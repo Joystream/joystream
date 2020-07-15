@@ -141,7 +141,7 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
                         ],
-                        node_runtime::ProposalsConfigParameters::default(),
+                        node_runtime::ProposalsConfigParameters::development(),
                     )
                 },
                 vec![],

@@ -27,7 +27,7 @@ impl<T: Trait> Module<T> {
         Self::initialize_storage_working_group_text_constraints();
         Self::clear_storage_data();
 
-        proposals_codex::Module::<T>::set_config_values(ProposalsConfigParameters::development());
+        proposals_codex::Module::<T>::set_config_values(ProposalsConfigParameters::testing());
     }
 }
 
