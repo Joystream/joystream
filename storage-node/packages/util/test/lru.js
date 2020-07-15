@@ -24,14 +24,14 @@ const lru = require('@joystream/storage-utils/lru')
 
 const DEFAULT_SLEEP = 1
 function sleep(ms = DEFAULT_SLEEP) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(resolve, ms)
   })
 }
 
-describe('util/lru', function() {
-  describe('simple usage', function() {
-    it('does not contain keys that were not added', function() {
+describe('util/lru', function () {
+  describe('simple usage', function () {
+    it('does not contain keys that were not added', function () {
       const cache = new lru.LRUCache()
       expect(cache.size()).to.equal(0)
 
@@ -41,7 +41,7 @@ describe('util/lru', function() {
       expect(cache.has('something')).to.be.false
     })
 
-    it('contains keys that were added', function() {
+    it('contains keys that were added', function () {
       const cache = new lru.LRUCache()
       cache.put('something', 'yay!')
       expect(cache.size()).to.equal(1)
@@ -52,7 +52,7 @@ describe('util/lru', function() {
       expect(cache.has('something')).to.be.true
     })
 
-    it('does not contain keys that were deleted', function() {
+    it('does not contain keys that were deleted', function () {
       const cache = new lru.LRUCache()
       cache.put('something', 'yay!')
       expect(cache.size()).to.equal(1)
@@ -67,7 +67,7 @@ describe('util/lru', function() {
       expect(cache.has('something')).to.be.false
     })
 
-    it('can be cleared', function() {
+    it('can be cleared', function () {
       const cache = new lru.LRUCache()
       cache.put('something', 'yay!')
       expect(cache.size()).to.equal(1)
@@ -77,8 +77,8 @@ describe('util/lru', function() {
     })
   })
 
-  describe('capacity management', function() {
-    it('does not grow beyond capacity', async function() {
+  describe('capacity management', function () {
+    it('does not grow beyond capacity', async function () {
       const cache = new lru.LRUCache(2) // Small capacity
       expect(cache.size()).to.equal(0)
 
@@ -96,7 +96,7 @@ describe('util/lru', function() {
       expect(cache.size()).to.equal(2) // Capacity exceeded
     })
 
-    it('removes the oldest key when pruning', async function() {
+    it('removes the oldest key when pruning', async function () {
       const cache = new lru.LRUCache(2) // Small capacity
       expect(cache.size()).to.equal(0)
 
@@ -119,7 +119,7 @@ describe('util/lru', function() {
       expect(cache.has('baz')).to.be.true
     })
 
-    it('updates LRU timestamp when reading', async function() {
+    it('updates LRU timestamp when reading', async function () {
       const cache = new lru.LRUCache(2) // Small capacity
       expect(cache.size()).to.equal(0)
 

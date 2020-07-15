@@ -33,7 +33,7 @@ const IPFS_CID_REGEX = /^Qm[1-9A-HJ-NP-Za-km-z]{44}$/
 function write(store, contentId, contents, callback) {
   store
     .open(contentId, 'w')
-    .then(stream => {
+    .then((stream) => {
       stream.on('finish', () => {
         stream.commit()
       })
@@ -45,7 +45,7 @@ function write(store, contentId, contents, callback) {
         process.nextTick(() => stream.end())
       }
     })
-    .catch(err => {
+    .catch((err) => {
       expect.fail(err)
     })
 }
@@ -53,9 +53,9 @@ function write(store, contentId, contents, callback) {
 function readAll(stream) {
   return new Promise((resolve, reject) => {
     const chunks = []
-    stream.on('data', chunk => chunks.push(chunk))
+    stream.on('data', (chunk) => chunks.push(chunk))
     stream.on('end', () => resolve(Buffer.concat(chunks)))
-    stream.on('error', err => reject(err))
+    stream.on('error', (err) => reject(err))
     stream.resume()
   })
 }
@@ -68,7 +68,7 @@ function createKnownObject(contentId, contents, callback) {
     },
   })
 
-  write(store, contentId, contents, theHash => {
+  write(store, contentId, contents, (theHash) => {
     hash = theHash
 
     callback(store, hash)
@@ -82,8 +82,8 @@ describe('storage/storage', () => {
   })
 
   describe('open()', () => {
-    it('can write a stream', done => {
-      write(storage, 'foobar', 'test-content', hash => {
+    it('can write a stream', (done) => {
+      write(storage, 'foobar', 'test-content', (hash) => {
         expect(hash).to.not.be.undefined
         expect(hash).to.match(IPFS_CID_REGEX)
         done()
@@ -124,28 +124,28 @@ describe('storage/storage', () => {
     // 		})
     // })
 
-    it('can read a stream', done => {
+    it('can read a stream', (done) => {
       const contents = 'test-for-reading'
-      createKnownObject('foobar', contents, store => {
+      createKnownObject('foobar', contents, (store) => {
         store
           .open('foobar', 'r')
-          .then(async stream => {
+          .then(async (stream) => {
             const data = await readAll(stream)
             expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0)
             done()
           })
-          .catch(err => {
+          .catch((err) => {
             expect.fail(err)
           })
       })
     })
 
-    it('detects the MIME type of a read stream', done => {
+    it('detects the MIME type of a read stream', (done) => {
       const contents = fs.readFileSync('../../storage-node_new.svg')
-      createKnownObject('foobar', contents, store => {
+      createKnownObject('foobar', contents, (store) => {
         store
           .open('foobar', 'r')
-          .then(async stream => {
+          .then(async (stream) => {
             const data = await readAll(stream)
             expect(contents.length).to.equal(data.length)
             expect(Buffer.compare(data, contents)).to.equal(0)
@@ -156,18 +156,18 @@ describe('storage/storage', () => {
             expect(stream.fileInfo).to.have.property('ext', 'xml')
             done()
           })
-          .catch(err => {
+          .catch((err) => {
             expect.fail(err)
           })
       })
     })
 
-    it('provides default MIME type for read streams', done => {
+    it('provides default MIME type for read streams', (done) => {
       const contents = 'test-for-reading'
-      createKnownObject('foobar', contents, store => {
+      createKnownObject('foobar', contents, (store) => {
         store
           .open('foobar', 'r')
-          .then(async stream => {
+          .then(async (stream) => {
             const data = await readAll(stream)
             expect(Buffer.compare(data, Buffer.from(contents))).to.equal(0)
 
@@ -175,7 +175,7 @@ describe('storage/storage', () => {
             expect(stream.fileInfo).to.have.property('ext', 'bin')
             done()
           })
-          .catch(err => {
+          .catch((err) => {
             expect.fail(err)
           })
       })
@@ -192,7 +192,7 @@ describe('storage/storage', () => {
       expect(storage.stat(hash)).to.eventually.be.rejectedWith('timed out')
     })
 
-    it('returns stats for a known object', done => {
+    it('returns stats for a known object', (done) => {
       const content = 'stat-test'
       const expectedSize = content.length
       createKnownObject('foobar', content, (store, hash) => {
@@ -212,7 +212,7 @@ describe('storage/storage', () => {
       expect(storage.size(hash)).to.eventually.be.rejectedWith('timed out')
     })
 
-    it('returns the size of a known object', done => {
+    it('returns the size of a known object', (done) => {
       createKnownObject('foobar', 'stat-test', (store, hash) => {
         expect(store.size(hash)).to.eventually.equal(15)
         done()
