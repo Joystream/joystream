@@ -354,6 +354,9 @@ const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str =
     "Ancestor category immutable, i.e. deleted or archived";
 const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
 const ERROR_CATEGORY_DOES_NOT_EXIST: &str = "Category does not exist.";
+const ERROR_CATEGORY_NOT_EMPTY_THREADS: &str = "Category still contains some threads.";
+const ERROR_CATEGORY_NOT_EMPTY_CATEGORIES: &str = "Category still contains some subcategories.";
+const ERROR_MODERATOR_CANT_DELETE_CATEGORY: &str = "No permissions to delete category.";
 
 // Errors about poll.
 const ERROR_POLL_ALTERNATIVES_TOO_SHORT: &str = "Poll items number too short.";
@@ -493,6 +496,23 @@ pub struct Category<CategoryId, ThreadId, Hash> {
     pub sticky_thread_ids: Vec<ThreadId>,
 }
 
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub enum PrivilegedActor<T: Trait> {
+    Lead,
+    Moderator(T::ModeratorId),
+}
+
+impl<T: Trait> core::fmt::Debug for PrivilegedActor<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            PrivilegedActor::Lead => write!(formatter, "PrivilegedActor {{ Lead }}"),
+            PrivilegedActor::Moderator(moderator_id) => {
+                write!(formatter, "PrivilegedActor {{ {:?} }}", moderator_id)
+            }
+        }
+    }
+}
+
 /// Represents a sequence of categories which have child-parent relatioonship
 /// where last element is final ancestor, or root, in the context of the category tree.
 type CategoryTreePath<CategoryId, ThreadId, Hash> = Vec<Category<CategoryId, ThreadId, Hash>>;
@@ -561,6 +581,9 @@ decl_event!(
         /// A category with given id was updated.
         /// The second argument reflects the new archival status of the category.
         CategoryUpdated(CategoryId, bool),
+
+        // A category was deleted
+        CategoryDeleted(CategoryId),
 
         /// A thread with given id was created.
         ThreadCreated(ThreadId),
@@ -716,6 +739,24 @@ decl_module! {
 
             // Generate event
             Self::deposit_event(RawEvent::CategoryUpdated(category_id, new_archival_status));
+
+            Ok(())
+        }
+
+        fn delete_category(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            let category = Self::ensure_can_delete_category(origin, &actor, &category_id)?;
+
+            // Delete thread
+            <CategoryById<T>>::remove(category_id);
+            if let Some(parent_category_id) = category.parent_category_id {
+                <CategoryById<T>>::mutate(parent_category_id, |tmp_category| tmp_category.num_direct_subcategories -= 1);
+            }
+
+            // Store the event
+            Self::deposit_event(RawEvent::CategoryDeleted(category_id));
 
             Ok(())
         }
@@ -1388,24 +1429,87 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    fn ensure_can_delete_category(
+        origin: T::Origin,
+        actor: &PrivilegedActor<T>,
+        category_id: &T::CategoryId,
+    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, &'static str> {
+        // Check actor's role
+        match actor {
+            PrivilegedActor::Lead => Self::ensure_is_forum_lead(origin)?,
+            PrivilegedActor::Moderator(moderator_id) => {
+                Self::ensure_is_moderator(origin, &moderator_id)?
+            }
+        };
+
+        // Ensure category exists
+        if !<CategoryById<T>>::exists(category_id) {
+            return Err(ERROR_CATEGORY_DOES_NOT_EXIST);
+        }
+
+        let category = <CategoryById<T>>::get(category_id);
+
+        // Ensure category is empty
+        ensure!(
+            category.num_direct_threads == 0,
+            ERROR_CATEGORY_NOT_EMPTY_THREADS,
+        );
+        ensure!(
+            category.num_direct_subcategories == 0,
+            ERROR_CATEGORY_NOT_EMPTY_CATEGORIES,
+        );
+
+        // Closure ensuring moderator can delete category
+        let can_moderator_delete =
+            |moderator_id: &T::ModeratorId,
+             category: Category<T::CategoryId, T::ThreadId, T::Hash>| {
+                if let Some(parent_category_id) = category.parent_category_id {
+                    Self::ensure_can_moderate_category_path(moderator_id, &parent_category_id)
+                        .map_err(|_| ERROR_MODERATOR_CANT_DELETE_CATEGORY)?;
+
+                    return Ok(category);
+                }
+
+                Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY)
+            };
+
+        // Decide if actor can delete category
+        match actor {
+            PrivilegedActor::Lead => Ok(category),
+            PrivilegedActor::Moderator(moderator_id) => {
+                can_moderator_delete(moderator_id, category)
+            }
+        }
+    }
+
     /// check if an account can moderate a category.
     fn ensure_can_moderate_category(
         account_id: &T::AccountId,
         moderator_id: &T::ModeratorId,
         category_id: &T::CategoryId,
     ) -> Result<(), &'static str> {
-        // Get path from category to root
-        let category_tree_path = Self::build_category_tree_path(category_id);
-
         // Ensure moderator account registered before
         Self::ensure_is_moderator_account(account_id, moderator_id)?;
 
-        // Iterate path, check all ancient category
+        Self::ensure_can_moderate_category_path(moderator_id, category_id)?;
+
+        Ok(())
+    }
+
+    // check that moderator is allowed to manipulate category in hierarchy
+    fn ensure_can_moderate_category_path(
+        moderator_id: &T::ModeratorId,
+        category_id: &T::CategoryId,
+    ) -> Result<(), &'static str> {
+        // Get path from category to root
+        let category_tree_path = Self::build_category_tree_path(category_id);
+
         for item in category_tree_path {
             if <CategoryByModerator<T>>::exists(item.id, moderator_id) {
                 return Ok(());
             }
         }
+
         Err(ERROR_MODERATOR_MODERATE_CATEGORY)
     }
 

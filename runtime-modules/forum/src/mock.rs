@@ -501,6 +501,25 @@ pub fn update_category_archival_status_mock(
     category_id
 }
 
+pub fn delete_category_mock(
+    origin: OriginType,
+    moderator_id: PrivilegedActor<Runtime>,
+    category_id: <Runtime as Trait>::CategoryId,
+    result: Result<(), &'static str>,
+) -> () {
+    assert_eq!(
+        TestForumModule::delete_category(mock_origin(origin), moderator_id, category_id),
+        result,
+    );
+    if result.is_ok() {
+        assert!(!<CategoryById<Runtime>>::exists(category_id));
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::CategoryDeleted(category_id))
+        );
+    };
+}
+
 pub fn moderate_thread_mock(
     origin: OriginType,
     moderator_id: <Runtime as Trait>::ModeratorId,
