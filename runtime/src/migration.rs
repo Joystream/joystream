@@ -2,6 +2,7 @@
 #![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
 
 use crate::VERSION;
+use proposals_codex::ProposalsConfigParameters;
 use rstd::prelude::*;
 use sr_primitives::{
     print,
@@ -26,7 +27,7 @@ impl<T: Trait> Module<T> {
         Self::initialize_storage_working_group_text_constraints();
         Self::clear_storage_data();
 
-        proposals_codex::Module::<T>::set_default_config_values();
+        proposals_codex::Module::<T>::set_config_values(ProposalsConfigParameters::development());
     }
 }
 

@@ -220,6 +220,7 @@ pub struct RoleParameters<Balance, BlockNumber> {
 }
 
 /// Contains proposal config parameters. Default values are used by migration and genesis config.
+#[derive(Copy, Clone)]
 pub struct ProposalsConfigParameters {
     /// 'Set validator count' proposal voting period
     pub set_validator_count_proposal_voting_period: u32,
