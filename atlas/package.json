@@ -7,11 +7,11 @@
 	"scripts": {
 		"start": "concurrently \"yarn dev\" \"yarn storybook\"",
 		"build": "lerna run build",
-		"dev": "lerna run --scope atlas-app --stream dev",
+		"dev": "lerna run --scope atlas-app dev",
 		"storybook": "lerna run --scope atlas-app --stream storybook",
 		"lint": "yarn run eslint . --ext .js,.jsx,.ts,.tsx",
 		"clean": "lerna clean && rm -rf node_modules",
-		"test": "jest"
+		"test": "lerna run --stream test"
 	},
 	"lint-staged": {
 		"*.{ts, tsx, js, jsx, json}": [

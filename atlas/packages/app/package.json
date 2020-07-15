@@ -5,7 +5,7 @@
 	"license": "ISC",
 	"directories": {
 		"src": "src",
-		"test": "__tests__"
+		"test": "src/__tests__"
 	},
 	"files": [
 		"src"
@@ -21,7 +21,7 @@
 		"start": "react-app-rewired start",
 		"dev": "react-app-rewired start",
 		"build": "react-app-rewired build",
-		"test": "echo \"Error: run tests from root\" && exit 1",
+		"test": "react-app-rewired test --watchAll=false",
 		"eject": "react-app-rewired eject",
 		"storybook": "start-storybook -p 6006 --quiet -c src/shared/.storybook",
 		"build-storybook": "build-storybook -c src/shared/.storybook",
@@ -71,5 +71,13 @@
 			"last 1 firefox version",
 			"last 1 safari version"
 		]
+	},
+	"jest": {
+		"moduleNameMapper": {
+			"@/(.*)$": "<rootDir>/src/$1",
+			"\\.svg": "<rootDir>/src/__mocks__/svgrMock.js"
+		},
+		"clearMocks": true,
+		"coverageDirectory": ".coverage"
 	}
 }
