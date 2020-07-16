@@ -1,21 +1,14 @@
-type Member @entity {
-  memberId: BigInt!
+" A spending proposal "
+type Proposal @entity {
+  " The account proposing it "
+  proposer: String!
 
-  # The unique handle chosen by member
-  handle: String @fulltext(query: "handles")
+  " The (total) amount that should be paid if the proposal is accepted "
+  value: BigDecimal!
 
-  # A Url to member's Avatar image
-  avatarUri: String
+  " The account to whom the payment should be made if the proposal is accepted "
+  beneficiary: String!
 
-  # Short text chosen by member to share information about themselves
-  about: String
-
-  # Blocknumber when member was registered
-  registeredAtBlock: BigInt!
-
-  # Member's controller account id.
-  controllerAccount: Bytes!
-
-  # Member's root account id
-  rootAccount: Bytes!
+  " The amount held on deposit (reserved) for making this proposal "
+  bond: BigDecimal!
 }
