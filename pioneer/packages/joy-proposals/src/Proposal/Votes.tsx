@@ -12,7 +12,7 @@ type VotesProps = {
 
 export default function Votes ({ votes }: VotesProps) {
   if (!votes.votes.length) {
-    return <Header as="h4">No votes has been submitted!</Header>;
+    return <Header as="h4">No votes have been submitted!</Header>;
   }
 
   return (

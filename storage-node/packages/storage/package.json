@@ -34,7 +34,8 @@
   },
   "scripts": {
     "test": "mocha --exit 'test/**/*.js'",
-    "lint": "eslint '**/*.js' --ignore-pattern 'test/**/*.js'"
+    "lint": "eslint '**/*.js' --ignore-pattern 'test/**/*.js'",
+    "checks": "yarn lint && prettier ./ --check && tsc --noEmit --pretty"
   },
   "devDependencies": {
     "chai": "^4.2.0",

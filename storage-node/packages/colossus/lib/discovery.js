@@ -60,7 +60,7 @@ function createApp(projectRoot, runtime) {
 
   // If no other handler gets triggered (errors), respond with the
   // error serialized to JSON.
-  app.use(function(err, req, res) {
+  app.use(function (err, req, res) {
     res.status(err.status).json(err)
   })
 
