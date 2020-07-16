@@ -22,4 +22,4 @@ yarn*
 .*.sw*
 
 # Visual Studio Code
-.vscode
+.vscode/
