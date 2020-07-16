@@ -10,7 +10,7 @@ members = [
 #	"runtime-modules/governance",
 #	"runtime-modules/hiring",
 #	"runtime-modules/membership",
-#	"runtime-modules/memo",
+	"runtime-modules/memo",
 	"runtime-modules/recurring-reward",
 #	"runtime-modules/service-discovery",
 #	"runtime-modules/stake",

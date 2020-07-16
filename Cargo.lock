@@ -945,6 +945,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-memo"
+version = "3.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-common",
+ "parity-scale-codec",
+ "sp-arithmetic",
+ "sp-runtime",
+]
+
+[[package]]
 name = "pallet-recurring-reward"
 version = "3.0.0"
 dependencies = [
