@@ -5,6 +5,8 @@ import cli from 'cli-ux';
 import { getTemplatePath } from '../utils/utils';
 import Mustache = require('mustache');
 
+const DEFAULT_WS_API_ENDPOINT = 'wss://kusama-rpc.polkadot.io/';
+
 export default class Scaffold extends Command {
   static description = `Starter kit: generates a directory layout and a sample schema file`;
 
@@ -25,7 +27,7 @@ export default class Scaffold extends Command {
   async promptDotEnv(): Promise<string> {
     const projectName = (await cli.prompt('Enter your project name', { required: true })) as string;
     const wsProviderUrl = (await cli.prompt('Substrate WS provider endpoint', {
-      default: 'ws://localhost:9944',
+      default: DEFAULT_WS_API_ENDPOINT,
     })) as string;
 
     const dbName = (await cli.prompt('Database name', { default: projectName })) as string;
