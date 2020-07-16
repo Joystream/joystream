@@ -940,7 +940,6 @@ dependencies = [
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",
- "sp-arithmetic",
  "sp-runtime",
 ]
 
@@ -953,7 +952,6 @@ dependencies = [
  "pallet-common",
  "parity-scale-codec",
  "sp-arithmetic",
- "sp-runtime",
 ]
 
 [[package]]
@@ -969,8 +967,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
- "sp-timestamp",
 ]
 
 [[package]]
@@ -1002,8 +998,21 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+]
+
+[[package]]
+name = "pallet-versioned-store"
+version = "3.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
  "sp-std",
- "sp-timestamp",
 ]
 
 [[package]]
