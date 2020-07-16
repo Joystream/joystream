@@ -43,7 +43,7 @@ export default class QueryBlockProducer extends EventEmitter {
     this._block_to_be_produced_next = new BN(0);
     this._height_of_chain = new BN(0);
     this._last_processed_event_index = new BN(0);
-    this._at_block = new BN(0)
+    this._at_block = new BN(0);
   }
 
   // TODO: We cannot assume first block has events... we need more robust logic.
@@ -71,7 +71,7 @@ export default class QueryBlockProducer extends EventEmitter {
     }
 
     if (at_event) {
-      this._last_processed_event_index = at_event
+      this._last_processed_event_index = at_event;
     }
 
     //
@@ -117,8 +117,19 @@ export default class QueryBlockProducer extends EventEmitter {
 
       debug(`\tHash ${block_hash_of_target.toString()}.`);
 
-      let records = await this._query_service.eventsAt(block_hash_of_target);
-      // TODO: CATCH HERE
+      let records = [];
+
+      // Warning: for some reason query service `eventsAt` method fail to fetch events. Indexer continue with the next block.
+      // This leads to inconsistency in data. It's a temporary fix
+      try {
+        records = await this._query_service.eventsAt(block_hash_of_target);
+      } catch (error) {
+        console.log(`block number: ${this._block_to_be_produced_next.toString()}`);
+        console.log('An error occured while reading events. Going to the next block. Error reason:', error.message);
+
+        this._block_to_be_produced_next = this._block_to_be_produced_next.addn(1);
+        continue;
+      }
 
       debug(`\tRead ${records.length} events.`);
 
@@ -150,12 +161,11 @@ export default class QueryBlockProducer extends EventEmitter {
           return query_event;
         }
       );
-      
+
       // Remove processed events from the list.
       if (this._block_to_be_produced_next.eq(this._at_block)) {
         query_events = query_events.filter((event) => event.index.gt(this._last_processed_event_index));
       }
-      
 
       let query_block = new QueryEventBlock(this._block_to_be_produced_next, query_events);
 

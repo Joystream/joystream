@@ -40,8 +40,10 @@ export default class QueryEvent implements SubstrateEvent {
 
   get event_params(): EventParameters {
     const { event } = this.event_record;
-
     let params: EventParameters = {};
+
+    // Event data can be Null(polkadot type)
+    if (!event.data.length) return params;
 
     event.data.forEach((data, index) => {
       params[event.typeDef[index].type] = data;
@@ -57,6 +59,9 @@ export default class QueryEvent implements SubstrateEvent {
   log(indent: number, logger: (str: string) => void): void {
     // Extract the phase, event
     const { event, phase } = this.event_record;
+
+    // Event data can be Null(polkadot type)
+    if (!event.data.length) return;
 
     logger(`\t\t\tParameters:`);
     event.data.forEach((data, index) => {
