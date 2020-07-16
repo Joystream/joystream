@@ -147,7 +147,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
 
   async parsedApplicationById (group: WorkingGroupKeys, wgApplicationId: number): Promise<ParsedApplication> {
     const wgApplication = await this.wgApplicationById(group, wgApplicationId);
-    return await this.parseApplication(wgApplicationId, wgApplication);
+    return this.parseApplication(wgApplicationId, wgApplication);
   }
 
   async openingApplications (group: WorkingGroupKeys, wgOpeningId: number): Promise<ParsedApplication[]> {
