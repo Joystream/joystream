@@ -1,6 +1,8 @@
 import { Command } from '@oclif/command';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as utils from './../utils/utils';
+
 import cli from 'cli-ux';
 import { getTemplatePath } from '../utils/utils';
 import Mustache = require('mustache');
@@ -19,7 +21,11 @@ export default class Scaffold extends Command {
     await fs.ensureDir('mappings');
     await fs.ensureDir('bootstrap');
 
-    await fs.copyFile(getTemplatePath('scaffold/schema.graphql'), path.join(process.cwd(), 'schema.graphql'));
+    // copy docker-compose
+    await utils.copyTemplateToCWD('scaffold/docker-compose.yml', 'docker-compose.yml');
+
+    // copy sample graphql schema
+    await utils.copyTemplateToCWD('scaffold/schema.graphql', 'schema.graphql');
 
     cli.action.stop();
   }
