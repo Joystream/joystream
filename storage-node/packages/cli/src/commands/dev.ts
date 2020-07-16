@@ -18,6 +18,18 @@ function roleKeyPair(api: RuntimeApi): KeyringPair {
   return api.identities.keyring.addFromUri(ROLE_ACCOUNT_URI, null, 'sr25519')
 }
 
+function getKeyFromAddressOrSuri(api: RuntimeApi, addressOrSuri: string) {
+  // Get key from keyring if it is an address
+  try {
+    return api.identities.keyring.getPair(addressOrSuri)
+  } catch (err) {
+    debug('supplied argument was not an address')
+  }
+
+  // Assume a SURI, add to keyring and return keypair
+  return api.identities.keyring.addFromUri(addressOrSuri, null, 'sr25519')
+}
+
 function developmentPort(): number {
   return 3001
 }
@@ -44,7 +56,7 @@ const batchDispatchCalls = async (
 }
 
 // Dispatch pre-prepared calls to runtime to initialize the versioned store
-const initVstore = async (api: RuntimeApi, contentLeadAddress: string): Promise<any> => {
+const vstoreInit = async (api: RuntimeApi, contentLead: string): Promise<any> => {
   // If any existing classes are found we will skip initializing
   // because the pre-prepared transactions make the assumption
   // that the versioned store is not initialized.
@@ -56,6 +68,13 @@ const initVstore = async (api: RuntimeApi, contentLeadAddress: string): Promise<
   } else {
     debug('Initializing Content Directory.')
   }
+
+  if (!contentLead) {
+    throw new Error('SURI of content lead not provided')
+  }
+
+  // Get address and load key into keyring if a SURI was supplied
+  const contentLeadAddress = getKeyFromAddressOrSuri(api, contentLead).address
 
   // Load pre-pared calls
   const classes = require('../../../../../devops/vstore/classes.json')
@@ -107,6 +126,12 @@ const check = async (api): Promise<any> => {
 // a member, storage lead, and a storage provider using a deterministic
 // development key for the role account
 const init = async (api: RuntimeApi): Promise<any> => {
+  debug('Ensuring we are on Development chain')
+  if (!(await api.system.isDevelopmentChain())) {
+    console.log('This command should only be run on a Development chain')
+    return
+  }
+
   // check if the initialization was previously run, skip if so.
   try {
     await check(api)
@@ -115,6 +140,7 @@ const init = async (api: RuntimeApi): Promise<any> => {
     // We didn't find a storage provider with expected role account
   }
 
+  // Load alice keypair into keyring
   const alice = aliceKeyPair(api).address
   const roleAccount = roleKeyPair(api).address
 
@@ -145,7 +171,7 @@ const init = async (api: RuntimeApi): Promise<any> => {
   await api.signAndSend(alice, api.api.tx.sudo.sudo(api.api.tx.contentWorkingGroup.replaceLead([aliceMemberId, alice])))
 
   // Initialize classes and entities in the versioned store
-  await initVstore(api, alice)
+  // await vstoreInit(api, alice)
 
   // set localhost colossus as discovery provider
   // assuming pioneer dev server is running on port 3000 we should run
@@ -189,12 +215,4 @@ const init = async (api: RuntimeApi): Promise<any> => {
   return check(api)
 }
 
-module.exports = {
-  init,
-  check,
-  aliceKeyPair,
-  roleKeyPair,
-  developmentPort,
-}
-
-export { init, check, aliceKeyPair, roleKeyPair, developmentPort }
+export { init, check, aliceKeyPair, roleKeyPair, developmentPort, vstoreInit }
