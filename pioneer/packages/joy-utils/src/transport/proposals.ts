@@ -13,9 +13,9 @@ import { ParsedMember } from '../types/members';
 import BaseTransport from './base';
 
 import { ThreadId, PostId } from '@joystream/types/common';
-import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost } from '@joystream/types/proposals';
+import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost, ProposalDetails } from '@joystream/types/proposals';
 import { MemberId } from '@joystream/types/members';
-import { u32, u64 } from '@polkadot/types/';
+import { u32, u64, Bytes } from '@polkadot/types/';
 import { BalanceOf } from '@polkadot/types/interfaces';
 
 import { bytesToString } from '../functions/misc';
@@ -28,10 +28,13 @@ import MembersTransport from './members';
 import ChainTransport from './chain';
 import CouncilTransport from './council';
 
+import { blake2AsHex } from '@polkadot/util-crypto';
+
 export default class ProposalsTransport extends BaseTransport {
   private membersT: MembersTransport;
   private chainT: ChainTransport;
   private councilT: CouncilTransport;
+  private runtimeUpgradeProposalDetailsCache: { [id: number]: [string, number] | undefined } = {};
 
   constructor (
     api: ApiPromise,
@@ -61,10 +64,46 @@ export default class ProposalsTransport extends BaseTransport {
     return (this.api.consts.proposalsEngine.cancellationFee as BalanceOf).toNumber();
   }
 
+  private runtimeUpgradeProposalCachedDetails(id: ProposalId) {
+    return this.runtimeUpgradeProposalDetailsCache[id.toNumber()];
+  }
+
+  private runtimeUpgradeProposalDetails(id: ProposalId, wasm: Bytes): [string, number] {
+    const cachedDetails = this.runtimeUpgradeProposalCachedDetails(id);
+
+    if (cachedDetails) {
+      return cachedDetails;
+    }
+
+    const details: [string, number] = [ blake2AsHex(wasm, 256), wasm.length ];
+    this.runtimeUpgradeProposalDetailsCache[id.toNumber()] = details;
+
+    return details;
+  }
+
   async proposalById (id: ProposalId): Promise<ParsedProposal> {
-    const rawDetails = (await this.proposalDetailsById(id)).toJSON() as { [k: string]: any };
-    const type = Object.keys(rawDetails)[0] as ProposalType;
-    const details = Array.isArray(rawDetails[type]) ? rawDetails[type] : [rawDetails[type]];
+    let details: any[] = [], type: ProposalType;
+    const cachedRuntimeProposalDetails = this.runtimeUpgradeProposalCachedDetails(id);
+    // Avoid fetching runtime upgrade proposal details if we already have them cached
+    if (cachedRuntimeProposalDetails) {
+      type = 'RuntimeUpgrade';
+      details = cachedRuntimeProposalDetails;
+    }
+    else {
+      // TODO: The right typesafe handling with JoyEnum would be very useful here
+      const rawDetails = await this.proposalDetailsById(id) as ProposalDetails;
+      type = rawDetails.type as ProposalType;
+
+      if (type === 'RuntimeUpgrade') {
+        // In case of RuntimeUpgrade proposal we override details to just contain the hash and filesize
+        // (instead of full WASM bytecode)
+        details = this.runtimeUpgradeProposalDetails(id, rawDetails.value as Bytes);
+      }
+      else {
+        const detailsJSON = rawDetails.value.toJSON();
+        details = Array.isArray(detailsJSON) ? detailsJSON : [detailsJSON];
+      }
+    }
     const rawProposal = await this.rawProposalById(id);
     const proposer = (await this.membersT.memberProfile(rawProposal.proposerId)).toJSON() as ParsedMember;
     const proposal = rawProposal.toJSON() as {
