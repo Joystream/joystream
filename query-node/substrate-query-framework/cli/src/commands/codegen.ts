@@ -15,7 +15,6 @@ import { getTypeormConfig, getTypeormModelGeneratorConnectionConfig, createSaved
 
 import Listr = require('listr');
 
-
 export default class Codegen extends Command {
   static description = 'Code generator';
   static generatedFolderName = 'generated';
@@ -51,7 +50,7 @@ export default class Codegen extends Command {
 
     // Create block indexer
     if (flags.indexer) {
-      cli.action.start('Generating the indexer');
+      cli.action.start('Generating the Indexer');
       await this.createBlockIndexer();
       cli.action.stop();
     }
@@ -110,7 +109,7 @@ export default class Codegen extends Command {
     // Create index.ts file
 
     const installDeps = {
-      title: 'Install dependendies for indexer',
+      title: 'Install dependendcies for the Indexer',
       task: async () => {
         await execa('yarn', ['install']);
         if (process.env.TYPE_REGISTER_PACKAGE_NAME) {
@@ -120,7 +119,7 @@ export default class Codegen extends Command {
     };
 
     const genEntities = {
-      title: 'Generate typeorm db entities',
+      title: 'Generate entity classes',
       task: async () => {
         await createSavedEntityEventTable();
         await execa('npx', getTypeormModelGeneratorConnectionConfig());
