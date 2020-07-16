@@ -20,7 +20,7 @@ import {
   ActivateOpeningAt,
   ActivateOpeningAtKeys
 } from '@joystream/types/hiring';
-import { WorkingGroup, WorkingGroupKeys } from '@joystream/types/common';
+import { WorkingGroup, WorkingGroupKey } from '@joystream/types/common';
 import { ApplicationsDetailsByOpening } from '@polkadot/joy-utils/react/components/working-groups/ApplicationDetails';
 import { LeadInfoFromId } from '@polkadot/joy-utils/react/components/working-groups/LeadInfo';
 import { formatReward } from '@polkadot/joy-utils/functions/format';
@@ -207,24 +207,24 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => ParsedParams} = {
         <ApplicationsDetailsByOpening
           openingId={opening_id}
           acceptedIds={[successful_application_id]}
-          group={(new WorkingGroup(working_group)).type as WorkingGroupKeys}/>
+          group={(new WorkingGroup(working_group)).type as WorkingGroupKey}/>
       )
     };
   },
   SlashWorkingGroupLeaderStake: ([leadId, amount, group]) => ({
     'Working group': (new WorkingGroup(group)).type,
     'Slash amount': formatBalance(amount),
-    Lead: new FullWidthParam(<LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKeys)} leadId={leadId}/>)
+    Lead: new FullWidthParam(<LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKey)} leadId={leadId}/>)
   }),
   DecreaseWorkingGroupLeaderStake: ([leadId, amount, group]) => ({
     'Working group': (new WorkingGroup(group)).type,
     'Decrease amount': formatBalance(amount),
-    Lead: new FullWidthParam(<LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKeys)} leadId={leadId}/>)
+    Lead: new FullWidthParam(<LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKey)} leadId={leadId}/>)
   }),
   SetWorkingGroupLeaderReward: ([leadId, amount, group]) => ({
     'Working group': (new WorkingGroup(group)).type,
     'New reward amount': formatBalance(amount),
-    Lead: new FullWidthParam(<LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKeys)} leadId={leadId}/>)
+    Lead: new FullWidthParam(<LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKey)} leadId={leadId}/>)
   }),
   TerminateWorkingGroupLeaderRole: ([params]) => {
     const paramsObj = new TerminateRoleParameters(params);
@@ -233,7 +233,7 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => ParsedParams} = {
       'Working group': workingGroup.type,
       Rationale: new FullWidthParam(bytesToString(rationale)),
       'Slash stake': slash.isTrue ? 'YES' : 'NO',
-      Lead: new FullWidthParam(<LeadInfoFromId group={workingGroup.type as WorkingGroupKeys} leadId={leadId.toNumber()}/>)
+      Lead: new FullWidthParam(<LeadInfoFromId group={workingGroup.type as WorkingGroupKey} leadId={leadId.toNumber()}/>)
     };
   }
 };

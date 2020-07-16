@@ -119,7 +119,7 @@ export class InputValidationLengthConstraint extends JoyStruct<InputValidationLe
 export const WorkingGroupDef = {
   Storage: Null
 } as const;
-export type WorkingGroupKeys = keyof typeof WorkingGroupDef;
+export type WorkingGroupKey = keyof typeof WorkingGroupDef;
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) { };
 
 export function registerCommonTypes() {

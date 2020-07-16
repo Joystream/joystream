@@ -4,7 +4,7 @@ import { ProfilePreviewFromStruct as MemberPreview } from '../../../MemberProfil
 import { useTransport, usePromise } from '../../hooks';
 import { Item, Label, Button } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
-import { WorkingGroupKeys } from '@joystream/types/common';
+import { WorkingGroupKey } from '@joystream/types/common';
 import PromiseComponent from '../PromiseComponent';
 
 type ApplicationsDetailsProps = {
@@ -59,7 +59,7 @@ export const ApplicationsDetails = ({ applications, acceptedIds }: ApplicationsD
 };
 
 type ApplicationsDetailsByIdsProps = {
-  group: WorkingGroupKeys;
+  group: WorkingGroupKey;
   ids: number[];
   acceptedIds?: number[];
 };
@@ -80,7 +80,7 @@ export const ApplicationsDetailsByIds = ({ group, ids, acceptedIds }: Applicatio
 };
 
 type ApplicationsDetailsByOpeningProps = {
-  group: WorkingGroupKeys;
+  group: WorkingGroupKey;
   openingId: number;
   acceptedIds?: number[];
 };

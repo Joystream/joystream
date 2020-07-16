@@ -10,7 +10,7 @@ import {
 } from './GenericProposalForm';
 import { FormField } from './FormFields';
 import { ProposalType } from '@polkadot/joy-utils/types/proposals';
-import { WorkingGroupKeys, WorkingGroupDef } from '@joystream/types/common';
+import { WorkingGroupKey, WorkingGroupDef } from '@joystream/types/common';
 import './forms.css';
 import { Dropdown, Message } from 'semantic-ui-react';
 import { usePromise, useTransport } from '@polkadot/joy-utils/react/hooks';
@@ -19,7 +19,7 @@ import { WorkerData } from '@polkadot/joy-utils/types/workingGroups';
 import { LeadInfo } from '@polkadot/joy-utils/react/components/working-groups/LeadInfo';
 
 export type FormValues = GenericFormValues & {
-  workingGroup: WorkingGroupKeys;
+  workingGroup: WorkingGroupKey;
 };
 
 export const defaultValues: FormValues = {

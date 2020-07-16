@@ -3,14 +3,14 @@ import { WorkerData } from '../../../types/workingGroups';
 import { ProfilePreviewFromStruct as MemberPreview } from '../../../MemberProfilePreview';
 import { Label, Message } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
-import { WorkingGroupKeys } from '@joystream/types/common';
+import { WorkingGroupKey } from '@joystream/types/common';
 import { useTransport, usePromise } from '../../hooks';
 import PromiseComponent from '../PromiseComponent';
 import { formatReward } from '@polkadot/joy-utils/functions/format';
 
 type LeadInfoProps = {
   lead: WorkerData | null;
-  group?: WorkingGroupKeys;
+  group?: WorkingGroupKey;
   header?: boolean;
   emptyMessage?: string;
 };
@@ -37,7 +37,7 @@ export const LeadInfo = ({ lead, group, header = false, emptyMessage = 'NONE' }:
 
 type LeadInfoFromIdProps = {
   leadId: number;
-  group: WorkingGroupKeys;
+  group: WorkingGroupKey;
 };
 
 export const LeadInfoFromId = ({ leadId, group }: LeadInfoFromIdProps) => {

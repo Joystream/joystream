@@ -23,7 +23,7 @@ import { formatBalance } from '@polkadot/util';
 import _ from 'lodash';
 import { IWorkingGroupOpeningPolicyCommitment } from '@joystream/types/working-group';
 import { IAddOpeningParameters } from '@joystream/types/proposals';
-import { WorkingGroupKeys, InputValidationLengthConstraint } from '@joystream/types/common';
+import { WorkingGroupKey, InputValidationLengthConstraint } from '@joystream/types/common';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import { withCalls } from '@polkadot/react-api';
 import { SimplifiedTypeInterface } from '@polkadot/joy-utils/types/common';
@@ -64,7 +64,7 @@ const defaultValues: FormValues = {
   humanReadableText: ''
 };
 
-const HRTDefault: (memberHandle: string, group: WorkingGroupKeys) => GenericJoyStreamRoleSchema =
+const HRTDefault: (memberHandle: string, group: WorkingGroupKey) => GenericJoyStreamRoleSchema =
   (memberHandle, group) => ({
     version: 1,
     headline: `Looking for ${group} Working Group Leader!`,

@@ -2,7 +2,7 @@ import { Worker, Opening as WGOpening } from '@joystream/types/working-group';
 import { Profile } from '@joystream/types/members';
 import { OpeningId, Opening, ApplicationStage } from '@joystream/types/hiring';
 import { AccountId } from '@polkadot/types/interfaces';
-import { WorkingGroupKeys } from '@joystream/types/common';
+import { WorkingGroupKey } from '@joystream/types/common';
 import { RewardRelationship } from '@joystream/types/recurring-rewards';
 
 export type WorkerData = {
@@ -11,7 +11,7 @@ export type WorkerData = {
   profile: Profile;
   stake?: number;
   reward?: RewardRelationship;
-  group: WorkingGroupKeys;
+  group: WorkingGroupKey;
 };
 
 export type OpeningData = {

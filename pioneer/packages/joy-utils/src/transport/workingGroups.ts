@@ -6,7 +6,7 @@ import MembersTransport from './members';
 import { SingleLinkedMapEntry } from '../index';
 import { Worker, WorkerId, Opening as WGOpening, Application as WGApplication } from '@joystream/types/working-group';
 import { apiModuleByGroup } from '../consts/workingGroups';
-import { WorkingGroupKeys } from '@joystream/types/common';
+import { WorkingGroupKey } from '@joystream/types/common';
 import { WorkerData, OpeningData, ParsedApplication } from '../types/workingGroups';
 import { OpeningId, ApplicationId, Opening, Application, ActiveOpeningStageKey } from '@joystream/types/hiring';
 import { MultipleLinkedMapEntry } from '../LinkedMapEntry';
@@ -21,12 +21,12 @@ export default class WorkingGroupsTransport extends BaseTransport {
     this.membersT = membersTransport;
   }
 
-  protected queryByGroup (group: WorkingGroupKeys) {
+  protected queryByGroup (group: WorkingGroupKey) {
     const module = apiModuleByGroup[group];
     return this.api.query[module];
   }
 
-  public async groupMemberById (group: WorkingGroupKeys, workerId: number): Promise<WorkerData | null> {
+  public async groupMemberById (group: WorkingGroupKey, workerId: number): Promise<WorkerData | null> {
     const workerLink = new SingleLinkedMapEntry(
       Worker,
       await this.queryByGroup(group).workerById(workerId)
@@ -50,7 +50,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
     return { group, workerId, worker, profile, stake, reward };
   }
 
-  public async currentLead (group: WorkingGroupKeys): Promise<WorkerData | null> {
+  public async currentLead (group: WorkingGroupKey): Promise<WorkerData | null> {
     const optLeadId = (await this.queryByGroup(group).currentLead()) as Option<WorkerId>;
 
     if (!optLeadId.isSome) {
@@ -62,7 +62,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
     return this.groupMemberById(group, leadWorkerId);
   }
 
-  public async allOpenings (group: WorkingGroupKeys): Promise<OpeningData[]> {
+  public async allOpenings (group: WorkingGroupKey): Promise<OpeningData[]> {
     const nextId = (await this.queryByGroup(group).nextOpeningId()) as OpeningId;
 
     if (nextId.eq(0)) {
@@ -83,7 +83,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
     return openingsData;
   }
 
-  public async activeOpenings (group: WorkingGroupKeys, substage?: ActiveOpeningStageKey) {
+  public async activeOpenings (group: WorkingGroupKey, substage?: ActiveOpeningStageKey) {
     return (await this.allOpenings(group))
       .filter(od =>
         od.hiringOpening.stage.isOfType('Active') &&
@@ -91,7 +91,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
       );
   }
 
-  async wgApplicationById (group: WorkingGroupKeys, wgApplicationId: number | ApplicationId): Promise<WGApplication> {
+  async wgApplicationById (group: WorkingGroupKey, wgApplicationId: number | ApplicationId): Promise<WGApplication> {
     const nextAppId = await this.queryByGroup(group).nextApplicationId() as ApplicationId;
 
     if (wgApplicationId < 0 || wgApplicationId >= nextAppId.toNumber()) {
@@ -145,12 +145,12 @@ export default class WorkingGroupsTransport extends BaseTransport {
     };
   }
 
-  async parsedApplicationById (group: WorkingGroupKeys, wgApplicationId: number): Promise<ParsedApplication> {
+  async parsedApplicationById (group: WorkingGroupKey, wgApplicationId: number): Promise<ParsedApplication> {
     const wgApplication = await this.wgApplicationById(group, wgApplicationId);
     return this.parseApplication(wgApplicationId, wgApplication);
   }
 
-  async openingApplications (group: WorkingGroupKeys, wgOpeningId: number): Promise<ParsedApplication[]> {
+  async openingApplications (group: WorkingGroupKey, wgOpeningId: number): Promise<ParsedApplication[]> {
     const applications: ParsedApplication[] = [];
 
     const nextAppId = await this.queryByGroup(group).nextApplicationId() as ApplicationId;
@@ -165,7 +165,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
     return applications;
   }
 
-  async openingActiveApplications (group: WorkingGroupKeys, wgOpeningId: number): Promise<ParsedApplication[]> {
+  async openingActiveApplications (group: WorkingGroupKey, wgOpeningId: number): Promise<ParsedApplication[]> {
     return (await this.openingApplications(group, wgOpeningId))
       .filter(a => a.stage.isOfType('Active'));
   }
