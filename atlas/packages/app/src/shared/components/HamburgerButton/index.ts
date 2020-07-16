@@ -1,3 +1,3 @@
-import HamburgerButton from "./HamburgerButton";
+import HamburgerButton from './HamburgerButton'
 
-export default HamburgerButton;
+export default HamburgerButton

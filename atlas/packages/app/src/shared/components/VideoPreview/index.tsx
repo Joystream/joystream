@@ -1,2 +1,2 @@
-import VideoPreview from "./VideoPreview";
-export default VideoPreview;
+import VideoPreview from './VideoPreview'
+export default VideoPreview

@@ -1,13 +1,11 @@
-import React from "react"
-import { shallow } from "enzyme"
-import App from "../App"
+import React from 'react'
+import { shallow } from 'enzyme'
+import App from '../App'
 
-describe("App component", () => {
-
+describe('App component', () => {
   const component = shallow(<App />)
 
-  it("Should render.", () => {
+  it('Should render.', () => {
     expect(component).toBeDefined()
   })
-
 })

@@ -1,27 +1,27 @@
-import React from "react";
-import ReactPlayer from "react-player";
-import { VideoPlayerStyleProps, makeStyles } from "./VideoPlayer.style";
+import React from 'react'
+import ReactPlayer from 'react-player'
+import { VideoPlayerStyleProps, makeStyles } from './VideoPlayer.style'
 
 export type VideoPlayerProps = {
-  src?: string;
-  playing?: boolean;
-  poster?: string;
-  controls?: boolean;
-  volume?: number;
-  loop?: boolean;
-  autoPlay?: boolean;
-  muted?: boolean;
-  className?: string;
-  onReady?(): void;
-  onStart?(): void;
-  onPlay?(): void;
-  onPause?(): void;
-  onBuffer?(): void;
-  onEnded?(): void;
-  onError?(error: any): void;
-  onDuration?(duration: number): void;
-  onProgress?(state: { played: number; loaded: number }): void;
-} & VideoPlayerStyleProps;
+  src?: string
+  playing?: boolean
+  poster?: string
+  controls?: boolean
+  volume?: number
+  loop?: boolean
+  autoPlay?: boolean
+  muted?: boolean
+  className?: string
+  onReady?(): void
+  onStart?(): void
+  onPlay?(): void
+  onPause?(): void
+  onBuffer?(): void
+  onEnded?(): void
+  onError?(error: any): void
+  onDuration?(duration: number): void
+  onProgress?(state: { played: number; loaded: number }): void
+} & VideoPlayerStyleProps
 
 export default function VideoPlayer({
   src,
@@ -45,13 +45,13 @@ export default function VideoPlayer({
   controls = true,
   ...styleProps
 }: VideoPlayerProps) {
-  let { playerStyles, containerStyles } = makeStyles(styleProps);
+  let { playerStyles, containerStyles } = makeStyles(styleProps)
   return (
     <div css={containerStyles}>
       <ReactPlayer
         css={playerStyles}
-        width={styleProps.responsive ? "100%" : styleProps.width}
-        height={styleProps.responsive ? "100%" : styleProps.height}
+        width={styleProps.responsive ? '100%' : styleProps.width}
+        height={styleProps.responsive ? '100%' : styleProps.height}
         url={src}
         autoPlay={autoPlay}
         light={poster || true}
@@ -69,11 +69,11 @@ export default function VideoPlayer({
         config={{
           file: {
             attributes: {
-              className: "video-player",
+              className: 'video-player',
             },
           },
         }}
       />
     </div>
-  );
+  )
 }

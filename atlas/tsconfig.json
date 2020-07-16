@@ -1,10 +1,10 @@
 {
-	"compilerOptions": {
-		"moduleResolution": "node",
-		"sourceMap": true,
-		"strict": true,
-		"esModuleInterop": true,
-		"jsx": "react"
-	},
-	"exclude": ["node_modules", "dist"]
+  "compilerOptions": {
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "jsx": "react"
+  },
+  "exclude": ["node_modules", "dist"]
 }

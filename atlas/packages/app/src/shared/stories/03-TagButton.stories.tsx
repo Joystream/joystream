@@ -1,15 +1,11 @@
-import React from "react"
-import { TagButton } from "../components"
+import React from 'react'
+import { TagButton } from '../components'
 
 export default {
-  title: "TagButton",
+  title: 'TagButton',
   component: TagButton,
 }
 
-export const Default = () => (
-  <TagButton text="Finance" />
-)
+export const Default = () => <TagButton text="Finance" />
 
-export const Selected = () => (
-  <TagButton text="Finance" selected={true} />
-)
+export const Selected = () => <TagButton text="Finance" selected={true} />
