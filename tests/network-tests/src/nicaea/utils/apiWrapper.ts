@@ -2,16 +2,26 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { Option, Vec, Bytes, u32 } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
-import { UserInfo, PaidMembershipTerms, MemberId } from '@constantinople/types/lib/members';
-import { Mint, MintId } from '@constantinople/types/lib/mint';
-import { Lead, LeadId } from '@constantinople/types/lib/content-working-group';
-import { RoleParameters } from '@constantinople/types/lib/roles';
-import { Seat } from '@constantinople/types';
+import { UserInfo, PaidMembershipTerms, MemberId } from '@nicaea/types/members';
+import { Mint, MintId } from '@nicaea/types/mint';
+import { Lead, LeadId } from '@nicaea/types/content-working-group';
+import { Application, WorkerId, Worker, ApplicationIdToWorkerIdMap, Opening } from '@nicaea/types/working-group';
+import { Application as HiringApplication } from '@nicaea/types/hiring';
+import { RoleParameters } from '@nicaea/types/roles';
+import { Seat } from '@nicaea/types/council';
 import { Balance, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces';
 import BN from 'bn.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
 import { Sender } from './sender';
 import { Utils } from './utils';
+import { Stake, StakedState } from '@nicaea/types/stake';
+import { RewardRelationship } from '@nicaea/types/recurring-rewards';
+import { Opening as HiringOpening, ApplicationId } from '@nicaea/types/hiring';
+import { WorkingGroupOpening } from '../dto/workingGroupOpening';
+
+export enum WorkingGroups {
+  storageWorkingGroup = 'storageWorkingGroup',
+}
 
 export class ApiWrapper {
   private readonly api: ApiPromise;
@@ -216,6 +226,90 @@ export class ApiWrapper {
     return this.estimateTxFee(this.api.tx.proposalsEngine.vote(0, 0, 'Approve'));
   }
 
+  public estimateAddOpeningFee(opening: WorkingGroupOpening, module: WorkingGroups): BN {
+    return this.estimateTxFee(
+      this.api.tx[module].addOpening(
+        opening.getActivateAt(),
+        opening.getCommitment(),
+        opening.getText(),
+        opening.getOpeningType()
+      )
+    );
+  }
+
+  public estimateAcceptApplicationsFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].acceptApplications(0));
+  }
+
+  public estimateApplyOnOpeningFee(account: KeyringPair, module: WorkingGroups): BN {
+    return this.estimateTxFee(
+      this.api.tx[module].applyOnOpening(
+        0,
+        0,
+        account.address,
+        0,
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test'
+      )
+    );
+  }
+
+  public estimateBeginApplicantReviewFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].beginApplicantReview(0));
+  }
+
+  public estimateFillOpeningFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(
+      this.api.tx[module].fillOpening(0, [0], {
+        amount_per_payout: 0,
+        next_payment_at_block: 0,
+        payout_interval: 0,
+      })
+    );
+  }
+
+  public estimateIncreaseStakeFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].increaseStake(0, 0));
+  }
+
+  public estimateDecreaseStakeFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].decreaseStake(0, 0));
+  }
+
+  public estimateUpdateRoleAccountFee(address: string, module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].updateRoleAccount(0, address));
+  }
+
+  public estimateUpdateRewardAccountFee(address: string, module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].updateRewardAccount(0, address));
+  }
+
+  public estimateLeaveRoleFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].leaveRole(0, 'Long justification text'));
+  }
+
+  public estimateWithdrawApplicationFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].withdrawApplication(0));
+  }
+
+  public estimateTerminateApplicationFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].terminateApplication(0));
+  }
+
+  public estimateSlashStakeFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(this.api.tx[module].slashStake(0, 0));
+  }
+
+  public estimateTerminateRoleFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(
+      this.api.tx[module].terminateRole(
+        0,
+        'Long justification text explaining why the worker role will be terminated',
+        false
+      )
+    );
+  }
+
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
     return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account, false);
   }
@@ -298,6 +392,10 @@ export class ApiWrapper {
       sudo,
       false
     );
+  }
+
+  public sudoSetWorkingGroupMintCapacity(sudo: KeyringPair, capacity: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(this.api.tx.sudo.sudo(this.api.tx[module].setMintCapacity(capacity)), sudo, false);
   }
 
   public getBestBlock(): Promise<BN> {
@@ -560,6 +658,42 @@ export class ApiWrapper {
     });
   }
 
+  public expectOpeningFilled(): Promise<ApplicationIdToWorkerIdMap> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'OpeningFilled') {
+            resolve((record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap);
+          }
+        });
+      });
+    });
+  }
+
+  public expectOpeningAdded(): Promise<BN> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'OpeningAdded') {
+            resolve((record.event.data as unknown) as BN);
+          }
+        });
+      });
+    });
+  }
+
+  public expectApplicationReviewBegan(): Promise<void> {
+    return new Promise(async resolve => {
+      await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'BeganApplicationReview') {
+            resolve();
+          }
+        });
+      });
+    });
+  }
+
   public getTotalIssuance(): Promise<BN> {
     return this.api.query.balances.totalIssuance<Balance>();
   }
@@ -603,7 +737,247 @@ export class ApiWrapper {
     const storageProviders: Vec<AccountId> = await this.api.query.actors.accountIdsByRole<Vec<AccountId>>(
       'StorageProvider'
     );
-    return storageProviders.map(accountId => accountId.toString()).includes(address);
+    const accountWorkers: BN = await this.getWorkerIdByRoleAccount(address, WorkingGroups.storageWorkingGroup);
+    return accountWorkers !== undefined;
+  }
+
+  public async addOpening(
+    leader: KeyringPair,
+    opening: WorkingGroupOpening,
+    module: WorkingGroups,
+    expectFailure: boolean
+  ): Promise<void> {
+    await this.sender.signAndSend(this.createAddOpeningTransaction(opening, module), leader, expectFailure);
+  }
+
+  public async sudoAddOpening(sudo: KeyringPair, opening: WorkingGroupOpening, module: WorkingGroups): Promise<void> {
+    await this.sender.signAndSend(
+      this.api.tx.sudo.sudo(this.createAddOpeningTransaction(opening, module)),
+      sudo,
+      false
+    );
+  }
+
+  private createAddOpeningTransaction(
+    opening: WorkingGroupOpening,
+    module: WorkingGroups
+  ): SubmittableExtrinsic<'promise'> {
+    return this.api.tx[module].addOpening(
+      opening.getActivateAt(),
+      opening.getCommitment(),
+      opening.getText(),
+      opening.getOpeningType()
+    );
+  }
+
+  public async acceptApplications(leader: KeyringPair, openingId: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].acceptApplications(openingId), leader, false);
+  }
+
+  public async beginApplicantReview(leader: KeyringPair, openingId: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].beginApplicantReview(openingId), leader, false);
+  }
+
+  public async sudoBeginApplicantReview(sudo: KeyringPair, openingId: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.sudo.sudo(this.api.tx[module].beginApplicantReview(openingId)),
+      sudo,
+      false
+    );
+  }
+
+  public async applyOnOpening(
+    account: KeyringPair,
+    roleAccountAddress: string,
+    openingId: BN,
+    roleStake: BN,
+    applicantStake: BN,
+    text: string,
+    expectFailure: boolean,
+    module: WorkingGroups
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    return this.sender.signAndSend(
+      this.api.tx[module].applyOnOpening(memberId, openingId, roleAccountAddress, roleStake, applicantStake, text),
+      account,
+      expectFailure
+    );
+  }
+
+  public async batchApplyOnOpening(
+    accounts: KeyringPair[],
+    openingId: BN,
+    roleStake: BN,
+    applicantStake: BN,
+    text: string,
+    module: WorkingGroups,
+    expectFailure: boolean
+  ): Promise<void[]> {
+    return Promise.all(
+      accounts.map(async keyPair => {
+        await this.applyOnOpening(
+          keyPair,
+          keyPair.address,
+          openingId,
+          roleStake,
+          applicantStake,
+          text,
+          expectFailure,
+          module
+        );
+      })
+    );
+  }
+
+  public async fillOpening(
+    leader: KeyringPair,
+    openingId: BN,
+    applicationId: BN[],
+    amountPerPayout: BN,
+    nextPaymentBlock: BN,
+    payoutInterval: BN,
+    module: WorkingGroups
+  ): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx[module].fillOpening(openingId, applicationId, {
+        amount_per_payout: amountPerPayout,
+        next_payment_at_block: nextPaymentBlock,
+        payout_interval: payoutInterval,
+      }),
+      leader,
+      false
+    );
+  }
+
+  public async sudoFillOpening(
+    sudo: KeyringPair,
+    openingId: BN,
+    applicationId: BN[],
+    amountPerPayout: BN,
+    nextPaymentBlock: BN,
+    payoutInterval: BN,
+    module: WorkingGroups
+  ): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx.sudo.sudo(
+        this.api.tx[module].fillOpening(openingId, applicationId, {
+          amount_per_payout: amountPerPayout,
+          next_payment_at_block: nextPaymentBlock,
+          payout_interval: payoutInterval,
+        })
+      ),
+      sudo,
+      false
+    );
+  }
+
+  public async increaseStake(worker: KeyringPair, workerId: BN, stake: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].increaseStake(workerId, stake), worker, false);
+  }
+
+  public async decreaseStake(
+    leader: KeyringPair,
+    workerId: BN,
+    stake: BN,
+    module: WorkingGroups,
+    expectFailure: boolean
+  ): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].decreaseStake(workerId, stake), leader, expectFailure);
+  }
+
+  public async slashStake(
+    leader: KeyringPair,
+    workerId: BN,
+    stake: BN,
+    module: WorkingGroups,
+    expectFailure: boolean
+  ): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].slashStake(workerId, stake), leader, expectFailure);
+  }
+
+  public async updateRoleAccount(
+    worker: KeyringPair,
+    workerId: BN,
+    newRoleAccount: string,
+    module: WorkingGroups
+  ): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].updateRoleAccount(workerId, newRoleAccount), worker, false);
+  }
+
+  public async updateRewardAccount(
+    worker: KeyringPair,
+    workerId: BN,
+    newRewardAccount: string,
+    module: WorkingGroups
+  ): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].updateRewardAccount(workerId, newRewardAccount), worker, false);
+  }
+
+  public async withdrawApplication(account: KeyringPair, workerId: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].withdrawApplication(workerId), account, false);
+  }
+
+  public async batchWithdrawApplication(accounts: KeyringPair[], module: WorkingGroups): Promise<void[]> {
+    return Promise.all(
+      accounts.map(async keyPair => {
+        const applicationIds: BN[] = await this.getApplicationsIdsByRoleAccount(keyPair.address, module);
+        await this.withdrawApplication(keyPair, applicationIds[0], module);
+      })
+    );
+  }
+
+  public async terminateApplication(leader: KeyringPair, applicationId: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(this.api.tx[module].terminateApplication(applicationId), leader, false);
+  }
+
+  public async batchTerminateApplication(
+    leader: KeyringPair,
+    roleAccounts: KeyringPair[],
+    module: WorkingGroups
+  ): Promise<void[]> {
+    return Promise.all(
+      roleAccounts.map(async keyPair => {
+        const applicationIds: BN[] = await this.getActiveApplicationsIdsByRoleAccount(keyPair.address, module);
+        await this.terminateApplication(leader, applicationIds[0], module);
+      })
+    );
+  }
+
+  public async terminateRole(
+    leader: KeyringPair,
+    applicationId: BN,
+    text: string,
+    module: WorkingGroups,
+    expectFailure: boolean
+  ): Promise<void> {
+    return this.sender.signAndSend(
+      this.api.tx[module].terminateRole(applicationId, text, false),
+      leader,
+      expectFailure
+    );
+  }
+
+  public async leaveRole(
+    account: KeyringPair,
+    text: string,
+    expectFailure: boolean,
+    module: WorkingGroups
+  ): Promise<void> {
+    const workerId: BN = await this.getWorkerIdByRoleAccount(account.address, module);
+    return this.sender.signAndSend(this.api.tx[module].leaveRole(workerId, text), account, expectFailure);
+  }
+
+  public async batchLeaveRole(
+    roleAccounts: KeyringPair[],
+    text: string,
+    expectFailure: boolean,
+    module: WorkingGroups
+  ): Promise<void[]> {
+    return Promise.all(
+      roleAccounts.map(async keyPair => {
+        await this.leaveRole(keyPair, text, expectFailure, module);
+      })
+    );
   }
 
   public async getStorageRoleParameters(): Promise<RoleParameters> {
@@ -611,34 +985,123 @@ export class ApiWrapper {
   }
 
   public async getAnnouncingPeriod(): Promise<BN> {
-    return await this.api.query.councilElection.announcingPeriod<BlockNumber>();
+    return this.api.query.councilElection.announcingPeriod<BlockNumber>();
   }
 
   public async getVotingPeriod(): Promise<BN> {
-    return await this.api.query.councilElection.votingPeriod<BlockNumber>();
+    return this.api.query.councilElection.votingPeriod<BlockNumber>();
   }
 
   public async getRevealingPeriod(): Promise<BN> {
-    return await this.api.query.councilElection.revealingPeriod<BlockNumber>();
+    return this.api.query.councilElection.revealingPeriod<BlockNumber>();
   }
 
   public async getCouncilSize(): Promise<BN> {
-    return await this.api.query.councilElection.councilSize<u32>();
+    return this.api.query.councilElection.councilSize<u32>();
   }
 
   public async getCandidacyLimit(): Promise<BN> {
-    return await this.api.query.councilElection.candidacyLimit<u32>();
+    return this.api.query.councilElection.candidacyLimit<u32>();
   }
 
   public async getNewTermDuration(): Promise<BN> {
-    return await this.api.query.councilElection.newTermDuration<BlockNumber>();
+    return this.api.query.councilElection.newTermDuration<BlockNumber>();
   }
 
   public async getMinCouncilStake(): Promise<BN> {
-    return await this.api.query.councilElection.minCouncilStake<BalanceOf>();
+    return this.api.query.councilElection.minCouncilStake<BalanceOf>();
   }
 
   public async getMinVotingStake(): Promise<BN> {
-    return await this.api.query.councilElection.minVotingStake<BalanceOf>();
+    return this.api.query.councilElection.minVotingStake<BalanceOf>();
+  }
+
+  public async getNextOpeningId(module: WorkingGroups): Promise<BN> {
+    return this.api.query[module].nextOpeningId<u32>();
+  }
+
+  public async getNextApplicationId(module: WorkingGroups): Promise<BN> {
+    return this.api.query[module].nextApplicationId<u32>();
+  }
+
+  public async getOpening(id: BN, module: WorkingGroups): Promise<Opening> {
+    return ((await this.api.query[module].openingById<Codec[]>(id))[0] as unknown) as Opening;
+  }
+
+  public async getHiringOpening(id: BN): Promise<HiringOpening> {
+    return ((await this.api.query.hiring.openingById<Codec[]>(id))[0] as unknown) as HiringOpening;
+  }
+
+  public async getWorkers(module: WorkingGroups): Promise<Worker[]> {
+    return ((await this.api.query[module].workerById<Codec[]>())[1] as unknown) as Worker[];
+  }
+
+  public async getWorkerById(id: BN, module: WorkingGroups): Promise<Worker> {
+    return ((await this.api.query[module].workerById<Codec[]>(id))[0] as unknown) as Worker;
+  }
+
+  public async getWorkerIdByRoleAccount(address: string, module: WorkingGroups): Promise<BN> {
+    const workersAndIds = await this.api.query[module].workerById<Codec[]>();
+    const workers: Worker[] = (workersAndIds[1] as unknown) as Worker[];
+    const ids: WorkerId[] = (workersAndIds[0] as unknown) as WorkerId[];
+    const index: number = workers.findIndex(worker => worker.role_account_id.toString() === address);
+    return ids[index];
+  }
+
+  public async getApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<BN[]> {
+    const applicationsAndIds = await this.api.query[module].applicationById<Codec[]>();
+    const applications: Application[] = (applicationsAndIds[1] as unknown) as Application[];
+    const ids: ApplicationId[] = (applicationsAndIds[0] as unknown) as ApplicationId[];
+    return applications
+      .map((application, index) => (application.role_account_id.toString() === address ? ids[index] : undefined))
+      .filter(id => id !== undefined) as BN[];
+  }
+
+  public async getHiringApplicationById(id: BN): Promise<HiringApplication> {
+    return ((await this.api.query.hiring.applicationById<Codec[]>(id))[0] as unknown) as HiringApplication;
+  }
+
+  public async getApplicationById(id: BN, module: WorkingGroups): Promise<Application> {
+    return ((await this.api.query[module].applicationById<Codec[]>(id))[0] as unknown) as Application;
+  }
+
+  public async getActiveApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<BN[]> {
+    const applicationsAndIds = await this.api.query[module].applicationById<Codec[]>();
+    const applications: Application[] = (applicationsAndIds[1] as unknown) as Application[];
+    const ids: ApplicationId[] = (applicationsAndIds[0] as unknown) as ApplicationId[];
+    return (
+      await Promise.all(
+        applications.map(async (application, index) => {
+          if (
+            application.role_account_id.toString() === address &&
+            (await this.getHiringApplicationById(application.application_id)).stage.type === 'Active'
+          ) {
+            return ids[index];
+          } else {
+            return undefined;
+          }
+        })
+      )
+    ).filter(index => index !== undefined) as BN[];
+  }
+
+  public async getStake(id: BN): Promise<Stake> {
+    return ((await this.api.query.stake.stakes<Codec[]>(id))[0] as unknown) as Stake;
+  }
+
+  public async getWorkerStakeAmount(workerId: BN, module: WorkingGroups): Promise<BN> {
+    let stakeId: BN = (await this.getWorkerById(workerId, module)).role_stake_profile.unwrap().stake_id;
+    return (((await this.getStake(stakeId)).staking_status.value as unknown) as StakedState).staked_amount;
+  }
+
+  public async getRewardRelationship(id: BN): Promise<RewardRelationship> {
+    return ((
+      await this.api.query.recurringRewards.rewardRelationships<Codec[]>(id)
+    )[0] as unknown) as RewardRelationship;
+  }
+
+  public async getWorkerRewardAccount(workerId: BN, module: WorkingGroups): Promise<string> {
+    let rewardRelationshipId: BN = (await this.getWorkerById(workerId, module)).reward_relationship.unwrap();
+    return (await this.getRewardRelationship(rewardRelationshipId)).getField('account').toString();
   }
 }

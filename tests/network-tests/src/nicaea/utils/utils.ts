@@ -4,7 +4,7 @@ import { blake2AsHex } from '@polkadot/util-crypto';
 import BN from 'bn.js';
 import fs from 'fs';
 import { decodeAddress } from '@polkadot/keyring';
-import { Seat } from '@constantinople/types';
+import { Seat } from '@nicaea/types/council';
 
 export class Utils {
   private static LENGTH_ADDRESS = 32 + 1; // publicKey + prefix
@@ -32,7 +32,6 @@ export class Utils {
     voteU8a.set(saltU8a, accountU8a.length);
 
     const hash = blake2AsHex(voteU8a, 256);
-    // console.log('Vote hash:', hash, 'for', { accountId, salt });
     return hash;
   }
 
