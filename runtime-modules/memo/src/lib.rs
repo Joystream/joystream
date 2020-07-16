@@ -1,13 +1,12 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use system::{self, ensure_signed};
 use frame_support::traits::Currency;
-use frame_support::{decl_module, decl_storage, decl_event, ensure};
-use sp_arithmetic::traits::{Zero};
+use frame_support::{decl_event, decl_module, decl_storage, ensure};
+use sp_arithmetic::traits::Zero;
+use system::{self, ensure_signed};
 
 use common::currency::GovernanceCurrency;
-
 
 pub trait Trait: system::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -32,7 +31,7 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
-        #[weight = 10_000_000]
+        #[weight = 10_000_000] // TODO: adjust weight
         fn update_memo(origin, memo: MemoText) {
             let sender = ensure_signed(origin)?;
 
