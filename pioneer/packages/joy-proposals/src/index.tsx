@@ -21,7 +21,8 @@ import {
   SetCouncilParamsForm,
   SetStorageRoleParamsForm,
   SetMaxValidatorCountForm,
-  RuntimeUpgradeForm
+  RuntimeUpgradeForm,
+  AddWorkingGroupOpeningForm
 } from './forms';
 
 interface Props extends AppProps, I18nProps {}
@@ -70,6 +71,7 @@ function App (props: Props): React.ReactElement<Props> {
           <Route exact path={`${basePath}/new/evict-storage-provider`} component={EvictStorageProviderForm} />
           <Route exact path={`${basePath}/new/set-validator-count`} component={SetMaxValidatorCountForm} />
           <Route exact path={`${basePath}/new/set-storage-role-parameters`} component={SetStorageRoleParamsForm} />
+          <Route exact path={`${basePath}/new/add-working-group-leader-opening`} component={AddWorkingGroupOpeningForm} />
           <Route exact path={`${basePath}/active`} component={NotDone} />
           <Route exact path={`${basePath}/finalized`} component={NotDone} />
           <Route exact path={`${basePath}/:id`} component={ProposalFromId} />

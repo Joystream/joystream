@@ -24,9 +24,9 @@ const streamBuffers = require('stream-buffers')
 
 const ranges = require('@joystream/storage-utils/ranges')
 
-describe('util/ranges', function() {
-  describe('parse()', function() {
-    it('should parse a full range', function() {
+describe('util/ranges', function () {
+  describe('parse()', function () {
+    it('should parse a full range', function () {
       // Range with unit
       let range = ranges.parse('bytes=0-100')
       expect(range.unit).to.equal('bytes')
@@ -50,14 +50,14 @@ describe('util/ranges', function() {
       expect(range.ranges[0][1]).to.equal(100)
     })
 
-    it('should error out on malformed strings', function() {
+    it('should error out on malformed strings', function () {
       expect(() => ranges.parse('foo')).to.throw()
       expect(() => ranges.parse('foo=bar')).to.throw()
       expect(() => ranges.parse('foo=100')).to.throw()
       expect(() => ranges.parse('foo=100-0')).to.throw()
     })
 
-    it('should parse a range without end', function() {
+    it('should parse a range without end', function () {
       const range = ranges.parse('0-')
       expect(range.unit).to.equal('bytes')
       expect(range.rangeStr).to.equal('0-')
@@ -65,7 +65,7 @@ describe('util/ranges', function() {
       expect(range.ranges[0][1]).to.be.undefined
     })
 
-    it('should parse a range without start', function() {
+    it('should parse a range without start', function () {
       const range = ranges.parse('-100')
       expect(range.unit).to.equal('bytes')
       expect(range.rangeStr).to.equal('-100')
@@ -73,7 +73,7 @@ describe('util/ranges', function() {
       expect(range.ranges[0][1]).to.equal(100)
     })
 
-    it('should parse multiple ranges', function() {
+    it('should parse multiple ranges', function () {
       const range = ranges.parse('0-10,30-40,60-80')
       expect(range.unit).to.equal('bytes')
       expect(range.rangeStr).to.equal('0-10,30-40,60-80')
@@ -85,7 +85,7 @@ describe('util/ranges', function() {
       expect(range.ranges[2][1]).to.equal(80)
     })
 
-    it('should merge overlapping ranges', function() {
+    it('should merge overlapping ranges', function () {
       // Two overlapping ranges
       let range = ranges.parse('0-20,10-30')
       expect(range.unit).to.equal('bytes')
@@ -119,7 +119,7 @@ describe('util/ranges', function() {
       expect(range.ranges[0][1]).to.equal(20)
     })
 
-    it('should sort ranges', function() {
+    it('should sort ranges', function () {
       const range = ranges.parse('10-30,0-5')
       expect(range.unit).to.equal('bytes')
       expect(range.rangeStr).to.equal('10-30,0-5')
@@ -131,8 +131,8 @@ describe('util/ranges', function() {
     })
   })
 
-  describe('send()', function() {
-    it('should send full files on request', function(done) {
+  describe('send()', function () {
+    it('should send full files on request', function (done) {
       const res = mockHttp.createResponse({})
       const inStream = new streamBuffers.ReadableStreamBuffer({})
 
@@ -141,7 +141,7 @@ describe('util/ranges', function() {
         name: 'test.file',
         type: 'application/test',
       }
-      ranges.send(res, inStream, opts, function(err) {
+      ranges.send(res, inStream, opts, function (err) {
         expect(err).to.not.exist
 
         // HTTP handling
@@ -163,7 +163,7 @@ describe('util/ranges', function() {
       inStream.stop()
     })
 
-    it('should send a range spanning the entire file on request', function(done) {
+    it('should send a range spanning the entire file on request', function (done) {
       const res = mockHttp.createResponse({})
       const inStream = new streamBuffers.ReadableStreamBuffer({})
 
@@ -175,7 +175,7 @@ describe('util/ranges', function() {
           ranges: [[0, 12]],
         },
       }
-      ranges.send(res, inStream, opts, function(err) {
+      ranges.send(res, inStream, opts, function (err) {
         expect(err).to.not.exist
 
         // HTTP handling
@@ -199,7 +199,7 @@ describe('util/ranges', function() {
       inStream.stop()
     })
 
-    it('should send a small range on request', function(done) {
+    it('should send a small range on request', function (done) {
       const res = mockHttp.createResponse({})
       const inStream = new streamBuffers.ReadableStreamBuffer({})
 
@@ -211,7 +211,7 @@ describe('util/ranges', function() {
           ranges: [[1, 11]], // Cut off first and last letter
         },
       }
-      ranges.send(res, inStream, opts, function(err) {
+      ranges.send(res, inStream, opts, function (err) {
         expect(err).to.not.exist
 
         // HTTP handling
@@ -235,7 +235,7 @@ describe('util/ranges', function() {
       inStream.stop()
     })
 
-    it('should send ranges crossing buffer boundaries', function(done) {
+    it('should send ranges crossing buffer boundaries', function (done) {
       const res = mockHttp.createResponse({})
       const inStream = new streamBuffers.ReadableStreamBuffer({
         chunkSize: 3, // Setting a chunk size smaller than the range should
@@ -250,7 +250,7 @@ describe('util/ranges', function() {
           ranges: [[1, 11]], // Cut off first and last letter
         },
       }
-      ranges.send(res, inStream, opts, function(err) {
+      ranges.send(res, inStream, opts, function (err) {
         expect(err).to.not.exist
 
         // HTTP handling
@@ -274,7 +274,7 @@ describe('util/ranges', function() {
       inStream.stop()
     })
 
-    it('should send multiple ranges', function(done) {
+    it('should send multiple ranges', function (done) {
       const res = mockHttp.createResponse({})
       const inStream = new streamBuffers.ReadableStreamBuffer({})
 
@@ -289,12 +289,12 @@ describe('util/ranges', function() {
           ], // Slice two ranges out
         },
       }
-      ranges.send(res, inStream, opts, function(err) {
+      ranges.send(res, inStream, opts, function (err) {
         expect(err).to.not.exist
 
         // HTTP handling
         expect(res.statusCode).to.equal(206)
-        expect(res.getHeader('content-type')).to.satisfy(str => str.startsWith('multipart/byteranges'))
+        expect(res.getHeader('content-type')).to.satisfy((str) => str.startsWith('multipart/byteranges'))
         expect(res.getHeader('content-disposition')).to.equal('inline')
 
         // Data/stream handling
@@ -320,7 +320,7 @@ describe('util/ranges', function() {
       inStream.stop()
     })
 
-    it('should deal with ranges without end', function(done) {
+    it('should deal with ranges without end', function (done) {
       const res = mockHttp.createResponse({})
       const inStream = new streamBuffers.ReadableStreamBuffer({})
 
@@ -332,7 +332,7 @@ describe('util/ranges', function() {
           ranges: [[5, undefined]], // Skip the first part, but read until end
         },
       }
-      ranges.send(res, inStream, opts, function(err) {
+      ranges.send(res, inStream, opts, function (err) {
         expect(err).to.not.exist
 
         // HTTP handling
@@ -355,7 +355,7 @@ describe('util/ranges', function() {
       inStream.stop()
     })
 
-    it('should ignore ranges without start', function(done) {
+    it('should ignore ranges without start', function (done) {
       const res = mockHttp.createResponse({})
       const inStream = new streamBuffers.ReadableStreamBuffer({})
 
@@ -367,7 +367,7 @@ describe('util/ranges', function() {
           ranges: [[undefined, 5]], // Only last five
         },
       }
-      ranges.send(res, inStream, opts, function(err) {
+      ranges.send(res, inStream, opts, function (err) {
         expect(err).to.not.exist
 
         // HTTP handling

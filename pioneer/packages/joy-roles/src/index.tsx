@@ -60,7 +60,7 @@ export const App: React.FC<Props> = (props: Props) => {
   const oppsCtrl = new OpportunitiesController(transport, props.myMemberId);
   const [applyCtrl] = useState(new ApplyController(transport));
   const myRolesCtrl = new MyRolesController(transport, props.myAddress);
-  const [adminCtrl] = useState(new AdminController(transport, api));
+  const [adminCtrl] = useState(new AdminController(transport, api, queueExtrinsic));
 
   useEffect(() => {
     return () => {

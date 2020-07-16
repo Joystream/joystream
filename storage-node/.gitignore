@@ -1,6 +1,6 @@
 build/
 coverage/
-dist
+dist/
 tmp/
 .DS_Store
 
@@ -27,3 +27,5 @@ node_modules/
 .nvmrc
 
 yarn.lock
+
+*.tsbuildinfo

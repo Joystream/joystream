@@ -33,16 +33,20 @@
   "scripts": {
     "test": "wsrun --serial test",
     "lint": "eslint --ignore-path .gitignore .",
+    "build": "yarn workspace @joystream/storage-cli run build",
     "checks": "yarn lint && prettier . --check",
     "format": "prettier ./ --write"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.11",
+    "@types/mocha": "^7.0.2",
     "eslint": "^5.16.0",
     "eslint-config-esnext": "^4.1.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-babel": "^5.3.1",
     "eslint-plugin-prettier": "^3.1.4",
     "prettier": "^2.0.5",
+    "typescript": "^3.9.6",
     "wsrun": "^3.6.5"
   }
 }

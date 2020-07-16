@@ -6,8 +6,8 @@
   "scripts": {
     "test": "yarn && yarn workspaces run test",
     "test-migration": "yarn && yarn workspaces run test-migration",
-    "postinstall": "yarn workspace @joystream/types build",
-    "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
+    "postinstall": "yarn workspace @joystream/types build && yarn workspace storage-node run build",
+	"cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
     "cargo-build": "scripts/cargo-build.sh",
     "lint": "yarn workspaces run lint"
   },
