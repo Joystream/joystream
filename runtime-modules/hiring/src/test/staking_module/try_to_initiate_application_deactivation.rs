@@ -56,15 +56,15 @@ impl<'a> TryToInitiateApplicationDeactivationFixture<'a> {
         let expected_application_state = match result {
             ApplicationDeactivationInitiationResult::Deactivated => Application {
                 stage: ApplicationStage::Inactive {
-                    deactivation_initiated: 1,
-                    deactivated: 1,
+                    deactivation_initiated: FIRST_BLOCK_HEIGHT,
+                    deactivated: FIRST_BLOCK_HEIGHT,
                     cause: self.cause,
                 },
                 ..old_application_state
             },
             ApplicationDeactivationInitiationResult::Unstaking => Application {
                 stage: ApplicationStage::Unstaking {
-                    deactivation_initiated: 1,
+                    deactivation_initiated: FIRST_BLOCK_HEIGHT,
                     cause: self.cause,
                 },
                 ..old_application_state
@@ -84,7 +84,7 @@ impl<'a> TryToInitiateApplicationDeactivationFixture<'a> {
         // invalid opening stages are not supported
 
         // check for opening existence
-        if !<OpeningById<Test>>::exists(opening_id) {
+        if !<OpeningById<Test>>::contains_key(opening_id) {
             return;
         }
 
@@ -118,7 +118,7 @@ impl<'a> TryToInitiateApplicationDeactivationFixture<'a> {
                 let expected_opening = Opening {
                     stage: OpeningStage::Active {
                         stage: ActiveOpeningStage::AcceptingApplications {
-                            started_accepting_applicants_at_block: 1,
+                            started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT,
                         },
                         applications_added,
                         active_application_count: expected_active_application_count,

@@ -239,10 +239,10 @@ fn ensure_can_add_application_succeeds() {
             ensure_can_add_application_result,
             Ok(DestructuredApplicationCanBeAddedEvaluation {
                 opening: Opening {
-                    created: 1,
+                    created: FIRST_BLOCK_HEIGHT,
                     stage: hiring::OpeningStage::Active {
                         stage: hiring::ActiveOpeningStage::AcceptingApplications {
-                            started_accepting_applicants_at_block: 1
+                            started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT
                         },
                         applications_added: BTreeSet::new(),
                         active_application_count: 0,
@@ -266,7 +266,7 @@ fn ensure_can_add_application_succeeds() {
                     human_readable_text: HUMAN_READABLE_TEXT.to_vec()
                 },
                 active_stage: hiring::ActiveOpeningStage::AcceptingApplications {
-                    started_accepting_applicants_at_block: 1
+                    started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT
                 },
                 applications_added: BTreeSet::new(),
                 active_application_count: 0,

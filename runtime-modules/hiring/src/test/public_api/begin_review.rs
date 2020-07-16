@@ -46,8 +46,8 @@ fn begin_review_succeeds() {
 
         let expected_opening_state =
             old_opening.clone_with_new_active_opening_stage(ActiveOpeningStage::ReviewPeriod {
-                started_accepting_applicants_at_block: 1,
-                started_review_period_at_block: 1,
+                started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT,
+                started_review_period_at_block: FIRST_BLOCK_HEIGHT,
             });
 
         assert_eq!(updated_opening, expected_opening_state);

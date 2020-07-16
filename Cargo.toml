@@ -8,7 +8,7 @@ members = [
 #	"runtime-modules/content-working-group",
 #	"runtime-modules/forum",
 #	"runtime-modules/governance",
-#	"runtime-modules/hiring",
+	"runtime-modules/hiring",
 #	"runtime-modules/membership",
 	"runtime-modules/memo",
 	"runtime-modules/recurring-reward",

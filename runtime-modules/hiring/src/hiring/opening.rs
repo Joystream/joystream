@@ -191,8 +191,6 @@ pub enum OpeningStage<BlockNumber, ApplicationId> {
 
         /// Deactivated at any time for any cause.
         deactivated_application_count: u32,
-        // Removed at any time.
-        //removed_application_count: u32
     },
 }
 
@@ -401,6 +399,4 @@ pub enum ActivateOpeningAt<BlockNumber> {
 pub struct ApplicationRationingPolicy {
     /// The maximum number of applications that can be on the list at any time.
     pub max_active_applicants: u32,
-    // How applicants will be ranked, in order to respect the maximum simultaneous application limit
-    //pub applicant_ranking: ApplicationRankingPolicy
 }
