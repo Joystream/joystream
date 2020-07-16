@@ -517,7 +517,7 @@ export class WorkingGroupUnstaker extends Enum {
 }
 
 export class CuratorApplicationIdToCuratorIdMap extends BTreeMap<ApplicationId, CuratorId> {
-  constructor (value?: any, index?: number) {
+  constructor (value?: any) {
     super(
       ApplicationId,
       CuratorId,

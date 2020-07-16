@@ -4,8 +4,8 @@ import { Codec } from "@polkadot/types/types";
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment';
 import { JoyStruct } from './JoyStruct';
-export { JoyStruct } from './JoyStruct';
 import { JoyEnum } from './JoyEnum';
+export { JoyStruct } from './JoyStruct';
 export { JoyEnum } from './JoyEnum';
 
 // Treat a BTreeSet as a Vec since it is encoded in the same way

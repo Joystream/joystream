@@ -1,6 +1,5 @@
-import { getTypeRegistry, bool, u32, u64, Text, Option, Vec as Vector} from '@polkadot/types';
+import { getTypeRegistry, bool, u32, u64, Text, Option, Vec as Vector, GenericAccountId } from '@polkadot/types';
 import { AccountId } from '@polkadot/types/interfaces';
-import { GenericAccountId } from '@polkadot/types';
 import { BlockAndTime, JoyStruct, ThreadId, PostId } from './common';
 
 export type ModerationActionType = {

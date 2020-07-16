@@ -22,5 +22,3 @@ export type PropertyTypeName =
   'TextVec' |
   'InternalVec'
 ;
-
-export default PropertyTypeName;

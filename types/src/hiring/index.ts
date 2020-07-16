@@ -8,6 +8,8 @@ import { GenericJoyStreamRoleSchema } from './schemas/role.schema.typings'
 
 import ajv from 'ajv'
 
+import * as role_schema_json from './schemas/role.schema.json'
+
 export class ApplicationId extends u64 { };
 export class OpeningId extends u64 { };
 
@@ -332,8 +334,6 @@ export class StakingPolicy extends JoyStruct<IStakingPolicy> {
   }
 
 };
-
-import * as role_schema_json from './schemas/role.schema.json'
 export const schemaValidator: ajv.ValidateFunction = new ajv({ allErrors: true }).compile(role_schema_json);
 
 const OpeningHRTFallback: GenericJoyStreamRoleSchema = {

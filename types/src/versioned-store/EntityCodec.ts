@@ -4,7 +4,7 @@ import { Codec } from '@polkadot/types/types';
 import { Class, Entity, VecClassPropertyValue, ClassPropertyValue, EntityId, ClassId, unifyPropName } from '.';
 import * as PV from './PropertyValue';
 import { PropertyValue } from './PropertyValue';
-import PropertyTypeName from './PropertyTypeName';
+import { PropertyTypeName } from './PropertyTypeName';
 import ChannelId from '../content-working-group/ChannelId';
 
 /**
@@ -24,7 +24,7 @@ function substrateToPlain<T> (x: Codec): T | undefined {
     res = (x as bool).valueOf();
   } else if (x instanceof Vec) {
     res = x.map(y => substrateToPlain(y));
-  } else if (typeof x !== undefined && x !== null) {
+  } else if (typeof x !== 'undefined' && x !== null) {
     res = x.toString();
   }
 
@@ -65,7 +65,11 @@ function plainToSubstrate(propType: string, value: any): PropertyValue {
       return value as any[]
     }
 
-    return typeof value === undefined ? [] : [ value ]
+    // The next line was: "return typeof value === undefined ? [] : [ value ]" before
+    // This condition was never met (spotted by linter), because "typeof value" can be 'undefined'
+    // (a string), but not actually undefined. Changing it to 'undefined' would change this function's behavior though
+    // and that may lead to unexpected consequences.
+    return [ value ]
   }
 
   const valueAsBoolArr = (): boolean[] => {
@@ -138,21 +142,6 @@ export type PlainEntity = {
 
 export type TextValueEntity = PlainEntity & {
   value: string
-}
-
-export class EntityCodecResolver {
-
-  private codecByClassIdMap = new Map<string, AnyEntityCodec>()
-
-  constructor (classes: Class[]) {
-    classes.forEach(c => {
-      this.codecByClassIdMap.set(c.id.toString(), new AnyEntityCodec(c))
-    })
-  }
-
-  getCodecByClassId<C extends EntityCodec<any>>(classId: ClassId): C | undefined {
-    return this.codecByClassIdMap.get(classId.toString()) as C
-  }
 }
 
 // TODO delete this hack once EntityCodec extracted from types to media app
@@ -279,3 +268,18 @@ export abstract class EntityCodec<T extends PlainEntity> {
 
 /** This class is created just to satisfy TypeScript in some cases */
 export class AnyEntityCodec extends EntityCodec<any> {}
+
+export class EntityCodecResolver {
+
+  private codecByClassIdMap = new Map<string, AnyEntityCodec>()
+
+  constructor (classes: Class[]) {
+    classes.forEach(c => {
+      this.codecByClassIdMap.set(c.id.toString(), new AnyEntityCodec(c))
+    })
+  }
+
+  getCodecByClassId<C extends EntityCodec<any>>(classId: ClassId): C | undefined {
+    return this.codecByClassIdMap.get(classId.toString()) as C
+  }
+}

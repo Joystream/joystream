@@ -51,6 +51,34 @@ export class Role extends Enum {
   }
 }
 
+export class ActorInRole extends Struct {
+  constructor(value?: any) {
+    super(
+      {
+        role: Role,
+        actor_id: ActorId,
+      },
+      value
+    );
+  }
+
+  get role(): Role {
+    return this.get("role") as Role;
+  }
+
+  get actor_id(): ActorId {
+    return this.get("actor_id") as ActorId;
+  }
+
+  get isContentLead(): boolean {
+    return this.role.eq(RoleKeys.CuratorLead);
+  }
+
+  get isCurator(): boolean {
+    return this.role.eq(RoleKeys.Curator);
+  }
+}
+
 export type IProfile = {
   handle: Text;
   avatar_uri: Text;
@@ -126,34 +154,6 @@ export class Profile extends JoyStruct<IProfile> {
 
   get roles(): Vec<ActorInRole> {
     return this.get("roles") as Vec<ActorInRole>;
-  }
-}
-
-export class ActorInRole extends Struct {
-  constructor(value?: any) {
-    super(
-      {
-        role: Role,
-        actor_id: ActorId,
-      },
-      value
-    );
-  }
-
-  get role(): Role {
-    return this.get("role") as Role;
-  }
-
-  get actor_id(): ActorId {
-    return this.get("actor_id") as ActorId;
-  }
-
-  get isContentLead(): boolean {
-    return this.role.eq(RoleKeys.CuratorLead);
-  }
-
-  get isCurator(): boolean {
-    return this.role.eq(RoleKeys.Curator);
   }
 }
 

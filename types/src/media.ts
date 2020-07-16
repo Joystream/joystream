@@ -1,5 +1,4 @@
-import { Enum, Struct, Option, Vec as Vector, H256, BTreeMap } from '@polkadot/types';
-import { getTypeRegistry, u64, bool, Text } from '@polkadot/types';
+import { Enum, Struct, Option, Vec as Vector, H256, BTreeMap , getTypeRegistry, u64, bool, Text } from '@polkadot/types';
 import { BlockAndTime } from './common';
 import { MemberId } from './members';
 import { StorageProviderId } from './working-group'; // this should be in discovery really

@@ -275,34 +275,6 @@ class SetLeadParams extends Tuple {
 
 export class SetLead extends Option.with(SetLeadParams) {}
 
-export class ProposalDetails extends Enum {
-  constructor(value?: any, index?: number) {
-    super(
-      {
-        Text: "Text",
-        RuntimeUpgrade: "Vec<u8>",
-        SetElectionParameters: ElectionParameters,
-        Spending: SpendingParams,
-        SetLead: SetLead,
-        SetContentWorkingGroupMintCapacity: "Balance",
-        EvictStorageProvider: "AccountId",
-        SetValidatorCount: "u32",
-        SetStorageRoleParameters: RoleParameters,
-        AddWorkingGroupLeaderOpening: AddOpeningParameters,
-        BeginReviewWorkingGroupLeaderApplication: Tuple.with([OpeningId, WorkingGroup]),
-        FillWorkingGroupLeaderOpening: FillOpeningParameters,
-        SetWorkingGroupMintCapacity: Tuple.with(["Balance", WorkingGroup]),
-        DecreaseWorkingGroupLeaderStake: Tuple.with([WorkerId, "Balance", WorkingGroup]),
-        SlashWorkingGroupLeaderStake: Tuple.with([WorkerId, "Balance", WorkingGroup]),
-        SetWorkingGroupLeaderReward: Tuple.with([WorkerId, "Balance", WorkingGroup]),
-        TerminateWorkingGroupLeaderRole: TerminateRoleParameters,
-      },
-      value,
-      index
-    );
-  }
-}
-
 export class Proposal extends Struct {
   constructor(value?: any) {
     super(
@@ -559,6 +531,34 @@ export class TerminateRoleParameters extends JoyStruct<ITerminateRoleParameters>
 
   get working_group(): WorkingGroup {
     return this.getField<WorkingGroup>('working_group');
+  }
+}
+
+export class ProposalDetails extends Enum {
+  constructor(value?: any, index?: number) {
+    super(
+      {
+        Text: "Text",
+        RuntimeUpgrade: "Vec<u8>",
+        SetElectionParameters: ElectionParameters,
+        Spending: SpendingParams,
+        SetLead: SetLead,
+        SetContentWorkingGroupMintCapacity: "Balance",
+        EvictStorageProvider: "AccountId",
+        SetValidatorCount: "u32",
+        SetStorageRoleParameters: RoleParameters,
+        AddWorkingGroupLeaderOpening: AddOpeningParameters,
+        BeginReviewWorkingGroupLeaderApplication: Tuple.with([OpeningId, WorkingGroup]),
+        FillWorkingGroupLeaderOpening: FillOpeningParameters,
+        SetWorkingGroupMintCapacity: Tuple.with(["Balance", WorkingGroup]),
+        DecreaseWorkingGroupLeaderStake: Tuple.with([WorkerId, "Balance", WorkingGroup]),
+        SlashWorkingGroupLeaderStake: Tuple.with([WorkerId, "Balance", WorkingGroup]),
+        SetWorkingGroupLeaderReward: Tuple.with([WorkerId, "Balance", WorkingGroup]),
+        TerminateWorkingGroupLeaderRole: TerminateRoleParameters,
+      },
+      value,
+      index
+    );
   }
 }
 

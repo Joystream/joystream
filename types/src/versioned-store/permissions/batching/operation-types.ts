@@ -23,12 +23,12 @@ export class OperationType extends Enum {
   }
 
   static CreateEntity (class_id: ClassId) : OperationType {
-    let value = new CreateEntity({class_id});
+    const value = new CreateEntity({class_id});
     return new OperationType({'CreateEntity': value });
   }
 
   static UpdatePropertyValues (entity_id: ParametrizedEntity, parametrized_property_values: ParameterizedClassPropertyValues) : OperationType {
-    let value = new UpdatePropertyValues({
+    const value = new UpdatePropertyValues({
       entity_id,
       parametrized_property_values,
     });
@@ -36,7 +36,7 @@ export class OperationType extends Enum {
   }
 
   static AddSchemaSupportToEntity (entity_id: ParametrizedEntity, schema_id: u16, parametrized_property_values: ParameterizedClassPropertyValues) : OperationType {
-    let value = new AddSchemaSupportToEntity({
+    const value = new AddSchemaSupportToEntity({
       entity_id,
       schema_id,
       parametrized_property_values

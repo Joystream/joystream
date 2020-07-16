@@ -118,7 +118,7 @@ export class Worker extends JoyStruct<IWorker> {
   }
 
   get is_active(): boolean {
-    return !Boolean(this.isEmpty);
+    return !this.isEmpty;
   }
 }
 
