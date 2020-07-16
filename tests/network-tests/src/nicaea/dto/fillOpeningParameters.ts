@@ -1,63 +1,63 @@
-import BN from 'bn.js';
+import BN from 'bn.js'
 
 export class FillOpeningParameters {
-  private amountPerPayout!: BN;
-  private nextPaymentAtBlock!: BN;
-  private payoutInterval!: BN;
-  private openingId!: BN;
-  private successfulApplicationId!: BN;
-  private workingGroup!: string;
+  private amountPerPayout!: BN
+  private nextPaymentAtBlock!: BN
+  private payoutInterval!: BN
+  private openingId!: BN
+  private successfulApplicationId!: BN
+  private workingGroup!: string
 
   public getAmountPerPayout(): BN {
-    return this.amountPerPayout;
+    return this.amountPerPayout
   }
 
   public getNextPaymentAtBlock(): BN {
-    return this.nextPaymentAtBlock;
+    return this.nextPaymentAtBlock
   }
 
   public getPayoutInterval(): BN {
-    return this.payoutInterval;
+    return this.payoutInterval
   }
 
   public getOpeningId(): BN {
-    return this.openingId;
+    return this.openingId
   }
 
   public getSuccessfulApplicationId(): BN {
-    return this.successfulApplicationId;
+    return this.successfulApplicationId
   }
 
   public getWorkingGroup(): string {
-    return this.workingGroup;
+    return this.workingGroup
   }
 
   public setAmountPerPayout(value: BN) {
-    this.amountPerPayout = value;
+    this.amountPerPayout = value
   }
 
   public setNextPaymentAtBlock(value: BN) {
-    this.nextPaymentAtBlock = value;
+    this.nextPaymentAtBlock = value
   }
 
   public setPayoutInterval(value: BN) {
-    this.payoutInterval = value;
+    this.payoutInterval = value
   }
 
   public setOpeningId(value: BN) {
-    this.openingId = value;
+    this.openingId = value
   }
 
   public setSuccessfulApplicationId(value: BN) {
-    this.successfulApplicationId = value;
+    this.successfulApplicationId = value
   }
 
   public setWorkingGroup(value: string) {
-    this.workingGroup = value;
+    this.workingGroup = value
   }
 
   constructor() {
-    return;
+    return
   }
 
   public getRewardPolicy() {
@@ -65,7 +65,7 @@ export class FillOpeningParameters {
       amount_per_payout: this.amountPerPayout,
       next_payment_at_block: this.nextPaymentAtBlock,
       payout_interval: this.payoutInterval,
-    };
+    }
   }
 
   public getFillOpeningParameters() {
@@ -74,6 +74,6 @@ export class FillOpeningParameters {
       successful_application_id: this.successfulApplicationId,
       reward_policy: this.getRewardPolicy(),
       working_group: this.workingGroup,
-    };
+    }
   }
 }
