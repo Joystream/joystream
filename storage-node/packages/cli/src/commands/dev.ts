@@ -1,30 +1,37 @@
 'use strict'
 
-const debug = require('debug')('joystream:storage-cli:dev')
+import dbug from 'debug'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { RuntimeApi } from '@joystream/storage-runtime-api'
+const debug = dbug('joystream:storage-cli:dev')
 
 // Derivation path appended to well known development seed used on
 // development chains
 const ALICE_URI = '//Alice'
 const ROLE_ACCOUNT_URI = '//Colossus'
 
-function aliceKeyPair(api) {
+function aliceKeyPair(api: RuntimeApi): KeyringPair {
   return api.identities.keyring.addFromUri(ALICE_URI, null, 'sr25519')
 }
 
-function roleKeyPair(api) {
+function roleKeyPair(api: RuntimeApi): KeyringPair {
   return api.identities.keyring.addFromUri(ROLE_ACCOUNT_URI, null, 'sr25519')
 }
 
-function developmentPort() {
+function developmentPort(): number {
   return 3001
 }
 
 // Sign and broadcast multiple transactions concurrently (so they may all be finalized in a single block)
 // Resolves when last transaction is finalized.
-const batchDispatchCalls = async (runtimeApi, senderAddress, rawCalls) => {
+const batchDispatchCalls = async (
+  runtimeApi: RuntimeApi,
+  senderAddress: string | Uint8Array,
+  rawCalls: any[]
+): Promise<any> => {
   const api = runtimeApi.api
 
-  debug(`dispatching ${rawCalls.length} transactions...`)
+  debug(`dispatching ${rawCalls.length} transactions.`)
 
   await rawCalls
     .map((call) => {
@@ -36,48 +43,54 @@ const batchDispatchCalls = async (runtimeApi, senderAddress, rawCalls) => {
     .shift()
 }
 
-const initVstore = async (api, contentLead) => {
-  const firstClass = await api.api.rpc.state.getStorage(api.api.query.versionedStore.classById.key(1))
-
+// Dispatch pre-prepared calls to runtime to initialize the versioned store
+const initVstore = async (api: RuntimeApi, contentLeadAddress: string): Promise<any> => {
+  // If any existing classes are found we will skip initializing
+  // because the pre-prepared transactions make the assumption
+  // that the versioned store is not initialized.
+  const firstClassStorageKey = api.api.query.versionedStore.classById.key(1)
+  const firstClass = await api.api.rpc.state.getStorage(firstClassStorageKey)
   if (firstClass.isSome) {
-    debug('Skipping Initializing Content Directory, classes already exist')
+    debug('Skipping Initializing Content Directory, classes already exist.')
     return
+  } else {
+    debug('Initializing Content Directory.')
   }
 
+  // Load pre-pared calls
   const classes = require('../../../../../devops/vstore/classes.json')
   const entities = require('../../../../../devops/vstore/entities.json')
 
-  debug('Initializing Content Directory')
-
-  // batch createClass calls into a single block
-  debug('creating classes...')
-
+  // To create all classes in a single block,
+  // select all createClass calls first
+  debug('Creating Classes in versioned store.')
   const createClasses = classes.filter((call) => {
     return call.methodName === 'createClass'
   })
+  await batchDispatchCalls(api, contentLeadAddress, createClasses)
 
-  await batchDispatchCalls(api, contentLead, createClasses)
-
-  // batch addClassSchema calls into a single block
-  debug('adding schemas to classes...')
+  // To add schemas to all classes in a single block
+  // select all addClassSchema calls
+  debug('Adding Schemas to classes in versioned store.')
   const addClassSchema = classes.filter((call) => {
     return call.methodName === 'addClassSchema'
   })
+  await batchDispatchCalls(api, contentLeadAddress, addClassSchema)
 
-  await batchDispatchCalls(api, contentLead, addClassSchema)
-
-  debug('creating entities...')
-
-  // Will this not overload the node.. Might not be safe to do on production network
-  await batchDispatchCalls(api, contentLead, entities)
+  // Combine all calls to create entities into a single block
+  debug('Creating entities in versioned store.')
+  await batchDispatchCalls(api, contentLeadAddress, entities)
 }
 
-const check = async (api) => {
+// Checks the chain state for the storage provider setup we expect
+// to have if the initialization was successfully run prior.
+// Returns the provider id if found, throws otherwise.
+const check = async (api): Promise<any> => {
   const roleAccountId = roleKeyPair(api).address
   const providerId = await api.workers.findProviderIdByRoleAccount(roleAccountId)
 
   if (providerId === null) {
-    throw new Error('Dev storage provider not found on chain!')
+    throw new Error('Dev storage provider not found on chain.')
   }
 
   console.log(`
@@ -93,7 +106,8 @@ const check = async (api) => {
 // Setup Alice account on a developement chain as
 // a member, storage lead, and a storage provider using a deterministic
 // development key for the role account
-const init = async (api) => {
+const init = async (api: RuntimeApi): Promise<any> => {
+  // check if the initialization was previously run, skip if so.
   try {
     await check(api)
     return
@@ -104,7 +118,7 @@ const init = async (api) => {
   const alice = aliceKeyPair(api).address
   const roleAccount = roleKeyPair(api).address
 
-  debug(`Ensuring Alice is sudo`)
+  debug(`Ensuring Alice ${alice} is sudo.`)
 
   // make sure alice is sudo - indirectly checking this is a dev chain
   const sudo = await api.identities.getSudoAccount()
@@ -113,38 +127,39 @@ const init = async (api) => {
     throw new Error('Setup requires Alice to be sudo. Are you sure you are running a devchain?')
   }
 
-  console.log('Running setup')
+  console.log('Running setup.')
 
-  debug('Ensuring Alice is as member..')
+  debug('Ensuring Alice is as member.')
   let aliceMemberId = await api.identities.firstMemberIdOf(alice)
 
   if (aliceMemberId === undefined) {
-    debug('Registering Alice as member..')
+    debug('Registering Alice as member.')
     aliceMemberId = await api.identities.registerMember(alice, {
       handle: 'alice',
     })
   } else {
-    debug('Alice is already a member')
+    debug('Alice is already a member.')
   }
 
-  debug('Setting Alice as content working group lead')
+  debug('Setting Alice as content working group lead.')
   await api.signAndSend(alice, api.api.tx.sudo.sudo(api.api.tx.contentWorkingGroup.replaceLead([aliceMemberId, alice])))
 
+  // Initialize classes and entities in the versioned store
   await initVstore(api, alice)
 
   // set localhost colossus as discovery provider
   // assuming pioneer dev server is running on port 3000 we should run
   // the storage dev server on a different port than the default for colossus which is also
   // 3000
-  debug('Setting Local development node as bootstrap endpoint')
+  debug('Setting Local development node as bootstrap endpoint.')
   await api.discovery.setBootstrapEndpoints(alice, [`http://localhost:${developmentPort()}/`])
 
-  debug('Transferring tokens to storage role account')
+  debug('Transferring tokens to storage role account.')
   // Give role account some tokens to work with
   api.balances.transfer(alice, roleAccount, 100000)
 
   // Make alice the storage lead
-  debug('Making Alice the storage Lead')
+  debug('Making Alice the storage Lead.')
   const leadOpeningId = await api.workers.devAddStorageLeadOpening()
   const leadApplicationId = await api.workers.devApplyOnOpening(leadOpeningId, aliceMemberId, alice, alice)
   api.workers.devBeginLeadOpeningReview(leadOpeningId)
@@ -152,21 +167,21 @@ const init = async (api) => {
 
   const leadAccount = await api.workers.getLeadRoleAccount()
   if (!leadAccount.eq(alice)) {
-    throw new Error('Setting alice as lead failed')
+    throw new Error('Setting alice as lead failed.')
   }
 
   // Create a storage openinging, apply, start review, and fill opening
-  debug(`Making ${ROLE_ACCOUNT_URI} account a storage provider`)
+  debug(`Making ${ROLE_ACCOUNT_URI} account a storage provider.`)
 
   const openingId = await api.workers.devAddStorageOpening()
-  debug(`created new storage opening: ${openingId}`)
+  debug(`Created new storage opening: ${openingId}`)
 
   const applicationId = await api.workers.devApplyOnOpening(openingId, aliceMemberId, alice, roleAccount)
-  debug(`applied with application id: ${applicationId}`)
+  debug(`Applied with application id: ${applicationId}`)
 
   api.workers.devBeginStorageOpeningReview(openingId)
 
-  debug(`filling storage opening`)
+  debug(`Filling storage opening.`)
   const providerId = await api.workers.devFillStorageOpening(openingId, applicationId)
 
   debug(`Assigned storage provider id: ${providerId}`)
