@@ -17,7 +17,7 @@ members = [
 #	"runtime-modules/storage",
 	"runtime-modules/token-minting",
 	"runtime-modules/versioned-store",
-#	"runtime-modules/versioned-store-permissions",
+	"runtime-modules/versioned-store-permissions",
 #	"runtime-modules/working-group",
 #	"node",
 #	"utils/chain-spec-builder/"
