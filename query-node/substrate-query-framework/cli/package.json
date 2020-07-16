@@ -1,5 +1,5 @@
 {
-  "name": "hydra-cli",
+  "name": "@joystream/hydra-cli",
   "description": "CLI tool for building a Hydra query node",
   "version": "0.0.1-alpha",
   "author": "metmirr @metmirr dzlzv @dzhelezov",
