@@ -40,7 +40,8 @@ fuzz_target!(|texts: Texts| {
 //use crate::*;
 use substrate_forum_module_reflection::*;
 
-#[derive(FieldCount, Debug)]
+//#[derive(FieldCount, Debug)]
+#[derive(Debug)]
 struct ReflectionTest {
     a: u64,
     b: u32,

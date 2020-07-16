@@ -4892,7 +4892,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-forum-module-reflection"
-version = "0.0.0"
+version = "0.0.1"
 dependencies = [
  "proc-macro2 1.0.18",
  "syn 1.0.34",
