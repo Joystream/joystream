@@ -178,6 +178,7 @@ export default class WarthogWrapper {
     envConfig['WARTHOG_DB_HOST'] = process.env.DB_HOST || envConfig['WARTHOG_DB_HOST'];
     envConfig['WARTHOG_DB_PORT'] = process.env.DB_PORT || envConfig['WARTHOG_DB_PORT'];
     envConfig['WARTHOG_APP_PORT'] = process.env.GRAPHQL_SERVER_PORT || envConfig['WARTHOG_APP_PORT'];
+    envConfig['WARTHOG_APP_HOST'] = process.env.GRAPHQL_SERVER_HOST || envConfig['WARTHOG_APP_HOST'];
 
     const newEnvConfig = Object.keys(envConfig)
       .map(key => `${key}=${envConfig[key]}`)
