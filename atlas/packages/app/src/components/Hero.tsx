@@ -1,10 +1,10 @@
-import React from "react";
-import { css } from "@emotion/core";
-import { Header, Button } from "@joystream/components";
+import React from 'react'
+import { css } from '@emotion/core'
+import { Button, Header } from '@/shared/components'
 
 type HeroProps = {
-	backgroundImg: string;
-};
+	backgroundImg: string
+}
 
 const Hero: React.FC<Partial<HeroProps>> = ({ backgroundImg }) => {
 	return (
@@ -47,6 +47,6 @@ const Hero: React.FC<Partial<HeroProps>> = ({ backgroundImg }) => {
 				</Button>
 			</div>
 		</Header>
-	);
-};
-export default Hero;
+	)
+}
+export default Hero

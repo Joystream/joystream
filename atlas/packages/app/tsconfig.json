@@ -1,9 +1,29 @@
 {
-	"extends": "../../tsconfig.json",
-
-	"compilerOptions": {
-		"declaration": true,
-		"declarationDir": "dist",
-		"lib": ["DOM", "ES2019"]
-	}
+  "extends": "./tsconfig.paths.json",
+  "compilerOptions": {
+    "target": "es2019",
+    "baseUrl": "./",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es2019"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "esnext",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/shared/stories"
+  ],
+  "include": [
+    "src"
+  ]
 }

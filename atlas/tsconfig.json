@@ -2,13 +2,9 @@
 	"compilerOptions": {
 		"moduleResolution": "node",
 		"sourceMap": true,
-		"baseUrl": ".",
-		"paths": {
-			"*": ["*", "packages/*"]
-		},
 		"strict": true,
 		"esModuleInterop": true,
-		"jsx": "preserve"
+		"jsx": "react"
 	},
 	"exclude": ["node_modules", "dist"]
 }
