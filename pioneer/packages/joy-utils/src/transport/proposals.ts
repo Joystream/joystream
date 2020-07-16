@@ -64,32 +64,31 @@ export default class ProposalsTransport extends BaseTransport {
     return (this.api.consts.proposalsEngine.cancellationFee as BalanceOf).toNumber();
   }
 
-  private runtimeUpgradeProposalCachedDetails(id: ProposalId) {
+  private runtimeUpgradeProposalCachedDetails (id: ProposalId) {
     return this.runtimeUpgradeProposalDetailsCache[id.toNumber()];
   }
 
-  private runtimeUpgradeProposalDetails(id: ProposalId, wasm: Bytes): [string, number] {
+  private runtimeUpgradeProposalDetails (id: ProposalId, wasm: Bytes): [string, number] {
     const cachedDetails = this.runtimeUpgradeProposalCachedDetails(id);
 
     if (cachedDetails) {
       return cachedDetails;
     }
 
-    const details: [string, number] = [ blake2AsHex(wasm, 256), wasm.length ];
+    const details: [string, number] = [blake2AsHex(wasm, 256), wasm.length];
     this.runtimeUpgradeProposalDetailsCache[id.toNumber()] = details;
 
     return details;
   }
 
   async proposalById (id: ProposalId): Promise<ParsedProposal> {
-    let details: any[] = [], type: ProposalType;
+    let details: any[] = []; let type: ProposalType;
     const cachedRuntimeProposalDetails = this.runtimeUpgradeProposalCachedDetails(id);
     // Avoid fetching runtime upgrade proposal details if we already have them cached
     if (cachedRuntimeProposalDetails) {
       type = 'RuntimeUpgrade';
       details = cachedRuntimeProposalDetails;
-    }
-    else {
+    } else {
       // TODO: The right typesafe handling with JoyEnum would be very useful here
       const rawDetails = await this.proposalDetailsById(id) as ProposalDetails;
       type = rawDetails.type as ProposalType;
@@ -98,8 +97,7 @@ export default class ProposalsTransport extends BaseTransport {
         // In case of RuntimeUpgrade proposal we override details to just contain the hash and filesize
         // (instead of full WASM bytecode)
         details = this.runtimeUpgradeProposalDetails(id, rawDetails.value as Bytes);
-      }
-      else {
+      } else {
         const detailsJSON = rawDetails.value.toJSON();
         details = Array.isArray(detailsJSON) ? detailsJSON : [detailsJSON];
       }

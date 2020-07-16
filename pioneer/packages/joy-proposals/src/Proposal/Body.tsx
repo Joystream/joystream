@@ -2,7 +2,6 @@ import React from 'react';
 import { Card, Header, Button, Icon, Message } from 'semantic-ui-react';
 import { ProposalType } from '@polkadot/joy-utils/types/proposals';
 import { bytesToString } from '@polkadot/joy-utils/functions/misc';
-import { blake2AsHex } from '@polkadot/util-crypto';
 import styled from 'styled-components';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import TxButton from '@polkadot/joy-utils/TxButton';

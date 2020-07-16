@@ -16,7 +16,7 @@ export function TransportProvider ({ children }: { children: React.PropsWithChil
   }
 
   // Preserve transport instance in state to allow more effective caching
-  const [ transportInstance ] = useState<Transport>(new Transport(api.api));
+  const [transportInstance] = useState<Transport>(new Transport(api.api));
 
   return <TransportContext.Provider value={transportInstance}>{children}</TransportContext.Provider>;
 }
