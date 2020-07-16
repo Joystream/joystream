@@ -6,9 +6,6 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "std")]
-use rstd::prelude::*;
-
 use codec::{Codec, Decode, Encode};
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::Currency;

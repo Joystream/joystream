@@ -11,7 +11,6 @@
 use codec::{Codec, Decode, Encode};
 use frame_support::storage::IterableStorageMap;
 use frame_support::{decl_module, decl_storage, ensure, Parameter};
-use rstd::prelude::*;
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerialize, Member};
 
