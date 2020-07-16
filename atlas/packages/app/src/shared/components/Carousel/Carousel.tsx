@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { css, SerializedStyles } from '@emotion/core'
 import { animated, useSpring } from 'react-spring'
 import useResizeObserver from 'use-resize-observer'

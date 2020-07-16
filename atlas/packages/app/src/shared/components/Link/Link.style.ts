@@ -1,7 +1,7 @@
 import { typography, colors } from '../../theme'
 import { StyleFn, makeStyles } from '../../utils'
 
-export type CustomLinkStyleProps = {}
+export type CustomLinkStyleProps = Record<string, unknown>
 
 const regular: StyleFn = () => ({
   fontFamily: typography.fonts.base,

@@ -7,7 +7,7 @@ type TypographyProps = {
 } & TypographyStyleProps
 
 export default function Typography({ children, onClick, ...styleProps }: TypographyProps) {
-  let styles = makeStyles(styleProps)
+  const styles = makeStyles(styleProps)
   return (
     <div css={styles} onClick={onClick}>
       {children}

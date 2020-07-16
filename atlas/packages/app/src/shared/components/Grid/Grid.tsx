@@ -7,7 +7,7 @@ type SectionProps = {
 } & GridStyleProps
 
 export default function Grid({ items = [], className = '', ...styleProps }: SectionProps) {
-  let styles = useCSS(styleProps)
+  const styles = useCSS(styleProps)
   return (
     <div css={styles.container} className={className}>
       {items.map((item, index) => (

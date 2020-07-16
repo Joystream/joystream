@@ -1,4 +1,4 @@
-import { colors, spacing, typography } from '../../theme'
+import { spacing } from '../../theme'
 import { makeStyles, StyleFn } from '../../utils'
 
 const container: StyleFn = () => ({

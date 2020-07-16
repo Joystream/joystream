@@ -27,25 +27,20 @@ export default function VideoPlayer({
   src,
   poster,
   playing,
-  onPause,
   autoPlay,
   loop = false,
-  muted = true,
   onStart,
-  ratio,
   onReady,
   onPlay,
   onBuffer,
-  onError,
   onEnded,
   onDuration,
   onProgress,
   className,
-  volume = 0.7,
   controls = true,
   ...styleProps
 }: VideoPlayerProps) {
-  let { playerStyles, containerStyles } = makeStyles(styleProps)
+  const { playerStyles, containerStyles } = makeStyles(styleProps)
   return (
     <div css={containerStyles}>
       <ReactPlayer

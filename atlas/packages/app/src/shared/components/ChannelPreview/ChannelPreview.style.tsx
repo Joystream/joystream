@@ -1,5 +1,5 @@
 import { StyleFn, makeStyles } from '../../utils'
-import { colors, typography } from '../../theme'
+import { colors } from '../../theme'
 
 export type ChannelPreviewStyleProps = {
   channelAvatar: string

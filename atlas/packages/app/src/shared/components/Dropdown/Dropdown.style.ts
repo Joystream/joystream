@@ -1,5 +1,4 @@
 import { StyleFn, makeStyles } from './../../utils'
-import { css } from '@emotion/core'
 import { typography, colors, spacing } from './../../theme'
 
 export type DropdownStyleProps = {

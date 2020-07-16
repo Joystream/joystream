@@ -1,3 +1,4 @@
+import React from 'react'
 import { typography, colors } from '../../theme'
 import { makeStyles, StyleFn } from '../../utils'
 import { disabled, dimensionsFromProps } from '../../theme/fragments'
@@ -81,13 +82,8 @@ const colorFromType: StyleFn = (styles = {}, { type }: ButtonStyleProps) => {
 }
 const paddingFromType: StyleFn = (
   styles,
-  {
-    size = 'regular',
-    children,
-    full = false,
-  }: { size: 'regular' | 'small' | 'smaller'; children?: React.ReactNode; full: boolean }
+  { size = 'regular', children }: { size: 'regular' | 'small' | 'smaller'; children?: React.ReactNode; full: boolean }
 ) => {
-  const buttonHeight = size === 'regular' ? '20px' : size === 'small' ? '15px' : '10px'
   return {
     ...styles,
     padding:

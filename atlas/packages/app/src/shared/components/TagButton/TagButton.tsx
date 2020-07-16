@@ -7,7 +7,7 @@ type TagButtonProps = {
 } & TagButtonStyleProps
 
 export default function TagButton({ children, onClick, ...styleProps }: TagButtonProps) {
-  let styles = useCSS(styleProps)
+  const styles = useCSS(styleProps)
   return (
     <div css={styles} onClick={onClick}>
       {children}

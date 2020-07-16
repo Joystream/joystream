@@ -1,7 +1,4 @@
 import { StyleFn } from './../utils/style-reducer'
-import { css } from '@emotion/core'
-import spacing from './spacing'
-import typography from './typography'
 import colors from './colors'
 import { StyleObj, stripInline } from '../utils'
 

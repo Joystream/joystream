@@ -1,8 +1,7 @@
 import { StyleFn, makeStyles } from './../../utils/style-reducer'
-import { css } from '@emotion/core'
 import { typography, colors } from '../../theme'
 
-export type TagStyleProps = {}
+export type TagStyleProps = Record<string, unknown>
 
 const styles: StyleFn = () => ({
   border: `1px solid ${colors.blue[700]}`,
@@ -22,4 +21,4 @@ const styles: StyleFn = () => ({
   },
 })
 
-export const useCSS = ({}: TagStyleProps) => makeStyles([styles])({})
+export const useCSS = () => makeStyles([styles])({})

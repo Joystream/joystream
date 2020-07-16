@@ -5,8 +5,10 @@ module.exports = {
     es6: true,
     jest: true,
   },
-  extends: ['plugin:react-hooks/recommended', '../.eslintrc.js'],
+  extends: ['plugin:react-hooks/recommended', '@joystream/eslint-config'],
   rules: {
     'react/prop-types': 'off',
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+    '@typescript-eslint/no-empty-function': 'warn',
   },
 }

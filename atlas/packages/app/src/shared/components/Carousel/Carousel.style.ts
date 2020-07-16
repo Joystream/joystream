@@ -1,7 +1,7 @@
 import { StyleFn, makeStyles } from '../../utils'
-import { spacing, breakpoints } from '../../theme'
+import { spacing } from '../../theme'
 
-export type CarouselStyleProps = {}
+export type CarouselStyleProps = Record<string, unknown>
 
 const container: StyleFn = () => ({
   position: 'relative',

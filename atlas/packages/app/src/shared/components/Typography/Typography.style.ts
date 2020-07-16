@@ -17,7 +17,7 @@ export type TypographyStyleProps = {
     | 'overhead'
 }
 
-export let makeStyles = ({ variant = 'body1' }: TypographyStyleProps) => {
+export const makeStyles = ({ variant = 'body1' }: TypographyStyleProps) => {
   const base = {
     fontFamily: typography.fonts.base,
     color: colors.white,

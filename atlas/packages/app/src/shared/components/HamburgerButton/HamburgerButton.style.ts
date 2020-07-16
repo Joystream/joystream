@@ -47,7 +47,7 @@ const hamburgerInner: StyleFn<HamburgerButtonStyleProps> = (_, { active }) => ({
   },
 })
 
-const hamburger: StyleFn<HamburgerButtonStyleProps> = (_, { active }) => ({
+const hamburger: StyleFn = () => ({
   padding: '3px',
   display: 'inline-block',
   cursor: 'pointer',

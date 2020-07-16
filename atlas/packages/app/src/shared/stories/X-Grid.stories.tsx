@@ -20,8 +20,8 @@ function Item() {
 
 export const Default = () => (
   <Grid
-    items={[...Array(12).keys()].map(() => (
-      <Item />
+    items={Array.from({ length: 12 }).map((_, idx) => (
+      <Item key={idx} />
     ))}
   />
 )
@@ -29,8 +29,8 @@ export const Default = () => (
 export const WithMinItemWidth300 = () => (
   <Grid
     minItemWidth="300"
-    items={[...Array(12).keys()].map(() => (
-      <Item />
+    items={Array.from({ length: 12 }).map((_, idx) => (
+      <Item key={idx} />
     ))}
   />
 )
@@ -38,8 +38,8 @@ export const WithMinItemWidth300 = () => (
 export const WithClassName = () => (
   <Grid
     className="customGrid"
-    items={[...Array(12).keys()].map(() => (
-      <Item />
+    items={Array.from({ length: 12 }).map((_, idx) => (
+      <Item key={idx} />
     ))}
   />
 )

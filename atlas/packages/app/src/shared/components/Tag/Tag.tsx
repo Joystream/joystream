@@ -5,7 +5,7 @@ type TagProps = {
   children?: React.ReactNode
 } & TagStyleProps
 
-export default function Tag({ children, ...styleProps }: TagProps) {
-  let styles = useCSS(styleProps)
+export default function Tag({ children }: TagProps) {
+  const styles = useCSS()
   return <div css={styles}>{children}</div>
 }

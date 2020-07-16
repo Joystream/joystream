@@ -6,7 +6,7 @@ export type AvatarStyleProps = {
 }
 
 const container: StyleFn = (_, { size = 'default' }) => {
-  let width = size === 'small' ? spacing.xs : size === 'default' ? spacing.m : spacing.xl
+  const width = size === 'small' ? spacing.xs : size === 'default' ? spacing.m : spacing.xl
   return {
     borderRadius: 999,
     minWidth: width,

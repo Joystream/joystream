@@ -18,7 +18,6 @@ export default function TextField({
   value = '',
   icon,
   disabled = false,
-  onChange,
   ...styleProps
 }: TextFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null)

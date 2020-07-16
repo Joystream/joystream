@@ -1,5 +1,5 @@
 import React from 'react'
-import { SerializedStyles, css } from '@emotion/core'
+import { SerializedStyles } from '@emotion/core'
 import { useCSS } from './Gallery.style'
 import Button from '../Button'
 import Carousel from '../Carousel'
@@ -8,7 +8,6 @@ type GalleryProps = {
   title: string
   action: string
   onClick: () => void
-  children: React.ReactNode[]
   containerCss: SerializedStyles
   leftControlCss: SerializedStyles
   rightControlCss: SerializedStyles

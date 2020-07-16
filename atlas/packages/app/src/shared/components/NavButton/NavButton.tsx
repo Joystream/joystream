@@ -10,7 +10,7 @@ type NavButtonProps = {
 } & NavButtonStyleProps
 
 export default function NavButton({ direction = 'right', onClick, outerCss, ...styleProps }: Partial<NavButtonProps>) {
-  let styles = useCSS(styleProps)
+  const styles = useCSS(styleProps)
   return (
     <button css={[styles, outerCss]} onClick={onClick}>
       {direction === 'right' ? <ChevronRightIcon /> : <ChevronLeftIcon />}

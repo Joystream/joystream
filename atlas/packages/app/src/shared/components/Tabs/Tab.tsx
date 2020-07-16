@@ -6,7 +6,7 @@ type TabProps = {
 }
 
 // FIXME: This looks incomplete
-export default function Tab({ label, children }: TabProps) {
+export default function Tab({ children }: TabProps) {
   // let styles = makeStyles(styleProps)
 
   return <div>{children}</div>

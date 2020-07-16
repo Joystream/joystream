@@ -1,5 +1,5 @@
 import { makeStyles, StyleFn } from '../../utils'
-import { typography, colors, breakpoints, spacing } from '../../theme'
+import { colors, spacing } from '../../theme'
 
 export type HeaderStyleProps = {
   backgroundImg?: string

@@ -20,7 +20,7 @@ const Button: React.FC<Partial<ButtonProps>> = ({
   onClick = () => {},
   ...styleProps
 }) => {
-  let styles = useCSS({ disabled, type, children, ...styleProps })
+  const styles = useCSS({ disabled, type, children, ...styleProps })
   return (
     <button css={[styles.container, containerCss]} onClick={onClick} disabled={disabled}>
       {icon && <BlockIcon css={styles.icon} />}

@@ -8,17 +8,7 @@ export type VideoPlayerStyleProps = {
   ratio?: string
 }
 
-export let makeStyles = ({
-  width = '100%',
-  height = '100%',
-  responsive = true,
-  ratio = '16:9',
-}: VideoPlayerStyleProps) => {
-  let ratioPerc = ratio
-    .split(':')
-    .map((x) => Number(x))
-    .reduce((x, y) => (y / x) * 100)
-
+export const makeStyles = ({ width = '100%', height = '100%' }: VideoPlayerStyleProps) => {
   return {
     containerStyles: css`
       max-width: ${breakpoints.medium};

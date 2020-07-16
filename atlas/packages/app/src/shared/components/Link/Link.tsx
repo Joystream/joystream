@@ -1,4 +1,4 @@
-import React, { ReactNode, ReactChild } from 'react'
+import React, { ReactChild } from 'react'
 import { Link } from '@reach/router'
 import { CustomLinkStyleProps, useCSS } from './Link.style'
 
@@ -25,10 +25,9 @@ export default function CustomLink({
   innerRef = () => {},
   getProps = () => {},
   state = null,
-  onClick,
   ...props
 }: CustomLinkProps) {
-  let styles = useCSS(props)
+  const styles = useCSS(props)
 
   if (disabled) return <label css={styles.disabled}>{children}</label>
   return (

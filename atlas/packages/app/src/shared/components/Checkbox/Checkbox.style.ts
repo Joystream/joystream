@@ -17,7 +17,7 @@ const checkbox: StyleFn = (_, { labelPosition }) => ({
 })
 
 const fillFromProps: StyleFn = (styles, { disabled, error, selected }) => {
-  let fill = error
+  const fill = error
     ? colors.error
     : selected && disabled
     ? colors.gray[700]
@@ -32,7 +32,7 @@ const fillFromProps: StyleFn = (styles, { disabled, error, selected }) => {
 }
 
 const borderColorFromProps: StyleFn = (styles, { disabled, error, selected }) => {
-  let borderColor = error
+  const borderColor = error
     ? colors.error
     : selected && disabled
     ? colors.gray[700]
@@ -49,7 +49,7 @@ const borderColorFromProps: StyleFn = (styles, { disabled, error, selected }) =>
 }
 
 const shadowFromProps: StyleFn = (styles, { disabled, error, selected }) => {
-  let shadow = error || disabled ? 'transparent' : selected ? colors.blue[900] : colors.gray[800]
+  const shadow = error || disabled ? 'transparent' : selected ? colors.blue[900] : colors.gray[800]
   return {
     ...styles,
     backgroundColor: shadow,

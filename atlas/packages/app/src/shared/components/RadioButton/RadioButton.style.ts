@@ -56,13 +56,13 @@ const dot: StyleFn = (_, { disabled, selected, error }) => {
 }
 
 const BackgroundFromProps: StyleFn = (styles = {}, { disabled, selected, error }) => {
-  let key = selected ? `backgroundImage` : `backgroundColor`
+  const key = selected ? `backgroundImage` : `backgroundColor`
   const SELECTED_ERROR = `repeating-radial-gradient(circle, ${colors.error} 0px, ${colors.error} 3px, transparent 3px, transparent 6px, ${colors.error} 6px, ${colors.error} 8px)`
   const SELECTED_DISABLED = `repeating-radial-gradient(circle, ${colors.gray[200]} 0px, ${colors.gray[200]} 3px, transparent 3px, transparent 6px, ${colors.gray[200]} 6px, ${colors.gray[200]} 8px)`
   const SELECTED_DEFAULT = `repeating-radial-gradient(circle, ${colors.blue[500]} 0px, ${colors.blue[500]} 3px, transparent 3px, transparent 6px, ${colors.blue[500]} 6px, ${colors.blue[500]} 8px)`
   const UNSELECTED_DISABLED = colors.gray[50]
 
-  let value =
+  const value =
     selected && error
       ? SELECTED_ERROR
       : selected && disabled

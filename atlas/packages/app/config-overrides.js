@@ -1,12 +1,22 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
 const path = require('path')
-const { override, addBabelPreset, addWebpackAlias, disableEsLint } = require('customize-cra')
+const { override, addBabelPreset, addWebpackAlias } = require('customize-cra')
 const eslintConfig = require('../../.eslintrc.js')
 
+const modifiedEslintConfig = {
+  ...eslintConfig,
+  rules: {
+    ...eslintConfig.rules,
+    // mark prettier rule as a warning in config passed to webpack so wrong code formatting won't make dev server fail
+    'prettier/prettier': 'warn',
+  },
+}
+
 // based on https://github.com/arackaf/customize-cra/issues/175#issuecomment-610023655
-const useEslintConfig = (configRules) => (config) => {
+const customEslintConfig = (configRules) => (config) => {
   const updatedRules = config.module.rules.map((rule) => {
     // Only target rules that have defined a `useEslintrc` parameter in their options
-    if (rule.use && rule.use.some((use) => use.options && use.options.useEslintrc !== void 0)) {
+    if (rule.use && rule.use.some((use) => use.options && use.options.useEslintrc !== undefined)) {
       const ruleUse = rule.use[0]
       const baseOptions = ruleUse.options
       const baseConfig = baseOptions.baseConfig || {}
@@ -32,12 +42,9 @@ module.exports = {
   webpack: override(
     addBabelPreset('@emotion/babel-preset-css-prop'),
     addWebpackAlias({
-      ['@']: path.resolve(__dirname, 'src/'),
+      '@': path.resolve(__dirname, 'src/'),
     }),
-
-    // once project is cleaned up we can remove disable and enable the config again
-    // useEslintConfig(eslintConfig),
-    disableEsLint()
+    customEslintConfig(modifiedEslintConfig)
   ),
   paths: (paths) => {
     paths.appBuild = path.resolve(__dirname, '..', '..', 'dist')

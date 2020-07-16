@@ -1,7 +1,7 @@
 import { colors, spacing, typography } from '../../theme'
 import { makeStyles, StyleFn } from '../../utils'
 
-export type TabsStyleProps = {}
+export type TabsStyleProps = Record<string, unknown>
 
 const container: StyleFn = () => ({
   fontFamily: typography.fonts.base,

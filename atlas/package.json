@@ -9,7 +9,7 @@
     "build": "lerna run build",
     "dev": "yarn workspace atlas-app dev",
     "storybook": "lerna run --scope atlas-app --stream storybook",
-    "lint": "yarn run eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint": "yarn workspace atlas-app lint",
     "clean": "lerna clean && rm -rf node_modules",
     "test": "yarn workspace atlas-app test"
   },

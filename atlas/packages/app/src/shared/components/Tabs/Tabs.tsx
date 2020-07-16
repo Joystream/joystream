@@ -14,7 +14,7 @@ export default function Tabs({ children, onChange = () => {}, ...styleProps }: T
     onChange(tab)
   }
 
-  let styles = useCSS(styleProps)
+  const styles = useCSS(styleProps)
 
   return (
     <div css={styles.container}>
