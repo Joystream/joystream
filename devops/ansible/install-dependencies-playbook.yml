@@ -1,0 +1,15 @@
+- hosts: 127.0.0.1
+  user: root
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: install pip
+      apt: name=python-pip state=present
+    - name: install docker
+      pip: name=docker
+    - name: Install yarn with npm
+      npm:
+        name: yarn
+        global: yes
+    - name: Install docker compose
+      pip: name=docker-compose

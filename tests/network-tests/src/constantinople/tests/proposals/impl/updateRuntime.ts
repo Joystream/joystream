@@ -1,24 +1,25 @@
 import { Keyring } from '@polkadot/api';
-import { Bytes } from '@polkadot/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { ApiWrapper } from '../../../utils/apiWrapper';
 import { v4 as uuid } from 'uuid';
 import BN from 'bn.js';
 import tap from 'tap';
+import { Utils } from '../../../utils/utils';
 
 export function updateRuntimeTest(
   apiWrapper: ApiWrapper,
   m1KeyPairs: KeyringPair[],
   m2KeyPairs: KeyringPair[],
   keyring: Keyring,
-  sudoUri: string
+  sudoUri: string,
+  runtimePath: string
 ) {
   let sudo: KeyringPair;
 
   tap.test('\n\tUpgrading the runtime test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri);
-    const runtime: Bytes = await apiWrapper.getRuntime();
+    const runtime: string = Utils.readRuntimeFromFile(runtimePath);
     const description: string = 'runtime upgrade proposal which is used for API network testing';
     const runtimeVoteFee: BN = apiWrapper.estimateVoteForProposalFee();
 
