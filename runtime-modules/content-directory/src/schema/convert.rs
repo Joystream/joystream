@@ -4,27 +4,15 @@ use runtime_primitives::traits::Hash;
 impl<T: Trait> From<InputPropertyValue<T>> for OutputPropertyValue<T> {
     fn from(input_property_value: InputPropertyValue<T>) -> Self {
         match input_property_value {
-            InputPropertyValue::Single(single_input_property_value) => {
-                OutputPropertyValue::Single(single_input_property_value.into())
+            InputPropertyValue::Single(input_value) => {
+                OutputPropertyValue::Single(input_value.into())
             }
-            InputPropertyValue::Vector(vector_input_property_value) => {
-                OutputPropertyValue::Vector(vector_input_property_value.into())
+            InputPropertyValue::Vector(vector_input_value) => {
+                let vec_output_property_value =
+                    VecOutputPropertyValue::new(vector_input_value.into(), T::Nonce::default());
+                OutputPropertyValue::Vector(vec_output_property_value)
             }
         }
-    }
-}
-
-impl<T: Trait> From<SingleInputPropertyValue<T>> for SingleOutputPropertyValue<T> {
-    fn from(single_input_property_value: SingleInputPropertyValue<T>) -> Self {
-        SingleOutputPropertyValue::new(single_input_property_value.get_value().into())
-    }
-}
-
-impl<T: Trait> From<VecInputPropertyValue<T>> for VecOutputPropertyValue<T> {
-    fn from(vec_input_property_value: VecInputPropertyValue<T>) -> Self {
-        let (vec_value, nonce) = vec_input_property_value.unzip();
-
-        VecOutputPropertyValue::new(vec_value.into(), nonce)
     }
 }
 

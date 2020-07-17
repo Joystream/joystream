@@ -799,7 +799,7 @@ pub fn insert_at_entity_property_vector(
     entity_id: EntityId,
     in_class_schema_property_id: PropertyId,
     index_in_property_vector: VecMaxLength,
-    property_value: SingleInputPropertyValue<Runtime>,
+    property_value: InputValue<Runtime>,
     nonce: Nonce,
 ) -> Result<(), &'static str> {
     TestModule::insert_at_entity_property_vector(
@@ -962,20 +962,17 @@ impl<T: Trait> PropertyType<T> {
 impl<T: Trait> InputPropertyValue<T> {
     pub fn vec_reference(entity_ids: Vec<EntityId>) -> InputPropertyValue<Runtime> {
         let vec_value = VecInputValue::<Runtime>::Reference(entity_ids);
-        let vec_property_value = VecInputPropertyValue::<Runtime>::new(vec_value, 0);
-        InputPropertyValue::<Runtime>::Vector(vec_property_value)
+        InputPropertyValue::<Runtime>::Vector(vec_value)
     }
 
     pub fn vec_text(texts: Vec<Vec<u8>>) -> InputPropertyValue<Runtime> {
         let vec_value = VecInputValue::<Runtime>::Text(texts);
-        let vec_property_value = VecInputPropertyValue::<Runtime>::new(vec_value, 0);
-        InputPropertyValue::<Runtime>::Vector(vec_property_value)
+        InputPropertyValue::<Runtime>::Vector(vec_value)
     }
 
     pub fn single_text(text_len: TextMaxLength) -> InputPropertyValue<Runtime> {
         let text_value = InputValue::<Runtime>::Text(generate_text(text_len as usize));
-        let text_property_value = SingleInputPropertyValue::<Runtime>::new(text_value);
-        InputPropertyValue::<Runtime>::Single(text_property_value)
+        InputPropertyValue::<Runtime>::Single(text_value)
     }
 }
 

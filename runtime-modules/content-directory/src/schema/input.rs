@@ -4,30 +4,30 @@ use super::*;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum InputPropertyValue<T: Trait> {
-    Single(SingleInputPropertyValue<T>),
-    Vector(VecInputPropertyValue<T>),
+    Single(InputValue<T>),
+    Vector(VecInputValue<T>),
 }
 
 impl<T: Trait> InputPropertyValue<T> {
-    pub fn as_single_property_value(&self) -> Option<&SingleInputPropertyValue<T>> {
-        if let InputPropertyValue::Single(single_property_value) = self {
-            Some(single_property_value)
+    pub fn as_single_value(&self) -> Option<&InputValue<T>> {
+        if let InputPropertyValue::Single(single_value) = self {
+            Some(single_value)
         } else {
             None
         }
     }
 
-    pub fn as_vec_property_value(&self) -> Option<&VecInputPropertyValue<T>> {
-        if let InputPropertyValue::Vector(vec_property_value) = self {
-            Some(vec_property_value)
+    pub fn as_vec_value(&self) -> Option<&VecInputValue<T>> {
+        if let InputPropertyValue::Vector(vec_value) = self {
+            Some(vec_value)
         } else {
             None
         }
     }
 
-    pub fn as_vec_property_value_mut(&mut self) -> Option<&mut VecInputPropertyValue<T>> {
-        if let InputPropertyValue::Vector(vec_property_value) = self {
-            Some(vec_property_value)
+    pub fn as_vec_value_mut(&mut self) -> Option<&mut VecInputValue<T>> {
+        if let InputPropertyValue::Vector(vec_value) = self {
+            Some(vec_value)
         } else {
             None
         }
@@ -37,54 +37,22 @@ impl<T: Trait> InputPropertyValue<T> {
     pub fn get_involved_entities(&self) -> Option<Vec<T::EntityId>> {
         match self {
             InputPropertyValue::Single(single_property_value) => {
-                if let Some(entity_id) = single_property_value.get_value_ref().get_involved_entity()
-                {
+                if let Some(entity_id) = single_property_value.get_involved_entity() {
                     Some(vec![entity_id])
                 } else {
                     None
                 }
             }
-            InputPropertyValue::Vector(vector_property_value) => vector_property_value
-                .get_vec_value()
-                .get_involved_entities(),
+            InputPropertyValue::Vector(vector_property_value) => {
+                vector_property_value.get_involved_entities()
+            }
         }
     }
 }
 
 impl<T: Trait> Default for InputPropertyValue<T> {
     fn default() -> Self {
-        InputPropertyValue::Single(SingleInputPropertyValue::default())
-    }
-}
-
-/// `InputValue` enum wrapper
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct SingleInputPropertyValue<T: Trait> {
-    value: InputValue<T>,
-}
-
-impl<T: Trait> Default for SingleInputPropertyValue<T> {
-    fn default() -> Self {
-        Self {
-            value: InputValue::default(),
-        }
-    }
-}
-
-impl<T: Trait> SingleInputPropertyValue<T> {
-    pub fn new(value: InputValue<T>) -> Self {
-        Self { value }
-    }
-
-    /// Get inner `InputValue` by reference
-    pub fn get_value_ref(&self) -> &InputValue<T> {
-        &self.value
-    }
-
-    /// Get inner `InputValue`
-    pub fn get_value(self) -> InputValue<T> {
-        self.value
+        InputPropertyValue::Single(InputValue::default())
     }
 }
 
@@ -122,68 +90,7 @@ impl<T: Trait> InputValue<T> {
     }
 }
 
-/// Consists of `VecInputPropertyValue` enum representation and `nonce`, used to avoid vector data race update conditions
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VecInputPropertyValue<T: Trait> {
-    vec_value: VecInputValue<T>,
-    nonce: T::Nonce,
-}
-
-impl<T: Trait> VecInputPropertyValue<T> {
-    pub fn new(vec_value: VecInputValue<T>, nonce: T::Nonce) -> Self {
-        Self { vec_value, nonce }
-    }
-
-    pub fn unzip(self) -> (VecInputValue<T>, T::Nonce) {
-        (self.vec_value, self.nonce)
-    }
-
-    /// Retrieve `VecInputValue` by reference
-    pub fn get_vec_value(&self) -> &VecInputValue<T> {
-        &self.vec_value
-    }
-
-    fn len(&self) -> usize {
-        match &self.vec_value {
-            VecInputValue::Bool(vec) => vec.len(),
-            VecInputValue::Uint16(vec) => vec.len(),
-            VecInputValue::Uint32(vec) => vec.len(),
-            VecInputValue::Uint64(vec) => vec.len(),
-            VecInputValue::Int16(vec) => vec.len(),
-            VecInputValue::Int32(vec) => vec.len(),
-            VecInputValue::Int64(vec) => vec.len(),
-            VecInputValue::Text(vec) => vec.len(),
-            VecInputValue::TextToHash(vec) => vec.len(),
-            VecInputValue::Reference(vec) => vec.len(),
-        }
-    }
-
-    /// Ensure `VecInputPropertyValue` nonce is equal to the provided one.
-    /// Used to to avoid possible data races, when performing vector specific operations
-    pub fn ensure_nonce_equality(&self, new_nonce: T::Nonce) -> dispatch::Result {
-        ensure!(
-            self.nonce == new_nonce,
-            ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH
-        );
-        Ok(())
-    }
-
-    /// Ensure, provided `index_in_property_vec` is valid index of `VecInputValue`
-    pub fn ensure_index_in_property_vector_is_valid(
-        &self,
-        index_in_property_vec: VecMaxLength,
-    ) -> dispatch::Result {
-        ensure!(
-            (index_in_property_vec as usize) <= self.len(),
-            ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE
-        );
-
-        Ok(())
-    }
-}
-
-/// Vector value enum representation, related to corresponding `VecInputPropertyValue` structure
+/// Vector value enum representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum VecInputValue<T: Trait> {

@@ -370,7 +370,7 @@ impl<T: Trait> Property<T> {
     /// and check all constraints
     pub fn ensure_property_value_can_be_inserted_at_property_vector(
         &self,
-        single_value: &SingleInputPropertyValue<T>,
+        single_value: &InputValue<T>,
         vec_value: &VecOutputPropertyValue<T>,
         index_in_property_vec: VecMaxLength,
         current_entity_controller: &EntityController<T>,
@@ -398,7 +398,7 @@ impl<T: Trait> Property<T> {
         let max_vec_len = property_type_vec.get_max_len();
 
         match (
-            single_value.get_value_ref(),
+            single_value,
             vec_value.get_vec_value(),
             property_type_vec.get_vec_type(),
         ) {
@@ -455,8 +455,7 @@ impl<T: Trait> Property<T> {
         value: &InputPropertyValue<T>,
     ) -> dispatch::Result {
         let single_value = value
-            .as_single_property_value()
-            .map(|single_prop_value| single_prop_value.get_value_ref());
+            .as_single_value();
 
         match (single_value, &self.property_type.as_single_value_type()) {
             (Some(InputValue::Text(text)), Some(Type::Text(text_max_len))) => {
@@ -504,8 +503,7 @@ impl<T: Trait> Property<T> {
     ) -> dispatch::Result {
         let (vec_value, vec_property_type) = if let (Some(vec_value), Some(vec_property_type)) = (
             value
-                .as_vec_property_value()
-                .map(|vec_property_value| vec_property_value.get_vec_value()),
+                .as_vec_value(),
             self.property_type.as_vec_type(),
         ) {
             (vec_value, vec_property_type)
@@ -572,7 +570,7 @@ impl<T: Trait> Property<T> {
                 PropertyType::Single(ref single_property_type),
             ) => {
                 match (
-                    single_property_value.get_value_ref(),
+                    single_property_value,
                     single_property_type.deref(),
                 ) {
                     (InputValue::Bool(_), Type::Bool)
@@ -588,11 +586,11 @@ impl<T: Trait> Property<T> {
                 }
             }
             (
-                InputPropertyValue::Vector(vec_property_value),
+                InputPropertyValue::Vector(vec_value),
                 PropertyType::Vector(ref vec_property_type),
             ) => {
                 match (
-                    vec_property_value.get_vec_value(),
+                    vec_value,
                     vec_property_type.get_vec_type(),
                 ) {
                     (VecInputValue::Bool(_), Type::Bool)
@@ -627,7 +625,7 @@ impl<T: Trait> Property<T> {
                     InputValue::Reference(entity_id),
                     Type::Reference(class_id, same_controller_status),
                 ) = (
-                    single_property_value.get_value_ref(),
+                    single_property_value,
                     single_property_type.deref(),
                 ) {
                     // Ensure class_id of Entity under provided entity_id references Entity,
@@ -645,14 +643,14 @@ impl<T: Trait> Property<T> {
                 }
             }
             (
-                InputPropertyValue::Vector(vec_property_value),
+                InputPropertyValue::Vector(vec_value),
                 PropertyType::Vector(vec_property_type),
             ) => {
                 if let (
                     VecInputValue::Reference(entity_ids),
                     Type::Reference(class_id, same_controller_status),
                 ) = (
-                    vec_property_value.get_vec_value(),
+                    vec_value,
                     vec_property_type.get_vec_type(),
                 ) {
                     for entity_id in entity_ids.iter() {

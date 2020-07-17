@@ -1618,7 +1618,7 @@ decl_module! {
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
             index_in_property_vector: VecMaxLength,
-            property_value: SingleInputPropertyValue<T>,
+            value: InputValue<T>,
             nonce: T::Nonce
         ) -> dispatch::Result {
 
@@ -1644,7 +1644,7 @@ decl_module! {
 
             // Ensure property_value type is equal to the property_value_vector type and check all constraints
             class_property.ensure_property_value_can_be_inserted_at_property_vector(
-                &property_value,
+                &value,
                 &property_value_vector,
                 index_in_property_vector,
                 entity_controller,
@@ -1653,8 +1653,6 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
-
-            let value = property_value.get_value();
 
             // Increase reference counter of involved entity (if some)
             let involved_entity_and_side_effect = if let Some(entity_rc_to_increment) = value.get_involved_entity() {

@@ -1,17 +1,17 @@
 use super::*;
 
-/// Enum, representing either `SingleOutputPropertyValue` or `VecOutputPropertyValue`
+/// Enum, representing either `OutputValue` or `VecOutputPropertyValue`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum OutputPropertyValue<T: Trait> {
-    Single(SingleOutputPropertyValue<T>),
+    Single(OutputValue<T>),
     Vector(VecOutputPropertyValue<T>),
 }
 
 impl<T: Trait> OutputPropertyValue<T> {
-    pub fn as_single_property_value(&self) -> Option<&SingleOutputPropertyValue<T>> {
-        if let OutputPropertyValue::Single(single_property_value) = self {
-            Some(single_property_value)
+    pub fn as_single_value(&self) -> Option<&OutputValue<T>> {
+        if let OutputPropertyValue::Single(single_value) = self {
+            Some(single_value)
         } else {
             None
         }
@@ -48,8 +48,7 @@ impl<T: Trait> OutputPropertyValue<T> {
     pub fn get_involved_entities(&self) -> Option<Vec<T::EntityId>> {
         match self {
             OutputPropertyValue::Single(single_property_value) => {
-                if let Some(entity_id) = single_property_value.get_value_ref().get_involved_entity()
-                {
+                if let Some(entity_id) = single_property_value.get_involved_entity() {
                     Some(vec![entity_id])
                 } else {
                     None
@@ -64,38 +63,7 @@ impl<T: Trait> OutputPropertyValue<T> {
 
 impl<T: Trait> Default for OutputPropertyValue<T> {
     fn default() -> Self {
-        OutputPropertyValue::Single(SingleOutputPropertyValue::default())
-    }
-}
-
-/// `OutputValue` enum wrapper
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub struct SingleOutputPropertyValue<T: Trait> {
-    value: OutputValue<T>,
-}
-
-impl<T: Trait> Default for SingleOutputPropertyValue<T> {
-    fn default() -> Self {
-        Self {
-            value: OutputValue::default(),
-        }
-    }
-}
-
-impl<T: Trait> SingleOutputPropertyValue<T> {
-    pub fn new(value: OutputValue<T>) -> Self {
-        Self { value }
-    }
-
-    /// Get inner `OutputValue` by reference
-    pub fn get_value_ref(&self) -> &OutputValue<T> {
-        &self.value
-    }
-
-    /// Get inner `OutputValue`
-    pub fn get_value(self) -> OutputValue<T> {
-        self.value
+        OutputPropertyValue::Single(OutputValue::default())
     }
 }
 
