@@ -1,52 +1,71 @@
-use syn::{ItemStruct, ItemEnum, Fields, FieldsUnnamed, Type, Ident, PathSegment};
+use syn::{ItemStruct, ItemEnum, Fields, FieldsUnnamed, Type, Ident, PathSegment, PathArguments, GenericArgument, AngleBracketedGenericArguments};
 use syn::token::Colon2;
 use syn::punctuated::Punctuated;
 use std::fmt;
 
+pub struct ModuleFunctionArgument(Punctuated<PathSegment, Colon2>);
+
 pub struct ModuleFunction {
     name: Ident,
-    arguments: Vec<Punctuated<PathSegment, Colon2>>,
+    arguments: Vec<ModuleFunctionArgument>,
+}
+
+impl fmt::Debug for ModuleFunctionArgument {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn format_generic(parameter_data: &AngleBracketedGenericArguments) -> String {
+            let mut generics = vec![];
+
+            for i in 0..parameter_data.args.len() {
+                let formated_generic = match &parameter_data.args[i] {
+                    GenericArgument::Type(ty) => format!("{:?}", process_ident_path(&ty)),
+                    _ => panic!("not implemented"),
+                };
+
+                generics.push(formated_generic);
+            }
+
+            format!("<{}>", generics.join(", "))
+        }
+
+        fn format_argument_segment(segment: &PathSegment) -> String {
+            let segment_detail = match &segment.arguments {
+                PathArguments::AngleBracketed(parameter_data) => format_generic(parameter_data),
+                PathArguments::Parenthesized(_) => panic!("not implemented"),
+                PathArguments::None => "".to_string(),
+            };
+
+            format!("{}{}", segment.ident.to_string(), segment_detail)
+        }
+
+        fn format_argument(argument: &Punctuated<PathSegment, Colon2>) -> String {
+            argument
+                .iter()
+                .map(format_argument_segment)
+                .collect::<Vec<String>>()
+                .join("::")
+        }
+
+        let arguments = format_argument(&self.0);
+
+        f.write_str(&format!("{}", arguments))
+    }
 }
 
 impl fmt::Debug for ModuleFunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        //let arguments = &self.arguments.iter().as_slice().join(", ");
-        //let arguments = &self.arguments.iter().map(|item| item.to_string()).collect::<Vec<u8>>().as_slice().join(", ");
-        //let arguments = &self.arguments.iter().map(|item| item.to_string()).collect::<String>().to_string().as_slice().join(", ");
-        //let arguments = &self.arguments.iter().map(|item| item.to_string()).collect::<String>();
-        let arguments = &self.arguments.iter()
-            .map(|item| {
-                //item.ident.to_string()
-                /*
-                item.iter()
-                    .map(|tmp_item| tmp_item.ident.to_string())
-                    .collect::<String>()
-                    //.into_bytes();
-                    .to_string()
-                    */
-                println!("xxx {:?}", item);
-                item.iter()
-                    .map(|path_segment| path_segment.ident.to_string())
-                    .collect::<Vec<String>>()
-                    .join(", ")
-            })
-            .collect::<String>();
-            //.into_bytes();
-            //.to_string();
+        fn format_arguments(arguments: &Vec<ModuleFunctionArgument>) -> String {
+            arguments
+                .iter()
+                .map(|item| format!("{:?}", item))
+                .collect::<Vec<String>>()
+                .join(", ")
+        }
+
+        let arguments = format_arguments(&self.arguments);
 
         f.write_str(&format!("ModuleFunction - {}({})", &self.name, arguments))
-
-/*
-        f.debug_struct("ModuleFunction")
-            .field("name", &self.name)
-            .field("arguments", &self.arguments)
-            //.field("arguments", &self.arguments.iter().as_slice().join(", "))
-            .finish()
-*/
     }
 }
-
-//pub struct ModuleFunctionArgument(Vec<u8>);
 
 pub fn extract_module_functions(input: &ItemEnum) -> Vec<ModuleFunction> {
     let mut functions = vec![];
@@ -75,8 +94,7 @@ pub fn extract_module_functions(input: &ItemEnum) -> Vec<ModuleFunction> {
     functions
 }
 
-fn process_unnamed_fields(unnamed_fields: &FieldsUnnamed) -> Vec<Punctuated<PathSegment, Colon2>> {
-    //println!("{:?}", unnamed_fields);
+fn process_unnamed_fields(unnamed_fields: &FieldsUnnamed) -> Vec<ModuleFunctionArgument> {
     let mut arguments = vec![];
 
     let len = unnamed_fields.unnamed.len();
@@ -89,29 +107,12 @@ fn process_unnamed_fields(unnamed_fields: &FieldsUnnamed) -> Vec<Punctuated<Path
     arguments
 }
 
-fn process_ident_path(ty: &Type) -> Punctuated<PathSegment, Colon2> {
-    println!("----------- {:?}", ty);
-
+fn process_ident_path(ty: &Type) -> ModuleFunctionArgument {
     match ty {
         Type::Path(type_path) => {
             let argument_type = type_path.path.segments.clone();
-            /*
-            let argument_type = type_path.path.segments
-                .iter()
-                .map(|item| item.ident.to_string())
-                .collect::<String>()
-                //.into_bytes();
-                .to_string();
-                */
 
-            //println!("{:?}", type_path.path.segments[0].ident.to_string());
-            //println!("{:?}", type_path.path.segments[0].ident.to_string());
-            //println!("{:?}", type_path.path.segments.to_string());
-            //println!("{:?}", type_path.path.segments.iter().map(|item| item.ident.to_string()).collect::<String>().join());
-
-            //println!("{:?}", argument_type);
-
-            argument_type
+            ModuleFunctionArgument(argument_type)
         },
         _ => panic!("not implemented"),
     }
