@@ -351,49 +351,52 @@ impl Default for ProposalsConfigParameters {
 }
 
 impl ProposalsConfigParameters {
-    /// Development chain config. No grace period,
+    /// Development chain config. 0 grace period for all proposals, ie.
     /// proposals executed immediatly. Short voting period.
     pub fn development() -> Self {
         Self::with_grace_and_voting_periods(0, 200)
     }
 
-    /// Staging chain config. Short grace and voting period
+    /// Staging chain config. Shorter grace periods and voting periods than default.
     pub fn testing() -> Self {
         Self::with_grace_and_voting_periods(200, 600)
     }
 
+    /// Set same voting_period for all proposals. For proposals
+    /// that by default have 0 grace period remain with 0 grace period.
+    /// All remaining proposals get assigned grace_period.
     fn with_grace_and_voting_periods(grace_period: u32, voting_period: u32) -> Self {
         ProposalsConfigParameters {
             set_validator_count_proposal_voting_period: voting_period,
-            set_validator_count_proposal_grace_period: grace_period,
+            set_validator_count_proposal_grace_period: 0,
             runtime_upgrade_proposal_voting_period: voting_period,
             runtime_upgrade_proposal_grace_period: grace_period,
             text_proposal_voting_period: voting_period,
-            text_proposal_grace_period: grace_period,
+            text_proposal_grace_period: 0,
             set_election_parameters_proposal_voting_period: voting_period,
             set_election_parameters_proposal_grace_period: grace_period,
             set_content_working_group_mint_capacity_proposal_voting_period: voting_period,
-            set_content_working_group_mint_capacity_proposal_grace_period: grace_period,
+            set_content_working_group_mint_capacity_proposal_grace_period: 0,
             set_lead_proposal_voting_period: voting_period,
-            set_lead_proposal_grace_period: grace_period,
+            set_lead_proposal_grace_period: 0,
             spending_proposal_voting_period: voting_period,
             spending_proposal_grace_period: grace_period,
             add_working_group_opening_proposal_voting_period: voting_period,
-            add_working_group_opening_proposal_grace_period: grace_period,
+            add_working_group_opening_proposal_grace_period: 0,
             begin_review_working_group_leader_applications_proposal_voting_period: voting_period,
             begin_review_working_group_leader_applications_proposal_grace_period: grace_period,
             fill_working_group_leader_opening_proposal_voting_period: voting_period,
-            fill_working_group_leader_opening_proposal_grace_period: grace_period,
+            fill_working_group_leader_opening_proposal_grace_period: 0,
             set_working_group_mint_capacity_proposal_voting_period: voting_period,
-            set_working_group_mint_capacity_proposal_grace_period: grace_period,
+            set_working_group_mint_capacity_proposal_grace_period: 0,
             decrease_working_group_leader_stake_proposal_voting_period: voting_period,
-            decrease_working_group_leader_stake_proposal_grace_period: grace_period,
+            decrease_working_group_leader_stake_proposal_grace_period: 0,
             slash_working_group_leader_stake_proposal_voting_period: voting_period,
-            slash_working_group_leader_stake_proposal_grace_period: grace_period,
+            slash_working_group_leader_stake_proposal_grace_period: 0,
             set_working_group_leader_reward_proposal_voting_period: voting_period,
-            set_working_group_leader_reward_proposal_grace_period: grace_period,
+            set_working_group_leader_reward_proposal_grace_period: 0,
             terminate_working_group_leader_role_proposal_voting_period: voting_period,
-            terminate_working_group_leader_role_proposal_grace_period: grace_period,
+            terminate_working_group_leader_role_proposal_grace_period: 0,
         }
     }
 }
