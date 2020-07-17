@@ -129,6 +129,7 @@ export const CurrentRoles = Loadable<CurrentRolesProps>(
             <Table.Header>
               <Table.Row>
                 <Table.HeaderCell>Role</Table.HeaderCell>
+                <Table.HeaderCell>Worker / Curator ID</Table.HeaderCell>
                 <Table.HeaderCell>Earned</Table.HeaderCell>
                 <Table.HeaderCell>Stake</Table.HeaderCell>
                 <Table.HeaderCell></Table.HeaderCell>
@@ -139,6 +140,9 @@ export const CurrentRoles = Loadable<CurrentRolesProps>(
                 <Table.Row key={key}>
                   <Table.Cell>
                     <RoleName name={role.name} url={role.url} />
+                  </Table.Cell>
+                  <Table.Cell>
+                    {role.workerId.toString()}
                   </Table.Cell>
                   <Table.Cell>
                     {formatBalance(role.reward)}
