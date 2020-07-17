@@ -45,9 +45,14 @@ export default class IndexBuilder {
 
     const lastProcessedEvent = await getRepository(SavedEntityEvent).findOne({ where: { id: 1 } });
 
-    // Priority is belongs to `startAt` parameter, if parameter is provided then ignore the saved event start
-    // block producer from `startAt` block number.
-    if (!atBlock && lastProcessedEvent) {
+    if (atBlock && lastProcessedEvent) {
+      throw new Error(
+        `Existing processed history detected on the database!
+        Last processed block is ${lastProcessedEvent.blockNumber.toString()}`
+      );
+    }
+
+    if (lastProcessedEvent) {
       this.lastProcessedEvent = lastProcessedEvent;
       await this._producer.start(this.lastProcessedEvent.blockNumber, this.lastProcessedEvent.index);
     } else {
