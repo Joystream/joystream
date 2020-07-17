@@ -35,7 +35,7 @@ fn add_schema_support_to_non_existent_entity() {
         ));
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         // Runtime state before tested call
 
@@ -81,7 +81,7 @@ fn add_schema_support_lead_auth_failed() {
         ));
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         // Runtime state before tested call
 
@@ -127,7 +127,7 @@ fn add_schema_support_member_auth_failed() {
         ));
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         // Runtime state before tested call
 
@@ -185,7 +185,7 @@ fn add_schema_support_curator_group_is_not_active() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         // Make an attempt to add schema support to entity using curator group, which is not active as actor
         let add_schema_support_to_entity_result = add_schema_support_to_entity(
@@ -231,7 +231,7 @@ fn add_schema_support_curator_auth_failed() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         // Make an attempt to add schema support to entity under unknown origin and curator actor,
         // which corresponding group is current entity controller
@@ -278,7 +278,7 @@ fn add_schema_support_curator_not_found_in_curator_group() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         // Make an attempt to add schema support to entity, using actor in group,
         // which curator id was not added to corresponding group set
@@ -325,7 +325,7 @@ fn add_schema_support_access_denied() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         // Make an attempt to add schema support to entity, using origin,
         // which corresponding actor is neither entity maintainer, nor controller.
@@ -363,7 +363,7 @@ fn add_schema_support_to_entity_schema_does_not_exist() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         // Make an attempt to add schema support to entity, providing schema_id,
         // which corresponding Schema does not exist on Class level
@@ -414,7 +414,7 @@ fn add_schema_support_to_entity_class_property_not_found() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(SECOND_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(SECOND_PROPERTY_ID, InputPropertyValue::default());
 
         // Make an attempt to add schema support to Entity, providing property value under property_id,
         // which does not not yet added to corresponding Class properties
@@ -460,7 +460,7 @@ fn add_schema_support_already_added_to_the_entity() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         assert_ok!(add_schema_support_to_entity(
             LEAD_ORIGIN,
@@ -537,7 +537,7 @@ fn add_schema_support_already_contains_given_property_id() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         assert_ok!(add_schema_support_to_entity(
             LEAD_ORIGIN,
@@ -554,7 +554,7 @@ fn add_schema_support_already_contains_given_property_id() {
 
         schema_property_values.insert(
             SECOND_PROPERTY_ID,
-            PropertyValue::<Runtime>::single_text(TextMaxLengthConstraint::get()),
+            InputPropertyValue::<Runtime>::single_text(TextMaxLengthConstraint::get()),
         );
 
         // Make an attempt to add schema support to entity, providing Schema property_values,
@@ -614,7 +614,7 @@ fn add_schema_support_is_not_active() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         // Make an attempt to add schema support to Entity, providing schema id,
         // which corresponding class Schema is not active
@@ -678,7 +678,7 @@ fn add_schema_support_does_not_contain_provided_property_id() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(SECOND_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(SECOND_PROPERTY_ID, InputPropertyValue::default());
 
         // Make an attempt to add schema support to Entity, providing property values, which are not a members of
         // provided Schema
@@ -739,7 +739,7 @@ fn add_schema_support_missing_required_property() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         // Make an attempt to add schema support to Entity, do not providing some of required property values
         let add_schema_support_to_entity_result = add_schema_support_to_entity(
@@ -793,7 +793,7 @@ fn add_schema_support_dont_match_type() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         // Make an attempt to add schema support to Entity, providing property values, some of which do not match
         // Class level Property Type
@@ -860,7 +860,7 @@ fn add_schema_support_referenced_entity_does_not_match_class() {
 
         let mut schema_property_values = BTreeMap::new();
         let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
 
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
 
@@ -921,8 +921,10 @@ fn add_schema_support_referenced_entity_does_not_exist() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_property_values = BTreeMap::new();
-        let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![UNKNOWN_ENTITY_ID, UNKNOWN_ENTITY_ID]);
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
+            UNKNOWN_ENTITY_ID,
+            UNKNOWN_ENTITY_ID,
+        ]);
 
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
 
@@ -992,7 +994,7 @@ fn add_schema_support_entity_can_not_be_referenced() {
 
         let mut schema_property_values = BTreeMap::new();
         let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
 
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
 
@@ -1068,7 +1070,7 @@ fn add_schema_support_same_controller_constraint_violation() {
 
         let mut schema_property_values = BTreeMap::new();
         let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
 
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
 
@@ -1128,7 +1130,7 @@ fn add_schema_support_text_property_is_too_long() {
         let mut schema_property_values = BTreeMap::new();
 
         let schema_property_value =
-            PropertyValue::<Runtime>::single_text(TextMaxLengthConstraint::get() + 1);
+            InputPropertyValue::<Runtime>::single_text(TextMaxLengthConstraint::get() + 1);
 
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
 
@@ -1200,8 +1202,7 @@ fn add_schema_support_vec_property_is_too_long() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_property_values = BTreeMap::new();
-        let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
                 SECOND_ENTITY_ID;
                 VecMaxLengthConstraint::get() as usize + 1
             ]);
@@ -1277,7 +1278,7 @@ fn add_schema_support_property_should_be_unique() {
         let mut first_schema_property_values = BTreeMap::new();
 
         let schema_property_value =
-            PropertyValue::<Runtime>::single_text(TextMaxLengthConstraint::get());
+            InputPropertyValue::<Runtime>::single_text(TextMaxLengthConstraint::get());
 
         first_schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value.clone());
 

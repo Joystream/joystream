@@ -1,12 +1,12 @@
 use crate::*;
 use core::ops::{Deref, DerefMut};
 
-/// Wrapper for existing `PropertyValue` and its respective `Class` `Property`
-pub struct ValueForExistingProperty<'a, T: Trait>(&'a Property<T>, &'a PropertyValue<T>);
+/// Wrapper for existing `InputPropertyValue` and its respective `Class` `Property`
+pub struct InputValueForExistingProperty<'a, T: Trait>(&'a Property<T>, &'a InputPropertyValue<T>);
 
-impl<'a, T: Trait> ValueForExistingProperty<'a, T> {
-    /// Create single instance of `ValueForExistingProperty` from provided `property` and `value`
-    fn new(property: &'a Property<T>, value: &'a PropertyValue<T>) -> Self {
+impl<'a, T: Trait> InputValueForExistingProperty<'a, T> {
+    /// Create single instance of `InputValueForExistingProperty` from provided `property` and `value`
+    fn new(property: &'a Property<T>, value: &'a InputPropertyValue<T>) -> Self {
         Self(property, value)
     }
 
@@ -15,57 +15,131 @@ impl<'a, T: Trait> ValueForExistingProperty<'a, T> {
         self.0
     }
 
-    /// Retrieve `Value` reference
-    pub fn get_value(&self) -> &PropertyValue<T> {
+    /// Retrieve `InputPropertyValue` reference
+    pub fn get_value(&self) -> &InputPropertyValue<T> {
         self.1
     }
 
-    /// Retrieve `Property` and `PropertyValue` references
-    pub fn unzip(&self) -> (&Property<T>, &PropertyValue<T>) {
+    /// Retrieve `Property` and `InputPropertyValue` references
+    pub fn unzip(&self) -> (&Property<T>, &InputPropertyValue<T>) {
         (self.0, self.1)
     }
 }
 
-/// Mapping, used to represent `PropertyId` relation to its respective `ValueForExistingProperty` structure
-pub struct ValuesForExistingProperties<'a, T: Trait>(
-    BTreeMap<PropertyId, ValueForExistingProperty<'a, T>>,
+/// Mapping, used to represent `PropertyId` relation to its respective `InputValueForExistingProperty` structure
+pub struct InputValuesForExistingProperties<'a, T: Trait>(
+    BTreeMap<PropertyId, InputValueForExistingProperty<'a, T>>,
 );
 
-impl<'a, T: Trait> Default for ValuesForExistingProperties<'a, T> {
+impl<'a, T: Trait> Default for InputValuesForExistingProperties<'a, T> {
     fn default() -> Self {
         Self(BTreeMap::default())
     }
 }
 
-impl<'a, T: Trait> Deref for ValuesForExistingProperties<'a, T> {
-    type Target = BTreeMap<PropertyId, ValueForExistingProperty<'a, T>>;
+impl<'a, T: Trait> Deref for InputValuesForExistingProperties<'a, T> {
+    type Target = BTreeMap<PropertyId, InputValueForExistingProperty<'a, T>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<'a, T: Trait> DerefMut for ValuesForExistingProperties<'a, T> {
+impl<'a, T: Trait> DerefMut for InputValuesForExistingProperties<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<'a, T: Trait> ValuesForExistingProperties<'a, T> {
-    /// Create `ValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
+impl<'a, T: Trait> InputValuesForExistingProperties<'a, T> {
+    /// Create `InputValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
     /// Throws an error, when `Class` `Property` under `property_id`, corresponding to provided `property_value` not found
     pub fn from(
         properties: &'a [Property<T>],
-        property_values: &'a BTreeMap<PropertyId, PropertyValue<T>>,
+        property_values: &'a BTreeMap<PropertyId, InputPropertyValue<T>>,
     ) -> Result<Self, &'static str> {
-        let mut values_for_existing_properties = ValuesForExistingProperties::<T>::default();
+        let mut values_for_existing_properties = InputValuesForExistingProperties::<T>::default();
         for (&property_id, property_value) in property_values {
             let property = properties
                 .get(property_id as usize)
                 .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
             values_for_existing_properties.insert(
                 property_id,
-                ValueForExistingProperty::new(property, property_value),
+                InputValueForExistingProperty::new(property, property_value),
+            );
+        }
+        Ok(values_for_existing_properties)
+    }
+}
+
+/// Wrapper for existing `OutputPropertyValue` and its respective `Class` `Property`
+pub struct OutputValueForExistingProperty<'a, T: Trait>(
+    &'a Property<T>,
+    &'a OutputPropertyValue<T>,
+);
+
+impl<'a, T: Trait> OutputValueForExistingProperty<'a, T> {
+    /// Create single instance of `OutputValueForExistingProperty` from provided `property` and `value`
+    fn new(property: &'a Property<T>, value: &'a OutputPropertyValue<T>) -> Self {
+        Self(property, value)
+    }
+
+    /// Retrieve `Property` reference
+    pub fn get_property(&self) -> &Property<T> {
+        self.0
+    }
+
+    /// Retrieve `OutputPropertyValue` reference
+    pub fn get_value(&self) -> &OutputPropertyValue<T> {
+        self.1
+    }
+
+    /// Retrieve `Property` and `OutputPropertyValue` references
+    pub fn unzip(&self) -> (&Property<T>, &OutputPropertyValue<T>) {
+        (self.0, self.1)
+    }
+}
+
+/// Mapping, used to represent `PropertyId` relation to its respective `OutputValuesForExistingProperties` structure
+pub struct OutputValuesForExistingProperties<'a, T: Trait>(
+    BTreeMap<PropertyId, OutputValueForExistingProperty<'a, T>>,
+);
+
+impl<'a, T: Trait> Default for OutputValuesForExistingProperties<'a, T> {
+    fn default() -> Self {
+        Self(BTreeMap::default())
+    }
+}
+
+impl<'a, T: Trait> Deref for OutputValuesForExistingProperties<'a, T> {
+    type Target = BTreeMap<PropertyId, OutputValueForExistingProperty<'a, T>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'a, T: Trait> DerefMut for OutputValuesForExistingProperties<'a, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<'a, T: Trait> OutputValuesForExistingProperties<'a, T> {
+    /// Create `OutputValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
+    /// Throws an error, when `Class` `Property` under `property_id`, corresponding to provided `property_value` not found
+    pub fn from(
+        properties: &'a [Property<T>],
+        property_values: &'a BTreeMap<PropertyId, OutputPropertyValue<T>>,
+    ) -> Result<Self, &'static str> {
+        let mut values_for_existing_properties = OutputValuesForExistingProperties::<T>::default();
+        for (&property_id, property_value) in property_values {
+            let property = properties
+                .get(property_id as usize)
+                .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
+            values_for_existing_properties.insert(
+                property_id,
+                OutputValueForExistingProperty::new(property, property_value),
             );
         }
         Ok(values_for_existing_properties)

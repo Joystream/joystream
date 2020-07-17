@@ -384,7 +384,7 @@ fn clear_entity_property_vector_is_locked_for_given_actor() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
@@ -475,7 +475,7 @@ fn clear_entity_property_vector_value_under_given_index_is_not_a_vector() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         // Add schema support to the entity
         assert_ok!(add_schema_support_to_entity(

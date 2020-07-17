@@ -13,11 +13,12 @@ fn insert_at_entity_property_vector_success() {
         // Events number before tested call
         let number_of_events_before_calls = System::events().len();
 
-        // Insert `SinglePropertyValue` at given `index_in_property_vector`
+        // Insert `SingleInputPropertyValue` at given `index_in_property_vector`
         // into `PropertyValueVec` under `in_class_schema_property_id`
         let nonce = 0;
         let index_in_property_vector = 1;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(SECOND_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(SECOND_ENTITY_ID));
 
         assert_ok!(insert_at_entity_property_vector(
             LEAD_ORIGIN,
@@ -37,8 +38,10 @@ fn insert_at_entity_property_vector_success() {
             .get_mut(&SECOND_PROPERTY_ID)
             .and_then(|property_value| property_value.as_vec_property_value_mut())
         {
-            second_schema_old_property_value
-                .insert_at(index_in_property_vector, Value::Reference(SECOND_ENTITY_ID));
+            second_schema_old_property_value.insert_at(
+                index_in_property_vector,
+                OutputValue::Reference(SECOND_ENTITY_ID),
+            );
         }
 
         assert_eq!(first_entity, entity_by_id(FIRST_ENTITY_ID));
@@ -86,7 +89,8 @@ fn insert_at_entity_property_vector_entity_not_found() {
 
         let nonce = 0;
         let index_in_property_vector = 1;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         // Make an attempt to insert value at given `index_in_property_vector`
         // into `PropertyValueVec` under `in_class_schema_property_id` in case when corresponding Entity does not exist
@@ -126,7 +130,8 @@ fn insert_at_entity_property_vector_lead_auth_failed() {
 
         let nonce = 0;
         let index_in_property_vector = 1;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         // Make an attempt to insert value at given `index_in_property_vector`
         // into `PropertyValueVec` under `in_class_schema_property_id` using unknown origin and lead actor
@@ -166,7 +171,8 @@ fn insert_at_entity_property_vector_member_auth_failed() {
 
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         // Make an attempt to insert value at given `index_in_property_vector`
         // into `PropertyValueVec` under `in_class_schema_property_id` using unknown origin and member actor
@@ -213,7 +219,8 @@ fn insert_at_entity_property_vector_curator_group_is_not_active() {
 
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         // Make an attempt to insert value at given `index_in_property_vector`
         // into `PropertyValueVec` under `in_class_schema_property_id` using curator group, which is not active as actor
@@ -256,7 +263,8 @@ fn insert_at_entity_property_vector_curator_auth_failed() {
 
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         // Make an attempt to insert value at given `index_in_property_vector`
         // into `PropertyValueVec` under `in_class_schema_property_id` using unknown origin and curator actor
@@ -299,7 +307,8 @@ fn insert_at_entity_property_vector_curator_not_found_in_curator_group() {
 
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         // Make an attempt to insert value at given `index_in_property_vector`
         // into `PropertyValueVec` under `in_class_schema_property_id`,
@@ -340,7 +349,8 @@ fn insert_at_entity_property_vector_access_denied() {
 
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         // Make an attempt to insert value at given `index_in_property_vector`
         // into `PropertyValueVec` under `in_class_schema_property_id`,
@@ -381,7 +391,8 @@ fn insert_at_entity_property_vector_values_locked_on_class_level() {
 
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         // Make an attempt to insert value at given `index_in_property_vector`
         // into `PropertyValueVec` under `in_class_schema_property_id`,
@@ -423,7 +434,8 @@ fn insert_at_entity_property_vector_class_property_not_found() {
 
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         // Make an attempt to insert value at given `index_in_property_vector`
         // into `PropertyValueVec` under `in_class_schema_property_id`,
@@ -479,7 +491,7 @@ fn insert_at_entity_property_vector_is_locked_for_given_actor() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
@@ -500,7 +512,8 @@ fn insert_at_entity_property_vector_is_locked_for_given_actor() {
 
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         // Make an attempt to remove value at given `index_in_property_vector`
         // from `PropertyValueVec` under `in_class_schema_property_id`,
@@ -546,7 +559,8 @@ fn insert_at_entity_property_vector_unknown_entity_property_id() {
 
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         // Make an attempt to insert value at given `index_in_property_vector`
         // intto `PropertyValueVec` under `in_class_schema_property_id`,
@@ -595,7 +609,7 @@ fn insert_at_entity_property_vector_value_under_given_index_is_not_a_vector() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+        schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
         // Add schema support to the entity
         assert_ok!(add_schema_support_to_entity(
@@ -613,7 +627,8 @@ fn insert_at_entity_property_vector_value_under_given_index_is_not_a_vector() {
 
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         // Make an attempt to insert value at given `index_in_property_vector`
         // into `PropertyValueVec` under `in_class_schema_property_id`,
@@ -658,7 +673,8 @@ fn insert_at_entity_property_vector_nonces_does_not_match() {
 
         let nonce = 1;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         // Make an attempt to insert value at given `index_in_property_vector`
         // into `PropertyValueVec` under `in_class_schema_property_id`,
@@ -697,7 +713,8 @@ fn insert_at_entity_property_vector_index_is_out_of_range() {
         add_class_reference_schema();
 
         let entity_ids = vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID];
-        let schema_property_value = PropertyValue::<Runtime>::vec_reference(entity_ids.clone());
+        let schema_property_value =
+            InputPropertyValue::<Runtime>::vec_reference(entity_ids.clone());
 
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
@@ -721,7 +738,8 @@ fn insert_at_entity_property_vector_index_is_out_of_range() {
         // when provided index_in_property_vector is out of range of the related vector
         let nonce = 0;
         let index_in_property_vector = entity_ids.len() as u16 + 1;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             LEAD_ORIGIN,
@@ -757,7 +775,8 @@ fn insert_at_entity_property_vector_is_too_long() {
         add_class_reference_schema();
 
         let entity_ids = vec![FIRST_ENTITY_ID; VecMaxLengthConstraint::get() as usize];
-        let schema_property_value = PropertyValue::<Runtime>::vec_reference(entity_ids.clone());
+        let schema_property_value =
+            InputPropertyValue::<Runtime>::vec_reference(entity_ids.clone());
 
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
@@ -781,7 +800,8 @@ fn insert_at_entity_property_vector_is_too_long() {
         // when corresponding property_vector can not contain more values
         let nonce = 0;
         let index_in_property_vector = 1;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(FIRST_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(FIRST_ENTITY_ID));
 
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             LEAD_ORIGIN,
@@ -834,7 +854,7 @@ fn insert_at_entity_property_vector_text_prop_is_too_long() {
             vec![property]
         ));
 
-        let schema_property_value = PropertyValue::<Runtime>::vec_text(vec![]);
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_text(vec![]);
 
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
@@ -858,7 +878,7 @@ fn insert_at_entity_property_vector_text_prop_is_too_long() {
         // when corresponding property text value is too long
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Text(generate_text(
+        let single_property_value = SingleInputPropertyValue::new(InputValue::Text(generate_text(
             TextMaxLengthConstraint::get() as usize + 1,
         )));
 
@@ -913,7 +933,7 @@ fn insert_at_entity_property_vector_prop_type_does_not_match_internal_vec_proper
             vec![property]
         ));
 
-        let schema_property_value = PropertyValue::<Runtime>::vec_text(vec![]);
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_text(vec![]);
 
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
@@ -937,7 +957,7 @@ fn insert_at_entity_property_vector_prop_type_does_not_match_internal_vec_proper
         // when corresponding property type does not match internal vector property type
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::default();
+        let single_property_value = SingleInputPropertyValue::default();
 
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             LEAD_ORIGIN,
@@ -982,7 +1002,8 @@ fn insert_at_entity_property_vector_referenced_entity_not_found() {
         // when corresponding single_property_value referes to unknown Entity
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(SECOND_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(SECOND_ENTITY_ID));
 
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             LEAD_ORIGIN,
@@ -1038,7 +1059,8 @@ fn insert_at_entity_property_vector_entity_can_not_be_referenced() {
         // when corresponding Entity can not be referenced
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(SECOND_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(SECOND_ENTITY_ID));
 
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             LEAD_ORIGIN,
@@ -1100,7 +1122,8 @@ fn insert_at_entity_property_vector_same_controller_constraint_violation() {
         // when corresponding Entity can only be referenced from Entity with the same controller.
         let nonce = 0;
         let index_in_property_vector = 0;
-        let single_property_value = SinglePropertyValue::new(Value::Reference(SECOND_ENTITY_ID));
+        let single_property_value =
+            SingleInputPropertyValue::new(InputValue::Reference(SECOND_ENTITY_ID));
 
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             LEAD_ORIGIN,

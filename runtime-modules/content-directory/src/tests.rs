@@ -86,7 +86,7 @@ pub fn add_entity_schemas_support() -> (Entity<Runtime>, Entity<Runtime>) {
     let mut second_entity = entity_by_id(SECOND_ENTITY_ID);
 
     let mut first_schema_property_values = BTreeMap::new();
-    first_schema_property_values.insert(FIRST_PROPERTY_ID, PropertyValue::default());
+    first_schema_property_values.insert(FIRST_PROPERTY_ID, InputPropertyValue::default());
 
     // Add first schema support to the first entity
     assert_ok!(add_schema_support_to_entity(
@@ -98,7 +98,7 @@ pub fn add_entity_schemas_support() -> (Entity<Runtime>, Entity<Runtime>) {
     ));
 
     let mut second_schema_property_values = BTreeMap::new();
-    let second_schema_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+    let second_schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
         SECOND_ENTITY_ID,
         SECOND_ENTITY_ID,
         SECOND_ENTITY_ID,
@@ -118,10 +118,10 @@ pub fn add_entity_schemas_support() -> (Entity<Runtime>, Entity<Runtime>) {
     // Update supported schemas set and properties of first entity
     first_entity.supported_schemas =
         BTreeSet::from_iter(vec![FIRST_SCHEMA_ID, SECOND_SCHEMA_ID].into_iter());
-    first_entity.values = {
-        first_schema_property_values.append(&mut second_schema_property_values);
-        first_schema_property_values
-    };
+
+    first_schema_property_values.append(&mut second_schema_property_values);
+
+    first_entity.values = TestModule::make_output_property_values(first_schema_property_values);
 
     // Update reference counter of second entity
     let inbound_rc = InboundReferenceCounter::new(3, true);
@@ -324,7 +324,7 @@ pub fn add_class_reference_schema_and_entity_schema_support(actor: &Actor<Runtim
     add_class_reference_schema();
 
     let schema_property_value =
-        PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+        InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
     let mut schema_property_values = BTreeMap::new();
     schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
