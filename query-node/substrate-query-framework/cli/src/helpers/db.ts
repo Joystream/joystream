@@ -27,13 +27,20 @@ export function getTypeormModelGeneratorConnectionConfig(): string[] {
 
   const command = [
     'typeorm-model-generator',
-    `--host`, `${envConfig['TYPEORM_HOST']}`,
-    `--port`, `${envConfig['TYPEORM_PORT']}`,
-    `--database`, `${envConfig['TYPEORM_DATABASE']}`,
-    `--engine`, `postgres`,
-    `--output`, `entities`,
-    `--user`, `${envConfig['TYPEORM_USERNAME']}`,
-    `--pass`, `${envConfig['TYPEORM_PASSWORD']}`,
+    `--host`,
+    `${envConfig['TYPEORM_HOST']}`,
+    `--port`,
+    `${envConfig['TYPEORM_PORT']}`,
+    `--database`,
+    `${envConfig['TYPEORM_DATABASE']}`,
+    `--engine`,
+    `postgres`,
+    `--output`,
+    `entities`,
+    `--user`,
+    `${envConfig['TYPEORM_USERNAME']}`,
+    `--pass`,
+    `${envConfig['TYPEORM_PASSWORD']}`,
     '--noConfig',
     '--generateConstructor',
   ];
@@ -65,7 +72,7 @@ export async function resetLastProcessedEvent(): Promise<void> {
 }
 
 export async function createSavedEntityEventTable(): Promise<void> {
-  const query = `CREATE TABLE "saved_entity_event" (
+  const query = `CREATE TABLE IF NOT EXISTS "saved_entity_event" (
       "id" integer PRIMARY KEY DEFAULT 1,
       "index" numeric,
       "eventName" character varying NOT NULL,
