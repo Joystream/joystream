@@ -15,7 +15,7 @@ export function getErrorLabelProps<ValuesT> (
 
 ): FieldErrorLabelProps | undefined {
   return (errors[fieldName] && touched[fieldName])
-    ? { content: errors[fieldName], pointing }
+    ? { content: errors[fieldName], pointing, size: 'large' }
     : undefined;
 }
 

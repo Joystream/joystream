@@ -33,7 +33,7 @@ type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = props => {
   const transport = useTransport();
-  const [validatorCount] = usePromise<number>(() => transport.validators.maxCount(), NaN);
+  const [validatorCount] = usePromise<number>(() => transport.validators.maxCount(), 20);
   const { handleChange, errors, touched, values, setFieldValue } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
 

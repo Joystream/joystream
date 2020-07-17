@@ -364,7 +364,7 @@ export default function Body ({
           ))}
         </ProposalParams>
         { iAmProposer && isCancellable && (<>
-          <Message warning active>
+          <Message warning visible>
             <Message.Content>
               <Message.Header>Proposal cancellation</Message.Header>
               <p style={{ margin: '0.5em 0', padding: '0' }}>

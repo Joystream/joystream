@@ -4,6 +4,7 @@ import { FormikProps } from 'formik';
 import LabelWithHelp from './LabelWithHelp';
 import { FormErrorLabelsProps } from './errorHandling';
 import { formatBalance } from '@polkadot/util';
+import styled from 'styled-components';
 
 /*
  * Generic form field components
@@ -21,9 +22,9 @@ type InputFormFieldProps = Omit<FormInputProps, 'error'> & {
 
 export function InputFormField (props: InputFormFieldProps) {
   const { unit } = props;
-  const fieldProps = { ...props, label: undefined };
+  const fieldProps = { ...props, label: undefined, error: undefined };
   return (
-    <FormField {...props}>
+    <FormField {...props} showErrorMsg={true}>
       <Form.Input
         {...fieldProps}
         style={ unit ? { display: 'flex', alignItems: 'center' } : undefined }>
@@ -40,9 +41,9 @@ type TextareaFormFieldProps = Omit<FormTextAreaProps, 'error'> & {
 };
 
 export function TextareaFormField (props: TextareaFormFieldProps) {
-  const fieldProps = { ...props, label: undefined };
+  const fieldProps = { ...props, label: undefined, error: undefined };
   return (
-    <FormField {...props}>
+    <FormField {...props} showErrorMsg={true}>
       <Form.TextArea {...fieldProps}/>
     </FormField>
   );
@@ -53,17 +54,23 @@ type FormFieldProps = Omit<(InputFormFieldProps | TextareaFormFieldProps), 'erro
   showErrorMsg?: boolean;
 };
 
+const StyledFormField = styled(Form.Field)`
+  & .field {
+    margin-bottom: 0 !important;
+  }
+`;
+
 export function FormField (props: React.PropsWithChildren<FormFieldProps>) {
   const { error, showErrorMsg = false, label, help, children } = props;
   return (
-    <Form.Field error={!!error}>
+    <StyledFormField error={!!error}>
       { (label && help)
         ? <LabelWithHelp text={ label.toString() } help={ help }/>
         : (label ? <label>{ label.toString() }</label> : null)
       }
       { children }
       { Boolean(showErrorMsg && error) && <Label {...error} prompt/> }
-    </Form.Field>
+    </StyledFormField>
   );
 }
 
