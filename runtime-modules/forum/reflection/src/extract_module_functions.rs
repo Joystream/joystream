@@ -84,7 +84,6 @@ pub fn extract_module_functions(input: &ItemEnum) -> Vec<ModuleFunction> {
         };
 
         let function = ModuleFunction {
-            //name: input.variants[i].ident.to_string().into_bytes(),
             name: ident.clone(),
             arguments: field_type_names,
         };

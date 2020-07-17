@@ -1,4 +1,5 @@
 #![no_main]
+#![feature(fn_traits)]
 use libfuzzer_sys::fuzz_target;
 
 use substrate_forum_module::mock::*;
@@ -34,6 +35,27 @@ fuzz_target!(|texts: Texts| {
 
 
         println!("{:?}", ReflectionTest {a: 1, b:2});
+
+
+
+        // test function call with array of arguments
+        create_category_mock.call((
+            origin.clone(),
+            None,
+            texts.text[0].clone(),
+            texts.text[1].clone(),
+            Ok(()),
+        ));
+/*
+        let a = vec![(
+            origin.clone(),
+            None,
+            texts.text[0].clone(),
+            texts.text[1].clone(),
+            Ok(()),
+        )];
+        create_category_mock.call(a);
+*/
     })
 });
 
