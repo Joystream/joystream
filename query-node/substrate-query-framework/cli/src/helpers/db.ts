@@ -75,9 +75,9 @@ export async function createSavedEntityEventTable(): Promise<void> {
   const query = `CREATE TABLE IF NOT EXISTS "saved_entity_event" (
       "id" integer PRIMARY KEY DEFAULT 1,
       "index" numeric,
-      "eventName" character varying NOT NULL,
-      "blockNumber" numeric NOT NULL,
-      "updatedAt" TIMESTAMP NOT NULL DEFAULT now())`;
+      "event_name" character varying NOT NULL,
+      "block_number" numeric NOT NULL,
+      "updated_at" TIMESTAMP NOT NULL DEFAULT now())`;
 
   await createConnection();
   // get a connection and create a new query runner
