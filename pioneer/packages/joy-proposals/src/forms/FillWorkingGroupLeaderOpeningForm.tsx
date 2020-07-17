@@ -84,12 +84,12 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
   const { handleChange, setFieldValue, values, myMemberId, errors, touched } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
-  const [allOpenings, openingsError, openingsLoading] = usePromise<OpeningData[]>(
-    () => transport.workingGroups.activeOpenings(values.workingGroup, 'ReviewPeriod'),
+  const [openings, openingsError, openingsLoading] = usePromise<OpeningData[]>(
+    () => transport.workingGroups.activeOpenings(values.workingGroup, 'ReviewPeriod', 'Leader'),
     [],
     [values.workingGroup]
   );
-  const openingsOptions: DropdownItemProps[] = allOpenings
+  const openingsOptions: DropdownItemProps[] = openings
     // Map to options
     .map(od => {
       const hrt = od.hiringOpening.parse_human_readable_text_with_fallback();

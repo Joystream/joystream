@@ -4,7 +4,7 @@ import BaseTransport from './base';
 import { ApiPromise } from '@polkadot/api';
 import MembersTransport from './members';
 import { SingleLinkedMapEntry } from '../index';
-import { Worker, WorkerId, Opening as WGOpening, Application as WGApplication } from '@joystream/types/working-group';
+import { Worker, WorkerId, Opening as WGOpening, Application as WGApplication, OpeningTypeKey } from '@joystream/types/working-group';
 import { apiModuleByGroup } from '../consts/workingGroups';
 import { WorkingGroupKey } from '@joystream/types/common';
 import { WorkerData, OpeningData, ParsedApplication } from '../types/workingGroups';
@@ -62,7 +62,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
     return this.groupMemberById(group, leadWorkerId);
   }
 
-  public async allOpenings (group: WorkingGroupKey): Promise<OpeningData[]> {
+  public async allOpenings (group: WorkingGroupKey, type?: OpeningTypeKey): Promise<OpeningData[]> {
     const nextId = (await this.queryByGroup(group).nextOpeningId()) as OpeningId;
 
     if (nextId.eq(0)) {
@@ -79,11 +79,12 @@ export default class WorkingGroupsTransport extends BaseTransport {
         const opening = openings[index];
         const hiringOpening = (new SingleLinkedMapEntry(Opening, hiringOpeningRes)).value;
         return { id, opening, hiringOpening };
-      });
+      })
+      .filter(openingData => !type || openingData.opening.opening_type.isOfType(type));
   }
 
-  public async activeOpenings (group: WorkingGroupKey, substage?: ActiveOpeningStageKey) {
-    return (await this.allOpenings(group))
+  public async activeOpenings (group: WorkingGroupKey, substage?: ActiveOpeningStageKey, type?: OpeningTypeKey) {
+    return (await this.allOpenings(group, type))
       .filter(od =>
         od.hiringOpening.stage.isOfType('Active') &&
         (!substage || od.hiringOpening.stage.asType('Active').stage.isOfType(substage))

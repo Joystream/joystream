@@ -243,10 +243,12 @@ export class WorkingGroupOpeningPolicyCommitment extends JoyStruct<IWorkingGroup
 
 export class OpeningType_Leader extends Null { };
 export class OpeningType_Worker extends Null { };
-export class OpeningType extends JoyEnum({
+export const OpeningTypeDef = {
   Leader: OpeningType_Leader,
   Worker: OpeningType_Worker
-} as const) { };
+} as const;
+export type OpeningTypeKey = keyof typeof OpeningTypeDef;
+export class OpeningType extends JoyEnum(OpeningTypeDef) { };
 
 export type IOpening = {
   hiring_opening_id: OpeningId,

@@ -41,12 +41,12 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
   const { handleChange, values, myMemberId, errors, touched } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
-  const [allOpenings, openingsError, openingsLoading] = usePromise(
-    () => transport.workingGroups.activeOpenings(values.workingGroup, 'AcceptingApplications'),
+  const [openings, openingsError, openingsLoading] = usePromise(
+    () => transport.workingGroups.activeOpenings(values.workingGroup, 'AcceptingApplications', 'Leader'),
     [] as OpeningData[],
     [values.workingGroup]
   );
-  const openingsOptions = allOpenings
+  const openingsOptions = openings
     // Map to options
     .map(od => {
       const hrt = od.hiringOpening.parse_human_readable_text_with_fallback();
