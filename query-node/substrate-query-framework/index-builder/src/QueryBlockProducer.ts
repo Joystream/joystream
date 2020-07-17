@@ -119,13 +119,13 @@ export default class QueryBlockProducer extends EventEmitter {
 
       let records = [];
 
-      // Warning: for some reason query service `eventsAt` method fail to fetch events. Indexer continue with the next block.
-      // This leads to inconsistency in data. It's a temporary fix
       try {
         records = await this._query_service.eventsAt(block_hash_of_target);
       } catch (error) {
-        console.log(`block number: ${this._block_to_be_produced_next.toString()}`);
-        console.log('An error occured while reading events. Going to the next block. Error reason:', error.message);
+        console.error(error);
+        console.error(
+          `An error occured while fetching events from ${this._block_to_be_produced_next.toString()}. Going to the next block.`
+        );
 
         this._block_to_be_produced_next = this._block_to_be_produced_next.addn(1);
         continue;
@@ -133,14 +133,19 @@ export default class QueryBlockProducer extends EventEmitter {
 
       debug(`\tRead ${records.length} events.`);
 
-      // Since there is at least 1 event, we will fetch block.
-      let signed_block = await this._query_service.getBlock(block_hash_of_target);
-      // TODO: CATCH HERE
+      let extrinsics_array: Extrinsic[] = [];
+      try {
+        // Since there is at least 1 event, we will fetch block.
+        let signed_block = await this._query_service.getBlock(block_hash_of_target);
 
-      debug(`\tFetched full block.`);
+        debug(`\tFetched full block.`);
 
-      let extrinsics_array = signed_block.block.extrinsics.toArray();
-
+        extrinsics_array = signed_block.block.extrinsics.toArray();
+      } catch (error) {
+        console.error(
+          `An error occured while fetching extrinsics from block ${this._block_to_be_produced_next.toString()}`
+        );
+      }
       let query_events: QueryEvent[] = records.map(
         (record, index): QueryEvent => {
           // Extract the phase, event
