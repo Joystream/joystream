@@ -21,8 +21,8 @@
 const multer = require('multer')
 
 // Taken from express-openapi examples
-module.exports = function(req, res, next) {
-  multer().any()(req, res, function(err) {
+module.exports = function (req, res, next) {
+  multer().any()(req, res, function (err) {
     if (err) {
       return next(err)
     }
@@ -34,7 +34,7 @@ module.exports = function(req, res, next) {
         }),
       {}
     )
-    Object.keys(filesMap).forEach(fieldname => {
+    Object.keys(filesMap).forEach((fieldname) => {
       const files = filesMap[fieldname]
       req.body[fieldname] = files.length > 1 ? files.map(() => '') : ''
     })

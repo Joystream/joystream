@@ -1,4 +1,4 @@
-import { getTypeRegistry, u32, u64, u128, Option, GenericAccountId } from '@polkadot/types';
+import { getTypeRegistry, u64, u128, Option } from '@polkadot/types';
 import { AccountId, Balance, BlockNumber } from '@polkadot/types/interfaces';
 import { JoyStruct } from '../common';
 import { MintId } from '../mint';
@@ -42,12 +42,12 @@ export class RewardRelationship extends JoyStruct<IRewardRelationship> {
     super({
       recipient: RecipientId,
       mint_id: MintId,
-      account: GenericAccountId,
-      amount_per_payout: u128,
-      next_payment_at_block: Option.with(u32),
-      payout_interval: Option.with(u32),
-      total_reward_received: u128,
-      total_reward_missed: u128,
+      account: 'AccountId',
+      amount_per_payout: 'Balance',
+      next_payment_at_block: Option.with('BlockNumber'),
+      payout_interval: Option.with('BlockNumber'),
+      total_reward_received: 'Balance',
+      total_reward_missed: 'Balance',
     }, value);
   }
 
@@ -55,8 +55,24 @@ export class RewardRelationship extends JoyStruct<IRewardRelationship> {
     return this.getField<RecipientId>('recipient')
   }
 
-  get total_reward_received(): u128 {
-    return this.getField<u128>('total_reward_received');
+  get total_reward_received(): Balance {
+    return this.getField<Balance>('total_reward_received');
+  }
+
+  get total_reward_missed(): Balance {
+    return this.getField<Balance>('total_reward_missed');
+  }
+
+  get amount_per_payout(): Balance {
+    return this.getField<Balance>('amount_per_payout');
+  }
+
+  get payout_interval(): Option<BlockNumber> {
+    return this.getField<Option<BlockNumber>>('payout_interval');
+  }
+
+  get next_payment_at_block(): Option<BlockNumber> {
+    return this.getField<Option<BlockNumber>>('next_payment_at_block');
   }
 };
 

@@ -30,7 +30,7 @@ function errorHandler(response, err, code) {
   response.status(err.code || code || 500).send({ message: err.toString() })
 }
 
-module.exports = function(storage, runtime) {
+module.exports = function (storage, runtime) {
   const doc = {
     // parameters for all operations in this path
     parameters: [
@@ -108,7 +108,7 @@ module.exports = function(storage, runtime) {
           }
         }
 
-        stream.on('fileInfo', async info => {
+        stream.on('fileInfo', async (info) => {
           try {
             debug('Detected file info:', info)
 
@@ -142,7 +142,7 @@ module.exports = function(storage, runtime) {
           }
         })
 
-        stream.on('committed', async hash => {
+        stream.on('committed', async (hash) => {
           console.log('commited', dataObject)
           try {
             if (hash !== dataObject.ipfs_content_id.toString()) {
@@ -170,7 +170,7 @@ module.exports = function(storage, runtime) {
           }
         })
 
-        stream.on('error', err => errorHandler(res, err))
+        stream.on('error', (err) => errorHandler(res, err))
         req.pipe(stream)
       } catch (err) {
         errorHandler(res, err)

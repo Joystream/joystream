@@ -39,7 +39,7 @@ const _ = require('lodash')
 const DEFAULT_TIMEOUT = 30 * 1000
 
 // Default/dummy resolution implementation.
-const DEFAULT_RESOLVE_CONTENT_ID = async original => {
+const DEFAULT_RESOLVE_CONTENT_ID = async (original) => {
   debug('Warning: Default resolution returns original CID', original)
   return original
 }
@@ -127,11 +127,11 @@ class StorageWriteStream extends Transform {
       const read = fs.createReadStream(this.temp.path)
       fileType
         .stream(read)
-        .then(stream => {
+        .then((stream) => {
           this.fileInfo = fixFileInfoOnStream(stream).fileInfo
           this.emit('fileInfo', this.fileInfo)
         })
-        .catch(err => {
+        .catch((err) => {
           debug('Error trying to detect file type at end-of-stream:', err)
         })
     }
@@ -151,13 +151,13 @@ class StorageWriteStream extends Transform {
     debug('Committing temporary stream: ', this.temp.path)
     this.storage.ipfs
       .addFromFs(this.temp.path)
-      .then(async result => {
+      .then(async (result) => {
         const hash = result[0].hash
         debug('Stream committed as', hash)
         this.emit('committed', hash)
         await this.storage.ipfs.pin.add(hash)
       })
-      .catch(err => {
+      .catch((err) => {
         debug('Error committing stream', err)
         this.emit('error', err)
       })
@@ -324,7 +324,7 @@ class Storage {
     // content ID (of its own).
     // We need to instead return a stream immediately, that we eventually
     // decorate with the content ID when that's available.
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const stream = new StorageWriteStream(this)
       resolve(stream)
     })
@@ -336,7 +336,7 @@ class Storage {
     let found = false
     return await this.withSpecifiedTimeout(timeout, (resolve, reject) => {
       const ls = this.ipfs.getReadableStream(resolved)
-      ls.on('data', async result => {
+      ls.on('data', async (result) => {
         if (result.path === resolved) {
           found = true
 
@@ -344,7 +344,7 @@ class Storage {
           resolve(fixFileInfoOnStream(ftStream))
         }
       })
-      ls.on('error', err => {
+      ls.on('error', (err) => {
         ls.end()
         debug(err)
         reject(err)
@@ -375,7 +375,7 @@ class Storage {
     debug(`Pinning ${resolved}`)
 
     // This call blocks until file is retrieved..
-    this.ipfs.pin.add(resolved, { quiet: true, pin: true }, err => {
+    this.ipfs.pin.add(resolved, { quiet: true, pin: true }, (err) => {
       if (err) {
         debug(`Error Pinning: ${resolved}`)
         delete this.pins[resolved]

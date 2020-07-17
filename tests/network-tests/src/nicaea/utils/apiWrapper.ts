@@ -8,7 +8,7 @@ import { Lead, LeadId } from '@nicaea/types/content-working-group';
 import { Application, WorkerId, Worker, ApplicationIdToWorkerIdMap, Opening } from '@nicaea/types/working-group';
 import { Application as HiringApplication } from '@nicaea/types/hiring';
 import { RoleParameters } from '@nicaea/types/roles';
-import { Seat } from '@nicaea/types/lib/council';
+import { Seat } from '@nicaea/types/council';
 import { Balance, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces';
 import BN from 'bn.js';
 import { SubmittableExtrinsic } from '@polkadot/api/types';
