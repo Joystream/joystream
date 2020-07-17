@@ -2,7 +2,12 @@ import "reflect-metadata";
 import * as dotenv from "dotenv";
 import * as chalk from 'chalk';
 import * as figlet from 'figlet';
+<<<<<<< HEAD
 import * as commander from 'commander';
+=======
+import * as BN from 'bn.js';
+import { Command } from 'commander';
+>>>>>>> metmirr/qn_indexer_start_options
 import { configure, getLogger } from 'log4js';
 
 import { createConnection } from "typeorm";
@@ -104,9 +109,10 @@ function setUp(opts: any) {
 async function doBootstrap(node: QueryNodeManager) {
   await node.bootstrap({
     wsProviderURI: process.env.WS_PROVIDER_ENDPOINT_URI as string,
-    processingPack: getBootstrapPack() as BootstrapPack,
-    {{#typeRegistrator}} typeRegistrator: {{typeRegistrator}} {{/typeRegistrator}}
+    processingPack: getBootstrapPack(),
+    {{#typeRegistrator}}typeRegistrator: {{typeRegistrator}} {{/typeRegistrator}}
   });
+
   logger.info("Bootstrap done");
 }
 
@@ -115,6 +121,7 @@ async function main() {
   setUp(command);
   
   const providerUri = process.env.WS_PROVIDER_ENDPOINT_URI;
+  const atBlock = process.env.BLOCK_HEIGHT;
 
   if (!providerUri) {
     throw new Error(
@@ -140,9 +147,10 @@ async function main() {
   }
 
   node.start({
-    wsProviderURI: providerUri, 
-    processingPack: getProcessingPack() as QueryEventProcessingPack,
-    {{#typeRegistrator}} typeRegistrator: {{typeRegistrator}} {{/typeRegistrator}} 
+    wsProviderURI: providerUri,
+    processingPack: getProcessingPack(),
+    atBlock: atBlock && atBlock !== '0' ? new BN(atBlock) : undefined,
+    {{#typeRegistrator}}typeRegistrator: {{typeRegistrator}} {{/typeRegistrator}}
   });
 }
 
