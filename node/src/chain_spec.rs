@@ -328,7 +328,7 @@ pub fn testnet_genesis(
             set_content_working_group_mint_capacity_proposal_grace_period: cpcp
                 .set_content_working_group_mint_capacity_proposal_grace_period,
             set_lead_proposal_voting_period: cpcp.set_lead_proposal_voting_period,
-            set_lead_proposal_grace_period: cpcp.set_lead_proposal_voting_period,
+            set_lead_proposal_grace_period: cpcp.set_lead_proposal_grace_period,
             spending_proposal_voting_period: cpcp.spending_proposal_voting_period,
             spending_proposal_grace_period: cpcp.spending_proposal_grace_period,
             add_working_group_opening_proposal_voting_period: cpcp
