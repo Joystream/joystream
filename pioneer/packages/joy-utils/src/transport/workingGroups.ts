@@ -72,15 +72,14 @@ export default class WorkingGroupsTransport extends BaseTransport {
     const query = this.queryByGroup(group).openingById();
     const result = new MultipleLinkedMapEntry(OpeningId, WGOpening, await query);
 
-    const openingsData: OpeningData[] = [];
-    for (const [index, opening] of Object.entries(result.linked_values.toArray())) {
-      const id = result.linked_keys[parseInt(index)];
-      const hiringId = opening.hiring_opening_id;
-      const hiringOpening = (new SingleLinkedMapEntry(Opening, await this.hiring.openingById(hiringId))).value;
-      openingsData.push({ id, opening, hiringOpening });
-    }
-
-    return openingsData;
+    const { linked_keys: openingIds, linked_values: openings } = result;
+    return (await Promise.all(openings.map(opening => this.hiring.openingById(opening.hiring_opening_id))))
+      .map((hiringOpeningRes, index) => {
+        const id = openingIds[index];
+        const opening = openings[index];
+        const hiringOpening = (new SingleLinkedMapEntry(Opening, hiringOpeningRes)).value;
+        return { id, opening, hiringOpening };
+      });
   }
 
   public async activeOpenings (group: WorkingGroupKey, substage?: ActiveOpeningStageKey) {
