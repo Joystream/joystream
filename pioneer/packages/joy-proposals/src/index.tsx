@@ -7,6 +7,7 @@ import { Breadcrumb } from 'semantic-ui-react';
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
 import { TransportProvider } from '@polkadot/joy-utils/react/context';
 import { ProposalPreviewList, ProposalFromId, ChooseProposalType } from './Proposal';
+import _ from 'lodash';
 
 import './index.css';
 
@@ -50,6 +51,15 @@ function App (props: Props): React.ReactElement<Props> {
         <StyledHeader>
           <Breadcrumb>
             <Switch>
+              <Route path={`${basePath}/new/:type`} render={props => (
+                <>
+                  <Breadcrumb.Section link as={Link} to={basePath}>Proposals</Breadcrumb.Section>
+                  <Breadcrumb.Divider icon="right angle" />
+                  <Breadcrumb.Section link as={Link} to={`${basePath}/new`}>New proposal</Breadcrumb.Section>
+                  <Breadcrumb.Divider icon="right angle" />
+                  <Breadcrumb.Section active>{_.startCase(props.match.params.type)}</Breadcrumb.Section>
+                </>
+              )} />
               <Route path={`${basePath}/new`}>
                 <Breadcrumb.Section link as={Link} to={basePath}>Proposals</Breadcrumb.Section>
                 <Breadcrumb.Divider icon="right angle" />
