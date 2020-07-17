@@ -5,4 +5,5 @@ module.exports = {
   tabWidth: 2,
   semi: false,
   trailingComma: 'es5',
+  quoteProps: 'preserve'
 }

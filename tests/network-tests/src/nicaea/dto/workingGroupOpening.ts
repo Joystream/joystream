@@ -192,35 +192,35 @@ export class WorkingGroupOpening {
 
   public getCommitment() {
     return {
-      application_rationing_policy: { max_active_applicants: this.maxActiveApplicants },
-      max_review_period_length: this.maxReviewPeriodLength,
-      application_staking_policy: {
-        amount: this.applicationStakingPolicyAmount,
-        amount_mode: 'AtLeast',
-        crowded_out_unstaking_period_length: this.applicationCrowdedOutUnstakingPeriodLength,
-        review_period_expired_unstaking_period_length: this.applicationExpiredUnstakingPeriodLength,
+      'application_rationing_policy': { 'max_active_applicants': this.maxActiveApplicants },
+      'max_review_period_length': this.maxReviewPeriodLength,
+      'application_staking_policy': {
+        'amount': this.applicationStakingPolicyAmount,
+        'amount_mode': 'AtLeast',
+        'crowded_out_unstaking_period_length': this.applicationCrowdedOutUnstakingPeriodLength,
+        'review_period_expired_unstaking_period_length': this.applicationExpiredUnstakingPeriodLength,
       },
-      role_staking_policy: {
-        amount: this.roleStakingPolicyAmount,
-        amount_mode: 'AtLeast',
-        crowded_out_unstaking_period_length: this.roleCrowdedOutUnstakingPeriodLength,
-        review_period_expired_unstaking_period_length: this.roleExpiredUnstakingPeriodLength,
+      'role_staking_policy': {
+        'amount': this.roleStakingPolicyAmount,
+        'amount_mode': 'AtLeast',
+        'crowded_out_unstaking_period_length': this.roleCrowdedOutUnstakingPeriodLength,
+        'review_period_expired_unstaking_period_length': this.roleExpiredUnstakingPeriodLength,
       },
-      role_slashing_terms: {
-        Slashable: {
-          max_count: this.slashableMaxCount,
-          max_percent_pts_per_time: this.slashableMaxPercentPtsPerTime,
+      'role_slashing_terms': {
+        'Slashable': {
+          'max_count': this.slashableMaxCount,
+          'max_percent_pts_per_time': this.slashableMaxPercentPtsPerTime,
         },
       },
-      fill_opening_successful_applicant_application_stake_unstaking_period: this
+      'fill_opening_successful_applicant_application_stake_unstaking_period': this
         .successfulApplicantApplicationStakeUnstakingPeriod,
-      fill_opening_failed_applicant_application_stake_unstaking_period: this
+      'fill_opening_failed_applicant_application_stake_unstaking_period': this
         .failedApplicantApplicationStakeUnstakingPeriod,
-      fill_opening_failed_applicant_role_stake_unstaking_period: this.failedApplicantRoleStakeUnstakingPeriod,
-      terminate_application_stake_unstaking_period: this.terminateApplicationStakeUnstakingPeriod,
-      terminate_role_stake_unstaking_period: this.terminateRoleStakeUnstakingPeriod,
-      exit_role_application_stake_unstaking_period: this.exitRoleApplicationStakeUnstakingPeriod,
-      exit_role_stake_unstaking_period: this.exitRoleStakeUnstakingPeriod,
+      'fill_opening_failed_applicant_role_stake_unstaking_period': this.failedApplicantRoleStakeUnstakingPeriod,
+      'terminate_application_stake_unstaking_period': this.terminateApplicationStakeUnstakingPeriod,
+      'terminate_role_stake_unstaking_period': this.terminateRoleStakeUnstakingPeriod,
+      'exit_role_application_stake_unstaking_period': this.exitRoleApplicationStakeUnstakingPeriod,
+      'exit_role_stake_unstaking_period': this.exitRoleStakeUnstakingPeriod,
     }
   }
 }

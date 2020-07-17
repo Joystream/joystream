@@ -57,7 +57,7 @@ export class ApiWrapper {
     expectFailure = false
   ): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ handle: name, avatar_uri: '', about: '' })),
+      this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ 'handle': name, 'avatar_uri': '', 'about': '' })),
       account,
       expectFailure
     )
@@ -103,7 +103,7 @@ export class ApiWrapper {
 
   public estimateBuyMembershipFee(account: KeyringPair, paidTermsId: number, name: string): BN {
     return this.estimateTxFee(
-      this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ handle: name, avatar_uri: '', about: '' }))
+      this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ 'handle': name, 'avatar_uri': '', 'about': '' }))
     )
   }
 
@@ -275,9 +275,9 @@ export class ApiWrapper {
   public estimateFillOpeningFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
       this.api.tx[module].fillOpening(0, [0], {
-        amount_per_payout: 0,
-        next_payment_at_block: 0,
-        payout_interval: 0,
+        'amount_per_payout': 0,
+        'next_payment_at_block': 0,
+        'payout_interval': 0,
       })
     )
   }
@@ -325,6 +325,26 @@ export class ApiWrapper {
   }
 
   public estimateProposeCreateWorkingGroupLeaderOpeningFee(): BN {
+    const opening: WorkingGroupOpening = new WorkingGroupOpening()
+    opening.setActivateAtBlock(undefined)
+    opening.setMaxActiveApplicants(new BN(32))
+    opening.setMaxReviewPeriodLength(new BN(32))
+    opening.setApplicationStakingPolicyAmount(new BN(1))
+    opening.setApplicationCrowdedOutUnstakingPeriodLength(new BN(1))
+    opening.setApplicationExpiredUnstakingPeriodLength(new BN(1))
+    opening.setRoleStakingPolicyAmount(new BN(1))
+    opening.setRoleCrowdedOutUnstakingPeriodLength(new BN(1))
+    opening.setRoleExpiredUnstakingPeriodLength(new BN(1))
+    opening.setSlashableMaxCount(new BN(0))
+    opening.setSlashableMaxPercentPtsPerTime(new BN(0))
+    opening.setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1))
+    opening.setFailedApplicantApplicationStakeUnstakingPeriod(new BN(1))
+    opening.setFailedApplicantRoleStakeUnstakingPeriod(new BN(1))
+    opening.setTerminateApplicationStakeUnstakingPeriod(new BN(1))
+    opening.setTerminateRoleStakeUnstakingPeriod(new BN(1))
+    opening.setExitRoleApplicationStakeUnstakingPeriod(new BN(1))
+    opening.setExitRoleStakeUnstakingPeriod(new BN(1))
+
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
         0,
@@ -332,38 +352,10 @@ export class ApiWrapper {
         'some long description for the purpose of testing',
         0,
         {
-          activate_at: 'CurrentBlock',
-          commitment: {
-            application_rationing_policy: { max_active_applicants: '32' },
-            max_review_period_length: 32,
-            application_staking_policy: {
-              amount: 0,
-              amount_mode: 'AtLeast',
-              crowded_out_unstaking_period_length: 0,
-              review_period_expired_unstaking_period_length: 0,
-            },
-            role_staking_policy: {
-              amount: 0,
-              amount_mode: 'AtLeast',
-              crowded_out_unstaking_period_length: 0,
-              review_period_expired_unstaking_period_length: 0,
-            },
-            role_slashing_terms: {
-              Slashable: {
-                max_count: 0,
-                max_percent_pts_per_time: 0,
-              },
-            },
-            fill_opening_successful_applicant_application_stake_unstaking_period: 0,
-            fill_opening_failed_applicant_application_stake_unstaking_period: 0,
-            fill_opening_failed_applicant_role_stake_unstaking_period: 0,
-            terminate_curator_application_stake_unstaking_period: 0,
-            terminate_curator_role_stake_unstaking_period: 0,
-            exit_curator_role_application_stake_unstaking_period: 0,
-            exit_curator_role_stake_unstaking_period: 0,
-          },
-          human_readable_text: 'Opening readable text',
-          working_group: 'Storage',
+          'activate_at': opening.getActivateAt(),
+          'commitment': opening.getCommitment(),
+          'human_readable_text': 'Opening readable text',
+          'working_group': 'Storage',
         }
       )
     )
@@ -410,10 +402,10 @@ export class ApiWrapper {
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
         {
-          worker_id: 0,
-          rationale: 'Exceptionaly long and extraordinary descriptive rationale',
-          slash: true,
-          working_group: 'Storage',
+          'worker_id': 0,
+          'rationale': 'Exceptionaly long and extraordinary descriptive rationale',
+          'slash': true,
+          'working_group': 'Storage',
         }
       )
     )
@@ -1040,10 +1032,10 @@ export class ApiWrapper {
         description,
         proposalStake,
         {
-          activate_at: opening.getActivateAt(),
-          commitment: opening.getCommitment(),
-          human_readable_text: opening.getText(),
-          working_group: workingGroup,
+          'activate_at': opening.getActivateAt(),
+          'commitment': opening.getCommitment(),
+          'human_readable_text': opening.getText(),
+          'working_group': workingGroup,
         }
       ),
       account,
@@ -1090,10 +1082,10 @@ export class ApiWrapper {
         description,
         proposalStake,
         {
-          worker_id: leadWorkerId,
+          'worker_id': leadWorkerId,
           rationale,
           slash,
-          working_group: workingGroup,
+          'working_group': workingGroup,
         }
       ),
       account,
@@ -1281,9 +1273,9 @@ export class ApiWrapper {
   ): Promise<void> {
     return this.sender.signAndSend(
       this.api.tx[module].fillOpening(openingId, applicationId, {
-        amount_per_payout: amountPerPayout,
-        next_payment_at_block: nextPaymentBlock,
-        payout_interval: payoutInterval,
+        'amount_per_payout': amountPerPayout,
+        'next_payment_at_block': nextPaymentBlock,
+        'payout_interval': payoutInterval,
       }),
       leader,
       false
@@ -1302,9 +1294,9 @@ export class ApiWrapper {
     return this.sender.signAndSend(
       this.api.tx.sudo.sudo(
         this.api.tx[module].fillOpening(openingId, applicationId, {
-          amount_per_payout: amountPerPayout,
-          next_payment_at_block: nextPaymentBlock,
-          payout_interval: payoutInterval,
+          'amount_per_payout': amountPerPayout,
+          'next_payment_at_block': nextPaymentBlock,
+          'payout_interval': payoutInterval,
         })
       ),
       sudo,

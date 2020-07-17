@@ -35,7 +35,7 @@ export class ApiWrapper {
     expectFailure = false
   ): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ handle: name, avatar_uri: '', about: '' })),
+      this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ 'handle': name, 'avatar_uri': '', 'about': '' })),
       account,
       expectFailure
     )
@@ -81,7 +81,7 @@ export class ApiWrapper {
 
   public estimateBuyMembershipFee(account: KeyringPair, paidTermsId: number, name: string): BN {
     return this.estimateTxFee(
-      this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ handle: name, avatar_uri: '', about: '' }))
+      this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ 'handle': name, 'avatar_uri': '', 'about': '' }))
     )
   }
 

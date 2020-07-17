@@ -46,4 +46,8 @@ export class Utils {
   public static readRuntimeFromFile(path: string): string {
     return '0x' + fs.readFileSync(path).toString('hex')
   }
+
+  public static camelToSnakeCase(key: string): string {
+    return key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+  }
 }

@@ -1,4 +1,5 @@
 import BN from 'bn.js'
+import { RewardPolicy } from '@nicaea/types/working-group'
 
 export class FillOpeningParameters {
   private amountPerPayout!: BN
@@ -62,18 +63,18 @@ export class FillOpeningParameters {
 
   public getRewardPolicy() {
     return {
-      amount_per_payout: this.amountPerPayout,
-      next_payment_at_block: this.nextPaymentAtBlock,
-      payout_interval: this.payoutInterval,
+      'amount_per_payout': this.amountPerPayout,
+      'next_payment_at_block': this.nextPaymentAtBlock,
+      'payout_interval': this.payoutInterval,
     }
   }
 
   public getFillOpeningParameters() {
     return {
-      opening_id: this.openingId,
-      successful_application_id: this.successfulApplicationId,
-      reward_policy: this.getRewardPolicy(),
-      working_group: this.workingGroup,
+      'opening_id': this.openingId,
+      'successful_application_id': this.successfulApplicationId,
+      'reward_policy': this.getRewardPolicy(),
+      'working_group': this.workingGroup,
     }
   }
 }
