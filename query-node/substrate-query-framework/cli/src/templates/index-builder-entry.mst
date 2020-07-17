@@ -2,12 +2,8 @@ import "reflect-metadata";
 import * as dotenv from "dotenv";
 import * as chalk from 'chalk';
 import * as figlet from 'figlet';
-<<<<<<< HEAD
 import * as commander from 'commander';
-=======
 import * as BN from 'bn.js';
-import { Command } from 'commander';
->>>>>>> metmirr/qn_indexer_start_options
 import { configure, getLogger } from 'log4js';
 
 import { createConnection } from "typeorm";
