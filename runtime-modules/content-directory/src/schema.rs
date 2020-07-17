@@ -454,8 +454,7 @@ impl<T: Trait> Property<T> {
         &self,
         value: &InputPropertyValue<T>,
     ) -> dispatch::Result {
-        let single_value = value
-            .as_single_value();
+        let single_value = value.as_single_value();
 
         match (single_value, &self.property_type.as_single_value_type()) {
             (Some(InputValue::Text(text)), Some(Type::Text(text_max_len))) => {
@@ -501,11 +500,9 @@ impl<T: Trait> Property<T> {
         &self,
         value: &InputPropertyValue<T>,
     ) -> dispatch::Result {
-        let (vec_value, vec_property_type) = if let (Some(vec_value), Some(vec_property_type)) = (
-            value
-                .as_vec_value(),
-            self.property_type.as_vec_type(),
-        ) {
+        let (vec_value, vec_property_type) = if let (Some(vec_value), Some(vec_property_type)) =
+            (value.as_vec_value(), self.property_type.as_vec_type())
+        {
             (vec_value, vec_property_type)
         } else {
             return Ok(());
@@ -568,43 +565,33 @@ impl<T: Trait> Property<T> {
             (
                 InputPropertyValue::Single(single_property_value),
                 PropertyType::Single(ref single_property_type),
-            ) => {
-                match (
-                    single_property_value,
-                    single_property_type.deref(),
-                ) {
-                    (InputValue::Bool(_), Type::Bool)
-                    | (InputValue::Uint16(_), Type::Uint16)
-                    | (InputValue::Uint32(_), Type::Uint32)
-                    | (InputValue::Uint64(_), Type::Uint64)
-                    | (InputValue::Int16(_), Type::Int16)
-                    | (InputValue::Int32(_), Type::Int32)
-                    | (InputValue::Int64(_), Type::Int64)
-                    | (InputValue::Text(_), Type::Text(_))
-                    | (InputValue::Reference(_), Type::Reference(_, _)) => true,
-                    _ => false,
-                }
-            }
+            ) => match (single_property_value, single_property_type.deref()) {
+                (InputValue::Bool(_), Type::Bool)
+                | (InputValue::Uint16(_), Type::Uint16)
+                | (InputValue::Uint32(_), Type::Uint32)
+                | (InputValue::Uint64(_), Type::Uint64)
+                | (InputValue::Int16(_), Type::Int16)
+                | (InputValue::Int32(_), Type::Int32)
+                | (InputValue::Int64(_), Type::Int64)
+                | (InputValue::Text(_), Type::Text(_))
+                | (InputValue::Reference(_), Type::Reference(_, _)) => true,
+                _ => false,
+            },
             (
                 InputPropertyValue::Vector(vec_value),
                 PropertyType::Vector(ref vec_property_type),
-            ) => {
-                match (
-                    vec_value,
-                    vec_property_type.get_vec_type(),
-                ) {
-                    (VecInputValue::Bool(_), Type::Bool)
-                    | (VecInputValue::Uint16(_), Type::Uint16)
-                    | (VecInputValue::Uint32(_), Type::Uint32)
-                    | (VecInputValue::Uint64(_), Type::Uint64)
-                    | (VecInputValue::Int16(_), Type::Int16)
-                    | (VecInputValue::Int32(_), Type::Int32)
-                    | (VecInputValue::Int64(_), Type::Int64)
-                    | (VecInputValue::Text(_), Type::Text(_))
-                    | (VecInputValue::Reference(_), Type::Reference(_, _)) => true,
-                    _ => false,
-                }
-            }
+            ) => match (vec_value, vec_property_type.get_vec_type()) {
+                (VecInputValue::Bool(_), Type::Bool)
+                | (VecInputValue::Uint16(_), Type::Uint16)
+                | (VecInputValue::Uint32(_), Type::Uint32)
+                | (VecInputValue::Uint64(_), Type::Uint64)
+                | (VecInputValue::Int16(_), Type::Int16)
+                | (VecInputValue::Int32(_), Type::Int32)
+                | (VecInputValue::Int64(_), Type::Int64)
+                | (VecInputValue::Text(_), Type::Text(_))
+                | (VecInputValue::Reference(_), Type::Reference(_, _)) => true,
+                _ => false,
+            },
             _ => false,
         }
     }
@@ -624,10 +611,8 @@ impl<T: Trait> Property<T> {
                 if let (
                     InputValue::Reference(entity_id),
                     Type::Reference(class_id, same_controller_status),
-                ) = (
-                    single_property_value,
-                    single_property_type.deref(),
-                ) {
+                ) = (single_property_value, single_property_type.deref())
+                {
                     // Ensure class_id of Entity under provided entity_id references Entity,
                     // which class_id is equal to class_id, declared in corresponding PropertyType
                     // Retrieve corresponding Entity
@@ -642,17 +627,12 @@ impl<T: Trait> Property<T> {
                     )?;
                 }
             }
-            (
-                InputPropertyValue::Vector(vec_value),
-                PropertyType::Vector(vec_property_type),
-            ) => {
+            (InputPropertyValue::Vector(vec_value), PropertyType::Vector(vec_property_type)) => {
                 if let (
                     VecInputValue::Reference(entity_ids),
                     Type::Reference(class_id, same_controller_status),
-                ) = (
-                    vec_value,
-                    vec_property_type.get_vec_type(),
-                ) {
+                ) = (vec_value, vec_property_type.get_vec_type())
+                {
                     for entity_id in entity_ids.iter() {
                         // Ensure class_id of Entity under provided entity_id references Entity,
                         // which class_id is equal to class_id, declared in corresponding PropertyType
