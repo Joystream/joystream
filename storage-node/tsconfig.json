@@ -9,15 +9,12 @@
     "esModuleInterop": true,
     "baseUrl": ".",
     "skipLibCheck": true,
-    "types" : [ "node", "mocha" ]
+    "types": ["node", "mocha"]
   },
   "files": [],
-  "exclude": [
-    "**/node_modules/*",
-    "build"
-  ],
+  "exclude": ["**/node_modules/*", "build"],
   "references": [
     { "path": "packages/cli" }
- //   { "path": "packages/storage" }
+    //   { "path": "packages/storage" }
   ]
 }

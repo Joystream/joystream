@@ -1,0 +1,4 @@
+- name: create testing node docker image
+  shell: ./scripts/build-joystream-testing-node-docker-image.sh
+  args:
+    chdir: ../../
