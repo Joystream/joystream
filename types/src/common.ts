@@ -96,6 +96,13 @@ export class InputValidationLengthConstraint extends JoyStruct<InputValidationLe
       }, value);
     }
 
+    static createWithMaxAllowed() {
+      return new InputValidationLengthConstraint({
+        min: new u16(1),
+        max_min_diff: new u16(65534) // Max allowed without causing u16 overflow
+      })
+    }
+
     get min (): u16 {
       return this.getField('min');
     }
@@ -112,7 +119,7 @@ export class InputValidationLengthConstraint extends JoyStruct<InputValidationLe
 export const WorkingGroupDef = {
   Storage: Null
 } as const;
-export type WorkingGroupKeys = keyof typeof WorkingGroupDef;
+export type WorkingGroupKey = keyof typeof WorkingGroupDef;
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) { };
 
 export function registerCommonTypes() {

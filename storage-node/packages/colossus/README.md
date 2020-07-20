@@ -1,7 +1,6 @@
 ![Storage Nodes for Joystream](../../banner.svg)
 
-Development
------------
+## Development
 
 Run a development server (an ipfs node and development chain should be running on the local machine)
 
@@ -16,9 +15,7 @@ The setup can be done by running the dev-init command for the storage-cli:
 yarn storage-cli dev-init
 ```
 
-
-Command-Line
-------------
+## Command-Line
 
 ```sh
 $ yarn colossus --help
@@ -50,9 +47,7 @@ $ yarn colossus --help
 To run a storage server in production you will need to enroll on the network first to
 obtain your provider-id and role account.
 
-
-API Packages
-------------
+## API Packages
 
 Since it's not entirely clear yet how APIs will develop in future, the approach
 taken here is to package individual APIs up individually. That is, instead of
@@ -62,11 +57,10 @@ API package's path.
 For example, for a `foo` API in its version `v1`, its definitions should live
 in `./paths/foo/v1.js` and `./paths/foo/v1/*.js` respectively.
 
-*Note:* until a reasonably stable API is reached, this project uses a `v0`
+_Note:_ until a reasonably stable API is reached, this project uses a `v0`
 version prefix.
 
-Interface/implementation
-------------------------
+## Interface/implementation
 
 For reusability across API versions, it's best to keep files in the `paths`
 subfolder very thin, and instead inject implementations via the `dependencies`
@@ -75,8 +69,7 @@ configuration value of `express-openapi`.
 These implementations line to the `./lib` subfolder. Adjust `app.js` as
 needed to make them available to API packages.
 
-Streaming Notes
----------------
+## Streaming Notes
 
 For streaming content, it is required that stream metadata is located at the
 start of the stream. Most software writes metadata at the end of the stream,

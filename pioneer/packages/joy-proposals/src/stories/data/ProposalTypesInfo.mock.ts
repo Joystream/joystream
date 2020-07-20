@@ -1,5 +1,5 @@
 import { ProposalTypeInfo } from '../../Proposal/ProposalTypePreview';
-import { Categories } from '../../Proposal/ChooseProposalType';
+import { Categories } from '@polkadot/joy-utils/types/proposals';
 
 const MockProposalTypesInfo: ProposalTypeInfo[] = [
   {
@@ -52,7 +52,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
   },
   {
     type: 'EvictStorageProvider',
-    category: Categories.storage,
+    category: Categories.other,
     description:
         'Change the total reward across all validators in a given block.' +
         'This is not the direct reward, but base reward for Pallet staking module.' +
@@ -68,7 +68,7 @@ const MockProposalTypesInfo: ProposalTypeInfo[] = [
   },
   {
     type: 'SetStorageRoleParameters',
-    category: Categories.storage,
+    category: Categories.other,
     description:
         'Change the total reward across all validators in a given block.' +
         'This is not the direct reward, but base reward for Pallet staking module.' +

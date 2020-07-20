@@ -65,7 +65,7 @@ class RuntimeApi {
 
     // Ok, create individual APIs
     this.identities = await IdentitiesApi.create(this, {
-      account_file: options.account_file,
+      accountFile: options.account_file,
       passphrase: options.passphrase,
       canPromptForPassphrase: options.canPromptForPassphrase,
     })
