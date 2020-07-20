@@ -12,7 +12,6 @@ mod tests;
 use codec::{Codec, Decode, Encode};
 use frame_support::traits::Currency;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
-use rstd::borrow::ToOwned;
 use sp_arithmetic::traits::{BaseArithmetic, One};
 use sp_runtime::traits::{MaybeSerialize, Member};
 use system::{self, ensure_root, ensure_signed};

@@ -1,25 +1,18 @@
 #![cfg(test)]
 
 pub use crate::{GenesisConfig, Trait, DEFAULT_PAID_TERM_ID};
-pub use common::currency::GovernanceCurrency;
+
 pub use frame_support::traits::Currency;
 use frame_support::{impl_outer_origin, parameter_types};
-pub use system;
-
-// pub use primitives::{Blake2Hasher, H256};
-// pub use sr_primitives::{
-//     testing::{Digest, DigestItem, Header, UintAuthorityId},
-//     traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize},
-//     weights::Weight,
-//     BuildStorage, Perbill,
-// };
-
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
+pub use system;
+
+pub use common::currency::GovernanceCurrency;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
