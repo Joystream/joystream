@@ -1,0 +1,24 @@
+FROM node:12-alpine
+
+RUN yarn global add typescript
+RUN yarn global add ts-node
+
+WORKDIR /home/node
+
+# BUILD GraphQL server first to enable imports of the generated entity classes
+COPY --from=hydra-graphql-server:latest --chown=node:node /home/node/generated/graphql-server ./generated/graphql-server
+COPY --chown=node:node ./generated/indexer ./generated/indexer/
+COPY --chown=node:node ./mappings ./mappings/
+COPY --chown=node:node ./bootstrap ./bootrstrap/
+COPY --chown=node:node ./package.json ./
+
+RUN yarn install
+
+USER node
+
+WORKDIR /home/node/generated/indexer
+RUN yarn install
+
+ENTRYPOINT []
+# options: bootstrap, bootstrap:dev, start:dev
+CMD ["yarn", "start"]
