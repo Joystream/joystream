@@ -37,7 +37,7 @@ function parseRange(range) {
     throw new Error(`Not a valid range: ${range}`)
   }
 
-  const vals = matches[1].split('-').map(v => {
+  const vals = matches[1].split('-').map((v) => {
     return v === '*' || v === '' ? undefined : parseInt(v, 10)
   })
 
@@ -68,12 +68,12 @@ function parse(rangeStr) {
 
   // Parse individual ranges
   const ranges = []
-  res.rangeStr.split(',').forEach(range => {
+  res.rangeStr.split(',').forEach((range) => {
     ranges.push(parseRange(range))
   })
 
   // Merge ranges into result.
-  ranges.forEach(newRange => {
+  ranges.forEach((newRange) => {
     debug('Found range:', newRange)
 
     let isMerged = false

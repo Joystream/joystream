@@ -14,16 +14,18 @@ export class OpeningId extends u64 { };
 export class CurrentBlock extends Null { };
 export class ExactBlock extends u32 { }; // BlockNumber
 
-export class ActivateOpeningAt extends Enum {
-  constructor(value?: any, index?: number) {
-    super(
-      {
-        CurrentBlock,
-        ExactBlock,
-      },
-      value, index);
-  }
-}
+
+export const ActivateOpeningAtDef = {
+  CurrentBlock,
+  ExactBlock,
+} as const;
+export const ActivateOpeningAtKeys: { [k in keyof typeof ActivateOpeningAtDef]: k } = {
+  CurrentBlock: 'CurrentBlock',
+  ExactBlock: 'ExactBlock'
+} as const;
+export type ActivateOpeningAtKey = keyof typeof ActivateOpeningAtDef;
+// TODO: Replace with JoyEnum
+export class ActivateOpeningAt extends Enum.with(ActivateOpeningAtDef) { }
 
 export enum ApplicationDeactivationCauseKeys {
   External = 'External',

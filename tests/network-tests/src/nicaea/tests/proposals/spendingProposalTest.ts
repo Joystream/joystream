@@ -1,17 +1,17 @@
 import { KeyringPair } from '@polkadot/keyring/types';
 import { membershipTest } from '../impl/membershipCreation';
 import { councilTest } from '../impl/electingCouncil';
-import { workingGroupMintCapacityProposalTest } from './impl/workingGroupMintCapacityProposal';
+import { spendingProposalTest } from './impl/spendingProposal';
 import { initConfig } from '../../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import BN from 'bn.js';
 import { setTestTimeout } from '../../utils/setTestTimeout';
 import tap from 'tap';
-import { registerJoystreamTypes } from '@constantinople/types';
+import { registerJoystreamTypes } from '@nicaea/types';
 import { closeApi } from '../impl/closeApi';
 import { ApiWrapper } from '../../utils/apiWrapper';
 
-tap.mocha.describe('Validator count proposal scenario', async () => {
+tap.mocha.describe('Spending proposal scenario', async () => {
   initConfig();
   registerJoystreamTypes();
 
@@ -26,7 +26,8 @@ tap.mocha.describe('Validator count proposal scenario', async () => {
   const K: number = +process.env.COUNCIL_ELECTION_K!;
   const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!);
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!);
-  const mintingCapacityIncrement: BN = new BN(+process.env.MINTING_CAPACITY_INCREMENT!);
+  const spendingBalance: BN = new BN(+process.env.SPENDING_BALANCE!);
+  const mintCapacity: BN = new BN(+process.env.COUNCIL_MINTING_CAPACITY!);
   const durationInBlocks: number = 29;
 
   const provider = new WsProvider(nodeUrl);
@@ -36,6 +37,6 @@ tap.mocha.describe('Validator count proposal scenario', async () => {
   membershipTest(apiWrapper, m1KeyPairs, keyring, N, paidTerms, sudoUri);
   membershipTest(apiWrapper, m2KeyPairs, keyring, N, paidTerms, sudoUri);
   councilTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, K, sudoUri, greaterStake, lesserStake);
-  workingGroupMintCapacityProposalTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, sudoUri, mintingCapacityIncrement);
+  spendingProposalTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, sudoUri, spendingBalance, mintCapacity);
   closeApi(apiWrapper);
 });

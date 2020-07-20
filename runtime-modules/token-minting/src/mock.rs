@@ -53,6 +53,10 @@ impl system::Trait for Test {
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
+    pub const TransferFee: u32 = 0;
+    pub const CreationFee: u32 = 0;
+    pub const TransactionBaseFee: u32 = 1;
+    pub const TransactionByteFee: u32 = 0;
 }
 
 impl balances::Trait for Test {

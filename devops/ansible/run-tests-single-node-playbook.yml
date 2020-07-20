@@ -1,0 +1,24 @@
+- hosts: 127.0.0.1
+  user: root
+  become: yes
+  become_method: sudo
+  tasks:
+    - name: run network
+      block:
+        - name: run docker container
+          docker_container:
+            name: "joystream-node-testing"
+            image: "joystream/node-testing"
+            ports:
+              - "9944:9944"
+            entrypoint: ./node --chain=chainspec.json --alice --validator --ws-external --rpc-cors=all
+            state: started
+        - name: execute network tests
+          shell: yarn debug >> ../../.tmp/tests.log
+          args:
+            chdir: ../../tests/network-tests/
+      always:
+        - name: stop docker container
+          docker_container:
+            name: "joystream-node-testing"
+            state: absent

@@ -1,6 +1,6 @@
 import { ProposalType, ProposalMeta } from '../types/proposals';
 
-const metadata: { [k in ProposalType]: ProposalMeta } = {
+export const metadata: { [k in ProposalType]: ProposalMeta } = {
   EvictStorageProvider: {
     description: 'Evicting Storage Provider Proposal',
     category: 'Storage',
@@ -81,7 +81,63 @@ const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalThreshold: 100,
     slashingQuorum: 60,
     slashingThreshold: 80
+  },
+  AddWorkingGroupLeaderOpening: {
+    description: 'Add Working Group Leader Opening Proposal',
+    category: 'Other',
+    stake: 100000,
+    approvalQuorum: 60,
+    approvalThreshold: 80,
+    slashingQuorum: 60,
+    slashingThreshold: 80
   }
 };
+
+type ProposalsApiMethodNames = {
+  votingPeriod: string;
+  gracePeriod: string;
+}
+export const apiMethods: { [k in ProposalType]: ProposalsApiMethodNames } = {
+  EvictStorageProvider: {
+    votingPeriod: 'evictStorageProviderProposalVotingPeriod',
+    gracePeriod: 'evictStorageProviderProposalPeriod'
+  },
+  Text: {
+    votingPeriod: 'textProposalVotingPeriod',
+    gracePeriod: 'textProposalGracePeriod'
+  },
+  SetStorageRoleParameters: {
+    votingPeriod: 'setStorageRoleParametersProposalVotingPeriod',
+    gracePeriod: 'setStorageRoleParametersProposalGracePeriod'
+  },
+  SetValidatorCount: {
+    votingPeriod: 'setValidatorCountProposalVotingPeriod',
+    gracePeriod: 'setValidatorCountProposalGracePeriod'
+  },
+  SetLead: {
+    votingPeriod: 'setLeadProposalVotingPeriod',
+    gracePeriod: 'setLeadProposalGracePeriod'
+  },
+  SetContentWorkingGroupMintCapacity: {
+    votingPeriod: 'setContentWorkingGroupMintCapacityProposalVotingPeriod',
+    gracePeriod: 'setContentWorkingGroupMintCapacityProposalGracePeriod'
+  },
+  Spending: {
+    votingPeriod: 'spendingProposalVotingPeriod',
+    gracePeriod: 'spendingProposalGracePeriod'
+  },
+  SetElectionParameters: {
+    votingPeriod: 'setElectionParametersProposalVotingPeriod',
+    gracePeriod: 'setElectionParametersProposalGracePeriod'
+  },
+  RuntimeUpgrade: {
+    votingPeriod: 'runtimeUpgradeProposalVotingPeriod',
+    gracePeriod: 'runtimeUpgradeProposalGracePeriod'
+  },
+  AddWorkingGroupLeaderOpening: {
+    votingPeriod: 'addWorkingGroupOpeningProposalVotingPeriod',
+    gracePeriod: 'addWorkingGroupOpeningProposalGracePeriod'
+  }
+} as const;
 
 export default metadata;

@@ -9,3 +9,4 @@ export { default as RuntimeUpgradeForm } from './RuntimeUpgradeForm';
 export { default as SetContentWorkingGroupMintCapForm } from './SetContentWorkingGroupMintCapForm';
 export { default as SetCouncilMintCapForm } from './SetCouncilMintCapForm';
 export { default as SetMaxValidatorCountForm } from './SetMaxValidatorCountForm';
+export { default as AddWorkingGroupOpeningForm } from './AddWorkingGroupOpeningForm';

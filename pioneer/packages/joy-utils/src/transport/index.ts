@@ -6,6 +6,7 @@ import MembersTransport from './members';
 import CouncilTransport from './council';
 import StorageProvidersTransport from './storageProviders';
 import ValidatorsTransport from './validators';
+import WorkingGroupsTransport from './workingGroups';
 
 export default class Transport {
   protected api: ApiPromise;
@@ -17,6 +18,7 @@ export default class Transport {
   public contentWorkingGroup: ContentWorkingGroupTransport;
   public storageProviders: StorageProvidersTransport;
   public validators: ValidatorsTransport;
+  public workingGroups: WorkingGroupsTransport;
 
   constructor (api: ApiPromise) {
     this.api = api;
@@ -27,5 +29,6 @@ export default class Transport {
     this.council = new CouncilTransport(api, this.members, this.chain);
     this.contentWorkingGroup = new ContentWorkingGroupTransport(api, this.members);
     this.proposals = new ProposalsTransport(api, this.members, this.chain, this.council);
+    this.workingGroups = new WorkingGroupsTransport(api, this.members);
   }
 }

@@ -6,7 +6,7 @@ mod working_group_proposals;
 
 use crate::{BlockNumber, ElectionParameters, ProposalCancellationFee, Runtime};
 use codec::Encode;
-use membership::members;
+use membership;
 use proposals_engine::{
     ActiveStake, ApprovedProposalStatus, BalanceOf, Error, FinalizationData, Proposal,
     ProposalDecisionStatus, ProposalParameters, ProposalStatus, VoteKind, VotersParameters,
@@ -25,7 +25,7 @@ use crate::CouncilManager;
 
 pub type Balances = balances::Module<Runtime>;
 pub type System = system::Module<Runtime>;
-pub type Membership = membership::members::Module<Runtime>;
+pub type Membership = membership::Module<Runtime>;
 pub type ProposalsEngine = proposals_engine::Module<Runtime>;
 pub type Council = governance::council::Module<Runtime>;
 pub type Election = governance::election::Module<Runtime>;
@@ -42,11 +42,9 @@ fn setup_members(count: u8) {
         Membership::add_screened_member(
             RawOrigin::Signed(authority_account_id.clone().into()).into(),
             account_id.clone().into(),
-            members::UserInfo {
-                handle: Some(account_id.to_vec()),
-                avatar_uri: None,
-                about: None,
-            },
+            Some(account_id.to_vec()),
+            None,
+            None,
         )
         .unwrap();
     }

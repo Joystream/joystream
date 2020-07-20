@@ -48,9 +48,7 @@ use super::council;
 use crate::election_params::ElectionParameters;
 pub use common::currency::{BalanceOf, GovernanceCurrency};
 
-pub trait Trait:
-    system::Trait + council::Trait + GovernanceCurrency + membership::members::Trait
-{
+pub trait Trait: system::Trait + council::Trait + GovernanceCurrency + membership::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type CouncilElected: CouncilElected<Seats<Self::AccountId, BalanceOf<Self>>, Self::BlockNumber>;
@@ -213,7 +211,7 @@ impl<T: Trait> Module<T> {
 
     fn can_participate(sender: &T::AccountId) -> bool {
         !<T as GovernanceCurrency>::Currency::free_balance(sender).is_zero()
-            && <membership::members::Module<T>>::is_member_account(sender)
+            && <membership::Module<T>>::is_member_account(sender)
     }
 
     // PUBLIC IMMUTABLES

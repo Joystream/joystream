@@ -1,0 +1,766 @@
+[
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "createClass",
+		"args": [
+			"0x4d65646961204f626a656374",
+			"0x436c61737320666f72207265736f6c76696e67206120636f6e74656e7420656e7469747920746f20616e2061637475616c206d656469612066696c65206f72206c696e6b2e",
+			{
+				"entity_permissions": { "update": [0, 1, 2], "maintainer_has_all_permissions": true },
+				"entities_can_be_created": true,
+				"add_schemas": [0],
+				"create_entities": [0, 1, 2],
+				"reference_constraint": { "NoConstraint": null },
+				"admins": [0],
+				"last_permissions_update": 0
+			}
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "createClass",
+		"args": [
+			"0x4c616e6775616765",
+			"0x436c61737320666f722073657474696e67206c616e67756167652e",
+			{
+				"entity_permissions": { "update": [0], "maintainer_has_all_permissions": true },
+				"entities_can_be_created": true,
+				"add_schemas": [0],
+				"create_entities": [0],
+				"reference_constraint": { "NoConstraint": null },
+				"admins": [0],
+				"last_permissions_update": 0
+			}
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "createClass",
+		"args": [
+			"0x436f6e74656e74204c6963656e7365",
+			"0x436c61737320666f722073706563696679696e6720746865206c6963656e736520756e64657220776869636820636f6e74656e74206973207075626c69736865642e",
+			{
+				"entity_permissions": { "update": [0], "maintainer_has_all_permissions": true },
+				"entities_can_be_created": true,
+				"add_schemas": [0],
+				"create_entities": [0],
+				"reference_constraint": { "NoConstraint": null },
+				"admins": [0],
+				"last_permissions_update": 0
+			}
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "createClass",
+		"args": [
+			"0x5075626c69636174696f6e20537461747573",
+			"0x436c61737320666f722073657474696e6720746865207075626c69636174696f6e20737461747573206f66206120636f6e74656e7420656e746974792e",
+			{
+				"entity_permissions": { "update": [0], "maintainer_has_all_permissions": true },
+				"entities_can_be_created": true,
+				"add_schemas": [0],
+				"create_entities": [0],
+				"reference_constraint": { "NoConstraint": null },
+				"admins": [0],
+				"last_permissions_update": 0
+			}
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "createClass",
+		"args": [
+			"0x4375726174696f6e20537461747573",
+			"0x436c61737320666f722063757261746f727320746f2073657420746865207075626c69636174696f6e20737461747573206f66206120636f6e74656e7420656e746974792e",
+			{
+				"entity_permissions": { "update": [0], "maintainer_has_all_permissions": true },
+				"entities_can_be_created": true,
+				"add_schemas": [0],
+				"create_entities": [0],
+				"reference_constraint": { "NoConstraint": null },
+				"admins": [0],
+				"last_permissions_update": 0
+			}
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "createClass",
+		"args": [
+			"0x466561747572656420436f6e74656e74",
+			"0x436c61737320666f722073657474696e6720666561747572656420636f6e74656e74206f6e2074686520706c6174666f726d2e",
+			{
+				"entity_permissions": { "update": [0], "maintainer_has_all_permissions": true },
+				"entities_can_be_created": true,
+				"add_schemas": [0],
+				"create_entities": [0],
+				"reference_constraint": { "NoConstraint": null },
+				"admins": [0],
+				"last_permissions_update": 0
+			}
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "createClass",
+		"args": [
+			"0x566964656f",
+			"0x436c61737320666f722067656e6572616c20766964656f73206e6f742061737369676e61626c6520746f2061206d6f726520737065636966696320766964656f20636f6e74656e7420747970652e",
+			{
+				"entity_permissions": { "update": [0, 1, 2], "maintainer_has_all_permissions": true },
+				"entities_can_be_created": true,
+				"add_schemas": [0],
+				"create_entities": [0, 1, 2],
+				"reference_constraint": { "NoConstraint": null },
+				"admins": [0],
+				"last_permissions_update": 0
+			}
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "createClass",
+		"args": [
+			"0x566964656f2043617465676f7279",
+			"0x436c61737320666f722073657474696e67207468652063617465676f727920666f7220766964656f7320696e2074686520566964656f20636c6173732e",
+			{
+				"entity_permissions": { "update": [0], "maintainer_has_all_permissions": true },
+				"entities_can_be_created": true,
+				"add_schemas": [0],
+				"create_entities": [0],
+				"reference_constraint": { "NoConstraint": null },
+				"admins": [0],
+				"last_permissions_update": 0
+			}
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "createClass",
+		"args": [
+			"0x4d7573696320416c62756d",
+			"0x416e20616c62756d206973206120636f6c6c656374696f6e206f6620747261636b73206f7220617564696f207265636f7264696e67732e20557375616c6c7920627920612073696e676c6520617274697374206f722067726f75702e",
+			{
+				"entity_permissions": { "update": [0, 1, 2], "maintainer_has_all_permissions": true },
+				"entities_can_be_created": true,
+				"add_schemas": [0],
+				"create_entities": [0, 1, 2],
+				"reference_constraint": { "NoConstraint": null },
+				"admins": [0],
+				"last_permissions_update": 0
+			}
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "createClass",
+		"args": [
+			"0x4d757369632047656e7265",
+			"0x436c61737320666f722073657474696e67207468652067656e726520666f72206d757369632e",
+			{
+				"entity_permissions": { "update": [0], "maintainer_has_all_permissions": true },
+				"entities_can_be_created": true,
+				"add_schemas": [0],
+				"create_entities": [0],
+				"reference_constraint": { "NoConstraint": null },
+				"admins": [0],
+				"last_permissions_update": 0
+			}
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "createClass",
+		"args": [
+			"0x4d75736963204d6f6f64",
+			"0x436c61737320666f722073657474696e6720746865206d6f6f647320666f72206d757369632e",
+			{
+				"entity_permissions": { "update": [0], "maintainer_has_all_permissions": true },
+				"entities_can_be_created": true,
+				"add_schemas": [0],
+				"create_entities": [0],
+				"reference_constraint": { "NoConstraint": null },
+				"admins": [0],
+				"last_permissions_update": 0
+			}
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "createClass",
+		"args": [
+			"0x4d75736963205468656d65",
+			"0x436c61737320666f722073657474696e6720746865207468656d657320666f72206d757369632e",
+			{
+				"entity_permissions": { "update": [0], "maintainer_has_all_permissions": true },
+				"entities_can_be_created": true,
+				"add_schemas": [0],
+				"create_entities": [0],
+				"reference_constraint": { "NoConstraint": null },
+				"admins": [0],
+				"last_permissions_update": 0
+			}
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "createClass",
+		"args": [
+			"0x4d7573696320547261636b",
+			"0x4120747261636b20697320616e20696e646976696475616c20736f6e67206f7220696e737472756d656e74616c207265636f7264696e672e",
+			{
+				"entity_permissions": { "update": [0, 1, 2], "maintainer_has_all_permissions": true },
+				"entities_can_be_created": true,
+				"add_schemas": [0],
+				"create_entities": [0, 1, 2],
+				"reference_constraint": { "NoConstraint": null },
+				"admins": [0],
+				"last_permissions_update": 0
+			}
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "addClassSchema",
+		"args": [
+			0,
+			1,
+			[],
+			[
+				{
+					"prop_type": { "Text": 48 },
+					"required": true,
+					"name": "Value",
+					"description": "ContentId of object in the data directory"
+				},
+				{
+					"prop_type": { "Uint64": null },
+					"required": false,
+					"name": "Channel Id",
+					"description": "Id of the channel this media object is published under."
+				}
+			]
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "addClassSchema",
+		"args": [
+			0,
+			2,
+			[],
+			[
+				{
+					"prop_type": { "Text": 2 },
+					"required": true,
+					"name": "Value",
+					"description": "Language code following the ISO 639-1 two letter standard."
+				}
+			]
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "addClassSchema",
+		"args": [
+			0,
+			3,
+			[],
+			[
+				{
+					"prop_type": { "Text": 255 },
+					"required": true,
+					"name": "Value",
+					"description": "The license of which the content is originally published under."
+				}
+			]
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "addClassSchema",
+		"args": [
+			0,
+			4,
+			[],
+			[
+				{
+					"prop_type": { "Text": 50 },
+					"required": true,
+					"name": "Value",
+					"description": "The publication status of the content in the content directory."
+				}
+			]
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "addClassSchema",
+		"args": [
+			0,
+			5,
+			[],
+			[
+				{
+					"prop_type": { "Text": 255 },
+					"required": true,
+					"name": "Value",
+					"description": "The curator publication status of the content in the content directory."
+				}
+			]
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "addClassSchema",
+		"args": [
+			0,
+			6,
+			[],
+			[
+				{
+					"prop_type": { "Internal": 7 },
+					"required": false,
+					"name": "Top Video",
+					"description": "The video that has the most prominent position(s) on the platform."
+				},
+				{
+					"prop_type": { "InternalVec": [12, 7] },
+					"required": false,
+					"name": "Featured Videos",
+					"description": "Videos featured in the Video tab."
+				},
+				{
+					"prop_type": { "InternalVec": [12, 9] },
+					"required": false,
+					"name": "Featured Albums",
+					"description": "Music albums featured in the Music tab."
+				}
+			]
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "addClassSchema",
+		"args": [
+			0,
+			7,
+			[],
+			[
+				{
+					"prop_type": { "Text": 255 },
+					"required": true,
+					"name": "Title",
+					"description": "The title of the video"
+				},
+				{
+					"prop_type": { "Text": 255 },
+					"required": true,
+					"name": "Thumbnail",
+					"description": "URL to video thumbnail: NOTE: Should be an https link to an image of ratio 16:9, ideally 1280 pixels wide by 720 pixels tall, with a minimum width of 640 pixels, in JPEG or PNG format."
+				},
+				{
+					"prop_type": { "Text": 4000 },
+					"required": true,
+					"name": "Description",
+					"description": "Information about the video."
+				},
+				{
+					"prop_type": { "Internal": 2 },
+					"required": true,
+					"name": "Language",
+					"description": "The main language used in the video."
+				},
+				{
+					"prop_type": { "Int64": null },
+					"required": true,
+					"name": "First Released",
+					"description": "When the video was first released"
+				},
+				{
+					"prop_type": { "Internal": 8 },
+					"required": false,
+					"name": "Category",
+					"description": "The category of the video."
+				},
+				{
+					"prop_type": { "TextVec": [5, 255] },
+					"required": false,
+					"name": "Links",
+					"description": "Links to the creators pages."
+				},
+				{
+					"prop_type": { "Internal": 1 },
+					"required": false,
+					"name": "Object",
+					"description": "The entityId of the object in the data directory."
+				},
+				{
+					"prop_type": { "Internal": 4 },
+					"required": true,
+					"name": "Publication Status",
+					"description": "The publication status of the video."
+				},
+				{
+					"prop_type": { "Internal": 5 },
+					"required": false,
+					"name": "Curation Status",
+					"description": "The publication status of the video set by the a content curator on the platform."
+				},
+				{
+					"prop_type": { "Bool": null },
+					"required": true,
+					"name": "Explicit",
+					"description": "Indicates whether the video contains explicit material."
+				},
+				{
+					"prop_type": { "Internal": 3 },
+					"required": true,
+					"name": "License",
+					"description": "The license of which the video is released under."
+				},
+				{
+					"prop_type": { "Text": 255 },
+					"required": false,
+					"name": "Attribution",
+					"description": "If the License requires attribution, add this here."
+				},
+				{
+					"prop_type": { "Uint64": null },
+					"required": false,
+					"name": "Channel Id",
+					"description": "Id of the channel this video is published under."
+				}
+			]
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "addClassSchema",
+		"args": [
+			0,
+			8,
+			[],
+			[
+				{
+					"prop_type": { "Text": 255 },
+					"required": true,
+					"name": "Value",
+					"description": "Categories for videos."
+				}
+			]
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "addClassSchema",
+		"args": [
+			0,
+			9,
+			[],
+			[
+				{
+					"prop_type": { "Text": 255 },
+					"required": true,
+					"name": "Title",
+					"description": "The title of the album"
+				},
+				{
+					"prop_type": { "Text": 255 },
+					"required": true,
+					"name": "Artist",
+					"description": "The artist, composer, band or group that published the album."
+				},
+				{
+					"prop_type": { "Text": 255 },
+					"required": true,
+					"name": "Thumbnail",
+					"description": "URL to album cover art thumbnail: NOTE: Should be an https link to a square image, between 1400x1400 and 3000x3000 pixels, in JPEG or PNG format."
+				},
+				{
+					"prop_type": { "Text": 4000 },
+					"required": true,
+					"name": "Description",
+					"description": "Information about the album and artist."
+				},
+				{
+					"prop_type": { "Int64": null },
+					"required": true,
+					"name": "First Released",
+					"description": "When the album was first released"
+				},
+				{
+					"prop_type": { "InternalVec": [3, 10] },
+					"required": false,
+					"name": "Genre",
+					"description": "The genre(s) of the album."
+				},
+				{
+					"prop_type": { "InternalVec": [3, 11] },
+					"required": false,
+					"name": "Mood",
+					"description": "The mood(s) of the album."
+				},
+				{
+					"prop_type": { "InternalVec": [3, 12] },
+					"required": false,
+					"name": "Theme",
+					"description": "The theme(s) of the album."
+				},
+				{
+					"prop_type": { "InternalVec": [100, 13] },
+					"required": false,
+					"name": "Tracks",
+					"description": "The tracks of the album."
+				},
+				{
+					"prop_type": { "Internal": 2 },
+					"required": false,
+					"name": "Language",
+					"description": "The language of the song lyrics in the album."
+				},
+				{
+					"prop_type": { "TextVec": [5, 255] },
+					"required": false,
+					"name": "Links",
+					"description": "Links to the artist or album site, or social media pages."
+				},
+				{
+					"prop_type": { "Text": 255 },
+					"required": false,
+					"name": "Lyrics",
+					"description": "Link to the album tracks lyrics."
+				},
+				{
+					"prop_type": { "Text": 255 },
+					"required": false,
+					"name": "Composer or songwriter",
+					"description": "The composer(s) and/or songwriter(s) of the album."
+				},
+				{
+					"prop_type": { "TextVec": [5, 255] },
+					"required": false,
+					"name": "Reviews",
+					"description": "Links to reviews of the album."
+				},
+				{
+					"prop_type": { "Internal": 4 },
+					"required": true,
+					"name": "Publication Status",
+					"description": "The publication status of the album."
+				},
+				{
+					"prop_type": { "Internal": 5 },
+					"required": false,
+					"name": "Curation Status",
+					"description": "The publication status of the album set by the a content curator on the platform."
+				},
+				{
+					"prop_type": { "Bool": null },
+					"required": true,
+					"name": "Explicit",
+					"description": "Indicates whether the album contains explicit material."
+				},
+				{
+					"prop_type": { "Internal": 3 },
+					"required": true,
+					"name": "License",
+					"description": "The license of which the album is released under."
+				},
+				{
+					"prop_type": { "Text": 255 },
+					"required": false,
+					"name": "Attribution",
+					"description": "If the License requires attribution, add this here."
+				},
+				{
+					"prop_type": { "Uint64": null },
+					"required": false,
+					"name": "Channel Id",
+					"description": "Id of the channel this album is published under."
+				}
+			]
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "addClassSchema",
+		"args": [
+			0,
+			10,
+			[],
+			[{ "prop_type": { "Text": 100 }, "required": true, "name": "Value", "description": "Genres for music." }]
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "addClassSchema",
+		"args": [
+			0,
+			11,
+			[],
+			[{ "prop_type": { "Text": 100 }, "required": true, "name": "Value", "description": "Moods for music." }]
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "addClassSchema",
+		"args": [
+			0,
+			12,
+			[],
+			[{ "prop_type": { "Text": 100 }, "required": true, "name": "Value", "description": "Themes for music." }]
+		]
+	},
+
+	{
+		"sectionName": "versionedStorePermissions",
+		"methodName": "addClassSchema",
+		"args": [
+			0,
+			13,
+			[],
+			[
+				{
+					"prop_type": { "Text": 255 },
+					"required": true,
+					"name": "Title",
+					"description": "The title of the track"
+				},
+				{
+					"prop_type": { "Text": 255 },
+					"required": true,
+					"name": "Artist",
+					"description": "The artist, composer, band or group that published the track."
+				},
+				{
+					"prop_type": { "Text": 255 },
+					"required": true,
+					"name": "Thumbnail",
+					"description": "URL to track cover art: NOTE: Should be an https link to a square image, between 1400x1400 and 3000x3000 pixels, in JPEG or PNG format."
+				},
+				{
+					"prop_type": { "Text": 255 },
+					"required": false,
+					"name": "Description",
+					"description": "Information about the track."
+				},
+				{
+					"prop_type": { "Internal": 2 },
+					"required": false,
+					"name": "Language",
+					"description": "The language of the lyrics in the track."
+				},
+				{
+					"prop_type": { "Int64": null },
+					"required": true,
+					"name": "First Released",
+					"description": "When the track was first released"
+				},
+				{
+					"prop_type": { "Internal": 10 },
+					"required": false,
+					"name": "Genre",
+					"description": "The genre of the track."
+				},
+				{
+					"prop_type": { "Internal": 11 },
+					"required": false,
+					"name": "Mood",
+					"description": "The mood of the track."
+				},
+				{
+					"prop_type": { "Internal": 12 },
+					"required": false,
+					"name": "Theme",
+					"description": "The theme of the track."
+				},
+				{
+					"prop_type": { "TextVec": [5, 255] },
+					"required": false,
+					"name": "Links",
+					"description": "Links to the artist site or social media pages."
+				},
+				{
+					"prop_type": { "Text": 255 },
+					"required": false,
+					"name": "Composer or songwriter",
+					"description": "The composer(s) and/or songwriter(s) of the track."
+				},
+				{
+					"prop_type": { "Text": 255 },
+					"required": false,
+					"name": "Lyrics",
+					"description": "Link to the track lyrics."
+				},
+				{
+					"prop_type": { "Internal": 1 },
+					"required": false,
+					"name": "Object",
+					"description": "The entityId of the object in the data directory."
+				},
+				{
+					"prop_type": { "Internal": 4 },
+					"required": true,
+					"name": "Publication Status",
+					"description": "The publication status of the track."
+				},
+				{
+					"prop_type": { "Internal": 5 },
+					"required": false,
+					"name": "Curation Status",
+					"description": "The publication status of the track set by the a content curator on the platform."
+				},
+				{
+					"prop_type": { "Bool": null },
+					"required": true,
+					"name": "Explicit",
+					"description": "Indicates whether the track contains explicit material."
+				},
+				{
+					"prop_type": { "Internal": 3 },
+					"required": true,
+					"name": "License",
+					"description": "The license of which the track is released under."
+				},
+				{
+					"prop_type": { "Text": 255 },
+					"required": false,
+					"name": "Attribution",
+					"description": "If the License requires attribution, add this here."
+				},
+				{
+					"prop_type": { "Uint64": null },
+					"required": false,
+					"name": "Channel Id",
+					"description": "Id of the channel this track is published under."
+				}
+			]
+		]
+	}
+]

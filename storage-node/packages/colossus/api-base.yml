@@ -2,7 +2,7 @@ openapi: '3.0.0'
 info:
   title: 'Joystream Storage Node API.'
   version: '1.0.0'
-paths: {}  # Will be populated by express-openapi
+paths: {} # Will be populated by express-openapi
 
 components:
   # Re-usable parameter definitions

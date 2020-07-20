@@ -90,7 +90,7 @@
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
     "build": "tsc --build tsconfig.json",
     "version": "oclif-dev readme && git add README.md",
-    "lint": "eslint ./src/ --quiet --ext .ts",
+    "lint": "eslint ./ --quiet --ext .ts",
     "checks": "yarn lint && tsc --noEmit --pretty && prettier ./ --check",
     "format": "prettier ./ --write"
   },

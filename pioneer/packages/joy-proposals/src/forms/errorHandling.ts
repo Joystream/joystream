@@ -2,7 +2,7 @@ import { FormikErrors, FormikTouched } from 'formik';
 import { LabelProps } from 'semantic-ui-react';
 
 type FieldErrorLabelProps = LabelProps | null; // This is used for displaying semantic-ui errors
-type FormErrorLabelsProps<ValuesT> = { [T in keyof ValuesT]: FieldErrorLabelProps };
+export type FormErrorLabelsProps<ValuesT> = { [T in keyof ValuesT]: FieldErrorLabelProps };
 
 // Single form field error state.
 // Takes formik "errors" and "touched" objects and the field name as arguments.
