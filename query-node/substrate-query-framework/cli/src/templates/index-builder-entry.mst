@@ -62,7 +62,7 @@ Please set BOOTSTRAP_FILE_LOCATION environment variable`)
 }
 
 function banner(): commander.Command {
-  console.log(chalk.green(figlet.textSync("Joystream-Indexer")));
+  console.log(chalk.green(figlet.textSync("{{projectName}}-Indexer")));
   const program = new commander.Command();
   const version = require("./package.json").version;
 
