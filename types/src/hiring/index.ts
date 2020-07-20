@@ -93,23 +93,17 @@ export class InactiveApplicationStage extends JoyStruct<InactiveApplicationStage
 
 export class ActiveApplicationStage extends Null { };
 
+// TODO: Find usages and replace with "JoyEnum-standard"
 export enum ApplicationStageKeys {
   Active = 'Active',
   Unstaking = 'Unstaking',
   Inactive = 'Inactive',
 }
-
-export class ApplicationStage extends Enum {
-  constructor(value?: any, index?: number) {
-    super(
-      {
-        [ApplicationStageKeys.Active]: ActiveApplicationStage,
-        [ApplicationStageKeys.Unstaking]: UnstakingApplicationStage,
-        [ApplicationStageKeys.Inactive]: InactiveApplicationStage,
-      },
-      value, index);
-  }
-}
+export class ApplicationStage extends JoyEnum({
+  Active: ActiveApplicationStage,
+  Unstaking: UnstakingApplicationStage,
+  Inactive: InactiveApplicationStage
+} as const) { };
 
 export type IApplicationRationingPolicy = {
   max_active_applicants: u32,
@@ -233,14 +227,14 @@ export class Deactivated extends JoyStruct<IDeactivated> {
   }
 };
 
-// TODO: Find usages and replace them with JoyEnum helpers
-export enum ActiveOpeningStageKeys {
-  AcceptingApplications = 'AcceptingApplications',
-  ReviewPeriod = 'ReviewPeriod',
-  Deactivated = 'Deactivated',
-}
+export const ActiveOpeningStageDef = {
+  AcceptingApplications: AcceptingApplications,
+  ReviewPeriod: ReviewPeriod,
+  Deactivated: Deactivated
+} as const;
+export type ActiveOpeningStageKey = keyof typeof ActiveOpeningStageDef;
 
-export class ActiveOpeningStage extends JoyEnum({AcceptingApplications, ReviewPeriod, Deactivated} as const) { }
+export class ActiveOpeningStage extends JoyEnum(ActiveOpeningStageDef) { }
 
 export type ActiveOpeningStageVariantType = {
   stage: ActiveOpeningStage,
@@ -265,12 +259,7 @@ export class ActiveOpeningStageVariant extends JoyStruct<ActiveOpeningStageVaria
   }
 
   get is_active(): boolean {
-    switch (this.stage.type) {
-      case ActiveOpeningStageKeys.AcceptingApplications:
-        return true
-    }
-
-	  return false
+    return this.stage.isOfType('AcceptingApplications');
   }
 }
 

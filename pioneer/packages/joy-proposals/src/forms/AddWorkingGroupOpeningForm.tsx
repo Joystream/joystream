@@ -23,13 +23,13 @@ import { formatBalance } from '@polkadot/util';
 import _ from 'lodash';
 import { IWorkingGroupOpeningPolicyCommitment } from '@joystream/types/working-group';
 import { IAddOpeningParameters } from '@joystream/types/proposals';
-import { WorkingGroupKeys } from '@joystream/types/common';
+import { WorkingGroupKey, InputValidationLengthConstraint } from '@joystream/types/common';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import { withCalls } from '@polkadot/react-api';
 import { SimplifiedTypeInterface } from '@polkadot/joy-utils/types/common';
 import Validation from '../validationSchema';
 
-type FormValues = WGFormValues & {
+export type FormValues = WGFormValues & {
   activateAt: ActivateOpeningAtKey;
   activateAtBlock: string;
   maxReviewPeriodLength: string;
@@ -64,7 +64,7 @@ const defaultValues: FormValues = {
   humanReadableText: ''
 };
 
-const HRTDefault: (memberHandle: string, group: WorkingGroupKeys) => GenericJoyStreamRoleSchema =
+const HRTDefault: (memberHandle: string, group: WorkingGroupKey) => GenericJoyStreamRoleSchema =
   (memberHandle, group) => ({
     version: 1,
     headline: `Looking for ${group} Working Group Leader!`,
@@ -101,6 +101,7 @@ type FormAdditionalProps = {}; // Aditional props coming all the way from export
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps> & {
   currentBlock?: BlockNumber;
+  HRTConstraint?: InputValidationLengthConstraint;
 };
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
@@ -344,14 +345,18 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: (props: FormContainerProps) => Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    ...Validation.AddWorkingGroupLeaderOpening(props.currentBlock?.toNumber() || 0)
+    ...Validation.AddWorkingGroupLeaderOpening(
+      props.currentBlock?.toNumber() || 0,
+      props.HRTConstraint || InputValidationLengthConstraint.createWithMaxAllowed()
+    )
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: 'AddWorkingGroupOpeningForm'
 })(AddWorkingGroupOpeningForm);
 
 export default withCalls<ExportComponentProps>(
-  ['derive.chain.bestNumber', { propName: 'currentBlock' }]
+  ['derive.chain.bestNumber', { propName: 'currentBlock' }],
+  ['query.storageWorkingGroup.openingHumanReadableText', { propName: 'HRTConstraint' }]
 )(
   withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer)
 );

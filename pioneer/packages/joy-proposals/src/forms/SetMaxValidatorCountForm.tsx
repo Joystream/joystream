@@ -17,7 +17,7 @@ import { withFormContainer } from './FormContainer';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import './forms.css';
 
-type FormValues = GenericFormValues & {
+export type FormValues = GenericFormValues & {
   maxValidatorCount: string;
 };
 
@@ -33,7 +33,7 @@ type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = props => {
   const transport = useTransport();
-  const [validatorCount] = usePromise<number>(() => transport.validators.maxCount(), NaN);
+  const [validatorCount] = usePromise<number>(() => transport.validators.maxCount(), 20);
   const { handleChange, errors, touched, values, setFieldValue } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
 
@@ -69,7 +69,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    maxValidatorCount: Validation.SetValidatorCount.maxValidatorCount
+    ...Validation.SetValidatorCount()
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: 'SetMaxValidatorCountForm'

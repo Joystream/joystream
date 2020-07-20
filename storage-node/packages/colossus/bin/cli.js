@@ -29,15 +29,19 @@ const FLAG_DEFINITIONS = {
   },
   keyFile: {
     type: 'string',
-    isRequired: (flags) => {
-      return !flags.dev
+    isRequired: (flags, input) => {
+      // Only required if running server command and not in dev mode
+      const serverCmd = input[0] === 'server'
+      return !flags.dev && serverCmd
     },
   },
   publicUrl: {
     type: 'string',
     alias: 'u',
-    isRequired: (flags) => {
-      return !flags.dev
+    isRequired: (flags, input) => {
+      // Only required if running server command and not in dev mode
+      const serverCmd = input[0] === 'server'
+      return !flags.dev && serverCmd
     },
   },
   passphrase: {
@@ -50,8 +54,10 @@ const FLAG_DEFINITIONS = {
   providerId: {
     type: 'number',
     alias: 'i',
-    isRequired: (flags) => {
-      return !flags.dev
+    isRequired: (flags, input) => {
+      // Only required if running server command and not in dev mode
+      const serverCmd = input[0] === 'server'
+      return !flags.dev && serverCmd
     },
   },
 }
