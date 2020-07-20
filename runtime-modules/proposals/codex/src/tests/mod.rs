@@ -860,6 +860,70 @@ fn set_default_proposal_parameters_succeeded() {
             <SpendingProposalGracePeriod<Test>>::get(),
             p.spending_proposal_grace_period as u64
         );
+        assert_eq!(
+            <AddWorkingGroupOpeningProposalVotingPeriod<Test>>::get(),
+            p.add_working_group_opening_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <AddWorkingGroupOpeningProposalGracePeriod<Test>>::get(),
+            p.add_working_group_opening_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <BeginReviewWorkingGroupLeaderApplicationsProposalVotingPeriod<Test>>::get(),
+            p.begin_review_working_group_leader_applications_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <BeginReviewWorkingGroupLeaderApplicationsProposalGracePeriod<Test>>::get(),
+            p.begin_review_working_group_leader_applications_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <FillWorkingGroupLeaderOpeningProposalVotingPeriod<Test>>::get(),
+            p.fill_working_group_leader_opening_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <FillWorkingGroupLeaderOpeningProposalGracePeriod<Test>>::get(),
+            p.fill_working_group_leader_opening_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <SetWorkingGroupMintCapacityProposalVotingPeriod<Test>>::get(),
+            p.set_working_group_mint_capacity_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SetWorkingGroupMintCapacityProposalGracePeriod<Test>>::get(),
+            p.set_working_group_mint_capacity_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <DecreaseWorkingGroupLeaderStakeProposalVotingPeriod<Test>>::get(),
+            p.decrease_working_group_leader_stake_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <DecreaseWorkingGroupLeaderStakeProposalGracePeriod<Test>>::get(),
+            p.decrease_working_group_leader_stake_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <SlashWorkingGroupLeaderStakeProposalVotingPeriod<Test>>::get(),
+            p.slash_working_group_leader_stake_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SlashWorkingGroupLeaderStakeProposalGracePeriod<Test>>::get(),
+            p.slash_working_group_leader_stake_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <SetWorkingGroupLeaderRewardProposalVotingPeriod<Test>>::get(),
+            p.set_working_group_leader_reward_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <SetWorkingGroupLeaderRewardProposalGracePeriod<Test>>::get(),
+            p.set_working_group_leader_reward_proposal_grace_period as u64
+        );
+        assert_eq!(
+            <TerminateWorkingGroupLeaderRoleProposalVotingPeriod<Test>>::get(),
+            p.terminate_working_group_leader_role_proposal_voting_period as u64
+        );
+        assert_eq!(
+            <TerminateWorkingGroupLeaderRoleProposalGracePeriod<Test>>::get(),
+            p.terminate_working_group_leader_role_proposal_grace_period as u64
+        );
     });
 }
 
