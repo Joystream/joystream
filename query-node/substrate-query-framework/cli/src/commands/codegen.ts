@@ -109,7 +109,7 @@ export default class Codegen extends Command {
     // Create index.ts file
 
     const installDeps = {
-      title: 'Install dependendcies for the Indexer',
+      title: 'Install dependencies for the Indexer',
       task: async () => {
         await execa('yarn', ['install']);
         if (process.env.TYPE_REGISTER_PACKAGE_NAME) {
