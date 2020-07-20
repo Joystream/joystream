@@ -390,7 +390,7 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
 name = "chain-spec-builder"
-version = "2.0.0-alpha.3"
+version = "3.0.0"
 dependencies = [
  "ansi_term 0.12.1",
  "joystream-node",
@@ -1569,7 +1569,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "2.6.0"
+version = "3.0.0"
 dependencies = [
  "ctrlc",
  "derive_more 0.14.1",
