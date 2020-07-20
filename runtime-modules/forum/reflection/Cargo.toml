@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 proc-macro2 = "1.0.18"
 syn = "1.0.34"
+quote = "1.0"
 
 [lib]
 name="substrate_forum_module_reflection"

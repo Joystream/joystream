@@ -668,6 +668,12 @@ decl_event!(
 
 use substrate_forum_module_reflection::*;
 
+impl< T : Trait > Call<T> {
+    fn i_believe_i_can_fly() -> Vec<u8> {
+        b"adfadfad" . to_vec()
+    }
+}
+
 decl_module! {
     #[derive(FuzzyModule)]
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {

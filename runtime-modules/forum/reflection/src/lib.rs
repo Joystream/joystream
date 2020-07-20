@@ -2,6 +2,7 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 
 use syn::{parse_macro_input, ItemStruct, ItemEnum, Fields, Type};
+use quote::quote;
 
 mod extract_module_functions;
 //use extract_module_functions
@@ -13,7 +14,8 @@ pub fn derive_fuzzy_module(input: TokenStream) -> TokenStream {
 
     println!("-----------------xxxxxxxxxxx-------------");
     let tmp = extract_module_functions::extract_module_functions(&tmp_input);
-    println!("hello {:?}", tmp);
+    //println!("hello {:?}", tmp);
+
 
 
 //println!("------- {:?}", tmp_input);
@@ -25,7 +27,26 @@ pub fn derive_fuzzy_module(input: TokenStream) -> TokenStream {
     tmp_input.fields.iter().map(|a| {println!("-------- {:?}", a)});
     println!("print done");
 */
-    //input
-    TokenStream::new()
-    //input
+
+    //TokenStream::new()
+
+    quote_test(tmp_input)
+}
+
+fn quote_test(input: ItemEnum) -> TokenStream {
+    //impl #input.ident {
+    let my_ident = input.ident;
+    let my_generics = input.generics;
+
+    let tmp = quote! {
+        impl#my_generics #my_ident {
+            fn i_believe_i_can_fly() -> Vec<u8> {
+                b"adfadfad".to_vec()
+            }
+        }
+    };
+
+    println!("QQQQuote {:?}", tmp.to_string());
+
+    TokenStream::from(tmp)
 }

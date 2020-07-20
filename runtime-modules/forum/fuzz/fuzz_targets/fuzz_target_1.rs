@@ -46,6 +46,9 @@ fuzz_target!(|texts: Texts| {
             texts.text[1].clone(),
             Ok(()),
         ));
+
+        TestForumModule::i_believe_i_can_fly();
+        println!("{:?}", TestForumModule::i_believe_i_can_fly());
 /*
         let a = vec![(
             origin.clone(),
