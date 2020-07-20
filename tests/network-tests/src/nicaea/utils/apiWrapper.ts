@@ -47,7 +47,8 @@ export class ApiWrapper {
       case WorkingGroups.storageWorkingGroup:
         return 'Storage';
       default:
-        return 'Undefined';
+        throw new Error(`Invalid working group string representation: ${workingGroup}`);
+        ;
     }
   }
 
@@ -335,7 +336,7 @@ export class ApiWrapper {
         {
           activate_at: 'CurrentBlock',
           commitment: {
-            application_rationing_policy: { max_active_applicants: '32' },
+            application_rationing_policy: { max_active_applicants: 32 },
             max_review_period_length: 32,
             application_staking_policy: {
               amount: 0,
@@ -384,13 +385,13 @@ export class ApiWrapper {
   }
 
   public estimateProposeFillLeaderOpeningFee(): BN {
-    const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters();
-    fillOpeningParameters.setAmountPerPayout(new BN(1));
-    fillOpeningParameters.setNextPaymentAtBlock(new BN(99999));
-    fillOpeningParameters.setPayoutInterval(new BN(99999));
-    fillOpeningParameters.setOpeningId(new BN(0));
-    fillOpeningParameters.setSuccessfulApplicationId(new BN(0));
-    fillOpeningParameters.setWorkingGroup('Storage');
+    const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters()
+      .setAmountPerPayout(new BN(1))
+      .setNextPaymentAtBlock(new BN(99999))
+      .setPayoutInterval(new BN(99999))
+      .setOpeningId(new BN(0))
+      .setSuccessfulApplicationId(new BN(0))
+      .setWorkingGroup('Storage');
 
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
@@ -1040,12 +1041,7 @@ export class ApiWrapper {
         title,
         description,
         proposalStake,
-        {
-          activate_at: opening.getActivateAt(),
-          commitment: opening.getCommitment(),
-          human_readable_text: opening.getText(),
-          working_group: workingGroup,
-        }
+        opening.getAddOpeningParameters(workingGroup)
       ),
       account,
       false
