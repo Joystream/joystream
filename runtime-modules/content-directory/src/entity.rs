@@ -73,6 +73,11 @@ impl<T: Trait> Entity<T> {
         &self.values
     }
 
+    /// Get `Entity` values by mutable reference
+    pub fn get_values_mut(&mut self) -> &mut BTreeMap<PropertyId, OutputPropertyValue<T>> {
+        &mut self.values
+    }
+
     /// Get mutable reference to `Entity` values
     pub fn set_values(&mut self, new_values: BTreeMap<PropertyId, OutputPropertyValue<T>>) {
         self.values = new_values;

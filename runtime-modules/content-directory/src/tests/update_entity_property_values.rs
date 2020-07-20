@@ -32,7 +32,7 @@ fn update_entity_property_values_success() {
 
         // Ensure first entity properties updated succesfully
         if let Some(second_schema_old_property_value) =
-            first_entity.values.get_mut(&SECOND_PROPERTY_ID)
+            first_entity.get_values_mut().get_mut(&SECOND_PROPERTY_ID)
         {
             second_schema_old_property_value.update(second_schema_new_property_value.into());
         }
@@ -662,6 +662,85 @@ fn update_entity_property_values_text_prop_is_too_long() {
         assert_failure(
             update_entity_property_values_result,
             ERROR_TEXT_PROP_IS_TOO_LONG,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn update_entity_property_values_hashed_text_prop_is_too_long() {
+    with_test_externalities(|| {
+        // Create class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+        let actor = Actor::Lead;
+
+        // Create entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.to_owned()));
+
+        let hashed_text_max_length_constraint = HashedTextMaxLengthConstraint::get();
+
+        // Create hash property
+        let property_type =
+            PropertyType::<Runtime>::single_text_hash(hashed_text_max_length_constraint);
+
+        let property = Property::<Runtime>::with_name_and_type(
+            PropertyNameLengthConstraint::get().max() as usize,
+            property_type,
+            true,
+            false,
+        );
+
+        // Add Schema to the first Class
+        assert_ok!(add_class_schema(
+            LEAD_ORIGIN,
+            FIRST_CLASS_ID,
+            BTreeSet::new(),
+            vec![property]
+        ));
+
+        let mut schema_property_values = BTreeMap::new();
+
+        let schema_property_value = InputPropertyValue::<Runtime>::single_text_to_hash(
+            hashed_text_max_length_constraint.unwrap(),
+        );
+
+        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
+
+        // Add schema support to the entity
+        assert_ok!(add_schema_support_to_entity(
+            LEAD_ORIGIN,
+            actor.clone(),
+            FIRST_ENTITY_ID,
+            FIRST_SCHEMA_ID,
+            schema_property_values,
+        ));
+
+        // Runtime state before tested call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        let mut schema_new_property_values = BTreeMap::new();
+        let schema_new_property_value = InputPropertyValue::<Runtime>::single_text_to_hash(
+            hashed_text_max_length_constraint.unwrap() + 1,
+        );
+
+        schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
+
+        // Make an attempt to update entity property values providing text to hash property value(s), which
+        // length exceeds length exceeds HashedTextMaxLengthConstraint.
+        let update_entity_property_values_result = update_entity_property_values(
+            LEAD_ORIGIN,
+            actor,
+            FIRST_ENTITY_ID,
+            schema_new_property_values,
+        );
+
+        // Failure checked
+        assert_failure(
+            update_entity_property_values_result,
+            ERROR_HASHED_TEXT_PROP_IS_TOO_LONG,
             number_of_events_before_call,
         );
     })

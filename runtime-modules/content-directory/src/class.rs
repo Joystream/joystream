@@ -63,6 +63,22 @@ impl<T: Trait> Class<T> {
         }
     }
 
+    pub fn get_name(&self) -> &[u8] {
+        &self.name
+    }
+
+    pub fn get_description(&self) -> &[u8] {
+        &self.description
+    }
+
+    pub fn set_name(&mut self, name: Vec<u8>) {
+        self.name = name;
+    }
+
+    pub fn set_description(&mut self, description: Vec<u8>) {
+        self.description = description;
+    }
+
     /// Used to update `Schema` status under given `schema_index`
     pub fn update_schema_status(&mut self, schema_index: SchemaId, schema_status: bool) {
         if let Some(schema) = self.schemas.get_mut(schema_index as usize) {
@@ -128,6 +144,20 @@ impl<T: Trait> Class<T> {
     /// Retrive the maximum entities count, which can be created for given `Class`
     pub fn get_maximum_entities_count(&self) -> T::EntityId {
         self.maximum_entities_count
+    }
+
+    /// Set per controller `Class`- specific limit
+    pub fn set_default_entity_creation_voucher_upper_bound(
+        &mut self,
+        new_default_entity_creation_voucher_upper_bound: T::EntityId,
+    ) {
+        self.default_entity_creation_voucher_upper_bound =
+            new_default_entity_creation_voucher_upper_bound;
+    }
+
+    /// Set the maximum entities count, which can be created for given `Class`
+    pub fn set_maximum_entities_count(&mut self, maximum_entities_count: T::EntityId) {
+        self.maximum_entities_count = maximum_entities_count;
     }
 
     /// Ensure `Class` `Schema` under given index exist, return corresponding `Schema`

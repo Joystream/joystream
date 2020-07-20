@@ -33,7 +33,7 @@ fn insert_at_entity_property_vector_success() {
 
         // Ensure first entity properties updated succesfully
         if let Some(second_schema_old_property_value) = first_entity
-            .values
+            .get_values_mut()
             .get_mut(&SECOND_PROPERTY_ID)
             .and_then(|property_value| property_value.as_vec_property_value_mut())
         {
@@ -879,6 +879,87 @@ fn insert_at_entity_property_vector_text_prop_is_too_long() {
         assert_failure(
             insert_at_entity_property_vector_result,
             ERROR_TEXT_PROP_IS_TOO_LONG,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn insert_at_entity_property_vector_hashed_text_prop_is_too_long() {
+    with_test_externalities(|| {
+        // Create class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+        let actor = Actor::Lead;
+
+        // Create entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
+
+        let hashed_text_max_length_constraint = HashedTextMaxLengthConstraint::get();
+
+        // Create vec text hash property
+        let property_type = PropertyType::<Runtime>::vec_text_hash(
+            hashed_text_max_length_constraint,
+            VecMaxLengthConstraint::get(),
+        );
+
+        let property = Property::<Runtime>::with_name_and_type(
+            PropertyNameLengthConstraint::get().max() as usize,
+            property_type,
+            true,
+            false,
+        );
+
+        // Add Schema to the Class
+        assert_ok!(add_class_schema(
+            LEAD_ORIGIN,
+            FIRST_CLASS_ID,
+            BTreeSet::new(),
+            vec![property]
+        ));
+
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_text_to_hash(vec![]);
+
+        let mut schema_property_values = BTreeMap::new();
+        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
+
+        // Add schema support to the entity
+        assert_ok!(add_schema_support_to_entity(
+            LEAD_ORIGIN,
+            actor.to_owned(),
+            FIRST_ENTITY_ID,
+            FIRST_SCHEMA_ID,
+            schema_property_values
+        ));
+
+        // Runtime state before tested call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // Make an attempt to insert value at given `index_in_property_vector`
+        // into `VecOutputPropertyValue` under `in_class_schema_property_id` in case,
+        // when corresponding property text to hash value is too long
+        let nonce = 0;
+        let index_in_property_vector = 0;
+        let input_value = InputValue::TextToHash(generate_text(
+            hashed_text_max_length_constraint.unwrap() as usize + 1,
+        ));
+
+        let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
+            LEAD_ORIGIN,
+            actor,
+            FIRST_ENTITY_ID,
+            FIRST_PROPERTY_ID,
+            index_in_property_vector,
+            input_value,
+            nonce,
+        );
+
+        // Failure checked
+        assert_failure(
+            insert_at_entity_property_vector_result,
+            ERROR_HASHED_TEXT_PROP_IS_TOO_LONG,
             number_of_events_before_call,
         );
     })

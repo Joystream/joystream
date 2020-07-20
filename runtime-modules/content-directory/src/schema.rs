@@ -130,7 +130,7 @@ impl<T: Trait> Default for SingleValuePropertyType<T> {
 }
 
 impl<T: Trait> SingleValuePropertyType<T> {
-    /// Ensure `Type` specific `TextMaxLengthConstraint` satisfied
+    /// Ensure `Type` specific `TextMaxLengthConstraint` or `HashedTextMaxLengthConstraint` satisfied
     fn ensure_property_type_size_is_valid(&self) -> dispatch::Result {
         if let Type::Text(text_max_len) = self.0 {
             ensure!(
@@ -138,6 +138,14 @@ impl<T: Trait> SingleValuePropertyType<T> {
                 ERROR_TEXT_PROP_IS_TOO_LONG
             );
         }
+
+        if let Type::Hash(hashed_text_max_len) = self.0 {
+            ensure!(
+                hashed_text_max_len <= T::HashedTextMaxLengthConstraint::get(),
+                ERROR_HASHED_TEXT_PROP_IS_TOO_LONG
+            );
+        }
+
         Ok(())
     }
 }
@@ -429,6 +437,16 @@ impl<T: Trait> Property<T> {
                 validate_property_vector_length_after_value_insert(vec, max_vec_len)
             }
             (
+                InputValue::TextToHash(text_item),
+                VecOutputValue::Hash(vec),
+                Type::Hash(text_max_len),
+            ) => {
+                if let Some(text_max_len) = text_max_len {
+                    Self::validate_max_len_of_text_to_be_hashed(text_item, *text_max_len)?;
+                }
+                validate_property_vector_length_after_value_insert(vec, max_vec_len)
+            }
+            (
                 InputValue::Reference(entity_id),
                 VecOutputValue::Reference(vec),
                 Type::Reference(class_id, same_controller_status),
@@ -576,6 +594,7 @@ impl<T: Trait> Property<T> {
                 | (InputValue::Int32(_), Type::Int32)
                 | (InputValue::Int64(_), Type::Int64)
                 | (InputValue::Text(_), Type::Text(_))
+                | (InputValue::TextToHash(_), Type::Hash(_))
                 | (InputValue::Reference(_), Type::Reference(_, _)) => true,
                 _ => false,
             },
@@ -591,6 +610,7 @@ impl<T: Trait> Property<T> {
                 | (VecInputValue::Int32(_), Type::Int32)
                 | (VecInputValue::Int64(_), Type::Int64)
                 | (VecInputValue::Text(_), Type::Text(_))
+                | (VecInputValue::TextToHash(_), Type::Hash(_))
                 | (VecInputValue::Reference(_), Type::Reference(_, _)) => true,
                 _ => false,
             },
