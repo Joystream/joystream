@@ -1,10 +1,10 @@
 {
-  "name": "cli",
-  "description": "Query node cli",
-  "version": "0.0.0",
-  "author": "metmirr @metmirr",
+  "name": "hydra-cli",
+  "description": "CLI tool for building a Hydra query node",
+  "version": "0.0.1-alpha",
+  "author": "metmirr @metmirr dzlzv @dzhelezov",
   "bin": {
-    "cli": "./bin/run"
+    "hydra-cli": "./bin/run"
   },
   "bugs": "https://github.com/joystream/joystream/joystream-query-node/cli/issues",
   "dependencies": {
@@ -57,7 +57,7 @@
     "/npm-shrinkwrap.json",
     "/oclif.manifest.json"
   ],
-  "homepage": "https://github.com/joystream/joystream/joystream-query-node/cli",
+  "homepage": "https://github.com/joystream/joystream/query-node/substrate-query-framework/cli",
   "keywords": [
     "oclif"
   ],
@@ -65,12 +65,15 @@
   "main": "lib/index.js",
   "oclif": {
     "commands": "./lib/src/commands",
-    "bin": "cli",
+    "bin": "hydra-cli",
     "plugins": [
       "@oclif/plugin-help"
-    ]
+    ],
+    "macos" : {
+      "identifier": "org.joystream.hydra.cli"
+    }
   },
-  "repository": "joystream/joystream/joystream-query-node/cli",
+  "repository": "git@github.com:Joystream/joystream.git",
   "scripts": {
     "build": "rm -rf lib && tsc --build tsconfig.json",
     "postpack": "rm -f oclif.manifest.json",

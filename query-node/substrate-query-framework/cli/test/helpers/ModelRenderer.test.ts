@@ -82,7 +82,7 @@ describe('ModelRenderer', () => {
   it('should render otm types', function () {
     const model = fromStringSchema(`
     type Author @entity {
-      posts: [Post!]
+      posts: [Post!] @derivedFrom(field: "author")
     }
     
     type Post @entity {
@@ -96,19 +96,19 @@ describe('ModelRenderer', () => {
     debug(`rendered: ${JSON.stringify(rendered, null, 2)}`);
 
     expect(rendered).to.include(`import { Post } from '../post/post.model`, `Should render imports`);
-    expect(rendered).to.include(`@OneToMany(() => Post, (post: Post) => post.author)`, 'Should render OTM decorator');
+    expect(rendered).to.include(`@OneToMany(() => Post, (param: Post) => param.author)`, 'Should render OTM decorator');
     expect(rendered).to.include(`posts?: Post[];`, 'Should render plural references');
   });
 
   it('should render mto types', function () {
     const model = fromStringSchema(`
     type Author @entity {
-      posts: [Post!]
+      name: String!
     }
     
     type Post @entity {
       title: String
-      # FIXME: this causes a double field author: Author! 
+      author: Author! 
     }`);
 
     generator = new ModelRenderer(model, model.lookupEntity('Post'), enumCtxProvider);
@@ -117,7 +117,7 @@ describe('ModelRenderer', () => {
 
     expect(rendered).to.include(`import { Author } from '../author/author.model`, `Should render imports`);
     expect(rendered).to.include(
-      `@ManyToOne(() => Author, (author: Author) => author.posts, {
+      `@ManyToOne(() => Author, (param: Author) => param.posts, {
     skipGraphQLField: true,
   })`,
       'Should render MTO decorator'

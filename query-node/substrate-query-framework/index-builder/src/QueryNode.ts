@@ -27,10 +27,8 @@ export default class QueryNode {
 
   // Query index building node.
   private _indexBuilder: IndexBuilder;
-  
 
-  private constructor(websocketProvider: WsProvider, api: ApiPromise, 
-    indexBuilder: IndexBuilder) {
+  private constructor(websocketProvider: WsProvider, api: ApiPromise, indexBuilder: IndexBuilder) {
     this._state = QueryNodeState.NOT_STARTED;
     this._websocketProvider = websocketProvider;
     this._api = api;
@@ -40,7 +38,7 @@ export default class QueryNode {
   static async create(
     ws_provider_endpoint_uri: string,
     processing_pack: QueryEventProcessingPack,
-    type_registrator: () => void,
+    type_registrator?: () => void
   ) {
     // TODO: Do we really need to do it like this?
     // Its pretty ugly, but the registrtion appears to be
@@ -51,7 +49,7 @@ export default class QueryNode {
     const provider = new WsProvider(ws_provider_endpoint_uri);
 
     // Register types before creating the api
-    type_registrator();
+    type_registrator ? type_registrator() : null;
 
     // Create the API and wait until ready
     const api = await ApiPromise.create({ provider });
