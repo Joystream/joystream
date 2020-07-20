@@ -137,8 +137,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       const fieldOptions = paramOptions?.nestedOptions && paramOptions.nestedOptions[subtype.name!]
       const fieldDefaultValue = fieldOptions?.value?.default || (structDefault && structDefault.get(subtype.name!))
       const finalFieldOptions: ApiParamOptions = {
-        ...fieldOptions,
         forcedName: subtype.name,
+        ...fieldOptions, // "forcedName" above should be overriden with "fieldOptions.forcedName" if available
         value: fieldDefaultValue && { ...fieldOptions?.value, default: fieldDefaultValue },
       }
       structValues[subtype.name!] = await this.promptForParam(subtype.type, finalFieldOptions)
