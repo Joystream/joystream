@@ -1,5 +1,5 @@
 import { SubstrateEvent, DB } from '../generated/indexer';
-import { Proposal } from '../generated/graphql-server/src/modules/proposal/Proposal.model';
+import { Proposal } from '../generated/graphql-server/src/modules/proposal/proposal.model';
 
 
 /**
