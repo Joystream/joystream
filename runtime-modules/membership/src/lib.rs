@@ -72,7 +72,8 @@ const DEFAULT_MAX_HANDLE_LENGTH: u32 = 40;
 const DEFAULT_MAX_AVATAR_URI_LENGTH: u32 = 1024;
 const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 
-pub type MembershipOf<T> = Membership<
+/// Public membership object alias.
+pub type Membership<T> = MembershipObject<
     <T as system::Trait>::BlockNumber,
     <T as timestamp::Trait>::Moment,
     <T as Trait>::PaidTermId,
@@ -82,7 +83,7 @@ pub type MembershipOf<T> = Membership<
 
 #[derive(Encode, Decode, Default)]
 /// Stored information about a registered user
-pub struct Membership<BlockNumber, Moment, PaidTermId, SubscriptionId, AccountId> {
+pub struct MembershipObject<BlockNumber, Moment, PaidTermId, SubscriptionId, AccountId> {
     /// The unique handle chosen by member
     pub handle: Vec<u8>,
 
@@ -156,7 +157,7 @@ decl_storage! {
         pub NextMemberId get(members_created) : T::MemberId;
 
         /// Mapping of member's id to their membership profile
-        pub MembershipById get(membership) : map T::MemberId => MembershipOf<T>;
+        pub MembershipById get(membership) : map T::MemberId => Membership<T>;
 
         /// Mapping of a root account id to vector of member ids it controls.
         pub(crate) MemberIdsByRootAccountId : map T::AccountId => Vec<T::MemberId>;
@@ -430,7 +431,7 @@ pub enum MemberRootAccountMismatch {
 
 impl<T: Trait> Module<T> {
     /// Provided that the member_id exists return its membership. Returns error otherwise.
-    pub fn ensure_membership(id: T::MemberId) -> Result<MembershipOf<T>, &'static str> {
+    pub fn ensure_membership(id: T::MemberId) -> Result<Membership<T>, &'static str> {
         if <MembershipById<T>>::exists(&id) {
             Ok(Self::membership(&id))
         } else {
@@ -442,7 +443,7 @@ impl<T: Trait> Module<T> {
     pub fn ensure_is_controller_account_for_member(
         member_id: &T::MemberId,
         account: &T::AccountId,
-    ) -> Result<MembershipOf<T>, ControllerAccountForMemberCheckFailed> {
+    ) -> Result<Membership<T>, ControllerAccountForMemberCheckFailed> {
         if MembershipById::<T>::exists(member_id) {
             let membership = MembershipById::<T>::get(member_id);
 
@@ -541,7 +542,7 @@ impl<T: Trait> Module<T> {
     ) -> T::MemberId {
         let new_member_id = Self::members_created();
 
-        let membership: MembershipOf<T> = Membership {
+        let membership: Membership<T> = MembershipObject {
             handle: user_info.handle.clone(),
             avatar_uri: user_info.avatar_uri.clone(),
             about: user_info.about.clone(),
