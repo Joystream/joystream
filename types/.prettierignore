@@ -1,1 +1,6 @@
-**
+**/*.js
+**/*.d.ts
+!.eslintrc.js
+hiring/schemas/role.schema.json
+lib/
+build/
