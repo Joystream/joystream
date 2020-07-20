@@ -13,7 +13,7 @@ services:
   
   # Run after Run after `yarn codegen:server` and `yarn docker:server:build`
   graphql-server:
-    image: hydra-graphql-server
+    image: hydra-graphql-server:latest
     env_file:
       - .env
     environment:
@@ -27,10 +27,11 @@ services:
   
   # Run after `yarn codegen:indexer` and `yarn docker:indexer:build`
   indexer:
-    image: hydra-indexer
+    image: hydra-indexer:latest
     env_file:
       - .env 
     environment:
-      - DB_HOST=db
+      - TYPEORM_HOST=db
+      - DEBUG=index-builder:*
     depends_on: 
       - db
