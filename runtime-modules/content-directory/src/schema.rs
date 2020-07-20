@@ -666,7 +666,7 @@ impl<T: Trait> Property<T> {
 
         let entity = Module::<T>::entity_by_id(entity_id);
         ensure!(
-            entity.class_id == class_id,
+            entity.get_class_id() == class_id,
             ERROR_REFERENCED_ENTITY_DOES_NOT_MATCH_ITS_CLASS
         );
         Ok(entity)
