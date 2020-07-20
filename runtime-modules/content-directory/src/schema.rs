@@ -19,7 +19,7 @@ pub type VecMaxLength = u16;
 pub type TextMaxLength = u16;
 
 /// Type representing max length of text property type, that will be subsequently hashed
-pub type HashedTextMaxLength = u16;
+pub type HashedTextMaxLength = Option<u16>;
 
 /// Type identificator for property id
 pub type PropertyId = u16;
@@ -462,7 +462,7 @@ impl<T: Trait> Property<T> {
             }
             (
                 Some(InputValue::TextToHash(text_to_be_hashed)),
-                Some(Type::Hash(text_to_be_hashed_max_len)),
+                Some(Type::Hash(Some(text_to_be_hashed_max_len))),
             ) => Self::validate_max_len_of_text_to_be_hashed(
                 text_to_be_hashed,
                 *text_to_be_hashed_max_len,
@@ -481,7 +481,7 @@ impl<T: Trait> Property<T> {
 
     pub fn validate_max_len_of_text_to_be_hashed(
         text_to_be_hashed: &[u8],
-        text_to_be_hashed_max_len: HashedTextMaxLength,
+        text_to_be_hashed_max_len: u16,
     ) -> dispatch::Result {
         ensure!(
             text_to_be_hashed.len() <= text_to_be_hashed_max_len as usize,
@@ -520,7 +520,9 @@ impl<T: Trait> Property<T> {
             VecInputValue::Int64(vec) => Self::validate_vec_len(vec, max_len),
             VecInputValue::TextToHash(vec) => {
                 Self::validate_vec_len(vec, max_len)?;
-                if let Type::Hash(text_to_be_hashed_max_len) = vec_property_type.get_vec_type() {
+                if let Type::Hash(Some(text_to_be_hashed_max_len)) =
+                    vec_property_type.get_vec_type()
+                {
                     for text_to_be_hashed_item in vec.iter() {
                         Self::validate_max_len_of_text_to_be_hashed(
                             text_to_be_hashed_item,

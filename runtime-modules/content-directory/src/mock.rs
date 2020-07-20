@@ -106,7 +106,7 @@ thread_local! {
 
     static VEC_MAX_LENGTH_CONSTRAINT: RefCell<VecMaxLength> = RefCell::new(0);
     static TEXT_MAX_LENGTH_CONSTRAINT: RefCell<TextMaxLength> = RefCell::new(0);
-    static HASHED_TEXT_MAX_LENGTH_CONSTRAINT: RefCell<TextMaxLength> = RefCell::new(0);
+    static HASHED_TEXT_MAX_LENGTH_CONSTRAINT: RefCell<HashedTextMaxLength> = RefCell::new(Some(0));
 
     static INDIVIDUAL_ENTITIES_CREATION_LIMIT: RefCell<EntityId> = RefCell::new(0);
 }
@@ -343,7 +343,7 @@ impl Default for ExtBuilder {
 
             vec_max_length_constraint: 200,
             text_max_length_constraint: 5000,
-            hashed_text_max_length_constraint: 25000,
+            hashed_text_max_length_constraint: Some(25000),
 
             individual_entities_creation_limit: 50,
         }
