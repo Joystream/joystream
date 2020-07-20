@@ -5,6 +5,13 @@ import { ReferenceConstraint } from './reference-constraint'
 import ClassPermissionsType from './ClassPermissions'
 import { Operation } from './batching/'
 
+export {
+  EntityPermissions,
+  ReferenceConstraint,
+  ClassPermissionsType,
+  Operation,
+}
+
 export function registerVersionedStorePermissionsTypes() {
   try {
     getTypeRegistry().register({
