@@ -15,7 +15,7 @@ sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://
 stake = { package = 'pallet-stake', default-features = false, path = '../stake'}
 
 [dev-dependencies]
-mockall = "0.6.0"
+mockall = "0.7.1"
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
