@@ -464,11 +464,9 @@ pub fn setup_members(count: u8) {
         Membership::add_screened_member(
             RawOrigin::Signed(authority_account_id).into(),
             account_id,
-            membership::members::UserInfo {
-                handle: Some(handle.to_vec()),
-                avatar_uri: None,
-                about: None,
-            },
+            Some(handle.to_vec()),
+            None,
+            None,
         )
         .unwrap();
     }
@@ -771,7 +769,6 @@ pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(
         expected_raw_event: RawEvent<
-            u64,
             u64,
             u64,
             u64,

@@ -23,7 +23,7 @@
 //! use system::ensure_root;
 //! use substrate_proposals_discussion_module::{self as discussions};
 //!
-//! pub trait Trait: discussions::Trait + membership::members::Trait {}
+//! pub trait Trait: discussions::Trait + membership::Trait {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
@@ -59,7 +59,7 @@ use types::{DiscussionPost, DiscussionThread, ThreadCounter};
 use common::origin::ActorOriginValidator;
 use srml_support::dispatch::DispatchResult;
 
-type MemberId<T> = <T as membership::members::Trait>::MemberId;
+type MemberId<T> = <T as membership::Trait>::MemberId;
 
 decl_event!(
     /// Proposals engine events
@@ -81,7 +81,7 @@ decl_event!(
 );
 
 /// 'Proposal discussion' substrate module Trait
-pub trait Trait: system::Trait + membership::members::Trait {
+pub trait Trait: system::Trait + membership::Trait {
     /// Discussion event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 

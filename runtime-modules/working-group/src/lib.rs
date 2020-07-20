@@ -59,6 +59,7 @@ use rstd::vec::Vec;
 use sr_primitives::traits::{Bounded, One, Zero};
 use srml_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReasons};
 use srml_support::{decl_event, decl_module, decl_storage, ensure, print, StorageValue};
+
 use system::{ensure_root, ensure_signed};
 
 use crate::types::ExitInitiationOrigin;
@@ -75,7 +76,7 @@ pub use types::{
 pub type StakeId<T> = <T as stake::Trait>::StakeId;
 
 /// Member identifier in membership::member module
-pub type MemberId<T> = <T as membership::members::Trait>::MemberId;
+pub type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Workaround for BTreeSet type
 pub type ApplicationIdSet<T> = BTreeSet<ApplicationId<T>>;
@@ -105,7 +106,7 @@ pub type NegativeImbalance<T> =
 pub type ApplicationIdToWorkerIdMap<T> = BTreeMap<ApplicationId<T>, WorkerId<T>>;
 
 /// Type identifier for worker role, which must be same as membership actor identifier
-pub type WorkerId<T> = <T as membership::members::Trait>::ActorId;
+pub type WorkerId<T> = <T as membership::Trait>::ActorId;
 
 /// Alias for the application id from the hiring module.
 pub type HiringApplicationId<T> = <T as hiring::Trait>::ApplicationId;
@@ -149,7 +150,7 @@ type ApplicationOf<T> =
 /// The _Working group_ main _Trait_
 pub trait Trait<I: Instance>:
     system::Trait
-    + membership::members::Trait
+    + membership::Trait
     + hiring::Trait
     + minting::Trait
     + stake::Trait
@@ -167,7 +168,6 @@ decl_event!(
     pub enum Event<T, I>
     where
         WorkerId = WorkerId<T>,
-        <T as membership::members::Trait>::ActorId,
         <T as system::Trait>::AccountId,
         OpeningId = OpeningId<T>,
         ApplicationId = ApplicationId<T>,
@@ -205,20 +205,20 @@ decl_event!(
 
         /// Emits on updating the role account of the worker.
         /// Params:
-        /// - Member id of the worker.
+        /// - Id of the worker.
         /// - Role account id of the worker.
-        WorkerRoleAccountUpdated(ActorId, AccountId),
+        WorkerRoleAccountUpdated(WorkerId, AccountId),
 
         /// Emits on updating the reward account of the worker.
         /// Params:
         /// - Member id of the worker.
         /// - Reward account id of the worker.
-        WorkerRewardAccountUpdated(ActorId, AccountId),
+        WorkerRewardAccountUpdated(WorkerId, AccountId),
 
         /// Emits on updating the reward amount of the worker.
         /// Params:
-        /// - Member id of the worker.
-        WorkerRewardAmountUpdated(ActorId),
+        /// - Id of the worker.
+        WorkerRewardAmountUpdated(WorkerId),
 
         /// Emits on adding new worker opening.
         /// Params:
@@ -364,7 +364,7 @@ decl_module! {
 
             // Ensure that origin is signed by member with given id.
             ensure_on_wrapped_error!(
-                membership::members::Module::<T>::ensure_member_controller_account_signed(origin, &worker.member_id)
+                membership::Module::<T>::ensure_member_controller_account_signed(origin, &worker.member_id)
             )?;
 
             //
@@ -602,8 +602,8 @@ decl_module! {
             // and cannot specify another arbitrary account as the source account.
             // Ensure the source_account is either the controller or root account of member with given id
             ensure!(
-                membership::members::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
-                membership::members::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
+                membership::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
+                membership::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
                 Error::OriginIsNeitherMemberControllerOrRoot
             );
 
@@ -1337,7 +1337,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         let member_id = Module::<T, I>::member_id_by_hiring_application_id(hiring_application_id);
 
-        if let Some(member_profile) = membership::members::MemberProfile::<T>::get(member_id) {
+        if membership::MembershipById::<T>::exists(member_id) {
+            let member_profile = membership::MembershipById::<T>::get(member_id);
             let refunding_result = CurrencyOf::<T>::resolve_into_existing(
                 &member_profile.controller_account,
                 imbalance,
@@ -1517,10 +1518,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                     let recipient = <recurringrewards::Module<T>>::add_recipient();
 
                     // Member must exist, since it was checked that it can enter the role.
-                    let member_profile = <membership::members::Module<T>>::member_profile(
-                        successful_application.member_id,
-                    )
-                    .unwrap();
+                    let member_profile =
+                        <membership::Module<T>>::membership(successful_application.member_id);
 
                     // Rewards are deposited in the member's root account.
                     let reward_destination_account = member_profile.root_account;

@@ -21,7 +21,7 @@ mod working_group {
 }
 
 mod membership_mod {
-    pub use membership::members::Event;
+    pub use membership::Event;
 }
 
 impl_outer_event! {
@@ -38,7 +38,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const InitialMembersBalance: u64 = 2000;
     pub const StakePoolId: [u8; 8] = *b"joystake";
     pub const ExistentialDeposit: u32 = 0;
     pub const TransferFee: u32 = 0;
@@ -87,13 +86,12 @@ impl stake::Trait for Test {
     type SlashId = u64;
 }
 
-impl membership::members::Trait for Test {
+impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
     type ActorId = u64;
-    type InitialMembersBalance = InitialMembersBalance;
 }
 
 impl common::currency::GovernanceCurrency for Test {
@@ -136,7 +134,7 @@ impl Trait<TestWorkingGroupInstance> for Test {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
-pub type Membership = membership::members::Module<Test>;
+pub type Membership = membership::Module<Test>;
 
 pub type TestWorkingGroupInstance = crate::Instance1;
 pub type TestWorkingGroup = Module<Test, TestWorkingGroupInstance>;
