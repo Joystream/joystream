@@ -1,3 +1,3 @@
-import { ActorId } from '../members';
+import { ActorId } from '../members'
 
-export default class ChannelId extends ActorId {};
+export default class ChannelId extends ActorId {}

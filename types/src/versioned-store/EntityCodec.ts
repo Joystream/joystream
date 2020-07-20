@@ -1,34 +1,34 @@
-import BN from 'bn.js';
-import { Text, bool, Vec, u16 } from '@polkadot/types';
-import { Codec } from '@polkadot/types/types';
-import { Class, Entity, VecClassPropertyValue, ClassPropertyValue, EntityId, ClassId, unifyPropName } from '.';
-import * as PV from './PropertyValue';
-import { PropertyValue } from './PropertyValue';
-import { PropertyTypeName } from './PropertyTypeName';
-import ChannelId from '../content-working-group/ChannelId';
+import BN from 'bn.js'
+import { Text, bool, Vec, u16 } from '@polkadot/types'
+import { Codec } from '@polkadot/types/types'
+import { Class, Entity, VecClassPropertyValue, ClassPropertyValue, EntityId, ClassId, unifyPropName } from '.'
+import * as PV from './PropertyValue'
+import { PropertyValue } from './PropertyValue'
+import { PropertyTypeName } from './PropertyTypeName'
+import ChannelId from '../content-working-group/ChannelId'
 
 /**
  * Convert a Substrate value to a plain JavaScript value of a corresponding type
  * like string, number, boolean, etc.
  */
-function substrateToPlain<T> (x: Codec): T | undefined {
-  let res: any = undefined;
+function substrateToPlain<T>(x: Codec): T | undefined {
+  let res: any = undefined
 
   if (x instanceof PV.None) {
-    res = undefined;
+    res = undefined
   } else if (x instanceof Text) {
-    res = (x as Text).toString();
+    res = (x as Text).toString()
   } else if (x instanceof BN) {
-    res = (x as BN).toNumber();
+    res = (x as BN).toNumber()
   } else if (x instanceof bool) {
-    res = (x as bool).valueOf();
+    res = (x as bool).valueOf()
   } else if (x instanceof Vec) {
-    res = x.map(y => substrateToPlain(y));
+    res = x.map((y) => substrateToPlain(y))
   } else if (typeof x !== 'undefined' && x !== null) {
-    res = x.toString();
+    res = x.toString()
   }
 
-  return res;
+  return res
 }
 
 /**
@@ -41,7 +41,6 @@ function substrateToPlain<T> (x: Codec): T | undefined {
  * @throws Error
  */
 function plainToSubstrate(propType: string, value: any): PropertyValue {
-
   const ok = (typeEnum: PV.PropertyValueEnum) => {
     return new PropertyValue({ [propType]: typeEnum })
   }
@@ -69,7 +68,7 @@ function plainToSubstrate(propType: string, value: any): PropertyValue {
     // This condition was never met (spotted by linter), because "typeof value" can be 'undefined'
     // (a string), but not actually undefined. Changing it to 'undefined' would change this function's behavior though
     // and that may lead to unexpected consequences.
-    return [ value ]
+    return [value]
   }
 
   const valueAsBoolArr = (): boolean[] => {
@@ -81,31 +80,49 @@ function plainToSubstrate(propType: string, value: any): PropertyValue {
   }
 
   switch (propType) {
-
     // Primitives:
 
-    case 'None':        return ok(new PV.None())
-    case 'Bool':        return ok(new PV.Bool(valueAsBool()))
-    case 'Uint16':      return ok(new PV.Uint16(value as string))
-    case 'Uint32':      return ok(new PV.Uint32(value as string))
-    case 'Uint64':      return ok(new PV.Uint64(value as string))
-    case 'Int16':       return ok(new PV.Int16(value as string))
-    case 'Int32':       return ok(new PV.Int32(value as string))
-    case 'Int64':       return ok(new PV.Int64(value as string))
-    case 'Text':        return ok(new PV.Text(value as string))
-    case 'Internal':    return ok(new PV.Internal(value as string))
+    case 'None':
+      return ok(new PV.None())
+    case 'Bool':
+      return ok(new PV.Bool(valueAsBool()))
+    case 'Uint16':
+      return ok(new PV.Uint16(value as string))
+    case 'Uint32':
+      return ok(new PV.Uint32(value as string))
+    case 'Uint64':
+      return ok(new PV.Uint64(value as string))
+    case 'Int16':
+      return ok(new PV.Int16(value as string))
+    case 'Int32':
+      return ok(new PV.Int32(value as string))
+    case 'Int64':
+      return ok(new PV.Int64(value as string))
+    case 'Text':
+      return ok(new PV.Text(value as string))
+    case 'Internal':
+      return ok(new PV.Internal(value as string))
 
     // Vectors:
 
-    case 'BoolVec':     return ok(new PV.BoolVec(valueAsBoolArr()))
-    case 'Uint16Vec':   return ok(new PV.Uint16Vec(valueAsStrArr()))
-    case 'Uint32Vec':   return ok(new PV.Uint32Vec(valueAsStrArr()))
-    case 'Uint64Vec':   return ok(new PV.Uint64Vec(valueAsStrArr()))
-    case 'Int16Vec':    return ok(new PV.Int16Vec(valueAsStrArr()))
-    case 'Int32Vec':    return ok(new PV.Int32Vec(valueAsStrArr()))
-    case 'Int64Vec':    return ok(new PV.Int64Vec(valueAsStrArr()))
-    case 'TextVec':     return ok(new PV.TextVec(valueAsStrArr()))
-    case 'InternalVec': return ok(new PV.InternalVec(valueAsArr()))
+    case 'BoolVec':
+      return ok(new PV.BoolVec(valueAsBoolArr()))
+    case 'Uint16Vec':
+      return ok(new PV.Uint16Vec(valueAsStrArr()))
+    case 'Uint32Vec':
+      return ok(new PV.Uint32Vec(valueAsStrArr()))
+    case 'Uint64Vec':
+      return ok(new PV.Uint64Vec(valueAsStrArr()))
+    case 'Int16Vec':
+      return ok(new PV.Int16Vec(valueAsStrArr()))
+    case 'Int32Vec':
+      return ok(new PV.Int32Vec(valueAsStrArr()))
+    case 'Int64Vec':
+      return ok(new PV.Int64Vec(valueAsStrArr()))
+    case 'TextVec':
+      return ok(new PV.TextVec(valueAsStrArr()))
+    case 'InternalVec':
+      return ok(new PV.InternalVec(valueAsArr()))
 
     default: {
       throw new Error(`Unknown property type name: ${propType}`)
@@ -117,11 +134,11 @@ interface HasTypeField {
   type: string
 }
 
-export function isInternalProp (field: HasTypeField): boolean {
+export function isInternalProp(field: HasTypeField): boolean {
   return field.type === 'Internal'
 }
 
-export function isInternalVecProp (field: HasTypeField): boolean {
+export function isInternalVecProp(field: HasTypeField): boolean {
   return field.type === 'InternalVec'
 }
 
@@ -155,47 +172,41 @@ export interface ToPlainObjectProps {
 }
 
 export abstract class EntityCodec<T extends PlainEntity> {
-
   private propNameToMetaMap: Map<string, PropMeta> = new Map()
   private propIndexToNameMap: Map<number, string> = new Map()
 
-  public constructor (entityClass: Class) {
+  public constructor(entityClass: Class) {
     entityClass.properties.map((p, index) => {
-      const propName = unifyPropName(p.name.toString());
-      const propMeta = { index, type: p.prop_type.type.toString() };
-      this.propNameToMetaMap.set(propName, propMeta);
-      this.propIndexToNameMap.set(index, propName);
+      const propName = unifyPropName(p.name.toString())
+      const propMeta = { index, type: p.prop_type.type.toString() }
+      this.propNameToMetaMap.set(propName, propMeta)
+      this.propIndexToNameMap.set(index, propName)
     })
   }
 
-  inClassIndexOfProp (propName: string): number | undefined {
+  inClassIndexOfProp(propName: string): number | undefined {
     return this.propNameToMetaMap.get(propName)?.index
   }
 
   /**
    * Converts an entity of Substrate codec type to a plain JS object.
    */
-  async toPlainObject (entity: Entity, props: ToPlainObjectProps = {}): Promise<T | undefined> {
-
-    const {
-      loadInternals,
-      loadEntityById,
-      loadChannelById
-    } = props || {}
+  async toPlainObject(entity: Entity, props: ToPlainObjectProps = {}): Promise<T | undefined> {
+    const { loadInternals, loadEntityById, loadChannelById } = props || {}
 
     const res: PlainEntity = {
       classId: entity.class_id.toNumber(),
-      inClassSchemaIndexes: entity.in_class_schema_indexes.map(x => x.toNumber()),
-      id: entity.id.toNumber()
+      inClassSchemaIndexes: entity.in_class_schema_indexes.map((x) => x.toNumber()),
+      id: entity.id.toNumber(),
     }
 
     if (!entity.in_class_schema_indexes.toArray().length) {
-		throw new Error(`No schema support exists for entity! Entity id: ${res.id}`);
-	}
+      throw new Error(`No schema support exists for entity! Entity id: ${res.id}`)
+    }
 
     for (const v of entity.entity_values) {
-      const propIdx = v.in_class_index.toNumber();
-      const propName = this.propIndexToNameMap.get(propIdx);
+      const propIdx = v.in_class_index.toNumber()
+      const propName = this.propIndexToNameMap.get(propIdx)
 
       if (propName) {
         const propValue = v.value.value
@@ -203,15 +214,9 @@ export abstract class EntityCodec<T extends PlainEntity> {
 
         // Load a referred internal entity:
         if (loadInternals) {
-          if (
-            propValue instanceof PV.Internal &&
-            typeof loadEntityById === 'function'
-          ) {
+          if (propValue instanceof PV.Internal && typeof loadEntityById === 'function') {
             convertedValue = await loadEntityById(propValue as EntityId)
-          } else if (
-            propName === 'channelId' &&
-            typeof loadChannelById === 'function'
-          ) {
+          } else if (propName === 'channelId' && typeof loadChannelById === 'function') {
             res.channel = await loadChannelById(propValue as ChannelId)
           }
         }
@@ -233,19 +238,18 @@ export abstract class EntityCodec<T extends PlainEntity> {
    * that can be passed to the extrinsic `update_entity_property_values`
    * of Substrate runtime module `substrate-versioned-store`.
    */
-  toSubstrateUpdate (updatedProps: Partial<{ [propName: string]: any }>): VecClassPropertyValue {
-
+  toSubstrateUpdate(updatedProps: Partial<{ [propName: string]: any }>): VecClassPropertyValue {
     // TODO check required fields! save prop metadata in constructor?
 
     // console.log('propNameToMetaMap propNameToMetaMap', this.propNameToMetaMap)
     // console.log('toSubstrateUpdate updatedProps', updatedProps)
 
-    const res = new VecClassPropertyValue();
-    Object.keys(updatedProps).map(propName => {
-      const meta = this.propNameToMetaMap.get(propName);
+    const res = new VecClassPropertyValue()
+    Object.keys(updatedProps).map((propName) => {
+      const meta = this.propNameToMetaMap.get(propName)
       if (meta) {
-        const propType = meta.type as PropertyTypeName;
-        const plainValue = (updatedProps as any)[propName];
+        const propType = meta.type as PropertyTypeName
+        const plainValue = (updatedProps as any)[propName]
 
         let codecValue: PropertyValue | undefined
         try {
@@ -255,14 +259,16 @@ export abstract class EntityCodec<T extends PlainEntity> {
         }
 
         if (codecValue) {
-          res.push(new ClassPropertyValue({
-            in_class_index: new u16(meta.index),
-            value: codecValue
-          }))
+          res.push(
+            new ClassPropertyValue({
+              in_class_index: new u16(meta.index),
+              value: codecValue,
+            })
+          )
         }
       }
-    });
-    return res;
+    })
+    return res
   }
 }
 
@@ -270,11 +276,10 @@ export abstract class EntityCodec<T extends PlainEntity> {
 export class AnyEntityCodec extends EntityCodec<any> {}
 
 export class EntityCodecResolver {
-
   private codecByClassIdMap = new Map<string, AnyEntityCodec>()
 
-  constructor (classes: Class[]) {
-    classes.forEach(c => {
+  constructor(classes: Class[]) {
+    classes.forEach((c) => {
       this.codecByClassIdMap.set(c.id.toString(), new AnyEntityCodec(c))
     })
   }
