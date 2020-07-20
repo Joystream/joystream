@@ -26,6 +26,7 @@ import { Bytes } from '@polkadot/types';
 import { WorkingGroup, InputValidationLengthConstraint } from '@joystream/types/common';
 import { bool as Bool } from '@polkadot/types/primitive';
 import { withCalls } from '@polkadot/react-api';
+import { formatBalance } from '@polkadot/util';
 
 export type FormValues = WGFormValues & {
   terminationRationale: string;
@@ -45,11 +46,11 @@ type FormContainerProps = ProposalFormContainerProps<ExportComponentProps> & {
 };
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const valuesToTerminateRoleParams = (values: FormValues, leadId: number): TerminateRoleParameters => {
+const valuesToTerminateRoleParams = (values: FormValues, lead: WorkerData): TerminateRoleParameters => {
   return new TerminateRoleParameters({
-    worker_id: new WorkerId(leadId),
+    worker_id: new WorkerId(lead.workerId),
     rationale: new Bytes(values.terminationRationale),
-    slash: new Bool(values.slashStake),
+    slash: lead.stake ? new Bool(values.slashStake) : new Bool(false),
     working_group: new WorkingGroup(values.workingGroup)
   });
 };
@@ -71,7 +72,7 @@ const TerminateWorkingGroupLeaderForm: React.FunctionComponent<FormInnerProps> =
         values.title,
         values.rationale,
         '{STAKE}',
-        valuesToTerminateRoleParams(values, lead?.workerId!)
+        lead && valuesToTerminateRoleParams(values, lead)
       ]}
     >
       { lead && (<>
@@ -88,13 +89,15 @@ const TerminateWorkingGroupLeaderForm: React.FunctionComponent<FormInnerProps> =
           error={errorLabelsProps.terminationRationale}
           value={values.terminationRationale}
         />
-        <FormField>
-          <Checkbox
-            toggle
-            onChange={(e, data) => { setFieldValue('slashStake', data.checked); }}
-            label="Slash leader stake"
-            checked={values.slashStake}/>
-        </FormField>
+        { lead.stake && (
+          <FormField>
+            <Checkbox
+              toggle
+              onChange={(e, data) => { setFieldValue('slashStake', data.checked); }}
+              label={ `Slash leader stake (${formatBalance(lead.stake)})` }
+              checked={values.slashStake}/>
+          </FormField>
+        ) }
       </>) }
     </GenericWorkingGroupProposalForm>
   );
