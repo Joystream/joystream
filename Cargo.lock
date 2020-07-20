@@ -1614,7 +1614,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "6.20.0"
+version = "7.25.0"
 dependencies = [
  "parity-scale-codec",
  "safe-mix",

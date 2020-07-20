@@ -160,8 +160,8 @@ pub mod opaque {
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
-    authoring_version: 6,
-    spec_version: 20,
+    authoring_version: 7,
+    spec_version: 25,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
 };
