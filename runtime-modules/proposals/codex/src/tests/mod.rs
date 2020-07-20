@@ -802,7 +802,7 @@ fn set_default_proposal_parameters_succeeded() {
         // nothing is set
         assert_eq!(<SetValidatorCountProposalVotingPeriod<Test>>::get(), 0);
 
-        ProposalCodex::set_default_config_values();
+        ProposalCodex::set_config_values(p);
 
         assert_eq!(
             <SetValidatorCountProposalVotingPeriod<Test>>::get(),
