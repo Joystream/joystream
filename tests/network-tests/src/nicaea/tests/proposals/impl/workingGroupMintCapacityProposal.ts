@@ -21,11 +21,11 @@ export function workingGroupMintCapacityProposalTest(
     sudo = keyring.addFromUri(sudoUri);
     const description: string = 'spending proposal which is used for API network testing';
     const runtimeVoteFee: BN = apiWrapper.estimateVoteForProposalFee();
-    const initialMintingCapacity: BN = await apiWrapper.getWorkingGroupMintCapacity();
+    const initialMintingCapacity: BN = await apiWrapper.getContentWorkingGroupMintCapacity();
 
     // Topping the balances
     const proposalStake: BN = new BN(50000);
-    const runtimeProposalFee: BN = apiWrapper.estimateProposeWorkingGroupMintCapacityFee(
+    const runtimeProposalFee: BN = apiWrapper.estimateProposeContentWorkingGroupMintCapacityFee(
       description,
       description,
       proposalStake,
@@ -37,7 +37,7 @@ export function workingGroupMintCapacityProposalTest(
     // Proposal creation
     const proposedMintingCapacity: BN = initialMintingCapacity.add(mintingCapacityIncrement);
     const proposalPromise = apiWrapper.expectProposalCreated();
-    await apiWrapper.proposeWorkingGroupMintCapacity(
+    await apiWrapper.proposeContentWorkingGroupMintCapacity(
       m1KeyPairs[0],
       'testing mint capacity' + uuid().substring(0, 8),
       'mint capacity to test proposal functionality' + uuid().substring(0, 8),
@@ -50,7 +50,7 @@ export function workingGroupMintCapacityProposalTest(
     const mintCapacityPromise = apiWrapper.expectProposalFinalized();
     await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber);
     await mintCapacityPromise;
-    const newMintingCapacity: BN = await apiWrapper.getWorkingGroupMintCapacity();
+    const newMintingCapacity: BN = await apiWrapper.getContentWorkingGroupMintCapacity();
     assert(
       proposedMintingCapacity.eq(newMintingCapacity),
       `Content working group has unexpected minting capacity ${newMintingCapacity}, expected ${proposedMintingCapacity}`
