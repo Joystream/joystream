@@ -416,19 +416,22 @@ export default class Api {
       sp.isSome ? unstakingPeriod(sp.unwrap()[key]) : 0
 
     const unstakingPeriods: Partial<UnstakingPeriods> = {
-      review_period_expired_application_stake_unstaking_period_length: spUnstakingPeriod(
+      ['review_period_expired_application_stake_unstaking_period_length']: spUnstakingPeriod(
         applSP,
         'review_period_expired_unstaking_period_length'
       ),
-      crowded_out_application_stake_unstaking_period_length: spUnstakingPeriod(
+      ['crowded_out_application_stake_unstaking_period_length']: spUnstakingPeriod(
         applSP,
         'crowded_out_unstaking_period_length'
       ),
-      review_period_expired_role_stake_unstaking_period_length: spUnstakingPeriod(
+      ['review_period_expired_role_stake_unstaking_period_length']: spUnstakingPeriod(
         roleSP,
         'review_period_expired_unstaking_period_length'
       ),
-      crowded_out_role_stake_unstaking_period_length: spUnstakingPeriod(roleSP, 'crowded_out_unstaking_period_length'),
+      ['crowded_out_role_stake_unstaking_period_length']: spUnstakingPeriod(
+        roleSP,
+        'crowded_out_unstaking_period_length'
+      ),
     }
 
     openingPolicyUnstakingPeriodsKeys.forEach((key) => {

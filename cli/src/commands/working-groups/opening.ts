@@ -1,7 +1,7 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { displayTable, displayCollapsedRow, displayHeader } from '../../helpers/display'
 import _ from 'lodash'
-import { OpeningStatus, GroupOpeningStage, GroupOpeningStakes, NameValueObj, UnstakingPeriodsKey } from '../../Types'
+import { OpeningStatus, GroupOpeningStage, GroupOpeningStakes, UnstakingPeriodsKey } from '../../Types'
 import { StakingAmountLimitModeKeys, StakingPolicy } from '@joystream/types/hiring'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
