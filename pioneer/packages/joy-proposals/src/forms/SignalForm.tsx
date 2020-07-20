@@ -16,7 +16,7 @@ import { TextareaFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import './forms.css';
 
-type FormValues = GenericFormValues & {
+export type FormValues = GenericFormValues & {
   description: string;
 };
 
@@ -61,7 +61,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    description: Validation.Text.description
+    ...Validation.Text()
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: 'SignalForm'

@@ -13,7 +13,14 @@ export const ProposalTypes = [
   'EvictStorageProvider',
   'SetValidatorCount',
   'SetStorageRoleParameters',
-  'AddWorkingGroupLeaderOpening'
+  'AddWorkingGroupLeaderOpening',
+  'SetWorkingGroupMintCapacity',
+  'BeginReviewWorkingGroupLeaderApplication',
+  'FillWorkingGroupLeaderOpening',
+  'SlashWorkingGroupLeaderStake',
+  'DecreaseWorkingGroupLeaderStake',
+  'SetWorkingGroupLeaderReward',
+  'TerminateWorkingGroupLeaderRole'
 ] as const;
 
 export type ProposalType = typeof ProposalTypes[number];
@@ -53,10 +60,10 @@ export type ProposalVotes = {
 };
 
 export const Categories = {
-  storage: 'Storage',
   council: 'Council',
   validators: 'Validators',
   cwg: 'Content Working Group',
+  wg: 'Working Groups',
   other: 'Other'
 } as const;
 
@@ -70,6 +77,7 @@ export type ProposalMeta = {
   approvalThreshold: number;
   slashingQuorum: number;
   slashingThreshold: number;
+  outdated?: boolean;
 }
 
 export type ParsedPost = {

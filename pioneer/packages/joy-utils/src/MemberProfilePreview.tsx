@@ -25,23 +25,26 @@ const StyledProfilePreview = styled.div`
   }
 `;
 
-const Details = styled.div``;
+const Details = styled.div`
+  margin-left: 1rem;
+  display: grid;
+  grid-row-gap: 0.25rem;
+  grid-template-columns: 100%;
+`;
 
 const DetailsHandle = styled.h4`
   margin: 0;
-  margin-left: 1rem;
   font-weight: bold;
   color: #333;
 `;
 
 const DetailsID = styled.div`
-  margin: 0;
-  margin-top: 0.25rem;
-  margin-left: 1rem;
   color: #777;
 `;
 
-export default function ProfilePreview ({ id, avatar_uri, root_account, handle, link = false }: ProfileItemProps) {
+export default function ProfilePreview (
+  { id, avatar_uri, root_account, handle, link = false, children }: React.PropsWithChildren<ProfileItemProps>
+) {
   const Preview = (
     <StyledProfilePreview>
       {avatar_uri.toString() ? (
@@ -52,6 +55,7 @@ export default function ProfilePreview ({ id, avatar_uri, root_account, handle, 
       <Details>
         <DetailsHandle>{handle.toString()}</DetailsHandle>
         { id !== undefined && <DetailsID>ID: {id.toString()}</DetailsID> }
+        { children }
       </Details>
     </StyledProfilePreview>
   );
@@ -69,7 +73,13 @@ type ProfilePreviewFromStructProps = {
   id?: number | MemberId;
 };
 
-export function ProfilePreviewFromStruct ({ profile, link, id }: ProfilePreviewFromStructProps) {
+export function ProfilePreviewFromStruct (
+  { profile, link, id, children }: React.PropsWithChildren<ProfilePreviewFromStructProps>
+) {
   const { avatar_uri, root_account, handle } = profile;
-  return <ProfilePreview {...{ avatar_uri, root_account, handle, link, id }} />;
+  return (
+    <ProfilePreview {...{ avatar_uri, root_account, handle, link, id }}>
+      {children}
+    </ProfilePreview>
+  );
 }

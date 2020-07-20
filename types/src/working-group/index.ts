@@ -243,10 +243,12 @@ export class WorkingGroupOpeningPolicyCommitment extends JoyStruct<IWorkingGroup
 
 export class OpeningType_Leader extends Null { };
 export class OpeningType_Worker extends Null { };
-export class OpeningType extends JoyEnum({
+export const OpeningTypeDef = {
   Leader: OpeningType_Leader,
   Worker: OpeningType_Worker
-} as const) { };
+} as const;
+export type OpeningTypeKey = keyof typeof OpeningTypeDef;
+export class OpeningType extends JoyEnum(OpeningTypeDef) { };
 
 export type IOpening = {
   hiring_opening_id: OpeningId,
@@ -299,6 +301,15 @@ export class RewardPolicy extends JoyStruct<IRewardPolicy> {
       next_payment_at_block: 'BlockNumber',
       payout_interval: 'Option<BlockNumber>',
     }, value);
+  }
+  get amount_per_payout(): Balance {
+    return this.getField<Balance>('amount_per_payout');
+  }
+  get next_payment_at_block(): BlockNumber {
+    return this.getField<BlockNumber>('next_payment_at_block');
+  }
+  get payout_interval(): Option<BlockNumber> {
+    return this.getField<Option<BlockNumber>>('payout_interval');
   }
 };
 
