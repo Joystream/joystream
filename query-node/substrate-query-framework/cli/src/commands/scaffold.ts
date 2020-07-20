@@ -22,15 +22,12 @@ export default class Scaffold extends Command {
 
     cli.action.start('Scaffolding');
 
-    await fs.ensureDir('mappings');
-    await fs.ensureDir('bootstrap');
-
-    // copy docker-compose
-    await utils.copyTemplateToCWD('scaffold/docker-compose.yml', 'docker-compose.yml');
-
+    // TODO: we don't do bootstrapping for now
+    //await fs.ensureDir('bootstrap');
     // copy sample graphql schema
     await utils.copyTemplateToCWD('scaffold/schema.graphql', 'schema.graphql');
 
+    await this.setupMappings();
     await this.setupNodeProject();
     await this.setupDocker();
 
@@ -65,6 +62,13 @@ export default class Scaffold extends Command {
     });
   }
 
+  // For now, we simply copy the hardcoded templates
+  async setupMappings(): Promise<void> {
+    await fs.ensureDir('mappings');
+    await utils.copyTemplateToCWD('scaffold/mappings/index.ts', path.join('mappings', 'index.ts'));
+    await utils.copyTemplateToCWD('scaffold/mappings/treasury.ts', path.join('mappings', 'treasury.ts'));
+  }
+
   async setupDocker(): Promise<void> {
     await utils.copyTemplateToCWD('scaffold/docker-compose.yml', 'docker-compose.yml');
 
@@ -86,7 +90,4 @@ export default class Scaffold extends Command {
 
     await execa('yarn', ['install']);
   }
-
-
-  
 }
