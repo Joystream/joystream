@@ -18,6 +18,12 @@ jobs:
       run: |
         yarn install --frozen-lockfile
         yarn workspace @joystream/types checks
+    - name: npm pack test
+      run: |
+        cd types
+        npm pack | tail -1 | xargs tar xzf
+        cd package && npm install
+        node ./index.js
 
   types_checks_osx:
     name: MacOS Checks
@@ -35,3 +41,9 @@ jobs:
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
         yarn workspace @joystream/types checks
+    - name: npm pack test
+      run: |
+        cd types
+        npm pack | tail -1 | xargs tar xzf
+        cd package && npm install
+        node ./index.js
