@@ -40,6 +40,12 @@ export default class Scaffold extends Command {
       default: DEFAULT_WS_API_ENDPOINT,
     })) as string;
 
+    const blockHeight = (await cli.prompt('Start block height', { default: '0' })) as string;
+
+    if (isNaN(parseInt(blockHeight))) {
+      throw new Error('Starting block height must be an integer');
+    }
+
     const dbName = (await cli.prompt('Database name', { default: projectName })) as string;
     const dbHost = (await cli.prompt('Database host', { default: 'localhost' })) as string;
     const dbPort = (await cli.prompt('Database port', { default: '5432' })) as string;
@@ -53,6 +59,7 @@ export default class Scaffold extends Command {
     return Mustache.render(template, {
       projectName,
       wsProviderUrl,
+      blockHeight,
       dbName,
       dbHost,
       dbPort,
