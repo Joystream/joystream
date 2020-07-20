@@ -46,7 +46,6 @@ pub fn create() -> ForumConfig {
 
         // TODO: get rid of mocks and setup valid values
         category_by_moderator: Vec::new(),
-        reaction_by_post: Vec::new(),
         poll_items_constraint: new_validation(1, 10),
         data_migration_done: true,
     }

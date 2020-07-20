@@ -647,6 +647,38 @@ pub fn set_stickied_threads_mock(
     category_id
 }
 
+pub fn react_post_mock(
+    origin: OriginType,
+    forum_user_id: <Runtime as Trait>::ForumUserId,
+    category_id: <Runtime as Trait>::CategoryId,
+    thread_id: <Runtime as Trait>::ThreadId,
+    post_id: <Runtime as Trait>::PostId,
+    post_reaction_id: <Runtime as Trait>::PostReactionId,
+    result: Result<(), Error>,
+) {
+    assert_eq!(
+        TestForumModule::react_post(
+            mock_origin(origin.clone()),
+            forum_user_id,
+            category_id,
+            thread_id,
+            post_id,
+            post_reaction_id,
+        ),
+        result
+    );
+    if result.is_ok() {
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::forum_mod(RawEvent::PostReacted(
+                forum_user_id,
+                post_id,
+                post_reaction_id,
+            ))
+        );
+    };
+}
+
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     create_genesis_config(true)
 }
@@ -665,7 +697,6 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
         next_post_id: 1,
 
         category_by_moderator: vec![],
-        reaction_by_post: vec![],
 
         poll_items_constraint: InputValidationLengthConstraint {
             min: 4,

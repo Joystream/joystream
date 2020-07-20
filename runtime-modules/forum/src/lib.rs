@@ -595,9 +595,6 @@ decl_storage! {
         /// Moderator set for each Category
         pub CategoryByModerator get(category_by_moderator) config(): double_map T::CategoryId, blake2_256(T::ModeratorId) => ();
 
-        /// Each account 's reaction to a post.
-        pub ReactionByPost get(reaction_by_post) config(): double_map T::PostId, blake2_256(T::ForumUserId) => T::PostReactionId;
-
         /// Input constraints for number of items in poll.
         pub PollItemsConstraint get(poll_items_constraint) config(): InputValidationLengthConstraint;
 
@@ -1033,14 +1030,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Get old value in map
-            let old_value = <ReactionByPost::<T>>::get(post_id, forum_user_id);
-
-            // Update and save event.
-            if old_value != react {
-                <ReactionByPost::<T>>::mutate(post_id, forum_user_id, |value| *value = react);
-                Self::deposit_event(RawEvent::PostReacted(forum_user_id, post_id, react));
-            }
+            Self::deposit_event(RawEvent::PostReacted(forum_user_id, post_id, react));
 
             Ok(())
         }
