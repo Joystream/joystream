@@ -13,7 +13,7 @@ export function councilTest(
   m1KeyPairs: KeyringPair[],
   m2KeyPairs: KeyringPair[],
   keyring: Keyring,
-  K: number,
+  k: number,
   sudoUri: string,
   greaterStake: BN,
   lesserStake: BN
@@ -38,8 +38,8 @@ export function councilTest(
 
     // First K members stake more
     await apiWrapper.sudoStartAnnouncingPerion(sudo, now.addn(100))
-    await apiWrapper.batchApplyForCouncilElection(m2KeyPairs.slice(0, K), greaterStake)
-    m2KeyPairs.slice(0, K).forEach((keyPair) =>
+    await apiWrapper.batchApplyForCouncilElection(m2KeyPairs.slice(0, k), greaterStake)
+    m2KeyPairs.slice(0, k).forEach((keyPair) =>
       apiWrapper.getCouncilElectionStake(keyPair.address).then((stake) => {
         assert(
           stake.eq(greaterStake),
@@ -49,8 +49,8 @@ export function councilTest(
     )
 
     // Last members stake less
-    await apiWrapper.batchApplyForCouncilElection(m2KeyPairs.slice(K), lesserStake)
-    m2KeyPairs.slice(K).forEach((keyPair) =>
+    await apiWrapper.batchApplyForCouncilElection(m2KeyPairs.slice(k), lesserStake)
+    m2KeyPairs.slice(k).forEach((keyPair) =>
       apiWrapper.getCouncilElectionStake(keyPair.address).then((stake) => {
         assert(
           stake.eq(lesserStake),
@@ -62,17 +62,17 @@ export function councilTest(
     // Voting
     await apiWrapper.sudoStartVotingPerion(sudo, now.addn(100))
     await apiWrapper.batchVoteForCouncilMember(
-      m1KeyPairs.slice(0, K),
-      m2KeyPairs.slice(0, K),
-      salt.slice(0, K),
+      m1KeyPairs.slice(0, k),
+      m2KeyPairs.slice(0, k),
+      salt.slice(0, k),
       lesserStake
     )
-    await apiWrapper.batchVoteForCouncilMember(m1KeyPairs.slice(K), m2KeyPairs.slice(K), salt.slice(K), greaterStake)
+    await apiWrapper.batchVoteForCouncilMember(m1KeyPairs.slice(k), m2KeyPairs.slice(k), salt.slice(k), greaterStake)
 
     // Revealing
     await apiWrapper.sudoStartRevealingPerion(sudo, now.addn(100))
-    await apiWrapper.batchRevealVote(m1KeyPairs.slice(0, K), m2KeyPairs.slice(0, K), salt.slice(0, K))
-    await apiWrapper.batchRevealVote(m1KeyPairs.slice(K), m2KeyPairs.slice(K), salt.slice(K))
+    await apiWrapper.batchRevealVote(m1KeyPairs.slice(0, k), m2KeyPairs.slice(0, k), salt.slice(0, k))
+    await apiWrapper.batchRevealVote(m1KeyPairs.slice(k), m2KeyPairs.slice(k), salt.slice(k))
     now = await apiWrapper.getBestBlock()
 
     // Resolving election

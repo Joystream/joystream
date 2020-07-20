@@ -62,7 +62,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         applicationStake,
         roleStake,
         openingActivationDelay,
-        WorkingGroups.storageWorkingGroup
+        WorkingGroups.StorageWorkingGroup
       ))
   )
   tap.test(
@@ -75,12 +75,12 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         applicationStake,
         roleStake,
         leadOpenignId,
-        WorkingGroups.storageWorkingGroup,
+        WorkingGroups.StorageWorkingGroup,
         false
       )
   )
   tap.test('Begin lead application review', async () =>
-    beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId, WorkingGroups.storageWorkingGroup)
+    beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId, WorkingGroups.StorageWorkingGroup)
   )
   tap.test('Fill lead opening', async () =>
     fillLeaderOpening(
@@ -91,7 +91,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       firstRewardInterval,
       rewardInterval,
       payoutAmount,
-      WorkingGroups.storageWorkingGroup
+      WorkingGroups.StorageWorkingGroup
     )
   )
 
@@ -108,7 +108,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         roleStake,
         openingActivationDelay,
         unstakingPeriod,
-        WorkingGroups.storageWorkingGroup,
+        WorkingGroups.StorageWorkingGroup,
         false
       ))
   )
@@ -120,15 +120,15 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       applicationStake,
       roleStake,
       workerOpenignId,
-      WorkingGroups.storageWorkingGroup,
+      WorkingGroups.StorageWorkingGroup,
       false
     )
   )
   tap.test('Begin application review', async () =>
-    beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, workerOpenignId, WorkingGroups.storageWorkingGroup)
+    beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, workerOpenignId, WorkingGroups.StorageWorkingGroup)
   )
   tap.test('Set mint capacity', async () =>
-    setMintCapacity(apiWrapper, sudo, mintCapacity, WorkingGroups.storageWorkingGroup)
+    setMintCapacity(apiWrapper, sudo, mintCapacity, WorkingGroups.StorageWorkingGroup)
   )
   tap.test('Fill worker opening', async () =>
     fillOpening(
@@ -140,13 +140,13 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       firstRewardInterval,
       rewardInterval,
       payoutAmount,
-      WorkingGroups.storageWorkingGroup
+      WorkingGroups.StorageWorkingGroup
     )
   )
 
-  tap.test('Await worker payout', async () => awaitPayout(apiWrapper, nKeyPairs, WorkingGroups.storageWorkingGroup))
+  tap.test('Await worker payout', async () => awaitPayout(apiWrapper, nKeyPairs, WorkingGroups.StorageWorkingGroup))
 
-  tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo, WorkingGroups.storageWorkingGroup))
+  tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo, WorkingGroups.StorageWorkingGroup))
 
   closeApi(apiWrapper)
 })

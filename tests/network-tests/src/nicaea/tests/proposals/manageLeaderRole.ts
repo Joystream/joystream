@@ -95,7 +95,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
         applicationStake,
         roleStake,
         new BN(openingId),
-        WorkingGroups.storageWorkingGroup,
+        WorkingGroups.StorageWorkingGroup,
         false
       )
   )
@@ -129,12 +129,12 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
         rewardInterval,
         payoutAmount,
         new BN(openingId),
-        WorkingGroups.storageWorkingGroup
+        WorkingGroups.StorageWorkingGroup
       ))
   )
   tap.test('Approve fill leader opening', async () => {
     voteForProposal(apiWrapper, m2KeyPairs, sudo, fillLeaderOpeningProposalId)
-    await expectLeaderSet(apiWrapper, leadKeyPair[0].address, WorkingGroups.storageWorkingGroup)
+    await expectLeaderSet(apiWrapper, leadKeyPair[0].address, WorkingGroups.StorageWorkingGroup)
   })
 
   let rewardProposalId: BN
@@ -146,12 +146,12 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
         m1KeyPairs,
         sudo,
         alteredPayoutAmount,
-        WorkingGroups.storageWorkingGroup
+        WorkingGroups.StorageWorkingGroup
       ))
   )
   tap.test('Approve new leader reward', async () => {
     voteForProposal(apiWrapper, m2KeyPairs, sudo, rewardProposalId)
-    await expectLeaderRewardAmountUpdated(apiWrapper, alteredPayoutAmount, WorkingGroups.storageWorkingGroup)
+    await expectLeaderRewardAmountUpdated(apiWrapper, alteredPayoutAmount, WorkingGroups.StorageWorkingGroup)
   })
 
   let decreaseStakeProposalId: BN
@@ -164,13 +164,13 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
         m1KeyPairs,
         sudo,
         stakeDecrement,
-        WorkingGroups.storageWorkingGroup
+        WorkingGroups.StorageWorkingGroup
       ))
   )
   tap.test('Approve decreased leader stake', async () => {
     newStake = applicationStake.sub(stakeDecrement)
     voteForProposal(apiWrapper, m2KeyPairs, sudo, decreaseStakeProposalId)
-    await expectLeaderStakeDecreased(apiWrapper, newStake, WorkingGroups.storageWorkingGroup)
+    await expectLeaderStakeDecreased(apiWrapper, newStake, WorkingGroups.StorageWorkingGroup)
   })
 
   let slashProposalId: BN
@@ -182,13 +182,13 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
         m1KeyPairs,
         sudo,
         slashAmount,
-        WorkingGroups.storageWorkingGroup
+        WorkingGroups.StorageWorkingGroup
       ))
   )
   tap.test('Approve leader slash', async () => {
     newStake = newStake.sub(slashAmount)
     voteForProposal(apiWrapper, m2KeyPairs, sudo, slashProposalId)
-    await expectLeaderSlashed(apiWrapper, newStake, WorkingGroups.storageWorkingGroup)
+    await expectLeaderSlashed(apiWrapper, newStake, WorkingGroups.StorageWorkingGroup)
   })
 
   let terminateLeaderRoleProposalId: BN
@@ -201,12 +201,12 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
         leadKeyPair[0].address,
         sudo,
         false,
-        WorkingGroups.storageWorkingGroup
+        WorkingGroups.StorageWorkingGroup
       ))
   )
   tap.test('Approve leader role termination', async () => {
     voteForProposal(apiWrapper, m2KeyPairs, sudo, terminateLeaderRoleProposalId)
-    await expectLeaderRoleTerminated(apiWrapper, WorkingGroups.storageWorkingGroup)
+    await expectLeaderRoleTerminated(apiWrapper, WorkingGroups.StorageWorkingGroup)
   })
 
   closeApi(apiWrapper)

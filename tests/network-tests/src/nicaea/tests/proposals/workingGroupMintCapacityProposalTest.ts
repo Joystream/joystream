@@ -40,7 +40,7 @@ tap.mocha.describe('Set storage working group mint capacity scenario', async () 
   councilTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, K, sudoUri, greaterStake, lesserStake)
 
   let mintCapacityProposalId: BN
-  const newMintCapacity: BN = (await apiWrapper.getWorkingGroupMintCapacity(WorkingGroups.storageWorkingGroup)).add(
+  const newMintCapacity: BN = (await apiWrapper.getWorkingGroupMintCapacity(WorkingGroups.StorageWorkingGroup)).add(
     mintCapacityIncrement
   )
   tap.test(
@@ -51,7 +51,7 @@ tap.mocha.describe('Set storage working group mint capacity scenario', async () 
         m1KeyPairs,
         sudo,
         newMintCapacity,
-        WorkingGroups.storageWorkingGroup
+        WorkingGroups.StorageWorkingGroup
       ))
   )
   tap.test('Approve mint capacity', async () => {

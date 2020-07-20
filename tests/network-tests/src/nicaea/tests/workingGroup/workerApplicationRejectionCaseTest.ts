@@ -61,7 +61,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         applicationStake,
         roleStake,
         leadOpeningActivationDelay,
-        WorkingGroups.storageWorkingGroup
+        WorkingGroups.StorageWorkingGroup
       ))
   )
   tap.test(
@@ -74,12 +74,12 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         applicationStake,
         roleStake,
         leadOpenignId,
-        WorkingGroups.storageWorkingGroup,
+        WorkingGroups.StorageWorkingGroup,
         false
       )
   )
   tap.test('Begin lead application review', async () =>
-    beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId, WorkingGroups.storageWorkingGroup)
+    beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId, WorkingGroups.StorageWorkingGroup)
   )
   tap.test('Fill lead opening', async () =>
     fillLeaderOpening(
@@ -90,7 +90,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       firstRewardInterval,
       rewardInterval,
       payoutAmount,
-      WorkingGroups.storageWorkingGroup
+      WorkingGroups.StorageWorkingGroup
     )
   )
 
@@ -107,7 +107,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         roleStake,
         openingActivationDelay,
         unstakingPeriod,
-        WorkingGroups.storageWorkingGroup,
+        WorkingGroups.StorageWorkingGroup,
         false
       ))
   )
@@ -119,12 +119,12 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       applicationStake,
       roleStake,
       openignId,
-      WorkingGroups.storageWorkingGroup,
+      WorkingGroups.StorageWorkingGroup,
       true
     )
   )
   tap.test('Begin accepting worker applications', async () =>
-    acceptApplications(apiWrapper, leadKeyPair[0], sudo, openignId, WorkingGroups.storageWorkingGroup)
+    acceptApplications(apiWrapper, leadKeyPair[0], sudo, openignId, WorkingGroups.StorageWorkingGroup)
   )
   tap.test('Apply for worker opening as non-member, expect failure', async () =>
     applyForOpening(
@@ -134,7 +134,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       applicationStake,
       roleStake,
       openignId,
-      WorkingGroups.storageWorkingGroup,
+      WorkingGroups.StorageWorkingGroup,
       true
     )
   )
@@ -146,15 +146,15 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       applicationStake,
       roleStake,
       openignId,
-      WorkingGroups.storageWorkingGroup,
+      WorkingGroups.StorageWorkingGroup,
       false
     )
   )
   tap.test('Terminate worker applicaitons', async () =>
-    terminateApplications(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, WorkingGroups.storageWorkingGroup)
+    terminateApplications(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, WorkingGroups.StorageWorkingGroup)
   )
 
-  tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo, WorkingGroups.storageWorkingGroup))
+  tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo, WorkingGroups.StorageWorkingGroup))
 
   closeApi(apiWrapper)
 })

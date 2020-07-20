@@ -20,7 +20,7 @@ import { WorkingGroupOpening } from '../dto/workingGroupOpening'
 import { FillOpeningParameters } from '../dto/fillOpeningParameters'
 
 export enum WorkingGroups {
-  storageWorkingGroup = 'storageWorkingGroup',
+  StorageWorkingGroup = 'storageWorkingGroup',
 }
 
 export class ApiWrapper {
@@ -43,7 +43,7 @@ export class ApiWrapper {
 
   public getWorkingGroupString(workingGroup: WorkingGroups): string {
     switch (workingGroup) {
-      case WorkingGroups.storageWorkingGroup:
+      case WorkingGroups.StorageWorkingGroup:
         return 'Storage'
       default:
         return 'Undefined'
@@ -995,7 +995,7 @@ export class ApiWrapper {
     const storageProviders: Vec<AccountId> = await this.api.query.actors.accountIdsByRole<Vec<AccountId>>(
       'StorageProvider'
     )
-    const accountWorkers: BN = await this.getWorkerIdByRoleAccount(address, WorkingGroups.storageWorkingGroup)
+    const accountWorkers: BN = await this.getWorkerIdByRoleAccount(address, WorkingGroups.StorageWorkingGroup)
     return accountWorkers !== undefined
   }
 

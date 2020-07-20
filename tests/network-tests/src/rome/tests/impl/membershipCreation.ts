@@ -11,7 +11,7 @@ import tap from 'tap'
 export function membershipTest(
   nKeyPairs: KeyringPair[],
   keyring: Keyring,
-  N: number,
+  n: number,
   paidTerms: number,
   nodeUrl: string,
   sudoUri: string
@@ -27,7 +27,7 @@ export function membershipTest(
     const provider = new WsProvider(nodeUrl)
     apiWrapper = await ApiWrapper.create(provider)
     sudo = keyring.addFromUri(sudoUri)
-    for (let i = 0; i < N; i++) {
+    for (let i = 0; i < n; i++) {
       nKeyPairs.push(keyring.addFromUri(i + uuid().substring(0, 8)))
     }
     aKeyPair = keyring.addFromUri(uuid().substring(0, 8))

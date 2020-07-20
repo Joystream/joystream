@@ -10,7 +10,7 @@ export function membershipTest(
   apiWrapper: ApiWrapper,
   nKeyPairs: KeyringPair[],
   keyring: Keyring,
-  N: number,
+  n: number,
   paidTerms: number,
   sudoUri: string
 ) {
@@ -21,7 +21,7 @@ export function membershipTest(
 
   tap.test('Membership creation test setup', async () => {
     sudo = keyring.addFromUri(sudoUri)
-    for (let i = 0; i < N; i++) {
+    for (let i = 0; i < n; i++) {
       nKeyPairs.push(keyring.addFromUri(i + uuid().substring(0, 8)))
     }
     aKeyPair = keyring.addFromUri(uuid().substring(0, 8))

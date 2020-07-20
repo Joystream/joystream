@@ -1,5 +1,4 @@
 import BN from 'bn.js'
-import { RewardPolicy } from '@nicaea/types/working-group'
 
 export class FillOpeningParameters {
   private amountPerPayout!: BN

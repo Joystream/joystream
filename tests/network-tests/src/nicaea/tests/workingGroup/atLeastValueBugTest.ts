@@ -57,7 +57,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         applicationStake,
         roleStake,
         openingActivationDelay,
-        WorkingGroups.storageWorkingGroup
+        WorkingGroups.StorageWorkingGroup
       ))
   )
   tap.test(
@@ -70,12 +70,12 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         applicationStake,
         roleStake,
         leadOpenignId,
-        WorkingGroups.storageWorkingGroup,
+        WorkingGroups.StorageWorkingGroup,
         false
       )
   )
   tap.test('Begin lead application review', async () =>
-    beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId, WorkingGroups.storageWorkingGroup)
+    beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId, WorkingGroups.StorageWorkingGroup)
   )
   tap.test('Fill lead opening', async () =>
     fillLeaderOpening(
@@ -86,7 +86,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       firstRewardInterval,
       rewardInterval,
       payoutAmount,
-      WorkingGroups.storageWorkingGroup
+      WorkingGroups.StorageWorkingGroup
     )
   )
 
@@ -103,7 +103,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         new BN(0),
         openingActivationDelay,
         unstakingPeriod,
-        WorkingGroups.storageWorkingGroup,
+        WorkingGroups.StorageWorkingGroup,
         true
       ))
   )
@@ -119,12 +119,12 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
         roleStake,
         openingActivationDelay,
         new BN(0),
-        WorkingGroups.storageWorkingGroup,
+        WorkingGroups.StorageWorkingGroup,
         true
       ))
   )
 
-  tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo, WorkingGroups.storageWorkingGroup))
+  tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo, WorkingGroups.StorageWorkingGroup))
 
   closeApi(apiWrapper)
 })

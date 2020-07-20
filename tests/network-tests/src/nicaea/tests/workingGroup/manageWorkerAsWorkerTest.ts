@@ -62,7 +62,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
         applicationStake,
         roleStake,
         openingActivationDelay,
-        WorkingGroups.storageWorkingGroup
+        WorkingGroups.StorageWorkingGroup
       ))
   )
   tap.test(
@@ -75,12 +75,12 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
         applicationStake,
         roleStake,
         leadOpenignId,
-        WorkingGroups.storageWorkingGroup,
+        WorkingGroups.StorageWorkingGroup,
         false
       )
   )
   tap.test('Begin lead application review', async () =>
-    beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId, WorkingGroups.storageWorkingGroup)
+    beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId, WorkingGroups.StorageWorkingGroup)
   )
   tap.test('Fill lead opening', async () =>
     fillLeaderOpening(
@@ -91,7 +91,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       firstRewardInterval,
       rewardInterval,
       payoutAmount,
-      WorkingGroups.storageWorkingGroup
+      WorkingGroups.StorageWorkingGroup
     )
   )
 
@@ -108,7 +108,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
         roleStake,
         openingActivationDelay,
         unstakingPeriod,
-        WorkingGroups.storageWorkingGroup,
+        WorkingGroups.StorageWorkingGroup,
         false
       ))
   )
@@ -122,12 +122,12 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
         applicationStake,
         roleStake,
         openignId,
-        WorkingGroups.storageWorkingGroup,
+        WorkingGroups.StorageWorkingGroup,
         false
       )
   )
   tap.test('Begin application review', async () =>
-    beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, openignId, WorkingGroups.storageWorkingGroup)
+    beginApplicationReview(apiWrapper, leadKeyPair[0], sudo, openignId, WorkingGroups.StorageWorkingGroup)
   )
   tap.test('Fill worker opening', async () =>
     fillOpening(
@@ -139,21 +139,21 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       firstRewardInterval,
       rewardInterval,
       payoutAmount,
-      WorkingGroups.storageWorkingGroup
+      WorkingGroups.StorageWorkingGroup
     )
   )
 
   tap.test('Increase worker stake', async () =>
-    increaseStake(apiWrapper, nKeyPairs, sudo, WorkingGroups.storageWorkingGroup)
+    increaseStake(apiWrapper, nKeyPairs, sudo, WorkingGroups.StorageWorkingGroup)
   )
   tap.test('Update reward account', async () =>
-    updateRewardAccount(apiWrapper, nKeyPairs, keyring, sudo, WorkingGroups.storageWorkingGroup)
+    updateRewardAccount(apiWrapper, nKeyPairs, keyring, sudo, WorkingGroups.StorageWorkingGroup)
   )
   tap.test('Update role account', async () =>
-    updateRoleAccount(apiWrapper, nKeyPairs, keyring, sudo, WorkingGroups.storageWorkingGroup)
+    updateRoleAccount(apiWrapper, nKeyPairs, keyring, sudo, WorkingGroups.StorageWorkingGroup)
   )
 
-  tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo, WorkingGroups.storageWorkingGroup))
+  tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo, WorkingGroups.StorageWorkingGroup))
 
   closeApi(apiWrapper)
 })
