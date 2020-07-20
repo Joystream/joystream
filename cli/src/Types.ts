@@ -142,6 +142,35 @@ export type GroupOpeningStakes = {
   role?: StakingPolicy
 }
 
+export const stakingPolicyUnstakingPeriodKeys = [
+  'crowded_out_unstaking_period_length',
+  'review_period_expired_unstaking_period_length',
+] as const
+
+export type StakingPolicyUnstakingPeriodKey = typeof stakingPolicyUnstakingPeriodKeys[number]
+
+export const openingPolicyUnstakingPeriodsKeys = [
+  'fill_opening_failed_applicant_application_stake_unstaking_period',
+  'fill_opening_failed_applicant_role_stake_unstaking_period',
+  'fill_opening_successful_applicant_application_stake_unstaking_period',
+  'terminate_application_stake_unstaking_period',
+  'terminate_role_stake_unstaking_period',
+  'exit_role_application_stake_unstaking_period',
+  'exit_role_stake_unstaking_period',
+] as const
+
+export type OpeningPolicyUnstakingPeriodsKey = typeof openingPolicyUnstakingPeriodsKeys[number]
+export type UnstakingPeriodsKey =
+  | OpeningPolicyUnstakingPeriodsKey
+  | 'crowded_out_application_stake_unstaking_period_length'
+  | 'crowded_out_role_stake_unstaking_period_length'
+  | 'review_period_expired_application_stake_unstaking_period_length'
+  | 'review_period_expired_role_stake_unstaking_period_length'
+
+export type UnstakingPeriods = {
+  [k in UnstakingPeriodsKey]: number
+}
+
 export type GroupOpening = {
   wgOpeningId: number
   openingId: number
@@ -150,6 +179,7 @@ export type GroupOpening = {
   stakes: GroupOpeningStakes
   applications: GroupApplication[]
   type: OpeningType
+  unstakingPeriods: UnstakingPeriods
 }
 
 // Some helper structs for generating human_readable_text in working group opening extrinsic

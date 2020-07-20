@@ -1,7 +1,7 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { displayTable, displayCollapsedRow, displayHeader } from '../../helpers/display'
 import _ from 'lodash'
-import { OpeningStatus, GroupOpeningStage, GroupOpeningStakes } from '../../Types'
+import { OpeningStatus, GroupOpeningStage, GroupOpeningStakes, NameValueObj, UnstakingPeriodsKey } from '../../Types'
 import { StakingAmountLimitModeKeys, StakingPolicy } from '@joystream/types/hiring'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
@@ -64,6 +64,14 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
       ...this.stakeColumns(opening.stakes),
     }
     displayCollapsedRow(openingRow)
+
+    displayHeader('Unstaking periods')
+    const periodsRow: { [k: string]: string } = {}
+    for (const key of Object.keys(opening.unstakingPeriods).sort()) {
+      const displayKey = _.startCase(key) + ':  '
+      periodsRow[displayKey] = opening.unstakingPeriods[key as UnstakingPeriodsKey].toLocaleString() + ' blocks'
+    }
+    displayCollapsedRow(periodsRow)
 
     displayHeader(`Applications (${opening.applications.length})`)
     const applicationsRows = opening.applications.map((a) => ({
