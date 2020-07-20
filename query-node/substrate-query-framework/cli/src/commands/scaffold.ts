@@ -2,10 +2,11 @@ import { Command } from '@oclif/command';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as utils from './../utils/utils';
-
 import cli from 'cli-ux';
 import { getTemplatePath } from '../utils/utils';
 import Mustache = require('mustache');
+import dotenv = require('dotenv');
+import execa = require('execa');
 
 const DEFAULT_WS_API_ENDPOINT = 'wss://kusama-rpc.polkadot.io/';
 
@@ -14,6 +15,9 @@ export default class Scaffold extends Command {
 
   async run(): Promise<void> {
     await fs.writeFile(path.join(process.cwd(), '.env'), await this.promptDotEnv());
+
+    dotenv.config();
+
     this.log('Your settings have been saved to .env, feel free to edit');
 
     cli.action.start('Scaffolding');
@@ -26,6 +30,9 @@ export default class Scaffold extends Command {
 
     // copy sample graphql schema
     await utils.copyTemplateToCWD('scaffold/schema.graphql', 'schema.graphql');
+
+    await this.setupNodeProject();
+    await this.setupDocker();
 
     cli.action.stop();
   }
@@ -57,4 +64,29 @@ export default class Scaffold extends Command {
       appPort,
     });
   }
+
+  async setupDocker(): Promise<void> {
+    await utils.copyTemplateToCWD('scaffold/docker-compose.yml', 'docker-compose.yml');
+
+    await utils.copyTemplateToCWD('scaffold/docker/Dockerfile.indexer', path.join('docker', 'Dockerfile.indexer'));
+    await utils.copyTemplateToCWD('scaffold/docker/Dockerfile.server', path.join('docker', 'Dockerfile.server'));
+
+    await utils.copyTemplateToCWD('scaffold/.dockerignore', '.dockerignore');
+  }
+
+  async setupNodeProject(): Promise<void> {
+    const template = await fs.readFile(getTemplatePath('scaffold/package.json'), 'utf-8');
+
+    await fs.writeFile(
+      path.join(process.cwd(), 'package.json'),
+      Mustache.render(template, {
+        projectName: process.env.PROJECT_NAME,
+      })
+    );
+
+    await execa('yarn', ['install']);
+  }
+
+
+  
 }

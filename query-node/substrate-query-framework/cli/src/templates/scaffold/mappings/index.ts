@@ -1,0 +1,1 @@
+export { handleProposed } from './treasury'
