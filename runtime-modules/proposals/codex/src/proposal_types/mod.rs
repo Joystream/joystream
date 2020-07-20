@@ -351,21 +351,10 @@ impl Default for ProposalsConfigParameters {
 }
 
 impl ProposalsConfigParameters {
-    /// Development chain config. 0 grace period for all proposals, ie.
-    /// proposals executed immediatly. Short voting period.
-    pub fn development() -> Self {
-        Self::with_grace_and_voting_periods(0, 200)
-    }
-
-    /// Staging chain config. Shorter grace periods and voting periods than default.
-    pub fn testing() -> Self {
-        Self::with_grace_and_voting_periods(200, 600)
-    }
-
     /// Set same voting_period for all proposals. For proposals
     /// that by default have 0 grace period remain with 0 grace period.
     /// All remaining proposals get assigned grace_period.
-    fn with_grace_and_voting_periods(grace_period: u32, voting_period: u32) -> Self {
+    pub fn with_grace_and_voting_periods(grace_period: u32, voting_period: u32) -> Self {
         ProposalsConfigParameters {
             set_validator_count_proposal_voting_period: voting_period,
             set_validator_count_proposal_grace_period: 0,

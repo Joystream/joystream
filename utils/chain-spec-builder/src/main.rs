@@ -23,7 +23,10 @@ use ansi_term::Style;
 use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
 use structopt::StructOpt;
 
-use joystream_node::chain_spec::{self, chain_spec_properties, AccountId};
+use joystream_node::{
+    chain_spec::{self, chain_spec_properties, AccountId},
+    proposals_config,
+};
 use sr_keystore::Store as Keystore;
 use sr_primitives::{
     crypto::{Public, Ss58Codec},
@@ -106,7 +109,7 @@ fn genesis_constructor(
         authorities,
         sudo_account.clone(),
         endowed_accounts.to_vec(),
-        joystream_runtime::ProposalsConfigParameters::default(),
+        proposals_config::default(),
     )
 }
 

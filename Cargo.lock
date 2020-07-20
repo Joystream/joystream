@@ -394,7 +394,6 @@ version = "2.1.0"
 dependencies = [
  "ansi_term 0.12.1",
  "joystream-node",
- "joystream-node-runtime",
  "rand 0.7.3",
  "structopt",
  "substrate-keystore",

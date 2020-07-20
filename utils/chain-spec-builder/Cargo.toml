@@ -13,7 +13,6 @@ ansi_term = "0.12.1"
 rand = "0.7.2"
 structopt = "0.3.5"
 joystream-node = { path = "../../node" }
-joystream-runtime = { path = "../../runtime", package = "joystream-node-runtime" }
 
 [dependencies.sr-keystore]
 git = 'https://github.com/paritytech/substrate.git'
