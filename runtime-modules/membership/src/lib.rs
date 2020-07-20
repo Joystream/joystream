@@ -13,7 +13,7 @@ use codec::{Codec, Decode, Encode};
 use rstd::borrow::ToOwned;
 use rstd::prelude::*;
 use sr_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
-use srml_support::traits::{Currency, Get};
+use srml_support::traits::Currency;
 use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
 use system::{self, ensure_root, ensure_signed};
 
@@ -59,9 +59,6 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + MaybeSerialize
         + PartialEq
         + Ord;
-
-    /// Initial balance of members created at genesis
-    type InitialMembersBalance: Get<BalanceOf<Self>>;
 }
 
 const FIRST_PAID_TERMS_ID: u32 = 1;
@@ -216,9 +213,6 @@ decl_storage! {
                 };
 
                 <Module<T>>::insert_member(&who, &user_info, EntryMethod::Genesis);
-
-                // Give member starting balance
-                T::Currency::deposit_creating(&who, T::InitialMembersBalance::get());
             }
         });
     }

@@ -50,7 +50,6 @@ parameter_types! {
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
-    pub const InitialMembersBalance: u64 = 2000;
     pub const StakePoolId: [u8; 8] = *b"joystake";
     pub const ExistentialDeposit: u32 = 0;
     pub const TransferFee: u32 = 0;
@@ -105,7 +104,6 @@ impl membership::Trait for Test {
     type PaidTermId = u64;
     type SubscriptionId = u64;
     type ActorId = u64;
-    type InitialMembersBalance = InitialMembersBalance;
 }
 
 impl common::currency::GovernanceCurrency for Test {

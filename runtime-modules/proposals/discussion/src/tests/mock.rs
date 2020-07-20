@@ -81,7 +81,6 @@ impl membership::Trait for Test {
     type PaidTermId = u64;
     type SubscriptionId = u64;
     type ActorId = u64;
-    type InitialMembersBalance = ();
 }
 
 impl crate::Trait for Test {

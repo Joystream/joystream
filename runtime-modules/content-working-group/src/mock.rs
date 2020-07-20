@@ -36,7 +36,6 @@ parameter_types! {
     pub const CreationFee: u32 = 0;
     pub const TransactionBaseFee: u32 = 1;
     pub const TransactionByteFee: u32 = 0;
-    pub const InitialMembersBalance: u64 = 2000;
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
@@ -179,7 +178,6 @@ impl membership::Trait for Test {
     type PaidTermId = u64;
     type SubscriptionId = u64;
     type ActorId = u64;
-    type InitialMembersBalance = InitialMembersBalance;
 }
 
 impl Trait for Test {

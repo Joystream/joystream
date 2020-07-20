@@ -68,7 +68,6 @@ impl membership::Trait for Test {
     type SubscriptionId = u32;
     type PaidTermId = u32;
     type ActorId = u32;
-    type InitialMembersBalance = InitialMembersBalance;
 }
 impl minting::Trait for Test {
     type Currency = Balances;
@@ -85,7 +84,6 @@ parameter_types! {
     pub const CreationFee: u32 = 0;
     pub const TransactionBaseFee: u32 = 1;
     pub const TransactionByteFee: u32 = 0;
-    pub const InitialMembersBalance: u32 = 0;
 }
 
 impl balances::Trait for Test {
