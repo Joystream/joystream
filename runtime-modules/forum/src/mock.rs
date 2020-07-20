@@ -314,7 +314,7 @@ pub fn delete_thread_mock(
     assert_eq!(
         TestForumModule::delete_thread(
             mock_origin(origin.clone()),
-            moderator_id,
+            PrivilegedActor::Moderator(moderator_id),
             category_id,
             thread_id,
         ),
@@ -340,7 +340,7 @@ pub fn move_thread_mock(
     assert_eq!(
         TestForumModule::move_thread_to_category(
             mock_origin(origin.clone()),
-            moderator_id,
+            PrivilegedActor::Moderator(moderator_id),
             category_id,
             thread_id,
             new_category_id,
@@ -563,7 +563,7 @@ pub fn moderate_thread_mock(
     assert_eq!(
         TestForumModule::moderate_thread(
             mock_origin(origin),
-            moderator_id,
+            PrivilegedActor::Moderator(moderator_id),
             category_id,
             thread_id,
             rationale.clone(),
@@ -594,7 +594,7 @@ pub fn moderate_post_mock(
     assert_eq!(
         TestForumModule::moderate_post(
             mock_origin(origin),
-            moderator_id,
+            PrivilegedActor::Moderator(moderator_id),
             category_id,
             thread_id,
             post_id,
@@ -625,7 +625,7 @@ pub fn set_stickied_threads_mock(
     assert_eq!(
         TestForumModule::set_stickied_threads(
             mock_origin(origin),
-            moderator_id,
+            PrivilegedActor::Moderator(moderator_id),
             category_id,
             stickied_ids.clone(),
         ),

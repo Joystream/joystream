@@ -511,9 +511,6 @@ decl_error! {
         /// Category not being updated.
         CategoryNotBeingUpdated,
 
-        /// Moderator can not moderate category.
-        ModeratorModerateCategory,
-
         /// Ancestor category immutable, i.e. deleted or archived
         AncestorCategoryImmutable,
 
@@ -872,11 +869,11 @@ decl_module! {
         }
 
 
-        fn delete_thread(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId) -> Result<(), Error> {
+        fn delete_thread(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId) -> Result<(), Error> {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            let (_, thread) = Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
+            let (_, thread) = Self::ensure_can_moderate_thread(origin, &actor, &category_id, &thread_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -895,12 +892,12 @@ decl_module! {
             Ok(())
         }
 
-        fn move_thread_to_category(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, new_category_id: T::CategoryId) -> Result<(), Error> {
+        fn move_thread_to_category(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, new_category_id: T::CategoryId) -> Result<(), Error> {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
             // Make sure moderator move between selected categories
-            let (_, thread) = Self::ensure_can_move_thread(origin, &moderator_id, &category_id, &thread_id, &new_category_id)?;
+            let (_, thread) = Self::ensure_can_move_thread(origin, &actor, &category_id, &thread_id, &new_category_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -968,12 +965,12 @@ decl_module! {
         }
 
         /// Moderate thread
-        fn moderate_thread(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, rationale: Vec<u8>) -> Result<(), Error> {
+        fn moderate_thread(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, rationale: Vec<u8>) -> Result<(), Error> {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Ensure moderator is allowed to moderate post
-            Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
+            // Ensure actor is allowed to moderate post
+            Self::ensure_can_moderate_thread(origin, &actor, &category_id, &thread_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1064,12 +1061,12 @@ decl_module! {
         }
 
         /// Moderate post
-        fn moderate_post(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, rationale: Vec<u8>) -> Result<(), Error> {
+        fn moderate_post(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, rationale: Vec<u8>) -> Result<(), Error> {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Ensure moderator is allowed to moderate post
-            Self::ensure_can_moderate_post(origin, &moderator_id, &category_id, &thread_id, &post_id)?;
+            // Ensure actor is allowed to moderate post
+            Self::ensure_can_moderate_post(origin, &actor, &category_id, &thread_id, &post_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1088,11 +1085,11 @@ decl_module! {
         }
 
         /// Set stickied threads for category
-        fn  set_stickied_threads(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, stickied_ids: Vec<T::ThreadId>) -> Result<(), Error> {
+        fn  set_stickied_threads(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId, stickied_ids: Vec<T::ThreadId>) -> Result<(), Error> {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            Self::ensure_can_set_stickied_threads(origin, &moderator_id, &category_id, &stickied_ids)?;
+            Self::ensure_can_set_stickied_threads(origin, &actor, &category_id, &stickied_ids)?;
 
             //
             // == MUTATION SAFE ==
@@ -1269,19 +1266,16 @@ impl<T: Trait> Module<T> {
 
     fn ensure_can_moderate_post(
         origin: T::Origin,
-        moderator_id: &T::ModeratorId,
+        actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
     ) -> Result<(), Error> {
-        // Get moderator id.
-        let who = ensure_signed(origin)?;
+        // Ensure the moderator can moderate the category
+        Self::ensure_can_moderate_category(origin, &actor, &category_id)?;
 
         // Make sure post exists and is mutable
         Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
-
-        // ensure the moderator can moderate the category
-        Self::ensure_can_moderate_category(&who, &moderator_id, &category_id)?;
 
         Ok(())
     }
@@ -1316,29 +1310,13 @@ impl<T: Trait> Module<T> {
         Error,
     > {
         // Check actor's role
-        match actor {
-            PrivilegedActor::Lead => Self::ensure_is_forum_lead(origin)?,
-            PrivilegedActor::Moderator(moderator_id) => {
-                Self::ensure_is_moderator(origin, &moderator_id)?
-            }
-        };
+        Self::ensure_actor_role(origin, actor)?;
 
         let thread = Self::ensure_thread_is_mutable(category_id, thread_id)?;
         let category = <CategoryById<T>>::get(category_id);
 
-        // Closure ensuring moderator can delete category
-        let ensure_moderator_can_update = |moderator_id: &T::ModeratorId| -> Result<(), Error> {
-            Self::ensure_can_moderate_category_path(moderator_id, &category_id)
-                .map_err(|_| Error::ModeratorCantUpdateCategory)?;
-
-            Ok(())
-        };
-
-        // Decide if actor can delete category
-        match actor {
-            PrivilegedActor::Lead => (),
-            PrivilegedActor::Moderator(moderator_id) => ensure_moderator_can_update(moderator_id)?,
-        };
+        // Ensure actor can delete category
+        Self::ensure_can_moderate_category_path(actor, category_id)?;
 
         Ok((category, thread))
     }
@@ -1381,6 +1359,18 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(thread)
+    }
+
+    fn ensure_actor_role(
+        origin: T::Origin,
+        actor: &PrivilegedActor<T>,
+    ) -> Result<T::AccountId, Error> {
+        match actor {
+            PrivilegedActor::Lead => Self::ensure_is_forum_lead(origin),
+            PrivilegedActor::Moderator(moderator_id) => {
+                Self::ensure_is_moderator(origin, &moderator_id)
+            }
+        }
     }
 
     /// Ensure forum user is lead
@@ -1436,10 +1426,10 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    // Ensure moderator can manipulate thread.
+    // Ensure actor can manipulate thread.
     fn ensure_can_moderate_thread(
         origin: T::Origin,
-        moderator_id: &T::ModeratorId,
+        actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
     ) -> Result<
@@ -1450,18 +1440,16 @@ impl<T: Trait> Module<T> {
         Error,
     > {
         // Check that account is forum member
-        let who = Self::ensure_is_moderator(origin, &moderator_id)?;
+        let who = Self::ensure_can_moderate_category(origin, actor, category_id)?;
 
         let thread = Self::ensure_thread_exists(category_id, thread_id)?;
-
-        Self::ensure_can_moderate_category(&who, moderator_id, category_id)?;
 
         Ok((who, thread))
     }
 
     fn ensure_can_move_thread(
         origin: T::Origin,
-        moderator_id: &T::ModeratorId,
+        actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         new_category_id: &T::CategoryId,
@@ -1475,10 +1463,10 @@ impl<T: Trait> Module<T> {
         ensure!(category_id != new_category_id, Error::ThreadMoveInvalid,);
 
         let (account_id, thread) =
-            Self::ensure_can_moderate_thread(origin, moderator_id, category_id, thread_id)
+            Self::ensure_can_moderate_thread(origin, actor, category_id, thread_id)
                 .map_err(|_| Error::ModeratorModerateOriginCategory)?;
 
-        Self::ensure_can_moderate_category(&account_id, moderator_id, new_category_id)
+        Self::ensure_can_moderate_category_path(actor, new_category_id)
             .map_err(|_| Error::ModeratorModerateDestinationCategory)?;
 
         Ok((account_id, thread))
@@ -1603,26 +1591,18 @@ impl<T: Trait> Module<T> {
             Error::CategoryNotEmptyCategories,
         );
 
-        // Closure ensuring moderator can delete category
-        let can_moderator_delete =
-            |moderator_id: &T::ModeratorId,
-             category: Category<T::CategoryId, T::ThreadId, T::Hash>| {
-                if let Some(parent_category_id) = category.parent_category_id {
-                    Self::ensure_can_moderate_category_path(moderator_id, &parent_category_id)
-                        .map_err(|_| Error::ModeratorCantDeleteCategory)?;
+        // check moderator's privilege
+        if let Some(parent_category_id) = category.parent_category_id {
+            Self::ensure_can_moderate_category_path(actor, &parent_category_id)
+                .map_err(|_| Error::ModeratorCantDeleteCategory)?;
 
-                    return Ok(category);
-                }
+            return Ok(category);
+        }
 
-                Err(Error::ModeratorCantDeleteCategory)
-            };
-
-        // Decide if actor can delete category
+        // category is root - only lead can delete it
         match actor {
             PrivilegedActor::Lead => Ok(category),
-            PrivilegedActor::Moderator(moderator_id) => {
-                can_moderator_delete(moderator_id, category)
-            }
+            PrivilegedActor::Moderator(_) => Err(Error::ModeratorCantDeleteCategory),
         }
     }
 
@@ -1632,12 +1612,7 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
     ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error> {
         // Check actor's role
-        match actor {
-            PrivilegedActor::Lead => Self::ensure_is_forum_lead(origin)?,
-            PrivilegedActor::Moderator(moderator_id) => {
-                Self::ensure_is_moderator(origin, &moderator_id)?
-            }
-        };
+        Self::ensure_can_moderate_category(origin, actor, category_id)?;
 
         // Ensure category exists
         if !<CategoryById<T>>::exists(category_id) {
@@ -1646,67 +1621,65 @@ impl<T: Trait> Module<T> {
 
         let category = <CategoryById<T>>::get(category_id);
 
-        // Closure ensuring moderator can delete category
-        let can_moderator_update =
-            |moderator_id: &T::ModeratorId,
-             category: Category<T::CategoryId, T::ThreadId, T::Hash>| {
-                Self::ensure_can_moderate_category_path(moderator_id, &category_id)
-                    .map_err(|_| Error::ModeratorCantUpdateCategory)?;
-
-                Ok(category)
-            };
-
-        // Decide if actor can delete category
-        match actor {
-            PrivilegedActor::Lead => Ok(category),
-            PrivilegedActor::Moderator(moderator_id) => {
-                can_moderator_update(moderator_id, category)
-            }
-        }
+        Ok(category)
     }
 
     /// check if an account can moderate a category.
     fn ensure_can_moderate_category(
-        account_id: &T::AccountId,
-        moderator_id: &T::ModeratorId,
+        origin: T::Origin,
+        actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
-    ) -> Result<(), Error> {
-        // Ensure moderator account registered before
-        Self::ensure_is_moderator_account(account_id, moderator_id)?;
+    ) -> Result<T::AccountId, Error> {
+        // Ensure actor's role
+        let who = Self::ensure_actor_role(origin, actor)?;
 
-        Self::ensure_can_moderate_category_path(moderator_id, category_id)?;
+        Self::ensure_can_moderate_category_path(actor, category_id)?;
 
-        Ok(())
+        Ok(who)
     }
 
     // check that moderator is allowed to manipulate category in hierarchy
     fn ensure_can_moderate_category_path(
-        moderator_id: &T::ModeratorId,
+        actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
-    ) -> Result<(), Error> {
-        // Get path from category to root
-        let category_tree_path = Self::build_category_tree_path(category_id);
-
-        for item in category_tree_path {
-            if <CategoryByModerator<T>>::exists(item.id, moderator_id) {
-                return Ok(());
+    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, Error> {
+        fn check_moderator<T: Trait>(
+            category_tree_path: &CategoryTreePathArg<T::CategoryId, T::ThreadId, T::Hash>,
+            moderator_id: &T::ModeratorId,
+        ) -> Result<(), Error> {
+            for item in category_tree_path {
+                if <CategoryByModerator<T>>::exists(item.id, moderator_id) {
+                    return Ok(());
+                }
             }
+
+            Err(Error::ModeratorCantUpdateCategory)
         }
 
-        Err(Error::ModeratorModerateCategory)
+        // TODO: test if this line can possibly create panic! It calls assert internaly
+        // Get path from category to root + ensure category exists
+        let category_tree_path = Self::build_category_tree_path(category_id);
+
+        match actor {
+            PrivilegedActor::Lead => (),
+            PrivilegedActor::Moderator(moderator_id) => {
+                check_moderator::<T>(&category_tree_path, moderator_id)?
+            }
+        };
+
+        let category = category_tree_path[0].clone();
+
+        Ok(category)
     }
 
     fn ensure_can_set_stickied_threads(
         origin: T::Origin,
-        moderator_id: &T::ModeratorId,
+        actor: &PrivilegedActor<T>,
         category_id: &T::CategoryId,
         stickied_ids: &[T::ThreadId],
     ) -> Result<(), Error> {
-        // Get moderator id.
-        let who = Self::ensure_is_moderator(origin, &moderator_id)?;
-
-        // ensure the moderator can moderate the category
-        Self::ensure_can_moderate_category(&who, &moderator_id, &category_id)?;
+        // Ensure actor can moderate the category
+        Self::ensure_can_moderate_category(origin, &actor, &category_id)?;
 
         // Ensure all thread id valid and is under the category
         for item in stickied_ids {
