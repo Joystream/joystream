@@ -2,6 +2,7 @@ import BN from 'bn.js';
 import { assert } from 'chai';
 import { ApiWrapper, WorkingGroups } from '../../../utils/apiWrapper';
 import { KeyringPair } from '@polkadot/keyring/types';
+import { Balance } from '@polkadot/types/interfaces';
 import { Keyring } from '@polkadot/api';
 import { v4 as uuid } from 'uuid';
 import { RewardRelationship } from '@nicaea/types/recurring-rewards';
@@ -23,7 +24,7 @@ export async function addWorkerOpening(
   expectFailure: boolean
 ): Promise<BN> {
   // Worker opening construction
-  let opening = new WorkingGroupOpening();
+  const opening = new WorkingGroupOpening();
   const activateAtBlock: BN | undefined = activationDelay.eqn(0)
     ? undefined
     : (await apiWrapper.getBestBlock()).add(activationDelay);
@@ -41,10 +42,10 @@ export async function addWorkerOpening(
   opening.setSuccessfulApplicantApplicationStakeUnstakingPeriod(unstakingPeriod);
   opening.setFailedApplicantApplicationStakeUnstakingPeriod(unstakingPeriod);
   opening.setFailedApplicantRoleStakeUnstakingPeriod(unstakingPeriod);
-  opening.setTerminateCuratorApplicationStakeUnstakingPeriod(unstakingPeriod);
-  opening.setTerminateCuratorRoleStakeUnstakingPeriod(unstakingPeriod);
-  opening.setExitCuratorRoleApplicationStakeUnstakingPeriod(unstakingPeriod);
-  opening.setExitCuratorRoleStakeUnstakingPeriod(unstakingPeriod);
+  opening.setTerminateApplicationStakeUnstakingPeriod(unstakingPeriod);
+  opening.setTerminateRoleStakeUnstakingPeriod(unstakingPeriod);
+  opening.setExitRoleApplicationStakeUnstakingPeriod(unstakingPeriod);
+  opening.setExitRoleStakeUnstakingPeriod(unstakingPeriod);
   opening.setText(uuid().substring(0, 8));
   opening.setOpeningType('Worker');
 
@@ -75,7 +76,7 @@ export async function addLeaderOpening(
   const activateAtBlock: BN | undefined = activationDelay.eqn(0)
     ? undefined
     : (await apiWrapper.getBestBlock()).add(activationDelay);
-  let opening = new WorkingGroupOpening();
+  const opening = new WorkingGroupOpening();
   opening.setActivateAtBlock(activateAtBlock);
   opening.setMaxActiveApplicants(new BN(membersKeyPairs.length));
   opening.setMaxReviewPeriodLength(new BN(32));
@@ -90,10 +91,10 @@ export async function addLeaderOpening(
   opening.setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1));
   opening.setFailedApplicantApplicationStakeUnstakingPeriod(new BN(1));
   opening.setFailedApplicantRoleStakeUnstakingPeriod(new BN(1));
-  opening.setTerminateCuratorApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setTerminateCuratorRoleStakeUnstakingPeriod(new BN(1));
-  opening.setExitCuratorRoleApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setExitCuratorRoleStakeUnstakingPeriod(new BN(1));
+  opening.setTerminateApplicationStakeUnstakingPeriod(new BN(1));
+  opening.setTerminateRoleStakeUnstakingPeriod(new BN(1));
+  opening.setExitRoleApplicationStakeUnstakingPeriod(new BN(1));
+  opening.setExitRoleStakeUnstakingPeriod(new BN(1));
   opening.setText(uuid().substring(0, 8));
   opening.setOpeningType('leader');
 
@@ -180,7 +181,7 @@ export async function beginApplicationReview(
   await apiWrapper.transferBalance(sudo, lead.address, beginReviewFee);
 
   // Begin application review
-  const beginApplicantReviewPromise: Promise<void> = apiWrapper.expectApplicationReviewBegan();
+  const beginApplicantReviewPromise: Promise<BN> = apiWrapper.expectApplicationReviewBegan();
   await apiWrapper.beginApplicantReview(lead, openingId, module);
   await beginApplicantReviewPromise;
 }
@@ -228,6 +229,8 @@ export async function fillOpening(
     module
   );
   const applicationIdToWorkerIdMap: ApplicationIdToWorkerIdMap = await fillOpeningPromise;
+
+  // Assertions
   applicationIdToWorkerIdMap.forEach(async (workerId, applicationId) => {
     const worker: Worker = await apiWrapper.getWorkerById(workerId, module);
     const application: Application = await apiWrapper.getApplicationById(applicationId, module);
@@ -236,8 +239,6 @@ export async function fillOpening(
       `Role account ids does not match, worker account: ${worker.role_account_id}, application account ${application.role_account_id}`
     );
   });
-
-  // Assertions
   const openingWorkersAccounts: string[] = (await apiWrapper.getWorkers(module)).map(worker =>
     worker.role_account_id.toString()
   );
@@ -274,23 +275,17 @@ export async function fillLeaderOpening(
     payoutInterval,
     module
   );
+
+  // Assertions
   const applicationIdToWorkerIdMap: ApplicationIdToWorkerIdMap = await fillOpeningPromise;
   applicationIdToWorkerIdMap.forEach(async (workerId, applicationId) => {
     const worker: Worker = await apiWrapper.getWorkerById(workerId, module);
     const application: Application = await apiWrapper.getApplicationById(applicationId, module);
     assert(
       worker.role_account_id.toString() === application.role_account_id.toString(),
-      `Role account ids does not match, worker account: ${worker.role_account_id}, application account ${application.role_account_id}`
+      `Role account ids does not match, leader account: ${worker.role_account_id}, application account ${application.role_account_id}`
     );
   });
-
-  // Assertions
-  const openingWorkersAccounts: string[] = (await apiWrapper.getWorkers(module)).map(worker =>
-    worker.role_account_id.toString()
-  );
-  membersKeyPairs.forEach(keyPair =>
-    assert(openingWorkersAccounts.includes(keyPair.address), `Account ${keyPair.address} is not leader`)
-  );
 }
 
 export async function increaseStake(
@@ -508,4 +503,91 @@ export async function awaitPayout(apiWrapper: ApiWrapper, membersKeyPairs: Keyri
 
 export async function setMintCapacity(apiWrapper: ApiWrapper, sudo: KeyringPair, capacity: BN, module: WorkingGroups) {
   await apiWrapper.sudoSetWorkingGroupMintCapacity(sudo, capacity, module);
+}
+
+export async function expectLeadOpeningAdded(apiWrapper: ApiWrapper): Promise<BN> {
+  return apiWrapper.expectOpeningAdded();
+}
+
+export async function expectLeaderSet(
+  apiWrapper: ApiWrapper,
+  leaderAddress: string,
+  module: WorkingGroups
+): Promise<BN> {
+  const leadWorkerId: BN = await apiWrapper.expectLeaderSet();
+  const worker: Worker = await apiWrapper.getWorkerById(leadWorkerId, module);
+  const leaderApplicationId = (await apiWrapper.getApplicationsIdsByRoleAccount(leaderAddress, module))[0];
+  const application: Application = await apiWrapper.getApplicationById(leaderApplicationId, module);
+  assert(
+    worker.role_account_id.toString() === application.role_account_id.toString(),
+    `Role account ids does not match, leader account: ${worker.role_account_id}, application account ${application.role_account_id}`
+  );
+  return leadWorkerId;
+}
+
+export async function expectBeganApplicationReview(apiWrapper: ApiWrapper): Promise<BN> {
+  return apiWrapper.expectApplicationReviewBegan();
+}
+
+export async function expectLeaderRoleTerminated(apiWrapper: ApiWrapper, module: WorkingGroups): Promise<void> {
+  await apiWrapper.expectLeaderTerminated();
+  const leadWorkerId: BN | undefined = await apiWrapper.getLeadWorkerId(module);
+  assert(leadWorkerId === undefined, `Unexpected lead worker id: ${leadWorkerId}, expected none`);
+  return;
+}
+
+export async function expectLeaderRewardAmountUpdated(
+  apiWrapper: ApiWrapper,
+  expectedReward: BN,
+  module: WorkingGroups
+): Promise<void> {
+  await apiWrapper.expectWorkerRewardAmountUpdated();
+  const leadWorkerId: BN = (await apiWrapper.getLeadWorkerId(module))!;
+  const receivedReward: BN = (await apiWrapper.getRewardRelationship(leadWorkerId)).getField<Balance>(
+    'amount_per_payout'
+  );
+  assert(
+    receivedReward.eq(expectedReward),
+    `Unexpected reward amount for worker with id ${leadWorkerId}: ${receivedReward}, expected ${expectedReward}`
+  );
+  return;
+}
+
+export async function expectLeaderStakeDecreased(
+  apiWrapper: ApiWrapper,
+  expectedStake: BN,
+  module: WorkingGroups
+): Promise<void> {
+  await apiWrapper.expectWorkerStakeDecreased();
+  const leadWorkerId: BN = (await apiWrapper.getLeadWorkerId(module))!;
+  const receivedStake: BN = await apiWrapper.getWorkerStakeAmount(leadWorkerId, module);
+  assert(
+    receivedStake.eq(expectedStake),
+    `Unexpected stake amount for worker with id ${leadWorkerId}: ${receivedStake}, expected ${expectedStake}`
+  );
+  return;
+}
+
+export async function expectLeaderSlashed(
+  apiWrapper: ApiWrapper,
+  expectedStake: BN,
+  module: WorkingGroups
+): Promise<void> {
+  await apiWrapper.expectWorkerStakeSlashed();
+  const leadWorkerId: BN = (await apiWrapper.getLeadWorkerId(module))!;
+  const receivedStake: BN = await apiWrapper.getWorkerStakeAmount(leadWorkerId, module);
+  assert(
+    receivedStake.eq(expectedStake),
+    `Unexpected stake amount for worker with id after slash ${leadWorkerId}: ${receivedStake}, expected ${expectedStake}`
+  );
+  return;
+}
+
+export async function expectMintCapacityChanged(apiWrapper: ApiWrapper, expectedMintCapacity: BN): Promise<void> {
+  const receivedMintCapacity = await apiWrapper.expectMintCapacityChanged();
+  assert(
+    receivedMintCapacity.eq(expectedMintCapacity),
+    `Unexpected mint capacity: ${receivedMintCapacity}, expected ${expectedMintCapacity}`
+  );
+  return;
 }

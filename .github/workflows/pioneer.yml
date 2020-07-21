@@ -17,7 +17,6 @@ jobs:
     - name: build
       run: |
         yarn install --frozen-lockfile
-        yarn madge --circular types/
         yarn workspace pioneer build
 
   pioneer_build_osx:
@@ -35,7 +34,6 @@ jobs:
     - name: build
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
-        yarn madge --circular types/
         yarn workspace pioneer build
 
   pioneer_lint_ubuntu:
@@ -53,7 +51,6 @@ jobs:
     - name: lint
       run: |
         yarn install --frozen-lockfile
-        yarn madge --circular types/
         yarn workspace pioneer lint
 
   pioneer_lint_osx:
@@ -71,5 +68,4 @@ jobs:
     - name: lint
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
-        yarn madge --circular types/
         yarn workspace pioneer lint

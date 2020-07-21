@@ -6,7 +6,10 @@
   "types": "index.d.ts",
   "scripts": {
     "prepublish": "npm run build",
-    "build": "tsc --build tsconfig.json"
+    "build": "tsc --build tsconfig.json",
+    "lint": "eslint ./ --quiet --ext .ts",
+    "format": "prettier ./ --write",
+    "checks": "yarn build && madge --circular ./ && yarn lint && prettier ./ --check"
   },
   "author": "Joystream contributors",
   "maintainers": [],

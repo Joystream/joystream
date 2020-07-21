@@ -1,6 +1,17 @@
-import { Vec as Vector, Text as PolkaText, bool as PolkaBool, Null, u16, u32, u64, i16, i32, i64 } from '@polkadot/types';
-import { Enum } from '@polkadot/types/codec';
-import EntityId from './EntityId';
+import {
+  Vec as Vector,
+  Text as PolkaText,
+  bool as PolkaBool,
+  Null,
+  u16,
+  u32,
+  u64,
+  i16,
+  i32,
+  i64,
+} from '@polkadot/types'
+import { Enum } from '@polkadot/types/codec'
+import EntityId from './EntityId'
 
 export class None extends Null {}
 
@@ -30,63 +41,66 @@ export class TextVec extends Vector.with(PolkaText) {}
 export class InternalVec extends Vector.with(EntityId) {}
 
 export type PropertyValueEnum =
-  None |
+  | None
 
   // Single values:
-  Bool |
-  Uint16 |
-  Uint32 |
-  Uint64 |
-  Int16 |
-  Int32 |
-  Int64 |
-  Text |
-  Internal |
+  | Bool
+  | Uint16
+  | Uint32
+  | Uint64
+  | Int16
+  | Int32
+  | Int64
+  | Text
+  | Internal
 
   // Vectors:
-  BoolVec |
-  Uint16Vec |
-  Uint32Vec |
-  Uint64Vec |
-  Int16Vec |
-  Int32Vec |
-  Int64Vec |
-  TextVec |
-  InternalVec
-;
+  | BoolVec
+  | Uint16Vec
+  | Uint32Vec
+  | Uint64Vec
+  | Int16Vec
+  | Int32Vec
+  | Int64Vec
+  | TextVec
+  | InternalVec
 
 export type PropertyValueEnumValue = {
-  [typeName: string]: PropertyValueEnum;
-};
+  [typeName: string]: PropertyValueEnum
+}
 
 export class PropertyValue extends Enum {
-  constructor (value?: PropertyValueEnumValue, index?: number) {
-    super({
-      None,
+  constructor(value?: PropertyValueEnumValue, index?: number) {
+    super(
+      {
+        None,
 
-      // Single values:
-      Bool,
-      Uint16,
-      Uint32,
-      Uint64,
-      Int16,
-      Int32,
-      Int64,
-      Text,
-      Internal,
+        // Single values:
+        Bool,
+        Uint16,
+        Uint32,
+        Uint64,
+        Int16,
+        Int32,
+        Int64,
+        Text,
+        Internal,
 
-      // Vectors:
-      BoolVec,
-      Uint16Vec,
-      Uint32Vec,
-      Uint64Vec,
-      Int16Vec,
-      Int32Vec,
-      Int64Vec,
-      TextVec,
-      InternalVec
-    }, value, index);
+        // Vectors:
+        BoolVec,
+        Uint16Vec,
+        Uint32Vec,
+        Uint64Vec,
+        Int16Vec,
+        Int32Vec,
+        Int64Vec,
+        TextVec,
+        InternalVec,
+      },
+      value,
+      index
+    )
   }
 }
 
-export default PropertyValue;
+export default PropertyValue

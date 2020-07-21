@@ -9,57 +9,39 @@
       "type": "string",
       "title": "Field title",
       "default": "",
-      "examples": [
-        "About you"
-      ],
+      "examples": ["About you"],
       "pattern": "^(.*)$"
     }
   },
-  "required": [
-    "version",
-    "headline",
-    "job",
-    "reward",
-    "creator",
-    "application"
-  ],
+  "required": ["version", "headline", "job", "reward", "creator", "application"],
   "properties": {
     "version": {
       "$id": "#/properties/version",
       "type": "integer",
       "title": "Schema version",
       "default": 0,
-      "examples": [
-        1
-      ]
+      "examples": [1]
     },
     "headline": {
       "$id": "#/properties/headline",
       "type": "string",
       "title": "Headline",
       "default": "",
-      "examples": [
-        "help us curate awesome content"
-      ],
+      "examples": ["help us curate awesome content"],
       "pattern": "^(.*)$"
     },
     "job": {
       "$id": "#/properties/job",
       "type": "object",
       "title": "Job specifics",
-      "required": [
-        "title",
-        "description"
-      ],
+      "required": ["title", "description"],
       "properties": {
         "title": {
           "$id": "#/properties/job/properties/title",
           "type": "string",
           "title": "Job title",
           "default": "",
-          "examples": [
-            "Content curator"
-          ],
+          "examples": ["Content curator"],
           "pattern": "^(.*)$"
         },
         "description": {
@@ -67,9 +49,7 @@
           "type": "string",
           "title": "Job description; expects HTML",
           "default": "",
-          "examples": [
-            "<p>Lorem ipsum</p>"
-          ]
+          "examples": ["<p>Lorem ipsum</p>"]
         }
       }
     },
@@ -86,10 +66,7 @@
             "$id": "#/properties/application/properties/sections/items",
             "type": "object",
             "title": "Question section",
-            "required": [
-              "title",
-              "questions"
-            ],
+            "required": ["title", "questions"],
             "properties": {
               "title": {
                 "$ref": "#/properties/application/title"
@@ -102,25 +79,18 @@
                   "$id": "#/properties/application/properties/sections/items/properties/questions/items",
                   "type": "object",
                   "title": "Question field",
-                  "required": [
-                    "title",
-                    "type"
-                  ],
+                  "required": ["title", "type"],
                   "properties": {
                     "title": {
                       "$ref": "#/properties/application/title"
                     },
                     "type": {
-      "$id": "#/properties/application/properties/questions/items/type",
-      "type": "string",
-      "title": "Question field type",
-      "default": "",
-      "examples": [
-        "text",
-		"text area"
-      ],
-      "pattern": "^(text|text area)$"
-
+                      "$id": "#/properties/application/properties/questions/items/type",
+                      "type": "string",
+                      "title": "Question field type",
+                      "default": "",
+                      "examples": ["text", "text area"],
+                      "pattern": "^(text|text area)$"
                     }
                   }
                 }
@@ -135,35 +105,27 @@
       "type": "string",
       "title": "The Reward Schema",
       "default": "",
-      "examples": [
-        "10 JOY per block"
-      ],
+      "examples": ["10 JOY per block"],
       "pattern": "^(.*)$"
     },
     "creator": {
       "$id": "#/properties/creator",
       "type": "object",
       "title": "Creator details",
-      "required": [
-        "membership"
-      ],
+      "required": ["membership"],
       "properties": {
         "membership": {
           "$id": "#/properties/creator/properties/membership",
           "type": "object",
           "title": "Entry in membership moduke",
-          "required": [
-            "handle"
-          ],
+          "required": ["handle"],
           "properties": {
             "handle": {
               "$id": "#/properties/creator/properties/membership/properties/handle",
               "type": "string",
               "title": "Handle or username",
               "default": "",
-              "examples": [
-                "5EV1NJUMouHKdNSXsArFyrryQDCixL7N1RTSivKM3rVJkwi5"
-              ],
+              "examples": ["5EV1NJUMouHKdNSXsArFyrryQDCixL7N1RTSivKM3rVJkwi5"],
               "pattern": "^(.*)$"
             }
           }
@@ -174,9 +136,7 @@
       "$id": "#/properties/process",
       "type": "object",
       "title": "Hiring process",
-      "required": [
-        "details"
-      ],
+      "required": ["details"],
       "properties": {
         "details": {
           "$id": "#/properties/process/properties/details",
@@ -187,9 +147,7 @@
             "type": "string",
             "title": "The Items Schema",
             "default": "",
-            "examples": [
-              "A"
-            ],
+            "examples": ["A"],
             "pattern": "^(.*)$"
           }
         }
