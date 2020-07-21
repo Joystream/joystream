@@ -761,18 +761,6 @@ decl_module! {
             // Ensure actor can update category
             let category = Self::ensure_can_update_category_archival_status(origin, &actor, &category_id)?;
 
-            if let Some(tmp_parent_category_id) = category.parent_category_id {
-                // Get path from parent to root of category tree.
-                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(&tmp_parent_category_id)?;
-
-                if new_archival_status && Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
-                    return Ok(())
-                }
-            }
-
-            // Get the category
-            let category = <CategoryById<T>>::get(category_id);
-
             // No change, invalid transaction
             if new_archival_status == category.archived {
                 return Err(Error::CategoryNotBeingUpdated)
@@ -865,16 +853,7 @@ decl_module! {
             Self::ensure_data_migration_done()?;
 
             // Ensure actor can update category
-            let (category, thread) = Self::ensure_can_update_thread_archival_status(origin, &actor, &category_id, &thread_id)?;
-
-            if let Some(tmp_parent_category_id) = category.parent_category_id {
-                // Get path from parent to root of category tree.
-                let category_tree_path = Self::ensure_valid_category_and_build_category_tree_path(&tmp_parent_category_id)?;
-
-                if new_archival_status && Self::ensure_can_mutate_in_path_leaf(&category_tree_path).is_err() {
-                    return Ok(());
-                }
-            }
+            let (_, thread) = Self::ensure_can_update_thread_archival_status(origin, &actor, &category_id, &thread_id)?;
 
             // No change, invalid transaction
             if new_archival_status == thread.archived {
@@ -945,7 +924,7 @@ decl_module! {
             Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
             // Get thread
-            let thread = Self::ensure_thread_exists(&category_id, &thread_id)?;
+            let thread = Self::ensure_thread_is_mutable(&category_id, &thread_id)?;
 
             // Make sure poll exist
             Self::ensure_vote_is_valid(&thread, index)?;
@@ -1112,16 +1091,7 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Get moderator id.
-            let who = Self::ensure_is_moderator(origin, &moderator_id)?;
-
-            // ensure the moderator can moderate the category
-            Self::ensure_can_moderate_category(&who, &moderator_id, &category_id)?;
-
-            // Ensure all thread id valid and is under the category
-            for item in &stickied_ids {
-                Self::ensure_thread_exists(&category_id, item)?;
-            }
+            Self::ensure_can_set_stickied_threads(origin, &moderator_id, &category_id, &stickied_ids)?;
 
             //
             // == MUTATION SAFE ==
@@ -1156,12 +1126,8 @@ impl<T: Trait> Module<T> {
         // Ensure data migration is done
         Self::ensure_data_migration_done()?;
 
-        // Get path from parent to root of category tree.
-        let category_tree_path =
-            Self::ensure_valid_category_and_build_category_tree_path(&category_id)?;
-
-        // No ancestor is blocking us doing mutation in this category
-        Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+        // Check that thread can be added to category
+        Self::ensure_category_is_mutable(&category_id)?;
 
         // Unwrap poll
         if let Some(data) = poll {
@@ -1220,14 +1186,7 @@ impl<T: Trait> Module<T> {
         Self::ensure_data_migration_done()?;
 
         // Make sure thread exists and is mutable
-        let thread = Self::ensure_thread_is_mutable(&category_id, &thread_id)?;
-
-        // Get path from parent to root of category tree.
-        let category_tree_path =
-            Self::ensure_valid_category_and_build_category_tree_path(&thread.category_id)?;
-
-        // No ancestor is blocking us doing mutation in this category
-        Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
+        Self::ensure_thread_is_mutable(&category_id, &thread_id)?;
 
         //
         // == MUTATION SAFE ==
@@ -1349,7 +1308,7 @@ impl<T: Trait> Module<T> {
         }
 
         // and corresponding category is mutable
-        Self::ensure_category_is_mutable(thread.category_id)?;
+        Self::ensure_category_is_mutable(category_id)?;
 
         Ok(thread)
     }
@@ -1535,7 +1494,7 @@ impl<T: Trait> Module<T> {
         Ok((account_id, thread))
     }
 
-    fn ensure_category_is_mutable(category_id: T::CategoryId) -> Result<(), Error> {
+    fn ensure_category_is_mutable(category_id: &T::CategoryId) -> Result<(), Error> {
         let category_tree_path = Self::build_category_tree_path(&category_id);
 
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)
@@ -1745,6 +1704,26 @@ impl<T: Trait> Module<T> {
         }
 
         Err(Error::ModeratorModerateCategory)
+    }
+
+    fn ensure_can_set_stickied_threads(
+        origin: T::Origin,
+        moderator_id: &T::ModeratorId,
+        category_id: &T::CategoryId,
+        stickied_ids: &[T::ThreadId],
+    ) -> Result<(), Error> {
+        // Get moderator id.
+        let who = Self::ensure_is_moderator(origin, &moderator_id)?;
+
+        // ensure the moderator can moderate the category
+        Self::ensure_can_moderate_category(&who, &moderator_id, &category_id)?;
+
+        // Ensure all thread id valid and is under the category
+        for item in stickied_ids {
+            Self::ensure_thread_exists(&category_id, item)?;
+        }
+
+        Ok(())
     }
 
     /// Check the vote is valid
