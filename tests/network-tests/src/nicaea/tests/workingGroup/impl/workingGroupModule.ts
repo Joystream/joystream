@@ -286,6 +286,12 @@ export async function fillLeaderOpening(
       `Role account ids does not match, leader account: ${worker.role_account_id}, application account ${application.role_account_id}`
     );
   });
+  const leadWorkerId: BN = (await apiWrapper.getLeadWorkerId(module))!;
+  const openingLeaderAccount: string = (await apiWrapper.getWorkerById(leadWorkerId, module)).role_account_id.toString();
+  assert(
+    openingLeaderAccount === membersKeyPairs[0].address, 
+    `Unexpected leader account ${openingLeaderAccount}, expected ${membersKeyPairs[0].address}`
+    );
 }
 
 export async function increaseStake(
