@@ -1,59 +1,62 @@
 import { ApiPromise } from '@polkadot/api';
 import { Codec } from '@polkadot/types/types';
+import { APIQueryCache } from '../APIQueryCache';
 
 export default abstract class BaseTransport {
   protected api: ApiPromise;
+  protected cacheApi: APIQueryCache;
 
-  constructor (api: ApiPromise) {
+  constructor (api: ApiPromise, cacheApi: APIQueryCache) {
     this.api = api;
+    this.cacheApi = cacheApi;
   }
 
   protected get proposalsEngine () {
-    return this.api.query.proposalsEngine;
+    return this.cacheApi.query.proposalsEngine;
   }
 
   protected get proposalsCodex () {
-    return this.api.query.proposalsCodex;
+    return this.cacheApi.query.proposalsCodex;
   }
 
   protected get proposalsDiscussion () {
-    return this.api.query.proposalsDiscussion;
+    return this.cacheApi.query.proposalsDiscussion;
   }
 
   protected get members () {
-    return this.api.query.members;
+    return this.cacheApi.query.members;
   }
 
   protected get council () {
-    return this.api.query.council;
+    return this.cacheApi.query.council;
   }
 
   protected get councilElection () {
-    return this.api.query.councilElection;
+    return this.cacheApi.query.councilElection;
   }
 
   protected get actors () {
-    return this.api.query.actors;
+    return this.cacheApi.query.actors;
   }
 
   protected get contentWorkingGroup () {
-    return this.api.query.contentWorkingGroup;
+    return this.cacheApi.query.contentWorkingGroup;
   }
 
   protected get minting () {
-    return this.api.query.minting;
+    return this.cacheApi.query.minting;
   }
 
   protected get hiring () {
-    return this.api.query.hiring;
+    return this.cacheApi.query.hiring;
   }
 
   protected get stake () {
-    return this.api.query.stake;
+    return this.cacheApi.query.stake;
   }
 
   protected get recurringRewards () {
-    return this.api.query.recurringRewards;
+    return this.cacheApi.query.recurringRewards;
   }
 
   protected queryMethodByName (name: string) {

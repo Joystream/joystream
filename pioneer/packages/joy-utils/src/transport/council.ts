@@ -8,13 +8,14 @@ import { FIRST_MEMBER_ID } from '../consts/members';
 import { ApiPromise } from '@polkadot/api';
 import MembersTransport from './members';
 import ChainTransport from './chain';
+import { APIQueryCache } from '../APIQueryCache';
 
 export default class CouncilTransport extends BaseTransport {
   private membersT: MembersTransport;
   private chainT: ChainTransport;
 
-  constructor (api: ApiPromise, membersTransport: MembersTransport, chainTransport: ChainTransport) {
-    super(api);
+  constructor (api: ApiPromise, cacheApi: APIQueryCache, membersTransport: MembersTransport, chainTransport: ChainTransport) {
+    super(api, cacheApi);
     this.membersT = membersTransport;
     this.chainT = chainTransport;
   }
@@ -22,7 +23,7 @@ export default class CouncilTransport extends BaseTransport {
   async councilMembersLength (atBlock?: number): Promise<number> {
     if (atBlock) {
       const blockHash = await this.chainT.blockHash(atBlock);
-      return ((await this.council.activeCouncil.at(blockHash)) as Seats).length;
+      return ((await this.api.query.council.activeCouncil.at(blockHash)) as Seats).length;
     }
 
     return ((await this.council.activeCouncil()) as Seats).length;

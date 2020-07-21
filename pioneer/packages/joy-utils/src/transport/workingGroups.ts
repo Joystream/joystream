@@ -12,18 +12,19 @@ import { OpeningId, ApplicationId, Opening, Application, ActiveOpeningStageKey }
 import { MultipleLinkedMapEntry } from '../LinkedMapEntry';
 import { Stake, StakeId } from '@joystream/types/stake';
 import { RewardRelationshipId, RewardRelationship } from '@joystream/types/recurring-rewards';
+import { APIQueryCache } from '../APIQueryCache';
 
 export default class WorkingGroupsTransport extends BaseTransport {
   private membersT: MembersTransport;
 
-  constructor (api: ApiPromise, membersTransport: MembersTransport) {
-    super(api);
+  constructor (api: ApiPromise, cacheApi: APIQueryCache, membersTransport: MembersTransport) {
+    super(api, cacheApi);
     this.membersT = membersTransport;
   }
 
   protected queryByGroup (group: WorkingGroupKey) {
     const module = apiModuleByGroup[group];
-    return this.api.query[module];
+    return this.cacheApi.query[module];
   }
 
   public async groupMemberById (group: WorkingGroupKey, workerId: number): Promise<WorkerData | null> {

@@ -15,7 +15,7 @@ import BaseTransport from './base';
 import { ThreadId, PostId } from '@joystream/types/common';
 import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost, ProposalDetails } from '@joystream/types/proposals';
 import { MemberId } from '@joystream/types/members';
-import { u32, u64, Bytes } from '@polkadot/types/';
+import { u32, u64, Bytes, Vec } from '@polkadot/types/';
 import { BalanceOf } from '@polkadot/types/interfaces';
 
 import { bytesToString } from '../functions/misc';
@@ -29,6 +29,7 @@ import ChainTransport from './chain';
 import CouncilTransport from './council';
 
 import { blake2AsHex } from '@polkadot/util-crypto';
+import { APIQueryCache } from '../APIQueryCache';
 
 export default class ProposalsTransport extends BaseTransport {
   private membersT: MembersTransport;
@@ -38,22 +39,23 @@ export default class ProposalsTransport extends BaseTransport {
 
   constructor (
     api: ApiPromise,
+    cacheApi: APIQueryCache,
     membersTransport: MembersTransport,
     chainTransport: ChainTransport,
     councilTransport: CouncilTransport
   ) {
-    super(api);
+    super(api, cacheApi);
     this.membersT = membersTransport;
     this.chainT = chainTransport;
     this.councilT = councilTransport;
   }
 
   proposalCount () {
-    return this.proposalsEngine.proposalCount<u32>();
+    return this.proposalsEngine.proposalCount() as Promise<u32>;
   }
 
   rawProposalById (id: ProposalId) {
-    return this.proposalsEngine.proposals<Proposal>(id);
+    return this.proposalsEngine.proposals(id) as Promise<Proposal>;
   }
 
   proposalDetailsById (id: ProposalId) {
@@ -139,7 +141,7 @@ export default class ProposalsTransport extends BaseTransport {
   }
 
   async activeProposals () {
-    const activeProposalIds = await this.proposalsEngine.activeProposalIds<ProposalId[]>();
+    const activeProposalIds = (await this.proposalsEngine.activeProposalIds()) as Vec<ProposalId>;
 
     return Promise.all(activeProposalIds.map(id => this.proposalById(id)));
   }
@@ -149,13 +151,9 @@ export default class ProposalsTransport extends BaseTransport {
     return proposals.filter(({ proposerId }) => member.eq(proposerId));
   }
 
-  async proposalDetails (id: ProposalId) {
-    return this.proposalsCodex.proposalDetailsByProposalId(id);
-  }
-
   async voteByProposalAndMember (proposalId: ProposalId, voterId: MemberId): Promise<VoteKind | null> {
-    const vote = await this.proposalsEngine.voteExistsByProposalByVoter<VoteKind>(proposalId, voterId);
-    const hasVoted = (await this.proposalsEngine.voteExistsByProposalByVoter.size(proposalId, voterId)).toNumber();
+    const vote = (await this.proposalsEngine.voteExistsByProposalByVoter(proposalId, voterId)) as VoteKind;
+    const hasVoted = (await this.api.query.proposalsEngine.voteExistsByProposalByVoter.size(proposalId, voterId)).toNumber();
     return hasVoted ? vote : null;
   }
 
@@ -214,7 +212,7 @@ export default class ProposalsTransport extends BaseTransport {
   }
 
   async subscribeProposal (id: number|ProposalId, callback: () => void) {
-    return this.proposalsEngine.proposals(id, callback);
+    return this.api.query.proposalsEngine.proposals(id, callback);
   }
 
   async discussion (id: number|ProposalId): Promise<ParsedDiscussion | null> {
