@@ -71,7 +71,7 @@ fn update_class_schema_status_lead_auth_failed() {
             LEAD_ORIGIN,
             FIRST_CLASS_ID,
             BTreeSet::new(),
-            vec![property.clone()]
+            vec![property]
         ));
 
         // Events number before tested call
@@ -125,7 +125,7 @@ fn update_class_schema_status_for_non_existent_schema() {
             LEAD_ORIGIN,
             FIRST_CLASS_ID,
             BTreeSet::new(),
-            vec![property.clone()]
+            vec![property]
         ));
 
         // Events number before tested call

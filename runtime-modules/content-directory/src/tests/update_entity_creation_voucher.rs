@@ -32,7 +32,7 @@ fn create_entity_creation_voucher_success() {
 
         assert_eq!(
             entity_creation_vouchers(FIRST_CLASS_ID, &entity_controller),
-            entity_voucher.clone(),
+            entity_voucher,
         );
 
         let entity_creation_voucher_created_event = get_test_event(
@@ -93,7 +93,7 @@ fn update_entity_creation_voucher_success() {
         entity_creation_voucher.set_maximum_entities_count(new_maximum_entities_count);
         assert_eq!(
             entity_creation_vouchers(FIRST_CLASS_ID, &entity_controller),
-            entity_creation_voucher.clone()
+            entity_creation_voucher
         );
 
         let entity_creation_voucher_created_event = get_test_event(
@@ -125,7 +125,7 @@ fn update_entity_creation_voucher_lead_auth_failed() {
         let update_entity_creation_voucher_result = update_entity_creation_voucher(
             FIRST_MEMBER_ORIGIN,
             FIRST_CLASS_ID,
-            entity_controller.clone(),
+            entity_controller,
             IndividualEntitiesCreationLimit::get(),
         );
 
@@ -152,7 +152,7 @@ fn update_entity_creation_voucher_class_does_not_exist() {
         let update_entity_creation_voucher_result = update_entity_creation_voucher(
             LEAD_ORIGIN,
             UNKNOWN_CLASS_ID,
-            entity_controller.clone(),
+            entity_controller,
             IndividualEntitiesCreationLimit::get(),
         );
 
@@ -183,7 +183,7 @@ fn update_entity_creation_voucher_individual_creation_limit_exceed() {
         let update_entity_creation_voucher_result = update_entity_creation_voucher(
             LEAD_ORIGIN,
             FIRST_CLASS_ID,
-            entity_controller.clone(),
+            entity_controller,
             IndividualEntitiesCreationLimit::get() + 1,
         );
 

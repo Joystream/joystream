@@ -51,7 +51,7 @@ fn create_entity_success() {
 
         assert_eq!(
             entity_creation_vouchers(FIRST_CLASS_ID, &entity_controller),
-            entity_voucher.clone(),
+            entity_voucher,
         );
 
         // Ensure new entity created
@@ -89,7 +89,7 @@ fn create_entity_of_non_existent_class() {
         let actor = Actor::Lead;
 
         // Make an attempt to create Entity of non existent Class
-        let create_entity_result = create_entity(LEAD_ORIGIN, UNKNOWN_CLASS_ID, actor.clone());
+        let create_entity_result = create_entity(LEAD_ORIGIN, UNKNOWN_CLASS_ID, actor);
 
         // Failure checked
         assert_failure(
@@ -178,7 +178,7 @@ fn create_entity_creation_blocked_on_class_level() {
         let actor = Actor::Lead;
 
         // Make an attempt to create Entity, when entiti creation was previously blocked on class level
-        let create_entity_result = create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone());
+        let create_entity_result = create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor);
 
         // Runtime tested state after call
 
@@ -205,8 +205,7 @@ fn create_entity_lead_auth_failed() {
         let actor = Actor::Lead;
 
         // Make an attempt to authorize as Lead under non lead origin
-        let create_entity_result =
-            create_entity(FIRST_MEMBER_ORIGIN, FIRST_CLASS_ID, actor.clone());
+        let create_entity_result = create_entity(FIRST_MEMBER_ORIGIN, FIRST_CLASS_ID, actor);
 
         // Failure checked
         assert_failure(
@@ -241,7 +240,7 @@ fn create_entity_member_auth_failed() {
         let actor = Actor::Member(UNKNOWN_MEMBER_ID);
 
         // Make an attempt to authorize under non existent member id
-        let create_entity_result = create_entity(UNKNOWN_ORIGIN, FIRST_CLASS_ID, actor.clone());
+        let create_entity_result = create_entity(UNKNOWN_ORIGIN, FIRST_CLASS_ID, actor);
 
         // Failure checked
         assert_failure(
@@ -266,7 +265,7 @@ fn create_entity_actor_can_not_create_entities() {
         let actor = Actor::Member(UNKNOWN_MEMBER_ID);
 
         // Make an attempt to create entity, authorizing as member in case, when members are not permitted to create entities on class level
-        let create_entity_result = create_entity(UNKNOWN_ORIGIN, FIRST_CLASS_ID, actor.clone());
+        let create_entity_result = create_entity(UNKNOWN_ORIGIN, FIRST_CLASS_ID, actor);
 
         // Failure checked
         assert_failure(
@@ -309,8 +308,7 @@ fn create_entity_unknown_curator_id() {
 
         // Make an attempt to create entity, authorizing as curator in group,
         // in case, when provided curator id wasn`t added to respective curator group set
-        let create_entity_result =
-            create_entity(FIRST_CURATOR_ORIGIN, FIRST_CLASS_ID, actor.clone());
+        let create_entity_result = create_entity(FIRST_CURATOR_ORIGIN, FIRST_CLASS_ID, actor);
 
         // Failure checked
         assert_failure(
@@ -353,8 +351,7 @@ fn create_entity_curator_group_is_not_active() {
 
         // Make an attempt to create entity, authorizing as curator in group, in case, when
         // corresponding curator group is not active. (default status of curator group right after creation)
-        let create_entity_result =
-            create_entity(FIRST_CURATOR_ORIGIN, FIRST_CLASS_ID, actor.clone());
+        let create_entity_result = create_entity(FIRST_CURATOR_ORIGIN, FIRST_CLASS_ID, actor);
 
         // Failure checked
         assert_failure(
@@ -397,8 +394,7 @@ fn create_entity_curator_not_found_in_curator_group() {
 
         // Make an attempt to create entity, authorizing as curator in group, in case, when
         // curator was not added to corresponding curator group.
-        let create_entity_result =
-            create_entity(FIRST_CURATOR_ORIGIN, FIRST_CLASS_ID, actor.clone());
+        let create_entity_result = create_entity(FIRST_CURATOR_ORIGIN, FIRST_CLASS_ID, actor);
 
         // Failure checked
         assert_failure(

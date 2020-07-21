@@ -75,7 +75,7 @@ fn add_class_schema_lead_auth_failied() {
             FIRST_MEMBER_ORIGIN,
             FIRST_CLASS_ID,
             BTreeSet::new(),
-            vec![property.clone()],
+            vec![property],
         );
 
         // Failure checked
@@ -103,7 +103,7 @@ fn add_class_schema_class_does_not_exist() {
             LEAD_ORIGIN,
             UNKNOWN_CLASS_ID,
             BTreeSet::new(),
-            vec![property.clone()],
+            vec![property],
         );
 
         // Failure checked
@@ -136,12 +136,8 @@ fn add_class_schema_limit_reached() {
             );
 
             // Add class schema
-            let add_class_schema_result = add_class_schema(
-                LEAD_ORIGIN,
-                FIRST_CLASS_ID,
-                BTreeSet::new(),
-                vec![property.clone()],
-            );
+            let add_class_schema_result =
+                add_class_schema(LEAD_ORIGIN, FIRST_CLASS_ID, BTreeSet::new(), vec![property]);
 
             if add_class_schema_result.is_err() {
                 break add_class_schema_result;
@@ -242,7 +238,7 @@ fn add_class_schema_prop_name_not_unique() {
             LEAD_ORIGIN,
             FIRST_CLASS_ID,
             BTreeSet::new(),
-            vec![first_property.clone()]
+            vec![first_property]
         ));
 
         // Events number before tested call
@@ -253,7 +249,7 @@ fn add_class_schema_prop_name_not_unique() {
             LEAD_ORIGIN,
             FIRST_CLASS_ID,
             BTreeSet::from_iter(vec![FIRST_PROPERTY_ID].into_iter()),
-            vec![second_property.clone()],
+            vec![second_property],
         );
 
         // Failure checked

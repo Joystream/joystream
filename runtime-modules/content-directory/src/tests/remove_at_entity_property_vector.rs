@@ -42,7 +42,7 @@ fn remove_at_entity_property_vector_success() {
 
         // Ensure reference counter of second entity updated succesfully
         let inbound_rc = InboundReferenceCounter::new(2, true);
-        *second_entity.get_reference_counter_mut() = inbound_rc.clone();
+        *second_entity.get_reference_counter_mut() = inbound_rc;
 
         assert_eq!(second_entity, entity_by_id(SECOND_ENTITY_ID));
 
@@ -88,7 +88,7 @@ fn remove_at_entity_property_vector_entity_not_found() {
         // from `PropertyValueVec` under `in_class_schema_property_id` in case when corresponding Entity does not exist
         let remove_at_entity_property_vector_result = remove_at_entity_property_vector(
             LEAD_ORIGIN,
-            actor.clone(),
+            actor,
             FIRST_ENTITY_ID,
             FIRST_PROPERTY_ID,
             index_in_property_vector,
@@ -463,7 +463,7 @@ fn remove_at_entity_property_vector_is_locked_for_given_actor() {
         // Add schema support to the entity
         assert_ok!(add_schema_support_to_entity(
             LEAD_ORIGIN,
-            Actor::Lead,
+            actor.clone(),
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
             schema_property_values
@@ -676,7 +676,7 @@ fn remove_at_entity_property_vector_index_is_out_of_range() {
             actor.to_owned(),
             FIRST_ENTITY_ID,
             FIRST_SCHEMA_ID,
-            schema_property_values.clone()
+            schema_property_values
         ));
 
         // Runtime state before tested call

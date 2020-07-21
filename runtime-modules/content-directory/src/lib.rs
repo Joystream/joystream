@@ -497,7 +497,7 @@ impl<T: Trait> Entity<T> {
     pub fn ensure_inbound_same_owner_rc_is_zero(&self) -> dispatch::Result {
         ensure!(
             self.reference_counter.is_same_owner_equal_to_zero(),
-            ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
+            ERROR_ENTITY_SAME_OWNER_RC_DOES_NOT_EQUAL_TO_ZERO
         );
         Ok(())
     }
@@ -1075,9 +1075,9 @@ decl_module! {
             let entity_property_id_references_with_same_owner_flag_set =
                 Self::get_property_id_references_with_same_owner_flag_set(values_for_existing_properties);
 
-            // Ensure provided `new_property_value_references_with_same_owner_flag_set`
-            // are valid references with `SameOwner` flag set
-            Self::ensure_only_references_with_same_owner_flag_set_provided(
+            // Ensure all ids of provided `new_property_value_references_with_same_owner_flag_set`
+            // corresponding to property ids of respective Class Property references with same owner flag set
+            Self::ensure_only_reference_ids_with_same_owner_flag_set_provided(
                 &entity_property_id_references_with_same_owner_flag_set,
                 &new_property_value_references_with_same_owner_flag_set
             )?;
@@ -1096,9 +1096,10 @@ decl_module! {
                 &class_properties, &new_property_value_references_with_same_owner_flag_set
             )?;
 
-            // Validate all values, provided in new_values_for_existing_properties,
-            // against the type of its Property and check any additional constraints
-            Self::ensure_property_values_are_valid(&new_controller, &new_values_for_existing_properties)?;
+            // Ensure all provided `new_property_value_references_with_same_owner_flag_set` are valid
+            Self::ensure_are_valid_references_with_same_owner_flag_set(
+                &new_values_for_existing_properties, &new_controller
+            )?;
 
             // Make updated entity_property_values from parameters provided
             let entity_property_values_updated =
@@ -2088,8 +2089,9 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    /// Ensure all provided `new_property_value_references_with_same_owner_flag_set` are references with `SameOwner` flag set
-    pub fn ensure_only_references_with_same_owner_flag_set_provided(
+    // Ensure all ids of provided `new_property_value_references_with_same_owner_flag_set`
+    // corresponding to property ids of respective Class Property references with same owner flag set
+    pub fn ensure_only_reference_ids_with_same_owner_flag_set_provided(
         entity_property_id_references_with_same_owner_flag_set: &BTreeSet<PropertyId>,
         new_property_value_references_with_same_owner_flag_set: &BTreeMap<
             PropertyId,
@@ -2105,8 +2107,24 @@ impl<T: Trait> Module<T> {
         ensure!(
             new_property_value_id_references_with_same_owner_flag_set
                 .is_subset(entity_property_id_references_with_same_owner_flag_set),
-            ERROR_ALL_PROVIDED_PROPERTY_VALUES_MUST_BE_REFERENCES_WITH_SAME_OWNER_FLAG_SET
+            ERROR_ALL_PROVIDED_PROPERTY_VALUE_IDS_MUST_BE_REFERENCES_WITH_SAME_OWNER_FLAG_SET
         );
+        Ok(())
+    }
+
+    /// Ensure all provided `new_property_value_references_with_same_owner_flag_set` are valid
+    fn ensure_are_valid_references_with_same_owner_flag_set(
+        new_property_value_references_with_same_owner_flag_set: &ValuesForExistingProperties<T>,
+        new_controller: &EntityController<T>,
+    ) -> dispatch::Result {
+        for updated_value_for_existing_property in
+            new_property_value_references_with_same_owner_flag_set.values()
+        {
+            let (property, value) = updated_value_for_existing_property.unzip();
+
+            // Perform all required checks to ensure provided property values are valid references
+            property.ensure_property_value_is_valid_reference(value, new_controller)?;
+        }
         Ok(())
     }
 

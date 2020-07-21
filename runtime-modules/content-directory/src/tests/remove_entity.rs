@@ -31,7 +31,7 @@ fn remove_entity_success() {
 
         assert_eq!(
             entity_creation_vouchers(FIRST_CLASS_ID, &entity_controller),
-            entity_voucher.clone(),
+            entity_voucher,
         );
 
         let entity_removed_event =
