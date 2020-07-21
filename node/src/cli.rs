@@ -90,7 +90,7 @@ where
         let exit = e
             .into_exit()
             .map_err(|_| error::Error::Other("Exit future failed.".into()));
-        let service = service.map_err(|err| error::Error::Service(err));
+        let service = service.map_err(error::Error::Service);
         let select = service.select(exit).map(|_| ()).map_err(|(err, _)| err);
         runtime.block_on(select)
     };

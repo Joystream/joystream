@@ -1,6 +1,5 @@
 use sr_primitives::traits::Convert;
 use srml_support::traits::{Currency, LockableCurrency, ReservableCurrency};
-use system;
 
 pub trait GovernanceCurrency: system::Trait + Sized {
     type Currency: Currency<Self::AccountId>

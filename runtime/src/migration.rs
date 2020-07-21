@@ -1,8 +1,9 @@
+// Clippy linter warning
+#![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
+
 use crate::VERSION;
 use sr_primitives::{print, traits::Zero};
 use srml_support::{decl_event, decl_module, decl_storage};
-use sudo;
-use system;
 
 impl<T: Trait> Module<T> {
     fn runtime_upgraded() {
@@ -19,6 +20,8 @@ impl<T: Trait> Module<T> {
             minting::BalanceOf::<T>::zero(),
         );
 
+        proposals_codex::Module::<T>::set_default_config_values();
+
         Self::deposit_event(RawEvent::Migrated(
             <system::Module<T>>::block_number(),
             VERSION.spec_version,
@@ -33,6 +36,7 @@ pub trait Trait:
     + forum::Trait
     + sudo::Trait
     + governance::council::Trait
+    + proposals_codex::Trait
 {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }

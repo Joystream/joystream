@@ -1,6 +1,9 @@
 [workspace]
 members = [
 	"runtime",
+	"runtime-modules/proposals/engine",
+	"runtime-modules/proposals/codex",
+	"runtime-modules/proposals/discussion",
 	"runtime-modules/common",
 	"runtime-modules/content-working-group",
 	"runtime-modules/forum",
