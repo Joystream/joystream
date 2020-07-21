@@ -1,6 +1,7 @@
 // @ts-check
 
 import { getRepository, getConnection } from 'typeorm';
+import * as BN from 'bn.js';
 
 import {
   QueryBlockProducer,
@@ -32,7 +33,7 @@ export default class IndexBuilder {
     return new IndexBuilder(producer, processing_pack);
   }
 
-  async start() {
+  async start(atBlock?: BN) {
     // check state
 
     // STORE THIS SOMEWHERE
@@ -44,12 +45,19 @@ export default class IndexBuilder {
 
     const lastProcessedEvent = await getRepository(SavedEntityEvent).findOne({ where: { id: 1 } });
 
-    if (lastProcessedEvent !== undefined) {
+    if (atBlock && lastProcessedEvent) {
+      throw new Error(
+        `Existing processed history detected on the database!
+        Last processed block is ${lastProcessedEvent.blockNumber.toString()}`
+      );
+    }
+
+    if (lastProcessedEvent) {
       this.lastProcessedEvent = lastProcessedEvent;
       await this._producer.start(this.lastProcessedEvent.blockNumber, this.lastProcessedEvent.index);
     } else {
       // Setup worker
-      await this._producer.start();
+      await this._producer.start(atBlock);
     }
 
     debug('Started worker.');

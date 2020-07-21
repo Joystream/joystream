@@ -2,6 +2,7 @@ import "reflect-metadata";
 import * as dotenv from "dotenv";
 import * as chalk from 'chalk';
 import * as figlet from 'figlet';
+import * as BN from 'bn.js';
 import { Command } from 'commander';
 import { configure, getLogger } from 'log4js';
 
@@ -74,7 +75,7 @@ function banner():Command {
         .description("Joystream Indexer")
         .option('-b, --bootstrap', 'Load initial data using the boot* mappings')
         .option('-l, --logging <file>', 'Path to log4js config', null)
-        .option('-h, --height <height>', 'Block height to start from', 0)
+        .option('-h, --height <height>', 'Block height to start from')
         .option('-e, --env <file>', '.env file location', '../../.env')
         .option('-n, --no-start', "Do not run the indexer");
 
@@ -85,16 +86,18 @@ function banner():Command {
 }
 
 function setUp(opts: any) {
-      
-    const height:string = opts.height || '0';
-    process.env.BLOCK_HEIGHT = height;
-
     if (opts.bootstrap) {
         process.env.QUERY_NODE_BOOTSTRAP_DB = 'true'
     }
 
     // dotenv config
     dotenv.config({ path: opts.env });
+
+    if (opts.height) {
+      process.env.BLOCK_HEIGHT = opts.height;
+    } else if (!process.env.BLOCK_HEIGHT) {
+      process.env.BLOCK_HEIGHT = '0';
+    }
 
     //log4js config
     if (opts.logging) {
@@ -107,12 +110,13 @@ function setUp(opts: any) {
 }
 
 async function doBootstrap(node: QueryNodeManager) {
-    await node.bootstrap(
-        process.env.WS_PROVIDER_ENDPOINT_URI as string,
-        getBootstrapPack(),
-        {{#typeRegistrator}} {{typeRegistrator}} {{/typeRegistrator}}
-    );
-    logger.info("Bootstrap done");
+  await node.bootstrap({
+    wsProviderURI: process.env.WS_PROVIDER_ENDPOINT_URI as string,
+    processingPack: getBootstrapPack(),
+    {{#typeRegistrator}}typeRegistrator: {{typeRegistrator}} {{/typeRegistrator}}
+  });
+
+  logger.info("Bootstrap done");
 }
 
 async function main() {
@@ -120,6 +124,7 @@ async function main() {
   setUp(command);
   
   const providerUri = process.env.WS_PROVIDER_ENDPOINT_URI;
+  const atBlock = process.env.BLOCK_HEIGHT;
 
   if (!providerUri) {
     throw new Error(
@@ -144,7 +149,12 @@ async function main() {
       process.exit(0);
   }
 
-  node.start(providerUri, getProcessingPack(), {{#typeRegistrator}} {{typeRegistrator}} {{/typeRegistrator}});
+  node.start({
+    wsProviderURI: providerUri,
+    processingPack: getProcessingPack(),
+    atBlock: atBlock && atBlock !== '0' ? new BN(atBlock) : undefined,
+    {{#typeRegistrator}}typeRegistrator: {{typeRegistrator}} {{/typeRegistrator}}
+  });
 }
 
 main().catch((e) => {
