@@ -85,9 +85,7 @@ export function councilTest(
     const m2addresses: string[] = m2KeyPairs.map((keyPair) => keyPair.address)
     const m1addresses: string[] = m1KeyPairs.map((keyPair) => keyPair.address)
     const members: string[] = seats.map((seat) => seat.member.toString())
-
     const bakers: string[] = seats.map((seat) => seat.backers.map((baker) => baker.member.toString())).flat()
-    console.log('' + bakers)
 
     // Assertions
     m2addresses.forEach((address) => assert(members.includes(address), `Account ${address} is not in the council`))
