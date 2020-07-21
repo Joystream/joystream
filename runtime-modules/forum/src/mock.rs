@@ -171,6 +171,10 @@ pub fn good_post_new_text() -> Vec<u8> {
     b"Changed post's text".to_vec()
 }
 
+pub fn good_moderation_rationale() -> Vec<u8> {
+    b"Moderation rationale".to_vec()
+}
+
 pub fn good_poll_description() -> Vec<u8> {
     b"poll description".to_vec()
 }
@@ -306,6 +310,10 @@ pub fn delete_thread_mock(
     thread_id: <Runtime as Trait>::PostId,
     result: Result<(), &'static str>,
 ) {
+    let num_direct_threads = match <CategoryById<Runtime>>::exists(category_id) {
+        true => <CategoryById<Runtime>>::get(category_id).num_direct_threads,
+        false => 0,
+    };
     assert_eq!(
         TestForumModule::delete_thread(
             mock_origin(origin.clone()),
@@ -317,6 +325,10 @@ pub fn delete_thread_mock(
     );
     if result.is_ok() {
         assert!(!<ThreadById<Runtime>>::exists(category_id, thread_id));
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id).num_direct_threads,
+            num_direct_threads - 1,
+        );
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadDeleted(thread_id))
@@ -525,16 +537,24 @@ pub fn moderate_thread_mock(
     moderator_id: <Runtime as Trait>::ModeratorId,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
+    rationale: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::ThreadId {
     assert_eq!(
-        TestForumModule::moderate_thread(mock_origin(origin), moderator_id, category_id, thread_id),
+        TestForumModule::moderate_thread(
+            mock_origin(origin),
+            moderator_id,
+            category_id,
+            thread_id,
+            rationale.clone(),
+        ),
         result
     );
     if result.is_ok() {
+        assert!(!<ThreadById<Runtime>>::exists(category_id, thread_id));
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id,))
+            TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id, rationale))
         );
     }
     thread_id
@@ -546,6 +566,7 @@ pub fn moderate_post_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
+    rationale: Vec<u8>,
     result: Result<(), &'static str>,
 ) -> <Runtime as Trait>::PostId {
     assert_eq!(
@@ -554,14 +575,16 @@ pub fn moderate_post_mock(
             moderator_id,
             category_id,
             thread_id,
-            post_id
+            post_id,
+            rationale.clone(),
         ),
         result
     );
     if result.is_ok() {
+        assert!(!<PostById<Runtime>>::exists(thread_id, post_id));
         assert_eq!(
             System::events().last().unwrap().event,
-            TestEvent::forum_mod(RawEvent::PostModerated(post_id,))
+            TestEvent::forum_mod(RawEvent::PostModerated(post_id, rationale))
         );
     }
 

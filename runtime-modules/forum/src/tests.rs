@@ -961,7 +961,14 @@ fn moderate_thread_origin_ok() {
             None,
             Ok(()),
         );
-        moderate_thread_mock(origin, moderator_id, category_id, thread_id, Ok(()));
+        moderate_thread_mock(
+            origin,
+            moderator_id,
+            category_id,
+            thread_id,
+            good_moderation_rationale(),
+            Ok(()),
+        );
     });
 }
 
@@ -1187,6 +1194,7 @@ fn moderate_post_origin() {
                 category_id,
                 thread_id,
                 post_id,
+                good_moderation_rationale(),
                 results[index],
             );
         });
@@ -1353,6 +1361,7 @@ fn test_migration_not_done() {
                 moderator_id,
                 category_id,
                 thread_id,
+                good_moderation_rationale(),
             ),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );
@@ -1364,6 +1373,7 @@ fn test_migration_not_done() {
                 category_id,
                 thread_id,
                 post_id,
+                good_moderation_rationale(),
             ),
             Err(ERROR_DATA_MIGRATION_NOT_DONE),
         );

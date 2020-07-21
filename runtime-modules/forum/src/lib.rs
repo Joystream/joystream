@@ -589,7 +589,7 @@ decl_event!(
         ThreadCreated(ThreadId),
 
         /// A thread with given id was moderated.
-        ThreadModerated(ThreadId),
+        ThreadModerated(ThreadId, Vec<u8>),
 
         /// A thread with given id was moderated.
         ThreadTitleUpdated(ThreadId),
@@ -604,7 +604,7 @@ decl_event!(
         PostAdded(PostId),
 
         /// Post with givne id was moderated.
-        PostModerated(PostId),
+        PostModerated(PostId, Vec<u8>),
 
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
@@ -807,14 +807,10 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            let (_, thread) = Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
+            Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
 
             // Delete thread
-            <ThreadById<T>>::remove(thread.category_id, thread_id);
-            <PostById<T>>::remove_prefix(thread_id);
-
-            // decrease category's thread counter
-            <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
+            Self::delete_thread_inner(category_id, thread_id);
 
             // Store the event
             Self::deposit_event(RawEvent::ThreadDeleted(thread_id));
@@ -887,30 +883,18 @@ decl_module! {
         }
 
         /// Moderate thread
-        fn moderate_thread(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId) -> dispatch::Result {
+        fn moderate_thread(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, rationale: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Ensure origin is medorator
-            let who = Self::ensure_is_moderator(origin, &moderator_id)?;
+            // Ensure moderator is allowed to moderate post
+            Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
 
-            // Get thread
-            let thread = Self::ensure_thread_exists(&category_id, &thread_id)?;
-
-            // ensure origin can moderate category
-            Self::ensure_can_moderate_category(&who, &moderator_id, &thread.category_id)?;
-
-            // Can mutate in corresponding category
-            let path = Self::build_category_tree_path(&thread.category_id);
-
-            // Path must be non-empty, as category id is from thread in state
-            assert!(!path.is_empty());
-
-            // Path can be updated
-            Self::ensure_can_mutate_in_path_leaf(&path)?;
+            // Delete thread
+            Self::delete_thread_inner(category_id, thread_id);
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadModerated(thread_id));
+            Self::deposit_event(RawEvent::ThreadModerated(thread_id, rationale));
 
             Ok(())
         }
@@ -992,24 +976,18 @@ decl_module! {
         }
 
         /// Moderate post
-        fn moderate_post(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId) -> dispatch::Result {
+        fn moderate_post(origin, moderator_id: T::ModeratorId, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, rationale: Vec<u8>) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            // Get moderator id.
-            let who = Self::ensure_is_moderator(origin, &moderator_id)?;
+            // Ensure moderator is allowed to moderate post
+            Self::ensure_can_moderate_post(origin, &moderator_id, &category_id, &thread_id, &post_id)?;
 
-            // Make sure post exists and is mutable
-            let post = Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
-
-            // make sure origin can moderate the category
-            Self::ensure_thread_exists(&category_id, &post.thread_id)?;
-
-            // ensure the moderator can moderate the category
-            Self::ensure_can_moderate_category(&who, &moderator_id, &category_id)?;
+            // Delete post
+            <PostById<T>>::remove(thread_id, post_id);
 
             // Generate event
-            Self::deposit_event(RawEvent::PostModerated(post_id));
+            Self::deposit_event(RawEvent::PostModerated(post_id, rationale));
 
             Ok(())
         }
@@ -1146,6 +1124,17 @@ impl<T: Trait> Module<T> {
         Ok(new_post)
     }
 
+    fn delete_thread_inner(category_id: T::CategoryId, thread_id: T::ThreadId) {
+        // Delete thread
+        <ThreadById<T>>::remove(category_id, thread_id);
+
+        // Delete all thread's posts
+        <PostById<T>>::remove_prefix(thread_id);
+
+        // decrease category's thread counter
+        <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
+    }
+
     // Ensure poll is valid
     fn ensure_poll_is_valid(poll: &Poll<T::Moment, T::Hash>) -> dispatch::Result {
         // Poll end time must larger than now
@@ -1199,6 +1188,25 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(<PostById<T>>::get(thread_id, post_id))
+    }
+
+    fn ensure_can_moderate_post(
+        origin: T::Origin,
+        moderator_id: &T::ModeratorId,
+        category_id: &T::CategoryId,
+        thread_id: &T::ThreadId,
+        post_id: &T::PostId,
+    ) -> dispatch::Result {
+        // Get moderator id.
+        let who = ensure_signed(origin)?;
+
+        // Make sure post exists and is mutable
+        Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
+
+        // ensure the moderator can moderate the category
+        Self::ensure_can_moderate_category(&who, &moderator_id, &category_id)?;
+
+        Ok(())
     }
 
     fn ensure_thread_is_mutable(
