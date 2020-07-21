@@ -1491,8 +1491,8 @@ fn edit_post_text() {
 // test if post react take effect
 fn react_post() {
     // three reations to post, test them one by one.
-    let new_values = vec![0, 1, 2];
-    for index in 0..new_values.len() {
+    let reactions = vec![0, 1, 2];
+    for index in 0..reactions.len() {
         let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = FORUM_LEAD_ORIGIN;
@@ -1523,20 +1523,14 @@ fn react_post() {
                 good_post_text(),
                 Ok(()),
             );
-            assert_eq!(
-                TestForumModule::react_post(
-                    mock_origin(origin.clone()),
-                    forum_lead,
-                    category_id,
-                    thread_id,
-                    post_id,
-                    new_values[index]
-                ),
-                Ok(())
-            );
-            assert_eq!(
-                TestForumModule::reaction_by_post(post_id, forum_lead),
-                new_values[index]
+            react_post_mock(
+                origin.clone(),
+                forum_lead,
+                category_id,
+                thread_id,
+                post_id,
+                reactions[index],
+                Ok(()),
             );
         });
     }
