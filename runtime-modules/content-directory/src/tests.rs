@@ -152,10 +152,10 @@ pub enum EntityAccessStateFailureType {
     EntityNotFound,
     LeadAuthFailed,
     MemberAuthFailed,
-    CuratorGroupIsNotActive,
     CuratorAuthFailed,
     CuratorNotFoundInCuratorGroup,
     EntityAccessDenied,
+    PropertyValuesLocked,
 }
 
 pub fn emulate_entity_access_state_for_failure_case(
@@ -191,48 +191,6 @@ pub fn emulate_entity_access_state_for_failure_case(
                 FIRST_MEMBER_ORIGIN,
                 FIRST_CLASS_ID,
                 actor.clone()
-            ));
-            actor
-        }
-        EntityAccessStateFailureType::CuratorGroupIsNotActive => {
-            // Add curator group
-            assert_ok!(add_curator_group(LEAD_ORIGIN));
-
-            // Add curator to group
-            assert_ok!(add_curator_to_group(
-                LEAD_ORIGIN,
-                FIRST_CURATOR_GROUP_ID,
-                FIRST_CURATOR_ID,
-            ));
-
-            // Add curator group as class maintainer
-            assert_ok!(add_maintainer_to_class(
-                LEAD_ORIGIN,
-                FIRST_CLASS_ID,
-                FIRST_CURATOR_GROUP_ID
-            ));
-
-            // Make curator group active
-            assert_ok!(set_curator_group_status(
-                LEAD_ORIGIN,
-                FIRST_CURATOR_GROUP_ID,
-                true
-            ));
-
-            let actor = Actor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID);
-
-            // Create Entity
-            assert_ok!(create_entity(
-                FIRST_CURATOR_ORIGIN,
-                FIRST_CLASS_ID,
-                actor.clone()
-            ));
-
-            // Make curator group inactive to block it from any entity operations
-            assert_ok!(set_curator_group_status(
-                LEAD_ORIGIN,
-                FIRST_CURATOR_GROUP_ID,
-                false
             ));
             actor
         }
@@ -322,5 +280,56 @@ pub fn emulate_entity_access_state_for_failure_case(
 
             Actor::Member(SECOND_MEMBER_ID)
         }
+        EntityAccessStateFailureType::PropertyValuesLocked => {
+            // Update class permissions to force lock all entity property values from update being performed
+            assert_ok!(update_class_permissions(
+                LEAD_ORIGIN,
+                FIRST_CLASS_ID,
+                None,
+                None,
+                Some(true),
+                None
+            ));
+
+            // Create entity
+            assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, Actor::Lead));
+
+            Actor::Lead
+        }
     }
+}
+
+pub fn add_class_reference_schema_and_entity_schema_support(actor: &Actor<Runtime>, origin: u64) {
+    // Create property
+    let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
+
+    let property = Property::<Runtime>::with_name_and_type(
+        (PropertyNameLengthConstraint::get().max() - 1) as usize,
+        property_type,
+        true,
+        false,
+    );
+
+    // Add Schema to the Class
+    assert_ok!(add_class_schema(
+        LEAD_ORIGIN,
+        FIRST_CLASS_ID,
+        BTreeSet::new(),
+        vec![property]
+    ));
+
+    let schema_property_value =
+        PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+
+    let mut schema_property_values = BTreeMap::new();
+    schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
+
+    // Add schema support to the entity
+    assert_ok!(add_schema_support_to_entity(
+        origin,
+        actor.to_owned(),
+        FIRST_ENTITY_ID,
+        FIRST_SCHEMA_ID,
+        schema_property_values.clone()
+    ));
 }

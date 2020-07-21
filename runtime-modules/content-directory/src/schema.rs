@@ -23,8 +23,8 @@ pub type SameController = bool;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Default, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct PropertyLockingPolicy {
-    is_locked_from_maintainer: bool,
-    is_locked_from_controller: bool,
+    pub is_locked_from_maintainer: bool,
+    pub is_locked_from_controller: bool,
 }
 
 /// Enum, used for `PropertyType` representation

@@ -1476,16 +1476,16 @@ decl_module! {
             // Retrieve Class, Entity and EntityAccessLevel for the actor, attemting to perform operation
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            // Ensure PropertyValue under given in_class_schema_property_id is Vector
-            let property_value_vector =
-                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
-
             // Ensure Property under given PropertyId is unlocked from actor with given EntityAccessLevel
             // Retrieve corresponding Property by value
             let property = class.ensure_class_property_type_unlocked_from(
                 in_class_schema_property_id,
                 access_level,
             )?;
+
+            // Ensure PropertyValue under given in_class_schema_property_id is Vector
+            let property_value_vector =
+                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -1535,16 +1535,16 @@ decl_module! {
             // Retrieve Class, Entity and EntityAccessLevel for the actor, attemting to perform operation
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
-            // Ensure PropertyValue under given in_class_schema_property_id is Vector
-            let property_value_vector =
-                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
-
             // Ensure Property under given PropertyId is unlocked from actor with given EntityAccessLevel
             // Retrieve corresponding Property by value
             let property = class.ensure_class_property_type_unlocked_from(
                 in_class_schema_property_id,
                 access_level,
             )?;
+
+            // Ensure PropertyValue under given in_class_schema_property_id is Vector
+            let property_value_vector =
+                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
 
             // Ensure `VecPropertyValue` nonce is equal to the provided one.
             // Used to to avoid possible data races, when performing vector specific operations
@@ -1617,6 +1617,13 @@ decl_module! {
             // Retrieve Class, Entity and EntityAccessLevel for the actor, attemting to perform operation
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
 
+            // Ensure Property under given PropertyId is unlocked from actor with given EntityAccessLevel
+            // Retrieve corresponding Property by value
+            let class_property = class.ensure_class_property_type_unlocked_from(
+                in_class_schema_property_id,
+                access_level,
+            )?;
+
             // Ensure PropertyValue under given in_class_schema_property_id is Vector
             let property_value_vector =
                 entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
@@ -1626,13 +1633,6 @@ decl_module! {
             property_value_vector.ensure_nonce_equality(nonce)?;
 
             let entity_controller = entity.get_permissions_ref().get_controller();
-
-            // Ensure Property under given PropertyId is unlocked from actor with given EntityAccessLevel
-            // Retrieve corresponding Property by value
-            let class_property = class.ensure_class_property_type_unlocked_from(
-                in_class_schema_property_id,
-                access_level,
-            )?;
 
             // Ensure property_value type is equal to the property_value_vector type and check all constraints
             class_property.ensure_property_value_can_be_inserted_at_property_vector(
