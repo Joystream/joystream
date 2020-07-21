@@ -1004,6 +1004,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-forum"
+version = "3.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-common",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+]
+
+[[package]]
 name = "pallet-hiring"
 version = "3.0.0"
 dependencies = [
