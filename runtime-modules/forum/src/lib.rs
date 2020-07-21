@@ -365,6 +365,9 @@ const ERROR_ANCESTOR_CATEGORY_IMMUTABLE: &str =
     "Ancestor category immutable, i.e. deleted or archived";
 const ERROR_MAX_VALID_CATEGORY_DEPTH_EXCEEDED: &str = "Maximum valid category depth exceeded.";
 const ERROR_CATEGORY_DOES_NOT_EXIST: &str = "Category does not exist.";
+const ERROR_CATEGORY_NOT_EMPTY_THREADS: &str = "Category still contains some threads.";
+const ERROR_CATEGORY_NOT_EMPTY_CATEGORIES: &str = "Category still contains some subcategories.";
+const ERROR_MODERATOR_CANT_DELETE_CATEGORY: &str = "No permissions to delete category.";
 
 // Errors about poll.
 const ERROR_POLL_ALTERNATIVES_TOO_SHORT: &str = "Poll items number too short.";
@@ -479,6 +482,23 @@ pub struct Category<CategoryId, ThreadId, Hash> {
     pub sticky_thread_ids: Vec<ThreadId>,
 }
 
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub enum PrivilegedActor<T: Trait> {
+    Lead,
+    Moderator(T::ModeratorId),
+}
+
+impl<T: Trait> core::fmt::Debug for PrivilegedActor<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            PrivilegedActor::Lead => write!(formatter, "PrivilegedActor {{ Lead }}"),
+            PrivilegedActor::Moderator(moderator_id) => {
+                write!(formatter, "PrivilegedActor {{ {:?} }}", moderator_id)
+            }
+        }
+    }
+}
+
 /// Represents a sequence of categories which have child-parent relatioonship
 /// where last element is final ancestor, or root, in the context of the category tree.
 type CategoryTreePath<CategoryId, ThreadId, Hash> = Vec<Category<CategoryId, ThreadId, Hash>>;
@@ -541,7 +561,6 @@ decl_event!(
         <T as Trait>::PostId,
         <T as Trait>::ForumUserId,
         <T as Trait>::PostReactionId,
-        <T as system::Trait>::Hash,
     {
         /// A category was introduced
         CategoryCreated(CategoryId),
@@ -550,11 +569,14 @@ decl_event!(
         /// The second argument reflects the new archival status of the category.
         CategoryUpdated(CategoryId, bool),
 
+        // A category was deleted
+        CategoryDeleted(CategoryId),
+
         /// A thread with given id was created.
         ThreadCreated(ThreadId),
 
         /// A thread with given id was moderated.
-        ThreadModerated(ThreadId, Hash),
+        ThreadModerated(ThreadId, Vec<u8>),
 
         /// A thread with given id was moderated.
         ThreadTitleUpdated(ThreadId),
@@ -569,7 +591,7 @@ decl_event!(
         PostAdded(PostId),
 
         /// Post with givne id was moderated.
-        PostModerated(PostId, Hash),
+        PostModerated(PostId, Vec<u8>),
 
         /// Post with given id had its text updated.
         /// The second argument reflects the number of total edits when the text update occurs.
@@ -708,6 +730,24 @@ decl_module! {
             Ok(())
         }
 
+        fn delete_category(origin, actor: PrivilegedActor<T>, category_id: T::CategoryId) -> dispatch::Result {
+            // Ensure data migration is done
+            Self::ensure_data_migration_done()?;
+
+            let category = Self::ensure_can_delete_category(origin, &actor, &category_id)?;
+
+            // Delete thread
+            <CategoryById<T>>::remove(category_id);
+            if let Some(parent_category_id) = category.parent_category_id {
+                <CategoryById<T>>::mutate(parent_category_id, |tmp_category| tmp_category.num_direct_subcategories -= 1);
+            }
+
+            // Store the event
+            Self::deposit_event(RawEvent::CategoryDeleted(category_id));
+
+            Ok(())
+        }
+
         /// Create new thread in category with poll
         fn create_thread(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, title: Vec<u8>, text: Vec<u8>,
             poll: Option<Poll<T::Moment, T::Hash>>,
@@ -754,14 +794,10 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            let (_, thread) = Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
+            Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
 
             // Delete thread
-            <ThreadById<T>>::remove(thread.category_id, thread_id);
-            <PostById<T>>::remove_prefix(thread_id);
-
-            // decrease category's thread counter
-            <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
+            Self::delete_thread_inner(category_id, thread_id);
 
             // Store the event
             Self::deposit_event(RawEvent::ThreadDeleted(thread_id));
@@ -841,14 +877,11 @@ decl_module! {
             // Ensure moderator is allowed to moderate post
             Self::ensure_can_moderate_thread(origin, &moderator_id, &category_id, &thread_id)?;
 
-            // Calculate rationale's hash
-            let rationale_hash = T::calculate_hash(rationale.as_slice());
-
             // Delete thread
-            <ThreadById<T>>::remove(category_id, thread_id);
+            Self::delete_thread_inner(category_id, thread_id);
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadModerated(thread_id, rationale_hash));
+            Self::deposit_event(RawEvent::ThreadModerated(thread_id, rationale));
 
             Ok(())
         }
@@ -932,14 +965,11 @@ decl_module! {
             // Ensure moderator is allowed to moderate post
             Self::ensure_can_moderate_post(origin, &moderator_id, &category_id, &thread_id, &post_id)?;
 
-            // Calculate rationale's hash
-            let rationale_hash = T::calculate_hash(rationale.as_slice());
-
             // Delete post
             <PostById<T>>::remove(thread_id, post_id);
 
             // Generate event
-            Self::deposit_event(RawEvent::PostModerated(post_id, rationale_hash));
+            Self::deposit_event(RawEvent::PostModerated(post_id, rationale));
 
             Ok(())
         }
@@ -1074,6 +1104,17 @@ impl<T: Trait> Module<T> {
         <NextPostId<T>>::mutate(|n| *n += One::one());
 
         Ok(new_post)
+    }
+
+    fn delete_thread_inner(category_id: T::CategoryId, thread_id: T::ThreadId) {
+        // Delete thread
+        <ThreadById<T>>::remove(category_id, thread_id);
+
+        // Delete all thread's posts
+        <PostById<T>>::remove_prefix(thread_id);
+
+        // decrease category's thread counter
+        <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
     }
 
     // Ensure poll is valid
@@ -1378,24 +1419,87 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    fn ensure_can_delete_category(
+        origin: T::Origin,
+        actor: &PrivilegedActor<T>,
+        category_id: &T::CategoryId,
+    ) -> Result<Category<T::CategoryId, T::ThreadId, T::Hash>, &'static str> {
+        // Check actor's role
+        match actor {
+            PrivilegedActor::Lead => Self::ensure_is_forum_lead(origin)?,
+            PrivilegedActor::Moderator(moderator_id) => {
+                Self::ensure_is_moderator(origin, &moderator_id)?
+            }
+        };
+
+        // Ensure category exists
+        if !<CategoryById<T>>::exists(category_id) {
+            return Err(ERROR_CATEGORY_DOES_NOT_EXIST);
+        }
+
+        let category = <CategoryById<T>>::get(category_id);
+
+        // Ensure category is empty
+        ensure!(
+            category.num_direct_threads == 0,
+            ERROR_CATEGORY_NOT_EMPTY_THREADS,
+        );
+        ensure!(
+            category.num_direct_subcategories == 0,
+            ERROR_CATEGORY_NOT_EMPTY_CATEGORIES,
+        );
+
+        // Closure ensuring moderator can delete category
+        let can_moderator_delete =
+            |moderator_id: &T::ModeratorId,
+             category: Category<T::CategoryId, T::ThreadId, T::Hash>| {
+                if let Some(parent_category_id) = category.parent_category_id {
+                    Self::ensure_can_moderate_category_path(moderator_id, &parent_category_id)
+                        .map_err(|_| ERROR_MODERATOR_CANT_DELETE_CATEGORY)?;
+
+                    return Ok(category);
+                }
+
+                Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY)
+            };
+
+        // Decide if actor can delete category
+        match actor {
+            PrivilegedActor::Lead => Ok(category),
+            PrivilegedActor::Moderator(moderator_id) => {
+                can_moderator_delete(moderator_id, category)
+            }
+        }
+    }
+
     /// check if an account can moderate a category.
     fn ensure_can_moderate_category(
         account_id: &T::AccountId,
         moderator_id: &T::ModeratorId,
         category_id: &T::CategoryId,
     ) -> Result<(), &'static str> {
-        // Get path from category to root
-        let category_tree_path = Self::build_category_tree_path(category_id);
-
         // Ensure moderator account registered before
         Self::ensure_is_moderator_account(account_id, moderator_id)?;
 
-        // Iterate path, check all ancient category
+        Self::ensure_can_moderate_category_path(moderator_id, category_id)?;
+
+        Ok(())
+    }
+
+    // check that moderator is allowed to manipulate category in hierarchy
+    fn ensure_can_moderate_category_path(
+        moderator_id: &T::ModeratorId,
+        category_id: &T::CategoryId,
+    ) -> Result<(), &'static str> {
+        // Get path from category to root
+        let category_tree_path = Self::build_category_tree_path(category_id);
+
         for item in category_tree_path {
             if <CategoryByModerator<T>>::exists(item.id, moderator_id) {
                 return Ok(());
             }
         }
+
         Err(ERROR_MODERATOR_MODERATE_CATEGORY)
     }
 

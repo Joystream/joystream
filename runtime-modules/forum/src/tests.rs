@@ -236,6 +236,189 @@ fn update_category_archival_status_category_exists() {
     });
 }
 
+#[test]
+// test category can be deleted
+fn delete_category() {
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        assert!(<CategoryById<Runtime>>::exists(category_id));
+        delete_category_mock(origin.clone(), PrivilegedActor::Lead, category_id, Ok(()));
+        assert!(!<CategoryById<Runtime>>::exists(category_id));
+    });
+}
+
+#[test]
+// test category can't be deleted when it has subcategories
+fn delete_category_non_empty_subcategories() {
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        create_category_mock(
+            origin.clone(),
+            Some(category_id),
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        delete_category_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            category_id,
+            Err(ERROR_CATEGORY_NOT_EMPTY_CATEGORIES),
+        );
+    });
+}
+
+#[test]
+// test category can't be deleted when it contains threads
+fn delete_category_non_empty_threads() {
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        delete_category_mock(
+            origin.clone(),
+            PrivilegedActor::Lead,
+            category_id,
+            Err(ERROR_CATEGORY_NOT_EMPTY_THREADS),
+        );
+    });
+}
+
+#[test]
+// test category can't be deleted by moderator only if he is moderating one of parent categories
+fn delete_category_need_ancestor_moderation() {
+    let moderators = [FORUM_MODERATOR_ORIGIN_ID];
+    let origins = [FORUM_MODERATOR_ORIGIN];
+
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id_1 = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let category_id_2 = create_category_mock(
+            origin.clone(),
+            Some(category_id_1),
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // without any permissions, moderator can't delete category
+        delete_category_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id_2,
+            Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY),
+        );
+
+        // give permision to moderate category itself
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id_2,
+            true,
+            Ok(()),
+        );
+
+        // without permissions to moderate only category itself, moderator can't delete category
+        delete_category_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id_2,
+            Err(ERROR_MODERATOR_CANT_DELETE_CATEGORY),
+        );
+
+        // give permision to moderate parent category
+        update_category_membership_of_moderator_mock(
+            origin.clone(),
+            moderators[0],
+            category_id_1,
+            true,
+            Ok(()),
+        );
+
+        // check number of subcategories is correct
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_subcategories,
+            1,
+        );
+
+        // with permissions to moderate parent category, delete will work
+        delete_category_mock(
+            origins[0].clone(),
+            PrivilegedActor::Moderator(moderators[0]),
+            category_id_2,
+            Ok(()),
+        );
+
+        // check that subcategory count was decreased
+        assert_eq!(
+            <CategoryById<Runtime>>::get(category_id_1).num_direct_subcategories,
+            0,
+        );
+    });
+}
+
+#[test]
+// test if lead can delete root category
+fn delete_category_root_by_lead() {
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        delete_category_mock(origin.clone(), PrivilegedActor::Lead, category_id, Ok(()));
+    });
+}
+
 /*
  ** create_thread
  */
