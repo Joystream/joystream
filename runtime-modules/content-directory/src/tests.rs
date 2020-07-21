@@ -301,7 +301,8 @@ pub fn emulate_entity_access_state_for_failure_case(
 
 pub fn add_class_reference_schema() {
     // Create property
-    let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
+    let property_type =
+        PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, VecMaxLengthConstraint::get());
 
     let property = Property::<Runtime>::with_name_and_type(
         (PropertyNameLengthConstraint::get().max() - 1) as usize,
@@ -334,6 +335,6 @@ pub fn add_class_reference_schema_and_entity_schema_support(actor: &Actor<Runtim
         actor.to_owned(),
         FIRST_ENTITY_ID,
         FIRST_SCHEMA_ID,
-        schema_property_values.clone()
+        schema_property_values
     ));
 }

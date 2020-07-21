@@ -929,6 +929,15 @@ impl<T: Trait> PropertyType<T> {
         PropertyType::<Runtime>::Vector(vec_reference)
     }
 
+    pub fn vec_text(
+        text_max_len: TextMaxLength,
+        vec_max_length: VecMaxLength,
+    ) -> PropertyType<Runtime> {
+        let vec_type = Type::<Runtime>::Text(text_max_len);
+        let vec_text = VecPropertyType::<Runtime>::new(vec_type, vec_max_length);
+        PropertyType::<Runtime>::Vector(vec_text)
+    }
+
     pub fn single_text(text_max_len: TextMaxLength) -> PropertyType<Runtime> {
         let text_type = SingleValuePropertyType(Type::<Runtime>::Text(text_max_len));
         PropertyType::<Runtime>::Single(text_type)
@@ -938,6 +947,12 @@ impl<T: Trait> PropertyType<T> {
 impl<T: Trait> PropertyValue<T> {
     pub fn vec_reference(entity_ids: Vec<EntityId>) -> PropertyValue<Runtime> {
         let vec_value = VecValue::<Runtime>::Reference(entity_ids);
+        let vec_property_value = VecPropertyValue::<Runtime>::new(vec_value, 0);
+        PropertyValue::<Runtime>::Vector(vec_property_value)
+    }
+
+    pub fn vec_text(texts: Vec<Vec<u8>>) -> PropertyValue<Runtime> {
+        let vec_value = VecValue::<Runtime>::Text(texts);
         let vec_property_value = VecPropertyValue::<Runtime>::new(vec_value, 0);
         PropertyValue::<Runtime>::Vector(vec_property_value)
     }

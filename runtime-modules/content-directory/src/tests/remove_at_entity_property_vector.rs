@@ -500,7 +500,7 @@ fn remove_at_entity_property_vector_is_locked_for_given_actor() {
 }
 
 #[test]
-fn clear_entity_property_vector_unknown_entity_property_id() {
+fn remove_at_entity_property_vector_unknown_entity_property_id() {
     with_test_externalities(|| {
         // Create class with default permissions
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
@@ -543,7 +543,7 @@ fn clear_entity_property_vector_unknown_entity_property_id() {
 }
 
 #[test]
-fn clear_entity_property_vector_value_under_given_index_is_not_a_vector() {
+fn remove_at_entity_property_vector_value_under_given_index_is_not_a_vector() {
     with_test_externalities(|| {
         // Create class with default permissions
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
