@@ -1123,7 +1123,7 @@ decl_module! {
                 access_level,
             )?;
 
-            // Ensure InputPropertyValue under given in_class_schema_property_id is Vector
+            // Ensure PropertyValue under given in_class_schema_property_id is Vector
             let property_value_vector =
                 entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
 

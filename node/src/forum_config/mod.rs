@@ -6,5 +6,5 @@ pub mod from_serialized;
 use node_runtime::forum::InputValidationLengthConstraint;
 
 pub fn new_validation(min: u16, max_min_diff: u16) -> InputValidationLengthConstraint {
-    return InputValidationLengthConstraint { min, max_min_diff };
+    InputValidationLengthConstraint { min, max_min_diff }
 }

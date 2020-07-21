@@ -91,7 +91,7 @@ decl_module! {
         // Privileged methods
 
         /// Force set a zero staked council. Stakes in existing council will vanish into thin air!
-        fn set_council(origin, accounts: Vec<T::AccountId>) {
+        pub fn set_council(origin, accounts: Vec<T::AccountId>) {
             ensure_root(origin)?;
             let new_council: Seats<T::AccountId, BalanceOf<T>> = accounts.into_iter().map(|account| {
                 Seat {
@@ -136,7 +136,7 @@ decl_module! {
 
         /// Sets the capacity of the the council mint, if it doesn't exist, attempts to
         /// create a new one.
-        fn set_council_mint_capacity(origin, capacity: minting::BalanceOf<T>) {
+        pub fn set_council_mint_capacity(origin, capacity: minting::BalanceOf<T>) {
             ensure_root(origin)?;
 
             if let Some(mint_id) = Self::council_mint() {

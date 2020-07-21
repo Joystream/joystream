@@ -551,7 +551,7 @@ fn insert_at_entity_property_vector_unknown_entity_property_id() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // intto `VecOutputPropertyValue` under `in_class_schema_property_id`,
+        // into `VecOutputPropertyValue` under `in_class_schema_property_id`,
         // in the case, when property value was not added to current Entity values yet.
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             LEAD_ORIGIN,
@@ -884,7 +884,7 @@ fn insert_at_entity_property_vector_text_prop_is_too_long() {
     })
 }
 
-#[test]
+
 fn insert_at_entity_property_vector_hashed_text_prop_is_too_long() {
     with_test_externalities(|| {
         // Create class with default permissions
