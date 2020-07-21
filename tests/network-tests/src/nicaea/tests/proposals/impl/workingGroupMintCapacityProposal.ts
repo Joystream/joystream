@@ -19,7 +19,7 @@ export function workingGroupMintCapacityProposalTest(
   tap.test('Mint capacity proposal test', async () => {
     // Setup
     sudo = keyring.addFromUri(sudoUri)
-    const description: string = 'Mint capacity proposal which is used for API network testing'
+    const description = 'Mint capacity proposal which is used for API network testing'
     const runtimeVoteFee: BN = apiWrapper.estimateVoteForProposalFee()
     const initialMintingCapacity: BN = await apiWrapper.getContentWorkingGroupMintCapacity()
 
