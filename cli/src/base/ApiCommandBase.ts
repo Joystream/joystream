@@ -249,16 +249,16 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   }
 
   async promptForJsonBytes(
-    JsonStruct: Constructor<Struct>,
+    jsonStruct: Constructor<Struct>,
     argName?: string,
     defaultValue?: Bytes,
     schemaValidator?: ajv.ValidateFunction
   ) {
-    const rawType = new JsonStruct().toRawType()
+    const rawType = new jsonStruct().toRawType()
     const typeDef = getTypeDef(rawType)
 
     const defaultStruct =
-      defaultValue && new JsonStruct(JSON.parse(Buffer.from(defaultValue.toHex().replace('0x', ''), 'hex').toString()))
+      defaultValue && new jsonStruct(JSON.parse(Buffer.from(defaultValue.toHex().replace('0x', ''), 'hex').toString()))
 
     if (argName) {
       typeDef.name = argName
