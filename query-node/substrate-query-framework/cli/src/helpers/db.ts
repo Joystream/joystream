@@ -22,21 +22,21 @@ export function getTypeormConfig(): string {
   return newEnvConfig;
 }
 
-export function getTypeormModelGeneratorConnectionConfig():string {
+export function getTypeormModelGeneratorConnectionConfig(): string[] {
   const envConfig = dotenv.parse(fs.readFileSync('.env'));
 
   const command = [
-    './node_modules/.bin/typeorm-model-generator ',
-    `--host ${envConfig['TYPEORM_HOST']}`,
-    `--port ${envConfig['TYPEORM_PORT']}`,
-    `--database ${envConfig['TYPEORM_DATABASE']}`,
-    `--engine postgres`,
-    `--output entities`,
-    `--user ${envConfig['TYPEORM_USERNAME']}`,
-    `--pass ${envConfig['TYPEORM_PASSWORD']}`,
+    'typeorm-model-generator',
+    `--host`, `${envConfig['TYPEORM_HOST']}`,
+    `--port`, `${envConfig['TYPEORM_PORT']}`,
+    `--database`, `${envConfig['TYPEORM_DATABASE']}`,
+    `--engine`, `postgres`,
+    `--output`, `entities`,
+    `--user`, `${envConfig['TYPEORM_USERNAME']}`,
+    `--pass`, `${envConfig['TYPEORM_PASSWORD']}`,
     '--noConfig',
-    '--generateConstructor'
-  ].join(' ');
+    '--generateConstructor',
+  ];
   return command;
 }
 
@@ -50,7 +50,7 @@ export async function resetLastProcessedEvent(): Promise<void> {
   const lastProcessedEvent = {
     blockNumber: 0,
     eventName: 'ExtrinsicSuccess',
-    index: 0
+    index: 0,
   };
 
   // now we can execute any queries on a query runner

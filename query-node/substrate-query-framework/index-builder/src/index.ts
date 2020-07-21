@@ -8,6 +8,7 @@ import QueryNode, { QueryNodeState } from './QueryNode';
 import QueryNodeManager from './QueryNodeManager';
 import { DatabaseManager, SavedEntityEvent, makeDatabaseManager, createDBConnection } from './db';
 import BootstrapPack, { BootstrapFunc } from './bootstrap/BootstrapPack';
+import { QueryNodeStartUpOptions } from './QueryNodeStartOptions';
 
 export {
   ISubstrateQueryService,
@@ -27,4 +28,5 @@ export {
   BootstrapPack,
   BootstrapFunc,
   createDBConnection,
+  QueryNodeStartUpOptions,
 };

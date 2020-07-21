@@ -104,15 +104,20 @@ export class ModelRenderer extends AbstractRenderer {
 
     this.objType.fields
       .filter(f => f.relation)
-      .forEach(f =>
+      .forEach(f => {
+        const columnType = f.relation?.columnType;
+        if (!columnType) {
+          // should never happen
+          throw new Error(`Relation column type for ${f.name} is undefined`);
+        }
         relatedEntityImports.add(
           path.join(
-            `import { ${f.relation?.columnType || ''} } from  '..`,
-            utils.kebabCase(f.relation?.columnType),
-            `${utils.kebabCase(f.relation?.columnType)}.model'`
+            `import { ${columnType} } from  '..`,
+            utils.kebabCase(columnType),
+            `${utils.kebabCase(columnType)}.model'`
           )
-        )
-      );
+        );
+      });
     return {
       relatedEntityImports: Array.from(relatedEntityImports.values()),
     };

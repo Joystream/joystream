@@ -1,7 +1,7 @@
 {
   "name": "index-builder",
   "description": "Block index builder for substrate based chains",
-  "version": "0.0.1-alpha",
+  "version": "0.0.3-alpha",
   "main": "index.js",
   "license": "MIT",
   "repository": "git@github.com:Joystream/joystream.git",
@@ -14,7 +14,10 @@
     "build": "rm -rf lib && tsc --build tsconfig.json"
   },
   "dependencies": {
-    "@polkadot/api": "^0.96.1"
+    "@polkadot/api": "^1.24.1",
+    "@types/shortid": "^0.0.29",
+    "shortid": "^2.2.15",
+    "typeorm": "^0.2.25"
   },
   "devDependencies": {
     "@polkadot/ts": "^0.3.14",
