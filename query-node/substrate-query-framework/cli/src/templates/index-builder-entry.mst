@@ -68,7 +68,7 @@ function banner(): commander.Command {
 
   program
     .version(version)
-    .description("Joystream Indexer")
+    .description("{{projectName}} Indexer")
     .option("-b, --bootstrap", "Load initial data using the boot* mappings")
     .option("-l, --logging <file>", "Path to log4js config", '')
     .option("-h, --height <height>", "Block height to start from", '0')
