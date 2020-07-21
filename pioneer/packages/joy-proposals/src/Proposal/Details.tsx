@@ -1,6 +1,7 @@
 import React from 'react';
-import { Item, Header } from 'semantic-ui-react';
+import { Item, Header, Label } from 'semantic-ui-react';
 import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
+import { metadata as proposalConsts } from '@polkadot/joy-utils/consts/proposals';
 import { ExtendedProposalStatus } from './ProposalDetails';
 import styled from 'styled-components';
 
@@ -71,7 +72,6 @@ type DetailsProps = {
 export default function Details ({ proposal, extendedStatus, proposerLink = false }: DetailsProps) {
   const { type, createdAt, createdAtBlock, proposer } = proposal;
   const { displayStatus, periodStatus, expiresIn, finalizedAtBlock, executedAtBlock, executionFailReason } = extendedStatus;
-  console.log(proposal);
   return (
     <DetailsContainer>
       <Detail name="Proposed By">
@@ -83,7 +83,9 @@ export default function Details ({ proposal, extendedStatus, proposerLink = fals
         />
         <Item.Extra>{ `${createdAt.toLocaleString()}` }</Item.Extra>
       </Detail>
-      <Detail name="Proposal type" value={type} />
+      <Detail name="Proposal type" value={type}>
+        <Item.Extra>{ proposalConsts[type].outdated && <Label size="small">Outdated proposal type</Label> }</Item.Extra>
+      </Detail>
       <Detail name="Stage" value={displayStatus}>
         <Item.Extra>
           { createdAtBlock && <BlockInfo>Created at block <b>#{ createdAtBlock }</b></BlockInfo> }

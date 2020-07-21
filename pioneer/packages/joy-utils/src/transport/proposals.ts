@@ -191,15 +191,14 @@ export default class ProposalsTransport extends BaseTransport {
   }
 
   async parametersFromProposalType (type: ProposalType) {
-    const { votingPeriod: votingPeriodMethod, gracePeriod: gracePeriodMethod } = proposalsApiMethods[type];
-    // TODO: Remove the fallback after outdated proposals are removed
-    const votingPeriod = this.proposalsCodex[votingPeriodMethod]
-      ? ((await this.proposalsCodex[votingPeriodMethod]()) as u32).toNumber()
-      : 0;
-    const gracePeriod = this.proposalsCodex[gracePeriodMethod]
-      ? ((await this.proposalsCodex[gracePeriodMethod]()) as u32).toNumber()
-      : 0;
-    // Currently it's same for all types, but this will change soon
+    const methods = proposalsApiMethods[type];
+    let votingPeriod = 0;
+    let gracePeriod = 0;
+    if (methods) {
+      votingPeriod = ((await this.proposalsCodex[methods.votingPeriod]()) as u32).toNumber();
+      gracePeriod = ((await this.proposalsCodex[methods.gracePeriod]()) as u32).toNumber();
+    }
+    // Currently it's same for all types, but this will change soon (?)
     const cancellationFee = this.cancellationFee();
     return {
       type,

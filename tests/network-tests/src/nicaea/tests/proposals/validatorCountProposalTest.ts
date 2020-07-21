@@ -1,17 +1,17 @@
 import { KeyringPair } from '@polkadot/keyring/types';
 import { membershipTest } from '../impl/membershipCreation';
 import { councilTest } from '../impl/electingCouncil';
-import { textProposalTest } from './impl/textProposal';
+import { validatorCountProposal } from './impl/validatorCountProposal';
 import { initConfig } from '../../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
 import BN from 'bn.js';
 import { setTestTimeout } from '../../utils/setTestTimeout';
 import tap from 'tap';
-import { registerJoystreamTypes } from '@constantinople/types';
+import { registerJoystreamTypes } from '@nicaea/types';
 import { closeApi } from '../impl/closeApi';
 import { ApiWrapper } from '../../utils/apiWrapper';
 
-tap.mocha.describe('Text proposal scenario', async () => {
+tap.mocha.describe('Validator count proposal scenario', async () => {
   initConfig();
   registerJoystreamTypes();
 
@@ -26,7 +26,8 @@ tap.mocha.describe('Text proposal scenario', async () => {
   const K: number = +process.env.COUNCIL_ELECTION_K!;
   const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!);
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!);
-  const durationInBlocks: number = 28;
+  const validatorCountIncrement: BN = new BN(+process.env.VALIDATOR_COUNT_INCREMENT!);
+  const durationInBlocks: number = 29;
 
   const provider = new WsProvider(nodeUrl);
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider);
@@ -35,6 +36,6 @@ tap.mocha.describe('Text proposal scenario', async () => {
   membershipTest(apiWrapper, m1KeyPairs, keyring, N, paidTerms, sudoUri);
   membershipTest(apiWrapper, m2KeyPairs, keyring, N, paidTerms, sudoUri);
   councilTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, K, sudoUri, greaterStake, lesserStake);
-  textProposalTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, sudoUri);
+  validatorCountProposal(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, sudoUri, validatorCountIncrement);
   closeApi(apiWrapper);
 });

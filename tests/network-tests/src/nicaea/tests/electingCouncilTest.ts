@@ -1,17 +1,16 @@
 import { KeyringPair } from '@polkadot/keyring/types';
-import { membershipTest } from '../impl/membershipCreation';
-import { councilTest } from '../impl/electingCouncil';
-import { setLeadProposalTest } from './impl/setLeadProposal';
-import { initConfig } from '../../utils/config';
+import { membershipTest } from './impl/membershipCreation';
+import { councilTest } from './impl/electingCouncil';
+import { initConfig } from '../utils/config';
 import { Keyring, WsProvider } from '@polkadot/api';
+import { setTestTimeout } from '../utils/setTestTimeout';
 import BN from 'bn.js';
-import { setTestTimeout } from '../../utils/setTestTimeout';
 import tap from 'tap';
-import { registerJoystreamTypes } from '@constantinople/types';
-import { closeApi } from '../impl/closeApi';
-import { ApiWrapper } from '../../utils/apiWrapper';
+import { registerJoystreamTypes } from '@nicaea/types';
+import { ApiWrapper } from '../utils/apiWrapper';
+import { closeApi } from './impl/closeApi';
 
-tap.mocha.describe('Set lead proposal scenario', async () => {
+tap.mocha.describe('Electing council scenario', async () => {
   initConfig();
   registerJoystreamTypes();
 
@@ -26,7 +25,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   const K: number = +process.env.COUNCIL_ELECTION_K!;
   const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!);
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!);
-  const durationInBlocks: number = 29;
+  const durationInBlocks: number = 25;
 
   const provider = new WsProvider(nodeUrl);
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider);
@@ -35,6 +34,5 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   membershipTest(apiWrapper, m1KeyPairs, keyring, N, paidTerms, sudoUri);
   membershipTest(apiWrapper, m2KeyPairs, keyring, N, paidTerms, sudoUri);
   councilTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, K, sudoUri, greaterStake, lesserStake);
-  setLeadProposalTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, sudoUri);
   closeApi(apiWrapper);
 });
