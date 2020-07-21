@@ -817,6 +817,7 @@ impl forum::Trait for Runtime {
     type ForumUserId = ForumUserId;
     type ModeratorId = ModeratorId;
     type CategoryId = u64;
+    type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
 
     fn is_lead(_account_id: &AccountId) -> bool {

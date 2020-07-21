@@ -276,6 +276,17 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + From<u64>
         + Into<u64>;
 
+    type PostReactionId: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq
+        + From<u64>
+        + Into<u64>;
+
     type MaxCategoryDepth: Get<u64>;
 
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool;
@@ -384,31 +395,6 @@ use system::ensure_signed;
 pub struct PostTextChange<Hash> {
     /// Text that expired
     pub text_hash: Hash,
-}
-
-/// Represents a reaction to a post
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Copy, Debug)]
-pub enum PostReaction {
-    /// No any reaction
-    NonReacton,
-
-    /// Thumb up to a post
-    ThumbUp,
-
-    /// Thumb down to a post
-    ThumbDown,
-
-    /// Like a post
-    Like,
-}
-
-/// Implement default trait for PostReaction
-impl Default for PostReaction {
-    /// Set default value for PostReaction
-    fn default() -> PostReaction {
-        Self::NonReacton
-    }
 }
 
 /// Represents all poll alternatives and vote count for each one
@@ -545,7 +531,7 @@ decl_storage! {
         pub CategoryByModerator get(category_by_moderator) config(): double_map T::CategoryId, blake2_256(T::ModeratorId) => ();
 
         /// Each account 's reaction to a post.
-        pub ReactionByPost get(reaction_by_post) config(): double_map T::PostId, blake2_256(T::ForumUserId) => PostReaction;
+        pub ReactionByPost get(reaction_by_post) config(): double_map T::PostId, blake2_256(T::ForumUserId) => T::PostReactionId;
 
         /// Input constraints for description text of each item in poll.
         pub PollDescConstraint get(poll_desc_constraint) config(): InputValidationLengthConstraint;
@@ -574,6 +560,7 @@ decl_event!(
         <T as Trait>::ThreadId,
         <T as Trait>::PostId,
         <T as Trait>::ForumUserId,
+        <T as Trait>::PostReactionId,
     {
         /// A category was introduced
         CategoryCreated(CategoryId),
@@ -611,7 +598,7 @@ decl_event!(
         PostTextUpdated(PostId),
 
         /// Thumb up post
-        PostReacted(ForumUserId, PostId, PostReaction),
+        PostReacted(ForumUserId, PostId, PostReactionId),
 
         /// Vote on poll
         VoteOnPoll(ThreadId, u32),
@@ -924,7 +911,7 @@ decl_module! {
         }
 
         /// like or unlike a post.
-        fn react_post(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, react: PostReaction) -> dispatch::Result {
+        fn react_post(origin, forum_user_id: T::ForumUserId, category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId, react: T::PostReactionId) -> dispatch::Result {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
@@ -933,11 +920,6 @@ decl_module! {
 
             // Make sure there exists a mutable post with post id `post_id`
             let _ = Self::ensure_post_is_mutable(&category_id, &thread_id, &post_id)?;
-
-            // If react is meaningful
-            if react == PostReaction::NonReacton {
-                return Ok(())
-            }
 
             // Get old value in map
             let old_value = <ReactionByPost::<T>>::get(post_id, forum_user_id);
