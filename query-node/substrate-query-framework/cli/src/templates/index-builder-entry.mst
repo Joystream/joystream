@@ -75,7 +75,7 @@ function banner():Command {
         .description("Joystream Indexer")
         .option('-b, --bootstrap', 'Load initial data using the boot* mappings')
         .option('-l, --logging <file>', 'Path to log4js config', null)
-        .option('-h, --height <height>', 'Block height to start from', 0)
+        .option('-h, --height <height>', 'Block height to start from')
         .option('-e, --env <file>', '.env file location', '../../.env')
         .option('-n, --no-start', "Do not run the indexer");
 
@@ -86,16 +86,18 @@ function banner():Command {
 }
 
 function setUp(opts: any) {
-      
-    const height:string = opts.height || '0';
-    process.env.BLOCK_HEIGHT = height;
-
     if (opts.bootstrap) {
         process.env.QUERY_NODE_BOOTSTRAP_DB = 'true'
     }
 
     // dotenv config
     dotenv.config({ path: opts.env });
+
+    if (opts.height) {
+      process.env.BLOCK_HEIGHT = opts.height;
+    } else if (!process.env.BLOCK_HEIGHT) {
+      process.env.BLOCK_HEIGHT = '0';
+    }
 
     //log4js config
     if (opts.logging) {
