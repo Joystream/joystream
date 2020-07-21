@@ -1020,6 +1020,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-governance"
+version = "3.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-membership",
+ "pallet-recurring-reward",
+ "pallet-timestamp",
+ "pallet-token-mint",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-hiring"
 version = "3.0.0"
 dependencies = [
