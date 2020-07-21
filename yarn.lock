@@ -1828,7 +1828,7 @@
     "@types/istanbul-reports" "^1.1.1"
     "@types/yargs" "^13.0.0"
 
-"@joystream/types@link:types":
+"@joystream/types@link:types", "@nicaea/types@link:types":
   version "0.12.0"
   dependencies:
     "@polkadot/keyring" "^1.7.0-beta.5"
