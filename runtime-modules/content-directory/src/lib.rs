@@ -450,7 +450,7 @@ impl<T: Trait> Entity<T> {
     /// Ensure `Schema` under given id is not added to given `Entity` yet
     pub fn ensure_schema_id_is_not_added(&self, schema_id: SchemaId) -> dispatch::Result {
         let schema_not_added = !self.supported_schemas.contains(&schema_id);
-        ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_ENTITY);
+        ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_THE_ENTITY);
         Ok(())
     }
 
@@ -462,7 +462,7 @@ impl<T: Trait> Entity<T> {
         ensure!(
             property_values
                 .keys()
-                .all(|key| property_values.contains_key(key)),
+                .all(|key| !self.values.contains_key(key)),
             ERROR_ENTITY_ALREADY_CONTAINS_GIVEN_PROPERTY_ID
         );
         Ok(())
@@ -2194,12 +2194,17 @@ impl<T: Trait> Module<T> {
     pub fn ensure_property_values_unique_option_satisfied(
         updated_values_for_existing_properties: ValuesForExistingProperties<T>,
     ) -> dispatch::Result {
-        for updated_value_for_existing_property in updated_values_for_existing_properties.values() {
+        for (&property_id, updated_value_for_existing_property) in
+            updated_values_for_existing_properties.iter()
+        {
             let (property, value) = updated_value_for_existing_property.unzip();
 
             // Ensure all PropertyValue's with unique option set are unique, except of null non required ones
-            property
-                .ensure_unique_option_satisfied(value, &updated_values_for_existing_properties)?;
+            property.ensure_unique_option_satisfied(
+                property_id,
+                value,
+                &updated_values_for_existing_properties,
+            )?;
         }
         Ok(())
     }

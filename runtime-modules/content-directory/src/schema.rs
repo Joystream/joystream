@@ -614,18 +614,20 @@ impl<T: Trait> Property<T> {
     /// Ensure all `PropertyValue`'s with unique option set are unique, except of null non required ones
     pub fn ensure_unique_option_satisfied(
         &self,
+        new_value_property_id: PropertyId,
         new_value: &PropertyValue<T>,
         updated_values_for_existing_properties: &ValuesForExistingProperties<T>,
     ) -> dispatch::Result {
         if self.unique && (*new_value != PropertyValue::default() || self.required) {
             ensure!(
                 updated_values_for_existing_properties
-                    .values()
-                    .map(
-                        |updated_value_for_existing_property| updated_value_for_existing_property
-                            .unzip()
-                    )
-                    .all(|(_, value)| *value != *new_value),
+                    .iter()
+                    // Skip current property value
+                    .filter(|(property_id, _)| **property_id != new_value_property_id)
+                    .map(|(_, updated_value_for_existing_property)| {
+                        updated_value_for_existing_property.get_value()
+                    })
+                    .all(|value| *value != *new_value),
                 ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
             );
         }
@@ -897,13 +899,13 @@ impl<T: Trait> Property<T> {
                 PropertyType::Vector(vec_property_type),
             ) => {
                 if let (
-                    VecValue::Reference(entities_vec),
+                    VecValue::Reference(entity_ids),
                     Type::Reference(class_id, same_controller_status),
                 ) = (
                     vec_property_value.get_vec_value(),
                     vec_property_type.get_vec_type(),
                 ) {
-                    for entity_id in entities_vec.iter() {
+                    for entity_id in entity_ids.iter() {
                         // Ensure class_id of Entity under provided entity_id references Entity,
                         // which class_id is equal to class_id, declared in corresponding PropertyType
                         // Retrieve corresponding Entity
@@ -931,9 +933,6 @@ impl<T: Trait> Property<T> {
         entity_id: T::EntityId,
         class_id: T::ClassId,
     ) -> Result<Entity<T>, &'static str> {
-        // Ensure Class under given id exists
-        Module::<T>::ensure_known_class_id(class_id)?;
-
         // Ensure Entity under given id exists
         Module::<T>::ensure_known_entity_id(entity_id)?;
 

@@ -468,7 +468,7 @@ fn add_class_schema_property_refers_unknown_class() {
             true,
             VecMaxLengthConstraint::get(),
         );
-        let property = Property::<Runtime>::with_name_and_type(1, reference_vec_type);
+        let property = Property::<Runtime>::with_name_and_type(1, reference_vec_type, true, true);
 
         // Make an attempt to add class schema, providing property with Type::Reference, which refers to unknown ClassId
         let add_class_schema_result =

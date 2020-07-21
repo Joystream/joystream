@@ -15,6 +15,11 @@ impl<'a, T: Trait> ValueForExistingProperty<'a, T> {
         self.0
     }
 
+    /// Retrieve `Value` reference
+    pub fn get_value(&self) -> &PropertyValue<T> {
+        self.1
+    }
+
     /// Retrieve `Property` and `PropertyValue` references
     pub fn unzip(&self) -> (&Property<T>, &PropertyValue<T>) {
         (self.0, self.1)

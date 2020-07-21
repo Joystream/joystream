@@ -863,13 +863,20 @@ impl<T: Trait> Property<T> {
         }
     }
 
-    pub fn with_name_and_type(name_len: usize, property_type: PropertyType<T>) -> Self {
+    pub fn with_name_and_type(
+        name_len: usize,
+        property_type: PropertyType<T>,
+        required: bool,
+        unique: bool,
+    ) -> Self {
         let name = generate_text(name_len);
         let description = generate_text(PropertyDescriptionLengthConstraint::get().min() as usize);
         Self {
             name,
             description,
             property_type,
+            required,
+            unique,
             ..Property::<T>::default()
         }
     }
@@ -933,6 +940,12 @@ impl<T: Trait> PropertyValue<T> {
         let vec_value = VecValue::<Runtime>::Reference(entity_ids);
         let vec_property_value = VecPropertyValue::<Runtime>::new(vec_value, 0);
         PropertyValue::<Runtime>::Vector(vec_property_value)
+    }
+
+    pub fn single_text(text_len: TextMaxLength) -> PropertyValue<Runtime> {
+        let text_value = Value::<Runtime>::Text(generate_text(text_len as usize));
+        let text_property_value = SinglePropertyValue::<Runtime>::new(text_value);
+        PropertyValue::<Runtime>::Single(text_property_value)
     }
 }
 
