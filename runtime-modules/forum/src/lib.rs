@@ -1269,7 +1269,7 @@ impl<T: Trait> Module<T> {
             Ok(())
         };
 
-        // Decide if actor can delete category
+        // Decide if actor can update thread
         match actor {
             PrivilegedActor::Lead => (),
             PrivilegedActor::Moderator(moderator_id) => ensure_moderator_can_update(moderator_id)?,
