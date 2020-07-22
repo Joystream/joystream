@@ -330,29 +330,6 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    /// Ensure all `OutputPropertyValue`'s with unique option set are unique, except of null non required ones
-    pub fn ensure_unique_option_satisfied(
-        &self,
-        new_value_property_id: PropertyId,
-        new_value: &OutputPropertyValue<T>,
-        updated_values_for_existing_properties: &OutputValuesForExistingProperties<T>,
-    ) -> dispatch::Result {
-        if self.unique && (*new_value != OutputPropertyValue::default() || self.required) {
-            ensure!(
-                updated_values_for_existing_properties
-                    .iter()
-                    // Skip current property value
-                    .filter(|(property_id, _)| **property_id != new_value_property_id)
-                    .map(|(_, updated_value_for_existing_property)| {
-                        updated_value_for_existing_property.get_value()
-                    })
-                    .all(|value| *value != *new_value),
-                ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
-            );
-        }
-        Ok(())
-    }
-
     /// Validate new `InputPropertyValue` against the type of this `Property`
     /// and check any additional constraints
     pub fn ensure_property_value_to_update_is_valid(

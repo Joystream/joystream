@@ -736,24 +736,10 @@ decl_module! {
 
             // Make updated entity_property_values from parameters provided
             let entity_property_values_updated =
-                if let Some(entity_property_values_updated) =
                     Self::make_updated_property_value_references_with_same_owner_flag_set(
                         unused_property_id_references_with_same_owner_flag_set, &entity_property_values,
                         &new_property_value_references_with_same_owner_flag_set,
-                    ) {
-
-                        // Create wrapper structure from provided entity_property_values_updated
-                        // and their corresponding Class properties
-                        let updated_values_for_existing_properties = OutputValuesForExistingProperties::from(
-                            &class_properties, &entity_property_values_updated
-                        )?;
-
-                        // Traverse all updated_values_for_existing_properties to ensure unique option satisfied (if required)
-                        Self::ensure_property_values_unique_option_satisfied(updated_values_for_existing_properties)?;
-                        Some(entity_property_values_updated)
-                    } else {
-                        None
-                    };
+                    );
 
             // Transfer entity ownership
             let entities_inbound_rcs_delta = if let Some(entity_property_values_updated) = entity_property_values_updated {
@@ -979,16 +965,6 @@ decl_module! {
                 schema, entity_property_values, &new_output_property_values
             );
 
-            // Create wrapper structure from updated entity values and their corresponding Class properties
-            let updated_values_for_existing_properties = OutputValuesForExistingProperties::from(
-                &class_properties, &entity_values_updated
-            )?;
-
-            // Traverse all updated_values_for_existing_properties to ensure unique option satisfied (if required)
-            Self::ensure_property_values_unique_option_satisfied(
-                updated_values_for_existing_properties
-            )?;
-
             //
             // == MUTATION SAFE ==
             //
@@ -1063,20 +1039,8 @@ decl_module! {
             let entity_property_values = entity.get_values();
 
             // Make updated entity_property_values from current entity_property_values and new_property_values provided
-            let entity_property_values_updated = if let Some(entity_property_values_updated) =
-                Self::make_updated_property_values(&entity_property_values, &new_property_values) {
-
-                    // Create wrapper structure from new_property_values and their corresponding Class properties
-                    let updated_values_for_existing_properties = OutputValuesForExistingProperties::from(
-                        &class_properties, &entity_property_values_updated
-                    )?;
-
-                    // Traverse all values_for_updated_properties to ensure unique option satisfied (if required)
-                    Self::ensure_property_values_unique_option_satisfied(updated_values_for_existing_properties)?;
-                    Some(entity_property_values_updated)
-                } else {
-                    None
-                };
+            let entity_property_values_updated =
+                Self::make_updated_property_values(&entity_property_values, &new_property_values);
 
             // If property values should be updated
             if let Some(entity_property_values_updated) = entity_property_values_updated {
@@ -1859,25 +1823,6 @@ impl<T: Trait> Module<T> {
 
             // All required property values should be provided
             ensure!(!class_property.required, ERROR_MISSING_REQUIRED_PROP);
-        }
-        Ok(())
-    }
-
-    /// Ensure all `updated_values_for_existing_properties` provided satisfy unique option, if required
-    pub fn ensure_property_values_unique_option_satisfied(
-        updated_values_for_existing_properties: OutputValuesForExistingProperties<T>,
-    ) -> dispatch::Result {
-        for (&property_id, updated_value_for_existing_property) in
-            updated_values_for_existing_properties.iter()
-        {
-            let (property, value) = updated_value_for_existing_property.unzip();
-
-            // Ensure all InputPropertyValue's with unique option set are unique, except of null non required ones
-            property.ensure_unique_option_satisfied(
-                property_id,
-                value,
-                &updated_values_for_existing_properties,
-            )?;
         }
         Ok(())
     }
