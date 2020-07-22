@@ -53,7 +53,8 @@ pub use sr_primitives::BuildStorage;
 pub use sr_primitives::{Perbill, Permill};
 
 pub use srml_support::{
-    construct_runtime, parameter_types, traits::Currency, traits::Imbalance, traits::Randomness,
+    construct_runtime, parameter_types,
+    traits::{Currency, Get, Imbalance, Randomness},
     StorageLinkedMap, StorageMap, StorageValue,
 };
 pub use staking::StakerStatus;
@@ -109,6 +110,11 @@ pub type ThreadId = u64;
 ///
 /// See the Note about ThreadId
 pub type PostId = u64;
+
+/// Forum identifiers for user, moderator and category
+pub type ForumUserId = u64;
+pub type ModeratorId = u64;
+pub type CategoryId = u64;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -203,7 +209,7 @@ impl system::Trait for Runtime {
     type AccountId = AccountId;
     /// The aggregated dispatch type that is available for extrinsics.
     type Call = Call;
-    /// The lookup mechanism to get account ID from whatever is passed in dispatchers.
+    /// The lookup mechanism to é account ID from whatever is passed in dispatchers.
     type Lookup = Indices;
     /// The index type for storing how many extrinsics an account has signed.
     type Index = Index;
@@ -778,6 +784,7 @@ impl members::Trait for Runtime {
  * run convention should be.
  */
 
+/*
 /// Shim registry which will proxy ForumUserRegistry behaviour to the members module
 pub struct ShimMembershipRegistry {}
 
@@ -796,12 +803,41 @@ impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
         }
     }
 }
+*/
+
+parameter_types! {
+    pub const MaxCategoryDepth: u64 = 5;
+}
 
 impl forum::Trait for Runtime {
     type Event = Event;
-    type MembershipRegistry = ShimMembershipRegistry;
+    //type MembershipRegistry = ShimMembershipRegistry;
     type ThreadId = ThreadId;
     type PostId = PostId;
+    type ForumUserId = ForumUserId;
+    type ModeratorId = ModeratorId;
+    type CategoryId = u64;
+    type PostReactionId = u64;
+    type MaxCategoryDepth = MaxCategoryDepth;
+
+    fn is_lead(_account_id: &AccountId) -> bool {
+        true
+    }
+
+    fn is_forum_member(
+        _account_id: &<Self as system::Trait>::AccountId,
+        _forum_user_id: &Self::ForumUserId,
+    ) -> bool {
+        true
+    }
+
+    fn is_moderator(_account_id: &Self::AccountId, _moderator_id: &Self::ModeratorId) -> bool {
+        true
+    }
+
+    fn calculate_hash(text: &[u8]) -> Self::Hash {
+        Self::Hash::from_slice(text)
+    }
 }
 
 impl migration::Trait for Runtime {

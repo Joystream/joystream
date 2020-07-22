@@ -2,28 +2,31 @@
 
 use super::new_validation;
 use node_runtime::{
-    forum::{Category, CategoryId, Post, Thread},
-    AccountId, BlockNumber, ForumConfig, Moment, PostId, ThreadId,
+    forum::{Category, Post, Thread},
+    CategoryId, ForumConfig, ForumUserId, Hash, Moment, PostId, ThreadId,
 };
 use serde::Deserialize;
 use serde_json::Result;
 
 #[derive(Deserialize)]
 struct ForumData {
-    categories: Vec<(CategoryId, Category<BlockNumber, Moment, AccountId>)>,
-    posts: Vec<(
-        PostId,
-        Post<BlockNumber, Moment, AccountId, ThreadId, PostId>,
+    categories: Vec<(CategoryId, Category<CategoryId, ThreadId, Hash>)>,
+    posts: Vec<(ThreadId, PostId, Post<ForumUserId, ThreadId, Hash>)>,
+    threads: Vec<(
+        CategoryId,
+        ThreadId,
+        Thread<ForumUserId, CategoryId, Moment, Hash>,
     )>,
-    threads: Vec<(ThreadId, Thread<BlockNumber, Moment, AccountId, ThreadId>)>,
 }
 
 fn parse_forum_json() -> Result<ForumData> {
-    let data = include_str!("../../res/forum_data_acropolis_serialized.json");
+    // TODO: remove temporary load of empty data by regular load of forum config in the new format
+    //let data = include_str!("../../res/forum_data_acropolis_serialized.json");
+    let data = include_str!("../../res/forum_data_empty.json");
     serde_json::from_str(data)
 }
 
-pub fn create(forum_sudo: AccountId) -> ForumConfig {
+pub fn create() -> ForumConfig {
     let forum_data = parse_forum_json().expect("failed loading forum data");
 
     let next_category_id: CategoryId = forum_data
@@ -40,12 +43,11 @@ pub fn create(forum_sudo: AccountId) -> ForumConfig {
         next_category_id,
         next_thread_id,
         next_post_id,
-        forum_sudo,
-        category_title_constraint: new_validation(10, 90),
-        category_description_constraint: new_validation(10, 490),
-        thread_title_constraint: new_validation(10, 90),
-        post_text_constraint: new_validation(10, 990),
-        thread_moderation_rationale_constraint: new_validation(10, 290),
-        post_moderation_rationale_constraint: new_validation(10, 290),
+
+        // TODO: get rid of mocks and setup valid values
+        category_by_moderator: Vec::new(),
+        reaction_by_post: Vec::new(),
+        poll_items_constraint: new_validation(1, 10),
+        data_migration_done: true,
     }
 }

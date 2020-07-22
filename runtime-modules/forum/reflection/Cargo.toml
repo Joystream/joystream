@@ -1,0 +1,13 @@
+[package]
+name = "substrate-forum-module-reflection"
+version = "0.0.1"
+edition = "2018"
+
+
+[dependencies]
+proc-macro2 = "1.0.18"
+syn = "1.0.34"
+
+[lib]
+name="substrate_forum_module_reflection"
+proc-macro = true

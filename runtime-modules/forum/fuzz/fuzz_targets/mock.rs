@@ -1,10 +1,10 @@
-#![cfg(any(test, fuzzing))]
 
 use crate::*;
+use substrate_forum_module::*;
 
 use primitives::H256;
 
-use crate::{GenesisConfig, Module, Trait};
+use substrate_forum_module::{GenesisConfig, Module, Trait};
 
 use runtime_primitives::{
     testing::Header,
@@ -18,7 +18,7 @@ impl_outer_origin! {
 }
 
 mod forum_mod {
-    pub use crate::Event;
+    pub use substrate_forum_module::Event;
 }
 
 impl_outer_event! {
