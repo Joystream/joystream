@@ -17,6 +17,18 @@ matrix:
     - os: linux
       env: TARGET=x86_64-unknown-linux-gnu
 
+# Skip Rust build in a pull request if no rust project files were modified
+before_install:
+  - |
+    if [ "$TRAVIS_PULL_REQUEST" != "false" ]
+      then
+      if ! git diff --name-only $TRAVIS_COMMIT_RANGE | grep -qE "(.rs|Cargo.(lock|toml))$"
+        then
+        echo "No changes to Rust or Cargo Files, CI not running."
+        travis_terminate 0
+      fi
+    fi
+
 install:
   - rustup install nightly-2020-05-23
   - rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-23

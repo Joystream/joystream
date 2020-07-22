@@ -1,7 +1,7 @@
 import { FormikErrors, FormikTouched } from 'formik';
 import { LabelProps } from 'semantic-ui-react';
 
-type FieldErrorLabelProps = LabelProps | null; // This is used for displaying semantic-ui errors
+type FieldErrorLabelProps = LabelProps | undefined; // This is used for displaying semantic-ui errors
 export type FormErrorLabelsProps<ValuesT> = { [T in keyof ValuesT]: FieldErrorLabelProps };
 
 // Single form field error state.
@@ -13,10 +13,10 @@ export function getErrorLabelProps<ValuesT> (
   fieldName: keyof ValuesT,
   pointing: LabelProps['pointing'] = undefined
 
-): FieldErrorLabelProps {
+): FieldErrorLabelProps | undefined {
   return (errors[fieldName] && touched[fieldName])
-    ? { content: errors[fieldName], pointing }
-    : null;
+    ? { content: errors[fieldName], pointing, size: 'large' }
+    : undefined;
 }
 
 // All form fields error states (uses default value for "pointing").

@@ -108,6 +108,7 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
                         ],
+                        crate::proposals_config::development(),
                     )
                 },
                 vec![],
@@ -140,6 +141,7 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
                         ],
+                        crate::proposals_config::development(),
                     )
                 },
                 vec![],
@@ -181,14 +183,13 @@ pub fn testnet_genesis(
     initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId, ImOnlineId)>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
+    cpcp: node_runtime::ProposalsConfigParameters,
 ) -> GenesisConfig {
     const CENTS: Balance = 1;
     const DOLLARS: Balance = 100 * CENTS;
     const STASH: Balance = 20 * DOLLARS;
     const ENDOWMENT: Balance = 100_000 * DOLLARS;
 
-    // default codex proposals config parameters
-    let cpcp = node_runtime::ProposalsConfigParameters::default();
     let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
     GenesisConfig {
@@ -328,7 +329,7 @@ pub fn testnet_genesis(
             set_content_working_group_mint_capacity_proposal_grace_period: cpcp
                 .set_content_working_group_mint_capacity_proposal_grace_period,
             set_lead_proposal_voting_period: cpcp.set_lead_proposal_voting_period,
-            set_lead_proposal_grace_period: cpcp.set_lead_proposal_voting_period,
+            set_lead_proposal_grace_period: cpcp.set_lead_proposal_grace_period,
             spending_proposal_voting_period: cpcp.spending_proposal_voting_period,
             spending_proposal_grace_period: cpcp.spending_proposal_grace_period,
             add_working_group_opening_proposal_voting_period: cpcp

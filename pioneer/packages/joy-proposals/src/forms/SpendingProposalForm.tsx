@@ -19,7 +19,7 @@ import { InputAddress } from '@polkadot/react-components/index';
 import { formatBalance } from '@polkadot/util';
 import './forms.css';
 
-type FormValues = GenericFormValues & {
+export type FormValues = GenericFormValues & {
   destinationAccount: any;
   tokens: string;
 };
@@ -86,8 +86,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    tokens: Validation.Spending.tokens,
-    destinationAccount: Validation.Spending.destinationAccount
+    ...Validation.Spending()
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: 'SpendingProposalsForm'

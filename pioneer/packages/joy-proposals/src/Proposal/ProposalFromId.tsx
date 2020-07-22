@@ -3,6 +3,7 @@ import { RouteComponentProps } from 'react-router-dom';
 import ProposalDetails from './ProposalDetails';
 import { useProposalSubscription } from '@polkadot/joy-utils/react/hooks';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import { ProposalId } from '@joystream/types/proposals';
 
 export default function ProposalFromId (props: RouteComponentProps<any>) {
   const {
@@ -11,7 +12,7 @@ export default function ProposalFromId (props: RouteComponentProps<any>) {
     }
   } = props;
 
-  const { proposal: proposalState, votes: votesState } = useProposalSubscription(id);
+  const { proposal: proposalState, votes: votesState } = useProposalSubscription(new ProposalId(id));
 
   return (
     <PromiseComponent

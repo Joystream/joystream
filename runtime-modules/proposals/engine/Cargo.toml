@@ -96,7 +96,7 @@ package = 'substrate-common-module'
 path = '../../common'
 
 [dev-dependencies]
-mockall = "0.6.0"
+mockall = "0.7.1"
 
 [dev-dependencies.runtime-io]
 default_features = false
