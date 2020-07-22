@@ -1004,6 +1004,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-content-working-group"
+version = "3.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-hiring",
+ "pallet-membership",
+ "pallet-recurring-reward",
+ "pallet-stake",
+ "pallet-timestamp",
+ "pallet-token-mint",
+ "pallet-versioned-store",
+ "pallet-versioned-store-permissions",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-forum"
 version = "3.0.0"
 dependencies = [
