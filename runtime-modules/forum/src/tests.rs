@@ -1020,7 +1020,7 @@ fn delete_thread() {
             moderators[1],
             category_id,
             thread_id,
-            Err(Error::ModeratorModerateCategory),
+            Err(Error::ModeratorCantUpdateCategory),
         );
 
         // moderator will delete thread
@@ -1660,7 +1660,7 @@ fn set_stickied_threads_wrong_moderator() {
             moderator_id,
             category_id,
             vec![thread_id],
-            Err(Error::ModeratorModerateCategory),
+            Err(Error::ModeratorCantUpdateCategory),
         );
     });
 }
@@ -1754,7 +1754,7 @@ fn test_migration_not_done() {
         assert_eq!(
             TestForumModule::moderate_thread(
                 mock_origin(origin.clone()),
-                moderator_id,
+                PrivilegedActor::Moderator(moderator_id),
                 category_id,
                 thread_id,
                 good_moderation_rationale(),
@@ -1765,7 +1765,7 @@ fn test_migration_not_done() {
         assert_eq!(
             TestForumModule::moderate_post(
                 mock_origin(origin.clone()),
-                moderator_id,
+                PrivilegedActor::Moderator(moderator_id),
                 category_id,
                 thread_id,
                 post_id,
