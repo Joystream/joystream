@@ -27,7 +27,7 @@ use frame_support::traits::Get;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use rstd::collections::btree_map::BTreeMap;
 use sp_runtime::traits::{MaybeSerialize, Member};
-use system::{self, ensure_root};
+use system::ensure_root;
 
 use common::origin::ActorOriginValidator;
 pub(crate) use common::BlockAndTime;

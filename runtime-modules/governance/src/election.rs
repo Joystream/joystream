@@ -39,7 +39,7 @@ use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
 use sp_arithmetic::traits::Zero;
 use sp_runtime::traits::Hash;
-use system::{self, ensure_root, ensure_signed};
+use system::{ensure_root, ensure_signed};
 
 use super::sealed_vote::SealedVote;
 use super::stake::Stake;

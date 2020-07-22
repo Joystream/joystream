@@ -1,6 +1,6 @@
 use frame_support::{debug, decl_event, decl_module, decl_storage, ensure};
 use sp_arithmetic::traits::{One, Zero};
-use system::{self, ensure_root};
+use system::ensure_root;
 
 pub use super::election::{self, CouncilElected, Seat, Seats};
 pub use common::currency::{BalanceOf, GovernanceCurrency};

@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use super::genesis;
-use super::mock::{self, *};
+use super::mock::*;
 
 use frame_support::{assert_err, assert_ok, traits::Currency, StorageValue};
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};

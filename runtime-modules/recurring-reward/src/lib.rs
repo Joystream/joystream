@@ -14,7 +14,7 @@ use frame_support::{decl_module, decl_storage, ensure, Parameter};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerialize, Member};
 
-use minting::{self, BalanceOf};
+use minting::BalanceOf;
 
 mod mock;
 mod tests;

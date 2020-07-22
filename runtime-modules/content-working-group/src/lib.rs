@@ -24,7 +24,7 @@ use frame_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_arithmetic::traits::{One, Zero};
-use system::{self, ensure_root, ensure_signed};
+use system::{ensure_root, ensure_signed};
 
 use common::constraints::InputValidationLengthConstraint;
 
