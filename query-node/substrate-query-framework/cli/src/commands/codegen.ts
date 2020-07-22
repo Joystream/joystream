@@ -12,9 +12,8 @@ import { createDir, getTemplatePath, createFile } from '../utils/utils';
 import { formatWithPrettier } from '../helpers/formatter';
 import WarthogWrapper from '../helpers/WarthogWrapper';
 import { getTypeormConfig, getTypeormModelGeneratorConnectionConfig, createSavedEntityEventTable } from '../helpers/db';
-
+import { upperFirst } from 'lodash'; 
 import Listr = require('listr');
-
 
 export default class Codegen extends Command {
   static description = 'Code generator';
@@ -51,7 +50,7 @@ export default class Codegen extends Command {
 
     // Create block indexer
     if (flags.indexer) {
-      cli.action.start('Generating the indexer');
+      cli.action.start('Generating the Indexer');
       await this.createBlockIndexer();
       cli.action.stop();
     }
@@ -94,6 +93,7 @@ export default class Codegen extends Command {
         indexFileContent = Mustache.render(indexFileContent, {
           packageName: process.env.TYPE_REGISTER_PACKAGE_NAME,
           typeRegistrator: process.env.TYPE_REGISTER_FUNCTION,
+          projectName: upperFirst(process.env.PROJECT_NAME)
         });
         createFile(path.resolve('index.ts'), formatWithPrettier(indexFileContent));
 
@@ -110,7 +110,7 @@ export default class Codegen extends Command {
     // Create index.ts file
 
     const installDeps = {
-      title: 'Install dependendies for indexer',
+      title: 'Install dependencies for the Indexer',
       task: async () => {
         await execa('yarn', ['install']);
         if (process.env.TYPE_REGISTER_PACKAGE_NAME) {
@@ -120,7 +120,7 @@ export default class Codegen extends Command {
     };
 
     const genEntities = {
-      title: 'Generate typeorm db entities',
+      title: 'Generate entity classes',
       task: async () => {
         await createSavedEntityEventTable();
         await execa('npx', getTypeormModelGeneratorConnectionConfig());

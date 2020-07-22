@@ -1,23 +1,35 @@
 import { Command } from '@oclif/command';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as utils from './../utils/utils';
 import cli from 'cli-ux';
 import { getTemplatePath } from '../utils/utils';
 import Mustache = require('mustache');
+import dotenv = require('dotenv');
+import execa = require('execa');
+
+const DEFAULT_WS_API_ENDPOINT = 'wss://kusama-rpc.polkadot.io/';
 
 export default class Scaffold extends Command {
   static description = `Starter kit: generates a directory layout and a sample schema file`;
 
   async run(): Promise<void> {
     await fs.writeFile(path.join(process.cwd(), '.env'), await this.promptDotEnv());
+
+    dotenv.config();
+
     this.log('Your settings have been saved to .env, feel free to edit');
 
     cli.action.start('Scaffolding');
 
-    await fs.ensureDir('mappings');
-    await fs.ensureDir('bootstrap');
+    // TODO: we don't do bootstrapping for now
+    //await fs.ensureDir('bootstrap');
+    // copy sample graphql schema
+    await utils.copyTemplateToCWD('scaffold/schema.graphql', 'schema.graphql');
 
-    await fs.copyFile(getTemplatePath('scaffold/schema.graphql'), path.join(process.cwd(), 'schema.graphql'));
+    await this.setupMappings();
+    await this.setupNodeProject();
+    await this.setupDocker();
 
     cli.action.stop();
   }
@@ -25,8 +37,14 @@ export default class Scaffold extends Command {
   async promptDotEnv(): Promise<string> {
     const projectName = (await cli.prompt('Enter your project name', { required: true })) as string;
     const wsProviderUrl = (await cli.prompt('Substrate WS provider endpoint', {
-      default: 'ws://localhost:9944',
+      default: DEFAULT_WS_API_ENDPOINT,
     })) as string;
+
+    const blockHeight = (await cli.prompt('Start block height', { default: '0' })) as string;
+
+    if (isNaN(parseInt(blockHeight))) {
+      throw new Error('Starting block height must be an integer');
+    }
 
     const dbName = (await cli.prompt('Database name', { default: projectName })) as string;
     const dbHost = (await cli.prompt('Database host', { default: 'localhost' })) as string;
@@ -41,6 +59,7 @@ export default class Scaffold extends Command {
     return Mustache.render(template, {
       projectName,
       wsProviderUrl,
+      blockHeight,
       dbName,
       dbHost,
       dbPort,
@@ -48,5 +67,35 @@ export default class Scaffold extends Command {
       dbPassword,
       appPort,
     });
+  }
+
+  // For now, we simply copy the hardcoded templates
+  async setupMappings(): Promise<void> {
+    await fs.ensureDir('mappings');
+    await utils.copyTemplateToCWD('scaffold/mappings/index.ts', path.join('mappings', 'index.ts'));
+    await utils.copyTemplateToCWD('scaffold/mappings/treasury.ts', path.join('mappings', 'treasury.ts'));
+  }
+
+  async setupDocker(): Promise<void> {
+    await fs.ensureDir('docker');
+    await utils.copyTemplateToCWD('scaffold/docker-compose.yml', 'docker-compose.yml');
+
+    await utils.copyTemplateToCWD('scaffold/docker/Dockerfile.indexer', path.join('docker', 'Dockerfile.indexer'));
+    await utils.copyTemplateToCWD('scaffold/docker/Dockerfile.server', path.join('docker', 'Dockerfile.server'));
+
+    await utils.copyTemplateToCWD('scaffold/.dockerignore', '.dockerignore');
+  }
+
+  async setupNodeProject(): Promise<void> {
+    const template = await fs.readFile(getTemplatePath('scaffold/package.json'), 'utf-8');
+
+    await fs.writeFile(
+      path.join(process.cwd(), 'package.json'),
+      Mustache.render(template, {
+        projectName: process.env.PROJECT_NAME,
+      })
+    );
+
+    await execa('yarn', ['install']);
   }
 }

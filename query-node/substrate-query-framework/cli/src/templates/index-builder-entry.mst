@@ -2,8 +2,8 @@ import "reflect-metadata";
 import * as dotenv from "dotenv";
 import * as chalk from 'chalk';
 import * as figlet from 'figlet';
+import * as commander from 'commander';
 import * as BN from 'bn.js';
-import { Command } from 'commander';
 import { configure, getLogger } from 'log4js';
 
 import { createConnection } from "typeorm";
@@ -61,28 +61,23 @@ Please set BOOTSTRAP_FILE_LOCATION environment variable`)
   return bootstrapPack;
 }
 
-function banner():Command {
-    console.log(
-        chalk.green(
-          figlet.textSync('Joystream-Indexer')
-        )
-    );
-    const program = new Command();
-    const version = require('./package.json').version;
+function banner(): commander.Command {
+  console.log(chalk.green(figlet.textSync("{{projectName}}-Indexer")));
+  const program = new commander.Command();
+  const version = require("./package.json").version;
 
-    program
-        .version(version)
-        .description("Joystream Indexer")
-        .option('-b, --bootstrap', 'Load initial data using the boot* mappings')
-        .option('-l, --logging <file>', 'Path to log4js config', null)
-        .option('-h, --height <height>', 'Block height to start from')
-        .option('-e, --env <file>', '.env file location', '../../.env')
-        .option('-n, --no-start', "Do not run the indexer");
+  program
+    .version(version)
+    .description("{{projectName}} Indexer")
+    .option("-b, --bootstrap", "Load initial data using the boot* mappings")
+    .option("-l, --logging <file>", "Path to log4js config")
+    .option("-h, --height <height>", "Block height to start from")
+    .option("-e, --env <file>", ".env file location", "../../.env")
+    .option("-n, --no-start", "Do not run the indexer");
 
-    
-    program.parse(process.argv);
-    
-    return program;
+  program.parse(process.argv);
+
+  return program;
 }
 
 function setUp(opts: any) {
@@ -131,9 +126,6 @@ async function main() {
       "WS_PROVIDER_ENDPOINT_URI environment variable is not set! Make sure you set it in your .env file or system wide."
     );
   }
-  
-  // Required for warthog models.
-  dotenv.config({ path: '../graphql-server/.env' });
 
   await createDBConnection();
 
