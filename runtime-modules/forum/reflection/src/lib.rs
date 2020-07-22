@@ -34,13 +34,16 @@ pub fn derive_fuzzy_module(input: TokenStream) -> TokenStream {
 }
 
 fn quote_test(input: ItemEnum) -> TokenStream {
-    //impl #input.ident {
     let my_ident = input.ident;
     let my_generics = input.generics;
 
+    // strangely name `Module` is not present in my_ident -> let's hardcode it
+    // impl#my_generics #my_ident {
+    //impl#my_generics #my_ident<T> {
+
     let tmp = quote! {
-        impl#my_generics #my_ident {
-            fn i_believe_i_can_fly() -> Vec<u8> {
+        impl#my_generics Module<T> {
+            pub fn i_believe_i_can_fly() -> Vec<u8> {
                 b"adfadfad".to_vec()
             }
         }

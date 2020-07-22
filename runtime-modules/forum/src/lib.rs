@@ -667,12 +667,14 @@ decl_event!(
 );
 
 use substrate_forum_module_reflection::*;
-
-impl< T : Trait > Call<T> {
-    fn i_believe_i_can_fly() -> Vec<u8> {
+/*
+//impl< T : Trait > Call<T> {
+impl<T: Trait> Module<T> {
+    pub fn i_believe_i_can_fly() -> Vec<u8> {
         b"adfadfad" . to_vec()
     }
 }
+*/
 
 decl_module! {
     #[derive(FuzzyModule)]
