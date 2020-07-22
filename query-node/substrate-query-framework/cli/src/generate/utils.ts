@@ -35,6 +35,7 @@ export function names(name: string): { [key: string]: string } {
 
 export function withNames(name: string): GeneratorContext {
   return {
+    name,
     ...names(name),
   };
 }

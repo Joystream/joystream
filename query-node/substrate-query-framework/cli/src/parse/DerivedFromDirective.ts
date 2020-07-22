@@ -21,7 +21,7 @@ export function addDerivedFromIfy(fieldDef: FieldDefinitionNode, field: Field): 
 }
 
 export function validateDerivedFields(model: WarthogModel): void {
-  model.types.forEach(objType => {
+  model.entities.forEach(objType => {
     objType.fields.forEach(f => {
       if (!f.derivedFrom) return;
 

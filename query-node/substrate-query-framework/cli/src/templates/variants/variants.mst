@@ -1,0 +1,66 @@
+import {
+  BaseModel,
+  BooleanField,
+  DateField,
+  FloatField,
+  IntField,
+  NumericField,
+  JSONField,
+  BytesField,
+  EnumField,
+  StringField
+} from 'warthog'; 
+
+{{#variants}}
+  {{#fields}}
+      {{#is.enum}}
+        import { {{tsType}} } from '../enums/enums';
+        export { {{tsType}} }
+      {{/is.enum}}
+  {{/fields}}
+{{/variants}}
+
+import { ObjectType, Field, createUnionType } from 'type-graphql';
+
+{{#variants}}
+@ObjectType()
+export class {{name}} {
+	public isTypeOf: string = '{{name}}';
+
+  {{#fields}}
+
+    {{#is.scalar}}
+      @{{decorator}}({
+        {{^required}}nullable: true,{{/required}}
+        {{#description}}description: `{{{description}}}`,{{/description}}
+        {{#unique}}unique: true,{{/unique}}
+      })
+      {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{tsType}};
+    {{/is.scalar}}
+
+    {{#is.enum}}
+      @EnumField('{{tsType}}', {{tsType}}, { 
+        {{^required}}nullable: true,{{/required}} 
+        {{#description}}description: `{{{description}}}`{{/description}} })
+      {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}:{{tsType}} 
+    {{/is.enum}}
+
+
+    {{#is.union}}
+    @Field(type => {{tsType}}, { 
+        {{^required}}nullable: true,{{/required}} 
+        {{#description}}description: `{{{description}}}`{{/description}} })
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: typeof {{tsType}};
+    {{/is.union}}
+
+  {{/fields}}
+}
+{{/variants}}
+
+{{#unions}}
+export const {{name}} = createUnionType({
+	name: '{{name}}',
+	types: () => [ {{#types}} {{name}}, {{/types}} ],
+	resolveType: value => (value.isTypeOf ? value.isTypeOf : undefined)
+});
+{{/unions}}

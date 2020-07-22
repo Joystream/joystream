@@ -1,5 +1,6 @@
 import { Relation } from '.';
 import { availableTypes } from './ScalarTypes';
+import { ModelType } from './WarthogModel';
 
 interface DerivedFrom {
   argument: string;
@@ -14,6 +15,8 @@ export class Field {
   name: string;
   // GraphQL field type
   type: string;
+  // type in the model (SCALAR, ENUM, INTERFACE, ENTITY, VARIANT)
+  modelType!: ModelType;
   // Is field type built-in or not
   isBuildinType: boolean;
   // Is field nullable or not
@@ -38,6 +41,10 @@ export class Field {
     this.isList = isList;
   }
 
+  // get isBuiltInType(): boolean {
+  //   return this.modelType == ModelType.SCALAR
+  // }
+
   columnType(): string {
     if (this.relation) return this.relation?.type;
     return this.isBuildinType ? availableTypes[this.type] : this.type;
@@ -56,6 +63,10 @@ export class Field {
   }
 
   isEnum(): boolean {
-    return !this.isBuildinType && !this.relation;
+    return this.modelType == ModelType.ENUM;
+  }
+
+  isUnion(): boolean {
+    return this.modelType == ModelType.UNION;
   }
 }

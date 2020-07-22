@@ -77,7 +77,7 @@ export class ModelRenderer extends AbstractRenderer {
 
   withDescription(): GeneratorContext {
     return {
-      description: this.objType.description,
+      description: this.objType.description || undefined,
     };
   }
 
@@ -90,6 +90,8 @@ export class ModelRenderer extends AbstractRenderer {
     }
     has['array'] = this.objType.fields.some(f => f.isArray());
     has['enum'] = this.objType.fields.some(f => f.isEnum());
+    has['union'] = this.objType.fields.some(f => f.isUnion());
+
     debug(`ObjectType has: ${JSON.stringify(has, null, 2)}`);
 
     return {
@@ -114,7 +116,7 @@ export class ModelRenderer extends AbstractRenderer {
             utils.kebabCase(columnType),
             `${utils.kebabCase(columnType)}.model'`
           )
-        )
+        );
       });
     return {
       relatedEntityImports: Array.from(relatedEntityImports.values()),

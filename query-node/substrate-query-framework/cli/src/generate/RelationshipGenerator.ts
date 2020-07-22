@@ -63,7 +63,7 @@ export class RelationshipGenerator {
   }
 
   listTypeWithNoDerivedDirective(field: Field, currentObject: ObjectType): void {
-    const relatedObject = this.model.lookupType(field.type);
+    const relatedObject = this.model.lookupEntity(field.type);
     const relatedFields = relatedObject.fields.filter(f => f.type === currentObject.name && f.isList);
 
     if (relatedFields.length !== 1) {
@@ -81,7 +81,7 @@ export class RelationshipGenerator {
     // Shoud never happen!
     if (!field.derivedFrom) throw new Error(`No derivedFrom found on ${currentObject.name}->${field.name}`);
 
-    const relatedObject = this.model.lookupType(field.type);
+    const relatedObject = this.model.lookupEntity(field.type);
     const relatedField = this.model.lookupField(field.type, field.derivedFrom.argument);
 
     if (relatedField.derivedFrom) {
@@ -99,7 +99,7 @@ export class RelationshipGenerator {
     // Shoud never happen!
     if (!field.derivedFrom) throw new Error(`No derivedFrom found on ${currentObject.name}->${field.name}`);
 
-    const relatedObject = this.model.lookupType(field.type);
+    const relatedObject = this.model.lookupEntity(field.type);
     const relatedField = this.model.lookupField(field.type, field.derivedFrom.argument);
 
     if (relatedField.derivedFrom) {
@@ -114,7 +114,7 @@ export class RelationshipGenerator {
   }
 
   typeWithNoDerivedDirective(field: Field, currentObject: ObjectType): void {
-    const relatedObject = this.model.lookupType(field.type);
+    const relatedObject = this.model.lookupEntity(field.type);
     const relatedFields = relatedObject.fields.filter(f => f.type === currentObject.name);
 
     if (relatedFields.length === 0) {
@@ -136,9 +136,9 @@ export class RelationshipGenerator {
   }
 
   generate(): void {
-    const entityNames = this.model.types.map(t => t.name);
+    const entityNames = this.model.entities.map(t => t.name);
 
-    this.model.types.forEach(currentObject => {
+    this.model.entities.forEach(currentObject => {
       for (const field of currentObject.fields) {
         if (!entityNames.includes(field.type) || this.isVisited(field, currentObject)) continue;
 

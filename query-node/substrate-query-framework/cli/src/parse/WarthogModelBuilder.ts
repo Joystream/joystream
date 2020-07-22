@@ -9,8 +9,9 @@ import {
 import { GraphQLSchemaParser, Visitors, SchemaNode } from './SchemaParser';
 import { WarthogModel, Field, ObjectType } from '../model';
 import Debug from 'debug';
-import { ENTITY_DIRECTIVE, UNIQUE_DIRECTIVE } from './constant';
+import { ENTITY_DIRECTIVE, UNIQUE_DIRECTIVE, VARIANT_DIRECTIVE } from './constant';
 import { FTSDirective, FULL_TEXT_SEARCHABLE_DIRECTIVE } from './FTSDirective';
+import { availableTypes } from '../model/ScalarTypes';
 import * as DerivedFrom from './DerivedFromDirective';
 import { RelationshipGenerator } from '../generate/RelationshipGenerator';
 
@@ -23,6 +24,7 @@ const debug = Debug('qnode-cli:model-generator');
 export class WarthogModelBuilder {
   private _schemaParser: GraphQLSchemaParser;
   private _model: WarthogModel;
+  private _fieldsToProcess: Field[] = [];
 
   constructor(schemaPath: string) {
     this._schemaParser = new GraphQLSchemaParser(schemaPath);
@@ -34,7 +36,7 @@ export class WarthogModelBuilder {
    * Scalar types are also built-in
    */
   private _isBuildinType(type: string): boolean {
-    return !this._schemaParser.getTypeNames().includes(type);
+    return type in availableTypes;
   }
 
   private _listType(typeNode: ListTypeNode, fieldName: string): Field {
@@ -67,6 +69,8 @@ export class WarthogModelBuilder {
     const field = new Field(name, namedTypeNode.name.value);
     field.isBuildinType = this._isBuildinType(field.type);
 
+    this._fieldsToProcess.push(field);
+
     return field;
   }
 
@@ -77,6 +81,14 @@ export class WarthogModelBuilder {
   private isEntity(o: TypeDefinitionNode): boolean {
     const entityDirective = o.directives?.find(d => d.name.value === ENTITY_DIRECTIVE);
     return entityDirective ? true : false;
+  }
+
+  private isVariant(o: TypeDefinitionNode): boolean {
+    if (o.directives == undefined) {
+      return false;
+    }
+
+    return o.directives.findIndex(d => d.name.value === VARIANT_DIRECTIVE) >= 0;
   }
 
   private isUnique(field: FieldDefinitionNode): boolean {
@@ -93,6 +105,7 @@ export class WarthogModelBuilder {
       name: o.name.value,
       fields: this.getFields(o),
       isEntity: this.isEntity(o),
+      isVariant: this.isVariant(o),
       description: o.description?.value,
       isInterface: o.kind === 'InterfaceTypeDefinition',
       interfaces: o.kind === 'ObjectTypeDefinition' ? this.getInterfaces(o) : [],
@@ -157,10 +170,31 @@ export class WarthogModelBuilder {
     });
   }
 
-  private generateObjectTypes() {
-    this._schemaParser.getObjectDefinations().map(o => {
-      const objType = this.generateTypeDefination(o);
-      this._model.addObjectType(objType);
+  private generateEntities() {
+    this._schemaParser
+      .getObjectDefinations()
+      .filter(o => this.isEntity(o))
+      .map(o => {
+        const objType = this.generateTypeDefination(o);
+        this._model.addEntity(objType);
+      });
+  }
+
+  private generateVariants() {
+    this._schemaParser
+      .getObjectDefinations()
+      .filter(o => this.isVariant(o))
+      .map(o => {
+        const objType = this.generateTypeDefination(o);
+        this._model.addVariant(objType);
+      });
+  }
+
+  private generateUnions() {
+    this._schemaParser.getUnionTypes().map(u => {
+      const types: string[] = [];
+      u.getTypes().map(s => types.push(s.name));
+      this._model.addUnion(u.name, types);
     });
   }
 
@@ -181,12 +215,23 @@ export class WarthogModelBuilder {
     this._schemaParser.dfsTraversal(visitors);
   }
 
+  private postProcessFields() {
+    while (this._fieldsToProcess) {
+      const f = this._fieldsToProcess.pop();
+      if (!f) return;
+      f.modelType = this._model.lookupType(f.type);
+    }
+  }
+
   buildWarthogModel(): WarthogModel {
     this._model = new WarthogModel();
 
     this.generateEnums();
     this.generateInterfaces();
-    this.generateObjectTypes();
+    this.generateVariants();
+    this.generateUnions();
+    this.generateEntities();
+    this.postProcessFields();
     this.genereateQueries();
 
     DerivedFrom.validateDerivedFields(this._model);

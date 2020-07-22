@@ -5,9 +5,11 @@
 
 export const ENTITY_DIRECTIVE = 'entity';
 export const UNIQUE_DIRECTIVE = 'unique';
+export const VARIANT_DIRECTIVE = 'variant';
 export const DERIVED_FROM_DIRECTIVE = `derivedFrom`;
 
 export const SCHEMA_DEFINITIONS_PREAMBLE = `
+directive @${VARIANT_DIRECTIVE} on OBJECT # varaint types
 directive @${ENTITY_DIRECTIVE} on OBJECT | INTERFACE  # Mark both object types and interfaces
 directive @${DERIVED_FROM_DIRECTIVE}(field: String!) on FIELD_DEFINITION
 directive @${UNIQUE_DIRECTIVE} on FIELD_DEFINITION
