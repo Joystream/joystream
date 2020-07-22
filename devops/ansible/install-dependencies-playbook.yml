@@ -12,6 +12,8 @@
 
     - name: install pip on Mac
       block:
+        - name: create temporary folder
+          shell: mkdir -p ../../.tmp
         - name: get pip installer using curl
           get_url: 
             url: https://bootstrap.pypa.io/get-pip.py
@@ -19,6 +21,9 @@
         - name: install pip
           shell: python ../../.tmp/get-pip.py
       when: ansible_distribution == 'MacOSX'
+      always: 
+        - name: remove pip installer script
+          shell: rm ../../.tmp/get-pip.py
 
     - name: install docker
       pip: name=docker
