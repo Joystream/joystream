@@ -13,9 +13,11 @@
     - name: install pip on Mac
       block:
         - name: get pip installer using curl
-          get_url: https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+          get_url: 
+            url: https://bootstrap.pypa.io/get-pip.py
+            dest: ../../.tmp/get-pip.py
         - name: install pip
-          shell: python get-pip.py
+          shell: python ../../.tmp/get-pip.py
       when: ansible_distribution == 'MacOSX'
 
     - name: install docker
