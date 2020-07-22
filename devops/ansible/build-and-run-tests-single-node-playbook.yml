@@ -8,5 +8,5 @@
   tasks:
     - name: build node
       include: build-image-tasklist.yml
-- name: run tests
-  import_playbook: run-tests-single-node-playbook.yml
+# - name: run tests
+#   import_playbook: run-tests-single-node-playbook.yml

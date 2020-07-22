@@ -3,13 +3,28 @@
   become: yes
   become_method: sudo
   tasks:
-    - name: install pip
-      apt: name=python-pip state=present
+
+    - name: install pip on Debian
+      block:
+        - name: install pip using apt
+          apt: name=python-pip state=present
+      when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
+
+    - name: install pip on Mac
+      block:
+        - name: get pip installer using curl
+          shell: curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        - name: install pip
+          shell: python get-pip.py
+      when: ansible_distribution == 'MacOSX'
+
     - name: install docker
       pip: name=docker
+
     - name: Install yarn with npm
       npm:
         name: yarn
         global: yes
+
     - name: Install docker compose
       pip: name=docker-compose
