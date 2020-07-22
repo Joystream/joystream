@@ -377,10 +377,7 @@ pub struct Poll<Timestamp, Hash> {
 /// Represents a thread post
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Post<ForumUserId, ThreadId, PostId, Hash> {
-    /// Post identifier
-    pub id: PostId,
-
+pub struct Post<ForumUserId, ThreadId, Hash> {
     /// Id of thread to which this post corresponds.
     pub thread_id: ThreadId,
 
@@ -394,10 +391,7 @@ pub struct Post<ForumUserId, ThreadId, PostId, Hash> {
 /// Represents a thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Thread<ForumUserId, CategoryId, ThreadId, Moment, Hash> {
-    /// Thread identifier
-    pub id: ThreadId,
-
+pub struct Thread<ForumUserId, CategoryId, Moment, Hash> {
     /// Title hash
     pub title_hash: Hash,
 
@@ -418,9 +412,6 @@ pub struct Thread<ForumUserId, CategoryId, ThreadId, Moment, Hash> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Category<CategoryId, ThreadId, Hash> {
-    /// Category identifier
-    pub id: CategoryId,
-
     /// Title
     pub title_hash: Hash,
 
@@ -462,11 +453,13 @@ impl<T: Trait> core::fmt::Debug for PrivilegedActor<T> {
 
 /// Represents a sequence of categories which have child-parent relatioonship
 /// where last element is final ancestor, or root, in the context of the category tree.
-type CategoryTreePath<CategoryId, ThreadId, Hash> = Vec<Category<CategoryId, ThreadId, Hash>>;
+type CategoryTreePath<CategoryId, ThreadId, Hash> =
+    Vec<(CategoryId, Category<CategoryId, ThreadId, Hash>)>;
 
 // TODO: remove when this issue is solved https://github.com/rust-lang/rust-clippy/issues/3381
 // temporary type for functions argument
-type CategoryTreePathArg<CategoryId, ThreadId, Hash> = [Category<CategoryId, ThreadId, Hash>];
+type CategoryTreePathArg<CategoryId, ThreadId, Hash> =
+    [(CategoryId, Category<CategoryId, ThreadId, Hash>)];
 
 decl_error! {
     /// Forum predefined errors
@@ -584,13 +577,13 @@ decl_storage! {
         pub NextCategoryId get(next_category_id) config(): T::CategoryId;
 
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(thread_by_id) config(): double_map T::CategoryId, blake2_256(T::ThreadId) => Thread<T::ForumUserId, T::CategoryId, T::ThreadId, T::Moment, T::Hash>;
+        pub ThreadById get(thread_by_id) config(): double_map T::CategoryId, blake2_256(T::ThreadId) => Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>;
 
         /// Thread identifier value to be used for next Thread in threadById.
         pub NextThreadId get(next_thread_id) config(): T::ThreadId;
 
         /// Map post identifier to corresponding post.
-        pub PostById get(post_by_id) config(): double_map T::ThreadId, blake2_256(T::PostId) => Post<T::ForumUserId, T::ThreadId, T::PostId, T::Hash>;
+        pub PostById get(post_by_id) config(): double_map T::ThreadId, blake2_256(T::PostId) => Post<T::ForumUserId, T::ThreadId, T::Hash>;
 
         /// Post identifier value to be used for for next post created.
         pub NextPostId get(next_post_id) config(): T::PostId;
@@ -678,18 +671,18 @@ decl_module! {
             Self::ensure_data_migration_done()?;
             clear_prefix(b"Forum ForumUserById");
 
-            let category = Self::ensure_can_update_category_membership_of_moderator(origin, &category_id)?;
+            Self::ensure_can_update_category_membership_of_moderator(origin, &category_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             if new_value {
-                <CategoryByModerator<T>>::insert(category.id, moderator_id, ());
+                <CategoryByModerator<T>>::insert(category_id, moderator_id, ());
                 return Ok(());
             }
 
-            <CategoryByModerator<T>>::remove(category.id, moderator_id);
+            <CategoryByModerator<T>>::remove(category_id, moderator_id);
 
             Ok(())
         }
@@ -699,7 +692,7 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            let parent_category = Self::ensure_can_create_category(origin, &parent_category_id)?;
+            Self::ensure_can_create_category(origin, &parent_category_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -710,16 +703,12 @@ decl_module! {
 
             // Create new category
             let new_category = Category {
-                id : next_category_id,
                 title_hash: T::calculate_hash(title.as_slice()),
                 description_hash: T::calculate_hash(description.as_slice()),
                 archived: false,
                 num_direct_subcategories: 0,
                 num_direct_threads: 0,
-                parent_category_id: match parent_category.clone() {
-                    Some(category) => Some(category.id),
-                    None => None,
-                },
+                parent_category_id,
                 sticky_thread_ids: vec![],
             };
 
@@ -730,8 +719,8 @@ decl_module! {
             <NextCategoryId<T>>::mutate(|value| *value += One::one());
 
             // If not root, increase parent's subcategories counter
-            if let Some(tmp_parent_category) = parent_category {
-                <CategoryById<T>>::mutate(tmp_parent_category.id, |c| {
+            if let Some(tmp_parent_category_id) = parent_category_id {
+                <CategoryById<T>>::mutate(tmp_parent_category_id, |c| {
                     c.num_direct_subcategories += 1;
                 });
             }
@@ -760,10 +749,10 @@ decl_module! {
             //
 
             // Mutate category, and set possible new change parameters
-            <CategoryById<T>>::mutate(category.id, |c| c.archived = new_archival_status);
+            <CategoryById<T>>::mutate(category_id, |c| c.archived = new_archival_status);
 
             // Generate event
-            Self::deposit_event(RawEvent::CategoryUpdated(category.id, new_archival_status));
+            Self::deposit_event(RawEvent::CategoryUpdated(category_id, new_archival_status));
 
             Ok(())
         }
@@ -779,13 +768,13 @@ decl_module! {
             //
 
             // Delete thread
-            <CategoryById<T>>::remove(category.id);
+            <CategoryById<T>>::remove(category_id);
             if let Some(parent_category_id) = category.parent_category_id {
                 <CategoryById<T>>::mutate(parent_category_id, |tmp_category| tmp_category.num_direct_subcategories -= 1);
             }
 
             // Store the event
-            Self::deposit_event(RawEvent::CategoryDeleted(category.id));
+            Self::deposit_event(RawEvent::CategoryDeleted(category_id));
 
             Ok(())
         }
@@ -797,17 +786,17 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            let category = Self::ensure_can_create_thread(origin, &forum_user_id, &category_id)?;
+            Self::ensure_can_create_thread(origin, &forum_user_id, &category_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Create a new thread
-            let thread = Self::add_new_thread(category.id, forum_user_id, title.as_slice(), text.as_slice(), &poll)?;
+            let (thread_id, _) = Self::add_new_thread(category_id, forum_user_id, title.as_slice(), text.as_slice(), &poll)?;
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadCreated(thread.id));
+            Self::deposit_event(RawEvent::ThreadCreated(thread_id));
 
             Ok(())
         }
@@ -824,10 +813,10 @@ decl_module! {
 
             // Update thread title
             let title_hash = T::calculate_hash(&new_title);
-            <ThreadById<T>>::mutate(thread.category_id, thread.id, |thread| thread.title_hash = title_hash);
+            <ThreadById<T>>::mutate(thread.category_id, thread_id, |thread| thread.title_hash = title_hash);
 
             // Store the event
-            Self::deposit_event(RawEvent::ThreadTitleUpdated(thread.id));
+            Self::deposit_event(RawEvent::ThreadTitleUpdated(thread_id));
 
             Ok(())
         }
@@ -850,10 +839,10 @@ decl_module! {
             //
 
             // Mutate thread, and set possible new change parameters
-            <ThreadById<T>>::mutate(thread.category_id, thread.id, |c| c.archived = new_archival_status);
+            <ThreadById<T>>::mutate(thread.category_id, thread_id, |c| c.archived = new_archival_status);
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadUpdated(thread.id, new_archival_status));
+            Self::deposit_event(RawEvent::ThreadUpdated(thread_id, new_archival_status));
 
             Ok(())
         }
@@ -870,10 +859,10 @@ decl_module! {
             //
 
             // Delete thread
-            Self::delete_thread_inner(thread.category_id, thread.id);
+            Self::delete_thread_inner(thread.category_id, thread_id);
 
             // Store the event
-            Self::deposit_event(RawEvent::ThreadDeleted(thread.id));
+            Self::deposit_event(RawEvent::ThreadDeleted(thread_id));
 
             Ok(())
         }
@@ -889,13 +878,13 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <ThreadById<T>>::remove(thread.category_id, thread.id);
-            <ThreadById<T>>::insert(new_category_id, thread.id, thread.clone());
+            <ThreadById<T>>::remove(thread.category_id, thread_id);
+            <ThreadById<T>>::insert(new_category_id, thread_id, thread.clone());
             <CategoryById<T>>::mutate(thread.category_id, |category| category.num_direct_threads -= 1);
             <CategoryById<T>>::mutate(new_category_id, |category| category.num_direct_threads += 1);
 
             // Store the event
-            Self::deposit_event(RawEvent::ThreadMoved(thread.id, new_category_id));
+            Self::deposit_event(RawEvent::ThreadMoved(thread_id, new_category_id));
 
             Ok(())
         }
@@ -934,7 +923,7 @@ decl_module! {
                 .collect();
 
             // Update thread with one object
-            <ThreadById<T>>::mutate(thread.category_id, thread.id, |value| {
+            <ThreadById<T>>::mutate(thread.category_id, thread_id, |value| {
                 *value = Thread {
                     poll: Some( Poll {
                         poll_alternatives: new_poll_alternatives,
@@ -945,7 +934,7 @@ decl_module! {
             });
 
             // Store the event
-            Self::deposit_event(RawEvent::VoteOnPoll(thread.id, index));
+            Self::deposit_event(RawEvent::VoteOnPoll(thread_id, index));
 
             Ok(())
         }
@@ -963,10 +952,10 @@ decl_module! {
             //
 
             // Delete thread
-            Self::delete_thread_inner(thread.category_id, thread.id);
+            Self::delete_thread_inner(thread.category_id, thread_id);
 
             // Generate event
-            Self::deposit_event(RawEvent::ThreadModerated(thread.id, rationale));
+            Self::deposit_event(RawEvent::ThreadModerated(thread_id, rationale));
 
             Ok(())
         }
@@ -983,10 +972,10 @@ decl_module! {
             //
 
             // Add new post
-            let post = Self::add_new_post(thread.category_id, thread.id, text.as_slice(), forum_user_id)?;
+            let (post_id, _) = Self::add_new_post(thread.category_id, thread_id, text.as_slice(), forum_user_id)?;
 
             // Generate event
-            Self::deposit_event(RawEvent::PostAdded(post.id));
+            Self::deposit_event(RawEvent::PostAdded(post_id));
 
             Ok(())
         }
@@ -1052,7 +1041,7 @@ decl_module! {
             //
 
             // Delete post
-            <PostById<T>>::remove(post.thread_id, post.id);
+            <PostById<T>>::remove(post.thread_id, post_id);
 
             // Generate event
             Self::deposit_event(RawEvent::PostModerated(post_id, rationale));
@@ -1065,17 +1054,17 @@ decl_module! {
             // Ensure data migration is done
             Self::ensure_data_migration_done()?;
 
-            let category = Self::ensure_can_set_stickied_threads(origin, &actor, &category_id, &stickied_ids)?;
+            Self::ensure_can_set_stickied_threads(origin, &actor, &category_id, &stickied_ids)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // Update category
-            <CategoryById<T>>::mutate(category.id, |category| category.sticky_thread_ids = stickied_ids.clone());
+            <CategoryById<T>>::mutate(category_id, |category| category.sticky_thread_ids = stickied_ids.clone());
 
             // Generate event
-            Self::deposit_event(RawEvent::CategoryStickyThreadUpdate(category.id, stickied_ids));
+            Self::deposit_event(RawEvent::CategoryStickyThreadUpdate(category_id, stickied_ids));
 
             Ok(())
         }
@@ -1096,12 +1085,18 @@ impl<T: Trait> Module<T> {
         title: &[u8],
         text: &[u8],
         poll: &Option<Poll<T::Moment, T::Hash>>,
-    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::ThreadId, T::Moment, T::Hash>, Error> {
+    ) -> Result<
+        (
+            T::ThreadId,
+            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
+        ),
+        Error,
+    > {
         // Ensure data migration is done
         Self::ensure_data_migration_done()?;
 
         // Check that thread can be added to category
-        let category = Self::ensure_category_is_mutable(&category_id)?;
+        Self::ensure_category_is_mutable(&category_id)?;
 
         // Unwrap poll
         if let Some(data) = poll {
@@ -1120,12 +1115,11 @@ impl<T: Trait> Module<T> {
         let new_thread_id = <NextThreadId<T>>::get();
 
         // Add inital post to thread
-        let _ = Self::add_new_post(category.id, new_thread_id, text, author_id);
+        let _ = Self::add_new_post(category_id, new_thread_id, text, author_id);
 
         // Build a new thread
         let new_thread = Thread {
-            id: new_thread_id,
-            category_id: category.id,
+            category_id,
             title_hash: T::calculate_hash(title),
             author_id,
             archived: false,
@@ -1133,7 +1127,7 @@ impl<T: Trait> Module<T> {
         };
 
         // Store thread
-        <ThreadById<T>>::mutate(category.id, new_thread_id, |value| {
+        <ThreadById<T>>::mutate(category_id, new_thread_id, |value| {
             *value = new_thread.clone()
         });
 
@@ -1141,9 +1135,9 @@ impl<T: Trait> Module<T> {
         <NextThreadId<T>>::mutate(|n| *n += One::one());
 
         // Update category's thread counter
-        <CategoryById<T>>::mutate(category.id, |c| c.num_direct_threads += 1);
+        <CategoryById<T>>::mutate(category_id, |c| c.num_direct_threads += 1);
 
-        Ok(new_thread)
+        Ok((new_thread_id, new_thread))
     }
 
     // TODO need a safer approach for system call
@@ -1156,7 +1150,7 @@ impl<T: Trait> Module<T> {
         thread_id: T::ThreadId,
         text: &[u8],
         author_id: T::ForumUserId,
-    ) -> Result<Post<T::ForumUserId, T::ThreadId, T::PostId, T::Hash>, Error> {
+    ) -> Result<(T::PostId, Post<T::ForumUserId, T::ThreadId, T::Hash>), Error> {
         // Ensure data migration is done
         Self::ensure_data_migration_done()?;
 
@@ -1172,7 +1166,6 @@ impl<T: Trait> Module<T> {
 
         // Build a post
         let new_post = Post {
-            id: new_post_id,
             thread_id,
             text_hash: T::calculate_hash(text),
             author_id,
@@ -1184,7 +1177,7 @@ impl<T: Trait> Module<T> {
         // Update next post id
         <NextPostId<T>>::mutate(|n| *n += One::one());
 
-        Ok(new_post)
+        Ok((new_post_id, new_post))
     }
 
     fn delete_thread_inner(category_id: T::CategoryId, thread_id: T::ThreadId) {
@@ -1232,7 +1225,7 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
-    ) -> Result<Post<T::ForumUserId, T::ThreadId, T::PostId, T::Hash>, Error> {
+    ) -> Result<Post<T::ForumUserId, T::ThreadId, T::Hash>, Error> {
         // Make sure post exists
         let post = Self::ensure_post_exists(thread_id, post_id)?;
 
@@ -1245,7 +1238,7 @@ impl<T: Trait> Module<T> {
     fn ensure_post_exists(
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
-    ) -> Result<Post<T::ForumUserId, T::ThreadId, T::PostId, T::Hash>, Error> {
+    ) -> Result<Post<T::ForumUserId, T::ThreadId, T::Hash>, Error> {
         if !<PostById<T>>::exists(thread_id, post_id) {
             return Err(Error::PostDoesNotExist);
         }
@@ -1259,7 +1252,7 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         post_id: &T::PostId,
-    ) -> Result<Post<T::ForumUserId, T::ThreadId, T::PostId, T::Hash>, Error> {
+    ) -> Result<Post<T::ForumUserId, T::ThreadId, T::Hash>, Error> {
         // Ensure the moderator can moderate the category
         Self::ensure_can_moderate_category(origin, &actor, &category_id)?;
 
@@ -1275,7 +1268,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<
         (
             Category<T::CategoryId, T::ThreadId, T::Hash>,
-            Thread<T::ForumUserId, T::CategoryId, T::ThreadId, T::Moment, T::Hash>,
+            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
         ),
         Error,
     > {
@@ -1300,7 +1293,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<
         (
             Category<T::CategoryId, T::ThreadId, T::Hash>,
-            Thread<T::ForumUserId, T::CategoryId, T::ThreadId, T::Moment, T::Hash>,
+            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
         ),
         Error,
     > {
@@ -1318,7 +1311,7 @@ impl<T: Trait> Module<T> {
     fn ensure_thread_exists(
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
-    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::ThreadId, T::Moment, T::Hash>, Error> {
+    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, Error> {
         if !<ThreadById<T>>::exists(category_id, thread_id) {
             return Err(Error::ThreadDoesNotExist);
         }
@@ -1331,7 +1324,7 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         forum_user_id: &T::ForumUserId,
-    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::ThreadId, T::Moment, T::Hash>, Error> {
+    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, Error> {
         // Check that account is forum member
         Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
@@ -1345,7 +1338,7 @@ impl<T: Trait> Module<T> {
         category_id: &T::CategoryId,
         thread_id: &T::ThreadId,
         forum_user_id: &T::ForumUserId,
-    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::ThreadId, T::Moment, T::Hash>, Error> {
+    ) -> Result<Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>, Error> {
         let (_, thread) = Self::ensure_thread_is_mutable(category_id, thread_id)?;
 
         if thread.author_id != *forum_user_id {
@@ -1429,7 +1422,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<
         (
             T::AccountId,
-            Thread<T::ForumUserId, T::CategoryId, T::ThreadId, T::Moment, T::Hash>,
+            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
         ),
         Error,
     > {
@@ -1450,7 +1443,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<
         (
             T::AccountId,
-            Thread<T::ForumUserId, T::CategoryId, T::ThreadId, T::Moment, T::Hash>,
+            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
         ),
         Error,
     > {
@@ -1473,7 +1466,7 @@ impl<T: Trait> Module<T> {
 
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)?;
 
-        Ok(category_tree_path[0].clone())
+        Ok(category_tree_path[0].1.clone())
     }
 
     fn ensure_can_mutate_in_path_leaf(
@@ -1483,7 +1476,7 @@ impl<T: Trait> Module<T> {
         ensure!(
             !category_tree_path
                 .iter()
-                .any(|c: &Category<T::CategoryId, T::ThreadId, T::Hash>| c.archived),
+                .any(|(_, c): &(_, Category<T::CategoryId, T::ThreadId, T::Hash>)| c.archived),
             Error::AncestorCategoryImmutable
         );
 
@@ -1549,7 +1542,7 @@ impl<T: Trait> Module<T> {
         let category = <CategoryById<T>>::get(*category_id);
 
         // Add category to path container
-        path.push(category.clone());
+        path.push((*category_id, category.clone()));
 
         // Make recursive call on parent if we are not at root
         if let Some(parent_category_id) = category.parent_category_id {
@@ -1646,7 +1639,7 @@ impl<T: Trait> Module<T> {
             moderator_id: &T::ModeratorId,
         ) -> Result<(), Error> {
             for item in category_tree_path {
-                if <CategoryByModerator<T>>::exists(item.id, moderator_id) {
+                if <CategoryByModerator<T>>::exists(item.0, moderator_id) {
                     return Ok(());
                 }
             }
@@ -1665,7 +1658,7 @@ impl<T: Trait> Module<T> {
             }
         };
 
-        let category = category_tree_path[0].clone();
+        let category = category_tree_path[0].1.clone();
 
         Ok(category)
     }
@@ -1729,7 +1722,7 @@ impl<T: Trait> Module<T> {
     ) -> Result<
         (
             Category<T::CategoryId, T::ThreadId, T::Hash>,
-            Thread<T::ForumUserId, T::CategoryId, T::ThreadId, T::Moment, T::Hash>,
+            Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
         ),
         Error,
     > {
@@ -1762,7 +1755,7 @@ impl<T: Trait> Module<T> {
 
     /// Check the vote is valid
     fn ensure_vote_is_valid(
-        thread: &Thread<T::ForumUserId, T::CategoryId, T::ThreadId, T::Moment, T::Hash>,
+        thread: &Thread<T::ForumUserId, T::CategoryId, T::Moment, T::Hash>,
         index: u32,
     ) -> Result<(), Error> {
         // Poll not existed

@@ -11,11 +11,11 @@ use serde_json::Result;
 #[derive(Deserialize)]
 struct ForumData {
     categories: Vec<(CategoryId, Category<CategoryId, ThreadId, Hash>)>,
-    posts: Vec<(ThreadId, PostId, Post<ForumUserId, ThreadId, PostId, Hash>)>,
+    posts: Vec<(ThreadId, PostId, Post<ForumUserId, ThreadId, Hash>)>,
     threads: Vec<(
         CategoryId,
         ThreadId,
-        Thread<ForumUserId, CategoryId, ThreadId, Moment, Hash>,
+        Thread<ForumUserId, CategoryId, Moment, Hash>,
     )>,
 }
 
