@@ -18,7 +18,6 @@ jobs:
       run: |
         yarn install --frozen-lockfile
         yarn workspace storage-node checks
-        yarn workspace @joystream/storage-cli build
 
   storage_node_build_osx:
     name: MacOS Checks
@@ -36,4 +35,3 @@ jobs:
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
         yarn workspace storage-node checks
-        yarn workspace @joystream/storage-cli build
