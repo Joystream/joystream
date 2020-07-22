@@ -1143,6 +1143,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-storage"
+version = "3.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-hiring",
+ "pallet-membership",
+ "pallet-recurring-reward",
+ "pallet-stake",
+ "pallet-timestamp",
+ "pallet-token-mint",
+ "pallet-working-group",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-timestamp"
 version = "2.0.0-rc4"
 source = "git+https://github.com/paritytech/substrate.git?rev=00768a1f21a579c478fe5d4f51e1fa71f7db9fd4#00768a1f21a579c478fe5d4f51e1fa71f7db9fd4"
