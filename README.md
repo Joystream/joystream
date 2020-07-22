@@ -20,7 +20,7 @@ The following tools are required for building, testing and contributing to this 
 - [docker](https://www.docker.com/get-started) - *optional*
 - [ansible](https://www.ansible.com/) - *optional*
 
-If you use VSCode as your code editor we recommend using the workspace [settings](devops/vscode/settings.json) for recommend eslint plugin to function properly, and to auto-fix linter and code style on save.
+If you use VSCode as your code editor we recommend using the workspace [settings](devops/vscode/settings.json) for recommend eslint plugin to function properly.
 
 After cloning the repo run the following initialization scripts:
 
