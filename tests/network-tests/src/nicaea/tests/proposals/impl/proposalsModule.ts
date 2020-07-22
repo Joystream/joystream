@@ -23,25 +23,25 @@ export async function createWorkingGroupLeaderOpening(
   await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake));
 
   // Opening construction
-  const opening = new WorkingGroupOpening();
-  opening.setMaxActiveApplicants(new BN(m1KeyPairs.length));
-  opening.setMaxReviewPeriodLength(new BN(32));
-  opening.setApplicationStakingPolicyAmount(new BN(applicationStake));
-  opening.setApplicationCrowdedOutUnstakingPeriodLength(new BN(1));
-  opening.setApplicationExpiredUnstakingPeriodLength(new BN(1));
-  opening.setRoleStakingPolicyAmount(new BN(roleStake));
-  opening.setRoleCrowdedOutUnstakingPeriodLength(new BN(1));
-  opening.setRoleExpiredUnstakingPeriodLength(new BN(1));
-  opening.setSlashableMaxCount(new BN(1));
-  opening.setSlashableMaxPercentPtsPerTime(new BN(100));
-  opening.setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setFailedApplicantApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setFailedApplicantRoleStakeUnstakingPeriod(new BN(1));
-  opening.setTerminateApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setTerminateRoleStakeUnstakingPeriod(new BN(1));
-  opening.setExitRoleApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setExitRoleStakeUnstakingPeriod(new BN(1));
-  opening.setText(uuid().substring(0, 8));
+  const opening = new WorkingGroupOpening()
+    .setMaxActiveApplicants(new BN(m1KeyPairs.length))
+    .setMaxReviewPeriodLength(new BN(32))
+    .setApplicationStakingPolicyAmount(new BN(applicationStake))
+    .setApplicationCrowdedOutUnstakingPeriodLength(new BN(1))
+    .setApplicationExpiredUnstakingPeriodLength(new BN(1))
+    .setRoleStakingPolicyAmount(new BN(roleStake))
+    .setRoleCrowdedOutUnstakingPeriodLength(new BN(1))
+    .setRoleExpiredUnstakingPeriodLength(new BN(1))
+    .setSlashableMaxCount(new BN(1))
+    .setSlashableMaxPercentPtsPerTime(new BN(100))
+    .setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1))
+    .setFailedApplicantApplicationStakeUnstakingPeriod(new BN(1))
+    .setFailedApplicantRoleStakeUnstakingPeriod(new BN(1))
+    .setTerminateApplicationStakeUnstakingPeriod(new BN(1))
+    .setTerminateRoleStakeUnstakingPeriod(new BN(1))
+    .setExitRoleApplicationStakeUnstakingPeriod(new BN(1))
+    .setExitRoleStakeUnstakingPeriod(new BN(1))
+    .setText(uuid().substring(0, 8));
 
   // Proposal creation
   const proposalPromise = apiWrapper.expectProposalCreated();
@@ -113,13 +113,13 @@ export async function fillLeaderOpeningProposal(
     await apiWrapper.getActiveApplicationsIdsByRoleAccount(applicantRoleAccountAddress, workingGroup)
   )[0];
   const now = await apiWrapper.getBestBlock();
-  const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters();
-  fillOpeningParameters.setAmountPerPayout(payoutAmount);
-  fillOpeningParameters.setNextPaymentAtBlock(now.add(firstRewardInterval));
-  fillOpeningParameters.setPayoutInterval(rewardInterval);
-  fillOpeningParameters.setOpeningId(openingId);
-  fillOpeningParameters.setSuccessfulApplicationId(applicationId);
-  fillOpeningParameters.setWorkingGroup(workingGroupString);
+  const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters()
+    .setAmountPerPayout(payoutAmount)
+    .setNextPaymentAtBlock(now.add(firstRewardInterval))
+    .setPayoutInterval(rewardInterval)
+    .setOpeningId(openingId)
+    .setSuccessfulApplicationId(applicationId)
+    .setWorkingGroup(workingGroupString);
 
   const proposalPromise = apiWrapper.expectProposalCreated();
   await apiWrapper.proposeFillLeaderOpening(

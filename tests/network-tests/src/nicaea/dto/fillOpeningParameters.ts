@@ -32,28 +32,34 @@ export class FillOpeningParameters {
     return this.workingGroup;
   }
 
-  public setAmountPerPayout(value: BN) {
+  public setAmountPerPayout(value: BN): FillOpeningParameters {
     this.amountPerPayout = value;
+    return this;
   }
 
-  public setNextPaymentAtBlock(value: BN) {
+  public setNextPaymentAtBlock(value: BN): FillOpeningParameters {
     this.nextPaymentAtBlock = value;
+    return this;
   }
 
-  public setPayoutInterval(value: BN) {
+  public setPayoutInterval(value: BN): FillOpeningParameters {
     this.payoutInterval = value;
+    return this;
   }
 
-  public setOpeningId(value: BN) {
+  public setOpeningId(value: BN): FillOpeningParameters {
     this.openingId = value;
+    return this;
   }
 
-  public setSuccessfulApplicationId(value: BN) {
+  public setSuccessfulApplicationId(value: BN): FillOpeningParameters {
     this.successfulApplicationId = value;
+    return this;
   }
 
-  public setWorkingGroup(value: string) {
+  public setWorkingGroup(value: string): FillOpeningParameters {
     this.workingGroup = value;
+    return this;
   }
 
   constructor() {

@@ -24,30 +24,30 @@ export async function addWorkerOpening(
   expectFailure: boolean
 ): Promise<BN> {
   // Worker opening construction
-  const opening = new WorkingGroupOpening();
   const activateAtBlock: BN | undefined = activationDelay.eqn(0)
     ? undefined
     : (await apiWrapper.getBestBlock()).add(activationDelay);
-  opening.setActivateAtBlock(activateAtBlock);
-  opening.setMaxActiveApplicants(new BN(membersKeyPairs.length));
-  opening.setMaxReviewPeriodLength(new BN(32));
-  opening.setApplicationStakingPolicyAmount(new BN(applicationStake));
-  opening.setApplicationCrowdedOutUnstakingPeriodLength(new BN(1));
-  opening.setApplicationExpiredUnstakingPeriodLength(new BN(1));
-  opening.setRoleStakingPolicyAmount(new BN(roleStake));
-  opening.setRoleCrowdedOutUnstakingPeriodLength(new BN(1));
-  opening.setRoleExpiredUnstakingPeriodLength(new BN(1));
-  opening.setSlashableMaxCount(new BN(1));
-  opening.setSlashableMaxPercentPtsPerTime(new BN(100));
-  opening.setSuccessfulApplicantApplicationStakeUnstakingPeriod(unstakingPeriod);
-  opening.setFailedApplicantApplicationStakeUnstakingPeriod(unstakingPeriod);
-  opening.setFailedApplicantRoleStakeUnstakingPeriod(unstakingPeriod);
-  opening.setTerminateApplicationStakeUnstakingPeriod(unstakingPeriod);
-  opening.setTerminateRoleStakeUnstakingPeriod(unstakingPeriod);
-  opening.setExitRoleApplicationStakeUnstakingPeriod(unstakingPeriod);
-  opening.setExitRoleStakeUnstakingPeriod(unstakingPeriod);
-  opening.setText(uuid().substring(0, 8));
-  opening.setOpeningType('Worker');
+  const opening = new WorkingGroupOpening()
+    .setActivateAtBlock(activateAtBlock)
+    .setMaxActiveApplicants(new BN(membersKeyPairs.length))
+    .setMaxReviewPeriodLength(new BN(32))
+    .setApplicationStakingPolicyAmount(new BN(applicationStake))
+    .setApplicationCrowdedOutUnstakingPeriodLength(new BN(1))
+    .setApplicationExpiredUnstakingPeriodLength(new BN(1))
+    .setRoleStakingPolicyAmount(new BN(roleStake))
+    .setRoleCrowdedOutUnstakingPeriodLength(new BN(1))
+    .setRoleExpiredUnstakingPeriodLength(new BN(1))
+    .setSlashableMaxCount(new BN(1))
+    .setSlashableMaxPercentPtsPerTime(new BN(100))
+    .setSuccessfulApplicantApplicationStakeUnstakingPeriod(unstakingPeriod)
+    .setFailedApplicantApplicationStakeUnstakingPeriod(unstakingPeriod)
+    .setFailedApplicantRoleStakeUnstakingPeriod(unstakingPeriod)
+    .setTerminateApplicationStakeUnstakingPeriod(unstakingPeriod)
+    .setTerminateRoleStakeUnstakingPeriod(unstakingPeriod)
+    .setExitRoleApplicationStakeUnstakingPeriod(unstakingPeriod)
+    .setExitRoleStakeUnstakingPeriod(unstakingPeriod)
+    .setText(uuid().substring(0, 8))
+    .setOpeningType('Worker');
 
   // Fee estimation and transfer
   const addOpeningFee: BN = apiWrapper.estimateAddOpeningFee(opening, module);
@@ -76,27 +76,27 @@ export async function addLeaderOpening(
   const activateAtBlock: BN | undefined = activationDelay.eqn(0)
     ? undefined
     : (await apiWrapper.getBestBlock()).add(activationDelay);
-  const opening = new WorkingGroupOpening();
-  opening.setActivateAtBlock(activateAtBlock);
-  opening.setMaxActiveApplicants(new BN(membersKeyPairs.length));
-  opening.setMaxReviewPeriodLength(new BN(32));
-  opening.setApplicationStakingPolicyAmount(new BN(applicationStake));
-  opening.setApplicationCrowdedOutUnstakingPeriodLength(new BN(1));
-  opening.setApplicationExpiredUnstakingPeriodLength(new BN(1));
-  opening.setRoleStakingPolicyAmount(new BN(roleStake));
-  opening.setRoleCrowdedOutUnstakingPeriodLength(new BN(1));
-  opening.setRoleExpiredUnstakingPeriodLength(new BN(1));
-  opening.setSlashableMaxCount(new BN(1));
-  opening.setSlashableMaxPercentPtsPerTime(new BN(100));
-  opening.setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setFailedApplicantApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setFailedApplicantRoleStakeUnstakingPeriod(new BN(1));
-  opening.setTerminateApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setTerminateRoleStakeUnstakingPeriod(new BN(1));
-  opening.setExitRoleApplicationStakeUnstakingPeriod(new BN(1));
-  opening.setExitRoleStakeUnstakingPeriod(new BN(1));
-  opening.setText(uuid().substring(0, 8));
-  opening.setOpeningType('leader');
+  const opening = new WorkingGroupOpening()
+    .setActivateAtBlock(activateAtBlock)
+    .setMaxActiveApplicants(new BN(membersKeyPairs.length))
+    .setMaxReviewPeriodLength(new BN(32))
+    .setApplicationStakingPolicyAmount(new BN(applicationStake))
+    .setApplicationCrowdedOutUnstakingPeriodLength(new BN(1))
+    .setApplicationExpiredUnstakingPeriodLength(new BN(1))
+    .setRoleStakingPolicyAmount(new BN(roleStake))
+    .setRoleCrowdedOutUnstakingPeriodLength(new BN(1))
+    .setRoleExpiredUnstakingPeriodLength(new BN(1))
+    .setSlashableMaxCount(new BN(1))
+    .setSlashableMaxPercentPtsPerTime(new BN(100))
+    .setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1))
+    .setFailedApplicantApplicationStakeUnstakingPeriod(new BN(1))
+    .setFailedApplicantRoleStakeUnstakingPeriod(new BN(1))
+    .setTerminateApplicationStakeUnstakingPeriod(new BN(1))
+    .setTerminateRoleStakeUnstakingPeriod(new BN(1))
+    .setExitRoleApplicationStakeUnstakingPeriod(new BN(1))
+    .setExitRoleStakeUnstakingPeriod(new BN(1))
+    .setText(uuid().substring(0, 8))
+    .setOpeningType('leader');
 
   const addOpeningPromise: Promise<BN> = apiWrapper.expectOpeningAdded();
   await apiWrapper.sudoAddOpening(sudo, opening, module);
@@ -286,6 +286,12 @@ export async function fillLeaderOpening(
       `Role account ids does not match, leader account: ${worker.role_account_id}, application account ${application.role_account_id}`
     );
   });
+  const leadWorkerId: BN = (await apiWrapper.getLeadWorkerId(module))!;
+  const openingLeaderAccount: string = (await apiWrapper.getWorkerById(leadWorkerId, module)).role_account_id.toString();
+  assert(
+    openingLeaderAccount === membersKeyPairs[0].address, 
+    `Unexpected leader account ${openingLeaderAccount}, expected ${membersKeyPairs[0].address}`
+    );
 }
 
 export async function increaseStake(
@@ -519,7 +525,7 @@ export async function expectLeaderSet(
   const leaderApplicationId = (await apiWrapper.getApplicationsIdsByRoleAccount(leaderAddress, module))[0];
   const application: Application = await apiWrapper.getApplicationById(leaderApplicationId, module);
   assert(
-    worker.role_account_id.toString() === application.role_account_id.toString(),
+    worker.role_account_id.eq(application.role_account_id),
     `Role account ids does not match, leader account: ${worker.role_account_id}, application account ${application.role_account_id}`
   );
   return leadWorkerId;

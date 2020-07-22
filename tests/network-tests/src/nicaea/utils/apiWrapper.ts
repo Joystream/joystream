@@ -11,7 +11,7 @@ import { RoleParameters } from '@nicaea/types/roles';
 import { Seat } from '@nicaea/types/council';
 import { Balance, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces';
 import BN from 'bn.js';
-import { SubmittableExtrinsic } from '@polkadot/api/types';
+import { SubmittableExtrinsic, UnsubscribePromise } from '@polkadot/api/types';
 import { Sender } from './sender';
 import { Utils } from './utils';
 import { Stake, StakedState } from '@nicaea/types/stake';
@@ -47,7 +47,8 @@ export class ApiWrapper {
       case WorkingGroups.storageWorkingGroup:
         return 'Storage';
       default:
-        return 'Undefined';
+        throw new Error(`Invalid working group string representation: ${workingGroup}`);
+        ;
     }
   }
 
@@ -335,7 +336,7 @@ export class ApiWrapper {
         {
           activate_at: 'CurrentBlock',
           commitment: {
-            application_rationing_policy: { max_active_applicants: '32' },
+            application_rationing_policy: { max_active_applicants: 32 },
             max_review_period_length: 32,
             application_staking_policy: {
               amount: 0,
@@ -384,13 +385,13 @@ export class ApiWrapper {
   }
 
   public estimateProposeFillLeaderOpeningFee(): BN {
-    const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters();
-    fillOpeningParameters.setAmountPerPayout(new BN(1));
-    fillOpeningParameters.setNextPaymentAtBlock(new BN(99999));
-    fillOpeningParameters.setPayoutInterval(new BN(99999));
-    fillOpeningParameters.setOpeningId(new BN(0));
-    fillOpeningParameters.setSuccessfulApplicationId(new BN(0));
-    fillOpeningParameters.setWorkingGroup('Storage');
+    const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters()
+      .setAmountPerPayout(new BN(1))
+      .setNextPaymentAtBlock(new BN(99999))
+      .setPayoutInterval(new BN(99999))
+      .setOpeningId(new BN(0))
+      .setSuccessfulApplicationId(new BN(0))
+      .setWorkingGroup('Storage');
 
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
@@ -808,9 +809,10 @@ export class ApiWrapper {
 
   public expectProposalCreated(): Promise<BN> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'ProposalCreated') {
+            unsubscribe();
             resolve(new BN(record.event.data[1].toString()));
           }
         });
@@ -820,9 +822,10 @@ export class ApiWrapper {
 
   public expectRuntimeUpgraded(): Promise<void> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method.toString() === 'RuntimeUpdated') {
+            unsubscribe();
             resolve();
           }
         });
@@ -832,13 +835,14 @@ export class ApiWrapper {
 
   public expectProposalFinalized(): Promise<void> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (
             record.event.method &&
             record.event.method.toString() === 'ProposalStatusUpdated' &&
             record.event.data[1].toString().includes('Executed')
           ) {
+            unsubscribe();
             resolve();
           }
         });
@@ -848,9 +852,10 @@ export class ApiWrapper {
 
   public expectOpeningFilled(): Promise<ApplicationIdToWorkerIdMap> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'OpeningFilled') {
+            unsubscribe();
             resolve((record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap);
           }
         });
@@ -860,9 +865,10 @@ export class ApiWrapper {
 
   public expectOpeningAdded(): Promise<BN> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'OpeningAdded') {
+            unsubscribe();
             resolve((record.event.data as unknown) as BN);
           }
         });
@@ -872,9 +878,10 @@ export class ApiWrapper {
 
   public expectLeaderSet(): Promise<BN> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'LeaderSet') {
+            unsubscribe();
             resolve((record.event.data as unknown) as BN);
           }
         });
@@ -884,9 +891,10 @@ export class ApiWrapper {
 
   public expectLeaderTerminated(): Promise<void> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'TerminatedLeader') {
+            unsubscribe();
             resolve();
           }
         });
@@ -896,9 +904,10 @@ export class ApiWrapper {
 
   public expectWorkerRewardAmountUpdated(): Promise<void> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'WorkerRewardAmountUpdated') {
+            unsubscribe();
             resolve();
           }
         });
@@ -908,9 +917,10 @@ export class ApiWrapper {
 
   public expectWorkerStakeDecreased(): Promise<void> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'StakeDecreased') {
+            unsubscribe();
             resolve();
           }
         });
@@ -920,9 +930,10 @@ export class ApiWrapper {
 
   public expectWorkerStakeSlashed(): Promise<void> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'StakeSlashed') {
+            unsubscribe();
             resolve();
           }
         });
@@ -932,9 +943,10 @@ export class ApiWrapper {
 
   public expectApplicationReviewBegan(): Promise<BN> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'BeganApplicationReview') {
+            unsubscribe();
             resolve((record.event.data as unknown) as BN);
           }
         });
@@ -944,9 +956,10 @@ export class ApiWrapper {
 
   public expectMintCapacityChanged(): Promise<BN> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'MintCapacityChanged') {
+            unsubscribe();
             resolve((record.event.data[1] as unknown) as BN);
           }
         });
@@ -1040,12 +1053,7 @@ export class ApiWrapper {
         title,
         description,
         proposalStake,
-        {
-          activate_at: opening.getActivateAt(),
-          commitment: opening.getCommitment(),
-          human_readable_text: opening.getText(),
-          working_group: workingGroup,
-        }
+        opening.getAddOpeningParameters(workingGroup)
       ),
       account,
       false
