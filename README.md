@@ -12,13 +12,14 @@ functionality to support the [various roles](https://www.joystream.org/roles) th
 Development [![Development Branch Build Status](https://travis-ci.org/Joystream/joystream.svg?branch=development)](https://travis-ci.org/Joystream/joystream) - build history on [Travis](https://travis-ci.org/github/Joystream/joystream/builds)
 
 ## Development Tools
+
 The following tools are required for building, testing and contributing to this repo:
 
-- [Rust](https://www.rust-lang.org/tools/install) toolchain - *required*
-- [nodejs](https://nodejs.org/)  v12.x - *required*
-- [yarn classic](https://classic.yarnpkg.com/en/docs/install) package manager v1.22.x- *required*
-- [docker](https://www.docker.com/get-started) - *optional*
-- [ansible](https://www.ansible.com/) - *optional*
+- [Rust](https://www.rust-lang.org/tools/install) toolchain - _required_
+- [nodejs](https://nodejs.org/) v12.x - _required_
+- [yarn classic](https://classic.yarnpkg.com/en/docs/install) package manager v1.22.x- _required_
+- [docker](https://www.docker.com/get-started) - _optional_
+- [ansible](https://www.ansible.com/) - _optional_
 
 If you use VSCode as your code editor we recommend using the workspace [settings](devops/vscode/settings.json) for recommend eslint plugin to function properly.
 
@@ -39,26 +40,32 @@ yarn cargo-checks
 ## Software
 
 **Substrate blockchain**
+
 - [joystream-node](./node)
 - [runtime](./runtime)
 - [runtime modules](./runtime-modules)
 
 **Server Applications - infrastructure**
+
 - [Storage Node](./storage-node) - Media Storage Infrastructure
-- [Query Node](https://github.com/Joystream/joystream/tree/query_node/query-node) - *under development*
-- [Discovery Node](https://github.com/Joystream/joystream/tree/init_discovery_node/discovery_node) - *under development*
+- [Query Node](https://github.com/Joystream/joystream/tree/query_node/query-node) - _under development_
+- [Discovery Node](https://github.com/Joystream/joystream/tree/init_discovery_node/discovery_node) - _under development_
 
 **Front-end Applications**
+
 - [Pioneer](./pioneer) - Main UI for accessing all Joystream features
-- [Atlas](https://github.com/Joystream/joystream/tree/init_atlas/atlas) - Media Player- *under development*
+- [Atlas](https://github.com/Joystream/joystream/tree/init_atlas/atlas) - Media Player- _under development_
 
 **Tools and CLI**
+
 - [joystream-cli](./cli) - CLI for community and governance activities
 
 **Testing infrastructure**
+
 - [Network integration](./tests/network-tests) - Joystream network integration testing framework
 
 ## Exploring the network with Pioneer
+
 Pioneer is currently the main web interface to interact with the network:
 
 We currently host it on: https://testnet.joystream.org
@@ -74,11 +81,11 @@ git checkout master
 yarn install
 yarn workspace pioneer start
 ```
+
 This runs a local development web server on port 3000.
 
 Use the link below to browse the network using the publicly hosted endpoint:
 http://localhost:3000/?rpc=wss://rome-rpc-endpoint.joystream.org:9944/
-
 
 ## Running a local full node
 

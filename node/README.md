@@ -6,8 +6,7 @@ joystream-node is the main server application that connects to the network, sync
 
 To setup a full node and validator review the [advanced guide from the helpdesk](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
 
-
-###  Pre-built Binaries
+### Pre-built Binaries
 
 The latest pre-built binaries can be downloaded from the [releases](https://github.com/Joystream/joystream/releases) page.
 Generally these will be built from master branch and relevant to the current active testnet.
@@ -29,6 +28,7 @@ compile the node and runtime
 ```bash
 cargo build --release
 ```
+
 This produces the binary in `./target/release/joystream-node`
 
 ### Running Local development chain
@@ -80,17 +80,9 @@ yarn workspace joystream-testing test
 ```
 
 To run the integration tests with a different chain, you can omit step running the local development chain and set the node URL using `NODE_URL` environment variable.
-Proposal grace periods should be set to 0, otherwise proposal network tests will fail.
-
-### Rome-Constantinople migration network test
-
-Ensure Rome node is up and running, and node URL is set using `NODE_URL` environment variable (default value is `localhost:9944`).
-
-```bash
-yarn test-migration
-```
 
 ### Installing a release build
+
 If you are building a tagged release from master branch and want to install the executable to your path follow the step below.
 
 This will install the executable `joystream-node` to your `~/.cargo/bin` folder, which you would normally have in your `$PATH` environment.
@@ -102,5 +94,5 @@ cargo install joystream-node --path node/
 Now you can run and connect to the rome testnet:
 
 ```bash
-joystream-node --chain rome.json
+joystream-node --chain testnets/rome.json
 ```
