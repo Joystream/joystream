@@ -1,3 +1,7 @@
+// Clippy linter requirement
+#![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
+                                          // example:  pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>|
+
 use crate::data_directory::Trait as DDTrait;
 use crate::traits::{ContentHasStorage, ContentIdExists};
 use codec::{Codec, Decode, Encode};
@@ -97,27 +101,27 @@ impl<T: Trait> ContentHasStorage<T> for Module<T> {
     // TODO deprecated
     fn has_storage_provider(which: &T::ContentId) -> bool {
         let dosr_list = Self::relationships_by_content_id(which);
-        return dosr_list.iter().any(|&dosr_id| {
+        dosr_list.iter().any(|&dosr_id| {
             let res = Self::relationships(dosr_id);
             if res.is_none() {
                 return false;
             }
             let dosr = res.unwrap();
             dosr.ready
-        });
+        })
     }
 
     // TODO deprecated
     fn is_ready_at_storage_provider(which: &T::ContentId, provider: &T::AccountId) -> bool {
         let dosr_list = Self::relationships_by_content_id(which);
-        return dosr_list.iter().any(|&dosr_id| {
+        dosr_list.iter().any(|&dosr_id| {
             let res = Self::relationships(dosr_id);
             if res.is_none() {
                 return false;
             }
             let dosr = res.unwrap();
             dosr.storage_provider == *provider && dosr.ready
-        });
+        })
     }
 }
 
@@ -138,7 +142,7 @@ decl_module! {
             // Create new ID, data.
             let new_id = Self::next_relationship_id();
             let dosr: DataObjectStorageRelationship<T> = DataObjectStorageRelationship {
-                content_id: cid.clone(),
+                content_id: cid,
                 storage_provider: who.clone(),
                 ready: false,
             };
@@ -148,9 +152,9 @@ decl_module! {
 
             // Also add the DOSR to the list of DOSRs for the CID. Uniqueness is guaranteed
             // by the map, so we can just append the new_id to the list.
-            let mut dosr_list = Self::relationships_by_content_id(cid.clone());
+            let mut dosr_list = Self::relationships_by_content_id(cid);
             dosr_list.push(new_id);
-            <RelationshipsByContentId<T>>::insert(cid.clone(), dosr_list);
+            <RelationshipsByContentId<T>>::insert(cid, dosr_list);
 
             // Emit event
             Self::deposit_event(RawEvent::DataObjectStorageRelationshipAdded(new_id, cid, who));

@@ -145,9 +145,9 @@ decl_module! {
                 size,
                 added_at: Self::current_block_and_time(),
                 owner: who.clone(),
-                liaison: liaison,
+                liaison,
                 liaison_judgement: LiaisonJudgement::Pending,
-                ipfs_content_id: ipfs_content_id.clone(),
+                ipfs_content_id,
             };
 
             <DataObjectByContentId<T>>::insert(&content_id, data);
@@ -157,14 +157,14 @@ decl_module! {
         // The LiaisonJudgement can be updated, but only by the liaison.
         fn accept_content(origin, content_id: T::ContentId) {
             let who = ensure_signed(origin)?;
-            Self::update_content_judgement(&who, content_id.clone(), LiaisonJudgement::Accepted)?;
+            Self::update_content_judgement(&who, content_id, LiaisonJudgement::Accepted)?;
             <KnownContentIds<T>>::mutate(|ids| ids.push(content_id));
             Self::deposit_event(RawEvent::ContentAccepted(content_id, who));
         }
 
         fn reject_content(origin, content_id: T::ContentId) {
             let who = ensure_signed(origin)?;
-            Self::update_content_judgement(&who, content_id.clone(), LiaisonJudgement::Rejected)?;
+            Self::update_content_judgement(&who, content_id, LiaisonJudgement::Rejected)?;
             Self::deposit_event(RawEvent::ContentRejected(content_id, who));
         }
 
@@ -198,11 +198,11 @@ decl_module! {
 
 impl<T: Trait> ContentIdExists<T> for Module<T> {
     fn has_content(content_id: &T::ContentId) -> bool {
-        Self::data_object_by_content_id(content_id.clone()).is_some()
+        Self::data_object_by_content_id(*content_id).is_some()
     }
 
     fn get_data_object(content_id: &T::ContentId) -> Result<DataObject<T>, &'static str> {
-        match Self::data_object_by_content_id(content_id.clone()) {
+        match Self::data_object_by_content_id(*content_id) {
             Some(data) => Ok(data),
             None => Err(MSG_CID_NOT_FOUND),
         }
