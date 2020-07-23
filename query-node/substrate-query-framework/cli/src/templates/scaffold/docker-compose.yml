@@ -6,6 +6,8 @@ services:
     restart: always
     ports:
       - "${DB_PORT}:5432"
+    volumes:
+      - /var/lib/postgresql/data
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
