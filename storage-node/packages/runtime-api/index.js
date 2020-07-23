@@ -129,7 +129,7 @@ class RuntimeApi {
    * If the subscribed events are given, and a callback as well, then the
    * callback is invoked with matching events.
    */
-  async signAndSend(accountId, tx, attempts, subscribed, callback) {
+  async signAndSend(accountId, tx, subscribed, callback) {
     accountId = this.identities.keyring.encodeAddress(accountId)
 
     // Key must be unlocked
@@ -237,7 +237,7 @@ class RuntimeApi {
     // eslint-disable-next-line  no-async-promise-executor
     return new Promise(async (resolve, reject) => {
       try {
-        await this.signAndSend(senderAccountId, tx, 1, subscribed, (events) => {
+        await this.signAndSend(senderAccountId, tx, subscribed, (events) => {
           events.forEach((event) => {
             // fix - we may not necessarily want the first event
             // if there are multiple events emitted,

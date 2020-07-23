@@ -103,7 +103,7 @@ class AssetsApi {
     const tx = this.base.api.tx.dataObjectStorageRegistry.addRelationship(storageProviderId, contentId)
 
     const subscribed = [['dataObjectStorageRegistry', 'DataObjectStorageRelationshipAdded']]
-    return this.base.signAndSend(providerAccountId, tx, 3, subscribed, callback)
+    return this.base.signAndSend(providerAccountId, tx, subscribed, callback)
   }
 
   /*
