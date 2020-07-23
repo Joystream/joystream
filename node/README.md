@@ -83,7 +83,7 @@ To run the integration tests with a different chain, you can omit step running t
 
 ### Installing a release build
 
-If you are building a tagged release from master branch and want to install the executable to your path follow the step below.
+If you are building a tagged release from `master` branch and want to install the executable to your path follow the step below.
 
 This will install the executable `joystream-node` to your `~/.cargo/bin` folder, which you would normally have in your `$PATH` environment.
 
