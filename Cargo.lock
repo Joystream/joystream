@@ -1112,6 +1112,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-proposals-discussion"
+version = "3.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-membership",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-proposals-engine"
 version = "3.0.0"
 dependencies = [
