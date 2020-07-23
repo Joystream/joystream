@@ -50,7 +50,7 @@ import { LinkageResult } from '@polkadot/types/codec/Linkage'
 
 import { InputValidationLengthConstraint } from '@joystream/types/common'
 
-export const DEFAULT_API_URI = 'wss://rome-rpc-endpoint.joystream.org:9944/'
+export const DEFAULT_API_URI = 'ws://localhost:9944/'
 const DEFAULT_DECIMALS = new u32(12)
 
 // Mapping of working group to api module

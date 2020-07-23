@@ -2,7 +2,6 @@ import fs from 'fs'
 import path from 'path'
 import ExitCodes from '../ExitCodes'
 import { CLIError } from '@oclif/errors'
-import { DEFAULT_API_URI } from '../Api'
 import lockFile from 'proper-lockfile'
 import DefaultCommandBase from './DefaultCommandBase'
 import os from 'os'
@@ -16,7 +15,7 @@ type StateObject = {
 // State object default values
 const DEFAULT_STATE: StateObject = {
   selectedAccountFilename: '',
-  apiUri: DEFAULT_API_URI,
+  apiUri: '',
 }
 
 // State file path (relative to getAppDataPath())

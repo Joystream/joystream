@@ -5,7 +5,7 @@ import Api from '../Api'
 import { getTypeDef, createType, Option, Tuple, Bytes } from '@polkadot/types'
 import { Codec, TypeDef, TypeDefInfo, Constructor } from '@polkadot/types/types'
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
-import { ApiPromise } from '@polkadot/api'
+import { ApiPromise, WsProvider } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
 import { SubmittableResultImpl } from '@polkadot/api/types'
@@ -20,6 +20,7 @@ class ExtrinsicFailedError extends Error {}
  */
 export default abstract class ApiCommandBase extends StateAwareCommandBase {
   private api: Api | null = null
+  forceSkipApiUriPrompt = false
 
   getApi(): Api {
     if (!this.api) throw new CLIError('Tried to get API before initialization.', { exit: ExitCodes.ApiError })
@@ -33,8 +34,58 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
   async init() {
     await super.init()
-    const apiUri: string = this.getPreservedState().apiUri
+    let apiUri: string = this.getPreservedState().apiUri
+    if (!apiUri) {
+      this.warn("You haven't provided a node/endpoint for the CLI to connect to yet!")
+      apiUri = await this.promptForApiUri()
+    }
     this.api = await Api.create(apiUri)
+  }
+
+  async promptForApiUri(): Promise<string> {
+    let selectedNodeUri = await this.simplePrompt({
+      type: 'list',
+      message: 'Choose a node/endpoint:',
+      choices: [
+        {
+          name: 'Local node (ws://localhost:9944)',
+          value: 'ws://localhost:9944',
+        },
+        {
+          name: 'Current Testnet official Joystream node (wss://rome-rpc-endpoint.joystream.org:9944/)',
+          value: 'wss://rome-rpc-endpoint.joystream.org:9944/',
+        },
+        {
+          name: 'Custom endpoint',
+          value: '',
+        },
+      ],
+    })
+
+    if (!selectedNodeUri) {
+      do {
+        selectedNodeUri = await this.simplePrompt({
+          type: 'input',
+          message: 'Provide a WS endpoint uri',
+        })
+        if (!this.isApiUriValid(selectedNodeUri)) {
+          this.warn('Provided uri seems incorrect! Please try again...')
+        }
+      } while (!this.isApiUriValid(selectedNodeUri))
+    }
+
+    await this.setPreservedState({ apiUri: selectedNodeUri })
+
+    return selectedNodeUri
+  }
+
+  isApiUriValid(uri: string) {
+    try {
+      new WsProvider(uri)
+    } catch (e) {
+      return false
+    }
+    return true
   }
 
   // This is needed to correctly handle some structs, enums etc.

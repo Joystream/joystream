@@ -1,28 +1,37 @@
-import StateAwareCommandBase from '../../base/StateAwareCommandBase'
 import chalk from 'chalk'
-import { WsProvider } from '@polkadot/api'
+import ApiCommandBase from '../../base/ApiCommandBase'
 import ExitCodes from '../../ExitCodes'
 
 type ApiSetUriArgs = { uri: string }
 
-export default class ApiSetUri extends StateAwareCommandBase {
+export default class ApiSetUri extends ApiCommandBase {
   static description = 'Set api WS provider uri'
   static args = [
     {
       name: 'uri',
-      required: true,
-      description: 'Uri of the node api WS provider',
+      required: false,
+      description: 'Uri of the node api WS provider (if skipped, a prompt will be displayed)',
     },
   ]
 
+  async init() {
+    this.forceSkipApiUriPrompt = true
+    super.init()
+  }
+
   async run() {
     const args: ApiSetUriArgs = this.parse(ApiSetUri).args as ApiSetUriArgs
-    try {
-      new WsProvider(args.uri)
-    } catch (e) {
-      this.error('The WS provider uri seems to be incorrect', { exit: ExitCodes.InvalidInput })
+    let newUri = ''
+    if (args.uri) {
+      if (this.isApiUriValid(args.uri)) {
+        await this.setPreservedState({ apiUri: args.uri })
+        newUri = args.uri
+      } else {
+        this.error('Provided uri seems to be incorrect!', { exit: ExitCodes.InvalidInput })
+      }
+    } else {
+      newUri = await this.promptForApiUri()
     }
-    await this.setPreservedState({ apiUri: args.uri })
-    this.log(chalk.greenBright('Api uri successfuly changed! New uri: ') + chalk.white(args.uri))
+    this.log(chalk.greenBright('Api uri successfuly changed! New uri: ') + chalk.white(newUri))
   }
 }
