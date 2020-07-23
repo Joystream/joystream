@@ -2,7 +2,7 @@
 
 ![ Nodes for Joystream](./validator-node-banner.svg)
 
-joystream-node is the main server application that connects to the network, synchronizes the blockchain with other nodes and produces blocks if configured as a validator node.
+The joystream-node is the main server application that connects to the network, synchronizes the blockchain with other nodes and produces blocks if configured as a validator node.
 
 A step by step guide to setup a full node and validator on the Joystream testnet, can be found [here](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
 
