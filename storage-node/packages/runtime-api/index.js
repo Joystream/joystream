@@ -88,7 +88,7 @@ class RuntimeApi {
     if (!events.length) return []
 
     const filtered = events.filter((record) => {
-      const { event, phase } = record
+      const { event /*phase*/ } = record
 
       // Show what we are busy with
       // debug(`\t${event.section}:${event.method}:: (phase=${phase.toString()})`)
@@ -108,7 +108,7 @@ class RuntimeApi {
       // Loop through each of the parameters, displaying the type and data
       const payload = {}
       event.data.forEach((data, index) => {
-        debug(`\t${types[index].type}: ${data.toString()}`)
+        // debug(`\t${types[index].type}: ${data.toString()}`)
         payload[types[index].type] = data
       })
 
@@ -116,9 +116,28 @@ class RuntimeApi {
       return [fullName, payload]
     })
 
-    debug('Matched Events', JSON.stringify(mapped))
+    debug('Events', JSON.stringify(mapped))
 
     return mapped
+  }
+
+  // Returns a function that takes events from transaction lifecycle updates
+  // that look for matching events and makes a callback and absorbs any expections
+  // raised by the callback to ensure we continue to process the complete
+  // transaction lifecyle.
+  static makeEventsHandler(subscribed, callback) {
+    return function eventsHandler(events) {
+      try {
+        if (subscribed && callback) {
+          const matched = RuntimeApi.matchingEvents(subscribed, events)
+          if (matched.length) {
+            callback(matched)
+          }
+        }
+      } catch (err) {
+        debug(`Error handling events ${err.stack}`)
+      }
+    }
   }
 
   /*
@@ -143,29 +162,16 @@ class RuntimeApi {
     // it will be rejected if the transaction is rejected by the node.
     const finalizedPromise = newExternallyControlledPromise()
 
-    // function assigned when transaction is successfully submitted
+    // function assigned when transaction is successfully submitted. Call
+    // it to unsubsribe from events.
     let unsubscribe
 
-    // Look for matching events and make a callback. Absorb any expections
-    // raised by the callback to ensure we continue to process the complete
-    // transaction lifecyle
-    const handleMatchingEvents = (events) => {
-      try {
-        if (subscribed && callback) {
-          const matched = RuntimeApi.matchingEvents(subscribed, events)
-          if (matched.length) {
-            callback(matched)
-          }
-        }
-      } catch (err) {
-        debug(`Error handling events ${err.stack}`)
-      }
-    }
+    const handleEvents = RuntimeApi.makeEventsHandler(subscribed, callback)
 
-    const handleTxCycle = ({ events = [], status }) => {
-      // when handling tx life cycle we can never detect api disconnect and could be waiting
+    const handleTxUpdates = ({ events = [], status }) => {
+      // when handling tx life cycle we cannot detect api disconnect and could be waiting
       // for events for ever!
-      handleMatchingEvents(events)
+      handleEvents(events)
 
       if (status.isFinalized) {
         // transaction was included in block (finalized)
@@ -195,7 +201,7 @@ class RuntimeApi {
       nonce = this.nonces[accountId] = nonce || (await this.api.query.system.accountNonce(accountId))
 
       try {
-        unsubscribe = await tx.sign(fromKey, { nonce }).send(handleTxCycle)
+        unsubscribe = await tx.sign(fromKey, { nonce }).send(handleTxUpdates)
         // transaction submitted successfully, increment and save nonce,
         // unless it was reset in handleTxCycle()
         if (this.nonces[accountId] !== undefined) {
