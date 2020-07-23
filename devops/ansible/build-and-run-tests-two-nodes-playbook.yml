@@ -14,4 +14,4 @@
         
     - name: run tests
       include_role:
-        name: run_tests_single_node
+        name: run_tests_two_nodes
