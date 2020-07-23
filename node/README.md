@@ -31,7 +31,7 @@ cargo build --release
 
 This produces the binary in `./target/release/joystream-node`
 
-### Running Local development chain
+### Running local development chain
 
 ```bash
 cargo run --release -- --dev
