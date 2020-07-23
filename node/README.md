@@ -66,7 +66,7 @@ Running full suite of checks, tests, formatting and linting:
 yarn cargo-checks
 ```
 
-Always format your rust code with `cargo fmt` before commiting:
+Always format your rust code with `cargo fmt` before committing:
 
 ```bash
 cargo fmt --all
