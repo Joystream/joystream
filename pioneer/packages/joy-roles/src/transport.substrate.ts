@@ -259,7 +259,9 @@ export class Transport extends TransportBase implements ITransport {
 
     return ({
       roleAccount,
+      group,
       memberId,
+      workerId: id.toNumber(),
       profile: profile.unwrap(),
       title: workerRoleNameByGroup[group],
       stake: stakeValue,

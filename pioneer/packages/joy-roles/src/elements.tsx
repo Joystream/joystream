@@ -10,6 +10,7 @@ import { IProfile, MemberId } from '@joystream/types/members';
 import { GenericAccountId } from '@polkadot/types';
 import { LeadRoleState } from '@joystream/types/content-working-group';
 import { WorkerId } from '@joystream/types/working-group';
+import { WorkingGroups } from './working_groups';
 
 type BalanceProps = {
   balance?: Balance;
@@ -39,6 +40,8 @@ export function HandleView (props: ProfileProps) {
 
 export type GroupMember = {
   memberId: MemberId;
+  group: WorkingGroups;
+  workerId: number;
   roleAccount: GenericAccountId;
   profile: IProfile;
   title: string;
@@ -78,6 +81,11 @@ export function GroupLeadView (props: GroupLead & inset) {
         </Image>
         <Card.Header><HandleView profile={props.profile} /></Card.Header>
         <Card.Meta>{props.title}</Card.Meta>
+        <Card.Meta>
+          { props.workerId && (
+            <Label size="tiny">{ 'Worker ID: ' + props.workerId.toString() }</Label>
+          ) }
+        </Card.Meta>
         <Card.Description>
           <Label color='teal' ribbon={fluid}>
             <Icon name="shield" />
@@ -134,6 +142,11 @@ export function GroupMemberView (props: GroupMember & inset) {
         </Image>
         <Card.Header><HandleView profile={props.profile} /></Card.Header>
         <Card.Meta>{props.title}</Card.Meta>
+        <Card.Meta>
+          <Label size="tiny">
+            { (props.group === WorkingGroups.ContentCurators ? 'Curator' : 'Worker') + ` ID: ${props.workerId.toString()}` }
+          </Label>
+        </Card.Meta>
         <Card.Description>
           {stake}
         </Card.Description>
