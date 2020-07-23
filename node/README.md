@@ -38,7 +38,7 @@ cargo run --release -- --dev
 ```
 
 If you repeatedly need to restart a new chain,
-This script will build and run a fresh new local development chain purging existing chain data:
+this script will build and run a fresh new local development chain (purging existing chain data):
 
 ```bash
 ./scripts/run-dev-chain.sh
