@@ -11,7 +11,7 @@
     "db:start": "docker-compose up -d db",
     "db:drop": "(cd ./generated/graphql-server && yarn db:drop)",
     "db:bootstrap": "(cd ./generated/graphql-server && yarn db:create && yarn db:sync && yarn db:migrate)",
-    "codegen:all": "npx @joystream/hydra-cli codegen --dbschema",
+    "codegen:all": "npx @joystream/hydra-cli codegen",
     "codegen:indexer": "npx @joystream/hydra-cli codegen --no-graphql",
     "codegen:server": "npx @joystream/hydra-cli codegen --no-indexer",
     "docker:indexer:build": "docker build -t hydra-indexer -f docker/Dockerfile.indexer .",
