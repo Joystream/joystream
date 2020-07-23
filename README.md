@@ -103,7 +103,7 @@ http://localhost:3000/?rpc=ws://localhost:9944/
 
 Learn more about [joystream-node](node/README.md).
 
-If you want to run a node as a validator on the testnet, checkout this [advanced guide](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
+A step by step guide to setup a full node and validator on the Joystream testnet, can be found [here](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
 
 ### Contributing
 
