@@ -91,7 +91,7 @@ This will install the executable `joystream-node` to your `~/.cargo/bin` folder,
 cargo install joystream-node --path node/
 ```
 
-Now you can run and connect to the rome testnet:
+Now you can run and connect to the Rome testnet:
 
 ```bash
 joystream-node --chain testnets/rome.json
