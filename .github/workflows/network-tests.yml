@@ -1,8 +1,8 @@
-name: joystream-cli
+name: network-tests
 on: [pull_request, push]
 
 jobs:
-  cli_build_ubuntu:
+  network_build_ubuntu:
     name: Ubuntu Checks
     runs-on: ubuntu-latest
     strategy:
@@ -17,9 +17,9 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile
-        yarn workspace joystream-cli checks
+        yarn workspace joystream-testing checks
 
-  cli_build_osx:
+  network_build_osx:
     name: MacOS Checks
     runs-on: macos-latest
     strategy:
@@ -34,4 +34,4 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
-        yarn workspace joystream-cli checks
+        yarn workspace joystream-testing checks

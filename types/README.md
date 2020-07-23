@@ -31,7 +31,7 @@ async function main () {
   registerJoystreamTypes();
 
   // Create the API and wait until ready
-  const api = await ApiPromise.create(provider);
+  const api = await ApiPromise.create({ provider });
 
   // Retrieve the chain & node information information via RPC calls
   const [chain, nodeName, nodeVersion] = await Promise.all([
@@ -46,13 +46,6 @@ async function main () {
 main();
 ```
 
-## Publishing Instructions
-The package is published with typescipt sources pre-compiled, automated with prepublish hook in package.json
-
-```
-npm publish
-```
-
-## Users
+## Examples
 
 See [joystream-api-examples](https://github.com/Joystream/joystream-api-examples) for some additional examples on usage.

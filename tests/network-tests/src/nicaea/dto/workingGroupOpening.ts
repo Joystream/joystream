@@ -1,5 +1,4 @@
 import BN from 'bn.js';
-import { KeyringPair } from '@polkadot/keyring/types';
 
 export class WorkingGroupOpening {
   private activateAtBlock: BN | undefined;
@@ -16,10 +15,10 @@ export class WorkingGroupOpening {
   private successfulApplicantApplicationStakeUnstakingPeriod!: BN;
   private failedApplicantApplicationStakeUnstakingPeriod!: BN;
   private failedApplicantRoleStakeUnstakingPeriod!: BN;
-  private terminateCuratorApplicationStakeUnstakingPeriod!: BN;
-  private terminateCuratorRoleStakeUnstakingPeriod!: BN;
-  private exitCuratorRoleApplicationStakeUnstakingPeriod!: BN;
-  private exitCuratorRoleStakeUnstakingPeriod!: BN;
+  private terminateApplicationStakeUnstakingPeriod!: BN;
+  private terminateRoleStakeUnstakingPeriod!: BN;
+  private exitRoleApplicationStakeUnstakingPeriod!: BN;
+  private exitRoleStakeUnstakingPeriod!: BN;
   private text!: string;
   private openingType!: string;
 
@@ -79,20 +78,20 @@ export class WorkingGroupOpening {
     return this.failedApplicantRoleStakeUnstakingPeriod;
   }
 
-  public getTerminateCuratorApplicationStakeUnstakingPeriod(): BN {
-    return this.terminateCuratorApplicationStakeUnstakingPeriod;
+  public getTerminateApplicationStakeUnstakingPeriod(): BN {
+    return this.terminateApplicationStakeUnstakingPeriod;
   }
 
-  public getTerminateCuratorRoleStakeUnstakingPeriod(): BN {
-    return this.terminateCuratorRoleStakeUnstakingPeriod;
+  public getTerminateRoleStakeUnstakingPeriod(): BN {
+    return this.terminateRoleStakeUnstakingPeriod;
   }
 
-  public getExitCuratorRoleApplicationStakeUnstakingPeriod(): BN {
-    return this.exitCuratorRoleApplicationStakeUnstakingPeriod;
+  public getExitRoleApplicationStakeUnstakingPeriod(): BN {
+    return this.exitRoleApplicationStakeUnstakingPeriod;
   }
 
-  public getExitCuratorRoleStakeUnstakingPeriod(): BN {
-    return this.exitCuratorRoleStakeUnstakingPeriod;
+  public getExitRoleStakeUnstakingPeriod(): BN {
+    return this.exitRoleStakeUnstakingPeriod;
   }
 
   public getText(): string {
@@ -103,90 +102,112 @@ export class WorkingGroupOpening {
     return this.openingType;
   }
 
-  public setActivateAtBlock(value: BN | undefined) {
+  public setActivateAtBlock(value: BN | undefined): WorkingGroupOpening {
     this.activateAtBlock = value;
+    return this;
   }
 
-  public setMaxActiveApplicants(value: BN) {
+  public setMaxActiveApplicants(value: BN): WorkingGroupOpening {
     this.maxActiveApplicants = value;
+    return this;
   }
 
-  public setMaxReviewPeriodLength(value: BN) {
+  public setMaxReviewPeriodLength(value: BN): WorkingGroupOpening {
     this.maxReviewPeriodLength = value;
+    return this;
   }
 
-  public setApplicationStakingPolicyAmount(value: BN) {
+  public setApplicationStakingPolicyAmount(value: BN): WorkingGroupOpening {
     this.applicationStakingPolicyAmount = value;
+    return this;
   }
 
-  public setApplicationCrowdedOutUnstakingPeriodLength(value: BN) {
+  public setApplicationCrowdedOutUnstakingPeriodLength(value: BN): WorkingGroupOpening {
     this.applicationCrowdedOutUnstakingPeriodLength = value;
+    return this;
   }
 
-  public setApplicationExpiredUnstakingPeriodLength(value: BN) {
+  public setApplicationExpiredUnstakingPeriodLength(value: BN): WorkingGroupOpening {
     this.applicationExpiredUnstakingPeriodLength = value;
+    return this;
   }
 
-  public setRoleStakingPolicyAmount(value: BN) {
+  public setRoleStakingPolicyAmount(value: BN): WorkingGroupOpening {
     this.roleStakingPolicyAmount = value;
+    return this;
   }
 
-  public setRoleCrowdedOutUnstakingPeriodLength(value: BN) {
+  public setRoleCrowdedOutUnstakingPeriodLength(value: BN): WorkingGroupOpening {
     this.roleCrowdedOutUnstakingPeriodLength = value;
+    return this;
   }
 
-  public setRoleExpiredUnstakingPeriodLength(value: BN) {
+  public setRoleExpiredUnstakingPeriodLength(value: BN): WorkingGroupOpening {
     this.roleExpiredUnstakingPeriodLength = value;
+    return this;
   }
 
-  public setSlashableMaxCount(value: BN) {
+  public setSlashableMaxCount(value: BN): WorkingGroupOpening {
     this.slashableMaxCount = value;
+    return this;
   }
 
-  public setSlashableMaxPercentPtsPerTime(value: BN) {
+  public setSlashableMaxPercentPtsPerTime(value: BN): WorkingGroupOpening {
     this.slashableMaxPercentPtsPerTime = value;
+    return this;
   }
 
-  public setSuccessfulApplicantApplicationStakeUnstakingPeriod(value: BN) {
+  public setSuccessfulApplicantApplicationStakeUnstakingPeriod(value: BN): WorkingGroupOpening {
     this.successfulApplicantApplicationStakeUnstakingPeriod = value;
+    return this;
   }
 
-  public setFailedApplicantApplicationStakeUnstakingPeriod(value: BN) {
+  public setFailedApplicantApplicationStakeUnstakingPeriod(value: BN): WorkingGroupOpening {
     this.failedApplicantApplicationStakeUnstakingPeriod = value;
+    return this;
   }
 
-  public setFailedApplicantRoleStakeUnstakingPeriod(value: BN) {
+  public setFailedApplicantRoleStakeUnstakingPeriod(value: BN): WorkingGroupOpening {
     this.failedApplicantRoleStakeUnstakingPeriod = value;
+    return this;
   }
 
-  public setTerminateCuratorApplicationStakeUnstakingPeriod(value: BN) {
-    this.terminateCuratorApplicationStakeUnstakingPeriod = value;
+  public setTerminateApplicationStakeUnstakingPeriod(value: BN): WorkingGroupOpening {
+    this.terminateApplicationStakeUnstakingPeriod = value;
+    return this;
   }
 
-  public setTerminateCuratorRoleStakeUnstakingPeriod(value: BN) {
-    this.terminateCuratorRoleStakeUnstakingPeriod = value;
+  public setTerminateRoleStakeUnstakingPeriod(value: BN): WorkingGroupOpening {
+    this.terminateRoleStakeUnstakingPeriod = value;
+    return this;
   }
 
-  public setExitCuratorRoleApplicationStakeUnstakingPeriod(value: BN) {
-    this.exitCuratorRoleApplicationStakeUnstakingPeriod = value;
+  public setExitRoleApplicationStakeUnstakingPeriod(value: BN): WorkingGroupOpening {
+    this.exitRoleApplicationStakeUnstakingPeriod = value;
+    return this;
   }
 
-  public setExitCuratorRoleStakeUnstakingPeriod(value: BN) {
-    this.exitCuratorRoleStakeUnstakingPeriod = value;
+  public setExitRoleStakeUnstakingPeriod(value: BN): WorkingGroupOpening {
+    this.exitRoleStakeUnstakingPeriod = value;
+    return this;
   }
 
-  public setText(value: string) {
+  public setText(value: string): WorkingGroupOpening {
     this.text = value;
+    return this;
   }
 
-  public setOpeningType(value: string) {
+  public setOpeningType(value: string): WorkingGroupOpening {
     this.openingType = value;
+    return this;
   }
 
-  constructor() {}
+  constructor() {
+    return;
+  }
 
   public getActivateAt() {
-    return this.activateAtBlock == undefined ? 'CurrentBlock' : { ExactBlock: this.activateAtBlock };
+    return this.activateAtBlock === undefined ? 'CurrentBlock' : { ExactBlock: this.activateAtBlock };
   }
 
   public getCommitment() {
@@ -216,10 +237,19 @@ export class WorkingGroupOpening {
       fill_opening_failed_applicant_application_stake_unstaking_period: this
         .failedApplicantApplicationStakeUnstakingPeriod,
       fill_opening_failed_applicant_role_stake_unstaking_period: this.failedApplicantRoleStakeUnstakingPeriod,
-      terminate_curator_application_stake_unstaking_period: this.terminateCuratorApplicationStakeUnstakingPeriod,
-      terminate_curator_role_stake_unstaking_period: this.terminateCuratorRoleStakeUnstakingPeriod,
-      exit_curator_role_application_stake_unstaking_period: this.exitCuratorRoleApplicationStakeUnstakingPeriod,
-      exit_curator_role_stake_unstaking_period: this.exitCuratorRoleStakeUnstakingPeriod,
+      terminate_application_stake_unstaking_period: this.terminateApplicationStakeUnstakingPeriod,
+      terminate_role_stake_unstaking_period: this.terminateRoleStakeUnstakingPeriod,
+      exit_role_application_stake_unstaking_period: this.exitRoleApplicationStakeUnstakingPeriod,
+      exit_role_stake_unstaking_period: this.exitRoleStakeUnstakingPeriod,
     };
+  }
+
+  public getAddOpeningParameters(workingGroup: string) {
+    return {
+      activate_at: this.getActivateAt(),
+      commitment: this.getCommitment(),
+      human_readable_text: this.getText(),
+      working_group: workingGroup,
+    }
   }
 }

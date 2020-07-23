@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Card, Header, Button, Icon, Message } from 'semantic-ui-react';
 import { ProposalType } from '@polkadot/joy-utils/types/proposals';
 import { bytesToString } from '@polkadot/joy-utils/functions/misc';
-import { blake2AsHex } from '@polkadot/util-crypto';
 import styled from 'styled-components';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import TxButton from '@polkadot/joy-utils/TxButton';
@@ -110,13 +109,10 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => ParsedParam[]} = {
       true
     )
   ],
-  RuntimeUpgrade: ([wasm]) => {
-    const buffer: Buffer = Buffer.from(wasm.replace('0x', ''), 'hex');
-    return [
-      new ParsedParam('Blake2b256 hash of WASM code', blake2AsHex(buffer, 256), true),
-      new ParsedParam('File size', buffer.length + ' bytes')
-    ];
-  },
+  RuntimeUpgrade: ([hash, filesize]) => [
+    new ParsedParam('Blake2b256 hash of WASM code', hash, true),
+    new ParsedParam('File size', filesize + ' bytes')
+  ],
   SetElectionParameters: ([params]) => [
     new ParsedParam('Announcing period', params.announcing_period + ' blocks'),
     new ParsedParam('Voting period', params.voting_period + ' blocks'),

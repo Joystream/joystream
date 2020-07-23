@@ -1,5 +1,5 @@
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { Option, Vec, Bytes, u32 } from '@polkadot/types';
+import { Option, Vec, Bytes, u32, u64 } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
 import { KeyringPair } from '@polkadot/keyring/types';
 import { UserInfo, PaidMembershipTerms, MemberId } from '@nicaea/types/members';
@@ -11,13 +11,14 @@ import { RoleParameters } from '@nicaea/types/roles';
 import { Seat } from '@nicaea/types/council';
 import { Balance, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces';
 import BN from 'bn.js';
-import { SubmittableExtrinsic } from '@polkadot/api/types';
+import { SubmittableExtrinsic, UnsubscribePromise } from '@polkadot/api/types';
 import { Sender } from './sender';
 import { Utils } from './utils';
 import { Stake, StakedState } from '@nicaea/types/stake';
 import { RewardRelationship } from '@nicaea/types/recurring-rewards';
 import { Opening as HiringOpening, ApplicationId } from '@nicaea/types/hiring';
 import { WorkingGroupOpening } from '../dto/workingGroupOpening';
+import { FillOpeningParameters } from '../dto/fillOpeningParameters';
 
 export enum WorkingGroups {
   storageWorkingGroup = 'storageWorkingGroup',
@@ -39,6 +40,16 @@ export class ApiWrapper {
 
   public close() {
     this.api.disconnect();
+  }
+
+  public getWorkingGroupString(workingGroup: WorkingGroups): string {
+    switch (workingGroup) {
+      case WorkingGroups.storageWorkingGroup:
+        return 'Storage';
+      default:
+        throw new Error(`Invalid working group string representation: ${workingGroup}`);
+        ;
+    }
   }
 
   public async buyMembership(
@@ -134,7 +145,12 @@ export class ApiWrapper {
     );
   }
 
-  public estimateProposeWorkingGroupMintCapacityFee(title: string, description: string, stake: BN, balance: BN): BN {
+  public estimateProposeContentWorkingGroupMintCapacityFee(
+    title: string,
+    description: string,
+    stake: BN,
+    balance: BN
+  ): BN {
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createSetContentWorkingGroupMintCapacityProposal(
         stake,
@@ -310,6 +326,156 @@ export class ApiWrapper {
     );
   }
 
+  public estimateProposeCreateWorkingGroupLeaderOpeningFee(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
+        0,
+        'some long title for the purpose of testing',
+        'some long description for the purpose of testing',
+        0,
+        {
+          activate_at: 'CurrentBlock',
+          commitment: {
+            application_rationing_policy: { max_active_applicants: 32 },
+            max_review_period_length: 32,
+            application_staking_policy: {
+              amount: 0,
+              amount_mode: 'AtLeast',
+              crowded_out_unstaking_period_length: 0,
+              review_period_expired_unstaking_period_length: 0,
+            },
+            role_staking_policy: {
+              amount: 0,
+              amount_mode: 'AtLeast',
+              crowded_out_unstaking_period_length: 0,
+              review_period_expired_unstaking_period_length: 0,
+            },
+            role_slashing_terms: {
+              Slashable: {
+                max_count: 0,
+                max_percent_pts_per_time: 0,
+              },
+            },
+            fill_opening_successful_applicant_application_stake_unstaking_period: 0,
+            fill_opening_failed_applicant_application_stake_unstaking_period: 0,
+            fill_opening_failed_applicant_role_stake_unstaking_period: 0,
+            terminate_curator_application_stake_unstaking_period: 0,
+            terminate_curator_role_stake_unstaking_period: 0,
+            exit_curator_role_application_stake_unstaking_period: 0,
+            exit_curator_role_stake_unstaking_period: 0,
+          },
+          human_readable_text: 'Opening readable text',
+          working_group: 'Storage',
+        }
+      )
+    );
+  }
+
+  public estimateProposeBeginWorkingGroupLeaderApplicationReviewFee(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        0,
+        0,
+        'Storage'
+      )
+    );
+  }
+
+  public estimateProposeFillLeaderOpeningFee(): BN {
+    const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters()
+      .setAmountPerPayout(new BN(1))
+      .setNextPaymentAtBlock(new BN(99999))
+      .setPayoutInterval(new BN(99999))
+      .setOpeningId(new BN(0))
+      .setSuccessfulApplicationId(new BN(0))
+      .setWorkingGroup('Storage');
+
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        0,
+        fillOpeningParameters.getFillOpeningParameters()
+      )
+    );
+  }
+
+  public estimateProposeTerminateLeaderRoleFee(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        0,
+        {
+          worker_id: 0,
+          rationale: 'Exceptionaly long and extraordinary descriptive rationale',
+          slash: true,
+          working_group: 'Storage',
+        }
+      )
+    );
+  }
+
+  public estimateProposeLeaderRewardFee(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        0,
+        0,
+        0,
+        'Storage'
+      )
+    );
+  }
+
+  public estimateProposeDecreaseLeaderStakeFee(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        0,
+        0,
+        0,
+        'Storage'
+      )
+    );
+  }
+
+  public estimateProposeSlashLeaderStakeFee(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        0,
+        0,
+        0,
+        'Storage'
+      )
+    );
+  }
+
+  public estimateProposeWorkingGroupMintCapacityFee(): BN {
+    return this.estimateTxFee(
+      this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
+        0,
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        'Some testing text used for estimation purposes which is longer than text expected during the test',
+        0,
+        0,
+        'Storage'
+      )
+    );
+  }
+
   private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<void> {
     return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account, false);
   }
@@ -458,7 +624,7 @@ export class ApiWrapper {
     );
   }
 
-  public async proposeWorkingGroupMintCapacity(
+  public async proposeContentWorkingGroupMintCapacity(
     account: KeyringPair,
     title: string,
     description: string,
@@ -601,6 +767,29 @@ export class ApiWrapper {
     );
   }
 
+  public async proposeBeginWorkingGroupLeaderApplicationReview(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    stake: BN,
+    openingId: BN,
+    workingGroup: string
+  ) {
+    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn();
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
+        memberId,
+        title,
+        description,
+        stake,
+        openingId,
+        workingGroup
+      ),
+      account,
+      false
+    );
+  }
+
   public approveProposal(account: KeyringPair, memberId: BN, proposal: BN): Promise<void> {
     return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account, false);
   }
@@ -620,9 +809,10 @@ export class ApiWrapper {
 
   public expectProposalCreated(): Promise<BN> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'ProposalCreated') {
+            unsubscribe();
             resolve(new BN(record.event.data[1].toString()));
           }
         });
@@ -632,9 +822,10 @@ export class ApiWrapper {
 
   public expectRuntimeUpgraded(): Promise<void> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method.toString() === 'RuntimeUpdated') {
+            unsubscribe();
             resolve();
           }
         });
@@ -644,13 +835,14 @@ export class ApiWrapper {
 
   public expectProposalFinalized(): Promise<void> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (
             record.event.method &&
             record.event.method.toString() === 'ProposalStatusUpdated' &&
             record.event.data[1].toString().includes('Executed')
           ) {
+            unsubscribe();
             resolve();
           }
         });
@@ -660,9 +852,10 @@ export class ApiWrapper {
 
   public expectOpeningFilled(): Promise<ApplicationIdToWorkerIdMap> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'OpeningFilled') {
+            unsubscribe();
             resolve((record.event.data[1] as unknown) as ApplicationIdToWorkerIdMap);
           }
         });
@@ -672,9 +865,10 @@ export class ApiWrapper {
 
   public expectOpeningAdded(): Promise<BN> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'OpeningAdded') {
+            unsubscribe();
             resolve((record.event.data as unknown) as BN);
           }
         });
@@ -682,12 +876,91 @@ export class ApiWrapper {
     });
   }
 
-  public expectApplicationReviewBegan(): Promise<void> {
+  public expectLeaderSet(): Promise<BN> {
     return new Promise(async resolve => {
-      await this.api.query.system.events<Vec<EventRecord>>(events => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'LeaderSet') {
+            unsubscribe();
+            resolve((record.event.data as unknown) as BN);
+          }
+        });
+      });
+    });
+  }
+
+  public expectLeaderTerminated(): Promise<void> {
+    return new Promise(async resolve => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'TerminatedLeader') {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
+    });
+  }
+
+  public expectWorkerRewardAmountUpdated(): Promise<void> {
+    return new Promise(async resolve => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'WorkerRewardAmountUpdated') {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
+    });
+  }
+
+  public expectWorkerStakeDecreased(): Promise<void> {
+    return new Promise(async resolve => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'StakeDecreased') {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
+    });
+  }
+
+  public expectWorkerStakeSlashed(): Promise<void> {
+    return new Promise(async resolve => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'StakeSlashed') {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
+    });
+  }
+
+  public expectApplicationReviewBegan(): Promise<BN> {
+    return new Promise(async resolve => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
         events.forEach(record => {
           if (record.event.method && record.event.method.toString() === 'BeganApplicationReview') {
-            resolve();
+            unsubscribe();
+            resolve((record.event.data as unknown) as BN);
+          }
+        });
+      });
+    });
+  }
+
+  public expectMintCapacityChanged(): Promise<BN> {
+    return new Promise(async resolve => {
+      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>(events => {
+        events.forEach(record => {
+          if (record.event.method && record.event.method.toString() === 'MintCapacityChanged') {
+            unsubscribe();
+            resolve((record.event.data[1] as unknown) as BN);
           }
         });
       });
@@ -708,8 +981,15 @@ export class ApiWrapper {
     return this.api.query.proposalsEngine.proposalCount<u32>();
   }
 
-  public async getWorkingGroupMintCapacity(): Promise<BN> {
+  public async getContentWorkingGroupMintCapacity(): Promise<BN> {
     const mintId: MintId = await this.api.query.contentWorkingGroup.mint<MintId>();
+    const mintCodec = await this.api.query.minting.mints<Codec[]>(mintId);
+    const mint: Mint = (mintCodec[0] as unknown) as Mint;
+    return mint.getField<Balance>('capacity');
+  }
+
+  public async getWorkingGroupMintCapacity(module: WorkingGroups): Promise<BN> {
+    const mintId: MintId = await this.api.query[module].mint<MintId>();
     const mintCodec = await this.api.query.minting.mints<Codec[]>(mintId);
     const mint: Mint = (mintCodec[0] as unknown) as Mint;
     return mint.getField<Balance>('capacity');
@@ -747,13 +1027,183 @@ export class ApiWrapper {
     module: WorkingGroups,
     expectFailure: boolean
   ): Promise<void> {
-    await this.sender.signAndSend(this.createAddOpeningTransaction(opening, module), leader, expectFailure);
+    return this.sender.signAndSend(this.createAddOpeningTransaction(opening, module), leader, expectFailure);
   }
 
   public async sudoAddOpening(sudo: KeyringPair, opening: WorkingGroupOpening, module: WorkingGroups): Promise<void> {
-    await this.sender.signAndSend(
+    return this.sender.signAndSend(
       this.api.tx.sudo.sudo(this.createAddOpeningTransaction(opening, module)),
       sudo,
+      false
+    );
+  }
+
+  public async proposeCreateWorkingGroupLeaderOpening(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    opening: WorkingGroupOpening,
+    workingGroup: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        opening.getAddOpeningParameters(workingGroup)
+      ),
+      account,
+      false
+    );
+  }
+
+  public async proposeFillLeaderOpening(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    fillOpeningParameters: FillOpeningParameters
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        fillOpeningParameters.getFillOpeningParameters()
+      ),
+      account,
+      false
+    );
+  }
+
+  public async proposeTerminateLeaderRole(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    leadWorkerId: BN,
+    rationale: string,
+    slash: boolean,
+    workingGroup: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        {
+          worker_id: leadWorkerId,
+          rationale,
+          slash,
+          working_group: workingGroup,
+        }
+      ),
+      account,
+      false
+    );
+  }
+
+  public async proposeLeaderReward(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    workerId: BN,
+    rewardAmount: BN,
+    workingGroup: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        workerId,
+        rewardAmount,
+        workingGroup
+      ),
+      account,
+      false
+    );
+  }
+
+  public async proposeDecreaseLeaderStake(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    workerId: BN,
+    rewardAmount: BN,
+    workingGroup: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        workerId,
+        rewardAmount,
+        workingGroup
+      ),
+      account,
+      false
+    );
+  }
+
+  public async proposeSlashLeaderStake(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    workerId: BN,
+    rewardAmount: BN,
+    workingGroup: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        workerId,
+        rewardAmount,
+        workingGroup
+      ),
+      account,
+      false
+    );
+  }
+
+  public async proposeWorkingGroupMintCapacity(
+    account: KeyringPair,
+    title: string,
+    description: string,
+    proposalStake: BN,
+    mintCapacity: BN,
+    workingGroup: string
+  ): Promise<void> {
+    const memberId: BN = (await this.getMemberIds(account.address))[0];
+    return this.sender.signAndSend(
+      this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
+        memberId,
+        title,
+        description,
+        proposalStake,
+        mintCapacity,
+        workingGroup
+      ),
+      account,
       false
     );
   }
@@ -1090,7 +1540,7 @@ export class ApiWrapper {
   }
 
   public async getWorkerStakeAmount(workerId: BN, module: WorkingGroups): Promise<BN> {
-    let stakeId: BN = (await this.getWorkerById(workerId, module)).role_stake_profile.unwrap().stake_id;
+    const stakeId: BN = (await this.getWorkerById(workerId, module)).role_stake_profile.unwrap().stake_id;
     return (((await this.getStake(stakeId)).staking_status.value as unknown) as StakedState).staked_amount;
   }
 
@@ -1101,7 +1551,11 @@ export class ApiWrapper {
   }
 
   public async getWorkerRewardAccount(workerId: BN, module: WorkingGroups): Promise<string> {
-    let rewardRelationshipId: BN = (await this.getWorkerById(workerId, module)).reward_relationship.unwrap();
+    const rewardRelationshipId: BN = (await this.getWorkerById(workerId, module)).reward_relationship.unwrap();
     return (await this.getRewardRelationship(rewardRelationshipId)).getField('account').toString();
+  }
+
+  public async getLeadWorkerId(module: WorkingGroups): Promise<BN | undefined> {
+    return (await this.api.query[module].currentLead<Option<WorkerId>>()).unwrapOr(undefined);
   }
 }
