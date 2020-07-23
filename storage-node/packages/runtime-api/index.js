@@ -84,26 +84,15 @@ class RuntimeApi {
     return this.asyncLock.acquire(`${accountId}`, func)
   }
 
-  /*
-   * Wait for an event. Filters out any events that don't match the module and
-   * event name.
-   *
-   * The result of the Promise is an array containing first the full event
-   * name, and then the event fields as an object.
-   */
-  async waitForEvent(module, name) {
-    return this.waitForEvents([[module, name]])
-  }
-
   static matchingEvents(subscribed, events) {
-    debug(`Number of events: ${events.length} subscribed to ${subscribed}`)
+    if (!events.length) return []
 
     const filtered = events.filter((record) => {
       const { event, phase } = record
 
       // Show what we are busy with
-      debug(`\t${event.section}:${event.method}:: (phase=${phase.toString()})`)
-      debug(`\t\t${event.meta.documentation.toString()}`)
+      // debug(`\t${event.section}:${event.method}:: (phase=${phase.toString()})`)
+      // debug(`\t\t${event.meta.documentation.toString()}`)
 
       // Skip events we're not interested in.
       const matching = subscribed.filter((value) => {
@@ -111,7 +100,6 @@ class RuntimeApi {
       })
       return matching.length > 0
     })
-    debug(`Filtered: ${filtered.length}`)
 
     const mapped = filtered.map((record) => {
       const { event } = record
@@ -127,27 +115,10 @@ class RuntimeApi {
       const fullName = `${event.section}.${event.method}`
       return [fullName, payload]
     })
+
     debug('Mapped', mapped)
 
     return mapped
-  }
-
-  /*
-   * Same as waitForEvent, but filter on multiple events. The parameter is an
-   * array of arrays containing module and name. Calling waitForEvent is
-   * identical to calling this with [[module, name]].
-   *
-   * Returns the first matched event *only*.
-   */
-  async waitForEvents(subscribed) {
-    return new Promise((resolve) => {
-      this.api.query.system.events((events) => {
-        const matches = RuntimeApi.matchingEvents(subscribed, events)
-        if (matches && matches.length) {
-          resolve(matches)
-        }
-      })
-    })
   }
 
   /*
