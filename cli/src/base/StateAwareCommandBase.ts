@@ -92,7 +92,8 @@ export default abstract class StateAwareCommandBase extends DefaultCommandBase {
   getPreservedState(): StateObject {
     let preservedState: StateObject
     try {
-      preservedState = require(this.getStateFilePath()) as StateObject
+      // Use readFileSync instead of "require" in order to always get a "fresh" state
+      preservedState = JSON.parse(fs.readFileSync(this.getStateFilePath()).toString()) as StateObject
     } catch (e) {
       throw this.createDataReadError()
     }
