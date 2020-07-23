@@ -23,7 +23,7 @@ cd joystream/
 ./setup.sh
 ```
 
-compile the node and runtime
+Compile the node and runtime:
 
 ```bash
 cargo build --release
