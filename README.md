@@ -109,7 +109,7 @@ If you want to run a node as a validator on the testnet, checkout this [advanced
 
 We have lots of good first [issues](https://github.com/Joystream/joystream/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) open to help you get started on contributing code. If you are not a developer you can still make valuable contributions by testing our software and providing feedback and opening new issues.
 
-A description of our [branching model](https://github.com/Joystream/joystream/issues/638) will help you understand where work on differnet software components happens, and where to direct your pull requests.
+A description of our [branching model](https://github.com/Joystream/joystream/issues/638) will help you to understand where work on different software components happens, and consequently where to direct your pull requests.
 
 We rely on `eslint` for code quality of our javascript and typescript code, `prettier` for consistent formmating. For Rust we rely on `rustfmt` and `clippy`.
 
