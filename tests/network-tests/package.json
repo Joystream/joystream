@@ -9,7 +9,7 @@
     "test-migration-nicaea": "tap --files src/constantinople/tests/proposals/updateRuntimeTest.ts --files src/nicaea/tests/electingCouncilTest.ts -T",
     "debug": "tap --files src/nicaea/tests/workingGroup/*Test.ts -T",
     "lint": "eslint . --quiet --ext .ts",
-    "checks": "yarn lint && tsc --noEmit --pretty && prettier . --check",
+    "checks": "yarn lint && tsc --noEmit --pretty && prettier ./ --check",
     "format": "prettier ./ --write "
   },
   "dependencies": {
