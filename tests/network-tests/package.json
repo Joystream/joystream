@@ -11,7 +11,7 @@
     "lint": "eslint . --quiet --ext .ts",
     "checks": "yarn lint && tsc --noEmit --pretty && prettier ./ --check",
     "format": "prettier ./ --write "
-  },
+  }, 
   "dependencies": {
     "@constantinople/types@npm:@joystream/types": "^0.10.0",
     "@nicaea/types": "link:../../types",
