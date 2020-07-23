@@ -68,7 +68,7 @@ yarn cargo-checks
 
 Pioneer is currently the main web interface to interact with the network:
 
-We currently host it on: https://testnet.joystream.org
+Currently hosted on: https://testnet.joystream.org
 
 You may have to disable some privacy/ad-blocker extensions in your browser for proper functionality, especially when browsing media.
 
