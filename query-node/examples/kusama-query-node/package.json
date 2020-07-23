@@ -4,6 +4,8 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
+    "@types/bn.js": "^4.11.6",
+    "bn.js": "^5.1.2",
     "tslib": "^2.0.0"
   }
 }
