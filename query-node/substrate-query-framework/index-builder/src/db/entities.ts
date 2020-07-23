@@ -1,22 +1,21 @@
-import { Entity, Column, EntityManager, PrimaryGeneratedColumn, ValueTransformer } from 'typeorm';
+import { Entity, Column, EntityManager, PrimaryGeneratedColumn, ValueTransformer, getConnection } from 'typeorm';
 import { SubstrateEvent } from '..';
 import * as BN from 'bn.js';
 
 class NumericTransformer implements ValueTransformer {
-      /**
-     * Used to marshal data when writing to the database.
-     */
-    to(value: BN): string {
-      return value.toString()
-    }
-    /**
-     * Used to unmarshal data when reading from the database.
-     */
-    from(value: string): BN {
-      return new BN(value)
-    }
+  /**
+   * Used to marshal data when writing to the database.
+   */
+  to(value: BN): string {
+    return value ? value.toString() : value;
+  }
+  /**
+   * Used to unmarshal data when reading from the database.
+   */
+  from(value: string): BN {
+    return new BN(value);
+  }
 }
-
 
 /**
  * Represents the last processed event. Corresponding database table will hold only one record
@@ -28,7 +27,7 @@ export class SavedEntityEvent {
   id!: number;
 
   // Index of the event. @polkadot/types/interfaces/EventId
-  @Column({ type: 'numeric', transformer: new NumericTransformer()})
+  @Column({ type: 'numeric', transformer: new NumericTransformer() })
   index!: BN;
 
   // The actually event name without event section. Event.method
@@ -67,5 +66,19 @@ export class SavedEntityEvent {
     lastProcessedEvent.updatedAt = new Date();
 
     await manager.save(lastProcessedEvent);
+  }
+
+  static async createTable(): Promise<void> {
+    const query = `CREATE TABLE IF NOT EXISTS "saved_entity_event" (
+      "id" integer PRIMARY KEY DEFAULT 1,
+      "index" numeric,
+      "event_name" character varying NOT NULL,
+      "block_number" numeric NOT NULL,
+      "updated_at" TIMESTAMP NOT NULL DEFAULT now())`;
+    // get a connection and create a new query runner
+    const queryRunner = getConnection().createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.query(query);
+    await queryRunner.release();
   }
 }
