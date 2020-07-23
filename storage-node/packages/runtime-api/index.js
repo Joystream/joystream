@@ -108,7 +108,7 @@ class RuntimeApi {
       // Loop through each of the parameters, displaying the type and data
       const payload = {}
       event.data.forEach((data, index) => {
-        debug(`\t\t\t${types[index].type}: ${data.toString()}`)
+        debug(`\t${types[index].type}: ${data.toString()}`)
         payload[types[index].type] = data
       })
 
@@ -116,7 +116,7 @@ class RuntimeApi {
       return [fullName, payload]
     })
 
-    debug('Mapped', mapped)
+    debug('Matched Events', JSON.stringify(mapped))
 
     return mapped
   }
@@ -153,7 +153,6 @@ class RuntimeApi {
       try {
         if (subscribed && callback) {
           const matched = RuntimeApi.matchingEvents(subscribed, events)
-          debug('Matching events:', matched)
           if (matched.length) {
             callback(matched)
           }
