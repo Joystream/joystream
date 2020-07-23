@@ -13,9 +13,9 @@ import { ParsedMember } from '../types/members';
 import BaseTransport from './base';
 
 import { ThreadId, PostId } from '@joystream/types/common';
-import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost } from '@joystream/types/proposals';
+import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost, ProposalDetails } from '@joystream/types/proposals';
 import { MemberId } from '@joystream/types/members';
-import { u32, u64 } from '@polkadot/types/';
+import { u32, u64, Bytes, Vec } from '@polkadot/types/';
 import { BalanceOf } from '@polkadot/types/interfaces';
 
 import { bytesToString } from '../functions/misc';
@@ -28,43 +28,80 @@ import MembersTransport from './members';
 import ChainTransport from './chain';
 import CouncilTransport from './council';
 
+import { blake2AsHex } from '@polkadot/util-crypto';
+import { APIQueryCache } from '../APIQueryCache';
+
+type ProposalDetailsCacheEntry = {
+  type: ProposalType;
+  details: any[];
+}
+type ProposalDetailsCache = {
+  [id: number]: ProposalDetailsCacheEntry | undefined;
+}
+
 export default class ProposalsTransport extends BaseTransport {
   private membersT: MembersTransport;
   private chainT: ChainTransport;
   private councilT: CouncilTransport;
+  private proposalDetailsCache: ProposalDetailsCache = {};
 
   constructor (
     api: ApiPromise,
+    cacheApi: APIQueryCache,
     membersTransport: MembersTransport,
     chainTransport: ChainTransport,
     councilTransport: CouncilTransport
   ) {
-    super(api);
+    super(api, cacheApi);
     this.membersT = membersTransport;
     this.chainT = chainTransport;
     this.councilT = councilTransport;
   }
 
   proposalCount () {
-    return this.proposalsEngine.proposalCount<u32>();
+    return this.proposalsEngine.proposalCount() as Promise<u32>;
   }
 
   rawProposalById (id: ProposalId) {
-    return this.proposalsEngine.proposals<Proposal>(id);
+    return this.proposalsEngine.proposals(id) as Promise<Proposal>;
   }
 
-  proposalDetailsById (id: ProposalId) {
-    return this.proposalsCodex.proposalDetailsByProposalId(id);
+  rawProposalDetails (id: ProposalId) {
+    return this.proposalsCodex.proposalDetailsByProposalId(id) as Promise<ProposalDetails>;
   }
 
   cancellationFee (): number {
     return (this.api.consts.proposalsEngine.cancellationFee as BalanceOf).toNumber();
   }
 
+  async typeAndDetails (id: ProposalId) {
+    const cachedProposalDetails = this.proposalDetailsCache[id.toNumber()];
+    // Avoid fetching runtime upgrade proposal details if we already have them cached
+    if (cachedProposalDetails) {
+      return cachedProposalDetails;
+    } else {
+      // TODO: The right typesafe handling with JoyEnum would be very useful here
+      const rawDetails = await this.rawProposalDetails(id);
+      const type = rawDetails.type as ProposalType;
+      let details: any[];
+      if (type === 'RuntimeUpgrade') {
+        // In case of RuntimeUpgrade proposal we override details to just contain the hash and filesize
+        // (instead of full WASM bytecode)
+        const wasm = rawDetails.value as Bytes;
+        details = [blake2AsHex(wasm, 256), wasm.length];
+      } else {
+        const detailsJSON = rawDetails.value.toJSON();
+        details = Array.isArray(detailsJSON) ? detailsJSON : [detailsJSON];
+      }
+      // Save entry in cache
+      this.proposalDetailsCache[id.toNumber()] = { type, details };
+
+      return { type, details };
+    }
+  }
+
   async proposalById (id: ProposalId): Promise<ParsedProposal> {
-    const rawDetails = (await this.proposalDetailsById(id)).toJSON() as { [k: string]: any };
-    const type = Object.keys(rawDetails)[0] as ProposalType;
-    const details = Array.isArray(rawDetails[type]) ? rawDetails[type] : [rawDetails[type]];
+    const { type, details } = await this.typeAndDetails(id);
     const rawProposal = await this.rawProposalById(id);
     const proposer = (await this.membersT.memberProfile(rawProposal.proposerId)).toJSON() as ParsedMember;
     const proposal = rawProposal.toJSON() as {
@@ -102,7 +139,7 @@ export default class ProposalsTransport extends BaseTransport {
   }
 
   async activeProposals () {
-    const activeProposalIds = await this.proposalsEngine.activeProposalIds<ProposalId[]>();
+    const activeProposalIds = (await this.proposalsEngine.activeProposalIds()) as Vec<ProposalId>;
 
     return Promise.all(activeProposalIds.map(id => this.proposalById(id)));
   }
@@ -112,13 +149,9 @@ export default class ProposalsTransport extends BaseTransport {
     return proposals.filter(({ proposerId }) => member.eq(proposerId));
   }
 
-  async proposalDetails (id: ProposalId) {
-    return this.proposalsCodex.proposalDetailsByProposalId(id);
-  }
-
   async voteByProposalAndMember (proposalId: ProposalId, voterId: MemberId): Promise<VoteKind | null> {
-    const vote = await this.proposalsEngine.voteExistsByProposalByVoter<VoteKind>(proposalId, voterId);
-    const hasVoted = (await this.proposalsEngine.voteExistsByProposalByVoter.size(proposalId, voterId)).toNumber();
+    const vote = (await this.proposalsEngine.voteExistsByProposalByVoter(proposalId, voterId)) as VoteKind;
+    const hasVoted = (await this.api.query.proposalsEngine.voteExistsByProposalByVoter.size(proposalId, voterId)).toNumber();
     return hasVoted ? vote : null;
   }
 
@@ -177,7 +210,7 @@ export default class ProposalsTransport extends BaseTransport {
   }
 
   async subscribeProposal (id: number|ProposalId, callback: () => void) {
-    return this.proposalsEngine.proposals(id, callback);
+    return this.api.query.proposalsEngine.proposals(id, callback);
   }
 
   async discussion (id: number|ProposalId): Promise<ParsedDiscussion | null> {
