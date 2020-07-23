@@ -74,11 +74,5 @@ module.exports = {
       }
     ],
   },
-  plugins: [
-    'standard',
-    '@typescript-eslint',
-    'react',
-    'react-hooks',
-    'prettier',
-  ],
+  plugins: ['standard', '@typescript-eslint', 'react', 'react-hooks', 'prettier'],
 }

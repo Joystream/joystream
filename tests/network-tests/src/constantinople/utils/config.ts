@@ -1,5 +1,5 @@
-import { config } from 'dotenv';
+import { config } from 'dotenv'
 
 export function initConfig() {
-  config();
+  config()
 }
