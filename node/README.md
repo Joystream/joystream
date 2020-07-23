@@ -54,7 +54,7 @@ cargo run --release -- --chain testnets/rome.json
 
 ### Tests and code quality
 
-Running unit tests
+Running unit tests:
 
 ```bash
 cargo test --all
