@@ -60,7 +60,7 @@ Running unit tests
 cargo test --all
 ```
 
-Running full suite of checks.. tests, formatting and linting:
+Running full suite of checks, tests, formatting and linting:
 
 ```bash
 yarn cargo-checks
