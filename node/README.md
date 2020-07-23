@@ -44,7 +44,7 @@ this script will build and run a fresh new local development chain (purging exis
 ./scripts/run-dev-chain.sh
 ```
 
-### Joystream public testnet
+### Joystream Public Testnets
 
 Use the `--chain` argument, and specify the path to the genesis `chain.json` file for that public network. The JSON "chain spec" files for Joystream public networks can be found in [../testnets/](../testnets/).
 
