@@ -6,7 +6,7 @@ joystream-node is the main server application that connects to the network, sync
 
 A step by step guide to setup a full node and validator on the Joystream testnet, can be found [here](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
 
-### Pre-built Binaries
+### Pre-built binaries
 
 The latest pre-built binaries can be downloaded from the [releases](https://github.com/Joystream/joystream/releases) page.
 Generally these will be built from `master` branch and will pertain to the currently active testnet.
