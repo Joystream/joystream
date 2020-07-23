@@ -111,7 +111,7 @@ We have lots of good first [issues](https://github.com/Joystream/joystream/issue
 
 A description of our [branching model](https://github.com/Joystream/joystream/issues/638) will help you to understand where work on different software components happens, and consequently where to direct your pull requests.
 
-We rely on `eslint` for code quality of our javascript and typescript code, `prettier` for consistent formmating. For Rust we rely on `rustfmt` and `clippy`.
+We rely on `eslint` for code quality of our JavaScript and TypeScript code and `prettier` for consistent formatting. For Rust we rely on `rustfmt` and `clippy`.
 
 The [husky](https://www.npmjs.com/package/husky#ci-servers) npm package is used to manage the project git-hooks. This is automatically installed and setup when you run `yarn install`.
 
