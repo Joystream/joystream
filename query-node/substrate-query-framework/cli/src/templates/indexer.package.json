@@ -19,7 +19,7 @@
       "chalk": "^4.0.0",
       "dotenv": "^8.0.0",
       "figlet": "^1.4.0",
-      "index-builder": "https://github.com/metmirr/joystream/releases/download/v0.0.3-alpha/index-builder-v0.0.3-alpha.tgz",
+      "index-builder": "https://github.com/metmirr/joystream/releases/download/v0.0.4-alpha/index-builder-v0.0.4-alpha.tgz",
       "lodash": "^4.17.15",
       "log4js": "^6.2.1",
       "pg": "^8.0.3",

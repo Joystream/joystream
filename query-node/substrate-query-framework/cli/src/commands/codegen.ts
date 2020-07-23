@@ -11,8 +11,8 @@ import execa = require('execa');
 import { createDir, getTemplatePath, createFile } from '../utils/utils';
 import { formatWithPrettier } from '../helpers/formatter';
 import WarthogWrapper from '../helpers/WarthogWrapper';
-import { getTypeormConfig, getTypeormModelGeneratorConnectionConfig, createSavedEntityEventTable } from '../helpers/db';
-import { upperFirst } from 'lodash'; 
+import { getTypeormConfig } from '../helpers/db';
+import { upperFirst } from 'lodash';
 import Listr = require('listr');
 
 export default class Codegen extends Command {
@@ -93,7 +93,7 @@ export default class Codegen extends Command {
         indexFileContent = Mustache.render(indexFileContent, {
           packageName: process.env.TYPE_REGISTER_PACKAGE_NAME,
           typeRegistrator: process.env.TYPE_REGISTER_FUNCTION,
-          projectName: upperFirst(process.env.PROJECT_NAME)
+          projectName: upperFirst(process.env.PROJECT_NAME),
         });
         createFile(path.resolve('index.ts'), formatWithPrettier(indexFileContent));
 
@@ -119,15 +119,7 @@ export default class Codegen extends Command {
       },
     };
 
-    const genEntities = {
-      title: 'Generate entity classes',
-      task: async () => {
-        await createSavedEntityEventTable();
-        await execa('npx', getTypeormModelGeneratorConnectionConfig());
-      },
-    };
-
-    const listr = new Listr([generateFiles, installDeps, genEntities]);
+    const listr = new Listr([generateFiles, installDeps]);
     await listr.run();
 
     process.chdir(goBackDir);

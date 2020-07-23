@@ -22,31 +22,6 @@ export function getTypeormConfig(): string {
   return newEnvConfig;
 }
 
-export function getTypeormModelGeneratorConnectionConfig(): string[] {
-  const envConfig = dotenv.parse(fs.readFileSync('.env'));
-
-  const command = [
-    'typeorm-model-generator',
-    `--host`,
-    `${envConfig['TYPEORM_HOST']}`,
-    `--port`,
-    `${envConfig['TYPEORM_PORT']}`,
-    `--database`,
-    `${envConfig['TYPEORM_DATABASE']}`,
-    `--engine`,
-    `postgres`,
-    `--output`,
-    `entities`,
-    `--user`,
-    `${envConfig['TYPEORM_USERNAME']}`,
-    `--pass`,
-    `${envConfig['TYPEORM_PASSWORD']}`,
-    '--noConfig',
-    '--generateConstructor',
-  ];
-  return command;
-}
-
 export async function resetLastProcessedEvent(): Promise<void> {
   await createConnection();
   // get a connection and create a new query runner
@@ -67,27 +42,6 @@ export async function resetLastProcessedEvent(): Promise<void> {
     index = ${lastProcessedEvent.index},
     "eventName" = '${lastProcessedEvent.eventName}';`
   );
-
-  await queryRunner.release();
-}
-
-export async function createSavedEntityEventTable(): Promise<void> {
-  const query = `CREATE TABLE IF NOT EXISTS "saved_entity_event" (
-      "id" integer PRIMARY KEY DEFAULT 1,
-      "index" numeric,
-      "event_name" character varying NOT NULL,
-      "block_number" numeric NOT NULL,
-      "updated_at" TIMESTAMP NOT NULL DEFAULT now())`;
-
-  await createConnection();
-  // get a connection and create a new query runner
-  const queryRunner = getConnection().createQueryRunner();
-
-  // establish real database connection using our new query runner
-  await queryRunner.connect();
-
-  // now we can execute any queries on a query runner
-  await queryRunner.query(query);
 
   await queryRunner.release();
 }
