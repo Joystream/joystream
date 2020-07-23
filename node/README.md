@@ -46,7 +46,7 @@ this script will build and run a fresh new local development chain (purging exis
 
 ### Joystream public testnet
 
-Use the `--chain` argument, and specify the path to the genesis chain.json file for that public network. The joystream public networks are found in [../testnets/](../testnets/)
+Use the `--chain` argument, and specify the path to the genesis `chain.json` file for that public network. The JSON "chain spec" files for Joystream public networks can be found in [../testnets/](../testnets/).
 
 ```bash
 cargo run --release -- --chain testnets/rome.json
