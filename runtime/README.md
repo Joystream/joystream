@@ -18,7 +18,7 @@ Deploying the compiled runtime on a live system can be done in one of two ways:
 
 1. Joystream runtime upgrade proposals which will be voted on by the council. When the Joystream platform is live, this will be the only way to upgrade the chain's runtime code.
 
-2. During development and testnet phases, we can send an extrinsic (transaction signed with the sudo key) invoking `system::setCode()`. This can be done either from the UI/extrinsics app, or directly with an admin script.
+2. By creating  an extrinsic (transaction) signed with the sudo key invoking `system::setCode()`. This can be done either from the [Pioneer](/pioneer) extrinsics tab, or directly with an admin script. This way of upgrading the runtime code is intended for development and testnet phases only.
 
 ### Versioning the runtime
 
