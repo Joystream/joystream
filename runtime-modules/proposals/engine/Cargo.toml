@@ -39,8 +39,4 @@ std = [
     'common/std',
 ]
 
-[dependencies.num_enum]
-default_features = false
-version = "0.4.2"
-
 

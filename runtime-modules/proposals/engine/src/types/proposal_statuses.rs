@@ -1,7 +1,6 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode};
-use rstd::prelude::*;
 
 use crate::ActiveStake;
 #[cfg(feature = "std")]

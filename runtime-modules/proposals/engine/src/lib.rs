@@ -57,23 +57,25 @@
 //! ## Usage
 //!
 //! ```
-//! use srml_support::{decl_module, dispatch::Result, print};
+//! use frame_support::{decl_module, print};
 //! use system::ensure_signed;
 //! use codec::Encode;
-//! use substrate_proposals_engine_module::{self as engine, ProposalParameters};
+//! use pallet_proposals_engine::{self as engine, ProposalParameters};
 //!
 //! pub trait Trait: engine::Trait + membership::Trait {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//!         #[weight = 10_000_000]
 //!         fn executable_proposal(origin) {
 //!             print("executed!");
 //!         }
 //!
+//!         #[weight = 10_000_000]
 //!         pub fn create_spending_proposal(
 //!             origin,
 //!             proposer_id: T::MemberId,
-//!         ) -> Result {
+//!         ) {
 //!             let account_id = ensure_signed(origin)?;
 //!             let parameters = ProposalParameters::default();
 //!             let title = b"Spending proposal".to_vec();
@@ -96,7 +98,6 @@
 //!                 None,
 //!                 encoded_proposal_code
 //!             )?;
-//!             Ok(())
 //!         }
 //!     }
 //! }
@@ -127,13 +128,12 @@ pub(crate) mod types;
 mod tests;
 
 use codec::Decode;
-use frame_support::dispatch::{DispatchError, DispatchResult, Dispatchable};
+use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::{Currency, Get};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, print, Parameter, StorageDoubleMap,
 };
-use rstd::prelude::*;
 use sp_arithmetic::traits::Zero;
 use system::{ensure_root, RawOrigin};
 
@@ -181,9 +181,7 @@ pub trait Trait: system::Trait + timestamp::Trait + stake::Trait + membership::T
     type MaxActiveProposalLimit: Get<u32>;
 
     /// Proposals executable code. Can be instantiated by external module Call enum members.
-    type DispatchableCallCode: Parameter
-        + Dispatchable<Origin = Self::Origin, PostInfo = DispatchError>
-        + Default;
+    type DispatchableCallCode: Parameter + UnfilteredDispatchable<Origin = Self::Origin> + Default;
 }
 
 decl_event!(
@@ -649,7 +647,7 @@ impl<T: Trait> Module<T> {
         let approved_proposal_status = match proposal_code_result {
             Ok(proposal_code) => {
                 if let Err(dispatch_error) =
-                    proposal_code.dispatch(T::Origin::from(RawOrigin::Root))
+                    proposal_code.dispatch_bypass_filter(T::Origin::from(RawOrigin::Root))
                 {
                     ApprovedProposalStatus::failed_execution(Self::parse_dispatch_error(
                         dispatch_error.error,
