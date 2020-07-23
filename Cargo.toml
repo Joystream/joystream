@@ -1,7 +1,7 @@
 [workspace]
 members = [
 #	"runtime",
-#	"runtime-modules/proposals/engine",
+	"runtime-modules/proposals/engine",
 #	"runtime-modules/proposals/codex",
 #	"runtime-modules/proposals/discussion",
 	"runtime-modules/common",
