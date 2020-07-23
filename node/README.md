@@ -9,7 +9,7 @@ A step by step guide to setup a full node and validator on the Joystream testnet
 ### Pre-built Binaries
 
 The latest pre-built binaries can be downloaded from the [releases](https://github.com/Joystream/joystream/releases) page.
-Generally these will be built from master branch and relevant to the current active testnet.
+Generally these will be built from `master` branch and will pertain to the currently active testnet.
 
 ### Building from source
 
