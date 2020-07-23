@@ -13,6 +13,7 @@ tap.mocha.describe('Membership creation scenario', async () => {
   registerJoystreamTypes()
 
   const nKeyPairs: KeyringPair[] = []
+  let aKeyPair: KeyringPair
   const keyring = new Keyring({ type: 'sr25519' })
   const N: number = +process.env.MEMBERSHIP_CREATION_N!
   const paidTerms: number = +process.env.MEMBERSHIP_PAID_TERMS!
@@ -22,6 +23,7 @@ tap.mocha.describe('Membership creation scenario', async () => {
 
   const provider = new WsProvider(nodeUrl)
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider)
+  const sudo: KeyringPair = keyring.addFromUri(sudoUri)
 
   setTestTimeout(apiWrapper, durationInBlocks)
   membershipTest(apiWrapper, nKeyPairs, keyring, N, paidTerms, sudoUri)
