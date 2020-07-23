@@ -42,11 +42,11 @@ export const TYPE_FIELDS: { [key: string]: { [key: string]: string } } = {
   },
   numeric: {
     decorator: 'NumericField',
-    tsType: 'string',
+    tsType: 'BN',
   },
   decimal: {
     decorator: 'NumericField',
-    tsType: 'string',
+    tsType: 'BN',
   },
   oto: {
     decorator: 'OneToOne',

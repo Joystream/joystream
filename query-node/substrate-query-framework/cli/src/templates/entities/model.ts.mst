@@ -17,6 +17,8 @@ import {
   StringField
 } from 'warthog';  {{! we don't need extra twists here }}
 
+{{#has.numeric}}import * as BN from 'bn.js' {{/has.numeric}}
+
 {{#has.union}}
 import { Column } from 'typeorm';
 import { Field } from 'type-graphql';
