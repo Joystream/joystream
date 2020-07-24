@@ -118,11 +118,15 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
   // Prompt for simple/plain value (provided as string) of given type
   async promptForSimple(typeDef: TypeDef, paramOptions?: ApiParamOptions): Promise<Codec> {
+    // If no default provided - get default value resulting from providing empty string
+    const defaultValueString =
+      paramOptions?.value?.default?.toString() || createType(typeDef.type as any, '').toString()
     const providedValue = await this.simplePrompt({
       message: `Provide value for ${this.paramName(typeDef)}`,
       type: 'input',
-      // If not default provided - show default value resulting from providing empty string
-      default: paramOptions?.value?.default?.toString() || createType(typeDef.type as any, '').toString(),
+      // We want to avoid showing default value like '0x', because it falsely suggests
+      // that user needs to provide the value as hex
+      default: (defaultValueString === '0x' ? '' : defaultValueString) || undefined,
       validate: paramOptions?.validator,
     })
     return createType(typeDef.type as any, providedValue)
