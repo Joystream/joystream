@@ -2,12 +2,8 @@
 #![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
 
 use crate::VERSION;
-use rstd::prelude::*;
-use sr_primitives::{
-    print,
-    traits::{One, Zero},
-};
-use srml_support::{debug, decl_event, decl_module, decl_storage};
+use frame_support::weights::Weight;
+use frame_support::{debug, decl_event, decl_module, decl_storage};
 
 impl<T: Trait> Module<T> {
     /// This method is called from on_initialize() when a runtime upgrade is detected. This
@@ -21,12 +17,6 @@ impl<T: Trait> Module<T> {
         // would be any new storage values that need an initial value which would not
         // have been initialized with config() or build() chainspec construction mechanism.
         // Other tasks like resetting values, migrating values etc.
-
-        Self::initialize_storage_working_group_mint();
-        Self::initialize_storage_working_group_text_constraints();
-        Self::clear_storage_data();
-
-        proposals_codex::Module::<T>::set_default_config_values();
     }
 }
 
@@ -47,8 +37,8 @@ decl_storage! {
         /// initialized to Some(VERSION.spec_version). It is an Option because the first time the module
         /// was introduced was as a runtime upgrade and type was never changed.
         /// When the runtime is upgraded the spec version be updated.
-        pub SpecVersion get(spec_version) build(|_config: &GenesisConfig| {
-            VERSION.spec_version
+        pub SpecVersion get(fn spec_version) build(|_config: &GenesisConfig| {
+            Some(VERSION.spec_version)
         }) : Option<u32>;
     }
 }
@@ -63,7 +53,7 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
-        fn on_initialize(_now: T::BlockNumber) {
+        fn on_initialize(_now: T::BlockNumber) -> Weight {
             if Self::spec_version().map_or(true, |spec_version| VERSION.spec_version > spec_version) {
                 // Mark store version with current version of the runtime
                 SpecVersion::put(VERSION.spec_version);
@@ -76,55 +66,10 @@ decl_module! {
                     VERSION.spec_version,
                 ));
             }
+
+            10_000_000 // TODO adjust weight
         }
     }
 }
 
-impl<T: Trait> Module<T> {
-    fn initialize_storage_working_group_mint() {
-        let mint_id_result = <minting::Module<T>>::add_mint(<minting::BalanceOf<T>>::zero(), None);
-
-        if let Ok(mint_id) = mint_id_result {
-            <working_group::Mint<T, working_group::Instance2>>::put(mint_id);
-        } else {
-            print("Failed to create a mint for the storage working group");
-        }
-    }
-
-    fn initialize_storage_working_group_text_constraints() {
-        <working_group::OpeningHumanReadableText<working_group::Instance2>>::put(
-            working_group::default_text_constraint(),
-        );
-        <working_group::WorkerApplicationHumanReadableText<working_group::Instance2>>::put(
-            working_group::default_text_constraint(),
-        );
-        <working_group::WorkerExitRationaleText<working_group::Instance2>>::put(
-            working_group::default_text_constraint(),
-        );
-    }
-
-    fn clear_storage_data() {
-        // Clear storage data object registry data.
-        for id in <storage::data_directory::Module<T>>::known_content_ids() {
-            <storage::data_object_storage_registry::RelationshipsByContentId<T>>::remove(id);
-        }
-
-        let mut potential_id = <T as storage::data_object_storage_registry::Trait>::DataObjectStorageRelationshipId::zero();
-        while potential_id
-            < storage::data_object_storage_registry::Module::<T>::next_relationship_id()
-        {
-            <storage::data_object_storage_registry::Relationships<T>>::remove(&potential_id);
-
-            potential_id += <T as storage::data_object_storage_registry::Trait>::DataObjectStorageRelationshipId::one();
-        }
-
-        storage::data_object_storage_registry::NextRelationshipId::<T>::kill();
-
-        // Clear storage data directory data.
-        for id in <storage::data_directory::Module<T>>::known_content_ids() {
-            <storage::data_directory::DataObjectByContentId<T>>::remove(id);
-        }
-
-        <storage::data_directory::KnownContentIds<T>>::kill();
-    }
-}
+impl<T: Trait> Module<T> {}
