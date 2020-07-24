@@ -219,6 +219,7 @@ use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
 use srml_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter,
 };
+use std::any::TypeId;
 
 mod mock;
 mod tests;
@@ -288,6 +289,7 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
         + Into<u64>;
 
     type MaxCategoryDepth: Get<u64>;
+    type MapLimits: StorageLimits;
 
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool;
     fn is_forum_member(
@@ -297,6 +299,15 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
     fn is_moderator(account_id: &Self::AccountId, moderator_id: &Self::ModeratorId) -> bool;
 
     fn calculate_hash(text: &[u8]) -> Self::Hash;
+}
+
+// upper bounds for storage maps and double maps; needed to prevent potential block exhaustion during deletion, etc.
+pub trait StorageLimits {
+    type MaxSubcategories: Get<u64>; // done
+    type MaxThreadsInCategory: Get<u64>; // done
+    type MaxPostsInThread: Get<u64>; // done
+    type MaxModeratorsForCategory: Get<u64>;
+    type MaxCategories: Get<u64>; // max categories in total
 }
 
 /*
@@ -406,6 +417,9 @@ pub struct Thread<ForumUserId, CategoryId, Moment, Hash> {
 
     /// poll description.
     pub poll: Option<Poll<Moment, Hash>>,
+
+    // Number of posts in thread, needed for map limit checks
+    pub num_direct_posts: u32,
 }
 
 /// Represents a category
@@ -555,6 +569,11 @@ decl_error! {
 
         /// data migration not done yet.
         DataMigrationNotDone,
+
+        // Error for limited size
+
+        // Maximum size of storage map exceeded
+        MapSizeLimit,
     }
 }
 
@@ -1034,14 +1053,13 @@ decl_module! {
             Self::ensure_data_migration_done()?;
 
             // Ensure actor is allowed to moderate post
-            let post = Self::ensure_can_moderate_post(origin, &actor, &category_id, &thread_id, &post_id)?;
+            Self::ensure_can_moderate_post(origin, &actor, &category_id, &thread_id, &post_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Delete post
-            <PostById<T>>::remove(post.thread_id, post_id);
+            Self::delete_post_inner(category_id, thread_id, post_id);
 
             // Generate event
             Self::deposit_event(RawEvent::PostModerated(post_id, rationale));
@@ -1124,6 +1142,7 @@ impl<T: Trait> Module<T> {
             author_id,
             archived: false,
             poll: poll.clone(),
+            num_direct_posts: 1,
         };
 
         // Store thread
@@ -1155,7 +1174,12 @@ impl<T: Trait> Module<T> {
         Self::ensure_data_migration_done()?;
 
         // Make sure thread exists and is mutable
-        Self::ensure_thread_is_mutable(&category_id, &thread_id)?;
+        let (_, thread) = Self::ensure_thread_is_mutable(&category_id, &thread_id)?;
+
+        // Ensure map limits are not reached
+        Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxPostsInThread>(
+            thread.num_direct_posts,
+        )?;
 
         //
         // == MUTATION SAFE ==
@@ -1177,6 +1201,9 @@ impl<T: Trait> Module<T> {
         // Update next post id
         <NextPostId<T>>::mutate(|n| *n += One::one());
 
+        // Update thread's post counter
+        <ThreadById<T>>::mutate(category_id, thread_id, |c| c.num_direct_posts += 1);
+
         Ok((new_post_id, new_post))
     }
 
@@ -1189,6 +1216,16 @@ impl<T: Trait> Module<T> {
 
         // decrease category's thread counter
         <CategoryById<T>>::mutate(category_id, |category| category.num_direct_threads -= 1);
+    }
+
+    fn delete_post_inner(category_id: T::CategoryId, thread_id: T::ThreadId, post_id: T::PostId) {
+        // Delete post
+        <PostById<T>>::remove(thread_id, post_id);
+
+        // Decrease thread's post counter
+        <ThreadById<T>>::mutate(category_id, thread_id, |thread| {
+            thread.num_direct_posts -= 1
+        });
     }
 
     // Ensure poll is valid
@@ -1695,6 +1732,10 @@ impl<T: Trait> Module<T> {
 
             let parent_category = <CategoryById<T>>::get(tmp_parent_category_id);
 
+            Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxSubcategories>(
+                parent_category.num_direct_subcategories,
+            )?;
+
             return Ok(Some(parent_category));
         }
 
@@ -1710,6 +1751,10 @@ impl<T: Trait> Module<T> {
         Self::ensure_is_forum_user(origin, &forum_user_id)?;
 
         let category = Self::ensure_category_is_mutable(category_id)?;
+
+        Self::ensure_map_limits::<<<T>::MapLimits as StorageLimits>::MaxThreadsInCategory>(
+            category.num_direct_threads,
+        )?;
 
         Ok(category)
     }
@@ -1776,6 +1821,51 @@ impl<T: Trait> Module<T> {
                 Ok(())
             }
         }
+    }
+
+    // supposed to be called before mutations - checks if next entity can be added
+    fn ensure_map_limits<U: 'static>(current_amount: u32) -> Result<(), Error> {
+        type MaxSubcategories<T> = <<T as Trait>::MapLimits as StorageLimits>::MaxSubcategories;
+        type MaxThreadsInCategory<T> =
+            <<T as Trait>::MapLimits as StorageLimits>::MaxThreadsInCategory;
+        type MaxPostsInThread<T> = <<T as Trait>::MapLimits as StorageLimits>::MaxPostsInThread;
+        type MaxModeratorsForCategory<T> =
+            <<T as Trait>::MapLimits as StorageLimits>::MaxModeratorsForCategory;
+        type MaxCategories<T> = <<T as Trait>::MapLimits as StorageLimits>::MaxCategories;
+
+        let amount = current_amount as u64;
+
+        fn check_limit(amount: u64, limit: u64) -> Result<(), Error> {
+            //if amount + 1 >= limit {
+            if amount >= limit {
+                return Err(Error::MapSizeLimit);
+            }
+
+            Ok(())
+        }
+
+        // ensure max subcategories
+        if TypeId::of::<U>() == TypeId::of::<MaxSubcategories<T>>() {
+            return check_limit(amount, <MaxSubcategories<T>>::get());
+        }
+
+        if TypeId::of::<U>() == TypeId::of::<MaxThreadsInCategory<T>>() {
+            return check_limit(amount, <MaxThreadsInCategory<T>>::get());
+        }
+
+        if TypeId::of::<U>() == TypeId::of::<MaxPostsInThread<T>>() {
+            return check_limit(amount, <MaxPostsInThread<T>>::get());
+        }
+
+        if TypeId::of::<U>() == TypeId::of::<MaxModeratorsForCategory<T>>() {
+            return check_limit(amount, <MaxModeratorsForCategory<T>>::get());
+        }
+
+        if TypeId::of::<U>() == TypeId::of::<MaxCategories<T>>() {
+            return check_limit(amount, <MaxCategories<T>>::get());
+        }
+
+        panic!("invalid implementation")
     }
 
     /// Ensure data migration is done

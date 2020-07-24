@@ -1775,3 +1775,89 @@ fn test_migration_not_done() {
         );
     });
 }
+
+#[test]
+// test storage limits are enforced
+fn storage_limit_checks() {
+    let config = default_genesis_config();
+    let forum_lead = FORUM_LEAD_ORIGIN_ID;
+    let origin = OriginType::Signed(forum_lead);
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        // test max subcategories limit
+        let max = <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxSubcategories>::get();
+        for i in 0..max {
+            create_category_mock(
+                origin.clone(),
+                Some(category_id),
+                good_category_title(),
+                good_category_description(),
+                match i {
+                    _ if i == max => Err(Error::MapSizeLimit),
+                    _ => Ok(()),
+                },
+            );
+        }
+
+        // test max threads in category
+        let max = <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxThreadsInCategory>::get();
+        for i in 0..max {
+            create_thread_mock(
+                origin.clone(),
+                forum_lead,
+                category_id,
+                good_thread_title(),
+                good_thread_text(),
+                None,
+                match i {
+                    _ if i == max => Err(Error::MapSizeLimit),
+                    _ => Ok(()),
+                },
+            );
+        }
+    });
+
+    let config = default_genesis_config();
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+        let thread_id = create_thread_mock(
+            origin.clone(),
+            forum_lead,
+            category_id,
+            good_thread_title(),
+            good_thread_text(),
+            None,
+            Ok(()),
+        );
+
+        // test max posts in thread
+        let max = <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get();
+        // starting from 1 because create_thread_mock creates one post by itself
+        for i in 1..max {
+            create_post_mock(
+                origin.clone(),
+                forum_lead,
+                category_id,
+                thread_id,
+                good_post_text(),
+                match i {
+                    _ if i == max => Err(Error::MapSizeLimit),
+                    _ => Ok(()),
+                },
+            );
+        }
+    });
+}

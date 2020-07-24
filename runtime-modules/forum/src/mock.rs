@@ -65,6 +65,22 @@ impl timestamp::Trait for Runtime {
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 20;
+
+    pub const MaxSubcategories: u64 = 20;
+    pub const MaxThreadsInCategory: u64 = 20;
+    pub const MaxPostsInThread: u64 = 20;
+    pub const MaxModeratorsForCategory: u64 = 20;
+    pub const MaxCategories: u64 = 20;
+}
+
+pub struct MapLimits;
+
+impl StorageLimits for MapLimits {
+    type MaxSubcategories = MaxSubcategories;
+    type MaxThreadsInCategory = MaxThreadsInCategory;
+    type MaxPostsInThread = MaxPostsInThread;
+    type MaxModeratorsForCategory = MaxModeratorsForCategory;
+    type MaxCategories = MaxCategories;
 }
 
 impl Trait for Runtime {
@@ -76,6 +92,8 @@ impl Trait for Runtime {
     type PostId = u64;
     type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
+
+    type MapLimits = MapLimits;
 
     fn is_lead(account_id: &<Self as system::Trait>::AccountId) -> bool {
         *account_id == FORUM_LEAD_ORIGIN_ID
