@@ -65,7 +65,6 @@ export class Transport extends TransportBase implements ITransport {
           ),
           title: 'Content curator',
           stake: new u128(10101),
-          earned: new u128(347829),
           workerId: 1,
           group: WorkingGroups.ContentCurators
         },
@@ -75,7 +74,6 @@ export class Transport extends TransportBase implements ITransport {
           profile: mockProfile('bwhm0'),
           title: 'Content curator',
           stake: new u128(10101),
-          earned: new u128(347829),
           workerId: 2,
           group: WorkingGroups.ContentCurators
         },
@@ -88,7 +86,6 @@ export class Transport extends TransportBase implements ITransport {
           ),
           title: 'Content curator',
           stake: new u128(10101),
-          earned: new u128(347829),
           workerId: 3,
           group: WorkingGroups.ContentCurators
         },
@@ -101,7 +98,6 @@ export class Transport extends TransportBase implements ITransport {
           ),
           title: 'Content curator',
           stake: new u128(10101),
-          earned: new u128(347829),
           workerId: 4,
           group: WorkingGroups.ContentCurators
         },
@@ -114,7 +110,6 @@ export class Transport extends TransportBase implements ITransport {
           ),
           title: 'Content curator',
           stake: new u128(10101),
-          earned: new u128(347829),
           workerId: 5,
           group: WorkingGroups.ContentCurators
         }
@@ -137,7 +132,6 @@ export class Transport extends TransportBase implements ITransport {
           ),
           title: 'Storage provider',
           stake: new u128(10101),
-          earned: new u128(347829),
           workerId: 1,
           group: WorkingGroups.StorageProviders
         }

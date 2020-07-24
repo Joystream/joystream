@@ -30,7 +30,6 @@ export function ContentCuratorsSection () {
       ),
       title: text('Title', 'Curation lead', 'Ben'),
       stake: new u128(number('Stake', 10101, {}, 'Ben')),
-      earned: new u128(number('Earned', 347829, {}, 'Ben')),
       workerId: 1,
       group: WorkingGroups.ContentCurators
     },
@@ -40,7 +39,6 @@ export function ContentCuratorsSection () {
       profile: mockProfile(text('Handle', 'bwhm0', 'Martin')),
       title: text('Title', 'Content curator', 'Martin'),
       stake: new u128(number('Stake', 10101, {}, 'Martin')),
-      earned: new u128(number('Earned', 347829, {}, 'Martin')),
       workerId: 2,
       group: WorkingGroups.ContentCurators
     },
@@ -53,7 +51,6 @@ export function ContentCuratorsSection () {
       ),
       title: text('Title', 'Content curator', 'Paul'),
       stake: new u128(number('Stake', 10101, {}, 'Paul')),
-      earned: new u128(number('Earned', 347829, {}, 'Paul')),
       workerId: 3,
       group: WorkingGroups.ContentCurators
     },
@@ -66,7 +63,6 @@ export function ContentCuratorsSection () {
       ),
       title: text('Title', 'Content curator', 'Alex'),
       stake: new u128(number('Stake', 10101, {}, 'Alex')),
-      earned: new u128(number('Earned', 347829, {}, 'Alex')),
       workerId: 4,
       group: WorkingGroups.ContentCurators
     },
@@ -79,7 +75,6 @@ export function ContentCuratorsSection () {
       ),
       title: text('Title', 'Content curator', 'Mokhtar'),
       stake: new u128(number('Stake', 10101, {}, 'Mokhtar')),
-      earned: new u128(number('Earned', 347829, {}, 'Mokhtar')),
       workerId: 5,
       group: WorkingGroups.ContentCurators
     }
