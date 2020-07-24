@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import moment from 'moment';
-import { Card, Icon, Image, Label, Statistic } from 'semantic-ui-react';
+import { Card, Icon, Image, Label, Statistic, Button } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
 import { Balance } from '@polkadot/types/interfaces';
@@ -11,6 +11,9 @@ import { GenericAccountId } from '@polkadot/types';
 import { LeadRoleState } from '@joystream/types/content-working-group';
 import { WorkerId } from '@joystream/types/working-group';
 import { WorkingGroups } from './working_groups';
+import { RewardRelationship } from '@joystream/types/recurring-rewards';
+import { formatReward } from '@polkadot/joy-utils/functions/format';
+import styled from 'styled-components';
 
 type BalanceProps = {
   balance?: Balance;
@@ -47,6 +50,8 @@ export type GroupMember = {
   title: string;
   stake?: Balance;
   earned?: Balance;
+  missed?: Balance;
+  rewardRelationship?: RewardRelationship;
 }
 
 export type GroupLead = {
@@ -83,7 +88,7 @@ export function GroupLeadView (props: GroupLead & inset) {
         <Card.Meta>{props.title}</Card.Meta>
         <Card.Meta>
           { props.workerId && (
-            <Label size="tiny">{ 'Worker ID: ' + props.workerId.toString() }</Label>
+            <Label>{ 'Worker ID: ' + props.workerId.toString() }</Label>
           ) }
         </Card.Meta>
         <Card.Description>
@@ -101,41 +106,57 @@ export function GroupLeadView (props: GroupLead & inset) {
   );
 }
 
-export function GroupMemberView (props: GroupMember & inset) {
-  let fluid = false;
-  if (typeof props.inset !== 'undefined') {
-    fluid = props.inset;
-  }
+const StakeAndReward = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-row-gap: 0.25em;
+  margin-bottom: 1em;
+`;
 
-  let stake = null;
-  if (typeof props.stake !== 'undefined' && props.stake.toNumber() !== 0) {
-    stake = (
-      <Label color='green' ribbon={fluid}>
-        <Icon name="shield" />
-        Staked
-        <Label.Detail>{formatBalance(props.stake)}</Label.Detail>
-      </Label>
-    );
-  }
+export function GroupMemberView (props: GroupMember) {
+  const [showDetails, setShowDetails] = useState(false);
 
   let avatar = <Identicon value={props.roleAccount.toString()} size={50} />;
   if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() !== '') {
     avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />;
   }
 
-  let earned = null;
-  if (typeof props.earned !== 'undefined' &&
-    props.earned.toNumber() > 0 &&
-    !fluid) {
-    earned = (
-      <Card.Content extra>
-        <Label>Earned <Label.Detail>{formatBalance(props.earned)}</Label.Detail></Label>
-      </Card.Content>
+  const details: JSX.Element[] = [];
+  if (typeof props.stake !== 'undefined' && props.stake.toNumber() !== 0) {
+    details.push(
+      <Label color='green'>
+        <Icon name="shield" />
+        Staked
+        <Label.Detail>{formatBalance(props.stake)}</Label.Detail>
+      </Label>
+    );
+  }
+  if (props.earned && props.earned.toNumber() > 0) {
+    details.push(
+      <Label>Earned <Label.Detail>{formatBalance(props.earned)}</Label.Detail></Label>
+    );
+  }
+  if (props.missed && props.missed.toNumber() > 0) {
+    details.push(
+      <Label>Missed <Label.Detail>{formatBalance(props.missed)}</Label.Detail></Label>
+    );
+  }
+  if (props.rewardRelationship) {
+    details.push(
+      <Label>Reward <Label.Detail>{formatReward(props.rewardRelationship)}</Label.Detail></Label>
+    );
+  }
+  if (props.rewardRelationship?.next_payment_at_block.unwrapOr(false)) {
+    details.push(
+      <Label>
+        Next payment block:
+        <Label.Detail>{props.rewardRelationship.next_payment_at_block.unwrap().toNumber()}</Label.Detail>
+      </Label>
     );
   }
 
   return (
-    <Card color='grey' className="staked-card" fluid={fluid}>
+    <Card color='grey' className="staked-card">
       <Card.Content>
         <Image floated='right'>
           {avatar}
@@ -143,15 +164,25 @@ export function GroupMemberView (props: GroupMember & inset) {
         <Card.Header><HandleView profile={props.profile} /></Card.Header>
         <Card.Meta>{props.title}</Card.Meta>
         <Card.Meta>
-          <Label size="tiny">
+          <Label>
             { (props.group === WorkingGroups.ContentCurators ? 'Curator' : 'Worker') + ` ID: ${props.workerId.toString()}` }
           </Label>
         </Card.Meta>
-        <Card.Description>
-          {stake}
-        </Card.Description>
       </Card.Content>
-      {earned}
+      { details.length > 0 && (
+        <Card.Content extra>
+          { showDetails && (
+            <Card.Description>
+              <StakeAndReward>
+                {details.map((detail, index) => <div key={index}>{detail}</div>)}
+              </StakeAndReward>
+            </Card.Description>
+          ) }
+          <Button onClick={ () => setShowDetails(v => !v) } size="tiny" fluid>
+            { showDetails ? 'Hide' : 'Show'} details
+          </Button>
+        </Card.Content>
+      ) }
     </Card>
   );
 }

@@ -195,14 +195,18 @@ export class Transport extends TransportBase implements ITransport {
     return this.stakeValue(stakeProfile.stake_id);
   }
 
-  protected async workerTotalReward (relationshipId: RewardRelationshipId): Promise<Balance> {
-    const relationship = new SingleLinkedMapEntry<RewardRelationship>(
+  protected async rewardRelationshipById (id: RewardRelationshipId): Promise<RewardRelationship | undefined> {
+    const rewardRelationship = new SingleLinkedMapEntry<RewardRelationship>(
       RewardRelationship,
-      await this.cachedApi.query.recurringRewards.rewardRelationships(
-        relationshipId
-      )
-    );
-    return relationship.value.total_reward_received;
+      await this.cachedApi.query.recurringRewards.rewardRelationships(id)
+    ).value;
+
+    return rewardRelationship.isEmpty ? undefined : rewardRelationship;
+  }
+
+  protected async workerTotalReward (relationshipId: RewardRelationshipId): Promise<Balance> {
+    const relationship = await this.rewardRelationshipById(relationshipId);
+    return relationship?.total_reward_received || new u128(0);
   }
 
   protected async memberIdFromRoleAndActorId (role: Role, id: ActorId): Promise<MemberId> {
@@ -252,10 +256,11 @@ export class Transport extends TransportBase implements ITransport {
       stakeValue = await this.workerStake(worker.role_stake_profile.unwrap());
     }
 
-    let earnedValue: Balance = new u128(0);
-    if (worker.reward_relationship && worker.reward_relationship.isSome) {
-      earnedValue = await this.workerTotalReward(worker.reward_relationship.unwrap());
-    }
+    const rewardRelationship = worker.reward_relationship.isSome
+      ? await this.rewardRelationshipById(worker.reward_relationship.unwrap())
+      : undefined;
+    const earnedValue: Balance = rewardRelationship?.total_reward_received || new u128(0);
+    const missedValue: Balance = rewardRelationship?.total_reward_missed || new u128(0);
 
     return ({
       roleAccount,
@@ -265,7 +270,9 @@ export class Transport extends TransportBase implements ITransport {
       profile: profile.unwrap(),
       title: workerRoleNameByGroup[group],
       stake: stakeValue,
-      earned: earnedValue
+      earned: earnedValue,
+      missed: missedValue,
+      rewardRelationship
     });
   }
 
