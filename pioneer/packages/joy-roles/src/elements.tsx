@@ -131,6 +131,11 @@ export function GroupMemberView (props: GroupMember) {
       </Label>
     );
   }
+  if (props.rewardRelationship) {
+    details.push(
+      <Label>Reward <Label.Detail>{formatReward(props.rewardRelationship)}</Label.Detail></Label>
+    );
+  }
   if (props.earned && props.earned.toNumber() > 0) {
     details.push(
       <Label>Earned <Label.Detail>{formatBalance(props.earned)}</Label.Detail></Label>
@@ -139,11 +144,6 @@ export function GroupMemberView (props: GroupMember) {
   if (props.missed && props.missed.toNumber() > 0) {
     details.push(
       <Label>Missed <Label.Detail>{formatBalance(props.missed)}</Label.Detail></Label>
-    );
-  }
-  if (props.rewardRelationship) {
-    details.push(
-      <Label>Reward <Label.Detail>{formatReward(props.rewardRelationship)}</Label.Detail></Label>
     );
   }
   if (props.rewardRelationship?.next_payment_at_block.unwrapOr(false)) {
