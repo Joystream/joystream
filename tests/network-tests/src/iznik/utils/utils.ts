@@ -3,8 +3,10 @@ import { compactToU8a, stringToU8a } from '@polkadot/util'
 import { blake2AsHex } from '@polkadot/util-crypto'
 import BN from 'bn.js'
 import fs from 'fs'
-import { decodeAddress } from '@polkadot/keyring'
+import Keyring, { decodeAddress } from '@polkadot/keyring'
 import { Seat } from '@nicaea/types/council'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { v4 as uuid } from 'uuid'
 
 export class Utils {
   private static LENGTH_ADDRESS = 32 + 1 // publicKey + prefix
@@ -49,5 +51,13 @@ export class Utils {
 
   public static camelToSnakeCase(key: string): string {
     return key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+  }
+
+  public static createKeyPairs(keyring: Keyring, n: number): KeyringPair[] {
+    const nKeyPairs: KeyringPair[] = []
+    for (let i = 0; i < n; i++) {
+      nKeyPairs.push(keyring.addFromUri(i + uuid().substring(0, 8)))
+    }
+    return nKeyPairs
   }
 }

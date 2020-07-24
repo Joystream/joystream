@@ -29,6 +29,8 @@ import {
   expectLeaderStakeDecreased,
   expectLeaderSlashed,
 } from '../workingGroup/impl/workingGroupModule'
+import { BuyMembershipHappyCaseFixture } from '../impl/membershipModule'
+import { ElectCouncilFixture } from '../impl/councilElectionModule'
 
 tap.mocha.describe('Set lead proposal scenario', async () => {
   initConfig()
@@ -61,10 +63,29 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   const sudo: KeyringPair = keyring.addFromUri(sudoUri)
 
   setTestTimeout(apiWrapper, durationInBlocks)
-  membershipTest(apiWrapper, m1KeyPairs, keyring, N, paidTerms, sudoUri)
-  membershipTest(apiWrapper, m2KeyPairs, keyring, N, paidTerms, sudoUri)
-  membershipTest(apiWrapper, leadKeyPair, keyring, 1, paidTerms, sudoUri)
-  councilTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, K, sudoUri, greaterStake, lesserStake)
+
+  const happyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture()
+  tap.test('Buy membeship is accepted with sufficient funds', async () =>
+    happyCaseFixture.runner(apiWrapper, sudo, m1KeyPairs, keyring, N, paidTerms)
+  )
+
+  tap.test('Buy membeship is accepted with sufficient funds', async () =>
+    happyCaseFixture.runner(apiWrapper, sudo, m2KeyPairs, keyring, N, paidTerms)
+  )
+
+  tap.test('Buy membeship is accepted with sufficient funds', async () =>
+    happyCaseFixture.runner(apiWrapper, sudo, leadKeyPair, keyring, 1, paidTerms)
+  )
+
+  const electCouncilFixture: ElectCouncilFixture = new ElectCouncilFixture()
+  tap.test('Elect council', async () =>
+    electCouncilFixture.runner(apiWrapper, m1KeyPairs, m2KeyPairs, K, sudo, greaterStake, lesserStake)
+  )
+
+  // membershipTest(apiWrapper, m1KeyPairs, keyring, N, paidTerms, sudoUri)
+  // membershipTest(apiWrapper, m2KeyPairs, keyring, N, paidTerms, sudoUri)
+  // membershipTest(apiWrapper, leadKeyPair, keyring, 1, paidTerms, sudoUri)
+  // councilTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, K, sudoUri, greaterStake, lesserStake)
 
   let createOpeningProposalId: BN
   let openingId: BN
