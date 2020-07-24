@@ -121,7 +121,12 @@ export async function main() {
   if (Object.prototype.hasOwnProperty.call(commands, command)) {
     // Command recognized
     const args = _.clone(cli.input).slice(1)
-    await commands[command](api, ...args)
+    try {
+      await commands[command](api, ...args)
+    } catch (err) {
+      console.error(`Command Failed: ${err}`)
+      process.exit(-1)
+    }
   } else {
     showUsageAndExit(`Command "${command}" not recognized.`)
   }
