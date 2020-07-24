@@ -8,10 +8,27 @@ import * as BN from 'bn.js';
 
 const DEBUG_TOPIC = 'index-builder:producer';
 
+// start with 250ms delay before retrying to produce a block
+const DEFAULT_BACKOFF_TIME_MS = 250;
+
+// Maximal delyar between retries 
+const MAX_BACKOFF_TIME_MS = 30 * 60 * 1000;
+
+// Time between checks if the head of the chain is beyond the
+// most recently produced block
+const POLL_INTERVAL_MS = 100;
+
+// There-are no timeouts for the WS fetches, so 
+// we have to abort explicitly. This parameter indicates
+// the period of time after which the API calls are failed by timeout.
+const FETCH_TIMEOUT_MS = 5000;
+
 var debug = require('debug')(DEBUG_TOPIC);
 
 export default class QueryBlockProducer extends EventEmitter {
   private _started: boolean;
+
+  private _backOffTime = DEFAULT_BACKOFF_TIME_MS;
 
   private _producing_blocks_blocks: boolean;
 
@@ -104,84 +121,126 @@ export default class QueryBlockProducer extends EventEmitter {
     if (!this._producing_blocks_blocks) await this._produce_blocks();
   }
 
-  private async _produce_blocks() {
-    assert(!this._producing_blocks_blocks, 'Cannot already be producing blocks.');
+  /*
+   * Await for the promise or reject after a timeout
+   */
+  private async _withTimeout<T>(promiseFn: Promise<T>, rejectMsg?: string): Promise<T> {
+    // Create a promise that rejects in <ms> milliseconds
+    let timeoutPromise = new Promise((resolve, reject) => {
+      let id = setTimeout(() => {
+        clearTimeout(id);
+        reject(`${rejectMsg || 'Execution time-out'}`);
+      }, FETCH_TIMEOUT_MS)
+    });
 
+    // Returns a race between our timeout and the passed in promise
+    return Promise.race([
+      promiseFn,
+      timeoutPromise
+    ]).then(((x: any) =>  x as T));
+  }
+
+  /**
+   * This sub-routing does the actual fetching and block processing.
+   * It can throw errors which should be handled by the top-level code 
+   * (in this case _produce_block())
+   */
+  private async _doBlockProduce() {
+    debug(`Fetching block #${this._block_to_be_produced_next}`);
+
+    let block_hash_of_target = await this._withTimeout(
+         this._query_service.getBlockHash(this._block_to_be_produced_next.toString()),
+        `Timeout: failed to fetch the block hash at height ${this._block_to_be_produced_next.toString()}`);
+    
+    debug(`\tHash ${block_hash_of_target.toString()}.`);
+
+    let records = [];
+
+    records = await this._withTimeout(
+        this._query_service.eventsAt(block_hash_of_target), 
+      `Timeout: failed to fetch events for block ${this._block_to_be_produced_next.toString()}`);
+    
+    debug(`\tRead ${records.length} events.`);
+
+    let extrinsics_array: Extrinsic[] = [];
+    let signed_block = await this._withTimeout(
+      this._query_service.getBlock(block_hash_of_target),
+      `Timeout: failed to fetch the block ${this._block_to_be_produced_next.toString()}`);
+
+    debug(`\tFetched full block.`);
+
+    extrinsics_array = signed_block.block.extrinsics.toArray();
+    let query_events: QueryEvent[] = records.map(
+      (record, index): QueryEvent => {
+          // Extract the phase, event
+        const { phase } = record;
+
+          // Try to recover extrinsic: only possible if its right phase, and extrinsics arra is non-empty, the last constraint
+          // is needed to avoid events from build config code in genesis, and possibly other cases.
+        let extrinsic =
+          phase.isApplyExtrinsic && extrinsics_array.length
+            ? extrinsics_array[phase.asApplyExtrinsic.toBn()]
+              : undefined;
+
+        let query_event = new QueryEvent(record, this._block_to_be_produced_next, extrinsic);
+
+          // Logging
+        query_event.log(0, debug);
+
+        return query_event;
+      }
+    );
+
+      // Remove processed events from the list.
+    if (this._block_to_be_produced_next.eq(this._at_block)) {
+      query_events = query_events.filter((event) => event.index.gt(this._last_processed_event_index));
+    }
+
+    let query_block = new QueryEventBlock(this._block_to_be_produced_next, query_events);
+
+    this.emit('QueryEventBlock', query_block);
+
+    debug(`\tEmitted query event block.`);
+  }
+
+  private _resetBackOffTime() {
+    this._backOffTime = DEFAULT_BACKOFF_TIME_MS;
+  } 
+
+  private _increaseBackOffTime() {
+    this._backOffTime = Math.min(this._backOffTime * 2, MAX_BACKOFF_TIME_MS);
+  }
+
+
+  private async _produce_blocks() {
+    if (!this._started) {
+      throw new Error("The block producer is stopped")
+    }
+
+    assert(!this._producing_blocks_blocks, 'Cannot already be producing blocks.');
     this._producing_blocks_blocks = true;
 
     // Continue as long as we know there are outstanding blocks.
     while (this._block_to_be_produced_next.lte(this._height_of_chain)) {
-      debug(`Fetching block #${this._block_to_be_produced_next}`);
-
-      let block_hash_of_target = await this._query_service.getBlockHash(this._block_to_be_produced_next.toString());
-      // TODO: CATCH HERE
-
-      debug(`\tHash ${block_hash_of_target.toString()}.`);
-
-      let records = [];
-
       try {
-        records = await this._query_service.eventsAt(block_hash_of_target);
-      } catch (error) {
-        console.error(error);
-        console.error(
-          `An error occured while fetching events from ${this._block_to_be_produced_next.toString()}. Going to the next block.`
-        );
-
+        await this._doBlockProduce();
+        // all went fine, so reset the back-off time
+        this._resetBackOffTime();
+        // and proceed to the next block
         this._block_to_be_produced_next = this._block_to_be_produced_next.addn(1);
-        continue;
+      
+      } catch (e) {
+        console.error(e);
+        debug(`An error occured while producting block ${this._block_to_be_produced_next}`);
+        // waiting until the next retry
+        debug(`Retrying after ${this._backOffTime} ms`);
+        await new Promise((resolve)=>setTimeout(() => {
+          resolve();
+        }, this._backOffTime));
+        this._increaseBackOffTime();
       }
-
-      debug(`\tRead ${records.length} events.`);
-
-      let extrinsics_array: Extrinsic[] = [];
-      try {
-        // Since there is at least 1 event, we will fetch block.
-        let signed_block = await this._query_service.getBlock(block_hash_of_target);
-
-        debug(`\tFetched full block.`);
-
-        extrinsics_array = signed_block.block.extrinsics.toArray();
-      } catch (error) {
-        console.error(
-          `An error occured while fetching extrinsics from block ${this._block_to_be_produced_next.toString()}`
-        );
-      }
-      let query_events: QueryEvent[] = records.map(
-        (record, index): QueryEvent => {
-          // Extract the phase, event
-          const { phase } = record;
-
-          // Try to recover extrinsic: only possible if its right phase, and extrinsics arra is non-empty, the last constraint
-          // is needed to avoid events from build config code in genesis, and possibly other cases.
-          let extrinsic =
-            phase.isApplyExtrinsic && extrinsics_array.length
-              ? extrinsics_array[phase.asApplyExtrinsic.toBn()]
-              : undefined;
-
-          let query_event = new QueryEvent(record, this._block_to_be_produced_next, extrinsic);
-
-          // Logging
-          query_event.log(0, debug);
-
-          return query_event;
-        }
-      );
-
-      // Remove processed events from the list.
-      if (this._block_to_be_produced_next.eq(this._at_block)) {
-        query_events = query_events.filter((event) => event.index.gt(this._last_processed_event_index));
-      }
-
-      let query_block = new QueryEventBlock(this._block_to_be_produced_next, query_events);
-
-      this.emit('QueryEventBlock', query_block);
-
-      debug(`\tEmitted query event block.`);
-
-      this._block_to_be_produced_next = this._block_to_be_produced_next.addn(1);
     }
-
     this._producing_blocks_blocks = false;
+     
   }
 }
