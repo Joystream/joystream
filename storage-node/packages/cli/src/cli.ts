@@ -124,7 +124,7 @@ export async function main() {
     try {
       await commands[command](api, ...args)
     } catch (err) {
-      console.error(`Command Failed: ${err}`)
+      console.error('Command Failed:', err)
       process.exit(-1)
     }
   } else {
