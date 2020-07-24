@@ -79,8 +79,9 @@ export default class QueryBlockProducer extends EventEmitter {
       this._OnNewHeads(header);
     });
 
+    debug(`Starting the block producer, next block: ${this._block_to_be_produced_next}`);
     // Start producing blocks right away
-    if (!this._producing_blocks_blocks) this._produce_blocks();
+    if (!this._producing_blocks_blocks) await this._produce_blocks();
   }
 
   async stop() {

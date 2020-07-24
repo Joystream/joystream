@@ -43,12 +43,21 @@ export default class IndexBuilder {
 
     debug('Spawned worker.');
 
+    if (atBlock) {
+      debug(`Got block height hint: ${atBlock}`);
+    }
+    
     const lastProcessedEvent = await getRepository(SavedEntityEvent).findOne({ where: { id: 1 } });
 
+    if (lastProcessedEvent) {
+      debug(`Found the most recent processed event at block ${lastProcessedEvent.blockNumber.toString()}`);
+    }
+
     if (atBlock && lastProcessedEvent) {
-      throw new Error(
-        `Existing processed history detected on the database!
-        Last processed block is ${lastProcessedEvent.blockNumber.toString()}`
+      debug(
+        `WARNING! Existing processed history detected on the database!
+        Last processed block is ${lastProcessedEvent.blockNumber.toString()}. The indexer 
+        will continue from block ${lastProcessedEvent.blockNumber.toString()} and ignore the block height hints.`
       );
     }
 
