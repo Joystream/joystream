@@ -241,6 +241,8 @@ class RuntimeApi {
     // synchronize access to nonce
     await this.executeWithAccountLock(accountId, async () => {
       const nonce = this.nonces[accountId] || (await this.api.query.system.accountNonce(accountId))
+      // In future use this rpc method to take the pending tx pool into account when fetching the nonce
+      // const nonce = await this.api.rpc.system.accountNextIndex(accountId)
 
       try {
         unsubscribe = await tx.sign(fromKey, { nonce }).send(handleTxUpdates)
