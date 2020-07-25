@@ -97,13 +97,15 @@ class RuntimeApi {
 
       // Skip events we're not interested in.
       const matching = subscribed.filter((value) => {
-        if (value[0] === '*') {
+        if (value[0] === '*' && value[1] === '*') {
           return true
+        } else if (value[0] === '*') {
+          return event.method === value[1]
+        } else if (value[1] === '*') {
+          return event.section === value[0]
+        } else {
+          return event.section === value[0] && event.method === value[1]
         }
-        if (value[0] === event.section) {
-          if (value[1] === '*') return true
-        }
-        return event.section === value[0] && event.method === value[1]
       })
       return matching.length > 0
     })
