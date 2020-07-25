@@ -122,7 +122,7 @@ class AssetsApi {
     contentId = parseContentId(contentId)
     const tx = this.base.api.tx.dataObjectStorageRegistry.addRelationship(storageProviderId, contentId)
 
-    return this.base.signAndSendThen(providerAccountId, tx, {
+    return this.base.signAndSendThenGetEventResult(providerAccountId, tx, {
       eventModule: 'dataObjectStorageRegistry',
       eventName: 'DataObjectStorageRelationshipAdded',
       eventProperty: 'DataObjectStorageRelationshipId', // index 0
