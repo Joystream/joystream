@@ -163,6 +163,10 @@ class RuntimeApi {
 
     const handleTxUpdates = (result) => {
       const { events = [], status } = result
+      if (!result || !status) {
+        return
+      }
+
       lastTxUpdateResult = result
       debug(status.type)
 
@@ -170,12 +174,12 @@ class RuntimeApi {
       // extrinsic from finalizing.
       if (status.isUsurped) {
         debug(JSON.stringify(result))
-        onFinalizedFailed({ err: 'Usurped' })
+        onFinalizedFailed && onFinalizedFailed({ err: 'Usurped' })
       }
 
       if (status.isDropped) {
         debug(JSON.stringify(result))
-        onFinalizedFailed({ err: 'Dropped' })
+        onFinalizedFailed && onFinalizedFailed({ err: 'Dropped' })
       }
 
       // My gutt says this comes before isReady and causes await send() to throw
@@ -184,6 +188,7 @@ class RuntimeApi {
       // This would be BadProof, bad encoding of the transaction.. etc?
       if (status.isInvalid) {
         debug(JSON.stringify(result))
+        onFinalizedFailed && onFinalizedFailed({ err: 'Dropped' })
       }
 
       if (status.isFinalized) {
@@ -199,6 +204,10 @@ class RuntimeApi {
           // TODO: check if it was sudo call .. can we detect failed dispatch? Sudid true/false event?
           onFinalizedSuccess({ mappedEvents, result, tx: status.asFinalized })
         }
+      }
+
+      if (result.isCompleted) {
+        unsubscribe()
       }
     }
 
