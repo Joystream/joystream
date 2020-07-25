@@ -205,6 +205,8 @@ function getServiceInformation(publicUrl) {
   }
 }
 
+// TODO: instead of recursion use while/async-await and use promise/setTimout based sleep
+// or cleaner code with generators?
 async function announcePublicUrl(api, publicUrl) {
   // re-announce in future
   const reannounce = function (timeoutMs) {
