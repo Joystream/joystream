@@ -144,6 +144,28 @@ impl<'a, T: Trait> OutputValuesForExistingProperties<'a, T> {
         }
         Ok(values_for_existing_properties)
     }
+
+    /// Used to retrieve `OutputPropertyValue`s, which respective `Properties` have `unique` flag set
+    /// (skip `PropertyId`s, which respective `property values` under this `Entity` are default and non `required`)
+    pub fn compute_unique(&self) -> BTreeMap<PropertyId, OutputPropertyValue<T>> {
+        self.iter()
+            .filter(|(property_id, _)| {
+                match self
+                    .get(property_id)
+                    .map(|value_for_property| value_for_property.unzip())
+                {
+                    Some((property, property_value)) if property.unique => {
+                        // skip `PropertyId`s, which respective `property values` under this `Entity` are default and non `required`
+                        property.required || *property_value != OutputPropertyValue::<T>::default()
+                    }
+                    _ => false,
+                }
+            })
+            .map(|(property_id, property_value)| {
+                (*property_id, property_value.get_value().to_owned())
+            })
+            .collect()
+    }
 }
 
 /// Length constraint for input validation

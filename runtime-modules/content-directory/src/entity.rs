@@ -53,7 +53,7 @@ impl<T: Trait> Entity<T> {
         }
     }
 
-    /// Get class id of this Entity
+    /// Get `class_id` of this `Entity`
     pub fn get_class_id(&self) -> T::ClassId {
         self.class_id
     }
