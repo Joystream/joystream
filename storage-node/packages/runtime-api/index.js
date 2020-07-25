@@ -189,7 +189,7 @@ class RuntimeApi {
       if (status.isInvalid) {
         debug(status.type)
         debug(JSON.stringify(status.asInvalid))
-        onFinalizedFailed && onFinalizedFailed({ err: 'Dropped', result, tx: status.asFinalized })
+        onFinalizedFailed && onFinalizedFailed({ err: 'Invalid', result, tx: status.asFinalized })
       }
 
       if (status.isFinalized) {
