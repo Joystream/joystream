@@ -157,7 +157,7 @@ module.exports = function (storage, runtime) {
 
             debug('creating storage relationship for newly uploaded content')
             // Create storage relationship and flip it to ready.
-            const dosrId = await runtime.assets.createAndReturnStorageRelationship(roleAddress, providerId, id)
+            const dosrId = await runtime.assets.createStorageRelationship(roleAddress, providerId, id)
 
             debug('toggling storage relationship for newly uploaded content')
             await runtime.assets.toggleStorageRelationshipReady(roleAddress, providerId, dosrId, true)

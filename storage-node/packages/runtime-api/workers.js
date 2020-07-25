@@ -208,7 +208,7 @@ class WorkersApi {
     return this.base.signAndSendThenGetEventResult(senderAccount, tx, {
       eventModule: 'storageWorkingGroup',
       eventName: 'OpeningAdded',
-      eventProperty: 'OpeningId',
+      eventProperty: 'OpeningId', // index 0
     })
   }
 
@@ -228,7 +228,7 @@ class WorkersApi {
     return this.base.signAndSendThenGetEventResult(memberAccount, applyTx, {
       eventModule: 'storageWorkingGroup',
       eventName: 'AppliedOnOpening',
-      eventProperty: 'ApplicationId',
+      eventProperty: 'ApplicationId', // index 1
     })
   }
 
@@ -289,7 +289,7 @@ class WorkersApi {
     return this.base.signAndSendThenGetEventResult(senderAccount, tx, {
       eventModule: 'storageWorkingGroup',
       eventName: 'OpeningFilled',
-      eventProperty: 'ApplicationIdToWorkerIdMap',
+      eventProperty: 'ApplicationIdToWorkerIdMap', // index 1
     })
   }
 }

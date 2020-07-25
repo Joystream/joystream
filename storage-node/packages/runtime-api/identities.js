@@ -188,7 +188,7 @@ class IdentitiesApi {
     return this.base.signAndSendThenGetEventResult(accountId, tx, {
       eventModule: 'members',
       eventName: 'MemberRegistered',
-      eventProperty: 'MemberId',
+      eventProperty: 'MemberId', // index 0
     })
   }
 
