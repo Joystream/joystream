@@ -30,6 +30,7 @@ const { DiscoveryApi } = require('@joystream/storage-runtime-api/discovery')
 const { SystemApi } = require('@joystream/storage-runtime-api/system')
 const AsyncLock = require('async-lock')
 const Promise = require('bluebird')
+const { GenericExtrinsicPayloadV2 } = require('../../../pioneer/packages/apps/build/main.a723bde4')
 
 Promise.config({
   cancellation: true,
@@ -110,27 +111,19 @@ class RuntimeApi {
       return matching.length > 0
     })
 
-    const mapped = filtered.map((record) => {
+    return filtered.map((record) => {
       const { event } = record
       const types = event.typeDef
-
-      // FIX: we are loosing some items if they have the same type
-      // only the first occurance is saved in the payload map. This is the cost of convenience
-      // to get a value "by name" - why not just return the original EventRecord
-      // and let the calller use the index to get the value desired?
-      const payload = {}
+      const payload = new Map()
       event.data.forEach((data, index) => {
         const type = types[index].type
-        payload[type] = payload[type] || data
+        payload.set(index, { type, data })
       })
 
       const fullName = `${event.section}.${event.method}`
+      debug(`matched event: ${fullName} =>`, ...event.data.map((data) => `${data},`))
       return [fullName, payload]
     })
-
-    mapped.length && debug('Mapped Events', JSON.stringify(mapped))
-
-    return mapped
   }
 
   /*
@@ -302,19 +295,18 @@ class RuntimeApi {
    * Sign and send a transaction expect event from
    * module and return eventProperty from the event.
    */
-  async signAndSendThenGetEventResult(senderAccountId, tx, { eventModule, eventName, eventProperty }) {
-    if (!eventModule || !eventName || !eventProperty) {
+  async signAndSendThenGetEventResult(senderAccountId, tx, { module, event, index, type }) {
+    if (!module || !event || index === undefined || !type) {
       throw new Error('MissingSubscribeEventDetails')
     }
 
-    // event from a module,
-    const subscribed = [[eventModule, eventName]]
+    const subscribed = [[module, event]]
 
     const { mappedEvents } = await this.signAndSend(senderAccountId, tx, subscribed)
 
     if (!mappedEvents) {
       // The tx was a future so it was not possible and will not be possible to get events
-      throw new Error('NoEventsCanBeCaptured')
+      throw new Error('NoEventsWereCaptured')
     }
 
     if (!mappedEvents.length) {
@@ -323,12 +315,24 @@ class RuntimeApi {
     }
 
     // fix - we may not necessarily want the first event
-    // if there are multiple instances of the same event
+    // when there are multiple instances of the same event
     const firstEvent = mappedEvents[0]
+
+    if (firstEvent[0] !== `${module}.${event}`) {
+      throw new Error('WrongEventCaptured')
+    }
+
     const payload = firstEvent[1]
-    // Note if the event data contained more than one element of the same type
-    // we can only get the first occurance
-    return payload[eventProperty]
+    if (!payload.has(index)) {
+      throw new Error('DataIndexOutOfRange')
+    }
+
+    const value = payload.get(index)
+    if (value.type !== type) {
+      throw new Error('DataTypeNotExpectedType')
+    }
+
+    return value.data
   }
 }
 

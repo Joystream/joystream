@@ -206,9 +206,10 @@ class WorkersApi {
    */
   async devSubmitAddOpeningTx(tx, senderAccount) {
     return this.base.signAndSendThenGetEventResult(senderAccount, tx, {
-      eventModule: 'storageWorkingGroup',
-      eventName: 'OpeningAdded',
-      eventProperty: 'OpeningId', // index 0
+      module: 'storageWorkingGroup',
+      event: 'OpeningAdded',
+      type: 'OpeningId',
+      index: 0,
     })
   }
 
@@ -226,9 +227,10 @@ class WorkersApi {
     )
 
     return this.base.signAndSendThenGetEventResult(memberAccount, applyTx, {
-      eventModule: 'storageWorkingGroup',
-      eventName: 'AppliedOnOpening',
-      eventProperty: 'ApplicationId', // index 1
+      module: 'storageWorkingGroup',
+      event: 'AppliedOnOpening',
+      type: 'ApplicationId',
+      index: 1,
     })
   }
 
@@ -287,9 +289,10 @@ class WorkersApi {
    */
   async devSubmitFillOpeningTx(senderAccount, tx) {
     return this.base.signAndSendThenGetEventResult(senderAccount, tx, {
-      eventModule: 'storageWorkingGroup',
-      eventName: 'OpeningFilled',
-      eventProperty: 'ApplicationIdToWorkerIdMap', // index 1
+      module: 'storageWorkingGroup',
+      event: 'OpeningFilled',
+      type: 'ApplicationIdToWorkerIdMap',
+      index: 1,
     })
   }
 }
