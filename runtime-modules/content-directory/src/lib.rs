@@ -702,7 +702,7 @@ decl_module! {
             let class_properties = class.get_properties();
 
             let class_id = entity.get_class_id();
-            
+
             let entity_property_values = entity.get_values();
 
             // Create wrapper structure from provided entity_property_values and their corresponding Class properties
@@ -901,7 +901,7 @@ decl_module! {
 
             // Retrieve Entity and EntityAccessLevel for the actor, attemting to perform operation
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
-            
+
             // Ensure actor with given EntityAccessLevel can remove entity
             EntityPermissions::<T>::ensure_group_can_remove_entity(access_level)?;
 
@@ -1254,7 +1254,7 @@ decl_module! {
                 None
             };
 
-           
+
 
             // Update entity property values
             <EntityById<T>>::mutate(entity_id, |entity| {
@@ -1867,9 +1867,7 @@ impl<T: Trait> Module<T> {
 
     /// Ensure all provided `new_property_value_references_with_same_owner_flag_set` are valid
     fn ensure_are_valid_references_with_same_owner_flag_set(
-        new_property_value_references_with_same_owner_flag_set: InputValuesForExistingProperties<
-            T,
-        >,
+        new_property_value_references_with_same_owner_flag_set: InputValuesForExistingProperties<T>,
         new_controller: &EntityController<T>,
     ) -> dispatch::Result {
         for updated_value_for_existing_property in
@@ -1902,8 +1900,7 @@ impl<T: Trait> Module<T> {
             // Update entity_property_values map at property_id with new_property_value_reference_with_same_owner_flag_set
             entity_property_values_updated.insert(
                 *property_id,
-                new_property_value_reference_with_same_owner_flag_set
-                    .to_owned()
+                new_property_value_reference_with_same_owner_flag_set.to_owned(),
             );
         }
 
