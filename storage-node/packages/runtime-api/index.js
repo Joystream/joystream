@@ -22,7 +22,6 @@ const debug = require('debug')('joystream:runtime:base')
 
 const { registerJoystreamTypes } = require('@joystream/types')
 const { ApiPromise, WsProvider } = require('@polkadot/api')
-
 const { IdentitiesApi } = require('@joystream/storage-runtime-api/identities')
 const { BalancesApi } = require('@joystream/storage-runtime-api/balances')
 const { WorkersApi } = require('@joystream/storage-runtime-api/workers')
@@ -168,18 +167,19 @@ class RuntimeApi {
       }
 
       lastTxUpdateResult = result
-      debug(status.type)
 
       // Deal with statuses which will prevent
       // extrinsic from finalizing.
       if (status.isUsurped) {
-        debug(JSON.stringify(result))
-        onFinalizedFailed && onFinalizedFailed({ err: 'Usurped' })
+        debug(status.type)
+        debug(JSON.stringify(status.asUsurped))
+        onFinalizedFailed && onFinalizedFailed({ err: 'Usurped', result, tx: status.asFinalized })
       }
 
       if (status.isDropped) {
-        debug(JSON.stringify(result))
-        onFinalizedFailed && onFinalizedFailed({ err: 'Dropped' })
+        debug(status.type)
+        debug(JSON.stringify(status.asDropped))
+        onFinalizedFailed && onFinalizedFailed({ err: 'Dropped', result, tx: status.asFinalized })
       }
 
       // My gutt says this comes before isReady and causes await send() to throw
@@ -187,22 +187,38 @@ class RuntimeApi {
       // We don't need to do anything other than log it?
       // This would be BadProof, bad encoding of the transaction.. etc?
       if (status.isInvalid) {
-        debug(JSON.stringify(result))
-        onFinalizedFailed && onFinalizedFailed({ err: 'Dropped' })
+        debug(status.type)
+        debug(JSON.stringify(status.asInvalid))
+        onFinalizedFailed && onFinalizedFailed({ err: 'Dropped', result, tx: status.asFinalized })
       }
 
       if (status.isFinalized) {
-        unsubscribe()
         const mappedEvents = RuntimeApi.matchingEvents(subscribed, events)
-
         const failed = result.findRecord('system', 'ExtrinsicFailed')
         const success = result.findRecord('system', 'ExtrinsicSuccess')
+        const sudid = result.findRecord('sudo', 'Sudid')
+        const sudoAsDone = result.findRecord('sudo', 'SudoAsDone')
 
         if (failed) {
           onFinalizedFailed({ err: 'ExtrinsicFailed', result, tx: status.asFinalized })
         } else if (success) {
-          // TODO: check if it was sudo call .. can we detect failed dispatch? Sudid true/false event?
-          onFinalizedSuccess({ mappedEvents, result, tx: status.asFinalized })
+          if (sudid) {
+            const dispatchSuccess = sudid.event.data[0]
+            if (dispatchSuccess.isTrue) {
+              onFinalizedSuccess({ mappedEvents, result, tx: status.asFinalized })
+            } else {
+              onFinalizedFailed({ err: 'SudidFailed', result, tx: status.asFinalized })
+            }
+          } else if (sudoAsDone) {
+            const dispatchSuccess = sudoAsDone.event.data[0]
+            if (dispatchSuccess.isTrue) {
+              onFinalizedSuccess({ mappedEvents, result, tx: status.asFinalized })
+            } else {
+              onFinalizedFailed({ err: 'SudoAsFailed', result, tx: status.asFinalized })
+            }
+          } else {
+            onFinalizedSuccess({ mappedEvents, result, tx: status.asFinalized })
+          }
         }
       }
 
