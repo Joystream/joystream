@@ -111,13 +111,13 @@ function startExpressApp(app, port) {
 
 // Start app
 function startAllServices({ store, api, port }) {
-  const app = require('../lib/app')(PROJECT_ROOT, store, api) // reduce falgs to only needed values
+  const app = require('../lib/app')(PROJECT_ROOT, store, api)
   return startExpressApp(app, port)
 }
 
 // Start discovery service app only
 function startDiscoveryService({ api, port }) {
-  const app = require('../lib/discovery')(PROJECT_ROOT, api) // reduce flags to only needed values
+  const app = require('../lib/discovery')(PROJECT_ROOT, api)
   return startExpressApp(app, port)
 }
 
@@ -244,14 +244,14 @@ if (!command) {
   command = 'server'
 }
 
-async function startColossus({ api, publicUrl, port, flags }) {
+async function startColossus({ api, publicUrl, port }) {
   // TODO: check valid url, and valid port number
   const store = getStorage(api)
   banner()
   const { startSyncing } = require('../lib/sync')
   startSyncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
   announcePublicUrl(api, publicUrl)
-  return startAllServices({ store, api, port, flags }) // dont pass all flags only required values
+  return startAllServices({ store, api, port })
 }
 
 const commands = {
