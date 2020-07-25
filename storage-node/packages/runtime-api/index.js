@@ -190,7 +190,6 @@ class RuntimeApi {
       // My gutt says this comes before isReady and causes await send() to throw
       // and therefore onFinalizedFailed isn't initialized.
       // We don't need to do anything other than log it?
-      // This would be BadProof, bad encoding of the transaction.. etc?
       if (status.isInvalid) {
         debug(status.type)
         debug(JSON.stringify(status.asInvalid))
@@ -205,21 +204,33 @@ class RuntimeApi {
         const sudoAsDone = result.findRecord('sudo', 'SudoAsDone')
 
         if (failed) {
-          onFinalizedFailed({ err: 'ExtrinsicFailed', result, tx: status.asFinalized })
+          const {
+            event: { data },
+          } = failed
+          const dispatchError = data[0]
+          onFinalizedFailed({
+            err: 'ExtrinsicFailed',
+            mappedEvents,
+            result,
+            tx: status.asFinalized,
+            dispatchError, // we get module number/id and index into the Error enum
+          })
         } else if (success) {
+          // Note: For root origin calls, the dispatch error is logged to console
+          // we cannot get it in the events
           if (sudid) {
             const dispatchSuccess = sudid.event.data[0]
             if (dispatchSuccess.isTrue) {
               onFinalizedSuccess({ mappedEvents, result, tx: status.asFinalized })
             } else {
-              onFinalizedFailed({ err: 'SudidFailed', result, tx: status.asFinalized })
+              onFinalizedFailed({ err: 'SudoFailed', mappedEvents, result, tx: status.asFinalized })
             }
           } else if (sudoAsDone) {
             const dispatchSuccess = sudoAsDone.event.data[0]
             if (dispatchSuccess.isTrue) {
               onFinalizedSuccess({ mappedEvents, result, tx: status.asFinalized })
             } else {
-              onFinalizedFailed({ err: 'SudoAsFailed', result, tx: status.asFinalized })
+              onFinalizedFailed({ err: 'SudoAsFailed', mappedEvents, result, tx: status.asFinalized })
             }
           } else {
             onFinalizedSuccess({ mappedEvents, result, tx: status.asFinalized })
