@@ -97,6 +97,12 @@ class RuntimeApi {
 
       // Skip events we're not interested in.
       const matching = subscribed.filter((value) => {
+        if (value[0] === '*') {
+          return true
+        }
+        if (value[0] === event.section) {
+          if (value[1] === '*') return true
+        }
         return event.section === value[0] && event.method === value[1]
       })
       return matching.length > 0
@@ -106,9 +112,8 @@ class RuntimeApi {
       const { event } = record
       const types = event.typeDef
 
-      // Loop through each of the event data items.
-      // FIX: we are loosing however some items if they have the same type
-      // only the first occurance is saved in the payload map, as the cost of convenience
+      // FIX: we are loosing some items if they have the same type
+      // only the first occurance is saved in the payload map. This is the cost of convenience
       // to get a value "by name" - why not just return the original EventRecord
       // and let the calller use the index to get the value desired?
       const payload = {}
