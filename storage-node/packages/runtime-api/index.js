@@ -182,9 +182,7 @@ class RuntimeApi {
         onFinalizedFailed && onFinalizedFailed({ err: 'Dropped', result, tx: status.asFinalized })
       }
 
-      // My gutt says this comes before isReady and causes await send() to throw
-      // and therefore onFinalizedFailed isn't initialized.
-      // We don't need to do anything other than log it?
+      // When is this status emitted?
       if (status.isInvalid) {
         debug(status.type)
         debug(JSON.stringify(status.asInvalid))
