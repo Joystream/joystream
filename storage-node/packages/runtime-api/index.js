@@ -30,7 +30,6 @@ const { DiscoveryApi } = require('@joystream/storage-runtime-api/discovery')
 const { SystemApi } = require('@joystream/storage-runtime-api/system')
 const AsyncLock = require('async-lock')
 const Promise = require('bluebird')
-const { GenericExtrinsicPayloadV2 } = require('../../../pioneer/packages/apps/build/main.a723bde4')
 
 Promise.config({
   cancellation: true,
