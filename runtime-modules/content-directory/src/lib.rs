@@ -771,7 +771,7 @@ decl_module! {
                 // Calculate entities reference counter side effects for current operation
                 let entities_inbound_rcs_delta =
                     Self::get_updated_inbound_rcs_delta(
-                        class_properties, entity_property_values, new_output_property_value_references_with_same_owner_flag_set
+                        entity_id, class_properties, entity_property_values, new_output_property_value_references_with_same_owner_flag_set
                     )?;
 
                 // Update InboundReferenceCounter, based on previously calculated ReferenceCounterSideEffects, for each Entity involved
@@ -1015,7 +1015,7 @@ decl_module! {
 
             // Calculate entities reference counter side effects for current operation
             let entities_inbound_rcs_delta = Self::calculate_entities_inbound_rcs_delta(
-                new_output_values_for_existing_properties, DeltaMode::Increment
+                entity_id, new_output_values_for_existing_properties, DeltaMode::Increment
             );
 
             // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
@@ -1106,7 +1106,7 @@ decl_module! {
 
                 // Calculate entities reference counter side effects for current operation (should always be safe)
                 let entities_inbound_rcs_delta =
-                    Self::get_updated_inbound_rcs_delta(class_properties, entity_property_values, new_output_property_values)?;
+                    Self::get_updated_inbound_rcs_delta(entity_id, class_properties, entity_property_values, new_output_property_values)?;
 
                 // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
                 Self::update_entities_rcs(&entities_inbound_rcs_delta);
@@ -1576,9 +1576,21 @@ impl<T: Trait> Module<T> {
         inbound_rcs_delta
     }
 
+    /// Filter references, pointing to the same `Entity`
+    fn filter_references_to_the_same_entity(
+        current_entity_id: T::EntityId,
+        involved_entity_ids: Vec<T::EntityId>,
+    ) -> Vec<T::EntityId> {
+        involved_entity_ids
+            .into_iter()
+            .filter(|involved_entity_id| current_entity_id != *involved_entity_id)
+            .collect()
+    }
+
     /// Calculate `ReferenceCounterSideEffects`, based on `values_for_existing_properties` provided and chosen `DeltaMode`
     /// Returns calculated `ReferenceCounterSideEffects`
     fn calculate_entities_inbound_rcs_delta(
+        current_entity_id: T::EntityId,
         values_for_existing_properties: OutputValuesForExistingProperties<T>,
         delta_mode: DeltaMode,
     ) -> Option<ReferenceCounterSideEffects<T>> {
@@ -1586,12 +1598,20 @@ impl<T: Trait> Module<T> {
             .values()
             .map(|value_for_existing_property| value_for_existing_property.unzip())
             .filter_map(|(property, value)| {
-                value.get_involved_entities().map(|involved_entity_ids| {
-                    (
+                let involved_entity_ids =
+                    value.get_involved_entities().map(|involved_entity_ids| {
+                        Self::filter_references_to_the_same_entity(
+                            current_entity_id,
+                            involved_entity_ids,
+                        )
+                    });
+                match involved_entity_ids {
+                    Some(involved_entity_ids) if !involved_entity_ids.is_empty() => Some((
                         involved_entity_ids,
                         property.property_type.same_controller_status(),
-                    )
-                })
+                    )),
+                    _ => None,
+                }
             })
             // Aggeregate all sideffects on a single entity together into one side effect map
             .fold(
@@ -1616,6 +1636,7 @@ impl<T: Trait> Module<T> {
     /// Compute `ReferenceCounterSideEffects`, based on `InputPropertyValue` `Reference`'s involved into update process.
     /// Returns updated `ReferenceCounterSideEffects`
     pub fn get_updated_inbound_rcs_delta(
+        current_entity_id: T::EntityId,
         class_properties: Vec<Property<T>>,
         entity_property_values: BTreeMap<PropertyId, OutputPropertyValue<T>>,
         new_output_property_values: BTreeMap<PropertyId, OutputPropertyValue<T>>,
@@ -1632,6 +1653,7 @@ impl<T: Trait> Module<T> {
         // Calculate entities inbound reference counter delta with Decrement DeltaMode for entity_property_values_to_update,
         // as involved InputPropertyValue References will be substituted with new ones
         let decremental_reference_counter_side_effects = Self::calculate_entities_inbound_rcs_delta(
+            current_entity_id,
             OutputValuesForExistingProperties::from(
                 &class_properties,
                 &entity_property_values_to_update,
@@ -1642,6 +1664,7 @@ impl<T: Trait> Module<T> {
         // Calculate entities inbound reference counter delta with Increment DeltaMode for new_property_values,
         // as involved InputPropertyValue References will substitute the old ones
         let incremental_reference_counter_side_effects = Self::calculate_entities_inbound_rcs_delta(
+            current_entity_id,
             OutputValuesForExistingProperties::from(
                 &class_properties,
                 &new_output_property_values,

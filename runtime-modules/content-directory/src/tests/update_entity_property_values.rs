@@ -70,7 +70,7 @@ fn update_entity_property_values_entity_not_found() {
         );
 
         // Create class reference schema
-        add_class_reference_schema();
+        add_unique_class_reference_schema();
 
         // Runtime state before tested call
 
@@ -108,7 +108,7 @@ fn update_entity_property_values_lead_auth_failed() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -146,7 +146,7 @@ fn update_entity_property_values_member_auth_failed() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -184,7 +184,7 @@ fn update_entity_property_values_curator_group_is_not_active() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(
+        add_unique_class_reference_schema_and_entity_schema_support(
             &Actor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
             FIRST_CURATOR_ORIGIN,
         );
@@ -232,7 +232,7 @@ fn update_entity_property_values_curator_auth_failed() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(
+        add_unique_class_reference_schema_and_entity_schema_support(
             &Actor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
             FIRST_CURATOR_ORIGIN,
         );
@@ -273,7 +273,7 @@ fn update_entity_property_values_curator_not_found_in_curator_group() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(
+        add_unique_class_reference_schema_and_entity_schema_support(
             &Actor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
             FIRST_CURATOR_ORIGIN,
         );
@@ -314,7 +314,7 @@ fn update_entity_property_values_entity_access_denied() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -353,7 +353,7 @@ fn update_entity_property_values_locked_on_class_level() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -475,7 +475,7 @@ fn update_entity_property_values_unknown_entity_property_id() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -518,7 +518,7 @@ fn update_entity_property_values_prop_value_do_not_match_type() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -560,7 +560,7 @@ fn update_entity_property_values_vec_prop_is_too_long() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -758,7 +758,7 @@ fn update_entity_property_values_referenced_entity_not_found() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -806,7 +806,7 @@ fn update_entity_property_values_referenced_entity_does_not_match_its_class() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         // Create class reference schema and add corresponding schema support to the first Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Create second entity
         assert_ok!(create_entity(LEAD_ORIGIN, SECOND_CLASS_ID, actor.clone()));
@@ -854,7 +854,7 @@ fn update_entity_property_values_entity_can_not_be_referenced() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         // Create class reference schema and add corresponding schema support to the first Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Create second Entity of first Class
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
@@ -920,7 +920,7 @@ fn update_entity_property_values_same_controller_constraint_violation() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         // Create class reference schema and add corresponding schema support to the first  Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Create second Entity
         assert_ok!(create_entity(
@@ -960,85 +960,66 @@ fn update_entity_property_values_same_controller_constraint_violation() {
     })
 }
 
-// #[test]
-// fn update_entity_property_values_property_should_be_unique() {
-//     with_test_externalities(|| {
-//         // Create class with default permissions
-//         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+#[test]
+fn update_entity_property_values_property_should_be_unique() {
+    with_test_externalities(|| {
+        // Create class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
-//         let actor = Actor::Lead;
+        let actor = Actor::Lead;
 
-//         // Create first Entity
-//         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
+        // Create first Entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
-//         // Create class reference schema and add corresponding schema support to the Entity
-//         add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+        // Create Class reference schema and add corresponding schema support to the first Entity
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
-//         // Create second property with unique constraint
-//         let property_type = PropertyType::<Runtime>::vec_reference(
-//             FIRST_CLASS_ID,
-//             true,
-//             VecMaxLengthConstraint::get(),
-//         );
+        // Create second Entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
-//         let property = Property::<Runtime>::with_name_and_type(
-//             PropertyNameLengthConstraint::get().max() as usize,
-//             property_type,
-//             true,
-//             true,
-//         );
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
+            FIRST_ENTITY_ID,
+            FIRST_ENTITY_ID,
+            FIRST_ENTITY_ID,
+        ]);
 
-//         // Add second Schema to the Class
-//         assert_ok!(add_class_schema(
-//             LEAD_ORIGIN,
-//             FIRST_CLASS_ID,
-//             BTreeSet::new(),
-//             vec![property]
-//         ));
+        let mut schema_property_values = BTreeMap::new();
+        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
 
-//         let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
-//             FIRST_ENTITY_ID,
-//             FIRST_ENTITY_ID,
-//             FIRST_ENTITY_ID,
-//         ]);
+        // Add schema support to the entity
+        assert_ok!(add_schema_support_to_entity(
+            LEAD_ORIGIN,
+            actor.to_owned(),
+            SECOND_ENTITY_ID,
+            FIRST_SCHEMA_ID,
+            schema_property_values
+        ));
 
-//         let mut schema_property_values = BTreeMap::new();
-//         schema_property_values.insert(SECOND_PROPERTY_ID, schema_property_value);
+        // Runtime state before tested call
 
-//         // Add schema support to the entity
-//         assert_ok!(add_schema_support_to_entity(
-//             LEAD_ORIGIN,
-//             actor.to_owned(),
-//             FIRST_ENTITY_ID,
-//             SECOND_SCHEMA_ID,
-//             schema_property_values
-//         ));
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
 
-//         // Runtime state before tested call
+        let mut schema_new_property_values = BTreeMap::new();
+        let schema_new_property_value =
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
-//         // Events number before tested call
-//         let number_of_events_before_call = System::events().len();
+        schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
 
-//         let mut schema_new_property_values = BTreeMap::new();
-//         let schema_new_property_value =
-//             InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+        // Make an attempt to update entity property values, providing property value(s), which are identical to thouse,
+        // are already added to the another Entity of this Class, though should be unique on Class Property level
+        let update_entity_property_values_result = update_entity_property_values(
+            LEAD_ORIGIN,
+            actor,
+            SECOND_ENTITY_ID,
+            schema_new_property_values,
+        );
 
-//         schema_new_property_values.insert(SECOND_PROPERTY_ID, schema_new_property_value);
-
-//         // Make an attempt to update entity property values, providing property value(s), which are identical to thouse,
-//         // are already added to The Entity, though should be unique on Class Property level
-//         let update_entity_property_values_result = update_entity_property_values(
-//             LEAD_ORIGIN,
-//             actor,
-//             FIRST_ENTITY_ID,
-//             schema_new_property_values,
-//         );
-
-//         // Failure checked
-//         assert_failure(
-//             update_entity_property_values_result,
-//             ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE,
-//             number_of_events_before_call,
-//         );
-//     })
-// }
+        // Failure checked
+        assert_failure(
+            update_entity_property_values_result,
+            ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE,
+            number_of_events_before_call,
+        );
+    })
+}

@@ -74,7 +74,7 @@ fn remove_at_entity_property_vector_entity_not_found() {
         );
 
         // Create class reference schema
-        add_class_reference_schema();
+        add_unique_class_reference_schema();
 
         // Runtime state before tested call
 
@@ -112,7 +112,7 @@ fn remove_at_entity_property_vector_lead_auth_failed() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -150,7 +150,7 @@ fn remove_at_entity_property_vector_member_auth_failed() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -188,7 +188,7 @@ fn remove_at_entity_property_vector_curator_group_is_not_active() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, FIRST_CURATOR_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, FIRST_CURATOR_ORIGIN);
 
         // Make curator group inactive to block it from any entity operations
         assert_ok!(set_curator_group_status(
@@ -233,7 +233,7 @@ fn remove_at_entity_property_vector_curator_auth_failed() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, FIRST_CURATOR_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, FIRST_CURATOR_ORIGIN);
 
         // Runtime state before tested call
 
@@ -271,7 +271,7 @@ fn remove_at_entity_property_vector_curator_not_found_in_curator_group() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(
+        add_unique_class_reference_schema_and_entity_schema_support(
             &Actor::Curator(FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID),
             FIRST_CURATOR_ORIGIN,
         );
@@ -313,7 +313,7 @@ fn remove_at_entity_property_vector_access_denied() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -352,7 +352,7 @@ fn remove_at_entity_property_vector_values_locked_on_class_level() {
         );
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -506,7 +506,7 @@ fn remove_at_entity_property_vector_unknown_entity_property_id() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create class reference schema
-        add_class_reference_schema();
+        add_unique_class_reference_schema();
 
         let actor = Actor::Lead;
 
@@ -619,7 +619,7 @@ fn remove_at_entity_property_vector_nonces_does_not_match() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
+        add_unique_class_reference_schema_and_entity_schema_support(&Actor::Lead, LEAD_ORIGIN);
 
         // Runtime state before tested call
 
@@ -662,7 +662,7 @@ fn remove_at_entity_property_vector_index_is_out_of_range() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         // Create class reference schema
-        add_class_reference_schema();
+        add_unique_class_reference_schema();
 
         let entity_ids = vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID];
         let schema_property_value =
