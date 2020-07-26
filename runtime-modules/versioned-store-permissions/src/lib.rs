@@ -4,6 +4,7 @@
 use codec::Codec;
 use frame_support::{decl_module, decl_storage, ensure, Parameter};
 use rstd::collections::btree_map::BTreeMap;
+use rstd::vec::Vec;
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 

@@ -46,7 +46,7 @@ mod tests {
     use crate::Runtime;
     use common::origin::ActorOriginValidator;
     use proposals_engine::VotersParameters;
-    use sr_primitives::AccountId32;
+    use sp_runtime::AccountId32;
     use system::RawOrigin;
 
     type Council = governance::council::Module<Runtime>;

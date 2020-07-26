@@ -58,6 +58,7 @@ use frame_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, With
 use frame_support::{decl_event, decl_module, decl_storage, ensure, print, StorageValue};
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rstd::vec::Vec;
+use rstd::vec;
 use sp_arithmetic::traits::{Bounded, One, Zero};
 use system::{ensure_root, ensure_signed};
 

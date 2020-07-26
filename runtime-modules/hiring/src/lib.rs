@@ -33,6 +33,7 @@ use rstd::collections::btree_map::BTreeMap;
 use rstd::collections::btree_set::BTreeSet;
 use rstd::iter::Iterator;
 use rstd::rc::Rc;
+use rstd::vec::Vec;
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerialize, Member};
 

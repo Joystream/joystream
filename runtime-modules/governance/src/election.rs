@@ -37,6 +37,8 @@ use frame_support::traits::{Currency, ReservableCurrency};
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::ops::Add;
+use rstd::vec;
+use rstd::vec::Vec;
 use sp_arithmetic::traits::Zero;
 use sp_runtime::traits::Hash;
 use system::{ensure_root, ensure_signed};

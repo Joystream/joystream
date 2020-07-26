@@ -17,6 +17,9 @@ use codec::{Codec, Decode, Encode};
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
 use sp_arithmetic::traits::{BaseArithmetic, One};
 use sp_runtime::traits::{MaybeSerialize, Member};
+use rstd::vec;
+use rstd::vec::Vec;
+use rstd::borrow::ToOwned;
 
 mod mock;
 mod tests;

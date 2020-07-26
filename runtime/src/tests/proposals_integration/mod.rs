@@ -4,7 +4,8 @@
 
 mod working_group_proposals;
 
-use crate::{BlockNumber, ElectionParameters, ProposalCancellationFee, Runtime};
+use crate::{BlockNumber, ProposalCancellationFee, Runtime};
+use governance::election_params::ElectionParameters;
 use codec::Encode;
 use membership;
 use proposals_engine::{
@@ -13,10 +14,11 @@ use proposals_engine::{
     VotingResults,
 };
 
-use sr_primitives::traits::{DispatchResult, OnFinalize, OnInitialize};
-use sr_primitives::AccountId32;
-use srml_support::traits::Currency;
-use srml_support::{StorageLinkedMap, StorageValue};
+use frame_support::dispatch::{DispatchResult};
+use sp_runtime::traits::{OnFinalize, OnInitialize};
+use sp_runtime::AccountId32;
+use frame_support::traits::Currency;
+use frame_support::{IterableStorageMap, StorageValue};
 use system::RawOrigin;
 
 use super::initial_test_ext;

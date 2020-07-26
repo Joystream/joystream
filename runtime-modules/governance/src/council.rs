@@ -1,6 +1,8 @@
 use frame_support::{debug, decl_event, decl_module, decl_storage, ensure};
 use sp_arithmetic::traits::{One, Zero};
 use system::ensure_root;
+use rstd::vec;
+use rstd::vec::Vec;
 
 pub use super::election::{self, CouncilElected, Seat, Seats};
 pub use common::currency::{BalanceOf, GovernanceCurrency};

@@ -1,6 +1,5 @@
 use super::*;
 
-use srml_support::StorageLinkedMap;
 use system::RawOrigin;
 
 use common::working_group::WorkingGroup;

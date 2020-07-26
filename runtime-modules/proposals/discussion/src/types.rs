@@ -3,6 +3,7 @@
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use rstd::vec::Vec;
 
 /// Represents a discussion thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]

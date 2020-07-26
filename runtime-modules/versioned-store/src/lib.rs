@@ -17,6 +17,8 @@ use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
 use rstd::collections::btree_set::BTreeSet;
+use rstd::vec;
+use rstd::vec::Vec;
 
 mod example;
 mod mock;

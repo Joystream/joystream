@@ -27,6 +27,7 @@ use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
+use rstd::vec::Vec;
 use system::ensure_root;
 /*
   Although there is support for ed25519 keys as the IPNS identity key and we could potentially
