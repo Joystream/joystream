@@ -171,6 +171,7 @@ class RuntimeApi {
 
       if (result.isError) {
         unsubscribe()
+        debug('Tx Error', status.type)
         onFinalizedFailed &&
           onFinalizedFailed({ err: status.type, result, tx: status.isUsurped ? status.asUsurped : undefined })
       } else if (result.isFinalized) {
