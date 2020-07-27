@@ -36,7 +36,6 @@ Promise.config({
   cancellation: true,
 })
 
-// const ASYNC_LOCK_TIMEOUT = 30 * 1000
 const TX_TIMEOUT = 20 * 1000
 
 /*
@@ -62,7 +61,6 @@ class RuntimeApi {
     // Create the API instrance
     this.api = await ApiPromise.create({ provider })
 
-    // this.asyncLock = new AsyncLock({ timeout: ASYNC_LOCK_TIMEOUT, maxPending: 100 })
     this.asyncLock = new AsyncLock()
 
     // Keep track locally of account nonces.
