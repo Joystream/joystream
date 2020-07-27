@@ -30,6 +30,7 @@ const { DiscoveryApi } = require('@joystream/storage-runtime-api/discovery')
 const { SystemApi } = require('@joystream/storage-runtime-api/system')
 const AsyncLock = require('async-lock')
 const Promise = require('bluebird')
+const { startsWith } = require('lodash')
 
 Promise.config({
   cancellation: true,
@@ -161,38 +162,19 @@ class RuntimeApi {
 
     const handleTxUpdates = (result) => {
       const { events = [], status } = result
+
       if (!result || !status) {
         return
       }
 
       lastTxUpdateResult = result
 
-      // Deal with statuses which will prevent
-      // extrinsic from finalizing.
-
-      // Some state change (perhaps another extrinsic was included) rendered this extrinsic invalid.
-      if (status.isUsurped) {
-        debug(status.type)
-        debug(JSON.stringify(status.asUsurped))
-        onFinalizedFailed && onFinalizedFailed({ err: 'Usurped', result, tx: status.asUsurped })
-      }
-
-      // Transaction was dropped from the pool because of the limit.
-      if (status.isDropped) {
-        debug(status.type)
-        debug(JSON.stringify(status.asDropped))
-        onFinalizedFailed && onFinalizedFailed({ err: 'Dropped', result })
-      }
-
-      // When is this status emitted?
-      // Extrinsic was detected as invalid.
-      if (status.isInvalid) {
-        debug(status.type)
-        debug(JSON.stringify(status.asInvalid))
-        onFinalizedFailed && onFinalizedFailed({ err: 'Invalid', result })
-      }
-
-      if (status.isFinalized) {
+      if (result.isError) {
+        unsubscribe()
+        onFinalizedFailed &&
+          onFinalizedFailed({ err: status.type, result, tx: status.isUsurped ? status.asUsurped : undefined })
+      } else if (result.isFinalized) {
+        unsubscribe()
         const mappedEvents = RuntimeApi.matchingEvents(subscribed, events)
         const failed = result.findRecord('system', 'ExtrinsicFailed')
         const success = result.findRecord('system', 'ExtrinsicSuccess')
@@ -212,8 +194,8 @@ class RuntimeApi {
             dispatchError, // we get module number/id and index into the Error enum
           })
         } else if (success) {
-          // Note: For root origin calls, the dispatch error is logged to console
-          // we cannot get it in the events
+          // Note: For root origin calls, the dispatch error is logged to the joystream-node
+          // console, we cannot get it in the events
           if (sudid) {
             const dispatchSuccess = sudid.event.data[0]
             if (dispatchSuccess.isTrue) {
@@ -232,10 +214,6 @@ class RuntimeApi {
             onFinalizedSuccess({ mappedEvents, result, tx: status.asFinalized })
           }
         }
-      }
-
-      if (result.isCompleted) {
-        unsubscribe()
       }
     }
 
