@@ -169,23 +169,27 @@ class RuntimeApi {
 
       // Deal with statuses which will prevent
       // extrinsic from finalizing.
+
+      // Some state change (perhaps another extrinsic was included) rendered this extrinsic invalid.
       if (status.isUsurped) {
         debug(status.type)
         debug(JSON.stringify(status.asUsurped))
-        onFinalizedFailed && onFinalizedFailed({ err: 'Usurped', result, tx: status.asFinalized })
+        onFinalizedFailed && onFinalizedFailed({ err: 'Usurped', result, tx: status.asUsurped })
       }
 
+      // Transaction was dropped from the pool because of the limit.
       if (status.isDropped) {
         debug(status.type)
         debug(JSON.stringify(status.asDropped))
-        onFinalizedFailed && onFinalizedFailed({ err: 'Dropped', result, tx: status.asFinalized })
+        onFinalizedFailed && onFinalizedFailed({ err: 'Dropped', result })
       }
 
       // When is this status emitted?
+      // Extrinsic was detected as invalid.
       if (status.isInvalid) {
         debug(status.type)
         debug(JSON.stringify(status.asInvalid))
-        onFinalizedFailed && onFinalizedFailed({ err: 'Invalid', result, tx: status.asFinalized })
+        onFinalizedFailed && onFinalizedFailed({ err: 'Invalid', result })
       }
 
       if (status.isFinalized) {
@@ -204,7 +208,7 @@ class RuntimeApi {
             err: 'ExtrinsicFailed',
             mappedEvents,
             result,
-            tx: status.asFinalized,
+            block: status.asFinalized,
             dispatchError, // we get module number/id and index into the Error enum
           })
         } else if (success) {
@@ -284,6 +288,8 @@ class RuntimeApi {
     // Return a promise that will resolve when the transaction finalizes.
     // On timeout it will be rejected. Timeout is a workaround for dealing with the
     // fact that if rpc connection is lost to node we have no way of detecting it or recovering.
+    // Timeout can also occur if a transaction that was part of batch of transactions submitted
+    // gets usurped.
     return new Promise((resolve, reject) => {
       onFinalizedSuccess = resolve
       onFinalizedFailed = reject
