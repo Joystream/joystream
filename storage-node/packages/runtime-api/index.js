@@ -127,6 +127,31 @@ class RuntimeApi {
     })
   }
 
+  // Get cached nonce and use unless system nonce is greater, to avoid stale nonce if
+  // there was a long gap in time between calls to signAndSend during which an external app
+  // submitted a transaction.
+  async selectBestNonce(accountId) {
+    const cachedNonce = this.nonces[accountId]
+    // In future use this rpc method to take the pending tx pool into account when fetching the nonce
+    // const nonce = await this.api.rpc.system.accountNextIndex(accountId)
+    const systemNonce = await this.api.query.system.accountNonce(accountId)
+
+    if (cachedNonce) {
+      // we have it cached.. but lets do a look ahead to see if we need to adjust
+      if (systemNonce.gt(cachedNonce)) {
+        return systemNonce
+      } else {
+        return cachedNonce
+      }
+    } else {
+      return systemNonce
+    }
+  }
+
+  incrementAndSaveNonce(accountId, nonce) {
+    this.nonces[accountId] = nonce.addn(1)
+  }
+
   /*
    * signAndSend() with nonce tracking, to enable concurrent sending of transacctions
    * so that they can be included in the same block. Allows you to use the accountId instead
@@ -221,15 +246,13 @@ class RuntimeApi {
 
     // synchronize access to nonce
     await this.executeWithAccountLock(accountId, async () => {
-      const nonce = this.nonces[accountId] || (await this.api.query.system.accountNonce(accountId))
-      // In future use this rpc method to take the pending tx pool into account when fetching the nonce
-      // const nonce = await this.api.rpc.system.accountNextIndex(accountId)
+      const nonce = await this.selectBestNonce(accountId)
 
       try {
         unsubscribe = await tx.sign(fromKey, { nonce }).send(handleTxUpdates)
         debug('TransactionSubmitted')
         // transaction submitted successfully, increment and save nonce.
-        this.nonces[accountId] = nonce.addn(1)
+        this.incrementAndSaveNonce(accountId, nonce)
       } catch (err) {
         const errstr = err.toString()
         debug('TransactionRejected:', errstr)
