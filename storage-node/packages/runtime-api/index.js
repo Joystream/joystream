@@ -113,13 +113,16 @@ class RuntimeApi {
       const { event } = record
       const types = event.typeDef
       const payload = new Map()
-      event.data.forEach((data, index) => {
-        const type = types[index].type
-        payload.set(index, { type, data })
-      })
 
+      // this check may be un-necessary but doing it just incase
+      if (event.data) {
+        event.data.forEach((data, index) => {
+          const type = types[index].type
+          payload.set(index, { type, data })
+        })
+      }
       const fullName = `${event.section}.${event.method}`
-      debug(`matched event: ${fullName} =>`, ...event.data.map((data) => `${data},`))
+      debug(`matched event: ${fullName} =>`, event.data && event.data.join(', '))
       return [fullName, payload]
     })
   }
