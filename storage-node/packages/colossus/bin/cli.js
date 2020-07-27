@@ -142,6 +142,21 @@ function getStorage(runtimeApi) {
   return Storage.create(options)
 }
 
+async function untilChainIsSynched(api) {
+  while (true) {
+    const health = await api.api.rpc.system.health()
+
+    if (health.isSyncing.isTrue) {
+      debug('Waiting for chain to be synced...')
+      await new Promise((resolve) => {
+        setTimeout(resolve, 1 * 30 * 1000)
+      })
+    } else {
+      return
+    }
+  }
+}
+
 async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }) {
   // Load key information
   const { RuntimeApi } = require('@joystream/storage-runtime-api')
@@ -164,6 +179,8 @@ async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }
   if (!api.identities.key) {
     throw new Error('Failed to unlock storage provider account')
   }
+
+  await untilChainIsSynched(api)
 
   if (!(await api.workers.isRoleAccountOfStorageProvider(api.storageProviderId, api.identities.key.address))) {
     throw new Error('storage provider role account and storageProviderId are not associated with a worker')
