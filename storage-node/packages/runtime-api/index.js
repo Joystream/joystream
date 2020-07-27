@@ -30,7 +30,6 @@ const { DiscoveryApi } = require('@joystream/storage-runtime-api/discovery')
 const { SystemApi } = require('@joystream/storage-runtime-api/system')
 const AsyncLock = require('async-lock')
 const Promise = require('bluebird')
-const { startsWith } = require('lodash')
 
 Promise.config({
   cancellation: true,
@@ -226,19 +225,19 @@ class RuntimeApi {
           if (sudid) {
             const dispatchSuccess = sudid.event.data[0]
             if (dispatchSuccess.isTrue) {
-              onFinalizedSuccess({ mappedEvents, result, tx: status.asFinalized })
+              onFinalizedSuccess({ mappedEvents, result, block: status.asFinalized })
             } else {
-              onFinalizedFailed({ err: 'SudoFailed', mappedEvents, result, tx: status.asFinalized })
+              onFinalizedFailed({ err: 'SudoFailed', mappedEvents, result, block: status.asFinalized })
             }
           } else if (sudoAsDone) {
             const dispatchSuccess = sudoAsDone.event.data[0]
             if (dispatchSuccess.isTrue) {
-              onFinalizedSuccess({ mappedEvents, result, tx: status.asFinalized })
+              onFinalizedSuccess({ mappedEvents, result, block: status.asFinalized })
             } else {
-              onFinalizedFailed({ err: 'SudoAsFailed', mappedEvents, result, tx: status.asFinalized })
+              onFinalizedFailed({ err: 'SudoAsFailed', mappedEvents, result, block: status.asFinalized })
             }
           } else {
-            onFinalizedSuccess({ mappedEvents, result, tx: status.asFinalized })
+            onFinalizedSuccess({ mappedEvents, result, block: status.asFinalized })
           }
         }
       }
