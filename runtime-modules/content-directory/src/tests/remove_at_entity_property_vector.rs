@@ -708,3 +708,69 @@ fn remove_at_entity_property_vector_index_is_out_of_range() {
         );
     })
 }
+
+#[test]
+fn remove_at_entity_property_vector_property_should_be_unique() {
+    with_test_externalities(|| {
+        // Create class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+        let actor = Actor::Lead;
+
+        // Create first Entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
+
+        // Create unique class reference schema and add corresponding schema support to the first Entity
+        add_unique_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+
+        // Create second Entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
+
+        // Create vec reference
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
+            FIRST_ENTITY_ID,
+            FIRST_ENTITY_ID,
+            FIRST_ENTITY_ID,
+        ]);
+
+        let mut schema_property_values = BTreeMap::new();
+        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
+
+        // Add schema support to the second Entity
+        assert_ok!(add_schema_support_to_entity(
+            LEAD_ORIGIN,
+            actor.to_owned(),
+            SECOND_ENTITY_ID,
+            FIRST_SCHEMA_ID,
+            schema_property_values
+        ));
+
+        // Runtime state before tested call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        let nonce = 0;
+        let index_in_property_vector = 0;
+
+        // Make an attempt to remove value at given `index_in_property_vector`
+        // from `PropertyValueVec` under `in_class_schema_property_id` in case,
+        // when in result we`ll get required & unique property value vector,
+        // which is already added to another Entity of this Class.
+        let remove_at_entity_property_vector_result = remove_at_entity_property_vector(
+            LEAD_ORIGIN,
+            actor,
+            SECOND_ENTITY_ID,
+            FIRST_PROPERTY_ID,
+            index_in_property_vector,
+            nonce,
+        );
+
+        // Failure checked
+        assert_failure(
+            remove_at_entity_property_vector_result,
+            ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE,
+            number_of_events_before_call,
+        );
+    })
+}

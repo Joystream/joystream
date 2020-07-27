@@ -154,7 +154,7 @@ decl_storage! {
         pub CuratorGroupById get(curator_group_by_id) config(): map T::CuratorGroupId => CuratorGroup<T>;
 
         /// Used to enforce uniqueness of a property value across all Entities that have this property in a given Class.
-        pub UniquePropertyValues get(unique_property_values) config(): double_map hasher(blake2_128) (T::ClassId, PropertyId), blake2_128(OutputPropertyValue<T>) => ();
+        pub UniquePropertyValues get(unique_property_values) config(): double_map hasher(blake2_128) (T::ClassId, PropertyId), blake2_128(SimplifiedOutputPropertyValue<T>) => ();
 
         /// Next runtime storage values used to maintain next id value, used on creation of respective curator groups, classes and entities
 
@@ -1154,7 +1154,7 @@ decl_module! {
             let empty_property_value_vector = Self::clear_property_vector(property_value_vector);
 
             // Ensure provided `Property` with `unique` flag set is `unique` on `Class` level
-            Self::ensure_property_unique_option_satisfied(class_id, in_class_schema_property_id, &empty_property_value_vector)?;
+            Self::ensure_property_unique_option_satisfied(class_id, in_class_schema_property_id, &empty_property_value_vector.simplify())?;
 
             //
             // == MUTATION SAFE ==
@@ -1218,7 +1218,7 @@ decl_module! {
                 .ensure_index_in_property_vector_is_valid(index_in_property_vector)?;
 
             let involved_entity_id = property_value_vector
-                .get_vec_value()
+                .get_vec_value_ref()
                 .get_involved_entities()
                 .and_then(|involved_entities| involved_entities.get(index_in_property_vector as usize).copied());
 
@@ -1231,7 +1231,7 @@ decl_module! {
             let class_id = entity.get_class_id();
 
             // Ensure provided `Property` with `unique` flag set is `unique` on `Class` level
-            Self::ensure_property_unique_option_satisfied(class_id, in_class_schema_property_id, &property_value_vector_updated)?;
+            Self::ensure_property_unique_option_satisfied(class_id, in_class_schema_property_id, &property_value_vector_updated.simplify())?;
 
             //
             // == MUTATION SAFE ==
@@ -1323,7 +1323,7 @@ decl_module! {
             let class_id = entity.get_class_id();
 
             // Ensure provided `Property` with `unique` flag set is `unique` on `Class` level
-            Self::ensure_property_unique_option_satisfied(class_id, in_class_schema_property_id, &property_value_vector_updated)?;
+            Self::ensure_property_unique_option_satisfied(class_id, in_class_schema_property_id, &property_value_vector_updated.simplify())?;
 
             //
             // == MUTATION SAFE ==
@@ -1439,7 +1439,7 @@ impl<T: Trait> Module<T> {
     pub fn add_unique_property_value(
         class_id: T::ClassId,
         property_id: PropertyId,
-        property_value: OutputPropertyValue<T>,
+        property_value: SimplifiedOutputPropertyValue<T>,
     ) {
         <UniquePropertyValues<T>>::insert((class_id, property_id), property_value, ());
     }
@@ -1448,7 +1448,7 @@ impl<T: Trait> Module<T> {
     pub fn remove_unique_property_value(
         class_id: T::ClassId,
         property_id: PropertyId,
-        property_value: OutputPropertyValue<T>,
+        property_value: SimplifiedOutputPropertyValue<T>,
     ) {
         <UniquePropertyValues<T>>::remove((class_id, property_id), property_value);
     }
@@ -1456,7 +1456,10 @@ impl<T: Trait> Module<T> {
     /// Add property values, that should be unique on `Class` level
     pub fn add_unique_property_values(
         class_id: T::ClassId,
-        new_output_values_for_existing_properties: BTreeMap<PropertyId, OutputPropertyValue<T>>,
+        new_output_values_for_existing_properties: BTreeMap<
+            PropertyId,
+            SimplifiedOutputPropertyValue<T>,
+        >,
     ) {
         new_output_values_for_existing_properties
             .into_iter()
@@ -1468,7 +1471,10 @@ impl<T: Trait> Module<T> {
     /// Remove property values, that should be unique on `Class` level
     pub fn remove_unique_property_values(
         class_id: T::ClassId,
-        new_output_values_for_existing_properties: BTreeMap<PropertyId, OutputPropertyValue<T>>,
+        new_output_values_for_existing_properties: BTreeMap<
+            PropertyId,
+            SimplifiedOutputPropertyValue<T>,
+        >,
     ) {
         new_output_values_for_existing_properties
             .into_iter()
@@ -1528,7 +1534,7 @@ impl<T: Trait> Module<T> {
         property: Property<T>,
     ) -> Option<ReferenceCounterSideEffects<T>> {
         let entity_ids_to_decrease_rc = property_value_vector
-            .get_vec_value()
+            .get_vec_value_ref()
             .get_involved_entities();
 
         if let Some(entity_ids_to_decrease_rcs) = entity_ids_to_decrease_rc {
@@ -1778,7 +1784,7 @@ impl<T: Trait> Module<T> {
     pub fn ensure_property_unique_option_satisfied(
         class_id: T::ClassId,
         property_id: PropertyId,
-        property_value: &OutputPropertyValue<T>,
+        property_value: &SimplifiedOutputPropertyValue<T>,
     ) -> Result<(), &'static str> {
         ensure!(
             !<UniquePropertyValues<T>>::exists((class_id, property_id), property_value),
@@ -1790,7 +1796,7 @@ impl<T: Trait> Module<T> {
     /// Ensure all provided `Properties` with `unique` flag set are `unique` on `Class` level
     pub fn ensure_properties_unique_option_satisfied(
         class_id: T::ClassId,
-        unique_new_property_values: &BTreeMap<PropertyId, OutputPropertyValue<T>>,
+        unique_new_property_values: &BTreeMap<PropertyId, SimplifiedOutputPropertyValue<T>>,
     ) -> Result<(), &'static str> {
         for (&property_id, property_value) in unique_new_property_values {
             Self::ensure_property_unique_option_satisfied(class_id, property_id, property_value)?;
@@ -2057,7 +2063,7 @@ impl<T: Trait> Module<T> {
         let mut entity_property_values_updated = entity_property_values.to_owned();
 
         new_output_property_values
-            .into_iter()
+            .iter()
             .for_each(|(id, new_property_value)| {
                 if let Some(entity_property_value) = entity_property_values_updated.get_mut(&id) {
                     entity_property_value.update(new_property_value.to_owned());

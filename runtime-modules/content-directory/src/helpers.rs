@@ -147,7 +147,7 @@ impl<'a, T: Trait> OutputValuesForExistingProperties<'a, T> {
 
     /// Used to retrieve `OutputPropertyValue`s, which respective `Properties` have `unique` flag set
     /// (skip `PropertyId`s, which respective `property values` under this `Entity` are default and non `required`)
-    pub fn compute_unique(&self) -> BTreeMap<PropertyId, OutputPropertyValue<T>> {
+    pub fn compute_unique(&self) -> BTreeMap<PropertyId, SimplifiedOutputPropertyValue<T>> {
         self.iter()
             .filter(|(property_id, _)| {
                 match self
@@ -162,7 +162,7 @@ impl<'a, T: Trait> OutputValuesForExistingProperties<'a, T> {
                 }
             })
             .map(|(property_id, property_value)| {
-                (*property_id, property_value.get_value().to_owned())
+                (*property_id, property_value.get_value().to_owned().into())
             })
             .collect()
     }

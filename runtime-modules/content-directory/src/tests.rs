@@ -301,6 +301,7 @@ pub fn emulate_entity_access_state_for_failure_case(
     }
 }
 
+///  Create class reference schema
 pub fn add_unique_class_reference_schema() {
     // Create property
     let property_type =
@@ -322,6 +323,7 @@ pub fn add_unique_class_reference_schema() {
     ));
 }
 
+///  Create class reference schema and add corresponding schema support to the Entity
 pub fn add_unique_class_reference_schema_and_entity_schema_support(
     actor: &Actor<Runtime>,
     origin: u64,

@@ -1,5 +1,14 @@
 use super::*;
 
+/// Enum, representing either `OutputValue` or `VecOutputValue`
+/// Simplified version, without nonces
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+pub enum SimplifiedOutputPropertyValue<T: Trait> {
+    Single(OutputValue<T>),
+    Vector(VecOutputValue<T>),
+}
+
 /// Enum, representing either `OutputValue` or `VecOutputPropertyValue`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
@@ -55,9 +64,13 @@ impl<T: Trait> OutputPropertyValue<T> {
                 }
             }
             OutputPropertyValue::Vector(vector_property_value) => vector_property_value
-                .get_vec_value()
+                .get_vec_value_ref()
                 .get_involved_entities(),
         }
+    }
+
+    pub fn simplify(&self) -> SimplifiedOutputPropertyValue<T> {
+        self.clone().into()
     }
 }
 
@@ -102,7 +115,7 @@ impl<T: Trait> OutputValue<T> {
 
 /// Consists of `VecOutputPropertyValue` enum representation and `nonce`, used to avoid vector data race update conditions
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Default, Clone, Debug, PartialEq, Eq)]
 pub struct VecOutputPropertyValue<T: Trait> {
     vec_value: VecOutputValue<T>,
     nonce: T::Nonce,
@@ -119,8 +132,13 @@ impl<T: Trait> VecOutputPropertyValue<T> {
         Self { vec_value, nonce }
     }
 
+    /// Retrieve `VecOutputValue`
+    pub fn get_vec_value(self) -> VecOutputValue<T> {
+        self.vec_value
+    }
+
     /// Retrieve `VecOutputValue` by reference
-    pub fn get_vec_value(&self) -> &VecOutputValue<T> {
+    pub fn get_vec_value_ref(&self) -> &VecOutputValue<T> {
         &self.vec_value
     }
 

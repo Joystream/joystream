@@ -384,7 +384,7 @@ impl<T: Trait> Property<T> {
 
         match (
             single_value,
-            vec_value.get_vec_value(),
+            vec_value.get_vec_value_ref(),
             property_type_vec.get_vec_type(),
         ) {
             // Single values
