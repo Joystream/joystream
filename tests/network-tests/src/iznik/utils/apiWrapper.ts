@@ -8,7 +8,7 @@ import { Lead, LeadId } from '@nicaea/types/content-working-group'
 import { Application, WorkerId, Worker, ApplicationIdToWorkerIdMap, Opening } from '@nicaea/types/working-group'
 import { RoleParameters } from '@nicaea/types/roles'
 import { Seat } from '@nicaea/types/council'
-import { Balance, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces'
+import { Balance, Event, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender } from './sender'
@@ -853,78 +853,13 @@ export class ApiWrapper {
     })
   }
 
-  public expectOpeningAdded(): Promise<BN> {
+  public expectEvent(eventName: string): Promise<Event> {
     return new Promise(async (resolve) => {
       const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
         events.forEach((record) => {
-          if (record.event.method && record.event.method.toString() === 'OpeningAdded') {
+          if (record.event.method && record.event.method.toString() === eventName) {
             unsubscribe()
-            resolve((record.event.data as unknown) as BN)
-          }
-        })
-      })
-    })
-  }
-
-  public expectLeaderSet(): Promise<BN> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (record.event.method && record.event.method.toString() === 'LeaderSet') {
-            unsubscribe()
-            resolve((record.event.data as unknown) as BN)
-          }
-        })
-      })
-    })
-  }
-
-  public expectLeaderTerminated(): Promise<void> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (record.event.method && record.event.method.toString() === 'TerminatedLeader') {
-            unsubscribe()
-            resolve()
-          }
-        })
-      })
-    })
-  }
-
-  public expectWorkerRewardAmountUpdated(): Promise<void> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (record.event.method && record.event.method.toString() === 'WorkerRewardAmountUpdated') {
-            unsubscribe()
-            resolve()
-          }
-        })
-      })
-    })
-  }
-
-  public expectWorkerStakeDecreased(): Promise<void> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (record.event.method && record.event.method.toString() === 'StakeDecreased') {
-            unsubscribe()
-            resolve()
-          }
-        })
-      })
-    })
-  }
-
-  public expectWorkerStakeSlashed(): Promise<void> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (record.event.method && record.event.method.toString() === 'StakeSlashed') {
-            unsubscribe()
-            resolve()
+            resolve(record.event)
           }
         })
       })
@@ -938,19 +873,6 @@ export class ApiWrapper {
           if (record.event.method && record.event.method.toString() === 'BeganApplicationReview') {
             unsubscribe()
             resolve((record.event.data as unknown) as BN)
-          }
-        })
-      })
-    })
-  }
-
-  public expectMintCapacityChanged(): Promise<BN> {
-    return new Promise(async (resolve) => {
-      const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
-        events.forEach((record) => {
-          if (record.event.method && record.event.method.toString() === 'MintCapacityChanged') {
-            unsubscribe()
-            resolve((record.event.data[1] as unknown) as BN)
           }
         })
       })
