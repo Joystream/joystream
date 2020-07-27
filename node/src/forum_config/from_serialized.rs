@@ -40,6 +40,7 @@ pub fn create() -> ForumConfig {
         category_by_id: forum_data.categories,
         thread_by_id: forum_data.threads,
         post_by_id: forum_data.posts,
+        category_counter: 0,
         next_category_id,
         next_thread_id,
         next_post_id,

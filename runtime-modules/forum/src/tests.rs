@@ -1782,6 +1782,8 @@ fn storage_limit_checks() {
     let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
+
+    // test MaxSubcategories and MaxThreadsInCategory
     build_test_externalities(config).execute_with(|| {
         let category_id = create_category_mock(
             origin.clone(),
@@ -1824,6 +1826,7 @@ fn storage_limit_checks() {
         }
     });
 
+    // test MaxPostsInThread
     let config = default_genesis_config();
     build_test_externalities(config).execute_with(|| {
         let category_id = create_category_mock(
@@ -1853,6 +1856,54 @@ fn storage_limit_checks() {
                 category_id,
                 thread_id,
                 good_post_text(),
+                match i {
+                    _ if i == max => Err(Error::MapSizeLimit),
+                    _ => Ok(()),
+                },
+            );
+        }
+    });
+
+    // test MaxModeratorsForCategory
+    let config = default_genesis_config();
+    build_test_externalities(config).execute_with(|| {
+        let category_id = create_category_mock(
+            origin.clone(),
+            None,
+            good_category_title(),
+            good_category_description(),
+            Ok(()),
+        );
+
+        let max: usize =
+            <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxModeratorsForCategory>::get()
+                as usize;
+        for i in 0..max {
+            let moderator_id = EXTRA_MODERATORS[i];
+            update_category_membership_of_moderator_mock(
+                origin.clone(),
+                moderator_id,
+                category_id,
+                true,
+                match i {
+                    _ if i == max => Err(Error::MapSizeLimit),
+                    _ => Ok(()),
+                },
+            );
+        }
+    });
+
+    // test MaxCategories
+    let config = default_genesis_config();
+    build_test_externalities(config).execute_with(|| {
+        let max: usize =
+            <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get() as usize;
+        for i in 0..max {
+            create_category_mock(
+                origin.clone(),
+                None,
+                good_category_title(),
+                good_category_description(),
                 match i {
                     _ if i == max => Err(Error::MapSizeLimit),
                     _ => Ok(()),

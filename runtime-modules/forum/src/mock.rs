@@ -69,8 +69,8 @@ parameter_types! {
     pub const MaxSubcategories: u64 = 20;
     pub const MaxThreadsInCategory: u64 = 20;
     pub const MaxPostsInThread: u64 = 20;
-    pub const MaxModeratorsForCategory: u64 = 20;
-    pub const MaxCategories: u64 = 20;
+    pub const MaxModeratorsForCategory: u64 = 3;
+    pub const MaxCategories: u64 = 40;
 }
 
 pub struct MapLimits;
@@ -161,6 +161,9 @@ pub const FORUM_MODERATOR_ORIGIN: OriginType = OriginType::Signed(FORUM_MODERATO
 pub const FORUM_MODERATOR_2_ORIGIN_ID: <Runtime as system::Trait>::AccountId = 124;
 
 pub const FORUM_MODERATOR_2_ORIGIN: OriginType = OriginType::Signed(FORUM_MODERATOR_2_ORIGIN_ID);
+
+const EXTRA_MODERATOR_COUNT: usize = 5;
+pub const EXTRA_MODERATORS: [u64; EXTRA_MODERATOR_COUNT] = [125, 126, 127, 128, 129];
 
 pub fn good_category_title() -> Vec<u8> {
     b"Great new category".to_vec()
@@ -713,6 +716,7 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
     GenesisConfig::<Runtime> {
         category_by_id: vec![], // endowed_accounts.iter().cloned().map(|k|(k, 1 << 60)).collect(),
         next_category_id: 1,
+        category_counter: 0,
         thread_by_id: vec![],
         next_thread_id: 1,
         post_by_id: vec![],
