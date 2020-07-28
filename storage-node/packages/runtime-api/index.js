@@ -136,20 +136,15 @@ class RuntimeApi {
     // const nonce = await this.api.rpc.system.accountNextIndex(accountId)
     const systemNonce = await this.api.query.system.accountNonce(accountId)
 
-    if (cachedNonce) {
-      // we have it cached.. but lets do a look ahead to see if we need to adjust
-      if (systemNonce.gt(cachedNonce)) {
-        return systemNonce
-      } else {
-        return cachedNonce
-      }
-    } else {
-      return systemNonce
-    }
+    const bestNonce = cachedNonce && cachedNonce.gte(systemNonce) ? cachedNonce : systemNonce
+
+    this.nonces[accountId] = bestNonce
+
+    return bestNonce.toNumber()
   }
 
-  incrementAndSaveNonce(accountId, nonce) {
-    this.nonces[accountId] = nonce.addn(1)
+  incrementAndSaveNonce(accountId) {
+    this.nonces[accountId] = this.nonces[accountId].addn(1)
   }
 
   /*
@@ -157,8 +152,11 @@ class RuntimeApi {
    * so that they can be included in the same block. Allows you to use the accountId instead
    * of the key, without requiring an external Signer configured on the underlying ApiPromie
    *
-   * If the subscribed events are given, and a callback as well, then the
-   * callback is invoked with matching events.
+   * If the subscribed events are given, then the matchedEvents will be returned in the resolved
+   * value.
+   * Resolves when a transaction finalizes with a successful dispatch (for both signed and root origins)
+   * Rejects in all other cases.
+   * Will also reject on timeout if the transaction doesn't finalize in time.
    */
   async signAndSend(accountId, tx, subscribed) {
     // Accept both a string or AccountId as argument
@@ -172,36 +170,148 @@ class RuntimeApi {
       throw new Error('Must unlock key before using it to sign!')
     }
 
-    // Functions to be called when the submitted transaction is finalized. They are initialized
-    // after the transaction is submitted to the resolve and reject function of the final promise
-    // returned by signAndSend
-    // on extrinsic success
-    let onFinalizedSuccess
-    // on extrinsic failure
-    let onFinalizedFailed
+    const callbacks = {
+      // Functions to be called when the submitted transaction is finalized. They are initialized
+      // after the transaction is submitted to the resolve and reject function of the final promise
+      // returned by signAndSend
+      // on extrinsic success
+      onFinalizedSuccess: null,
+      // on extrinsic failure
+      onFinalizedFailed: null,
+      // Function assigned when transaction is successfully submitted. Invoking it ubsubscribes from
+      // listening to tx status updates.
+      unsubscribe: null,
+    }
 
-    // Function assigned when transaction is successfully submitted. Invoking it ubsubscribes from
-    // listening to tx status updates.
-    let unsubscribe
+    // object used to communicate back information from the tx updates handler
+    const out = {
+      lastTxUpdateResult: undefined,
+    }
 
-    let lastTxUpdateResult
+    // synchronize access to nonce
+    await this.executeWithAccountLock(accountId, async () => {
+      const nonce = await this.selectBestNonce(accountId)
+      const signed = tx.sign(fromKey, { nonce })
+      const txhash = signed.hash
 
-    const handleTxUpdates = (result) => {
+      try {
+        callbacks.unsubscribe = await signed.send(
+          RuntimeApi.createTxUpdateHandler(callbacks, { nonce, txhash, subscribed }, out)
+        )
+
+        const serialized = JSON.stringify({
+          nonce,
+          txhash,
+          tx: signed.toHex(),
+        })
+
+        if (out.lastResult.status.isFuture) {
+          debugTx(`Warning: Submitted Tx with future nonce: ${serialized}`)
+        } else {
+          debugTx(`Submitted: ${serialized}`)
+        }
+
+        // transaction submitted successfully, increment and save nonce.
+        this.incrementAndSaveNonce(accountId)
+      } catch (err) {
+        const errstr = err.toString()
+        debugTx(`Rejected: ${errstr} txhash: ${txhash} nonce: ${nonce}`)
+        throw err
+      }
+    })
+
+    // We cannot get tx updates for a future tx so return now to avoid blocking caller
+    if (out.lastResult.status.isFuture) {
+      return {}
+    }
+
+    // Return a promise that will resolve when the transaction finalizes.
+    // On timeout it will be rejected. Timeout is a workaround for dealing with the
+    // fact that if rpc connection is lost to node we have no way of detecting it or recovering.
+    // Timeout can also occur if a transaction that was part of batch of transactions submitted
+    // gets usurped.
+    return new Promise((resolve, reject) => {
+      callbacks.onFinalizedSuccess = resolve
+      callbacks.onFinalizedFailed = reject
+    }).timeout(TX_TIMEOUT)
+  }
+
+  /*
+   * Sign and send a transaction expect event from
+   * module and return specific(index) value from event data
+   */
+  async signAndSendThenGetEventResult(senderAccountId, tx, { module, event, index, type }) {
+    if (!module || !event || index === undefined || !type) {
+      throw new Error('MissingSubscribeEventDetails')
+    }
+
+    const subscribed = [[module, event]]
+
+    const { mappedEvents } = await this.signAndSend(senderAccountId, tx, subscribed)
+
+    if (!mappedEvents) {
+      // The tx was a future so it was not possible and will not be possible to get events
+      throw new Error('NoEventsWereCaptured')
+    }
+
+    if (!mappedEvents.length) {
+      // our expected event was not emitted
+      throw new Error('ExpectedEventNotFound')
+    }
+
+    // fix - we may not necessarily want the first event
+    // when there are multiple instances of the same event
+    const firstEvent = mappedEvents[0]
+
+    if (firstEvent[0] !== `${module}.${event}`) {
+      throw new Error('WrongEventCaptured')
+    }
+
+    const payload = firstEvent[1]
+    if (!payload.has(index)) {
+      throw new Error('DataIndexOutOfRange')
+    }
+
+    const value = payload.get(index)
+    if (value.type !== type) {
+      throw new Error('DataTypeNotExpectedType')
+    }
+
+    return value.data
+  }
+
+  static createTxUpdateHandler(callbacks, submittedTx, out = {}) {
+    const { nonce, txhash, subscribed } = submittedTx
+
+    return function handleTxUpdates(result) {
       const { events = [], status } = result
+      const { unsubscribe, onFinalizedFailed, onFinalizedSuccess } = callbacks
 
       if (!result || !status) {
         return
       }
 
-      lastTxUpdateResult = result
+      out.lastResult = result
+
+      const txinfo = () => {
+        return JSON.stringify({
+          nonce,
+          txhash,
+        })
+      }
 
       if (result.isError) {
         unsubscribe()
-        debugTx('Error', status.type)
+
+        debugTx(`Error: ${status.type}`, txinfo())
+
         onFinalizedFailed &&
           onFinalizedFailed({ err: status.type, result, tx: status.isUsurped ? status.asUsurped : undefined })
       } else if (result.isFinalized) {
         unsubscribe()
+
+        debugTx('Finalized', txinfo())
+
         const mappedEvents = RuntimeApi.matchingEvents(subscribed, events)
         const failed = result.findRecord('system', 'ExtrinsicFailed')
         const success = result.findRecord('system', 'ExtrinsicSuccess')
@@ -243,110 +353,6 @@ class RuntimeApi {
         }
       }
     }
-
-    // synchronize access to nonce
-    await this.executeWithAccountLock(accountId, async () => {
-      const nonce = await this.selectBestNonce(accountId)
-
-      try {
-        const signed = tx.sign(fromKey, { nonce })
-        unsubscribe = await signed.send(handleTxUpdates)
-        const serialized = JSON.stringify({
-          nonce: nonce.toNumber(),
-          hash: signed.hash,
-          tx: signed.toHex(),
-        })
-        debugTx(`Submitted: ${serialized}`)
-        // transaction submitted successfully, increment and save nonce.
-        this.incrementAndSaveNonce(accountId, nonce)
-      } catch (err) {
-        const errstr = err.toString()
-        debugTx('Rejected:', errstr)
-        // This happens when nonce is already used in finalized transactions, ie. the selected nonce
-        // was less than current account nonce. A few scenarios where this happens (other than incorrect code)
-        // 1. When a past future tx got finalized because we submitted some transactions
-        // using up the nonces upto that point.
-        // 2. Can happen while storage-node is talkig to a joystream-node that is still not fully
-        // synced.
-        // 3. Storage role account holder sent a transaction just ahead of us via another app.
-        if (errstr.indexOf('ExtrinsicStatus:: 1010: Invalid Transaction: Stale') !== -1) {
-          // In case 1 or 3 a quick recovery could work by just incrementing, but since we
-          // cannot detect which case we are in just reset and force re-reading nonce. Even
-          // that may not be sufficient expect after a few more failures..
-          delete this.nonces[accountId]
-        }
-
-        // Technically it means a transaction in the mempool with same
-        // nonce and same fees being paid so we cannot replace it, either we didn't correctly
-        // increment the nonce or someone external to this application sent a transaction
-        // with same nonce ahead of us.
-        if (errstr.indexOf('ExtrinsicStatus:: 1014: Priority is too low') !== -1) {
-          delete this.nonces[accountId]
-        }
-
-        throw err
-      }
-    })
-
-    // We cannot get tx updates for a future tx so return now to avoid blocking caller
-    if (lastTxUpdateResult.status.isFuture) {
-      debug('Warning: Submitted extrinsic with future nonce')
-      return {}
-    }
-
-    // Return a promise that will resolve when the transaction finalizes.
-    // On timeout it will be rejected. Timeout is a workaround for dealing with the
-    // fact that if rpc connection is lost to node we have no way of detecting it or recovering.
-    // Timeout can also occur if a transaction that was part of batch of transactions submitted
-    // gets usurped.
-    return new Promise((resolve, reject) => {
-      onFinalizedSuccess = resolve
-      onFinalizedFailed = reject
-    }).timeout(TX_TIMEOUT)
-  }
-
-  /*
-   * Sign and send a transaction expect event from
-   * module and return eventProperty from the event.
-   */
-  async signAndSendThenGetEventResult(senderAccountId, tx, { module, event, index, type }) {
-    if (!module || !event || index === undefined || !type) {
-      throw new Error('MissingSubscribeEventDetails')
-    }
-
-    const subscribed = [[module, event]]
-
-    const { mappedEvents } = await this.signAndSend(senderAccountId, tx, subscribed)
-
-    if (!mappedEvents) {
-      // The tx was a future so it was not possible and will not be possible to get events
-      throw new Error('NoEventsWereCaptured')
-    }
-
-    if (!mappedEvents.length) {
-      // our expected event was not emitted
-      throw new Error('ExpectedEventNotFound')
-    }
-
-    // fix - we may not necessarily want the first event
-    // when there are multiple instances of the same event
-    const firstEvent = mappedEvents[0]
-
-    if (firstEvent[0] !== `${module}.${event}`) {
-      throw new Error('WrongEventCaptured')
-    }
-
-    const payload = firstEvent[1]
-    if (!payload.has(index)) {
-      throw new Error('DataIndexOutOfRange')
-    }
-
-    const value = payload.get(index)
-    if (value.type !== type) {
-      throw new Error('DataTypeNotExpectedType')
-    }
-
-    return value.data
   }
 }
 
