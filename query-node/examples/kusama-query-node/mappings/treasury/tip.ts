@@ -3,7 +3,7 @@ import { Tip } from '../../generated/graphql-server/src/modules/tip/tip.model';
 import { Tipper } from '../../generated/graphql-server/src/modules/tipper/tipper.model';
 import { assert } from 'console';
 
-export async function handleNewTip(db: DB, event: SubstrateEvent) {
+export async function treasuryNewTip(db: DB, event: SubstrateEvent) {
   const { Hash } = event.event_params;
   const { extrinsic } = event;
 
@@ -32,7 +32,7 @@ export async function handleNewTip(db: DB, event: SubstrateEvent) {
   }
 }
 
-export async function handleTipRetracted(db: DB, event: SubstrateEvent) {
+export async function treasuryTipRetracted(db: DB, event: SubstrateEvent) {
   const { Hash } = event.event_params;
   const tip = await db.get(Tip, { where: { reason: Buffer.from(Hash.toString()) } });
 
@@ -44,7 +44,7 @@ export async function handleTipRetracted(db: DB, event: SubstrateEvent) {
 }
 
 // A tip suggestion has reached threshold and is closing.
-export async function handleTipClosing(db: DB, event: SubstrateEvent) {
+export async function treasuryTipClosing(db: DB, event: SubstrateEvent) {
   const { Hash } = event.event_params;
   const { extrinsic } = event;
   const tip = await db.get(Tip, { where: { reason: Buffer.from(Hash.toString()) } });
@@ -63,7 +63,7 @@ export async function handleTipClosing(db: DB, event: SubstrateEvent) {
 }
 
 // A tip suggestion has reached threshold and is closing.
-export async function handleTipClosed(db: DB, event: SubstrateEvent) {
+export async function treasuryTipClosed(db: DB, event: SubstrateEvent) {
   const { Hash, AccountId } = event.event_params;
   const { extrinsic } = event;
   const tip = await db.get(Tip, { where: { reason: Buffer.from(Hash.toString()) } });
