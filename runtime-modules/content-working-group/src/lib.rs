@@ -22,10 +22,10 @@ use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 use frame_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
+use rstd::borrow::ToOwned;
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use rstd::vec;
 use rstd::vec::Vec;
-use rstd::borrow::ToOwned;
 use sp_arithmetic::traits::{One, Zero};
 use system::{ensure_root, ensure_signed};
 

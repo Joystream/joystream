@@ -134,9 +134,9 @@ use frame_support::traits::{Currency, Get};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, print, Parameter, StorageDoubleMap,
 };
+use rstd::vec::Vec;
 use sp_arithmetic::traits::Zero;
 use system::{ensure_root, RawOrigin};
-use rstd::vec::Vec;
 
 use common::origin::ActorOriginValidator;
 

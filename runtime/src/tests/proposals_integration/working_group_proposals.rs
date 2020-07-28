@@ -29,7 +29,7 @@ fn add_opening(
     assert!(!<working_group::OpeningById<
         Runtime,
         StorageWorkingGroupInstance,
-    >>::exists(opening_id));
+    >>::contains_key(opening_id));
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_add_working_group_leader_opening_proposal(
@@ -288,7 +288,7 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
         assert!(!<working_group::OpeningById<
             Runtime,
             StorageWorkingGroupInstance,
-        >>::exists(next_opening_id));
+        >>::contains_key(next_opening_id));
 
         let opening_id = add_opening(
             member_id,
@@ -305,7 +305,7 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
         assert!(<working_group::OpeningById<
             Runtime,
             StorageWorkingGroupInstance,
-        >>::exists(opening_id));
+        >>::contains_key(opening_id));
     });
 }
 
@@ -461,7 +461,7 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
         let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
 
         let stake_id = 1;
-        let old_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let old_balance = Balances::free_balance(&account_id.into());
         let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
 
         assert_eq!(get_stake_balance(old_stake), stake_amount);
@@ -475,7 +475,7 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
             4,
         );
 
-        let new_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let new_balance = Balances::free_balance(&account_id.into());
         let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
 
         assert_eq!(
@@ -542,7 +542,7 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
         let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
 
         let stake_id = 1;
-        let old_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let old_balance = Balances::free_balance(&account_id.into());
         let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
 
         assert_eq!(get_stake_balance(old_stake), stake_amount);
@@ -556,7 +556,7 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
             4,
         );
 
-        let new_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let new_balance = Balances::free_balance(&account_id.into());
         let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
 
         assert_eq!(
@@ -652,7 +652,7 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
         let worker = StorageWorkingGroup::worker_by_id(leader_worker_id);
         let relationship_id = worker.reward_relationship.unwrap();
 
-        let relationship = recurringrewards::RewardRelationships::<Runtime>::get(relationship_id);
+        let relationship = recurring_rewards::RewardRelationships::<Runtime>::get(relationship_id);
         assert_eq!(relationship.amount_per_payout, old_reward_amount);
 
         let new_reward_amount = 999;
@@ -664,7 +664,7 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
             5,
         );
 
-        let relationship = recurringrewards::RewardRelationships::<Runtime>::get(relationship_id);
+        let relationship = recurring_rewards::RewardRelationships::<Runtime>::get(relationship_id);
         assert_eq!(relationship.amount_per_payout, new_reward_amount);
     });
 }
@@ -734,7 +734,7 @@ fn create_terminate_group_leader_role_proposal_execution_succeeds() {
         let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
 
         let stake_id = 1;
-        let old_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let old_balance = Balances::free_balance(&account_id.into());
         let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
 
         assert_eq!(get_stake_balance(old_stake), stake_amount);
@@ -743,7 +743,7 @@ fn create_terminate_group_leader_role_proposal_execution_succeeds() {
 
         assert!(StorageWorkingGroup::current_lead().is_none());
 
-        let new_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let new_balance = Balances::free_balance(&account_id.into());
         let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
 
         assert_eq!(new_stake.staking_status, stake::StakingStatus::NotStaked);
@@ -816,7 +816,7 @@ fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
         let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
 
         let stake_id = 1;
-        let old_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let old_balance = Balances::free_balance(&account_id.into());
         let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
 
         assert_eq!(get_stake_balance(old_stake), stake_amount);
@@ -825,7 +825,7 @@ fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
 
         assert!(StorageWorkingGroup::current_lead().is_none());
 
-        let new_balance = Balances::free_balance::<&AccountId32>(&account_id.into());
+        let new_balance = Balances::free_balance(&account_id.into());
         let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
 
         assert_eq!(new_stake.staking_status, stake::StakingStatus::NotStaked);

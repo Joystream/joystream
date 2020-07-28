@@ -51,7 +51,7 @@ mod tests {
 
     type Council = governance::council::Module<Runtime>;
 
-    fn initial_test_ext() -> runtime_io::TestExternalities {
+    fn initial_test_ext() -> sp_io::TestExternalities {
         let t = system::GenesisConfig::default()
             .build_storage::<Runtime>()
             .unwrap();

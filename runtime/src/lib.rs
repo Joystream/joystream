@@ -27,11 +27,11 @@ use frame_support::{
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
+use rstd::boxed::Box;
+use rstd::vec::Vec;
 use sp_api::impl_runtime_apis;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
-use rstd::vec::Vec;
-use rstd::boxed::Box;
 use sp_core::OpaqueMetadata;
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{
@@ -44,8 +44,8 @@ use sp_runtime::{
     ApplyExtrinsicResult, MultiSignature,
 };
 #[cfg(feature = "std")]
-use sp_version::{NativeVersion};
-use sp_version::{RuntimeVersion};
+use sp_version::NativeVersion;
+use sp_version::RuntimeVersion;
 use system::EnsureRoot;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};

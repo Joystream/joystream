@@ -25,9 +25,9 @@
 use codec::{Codec, Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use rstd::vec::Vec;
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
-use rstd::vec::Vec;
 
 use crate::data_directory::{self, ContentIdExists};
 use crate::{StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};

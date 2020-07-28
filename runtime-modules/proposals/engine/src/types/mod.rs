@@ -4,12 +4,12 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode};
+use frame_support::dispatch::DispatchResult;
+use frame_support::traits::Currency;
+use rstd::boxed::Box;
 use rstd::cmp::PartialOrd;
 use rstd::ops::Add;
 use rstd::vec::Vec;
-use rstd::boxed::Box;
-use frame_support::dispatch::DispatchResult;
-use frame_support::traits::Currency;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::Perbill;

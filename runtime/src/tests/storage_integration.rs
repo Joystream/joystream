@@ -2,7 +2,7 @@ use super::initial_test_ext;
 use crate::integration::storage::StorageProviderHelper;
 use crate::Runtime;
 
-use srml_support::{StorageLinkedMap, StorageMap};
+use frame_support::StorageMap;
 use working_group::{Instance2, Worker};
 
 #[test]
