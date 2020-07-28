@@ -309,7 +309,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         let mut expected_proposal = Proposal {
             parameters,
             proposer_id: member_id,
-            created_at: 1,
+            created_at: 0,
             status: ProposalStatus::Active(Some(ActiveStake {
                 stake_id: 0,
                 source_account_id: account_id.clone(),
@@ -330,7 +330,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 
         expected_proposal.status = ProposalStatus::Finalized(FinalizationData {
             proposal_status: ProposalDecisionStatus::Canceled,
-            finalized_at: 1,
+            finalized_at: 0,
             encoded_unstaking_error_due_to_broken_runtime: None,
             stake_data_after_unstaking_error: None,
         });
@@ -529,7 +529,7 @@ where
             Proposal {
                 status: ProposalStatus::approved(
                     ApprovedProposalStatus::Executed,
-                    self.run_to_block - 1
+                    self.run_to_block - 2
                 ),
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),

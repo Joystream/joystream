@@ -22,7 +22,7 @@ fn add_opening(
     sequence_number: u32, // action sequence number to align with other actions
 ) -> u64 {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number + 1;
+    let run_to_block = sequence_number * 2;
 
     let opening_id = StorageWorkingGroup::next_opening_id();
 
@@ -63,7 +63,7 @@ fn begin_review_applications(
     sequence_number: u32, // action sequence number to align with other actions
 ) {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number + 1;
+    let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
@@ -92,7 +92,7 @@ fn fill_opening(
     sequence_number: u32, // action sequence number to align with other actions
 ) {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number + 1;
+    let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_fill_working_group_leader_opening_proposal(
@@ -132,7 +132,7 @@ fn decrease_stake(
     sequence_number: u32, // action sequence number to align with other actions
 ) {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number + 1;
+    let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_decrease_working_group_leader_stake_proposal(
@@ -161,7 +161,7 @@ fn slash_stake(
     sequence_number: u32, // action sequence number to align with other actions
 ) {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number + 1;
+    let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_slash_working_group_leader_stake_proposal(
@@ -190,7 +190,7 @@ fn set_reward(
     sequence_number: u32, // action sequence number to align with other actions
 ) {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number + 1;
+    let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_set_working_group_leader_reward_proposal(
@@ -219,7 +219,7 @@ fn set_mint_capacity(
     setup_environment: bool,
 ) {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number + 1;
+    let run_to_block = sequence_number * 2;
 
     let mint_id_result = <minting::Module<Runtime>>::add_mint(0, None);
 
@@ -253,7 +253,7 @@ fn terminate_role(
     sequence_number: u32, // action sequence number to align with other actions
 ) {
     let expected_proposal_id = sequence_number;
-    let run_to_block = sequence_number + 1;
+    let run_to_block = sequence_number * 2;
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_terminate_working_group_leader_role_proposal(
@@ -330,7 +330,7 @@ fn create_begin_review_working_group_leader_applications_proposal_execution_succ
             hiring_opening.stage,
             hiring::OpeningStage::Active {
                 stage: hiring::ActiveOpeningStage::AcceptingApplications {
-                    started_accepting_applicants_at_block: 1
+                    started_accepting_applicants_at_block: 0
                 },
                 applications_added: BTreeSet::new(),
                 active_application_count: 0,
@@ -346,7 +346,7 @@ fn create_begin_review_working_group_leader_applications_proposal_execution_succ
             hiring_opening.stage,
             hiring::OpeningStage::Active {
                 stage: hiring::ActiveOpeningStage::ReviewPeriod {
-                    started_accepting_applicants_at_block: 1,
+                    started_accepting_applicants_at_block: 0,
                     started_review_period_at_block: 2,
                 },
                 applications_added: BTreeSet::new(),
