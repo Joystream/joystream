@@ -19,6 +19,7 @@
 'use strict'
 
 const debug = require('debug')('joystream:runtime:base')
+const debugTx = require('debug')('joystream:runtime:base:tx')
 
 const { registerJoystreamTypes } = require('@joystream/types')
 const { ApiPromise, WsProvider } = require('@polkadot/api')
@@ -121,7 +122,7 @@ class RuntimeApi {
         })
       }
       const fullName = `${event.section}.${event.method}`
-      debug(`matched event: ${fullName} =>`, event.data && event.data.join(', '))
+      debugTx(`matched event: ${fullName} =>`, event.data && event.data.join(', '))
       return [fullName, payload]
     })
   }
@@ -196,7 +197,7 @@ class RuntimeApi {
 
       if (result.isError) {
         unsubscribe()
-        debug('Tx Error', status.type)
+        debugTx('Error', status.type)
         onFinalizedFailed &&
           onFinalizedFailed({ err: status.type, result, tx: status.isUsurped ? status.asUsurped : undefined })
       } else if (result.isFinalized) {
@@ -251,15 +252,16 @@ class RuntimeApi {
         const signed = tx.sign(fromKey, { nonce })
         unsubscribe = await signed.send(handleTxUpdates)
         const serialized = JSON.stringify({
+          nonce: nonce.toNumber(),
           hash: signed.hash,
-          raw: signed.toHex(),
+          tx: signed.toHex(),
         })
-        debug(`TransactionSubmitted: ${serialized}`)
+        debugTx(`Submitted: ${serialized}`)
         // transaction submitted successfully, increment and save nonce.
         this.incrementAndSaveNonce(accountId, nonce)
       } catch (err) {
         const errstr = err.toString()
-        debug('TransactionRejected:', errstr)
+        debugTx('Rejected:', errstr)
         // This happens when nonce is already used in finalized transactions, ie. the selected nonce
         // was less than current account nonce. A few scenarios where this happens (other than incorrect code)
         // 1. When a past future tx got finalized because we submitted some transactions
