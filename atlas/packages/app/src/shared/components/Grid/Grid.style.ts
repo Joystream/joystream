@@ -1,4 +1,4 @@
-import { StyleFn, makeStyles } from '../../utils'
+import { makeStyles, StyleFn } from '../../utils'
 
 export type GridStyleProps = {
   minItemWidth?: string | number
@@ -11,7 +11,6 @@ const container: StyleFn = (_, { minItemWidth = '300', maxItemWidth }) => ({
 })
 
 const item: StyleFn = () => ({
-  cursor: 'pointer',
   width: '100%',
 })
 

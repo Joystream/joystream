@@ -31,6 +31,7 @@ type VideoPreviewProps = {
   imgRef: React.Ref<HTMLImageElement>
   onClick?: (e: React.MouseEvent<HTMLElement>) => void
   onChannelClick?: (e: React.MouseEvent<HTMLElement>) => void
+  className?: string
 }
 
 const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
@@ -47,6 +48,7 @@ const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
   poster,
   onClick,
   onChannelClick,
+  className,
 }) => {
   const clickable = !!onClick
   const channelClickable = !!onChannelClick
@@ -68,7 +70,7 @@ const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
   }
 
   return (
-    <Container onClick={handleClick} clickable={clickable}>
+    <Container onClick={handleClick} clickable={clickable} className={className}>
       <CoverContainer>
         <CoverImage src={poster} ref={imgRef} alt={`${title} by ${channel} thumbnail`} />
         {duration && <CoverDurationOverlay>{duration}</CoverDurationOverlay>}
