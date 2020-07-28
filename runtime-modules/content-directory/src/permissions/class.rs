@@ -88,7 +88,7 @@ impl<T: Trait> ClassPermissions<T> {
         &self,
         account_id: &T::AccountId,
         actor: &Actor<T>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         let can_create = match &actor {
             Actor::Lead => {
                 // Ensure lead authorization performed succesfully
@@ -118,16 +118,13 @@ impl<T: Trait> ClassPermissions<T> {
     }
 
     /// Ensure entities creation is not blocked on `Class` level
-    pub fn ensure_entity_creation_not_blocked(&self) -> dispatch::Result {
+    pub fn ensure_entity_creation_not_blocked(&self) -> DispatchResult {
         ensure!(!self.entity_creation_blocked, ERROR_ENTITY_CREATION_BLOCKED);
         Ok(())
     }
 
     /// Ensure maintainer, associated with given `curator_group_id` is already added to `maintainers` set
-    pub fn ensure_maintainer_exists(
-        &self,
-        curator_group_id: &T::CuratorGroupId,
-    ) -> dispatch::Result {
+    pub fn ensure_maintainer_exists(&self, curator_group_id: &T::CuratorGroupId) -> DispatchResult {
         ensure!(
             self.maintainers.contains(curator_group_id),
             ERROR_MAINTAINER_DOES_NOT_EXIST
@@ -139,7 +136,7 @@ impl<T: Trait> ClassPermissions<T> {
     pub fn ensure_maintainer_does_not_exist(
         &self,
         curator_group_id: &T::CuratorGroupId,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         ensure!(
             !self.maintainers.contains(curator_group_id),
             ERROR_MAINTAINER_ALREADY_EXISTS

@@ -104,7 +104,7 @@ impl<T: Trait> Entity<T> {
     }
 
     /// Ensure `Schema` under given id is not added to given `Entity` yet
-    pub fn ensure_schema_id_is_not_added(&self, schema_id: SchemaId) -> dispatch::Result {
+    pub fn ensure_schema_id_is_not_added(&self, schema_id: SchemaId) -> DispatchResult {
         let schema_not_added = !self.supported_schemas.contains(&schema_id);
         ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_THE_ENTITY);
         Ok(())
@@ -114,7 +114,7 @@ impl<T: Trait> Entity<T> {
     pub fn ensure_property_values_are_not_added(
         &self,
         property_values: &BTreeMap<PropertyId, InputPropertyValue<T>>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         ensure!(
             property_values
                 .keys()
@@ -141,7 +141,7 @@ impl<T: Trait> Entity<T> {
     }
 
     /// Ensure any `InputPropertyValue` from external entity does not point to the given `Entity`
-    pub fn ensure_rc_is_zero(&self) -> dispatch::Result {
+    pub fn ensure_rc_is_zero(&self) -> DispatchResult {
         ensure!(
             self.reference_counter.is_total_equal_to_zero(),
             ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
@@ -150,7 +150,7 @@ impl<T: Trait> Entity<T> {
     }
 
     /// Ensure any inbound `InputPropertyValue` with `same_owner` flag set points to the given `Entity`
-    pub fn ensure_inbound_same_owner_rc_is_zero(&self) -> dispatch::Result {
+    pub fn ensure_inbound_same_owner_rc_is_zero(&self) -> DispatchResult {
         ensure!(
             self.reference_counter.is_same_owner_equal_to_zero(),
             ERROR_ENTITY_SAME_OWNER_RC_DOES_NOT_EQUAL_TO_ZERO

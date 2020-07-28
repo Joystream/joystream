@@ -52,7 +52,7 @@ impl<T: Trait> EntityCreationVoucher<T> {
     pub fn ensure_new_max_entities_count_is_valid(
         self,
         maximum_entities_count: T::EntityId,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         ensure!(
             maximum_entities_count >= self.entities_created,
             ERROR_NEW_ENTITIES_MAX_COUNT_IS_LESS_THAN_NUMBER_OF_ALREADY_CREATED
@@ -61,7 +61,7 @@ impl<T: Trait> EntityCreationVoucher<T> {
     }
 
     /// Ensure voucher limit not reached
-    pub fn ensure_voucher_limit_not_reached(&self) -> dispatch::Result {
+    pub fn ensure_voucher_limit_not_reached(&self) -> DispatchResult {
         ensure!(self.limit_not_reached(), ERROR_VOUCHER_LIMIT_REACHED);
         Ok(())
     }

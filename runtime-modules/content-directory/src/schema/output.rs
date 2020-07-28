@@ -69,6 +69,7 @@ impl<T: Trait> OutputPropertyValue<T> {
         }
     }
 
+    /// Make `SimplifiedOutputPropertyValue` from `OutputPropertyValue`
     pub fn simplify(&self) -> SimplifiedOutputPropertyValue<T> {
         self.clone().into()
     }
@@ -243,7 +244,7 @@ impl<T: Trait> VecOutputPropertyValue<T> {
 
     /// Ensure `VecOutputPropertyValue` nonce is equal to the provided one.
     /// Used to to avoid possible data races, when performing vector specific operations
-    pub fn ensure_nonce_equality(&self, new_nonce: T::Nonce) -> dispatch::Result {
+    pub fn ensure_nonce_equality(&self, new_nonce: T::Nonce) -> DispatchResult {
         ensure!(
             self.nonce == new_nonce,
             ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH
@@ -255,7 +256,7 @@ impl<T: Trait> VecOutputPropertyValue<T> {
     pub fn ensure_index_in_property_vector_is_valid(
         &self,
         index_in_property_vec: VecMaxLength,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         ensure!(
             (index_in_property_vec as usize) <= self.len(),
             ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE

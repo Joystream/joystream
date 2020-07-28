@@ -201,7 +201,7 @@ impl InputValidationLengthConstraint {
         len: usize,
         too_short_msg: &'static str,
         too_long_msg: &'static str,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         let length = len as u16;
         if length < self.min {
             Err(too_short_msg)

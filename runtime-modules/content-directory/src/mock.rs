@@ -483,14 +483,11 @@ pub fn next_curator_group_id() -> CuratorGroupId {
     TestModule::next_curator_group_id()
 }
 
-pub fn add_curator_group(lead_origin: u64) -> Result<(), &'static str> {
+pub fn add_curator_group(lead_origin: u64) -> DispatchResult {
     TestModule::add_curator_group(Origin::signed(lead_origin))
 }
 
-pub fn remove_curator_group(
-    lead_origin: u64,
-    curator_group_id: CuratorGroupId,
-) -> Result<(), &'static str> {
+pub fn remove_curator_group(lead_origin: u64, curator_group_id: CuratorGroupId) -> DispatchResult {
     TestModule::remove_curator_group(Origin::signed(lead_origin), curator_group_id)
 }
 
@@ -498,7 +495,7 @@ pub fn add_curator_to_group(
     lead_origin: u64,
     curator_group_id: CuratorGroupId,
     curator_id: CuratorId,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::add_curator_to_group(Origin::signed(lead_origin), curator_group_id, curator_id)
 }
 
@@ -506,7 +503,7 @@ pub fn remove_curator_from_group(
     lead_origin: u64,
     curator_group_id: CuratorGroupId,
     curator_id: CuratorId,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::remove_curator_from_group(Origin::signed(lead_origin), curator_group_id, curator_id)
 }
 
@@ -514,7 +511,7 @@ pub fn set_curator_group_status(
     lead_origin: u64,
     curator_group_id: CuratorGroupId,
     is_active: bool,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::set_curator_group_status(Origin::signed(lead_origin), curator_group_id, is_active)
 }
 
@@ -523,7 +520,7 @@ pub fn curator_group_by_id(curator_group_id: CuratorGroupId) -> CuratorGroup<Run
 }
 
 pub fn curator_group_exists(curator_group_id: CuratorGroupId) -> bool {
-    CuratorGroupById::<Runtime>::exists(curator_group_id)
+    CuratorGroupById::<Runtime>::contains_key(curator_group_id)
 }
 
 // Classes
@@ -541,7 +538,7 @@ pub enum ClassType {
     CuratorGroupDoesNotExist,
 }
 
-pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> Result<(), &'static str> {
+pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> DispatchResult {
     let mut class = create_class_with_default_permissions();
     match class_type {
         ClassType::Valid => (),
@@ -614,7 +611,7 @@ pub fn add_maintainer_to_class(
     lead_origin: u64,
     class_id: ClassId,
     curator_group_id: CuratorGroupId,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::add_maintainer_to_class(Origin::signed(lead_origin), class_id, curator_group_id)
 }
 
@@ -622,7 +619,7 @@ pub fn remove_maintainer_from_class(
     lead_origin: u64,
     class_id: ClassId,
     curator_group_id: CuratorGroupId,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::remove_maintainer_from_class(
         Origin::signed(lead_origin),
         class_id,
@@ -637,7 +634,7 @@ pub fn update_class_permissions(
     updated_entity_creation_blocked: Option<bool>,
     updated_all_entity_property_values_locked: Option<bool>,
     updated_maintainers: Option<BTreeSet<CuratorGroupId>>,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::update_class_permissions(
         Origin::signed(lead_origin),
         class_id,
@@ -653,7 +650,7 @@ pub fn add_class_schema(
     class_id: ClassId,
     existing_properties: BTreeSet<PropertyId>,
     new_properties: Vec<Property<Runtime>>,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::add_class_schema(
         Origin::signed(lead_origin),
         class_id,
@@ -667,7 +664,7 @@ pub fn update_class_schema_status(
     class_id: ClassId,
     schema_id: SchemaId,
     status: bool,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::update_class_schema_status(Origin::signed(lead_origin), class_id, schema_id, status)
 }
 
@@ -680,7 +677,7 @@ pub fn class_by_id(class_id: ClassId) -> Class<Runtime> {
 }
 
 pub fn class_exists(class_id: ClassId) -> bool {
-    ClassById::<Runtime>::exists(class_id)
+    ClassById::<Runtime>::contains_key(class_id)
 }
 
 // Vouchers
@@ -690,7 +687,7 @@ pub fn update_entity_creation_voucher(
     class_id: ClassId,
     controller: EntityController<Runtime>,
     maximum_entities_count: EntityId,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::update_entity_creation_voucher(
         Origin::signed(lead_origin),
         class_id,
@@ -710,13 +707,13 @@ pub fn entity_creation_voucher_exists(
     class_id: ClassId,
     entity_controller: &EntityController<Runtime>,
 ) -> bool {
-    EntityCreationVouchers::<Runtime>::exists(class_id, entity_controller)
+    EntityCreationVouchers::<Runtime>::contains_key(class_id, entity_controller)
 }
 
 // Entities
 
 pub fn entity_exists(entity_id: EntityId) -> bool {
-    EntityById::<Runtime>::exists(entity_id)
+    EntityById::<Runtime>::contains_key(entity_id)
 }
 
 pub fn entity_by_id(entity_id: EntityId) -> Entity<Runtime> {
@@ -727,19 +724,11 @@ pub fn next_entity_id() -> EntityId {
     TestModule::next_entity_id()
 }
 
-pub fn create_entity(
-    origin: u64,
-    class_id: ClassId,
-    actor: Actor<Runtime>,
-) -> Result<(), &'static str> {
+pub fn create_entity(origin: u64, class_id: ClassId, actor: Actor<Runtime>) -> DispatchResult {
     TestModule::create_entity(Origin::signed(origin), class_id, actor)
 }
 
-pub fn remove_entity(
-    origin: u64,
-    actor: Actor<Runtime>,
-    entity_id: EntityId,
-) -> Result<(), &'static str> {
+pub fn remove_entity(origin: u64, actor: Actor<Runtime>, entity_id: EntityId) -> DispatchResult {
     TestModule::remove_entity(Origin::signed(origin), actor, entity_id)
 }
 
@@ -748,7 +737,7 @@ pub fn update_entity_permissions(
     entity_id: EntityId,
     updated_frozen: Option<bool>,
     updated_referenceable: Option<bool>,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::update_entity_permissions(
         Origin::signed(lead_origin),
         entity_id,
@@ -763,7 +752,7 @@ pub fn add_schema_support_to_entity(
     entity_id: EntityId,
     schema_id: SchemaId,
     new_property_values: BTreeMap<PropertyId, InputPropertyValue<Runtime>>,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::add_schema_support_to_entity(
         Origin::signed(origin),
         actor,
@@ -778,7 +767,7 @@ pub fn update_entity_property_values(
     actor: Actor<Runtime>,
     entity_id: EntityId,
     new_property_values: BTreeMap<PropertyId, InputPropertyValue<Runtime>>,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::update_entity_property_values(
         Origin::signed(origin),
         actor,
@@ -792,7 +781,7 @@ pub fn clear_entity_property_vector(
     actor: Actor<Runtime>,
     entity_id: EntityId,
     in_class_schema_property_id: PropertyId,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::clear_entity_property_vector(
         Origin::signed(origin),
         actor,
@@ -809,7 +798,7 @@ pub fn insert_at_entity_property_vector(
     index_in_property_vector: VecMaxLength,
     property_value: InputValue<Runtime>,
     nonce: Nonce,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::insert_at_entity_property_vector(
         Origin::signed(origin),
         actor,
@@ -828,7 +817,7 @@ pub fn remove_at_entity_property_vector(
     in_class_schema_property_id: PropertyId,
     index_in_property_vector: VecMaxLength,
     nonce: Nonce,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::remove_at_entity_property_vector(
         Origin::signed(origin),
         actor,
@@ -847,7 +836,7 @@ pub fn transfer_entity_ownership(
         PropertyId,
         InputPropertyValue<Runtime>,
     >,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::transfer_entity_ownership(
         Origin::signed(origin),
         entity_id,
@@ -862,7 +851,7 @@ pub fn transaction(
     origin: u64,
     actor: Actor<Runtime>,
     operations: Vec<OperationType<Runtime>>,
-) -> Result<(), &'static str> {
+) -> DispatchResult {
     TestModule::transaction(Origin::signed(origin), actor, operations)
 }
 

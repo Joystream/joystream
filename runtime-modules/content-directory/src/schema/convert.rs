@@ -1,5 +1,5 @@
 use super::*;
-use runtime_primitives::traits::Hash;
+use sp_runtime::traits::Hash;
 
 impl<T: Trait> From<InputPropertyValue<T>> for OutputPropertyValue<T> {
     fn from(input_property_value: InputPropertyValue<T>) -> Self {

@@ -93,7 +93,7 @@ impl<T: Trait> EntityPermissions<T> {
     }
 
     /// Ensure actor with given `EntityAccessLevel` can remove entity
-    pub fn ensure_group_can_remove_entity(access_level: EntityAccessLevel) -> dispatch::Result {
+    pub fn ensure_group_can_remove_entity(access_level: EntityAccessLevel) -> DispatchResult {
         match access_level {
             EntityAccessLevel::EntityController => Ok(()),
             EntityAccessLevel::EntityControllerAndMaintainer => Ok(()),
@@ -105,7 +105,7 @@ impl<T: Trait> EntityPermissions<T> {
     pub fn ensure_controllers_are_not_equal(
         &self,
         new_entity_controller: &EntityController<T>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         ensure!(
             !self.controller_is_equal_to(new_entity_controller),
             ERROR_PROVIDED_ENTITY_CONTROLLER_IS_EQUAL_TO_CURRENT_ONE

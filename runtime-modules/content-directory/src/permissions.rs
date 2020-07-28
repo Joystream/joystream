@@ -12,18 +12,18 @@ pub use crate::errors::*;
 use crate::*;
 pub use codec::{Codec, Decode, Encode};
 use core::fmt::Debug;
-use runtime_primitives::traits::{MaybeSerializeDeserialize, Member, SimpleArithmetic};
-
+use frame_support::{ensure, Parameter};
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
-use srml_support::{dispatch, ensure, Parameter};
+use sp_arithmetic::traits::BaseArithmetic;
+use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 
 /// Model of authentication manager.
 pub trait ActorAuthenticator: system::Trait + Debug {
     /// Curator identifier
     type CuratorId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -36,7 +36,7 @@ pub trait ActorAuthenticator: system::Trait + Debug {
     /// Member identifier
     type MemberId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -49,7 +49,7 @@ pub trait ActorAuthenticator: system::Trait + Debug {
     /// Curator group identifier
     type CuratorGroupId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + One
         + Default
@@ -74,7 +74,7 @@ pub trait ActorAuthenticator: system::Trait + Debug {
 pub fn ensure_curator_auth_success<T: ActorAuthenticator>(
     curator_id: &T::CuratorId,
     account_id: &T::AccountId,
-) -> dispatch::Result {
+) -> DispatchResult {
     ensure!(
         T::is_curator(curator_id, account_id),
         ERROR_CURATOR_AUTH_FAILED
@@ -86,7 +86,7 @@ pub fn ensure_curator_auth_success<T: ActorAuthenticator>(
 pub fn ensure_member_auth_success<T: ActorAuthenticator>(
     member_id: &T::MemberId,
     account_id: &T::AccountId,
-) -> dispatch::Result {
+) -> DispatchResult {
     ensure!(
         T::is_member(member_id, account_id),
         ERROR_MEMBER_AUTH_FAILED
@@ -97,13 +97,13 @@ pub fn ensure_member_auth_success<T: ActorAuthenticator>(
 /// Ensure lead authorization performed succesfully
 pub fn ensure_lead_auth_success<T: ActorAuthenticator>(
     account_id: &T::AccountId,
-) -> dispatch::Result {
+) -> DispatchResult {
     ensure!(T::is_lead(account_id), ERROR_LEAD_AUTH_FAILED);
     Ok(())
 }
 
 /// Ensure given `Origin` is lead
-pub fn ensure_is_lead<T: ActorAuthenticator>(origin: T::Origin) -> dispatch::Result {
+pub fn ensure_is_lead<T: ActorAuthenticator>(origin: T::Origin) -> DispatchResult {
     let account_id = ensure_signed(origin)?;
     ensure_lead_auth_success::<T>(&account_id)
 }

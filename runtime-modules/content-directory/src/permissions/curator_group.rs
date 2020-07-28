@@ -62,7 +62,7 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Ensure curator group does not maintain any `Class`
-    pub fn ensure_curator_group_maintains_no_classes(&self) -> dispatch::Result {
+    pub fn ensure_curator_group_maintains_no_classes(&self) -> DispatchResult {
         ensure!(
             self.number_of_classes_maintained == 0,
             ERROR_CURATOR_GROUP_REMOVAL_FORBIDDEN
@@ -71,7 +71,7 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Ensure `MaxNumberOfCuratorsPerGroup` constraint satisfied
-    pub fn ensure_max_number_of_curators_limit_not_reached(&self) -> dispatch::Result {
+    pub fn ensure_max_number_of_curators_limit_not_reached(&self) -> DispatchResult {
         ensure!(
             self.curators.len() < T::MaxNumberOfCuratorsPerGroup::get() as usize,
             ERROR_NUMBER_OF_CURATORS_PER_GROUP_LIMIT_REACHED
@@ -80,7 +80,7 @@ impl<T: Trait> CuratorGroup<T> {
     }
 
     /// Ensure curator under given `curator_id` exists in `CuratorGroup`
-    pub fn ensure_curator_in_group_exists(&self, curator_id: &T::CuratorId) -> dispatch::Result {
+    pub fn ensure_curator_in_group_exists(&self, curator_id: &T::CuratorId) -> DispatchResult {
         ensure!(
             self.get_curators().contains(curator_id),
             ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP
@@ -93,7 +93,7 @@ impl<T: Trait> CuratorGroup<T> {
         curator_id: &T::CuratorId,
         curator_group_id: &T::CuratorGroupId,
         account_id: &T::AccountId,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         // Ensure curator authorization performed succesfully
         ensure_curator_auth_success::<T>(curator_id, account_id)?;
 
