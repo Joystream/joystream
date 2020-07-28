@@ -41,7 +41,7 @@
     "joystream",
     "runtime"
   ],
-  "license": "Apache-2.0",
+  "license": "GPLv3",
   "bugs": {
     "url": "https://github.com/Joystream/joystream/issues"
   },
