@@ -6,7 +6,7 @@ use crate::{
     ActivateOpeningAt, ActiveOpeningStage, AddOpeningError, ApplicationRationingPolicy, Opening,
     OpeningStage, StakePurpose, StakingPolicy,
 };
-use rstd::collections::btree_set::BTreeSet;
+use sp_std::collections::btree_set::BTreeSet;
 
 pub static HUMAN_READABLE_TEXT: &[u8] = b"HUMAN_READABLE_TEXT!!!!";
 

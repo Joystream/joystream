@@ -51,8 +51,8 @@ mod types;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::traits::Get;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
-use rstd::clone::Clone;
-use rstd::vec::Vec;
+use sp_std::clone::Clone;
+use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
 use types::{DiscussionPost, DiscussionThread, ThreadCounter};

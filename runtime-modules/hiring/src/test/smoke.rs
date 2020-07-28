@@ -1,7 +1,7 @@
 use super::*;
 use crate::mock::*;
 
-use rstd::collections::btree_set::BTreeSet;
+use sp_std::collections::btree_set::BTreeSet;
 
 /**
 Main hiring workflow:

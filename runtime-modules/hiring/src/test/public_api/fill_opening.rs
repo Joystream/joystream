@@ -2,8 +2,8 @@ use crate::mock::*;
 use crate::test::*;
 
 use crate::test::public_api::*;
-use rstd::collections::btree_set::BTreeSet;
-use rstd::result::Result;
+use sp_std::collections::btree_set::BTreeSet;
+use sp_std::result::Result;
 
 /*
 Not covered:

@@ -3,10 +3,10 @@
 
 use codec::Codec;
 use frame_support::{decl_module, decl_storage, ensure, Parameter};
-use rstd::collections::btree_map::BTreeMap;
-use rstd::vec::Vec;
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::vec::Vec;
 
 //TODO: Convert errors to the Substrate decl_error! macro.
 /// Result with string error message. This exists for backward compatibility purpose.

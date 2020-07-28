@@ -3,8 +3,8 @@
 
 use frame_support::traits::Currency;
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
-use rstd::vec::Vec;
 use sp_arithmetic::traits::Zero;
+use sp_std::vec::Vec;
 use system::ensure_signed;
 
 use common::currency::GovernanceCurrency;

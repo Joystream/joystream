@@ -15,11 +15,11 @@ pub type DispatchResult = Result<(), &'static str>;
 
 use codec::{Codec, Decode, Encode};
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
-use rstd::borrow::ToOwned;
-use rstd::vec;
-use rstd::vec::Vec;
 use sp_arithmetic::traits::{BaseArithmetic, One};
 use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_std::borrow::ToOwned;
+use sp_std::vec;
+use sp_std::vec::Vec;
 
 mod mock;
 mod tests;

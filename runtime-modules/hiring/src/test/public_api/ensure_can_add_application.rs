@@ -2,7 +2,7 @@ use crate::mock::*;
 use crate::test::*;
 
 use crate::hiring::*;
-use rstd::collections::btree_set::BTreeSet;
+use sp_std::collections::btree_set::BTreeSet;
 
 #[test]
 fn ensure_can_add_application_fails_with_no_opening() {

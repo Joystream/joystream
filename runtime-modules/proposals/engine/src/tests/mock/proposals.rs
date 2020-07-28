@@ -1,7 +1,7 @@
 //! Contains executable proposal extrinsic mocks
 
 use frame_support::decl_module;
-use rstd::vec::Vec;
+use sp_std::vec::Vec;
 pub trait Trait: system::Trait {}
 
 decl_module! {

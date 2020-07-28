@@ -7,7 +7,7 @@ use codec::Encode;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_support::{StorageDoubleMap, StorageMap, StorageValue};
-use rstd::rc::Rc;
+use sp_std::rc::Rc;
 use system::RawOrigin;
 use system::{EventRecord, Phase};
 

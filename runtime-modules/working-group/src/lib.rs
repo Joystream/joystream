@@ -56,10 +56,10 @@ use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReasons};
 use frame_support::{decl_event, decl_module, decl_storage, ensure, print, StorageValue};
-use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use rstd::vec;
-use rstd::vec::Vec;
 use sp_arithmetic::traits::{Bounded, One, Zero};
+use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use sp_std::vec;
+use sp_std::vec::Vec;
 use system::{ensure_root, ensure_signed};
 
 use crate::types::ExitInitiationOrigin;
@@ -327,7 +327,7 @@ decl_storage! {
             map hasher(blake2_128_concat) HiringApplicationId<T> =>  MemberId<T>;
     }
         add_extra_genesis {
-        config(phantom): rstd::marker::PhantomData<I>;
+        config(phantom): sp_std::marker::PhantomData<I>;
         config(storage_working_group_mint_capacity): minting::BalanceOf<T>;
         config(opening_human_readable_text_constraint): InputValidationLengthConstraint;
         config(worker_application_human_readable_text_constraint): InputValidationLengthConstraint;

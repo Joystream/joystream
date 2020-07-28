@@ -8,7 +8,7 @@ use proposals_codex::AddOpeningParameters;
 use working_group::{OpeningPolicyCommitment, RewardPolicy};
 
 use crate::{Balance, BlockNumber, StorageWorkingGroupInstance};
-use rstd::collections::btree_set::BTreeSet;
+use sp_std::collections::btree_set::BTreeSet;
 
 type StorageWorkingGroup = working_group::Module<Runtime, StorageWorkingGroupInstance>;
 

@@ -16,9 +16,9 @@ use serde::{Deserialize, Serialize};
 
 use codec::{Decode, Encode};
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
-use rstd::collections::btree_set::BTreeSet;
-use rstd::vec;
-use rstd::vec::Vec;
+use sp_std::collections::btree_set::BTreeSet;
+use sp_std::vec;
+use sp_std::vec::Vec;
 
 mod example;
 mod mock;
@@ -350,7 +350,7 @@ impl<T: Trait> Module<T> {
 
         // TODO Use BTreeSet for prop unique names when switched to Substrate 2.
         // There is no support for BTreeSet in Substrate 1 runtime.
-        // use rstd::collections::btree_set::BTreeSet;
+        // use sp_std::collections::btree_set::BTreeSet;
         let mut unique_prop_names = BTreeSet::new();
         for prop in class.properties.iter() {
             unique_prop_names.insert(prop.name.clone());

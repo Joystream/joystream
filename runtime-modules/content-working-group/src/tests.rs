@@ -4,8 +4,8 @@ use super::genesis;
 use super::mock::*;
 
 use frame_support::{assert_err, assert_ok, traits::Currency, StorageValue};
-use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_arithmetic::traits::One;
+use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use system::RawOrigin;
 
 use common::constraints::InputValidationLengthConstraint;

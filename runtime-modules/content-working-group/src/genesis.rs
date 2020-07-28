@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 use crate::{Trait, *};
-use rstd::map;
+use sp_std::map;
 
 use common::constraints::InputValidationLengthConstraint;
 

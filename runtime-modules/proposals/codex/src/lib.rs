@@ -68,10 +68,10 @@ mod tests;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get};
 use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
-use rstd::clone::Clone;
-use rstd::str::from_utf8;
-use rstd::vec::Vec;
 use sp_arithmetic::traits::Zero;
+use sp_std::clone::Clone;
+use sp_std::str::from_utf8;
+use sp_std::vec::Vec;
 use system::ensure_root;
 
 use common::origin::ActorOriginValidator;

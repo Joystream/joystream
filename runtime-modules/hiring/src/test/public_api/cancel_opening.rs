@@ -2,7 +2,7 @@ use crate::mock::*;
 use crate::test::*;
 
 use crate::test::public_api::*;
-use rstd::collections::btree_map::BTreeMap;
+use sp_std::collections::btree_map::BTreeMap;
 
 /*
 Not covered:

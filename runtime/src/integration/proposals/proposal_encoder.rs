@@ -5,9 +5,9 @@ use working_group::OpeningType;
 
 use codec::Encode;
 use frame_support::print;
-use rstd::collections::btree_set::BTreeSet;
-use rstd::marker::PhantomData;
-use rstd::vec::Vec;
+use sp_std::collections::btree_set::BTreeSet;
+use sp_std::marker::PhantomData;
+use sp_std::vec::Vec;
 
 // The macro binds working group outer-level Call with the provided inner-level working group
 // extrinsic call. Outer-call is defined by the provided WorkingGroup param expression.

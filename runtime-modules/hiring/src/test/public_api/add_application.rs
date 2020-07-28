@@ -1,6 +1,6 @@
 use crate::mock::*;
 use crate::test::*;
-use rstd::collections::btree_map::BTreeMap;
+use sp_std::collections::btree_map::BTreeMap;
 use stake::NegativeImbalance;
 
 use crate::test::public_api::*;

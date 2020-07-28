@@ -1,6 +1,6 @@
 #![warn(missing_docs)]
 
-use rstd::marker::PhantomData;
+use sp_std::marker::PhantomData;
 
 use common::origin::ActorOriginValidator;
 use proposals_engine::VotersParameters;

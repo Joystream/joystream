@@ -6,13 +6,13 @@
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Currency;
-use rstd::boxed::Box;
-use rstd::cmp::PartialOrd;
-use rstd::ops::Add;
-use rstd::vec::Vec;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::Perbill;
+use sp_std::boxed::Box;
+use sp_std::cmp::PartialOrd;
+use sp_std::ops::Add;
+use sp_std::vec::Vec;
 
 mod proposal_statuses;
 mod stakes;

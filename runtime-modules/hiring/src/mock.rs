@@ -1,14 +1,14 @@
 #![cfg(test)]
 
 use frame_support::{impl_outer_origin, parameter_types};
-use rstd::cell::{Cell, RefCell};
-use rstd::rc::Rc;
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
+use sp_std::cell::{Cell, RefCell};
+use sp_std::rc::Rc;
 use std::panic;
 
 use crate::hiring::ApplicationDeactivationCause;
@@ -126,7 +126,9 @@ thread_local! {
 }
 
 // Sets stake handler implementation in hiring module. Mockall frameworks integration
-pub(crate) fn set_stake_handler_impl(mock: Rc<rstd::cell::RefCell<dyn crate::StakeHandler<Test>>>) {
+pub(crate) fn set_stake_handler_impl(
+    mock: Rc<sp_std::cell::RefCell<dyn crate::StakeHandler<Test>>>,
+) {
     // Hiring::staking.mock_safe(move || MockResult::Return(mock.clone()));
     THREAD_LOCAL_STAKE_HANDLER.with(|f| {
         *f.borrow_mut() = mock.clone();

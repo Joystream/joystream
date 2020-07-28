@@ -35,12 +35,12 @@ use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 use frame_support::traits::{Currency, ReservableCurrency};
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
-use rstd::collections::btree_map::BTreeMap;
-use rstd::ops::Add;
-use rstd::vec;
-use rstd::vec::Vec;
 use sp_arithmetic::traits::Zero;
 use sp_runtime::traits::Hash;
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::ops::Add;
+use sp_std::vec;
+use sp_std::vec::Vec;
 use system::{ensure_root, ensure_signed};
 
 use super::sealed_vote::SealedVote;
@@ -324,7 +324,7 @@ impl<T: Trait> Module<T> {
             Self::move_to_announcing_stage();
         } else {
             // upper limit on applicants that will move to voting stage
-            let limit = rstd::cmp::max(Self::council_size_usize(), Self::candidacy_limit_usize());
+            let limit = sp_std::cmp::max(Self::council_size_usize(), Self::candidacy_limit_usize());
             let applicants_to_drop = Self::find_least_staked_applicants(&mut applicants, limit);
 
             Self::drop_applicants(applicants_to_drop);

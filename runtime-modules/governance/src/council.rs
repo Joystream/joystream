@@ -1,7 +1,7 @@
 use frame_support::{debug, decl_event, decl_module, decl_storage, ensure};
-use rstd::vec;
-use rstd::vec::Vec;
 use sp_arithmetic::traits::{One, Zero};
+use sp_std::vec;
+use sp_std::vec::Vec;
 use system::ensure_root;
 
 pub use super::election::{self, CouncilElected, Seat, Seats};

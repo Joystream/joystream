@@ -2,7 +2,7 @@
 
 use frame_support::traits::{Currency, Imbalance};
 use frame_support::StorageMap;
-use rstd::marker::PhantomData;
+use sp_std::marker::PhantomData;
 
 // Balance alias
 type BalanceOf<T> =

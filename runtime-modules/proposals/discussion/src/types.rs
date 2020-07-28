@@ -1,9 +1,9 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode};
-use rstd::vec::Vec;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use sp_std::vec::Vec;
 
 /// Represents a discussion thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]

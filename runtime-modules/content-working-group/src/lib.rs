@@ -22,11 +22,11 @@ use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 use frame_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
-use rstd::borrow::ToOwned;
-use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use rstd::vec;
-use rstd::vec::Vec;
 use sp_arithmetic::traits::{One, Zero};
+use sp_std::borrow::ToOwned;
+use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use sp_std::vec;
+use sp_std::vec::Vec;
 use system::{ensure_root, ensure_signed};
 
 use common::constraints::InputValidationLengthConstraint;
@@ -785,7 +785,7 @@ macro_rules! ensure_on_wrapped_error {
 //derive_from_impl(hiring::BeginAcceptingApplicationsError)
 //derive_from_impl(hiring::BeginAcceptingApplicationsError)
 
-impl rstd::convert::From<WrappedError<hiring::BeginAcceptingApplicationsError>> for &str {
+impl sp_std::convert::From<WrappedError<hiring::BeginAcceptingApplicationsError>> for &str {
     fn from(wrapper: WrappedError<hiring::BeginAcceptingApplicationsError>) -> Self {
         match wrapper.error {
             hiring::BeginAcceptingApplicationsError::OpeningDoesNotExist => {
@@ -798,7 +798,7 @@ impl rstd::convert::From<WrappedError<hiring::BeginAcceptingApplicationsError>> 
     }
 }
 
-impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
+impl sp_std::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
     fn from(wrapper: WrappedError<hiring::AddOpeningError>) -> Self {
         match wrapper.error {
             hiring::AddOpeningError::OpeningMustActivateInTheFuture => {
@@ -827,7 +827,7 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
     }
 }
 
-impl rstd::convert::From<WrappedError<hiring::BeginReviewError>> for &str {
+impl sp_std::convert::From<WrappedError<hiring::BeginReviewError>> for &str {
     fn from(wrapper: WrappedError<hiring::BeginReviewError>) -> Self {
         match wrapper.error {
             hiring::BeginReviewError::OpeningDoesNotExist => {
@@ -840,7 +840,7 @@ impl rstd::convert::From<WrappedError<hiring::BeginReviewError>> for &str {
     }
 }
 
-impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError<T>>> for &str {
+impl<T: hiring::Trait> sp_std::convert::From<WrappedError<hiring::FillOpeningError<T>>> for &str {
     fn from(wrapper: WrappedError<hiring::FillOpeningError<T>>) -> Self {
         match wrapper.error {
             hiring::FillOpeningError::<T>::OpeningDoesNotExist => MSG_FULL_CURATOR_OPENING_OPENING_DOES_NOT_EXIST,
@@ -878,7 +878,7 @@ impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError
     }
 }
 
-impl rstd::convert::From<WrappedError<hiring::DeactivateApplicationError>> for &str {
+impl sp_std::convert::From<WrappedError<hiring::DeactivateApplicationError>> for &str {
     fn from(wrapper: WrappedError<hiring::DeactivateApplicationError>) -> Self {
         match wrapper.error {
             hiring::DeactivateApplicationError::ApplicationDoesNotExist => {
@@ -900,7 +900,9 @@ impl rstd::convert::From<WrappedError<hiring::DeactivateApplicationError>> for &
     }
 }
 
-impl rstd::convert::From<WrappedError<membership::ControllerAccountForMemberCheckFailed>> for &str {
+impl sp_std::convert::From<WrappedError<membership::ControllerAccountForMemberCheckFailed>>
+    for &str
+{
     fn from(wrapper: WrappedError<membership::ControllerAccountForMemberCheckFailed>) -> Self {
         match wrapper.error {
             membership::ControllerAccountForMemberCheckFailed::NotMember => {
@@ -913,7 +915,7 @@ impl rstd::convert::From<WrappedError<membership::ControllerAccountForMemberChec
     }
 }
 
-impl rstd::convert::From<WrappedError<hiring::AddApplicationError>> for &str {
+impl sp_std::convert::From<WrappedError<hiring::AddApplicationError>> for &str {
     fn from(wrapper: WrappedError<hiring::AddApplicationError>) -> Self {
         match wrapper.error {
             hiring::AddApplicationError::OpeningDoesNotExist => {
@@ -938,7 +940,7 @@ impl rstd::convert::From<WrappedError<hiring::AddApplicationError>> for &str {
     }
 }
 
-impl rstd::convert::From<WrappedError<membership::MemberControllerAccountDidNotSign>> for &str {
+impl sp_std::convert::From<WrappedError<membership::MemberControllerAccountDidNotSign>> for &str {
     fn from(wrapper: WrappedError<membership::MemberControllerAccountDidNotSign>) -> Self {
         match wrapper.error {
             membership::MemberControllerAccountDidNotSign::UnsignedOrigin => {

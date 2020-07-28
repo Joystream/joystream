@@ -1,6 +1,6 @@
 use codec::{Decode, Encode};
-use rstd::cmp::Ordering;
 use sp_arithmetic::traits::BaseArithmetic;
+use sp_std::cmp::Ordering;
 
 #[derive(Encode, Decode, Clone, Copy, Default, Debug)]
 pub struct Stake<Balance>

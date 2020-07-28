@@ -1,6 +1,6 @@
 use crate::mock::*;
 use crate::test::*;
-use rstd::collections::btree_set::BTreeSet;
+use sp_std::collections::btree_set::BTreeSet;
 
 #[test]
 fn begin_accepting_applications_fails_with_no_opening() {

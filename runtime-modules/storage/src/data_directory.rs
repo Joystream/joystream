@@ -25,9 +25,9 @@ use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Get;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
-use rstd::collections::btree_map::BTreeMap;
-use rstd::vec::Vec;
 use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::vec::Vec;
 use system::ensure_root;
 
 use common::origin::ActorOriginValidator;

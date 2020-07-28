@@ -28,14 +28,14 @@ use codec::Codec;
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::{Currency, Imbalance};
 use frame_support::{decl_module, decl_storage, ensure, Parameter};
-use rstd::cell::RefCell;
-use rstd::collections::btree_map::BTreeMap;
-use rstd::collections::btree_set::BTreeSet;
-use rstd::iter::Iterator;
-use rstd::rc::Rc;
-use rstd::vec::Vec;
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_std::cell::RefCell;
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::collections::btree_set::BTreeSet;
+use sp_std::iter::Iterator;
+use sp_std::rc::Rc;
+use sp_std::vec::Vec;
 
 use stake::{InitiateUnstakingError, Stake, StakeActionError, StakingError, Trait as StakeTrait};
 

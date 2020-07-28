@@ -1,5 +1,5 @@
 use frame_support::traits::Randomness;
-use rstd::vec::Vec;
+use sp_std::vec::Vec;
 
 use crate::{ActorId, Runtime};
 

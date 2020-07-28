@@ -1,5 +1,5 @@
 use frame_support::StorageMap;
-use rstd::marker::PhantomData;
+use sp_std::marker::PhantomData;
 
 use crate::StorageWorkingGroupInstance;
 use stake::{BalanceOf, NegativeImbalance};

@@ -5,11 +5,11 @@ use codec::{Codec, Decode, Encode};
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReasons};
 use frame_support::{decl_module, decl_storage, ensure, Parameter};
-use rstd::collections::btree_map::BTreeMap;
-use rstd::prelude::*;
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
 use sp_runtime::ModuleId;
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::prelude::*;
 
 mod errors;
 pub use errors::*;
