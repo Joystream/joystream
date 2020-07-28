@@ -1,5 +1,5 @@
 import { Worker, Opening as WGOpening } from '@joystream/types/working-group';
-import { Profile } from '@joystream/types/members';
+import { Membership } from '@joystream/types/members';
 import { OpeningId, Opening, ApplicationStage } from '@joystream/types/hiring';
 import { AccountId } from '@polkadot/types/interfaces';
 import { WorkingGroupKey } from '@joystream/types/common';
@@ -8,7 +8,7 @@ import { RewardRelationship } from '@joystream/types/recurring-rewards';
 export type WorkerData = {
   workerId: number;
   worker: Worker;
-  profile: Profile;
+  profile: Membership;
   stake?: number;
   reward?: RewardRelationship;
   group: WorkingGroupKey;
@@ -23,7 +23,7 @@ export type OpeningData = {
 export type ParsedApplication = {
   wgApplicationId: number;
   applicationId: number;
-  member: Profile;
+  member: Membership;
   roleAccout: AccountId;
   stakes: {
     application: number;

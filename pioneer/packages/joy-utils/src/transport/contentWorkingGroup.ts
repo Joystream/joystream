@@ -1,11 +1,12 @@
-import { MemberId, Profile, ActorInRole, RoleKeys, Role } from '@joystream/types/members';
+import { Membership } from '@joystream/types/members';
 import { u128, Vec, Option } from '@polkadot/types/';
 import BaseTransport from './base';
 import { MintId, Mint } from '@joystream/types/mint';
-import { LeadId } from '@joystream/types/content-working-group';
+import { LeadId, Lead } from '@joystream/types/content-working-group';
 import { ApiPromise } from '@polkadot/api';
 import MembersTransport from './members';
 import { APIQueryCache } from '../APIQueryCache';
+import { SingleLinkedMapEntry } from '..';
 
 export default class ContentWorkingGroupTransport extends BaseTransport {
   private membersT: MembersTransport;
@@ -21,19 +22,20 @@ export default class ContentWorkingGroupTransport extends BaseTransport {
     return (WGMint[0].get('capacity') as u128).toNumber();
   }
 
-  async currentLead (): Promise<{ id: number; profile: Profile } | null> {
+  async currentLead (): Promise<{ id: number; profile: Membership } | null> {
     const optLeadId = (await this.contentWorkingGroup.currentLeadId()) as Option<LeadId>;
     const leadId = optLeadId.unwrapOr(null);
 
     if (!leadId) return null;
 
-    const actorInRole = new ActorInRole({
-      role: new Role(RoleKeys.CuratorLead),
-      actor_id: leadId
-    });
-    const memberId = (await this.members.membershipIdByActorInRole(actorInRole)) as MemberId;
-    const profile = (await this.membersT.memberProfile(memberId)).unwrapOr(null);
+    const lead = new SingleLinkedMapEntry(Lead, await this.contentWorkingGroup.leadById(leadId)).value;
 
-    return profile && { id: memberId.toNumber(), profile };
+    if (!lead.stage.isOfType('Active')) {
+      return null;
+    }
+
+    const profile = await this.membersT.expectedMembership(lead.member_id);
+
+    return profile && { id: lead.member_id.toNumber(), profile };
   }
 }

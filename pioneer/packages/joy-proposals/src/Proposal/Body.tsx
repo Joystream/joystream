@@ -7,7 +7,7 @@ import styled from 'styled-components';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { ProposalId, TerminateRoleParameters } from '@joystream/types/proposals';
-import { MemberId, Profile } from '@joystream/types/members';
+import { MemberId, Membership } from '@joystream/types/members';
 import ProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { Option, Bytes } from '@polkadot/types/';
@@ -55,20 +55,18 @@ function ProposedMember (props: { memberId?: MemberId | number | null }) {
   const memberId: MemberId | number = props.memberId;
 
   const transport = useTransport();
-  const [member, error, loading] = usePromise<Option<Profile> | null>(
-    () => transport.members.memberProfile(memberId),
+  const [member, error, loading] = usePromise<Membership | null>(
+    () => transport.members.membershipById(memberId),
     null
   );
 
-  const profile = member && member.unwrapOr(null);
-
   return (
     <PromiseComponent error={error} loading={loading} message="Fetching profile...">
-      { profile ? (
+      { member ? (
         <ProfilePreview
-          avatar_uri={ profile.avatar_uri.toString() }
-          root_account={ profile.root_account.toString() }
-          handle={ profile.handle.toString() }
+          avatar_uri={ member.avatar_uri.toString() }
+          root_account={ member.root_account.toString() }
+          handle={ member.handle.toString() }
           link={ true }
         />
       ) : 'Profile not found' }

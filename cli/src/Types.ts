@@ -8,7 +8,7 @@ import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces'
 import { DerivedBalances } from '@polkadot/api-derive/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { WorkerId, OpeningType } from '@joystream/types/working-group'
-import { Profile, MemberId } from '@joystream/types/members'
+import { Membership, MemberId } from '@joystream/types/members'
 import {
   GenericJoyStreamRoleSchema,
   JobSpecifics,
@@ -103,7 +103,7 @@ export type GroupMember = {
   workerId: WorkerId
   memberId: MemberId
   roleAccount: AccountId
-  profile: Profile
+  profile: Membership
   stake?: Balance
   reward?: Reward
 }
@@ -112,7 +112,7 @@ export type GroupApplication = {
   wgApplicationId: number
   applicationId: number
   wgOpeningId: number
-  member: Profile | null
+  member: Membership | null
   roleAccout: AccountId
   stakes: {
     application: number

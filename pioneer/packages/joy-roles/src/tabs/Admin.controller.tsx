@@ -45,7 +45,7 @@ import {
 } from '@joystream/types/hiring';
 
 import {
-  Profile,
+  Membership,
   MemberId
 } from '@joystream/types/members';
 
@@ -77,7 +77,7 @@ type ids = {
 type application = ids & {
   account: string;
   memberId: number;
-  profile: Profile;
+  profile: Membership;
   stage: ApplicationStage;
   applicationStake: Balance;
   roleStake: Balance;
@@ -430,8 +430,12 @@ export class AdminController extends Controller<State, ITransport> {
     this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
-  protected async profile (id: MemberId): Promise<Option<Profile>> {
-    return (await this.api.query.members.memberProfile(id)) as Option<Profile>;
+  protected async profile (id: MemberId): Promise<Membership> {
+    const member = (await this.api.query.members.membershipById(id)) as Membership;
+    if (member.handle.isEmpty) {
+      throw new Error(`Expected member profile not found! (id: ${id.toString()}`);
+    }
+    return member;
   }
 
   protected async stakeValue (stakeId: StakeId): Promise<Balance> {
@@ -517,7 +521,7 @@ export class AdminController extends Controller<State, ITransport> {
         stage: baseApplications.value.stage,
         account: cApplication.value.role_account_id.toString(),
         memberId: cApplication.value.member_id.toNumber(),
-        profile: (await this.profile(cApplication.value.member_id)).unwrap(),
+        profile: (await this.profile(cApplication.value.member_id)),
         applicationStake: await this.applicationStake(baseApplications.value),
         roleStake: await this.roleStake(baseApplications.value),
         application: baseApplications.value

@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { Balance } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
 import Identicon from '@polkadot/react-identicon';
-import { IProfile, MemberId } from '@joystream/types/members';
+import { IMembership, MemberId } from '@joystream/types/members';
 import { GenericAccountId } from '@polkadot/types';
 import { LeadRoleState } from '@joystream/types/content-working-group';
 import { WorkerId } from '@joystream/types/working-group';
@@ -24,7 +24,7 @@ export function BalanceView (props: BalanceProps) {
 }
 
 type ProfileProps = {
-  profile: IProfile;
+  profile: IMembership;
 }
 
 export function HandleView (props: ProfileProps) {
@@ -40,7 +40,7 @@ export function HandleView (props: ProfileProps) {
 export type GroupMember = {
   memberId: MemberId;
   roleAccount: GenericAccountId;
-  profile: IProfile;
+  profile: IMembership;
   title: string;
   stake?: Balance;
   earned?: Balance;
@@ -50,7 +50,7 @@ export type GroupLead = {
   memberId: MemberId;
   workerId?: WorkerId; // In case of "working-group" module
   roleAccount: GenericAccountId;
-  profile: IProfile;
+  profile: IMembership;
   title: string;
   stage?: LeadRoleState;
 }

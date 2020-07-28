@@ -189,15 +189,15 @@ OPTIONS
       If no "--method" flag is provided then all methods in that module will be listed along with the descriptions.
 
   -a, --callArgs=callArgs
-      Specifies the arguments to use when calling a method. Multiple arguments can be separated with a comma, ie. 
+      Specifies the arguments to use when calling a method. Multiple arguments can be separated with a comma, ie.
       "-a=arg1,arg2".
       You can omit this flag even if the method requires some aguments.
       In that case you will be promted to provide value for each required argument.
-      Ommiting this flag is recommended when input parameters are of more complex types (and it's hard to specify them as 
+      Ommiting this flag is recommended when input parameters are of more complex types (and it's hard to specify them as
       just simple comma-separated strings)
 
   -e, --exec
-      Provide this flag if you want to execute the actual call, instead of displaying the method description (which is 
+      Provide this flag if you want to execute the actual call, instead of displaying the method description (which is
       default)
 
   -m, --method=method
@@ -212,9 +212,9 @@ EXAMPLES
   $ api:inspect
   $ api:inspect -t=query
   $ api:inspect -t=query -M=members
-  $ api:inspect -t=query -M=members -m=memberProfile
-  $ api:inspect -t=query -M=members -m=memberProfile -e
-  $ api:inspect -t=query -M=members -m=memberProfile -e -a=1
+  $ api:inspect -t=query -M=members -m=membershipById
+  $ api:inspect -t=query -M=members -m=membershipById -e
+  $ api:inspect -t=query -M=members -m=membershipById -e -a=1
 ```
 
 _See code: [src/commands/api/inspect.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/inspect.ts)_

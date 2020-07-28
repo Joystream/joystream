@@ -32,7 +32,7 @@ import {
 import { Application, Opening, OpeningId, ApplicationId, ActiveApplicationStage } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
 import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
-import { ActorInRole, Profile, MemberId, Role, RoleKeys, ActorId } from '@joystream/types/members';
+import { Membership, MemberId, ActorId } from '@joystream/types/members';
 import { createAccount, generateSeed } from '@polkadot/joy-utils/accounts';
 
 import { WorkingGroupMembership, GroupLeadStatus } from './tabs/WorkingGroup';
@@ -176,11 +176,6 @@ export class Transport extends TransportBase implements ITransport {
     this.cachedApi.unsubscribe();
   }
 
-  async roles (): Promise<Array<Role>> {
-    const roles: any = await this.cachedApi.query.actors.availableRoles();
-    return this.promise<Array<Role>>(roles.map((role: Role) => role));
-  }
-
   protected async stakeValue (stakeId: StakeId): Promise<Balance> {
     const stake = new SingleLinkedMapEntry<Stake>(
       Stake,
@@ -205,31 +200,14 @@ export class Transport extends TransportBase implements ITransport {
     return relationship.value.total_reward_received;
   }
 
-  protected async memberIdFromRoleAndActorId (role: Role, id: ActorId): Promise<MemberId> {
-    const memberId = (
-      await this.cachedApi.query.members.membershipIdByActorInRole(
-        new ActorInRole({
-          role: role,
-          actor_id: id
-        })
-      )
-    ) as MemberId;
+  protected async curatorMemberId (curator: Curator): Promise<MemberId> {
+    const curatorApplicationId = curator.induction.curator_application_id;
+    const curatorApplication = new SingleLinkedMapEntry<CuratorApplication>(
+      CuratorApplication,
+      await this.cachedApi.query.contentWorkingGroup.curatorApplicationById(curatorApplicationId)
+    ).value;
 
-    return memberId;
-  }
-
-  protected memberIdFromCuratorId (curatorId: CuratorId): Promise<MemberId> {
-    return this.memberIdFromRoleAndActorId(
-      new Role(RoleKeys.Curator),
-      curatorId
-    );
-  }
-
-  protected memberIdFromLeadId (leadId: LeadId): Promise<MemberId> {
-    return this.memberIdFromRoleAndActorId(
-      new Role(RoleKeys.CuratorLead),
-      leadId
-    );
+    return curatorApplication.member_id;
   }
 
   protected async groupMember (
@@ -239,12 +217,12 @@ export class Transport extends TransportBase implements ITransport {
   ): Promise<GroupMember> {
     const roleAccount = worker.role_account_id;
     const memberId = group === WorkingGroups.ContentCurators
-      ? await this.memberIdFromCuratorId(id)
+      ? await this.curatorMemberId(worker as Curator)
       : (worker as Worker).member_id;
 
-    const profile = await this.cachedApi.query.members.memberProfile(memberId) as Option<Profile>;
-    if (profile.isNone) {
-      throw new Error('no profile found');
+    const profile = await this.cachedApi.query.members.membershipById(memberId) as Membership;
+    if (profile.handle.isEmpty) {
+      throw new Error('No group member profile found!');
     }
 
     let stakeValue: Balance = new u128(0);
@@ -260,7 +238,7 @@ export class Transport extends TransportBase implements ITransport {
     return ({
       roleAccount,
       memberId,
-      profile: profile.unwrap(),
+      profile,
       title: workerRoleNameByGroup[group],
       stake: stakeValue,
       earned: earnedValue
@@ -311,7 +289,7 @@ export class Transport extends TransportBase implements ITransport {
       await this.cachedApi.query.contentWorkingGroup.leadById(leadId)
     );
 
-    const memberId = await this.memberIdFromLeadId(leadId);
+    const memberId = lead.value.member_id;
 
     return {
       lead: lead.value,
@@ -350,9 +328,9 @@ export class Transport extends TransportBase implements ITransport {
       : await this.currentStorageLead();
 
     if (currentLead !== null) {
-      const profile = await this.cachedApi.query.members.memberProfile(currentLead.memberId) as Option<Profile>;
+      const profile = await this.cachedApi.query.members.membershipById(currentLead.memberId) as Membership;
 
-      if (profile.isNone) {
+      if (profile.handle.isEmpty) {
         throw new Error(`${group} lead profile not found!`);
       }
 
@@ -361,7 +339,7 @@ export class Transport extends TransportBase implements ITransport {
           memberId: currentLead.memberId,
           workerId: currentLead.workerId,
           roleAccount: currentLead.lead.role_account_id,
-          profile: profile.unwrap(),
+          profile,
           title: _.startCase(group) + ' Lead',
           stage: group === WorkingGroups.ContentCurators ? (currentLead.lead as Lead).stage : undefined
         },

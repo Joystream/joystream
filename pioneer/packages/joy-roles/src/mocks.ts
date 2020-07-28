@@ -1,7 +1,7 @@
 import { bool, Option, Text, u32, u64, Vec } from '@polkadot/types';
 import AccountId from '@polkadot/types/primitive/Generic/AccountId';
 
-import { ActorInRole, IProfile, EntryMethod } from '@joystream/types/members';
+import { IMembership, EntryMethod } from '@joystream/types/members';
 
 import {
   AcceptingApplications,
@@ -11,7 +11,7 @@ import {
   ApplicationId
 } from '@joystream/types/hiring';
 
-export function mockProfile (name: string, avatar_uri = ''): IProfile {
+export function mockProfile (name: string, avatar_uri = ''): IMembership {
   return {
     handle: new Text(name),
     avatar_uri: new Text(avatar_uri),
@@ -22,8 +22,7 @@ export function mockProfile (name: string, avatar_uri = ''): IProfile {
     suspended: new bool(false),
     subscription: new Option(u64),
     root_account: new AccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
-    controller_account: new AccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
-    roles: new Vec<ActorInRole>(ActorInRole)
+    controller_account: new AccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp')
   };
 }
 

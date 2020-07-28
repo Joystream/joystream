@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { Dropdown, DropdownItemProps, DropdownProps } from 'semantic-ui-react';
-import { Profile } from '@joystream/types/members';
+import { Membership } from '@joystream/types/members';
 import { memberFromAccount, MemberFromAccount } from './accounts';
 import { AccountId } from '@polkadot/types/interfaces';
 import { ApiContext } from '@polkadot/react-api';
@@ -14,7 +14,7 @@ const StyledMembersDropdown = styled(Dropdown)`
 `;
 
 function membersToOptions (members: MemberFromAccount[]) {
-  const validMembers = members.filter(m => m.profile !== undefined) as (MemberFromAccount & { profile: Profile })[];
+  const validMembers = members.filter(m => m.profile !== undefined) as (MemberFromAccount & { profile: Membership })[];
   return validMembers
     .map(({ id, profile, account }) => ({
       key: profile.handle,

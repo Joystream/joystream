@@ -10,10 +10,9 @@ import {
   u128,
   Text,
   GenericAccountId,
-  Vec,
 } from '@polkadot/types'
 import { BlockNumber, Moment, BalanceOf } from '@polkadot/types/interfaces'
-import { OptionText, JoyStruct } from './common'
+import { JoyStruct } from './common'
 import AccountId from '@polkadot/types/primitive/Generic/AccountId'
 
 export class MemberId extends u64 {}
@@ -38,48 +37,7 @@ export class EntryMethod extends Enum {
   }
 }
 
-export enum RoleKeys {
-  StorageProvider = 'StorageProvider',
-  ChannelOwner = 'ChannelOwner',
-  CuratorLead = 'CuratorLead',
-  Curator = 'Curator',
-}
-
-export class Role extends Enum {
-  constructor(value?: any, index?: number) {
-    super([RoleKeys.StorageProvider, RoleKeys.ChannelOwner, RoleKeys.CuratorLead, RoleKeys.Curator], value, index)
-  }
-}
-
-export class ActorInRole extends Struct {
-  constructor(value?: any) {
-    super(
-      {
-        role: Role,
-        actor_id: ActorId,
-      },
-      value
-    )
-  }
-
-  get role(): Role {
-    return this.get('role') as Role
-  }
-
-  get actor_id(): ActorId {
-    return this.get('actor_id') as ActorId
-  }
-
-  get isContentLead(): boolean {
-    return this.role.eq(RoleKeys.CuratorLead)
-  }
-
-  get isCurator(): boolean {
-    return this.role.eq(RoleKeys.Curator)
-  }
-}
-
-export type IProfile = {
+export type IMembership = {
   handle: Text
   avatar_uri: Text
   about: Text
@@ -90,10 +48,9 @@ export type IProfile = {
   subscription: Option<SubscriptionId>
   root_account: AccountId
   controller_account: AccountId
-  roles: Vec<ActorInRole>
 }
-export class Profile extends JoyStruct<IProfile> {
-  constructor(value?: IProfile) {
+export class Membership extends JoyStruct<IMembership> {
+  constructor(value?: IMembership) {
     super(
       {
         handle: Text,
@@ -106,7 +63,6 @@ export class Profile extends JoyStruct<IProfile> {
         subscription: Option.with(SubscriptionId),
         root_account: AccountId,
         controller_account: AccountId,
-        roles: Vec.with(ActorInRole),
       },
       value
     )
@@ -151,29 +107,6 @@ export class Profile extends JoyStruct<IProfile> {
   get controller_account(): AccountId {
     return this.get('controller_account') as AccountId
   }
-
-  get roles(): Vec<ActorInRole> {
-    return this.get('roles') as Vec<ActorInRole>
-  }
-}
-
-export class UserInfo extends Struct {
-  constructor(value?: any) {
-    super(
-      {
-        handle: OptionText,
-        avatar_uri: OptionText,
-        about: OptionText,
-      },
-      value
-    )
-  }
-}
-
-export type CheckedUserInfo = {
-  handle: Text
-  avatar_uri: Text
-  about: Text
 }
 
 export class PaidMembershipTerms extends Struct {
@@ -204,20 +137,12 @@ export function registerMembershipTypes() {
       MemberId,
       PaidTermId,
       SubscriptionId,
-      Profile,
-      UserInfo,
-      CheckedUserInfo: {
-        handle: 'Text',
-        avatar_uri: 'Text',
-        about: 'Text',
-      },
+      Membership,
       PaidMembershipTerms: {
         fee: 'BalanceOf',
         text: 'Text',
       },
-      Role,
       ActorId,
-      ActorInRole,
     })
   } catch (err) {
     console.error('Failed to register custom types of membership module', err)

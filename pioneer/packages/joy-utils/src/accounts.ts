@@ -10,8 +10,7 @@ import { isHex, u8aToHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate, randomAsU8a } from '@polkadot/util-crypto';
 
 import { ApiPromise } from '@polkadot/api';
-import { MemberId, Profile } from '@joystream/types/members';
-import { Option } from '@polkadot/types';
+import { MemberId, Membership } from '@joystream/types/members';
 import { AccountId } from '@polkadot/types/interfaces';
 import { Vec } from '@polkadot/types/codec';
 
@@ -142,17 +141,18 @@ export function isPasswordValid (password: string): boolean {
   return password.length === 0 || keyring.isPassValid(password);
 }
 
-export type MemberFromAccount = { account: string; id: number; profile?: Profile };
+export type MemberFromAccount = { account: string; id: number; profile?: Membership };
 
+// TODO: Use transport instead (now that it's available in joy-utils)
 export async function memberFromAccount (api: ApiPromise, accountId: AccountId | string): Promise<MemberFromAccount> {
   const [memberId] =
     ((await api.query.members.memberIdsByRootAccountId(accountId)) as Vec<MemberId>)
       .concat((await api.query.members.memberIdsByControllerAccountId(accountId)) as Vec<MemberId>);
-  const member = (await api.query.members.memberProfile(memberId)) as Option<Profile>;
+  const member = (await api.query.members.membershipById(memberId)) as Membership;
 
   return {
     account: accountId.toString(),
     id: memberId.toNumber(),
-    profile: member.unwrapOr(undefined)
+    profile: member.handle.isEmpty ? undefined : member
   };
 }

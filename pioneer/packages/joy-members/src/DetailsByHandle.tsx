@@ -11,11 +11,11 @@ import { queryMembershipToProp } from './utils';
 
 type DetailsByHandleProps = {
   handle: string;
-  handles?: MemberId;
+  memberIdByHandle?: MemberId;
 };
 
 function DetailsByHandleInner (p: DetailsByHandleProps) {
-  const { handles: memberId } = p;
+  const { memberIdByHandle: memberId } = p;
   return memberId !== undefined // here we can't make distinction value existing and loading
     ? <div className='ui massive relaxed middle aligned list FullProfile'>
       <Details memberId={memberId} />
@@ -24,7 +24,7 @@ function DetailsByHandleInner (p: DetailsByHandleProps) {
 }
 
 const DetailsByHandle = withCalls<DetailsByHandleProps>(
-  queryMembershipToProp('handles', 'handle')
+  queryMembershipToProp('memberIdByHandle', 'handle')
 )(DetailsByHandleInner);
 
 type Props = I18nProps & {

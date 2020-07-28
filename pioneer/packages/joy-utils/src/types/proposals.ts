@@ -1,5 +1,5 @@
 import { ProposalId, VoteKind } from '@joystream/types/proposals';
-import { MemberId, Profile } from '@joystream/types/members';
+import { MemberId, Membership } from '@joystream/types/members';
 import { ThreadId, PostId } from '@joystream/types/common';
 import { ParsedMember } from './members';
 
@@ -88,7 +88,7 @@ export type ParsedPost = {
   createdAtBlock: number;
   updatedAt: Date;
   updatedAtBlock: number;
-  author: Profile | null;
+  author: Membership | null;
   authorId: MemberId;
   editsCount: number;
 };
