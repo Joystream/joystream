@@ -3,14 +3,16 @@
 use crate::InputValidationLengthConstraint;
 use crate::*;
 use core::iter::FromIterator;
-use primitives::H256;
-use runtime_primitives::{
+use frame_support::traits::{OnFinalize, OnInitialize};
+pub use frame_support::{
+    assert_err, assert_ok, impl_outer_event, impl_outer_origin, parameter_types,
+};
+use sp_core::H256;
+use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-pub use srml_support::{assert_err, assert_ok};
-use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use std::cell::RefCell;
 
 /// Runtime Types
@@ -217,9 +219,10 @@ impl Get<EntityId> for IndividualEntitiesCreationLimit {
 }
 
 impl system::Trait for Runtime {
+    type BaseCallFilter = ();
     type Origin = Origin;
-    type Index = u64;
     type Call = ();
+    type Index = u64;
     type BlockNumber = u64;
     type Hash = H256;
     type Hashing = BlakeTwo256;
@@ -229,9 +232,17 @@ impl system::Trait for Runtime {
     type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = ();
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
 mod test_events {
@@ -241,6 +252,7 @@ mod test_events {
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         test_events<T>,
+        system<T>,
     }
 }
 
@@ -384,7 +396,7 @@ impl ExtBuilder {
             .with(|v| *v.borrow_mut() = self.individual_entities_creation_limit);
     }
 
-    pub fn build(self, config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities {
+    pub fn build(self, config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
         self.set_associated_consts();
         let mut t = system::GenesisConfig::default()
             .build_storage::<Runtime>()
@@ -411,9 +423,19 @@ fn default_content_directory_genesis_config() -> GenesisConfig<Runtime> {
 
 pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
     let default_genesis_config = default_content_directory_genesis_config();
+    /*
+        Events are not emitted on block 0.
+        So any dispatchable calls made during genesis block formation will have no events emitted.
+        https://substrate.dev/recipes/2-appetizers/4-events.html
+    */
+    let func = || {
+        run_to_block(1);
+        f()
+    };
+
     ExtBuilder::default()
         .build(default_genesis_config)
-        .execute_with(f)
+        .execute_with(func)
 }
 
 pub fn generate_text(len: usize) -> Vec<u8> {
@@ -1031,3 +1053,15 @@ impl PropertyLockingPolicy {
 // Assign back to type variables so we can make dispatched calls of these modules later.
 pub type System = system::Module<Runtime>;
 pub type TestModule = Module<Runtime>;
+
+// Recommendation from Parity on testing on_finalize
+// https://substrate.dev/docs/en/next/development/module/tests
+pub fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        <TestModule as OnFinalize<u64>>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <TestModule as OnInitialize<u64>>::on_initialize(System::block_number());
+    }
+}
