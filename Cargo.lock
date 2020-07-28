@@ -1129,6 +1129,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-token-mint",
  "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
  "pallet-versioned-store",
  "pallet-versioned-store-permissions",
  "pallet-working-group",

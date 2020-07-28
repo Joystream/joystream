@@ -27,6 +27,9 @@ use frame_support::{
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
+use pallet_session::historical as pallet_session_historical;
+use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
+use pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo;
 use rstd::boxed::Box;
 use rstd::vec::Vec;
 use sp_api::impl_runtime_apis;
@@ -37,11 +40,10 @@ use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::traits::{
     BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, StaticLookup, Verify,
 };
-use sp_runtime::transaction_validity::TransactionSource;
-use sp_runtime::Perbill;
+use sp_runtime::transaction_validity::{TransactionSource, TransactionValidity};
 use sp_runtime::{
-    create_runtime_str, generic, impl_opaque_keys, transaction_validity::TransactionValidity,
-    ApplyExtrinsicResult, MultiSignature,
+    create_runtime_str, generic, impl_opaque_keys, ApplyExtrinsicResult, FixedPointNumber,
+    MultiSignature, Perbill, Perquintill,
 };
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -53,6 +55,9 @@ use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, Membershi
 use content_working_group as content_wg;
 use governance::{council, election};
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
+
+/// Priority for a transaction. Additive. Higher is better.
+pub type TransactionPriority = u64;
 
 /// Alias for ContentId, used in various places.
 pub type ContentId = sp_core::H256;
@@ -117,13 +122,9 @@ pub mod opaque {
 
     pub use sp_runtime::OpaqueExtrinsic as UncheckedExtrinsic;
 
-    /// Opaque block header type.
     pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
-    /// Opaque block type.
     pub type Block = generic::Block<Header, UncheckedExtrinsic>;
-    /// Opaque block identifier type.
     pub type BlockId = generic::BlockId<Block>;
-
     pub type SessionHandlers = (Grandpa, Babe, ImOnline);
 
     impl_opaque_keys! {
@@ -180,7 +181,7 @@ pub const DAYS: BlockNumber = HOURS * 24;
 // 1 in 4 blocks (on average, not counting collisions) will be primary babe blocks.
 pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 
-/// The version infromation used to identify this runtime when compiled natively.
+/// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
 pub fn native_version() -> NativeVersion {
     NativeVersion {
@@ -191,7 +192,8 @@ pub fn native_version() -> NativeVersion {
 
 parameter_types! {
     pub const BlockHashCount: BlockNumber = 250;
-    pub const MaximumBlockWeight: Weight = 1_000_000_000;
+    /// We allow for 2 seconds of compute with a 6 second average block time.
+    pub const MaximumBlockWeight: Weight = 2 * frame_support::weights::constants::WEIGHT_PER_SECOND;
     pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
     pub const MaximumBlockLength: u32 = 5 * 1024 * 1024;
     pub const Version: RuntimeVersion = VERSION;
@@ -340,7 +342,6 @@ parameter_types! {
 }
 
 impl timestamp::Trait for Runtime {
-    /// A timestamp: milliseconds since the unix epoch.
     type Moment = Moment;
     type OnTimestampSet = Babe;
     type MinimumPeriod = MinimumPeriod;
@@ -350,8 +351,6 @@ parameter_types! {
     pub const ExistentialDeposit: u128 = 0;
     pub const TransferFee: u128 = 0;
     pub const CreationFee: u128 = 0;
-    pub const TransactionBaseFee: u128 = 1;
-    pub const TransactionByteFee: u128 = 0;
     pub const InitialMembersBalance: u32 = 2000;
 }
 
@@ -373,13 +372,20 @@ impl pallet_balances::Trait for Runtime {
     type AccountStore = System;
 }
 
+parameter_types! {
+    pub const TransactionByteFee: Balance = 1; // TODO: adjust fee
+    pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
+    pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
+    pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
+}
+
 impl pallet_transaction_payment::Trait for Runtime {
     type Currency = Balances;
     type OnTransactionPayment = ();
-    //    type TransactionBaseFee = TransactionBaseFee;
     type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = IdentityFee<Balance>;
-    type FeeMultiplierUpdate = ();
+    type WeightToFee = IdentityFee<Balance>; // TODO: adjust weight
+    type FeeMultiplierUpdate =
+        TargetedFeeAdjustment<Self, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
 }
 
 impl pallet_sudo::Trait for Runtime {
@@ -417,30 +423,16 @@ parameter_types! {
     pub const DisabledValidatorsThreshold: Perbill = Perbill::from_percent(17);
 }
 
-/*
-type Event = Event;
-type ValidatorId = <Self as frame_system::Trait>::AccountId;
-type ValidatorIdOf = pallet_staking::StashOf<Self>;
-type ShouldEndSession = Babe;
-type NextSessionRotation = Babe;
-type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Staking>;
-type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
-type Keys = SessionKeys;
-type DisabledValidatorsThreshold = DisabledValidatorsThreshold;*/
-
 impl pallet_session::Trait for Runtime {
-    //    type OnSessionEnding = Staking;
-    type SessionHandler = SessionHandlers;
-    type ShouldEndSession = Babe;
     type Event = Event;
-    type Keys = SessionKeys;
     type ValidatorId = AccountId;
     type ValidatorIdOf = pallet_staking::StashOf<Self>;
-    //    type SelectInitialValidators = Staking;
+    type ShouldEndSession = Babe;
+    type NextSessionRotation = Babe;
+    type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, Staking>;
+    type SessionHandler = SessionHandlers;
+    type Keys = SessionKeys;
     type DisabledValidatorsThreshold = DisabledValidatorsThreshold;
-    //TODO
-    type NextSessionRotation = ();
-    type SessionManager = ();
 }
 
 impl pallet_session::historical::Trait for Runtime {
@@ -460,81 +452,55 @@ pallet_staking_reward_curve::build! {
 }
 
 parameter_types! {
-    pub const SessionsPerEra: sp_staking::SessionIndex = 6;
-    pub const BondingDuration: pallet_staking::EraIndex = 24;
-    pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
+    pub const SessionDuration: BlockNumber = EPOCH_DURATION_IN_SLOTS as _;
+    pub const ImOnlineUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+    /// We prioritize im-online heartbeats over election solution submission.
+    pub const StakingUnsignedPriority: TransactionPriority = TransactionPriority::max_value() / 2;
 }
 
-/*
+parameter_types! {
+    pub const SessionsPerEra: sp_staking::SessionIndex = 6;
+    pub const BondingDuration: pallet_staking::EraIndex = 24;
+    pub const SlashDeferDuration: pallet_staking::EraIndex = 6; // 1/4 the bonding duration.
+    pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
+    pub const MaxNominatorRewardedPerValidator: u32 = 64;
+    pub const ElectionLookahead: BlockNumber = EPOCH_DURATION_IN_BLOCKS / 4;
+    pub const MaxIterations: u32 = 10;
+    // 0.05%. The higher the value, the more strict solution acceptance becomes.
+    pub MinSolutionScoreBump: Perbill = Perbill::from_rational_approximation(5u32, 10_000);
+}
+
+impl pallet_staking::Trait for Runtime {
     type Currency = Balances;
     type UnixTime = Timestamp;
-    type CurrencyToVote = CurrencyToVoteHandler;
-    type RewardRemainder = Treasury;
+    type CurrencyToVote = common::currency::CurrencyToVoteHandler;
+    type RewardRemainder = (); // Could be Treasury.
     type Event = Event;
-    type Slash = Treasury; // send the slashed funds to the treasury.
-    type Reward = (); // rewards are minted from the void
+    type Slash = (); // Where to send the slashed funds. Could be Treasury.
+    type Reward = (); // Rewards are minted from the void.
     type SessionsPerEra = SessionsPerEra;
     type BondingDuration = BondingDuration;
     type SlashDeferDuration = SlashDeferDuration;
-    /// A super-majority of the council can cancel the slash.
-    type SlashCancelOrigin = EnsureOneOf<
-        AccountId,
-        EnsureRoot<AccountId>,
-        pallet_collective::EnsureProportionAtLeast<_3, _4, AccountId, CouncilCollective>
-    >;
+    type SlashCancelOrigin = EnsureRoot<AccountId>; // Requires sudo. Parity recommends: a super-majority of the council can cancel the slash.
     type SessionInterface = Self;
     type RewardCurve = RewardCurve;
     type NextNewSession = Session;
-    type ElectionLookahead = ElectionLookahead;
+    type ElectionLookahead = MaxIterations;
     type Call = Call;
     type MaxIterations = MaxIterations;
     type MinSolutionScoreBump = MinSolutionScoreBump;
     type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
     type UnsignedPriority = StakingUnsignedPriority;
-*/
-impl pallet_staking::Trait for Runtime {
-    type Currency = Balances;
-    type UnixTime = Timestamp;
-    type CurrencyToVote = common::currency::CurrencyToVoteHandler;
-    type RewardRemainder = ();
-    type Event = Event;
-    type Slash = (); // where to send the slashed funds.
-    type Reward = (); // rewards are minted from the void
-    type SessionsPerEra = SessionsPerEra;
-    type BondingDuration = BondingDuration;
-    // TODO
-    type SlashDeferDuration = ();
-    type SlashCancelOrigin = EnsureRoot<AccountId>;
-    type SessionInterface = Self;
-    type RewardCurve = RewardCurve;
-    type NextNewSession = ();
-    type ElectionLookahead = ();
-    type Call = Call;
-    type MaxIterations = ();
-    type MinSolutionScoreBump = ();
-    type MaxNominatorRewardedPerValidator = ();
-    type UnsignedPriority = ();
 }
 
 //type SubmitTransaction = TransactionSubmitter<ImOnlineId, Runtime, UncheckedExtrinsic>;
 
-parameter_types! {
-    pub const SessionDuration: BlockNumber = EPOCH_DURATION_IN_SLOTS as _;
-}
-
-/*
+impl pallet_im_online::Trait for Runtime {
     type AuthorityId = ImOnlineId;
     type Event = Event;
     type SessionDuration = SessionDuration;
     type ReportUnresponsiveness = Offences;
     type UnsignedPriority = ImOnlineUnsignedPriority;
-*/
-impl pallet_im_online::Trait for Runtime {
-    type AuthorityId = ImOnlineId;
-    type Event = Event;
-    type ReportUnresponsiveness = Offences;
-    type SessionDuration = SessionDuration;
-    type UnsignedPriority = (); //ImOnlineUnsignedPriority;
 }
 
 impl pallet_offences::Trait for Runtime {
@@ -838,6 +804,7 @@ construct_runtime!(
         TransactionPayment: pallet_transaction_payment::{Module, Storage},
         Staking: pallet_staking::{Module, Call, Config<T>, Storage, Event<T>, ValidateUnsigned},
         Session: pallet_session::{Module, Call, Storage, Event, Config<T>},
+        Historical: pallet_session_historical::{Module},
         FinalityTracker: pallet_finality_tracker::{Module, Call, Inherent},
         Grandpa: pallet_grandpa::{Module, Call, Storage, Config, Event},
         ImOnline: pallet_im_online::{Module, Call, Storage, Event<T>, ValidateUnsigned, Config<T>},
@@ -893,18 +860,9 @@ pub type SignedExtra = (
     system::CheckNonce<Runtime>,
     system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+    pallet_grandpa::ValidateEquivocationReport<Runtime>,
 );
 
-/*
-    frame_system::CheckSpecVersion<Runtime>,
-    frame_system::CheckTxVersion<Runtime>,
-    frame_system::CheckGenesis<Runtime>,
-    frame_system::CheckEra<Runtime>,
-    frame_system::CheckNonce<Runtime>,
-    frame_system::CheckWeight<Runtime>,
-    pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-    pallet_grandpa::ValidateEquivocationReport<Runtime>,
-*/
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
 /// Extrinsic type that has already been checked.
@@ -970,30 +928,36 @@ impl_runtime_apis! {
             Executive::offchain_worker(header)
         }
     }
-//TODO
+
     impl fg_primitives::GrandpaApi<Block> for Runtime {
         fn grandpa_authorities() -> GrandpaAuthorityList {
             Grandpa::grandpa_authorities()
         }
 
         fn submit_report_equivocation_extrinsic(
-            _equivocation_proof: fg_primitives::EquivocationProof<
+            equivocation_proof: fg_primitives::EquivocationProof<
                 <Block as BlockT>::Hash,
                 NumberFor<Block>,
             >,
-            _key_owner_proof: fg_primitives::OpaqueKeyOwnershipProof,
+            key_owner_proof: fg_primitives::OpaqueKeyOwnershipProof,
         ) -> Option<()> {
-            None
+            let key_owner_proof = key_owner_proof.decode()?;
+
+            Grandpa::submit_report_equivocation_extrinsic(
+                equivocation_proof,
+                key_owner_proof,
+            )
         }
 
         fn generate_key_ownership_proof(
             _set_id: fg_primitives::SetId,
-            _authority_id: GrandpaId,
+            authority_id: GrandpaId,
         ) -> Option<fg_primitives::OpaqueKeyOwnershipProof> {
-            // NOTE: this is the only implementation possible since we've
-            // defined our key owner proof type as a bottom type (i.e. a type
-            // with no values).
-            None
+            use codec::Encode;
+
+            Historical::prove((fg_primitives::KEY_TYPE, authority_id))
+                .map(|p| p.encode())
+                .map(fg_primitives::OpaqueKeyOwnershipProof::new)
         }
     }
 
@@ -1011,15 +975,6 @@ impl_runtime_apis! {
                 genesis_authorities: Babe::authorities(),
                 randomness: Babe::randomness(),
                 allowed_slots: sp_consensus_babe::AllowedSlots::PrimaryAndSecondaryPlainSlots,
-                //secondary_slots: true, //TODO
-                /*
-                                slot_duration: Babe::slot_duration(),
-                epoch_length: EpochDuration::get(),
-                c: PRIMARY_PROBABILITY,
-                genesis_authorities: Babe::authorities(),
-                randomness: Babe::randomness(),
-                allowed_slots: sp_consensus_babe::AllowedSlots::PrimaryAndSecondaryPlainSlots,
-                */
             }
         }
 
@@ -1029,35 +984,9 @@ impl_runtime_apis! {
     }
 
     impl sp_authority_discovery::AuthorityDiscoveryApi<Block> for Runtime {
-        // fn authorities() -> Vec<EncodedAuthorityId> {
-        //     AuthorityDiscovery::authorities().into_iter()
-        //         .map(|id| id.encode())
-        //         .map(EncodedAuthorityId)
-        //         .collect()
-        // }
         fn authorities() -> Vec<AuthorityDiscoveryId> {
             AuthorityDiscovery::authorities()
         }
-
-        // fn sign(payload: &Vec<u8>) -> Option<(EncodedSignature, EncodedAuthorityId)> {
-        //       AuthorityDiscovery::sign(payload).map(|(sig, id)| {
-        //     (EncodedSignature(sig.encode()), EncodedAuthorityId(id.encode()))
-        // })
-        // }
-
-        // fn verify(payload: &Vec<u8>, signature: &EncodedSignature, authority_id: &EncodedAuthorityId) -> bool {
-        //     let signature = match BabeSignature::decode(&mut &signature.0[..]) {
-        //         Ok(s) => s,
-        //         _ => return false,
-        //     };
-        //
-        //     let authority_id = match BabeId::decode(&mut &authority_id.0[..]) {
-        //         Ok(id) => id,
-        //         _ => return false,
-        //     };
-        //
-        //     AuthorityDiscovery::verify(payload, signature, authority_id)
-        // }
     }
 
     impl frame_system_rpc_runtime_api::AccountNonceApi<Block, AccountId, Index> for Runtime {
@@ -1070,15 +999,20 @@ impl_runtime_apis! {
         fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
             SessionKeys::generate(seed)
         }
-        // fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {
-        //     let seed = seed.as_ref().map(|s| rstd::str::from_utf8(&s).expect("Seed is an utf8 string"));
-        //     opaque::SessionKeys::generate(seed)
-        // }
-
-      fn decode_session_keys(
+        fn decode_session_keys(
             encoded: Vec<u8>,
         ) -> Option<Vec<(Vec<u8>, KeyTypeId)>> {
             SessionKeys::decode_into_raw_public_keys(&encoded)
+        }
+    }
+
+    impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<
+        Block,
+        Balance,
+        UncheckedExtrinsic,
+    > for Runtime {
+        fn query_info(uxt: UncheckedExtrinsic, len: u32) -> RuntimeDispatchInfo<Balance> {
+            TransactionPayment::query_info(uxt, len)
         }
     }
 }
