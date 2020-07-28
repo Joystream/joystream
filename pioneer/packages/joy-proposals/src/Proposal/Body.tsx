@@ -62,7 +62,7 @@ function ProposedMember (props: { memberId?: MemberId | number | null }) {
 
   return (
     <PromiseComponent error={error} loading={loading} message="Fetching profile...">
-      { member ? (
+      { (member && !member.handle.isEmpty) ? (
         <ProfilePreview
           avatar_uri={ member.avatar_uri.toString() }
           root_account={ member.root_account.toString() }
