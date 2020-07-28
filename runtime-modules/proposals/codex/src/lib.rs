@@ -1053,11 +1053,9 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Sets default config values for the proposals.
+    /// Sets config values for the proposals.
     /// Should be called on the migration to the new runtime version.
-    pub fn set_default_config_values() {
-        let p = ProposalsConfigParameters::default();
-
+    pub fn set_config_values(p: ProposalsConfigParameters) {
         <SetValidatorCountProposalVotingPeriod<T>>::put(T::BlockNumber::from(
             p.set_validator_count_proposal_voting_period,
         ));

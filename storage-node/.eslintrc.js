@@ -13,6 +13,7 @@ module.exports = {
     'no-console': 'off', // we use console in the project
     '@typescript-eslint/no-var-requires': 'warn',
     '@typescript-eslint/camelcase': 'warn',
+    '@typescript-eslint/naming-convention': 'off',
   },
   overrides: [
     {

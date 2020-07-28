@@ -17,7 +17,6 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile
-        yarn madge --circular types/
         yarn workspace joystream-cli checks
 
   cli_build_osx:
@@ -35,5 +34,4 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
-        yarn madge --circular types/
         yarn workspace joystream-cli checks

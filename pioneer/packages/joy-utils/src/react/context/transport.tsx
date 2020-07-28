@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { ApiContext } from '@polkadot/react-api';
 import { ApiProps } from '@polkadot/react-api/types';
 
@@ -15,7 +15,8 @@ export function TransportProvider ({ children }: { children: React.PropsWithChil
     throw new Error('Cannot create Transport: The Substrate API is not ready yet.');
   }
 
-  const transport = new Transport(api.api);
+  // Preserve transport instance in state to allow more effective caching
+  const [transportInstance] = useState<Transport>(() => new Transport(api.api));
 
-  return <TransportContext.Provider value={transport}>{children}</TransportContext.Provider>;
+  return <TransportContext.Provider value={transportInstance}>{children}</TransportContext.Provider>;
 }

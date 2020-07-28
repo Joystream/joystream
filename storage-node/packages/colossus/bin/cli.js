@@ -29,15 +29,19 @@ const FLAG_DEFINITIONS = {
   },
   keyFile: {
     type: 'string',
-    isRequired: (flags) => {
-      return !flags.dev
+    isRequired: (flags, input) => {
+      // Only required if running server command and not in dev mode
+      const serverCmd = input[0] === 'server'
+      return !flags.dev && serverCmd
     },
   },
   publicUrl: {
     type: 'string',
     alias: 'u',
-    isRequired: (flags) => {
-      return !flags.dev
+    isRequired: (flags, input) => {
+      // Only required if running server command and not in dev mode
+      const serverCmd = input[0] === 'server'
+      return !flags.dev && serverCmd
     },
   },
   passphrase: {
@@ -50,8 +54,10 @@ const FLAG_DEFINITIONS = {
   providerId: {
     type: 'number',
     alias: 'i',
-    isRequired: (flags) => {
-      return !flags.dev
+    isRequired: (flags, input) => {
+      // Only required if running server command and not in dev mode
+      const serverCmd = input[0] === 'server'
+      return !flags.dev && serverCmd
     },
   },
 }
@@ -105,13 +111,13 @@ function startExpressApp(app, port) {
 
 // Start app
 function startAllServices({ store, api, port }) {
-  const app = require('../lib/app')(PROJECT_ROOT, store, api) // reduce falgs to only needed values
+  const app = require('../lib/app')(PROJECT_ROOT, store, api)
   return startExpressApp(app, port)
 }
 
 // Start discovery service app only
 function startDiscoveryService({ api, port }) {
-  const app = require('../lib/discovery')(PROJECT_ROOT, api) // reduce flags to only needed values
+  const app = require('../lib/discovery')(PROJECT_ROOT, api)
   return startExpressApp(app, port)
 }
 
@@ -136,6 +142,21 @@ function getStorage(runtimeApi) {
   return Storage.create(options)
 }
 
+async function untilChainIsSynched(api) {
+  while (true) {
+    const health = await api.api.rpc.system.health()
+
+    if (health.isSyncing.isTrue) {
+      debug('Waiting for chain to be synced...')
+      await new Promise((resolve) => {
+        setTimeout(resolve, 1 * 30 * 1000)
+      })
+    } else {
+      return
+    }
+  }
+}
+
 async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }) {
   // Load key information
   const { RuntimeApi } = require('@joystream/storage-runtime-api')
@@ -158,6 +179,8 @@ async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }
   if (!api.identities.key) {
     throw new Error('Failed to unlock storage provider account')
   }
+
+  await untilChainIsSynched(api)
 
   if (!(await api.workers.isRoleAccountOfStorageProvider(api.storageProviderId, api.identities.key.address))) {
     throw new Error('storage provider role account and storageProviderId are not associated with a worker')
@@ -199,6 +222,8 @@ function getServiceInformation(publicUrl) {
   }
 }
 
+// TODO: instead of recursion use while/async-await and use promise/setTimout based sleep
+// or cleaner code with generators?
 async function announcePublicUrl(api, publicUrl) {
   // re-announce in future
   const reannounce = function (timeoutMs) {
@@ -238,14 +263,14 @@ if (!command) {
   command = 'server'
 }
 
-async function startColossus({ api, publicUrl, port, flags }) {
+async function startColossus({ api, publicUrl, port }) {
   // TODO: check valid url, and valid port number
   const store = getStorage(api)
   banner()
   const { startSyncing } = require('../lib/sync')
   startSyncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
   announcePublicUrl(api, publicUrl)
-  return startAllServices({ store, api, port, flags }) // dont pass all flags only required values
+  return startAllServices({ store, api, port })
 }
 
 const commands = {

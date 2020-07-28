@@ -186,9 +186,10 @@ class IdentitiesApi {
     const tx = this.base.api.tx.members.buyMembership(0, userInfo)
 
     return this.base.signAndSendThenGetEventResult(accountId, tx, {
-      eventModule: 'members',
-      eventName: 'MemberRegistered',
-      eventProperty: 'MemberId',
+      module: 'members',
+      event: 'MemberRegistered',
+      type: 'MemberId',
+      index: 0,
     })
   }
 

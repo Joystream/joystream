@@ -9,4 +9,5 @@ perl -i -pe's/"setContentWorkingGroupMintCapacityProposalGracePeriod":.*/"setCon
 perl -i -pe's/"setLeadProposalGracePeriod":.*/"setLeadProposalGracePeriod": 0,/' .tmp/chainspec.json
 perl -i -pe's/"spendingProposalGracePeriod":.*/"spendingProposalGracePeriod": 0,/' .tmp/chainspec.json
 perl -i -pe's/"evictStorageProviderProposalGracePeriod":.*/"evictStorageProviderProposalGracePeriod": 0,/' .tmp/chainspec.json
-perl -i -pe's/"setStorageRoleParametersProposalGracePeriod":.*/"setStorageRoleParametersProposalGracePeriod": 0/' .tmp/chainspec.json
+perl -i -pe's/"beginReviewWorkingGroupLeaderApplicationsProposalGracePeriod":.*/"beginReviewWorkingGroupLeaderApplicationsProposalGracePeriod": 0,/' .tmp/chainspec.json
+perl -i -pe's/"setStorageRoleParametersProposalGracePeriod":.*/"setStorageRoleParametersProposalGracePeriod": 0,/' .tmp/chainspec.json
