@@ -28,7 +28,7 @@
   },
   "scripts": {
     "test": "mocha 'dist/test/**/*.js'",
-    "lint": "eslint --ext .ts,.tsx . && tsc --noEmit --pretty",
+    "lint": "eslint --ext .js,.ts . && tsc --noEmit --pretty",
     "build": "tsc --build"
   },
   "bin": {
