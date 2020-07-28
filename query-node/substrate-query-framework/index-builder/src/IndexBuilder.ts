@@ -69,7 +69,7 @@ export default class IndexBuilder {
     debug(`Yay, block producer at height: #${query_event_block.block_number}`);
 
     asyncForEach(query_event_block.query_events, async (query_event: QueryEvent) => {
-      if (!this._processing_pack[query_event.event_method]) {
+      if (!this._processing_pack[query_event.event_name]) {
         debug(`Unrecognized: ` + query_event.event_name);
 
         query_event.log(0, debug);
@@ -83,7 +83,7 @@ export default class IndexBuilder {
           await queryRunner.startTransaction();
 
           // Call event handler
-          await this._processing_pack[query_event.event_method](makeDatabaseManager(queryRunner.manager), query_event);
+          await this._processing_pack[query_event.event_name](makeDatabaseManager(queryRunner.manager), query_event);
 
           // Update last processed event
           await SavedEntityEvent.update(query_event, queryRunner.manager);
