@@ -61,7 +61,7 @@ export class SavedEntityEvent {
     }
 
     lastProcessedEvent.index = event.index;
-    lastProcessedEvent.eventName = event.event_method;
+    lastProcessedEvent.eventName = event.event_name;
     lastProcessedEvent.blockNumber = event.block_number;
     lastProcessedEvent.updatedAt = new Date();
 
