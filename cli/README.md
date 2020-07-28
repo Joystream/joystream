@@ -25,6 +25,16 @@ To run a command in developemnt environment (without installing the package):
     ```
         $ ./bin/run COMMAND
     ```
+
+Alternatively:
+
+1. Navigate into the CLI root directory
+1. Execute `yarn link` (if that doesn't work, consider `sudo yarn link`)
+1. Execute command from any location like this:
+
+    ```
+        $ joystream-cli COMMAND
+    ```
 <!-- development -->
 
 # Usage
@@ -46,10 +56,11 @@ USAGE
 <!-- first-steps -->
 When using the CLI for the first time there are a few common steps you might want to take in order to configure the CLI:
 
-1. Make sure the CLI is using the correct node endpoint by executing the `api:getUri` command. You can change the uri via `api:setUri` ie. `api:setUri ws://localhost:9944/` (to use the local node).
+1. Set the correct node endpoint. You can do this by executing `api:setUri` or any command that requires an api connection. To verify the current endpoint you can execute `api:getUri`.
 1. In order to use the accounts/keys that you may already have access to within Pioneer, you need to dowload the backup json file(s) ([https://testnet.joystream.org/#/accounts](https://testnet.joystream.org/#/accounts)) and import them into the CLI by executing `account:import /path/to/backup.json`.
 1. By executing `account:choose` you can choose one of the imported accounts, that will then serve as context for the next commands (you can check currently selected account using `account:info`). If you just want to use the development _Alice_ or _Bob_ account, you can access them without importing by providing an additional flag: `account:choose --showSpecial`.
 1. The context should now be fully set up! Feel free to use the `--help` flag to investigate the available commands or take a look at the sections below.
+1. You may also find it useful to get the first part of the command (before the colon) autocompleted when you press `[Tab]` while typing the name in the console. Executing `autocomplete` command will provide the instructions on how to set this up (see documentation below).
 <!-- first-steps -->
 
 # Commands
@@ -63,7 +74,8 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli account:transferTokens RECIPIENT AMOUNT`](#joystream-cli-accounttransfertokens-recipient-amount)
 * [`joystream-cli api:getUri`](#joystream-cli-apigeturi)
 * [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
-* [`joystream-cli api:setUri URI`](#joystream-cli-apiseturi-uri)
+* [`joystream-cli api:setUri [URI]`](#joystream-cli-apiseturi-uri)
+* [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
 * [`joystream-cli council:info`](#joystream-cli-councilinfo)
 * [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
 * [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
@@ -239,19 +251,42 @@ EXAMPLES
 
 _See code: [src/commands/api/inspect.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/inspect.ts)_
 
-## `joystream-cli api:setUri URI`
+## `joystream-cli api:setUri [URI]`
 
 Set api WS provider uri
 
 ```
 USAGE
-  $ joystream-cli api:setUri URI
+  $ joystream-cli api:setUri [URI]
 
 ARGUMENTS
-  URI  Uri of the node api WS provider
+  URI  Uri of the node api WS provider (if skipped, a prompt will be displayed)
 ```
 
 _See code: [src/commands/api/setUri.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/setUri.ts)_
+
+## `joystream-cli autocomplete [SHELL]`
+
+display autocomplete installation instructions
+
+```
+USAGE
+  $ joystream-cli autocomplete [SHELL]
+
+ARGUMENTS
+  SHELL  shell type
+
+OPTIONS
+  -r, --refresh-cache  Refresh cache (ignores displaying instructions)
+
+EXAMPLES
+  $ joystream-cli autocomplete
+  $ joystream-cli autocomplete bash
+  $ joystream-cli autocomplete zsh
+  $ joystream-cli autocomplete --refresh-cache
+```
+
+_See code: [@oclif/plugin-autocomplete](https://github.com/oclif/plugin-autocomplete/blob/v0.2.0/src/commands/autocomplete/index.ts)_
 
 ## `joystream-cli council:info`
 
