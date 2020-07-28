@@ -1,12 +1,12 @@
-joystream-cli
+@joystream/cli
 =============
 
 Command Line Interface for Joystream community and governance activities
 
 [![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
-[![Version](https://img.shields.io/npm/v/joystream-cli.svg)](https://npmjs.org/package/joystream-cli)
-[![Downloads/week](https://img.shields.io/npm/dw/joystream-cli.svg)](https://npmjs.org/package/joystream-cli)
-[![License](https://img.shields.io/npm/l/joystream-cli.svg)](https://github.com/Joystream/cli/blob/master/package.json)
+[![Version](https://img.shields.io/npm/v/@joystream/cli.svg)](https://npmjs.org/package/@joystream/cli)
+[![Downloads/week](https://img.shields.io/npm/dw/@joystream/cli.svg)](https://npmjs.org/package/@joystream/cli)
+[![License](https://img.shields.io/npm/l/@joystream/cli.svg)](https://github.com/Joystream/cli/blob/master/package.json)
 
 <!-- toc -->
 * [Development](#development)
@@ -40,11 +40,11 @@ Alternatively:
 # Usage
 <!-- usage -->
 ```sh-session
-$ npm install -g joystream-cli
+$ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-joystream-cli/0.0.0 linux-x64 node-v13.12.0
+@joystream/cli/0.1.0 linux-x64 node-v13.12.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -221,15 +221,15 @@ OPTIONS
       If no "--method" flag is provided then all methods in that module will be listed along with the descriptions.
 
   -a, --callArgs=callArgs
-      Specifies the arguments to use when calling a method. Multiple arguments can be separated with a comma, ie.
+      Specifies the arguments to use when calling a method. Multiple arguments can be separated with a comma, ie. 
       "-a=arg1,arg2".
       You can omit this flag even if the method requires some aguments.
       In that case you will be promted to provide value for each required argument.
-      Ommiting this flag is recommended when input parameters are of more complex types (and it's hard to specify them as
+      Ommiting this flag is recommended when input parameters are of more complex types (and it's hard to specify them as 
       just simple comma-separated strings)
 
   -e, --exec
-      Provide this flag if you want to execute the actual call, instead of displaying the method description (which is
+      Provide this flag if you want to execute the actual call, instead of displaying the method description (which is 
       default)
 
   -m, --method=method

@@ -5,6 +5,7 @@ import { CLIError } from '@oclif/errors'
 import lockFile from 'proper-lockfile'
 import DefaultCommandBase from './DefaultCommandBase'
 import os from 'os'
+import _ from 'lodash'
 
 // Type for the state object (which is preserved as json in the state file)
 type StateObject = {
@@ -47,7 +48,7 @@ export default abstract class StateAwareCommandBase extends DefaultCommandBase {
     if (!packageJson || !packageJson.name) {
       throw new CLIError('Cannot get package name from package.json!')
     }
-    return path.join(systemAppDataPath, packageJson.name)
+    return path.join(systemAppDataPath, _.kebabCase(packageJson.name))
   }
 
   getStateFilePath(): string {
