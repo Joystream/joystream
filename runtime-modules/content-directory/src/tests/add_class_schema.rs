@@ -118,7 +118,6 @@ fn add_class_schema_class_does_not_exist() {
 #[test]
 fn add_class_schema_limit_reached() {
     with_test_externalities(|| {
-
         // Create simple class with default permissions
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 

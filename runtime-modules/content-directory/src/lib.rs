@@ -41,7 +41,7 @@ pub use serde::{Deserialize, Serialize};
 /// Type, used in diffrent numeric constraints representations
 type MaxNumber = u32;
 
-//TODO: Convert errors to the Substrate decl_error! macro.
+// TODO: Convert errors to the Substrate decl_error! macro.
 /// Result with string error message. This exists for backward compatibility purpose.
 pub type DispatchResult = Result<(), &'static str>;
 
