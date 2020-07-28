@@ -1,2 +1,2 @@
-import SeriesPreview from "./SeriesPreview";
-export default SeriesPreview;
+import SeriesPreview from './SeriesPreview'
+export default SeriesPreview

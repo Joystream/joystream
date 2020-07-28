@@ -1,20 +1,22 @@
 {
-	"private": true,
-	"name": "joystream",
-	"license": "GPL-3.0-only",
-	"scripts": {
-		"test": "yarn && yarn workspaces run test"
-	},
-	"workspaces": [
-		"tests/network-tests"
-	],
-	"devDependencies": {
-		"husky": "^4.2.5"
-	},
-	"husky": {
-	  "hooks": {
-		"pre-commit": "devops/git-hooks/pre-commit",
-		"pre-push": "devops/git-hooks/pre-push"
-	  }
-	}
+  "private": true,
+  "name": "joystream",
+  "version": "1.0.0",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "test": "yarn && yarn workspaces run test",
+    "lint": "yarn workspaces run lint"
+  },
+  "workspaces": [
+    "tests/network-tests",
+    "devops/prettier-config",
+    "devops/eslint-config"
+  ],
+  "resolutions": {
+    "typescript": "^3.7.2"
+  },
+  "devDependencies": {
+    "husky": "^4.2.5",
+    "eslint": "^6.6.0"
+  }
 }

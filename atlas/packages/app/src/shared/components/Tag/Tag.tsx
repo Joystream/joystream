@@ -1,11 +1,11 @@
-import React from "react";
-import { TagStyleProps, useCSS } from "./Tag.style";
+import React from 'react'
+import { TagStyleProps, useCSS } from './Tag.style'
 
 type TagProps = {
-	children?: React.ReactNode;
-} & TagStyleProps;
+  children?: React.ReactNode
+} & TagStyleProps
 
-export default function Tag({ children, ...styleProps }: TagProps) {
-	let styles = useCSS(styleProps);
-	return <div css={styles}>{children}</div>;
+export default function Tag({ children }: TagProps) {
+  const styles = useCSS()
+  return <div css={styles}>{children}</div>
 }

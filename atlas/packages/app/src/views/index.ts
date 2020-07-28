@@ -1,3 +1,3 @@
-import HomeView from "./HomeView";
+import HomeView from './HomeView'
 
-export { HomeView };
+export { HomeView }

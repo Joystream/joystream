@@ -1,2 +1,2 @@
-import TagButton from "./TagButton";
-export default TagButton;
+import TagButton from './TagButton'
+export default TagButton
