@@ -25,7 +25,7 @@ use common::currency::{BalanceOf, GovernanceCurrency};
 /// Result with string error message. This exists for backward compatibility purpose.
 pub type DispatchResult = Result<(), &'static str>;
 
-pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
+pub trait Trait: system::Trait + GovernanceCurrency + pallet_timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type MemberId: Parameter
@@ -81,7 +81,7 @@ const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 /// Public membership object alias.
 pub type Membership<T> = MembershipObject<
     <T as system::Trait>::BlockNumber,
-    <T as timestamp::Trait>::Moment,
+    <T as pallet_timestamp::Trait>::Moment,
     <T as Trait>::PaidTermId,
     <T as Trait>::SubscriptionId,
     <T as system::Trait>::AccountId,
@@ -568,7 +568,7 @@ impl<T: Trait> Module<T> {
             avatar_uri: user_info.avatar_uri.clone(),
             about: user_info.about.clone(),
             registered_at_block: <system::Module<T>>::block_number(),
-            registered_at_time: <timestamp::Module<T>>::now(),
+            registered_at_time: <pallet_timestamp::Module<T>>::now(),
             entry: entry_method,
             suspended: false,
             subscription: None,

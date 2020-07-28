@@ -341,7 +341,7 @@ parameter_types! {
     pub const MinimumPeriod: Moment = SLOT_DURATION / 2;
 }
 
-impl timestamp::Trait for Runtime {
+impl pallet_timestamp::Trait for Runtime {
     type Moment = Moment;
     type OnTimestampSet = Babe;
     type MinimumPeriod = MinimumPeriod;
@@ -797,7 +797,7 @@ construct_runtime!(
         // Substrate
         System: system::{Module, Call, Storage, Config, Event<T>},
         Babe: pallet_babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
-        Timestamp: timestamp::{Module, Call, Storage, Inherent},
+        Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
         Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
         Indices: pallet_indices::{Module, Call, Storage, Config<T>, Event<T>},
         Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},

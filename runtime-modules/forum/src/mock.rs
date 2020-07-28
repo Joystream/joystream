@@ -96,7 +96,7 @@ impl system::Trait for Runtime {
     type OnKilledAccount = ();
 }
 
-impl timestamp::Trait for Runtime {
+impl pallet_timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -456,24 +456,24 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
 pub type RuntimeMap<K, V> = std::vec::Vec<(K, V)>;
 pub type RuntimeCategory = Category<
     <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
+    <Runtime as pallet_timestamp::Trait>::Moment,
     <Runtime as system::Trait>::AccountId,
 >;
 pub type RuntimeThread = Thread<
     <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
+    <Runtime as pallet_timestamp::Trait>::Moment,
     <Runtime as system::Trait>::AccountId,
     RuntimeThreadId,
 >;
 pub type RuntimePost = Post<
     <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
+    <Runtime as pallet_timestamp::Trait>::Moment,
     <Runtime as system::Trait>::AccountId,
     RuntimeThreadId,
     RuntimePostId,
 >;
 pub type RuntimeBlockchainTimestamp =
-    BlockAndTime<<Runtime as system::Trait>::BlockNumber, <Runtime as timestamp::Trait>::Moment>;
+    BlockAndTime<<Runtime as system::Trait>::BlockNumber, <Runtime as pallet_timestamp::Trait>::Moment>;
 
 pub type RuntimeThreadId = <Runtime as Trait>::ThreadId;
 pub type RuntimePostId = <Runtime as Trait>::PostId;

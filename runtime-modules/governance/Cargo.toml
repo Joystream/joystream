@@ -12,7 +12,7 @@ frame-support = { package = 'frame-support', default-features = false, git = 'ht
 system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../token-minting'}
 recurringrewards = { package = 'pallet-recurring-reward', default-features = false, path = '../recurring-reward'}
@@ -33,7 +33,7 @@ std = [
 	'system/std',
 	'sp-arithmetic/std',
 	'sp-runtime/std',
-	'timestamp/std',
+	'pallet-timestamp/std',
 	'membership/std',
 	'minting/std',
 	'recurringrewards/std',

@@ -261,7 +261,7 @@ impl<BlockNumber, Moment, AccountId> Category<BlockNumber, Moment, AccountId> {
 type CategoryTreePath<BlockNumber, Moment, AccountId> =
     Vec<Category<BlockNumber, Moment, AccountId>>;
 
-pub trait Trait: system::Trait + timestamp::Trait + Sized {
+pub trait Trait: system::Trait + pallet_timestamp::Trait + Sized {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type MembershipRegistry: ForumUserRegistry<Self::AccountId>;

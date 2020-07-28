@@ -39,7 +39,7 @@ use crate::{MemberId, StorageProviderId, StorageWorkingGroup, StorageWorkingGrou
 
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
-    timestamp::Trait
+    pallet_timestamp::Trait
     + system::Trait
     + data_object_type_registry::Trait
     + membership::Trait
@@ -109,7 +109,7 @@ impl Default for LiaisonJudgement {
 pub type DataObject<T> = DataObjectInternal<
     MemberId<T>,
     <T as system::Trait>::BlockNumber,
-    <T as timestamp::Trait>::Moment,
+    <T as pallet_timestamp::Trait>::Moment,
     <T as data_object_type_registry::Trait>::DataObjectTypeId,
     StorageProviderId<T>,
 >;

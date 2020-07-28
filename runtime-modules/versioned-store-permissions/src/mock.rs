@@ -54,7 +54,7 @@ impl system::Trait for Runtime {
     type OnKilledAccount = ();
 }
 
-impl timestamp::Trait for Runtime {
+impl pallet_timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;

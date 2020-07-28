@@ -108,7 +108,7 @@ impl common::currency::GovernanceCurrency for Test {
     type Currency = Balances;
 }
 
-impl timestamp::Trait for Test {
+impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;

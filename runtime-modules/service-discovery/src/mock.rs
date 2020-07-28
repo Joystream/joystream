@@ -140,7 +140,7 @@ impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
-impl timestamp::Trait for Test {
+impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;

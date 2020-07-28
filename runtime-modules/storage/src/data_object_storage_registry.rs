@@ -36,7 +36,7 @@ const DEFAULT_FIRST_RELATIONSHIP_ID: u8 = 1;
 
 /// The _Data object storage registry_ main _Trait_.
 pub trait Trait:
-    timestamp::Trait
+    pallet_timestamp::Trait
     + system::Trait
     + data_directory::Trait
     + working_group::Trait<StorageWorkingGroupInstance>

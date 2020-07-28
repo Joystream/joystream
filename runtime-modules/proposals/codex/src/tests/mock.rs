@@ -307,7 +307,7 @@ impl system::Trait for Test {
     type OnKilledAccount = ();
 }
 
-impl timestamp::Trait for Test {
+impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -325,5 +325,5 @@ pub type Staking = staking::Module<Test>;
 pub type ProposalCodex = crate::Module<Test>;
 pub type ProposalsEngine = proposals_engine::Module<Test>;
 pub type Balances = balances::Module<Test>;
-pub type Timestamp = timestamp::Module<Test>;
+pub type Timestamp = pallet_timestamp::Module<Test>;
 pub type System = system::Module<Test>;
