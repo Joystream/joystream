@@ -248,8 +248,13 @@ class RuntimeApi {
       const nonce = await this.selectBestNonce(accountId)
 
       try {
-        unsubscribe = await tx.sign(fromKey, { nonce }).send(handleTxUpdates)
-        debug('TransactionSubmitted')
+        const signed = tx.sign(fromKey, { nonce })
+        unsubscribe = await signed.send(handleTxUpdates)
+        const serialized = JSON.stringify({
+          hash: signed.hash,
+          raw: signed.toHex(),
+        })
+        debug(`TransactionSubmitted: ${serialized}`)
         // transaction submitted successfully, increment and save nonce.
         this.incrementAndSaveNonce(accountId, nonce)
       } catch (err) {
