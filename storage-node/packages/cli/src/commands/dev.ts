@@ -45,14 +45,14 @@ const batchDispatchCalls = async (
 
   debug(`dispatching ${rawCalls.length} transactions.`)
 
-  await rawCalls
-    .map((call) => {
+  // promise.all to avoid unhandled promise rejection
+  return Promise.all(
+    rawCalls.map((call) => {
       const { methodName, sectionName, args } = call
       const tx = api.tx[sectionName][methodName](...args)
       return runtimeApi.signAndSend(senderAddress, tx)
     })
-    .reverse()
-    .shift()
+  )
 }
 
 // Dispatch pre-prepared calls to runtime to initialize the versioned store

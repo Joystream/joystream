@@ -96,17 +96,6 @@ class AssetsApi {
   }
 
   /*
-   * Creates storage relationship for a data object and provider
-   */
-  async createStorageRelationship(providerAccountId, storageProviderId, contentId, callback) {
-    contentId = parseContentId(contentId)
-    const tx = this.base.api.tx.dataObjectStorageRegistry.addRelationship(storageProviderId, contentId)
-
-    const subscribed = [['dataObjectStorageRegistry', 'DataObjectStorageRelationshipAdded']]
-    return this.base.signAndSend(providerAccountId, tx, 3, subscribed, callback)
-  }
-
-  /*
    * Gets storage relationship for contentId for the given provider
    */
   async getStorageRelationshipAndId(storageProviderId, contentId) {
@@ -126,22 +115,18 @@ class AssetsApi {
   }
 
   /*
-   * Creates storage relationship for a data object and provider and returns the relationship id
+   * Creates storage relationship for a data object and provider and
+   * returns the relationship id
    */
-  async createAndReturnStorageRelationship(providerAccountId, storageProviderId, contentId) {
+  async createStorageRelationship(providerAccountId, storageProviderId, contentId) {
     contentId = parseContentId(contentId)
-    // TODO: rewrite this method to async-await style
-    // eslint-disable-next-line  no-async-promise-executor
-    return new Promise(async (resolve, reject) => {
-      try {
-        await this.createStorageRelationship(providerAccountId, storageProviderId, contentId, (events) => {
-          events.forEach((event) => {
-            resolve(event[1].DataObjectStorageRelationshipId)
-          })
-        })
-      } catch (err) {
-        reject(err)
-      }
+    const tx = this.base.api.tx.dataObjectStorageRegistry.addRelationship(storageProviderId, contentId)
+
+    return this.base.signAndSendThenGetEventResult(providerAccountId, tx, {
+      module: 'dataObjectStorageRegistry',
+      event: 'DataObjectStorageRelationshipAdded',
+      type: 'DataObjectStorageRelationshipId',
+      index: 0,
     })
   }
 

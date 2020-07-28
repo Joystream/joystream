@@ -42,5 +42,9 @@
       "pre-commit": "devops/git-hooks/pre-commit",
       "pre-push": "devops/git-hooks/pre-push"
     }
+  },
+  "engines": {
+    "node": ">=12.18.0",
+    "yarn": "^1.22.0"
   }
 }

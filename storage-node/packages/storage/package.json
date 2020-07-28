@@ -30,7 +30,7 @@
     "linux"
   ],
   "engines": {
-    "node": ">=10.15.3"
+    "node": ">=12.18.0"
   },
   "scripts": {
     "test": "mocha --exit 'test/**/*.js'",
