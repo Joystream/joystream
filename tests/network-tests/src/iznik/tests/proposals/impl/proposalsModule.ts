@@ -4,312 +4,962 @@ import { v4 as uuid } from 'uuid'
 import BN from 'bn.js'
 import { WorkingGroupOpening } from '../../../dto/workingGroupOpening'
 import { FillOpeningParameters } from '../../../dto/fillOpeningParameters'
+import { Fixture } from '../../../utils/fixture'
+import { Bytes } from '@polkadot/types'
+import { assert } from 'chai'
 
-export async function createWorkingGroupLeaderOpening(
-  apiWrapper: ApiWrapper,
-  m1KeyPairs: KeyringPair[],
-  sudo: KeyringPair,
-  applicationStake: BN,
-  roleStake: BN,
-  workingGroup: string
-): Promise<BN> {
-  // Setup
-  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
-  const description: string = 'Testing working group lead opening proposal ' + uuid().substring(0, 8)
+export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
+  private applicationStake: BN
+  private roleStake: BN
+  private workingGroup: string
 
-  // Proposal stake calculation
-  const proposalStake: BN = new BN(100000)
-  const proposalFee: BN = apiWrapper.estimateProposeCreateWorkingGroupLeaderOpeningFee()
-  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake))
+  private result: BN | undefined
 
-  // Opening construction
-  const opening = new WorkingGroupOpening()
-    .setMaxActiveApplicants(new BN(m1KeyPairs.length))
-    .setMaxReviewPeriodLength(new BN(32))
-    .setApplicationStakingPolicyAmount(new BN(applicationStake))
-    .setApplicationCrowdedOutUnstakingPeriodLength(new BN(1))
-    .setApplicationExpiredUnstakingPeriodLength(new BN(1))
-    .setRoleStakingPolicyAmount(new BN(roleStake))
-    .setRoleCrowdedOutUnstakingPeriodLength(new BN(1))
-    .setRoleExpiredUnstakingPeriodLength(new BN(1))
-    .setSlashableMaxCount(new BN(1))
-    .setSlashableMaxPercentPtsPerTime(new BN(100))
-    .setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1))
-    .setFailedApplicantApplicationStakeUnstakingPeriod(new BN(1))
-    .setFailedApplicantRoleStakeUnstakingPeriod(new BN(1))
-    .setTerminateApplicationStakeUnstakingPeriod(new BN(1))
-    .setTerminateRoleStakeUnstakingPeriod(new BN(1))
-    .setExitRoleApplicationStakeUnstakingPeriod(new BN(1))
-    .setExitRoleStakeUnstakingPeriod(new BN(1))
-    .setText(uuid().substring(0, 8))
+  constructor(
+    apiWrapper: ApiWrapper,
+    m1KeyPairs: KeyringPair[],
+    sudo: KeyringPair,
+    applicationStake: BN,
+    roleStake: BN,
+    workingGroup: string
+  ) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.sudo = sudo
+    this.applicationStake = applicationStake
+    this.roleStake = roleStake
+    this.workingGroup = workingGroup
+  }
 
-  // Proposal creation
-  const proposalPromise = apiWrapper.expectProposalCreated()
-  await apiWrapper.proposeCreateWorkingGroupLeaderOpening(
-    m1KeyPairs[0],
-    proposalTitle,
-    description,
-    proposalStake,
-    opening,
-    workingGroup
-  )
-  const proposalNumber: BN = await proposalPromise
-  return proposalNumber
+  public getResult(): BN | undefined {
+    return this.result
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
+    const description: string = 'Testing working group lead opening proposal ' + uuid().substring(0, 8)
+
+    // Proposal stake calculation
+    const proposalStake: BN = new BN(100000)
+    const proposalFee: BN = this.apiWrapper.estimateProposeCreateWorkingGroupLeaderOpeningFee()
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, proposalFee.add(proposalStake))
+
+    // Opening construction
+    const opening = new WorkingGroupOpening()
+      .setMaxActiveApplicants(new BN(this.m1KeyPairs.length))
+      .setMaxReviewPeriodLength(new BN(32))
+      .setApplicationStakingPolicyAmount(new BN(this.applicationStake))
+      .setApplicationCrowdedOutUnstakingPeriodLength(new BN(1))
+      .setApplicationExpiredUnstakingPeriodLength(new BN(1))
+      .setRoleStakingPolicyAmount(new BN(this.roleStake))
+      .setRoleCrowdedOutUnstakingPeriodLength(new BN(1))
+      .setRoleExpiredUnstakingPeriodLength(new BN(1))
+      .setSlashableMaxCount(new BN(1))
+      .setSlashableMaxPercentPtsPerTime(new BN(100))
+      .setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1))
+      .setFailedApplicantApplicationStakeUnstakingPeriod(new BN(1))
+      .setFailedApplicantRoleStakeUnstakingPeriod(new BN(1))
+      .setTerminateApplicationStakeUnstakingPeriod(new BN(1))
+      .setTerminateRoleStakeUnstakingPeriod(new BN(1))
+      .setExitRoleApplicationStakeUnstakingPeriod(new BN(1))
+      .setExitRoleStakeUnstakingPeriod(new BN(1))
+      .setText(uuid().substring(0, 8))
+
+    // Proposal creation
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeCreateWorkingGroupLeaderOpening(
+      this.m1KeyPairs[0],
+      proposalTitle,
+      description,
+      proposalStake,
+      opening,
+      this.workingGroup
+    )
+    const proposalNumber: BN = await proposalPromise
+    this.result = proposalNumber
+  }
 }
 
-export async function beginWorkingGroupLeaderApplicationReview(
-  apiWrapper: ApiWrapper,
-  m1KeyPairs: KeyringPair[],
-  sudo: KeyringPair,
-  openingId: BN,
-  workingGroup: string
-): Promise<BN> {
-  // Setup
-  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
-  const description: string = 'Testing begin working group lead application review proposal ' + uuid().substring(0, 8)
+export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
+  private openingId: BN
+  private workingGroup: string
 
-  // Proposal stake calculation
-  const proposalStake: BN = new BN(25000)
-  const proposalFee: BN = apiWrapper.estimateProposeBeginWorkingGroupLeaderApplicationReviewFee()
-  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake))
+  private result: BN | undefined
 
-  // Proposal creation
-  const proposalPromise = apiWrapper.expectProposalCreated()
-  await apiWrapper.proposeBeginWorkingGroupLeaderApplicationReview(
-    m1KeyPairs[0],
-    proposalTitle,
-    description,
-    proposalStake,
-    openingId,
-    workingGroup
-  )
-  const proposalNumber: BN = await proposalPromise
-  return proposalNumber
+  constructor(
+    apiWrapper: ApiWrapper,
+    m1KeyPairs: KeyringPair[],
+    sudo: KeyringPair,
+    openingId: BN,
+    workingGroup: string
+  ) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.sudo = sudo
+    this.openingId = openingId
+    this.workingGroup = workingGroup
+  }
+
+  public getResult(): BN | undefined {
+    return this.result
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
+    const description: string = 'Testing begin working group lead application review proposal ' + uuid().substring(0, 8)
+
+    // Proposal stake calculation
+    const proposalStake: BN = new BN(25000)
+    const proposalFee: BN = this.apiWrapper.estimateProposeBeginWorkingGroupLeaderApplicationReviewFee()
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, proposalFee.add(proposalStake))
+
+    // Proposal creation
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeBeginWorkingGroupLeaderApplicationReview(
+      this.m1KeyPairs[0],
+      proposalTitle,
+      description,
+      proposalStake,
+      this.openingId,
+      this.workingGroup
+    )
+    const proposalNumber: BN = await proposalPromise
+    this.result = proposalNumber
+  }
 }
 
-export async function fillLeaderOpeningProposal(
-  apiWrapper: ApiWrapper,
-  m1KeyPairs: KeyringPair[],
-  applicantRoleAccountAddress: string,
-  sudo: KeyringPair,
-  firstRewardInterval: BN,
-  rewardInterval: BN,
-  payoutAmount: BN,
-  openingId: BN,
-  workingGroup: WorkingGroups
-): Promise<BN> {
-  // Setup
-  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
-  const description: string = 'Testing fill opening proposal ' + uuid().substring(0, 8)
-  const workingGroupString: string = apiWrapper.getWorkingGroupString(workingGroup)
+export class FillLeaderOpeningProposalFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private applicantRoleAccountAddress: string
+  private sudo: KeyringPair
+  private firstRewardInterval: BN
+  private rewardInterval: BN
+  private payoutAmount: BN
+  private openingId: BN
+  private workingGroup: WorkingGroups
 
-  // Proposal stake calculation
-  const proposalStake: BN = new BN(50000)
-  const proposalFee: BN = apiWrapper.estimateProposeFillLeaderOpeningFee()
-  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake))
+  private result: BN | undefined
 
-  // Proposal creation
-  const applicationId: BN = (
-    await apiWrapper.getActiveApplicationsIdsByRoleAccount(applicantRoleAccountAddress, workingGroup)
-  )[0]
-  const now = await apiWrapper.getBestBlock()
-  const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters()
-    .setAmountPerPayout(payoutAmount)
-    .setNextPaymentAtBlock(now.add(firstRewardInterval))
-    .setPayoutInterval(rewardInterval)
-    .setOpeningId(openingId)
-    .setSuccessfulApplicationId(applicationId)
-    .setWorkingGroup(workingGroupString)
+  constructor(
+    apiWrapper: ApiWrapper,
+    m1KeyPairs: KeyringPair[],
+    applicantRoleAccountAddress: string,
+    sudo: KeyringPair,
+    firstRewardInterval: BN,
+    rewardInterval: BN,
+    payoutAmount: BN,
+    openingId: BN,
+    workingGroup: WorkingGroups
+  ) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.applicantRoleAccountAddress = applicantRoleAccountAddress
+    this.sudo = sudo
+    this.firstRewardInterval = firstRewardInterval
+    this.rewardInterval = rewardInterval
+    this.payoutAmount = payoutAmount
+    this.openingId = openingId
+    this.workingGroup = workingGroup
+  }
 
-  const proposalPromise = apiWrapper.expectProposalCreated()
-  await apiWrapper.proposeFillLeaderOpening(
-    m1KeyPairs[0],
-    proposalTitle,
-    description,
-    proposalStake,
-    fillOpeningParameters
-  )
-  const proposalNumber: BN = await proposalPromise
-  return proposalNumber
+  public getResult(): BN | undefined {
+    return this.result
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
+    const description: string = 'Testing fill opening proposal ' + uuid().substring(0, 8)
+    const workingGroupString: string = this.apiWrapper.getWorkingGroupString(this.workingGroup)
+
+    // Proposal stake calculation
+    const proposalStake: BN = new BN(50000)
+    const proposalFee: BN = this.apiWrapper.estimateProposeFillLeaderOpeningFee()
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, proposalFee.add(proposalStake))
+
+    // Proposal creation
+    const applicationId: BN = (
+      await this.apiWrapper.getActiveApplicationsIdsByRoleAccount(this.applicantRoleAccountAddress, this.workingGroup)
+    )[0]
+    const now = await this.apiWrapper.getBestBlock()
+    const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters()
+      .setAmountPerPayout(this.payoutAmount)
+      .setNextPaymentAtBlock(now.add(this.firstRewardInterval))
+      .setPayoutInterval(this.rewardInterval)
+      .setOpeningId(this.openingId)
+      .setSuccessfulApplicationId(applicationId)
+      .setWorkingGroup(workingGroupString)
+
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeFillLeaderOpening(
+      this.m1KeyPairs[0],
+      proposalTitle,
+      description,
+      proposalStake,
+      fillOpeningParameters
+    )
+    const proposalNumber: BN = await proposalPromise
+    this.result = proposalNumber
+  }
 }
 
-export async function terminateLeaderRoleProposal(
-  apiWrapper: ApiWrapper,
-  m1KeyPairs: KeyringPair[],
-  leaderRoleAccountAddress: string,
-  sudo: KeyringPair,
-  slash: boolean,
-  workingGroup: WorkingGroups
-) {
-  // Setup
-  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
-  const description: string = 'Testing begin working group lead application review proposal ' + uuid().substring(0, 8)
-  const rationale: string = 'Testing leader termination ' + uuid().substring(0, 8)
-  const workingGroupString: string = apiWrapper.getWorkingGroupString(workingGroup)
-  const workerId: BN = await apiWrapper.getWorkerIdByRoleAccount(leaderRoleAccountAddress, workingGroup)
+export class TerminateLeaderRoleProposalFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private leaderRoleAccountAddress: string
+  private sudo: KeyringPair
+  private slash: boolean
+  private workingGroup: WorkingGroups
 
-  // Proposal stake calculation
-  const proposalStake: BN = new BN(100000)
-  const proposalFee: BN = apiWrapper.estimateProposeTerminateLeaderRoleFee()
-  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake))
+  private result: BN | undefined
 
-  // Proposal creation
-  const proposalPromise = apiWrapper.expectProposalCreated()
-  await apiWrapper.proposeTerminateLeaderRole(
-    m1KeyPairs[0],
-    proposalTitle,
-    description,
-    proposalStake,
-    workerId,
-    rationale,
-    slash,
-    workingGroupString
-  )
-  const proposalNumber: BN = await proposalPromise
-  return proposalNumber
+  constructor(
+    apiWrapper: ApiWrapper,
+    m1KeyPairs: KeyringPair[],
+    leaderRoleAccountAddress: string,
+    sudo: KeyringPair,
+    slash: boolean,
+    workingGroup: WorkingGroups
+  ) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.leaderRoleAccountAddress = leaderRoleAccountAddress
+    this.sudo = sudo
+    this.slash = slash
+    this.workingGroup = workingGroup
+  }
+
+  public getResult(): BN | undefined {
+    return this.result
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
+    const description: string = 'Testing begin working group lead application review proposal ' + uuid().substring(0, 8)
+    const rationale: string = 'Testing leader termination ' + uuid().substring(0, 8)
+    const workingGroupString: string = this.apiWrapper.getWorkingGroupString(this.workingGroup)
+    const workerId: BN = await this.apiWrapper.getWorkerIdByRoleAccount(
+      this.leaderRoleAccountAddress,
+      this.workingGroup
+    )
+
+    // Proposal stake calculation
+    const proposalStake: BN = new BN(100000)
+    const proposalFee: BN = this.apiWrapper.estimateProposeTerminateLeaderRoleFee()
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, proposalFee.add(proposalStake))
+
+    // Proposal creation
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeTerminateLeaderRole(
+      this.m1KeyPairs[0],
+      proposalTitle,
+      description,
+      proposalStake,
+      workerId,
+      rationale,
+      this.slash,
+      workingGroupString
+    )
+    const proposalNumber: BN = await proposalPromise
+    this.result = proposalNumber
+  }
 }
 
-export async function setLeaderRewardProposal(
-  apiWrapper: ApiWrapper,
-  m1KeyPairs: KeyringPair[],
-  sudo: KeyringPair,
-  payoutAmount: BN,
-  workingGroup: WorkingGroups
-): Promise<BN> {
-  // Setup
-  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
-  const description: string = 'Testing set leader reward proposal ' + uuid().substring(0, 8)
-  const workingGroupString: string = apiWrapper.getWorkingGroupString(workingGroup)
-  const workerId: BN = (await apiWrapper.getLeadWorkerId(workingGroup))!
+export class SetLeaderRewardProposalFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
+  private payoutAmount: BN
+  private workingGroup: WorkingGroups
 
-  // Proposal stake calculation
-  const proposalStake: BN = new BN(50000)
-  const proposalFee: BN = apiWrapper.estimateProposeLeaderRewardFee()
-  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake))
+  private result: BN | undefined
 
-  // Proposal creation
-  const proposalPromise = apiWrapper.expectProposalCreated()
-  await apiWrapper.proposeLeaderReward(
-    m1KeyPairs[0],
-    proposalTitle,
-    description,
-    proposalStake,
-    workerId,
-    payoutAmount,
-    workingGroupString
-  )
-  const proposalNumber: BN = await proposalPromise
-  return proposalNumber
+  constructor(
+    apiWrapper: ApiWrapper,
+    m1KeyPairs: KeyringPair[],
+    sudo: KeyringPair,
+    payoutAmount: BN,
+    workingGroup: WorkingGroups
+  ) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.sudo = sudo
+    this.payoutAmount = payoutAmount
+    this.workingGroup = workingGroup
+  }
+
+  public getResult(): BN | undefined {
+    return this.result
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
+    const description: string = 'Testing set leader reward proposal ' + uuid().substring(0, 8)
+    const workingGroupString: string = this.apiWrapper.getWorkingGroupString(this.workingGroup)
+    const workerId: BN = (await this.apiWrapper.getLeadWorkerId(this.workingGroup))!
+
+    // Proposal stake calculation
+    const proposalStake: BN = new BN(50000)
+    const proposalFee: BN = this.apiWrapper.estimateProposeLeaderRewardFee()
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, proposalFee.add(proposalStake))
+
+    // Proposal creation
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeLeaderReward(
+      this.m1KeyPairs[0],
+      proposalTitle,
+      description,
+      proposalStake,
+      workerId,
+      this.payoutAmount,
+      workingGroupString
+    )
+    const proposalNumber: BN = await proposalPromise
+    this.result = proposalNumber
+  }
 }
 
-export async function decreaseLeaderStakeProposal(
-  apiWrapper: ApiWrapper,
-  m1KeyPairs: KeyringPair[],
-  sudo: KeyringPair,
-  stakeDecrement: BN,
-  workingGroup: WorkingGroups
-): Promise<BN> {
-  // Setup
-  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
-  const description: string = 'Testing decrease leader stake proposal ' + uuid().substring(0, 8)
-  const workingGroupString: string = apiWrapper.getWorkingGroupString(workingGroup)
-  const workerId: BN = (await apiWrapper.getLeadWorkerId(workingGroup))!
+export class DecreaseLeaderStakeProposalFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
+  private stakeDecrement: BN
+  private workingGroup: WorkingGroups
 
-  // Proposal stake calculation
-  const proposalStake: BN = new BN(50000)
-  const proposalFee: BN = apiWrapper.estimateProposeDecreaseLeaderStakeFee()
-  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake))
+  private result: BN | undefined
 
-  // Proposal creation
-  const proposalPromise = apiWrapper.expectProposalCreated()
-  await apiWrapper.proposeDecreaseLeaderStake(
-    m1KeyPairs[0],
-    proposalTitle,
-    description,
-    proposalStake,
-    workerId,
-    stakeDecrement,
-    workingGroupString
-  )
-  const proposalNumber: BN = await proposalPromise
-  return proposalNumber
+  constructor(
+    apiWrapper: ApiWrapper,
+    m1KeyPairs: KeyringPair[],
+    sudo: KeyringPair,
+    stakeDecrement: BN,
+    workingGroup: WorkingGroups
+  ) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.sudo = sudo
+    this.stakeDecrement = stakeDecrement
+    this.workingGroup = workingGroup
+  }
+
+  public getResult(): BN | undefined {
+    return this.result
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
+    const description: string = 'Testing decrease leader stake proposal ' + uuid().substring(0, 8)
+    const workingGroupString: string = this.apiWrapper.getWorkingGroupString(this.workingGroup)
+    const workerId: BN = (await this.apiWrapper.getLeadWorkerId(this.workingGroup))!
+
+    // Proposal stake calculation
+    const proposalStake: BN = new BN(50000)
+    const proposalFee: BN = this.apiWrapper.estimateProposeDecreaseLeaderStakeFee()
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, proposalFee.add(proposalStake))
+
+    // Proposal creation
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeDecreaseLeaderStake(
+      this.m1KeyPairs[0],
+      proposalTitle,
+      description,
+      proposalStake,
+      workerId,
+      this.stakeDecrement,
+      workingGroupString
+    )
+    const proposalNumber: BN = await proposalPromise
+    this.result = proposalNumber
+  }
 }
 
-export async function slashLeaderProposal(
-  apiWrapper: ApiWrapper,
-  m1KeyPairs: KeyringPair[],
-  sudo: KeyringPair,
-  slashAmount: BN,
-  workingGroup: WorkingGroups
-): Promise<BN> {
-  // Setup
-  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
-  const description: string = 'Testing slash leader stake proposal ' + uuid().substring(0, 8)
-  const workingGroupString: string = apiWrapper.getWorkingGroupString(workingGroup)
-  const workerId: BN = (await apiWrapper.getLeadWorkerId(workingGroup))!
+export class SlashLeaderProposalFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
+  private slashAmount: BN
+  private workingGroup: WorkingGroups
 
-  // Proposal stake calculation
-  const proposalStake: BN = new BN(50000)
-  const proposalFee: BN = apiWrapper.estimateProposeSlashLeaderStakeFee()
-  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake))
+  private result: BN | undefined
 
-  // Proposal creation
-  const proposalPromise = apiWrapper.expectProposalCreated()
-  await apiWrapper.proposeSlashLeaderStake(
-    m1KeyPairs[0],
-    proposalTitle,
-    description,
-    proposalStake,
-    workerId,
-    slashAmount,
-    workingGroupString
-  )
-  const proposalNumber: BN = await proposalPromise
-  return proposalNumber
+  constructor(
+    apiWrapper: ApiWrapper,
+    m1KeyPairs: KeyringPair[],
+    sudo: KeyringPair,
+    slashAmount: BN,
+    workingGroup: WorkingGroups
+  ) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.sudo = sudo
+    this.slashAmount = slashAmount
+    this.workingGroup = workingGroup
+  }
+
+  public getResult(): BN | undefined {
+    return this.result
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
+    const description: string = 'Testing slash leader stake proposal ' + uuid().substring(0, 8)
+    const workingGroupString: string = this.apiWrapper.getWorkingGroupString(this.workingGroup)
+    const workerId: BN = (await this.apiWrapper.getLeadWorkerId(this.workingGroup))!
+
+    // Proposal stake calculation
+    const proposalStake: BN = new BN(50000)
+    const proposalFee: BN = this.apiWrapper.estimateProposeSlashLeaderStakeFee()
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, proposalFee.add(proposalStake))
+
+    // Proposal creation
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeSlashLeaderStake(
+      this.m1KeyPairs[0],
+      proposalTitle,
+      description,
+      proposalStake,
+      workerId,
+      this.slashAmount,
+      workingGroupString
+    )
+    const proposalNumber: BN = await proposalPromise
+    this.result = proposalNumber
+  }
 }
 
-export async function workingGroupMintCapacityProposal(
-  apiWrapper: ApiWrapper,
-  m1KeyPairs: KeyringPair[],
-  sudo: KeyringPair,
-  mintCapacity: BN,
-  workingGroup: WorkingGroups
-): Promise<BN> {
-  // Setup
-  const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
-  const description: string = 'Testing working group mint capacity proposal ' + uuid().substring(0, 8)
-  const workingGroupString: string = apiWrapper.getWorkingGroupString(workingGroup)
+export class WorkingGroupMintCapacityProposalFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
+  private mintCapacity: BN
+  private workingGroup: WorkingGroups
 
-  // Proposal stake calculation
-  const proposalStake: BN = new BN(50000)
-  const proposalFee: BN = apiWrapper.estimateProposeWorkingGroupMintCapacityFee()
-  await apiWrapper.transferBalance(sudo, m1KeyPairs[0].address, proposalFee.add(proposalStake))
+  private result: BN | undefined
 
-  // Proposal creation
-  const proposalPromise = apiWrapper.expectProposalCreated()
-  await apiWrapper.proposeWorkingGroupMintCapacity(
-    m1KeyPairs[0],
-    proposalTitle,
-    description,
-    proposalStake,
-    mintCapacity,
-    workingGroupString
-  )
-  const proposalNumber: BN = await proposalPromise
-  return proposalNumber
+  constructor(
+    apiWrapper: ApiWrapper,
+    m1KeyPairs: KeyringPair[],
+    sudo: KeyringPair,
+    mintCapacity: BN,
+    workingGroup: WorkingGroups
+  ) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.sudo = sudo
+    this.mintCapacity = mintCapacity
+    this.workingGroup = workingGroup
+  }
+
+  public getResult(): BN | undefined {
+    return this.result
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
+    const description: string = 'Testing working group mint capacity proposal ' + uuid().substring(0, 8)
+    const workingGroupString: string = this.apiWrapper.getWorkingGroupString(this.workingGroup)
+
+    // Proposal stake calculation
+    const proposalStake: BN = new BN(50000)
+    const proposalFee: BN = this.apiWrapper.estimateProposeWorkingGroupMintCapacityFee()
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, proposalFee.add(proposalStake))
+
+    // Proposal creation
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeWorkingGroupMintCapacity(
+      this.m1KeyPairs[0],
+      proposalTitle,
+      description,
+      proposalStake,
+      this.mintCapacity,
+      workingGroupString
+    )
+    const proposalNumber: BN = await proposalPromise
+    this.result = proposalNumber
+  }
 }
 
-export async function voteForProposal(
-  apiWrapper: ApiWrapper,
-  m2KeyPairs: KeyringPair[],
-  sudo: KeyringPair,
-  proposalNumber: BN
-): Promise<void> {
-  const proposalVoteFee: BN = apiWrapper.estimateVoteForProposalFee()
-  await apiWrapper.transferBalanceToAccounts(sudo, m2KeyPairs, proposalVoteFee)
+export class ElectionParametersProposalFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private m2KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
 
-  // Approving the proposal
-  const proposalExecutionPromise = apiWrapper.expectProposalFinalized()
-  await apiWrapper.batchApproveProposal(m2KeyPairs, proposalNumber)
-  await proposalExecutionPromise
+  constructor(apiWrapper: ApiWrapper, m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[], sudo: KeyringPair) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.m2KeyPairs = m2KeyPairs
+    this.sudo = sudo
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
+    const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8)
+    const runtimeVoteFee: BN = this.apiWrapper.estimateVoteForProposalFee()
+    await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.m2KeyPairs, runtimeVoteFee)
+    const announcingPeriod: BN = await this.apiWrapper.getAnnouncingPeriod()
+    const votingPeriod: BN = await this.apiWrapper.getVotingPeriod()
+    const revealingPeriod: BN = await this.apiWrapper.getRevealingPeriod()
+    const councilSize: BN = await this.apiWrapper.getCouncilSize()
+    const candidacyLimit: BN = await this.apiWrapper.getCandidacyLimit()
+    const newTermDuration: BN = await this.apiWrapper.getNewTermDuration()
+    const minCouncilStake: BN = await this.apiWrapper.getMinCouncilStake()
+    const minVotingStake: BN = await this.apiWrapper.getMinVotingStake()
+
+    // Proposal stake calculation
+    const proposalStake: BN = new BN(200000)
+    const proposalFee: BN = this.apiWrapper.estimateProposeElectionParametersFee(
+      description,
+      description,
+      proposalStake,
+      announcingPeriod,
+      votingPeriod,
+      revealingPeriod,
+      councilSize,
+      candidacyLimit,
+      newTermDuration,
+      minCouncilStake,
+      minVotingStake
+    )
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, proposalFee.add(proposalStake))
+
+    // Proposal creation
+    const proposedAnnouncingPeriod: BN = announcingPeriod.subn(1)
+    const proposedVotingPeriod: BN = votingPeriod.addn(1)
+    const proposedRevealingPeriod: BN = revealingPeriod.addn(1)
+    const proposedCouncilSize: BN = councilSize.addn(1)
+    const proposedCandidacyLimit: BN = candidacyLimit.addn(1)
+    const proposedNewTermDuration: BN = newTermDuration.addn(1)
+    const proposedMinCouncilStake: BN = minCouncilStake.addn(1)
+    const proposedMinVotingStake: BN = minVotingStake.addn(1)
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeElectionParameters(
+      this.m1KeyPairs[0],
+      proposalTitle,
+      description,
+      proposalStake,
+      proposedAnnouncingPeriod,
+      proposedVotingPeriod,
+      proposedRevealingPeriod,
+      proposedCouncilSize,
+      proposedCandidacyLimit,
+      proposedNewTermDuration,
+      proposedMinCouncilStake,
+      proposedMinVotingStake
+    )
+    const proposalNumber = await proposalPromise
+
+    // Approving the proposal
+    const proposalExecutionPromise = this.apiWrapper.expectProposalFinalized()
+    await this.apiWrapper.batchApproveProposal(this.m2KeyPairs, proposalNumber)
+    await proposalExecutionPromise
+
+    // Assertions
+    const newAnnouncingPeriod: BN = await this.apiWrapper.getAnnouncingPeriod()
+    const newVotingPeriod: BN = await this.apiWrapper.getVotingPeriod()
+    const newRevealingPeriod: BN = await this.apiWrapper.getRevealingPeriod()
+    const newCouncilSize: BN = await this.apiWrapper.getCouncilSize()
+    const newCandidacyLimit: BN = await this.apiWrapper.getCandidacyLimit()
+    const newNewTermDuration: BN = await this.apiWrapper.getNewTermDuration()
+    const newMinCouncilStake: BN = await this.apiWrapper.getMinCouncilStake()
+    const newMinVotingStake: BN = await this.apiWrapper.getMinVotingStake()
+    assert(
+      proposedAnnouncingPeriod.eq(newAnnouncingPeriod),
+      `Announcing period has unexpected value ${newAnnouncingPeriod}, expected ${proposedAnnouncingPeriod}`
+    )
+    assert(
+      proposedVotingPeriod.eq(newVotingPeriod),
+      `Voting period has unexpected value ${newVotingPeriod}, expected ${proposedVotingPeriod}`
+    )
+    assert(
+      proposedRevealingPeriod.eq(newRevealingPeriod),
+      `Revealing has unexpected value ${newRevealingPeriod}, expected ${proposedRevealingPeriod}`
+    )
+    assert(
+      proposedCouncilSize.eq(newCouncilSize),
+      `Council size has unexpected value ${newCouncilSize}, expected ${proposedCouncilSize}`
+    )
+    assert(
+      proposedCandidacyLimit.eq(newCandidacyLimit),
+      `Candidacy limit has unexpected value ${newCandidacyLimit}, expected ${proposedCandidacyLimit}`
+    )
+    assert(
+      proposedNewTermDuration.eq(newNewTermDuration),
+      `New term duration has unexpected value ${newNewTermDuration}, expected ${proposedNewTermDuration}`
+    )
+    assert(
+      proposedMinCouncilStake.eq(newMinCouncilStake),
+      `Min council stake has unexpected value ${newMinCouncilStake}, expected ${proposedMinCouncilStake}`
+    )
+    assert(
+      proposedMinVotingStake.eq(newMinVotingStake),
+      `Min voting stake has unexpected value ${newMinVotingStake}, expected ${proposedMinVotingStake}`
+    )
+  }
+}
+
+export class SetLeadProposalFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private m2KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
+
+  constructor(apiWrapper: ApiWrapper, m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[], sudo: KeyringPair) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.m2KeyPairs = m2KeyPairs
+    this.sudo = sudo
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
+    const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8)
+    const runtimeVoteFee: BN = this.apiWrapper.estimateVoteForProposalFee()
+    await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.m2KeyPairs, runtimeVoteFee)
+
+    // Proposal stake calculation
+    const proposalStake: BN = new BN(50000)
+    const proposalFee: BN = this.apiWrapper.estimateProposeLeadFee(
+      description,
+      description,
+      proposalStake,
+      this.sudo.address
+    )
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, proposalFee.add(proposalStake))
+
+    // Proposal creation
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeLead(this.m1KeyPairs[0], proposalTitle, description, proposalStake, this.m1KeyPairs[1])
+    const proposalNumber = await proposalPromise
+
+    // Approving the proposal
+    const proposalExecutionPromise = this.apiWrapper.expectProposalFinalized()
+    await this.apiWrapper.batchApproveProposal(this.m2KeyPairs, proposalNumber)
+    await proposalExecutionPromise
+    const newLead: string = await this.apiWrapper.getCurrentLeadAddress()
+    assert(
+      newLead === this.m1KeyPairs[1].address,
+      `New lead has unexpected value ${newLead}, expected ${this.m1KeyPairs[1].address}`
+    )
+  }
+}
+
+export class SpendingProposalFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private m2KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
+  private spendingBalance: BN
+  private mintCapacity: BN
+
+  constructor(
+    apiWrapper: ApiWrapper,
+    m1KeyPairs: KeyringPair[],
+    m2KeyPairs: KeyringPair[],
+    sudo: KeyringPair,
+    spendingBalance: BN,
+    mintCapacity: BN
+  ) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.m2KeyPairs = m2KeyPairs
+    this.sudo = sudo
+    this.spendingBalance = spendingBalance
+    this.mintCapacity = mintCapacity
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const description = 'spending proposal which is used for API network testing with some mock data'
+    const runtimeVoteFee: BN = this.apiWrapper.estimateVoteForProposalFee()
+
+    // Topping the balances
+    const proposalStake: BN = new BN(25000)
+    const runtimeProposalFee: BN = this.apiWrapper.estimateProposeSpendingFee(
+      description,
+      description,
+      proposalStake,
+      this.spendingBalance,
+      this.sudo.address
+    )
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, runtimeProposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.m2KeyPairs, runtimeVoteFee)
+    await this.apiWrapper.sudoSetCouncilMintCapacity(this.sudo, this.mintCapacity)
+
+    // Proposal creation
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeSpending(
+      this.m1KeyPairs[0],
+      'testing spending' + uuid().substring(0, 8),
+      'spending to test proposal functionality' + uuid().substring(0, 8),
+      proposalStake,
+      this.spendingBalance,
+      this.sudo.address
+    )
+    const proposalNumber = await proposalPromise
+
+    // Approving spending proposal
+    const balanceBeforeMinting: BN = await this.apiWrapper.getBalance(this.sudo.address)
+    const spendingPromise = this.apiWrapper.expectProposalFinalized()
+    await this.apiWrapper.batchApproveProposal(this.m2KeyPairs, proposalNumber)
+    await spendingPromise
+    const balanceAfterMinting: BN = await this.apiWrapper.getBalance(this.sudo.address)
+    assert(
+      balanceAfterMinting.sub(balanceBeforeMinting).eq(this.spendingBalance),
+      `member ${
+        this.m1KeyPairs[0].address
+      } has unexpected balance ${balanceAfterMinting}, expected ${balanceBeforeMinting.add(this.spendingBalance)}`
+    )
+  }
+}
+
+export class TextProposalFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private m2KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
+
+  constructor(apiWrapper: ApiWrapper, m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[], sudo: KeyringPair) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.m2KeyPairs = m2KeyPairs
+    this.sudo = sudo
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
+    const description: string = 'Testing text proposal ' + uuid().substring(0, 8)
+    const proposalText: string = 'Text of the testing proposal ' + uuid().substring(0, 8)
+    const runtimeVoteFee: BN = this.apiWrapper.estimateVoteForProposalFee()
+    await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.m2KeyPairs, runtimeVoteFee)
+
+    // Proposal stake calculation
+    const proposalStake: BN = new BN(25000)
+    const runtimeProposalFee: BN = this.apiWrapper.estimateProposeTextFee(
+      proposalStake,
+      description,
+      description,
+      proposalText
+    )
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, runtimeProposalFee.add(proposalStake))
+
+    // Proposal creation
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeText(this.m1KeyPairs[0], proposalStake, proposalTitle, description, proposalText)
+    const proposalNumber = await proposalPromise
+
+    // Approving text proposal
+    const textProposalPromise = this.apiWrapper.expectProposalFinalized()
+    await this.apiWrapper.batchApproveProposal(this.m2KeyPairs, proposalNumber)
+    await textProposalPromise
+  }
+}
+
+export class ValidatorCountProposalFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private m2KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
+  private validatorCountIncrement: BN
+
+  constructor(
+    apiWrapper: ApiWrapper,
+    m1KeyPairs: KeyringPair[],
+    m2KeyPairs: KeyringPair[],
+    sudo: KeyringPair,
+    validatorCountIncrement: BN
+  ) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.m2KeyPairs = m2KeyPairs
+    this.sudo = sudo
+    this.validatorCountIncrement = validatorCountIncrement
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
+    const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8)
+    const runtimeVoteFee: BN = this.apiWrapper.estimateVoteForProposalFee()
+    await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.m2KeyPairs, runtimeVoteFee)
+
+    // Proposal stake calculation
+    const proposalStake: BN = new BN(100000)
+    const proposalFee: BN = this.apiWrapper.estimateProposeValidatorCountFee(description, description, proposalStake)
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, proposalFee.add(proposalStake))
+    const validatorCount: BN = await this.apiWrapper.getValidatorCount()
+
+    // Proposal creation
+    const proposedValidatorCount: BN = validatorCount.add(this.validatorCountIncrement)
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeValidatorCount(
+      this.m1KeyPairs[0],
+      proposalTitle,
+      description,
+      proposalStake,
+      proposedValidatorCount
+    )
+    const proposalNumber = await proposalPromise
+
+    // Approving the proposal
+    const proposalExecutionPromise = this.apiWrapper.expectProposalFinalized()
+    await this.apiWrapper.batchApproveProposal(this.m2KeyPairs, proposalNumber)
+    await proposalExecutionPromise
+    const newValidatorCount: BN = await this.apiWrapper.getValidatorCount()
+    assert(
+      proposedValidatorCount.eq(newValidatorCount),
+      `Validator count has unexpeccted value ${newValidatorCount}, expected ${proposedValidatorCount}`
+    )
+  }
+}
+
+export class ContentWorkingGroupMintCapacityProposalFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private m2KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
+  private mintingCapacityIncrement: BN
+
+  constructor(
+    apiWrapper: ApiWrapper,
+    m1KeyPairs: KeyringPair[],
+    m2KeyPairs: KeyringPair[],
+    sudo: KeyringPair,
+    mintingCapacityIncrement: BN
+  ) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.m2KeyPairs = m2KeyPairs
+    this.sudo = sudo
+    this.mintingCapacityIncrement = mintingCapacityIncrement
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const description = 'Mint capacity proposal which is used for API network testing'
+    const runtimeVoteFee: BN = this.apiWrapper.estimateVoteForProposalFee()
+    const initialMintingCapacity: BN = await this.apiWrapper.getContentWorkingGroupMintCapacity()
+
+    // Topping the balances
+    const proposalStake: BN = new BN(50000)
+    const runtimeProposalFee: BN = this.apiWrapper.estimateProposeContentWorkingGroupMintCapacityFee(
+      description,
+      description,
+      proposalStake,
+      initialMintingCapacity.add(this.mintingCapacityIncrement)
+    )
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, runtimeProposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.m2KeyPairs, runtimeVoteFee)
+
+    // Proposal creation
+    const proposedMintingCapacity: BN = initialMintingCapacity.add(this.mintingCapacityIncrement)
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeContentWorkingGroupMintCapacity(
+      this.m1KeyPairs[0],
+      'testing mint capacity' + uuid().substring(0, 8),
+      'mint capacity to test proposal functionality' + uuid().substring(0, 8),
+      proposalStake,
+      proposedMintingCapacity
+    )
+    const proposalNumber = await proposalPromise
+
+    // Approving mint capacity proposal
+    const mintCapacityPromise = this.apiWrapper.expectProposalFinalized()
+    await this.apiWrapper.batchApproveProposal(this.m2KeyPairs, proposalNumber)
+    await mintCapacityPromise
+    const newMintingCapacity: BN = await this.apiWrapper.getContentWorkingGroupMintCapacity()
+    assert(
+      proposedMintingCapacity.eq(newMintingCapacity),
+      `Content working group has unexpected minting capacity ${newMintingCapacity}, expected ${proposedMintingCapacity}`
+    )
+  }
+}
+
+export class UpdateRuntimeFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m1KeyPairs: KeyringPair[]
+  private m2KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
+
+  constructor(apiWrapper: ApiWrapper, m1KeyPairs: KeyringPair[], m2KeyPairs: KeyringPair[], sudo: KeyringPair) {
+    this.apiWrapper = apiWrapper
+    this.m1KeyPairs = m1KeyPairs
+    this.m2KeyPairs = m2KeyPairs
+    this.sudo = sudo
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    // Setup
+    const runtime: Bytes = await this.apiWrapper.getRuntime()
+    const description = 'runtime upgrade proposal which is used for API network testing'
+    const runtimeVoteFee: BN = this.apiWrapper.estimateVoteForProposalFee()
+
+    // Topping the balances
+    const proposalStake: BN = new BN(1000000)
+    const runtimeProposalFee: BN = this.apiWrapper.estimateProposeRuntimeUpgradeFee(
+      proposalStake,
+      description,
+      description,
+      runtime
+    )
+    await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, runtimeProposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.m2KeyPairs, runtimeVoteFee)
+
+    // Proposal creation
+    const proposalPromise = this.apiWrapper.expectProposalCreated()
+    await this.apiWrapper.proposeRuntime(
+      this.m1KeyPairs[0],
+      proposalStake,
+      'testing runtime' + uuid().substring(0, 8),
+      'runtime to test proposal functionality' + uuid().substring(0, 8),
+      runtime
+    )
+    const proposalNumber = await proposalPromise
+
+    // Approving runtime update proposal
+    const runtimePromise = this.apiWrapper.expectProposalFinalized()
+    await this.apiWrapper.batchApproveProposal(this.m2KeyPairs, proposalNumber)
+    await runtimePromise
+  }
+}
+
+export class VoteForProposalFixture implements Fixture {
+  private apiWrapper: ApiWrapper
+  private m2KeyPairs: KeyringPair[]
+  private sudo: KeyringPair
+  private proposalNumber: BN
+
+  constructor(apiWrapper: ApiWrapper, m2KeyPairs: KeyringPair[], sudo: KeyringPair, proposalNumber: BN) {
+    this.apiWrapper = apiWrapper
+    this.m2KeyPairs = m2KeyPairs
+    this.sudo = sudo
+    this.proposalNumber = proposalNumber
+  }
+
+  public async runner(expectFailure: boolean): Promise<void> {
+    const proposalVoteFee: BN = this.apiWrapper.estimateVoteForProposalFee()
+    await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.m2KeyPairs, proposalVoteFee)
+
+    // Approving the proposal
+    const proposalExecutionPromise = this.apiWrapper.expectProposalFinalized()
+    await this.apiWrapper.batchApproveProposal(this.m2KeyPairs, this.proposalNumber)
+    await proposalExecutionPromise
+  }
 }

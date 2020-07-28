@@ -83,10 +83,11 @@ export class AddWorkerOpeningFixture implements Fixture {
     await this.apiWrapper.transferBalance(this.sudo, this.lead.address, addOpeningFee)
 
     // Worker opening creation
-    const addOpeningPromise: Promise<BN> = this.apiWrapper.expectOpeningAdded()
+    const addOpeningPromise: Promise<Event> = this.apiWrapper.expectEvent('OpeningAdded')
     await this.apiWrapper.addOpening(this.lead, opening, this.module, expectFailure)
     if (!expectFailure) {
-      const openingId: BN = await addOpeningPromise
+      const openingId: BN = ((await addOpeningPromise).data[0] as unknown) as BN
+      console.log('received opening id ' + openingId)
       this.result = openingId
     }
   }
@@ -152,9 +153,9 @@ export class AddLeaderOpeningFixture implements Fixture {
       .setText(uuid().substring(0, 8))
       .setOpeningType('leader')
 
-    const addOpeningPromise: Promise<BN> = this.apiWrapper.expectOpeningAdded()
+    const addOpeningPromise: Promise<Event> = this.apiWrapper.expectEvent('OpeningAdded')
     await this.apiWrapper.sudoAddOpening(this.sudo, opening, this.module)
-    const openingId: BN = await addOpeningPromise
+    const openingId: BN = ((await addOpeningPromise).data[0] as unknown) as BN
 
     this.result = openingId
   }
@@ -202,7 +203,6 @@ export class ApplyForOpeningFixture implements Fixture {
   private roleStake: BN
   private openingId: BN
   private module: WorkingGroups
-  private expectFailure: boolean
 
   public constructor(
     apiWrapper: ApiWrapper,
@@ -211,8 +211,7 @@ export class ApplyForOpeningFixture implements Fixture {
     applicationStake: BN,
     roleStake: BN,
     openingId: BN,
-    module: WorkingGroups,
-    expectFailure: boolean
+    module: WorkingGroups
   ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
@@ -221,7 +220,6 @@ export class ApplyForOpeningFixture implements Fixture {
     this.roleStake = roleStake
     this.openingId = openingId
     this.module = module
-    this.expectFailure = expectFailure
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
@@ -240,7 +238,7 @@ export class ApplyForOpeningFixture implements Fixture {
       this.applicationStake,
       uuid().substring(0, 8),
       this.module,
-      this.expectFailure
+      expectFailure
     )
   }
 }
@@ -644,8 +642,7 @@ export class DecreaseStakeFixture implements Fixture {
     membersKeyPairs: KeyringPair[],
     lead: KeyringPair,
     sudo: KeyringPair,
-    module: WorkingGroups,
-    expectFailure: boolean
+    module: WorkingGroups
   ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
@@ -912,7 +909,7 @@ export class ExpectLeaderSetFixture implements Fixture {
   }
 }
 
-export class ExpectBeganApplicationReview implements Fixture {
+export class ExpectBeganApplicationReviewFixture implements Fixture {
   private apiWrapper: ApiWrapper
 
   private result: BN | undefined
@@ -1069,7 +1066,7 @@ export class ExpectLeaderSlashedFixture implements Fixture {
   }
 }
 
-export class ExpectMintCapacityChanged implements Fixture {
+export class ExpectMintCapacityChangedFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private expectedMintCapacity: BN
 

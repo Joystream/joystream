@@ -1,6 +1,4 @@
 import { KeyringPair } from '@polkadot/keyring/types'
-import { membershipTest } from '../impl/membershipCreation'
-import { councilTest } from '../impl/electingCouncil'
 import { initConfig } from '../../utils/config'
 import { Keyring, WsProvider } from '@polkadot/api'
 import BN from 'bn.js'
@@ -9,42 +7,47 @@ import tap from 'tap'
 import { registerJoystreamTypes } from '@nicaea/types'
 import { closeApi } from '../impl/closeApi'
 import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
-import {
-  createWorkingGroupLeaderOpening,
-  voteForProposal,
-  beginWorkingGroupLeaderApplicationReview,
-  fillLeaderOpeningProposal,
-  terminateLeaderRoleProposal,
-  setLeaderRewardProposal,
-  decreaseLeaderStakeProposal,
-  slashLeaderProposal,
-} from './impl/proposalsModule'
-import {
-  applyForOpening,
-  expectLeadOpeningAdded,
-  expectLeaderSet,
-  expectBeganApplicationReview,
-  expectLeaderRoleTerminated,
-  expectLeaderRewardAmountUpdated,
-  expectLeaderStakeDecreased,
-  expectLeaderSlashed,
-} from '../workingGroup/impl/workingGroupModule'
 import { BuyMembershipHappyCaseFixture } from '../impl/membershipModule'
 import { ElectCouncilFixture } from '../impl/councilElectionModule'
+import {
+  BeginWorkingGroupLeaderApplicationReviewFixture,
+  CreateWorkingGroupLeaderOpeningFixture,
+  DecreaseLeaderStakeProposalFixture,
+  FillLeaderOpeningProposalFixture,
+  SetLeaderRewardProposalFixture,
+  SlashLeaderProposalFixture,
+  TerminateLeaderRoleProposalFixture,
+  VoteForProposalFixture,
+} from './impl/proposalsModule'
+import {
+  ApplyForOpeningFixture,
+  ExpectBeganApplicationReviewFixture,
+  ExpectLeaderRewardAmountUpdatedFixture,
+  ExpectLeaderRoleTerminatedFixture,
+  ExpectLeaderSetFixture,
+  ExpectLeaderSlashedFixture,
+  ExpectLeaderStakeDecreasedFixture,
+  ExpectLeadOpeningAddedFixture,
+} from '../workingGroup/impl/workingGroupModule'
+import { Utils } from '../../utils/utils'
 
 tap.mocha.describe('Set lead proposal scenario', async () => {
   initConfig()
   registerJoystreamTypes()
 
-  const m1KeyPairs: KeyringPair[] = []
-  const m2KeyPairs: KeyringPair[] = []
-  const leadKeyPair: KeyringPair[] = []
-
-  const keyring = new Keyring({ type: 'sr25519' })
-  const N: number = +process.env.MEMBERSHIP_CREATION_N!
-  const paidTerms: number = +process.env.MEMBERSHIP_PAID_TERMS!
   const nodeUrl: string = process.env.NODE_URL!
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!
+  const keyring = new Keyring({ type: 'sr25519' })
+  const provider = new WsProvider(nodeUrl)
+  const apiWrapper: ApiWrapper = await ApiWrapper.create(provider)
+  const sudo: KeyringPair = keyring.addFromUri(sudoUri)
+
+  const N: number = +process.env.MEMBERSHIP_CREATION_N!
+  const m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
+  const m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
+  const leadKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
+
+  const paidTerms: number = +process.env.MEMBERSHIP_PAID_TERMS!
   const K: number = +process.env.COUNCIL_ELECTION_K!
   const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!)
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!)
@@ -58,176 +61,243 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   const slashAmount: BN = new BN(process.env.SLASH_AMOUNT!)
   const durationInBlocks = 70
 
-  const provider = new WsProvider(nodeUrl)
-  const apiWrapper: ApiWrapper = await ApiWrapper.create(provider)
-  const sudo: KeyringPair = keyring.addFromUri(sudoUri)
-
   setTestTimeout(apiWrapper, durationInBlocks)
 
-  const happyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture()
-  tap.test('Buy membeship is accepted with sufficient funds', async () =>
-    happyCaseFixture.runner(apiWrapper, sudo, m1KeyPairs, keyring, N, paidTerms)
+  const firstMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
+    apiWrapper,
+    sudo,
+    m1KeyPairs,
+    paidTerms
   )
+  tap.test('Creating first set of members', async () => firstMemberSetFixture.runner(false))
 
-  tap.test('Buy membeship is accepted with sufficient funds', async () =>
-    happyCaseFixture.runner(apiWrapper, sudo, m2KeyPairs, keyring, N, paidTerms)
+  const secondMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
+    apiWrapper,
+    sudo,
+    m2KeyPairs,
+    paidTerms
   )
+  tap.test('Creating second set of members', async () => secondMemberSetFixture.runner(false))
 
-  tap.test('Buy membeship is accepted with sufficient funds', async () =>
-    happyCaseFixture.runner(apiWrapper, sudo, leadKeyPair, keyring, 1, paidTerms)
+  const leaderMembershipFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
+    apiWrapper,
+    sudo,
+    leadKeyPair,
+    paidTerms
   )
+  tap.test('Buy membership for lead', async () => leaderMembershipFixture.runner(false))
 
-  const electCouncilFixture: ElectCouncilFixture = new ElectCouncilFixture()
-  tap.test('Elect council', async () =>
-    electCouncilFixture.runner(apiWrapper, m1KeyPairs, m2KeyPairs, K, sudo, greaterStake, lesserStake)
+  const electCouncilFixture: ElectCouncilFixture = new ElectCouncilFixture(
+    apiWrapper,
+    m1KeyPairs,
+    m2KeyPairs,
+    K,
+    sudo,
+    greaterStake,
+    lesserStake
   )
+  tap.test('Elect council', async () => electCouncilFixture.runner(false))
 
-  // membershipTest(apiWrapper, m1KeyPairs, keyring, N, paidTerms, sudoUri)
-  // membershipTest(apiWrapper, m2KeyPairs, keyring, N, paidTerms, sudoUri)
-  // membershipTest(apiWrapper, leadKeyPair, keyring, 1, paidTerms, sudoUri)
-  // councilTest(apiWrapper, m1KeyPairs, m2KeyPairs, keyring, K, sudoUri, greaterStake, lesserStake)
-
-  let createOpeningProposalId: BN
-  let openingId: BN
-  tap.test(
-    'Propose create leader opening',
-    async () =>
-      (createOpeningProposalId = await createWorkingGroupLeaderOpening(
-        apiWrapper,
-        m1KeyPairs,
-        sudo,
-        applicationStake,
-        roleStake,
-        'Storage'
-      ))
+  const createWorkingGroupLeaderOpeningFixture: CreateWorkingGroupLeaderOpeningFixture = new CreateWorkingGroupLeaderOpeningFixture(
+    apiWrapper,
+    m1KeyPairs,
+    sudo,
+    applicationStake,
+    roleStake,
+    'Storage'
   )
+  tap.test('Propose create leader opening', async () => createWorkingGroupLeaderOpeningFixture.runner(false))
+
+  let voteForCreateOpeningProposalFixture: VoteForProposalFixture
+  let expectLeadOpeningAddedFixture: ExpectLeadOpeningAddedFixture = new ExpectLeadOpeningAddedFixture(apiWrapper)
   tap.test('Approve add opening proposal', async () => {
-    voteForProposal(apiWrapper, m2KeyPairs, sudo, createOpeningProposalId)
-    openingId = await expectLeadOpeningAdded(apiWrapper)
+    voteForCreateOpeningProposalFixture = new VoteForProposalFixture(
+      apiWrapper,
+      m2KeyPairs,
+      sudo,
+      createWorkingGroupLeaderOpeningFixture.getResult()!
+    )
+    voteForCreateOpeningProposalFixture.runner(false)
+    await expectLeadOpeningAddedFixture.runner(false)
   })
 
-  tap.test(
-    'Apply for lead opening',
-    async () =>
-      await applyForOpening(
-        apiWrapper,
-        leadKeyPair,
-        sudo,
-        applicationStake,
-        roleStake,
-        new BN(openingId),
-        WorkingGroups.StorageWorkingGroup,
-        false
-      )
-  )
-  let beginReviewProposalId: BN
-  tap.test(
-    'Propose begin leader application review',
-    async () =>
-      (beginReviewProposalId = await beginWorkingGroupLeaderApplicationReview(
-        apiWrapper,
-        m1KeyPairs,
-        sudo,
-        new BN(openingId),
-        'Storage'
-      ))
-  )
-  tap.test('Approve begin review proposal', async () => {
-    voteForProposal(apiWrapper, m2KeyPairs, sudo, beginReviewProposalId)
-    expectBeganApplicationReview(apiWrapper)
+  let applyForLeaderOpeningFixture: ApplyForOpeningFixture
+  tap.test('Apply for lead opening', async () => {
+    applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
+      apiWrapper,
+      leadKeyPair,
+      sudo,
+      applicationStake,
+      roleStake,
+      new BN(expectLeadOpeningAddedFixture.getResult()!),
+      WorkingGroups.StorageWorkingGroup
+    )
+    await applyForLeaderOpeningFixture.runner(false)
   })
 
-  let fillLeaderOpeningProposalId: BN
-  tap.test(
-    'Propose fill leader opening',
-    async () =>
-      (fillLeaderOpeningProposalId = await fillLeaderOpeningProposal(
-        apiWrapper,
-        m1KeyPairs,
-        leadKeyPair[0].address,
-        sudo,
-        firstRewardInterval,
-        rewardInterval,
-        payoutAmount,
-        new BN(openingId),
-        WorkingGroups.StorageWorkingGroup
-      ))
+  let beginWorkingGroupLeaderApplicationReviewFixture: BeginWorkingGroupLeaderApplicationReviewFixture
+  tap.test('Propose begin leader application review', async () => {
+    beginWorkingGroupLeaderApplicationReviewFixture = new BeginWorkingGroupLeaderApplicationReviewFixture(
+      apiWrapper,
+      m1KeyPairs,
+      sudo,
+      new BN(expectLeadOpeningAddedFixture.getResult()!),
+      'Storage'
+    )
+    await beginWorkingGroupLeaderApplicationReviewFixture.runner(false)
+  })
+
+  let voteForBeginReviewProposal: VoteForProposalFixture
+  let expectBeganApplicationReviewFixture: ExpectBeganApplicationReviewFixture = new ExpectBeganApplicationReviewFixture(
+    apiWrapper
+  )
+  tap.test('Approve begin application review', async () => {
+    voteForBeginReviewProposal = new VoteForProposalFixture(
+      apiWrapper,
+      m2KeyPairs,
+      sudo,
+      beginWorkingGroupLeaderApplicationReviewFixture.getResult()!
+    )
+    voteForBeginReviewProposal.runner(false)
+    await expectBeganApplicationReviewFixture.runner(false)
+  })
+
+  let fillLeaderOpeningProposalFixture: FillLeaderOpeningProposalFixture
+  tap.test('Propose fill leader opening', async () => {
+    fillLeaderOpeningProposalFixture = new FillLeaderOpeningProposalFixture(
+      apiWrapper,
+      m1KeyPairs,
+      leadKeyPair[0].address,
+      sudo,
+      firstRewardInterval,
+      rewardInterval,
+      payoutAmount,
+      new BN(expectLeadOpeningAddedFixture.getResult()!),
+      WorkingGroups.StorageWorkingGroup
+    )
+    await fillLeaderOpeningProposalFixture.runner(false)
+  })
+
+  let voteForFillLeaderProposalFixture: VoteForProposalFixture
+  const expectLeaderSetFixture: ExpectLeaderSetFixture = new ExpectLeaderSetFixture(
+    apiWrapper,
+    leadKeyPair[0].address,
+    WorkingGroups.StorageWorkingGroup
   )
   tap.test('Approve fill leader opening', async () => {
-    voteForProposal(apiWrapper, m2KeyPairs, sudo, fillLeaderOpeningProposalId)
-    await expectLeaderSet(apiWrapper, leadKeyPair[0].address, WorkingGroups.StorageWorkingGroup)
+    voteForFillLeaderProposalFixture = new VoteForProposalFixture(
+      apiWrapper,
+      m2KeyPairs,
+      sudo,
+      fillLeaderOpeningProposalFixture.getResult()!
+    )
+    voteForFillLeaderProposalFixture.runner(false)
+    await expectLeaderSetFixture.runner(false)
   })
 
-  let rewardProposalId: BN
-  tap.test(
-    'Propose leader reward',
-    async () =>
-      (rewardProposalId = await setLeaderRewardProposal(
-        apiWrapper,
-        m1KeyPairs,
-        sudo,
-        alteredPayoutAmount,
-        WorkingGroups.StorageWorkingGroup
-      ))
+  const setLeaderRewardProposalFixture: SetLeaderRewardProposalFixture = new SetLeaderRewardProposalFixture(
+    apiWrapper,
+    m1KeyPairs,
+    sudo,
+    alteredPayoutAmount,
+    WorkingGroups.StorageWorkingGroup
+  )
+  tap.test('Propose leader reward', async () => setLeaderRewardProposalFixture.runner(false))
+
+  let voteForeLeaderRewardFixture: VoteForProposalFixture
+  const expectLeaderRewardAmountUpdatedFixture: ExpectLeaderRewardAmountUpdatedFixture = new ExpectLeaderRewardAmountUpdatedFixture(
+    apiWrapper,
+    alteredPayoutAmount,
+    WorkingGroups.StorageWorkingGroup
   )
   tap.test('Approve new leader reward', async () => {
-    voteForProposal(apiWrapper, m2KeyPairs, sudo, rewardProposalId)
-    await expectLeaderRewardAmountUpdated(apiWrapper, alteredPayoutAmount, WorkingGroups.StorageWorkingGroup)
+    voteForeLeaderRewardFixture = new VoteForProposalFixture(
+      apiWrapper,
+      m2KeyPairs,
+      sudo,
+      setLeaderRewardProposalFixture.getResult()!
+    )
+    voteForeLeaderRewardFixture.runner(false)
+    await expectLeaderRewardAmountUpdatedFixture.runner(false)
   })
 
-  let decreaseStakeProposalId: BN
-  let newStake: BN
-  tap.test(
-    'Propose decrease stake',
-    async () =>
-      (decreaseStakeProposalId = await decreaseLeaderStakeProposal(
-        apiWrapper,
-        m1KeyPairs,
-        sudo,
-        stakeDecrement,
-        WorkingGroups.StorageWorkingGroup
-      ))
+  const decreaseLeaderStakeProposalFixture: DecreaseLeaderStakeProposalFixture = new DecreaseLeaderStakeProposalFixture(
+    apiWrapper,
+    m1KeyPairs,
+    sudo,
+    stakeDecrement,
+    WorkingGroups.StorageWorkingGroup
   )
+  let newStake: BN
+  tap.test('Propose decrease stake', async () => decreaseLeaderStakeProposalFixture.runner(false))
+
+  let voteForDecreaseStakeProposal: VoteForProposalFixture
+  let expectLeaderStakeDecreasedFixture: ExpectLeaderStakeDecreasedFixture
   tap.test('Approve decreased leader stake', async () => {
     newStake = applicationStake.sub(stakeDecrement)
-    voteForProposal(apiWrapper, m2KeyPairs, sudo, decreaseStakeProposalId)
-    await expectLeaderStakeDecreased(apiWrapper, newStake, WorkingGroups.StorageWorkingGroup)
+    voteForFillLeaderProposalFixture = new VoteForProposalFixture(
+      apiWrapper,
+      m2KeyPairs,
+      sudo,
+      decreaseLeaderStakeProposalFixture.getResult()!
+    )
+    voteForFillLeaderProposalFixture.runner(false)
+    expectLeaderStakeDecreasedFixture = new ExpectLeaderStakeDecreasedFixture(
+      apiWrapper,
+      newStake,
+      WorkingGroups.StorageWorkingGroup
+    )
+    await expectLeaderStakeDecreasedFixture.runner(false)
   })
 
-  let slashProposalId: BN
-  tap.test(
-    'Propose leader slash',
-    async () =>
-      (slashProposalId = await slashLeaderProposal(
-        apiWrapper,
-        m1KeyPairs,
-        sudo,
-        slashAmount,
-        WorkingGroups.StorageWorkingGroup
-      ))
+  const slashLeaderProposalFixture: SlashLeaderProposalFixture = new SlashLeaderProposalFixture(
+    apiWrapper,
+    m1KeyPairs,
+    sudo,
+    slashAmount,
+    WorkingGroups.StorageWorkingGroup
   )
+  tap.test('Propose leader slash', async () => slashLeaderProposalFixture.runner(false))
+
+  let voteForSlashProposalFixture: VoteForProposalFixture
+  let expectLeaderSlashedFixture: ExpectLeaderSlashedFixture
   tap.test('Approve leader slash', async () => {
     newStake = newStake.sub(slashAmount)
-    voteForProposal(apiWrapper, m2KeyPairs, sudo, slashProposalId)
-    await expectLeaderSlashed(apiWrapper, newStake, WorkingGroups.StorageWorkingGroup)
+    voteForSlashProposalFixture = new VoteForProposalFixture(
+      apiWrapper,
+      m2KeyPairs,
+      sudo,
+      slashLeaderProposalFixture.getResult()!
+    )
+    voteForSlashProposalFixture.runner(false)
+    expectLeaderSlashedFixture = new ExpectLeaderSlashedFixture(apiWrapper, newStake, WorkingGroups.StorageWorkingGroup)
+    await expectLeaderSlashedFixture.runner(false)
   })
 
-  let terminateLeaderRoleProposalId: BN
-  tap.test(
-    'Propose terminate leader role',
-    async () =>
-      (terminateLeaderRoleProposalId = await terminateLeaderRoleProposal(
-        apiWrapper,
-        m1KeyPairs,
-        leadKeyPair[0].address,
-        sudo,
-        false,
-        WorkingGroups.StorageWorkingGroup
-      ))
+  const terminateLeaderRoleProposalFixture: TerminateLeaderRoleProposalFixture = new TerminateLeaderRoleProposalFixture(
+    apiWrapper,
+    m1KeyPairs,
+    leadKeyPair[0].address,
+    sudo,
+    false,
+    WorkingGroups.StorageWorkingGroup
+  )
+  tap.test('Propose terminate leader role', async () => terminateLeaderRoleProposalFixture.runner(false))
+
+  let voteForLeaderRoleTerminationFixture: VoteForProposalFixture
+  const expectLeaderRoleTerminatedFixture: ExpectLeaderRoleTerminatedFixture = new ExpectLeaderRoleTerminatedFixture(
+    apiWrapper,
+    WorkingGroups.StorageWorkingGroup
   )
   tap.test('Approve leader role termination', async () => {
-    voteForProposal(apiWrapper, m2KeyPairs, sudo, terminateLeaderRoleProposalId)
-    await expectLeaderRoleTerminated(apiWrapper, WorkingGroups.StorageWorkingGroup)
+    voteForLeaderRoleTerminationFixture = new VoteForProposalFixture(
+      apiWrapper,
+      m2KeyPairs,
+      sudo,
+      terminateLeaderRoleProposalFixture.getResult()!
+    )
+    voteForLeaderRoleTerminationFixture.runner(false)
+    await expectLeaderRoleTerminatedFixture.runner(false)
   })
 
   closeApi(apiWrapper)

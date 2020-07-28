@@ -5,20 +5,20 @@ import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
 import { WsProvider, Keyring } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { setTestTimeout } from '../../utils/setTestTimeout'
-import {
-  addWorkerOpening,
-  applyForOpening,
-  acceptApplications,
-  terminateApplications,
-  addLeaderOpening,
-  beginLeaderApplicationReview,
-  fillLeaderOpening,
-  leaveRole,
-} from './impl/workingGroupModule'
 import BN from 'bn.js'
 import tap from 'tap'
 import { BuyMembershipHappyCaseFixture } from '../impl/membershipModule'
 import { Utils } from '../../utils/utils'
+import {
+  AcceptApplicationsFixture,
+  AddLeaderOpeningFixture,
+  AddWorkerOpeningFixture,
+  ApplyForOpeningFixture,
+  BeginLeaderApplicationReviewFixture,
+  FillLeaderOpeningFixture,
+  LeaveRoleFixture,
+  TerminateApplicationsFixture,
+} from './impl/workingGroupModule'
 
 tap.mocha.describe('Worker application happy case scenario', async () => {
   initConfig()
@@ -65,111 +65,141 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   )
   tap.test('Buying membership for leader account', async () => leaderHappyCaseFixture.runner(false))
 
-  let leadOpenignId: BN
-  tap.test(
-    'Add lead opening',
-    async () =>
-      (leadOpenignId = await addLeaderOpening(
-        apiWrapper,
-        nKeyPairs,
-        sudo,
-        applicationStake,
-        roleStake,
-        leadOpeningActivationDelay,
-        WorkingGroups.StorageWorkingGroup
-      ))
+  const addLeaderOpeningFixture: AddLeaderOpeningFixture = new AddLeaderOpeningFixture(
+    apiWrapper,
+    nKeyPairs,
+    sudo,
+    applicationStake,
+    roleStake,
+    leadOpeningActivationDelay,
+    WorkingGroups.StorageWorkingGroup
   )
-  tap.test(
-    'Apply for lead opening',
-    async () =>
-      await applyForOpening(
-        apiWrapper,
-        leadKeyPair,
-        sudo,
-        applicationStake,
-        roleStake,
-        leadOpenignId,
-        WorkingGroups.StorageWorkingGroup,
-        false
-      )
-  )
-  tap.test('Begin lead application review', async () =>
-    beginLeaderApplicationReview(apiWrapper, sudo, leadOpenignId, WorkingGroups.StorageWorkingGroup)
-  )
-  tap.test('Fill lead opening', async () =>
-    fillLeaderOpening(
+  // let leadOpenignId: BN
+  tap.test('Add lead opening', async () => await addLeaderOpeningFixture.runner(false))
+
+  let applyForLeaderOpeningFixture: ApplyForOpeningFixture
+  tap.test('Apply for lead opening', async () => {
+    applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
       apiWrapper,
       leadKeyPair,
       sudo,
-      leadOpenignId,
+      applicationStake,
+      roleStake,
+      addLeaderOpeningFixture.getResult()!,
+      WorkingGroups.StorageWorkingGroup
+    )
+    await applyForLeaderOpeningFixture.runner(false)
+  })
+
+  let beginLeaderApplicationReviewFixture: BeginLeaderApplicationReviewFixture
+  tap.test('Begin lead application review', async () => {
+    beginLeaderApplicationReviewFixture = new BeginLeaderApplicationReviewFixture(
+      apiWrapper,
+      sudo,
+      addLeaderOpeningFixture.getResult()!,
+      WorkingGroups.StorageWorkingGroup
+    )
+    await beginLeaderApplicationReviewFixture.runner(false)
+  })
+
+  let fillLeaderOpeningFixture: FillLeaderOpeningFixture
+  tap.test('Fill lead opening', async () => {
+    fillLeaderOpeningFixture = new FillLeaderOpeningFixture(
+      apiWrapper,
+      leadKeyPair,
+      sudo,
+      addLeaderOpeningFixture.getResult()!,
       firstRewardInterval,
       rewardInterval,
       payoutAmount,
       WorkingGroups.StorageWorkingGroup
     )
-  )
+    await fillLeaderOpeningFixture.runner(false)
+  })
 
-  let openignId: BN
-  tap.test(
-    'Add worker opening',
-    async () =>
-      (openignId = await addWorkerOpening(
-        apiWrapper,
-        nKeyPairs,
-        leadKeyPair[0],
-        sudo,
-        applicationStake,
-        roleStake,
-        openingActivationDelay,
-        unstakingPeriod,
-        WorkingGroups.StorageWorkingGroup,
-        false
-      ))
+  const addWorkerOpeningFixture: AddWorkerOpeningFixture = new AddWorkerOpeningFixture(
+    apiWrapper,
+    nKeyPairs,
+    leadKeyPair[0],
+    sudo,
+    applicationStake,
+    roleStake,
+    openingActivationDelay,
+    unstakingPeriod,
+    WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Apply for worker opening, expect failure', async () =>
-    applyForOpening(
+  tap.test('Add worker opening', async () => addWorkerOpeningFixture.runner(false))
+
+  let applyForWorkerOpeningBeforeAcceptanceFixture: ApplyForOpeningFixture
+  tap.test('Apply for worker opening, expect failure', async () => {
+    applyForWorkerOpeningBeforeAcceptanceFixture = new ApplyForOpeningFixture(
       apiWrapper,
       nKeyPairs,
       sudo,
       applicationStake,
       roleStake,
-      openignId,
-      WorkingGroups.StorageWorkingGroup,
-      true
+      addWorkerOpeningFixture.getResult()!,
+      WorkingGroups.StorageWorkingGroup
     )
-  )
-  tap.test('Begin accepting worker applications', async () =>
-    acceptApplications(apiWrapper, leadKeyPair[0], sudo, openignId, WorkingGroups.StorageWorkingGroup)
-  )
-  tap.test('Apply for worker opening as non-member, expect failure', async () =>
-    applyForOpening(
+    await applyForWorkerOpeningBeforeAcceptanceFixture.runner(true)
+  })
+
+  let acceptApplicationsFixture: AcceptApplicationsFixture
+  tap.test('Begin accepting worker applications', async () => {
+    acceptApplicationsFixture = new AcceptApplicationsFixture(
+      apiWrapper,
+      leadKeyPair[0],
+      sudo,
+      addWorkerOpeningFixture.getResult()!,
+      WorkingGroups.StorageWorkingGroup
+    )
+    acceptApplicationsFixture.runner(false)
+  })
+
+  let applyForWorkerOpeningAsNonMemberFixture: ApplyForOpeningFixture
+  tap.test('Apply for worker opening as non-member, expect failure', async () => {
+    applyForWorkerOpeningAsNonMemberFixture = new ApplyForOpeningFixture(
       apiWrapper,
       nonMemberKeyPairs,
       sudo,
       applicationStake,
       roleStake,
-      openignId,
-      WorkingGroups.StorageWorkingGroup,
-      true
+      addWorkerOpeningFixture.getResult()!,
+      WorkingGroups.StorageWorkingGroup
     )
-  )
-  tap.test('Apply for worker opening as member', async () =>
-    applyForOpening(
+    await applyForWorkerOpeningAsNonMemberFixture.runner(true)
+  })
+
+  let applyForWorkerOpeningFixture: ApplyForOpeningFixture
+  tap.test('Apply for worker opening', async () => {
+    applyForWorkerOpeningFixture = new ApplyForOpeningFixture(
       apiWrapper,
       nKeyPairs,
       sudo,
       applicationStake,
       roleStake,
-      openignId,
-      WorkingGroups.StorageWorkingGroup,
-      false
+      addWorkerOpeningFixture.getResult()!,
+      WorkingGroups.StorageWorkingGroup
     )
-  )
-  tap.test('Terminate worker applicaitons', async () =>
-    terminateApplications(apiWrapper, nKeyPairs, leadKeyPair[0], sudo, WorkingGroups.StorageWorkingGroup)
-  )
+    await applyForWorkerOpeningFixture.runner(false)
+  })
 
-  tap.test('Leaving lead role', async () => leaveRole(apiWrapper, leadKeyPair, sudo, WorkingGroups.StorageWorkingGroup))
+  const terminateApplicationsFixture: TerminateApplicationsFixture = new TerminateApplicationsFixture(
+    apiWrapper,
+    nKeyPairs,
+    leadKeyPair[0],
+    sudo,
+    WorkingGroups.StorageWorkingGroup
+  )
+  tap.test('Terminate worker applicaitons', async () => terminateApplicationsFixture.runner(false))
+
+  const leaveRoleFixture: LeaveRoleFixture = new LeaveRoleFixture(
+    apiWrapper,
+    leadKeyPair,
+    sudo,
+    WorkingGroups.StorageWorkingGroup
+  )
+  tap.test('Leaving lead role', async () => leaveRoleFixture.runner(false))
 
   closeApi(apiWrapper)
 })
