@@ -28,7 +28,7 @@ export default create({
   barSelectedColor: 'white',
 
   // Form colors
-	inputBg: 'white',
+  inputBg: 'white',
   inputBorder: '#272D33',
   inputTextColor: 'black',
   inputBorderRadius: 4,

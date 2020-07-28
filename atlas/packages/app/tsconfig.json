@@ -3,11 +3,7 @@
   "compilerOptions": {
     "target": "es2019",
     "baseUrl": "./",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "es2019"
-    ],
+    "lib": ["dom", "dom.iterable", "es2019"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -18,12 +14,6 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-    "src/shared/stories"
-  ],
-  "include": [
-    "src"
-  ]
+  "exclude": ["node_modules", "dist", "src/shared/stories"],
+  "include": ["src"]
 }
