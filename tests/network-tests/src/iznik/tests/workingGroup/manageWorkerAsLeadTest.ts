@@ -1,6 +1,6 @@
 import { initConfig } from '../../utils/config'
 import { registerJoystreamTypes } from '@nicaea/types'
-import { closeApi } from '../impl/closeApi'
+import { closeApi } from '../../utils/closeApi'
 import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
 import { WsProvider, Keyring } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -18,11 +18,11 @@ import {
   DecreaseStakeFixture,
   SlashFixture,
   TerminateRoleFixture,
-} from './impl/workingGroupModule'
-import BN from 'bn.js'
-import tap = require('tap')
-import { BuyMembershipHappyCaseFixture } from '../impl/membershipModule'
+} from '../fixtures/workingGroupModule'
+import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
 import { Utils } from '../../utils/utils'
+import BN from 'bn.js'
+import tap from 'tap'
 
 tap.mocha.describe('Manage worker as worker scenario', async () => {
   initConfig()

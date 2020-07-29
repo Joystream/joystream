@@ -5,12 +5,12 @@ import BN from 'bn.js'
 import { setTestTimeout } from '../../utils/setTestTimeout'
 import tap from 'tap'
 import { registerJoystreamTypes } from '@nicaea/types'
-import { closeApi } from '../impl/closeApi'
+import { closeApi } from '../../utils/closeApi'
 import { ApiWrapper } from '../../utils/apiWrapper'
 import { Utils } from '../../utils/utils'
-import { BuyMembershipHappyCaseFixture } from '../impl/membershipModule'
-import { ElectCouncilFixture } from '../impl/councilElectionModule'
-import { TextProposalFixture } from './impl/proposalsModule'
+import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
+import { ElectCouncilFixture } from '../fixtures/councilElectionModule'
+import { TextProposalFixture } from '../fixtures/proposalsModule'
 
 tap.mocha.describe('Text proposal scenario', async () => {
   initConfig()

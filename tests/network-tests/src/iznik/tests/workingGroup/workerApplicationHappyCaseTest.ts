@@ -1,13 +1,13 @@
 import { initConfig } from '../../utils/config'
 import { registerJoystreamTypes } from '@nicaea/types'
-import { closeApi } from '../impl/closeApi'
+import { closeApi } from '../../utils/closeApi'
 import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
 import { WsProvider, Keyring } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { setTestTimeout } from '../../utils/setTestTimeout'
 import BN from 'bn.js'
 import tap from 'tap'
-import { BuyMembershipHappyCaseFixture } from '../impl/membershipModule'
+import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
 import { Utils } from '../../utils/utils'
 import {
   AddLeaderOpeningFixture,
@@ -19,7 +19,7 @@ import {
   FillOpeningFixture,
   LeaveRoleFixture,
   WithdrawApplicationFixture,
-} from './impl/workingGroupModule'
+} from '../fixtures/workingGroupModule'
 
 tap.mocha.describe('Worker application happy case scenario', async () => {
   initConfig()

@@ -1,6 +1,6 @@
 import { initConfig } from '../../utils/config'
 import { registerJoystreamTypes } from '@nicaea/types'
-import { closeApi } from '../impl/closeApi'
+import { closeApi } from '../../utils/closeApi'
 import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
 import { WsProvider, Keyring } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -12,14 +12,17 @@ import {
   AwaitPayoutFixture,
   BeginApplicationReviewFixture,
   BeginLeaderApplicationReviewFixture,
+  ExpectMintCapacityChangedFixture,
   FillLeaderOpeningFixture,
   FillOpeningFixture,
   LeaveRoleFixture,
-} from './impl/workingGroupModule'
+} from '../fixtures/workingGroupModule'
 import BN from 'bn.js'
 import tap from 'tap'
-import { BuyMembershipHappyCaseFixture } from '../impl/membershipModule'
+import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
 import { Utils } from '../../utils/utils'
+import { ElectCouncilFixture } from '../fixtures/councilElectionModule'
+import { VoteForProposalFixture, WorkingGroupMintCapacityProposalFixture } from '../fixtures/proposalsModule'
 
 tap.mocha.describe('Worker application happy case scenario', async () => {
   initConfig()
@@ -33,12 +36,18 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const sudo: KeyringPair = keyring.addFromUri(sudoUri)
 
   const N: number = +process.env.WORKING_GROUP_N!
-  const nKeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
+  const m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
+  const m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const leadKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
 
   const paidTerms: number = +process.env.MEMBERSHIP_PAID_TERMS!
+  const K: number = +process.env.COUNCIL_ELECTION_K!
+  const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!)
+  const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!)
   const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!)
+  const leaderFirstRewardInterval: BN = new BN(process.env.LONG_REWARD_INTERVAL!)
+  const leaderRewardInterval: BN = new BN(process.env.LONG_REWARD_INTERVAL!)
   const firstRewardInterval: BN = new BN(process.env.SHORT_FIRST_REWARD_INTERVAL!)
   const rewardInterval: BN = new BN(process.env.SHORT_REWARD_INTERVAL!)
   const payoutAmount: BN = new BN(process.env.PAYOUT_AMOUNT!)
@@ -49,13 +58,32 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
 
   setTestTimeout(apiWrapper, durationInBlocks)
 
-  const happyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
+  const firstMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
     apiWrapper,
     sudo,
-    nKeyPairs,
+    m1KeyPairs,
     paidTerms
   )
-  tap.test('Creating a set of members', async () => happyCaseFixture.runner(false))
+  tap.test('Creating first set of members', async () => firstMemberSetFixture.runner(false))
+
+  const secondMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
+    apiWrapper,
+    sudo,
+    m2KeyPairs,
+    paidTerms
+  )
+  tap.test('Creating second set of members', async () => secondMemberSetFixture.runner(false))
+
+  const electCouncilFixture: ElectCouncilFixture = new ElectCouncilFixture(
+    apiWrapper,
+    m1KeyPairs,
+    m2KeyPairs,
+    K,
+    sudo,
+    greaterStake,
+    lesserStake
+  )
+  tap.test('Elect council', async () => electCouncilFixture.runner(false))
 
   const leaderHappyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
     apiWrapper,
@@ -67,14 +95,13 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
 
   const addLeaderOpeningFixture: AddLeaderOpeningFixture = new AddLeaderOpeningFixture(
     apiWrapper,
-    nKeyPairs,
+    m1KeyPairs,
     sudo,
     applicationStake,
     roleStake,
     openingActivationDelay,
     WorkingGroups.StorageWorkingGroup
   )
-  // let leadOpenignId: BN
   tap.test('Add lead opening', async () => await addLeaderOpeningFixture.runner(false))
 
   let applyForLeaderOpeningFixture: ApplyForOpeningFixture
@@ -109,17 +136,42 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       leadKeyPair,
       sudo,
       addLeaderOpeningFixture.getResult()!,
-      firstRewardInterval,
-      rewardInterval,
+      leaderFirstRewardInterval,
+      leaderRewardInterval,
       payoutAmount,
       WorkingGroups.StorageWorkingGroup
     )
     await fillLeaderOpeningFixture.runner(false)
   })
 
+  const workingGroupMintCapacityProposalFixture: WorkingGroupMintCapacityProposalFixture = new WorkingGroupMintCapacityProposalFixture(
+    apiWrapper,
+    m1KeyPairs,
+    sudo,
+    mintCapacity,
+    WorkingGroups.StorageWorkingGroup
+  )
+  tap.test('Propose mint capacity', async () => workingGroupMintCapacityProposalFixture.runner(false))
+
+  let voteForProposalFixture: VoteForProposalFixture
+  const expectMintCapacityChanged: ExpectMintCapacityChangedFixture = new ExpectMintCapacityChangedFixture(
+    apiWrapper,
+    mintCapacity
+  )
+  tap.test('Approve mint capacity', async () => {
+    voteForProposalFixture = new VoteForProposalFixture(
+      apiWrapper,
+      m2KeyPairs,
+      sudo,
+      workingGroupMintCapacityProposalFixture.getResult()!
+    )
+    voteForProposalFixture.runner(false)
+    await expectMintCapacityChanged.runner(false)
+  })
+
   const addWorkerOpeningFixture: AddWorkerOpeningFixture = new AddWorkerOpeningFixture(
     apiWrapper,
-    nKeyPairs,
+    m1KeyPairs,
     leadKeyPair[0],
     sudo,
     applicationStake,
@@ -134,7 +186,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   tap.test('First apply for worker opening', async () => {
     applyForWorkerOpeningFixture = new ApplyForOpeningFixture(
       apiWrapper,
-      nKeyPairs,
+      m1KeyPairs,
       sudo,
       applicationStake,
       roleStake,
@@ -160,7 +212,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   tap.test('Fill worker opening', async () => {
     fillOpeningFixture = new FillOpeningFixture(
       apiWrapper,
-      nKeyPairs,
+      m1KeyPairs,
       leadKeyPair[0],
       sudo,
       addWorkerOpeningFixture.getResult()!,
@@ -174,7 +226,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
 
   const awaitPayoutFixture: AwaitPayoutFixture = new AwaitPayoutFixture(
     apiWrapper,
-    nKeyPairs,
+    m1KeyPairs,
     WorkingGroups.StorageWorkingGroup
   )
   tap.test('Await worker payout', async () => awaitPayoutFixture.runner(false))

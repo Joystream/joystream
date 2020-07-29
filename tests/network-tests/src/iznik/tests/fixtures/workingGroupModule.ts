@@ -1,16 +1,16 @@
 import BN from 'bn.js'
 import { assert } from 'chai'
-import { ApiWrapper, WorkingGroups } from '../../../utils/apiWrapper'
+import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Balance, Event } from '@polkadot/types/interfaces'
 import { Keyring } from '@polkadot/api'
 import { v4 as uuid } from 'uuid'
 import { RewardRelationship } from '@nicaea/types/recurring-rewards'
 import { Worker, ApplicationIdToWorkerIdMap, Application } from '@nicaea/types/working-group'
-import { Utils } from '../../../utils/utils'
+import { Utils } from '../../utils/utils'
 import { Opening as HiringOpening } from '@nicaea/types/hiring'
-import { WorkingGroupOpening } from '../../../dto/workingGroupOpening'
-import { Fixture } from '../../../utils/fixture'
+import { WorkingGroupOpening } from '../../dto/workingGroupOpening'
+import { Fixture } from './interfaces/fixture'
 
 export class AddWorkerOpeningFixture implements Fixture {
   private apiWrapper: ApiWrapper
@@ -156,8 +156,10 @@ export class AddLeaderOpeningFixture implements Fixture {
     const addOpeningPromise: Promise<Event> = this.apiWrapper.expectEvent('OpeningAdded')
     await this.apiWrapper.sudoAddOpening(this.sudo, opening, this.module)
     const openingId: BN = ((await addOpeningPromise).data[0] as unknown) as BN
-
     this.result = openingId
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -192,6 +194,9 @@ export class AcceptApplicationsFixture implements Fixture {
 
     const opening: HiringOpening = await this.apiWrapper.getHiringOpening(this.openingId)
     assert(opening.is_active, `Opening ${this.openingId} is not active`)
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -272,6 +277,9 @@ export class WithdrawApplicationFixture implements Fixture {
       )
       assert(activeApplications.length === 0, `Unexpected active application found for ${keyPair.address}`)
     })
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -299,6 +307,9 @@ export class BeginApplicationReviewFixture implements Fixture {
     const beginApplicantReviewPromise: Promise<BN> = this.apiWrapper.expectApplicationReviewBegan()
     await this.apiWrapper.beginApplicantReview(this.lead, this.openingId, this.module)
     await beginApplicantReviewPromise
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -318,6 +329,9 @@ export class BeginLeaderApplicationReviewFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     // Begin application review
     await this.apiWrapper.sudoBeginApplicantReview(this.sudo, this.openingId, this.module)
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -395,6 +409,9 @@ export class FillOpeningFixture implements Fixture {
     this.membersKeyPairs.forEach((keyPair) =>
       assert(openingWorkersAccounts.includes(keyPair.address), `Account ${keyPair.address} is not worker`)
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -468,6 +485,9 @@ export class FillLeaderOpeningFixture implements Fixture {
       openingLeaderAccount === this.membersKeyPairs[0].address,
       `Unexpected leader account ${openingLeaderAccount}, expected ${this.membersKeyPairs[0].address}`
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -505,6 +525,9 @@ export class IncreaseStakeFixture implements Fixture {
       increasedWorkerStake.eq(newWorkerStake),
       `Unexpected worker stake ${newWorkerStake}, expected ${increasedWorkerStake}`
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -543,6 +566,9 @@ export class UpdateRewardAccountFixture implements Fixture {
       newRewardAccount === createdAccount.address,
       `Unexpected role account ${newRewardAccount}, expected ${createdAccount.address}`
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -585,6 +611,9 @@ export class UpdateRoleAccountFixture implements Fixture {
     )
 
     this.membersKeyPairs[0] = createdAccount
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -627,6 +656,9 @@ export class TerminateApplicationsFixture implements Fixture {
       )
       assert(activeApplications.length === 0, `Account ${keyPair.address} has unexpected active applications`)
     })
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -768,7 +800,7 @@ export class LeaveRoleFixture implements Fixture {
     const leaveRoleFee = this.apiWrapper.estimateLeaveRoleFee(this.module)
     await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.membersKeyPairs, leaveRoleFee)
 
-    await this.apiWrapper.batchLeaveRole(this.membersKeyPairs, uuid().substring(0, 8), false, this.module)
+    await this.apiWrapper.batchLeaveRole(this.membersKeyPairs, uuid().substring(0, 8), expectFailure, this.module)
 
     // Assertions
     this.membersKeyPairs.forEach(async (keyPair) => {
@@ -821,27 +853,11 @@ export class AwaitPayoutFixture implements Fixture {
       balanceAfterSecondPayout.eq(expectedBalanceSecond),
       `Unexpected balance, expected ${expectedBalanceSecond} got ${balanceAfterSecondPayout}`
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
-
-// export class SetMintCapacityFixture implements Fixture {
-//   private apiWrapper: ApiWrapper
-//   private sudo: KeyringPair
-//   private capacity: BN
-//   private module: WorkingGroups
-//
-//   constructor(apiWrapper: ApiWrapper, sudo: KeyringPair, capacity:, module: WorkingGroups) {
-//     this.apiWrapper = apiWrapper;
-//     this.sudo = sudo;
-//     this.capacity = capacity;
-//     this.module = module;
-//   }
-//
-//   public async runner(expectFailure: boolean): Promise<void> {
-//     await this.apiWrapper.sudoSetWorkingGroupMintCapacity(this.sudo, this.capacity, this.module)
-//   }
-//
-// }
 
 export class ExpectLeadOpeningAddedFixture implements Fixture {
   private apiWrapper: ApiWrapper
@@ -866,6 +882,9 @@ export class ExpectLeadOpeningAddedFixture implements Fixture {
     const event: Event = await this.apiWrapper.expectEvent('OpeningAdded')
     this.events.push(event)
     this.result = (event.data as unknown) as BN
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -906,6 +925,9 @@ export class ExpectLeaderSetFixture implements Fixture {
       `Role account ids does not match, leader account: ${worker.role_account_id}, application account ${application.role_account_id}`
     )
     this.result = leadWorkerId
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -931,6 +953,9 @@ export class ExpectBeganApplicationReviewFixture implements Fixture {
     const event: Event = await this.apiWrapper.expectEvent('BeganApplicationReview')
     this.events.push(event)
     this.result = (event.data as unknown) as BN
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -959,6 +984,9 @@ export class ExpectLeaderRoleTerminatedFixture implements Fixture {
     this.events.push(event)
     const leadWorkerId: BN | undefined = await this.apiWrapper.getLeadWorkerId(this.module)
     assert(leadWorkerId === undefined, `Unexpected lead worker id: ${leadWorkerId}, expected none`)
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -995,6 +1023,9 @@ export class ExpectLeaderRewardAmountUpdatedFixture implements Fixture {
       receivedReward.eq(this.expectedReward),
       `Unexpected reward amount for worker with id ${leadWorkerId}: ${receivedReward}, expected ${this.expectedReward}`
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -1029,6 +1060,9 @@ export class ExpectLeaderStakeDecreasedFixture implements Fixture {
       receivedStake.eq(this.expectedStake),
       `Unexpected stake amount for worker with id ${leadWorkerId}: ${receivedStake}, expected ${this.expectedStake}`
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -1063,6 +1097,9 @@ export class ExpectLeaderSlashedFixture implements Fixture {
       receivedStake.eq(this.expectedStake),
       `Unexpected stake amount for worker with id after slash ${leadWorkerId}: ${receivedStake}, expected ${this.expectedStake}`
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -1095,5 +1132,8 @@ export class ExpectMintCapacityChangedFixture implements Fixture {
       `Unexpected mint capacity: ${receivedMintCapacity}, expected ${this.expectedMintCapacity}`
     )
     this.result = receivedMintCapacity
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }

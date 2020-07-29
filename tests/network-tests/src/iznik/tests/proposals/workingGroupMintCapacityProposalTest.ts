@@ -5,13 +5,13 @@ import BN from 'bn.js'
 import { setTestTimeout } from '../../utils/setTestTimeout'
 import tap from 'tap'
 import { registerJoystreamTypes } from '@nicaea/types'
-import { closeApi } from '../impl/closeApi'
+import { closeApi } from '../../utils/closeApi'
 import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
 import { Utils } from '../../utils/utils'
-import { BuyMembershipHappyCaseFixture } from '../impl/membershipModule'
-import { ElectCouncilFixture } from '../impl/councilElectionModule'
-import { VoteForProposalFixture, WorkingGroupMintCapacityProposalFixture } from './impl/proposalsModule'
-import { ExpectMintCapacityChangedFixture } from '../workingGroup/impl/workingGroupModule'
+import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
+import { ElectCouncilFixture } from '../fixtures/councilElectionModule'
+import { VoteForProposalFixture, WorkingGroupMintCapacityProposalFixture } from '../fixtures/proposalsModule'
+import { ExpectMintCapacityChangedFixture } from '../fixtures/workingGroupModule'
 
 tap.mocha.describe('Set storage working group mint capacity scenario', async () => {
   initConfig()

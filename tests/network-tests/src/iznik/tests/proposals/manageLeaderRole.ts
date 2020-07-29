@@ -5,10 +5,10 @@ import BN from 'bn.js'
 import { setTestTimeout } from '../../utils/setTestTimeout'
 import tap from 'tap'
 import { registerJoystreamTypes } from '@nicaea/types'
-import { closeApi } from '../impl/closeApi'
+import { closeApi } from '../../utils/closeApi'
 import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
-import { BuyMembershipHappyCaseFixture } from '../impl/membershipModule'
-import { ElectCouncilFixture } from '../impl/councilElectionModule'
+import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
+import { ElectCouncilFixture } from '../fixtures/councilElectionModule'
 import {
   BeginWorkingGroupLeaderApplicationReviewFixture,
   CreateWorkingGroupLeaderOpeningFixture,
@@ -18,7 +18,7 @@ import {
   SlashLeaderProposalFixture,
   TerminateLeaderRoleProposalFixture,
   VoteForProposalFixture,
-} from './impl/proposalsModule'
+} from '../fixtures/proposalsModule'
 import {
   ApplyForOpeningFixture,
   ExpectBeganApplicationReviewFixture,
@@ -28,7 +28,7 @@ import {
   ExpectLeaderSlashedFixture,
   ExpectLeaderStakeDecreasedFixture,
   ExpectLeadOpeningAddedFixture,
-} from '../workingGroup/impl/workingGroupModule'
+} from '../fixtures/workingGroupModule'
 import { Utils } from '../../utils/utils'
 
 tap.mocha.describe('Set lead proposal scenario', async () => {
@@ -109,7 +109,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   tap.test('Propose create leader opening', async () => createWorkingGroupLeaderOpeningFixture.runner(false))
 
   let voteForCreateOpeningProposalFixture: VoteForProposalFixture
-  let expectLeadOpeningAddedFixture: ExpectLeadOpeningAddedFixture = new ExpectLeadOpeningAddedFixture(apiWrapper)
+  const expectLeadOpeningAddedFixture: ExpectLeadOpeningAddedFixture = new ExpectLeadOpeningAddedFixture(apiWrapper)
   tap.test('Approve add opening proposal', async () => {
     voteForCreateOpeningProposalFixture = new VoteForProposalFixture(
       apiWrapper,
@@ -148,7 +148,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   })
 
   let voteForBeginReviewProposal: VoteForProposalFixture
-  let expectBeganApplicationReviewFixture: ExpectBeganApplicationReviewFixture = new ExpectBeganApplicationReviewFixture(
+  const expectBeganApplicationReviewFixture: ExpectBeganApplicationReviewFixture = new ExpectBeganApplicationReviewFixture(
     apiWrapper
   )
   tap.test('Approve begin application review', async () => {

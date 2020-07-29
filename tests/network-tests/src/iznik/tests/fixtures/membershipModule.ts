@@ -2,7 +2,7 @@ import { ApiWrapper } from '../../utils/apiWrapper'
 import { KeyringPair } from '@polkadot/keyring/types'
 import BN from 'bn.js'
 import { assert } from 'chai'
-import { Fixture } from '../../utils/fixture'
+import { Fixture } from './interfaces/fixture'
 
 export class BuyMembershipHappyCaseFixture implements Fixture {
   private apiWrapper: ApiWrapper
@@ -48,6 +48,9 @@ export class BuyMembershipHappyCaseFixture implements Fixture {
         .getMemberIds(keyPair.address)
         .then((membership) => assert(membership.length > 0, `Account ${keyPair.address} is not a member`))
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -96,5 +99,8 @@ export class BuyMembershipWithInsufficienFundsFixture implements Fixture {
     this.apiWrapper
       .getMemberIds(this.aKeyPair.address)
       .then((membership) => assert(membership.length === 0, 'Account A is a member'))
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }

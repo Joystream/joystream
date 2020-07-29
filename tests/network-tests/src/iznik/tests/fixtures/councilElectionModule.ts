@@ -5,7 +5,7 @@ import { assert } from 'chai'
 import { Seat } from '@nicaea/types/council'
 import { v4 as uuid } from 'uuid'
 import { Utils } from '../../utils/utils'
-import { Fixture } from '../../utils/fixture'
+import { Fixture } from './interfaces/fixture'
 
 export class ElectCouncilFixture implements Fixture {
   private apiWrapper: ApiWrapper
@@ -67,7 +67,7 @@ export class ElectCouncilFixture implements Fixture {
       this.apiWrapper.getCouncilElectionStake(keyPair.address).then((stake) => {
         assert(
           stake.eq(this.greaterStake),
-          `${keyPair.address} not applied correctrly for council election with stake ${stake} versus expected ${this.greaterStake}`
+          `${keyPair.address} not applied correctly for council election with stake ${stake} versus expected ${this.greaterStake}`
         )
       })
     )
@@ -133,5 +133,8 @@ export class ElectCouncilFixture implements Fixture {
         `Member ${seat.member} has unexpected stake ${Utils.getTotalStake(seat)}`
       )
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }

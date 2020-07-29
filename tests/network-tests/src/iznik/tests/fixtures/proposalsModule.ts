@@ -1,10 +1,10 @@
 import { KeyringPair } from '@polkadot/keyring/types'
-import { ApiWrapper, WorkingGroups } from '../../../utils/apiWrapper'
+import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
 import { v4 as uuid } from 'uuid'
 import BN from 'bn.js'
-import { WorkingGroupOpening } from '../../../dto/workingGroupOpening'
-import { FillOpeningParameters } from '../../../dto/fillOpeningParameters'
-import { Fixture } from '../../../utils/fixture'
+import { WorkingGroupOpening } from '../../dto/workingGroupOpening'
+import { FillOpeningParameters } from '../../dto/fillOpeningParameters'
+import { Fixture } from './interfaces/fixture'
 import { Bytes } from '@polkadot/types'
 import { assert } from 'chai'
 
@@ -81,6 +81,9 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
     )
     const proposalNumber: BN = await proposalPromise
     this.result = proposalNumber
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -131,8 +134,10 @@ export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture 
       this.openingId,
       this.workingGroup
     )
-    const proposalNumber: BN = await proposalPromise
-    this.result = proposalNumber
+    this.result = await proposalPromise
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -207,8 +212,10 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
       proposalStake,
       fillOpeningParameters
     )
-    const proposalNumber: BN = await proposalPromise
-    this.result = proposalNumber
+    this.result = await proposalPromise
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -270,8 +277,10 @@ export class TerminateLeaderRoleProposalFixture implements Fixture {
       this.slash,
       workingGroupString
     )
-    const proposalNumber: BN = await proposalPromise
-    this.result = proposalNumber
+    this.result = await proposalPromise
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -325,8 +334,10 @@ export class SetLeaderRewardProposalFixture implements Fixture {
       this.payoutAmount,
       workingGroupString
     )
-    const proposalNumber: BN = await proposalPromise
-    this.result = proposalNumber
+    this.result = await proposalPromise
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -380,8 +391,10 @@ export class DecreaseLeaderStakeProposalFixture implements Fixture {
       this.stakeDecrement,
       workingGroupString
     )
-    const proposalNumber: BN = await proposalPromise
-    this.result = proposalNumber
+    this.result = await proposalPromise
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -435,8 +448,10 @@ export class SlashLeaderProposalFixture implements Fixture {
       this.slashAmount,
       workingGroupString
     )
-    const proposalNumber: BN = await proposalPromise
-    this.result = proposalNumber
+    this.result = await proposalPromise
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -488,8 +503,10 @@ export class WorkingGroupMintCapacityProposalFixture implements Fixture {
       this.mintCapacity,
       workingGroupString
     )
-    const proposalNumber: BN = await proposalPromise
-    this.result = proposalNumber
+    this.result = await proposalPromise
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -610,6 +627,9 @@ export class ElectionParametersProposalFixture implements Fixture {
       proposedMinVotingStake.eq(newMinVotingStake),
       `Min voting stake has unexpected value ${newMinVotingStake}, expected ${proposedMinVotingStake}`
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -657,6 +677,9 @@ export class SetLeadProposalFixture implements Fixture {
       newLead === this.m1KeyPairs[1].address,
       `New lead has unexpected value ${newLead}, expected ${this.m1KeyPairs[1].address}`
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -726,6 +749,9 @@ export class SpendingProposalFixture implements Fixture {
         this.m1KeyPairs[0].address
       } has unexpected balance ${balanceAfterMinting}, expected ${balanceBeforeMinting.add(this.spendingBalance)}`
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -769,6 +795,9 @@ export class TextProposalFixture implements Fixture {
     const textProposalPromise = this.apiWrapper.expectProposalFinalized()
     await this.apiWrapper.batchApproveProposal(this.m2KeyPairs, proposalNumber)
     await textProposalPromise
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -827,6 +856,9 @@ export class ValidatorCountProposalFixture implements Fixture {
       proposedValidatorCount.eq(newValidatorCount),
       `Validator count has unexpeccted value ${newValidatorCount}, expected ${proposedValidatorCount}`
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -889,6 +921,9 @@ export class ContentWorkingGroupMintCapacityProposalFixture implements Fixture {
       proposedMintingCapacity.eq(newMintingCapacity),
       `Content working group has unexpected minting capacity ${newMintingCapacity}, expected ${proposedMintingCapacity}`
     )
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -937,6 +972,9 @@ export class UpdateRuntimeFixture implements Fixture {
     const runtimePromise = this.apiWrapper.expectProposalFinalized()
     await this.apiWrapper.batchApproveProposal(this.m2KeyPairs, proposalNumber)
     await runtimePromise
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
 
@@ -961,5 +999,8 @@ export class VoteForProposalFixture implements Fixture {
     const proposalExecutionPromise = this.apiWrapper.expectProposalFinalized()
     await this.apiWrapper.batchApproveProposal(this.m2KeyPairs, this.proposalNumber)
     await proposalExecutionPromise
+    if (expectFailure) {
+      throw new Error('Successful fixture run while expecting failure')
+    }
   }
 }
