@@ -15,7 +15,7 @@ fn update_entity_property_values_success() {
 
         let mut second_schema_new_property_values = BTreeMap::new();
         let second_schema_new_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
 
         second_schema_new_property_values
             .insert(SECOND_PROPERTY_ID, second_schema_new_property_value.clone());
@@ -34,7 +34,7 @@ fn update_entity_property_values_success() {
         if let Some(second_schema_old_property_value) =
             first_entity.values.get_mut(&SECOND_PROPERTY_ID)
         {
-            second_schema_old_property_value.update(second_schema_new_property_value);
+            second_schema_old_property_value.update(second_schema_new_property_value.into());
         }
 
         assert_eq!(first_entity, entity_by_id(FIRST_ENTITY_ID));
@@ -79,7 +79,7 @@ fn update_entity_property_values_entity_not_found() {
 
         let mut schema_new_property_values = BTreeMap::new();
         let schema_new_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
 
@@ -117,7 +117,7 @@ fn update_entity_property_values_lead_auth_failed() {
 
         let mut schema_new_property_values = BTreeMap::new();
         let schema_new_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
 
@@ -155,7 +155,7 @@ fn update_entity_property_values_member_auth_failed() {
 
         let mut schema_new_property_values = BTreeMap::new();
         let schema_new_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
 
@@ -203,7 +203,7 @@ fn update_entity_property_values_curator_group_is_not_active() {
 
         let mut schema_new_property_values = BTreeMap::new();
         let schema_new_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
 
@@ -244,7 +244,7 @@ fn update_entity_property_values_curator_auth_failed() {
 
         let mut schema_new_property_values = BTreeMap::new();
         let schema_new_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
 
@@ -285,7 +285,7 @@ fn update_entity_property_values_curator_not_found_in_curator_group() {
 
         let mut schema_new_property_values = BTreeMap::new();
         let schema_new_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
 
@@ -323,7 +323,7 @@ fn update_entity_property_values_entity_access_denied() {
 
         let mut schema_new_property_values = BTreeMap::new();
         let schema_new_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
 
@@ -362,7 +362,7 @@ fn update_entity_property_values_locked_on_class_level() {
 
         let mut schema_new_property_values = BTreeMap::new();
         let schema_new_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
 
@@ -415,7 +415,7 @@ fn update_entity_property_values_is_locked_for_given_actor() {
         // Create second entity
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
-        let schema_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
             FIRST_ENTITY_ID,
             FIRST_ENTITY_ID,
             FIRST_ENTITY_ID,
@@ -440,7 +440,7 @@ fn update_entity_property_values_is_locked_for_given_actor() {
 
         let mut schema_new_property_values = BTreeMap::new();
         let schema_new_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
 
@@ -484,7 +484,7 @@ fn update_entity_property_values_unknown_entity_property_id() {
 
         let mut schema_new_property_values = BTreeMap::new();
         let schema_new_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         schema_new_property_values.insert(SECOND_PROPERTY_ID, schema_new_property_value);
 
@@ -526,7 +526,7 @@ fn update_entity_property_values_prop_value_do_not_match_type() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_new_property_values = BTreeMap::new();
-        let schema_new_property_value = PropertyValue::<Runtime>::default();
+        let schema_new_property_value = InputPropertyValue::<Runtime>::default();
 
         schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
 
@@ -568,7 +568,7 @@ fn update_entity_property_values_vec_prop_is_too_long() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_new_property_values = BTreeMap::new();
-        let schema_new_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+        let schema_new_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
                 FIRST_ENTITY_ID;
                 VecMaxLengthConstraint::get() as usize + 1
             ]);
@@ -625,7 +625,7 @@ fn update_entity_property_values_text_prop_is_too_long() {
         let mut schema_property_values = BTreeMap::new();
 
         let schema_property_value =
-            PropertyValue::<Runtime>::single_text(TextMaxLengthConstraint::get());
+            InputPropertyValue::<Runtime>::single_text(TextMaxLengthConstraint::get());
 
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
 
@@ -645,7 +645,7 @@ fn update_entity_property_values_text_prop_is_too_long() {
 
         let mut schema_new_property_values = BTreeMap::new();
         let schema_new_property_value =
-            PropertyValue::<Runtime>::single_text(TextMaxLengthConstraint::get() + 1);
+            InputPropertyValue::<Runtime>::single_text(TextMaxLengthConstraint::get() + 1);
 
         schema_new_property_values.insert(FIRST_PROPERTY_ID, schema_new_property_value);
 
@@ -687,7 +687,7 @@ fn update_entity_property_values_referenced_entity_not_found() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_new_property_values = BTreeMap::new();
-        let schema_new_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+        let schema_new_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
                 SECOND_ENTITY_ID;
                 VecMaxLengthConstraint::get() as usize
             ]);
@@ -738,7 +738,7 @@ fn update_entity_property_values_referenced_entity_does_not_match_its_class() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_new_property_values = BTreeMap::new();
-        let schema_new_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+        let schema_new_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
                 SECOND_ENTITY_ID;
                 VecMaxLengthConstraint::get() as usize
             ]);
@@ -794,7 +794,7 @@ fn update_entity_property_values_entity_can_not_be_referenced() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_new_property_values = BTreeMap::new();
-        let schema_new_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+        let schema_new_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
                 SECOND_ENTITY_ID;
                 VecMaxLengthConstraint::get() as usize
             ]);
@@ -856,7 +856,7 @@ fn update_entity_property_values_same_controller_constraint_violation() {
         let number_of_events_before_call = System::events().len();
 
         let mut schema_new_property_values = BTreeMap::new();
-        let schema_new_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+        let schema_new_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
                 SECOND_ENTITY_ID;
                 VecMaxLengthConstraint::get() as usize
             ]);
@@ -917,7 +917,7 @@ fn update_entity_property_values_property_should_be_unique() {
             vec![property]
         ));
 
-        let schema_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
             FIRST_ENTITY_ID,
             FIRST_ENTITY_ID,
             FIRST_ENTITY_ID,
@@ -942,7 +942,7 @@ fn update_entity_property_values_property_should_be_unique() {
 
         let mut schema_new_property_values = BTreeMap::new();
         let schema_new_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         schema_new_property_values.insert(SECOND_PROPERTY_ID, schema_new_property_value);
 

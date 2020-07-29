@@ -178,7 +178,7 @@ fn transfer_entity_ownership_inbound_same_owner_rc_does_not_equal_to_zero() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
@@ -246,7 +246,7 @@ fn transfer_entity_ownership_provided_property_value_ids_must_be_references_with
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
 
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
@@ -269,7 +269,7 @@ fn transfer_entity_ownership_provided_property_value_ids_must_be_references_with
 
         let new_controller = EntityController::Member(FIRST_MEMBER_ID);
 
-        let schema_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
             THIRD_ENTITY_ID,
             THIRD_ENTITY_ID,
             THIRD_ENTITY_ID,
@@ -329,7 +329,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_entity_that
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
 
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
@@ -360,7 +360,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_entity_that
 
         let new_controller = EntityController::Member(FIRST_MEMBER_ID);
 
-        let schema_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
             THIRD_ENTITY_ID,
             THIRD_ENTITY_ID,
             THIRD_ENTITY_ID,
@@ -409,7 +409,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_non_existen
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
 
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
@@ -425,7 +425,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_non_existen
 
         let new_controller = EntityController::Member(FIRST_MEMBER_ID);
 
-        let schema_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
             THIRD_ENTITY_ID,
             THIRD_ENTITY_ID,
             THIRD_ENTITY_ID,
@@ -485,7 +485,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_entity_cont
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
 
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
@@ -504,7 +504,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_entity_cont
 
         let new_controller = EntityController::Member(FIRST_MEMBER_ID);
 
-        let schema_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
             THIRD_ENTITY_ID,
             THIRD_ENTITY_ID,
             THIRD_ENTITY_ID,
@@ -563,7 +563,7 @@ fn transfer_entity_ownership_required_property_was_not_provided() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         let schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
 
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
@@ -672,7 +672,7 @@ fn transfer_entity_ownership_unique_constraint_violation() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         let first_schema_property_value =
-            PropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
+            InputPropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
 
         let mut schema_property_values = BTreeMap::new();
         schema_property_values.insert(FIRST_PROPERTY_ID, first_schema_property_value);
@@ -686,7 +686,7 @@ fn transfer_entity_ownership_unique_constraint_violation() {
             schema_property_values
         ));
 
-        let second_schema_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+        let second_schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
             SECOND_ENTITY_ID,
             SECOND_ENTITY_ID,
             SECOND_ENTITY_ID,
@@ -713,7 +713,7 @@ fn transfer_entity_ownership_unique_constraint_violation() {
 
         let new_controller = EntityController::Member(FIRST_MEMBER_ID);
 
-        let schema_property_value = PropertyValue::<Runtime>::vec_reference(vec![
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
             THIRD_ENTITY_ID,
             THIRD_ENTITY_ID,
             THIRD_ENTITY_ID,

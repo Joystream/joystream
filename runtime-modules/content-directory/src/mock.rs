@@ -106,6 +106,7 @@ thread_local! {
 
     static VEC_MAX_LENGTH_CONSTRAINT: RefCell<VecMaxLength> = RefCell::new(0);
     static TEXT_MAX_LENGTH_CONSTRAINT: RefCell<TextMaxLength> = RefCell::new(0);
+    static HASHED_TEXT_MAX_LENGTH_CONSTRAINT: RefCell<TextMaxLength> = RefCell::new(0);
 
     static INDIVIDUAL_ENTITIES_CREATION_LIMIT: RefCell<EntityId> = RefCell::new(0);
 }
@@ -194,6 +195,13 @@ impl Get<TextMaxLength> for TextMaxLengthConstraint {
     }
 }
 
+pub struct HashedTextMaxLengthConstraint;
+impl Get<HashedTextMaxLength> for HashedTextMaxLengthConstraint {
+    fn get() -> HashedTextMaxLength {
+        HASHED_TEXT_MAX_LENGTH_CONSTRAINT.with(|v| *v.borrow())
+    }
+}
+
 pub struct MaxNumberOfEntitiesPerClass;
 impl Get<EntityId> for MaxNumberOfEntitiesPerClass {
     fn get() -> EntityId {
@@ -261,6 +269,7 @@ impl Trait for Runtime {
 
     type VecMaxLengthConstraint = VecMaxLengthConstraint;
     type TextMaxLengthConstraint = TextMaxLengthConstraint;
+    type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
 
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
 }
@@ -309,6 +318,7 @@ pub struct ExtBuilder {
 
     vec_max_length_constraint: VecMaxLength,
     text_max_length_constraint: TextMaxLength,
+    hashed_text_max_length_constraint: HashedTextMaxLength,
 
     individual_entities_creation_limit: EntityId,
 }
@@ -333,6 +343,7 @@ impl Default for ExtBuilder {
 
             vec_max_length_constraint: 200,
             text_max_length_constraint: 5000,
+            hashed_text_max_length_constraint: 25000,
 
             individual_entities_creation_limit: 50,
         }
@@ -365,6 +376,9 @@ impl ExtBuilder {
 
         VEC_MAX_LENGTH_CONSTRAINT.with(|v| *v.borrow_mut() = self.vec_max_length_constraint);
         TEXT_MAX_LENGTH_CONSTRAINT.with(|v| *v.borrow_mut() = self.text_max_length_constraint);
+
+        HASHED_TEXT_MAX_LENGTH_CONSTRAINT
+            .with(|v| *v.borrow_mut() = self.hashed_text_max_length_constraint);
 
         INDIVIDUAL_ENTITIES_CREATION_LIMIT
             .with(|v| *v.borrow_mut() = self.individual_entities_creation_limit);
@@ -740,7 +754,7 @@ pub fn add_schema_support_to_entity(
     actor: Actor<Runtime>,
     entity_id: EntityId,
     schema_id: SchemaId,
-    new_property_values: BTreeMap<PropertyId, PropertyValue<Runtime>>,
+    new_property_values: BTreeMap<PropertyId, InputPropertyValue<Runtime>>,
 ) -> Result<(), &'static str> {
     TestModule::add_schema_support_to_entity(
         Origin::signed(origin),
@@ -755,7 +769,7 @@ pub fn update_entity_property_values(
     origin: u64,
     actor: Actor<Runtime>,
     entity_id: EntityId,
-    new_property_values: BTreeMap<PropertyId, PropertyValue<Runtime>>,
+    new_property_values: BTreeMap<PropertyId, InputPropertyValue<Runtime>>,
 ) -> Result<(), &'static str> {
     TestModule::update_entity_property_values(
         Origin::signed(origin),
@@ -785,7 +799,7 @@ pub fn insert_at_entity_property_vector(
     entity_id: EntityId,
     in_class_schema_property_id: PropertyId,
     index_in_property_vector: VecMaxLength,
-    property_value: SinglePropertyValue<Runtime>,
+    property_value: InputValue<Runtime>,
     nonce: Nonce,
 ) -> Result<(), &'static str> {
     TestModule::insert_at_entity_property_vector(
@@ -823,7 +837,7 @@ pub fn transfer_entity_ownership(
     new_controller: EntityController<Runtime>,
     new_property_value_references_with_same_owner_flag_set: BTreeMap<
         PropertyId,
-        PropertyValue<Runtime>,
+        InputPropertyValue<Runtime>,
     >,
 ) -> Result<(), &'static str> {
     TestModule::transfer_entity_ownership(
@@ -945,23 +959,20 @@ impl<T: Trait> PropertyType<T> {
     }
 }
 
-impl<T: Trait> PropertyValue<T> {
-    pub fn vec_reference(entity_ids: Vec<EntityId>) -> PropertyValue<Runtime> {
-        let vec_value = VecValue::<Runtime>::Reference(entity_ids);
-        let vec_property_value = VecPropertyValue::<Runtime>::new(vec_value, 0);
-        PropertyValue::<Runtime>::Vector(vec_property_value)
+impl<T: Trait> InputPropertyValue<T> {
+    pub fn vec_reference(entity_ids: Vec<EntityId>) -> InputPropertyValue<Runtime> {
+        let vec_value = VecInputValue::<Runtime>::Reference(entity_ids);
+        InputPropertyValue::<Runtime>::Vector(vec_value)
     }
 
-    pub fn vec_text(texts: Vec<Vec<u8>>) -> PropertyValue<Runtime> {
-        let vec_value = VecValue::<Runtime>::Text(texts);
-        let vec_property_value = VecPropertyValue::<Runtime>::new(vec_value, 0);
-        PropertyValue::<Runtime>::Vector(vec_property_value)
+    pub fn vec_text(texts: Vec<Vec<u8>>) -> InputPropertyValue<Runtime> {
+        let vec_value = VecInputValue::<Runtime>::Text(texts);
+        InputPropertyValue::<Runtime>::Vector(vec_value)
     }
 
-    pub fn single_text(text_len: TextMaxLength) -> PropertyValue<Runtime> {
-        let text_value = Value::<Runtime>::Text(generate_text(text_len as usize));
-        let text_property_value = SinglePropertyValue::<Runtime>::new(text_value);
-        PropertyValue::<Runtime>::Single(text_property_value)
+    pub fn single_text(text_len: TextMaxLength) -> InputPropertyValue<Runtime> {
+        let text_value = InputValue::<Runtime>::Text(generate_text(text_len as usize));
+        InputPropertyValue::<Runtime>::Single(text_value)
     }
 }
 

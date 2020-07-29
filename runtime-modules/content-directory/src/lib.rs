@@ -13,8 +13,8 @@ mod permissions;
 mod schema;
 
 use core::fmt::Debug;
+use core::hash::Hash;
 use core::ops::AddAssign;
-use std::hash::Hash;
 
 use codec::{Codec, Decode, Encode};
 use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
@@ -126,6 +126,9 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
 
     /// The maximum length of text property value constarint
     type TextMaxLengthConstraint: Get<TextMaxLength>;
+
+    /// The maximum length of text, that will be hashed property value constarint
+    type HashedTextMaxLengthConstraint: Get<HashedTextMaxLength>;
 
     /// Entities creation constraint per class
     type MaxNumberOfEntitiesPerClass: Get<Self::EntityId>;
@@ -385,9 +388,9 @@ pub struct Entity<T: Trait> {
     /// or that very old schema are eventually removed.
     pub supported_schemas: BTreeSet<SchemaId>, // indices of schema in corresponding class
 
-    /// Values for properties on class that are used by some schema used by this entity!
+    /// Values for properties on class that are used by some schema used by this entity
     /// Length is no more than Class.properties.
-    pub values: BTreeMap<PropertyId, PropertyValue<T>>,
+    pub values: BTreeMap<PropertyId, OutputPropertyValue<T>>,
 
     /// Number of property values referencing current entity
     pub reference_counter: InboundReferenceCounter,
@@ -411,7 +414,7 @@ impl<T: Trait> Entity<T> {
         controller: EntityController<T>,
         class_id: T::ClassId,
         supported_schemas: BTreeSet<SchemaId>,
-        values: BTreeMap<PropertyId, PropertyValue<T>>,
+        values: BTreeMap<PropertyId, OutputPropertyValue<T>>,
     ) -> Self {
         Self {
             entity_permissions: EntityPermissions::<T>::default_with_controller(controller),
@@ -423,7 +426,7 @@ impl<T: Trait> Entity<T> {
     }
 
     /// Get `Entity` values by value
-    fn get_values(self) -> BTreeMap<PropertyId, PropertyValue<T>> {
+    fn get_values(self) -> BTreeMap<PropertyId, OutputPropertyValue<T>> {
         self.values
     }
 
@@ -457,7 +460,7 @@ impl<T: Trait> Entity<T> {
     /// Ensure provided `property_values` are not added to the `Entity` `values` map yet
     pub fn ensure_property_values_are_not_added(
         &self,
-        property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        property_values: &BTreeMap<PropertyId, InputPropertyValue<T>>,
     ) -> dispatch::Result {
         ensure!(
             property_values
@@ -468,11 +471,11 @@ impl<T: Trait> Entity<T> {
         Ok(())
     }
 
-    /// Ensure PropertyValue under given `in_class_schema_property_id` is Vector
+    /// Ensure InputPropertyValue under given `in_class_schema_property_id` is Vector
     fn ensure_property_value_is_vec(
         &self,
         in_class_schema_property_id: PropertyId,
-    ) -> Result<VecPropertyValue<T>, &'static str> {
+    ) -> Result<VecOutputPropertyValue<T>, &'static str> {
         self.values
             .get(&in_class_schema_property_id)
             // Throw an error if a property was not found on entity
@@ -484,7 +487,7 @@ impl<T: Trait> Entity<T> {
             .ok_or(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR)
     }
 
-    /// Ensure any `PropertyValue` from external entity does not point to the given `Entity`
+    /// Ensure any `InputPropertyValue` from external entity does not point to the given `Entity`
     pub fn ensure_rc_is_zero(&self) -> dispatch::Result {
         ensure!(
             self.reference_counter.is_total_equal_to_zero(),
@@ -493,7 +496,7 @@ impl<T: Trait> Entity<T> {
         Ok(())
     }
 
-    /// Ensure any inbound `PropertyValue` with `same_owner` flag set points to the given `Entity`
+    /// Ensure any inbound `InputPropertyValue` with `same_owner` flag set points to the given `Entity`
     pub fn ensure_inbound_same_owner_rc_is_zero(&self) -> dispatch::Result {
         ensure!(
             self.reference_counter.is_same_owner_equal_to_zero(),
@@ -1048,7 +1051,7 @@ decl_module! {
             origin,
             entity_id: T::EntityId,
             new_controller: EntityController<T>,
-            new_property_value_references_with_same_owner_flag_set: BTreeMap<PropertyId, PropertyValue<T>>
+            new_property_value_references_with_same_owner_flag_set: BTreeMap<PropertyId, InputPropertyValue<T>>
         ) -> dispatch::Result {
 
             // Ensure given origin is lead
@@ -1060,7 +1063,7 @@ decl_module! {
             // Ensure provided new_entity_controller is not equal to current one
             entity.get_permissions_ref().ensure_controllers_are_not_equal(&new_controller)?;
 
-            // Ensure any inbound PropertyValue::Reference with same_owner flag set points to the given Entity
+            // Ensure any inbound InputPropertyValue::Reference with same_owner flag set points to the given Entity
             entity.ensure_inbound_same_owner_rc_is_zero()?;
 
             let class_properties = class.properties;
@@ -1068,7 +1071,7 @@ decl_module! {
             let entity_property_values = entity.values;
 
             // Create wrapper structure from provided entity_property_values and their corresponding Class properties
-            let values_for_existing_properties = ValuesForExistingProperties::from(&class_properties, &entity_property_values)?;
+            let values_for_existing_properties = OutputValuesForExistingProperties::from(&class_properties, &entity_property_values)?;
 
             // Filter provided values_for_existing_properties, leaving only `Reference`'s with `SameOwner` flag set
             // Retrieve the set of corresponding property ids
@@ -1092,7 +1095,7 @@ decl_module! {
             Self::ensure_all_required_properties_provided(&class_properties, &unused_property_id_references_with_same_owner_flag_set)?;
 
             // Create wrapper structure from provided new_property_value_references_with_same_owner_flag_set and their corresponding Class properties
-            let new_values_for_existing_properties = ValuesForExistingProperties::from(
+            let new_values_for_existing_properties = InputValuesForExistingProperties::from(
                 &class_properties, &new_property_value_references_with_same_owner_flag_set
             )?;
 
@@ -1111,7 +1114,7 @@ decl_module! {
 
                         // Create wrapper structure from provided entity_property_values_updated
                         // and their corresponding Class properties
-                        let updated_values_for_existing_properties = ValuesForExistingProperties::from(
+                        let updated_values_for_existing_properties = OutputValuesForExistingProperties::from(
                             &class_properties, &entity_property_values_updated
                         )?;
 
@@ -1129,7 +1132,7 @@ decl_module! {
                 // Calculate entities reference counter side effects for current operation
                 let entities_inbound_rcs_delta =
                     Self::get_updated_inbound_rcs_delta(
-                        class_properties, entity_property_values, &new_property_value_references_with_same_owner_flag_set
+                        class_properties, entity_property_values, new_property_value_references_with_same_owner_flag_set
                     )?;
 
                 //
@@ -1267,7 +1270,7 @@ decl_module! {
             // Ensure actor with given EntityAccessLevel can remove entity
             EntityPermissions::<T>::ensure_group_can_remove_entity(access_level)?;
 
-            // Ensure any inbound PropertyValue::Reference points to the given Entity
+            // Ensure any inbound InputPropertyValue::Reference points to the given Entity
             entity.ensure_rc_is_zero()?;
 
             //
@@ -1298,7 +1301,7 @@ decl_module! {
             actor: Actor<T>,
             entity_id: T::EntityId,
             schema_id: SchemaId,
-            new_property_values: BTreeMap<PropertyId, PropertyValue<T>>
+            new_property_values: BTreeMap<PropertyId, InputPropertyValue<T>>
         ) -> dispatch::Result {
 
             // Retrieve Class, Entity and ensure given have access to the Entity under given entity_id
@@ -1310,7 +1313,7 @@ decl_module! {
             let class_properties = class.properties;
 
             // Create wrapper structure from provided new_property_values and their corresponding Class properties
-            let new_values_for_existing_properties = ValuesForExistingProperties::from(&class_properties, &new_property_values)?;
+            let new_values_for_existing_properties = InputValuesForExistingProperties::from(&class_properties, &new_property_values)?;
 
             // Ensure Schema under given id is not added to given Entity yet
             entity.ensure_schema_id_is_not_added(schema_id)?;
@@ -1339,13 +1342,15 @@ decl_module! {
 
             let entity_property_values = entity.get_values();
 
+            let new_output_property_values = Self::make_output_property_values(new_property_values);
+
             // Compute updated entity values, after new schema support added
             let entity_values_updated = Self::make_updated_entity_property_values(
-                schema, entity_property_values, new_property_values.to_owned()
+                schema, entity_property_values, &new_output_property_values
             );
 
             // Create wrapper structure from updated entity values and their corresponding Class properties
-            let updated_values_for_existing_properties = ValuesForExistingProperties::from(
+            let updated_values_for_existing_properties = OutputValuesForExistingProperties::from(
                 &class_properties, &entity_values_updated
             )?;
 
@@ -1358,9 +1363,11 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
+            let new_output_values_for_existing_properties = OutputValuesForExistingProperties::from(&class_properties, &new_output_property_values)?;
+
             // Calculate entities reference counter side effects for current operation
             let entities_inbound_rcs_delta = Self::calculate_entities_inbound_rcs_delta(
-                new_values_for_existing_properties, DeltaMode::Increment
+                new_output_values_for_existing_properties, DeltaMode::Increment
             );
 
             // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
@@ -1383,12 +1390,12 @@ decl_module! {
             Ok(())
         }
 
-        /// Update `Entity` `PropertyValue`'s with provided ones
+        /// Update `Entity` `InputPropertyValue`'s with provided ones
         pub fn update_entity_property_values(
             origin,
             actor: Actor<T>,
             entity_id: T::EntityId,
-            new_property_values: BTreeMap<PropertyId, PropertyValue<T>>
+            new_property_values: BTreeMap<PropertyId, InputPropertyValue<T>>
         ) -> dispatch::Result {
 
             // Retrieve Class, Entity and EntityAccessLevel for the actor, attemting to perform operation
@@ -1407,7 +1414,7 @@ decl_module! {
             let class_properties = class.properties;
 
             // Create wrapper structure from new_property_values and their corresponding Class properties
-            let new_values_for_existing_properties = ValuesForExistingProperties::from(&class_properties, &new_property_values)?;
+            let new_values_for_existing_properties = InputValuesForExistingProperties::from(&class_properties, &new_property_values)?;
 
             // Ensure all provided property values are unlocked for the actor with given access_level
             Self::ensure_all_property_values_are_unlocked_from(&new_values_for_existing_properties, access_level)?;
@@ -1428,7 +1435,7 @@ decl_module! {
                 Self::make_updated_property_values(&entity_property_values, &new_property_values) {
 
                     // Create wrapper structure from new_property_values and their corresponding Class properties
-                    let updated_values_for_existing_properties = ValuesForExistingProperties::from(
+                    let updated_values_for_existing_properties = OutputValuesForExistingProperties::from(
                         &class_properties, &entity_property_values_updated
                     )?;
 
@@ -1444,7 +1451,7 @@ decl_module! {
 
                 // Calculate entities reference counter side effects for current operation
                 let entities_inbound_rcs_delta =
-                    Self::get_updated_inbound_rcs_delta(class_properties, entity_property_values, &new_property_values)?;
+                    Self::get_updated_inbound_rcs_delta(class_properties, entity_property_values, new_property_values)?;
 
                 //
                 // == MUTATION SAFE ==
@@ -1484,7 +1491,7 @@ decl_module! {
                 access_level,
             )?;
 
-            // Ensure PropertyValue under given in_class_schema_property_id is Vector
+            // Ensure InputPropertyValue under given in_class_schema_property_id is Vector
             let property_value_vector =
                 entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
 
@@ -1543,15 +1550,15 @@ decl_module! {
                 access_level,
             )?;
 
-            // Ensure PropertyValue under given in_class_schema_property_id is Vector
+            // Ensure InputPropertyValue under given in_class_schema_property_id is Vector
             let property_value_vector =
                 entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
 
-            // Ensure `VecPropertyValue` nonce is equal to the provided one.
+            // Ensure `VecInputPropertyValue` nonce is equal to the provided one.
             // Used to to avoid possible data races, when performing vector specific operations
             property_value_vector.ensure_nonce_equality(nonce)?;
 
-            // Ensure, provided index_in_property_vec is valid index of VecValue
+            // Ensure, provided index_in_property_vec is valid index of VecInputValue
             property_value_vector
                 .ensure_index_in_property_vector_is_valid(index_in_property_vector)?;
 
@@ -1577,7 +1584,7 @@ decl_module! {
             };
 
             // Remove value at in_class_schema_property_id in property value vector
-            // Get VecPropertyValue wrapped in PropertyValue
+            // Get VecInputPropertyValue wrapped in InputPropertyValue
             let property_value_vector_updated = Self::remove_at_index_in_property_vector(
                 property_value_vector, index_in_property_vector
             );
@@ -1603,7 +1610,7 @@ decl_module! {
             Ok(())
         }
 
-        /// Insert `SinglePropertyValue` at given `index_in_property_vector`
+        /// Insert `SingleInputPropertyValue` at given `index_in_property_vector`
         /// into `PropertyValueVec` under `in_class_schema_property_id`
         pub fn insert_at_entity_property_vector(
             origin,
@@ -1611,7 +1618,7 @@ decl_module! {
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
             index_in_property_vector: VecMaxLength,
-            property_value: SinglePropertyValue<T>,
+            value: InputValue<T>,
             nonce: T::Nonce
         ) -> dispatch::Result {
 
@@ -1625,11 +1632,11 @@ decl_module! {
                 access_level,
             )?;
 
-            // Ensure PropertyValue under given in_class_schema_property_id is Vector
+            // Ensure InputPropertyValue under given in_class_schema_property_id is Vector
             let property_value_vector =
                 entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
 
-            // Ensure `VecPropertyValue` nonce is equal to the provided one.
+            // Ensure `VecInputPropertyValue` nonce is equal to the provided one.
             // Used to to avoid possible data races, when performing vector specific operations
             property_value_vector.ensure_nonce_equality(nonce)?;
 
@@ -1637,7 +1644,7 @@ decl_module! {
 
             // Ensure property_value type is equal to the property_value_vector type and check all constraints
             class_property.ensure_property_value_can_be_inserted_at_property_vector(
-                &property_value,
+                &value,
                 &property_value_vector,
                 index_in_property_vector,
                 entity_controller,
@@ -1646,8 +1653,6 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
-
-            let value = property_value.get_value();
 
             // Increase reference counter of involved entity (if some)
             let involved_entity_and_side_effect = if let Some(entity_rc_to_increment) = value.get_involved_entity() {
@@ -1661,8 +1666,8 @@ decl_module! {
                 None
             };
 
-            // Insert SinglePropertyValue at in_class_schema_property_id into property value vector
-            // Get VecPropertyValue wrapped in PropertyValue
+            // Insert SingleInputPropertyValue at in_class_schema_property_id into property value vector
+            // Get VecInputPropertyValue wrapped in InputPropertyValue
             let property_value_vector_updated = Self::insert_at_index_in_property_vector(
                 property_value_vector, index_in_property_vector, value
             );
@@ -1746,6 +1751,15 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
+    pub fn make_output_property_values(
+        input_property_values: BTreeMap<PropertyId, InputPropertyValue<T>>,
+    ) -> BTreeMap<PropertyId, OutputPropertyValue<T>> {
+        input_property_values
+            .into_iter()
+            .map(|(property_id, property_value)| (property_id, property_value.into()))
+            .collect()
+    }
+
     /// Updates corresponding `Entity` `reference_counter` by `reference_counter_delta`.
     fn update_entity_rc(
         entity_id: T::EntityId,
@@ -1771,23 +1785,23 @@ impl<T: Trait> Module<T> {
     /// Returns updated `entity_property_values`
     fn make_updated_entity_property_values(
         schema: Schema,
-        entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
-        property_values: BTreeMap<PropertyId, PropertyValue<T>>,
-    ) -> BTreeMap<PropertyId, PropertyValue<T>> {
+        entity_property_values: BTreeMap<PropertyId, OutputPropertyValue<T>>,
+        output_property_values: &BTreeMap<PropertyId, OutputPropertyValue<T>>,
+    ) -> BTreeMap<PropertyId, OutputPropertyValue<T>> {
         // Concatenate existing `entity_property_values` with `property_values`, provided, when adding `Schema` support.
-        let updated_entity_property_values: BTreeMap<PropertyId, PropertyValue<T>> =
+        let updated_entity_property_values: BTreeMap<PropertyId, OutputPropertyValue<T>> =
             entity_property_values
                 .into_iter()
-                .chain(property_values.into_iter())
+                .chain(output_property_values.to_owned().into_iter())
                 .collect();
 
-        // Write all missing non required `Schema` `property_values` as `PropertyValue::default()`
-        let non_required_property_values: BTreeMap<PropertyId, PropertyValue<T>> = schema
+        // Write all missing non required `Schema` `property_values` as `InputPropertyValue::default()`
+        let non_required_property_values: BTreeMap<PropertyId, OutputPropertyValue<T>> = schema
             .get_properties()
             .iter()
             .filter_map(|property_id| {
                 if !updated_entity_property_values.contains_key(property_id) {
-                    Some((*property_id, PropertyValue::default()))
+                    Some((*property_id, OutputPropertyValue::default()))
                 } else {
                     None
                 }
@@ -1804,7 +1818,7 @@ impl<T: Trait> Module<T> {
     /// Calculate side effects for clear_property_vector operation, based on `property_value_vector` provided and its respective `property`.
     /// Returns calculated `ReferenceCounterSideEffects`
     pub fn make_side_effects_for_clear_property_vector_operation(
-        property_value_vector: &VecPropertyValue<T>,
+        property_value_vector: &VecOutputPropertyValue<T>,
         property: Property<T>,
     ) -> Option<ReferenceCounterSideEffects<T>> {
         let entity_ids_to_decrease_rc = property_value_vector
@@ -1859,7 +1873,7 @@ impl<T: Trait> Module<T> {
     /// Calculate `ReferenceCounterSideEffects`, based on `values_for_existing_properties` provided and chosen `DeltaMode`
     /// Returns calculated `ReferenceCounterSideEffects`
     fn calculate_entities_inbound_rcs_delta(
-        values_for_existing_properties: ValuesForExistingProperties<T>,
+        values_for_existing_properties: OutputValuesForExistingProperties<T>,
         delta_mode: DeltaMode,
     ) -> Option<ReferenceCounterSideEffects<T>> {
         let entities_inbound_rcs_delta = values_for_existing_properties
@@ -1893,15 +1907,15 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Compute `ReferenceCounterSideEffects`, based on `PropertyValue` `Reference`'s involved into update process.
+    /// Compute `ReferenceCounterSideEffects`, based on `InputPropertyValue` `Reference`'s involved into update process.
     /// Returns updated `ReferenceCounterSideEffects`
     pub fn get_updated_inbound_rcs_delta(
         class_properties: Vec<Property<T>>,
-        entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
-        new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        entity_property_values: BTreeMap<PropertyId, OutputPropertyValue<T>>,
+        new_property_values: BTreeMap<PropertyId, InputPropertyValue<T>>,
     ) -> Result<Option<ReferenceCounterSideEffects<T>>, &'static str> {
         // Filter entity_property_values to get only those, which will be substituted with new_property_values
-        let entity_property_values_to_update: BTreeMap<PropertyId, PropertyValue<T>> =
+        let entity_property_values_to_update: BTreeMap<PropertyId, OutputPropertyValue<T>> =
             entity_property_values
                 .into_iter()
                 .filter(|(entity_id, _)| new_property_values.contains_key(entity_id))
@@ -1910,19 +1924,24 @@ impl<T: Trait> Module<T> {
         // Calculate entities reference counter side effects for update operation
 
         // Calculate entities inbound reference counter delta with Decrement DeltaMode for entity_property_values_to_update,
-        // as involved PropertyValue References will be substituted with new ones
+        // as involved InputPropertyValue References will be substituted with new ones
         let decremental_reference_counter_side_effects = Self::calculate_entities_inbound_rcs_delta(
-            ValuesForExistingProperties::from(
+            OutputValuesForExistingProperties::from(
                 &class_properties,
                 &entity_property_values_to_update,
             )?,
             DeltaMode::Decrement,
         );
 
+        let new_property_values_output = Self::make_output_property_values(new_property_values);
+
         // Calculate entities inbound reference counter delta with Increment DeltaMode for new_property_values,
-        // as involved PropertyValue References will substitute the old ones
+        // as involved InputPropertyValue References will substitute the old ones
         let incremental_reference_counter_side_effects = Self::calculate_entities_inbound_rcs_delta(
-            ValuesForExistingProperties::from(&class_properties, new_property_values)?,
+            OutputValuesForExistingProperties::from(
+                &class_properties,
+                &new_property_values_output,
+            )?,
             DeltaMode::Increment,
         );
 
@@ -2067,7 +2086,7 @@ impl<T: Trait> Module<T> {
     /// Filter `provided values_for_existing_properties`, leaving only `Reference`'s with `SameOwner` flag set
     /// Returns the set of corresponding property ids
     pub fn get_property_id_references_with_same_owner_flag_set(
-        values_for_existing_properties: ValuesForExistingProperties<T>,
+        values_for_existing_properties: OutputValuesForExistingProperties<T>,
     ) -> BTreeSet<PropertyId> {
         values_for_existing_properties
             // Iterate over the PropertyId's
@@ -2095,7 +2114,7 @@ impl<T: Trait> Module<T> {
         entity_property_id_references_with_same_owner_flag_set: &BTreeSet<PropertyId>,
         new_property_value_references_with_same_owner_flag_set: &BTreeMap<
             PropertyId,
-            PropertyValue<T>,
+            InputPropertyValue<T>,
         >,
     ) -> dispatch::Result {
         let new_property_value_id_references_with_same_owner_flag_set: BTreeSet<PropertyId> =
@@ -2114,7 +2133,9 @@ impl<T: Trait> Module<T> {
 
     /// Ensure all provided `new_property_value_references_with_same_owner_flag_set` are valid
     fn ensure_are_valid_references_with_same_owner_flag_set(
-        new_property_value_references_with_same_owner_flag_set: &ValuesForExistingProperties<T>,
+        new_property_value_references_with_same_owner_flag_set: &InputValuesForExistingProperties<
+            T,
+        >,
         new_controller: &EntityController<T>,
     ) -> dispatch::Result {
         for updated_value_for_existing_property in
@@ -2132,12 +2153,12 @@ impl<T: Trait> Module<T> {
     /// Returns updated `entity_property_values`, if update performed
     pub fn make_updated_property_value_references_with_same_owner_flag_set(
         unused_property_id_references_with_same_owner_flag_set: BTreeSet<PropertyId>,
-        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        entity_property_values: &BTreeMap<PropertyId, OutputPropertyValue<T>>,
         new_property_value_references_with_same_owner_flag_set: &BTreeMap<
             PropertyId,
-            PropertyValue<T>,
+            InputPropertyValue<T>,
         >,
-    ) -> Option<BTreeMap<PropertyId, PropertyValue<T>>> {
+    ) -> Option<BTreeMap<PropertyId, OutputPropertyValue<T>>> {
         // Used to check if update performed
         let mut entity_property_values_updated = entity_property_values.clone();
 
@@ -2147,7 +2168,9 @@ impl<T: Trait> Module<T> {
             // Update entity_property_values map at property_id with new_property_value_reference_with_same_owner_flag_set
             entity_property_values_updated.insert(
                 *property_id,
-                new_property_value_reference_with_same_owner_flag_set.to_owned(),
+                new_property_value_reference_with_same_owner_flag_set
+                    .to_owned()
+                    .into(),
             );
         }
 
@@ -2158,7 +2181,7 @@ impl<T: Trait> Module<T> {
         {
             entity_property_values_updated.insert(
                 unused_property_id_reference_with_same_owner_flag_set,
-                PropertyValue::default(),
+                OutputPropertyValue::default(),
             );
         }
 
@@ -2180,7 +2203,7 @@ impl<T: Trait> Module<T> {
 
     /// Retrieve `property_ids`, that are not in `property_values`
     pub fn compute_unused_property_ids(
-        property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        property_values: &BTreeMap<PropertyId, InputPropertyValue<T>>,
         property_ids: &BTreeSet<PropertyId>,
     ) -> BTreeSet<PropertyId> {
         let property_value_indices: BTreeSet<PropertyId> =
@@ -2210,14 +2233,14 @@ impl<T: Trait> Module<T> {
 
     /// Ensure all `updated_values_for_existing_properties` provided satisfy unique option, if required
     pub fn ensure_property_values_unique_option_satisfied(
-        updated_values_for_existing_properties: ValuesForExistingProperties<T>,
+        updated_values_for_existing_properties: OutputValuesForExistingProperties<T>,
     ) -> dispatch::Result {
         for (&property_id, updated_value_for_existing_property) in
             updated_values_for_existing_properties.iter()
         {
             let (property, value) = updated_value_for_existing_property.unzip();
 
-            // Ensure all PropertyValue's with unique option set are unique, except of null non required ones
+            // Ensure all InputPropertyValue's with unique option set are unique, except of null non required ones
             property.ensure_unique_option_satisfied(
                 property_id,
                 value,
@@ -2231,12 +2254,12 @@ impl<T: Trait> Module<T> {
     /// and check any additional constraints
     pub fn ensure_property_values_are_valid(
         entity_controller: &EntityController<T>,
-        values_for_existing_properties: &ValuesForExistingProperties<T>,
+        values_for_existing_properties: &InputValuesForExistingProperties<T>,
     ) -> dispatch::Result {
         for value_for_existing_property in values_for_existing_properties.values() {
             let (property, value) = value_for_existing_property.unzip();
 
-            // Validate new PropertyValue against the type of this Property and check any additional constraints
+            // Validate new InputPropertyValue against the type of this Property and check any additional constraints
             property.ensure_property_value_to_update_is_valid(value, entity_controller)?;
         }
 
@@ -2245,8 +2268,8 @@ impl<T: Trait> Module<T> {
 
     /// Ensure all provided `new_property_values` are already exist in `entity_property_values` map
     pub fn ensure_all_property_values_are_already_added(
-        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-        new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
+        entity_property_values: &BTreeMap<PropertyId, OutputPropertyValue<T>>,
+        new_property_values: &BTreeMap<PropertyId, InputPropertyValue<T>>,
     ) -> dispatch::Result {
         ensure!(
             new_property_values
@@ -2259,7 +2282,7 @@ impl<T: Trait> Module<T> {
 
     /// Ensure `new_values_for_existing_properties` are accessible for actor with given `access_level`
     pub fn ensure_all_property_values_are_unlocked_from(
-        new_values_for_existing_properties: &ValuesForExistingProperties<T>,
+        new_values_for_existing_properties: &InputValuesForExistingProperties<T>,
         access_level: EntityAccessLevel,
     ) -> dispatch::Result {
         for value_for_new_property in new_values_for_existing_properties.values() {
@@ -2274,14 +2297,15 @@ impl<T: Trait> Module<T> {
     /// Filter `new_property_values` identical to `entity_property_values`.
     /// Return only `new_property_values`, that are not in `entity_property_values`
     pub fn try_filter_identical_property_values(
-        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-        new_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
-    ) -> BTreeMap<PropertyId, PropertyValue<T>> {
+        entity_property_values: &BTreeMap<PropertyId, OutputPropertyValue<T>>,
+        new_property_values: BTreeMap<PropertyId, InputPropertyValue<T>>,
+    ) -> BTreeMap<PropertyId, InputPropertyValue<T>> {
         new_property_values
             .into_iter()
             .filter(|(id, new_property_value)| {
                 if let Some(entity_property_value) = entity_property_values.get(id) {
-                    *entity_property_value != *new_property_value
+                    OutputPropertyValue::<T>::from(new_property_value.to_owned())
+                        != *entity_property_value
                 } else {
                     true
                 }
@@ -2292,9 +2316,9 @@ impl<T: Trait> Module<T> {
     /// Update existing `entity_property_values` with `new_property_values`.
     /// if update performed, returns updated entity property values
     pub fn make_updated_property_values(
-        entity_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-        new_property_values: &BTreeMap<PropertyId, PropertyValue<T>>,
-    ) -> Option<BTreeMap<PropertyId, PropertyValue<T>>> {
+        entity_property_values: &BTreeMap<PropertyId, OutputPropertyValue<T>>,
+        new_property_values: &BTreeMap<PropertyId, InputPropertyValue<T>>,
+    ) -> Option<BTreeMap<PropertyId, OutputPropertyValue<T>>> {
         // Used to check if updated performed
         let mut entity_property_values_updated = entity_property_values.to_owned();
 
@@ -2302,7 +2326,7 @@ impl<T: Trait> Module<T> {
             .iter()
             .for_each(|(id, new_property_value)| {
                 if let Some(entity_property_value) = entity_property_values_updated.get_mut(&id) {
-                    entity_property_value.update(new_property_value.to_owned());
+                    entity_property_value.update(new_property_value.to_owned().into());
                 }
             });
 
@@ -2313,43 +2337,43 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    /// Insert `Value` into `VecPropertyValue` at `index_in_property_vector`.
-    /// Returns `VecPropertyValue` wrapped in `PropertyValue`
+    /// Insert `InputValue` into `VecOutputPropertyValue` at `index_in_property_vector`.
+    /// Returns `VecOutputPropertyValue` wrapped in `OutputPropertyValue`
     pub fn insert_at_index_in_property_vector(
-        mut property_value_vector: VecPropertyValue<T>,
+        mut property_value_vector: VecOutputPropertyValue<T>,
         index_in_property_vector: VecMaxLength,
-        value: Value<T>,
-    ) -> PropertyValue<T> {
-        property_value_vector.insert_at(index_in_property_vector, value);
-        PropertyValue::Vector(property_value_vector)
+        value: InputValue<T>,
+    ) -> OutputPropertyValue<T> {
+        property_value_vector.insert_at(index_in_property_vector, value.into());
+        OutputPropertyValue::Vector(property_value_vector)
     }
 
-    /// Remove `Value` at `index_in_property_vector` in `VecPropertyValue`.
-    /// Returns `VecPropertyValue` wrapped in `PropertyValue`
+    /// Remove `InputValue` at `index_in_property_vector` in `VecInputPropertyValue`.
+    /// Returns `VecInputPropertyValue` wrapped in `InputPropertyValue`
     pub fn remove_at_index_in_property_vector(
-        mut property_value_vector: VecPropertyValue<T>,
+        mut property_value_vector: VecOutputPropertyValue<T>,
         index_in_property_vector: VecMaxLength,
-    ) -> PropertyValue<T> {
+    ) -> OutputPropertyValue<T> {
         property_value_vector.remove_at(index_in_property_vector);
-        PropertyValue::Vector(property_value_vector)
+        OutputPropertyValue::Vector(property_value_vector)
     }
 
-    /// Clear `VecPropertyValue`.
-    /// Returns empty `VecPropertyValue` wrapped in `PropertyValue`
+    /// Clear `VecOutputPropertyValue`.
+    /// Returns empty `VecOutputPropertyValue` wrapped in `OutputPropertyValue`
     pub fn clear_property_vector(
-        mut property_value_vector: VecPropertyValue<T>,
-    ) -> PropertyValue<T> {
+        mut property_value_vector: VecOutputPropertyValue<T>,
+    ) -> OutputPropertyValue<T> {
         property_value_vector.clear();
-        PropertyValue::Vector(property_value_vector)
+        OutputPropertyValue::Vector(property_value_vector)
     }
 
-    /// Insert `PropertyValue` into `entity_property_values` mapping at `in_class_schema_property_id`.
+    /// Insert `InputPropertyValue` into `entity_property_values` mapping at `in_class_schema_property_id`.
     /// Returns updated `entity_property_values`
     pub fn insert_at_in_class_schema_property_id(
-        mut entity_property_values: BTreeMap<PropertyId, PropertyValue<T>>,
+        mut entity_property_values: BTreeMap<PropertyId, OutputPropertyValue<T>>,
         in_class_schema_property_id: PropertyId,
-        property_value: PropertyValue<T>,
-    ) -> BTreeMap<PropertyId, PropertyValue<T>> {
+        property_value: OutputPropertyValue<T>,
+    ) -> BTreeMap<PropertyId, OutputPropertyValue<T>> {
         entity_property_values.insert(in_class_schema_property_id, property_value);
         entity_property_values
     }

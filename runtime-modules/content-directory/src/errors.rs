@@ -29,6 +29,7 @@ pub const ERROR_NEW_ENTITIES_MAX_COUNT_IS_LESS_THAN_NUMBER_OF_ALREADY_CREATED: &
 pub const ERROR_MAX_NUMBER_OF_OPERATIONS_DURING_ATOMIC_BATCHING_LIMIT_REACHED: &str =
     "Number of operations during atomic batching limit reached";
 pub const ERROR_TEXT_PROP_IS_TOO_LONG: &str = "Text property is too long";
+pub const ERROR_HASHED_TEXT_PROP_IS_TOO_LONG: &str = "Text property to be hashed is too long";
 pub const ERROR_VEC_PROP_IS_TOO_LONG: &str = "Vector property is too long";
 pub const ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG: &str =
     "Propery value vector can`t contain more values";

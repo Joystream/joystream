@@ -1,15 +1,12 @@
-use crate::{
-    PropertyId, PropertyValue, SchemaId, SinglePropertyValue, Trait, Value, VecPropertyValue,
-    VecValue,
-};
+use crate::{InputPropertyValue, InputValue, PropertyId, SchemaId, Trait, VecInputValue};
 use codec::{Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub enum ParametrizedPropertyValue<T: Trait> {
-    /// Same fields as normal PropertyValue
-    PropertyValue(PropertyValue<T>),
+    /// Same fields as normal InputPropertyValue
+    InputPropertyValue(InputPropertyValue<T>),
 
     /// This is the index of an operation creating an entity in the transaction/batch operations
     InternalEntityJustAdded(u32), // should really be usize but it doesn't have Encode/Decode support
@@ -29,7 +26,7 @@ pub struct ParametrizedClassPropertyValue<T: Trait> {
     /// Index is into properties vector of class.
     pub in_class_index: PropertyId,
 
-    /// Value of property with index `in_class_index` in a given class.
+    /// InputValue of property with index `in_class_index` in a given class.
     pub value: ParametrizedPropertyValue<T>,
 }
 
@@ -76,12 +73,12 @@ pub fn parametrized_entity_to_entity_id<T: Trait>(
 pub fn parametrized_property_values_to_property_values<T: Trait>(
     created_entities: &BTreeMap<usize, T::EntityId>,
     parametrized_property_values: Vec<ParametrizedClassPropertyValue<T>>,
-) -> Result<BTreeMap<PropertyId, PropertyValue<T>>, &'static str> {
+) -> Result<BTreeMap<PropertyId, InputPropertyValue<T>>, &'static str> {
     let mut class_property_values = BTreeMap::new();
 
     for parametrized_class_property_value in parametrized_property_values.into_iter() {
         let property_value = match parametrized_class_property_value.value {
-            ParametrizedPropertyValue::PropertyValue(value) => value,
+            ParametrizedPropertyValue::InputPropertyValue(value) => value,
             ParametrizedPropertyValue::InternalEntityJustAdded(
                 entity_created_in_operation_index,
             ) => {
@@ -90,7 +87,7 @@ pub fn parametrized_property_values_to_property_values<T: Trait>(
                 let entity_id = created_entities
                     .get(&op_index)
                     .ok_or("EntityNotCreatedByOperation")?;
-                PropertyValue::Single(SinglePropertyValue::new(Value::Reference(*entity_id)))
+                InputPropertyValue::Single(InputValue::Reference(*entity_id))
             }
             ParametrizedPropertyValue::InternalEntityVec(parametrized_entities) => {
                 let mut entities: Vec<T::EntityId> = vec![];
@@ -109,10 +106,7 @@ pub fn parametrized_property_values_to_property_values<T: Trait>(
                         }
                     }
                 }
-                PropertyValue::Vector(VecPropertyValue::new(
-                    VecValue::Reference(entities),
-                    T::Nonce::default(),
-                ))
+                InputPropertyValue::Vector(VecInputValue::Reference(entities))
             }
         };
 
