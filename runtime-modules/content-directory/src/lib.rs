@@ -100,13 +100,13 @@
 //! pub trait Trait: substrate_content_directory_module::Trait {}
 //!
 //! decl_module! {
-//! 	pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 //!         #[weight = 10_000_000]
-//! 		pub fn add_curator_group(origin) -> Result<(), &'static str> {
-//! 			<substrate_content_directory_module::Module<T>>::add_curator_group(origin)?;
-//! 			Ok(())
-//! 		}
-//! 	}
+//!         pub fn add_curator_group(origin) -> Result<(), &'static str> {
+//!             <substrate_content_directory_module::Module<T>>::add_curator_group(origin)?;
+//!             Ok(())
+//!         }
+//!     }
 //! }
 //! # fn main() {}
 //! ```
@@ -142,10 +142,10 @@ use core::ops::AddAssign;
 use codec::{Codec, Decode, Encode};
 use frame_support::storage::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter};
-use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use rstd::vec::Vec;
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
+use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use sp_std::vec::Vec;
 use system::ensure_signed;
 
 #[cfg(feature = "std")]
