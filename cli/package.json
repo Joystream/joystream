@@ -48,6 +48,10 @@
     "node": ">=12.18.0",
     "yarn": "^1.22.0"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "files": [
     "/bin",
     "/lib",
