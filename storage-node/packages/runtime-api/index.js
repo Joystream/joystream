@@ -31,6 +31,7 @@ const { DiscoveryApi } = require('@joystream/storage-runtime-api/discovery')
 const { SystemApi } = require('@joystream/storage-runtime-api/system')
 const AsyncLock = require('async-lock')
 const Promise = require('bluebird')
+const { sleep } = require('@joystream/storage-utils/sleep')
 
 Promise.config({
   cancellation: true,
@@ -84,6 +85,29 @@ class RuntimeApi {
 
   disconnect() {
     this.api.disconnect()
+  }
+
+  async untilChainIsSynced() {
+    debug('Waiting for chain to be synced before proceeding.')
+    while (true) {
+      const isSyncing = await this.chainIsSyncing()
+      if (isSyncing) {
+        debug('Still waiting for chain to be synced.')
+        await sleep(1 * 30 * 1000)
+      } else {
+        return
+      }
+    }
+  }
+
+  async chainIsSyncing() {
+    const { isSyncing } = await this.api.rpc.system.health()
+    return isSyncing.isTrue
+  }
+
+  async providerHasMinimumBalance(minimumBalance) {
+    const providerAccountId = this.identities.key.address
+    return this.balances.hasMinimumBalanceOf(providerAccountId, minimumBalance)
   }
 
   executeWithAccountLock(accountId, func) {
