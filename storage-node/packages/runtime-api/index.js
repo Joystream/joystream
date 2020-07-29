@@ -105,6 +105,11 @@ class RuntimeApi {
     return isSyncing.isTrue
   }
 
+  async providerHasMinimumBalance(minimumBalance) {
+    const providerAccountId = this.identities.key.address
+    return this.balances.hasMinimumBalanceOf(providerAccountId, minimumBalance)
+  }
+
   executeWithAccountLock(accountId, func) {
     return this.asyncLock.acquire(`${accountId}`, func)
   }

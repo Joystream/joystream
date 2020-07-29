@@ -91,6 +91,13 @@ module.exports = function (storage, runtime) {
         return
       }
 
+      const sufficientBalance = await runtime.providerHasMinimumBalance(3)
+
+      if (!sufficientBalance) {
+        errorHandler(res, 'Insufficient balance to process upload!', 503)
+        return
+      }
+
       // We'll open a write stream to the backend, but reserve the right to
       // abort upload if the filters don't smell right.
       let stream

@@ -216,9 +216,14 @@ async function announcePublicUrl(api, publicUrl) {
   }
 
   const chainIsSyncing = await api.chainIsSyncing()
-
   if (chainIsSyncing) {
     debug('Chain is syncing. Postponing announcing public url.')
+    return reannounce(10 * 60 * 1000)
+  }
+
+  const sufficientBalance = await api.providerHasMinimumBalance(1)
+  if (!sufficientBalance) {
+    debug('Provider role account does not have sufficient balance. Postponing announcing public url.')
     return reannounce(10 * 60 * 1000)
   }
 
