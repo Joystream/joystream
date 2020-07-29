@@ -2,10 +2,10 @@ import fs from 'fs'
 import path from 'path'
 import ExitCodes from '../ExitCodes'
 import { CLIError } from '@oclif/errors'
-import { DEFAULT_API_URI } from '../Api'
 import lockFile from 'proper-lockfile'
 import DefaultCommandBase from './DefaultCommandBase'
 import os from 'os'
+import _ from 'lodash'
 
 // Type for the state object (which is preserved as json in the state file)
 type StateObject = {
@@ -16,7 +16,7 @@ type StateObject = {
 // State object default values
 const DEFAULT_STATE: StateObject = {
   selectedAccountFilename: '',
-  apiUri: DEFAULT_API_URI,
+  apiUri: '',
 }
 
 // State file path (relative to getAppDataPath())
@@ -48,7 +48,7 @@ export default abstract class StateAwareCommandBase extends DefaultCommandBase {
     if (!packageJson || !packageJson.name) {
       throw new CLIError('Cannot get package name from package.json!')
     }
-    return path.join(systemAppDataPath, packageJson.name)
+    return path.join(systemAppDataPath, _.kebabCase(packageJson.name))
   }
 
   getStateFilePath(): string {
@@ -93,7 +93,8 @@ export default abstract class StateAwareCommandBase extends DefaultCommandBase {
   getPreservedState(): StateObject {
     let preservedState: StateObject
     try {
-      preservedState = require(this.getStateFilePath()) as StateObject
+      // Use readFileSync instead of "require" in order to always get a "fresh" state
+      preservedState = JSON.parse(fs.readFileSync(this.getStateFilePath()).toString()) as StateObject
     } catch (e) {
       throw this.createDataReadError()
     }

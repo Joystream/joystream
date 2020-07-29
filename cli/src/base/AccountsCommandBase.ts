@@ -140,14 +140,22 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   async getRequiredSelectedAccount(promptIfMissing = true): Promise<NamedKeyringPair> {
     let selectedAccount: NamedKeyringPair | null = this.getSelectedAccount()
     if (!selectedAccount) {
-      this.warn('No default account selected! Use account:choose to set the default account!')
-      if (!promptIfMissing) this.exit(ExitCodes.NoAccountSelected)
-      const accounts: NamedKeyringPair[] = this.fetchAccounts()
-      if (!accounts.length) {
-        this.error('There are no accounts available!', { exit: ExitCodes.NoAccountFound })
+      if (!promptIfMissing) {
+        this.error('No default account selected! Use account:choose to set the default account.', {
+          exit: ExitCodes.NoAccountSelected,
+        })
       }
 
+      const accounts: NamedKeyringPair[] = this.fetchAccounts()
+      if (!accounts.length) {
+        this.error('No accounts available! Use account:import in order to import accounts into the CLI.', {
+          exit: ExitCodes.NoAccountFound,
+        })
+      }
+
+      this.warn('No default account selected!')
       selectedAccount = await this.promptForAccount(accounts)
+      await this.setSelectedAccount(selectedAccount)
     }
 
     return selectedAccount

@@ -17,6 +17,19 @@ class OpeningPolicyCommitmentOptions implements ApiParamsOptions {
       locked: true,
     },
   }
+  // Rename fields containing "curator" (solivg minor UI issue related to flat namespace)
+  public terminate_curator_application_stake_unstaking_period: ApiParamOptions = {
+    forcedName: 'terminate_application_stake_unstaking_period',
+  }
+  public terminate_curator_role_stake_unstaking_period: ApiParamOptions = {
+    forcedName: 'terminate_role_stake_unstaking_period',
+  }
+  public exit_curator_role_application_stake_unstaking_period: ApiParamOptions = {
+    forcedName: 'exit_role_application_stake_unstaking_period',
+  }
+  public exit_curator_role_stake_unstaking_period: ApiParamOptions = {
+    forcedName: 'exit_role_stake_unstaking_period',
+  }
 }
 
 class AddWrokerOpeningOptions implements ApiParamsOptions {

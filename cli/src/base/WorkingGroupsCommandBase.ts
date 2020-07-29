@@ -18,6 +18,7 @@ import fs from 'fs'
 import path from 'path'
 import _ from 'lodash'
 import { ApplicationStageKeys } from '@joystream/types/hiring'
+import chalk from 'chalk'
 
 const DEFAULT_GROUP = WorkingGroups.StorageProviders
 const DRAFTS_FOLDER = 'opening-drafts'
@@ -267,5 +268,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
       })
     }
     this.group = flags.group as WorkingGroups
+
+    this.log(chalk.white('Group: ' + flags.group))
   }
 }
