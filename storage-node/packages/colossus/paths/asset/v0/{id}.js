@@ -91,6 +91,13 @@ module.exports = function (storage, runtime) {
         return
       }
 
+      const sufficientBalance = await runtime.providerHasMinimumBalance(3)
+
+      if (!sufficientBalance) {
+        errorHandler(res, 'Insufficient balance to process upload!', 503)
+        return
+      }
+
       // We'll open a write stream to the backend, but reserve the right to
       // abort upload if the filters don't smell right.
       let stream
@@ -157,7 +164,7 @@ module.exports = function (storage, runtime) {
 
             debug('creating storage relationship for newly uploaded content')
             // Create storage relationship and flip it to ready.
-            const dosrId = await runtime.assets.createAndReturnStorageRelationship(roleAddress, providerId, id)
+            const dosrId = await runtime.assets.createStorageRelationship(roleAddress, providerId, id)
 
             debug('toggling storage relationship for newly uploaded content')
             await runtime.assets.toggleStorageRelationshipReady(roleAddress, providerId, dosrId, true)

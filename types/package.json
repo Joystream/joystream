@@ -26,7 +26,8 @@
     "typescript": "^3.7.2"
   },
   "engines": {
-    "node": ">=10.0"
+    "node": ">=12.18.0",
+    "yarn": "^1.22.0"
   },
   "publishConfig": {
     "access": "public",
@@ -41,7 +42,7 @@
     "joystream",
     "runtime"
   ],
-  "license": "Apache-2.0",
+  "license": "GPLv3",
   "bugs": {
     "url": "https://github.com/Joystream/joystream/issues"
   },

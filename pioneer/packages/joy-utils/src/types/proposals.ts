@@ -25,6 +25,9 @@ export const ProposalTypes = [
 
 export type ProposalType = typeof ProposalTypes[number];
 
+export const proposalStatusFilters = ['All', 'Active', 'Canceled', 'Approved', 'Rejected', 'Slashed', 'Expired'] as const;
+export type ProposalStatusFilter = typeof proposalStatusFilters[number];
+
 export type ParsedProposal = {
   id: ProposalId;
   type: ProposalType;
@@ -47,6 +50,13 @@ export type ParsedProposal = {
     votingPeriod: number;
   };
   cancellationFee: number;
+};
+
+export type ProposalsBatch = {
+  batchNumber: number;
+  batchSize: number;
+  totalBatches: number;
+  proposals: ParsedProposal[];
 };
 
 export type ProposalVote = {

@@ -111,13 +111,13 @@ function startExpressApp(app, port) {
 
 // Start app
 function startAllServices({ store, api, port }) {
-  const app = require('../lib/app')(PROJECT_ROOT, store, api) // reduce falgs to only needed values
+  const app = require('../lib/app')(PROJECT_ROOT, store, api)
   return startExpressApp(app, port)
 }
 
 // Start discovery service app only
 function startDiscoveryService({ api, port }) {
-  const app = require('../lib/discovery')(PROJECT_ROOT, api) // reduce flags to only needed values
+  const app = require('../lib/discovery')(PROJECT_ROOT, api)
   return startExpressApp(app, port)
 }
 
@@ -165,6 +165,8 @@ async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }
     throw new Error('Failed to unlock storage provider account')
   }
 
+  await api.untilChainIsSynced()
+
   if (!(await api.workers.isRoleAccountOfStorageProvider(api.storageProviderId, api.identities.key.address))) {
     throw new Error('storage provider role account and storageProviderId are not associated with a worker')
   }
@@ -205,10 +207,24 @@ function getServiceInformation(publicUrl) {
   }
 }
 
+// TODO: instead of recursion use while/async-await and use promise/setTimout based sleep
+// or cleaner code with generators?
 async function announcePublicUrl(api, publicUrl) {
   // re-announce in future
   const reannounce = function (timeoutMs) {
     setTimeout(announcePublicUrl, timeoutMs, api, publicUrl)
+  }
+
+  const chainIsSyncing = await api.chainIsSyncing()
+  if (chainIsSyncing) {
+    debug('Chain is syncing. Postponing announcing public url.')
+    return reannounce(10 * 60 * 1000)
+  }
+
+  const sufficientBalance = await api.providerHasMinimumBalance(1)
+  if (!sufficientBalance) {
+    debug('Provider role account does not have sufficient balance. Postponing announcing public url.')
+    return reannounce(10 * 60 * 1000)
   }
 
   debug('announcing public url')
@@ -244,14 +260,14 @@ if (!command) {
   command = 'server'
 }
 
-async function startColossus({ api, publicUrl, port, flags }) {
+async function startColossus({ api, publicUrl, port }) {
   // TODO: check valid url, and valid port number
   const store = getStorage(api)
   banner()
   const { startSyncing } = require('../lib/sync')
   startSyncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
   announcePublicUrl(api, publicUrl)
-  return startAllServices({ store, api, port, flags }) // dont pass all flags only required values
+  return startAllServices({ store, api, port })
 }
 
 const commands = {
@@ -272,11 +288,13 @@ const commands = {
     return startColossus({ api, publicUrl, port })
   },
   discovery: async () => {
+    banner()
     debug('Starting Joystream Discovery Service')
     const { RuntimeApi } = require('@joystream/storage-runtime-api')
     const wsProvider = cli.flags.wsProvider
     const api = await RuntimeApi.create({ provider_url: wsProvider })
     const port = cli.flags.port
+    await api.untilChainIsSynced()
     await startDiscoveryService({ api, port })
   },
 }

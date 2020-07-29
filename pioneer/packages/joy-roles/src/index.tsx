@@ -73,7 +73,7 @@ export const App: React.FC<Props> = (props: Props) => {
   if (props.myAddress) {
     tabs.push({
       name: 'my-roles',
-      text: t('My roles')
+      text: t('My roles and applications')
     });
   }
 
