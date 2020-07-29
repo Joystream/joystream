@@ -62,6 +62,27 @@ impl<T: Trait> Default for Type<T> {
     }
 }
 
+impl<T: Trait> Type<T> {
+    /// Ensure `Type` specific `TextMaxLengthConstraint` or `HashedTextMaxLengthConstraint` satisfied
+    pub fn ensure_property_type_size_is_valid(&self) -> DispatchResult {
+        if let Type::Text(text_max_len) = self {
+            ensure!(
+                *text_max_len <= T::TextMaxLengthConstraint::get(),
+                ERROR_TEXT_PROP_IS_TOO_LONG
+            );
+        }
+
+        if let Type::Hash(hashed_text_max_len) = self {
+            ensure!(
+                *hashed_text_max_len <= T::HashedTextMaxLengthConstraint::get(),
+                ERROR_HASHED_TEXT_PROP_IS_TOO_LONG
+            );
+        }
+
+        Ok(())
+    }
+}
+
 /// Vector property type representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
@@ -90,18 +111,9 @@ impl<T: Trait> VecPropertyType<T> {
 
     /// Ensure `Type` specific `TextMaxLengthConstraint` & `VecMaxLengthConstraint` satisfied
     fn ensure_property_type_size_is_valid(&self) -> DispatchResult {
-        if let Type::Text(text_max_len) = self.vec_type {
-            ensure!(
-                text_max_len <= T::TextMaxLengthConstraint::get(),
-                ERROR_TEXT_PROP_IS_TOO_LONG
-            );
-        }
-        if let Type::Hash(hash_text_max_len) = self.vec_type {
-            ensure!(
-                hash_text_max_len <= T::HashedTextMaxLengthConstraint::get(),
-                ERROR_HASHED_TEXT_PROP_IS_TOO_LONG
-            );
-        }
+        // Ensure Type specific TextMaxLengthConstraint or HashedTextMaxLengthConstraint satisfied
+        self.vec_type.ensure_property_type_size_is_valid()?;
+
         ensure!(
             self.max_length <= T::VecMaxLengthConstraint::get(),
             ERROR_VEC_PROP_IS_TOO_LONG
@@ -118,57 +130,17 @@ impl<T: Trait> VecPropertyType<T> {
     }
 }
 
-/// `Type` enum wrapper
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
-pub struct SingleValuePropertyType<T: Trait>(pub Type<T>);
-
-impl<T: Trait> Default for SingleValuePropertyType<T> {
-    fn default() -> Self {
-        Self(Type::default())
-    }
-}
-
-impl<T: Trait> SingleValuePropertyType<T> {
-    /// Ensure `Type` specific `TextMaxLengthConstraint` or `HashedTextMaxLengthConstraint` satisfied
-    fn ensure_property_type_size_is_valid(&self) -> DispatchResult {
-        if let Type::Text(text_max_len) = self.0 {
-            ensure!(
-                text_max_len <= T::TextMaxLengthConstraint::get(),
-                ERROR_TEXT_PROP_IS_TOO_LONG
-            );
-        }
-
-        if let Type::Hash(hashed_text_max_len) = self.0 {
-            ensure!(
-                hashed_text_max_len <= T::HashedTextMaxLengthConstraint::get(),
-                ERROR_HASHED_TEXT_PROP_IS_TOO_LONG
-            );
-        }
-
-        Ok(())
-    }
-}
-
-impl<T: Trait> Deref for SingleValuePropertyType<T> {
-    type Target = Type<T>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-/// Enum, representing either `SingleValuePropertyType` or `VecPropertyType`
+/// Enum, representing either `Type` or `VecPropertyType`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PropertyType<T: Trait> {
-    Single(SingleValuePropertyType<T>),
+    Single(Type<T>),
     Vector(VecPropertyType<T>),
 }
 
 impl<T: Trait> Default for PropertyType<T> {
     fn default() -> Self {
-        Self::Single(SingleValuePropertyType::default())
+        Self::Single(Type::default())
     }
 }
 
@@ -182,8 +154,8 @@ impl<T: Trait> PropertyType<T> {
     }
 
     pub fn as_vec_type(&self) -> Option<&VecPropertyType<T>> {
-        if let PropertyType::Vector(single_value_property_type) = self {
-            Some(single_value_property_type)
+        if let PropertyType::Vector(vec_value_property_type) = self {
+            Some(vec_value_property_type)
         } else {
             None
         }
