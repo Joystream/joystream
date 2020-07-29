@@ -21,9 +21,7 @@ mod tests; // Runtime integration tests
 use frame_support::inherent::{CheckInherentsResult, InherentData};
 use frame_support::traits::KeyOwnerProofSystem;
 use frame_support::weights::{IdentityFee, Weight};
-use frame_support::{
-    construct_runtime, parameter_types, traits::Randomness, StorageMap, StorageValue,
-};
+use frame_support::{construct_runtime, parameter_types, traits::Randomness};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -531,57 +529,10 @@ impl versioned_store_permissions::Trait for Runtime {
     type Credential = Credential;
     type CredentialChecker = (
         integration::content_working_group::ContentWorkingGroupCredentials,
-        SudoKeyHasAllCredentials,
+        integration::versioned_store::SudoKeyHasAllCredentials,
     );
-    type CreateClassPermissionsChecker = ContentLeadOrSudoKeyCanCreateClasses;
-}
-
-// Credential Checker that gives the sudo key holder all credentials
-pub struct SudoKeyHasAllCredentials {}
-impl versioned_store_permissions::CredentialChecker<Runtime> for SudoKeyHasAllCredentials {
-    fn account_has_credential(
-        account: &AccountId,
-        _credential: <Runtime as versioned_store_permissions::Trait>::Credential,
-    ) -> bool {
-        <pallet_sudo::Module<Runtime>>::key() == *account
-    }
-}
-
-// Allow sudo key holder permission to create classes
-pub struct SudoKeyCanCreateClasses {}
-impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
-    for SudoKeyCanCreateClasses
-{
-    fn account_can_create_class_permissions(account: &AccountId) -> bool {
-        <pallet_sudo::Module<Runtime>>::key() == *account
-    }
-}
-
-pub struct ContentLeadOrSudoKeyCanCreateClasses {}
-impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
-    for ContentLeadOrSudoKeyCanCreateClasses
-{
-    fn account_can_create_class_permissions(account: &AccountId) -> bool {
-        ContentLeadCanCreateClasses::account_can_create_class_permissions(account)
-            || SudoKeyCanCreateClasses::account_can_create_class_permissions(account)
-    }
-}
-
-// Allow content working group lead to create classes in content directory
-pub struct ContentLeadCanCreateClasses {}
-impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
-    for ContentLeadCanCreateClasses
-{
-    fn account_can_create_class_permissions(account: &AccountId) -> bool {
-        // get current lead id
-        let maybe_current_lead_id = content_wg::CurrentLeadId::<Runtime>::get();
-        if let Some(lead_id) = maybe_current_lead_id {
-            let lead = content_wg::LeadById::<Runtime>::get(lead_id);
-            lead.role_account == *account
-        } else {
-            false
-        }
-    }
+    type CreateClassPermissionsChecker =
+        integration::versioned_store::ContentLeadOrSudoKeyCanCreateClasses;
 }
 
 impl hiring::Trait for Runtime {
@@ -674,39 +625,9 @@ impl membership::Trait for Runtime {
     type ActorId = ActorId;
 }
 
-/*
- * Forum module integration
- *
- * ForumUserRegistry could have been implemented directly on
- * the membership module, and likewise ForumUser on Profile,
- * however this approach is more loosely coupled.
- *
- * Further exploration required to decide what the long
- * run convention should be.
- */
-
-/// Shim registry which will proxy ForumUserRegistry behaviour to the members module
-pub struct ShimMembershipRegistry {}
-
-impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
-    fn get_forum_user(id: &AccountId) -> Option<forum::ForumUser<AccountId>> {
-        if membership::Module::<Runtime>::is_member_account(id) {
-            // For now we don't retreive the members profile since it is not used for anything,
-            // but in the future we may need it to read out more
-            // information possibly required to construct a
-            // ForumUser.
-
-            // Now convert member profile to a forum user
-            Some(forum::ForumUser { id: id.clone() })
-        } else {
-            None
-        }
-    }
-}
-
 impl forum::Trait for Runtime {
     type Event = Event;
-    type MembershipRegistry = ShimMembershipRegistry;
+    type MembershipRegistry = integration::forum::ShimMembershipRegistry;
     type ThreadId = ThreadId;
     type PostId = PostId;
 }
