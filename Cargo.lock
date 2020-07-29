@@ -652,9 +652,9 @@ version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1eae4d76b7cefedd1b4f8cc24378b2fbd1ac1b66e3bbebe8e2192d3be81cb355"
 dependencies = [
- "proc-macro2 1.0.10",
- "quote 1.0.3",
- "syn 1.0.17",
+ "proc-macro2 1.0.18",
+ "quote 1.0.7",
+ "syn 1.0.34",
 ]
 
 [[package]]
@@ -2701,10 +2701,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffa5a33ddddfee04c0283a7653987d634e880347e96b5b2ed64de07efb59db9d"
 dependencies = [
  "proc-macro-crate",
- "proc-macro2 1.0.10",
- "quote 1.0.3",
- "syn 1.0.17",
+ "proc-macro2 1.0.18",
+ "quote 1.0.7",
+ "syn 1.0.34",
 ]
+
+[[package]]
+name = "object"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ab52be62400ca80aa00285d25253d7f7c437b7375c4de678f5405d3afe82ca5"
 
 [[package]]
 name = "ole32-sys"
