@@ -1,6 +1,6 @@
-import { u16, Null } from '@polkadot/types';
-import { Enum, Tuple } from '@polkadot/types/codec';
-import ClassId from './ClassId';
+import { u16, Null } from '@polkadot/types'
+import { Enum, Tuple } from '@polkadot/types/codec'
+import ClassId from './ClassId'
 
 export class None extends Null {}
 
@@ -27,75 +27,78 @@ export class Int32Vec extends u16 {}
 export class Int64Vec extends u16 {}
 
 export class TextVec extends Tuple.with([u16, u16]) {
-  static newTypesafe (maxItems: u16 | number, maxTextLength: u16 | number) {
-    return new this([ maxItems, maxTextLength ]);
+  static newTypesafe(maxItems: u16 | number, maxTextLength: u16 | number) {
+    return new this([maxItems, maxTextLength])
   }
 }
 
 export class InternalVec extends Tuple.with([u16, ClassId]) {
-  static newTypesafe (maxItems: u16 | number, classId: ClassId | number) {
-    return new this([ maxItems, classId ]);
+  static newTypesafe(maxItems: u16 | number, classId: ClassId | number) {
+    return new this([maxItems, classId])
   }
 }
 
 export type PropertyTypeEnum =
-  None |
+  | None
 
   // Single values:
-  Bool |
-  Uint16 |
-  Uint32 |
-  Uint64 |
-  Int16 |
-  Int32 |
-  Int64 |
-  Text |
-  Internal |
+  | Bool
+  | Uint16
+  | Uint32
+  | Uint64
+  | Int16
+  | Int32
+  | Int64
+  | Text
+  | Internal
 
   // Vectors:
-  BoolVec |
-  Uint16Vec |
-  Uint32Vec |
-  Uint64Vec |
-  Int16Vec |
-  Int32Vec |
-  Int64Vec |
-  TextVec |
-  InternalVec
-;
+  | BoolVec
+  | Uint16Vec
+  | Uint32Vec
+  | Uint64Vec
+  | Int16Vec
+  | Int32Vec
+  | Int64Vec
+  | TextVec
+  | InternalVec
 
 type PropertyTypeEnumValue = {
-  [typeName: string]: PropertyTypeEnum;
-};
+  [typeName: string]: PropertyTypeEnum
+}
 
 export class PropertyType extends Enum {
-  constructor (value?: PropertyTypeEnumValue, index?: number) {
-    super({
-      None,
+  constructor(value?: PropertyTypeEnumValue, index?: number) {
+    super(
+      {
+        None,
 
-      // Single values:
-      Bool,
-      Uint16,
-      Uint32,
-      Uint64,
-      Int16,
-      Int32,
-      Int64,
-      Text,
-      Internal,
+        // Single values:
+        Bool,
+        Uint16,
+        Uint32,
+        Uint64,
+        Int16,
+        Int32,
+        Int64,
+        Text,
+        Internal,
 
-      // Vectors:
-      BoolVec,
-      Uint16Vec,
-      Uint32Vec,
-      Uint64Vec,
-      Int16Vec,
-      Int32Vec,
-      Int64Vec,
-      TextVec,
-      InternalVec
-    }, value, index);
+        // Vectors:
+        BoolVec,
+        Uint16Vec,
+        Uint32Vec,
+        Uint64Vec,
+        Int16Vec,
+        Int32Vec,
+        Int64Vec,
+        TextVec,
+        InternalVec,
+      },
+      value,
+      index
+    )
   }
 }
 
-export default PropertyType;
+export default PropertyType

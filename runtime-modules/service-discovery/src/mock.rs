@@ -1,8 +1,6 @@
 #![cfg(test)]
 
-pub use super::discovery;
-pub use roles::actors;
-use roles::traits::Roles;
+pub use crate::*;
 
 pub use primitives::{Blake2Hasher, H256};
 pub use sr_primitives::{
@@ -13,6 +11,23 @@ pub use sr_primitives::{
 
 use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
+
+mod working_group_mod {
+    pub use super::StorageWorkingGroupInstance;
+    pub use working_group::Event;
+    pub use working_group::Trait;
+}
+
+mod membership_mod {
+    pub use membership::members::Event;
+}
+
+mod discovery {
+    pub use crate::Event;
+}
+
 impl_outer_origin! {
     pub enum Origin for Test {}
 }
@@ -20,6 +35,9 @@ impl_outer_origin! {
 impl_outer_event! {
     pub enum MetaEvent for Test {
         discovery<T>,
+        balances<T>,
+        membership_mod<T>,
+         working_group_mod StorageWorkingGroupInstance <T>,
     }
 }
 
@@ -31,6 +49,12 @@ parameter_types! {
     pub const MaximumBlockWeight: u32 = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
+    pub const MinimumPeriod: u64 = 5;
+    pub const InitialMembersBalance: u64 = 2000;
+    pub const StakePoolId: [u8; 8] = *b"joystake";
+    pub const ExistentialDeposit: u32 = 0;
+    pub const TransferFee: u32 = 0;
+    pub const CreationFee: u32 = 0;
 }
 
 impl system::Trait for Test {
@@ -51,31 +75,74 @@ impl system::Trait for Test {
     type Version = ();
 }
 
-pub fn alice_account() -> u64 {
-    1
-}
-pub fn bob_account() -> u64 {
-    2
-}
-
-impl discovery::Trait for Test {
+impl Trait for Test {
     type Event = MetaEvent;
-    type Roles = MockRoles;
 }
 
-pub struct MockRoles {}
-impl Roles<Test> for MockRoles {
-    fn is_role_account(account_id: &u64) -> bool {
-        *account_id == alice_account()
-    }
+impl hiring::Trait for Test {
+    type OpeningId = u64;
+    type ApplicationId = u64;
+    type ApplicationDeactivatedHandler = ();
+    type StakeHandlerProvider = hiring::Module<Self>;
+}
 
-    fn account_has_role(_account_id: &u64, _role: actors::Role) -> bool {
-        false
-    }
+impl minting::Trait for Test {
+    type Currency = Balances;
+    type MintId = u64;
+}
 
-    fn random_account_for_role(_role: actors::Role) -> Result<u64, &'static str> {
-        Err("not implemented")
-    }
+impl stake::Trait for Test {
+    type Currency = Balances;
+    type StakePoolId = StakePoolId;
+    type StakingEventsHandler = ();
+    type StakeId = u64;
+    type SlashId = u64;
+}
+
+impl membership::members::Trait for Test {
+    type Event = MetaEvent;
+    type MemberId = u64;
+    type PaidTermId = u64;
+    type SubscriptionId = u64;
+    type ActorId = u64;
+    type InitialMembersBalance = InitialMembersBalance;
+}
+
+impl common::currency::GovernanceCurrency for Test {
+    type Currency = Balances;
+}
+
+impl balances::Trait for Test {
+    type Balance = u64;
+    type OnFreeBalanceZero = ();
+    type OnNewAccount = ();
+    type TransferPayment = ();
+    type DustRemoval = ();
+    type Event = MetaEvent;
+    type ExistentialDeposit = ExistentialDeposit;
+    type TransferFee = TransferFee;
+    type CreationFee = CreationFee;
+}
+
+impl recurringrewards::Trait for Test {
+    type PayoutStatusHandler = ();
+    type RecipientId = u64;
+    type RewardRelationshipId = u64;
+}
+
+parameter_types! {
+    pub const MaxWorkerNumberLimit: u32 = 3;
+}
+
+impl working_group::Trait<StorageWorkingGroupInstance> for Test {
+    type Event = MetaEvent;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl timestamp::Trait for Test {
+    type Moment = u64;
+    type OnTimestampSet = ();
+    type MinimumPeriod = MinimumPeriod;
 }
 
 pub fn initial_test_ext() -> runtime_io::TestExternalities {
@@ -86,5 +153,25 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
     t.into()
 }
 
+pub type Balances = balances::Module<Test>;
 pub type System = system::Module<Test>;
-pub type Discovery = discovery::Module<Test>;
+pub type Discovery = Module<Test>;
+
+pub(crate) fn hire_storage_provider() -> (u64, u64) {
+    let storage_provider_id = 1;
+    let role_account_id = 1;
+
+    let storage_provider = working_group::Worker {
+        member_id: 1,
+        role_account_id,
+        reward_relationship: None,
+        role_stake_profile: None,
+    };
+
+    <working_group::WorkerById<Test, StorageWorkingGroupInstance>>::insert(
+        storage_provider_id,
+        storage_provider,
+    );
+
+    (role_account_id, storage_provider_id)
+}

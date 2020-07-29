@@ -19,7 +19,7 @@ struct ForumData {
 }
 
 fn parse_forum_json() -> Result<ForumData> {
-    let data = include_str!("../../res/forum_data_acropolis_serialized.json");
+    let data = include_str!("../../res/forum_data_empty.json");
     serde_json::from_str(data)
 }
 
@@ -40,12 +40,12 @@ pub fn create(forum_sudo: AccountId) -> ForumConfig {
         next_category_id,
         next_thread_id,
         next_post_id,
-        forum_sudo,
         category_title_constraint: new_validation(10, 90),
         category_description_constraint: new_validation(10, 490),
         thread_title_constraint: new_validation(10, 90),
         post_text_constraint: new_validation(10, 990),
         thread_moderation_rationale_constraint: new_validation(10, 290),
         post_moderation_rationale_constraint: new_validation(10, 290),
+        forum_sudo,
     }
 }

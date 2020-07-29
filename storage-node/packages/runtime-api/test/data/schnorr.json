@@ -1,0 +1,6 @@
+{
+  "address": "5GjxHjq9rtcxsfgcNswLGjYNRu8UmHAnYq7KfACE3yTjfYVk",
+  "encoded": "0x3dd5965708bbf4316c431ba8274b885a6017d82bc8bcb8c8b02e00c0c90356fb8a379f4be44bd454c76799d9d09bda7fc03c695340e23818f60cfcf00f3b48f42fb8d362e74f261354e99fff9cb2f91d899a722f0051db74d985602f3e95e49a99c73f77951022f98a99bb90981e3c1f60a5642ed583cd65b0161f8461d30f8b320bcd98cd7fb7ec71886d76825696d6fc11ac14a7391f2cdcb2b721d4",
+  "encoding": { "content": ["pkcs8", "sr25519"], "type": "xsalsa20-poly1305", "version": "2" },
+  "meta": { "name": "Schnorr keypair for testing", "whenCreated": 1558974091206 }
+}

@@ -1,6 +1,6 @@
 import { ProposalId, VoteKind } from '@joystream/types/proposals';
 import { MemberId, Profile } from '@joystream/types/members';
-import { ThreadId, PostId } from '@joystream/types/forum';
+import { ThreadId, PostId } from '@joystream/types/common';
 import { ParsedMember } from './members';
 
 export const ProposalTypes = [
@@ -12,10 +12,21 @@ export const ProposalTypes = [
   'SetContentWorkingGroupMintCapacity',
   'EvictStorageProvider',
   'SetValidatorCount',
-  'SetStorageRoleParameters'
+  'SetStorageRoleParameters',
+  'AddWorkingGroupLeaderOpening',
+  'SetWorkingGroupMintCapacity',
+  'BeginReviewWorkingGroupLeaderApplication',
+  'FillWorkingGroupLeaderOpening',
+  'SlashWorkingGroupLeaderStake',
+  'DecreaseWorkingGroupLeaderStake',
+  'SetWorkingGroupLeaderReward',
+  'TerminateWorkingGroupLeaderRole'
 ] as const;
 
 export type ProposalType = typeof ProposalTypes[number];
+
+export const proposalStatusFilters = ['All', 'Active', 'Canceled', 'Approved', 'Rejected', 'Slashed', 'Expired'] as const;
+export type ProposalStatusFilter = typeof proposalStatusFilters[number];
 
 export type ParsedProposal = {
   id: ProposalId;
@@ -41,6 +52,13 @@ export type ParsedProposal = {
   cancellationFee: number;
 };
 
+export type ProposalsBatch = {
+  batchNumber: number;
+  batchSize: number;
+  totalBatches: number;
+  proposals: ParsedProposal[];
+};
+
 export type ProposalVote = {
   vote: VoteKind | null;
   member: ParsedMember & { memberId: MemberId };
@@ -52,10 +70,10 @@ export type ProposalVotes = {
 };
 
 export const Categories = {
-  storage: 'Storage',
   council: 'Council',
   validators: 'Validators',
   cwg: 'Content Working Group',
+  wg: 'Working Groups',
   other: 'Other'
 } as const;
 
@@ -69,6 +87,7 @@ export type ProposalMeta = {
   approvalThreshold: number;
   slashingQuorum: number;
   slashingThreshold: number;
+  outdated?: boolean;
 }
 
 export type ParsedPost = {

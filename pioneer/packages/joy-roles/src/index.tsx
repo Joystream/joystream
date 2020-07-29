@@ -60,7 +60,7 @@ export const App: React.FC<Props> = (props: Props) => {
   const oppsCtrl = new OpportunitiesController(transport, props.myMemberId);
   const [applyCtrl] = useState(new ApplyController(transport));
   const myRolesCtrl = new MyRolesController(transport, props.myAddress);
-  const [adminCtrl] = useState(new AdminController(transport, api));
+  const [adminCtrl] = useState(new AdminController(transport, api, queueExtrinsic));
 
   useEffect(() => {
     return () => {
@@ -73,7 +73,7 @@ export const App: React.FC<Props> = (props: Props) => {
   if (props.myAddress) {
     tabs.push({
       name: 'my-roles',
-      text: t('My roles')
+      text: t('My roles and applications')
     });
   }
 
@@ -86,8 +86,9 @@ export const App: React.FC<Props> = (props: Props) => {
         />
       </header>
       <Switch>
-        <Route path={`${basePath}/opportunities/:group/:id/apply`} render={(props) => renderViewComponent(ApplyView(applyCtrl), props)} />
-        <Route path={`${basePath}/opportunities/:group/:id`} render={(props) => renderViewComponent(OpportunityView(oppCtrl), props)} />
+        <Route path={`${basePath}/opportunities/:group/:id([0-9]+)/apply`} render={(props) => renderViewComponent(ApplyView(applyCtrl), props)} />
+        <Route path={`${basePath}/opportunities/:group/:id([0-9]+)`} render={(props) => renderViewComponent(OpportunityView(oppCtrl), props)} />
+        <Route path={`${basePath}/opportunities/:group/:lead(lead)?`} render={(props) => renderViewComponent(OpportunitiesView(oppsCtrl), props)} />
         <Route path={`${basePath}/opportunities`} render={() => renderViewComponent(OpportunitiesView(oppsCtrl))} />
         <Route path={`${basePath}/my-roles`} render={() => renderViewComponent(MyRolesView(myRolesCtrl))} />
         <Route path={`${basePath}/admin`} render={() => renderViewComponent(AdminView(adminCtrl))} />

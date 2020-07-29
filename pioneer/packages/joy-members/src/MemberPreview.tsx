@@ -11,7 +11,7 @@ import IdentityIcon from '@polkadot/react-components/IdentityIcon';
 import translate from './translate';
 import { MemberId, Profile } from '@joystream/types/members';
 import { queryMembershipToProp } from './utils';
-import { Seat } from '@joystream/types/';
+import { Seat } from '@joystream/types/council';
 import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/index';
 import { FlexCenter } from '@polkadot/joy-utils/FlexCenter';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';

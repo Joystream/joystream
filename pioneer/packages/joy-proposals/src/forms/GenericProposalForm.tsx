@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { FormikProps, WithFormikConfig } from 'formik';
 import { Form, Icon, Button, Message } from 'semantic-ui-react';
 import { getFormErrorLabelsProps } from './errorHandling';
@@ -49,6 +49,7 @@ type GenericProposalFormAdditionalProps = {
   txMethod?: string;
   submitParams?: any[];
   proposalType?: ProposalType;
+  disabled?: boolean;
 };
 
 type GenericFormContainerProps = ProposalFormContainerProps<
@@ -66,10 +67,7 @@ export const genericFormDefaultOptions: GenericFormDefaultOptions = {
     ...(props.initialData || {})
   }),
   validationSchema: {
-
-    title: Validation.All.title,
-    rationale: Validation.All.rationale
-
+    ...Validation.All()
   },
   handleSubmit: (values, { setSubmitting, resetForm }) => {
     // This is handled via TxButton
@@ -81,25 +79,62 @@ export const genericFormDefaultOptions: GenericFormDefaultOptions = {
 export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps> = props => {
   const {
     handleChange,
+    handleSubmit,
     errors,
     isSubmitting,
+    isValidating,
+    isValid,
     touched,
-    handleSubmit,
+    submitForm,
     children,
     handleReset,
     values,
     txMethod,
     submitParams,
-    isValid,
     setSubmitting,
     history,
     balances_totalIssuance,
-    proposalType
+    proposalType,
+    disabled = false
   } = props;
   const errorLabelsProps = getFormErrorLabelsProps<GenericFormValues>(errors, touched);
+  const [afterSubmit, setAfterSubmit] = useState(null as (() => () => void) | null);
+  const formContainerRef = useRef<HTMLDivElement>(null);
 
-  const onSubmit = (sendTx: () => void) => {
-    if (isValid) sendTx();
+  // Scroll to top on load
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  // After-submit effect
+  // With current version of Formik, there seems to be no other viable way to handle this (ie. for sendTx)
+  useEffect(() => {
+    if (!isValidating && afterSubmit) {
+      if (isValid) {
+        afterSubmit();
+      }
+      setAfterSubmit(null);
+      setSubmitting(false);
+    }
+  }, [isValidating, isValid, afterSubmit]);
+
+  // Focus first error field when isValidating changes to false (which happens after form is validated)
+  // (operates directly on DOM)
+  useEffect(() => {
+    if (!isValidating && formContainerRef.current !== null) {
+      const [errorField] = formContainerRef.current.getElementsByClassName('error field');
+      if (errorField) {
+        errorField.scrollIntoView({ behavior: 'smooth' });
+        const [errorInput] = errorField.querySelectorAll('input,textarea');
+        if (errorInput) {
+          (errorInput as (HTMLInputElement | HTMLTextAreaElement)).focus();
+        }
+      }
+    }
+  }, [isValidating]);
+
+  // Replaces standard submit handler (in order to work with TxButton)
+  const onTxButtonClick = (sendTx: () => void) => {
+    submitForm();
+    setAfterSubmit(() => sendTx);
   };
 
   const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
@@ -127,8 +162,13 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
     proposalsConsts[proposalType].stake;
 
   return (
-    <div className="Forms">
-      <Form className="proposal-form" onSubmit={handleSubmit}>
+    <div className="Forms" ref={formContainerRef}>
+      <Form
+        className="proposal-form"
+        onSubmit={txMethod
+          ? () => { /* Do nothing. Tx button uses custom submit handler - "onTxButtonClick" */ }
+          : handleSubmit
+        }>
         <InputFormField
           label="Title"
           help="The title of your proposal"
@@ -157,15 +197,15 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
         <div className="form-buttons">
           {txMethod ? (
             <TxButton
-              type="submit"
+              type="button" // Tx button uses custom submit handler - "onTxButtonClick"
               label="Submit proposal"
               icon="paper plane"
-              isDisabled={isSubmitting || !isValid}
+              isDisabled={disabled || isSubmitting}
               params={(submitParams || []).map(p => (p === '{STAKE}' ? requiredStake : p))}
               tx={`proposalsCodex.${txMethod}`}
-              onClick={onSubmit}
               txFailedCb={onTxFailed}
               txSuccessCb={onTxSuccess}
+              onClick={onTxButtonClick} // This replaces standard submit
             />
           ) : (
             <Button type="submit" color="blue" loading={isSubmitting}>

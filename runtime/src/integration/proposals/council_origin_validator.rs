@@ -2,7 +2,7 @@
 
 use rstd::marker::PhantomData;
 
-use common::origin_validator::ActorOriginValidator;
+use common::origin::ActorOriginValidator;
 use proposals_engine::VotersParameters;
 
 use super::{MemberId, MembershipOriginValidator};
@@ -44,7 +44,7 @@ impl<T: governance::council::Trait> VotersParameters for CouncilManager<T> {
 mod tests {
     use super::CouncilManager;
     use crate::Runtime;
-    use common::origin_validator::ActorOriginValidator;
+    use common::origin::ActorOriginValidator;
     use membership::members::UserInfo;
     use proposals_engine::VotersParameters;
     use sr_primitives::AccountId32;

@@ -16,7 +16,7 @@ import { withFormContainer } from './FormContainer';
 import './forms.css';
 import FileDropdown from './FileDropdown';
 
-type FormValues = GenericFormValues & {
+export type FormValues = GenericFormValues & {
   // wasm blob as ArrayBuffer, or an Error string
   WASM: ArrayBuffer | string;
 };
@@ -62,7 +62,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    WASM: Validation.RuntimeUpgrade.WASM
+    ...Validation.RuntimeUpgrade()
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: 'RuntimeUpgradeForm'

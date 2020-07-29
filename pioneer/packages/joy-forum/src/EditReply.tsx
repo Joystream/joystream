@@ -10,7 +10,8 @@ import { withMulti } from '@polkadot/react-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Text } from '@polkadot/types';
-import { PostId, Post, ThreadId } from '@joystream/types/forum';
+import { PostId, ThreadId } from '@joystream/types/common';
+import { Post } from '@joystream/types/forum';
 import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';

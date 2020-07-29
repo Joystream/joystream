@@ -18,6 +18,7 @@ import uiKeyring from '@polkadot/ui-keyring';
 import * as types from '@polkadot/types';
 import * as util from '@polkadot/util';
 import * as hashing from '@polkadot/util-crypto';
+import * as joy_types from '@joystream/types';
 
 import makeWrapper from './snippets/wrapping';
 import allSnippets from './snippets';
@@ -39,6 +40,9 @@ interface Injected {
   types: typeof types;
   util: typeof util;
   window: null;
+  joy: {
+    types: typeof joy_types;
+  };
 }
 
 interface Props extends AppProps, I18nProps, RouteComponentProps<{}> {
@@ -195,7 +199,10 @@ function Playground ({ className, history, match: { params: { base64 } }, t }: P
         : null,
       types,
       util,
-      window: null
+      window: null,
+      joy: {
+        types: joy_types
+      }
     };
 
     await injectedRef.current.api.isReady;

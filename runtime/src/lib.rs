@@ -8,7 +8,7 @@
 #![allow(array_into_iter)]
 
 // Runtime integration tests
-mod test;
+mod tests;
 
 // Make the WASM binary available.
 // This is required only by the node build.
@@ -62,6 +62,22 @@ pub use timestamp::Call as TimestampCall;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 pub use proposals_codex::ProposalsConfigParameters;
 
+pub use common;
+pub use forum;
+pub use working_group;
+
+pub use governance::election_params::ElectionParameters;
+use governance::{council, election};
+use membership::members;
+use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
+pub use versioned_store;
+
+pub use content_working_group as content_wg;
+mod migration;
+
+/// Alias for ContentId, used in various places.
+pub type ContentId = primitives::H256;
+
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -110,6 +126,9 @@ pub type ThreadId = u64;
 /// See the Note about ThreadId
 pub type PostId = u64;
 
+/// Represent an actor in membership group, which is the same in the working groups.
+pub type ActorId = u64;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -142,7 +161,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 6,
-    spec_version: 15,
+    spec_version: 21,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
 };
@@ -300,7 +319,7 @@ impl transaction_payment::Trait for Runtime {
     type TransactionBaseFee = TransactionBaseFee;
     type TransactionByteFee = TransactionByteFee;
     type WeightToFee = ();
-    type FeeMultiplierUpdate = (); // FeeMultiplierUpdateHandler;
+    type FeeMultiplierUpdate = ();
 }
 
 impl sudo::Trait for Runtime {
@@ -422,28 +441,16 @@ impl finality_tracker::Trait for Runtime {
     type ReportLatency = ReportLatency;
 }
 
-pub use forum;
-pub use governance::election_params::ElectionParameters;
-use governance::{council, election};
-use membership::members;
-use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
-pub use versioned_store;
-
-pub use content_working_group as content_wg;
-mod migration;
-use roles::actors;
-use service_discovery::discovery;
-
-/// Alias for ContentId, used in various places.
-pub type ContentId = primitives::H256;
-
 impl versioned_store::Trait for Runtime {
     type Event = Event;
 }
 
 impl versioned_store_permissions::Trait for Runtime {
     type Credential = Credential;
-    type CredentialChecker = (ContentWorkingGroupCredentials, SudoKeyHasAllCredentials);
+    type CredentialChecker = (
+        integration::content_working_group::ContentWorkingGroupCredentials,
+        SudoKeyHasAllCredentials,
+    );
     type CreateClassPermissionsChecker = ContentLeadOrSudoKeyCanCreateClasses;
 }
 
@@ -458,72 +465,6 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for SudoKeyHasAllCr
     }
 }
 
-parameter_types! {
-    pub const CurrentLeadCredential: Credential = 0;
-    pub const AnyActiveCuratorCredential: Credential = 1;
-    pub const AnyActiveChannelOwnerCredential: Credential = 2;
-    pub const PrincipalIdMappingStartsAtCredential: Credential = 1000;
-}
-
-pub struct ContentWorkingGroupCredentials {}
-impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingGroupCredentials {
-    fn account_has_credential(
-        account: &AccountId,
-        credential: <Runtime as versioned_store_permissions::Trait>::Credential,
-    ) -> bool {
-        match credential {
-            // Credentials from 0..999 represents groups or more complex requirements
-            // Current Lead if set
-            credential if credential == CurrentLeadCredential::get() => {
-                match <content_wg::Module<Runtime>>::ensure_lead_is_set() {
-                    Ok((_, lead)) => lead.role_account == *account,
-                    _ => false,
-                }
-            }
-            // Any Active Curator
-            credential if credential == AnyActiveCuratorCredential::get() => {
-                // Look for a Curator with a matching role account
-                for (_principal_id, principal) in <content_wg::PrincipalById<Runtime>>::enumerate()
-                {
-                    if let content_wg::Principal::Curator(curator_id) = principal {
-                        let curator = <content_wg::CuratorById<Runtime>>::get(curator_id);
-                        if curator.role_account == *account
-                            && curator.stage == content_wg::CuratorRoleStage::Active
-                        {
-                            return true;
-                        }
-                    }
-                }
-
-                false
-            }
-            // Any Active Channel Owner
-            credential if credential == AnyActiveChannelOwnerCredential::get() => {
-                // Look for a ChannelOwner with a matching role account
-                for (_principal_id, principal) in <content_wg::PrincipalById<Runtime>>::enumerate()
-                {
-                    if let content_wg::Principal::ChannelOwner(channel_id) = principal {
-                        let channel = <content_wg::ChannelById<Runtime>>::get(channel_id);
-                        if channel.role_account == *account {
-                            return true; // should we also take publishing_status/curation_status into account ?
-                        }
-                    }
-                }
-
-                false
-            }
-            // mapping to workging group principal id
-            n if n >= PrincipalIdMappingStartsAtCredential::get() => {
-                <content_wg::Module<Runtime>>::account_has_credential(
-                    account,
-                    n - PrincipalIdMappingStartsAtCredential::get(),
-                )
-            }
-            _ => false,
-        }
-    }
-}
-
 // Allow sudo key holder permission to create classes
 pub struct SudoKeyCanCreateClasses {}
 impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
@@ -533,20 +474,6 @@ impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
         <sudo::Module<Runtime>>::key() == *account
     }
 }
-
-// Impl this in the permissions module - can't be done here because
-// neither CreateClassPermissionsChecker or (X, Y) are local types?
-// impl<
-//         T: versioned_store_permissions::Trait,
-//         X: versioned_store_permissions::CreateClassPermissionsChecker<T>,
-//         Y: versioned_store_permissions::CreateClassPermissionsChecker<T>,
-//     > versioned_store_permissions::CreateClassPermissionsChecker<T> for (X, Y)
-// {
-//     fn account_can_create_class_permissions(account: &T::AccountId) -> bool {
-//         X::account_can_create_class_permissions(account)
-//             || Y::account_can_create_class_permissions(account)
-//     }
-// }
 
 pub struct ContentLeadOrSudoKeyCanCreateClasses {}
 impl versioned_store_permissions::CreateClassPermissionsChecker<Runtime>
@@ -601,78 +528,14 @@ impl stake::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = (
-        ContentWorkingGroupStakingEventHandler,
-        crate::integration::proposals::StakingEventsHandler<Self>,
+        crate::integration::content_working_group::ContentWorkingGroupStakingEventHandler,
+        (
+            crate::integration::proposals::StakingEventsHandler<Self>,
+            crate::integration::working_group::StakingEventsHandler<Self>,
+        ),
     );
     type StakeId = u64;
     type SlashId = u64;
-}
-
-pub struct ContentWorkingGroupStakingEventHandler {}
-impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHandler {
-    fn unstaked(
-        stake_id: &<Runtime as stake::Trait>::StakeId,
-        _unstaked_amount: stake::BalanceOf<Runtime>,
-        remaining_imbalance: stake::NegativeImbalance<Runtime>,
-    ) -> stake::NegativeImbalance<Runtime> {
-        if !hiring::ApplicationIdByStakingId::<Runtime>::exists(stake_id) {
-            // Stake not related to a staked role managed by the hiring module
-            return remaining_imbalance;
-        }
-
-        let application_id = hiring::ApplicationIdByStakingId::<Runtime>::get(stake_id);
-
-        if !content_wg::CuratorApplicationById::<Runtime>::exists(application_id) {
-            // Stake not for a Curator
-            return remaining_imbalance;
-        }
-
-        // Notify the Hiring module - is there a potential re-entrancy bug if
-        // instant unstaking is occuring?
-        hiring::Module::<Runtime>::unstaked(*stake_id);
-
-        // Only notify working group module if non instantaneous unstaking occured
-        if content_wg::UnstakerByStakeId::<Runtime>::exists(stake_id) {
-            content_wg::Module::<Runtime>::unstaked(*stake_id);
-        }
-
-        // Determine member id of the curator
-        let curator_application =
-            content_wg::CuratorApplicationById::<Runtime>::get(application_id);
-        let member_id = curator_application.member_id;
-
-        // get member's profile
-        let member_profile = membership::members::MemberProfile::<Runtime>::get(member_id).unwrap();
-
-        // deposit funds to member's root_account
-        // The application doesn't recorded the original source_account from which staked funds were
-        // provided, so we don't really have another option at the moment.
-        <Runtime as stake::Trait>::Currency::resolve_creating(
-            &member_profile.root_account,
-            remaining_imbalance,
-        );
-
-        stake::NegativeImbalance::<Runtime>::zero()
-    }
-
-    // Handler for slashing event
-    fn slashed(
-        _id: &<Runtime as stake::Trait>::StakeId,
-        _slash_id: Option<<Runtime as stake::Trait>::SlashId>,
-        _slashed_amount: stake::BalanceOf<Runtime>,
-        _remaining_stake: stake::BalanceOf<Runtime>,
-        remaining_imbalance: stake::NegativeImbalance<Runtime>,
-    ) -> stake::NegativeImbalance<Runtime> {
-        // Check if the stake is associated with a hired curator or applicant
-        // if their stake goes below minimum required for the role,
-        // they should get deactivated.
-        // Since we don't currently implement any slash initiation in working group,
-        // there is nothing to do for now.
-
-        // Not interested in transfering the slashed amount anywhere for now,
-        // so return it to next handler.
-        remaining_imbalance
-    }
 }
 
 impl content_wg::Trait for Runtime {
@@ -697,6 +560,10 @@ impl memo::Trait for Runtime {
     type Event = Event;
 }
 
+parameter_types! {
+    pub const MaxObjectsPerInjection: u32 = 100;
+}
+
 impl storage::data_object_type_registry::Trait for Runtime {
     type Event = Event;
     type DataObjectTypeId = u64;
@@ -705,57 +572,16 @@ impl storage::data_object_type_registry::Trait for Runtime {
 impl storage::data_directory::Trait for Runtime {
     type Event = Event;
     type ContentId = ContentId;
-    type SchemaId = u64;
-    type Roles = LookupRoles;
+    type StorageProviderHelper = integration::storage::StorageProviderHelper;
     type IsActiveDataObjectType = DataObjectTypeRegistry;
+    type MemberOriginValidator = MembershipOriginValidator<Self>;
+    type MaxObjectsPerInjection = MaxObjectsPerInjection;
 }
 
 impl storage::data_object_storage_registry::Trait for Runtime {
     type Event = Event;
     type DataObjectStorageRelationshipId = u64;
-    type Roles = LookupRoles;
     type ContentIdExists = DataDirectory;
-}
-
-fn random_index(upper_bound: usize) -> usize {
-    let seed = RandomnessCollectiveFlip::random_seed();
-    let mut rand: u64 = 0;
-    for offset in 0..8 {
-        rand += (seed.as_ref()[offset] as u64) << offset;
-    }
-    (rand as usize) % upper_bound
-}
-
-pub struct LookupRoles {}
-impl roles::traits::Roles<Runtime> for LookupRoles {
-    fn is_role_account(account_id: &<Runtime as system::Trait>::AccountId) -> bool {
-        <actors::Module<Runtime>>::is_role_account(account_id)
-    }
-
-    fn account_has_role(
-        account_id: &<Runtime as system::Trait>::AccountId,
-        role: actors::Role,
-    ) -> bool {
-        <actors::Module<Runtime>>::account_has_role(account_id, role)
-    }
-
-    fn random_account_for_role(
-        role: actors::Role,
-    ) -> Result<<Runtime as system::Trait>::AccountId, &'static str> {
-        let ids = <actors::AccountIdsByRole<Runtime>>::get(role);
-
-        let live_ids: Vec<<Runtime as system::Trait>::AccountId> = ids
-            .into_iter()
-            .filter(|id| !<discovery::Module<Runtime>>::is_account_info_expired(id))
-            .collect();
-
-        if live_ids.is_empty() {
-            Err("no staked account found")
-        } else {
-            let index = random_index(live_ids.len());
-            Ok(live_ids[index].clone())
-        }
-    }
 }
 
 impl members::Trait for Runtime {
@@ -763,7 +589,7 @@ impl members::Trait for Runtime {
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
-    type ActorId = u64;
+    type ActorId = ActorId;
     type InitialMembersBalance = InitialMembersBalance;
 }
 
@@ -772,7 +598,7 @@ impl members::Trait for Runtime {
  *
  * ForumUserRegistry could have been implemented directly on
  * the membership module, and likewise ForumUser on Profile,
- * however this approach is more loosley coupled.
+ * however this approach is more loosely coupled.
  *
  * Further exploration required to decide what the long
  * run convention should be.
@@ -807,22 +633,20 @@ impl forum::Trait for Runtime {
 impl migration::Trait for Runtime {
     type Event = Event;
 }
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
 
-impl actors::Trait for Runtime {
-    type Event = Event;
-    type OnActorRemoved = HandleActorRemoved;
+parameter_types! {
+    pub const MaxWorkerNumberLimit: u32 = 100;
 }
 
-pub struct HandleActorRemoved {}
-impl actors::ActorRemoved<Runtime> for HandleActorRemoved {
-    fn actor_removed(actor: &<Runtime as system::Trait>::AccountId) {
-        Discovery::remove_account_info(actor);
-    }
+impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
-impl discovery::Trait for Runtime {
+impl service_discovery::Trait for Runtime {
     type Event = Event;
-    type Roles = LookupRoles;
 }
 
 parameter_types! {
@@ -913,11 +737,6 @@ construct_runtime!(
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: members::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        Actors: actors::{Module, Call, Storage, Event<T>, Config},
-        DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
-        DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        Discovery: discovery::{Module, Call, Storage, Event<T>},
         VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
         VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage},
         Stake: stake::{Module, Call, Storage},
@@ -925,11 +744,18 @@ construct_runtime!(
         RecurringRewards: recurringrewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
         ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
+        // --- Storage
+        DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
+        DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
+        DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
+        Discovery: service_discovery::{Module, Call, Storage, Event<T>},
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
-        // ---
+        // --- Working groups
+        // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
+        StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Error, Event<T>},
     }
 );
 

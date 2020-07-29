@@ -11,6 +11,8 @@ import {
   OpeningsView
 } from './Opportunities';
 
+import { AvailableGroups, WorkingGroups } from '../working_groups';
+
 type State = {
   blockTime?: number;
   opportunities?: Array<WorkingGroupOpening>;
@@ -37,8 +39,10 @@ export class OpportunitiesController extends Controller<State, ITransport> {
 }
 
 export const OpportunitiesView = View<OpportunitiesController, State>(
-  (state) => (
+  (state, controller, params) => (
     <OpeningsView
+      group={AvailableGroups.includes(params.get('group') as any) ? params.get('group') as WorkingGroups : undefined}
+      lead={!!params.get('lead')}
       openings={state.opportunities}
       block_time_in_seconds={state.blockTime}
       member_id={state.memberId}

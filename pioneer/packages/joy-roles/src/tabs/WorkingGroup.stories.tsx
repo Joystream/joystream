@@ -1,19 +1,18 @@
 import React from 'react';
 import { boolean, number, text, withKnobs } from '@storybook/addon-knobs';
 
-import { Balance } from '@polkadot/types/interfaces';
-import { Text, u128, GenericAccountId } from '@polkadot/types';
+import { u128, GenericAccountId } from '@polkadot/types';
 
-import { Actor } from '@joystream/types/roles';
-import { IProfile, MemberId } from '@joystream/types/members';
+import { MemberId } from '@joystream/types/members';
 
-import { ContentCurators, StorageAndDistribution } from '@polkadot/joy-roles/tabs/WorkingGroup';
+import { ContentCurators } from '@polkadot/joy-roles/tabs/WorkingGroup';
 import { GroupMember } from '../elements';
 
 import { mockProfile } from '../mocks';
 
 import 'semantic-ui-css/semantic.min.css';
 import '@polkadot/joy-roles/index.sass';
+import { WorkingGroups } from '../working_groups';
 
 export default {
   title: 'Roles / Components / Working groups tab',
@@ -31,7 +30,8 @@ export function ContentCuratorsSection () {
       ),
       title: text('Title', 'Curation lead', 'Ben'),
       stake: new u128(number('Stake', 10101, {}, 'Ben')),
-      earned: new u128(number('Earned', 347829, {}, 'Ben'))
+      workerId: 1,
+      group: WorkingGroups.ContentCurators
     },
     {
       memberId: new MemberId(2),
@@ -39,7 +39,8 @@ export function ContentCuratorsSection () {
       profile: mockProfile(text('Handle', 'bwhm0', 'Martin')),
       title: text('Title', 'Content curator', 'Martin'),
       stake: new u128(number('Stake', 10101, {}, 'Martin')),
-      earned: new u128(number('Earned', 347829, {}, 'Martin'))
+      workerId: 2,
+      group: WorkingGroups.ContentCurators
     },
     {
       memberId: new MemberId(3),
@@ -50,7 +51,8 @@ export function ContentCuratorsSection () {
       ),
       title: text('Title', 'Content curator', 'Paul'),
       stake: new u128(number('Stake', 10101, {}, 'Paul')),
-      earned: new u128(number('Earned', 347829, {}, 'Paul'))
+      workerId: 3,
+      group: WorkingGroups.ContentCurators
     },
     {
       memberId: new MemberId(4),
@@ -61,7 +63,8 @@ export function ContentCuratorsSection () {
       ),
       title: text('Title', 'Content curator', 'Alex'),
       stake: new u128(number('Stake', 10101, {}, 'Alex')),
-      earned: new u128(number('Earned', 347829, {}, 'Alex'))
+      workerId: 4,
+      group: WorkingGroups.ContentCurators
     },
     {
       memberId: new MemberId(5),
@@ -72,45 +75,12 @@ export function ContentCuratorsSection () {
       ),
       title: text('Title', 'Content curator', 'Mokhtar'),
       stake: new u128(number('Stake', 10101, {}, 'Mokhtar')),
-      earned: new u128(number('Earned', 347829, {}, 'Mokhtar'))
+      workerId: 5,
+      group: WorkingGroups.ContentCurators
     }
   ];
 
   return (
-    <ContentCurators members={members} rolesAvailable={boolean('Roles available', true)} />
+    <ContentCurators workers={members} workerRolesAvailable={boolean('Roles available', true)} />
   );
 }
-
-export const StorageProvidersSection = () => {
-  const balances = new Map<string, Balance>([
-    ['5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp', new u128(101)]
-  ]);
-
-  const memos = new Map<string, Text>([
-    ['5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp', new Text('This is a memo')]
-  ]);
-
-  const profiles = new Map<number, IProfile>([
-    [1, mockProfile('bwhm0')],
-    [2, mockProfile(
-      'benholdencrowther',
-      'https://www.benholdencrowther.com/wp-content/uploads/2019/03/Hanging_Gardens_of_Babylon.jpg'
-    )]
-  ]);
-
-  const storageProviders: Actor[] = [
-    new Actor({ member_id: 1, account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp' }),
-    new Actor({ member_id: 2, account: '5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3' })
-  ];
-
-  return (
-    <div>
-      <StorageAndDistribution
-        actors={storageProviders}
-        balances={balances}
-        memos={memos}
-        profiles={profiles}
-      />
-    </div>
-  );
-};

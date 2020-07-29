@@ -1,1 +1,13 @@
-/lib/
+# Don't track build artifacts
+**/*.js
+**/*.d.ts
+!.eslintrc.js
+
+# JSON files imported by hiring types
+hiring/schemas/role.schema.json
+
+# from prior versions
+lib/
+
+# artifact of webpack when building pioneer?
+build/

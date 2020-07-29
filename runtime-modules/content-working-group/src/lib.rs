@@ -38,9 +38,7 @@ use srml_support::{
 };
 use system::{self, ensure_root, ensure_signed};
 
-/// DIRTY IMPORT BECAUSE
-/// InputValidationLengthConstraint has not been factored out yet!!!
-use forum::InputValidationLengthConstraint;
+use common::constraints::InputValidationLengthConstraint;
 
 /// Module configuration trait for this Substrate module.
 pub trait Trait:
@@ -241,6 +239,10 @@ pub static MSG_ORIGIN_IS_NIETHER_MEMBER_CONTROLLER_OR_ROOT: &str =
     "Origin must be controller or root account of member";
 pub static MSG_MEMBER_HAS_ACTIVE_APPLICATION_ON_OPENING: &str =
     "Member already has an active application on the opening";
+pub static MSG_ADD_CURATOR_OPENING_ROLE_STAKE_CANNOT_BE_ZERO: &str =
+    "Add curator opening role stake cannot be zero";
+pub static MSG_ADD_CURATOR_OPENING_APPLICATION_STAKE_CANNOT_BE_ZERO: &str =
+    "Add curator opening application stake cannot be zero";
 
 /// The exit stage of a lead involvement in the working group.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -838,7 +840,7 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
             hiring::AddOpeningError::OpeningMustActivateInTheFuture => {
                 MSG_ADD_CURATOR_OPENING_ACTIVATES_IN_THE_PAST
             }
-            hiring::AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(purpose) => {
+            hiring::AddOpeningError::StakeAmountLessThanMinimumStakeBalance(purpose) => {
                 match purpose {
                     hiring::StakePurpose::Role => {
                         MSG_ADD_CURATOR_OPENING_ROLE_STAKE_LESS_THAN_MINIMUM
@@ -851,6 +853,12 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for &str {
             hiring::AddOpeningError::ApplicationRationingZeroMaxApplicants => {
                 MSG_ADD_CURATOR_OPENING_ZERO_MAX_APPLICANT_COUNT
             }
+            hiring::AddOpeningError::StakeAmountCannotBeZero(purpose) => match purpose {
+                hiring::StakePurpose::Role => MSG_ADD_CURATOR_OPENING_ROLE_STAKE_CANNOT_BE_ZERO,
+                hiring::StakePurpose::Application => {
+                    MSG_ADD_CURATOR_OPENING_APPLICATION_STAKE_CANNOT_BE_ZERO
+                }
+            },
         }
     }
 }
@@ -1468,6 +1476,23 @@ decl_module! {
             // Ensure curator opening exists
             let (curator_opening, _) = Self::ensure_curator_opening_exists(&curator_opening_id)?;
 
+            // Ensure a mint exists if lead is providing a reward for positions being filled
+            let create_reward_settings = if let Some(policy) = reward_policy {
+                // A reward will need to be created so ensure our configured mint exists
+                let mint_id = Self::mint();
+
+                // Technically this is a bug-check and should not be here.
+                ensure!(<minting::Mints<T>>::exists(mint_id), MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST);
+
+                // Make sure valid parameters are selected for next payment at block number
+                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(), MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
+
+                // The verified reward settings to use
+                Some((mint_id, policy))
+            } else {
+                None
+            };
+
             // Make iterator over successful curator application
             let successful_iter = successful_curator_application_ids
                                     .iter()
@@ -1517,21 +1542,6 @@ decl_module! {
                     curator_opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
                 )
             )?;
-
-            let create_reward_settings = if let Some(policy) = reward_policy {
-                // A reward will need to be created so ensure our configured mint exists
-                let mint_id = Self::mint();
-
-                ensure!(<minting::Mints<T>>::exists(mint_id), MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST);
-
-                // Make sure valid parameters are selected for next payment at block number
-                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(), MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
-
-                // The verified reward settings to use
-                Some((mint_id, policy))
-            } else {
-                None
-            };
 
             //
             // == MUTATION SAFE ==
@@ -1980,6 +1990,8 @@ decl_module! {
             new_capacity: minting::BalanceOf<T>
         ) {
             ensure_root(origin)?;
+
+            ensure!(<Mint<T>>::exists(), MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST);
 
             let mint_id = Self::mint();
 

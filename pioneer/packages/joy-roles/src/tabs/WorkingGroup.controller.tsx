@@ -7,15 +7,14 @@ import { ITransport } from '../transport';
 import {
   ContentCurators,
   WorkingGroupMembership,
-  StorageAndDistributionMembership,
-  GroupLeadStatus,
-  ContentLead
+  StorageProviders
 } from './WorkingGroup';
+
+import styled from 'styled-components';
 
 type State = {
   contentCurators?: WorkingGroupMembership;
-  storageProviders?: StorageAndDistributionMembership;
-  groupLeadStatus?: GroupLeadStatus;
+  storageProviders?: WorkingGroupMembership;
 }
 
 export class WorkingGroupsController extends Controller<State, ITransport> {
@@ -23,7 +22,6 @@ export class WorkingGroupsController extends Controller<State, ITransport> {
     super(transport, {});
     this.getCurationGroup();
     this.getStorageGroup();
-    this.getGroupLeadStatus();
   }
 
   getCurationGroup () {
@@ -34,25 +32,27 @@ export class WorkingGroupsController extends Controller<State, ITransport> {
   }
 
   getStorageGroup () {
-    this.transport.storageGroup().then((value: StorageAndDistributionMembership) => {
+    this.transport.storageGroup().then((value: WorkingGroupMembership) => {
       this.setState({ storageProviders: value });
-      this.dispatch();
-    });
-  }
-
-  getGroupLeadStatus () {
-    this.transport.groupLeadStatus().then((value: GroupLeadStatus) => {
-      this.setState({ groupLeadStatus: value });
       this.dispatch();
     });
   }
 }
 
+const WorkingGroupsOverview = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 2rem;
+  @media screen and (max-width: 1199px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
 export const WorkingGroupsView = View<WorkingGroupsController, State>(
   (state) => (
-    <div>
-      <ContentCurators {...state.contentCurators!} />
-      <ContentLead {...state.groupLeadStatus!} />
-    </div>
+    <WorkingGroupsOverview>
+      <ContentCurators {...state.contentCurators}/>
+      <StorageProviders {...state.storageProviders}/>
+    </WorkingGroupsOverview>
   )
 );

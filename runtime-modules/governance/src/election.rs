@@ -801,7 +801,7 @@ decl_module! {
 
         // Member can apply during announcing stage only. On first call a minimum stake will need to be provided.
         // Member can make subsequent calls during announcing stage to increase their stake.
-        fn apply(origin, stake: BalanceOf<T>) {
+        pub fn apply(origin, stake: BalanceOf<T>) {
             let sender = ensure_signed(origin)?;
             ensure!(Self::can_participate(&sender), "Only members can apply to be on council");
 
@@ -909,7 +909,7 @@ decl_module! {
             );
         }
 
-        fn force_start_election(origin) {
+        pub fn force_start_election(origin) {
             ensure_root(origin)?;
             Self::start_election(<council::Module<T>>::active_council())?;
         }

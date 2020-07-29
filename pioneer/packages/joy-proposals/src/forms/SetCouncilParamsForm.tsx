@@ -19,10 +19,10 @@ import { createType } from '@polkadot/types';
 import './forms.css';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import _ from 'lodash';
-import { ElectionParameters } from '@joystream/types/proposals';
+import { ElectionParameters } from '@joystream/types/council';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 
-type FormValues = GenericFormValues & {
+export type FormValues = GenericFormValues & {
   announcingPeriod: string;
   votingPeriod: string;
   minVotingStake: string;
@@ -203,14 +203,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    announcingPeriod: Validation.SetElectionParameters.announcingPeriod,
-    votingPeriod: Validation.SetElectionParameters.votingPeriod,
-    minVotingStake: Validation.SetElectionParameters.minVotingStake,
-    revealingPeriod: Validation.SetElectionParameters.revealingPeriod,
-    minCouncilStake: Validation.SetElectionParameters.minCouncilStake,
-    newTermDuration: Validation.SetElectionParameters.newTermDuration,
-    candidacyLimit: Validation.SetElectionParameters.candidacyLimit,
-    councilSize: Validation.SetElectionParameters.councilSize
+    ...Validation.SetElectionParameters()
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: 'SetCouncilParamsForm'

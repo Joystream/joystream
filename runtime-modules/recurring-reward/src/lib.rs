@@ -94,10 +94,10 @@ pub struct RewardRelationship<AccountId, Balance, BlockNumber, MintId, Recipient
     mint_id: MintId,
 
     /// Destination account for reward
-    account: AccountId,
+    pub account: AccountId,
 
     /// The payout amount at the next payout
-    amount_per_payout: Balance,
+    pub amount_per_payout: Balance,
 
     /// When set, identifies block when next payout should be processed,
     /// otherwise there is no pending payout
@@ -146,7 +146,7 @@ decl_storage! {
 
         RecipientsCreated get(recipients_created): T::RecipientId;
 
-        RewardRelationships get(reward_relationships): linked_map T::RewardRelationshipId => RewardRelationship<T::AccountId, BalanceOf<T>, T::BlockNumber, T::MintId, T::RecipientId>;
+        pub RewardRelationships get(reward_relationships): linked_map T::RewardRelationshipId => RewardRelationship<T::AccountId, BalanceOf<T>, T::BlockNumber, T::MintId, T::RecipientId>;
 
         RewardRelationshipsCreated get(reward_relationships_created): T::RewardRelationshipId;
     }

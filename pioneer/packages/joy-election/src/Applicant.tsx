@@ -11,12 +11,12 @@ import CandidatePreview from './CandidatePreview';
 
 import translate from './translate';
 import { calcTotalStake } from '@polkadot/joy-utils/index';
-import { Stake } from '@joystream/types/';
+import { ElectionStake } from '@joystream/types/council';
 
 type Props = ApiProps & I18nProps & {
   index: number;
   accountId: AccountId;
-  stake?: Stake;
+  stake?: ElectionStake;
 };
 
 class Applicant extends React.PureComponent<Props> {

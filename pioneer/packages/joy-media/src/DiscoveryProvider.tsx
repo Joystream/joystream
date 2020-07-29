@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext, createContext } from 'react';
 import { Message } from 'semantic-ui-react';
 import axios, { CancelToken } from 'axios';
 
-import { AccountId } from '@polkadot/types/interfaces';
+import { StorageProviderId } from '@joystream/types/working-group';
 import { Vec } from '@polkadot/types';
 import { Url } from '@joystream/types/discovery';
 import ApiContext from '@polkadot/react-api/ApiContext';
@@ -15,8 +15,8 @@ export type BootstrapNodes = {
 };
 
 export type DiscoveryProvider = {
-  resolveAssetEndpoint: (provider: AccountId, contentId?: string, cancelToken?: CancelToken) => Promise<string>;
-  reportUnreachable: (provider: AccountId) => void;
+  resolveAssetEndpoint: (provider: StorageProviderId, contentId?: string, cancelToken?: CancelToken) => Promise<string>;
+  reportUnreachable: (provider: StorageProviderId) => void;
 };
 
 export type DiscoveryProviderProps = {
@@ -41,7 +41,7 @@ type ProviderStats = {
 function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryProvider {
   const stats: Map<string, ProviderStats> = new Map();
 
-  const resolveAssetEndpoint = async (storageProvider: AccountId, contentId?: string, cancelToken?: CancelToken) => {
+  const resolveAssetEndpoint = async (storageProvider: StorageProviderId, contentId?: string, cancelToken?: CancelToken) => {
     const providerKey = storageProvider.toString();
 
     let stat = stats.get(providerKey);
@@ -98,7 +98,7 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
     throw new Error('Resolving failed.');
   };
 
-  const reportUnreachable = (provider: AccountId) => {
+  const reportUnreachable = (provider: StorageProviderId) => {
     const key = provider.toString();
     const stat = stats.get(key);
     if (stat) {

@@ -17,6 +17,7 @@ module.exports = {
     'react/prop-types': 'off',
     'new-cap': 'off',
     '@typescript-eslint/interface-name-prefix': 'off',
+    '@typescript-eslint/ban-ts-comment': 'error',
     // why only required in VSCode!?!? is eslint plugin not working like eslint commandline?
     // Or are we having to add this because of new versions of eslint-config-* ?
     'no-console': 'off',

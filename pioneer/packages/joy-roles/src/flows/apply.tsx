@@ -172,17 +172,17 @@ export function FundSourceSelector (props: FundSourceSelectorProps & FundSourceC
   );
 }
 
-function rankIcon (place: number, slots: number): SemanticICONS {
-  if (place <= 1) {
-    return 'thermometer empty';
-  } else if (place <= (slots / 4)) {
-    return 'thermometer quarter';
-  } else if (place <= (slots / 2)) {
-    return 'thermometer half';
-  } else if (place > (slots / 2) && place < slots) {
+function rankIcon (estimatedSlot: number, slots: number): SemanticICONS {
+  if (estimatedSlot === 1) { // 1st place
+    return 'thermometer';
+  } else if (estimatedSlot <= (slots / 3)) { // Places 2-33 if slotsCount == 100
     return 'thermometer three quarters';
+  } else if (estimatedSlot <= (slots / 1.5)) { // Places 34-66 if slotsCount == 100
+    return 'thermometer half';
+  } else if (estimatedSlot <= slots) { // Places 67-100 if slotsCount == 100
+    return 'thermometer quarter';
   }
-  return 'thermometer';
+  return 'thermometer empty'; // Places >100 for slotsCount == 100
 }
 
 export type StakeRankSelectorProps = {
@@ -192,40 +192,28 @@ export type StakeRankSelectorProps = {
   step: Balance;
   otherStake: Balance;
   requirement: IStakeRequirement;
+  maxNumberOfApplications: number;
 }
 
 export function StakeRankSelector (props: StakeRankSelectorProps) {
   const slotCount = props.slots.length;
-  const [rank, setRank] = useState(1);
-  const minStake = props.requirement.value;
+  const minStake = props.maxNumberOfApplications && props.slots.length === props.maxNumberOfApplications
+    ? props.slots[0].sub(props.otherStake).addn(1) // Slots are ordered by stake ASC
+    : props.requirement.value;
+  const stakeSufficient = props.stake.gte(minStake);
 
   const ticks = [];
   for (let i = 0; i < slotCount; i++) {
     ticks.push(<div key={i} className="tick" style={{ width: (100 / slotCount) + '%' }}>{slotCount - i}</div>);
   }
 
-  const findRankValue = (newStake: Balance): number => {
-    if (newStake.add(props.otherStake).gt(props.slots[slotCount - 1])) {
-      return slotCount;
-    }
-
-    for (let i = slotCount; i--; i >= 0) {
-      if (newStake.add(props.otherStake).gt(props.slots[i])) {
-        return i + 1;
-      }
-    }
-
-    return 0;
-  };
+  let estimatedSlot = slotCount + 1;
+  props.slots.forEach(slotStake => props.stake.gt(slotStake.sub(props.otherStake)) && --estimatedSlot);
 
   const changeValue = (e: any, { value }: any) => {
     const newStake = new u128(value);
     props.setStake(newStake);
-    setRank(findRankValue(newStake));
   };
-  useEffect(() => {
-    props.setStake(props.slots[0]);
-  }, []);
 
   const slider = null;
   return (
@@ -238,21 +226,26 @@ export function StakeRankSelector (props: StakeRankSelectorProps) {
           type="number"
           step={slotCount > 1 ? props.step.toNumber() : 1}
           value={props.stake.toNumber() > 0 ? props.stake.toNumber() : 0}
-          min={props.slots.length > 0 ? props.slots[0].sub(props.otherStake).toNumber() : 0}
-          error={props.stake.lt(minStake)}
+          min={minStake}
+          error={!stakeSufficient}
         />
-        <Label size='large'>
-          <Icon name={rankIcon(rank, slotCount)} />
-          Estimated rank
-          <Label.Detail>{(slotCount + 1) - rank} / {slotCount}</Label.Detail>
-        </Label>
-        <Label size='large'>
+        { props.maxNumberOfApplications > 0 && (
+          <Label size='large'>
+            <Icon name={rankIcon(estimatedSlot, slotCount)} />
+            Estimated rank
+            <Label.Detail>{estimatedSlot} / {props.maxNumberOfApplications}</Label.Detail>
+          </Label>
+        ) }
+        <Label size='large' color={stakeSufficient ? 'green' : 'red'}>
           <Icon name="shield" />
           Your stake
           <Label.Detail>{formatBalance(props.stake)}</Label.Detail>
         </Label>
       </Container>
       {slider}
+      { !stakeSufficient && (
+        <Label color="red">Currently you need to stake at least {formatBalance(minStake)} to be considered for this position!</Label>
+      ) }
     </Container>
   );
 }
@@ -377,24 +370,17 @@ export type StageTransitionProps = {
   prevTransition: () => void;
 }
 
-export type ApplicationStatusProps = {
-  numberOfApplications: number;
-}
-
 type CaptureKeyAndPassphraseProps = {
   keyAddress: AccountId;
   setKeyAddress: (a: AccountId) => void;
-  keyPassphrase: string;
-  setKeyPassphrase: (p: string) => void;
-  minStake: Balance;
+  // keyPassphrase: string;
+  // setKeyPassphrase: (p: string) => void;
+  // minStake: Balance;
 }
 
 export type ConfirmStakesStageProps =
-  StakeRequirementProps &
   FundSourceSelectorProps &
-  ApplicationStatusProps &
-  StakeRankSelectorProps &
-  CaptureKeyAndPassphraseProps & {
+  Pick<StakeRankSelectorProps, 'slots' | 'step'> & {
     applications: OpeningStakeAndApplicationStatus;
     selectedApplicationStake: Balance;
     setSelectedApplicationStake: (b: Balance) => void;
@@ -426,7 +412,7 @@ export function ConfirmStakesStage (props: ConfirmStakesStageProps & StageTransi
   );
 }
 
-type StakeSelectorProps = ConfirmStakesStageProps & ApplicationStatusProps
+type StakeSelectorProps = ConfirmStakesStageProps;
 
 function ConfirmStakes (props: StakeSelectorProps) {
   if (bothStakesVariable(props.applications)) {
@@ -488,55 +474,25 @@ export type ConfirmStakes2UpProps = {
 }
 
 export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
-  const [valid, setValid] = useState(true);
   const slotCount = props.slots.length;
-  const [rank, setRank] = useState(1);
-  const minStake = props.slots[0];
-  const [combined, setCombined] = useState(new u128(0));
+  const { maxNumberOfApplications, requiredApplicationStake, requiredRoleStake } = props.applications;
+  const minStake = maxNumberOfApplications && props.slots.length === maxNumberOfApplications
+    ? props.slots[0].addn(1) // Slots are sorted by combined stake ASC
+    : requiredApplicationStake.value.add(requiredRoleStake.value);
+  const combined = Add(props.selectedApplicationStake, props.selectedRoleStake);
+  const valid = combined.gte(minStake);
 
-  const findRankValue = (newStake: Balance): number => {
-    if (slotCount === 0) {
-      return 0;
-    }
-
-    if (newStake.gt(props.slots[slotCount - 1])) {
-      return slotCount;
-    }
-
-    for (let i = slotCount; i--; i >= 0) {
-      if (newStake.gt(props.slots[i])) {
-        return i + 1;
-      }
-    }
-
-    return 0;
-  };
-
-  // Watch stake values
-  useEffect(() => {
-    const newCombined = Add(props.selectedApplicationStake, props.selectedRoleStake);
-    setCombined(newCombined);
-  },
-  [props.selectedApplicationStake, props.selectedRoleStake]
-  );
-
-  useEffect(() => {
-    setRank(findRankValue(combined));
-    if (slotCount > 0) {
-      setValid(combined.gte(minStake));
-    }
-  },
-  [combined]
-  );
+  let estimatedSlot = slotCount + 1;
+  props.slots.forEach(slotStake => combined.gt(slotStake) && --estimatedSlot);
 
   const ticks = [];
   for (let i = 0; i < slotCount; i++) {
-    ticks.push(<div key={i} className="tick" style={{ width: (100 / slotCount) + '%' }}>{slotCount - i}</div>);
+    ticks.push(<div key={i} className="tick" style={{ width: (100 / slotCount) + '%' }}>{i + 1}</div>);
   }
 
-  const tickLabel = <div className="ui pointing below label" style={{ left: ((100 / slotCount) * rank) + '%' }}>
+  const tickLabel = <div className="ui pointing below label" style={{ left: ((100 / slotCount) * (estimatedSlot - 1)) + '%' }}>
     Your rank
-    <div className="detail">{(slotCount - rank) + 1}/{props.applications.maxNumberOfApplications}</div>
+    <div className="detail">{estimatedSlot}/{props.applications.maxNumberOfApplications}</div>
   </div>;
 
   let tickContainer = null;
@@ -630,11 +586,13 @@ export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
                   Your current combined stake
                   <Label.Detail>{formatBalance(new u128(props.selectedApplicationStake.add(props.selectedRoleStake)))}</Label.Detail>
                 </Label>
-                <Label color='grey'>
-                  <Icon name={rankIcon(rank, slotCount)} />
-                  Estimated rank
-                  <Label.Detail>{(slotCount - rank) + 1}/{props.applications.maxNumberOfApplications}</Label.Detail>
-                </Label>
+                { maxNumberOfApplications > 0 && (
+                  <Label color='grey'>
+                    <Icon name={rankIcon(estimatedSlot, slotCount)} />
+                    Estimated rank
+                    <Label.Detail>{estimatedSlot}/{props.applications.maxNumberOfApplications}</Label.Detail>
+                  </Label>
+                ) }
               </Grid.Column>
             </Grid.Row>
           </Grid>
@@ -677,7 +635,8 @@ function StakeRankMiniSelector (props: StakeRankMiniSelectorProps) {
   );
 }
 
-type CaptureStake1UpProps = ApplicationStatusProps & {
+type CaptureStake1UpProps = {
+  numberOfApplications: number;
   name: string;
   stakeReturnPolicy: string;
   colour: string;
@@ -709,11 +668,6 @@ function CaptureStake1Up (props: CaptureStake1UpProps) {
       </p>
     );
   }
-
-  // Set default value
-  useEffect(() => {
-    props.setValue(props.requirement.value);
-  }, []);
 
   let slider = null;
   let atLeast = null;
@@ -996,7 +950,7 @@ export function DoneStage (props: DoneStageProps) {
       </p>
       <p>
         You can track the progress of your
-        application in the <Link to="#working-group/my-roles">My roles</Link> section. Note that your application is attached
+        application in the <Link to="#working-group/my-roles">My roles and applications</Link> section. Note that your application is attached
         to your role key (see below).  If you have any issues, you can message the group lead in in the <Link to="#forum">Forum</Link> or contact them directly.
       </p>
 
@@ -1030,7 +984,7 @@ export function DoneStage (props: DoneStageProps) {
   );
 }
 
-export type FlowModalProps = ConfirmStakesStageProps & FundSourceSelectorProps & {
+export type FlowModalProps = Pick<StakeRankSelectorProps, 'slots' | 'step'> & FundSourceSelectorProps & {
   role: GenericJoyStreamRoleSchema;
   applications: OpeningStakeAndApplicationStatus;
   hasConfirmStep: boolean;

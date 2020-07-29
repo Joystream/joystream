@@ -7,7 +7,7 @@ import keyring from '@polkadot/ui-keyring';
 // Joystream Stake utils
 // --------------------------------------
 
-import { Stake, Backer } from '@joystream/types/';
+import { ElectionStake, Backer } from '@joystream/types/council';
 
 // Substrate/Polkadot API utils
 // --------------------------------------
@@ -117,11 +117,11 @@ export function newOptionalText (str?: string): OptionalText {
   return new Option(Text, text);
 }
 
-export function calcTotalStake (stakes: Stake | Stake[] | undefined): BN {
+export function calcTotalStake (stakes: ElectionStake | ElectionStake[] | undefined): BN {
   if (typeof stakes === 'undefined') {
     return ZERO;
   }
-  const total = (stake: Stake) => stake.new.add(stake.transferred);
+  const total = (stake: ElectionStake) => stake.new.add(stake.transferred);
   try {
     if (Array.isArray(stakes)) {
       return stakes.reduce((accum, stake) => {

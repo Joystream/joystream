@@ -3,19 +3,10 @@ import ProposalTypePreview from './ProposalTypePreview';
 import { Item, Dropdown } from 'semantic-ui-react';
 
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
+import { Categories } from '@polkadot/joy-utils/types/proposals';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 import './ChooseProposalType.css';
 import { RouteComponentProps } from 'react-router-dom';
-
-export const Categories = {
-  storage: 'Storage',
-  council: 'Council',
-  validators: 'Validators',
-  cwg: 'Content Working Group',
-  other: 'Other'
-} as const;
-
-export type Category = typeof Categories[keyof typeof Categories];
 
 export default function ChooseProposalType (props: RouteComponentProps) {
   const transport = useTransport();
@@ -23,7 +14,6 @@ export default function ChooseProposalType (props: RouteComponentProps) {
   const [proposalTypes, error, loading] = usePromise(() => transport.proposals.proposalsTypesParameters(), []);
   const [category, setCategory] = useState('');
 
-  console.log({ proposalTypes, loading, error });
   return (
     <div className="ChooseProposalType">
       <PromiseComponent error={error} loading={loading} message={'Fetching proposals\' parameters...'}>
@@ -39,7 +29,7 @@ export default function ChooseProposalType (props: RouteComponentProps) {
         </div>
         <Item.Group>
           {proposalTypes
-            .filter(typeInfo => !category || typeInfo.category === category)
+            .filter(typeInfo => (!category || typeInfo.category === category) && !typeInfo.outdated)
             .map((typeInfo, idx) => (
               <ProposalTypePreview key={`${typeInfo} - ${idx}`} typeInfo={typeInfo} history={props.history} />
             ))}

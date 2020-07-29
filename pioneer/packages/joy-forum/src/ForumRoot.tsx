@@ -6,7 +6,8 @@ import BN from 'bn.js';
 
 import Section from '@polkadot/joy-utils/Section';
 import { withMulti, withApi } from '@polkadot/react-api';
-import { PostId, Post, Thread } from '@joystream/types/forum';
+import { PostId } from '@joystream/types/common';
+import { Post, Thread } from '@joystream/types/forum';
 import { bnToStr } from '@polkadot/joy-utils/';
 import { ApiProps } from '@polkadot/react-api/types';
 import { MemberPreview } from '@polkadot/joy-members/MemberPreview';

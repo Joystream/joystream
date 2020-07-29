@@ -1,0 +1,34 @@
+version: "3"
+services:
+  node_alice:
+    image: joystream/node-testing
+    container_name: alice
+    entrypoint: ./node --chain=chainspec.json --alice --validator --ws-external --rpc-cors=all
+    ports:
+      - "30333:30333"
+      - "9933:9933"
+      - "9944:9944"
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.1
+
+  node_bob:
+    image: joystream/node-testing
+    container_name: bob
+    entrypoint: ./node --chain=chainspec.json --bob --ws-external --rpc-cors=all
+    ports:
+      - "30335:30333"
+      - "9935:9933"
+      - "9945:9944"
+    links:
+      - "node_alice:alice"
+    networks:
+      testing_net:
+        ipv4_address: 172.28.1.2
+
+networks:
+  testing_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16

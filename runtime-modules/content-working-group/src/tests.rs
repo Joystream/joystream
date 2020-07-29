@@ -9,9 +9,7 @@ use rstd::collections::btree_set::BTreeSet;
 use sr_primitives::traits::One;
 use srml_support::{assert_err, assert_ok, StorageLinkedMap, StorageValue};
 
-/// DIRTY IMPORT BECAUSE
-/// InputValidationLengthConstraint has not been factored out yet!!!
-use forum::InputValidationLengthConstraint;
+use common::constraints::InputValidationLengthConstraint;
 
 #[test]
 fn create_channel_success() {
