@@ -4,7 +4,8 @@ import { Router } from '@reach/router'
 
 import store from './store'
 import { Layout } from './components'
-import { HomeView } from './views'
+import { HomeView, VideoView } from './views'
+import routes from './config/routes'
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
       <Layout>
         <Router primary={false}>
           <HomeView default />
+          <VideoView path={routes.video} />
         </Router>
       </Layout>
     </Provider>

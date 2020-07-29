@@ -1,7 +1,7 @@
 import styled from '@emotion/styled'
 import { colors, spacing, typography } from '../../theme'
 import Avatar from '../Avatar'
-import { Play } from '../../icons'
+import { PlayIcon } from '../../icons'
 
 const HOVER_BORDER_SIZE = '2px'
 
@@ -55,10 +55,11 @@ export const CoverHoverOverlay = styled.div`
   align-items: center;
 `
 
-// Play icon is incorrectly typed as string
-export const CoverPlayIcon = styled(Play as any)`
+export const CoverPlayIcon = styled(PlayIcon)`
   transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   transform: translateY(40px);
+  width: 54px;
+  height: 54px;
 `
 
 export const ProgressOverlay = styled.div`

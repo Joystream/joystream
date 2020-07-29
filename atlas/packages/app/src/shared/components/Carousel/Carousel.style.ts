@@ -1,4 +1,4 @@
-import { StyleFn, makeStyles } from '../../utils'
+import { makeStyles, StyleFn } from '../../utils'
 import { spacing } from '../../theme'
 
 export type CarouselStyleProps = Record<string, unknown>
@@ -9,6 +9,8 @@ const container: StyleFn = () => ({
 })
 const outerItemsContainer: StyleFn = () => ({
   overflow: 'hidden',
+  padding: `${spacing.xs} 0 0 ${spacing.xs}`,
+  margin: `-${spacing.xs} 0 0 -${spacing.xs}`,
 })
 
 const innerItemsContainer: StyleFn = () => ({

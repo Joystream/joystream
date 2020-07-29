@@ -1,74 +1,72 @@
-import React from 'react'
-import ReactPlayer from 'react-player'
-import { VideoPlayerStyleProps, makeStyles } from './VideoPlayer.style'
+import React, { useEffect, useState } from 'react'
+import { Container, PlayOverlay, StyledPlayIcon } from './VideoPlayer.style'
+import { useVideoJsPlayer, VideoJsConfig } from './videoJsPlayer'
 
-export type VideoPlayerProps = {
-  src?: string
-  playing?: boolean
-  poster?: string
-  controls?: boolean
-  volume?: number
-  loop?: boolean
-  autoPlay?: boolean
-  muted?: boolean
+type VideoPlayerProps = {
   className?: string
-  onReady?(): void
-  onStart?(): void
-  onPlay?(): void
-  onPause?(): void
-  onBuffer?(): void
-  onEnded?(): void
-  onError?(error: any): void
-  onDuration?(duration: number): void
-  onProgress?(state: { played: number; loaded: number }): void
-} & VideoPlayerStyleProps
+  autoplay?: boolean
+} & VideoJsConfig
 
-export default function VideoPlayer({
-  src,
-  poster,
-  playing,
-  autoPlay,
-  loop = false,
-  onStart,
-  onReady,
-  onPlay,
-  onBuffer,
-  onEnded,
-  onDuration,
-  onProgress,
-  className,
-  controls = true,
-  ...styleProps
-}: VideoPlayerProps) {
-  const { playerStyles, containerStyles } = makeStyles(styleProps)
+const VideoPlayer: React.FC<VideoPlayerProps> = ({ className, autoplay, ...videoJsConfig }) => {
+  const [player, playerRef] = useVideoJsPlayer(videoJsConfig)
+  const [playOverlayVisible, setPlayOverlayVisible] = useState(true)
+
+  useEffect(() => {
+    if (!player || !autoplay) {
+      return
+    }
+
+    const handler = async () => {
+      try {
+        await player.play()
+      } catch (e) {
+        console.warn('Autoplay failed:', e)
+      }
+    }
+
+    player.on('loadstart', handler)
+
+    return () => {
+      player.off('loadstart', handler)
+    }
+  }, [player, autoplay])
+
+  useEffect(() => {
+    if (!player) {
+      return
+    }
+
+    const handler = () => {
+      setPlayOverlayVisible(false)
+    }
+
+    player.on('play', handler)
+
+    return () => {
+      player.off('play', handler)
+    }
+  })
+
+  const handlePlayOverlayClick = () => {
+    if (!player) {
+      return
+    }
+
+    player.play()
+  }
+
   return (
-    <div css={containerStyles}>
-      <ReactPlayer
-        css={playerStyles}
-        width={styleProps.responsive ? '100%' : styleProps.width}
-        height={styleProps.responsive ? '100%' : styleProps.height}
-        url={src}
-        autoPlay={autoPlay}
-        light={poster || true}
-        className={className}
-        playing={playing}
-        loop={loop}
-        controls={controls}
-        onStart={onStart}
-        onPlay={onPlay}
-        onBuffer={onBuffer}
-        onReady={onReady}
-        onEnded={onEnded}
-        onDuration={onDuration}
-        onProgress={onProgress}
-        config={{
-          file: {
-            attributes: {
-              className: 'video-player',
-            },
-          },
-        }}
-      />
-    </div>
+    <Container className={className}>
+      {playOverlayVisible && (
+        <PlayOverlay onClick={handlePlayOverlayClick}>
+          <StyledPlayIcon />
+        </PlayOverlay>
+      )}
+      <div data-vjs-player>
+        <video ref={playerRef} className="video-js" />
+      </div>
+    </Container>
   )
 }
+
+export default VideoPlayer

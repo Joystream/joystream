@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
+
 const reactConfig = require('../../../config-overrides')
 
 module.exports = {
