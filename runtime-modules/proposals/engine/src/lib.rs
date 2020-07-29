@@ -143,7 +143,9 @@ use common::origin::ActorOriginValidator;
 type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Proposals engine trait.
-pub trait Trait: system::Trait + pallet_timestamp::Trait + stake::Trait + membership::Trait {
+pub trait Trait:
+    system::Trait + pallet_timestamp::Trait + stake::Trait + membership::Trait
+{
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 

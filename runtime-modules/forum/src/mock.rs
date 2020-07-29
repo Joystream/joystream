@@ -472,8 +472,10 @@ pub type RuntimePost = Post<
     RuntimeThreadId,
     RuntimePostId,
 >;
-pub type RuntimeBlockchainTimestamp =
-    BlockAndTime<<Runtime as system::Trait>::BlockNumber, <Runtime as pallet_timestamp::Trait>::Moment>;
+pub type RuntimeBlockchainTimestamp = BlockAndTime<
+    <Runtime as system::Trait>::BlockNumber,
+    <Runtime as pallet_timestamp::Trait>::Moment,
+>;
 
 pub type RuntimeThreadId = <Runtime as Trait>::ThreadId;
 pub type RuntimePostId = <Runtime as Trait>::PostId;
