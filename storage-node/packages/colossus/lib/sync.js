@@ -92,6 +92,14 @@ async function syncCallback(api, storage) {
 async function syncPeriodic(api, flags, storage) {
   try {
     debug('Starting sync run...')
+
+    const chainIsSyncing = await api.chainIsSyncing()
+
+    if (chainIsSyncing) {
+      debug('Chain is syncing. Postponing sync run.')
+      return setTimeout(syncPeriodic, flags.syncPeriod, api, flags, storage)
+    }
+
     await syncCallback(api, storage)
     debug('sync run complete')
   } catch (err) {

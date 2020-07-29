@@ -142,21 +142,6 @@ function getStorage(runtimeApi) {
   return Storage.create(options)
 }
 
-async function untilChainIsSynched(api) {
-  while (true) {
-    const health = await api.api.rpc.system.health()
-
-    if (health.isSyncing.isTrue) {
-      debug('Waiting for chain to be synced...')
-      await new Promise((resolve) => {
-        setTimeout(resolve, 1 * 30 * 1000)
-      })
-    } else {
-      return
-    }
-  }
-}
-
 async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }) {
   // Load key information
   const { RuntimeApi } = require('@joystream/storage-runtime-api')
@@ -180,7 +165,7 @@ async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }
     throw new Error('Failed to unlock storage provider account')
   }
 
-  await untilChainIsSynched(api)
+  await api.untilChainIsSynced()
 
   if (!(await api.workers.isRoleAccountOfStorageProvider(api.storageProviderId, api.identities.key.address))) {
     throw new Error('storage provider role account and storageProviderId are not associated with a worker')
@@ -228,6 +213,13 @@ async function announcePublicUrl(api, publicUrl) {
   // re-announce in future
   const reannounce = function (timeoutMs) {
     setTimeout(announcePublicUrl, timeoutMs, api, publicUrl)
+  }
+
+  const chainIsSyncing = await api.chainIsSyncing()
+
+  if (chainIsSyncing) {
+    debug('Chain is syncing. Postponing announcing public url.')
+    return reannounce(10 * 60 * 1000)
   }
 
   debug('announcing public url')
@@ -291,11 +283,13 @@ const commands = {
     return startColossus({ api, publicUrl, port })
   },
   discovery: async () => {
+    banner()
     debug('Starting Joystream Discovery Service')
     const { RuntimeApi } = require('@joystream/storage-runtime-api')
     const wsProvider = cli.flags.wsProvider
     const api = await RuntimeApi.create({ provider_url: wsProvider })
     const port = cli.flags.port
+    await api.untilChainIsSynced()
     await startDiscoveryService({ api, port })
   },
 }
