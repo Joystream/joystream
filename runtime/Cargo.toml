@@ -25,6 +25,7 @@ sp-block-builder = { package = 'sp-block-builder', default-features = false, git
 sp-api = { package = 'sp-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 sp-version = { package = 'sp-version', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+node-primitives = { package = 'node-primitives', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 
 # Frame
 frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
@@ -100,6 +101,7 @@ std = [
     'sp-block-builder/std',
     'sp-session/std',
     'sp-staking/std',
+    'node-primitives/std',
 
     # Frame
     'frame-support/std',

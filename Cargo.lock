@@ -1097,6 +1097,7 @@ dependencies = [
  "frame-support",
  "frame-system",
  "frame-system-rpc-runtime-api",
+ "node-primitives",
  "pallet-authority-discovery",
  "pallet-authorship",
  "pallet-babe",
@@ -1533,6 +1534,18 @@ dependencies = [
  "cfg-if",
  "libc",
  "winapi 0.3.8",
+]
+
+[[package]]
+name = "node-primitives"
+version = "2.0.0-rc4"
+source = "git+https://github.com/paritytech/substrate.git?rev=00768a1f21a579c478fe5d4f51e1fa71f7db9fd4#00768a1f21a579c478fe5d4f51e1fa71f7db9fd4"
+dependencies = [
+ "frame-system",
+ "parity-scale-codec",
+ "sp-application-crypto",
+ "sp-core",
+ "sp-runtime",
 ]
 
 [[package]]

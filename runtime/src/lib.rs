@@ -18,10 +18,14 @@ mod migration;
 #[cfg(test)]
 mod tests; // Runtime integration tests
 
+use codec::Encode;
 use frame_support::inherent::{CheckInherentsResult, InherentData};
 use frame_support::traits::KeyOwnerProofSystem;
-use frame_support::weights::{IdentityFee, Weight};
-use frame_support::{construct_runtime, parameter_types, traits::Randomness};
+use frame_support::weights::{
+    constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
+    IdentityFee, Weight,
+};
+use frame_support::{construct_runtime, debug, parameter_types, traits::Randomness};
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
@@ -33,13 +37,14 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
 use sp_runtime::curve::PiecewiseLinear;
+use sp_runtime::generic::SignedPayload;
 use sp_runtime::traits::{
-    BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, StaticLookup, Verify,
+    BlakeTwo256, Block as BlockT, IdentifyAccount, NumberFor, Saturating, StaticLookup, Verify,
 };
 use sp_runtime::transaction_validity::{TransactionSource, TransactionValidity};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys, ApplyExtrinsicResult, FixedPointNumber,
-    MultiSignature, Perbill, Perquintill,
+    MultiSignature, Perbill, Perquintill, SaturatedConversion,
 };
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
@@ -83,9 +88,6 @@ pub type Index = u32;
 /// A hash of some data used by the chain.
 pub type Hash = sp_core::H256;
 
-/// Digest item type.
-pub type DigestItem = generic::DigestItem<Hash>;
-
 /// Moment type
 pub type Moment = u64;
 
@@ -97,7 +99,7 @@ pub type Credential = u64;
 /// Note: Both modules expose type names ThreadId and PostId (which are defined on their Trait) and
 /// used in state storage and dispatchable method's argument types,
 /// and are therefore part of the public API/metadata of the runtime.
-/// In the currenlty version the polkadot-js/api that is used and is compatible with the runtime,
+/// In the current version the polkadot-js/api that is used and is compatible with the runtime,
 /// the type registry has flat namespace and its not possible
 /// to register identically named types from different modules, separately. And so we MUST configure
 /// the underlying types to be identicaly to avoid issues with encoding/decoding these types on the client side.
@@ -114,7 +116,7 @@ pub type ActorId = u64;
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
-/// to even the core datastructures.
+/// to even the core data structures.
 pub mod opaque {
     use super::*;
 
@@ -138,11 +140,11 @@ pub mod opaque {
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
-    authoring_version: 6,
-    spec_version: 20,
+    authoring_version: 7,
+    spec_version: 0,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
-    transaction_version: 0, //TODO ??
+    transaction_version: 1,
 };
 
 /// Constants for Babe.
@@ -195,51 +197,15 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
     pub const MaximumBlockLength: u32 = 5 * 1024 * 1024;
     pub const Version: RuntimeVersion = VERSION;
+    /// Assume 10% of weight for average on_initialize calls.
+    pub MaximumExtrinsicWeight: Weight =
+        AvailableBlockRatio::get().saturating_sub(AVERAGE_ON_INITIALIZE_WEIGHT)
+        * MaximumBlockWeight::get();
 }
+const AVERAGE_ON_INITIALIZE_WEIGHT: Perbill = Perbill::from_percent(10);
 
+// TODO: adjust weight
 impl system::Trait for Runtime {
-    /// The identifier used to distinguish between accounts.
-    type AccountId = AccountId;
-    /// The aggregated dispatch type that is available for extrinsics.
-    type Call = Call;
-    /// The lookup mechanism to get account ID from whatever is passed in dispatchers.
-    type Lookup = Indices;
-    /// The index type for storing how many extrinsics an account has signed.
-    type Index = Index;
-    /// The index type for blocks.
-    type BlockNumber = BlockNumber;
-    /// The type for hashing blocks and tries.
-    type Hash = Hash;
-    /// The hashing algorithm used.
-    type Hashing = BlakeTwo256;
-    /// The header type.
-    type Header = generic::Header<BlockNumber, BlakeTwo256>;
-    /// The ubiquitous event type.
-    type Event = Event;
-    /// The ubiquitous origin type.
-    type Origin = Origin;
-    /// Maximum number of block number to block hash mappings to keep (oldest pruned first).
-    type BlockHashCount = BlockHashCount;
-    /// Maximum weight of each block. With a default weight system of 1byte == 1weight, 4mb is ok.
-    type MaximumBlockWeight = MaximumBlockWeight;
-    /// Maximum size of all encoded transactions (in bytes) that are allowed in one block.
-    type MaximumBlockLength = MaximumBlockLength;
-    /// Portion of the block weight that is available to all normal transactions.
-    type AvailableBlockRatio = AvailableBlockRatio;
-    type Version = Version;
-    //TODO
-    type BaseCallFilter = ();
-    type DbWeight = ();
-    type BlockExecutionWeight = ();
-    type ExtrinsicBaseWeight = ();
-    type MaximumExtrinsicWeight = ();
-    type ModuleToIndex = ();
-    type AccountData = pallet_balances::AccountData<Balance>;
-    type OnNewAccount = ();
-    type OnKilledAccount = ();
-}
-
-/*
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = Call;
@@ -264,7 +230,7 @@ impl system::Trait for Runtime {
     type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
-*/
+}
 
 parameter_types! {
     pub const EpochDuration: u64 = EPOCH_DURATION_IN_SLOTS as u64;
@@ -279,11 +245,7 @@ impl pallet_babe::Trait for Runtime {
 
 impl pallet_grandpa::Trait for Runtime {
     type Event = Event;
-
-    //toDO
     type Call = Call;
-    type KeyOwnerProofSystem = ();
-
     type KeyOwnerProof =
         <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
 
@@ -292,19 +254,7 @@ impl pallet_grandpa::Trait for Runtime {
         GrandpaId,
     )>>::IdentificationTuple;
 
-    type HandleEquivocation = ();
-}
-
-/*
     type KeyOwnerProofSystem = Historical;
-
-    type KeyOwnerProof =
-        <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, GrandpaId)>>::Proof;
-
-    type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
-        KeyTypeId,
-        GrandpaId,
-    )>>::IdentificationTuple;
 
     type HandleEquivocation = pallet_grandpa::EquivocationHandler<
         Self::KeyOwnerIdentification,
@@ -312,8 +262,58 @@ impl pallet_grandpa::Trait for Runtime {
         Runtime,
         Offences,
     >;
+}
 
-*/
+impl<LocalCall> system::offchain::CreateSignedTransaction<LocalCall> for Runtime
+where
+    Call: From<LocalCall>,
+{
+    fn create_transaction<C: system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+        call: Call,
+        public: <Signature as sp_runtime::traits::Verify>::Signer,
+        account: AccountId,
+        nonce: Index,
+    ) -> Option<(
+        Call,
+        <UncheckedExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload,
+    )> {
+        // take the biggest period possible.
+        let period = BlockHashCount::get()
+            .checked_next_power_of_two()
+            .map(|c| c / 2)
+            .unwrap_or(2) as u64;
+        let current_block = System::block_number()
+            .saturated_into::<u64>()
+            // The `System::block_number` is initialized with `n+1`,
+            // so the actual block number is `n`.
+            .saturating_sub(1);
+        let tip = 0;
+        let extra: SignedExtra = (
+            system::CheckSpecVersion::<Runtime>::new(),
+            system::CheckTxVersion::<Runtime>::new(),
+            system::CheckGenesis::<Runtime>::new(),
+            system::CheckEra::<Runtime>::from(generic::Era::mortal(period, current_block)),
+            system::CheckNonce::<Runtime>::from(nonce),
+            system::CheckWeight::<Runtime>::new(),
+            pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+            pallet_grandpa::ValidateEquivocationReport::<Runtime>::new(),
+        );
+        let raw_payload = SignedPayload::new(call, extra)
+            .map_err(|e| {
+                debug::warn!("Unable to create signed payload: {:?}", e);
+            })
+            .ok()?;
+        let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+        let address = Indices::unlookup(account);
+        let (call, extra, _) = raw_payload.deconstruct();
+        Some((call, (address, signature, extra)))
+    }
+}
+
+impl system::offchain::SigningTypes for Runtime {
+    type Public = <Signature as sp_runtime::traits::Verify>::Signer;
+    type Signature = Signature;
+}
 
 impl<C> system::offchain::SendTransactionTypes<C> for Runtime
 where
@@ -323,15 +323,14 @@ where
     type OverarchingCall = Call;
 }
 
+parameter_types! {
+    pub const IndexDeposit: Balance = 0; // no minimum deposit
+}
+
 impl pallet_indices::Trait for Runtime {
-    /// The type for recording indexing into the account enumeration. If this ever overflows, there
-    /// will be problems!
-    type AccountIndex = u32;
-    /// Use the standard means of resolving an index hint from an id.
-    //type ResolveHint = pallet_indices::SimpleResolveHint<Self::AccountId, Self::AccountIndex>;
+    type AccountIndex = AccountIndex;
     type Currency = Balances;
-    //toDO
-    type Deposit = ();
+    type Deposit = IndexDeposit;
     type Event = Event;
 }
 
@@ -353,20 +352,10 @@ parameter_types! {
 }
 
 impl pallet_balances::Trait for Runtime {
-    /// The type for recording an account's balance.
     type Balance = Balance;
-    // /// What to do if an account's free balance gets zeroed.
-    // type OnFreeBalanceZero = (Staking, Session);
-    // /// What to do if a new account is created.
-    // type OnNewAccount = (); // Indices; // disable use of Indices feature
-    // /// The ubiquitous event type.
-    type Event = Event;
-
     type DustRemoval = ();
-    //type TransferPayment = ();
+    type Event = Event;
     type ExistentialDeposit = ExistentialDeposit;
-    // type TransferFee = TransferFee;
-    // type CreationFee = CreationFee;
     type AccountStore = System;
 }
 
@@ -491,8 +480,6 @@ impl pallet_staking::Trait for Runtime {
     type UnsignedPriority = StakingUnsignedPriority;
 }
 
-//type SubmitTransaction = TransactionSubmitter<ImOnlineId, Runtime, UncheckedExtrinsic>;
-
 impl pallet_im_online::Trait for Runtime {
     type AuthorityId = ImOnlineId;
     type Event = Event;
@@ -501,11 +488,15 @@ impl pallet_im_online::Trait for Runtime {
     type UnsignedPriority = ImOnlineUnsignedPriority;
 }
 
+parameter_types! {
+    pub OffencesWeightSoftLimit: Weight = Perbill::from_percent(60) * MaximumBlockWeight::get();
+}
+
 impl pallet_offences::Trait for Runtime {
     type Event = Event;
     type IdentificationTuple = pallet_session::historical::IdentificationTuple<Self>;
     type OnOffenceHandler = Staking;
-    type WeightSoftLimit = (); //OffencesWeightSoftLimit;
+    type WeightSoftLimit = OffencesWeightSoftLimit;
 }
 
 impl pallet_authority_discovery::Trait for Runtime {}
@@ -529,10 +520,10 @@ impl versioned_store_permissions::Trait for Runtime {
     type Credential = Credential;
     type CredentialChecker = (
         integration::content_working_group::ContentWorkingGroupCredentials,
-        integration::versioned_store::SudoKeyHasAllCredentials,
+        integration::versioned_store_permissions::SudoKeyHasAllCredentials,
     );
     type CreateClassPermissionsChecker =
-        integration::versioned_store::ContentLeadOrSudoKeyCanCreateClasses;
+        integration::versioned_store_permissions::ContentLeadOrSudoKeyCanCreateClasses;
 }
 
 impl hiring::Trait for Runtime {
@@ -786,8 +777,6 @@ pub type SignedExtra = (
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
-/// Extrinsic type that has already been checked.
-pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, Call, SignedExtra>;
 /// Executive: handles dispatch to the various modules.
 pub type Executive =
     frame_executive::Executive<Runtime, Block, system::ChainContext<Runtime>, Runtime, AllModules>;
