@@ -89,6 +89,9 @@ export function OpeningHeader (props: OpeningStage) {
               />
             </Link>
           </Label.Detail>
+          <Label.Detail>
+            <Icon name="hashtag" /> {props.meta.id}
+          </Label.Detail>
         </Label>
         <a>
           <CopyToClipboard text={window.location.origin + '/#/working-groups/opportunities/' + props.meta.group + '/' + props.meta.id}>
@@ -540,7 +543,7 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
     };
     const groupOption = (group: WorkingGroups | null, lead = false) => ({
       value: `${basePath}${group ? `/${group}` : ''}${lead ? '/lead' : ''}`,
-      text: _.startCase(`${group || 'All opportuniries'}`) + (lead ? ' (Lead)' : '')
+      text: _.startCase(`${group || 'All opportunities'}`) + (lead ? ' (Lead)' : '')
     });
     // Can assert "props.openings!" because we're using "Loadable" which prevents them from beeing undefined
     const filteredOpenings = props.openings!.filter(o =>

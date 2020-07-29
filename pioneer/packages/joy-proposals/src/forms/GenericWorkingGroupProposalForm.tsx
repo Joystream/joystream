@@ -83,7 +83,7 @@ export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerP
           name="workingGroup"
           placeholder="Select the working group"
           selection
-          options={Object.keys(WorkingGroupDef).map(wgKey => ({ text: wgKey + ' Wroking Group', value: wgKey }))}
+          options={Object.keys(WorkingGroupDef).map(wgKey => ({ text: wgKey + ' Working Group', value: wgKey }))}
           value={values.workingGroup}
           onChange={ handleChange }
         />

@@ -413,6 +413,8 @@ export function Application (props: ApplicationProps) {
         <Label.Detail className="right">
           {openingIcon(props.stage.state)}
           {openingDescription(props.stage.state)}
+          <Icon name="hashtag" style={{ marginLeft: '0.75em' }}/>
+          { props.id }
           <ApplicationLabel>
             {_.startCase(props.meta.group) + (isLeadApplication ? ' Lead' : '')}
           </ApplicationLabel>
