@@ -185,7 +185,7 @@ class RuntimeApi {
 
     // object used to communicate back information from the tx updates handler
     const out = {
-      lastTxUpdateResult: undefined,
+      lastResult: undefined,
     }
 
     // synchronize access to nonce
@@ -205,6 +205,10 @@ class RuntimeApi {
           tx: signed.toHex(),
         })
 
+        // We are depending on the behaviour that at this point the Ready status
+        // Elaboration: when the tx is rejected and therefore the tx isn't added
+        // to the tx pool ready queue status is not updated and
+        // .send() throws, so we don't reach this code.
         if (out.lastResult.status.isFuture) {
           debugTx(`Warning: Submitted Tx with future nonce: ${serialized}`)
         } else {
@@ -220,6 +224,8 @@ class RuntimeApi {
       }
     })
 
+    // Here again we assume that the transaction has been accepted into the tx pool
+    // and status was updated.
     // We cannot get tx updates for a future tx so return now to avoid blocking caller
     if (out.lastResult.status.isFuture) {
       return {}
