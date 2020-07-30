@@ -2,7 +2,7 @@
 
 pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use common::currency::GovernanceCurrency;
-use membership::members;
+use membership;
 pub use system;
 
 pub use primitives::{Blake2Hasher, H256};
@@ -21,6 +21,10 @@ use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, Storage
 mod working_group_mod {
     pub use super::StorageWorkingGroupInstance;
     pub use working_group::Event;
+}
+
+mod members {
+    pub use membership::Event;
 }
 
 impl_outer_origin! {
@@ -122,7 +126,6 @@ parameter_types! {
     pub const CreationFee: u32 = 0;
     pub const TransactionBaseFee: u32 = 1;
     pub const TransactionByteFee: u32 = 0;
-    pub const InitialMembersBalance: u32 = 2000;
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
@@ -190,13 +193,12 @@ impl data_object_storage_registry::Trait for Test {
     type ContentIdExists = MockContent;
 }
 
-impl members::Trait for Test {
+impl membership::Trait for Test {
     type Event = MetaEvent;
     type MemberId = u64;
     type SubscriptionId = u32;
     type PaidTermId = u32;
     type ActorId = u32;
-    type InitialMembersBalance = InitialMembersBalance;
 }
 
 impl stake::Trait for Test {
@@ -277,7 +279,7 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        membership::members::GenesisConfig::<Test> {
+        membership::GenesisConfig::<Test> {
             default_paid_membership_fee: 0,
             members: vec![(1, "alice".into(), "".into(), "".into())],
         }

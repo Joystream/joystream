@@ -68,7 +68,6 @@ pub use working_group;
 
 pub use governance::election_params::ElectionParameters;
 use governance::{council, election};
-use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use versioned_store;
 
@@ -584,13 +583,12 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type ContentIdExists = DataDirectory;
 }
 
-impl members::Trait for Runtime {
+impl membership::Trait for Runtime {
     type Event = Event;
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
     type ActorId = ActorId;
-    type InitialMembersBalance = InitialMembersBalance;
 }
 
 /*
@@ -609,7 +607,7 @@ pub struct ShimMembershipRegistry {}
 
 impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
     fn get_forum_user(id: &AccountId) -> Option<forum::ForumUser<AccountId>> {
-        if members::Module::<Runtime>::is_member_account(id) {
+        if membership::Module::<Runtime>::is_member_account(id) {
             // For now we don't retreive the members profile since it is not used for anything,
             // but in the future we may need it to read out more
             // information possibly required to construct a
@@ -735,7 +733,7 @@ construct_runtime!(
         CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
-        Members: members::{Module, Call, Storage, Event<T>, Config<T>},
+        Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
         VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage},
