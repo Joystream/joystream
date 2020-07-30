@@ -73,7 +73,6 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
     openingActivationDelay,
     WorkingGroups.StorageWorkingGroup
   )
-  // let leadOpenignId: BN
   tap.test('Add lead opening', async () => await addLeaderOpeningFixture.runner(false))
 
   let applyForLeaderOpeningFixture: ApplyForOpeningFixture

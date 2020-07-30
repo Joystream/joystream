@@ -9,10 +9,11 @@ import {
   Application,
   ApplicationIdToWorkerIdMap,
   Opening,
-  OpeningType,
   RewardPolicy,
+  SlashingTerms,
   Worker,
   WorkerId,
+  WorkingGroupOpeningPolicyCommitment,
 } from '@nicaea/types/working-group'
 import { RoleParameters } from '@nicaea/types/roles'
 import { Seat } from '@nicaea/types/council'
@@ -34,7 +35,6 @@ import {
 } from '@nicaea/types/hiring'
 import { FillOpeningParameters } from '@nicaea/types/proposals'
 import { WorkingGroup } from '@nicaea/types/common'
-import { SlashingTerms, WorkingGroupOpeningPolicyCommitment } from '@nicaea/types/working-group'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -369,8 +369,6 @@ export class ApiWrapper {
   }
 
   public estimateProposeCreateWorkingGroupLeaderOpeningFee(): BN {
-
-
     const commitment: WorkingGroupOpeningPolicyCommitment = new WorkingGroupOpeningPolicyCommitment({
       application_rationing_policy: new Option(ApplicationRationingPolicy, {
         max_active_applicants: new BN(32) as u32,

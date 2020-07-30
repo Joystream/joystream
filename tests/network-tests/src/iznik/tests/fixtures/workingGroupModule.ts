@@ -2,14 +2,25 @@ import BN from 'bn.js'
 import { assert } from 'chai'
 import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { Balance, Event } from '@polkadot/types/interfaces'
+import { Balance, BlockNumber, Event } from '@polkadot/types/interfaces'
 import { Keyring } from '@polkadot/api'
+import { Option, u32 } from '@polkadot/types'
 import { v4 as uuid } from 'uuid'
 import { RewardRelationship } from '@nicaea/types/recurring-rewards'
-import { Worker, ApplicationIdToWorkerIdMap, Application } from '@nicaea/types/working-group'
+import {
+  Application,
+  ApplicationIdToWorkerIdMap,
+  SlashingTerms,
+  Worker,
+  WorkingGroupOpeningPolicyCommitment,
+} from '@nicaea/types/working-group'
 import { Utils } from '../../utils/utils'
-import { Opening as HiringOpening } from '@nicaea/types/hiring'
-import { WorkingGroupOpening } from '../../dto/workingGroupOpening'
+import {
+  ActivateOpeningAt,
+  ApplicationRationingPolicy,
+  Opening as HiringOpening,
+  StakingPolicy,
+} from '@nicaea/types/hiring'
 import { Fixture } from './interfaces/fixture'
 
 export class AddWorkerOpeningFixture implements Fixture {
@@ -53,38 +64,64 @@ export class AddWorkerOpeningFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Worker opening construction
-    const activateAtBlock: BN | undefined = this.activationDelay.eqn(0)
-      ? undefined
-      : (await this.apiWrapper.getBestBlock()).add(this.activationDelay)
-    const opening = new WorkingGroupOpening()
-      .setActivateAtBlock(activateAtBlock)
-      .setMaxActiveApplicants(new BN(this.membersKeyPairs.length))
-      .setMaxReviewPeriodLength(new BN(32))
-      .setApplicationStakingPolicyAmount(new BN(this.applicationStake))
-      .setApplicationCrowdedOutUnstakingPeriodLength(new BN(1))
-      .setApplicationExpiredUnstakingPeriodLength(new BN(1))
-      .setRoleStakingPolicyAmount(new BN(this.roleStake))
-      .setRoleCrowdedOutUnstakingPeriodLength(new BN(1))
-      .setRoleExpiredUnstakingPeriodLength(new BN(1))
-      .setSlashableMaxCount(new BN(1))
-      .setSlashableMaxPercentPtsPerTime(new BN(100))
-      .setSuccessfulApplicantApplicationStakeUnstakingPeriod(this.unstakingPeriod)
-      .setFailedApplicantApplicationStakeUnstakingPeriod(this.unstakingPeriod)
-      .setFailedApplicantRoleStakeUnstakingPeriod(this.unstakingPeriod)
-      .setTerminateApplicationStakeUnstakingPeriod(this.unstakingPeriod)
-      .setTerminateRoleStakeUnstakingPeriod(this.unstakingPeriod)
-      .setExitRoleApplicationStakeUnstakingPeriod(this.unstakingPeriod)
-      .setExitRoleStakeUnstakingPeriod(this.unstakingPeriod)
-      .setText(uuid().substring(0, 8))
-      .setOpeningType('Worker')
+    const activateAtBlock: ActivateOpeningAt = new ActivateOpeningAt(
+      this.activationDelay.eqn(0)
+        ? 'CurrentBlock'
+        : { ExactBlock: (await this.apiWrapper.getBestBlock()).add(this.activationDelay) }
+    )
+    const commitment: WorkingGroupOpeningPolicyCommitment = new WorkingGroupOpeningPolicyCommitment({
+      application_rationing_policy: new Option(ApplicationRationingPolicy, {
+        max_active_applicants: new BN(this.membersKeyPairs.length) as u32,
+      }),
+      max_review_period_length: new BN(32) as u32,
+      application_staking_policy: new Option(StakingPolicy, {
+        amount: this.applicationStake,
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: new BN(1),
+        review_period_expired_unstaking_period_length: new BN(1),
+      }),
+      role_staking_policy: new Option(StakingPolicy, {
+        amount: this.roleStake,
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: new BN(1),
+        review_period_expired_unstaking_period_length: new BN(1),
+      }),
+      role_slashing_terms: new SlashingTerms({
+        Slashable: {
+          max_count: new BN(1),
+          max_percent_pts_per_time: new BN(100),
+        },
+      }),
+      fill_opening_successful_applicant_application_stake_unstaking_period: new Option(
+        u32,
+        this.unstakingPeriod as BlockNumber
+      ),
+      fill_opening_failed_applicant_application_stake_unstaking_period: new Option(
+        u32,
+        this.unstakingPeriod as BlockNumber
+      ),
+      fill_opening_failed_applicant_role_stake_unstaking_period: new Option(u32, this.unstakingPeriod as BlockNumber),
+      terminate_application_stake_unstaking_period: new Option(u32, this.unstakingPeriod as BlockNumber),
+      terminate_role_stake_unstaking_period: new Option(u32, this.unstakingPeriod as BlockNumber),
+      exit_role_application_stake_unstaking_period: new Option(u32, this.unstakingPeriod as BlockNumber),
+      exit_role_stake_unstaking_period: new Option(u32, this.unstakingPeriod as BlockNumber),
+    })
 
     // Fee estimation and transfer
-    const addOpeningFee: BN = this.apiWrapper.estimateAddOpeningFee(opening, this.module)
+    const addOpeningFee: BN = this.apiWrapper.estimateAddOpeningFee(this.module)
     await this.apiWrapper.transferBalance(this.sudo, this.lead.address, addOpeningFee)
 
     // Worker opening creation
     const addOpeningPromise: Promise<Event> = this.apiWrapper.expectEvent('OpeningAdded')
-    await this.apiWrapper.addOpening(this.lead, opening, this.module, expectFailure)
+    await this.apiWrapper.addOpening(
+      this.lead,
+      activateAtBlock,
+      commitment,
+      uuid().substring(0, 8),
+      'Worker',
+      this.module,
+      expectFailure
+    )
     if (!expectFailure) {
       const openingId: BN = ((await addOpeningPromise).data[0] as unknown) as BN
       console.log('received opening id ' + openingId)
@@ -128,33 +165,52 @@ export class AddLeaderOpeningFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Leader opening creation
-    const activateAtBlock: BN | undefined = this.activationDelay.eqn(0)
-      ? undefined
-      : (await this.apiWrapper.getBestBlock()).add(this.activationDelay)
-    const opening = new WorkingGroupOpening()
-      .setActivateAtBlock(activateAtBlock)
-      .setMaxActiveApplicants(new BN(this.membersKeyPairs.length))
-      .setMaxReviewPeriodLength(new BN(32))
-      .setApplicationStakingPolicyAmount(new BN(this.applicationStake))
-      .setApplicationCrowdedOutUnstakingPeriodLength(new BN(1))
-      .setApplicationExpiredUnstakingPeriodLength(new BN(1))
-      .setRoleStakingPolicyAmount(new BN(this.roleStake))
-      .setRoleCrowdedOutUnstakingPeriodLength(new BN(1))
-      .setRoleExpiredUnstakingPeriodLength(new BN(1))
-      .setSlashableMaxCount(new BN(1))
-      .setSlashableMaxPercentPtsPerTime(new BN(100))
-      .setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1))
-      .setFailedApplicantApplicationStakeUnstakingPeriod(new BN(1))
-      .setFailedApplicantRoleStakeUnstakingPeriod(new BN(1))
-      .setTerminateApplicationStakeUnstakingPeriod(new BN(1))
-      .setTerminateRoleStakeUnstakingPeriod(new BN(1))
-      .setExitRoleApplicationStakeUnstakingPeriod(new BN(1))
-      .setExitRoleStakeUnstakingPeriod(new BN(1))
-      .setText(uuid().substring(0, 8))
-      .setOpeningType('leader')
+    const activateAtBlock: ActivateOpeningAt = new ActivateOpeningAt(
+      this.activationDelay.eqn(0)
+        ? 'CurrentBlock'
+        : { ExactBlock: (await this.apiWrapper.getBestBlock()).add(this.activationDelay) }
+    )
+    const commitment: WorkingGroupOpeningPolicyCommitment = new WorkingGroupOpeningPolicyCommitment({
+      application_rationing_policy: new Option(ApplicationRationingPolicy, {
+        max_active_applicants: new BN(this.membersKeyPairs.length) as u32,
+      }),
+      max_review_period_length: new BN(32) as u32,
+      application_staking_policy: new Option(StakingPolicy, {
+        amount: this.applicationStake,
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: new BN(1),
+        review_period_expired_unstaking_period_length: new BN(1),
+      }),
+      role_staking_policy: new Option(StakingPolicy, {
+        amount: this.roleStake,
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: new BN(1),
+        review_period_expired_unstaking_period_length: new BN(1),
+      }),
+      role_slashing_terms: new SlashingTerms({
+        Slashable: {
+          max_count: new BN(1),
+          max_percent_pts_per_time: new BN(100),
+        },
+      }),
+      fill_opening_successful_applicant_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      fill_opening_failed_applicant_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      fill_opening_failed_applicant_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      terminate_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      terminate_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      exit_role_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      exit_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+    })
 
     const addOpeningPromise: Promise<Event> = this.apiWrapper.expectEvent('OpeningAdded')
-    await this.apiWrapper.sudoAddOpening(this.sudo, opening, this.module)
+    await this.apiWrapper.sudoAddOpening(
+      this.sudo,
+      activateAtBlock,
+      commitment,
+      uuid().substring(0, 8),
+      'Leader',
+      this.module
+    )
     const openingId: BN = ((await addOpeningPromise).data[0] as unknown) as BN
     this.result = openingId
     if (expectFailure) {
