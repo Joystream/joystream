@@ -62,7 +62,7 @@
   "keywords": [
     "oclif"
   ],
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "main": "lib/index.js",
   "oclif": {
     "repositoryPrefix": "<%- repo %>/blob/master/cli/<%- commandPath %>",
