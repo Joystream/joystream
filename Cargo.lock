@@ -5195,6 +5195,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-referendum-module"
+version = "2.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-io",
+ "sr-primitives",
+ "srml-support",
+ "srml-system",
+ "substrate-primitives",
+]
+
+[[package]]
 name = "substrate-roles-module"
 version = "1.0.1"
 dependencies = [
