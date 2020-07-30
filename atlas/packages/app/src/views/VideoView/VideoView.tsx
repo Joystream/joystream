@@ -16,25 +16,12 @@ import {
   TitleActionsContainer,
 } from './VideoView.style'
 import { Button, VideoPlayer } from '@/shared/components'
-import Video from '../../types/video'
-import { DateTime } from 'luxon'
-import { formatDateShort } from '../../utils/date'
-import { formatNumber } from '../../utils/number'
-import { MOCK_VIDEOS } from '../../config/mockData'
-
-const FAKE_VIDEO: Video = {
-  title: 'Sample Video Title',
-  description:
-    'Recounting her story of finding opportunity and stability in the US, Elizabeth Camarillo Gutierrez examines the flaws in narratives that simplify and idealize the immigrant experience -- and shares hard-earned wisdom on the best way to help those around us. "Our world is one that flourishes when different voices come together," she says.\nRecounting her story of finding opportunity and stability in the US, Elizabeth Camarillo Gutierrez examines the flaws in narratives that simplify and idealize the immigrant experience -- and shares hard-earned wisdom on the best way to help those around us. "Our world is one that flourishes when different voices come together," she says.',
-  views: 240737,
-  createdAt: DateTime.local(),
-  channel: {
-    name: 'Channel Name',
-  },
-}
+import { formatDateShort } from '@/utils/time'
+import { formatNumber } from '@/utils/number'
+import { mockVideos } from '@/config/mocks'
 
 const VideoView: React.FC<RouteComponentProps> = () => {
-  const { title, views, createdAt, channel, description } = FAKE_VIDEO
+  const { title, views, createdAt, channel, description } = mockVideos[0]
 
   const descriptionLines = description.split('\n')
 
@@ -62,8 +49,16 @@ const VideoView: React.FC<RouteComponentProps> = () => {
         <MoreVideosContainer>
           <MoreVideosHeader>More from {channel.name}</MoreVideosHeader>
           <MoreVideosGrid>
-            {MOCK_VIDEOS.map((v, idx) => (
-              <MoreVideosPreview key={idx} {...v} />
+            {mockVideos.map((v, idx) => (
+              <MoreVideosPreview
+                key={idx}
+                title={v.title}
+                channelName={v.channel.name}
+                createdAt={v.createdAt}
+                duration={v.duration}
+                views={v.views}
+                posterURL={v.posterURL}
+              />
             ))}
           </MoreVideosGrid>
         </MoreVideosContainer>

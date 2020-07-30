@@ -15,37 +15,41 @@ import {
   TextContainer,
   TitleHeader,
 } from './VideoPreview.styles'
+import { DateTime, Duration } from 'luxon'
+import { formatDateShort, formatDurationShort } from '@/utils/time'
+import { formatNumberShort } from '@/utils/number'
 
 type VideoPreviewProps = {
   title: string
-  channel: string
-  channelImg: string
-  showChannel: boolean
-  showMeta: boolean
-  createdAt: string
-  duration?: string
+  channelName: string
+  channelAvatarURL?: string
+  createdAt: DateTime
+  duration?: Duration
   // video watch progress in percent (0-100)
   progress?: number
-  views: string
-  poster: string
-  imgRef: React.Ref<HTMLImageElement>
+  views: number
+  posterURL: string
+
+  showChannel?: boolean
+  showMeta?: boolean
+  imgRef?: React.Ref<HTMLImageElement>
   onClick?: (e: React.MouseEvent<HTMLElement>) => void
   onChannelClick?: (e: React.MouseEvent<HTMLElement>) => void
   className?: string
 }
 
-const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
+const VideoPreview: React.FC<VideoPreviewProps> = ({
   title,
-  channel,
-  channelImg,
-  showChannel = true,
-  showMeta = true,
+  channelName,
+  channelAvatarURL,
   createdAt,
   duration,
   progress = 0,
   views,
+  posterURL,
+  showChannel = true,
+  showMeta = true,
   imgRef,
-  poster,
   onClick,
   onChannelClick,
   className,
@@ -72,8 +76,8 @@ const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
   return (
     <Container onClick={handleClick} clickable={clickable} className={className}>
       <CoverContainer>
-        <CoverImage src={poster} ref={imgRef} alt={`${title} by ${channel} thumbnail`} />
-        {duration && <CoverDurationOverlay>{duration}</CoverDurationOverlay>}
+        <CoverImage src={posterURL} ref={imgRef} alt={`${title} by ${channelName} thumbnail`} />
+        {duration && <CoverDurationOverlay>{formatDurationShort(duration)}</CoverDurationOverlay>}
         {!!progress && (
           <ProgressOverlay>
             <ProgressBar style={{ width: `${progress}%` }} />
@@ -87,8 +91,8 @@ const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
         {showChannel && (
           <StyledAvatar
             size="small"
-            name={channel}
-            img={channelImg}
+            name={channelName}
+            img={channelAvatarURL}
             channelClickable={channelClickable}
             onClick={handleChannelClick}
           />
@@ -97,12 +101,12 @@ const VideoPreview: React.FC<Partial<VideoPreviewProps>> = ({
           <TitleHeader>{title}</TitleHeader>
           {showChannel && (
             <ChannelName channelClickable={channelClickable} onClick={handleChannelClick}>
-              {channel}
+              {channelName}
             </ChannelName>
           )}
           {showMeta && (
             <MetaText>
-              {createdAt}・{views} views
+              {formatDateShort(createdAt)}・{formatNumberShort(views)} views
             </MetaText>
           )}
         </TextContainer>

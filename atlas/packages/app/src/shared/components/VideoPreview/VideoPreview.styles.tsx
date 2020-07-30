@@ -5,9 +5,7 @@ import { PlayIcon } from '../../icons'
 
 const HOVER_BORDER_SIZE = '2px'
 
-type CoverImageProps = {
-  displayPosterPlaceholder?: boolean
-}
+type CoverImageProps = Record<string, unknown>
 
 type ContainerProps = {
   clickable: boolean
@@ -31,8 +29,7 @@ export const CoverContainer = styled.div`
 export const CoverImage = styled.img<CoverImageProps>`
   width: 100%;
   height: 100%;
-  background-image: ${({ displayPosterPlaceholder }) =>
-    displayPosterPlaceholder ? `linear-gradient(${colors.gray[300]}, ${colors.gray[700]})` : 'none'};
+  background: linear-gradient(${colors.gray[300]}, ${colors.gray[700]});
   background-size: cover;
   object-fit: cover;
 `
@@ -125,6 +122,7 @@ export const InfoContainer = styled.div`
 
 export const StyledAvatar = styled(Avatar)<ChannelProps>`
   width: 40px;
+  min-width: 40px;
   height: 40px;
   margin-right: ${spacing.xs};
   cursor: ${({ channelClickable }) => (channelClickable ? 'pointer' : 'auto')};

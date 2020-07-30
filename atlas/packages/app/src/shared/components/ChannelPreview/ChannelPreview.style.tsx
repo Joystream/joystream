@@ -1,4 +1,4 @@
-import { StyleFn, makeStyles } from '../../utils'
+import { makeStyles, StyleFn } from '../../utils'
 import { colors } from '../../theme'
 
 export type ChannelPreviewStyleProps = {
@@ -7,12 +7,12 @@ export type ChannelPreviewStyleProps = {
   height: number
 }
 
+const imageTopOverflow = '2rem'
+
 const outerContainer: StyleFn = (_, { width = 200, height = 186 }) => ({
-  minWidth: width,
-  minHeight: height,
-  maxWidth: width,
-  maxHeight: height,
-  paddingTop: '2rem',
+  width,
+  height: `calc(${height}px + ${imageTopOverflow})`,
+  paddingTop: imageTopOverflow,
 })
 
 const innerContainer: StyleFn = () => ({
@@ -40,7 +40,7 @@ const avatar: StyleFn = () => ({
   width: 156,
   height: 156,
   position: 'relative',
-  margin: `-2rem auto 0`,
+  margin: `-${imageTopOverflow} auto 0`,
   zIndex: 2,
 })
 

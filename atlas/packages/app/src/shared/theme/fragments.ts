@@ -1,6 +1,5 @@
-import { StyleFn } from './../utils/style-reducer'
 import colors from './colors'
-import { StyleObj, stripInline } from '../utils'
+import { stripInline, StyleFn, StyleObj } from '../utils'
 
 export function log(styles: StyleObj, props: any) {
   console.log('styles', styles)
