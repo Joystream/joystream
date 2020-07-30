@@ -47,7 +47,7 @@ fn new_stake_reusing_transferable_works() {
     }
 }
 
-#[test]
+#[test] #[ignore]
 fn check_default_params() {
     // TODO missing test implementation?
 }
@@ -1193,3 +1193,44 @@ fn setting_election_parameters() {
         );
     });
 }
+
+// TODO: check for obsolescence and duplicities with older test (above)
+/////////////////// New council - test /////////////////////////////////////////
+
+#[test]
+fn locks_is_locking_funds() {
+    initial_test_ext().execute_with(|| {
+        // check that funds locked by account cannot be accessed until lock expires
+    })
+}
+
+#[test]
+fn locks_funds_can_be_used_to_vote() {
+    initial_test_ext().execute_with(|| {
+        // check that funds locked by account for some purpose can be also used for voting
+    })
+}
+
+#[test]
+fn locks_expires_on_next_council_election() {
+    initial_test_ext().execute_with(|| {
+        // check that lock expires when next election starts reveal period and can be withdrawn
+    })
+}
+
+#[test]
+fn locks_expires_on_next_council_election() {
+    initial_test_ext().execute_with(|| {
+        // check that lock expires when next election starts reveal period
+    })
+}
+
+#[test]
+fn locks_can_be_reused_for_following_election() {
+    initial_test_ext().execute_with(|| {
+        // check that locked funds can be used for candidacy in following council election
+    })
+}
+
+// revealing vote
+// there are test for that above
