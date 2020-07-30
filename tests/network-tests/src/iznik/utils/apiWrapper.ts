@@ -34,7 +34,7 @@ import {
 } from '@nicaea/types/hiring'
 import { FillOpeningParameters } from '@nicaea/types/proposals'
 import { WorkingGroup } from '@nicaea/types/common'
-import { SlashingTerms, WorkingGroupOpeningPolicyCommitment } from '../../../../../types/src/working-group'
+import { SlashingTerms, WorkingGroupOpeningPolicyCommitment } from '@nicaea/types/working-group'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -369,6 +369,8 @@ export class ApiWrapper {
   }
 
   public estimateProposeCreateWorkingGroupLeaderOpeningFee(): BN {
+
+
     const commitment: WorkingGroupOpeningPolicyCommitment = new WorkingGroupOpeningPolicyCommitment({
       application_rationing_policy: new Option(ApplicationRationingPolicy, {
         max_active_applicants: new BN(32) as u32,
@@ -431,14 +433,6 @@ export class ApiWrapper {
   }
 
   public estimateProposeFillLeaderOpeningFee(): BN {
-    // const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters()
-    //   .setAmountPerPayout(new BN(1))
-    //   .setNextPaymentAtBlock(new BN(99999))
-    //   .setPayoutInterval(new BN(99999))
-    //   .setOpeningId(new BN(0))
-    //   .setSuccessfulApplicationId(new BN(0))
-    //   .setWorkingGroup('Storage')
-
     const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters({
       opening_id: new BN(0) as OpeningId,
       successful_application_id: new BN(0) as ApplicationId,
@@ -1039,7 +1033,9 @@ export class ApiWrapper {
     title: string,
     description: string,
     proposalStake: BN,
-    opening: WorkingGroupOpening,
+    actiavteAt: ActivateOpeningAt,
+    commitment: WorkingGroupOpeningPolicyCommitment,
+    text: string,
     workingGroup: string
   ): Promise<void> {
     const memberId: BN = (await this.getMemberIds(account.address))[0]
@@ -1049,7 +1045,12 @@ export class ApiWrapper {
         title,
         description,
         proposalStake,
-        opening.getAddOpeningParameters(workingGroup)
+        {
+          activate_at: actiavteAt,
+          commitment: commitment,
+          human_readable_text: text,
+          working_group: workingGroup,
+        }
       ),
       account,
       false
