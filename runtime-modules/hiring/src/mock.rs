@@ -58,7 +58,6 @@ parameter_types! {
     pub const CreationFee: u32 = 0;
     pub const TransactionBaseFee: u32 = 1;
     pub const TransactionByteFee: u32 = 0;
-    pub const InitialMembersBalance: u64 = 2000;
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 

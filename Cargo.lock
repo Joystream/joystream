@@ -4694,7 +4694,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-content-working-group-module"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -4917,7 +4917,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-membership-module"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "parity-scale-codec",
  "serde",
