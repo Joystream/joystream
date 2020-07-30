@@ -1,23 +1,40 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import { Option, Vec, Bytes, u32 } from '@polkadot/types'
+import { Bytes, Option, u32, Vec } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { UserInfo, PaidMembershipTerms, MemberId } from '@nicaea/types/members'
+import { MemberId, PaidMembershipTerms, UserInfo } from '@nicaea/types/members'
 import { Mint, MintId } from '@nicaea/types/mint'
 import { Lead, LeadId } from '@nicaea/types/content-working-group'
-import { Application, WorkerId, Worker, ApplicationIdToWorkerIdMap, Opening } from '@nicaea/types/working-group'
+import {
+  Application,
+  ApplicationIdToWorkerIdMap,
+  Opening,
+  OpeningType,
+  RewardPolicy,
+  Worker,
+  WorkerId,
+} from '@nicaea/types/working-group'
 import { RoleParameters } from '@nicaea/types/roles'
 import { Seat } from '@nicaea/types/council'
-import { Balance, Event, EventRecord, AccountId, BlockNumber, BalanceOf } from '@polkadot/types/interfaces'
+import { AccountId, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender } from './sender'
 import { Utils } from './utils'
 import { Stake, StakedState } from '@nicaea/types/stake'
 import { RewardRelationship } from '@nicaea/types/recurring-rewards'
-import { Opening as HiringOpening, Application as HiringApplication, ApplicationId } from '@nicaea/types/hiring'
-import { WorkingGroupOpening } from '../dto/workingGroupOpening'
-import { FillOpeningParameters } from '../dto/fillOpeningParameters'
+import {
+  ActivateOpeningAt,
+  Application as HiringApplication,
+  ApplicationId,
+  ApplicationRationingPolicy,
+  Opening as HiringOpening,
+  OpeningId,
+  StakingPolicy,
+} from '@nicaea/types/hiring'
+import { FillOpeningParameters } from '@nicaea/types/proposals'
+import { WorkingGroup } from '@nicaea/types/common'
+import { SlashingTerms, WorkingGroupOpeningPolicyCommitment } from '../../../../../types/src/working-group'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -240,14 +257,41 @@ export class ApiWrapper {
     return this.estimateTxFee(this.api.tx.proposalsEngine.vote(0, 0, 'Approve'))
   }
 
-  public estimateAddOpeningFee(opening: WorkingGroupOpening, module: WorkingGroups): BN {
+  public estimateAddOpeningFee(module: WorkingGroups): BN {
+    const commitment: WorkingGroupOpeningPolicyCommitment = new WorkingGroupOpeningPolicyCommitment({
+      application_rationing_policy: new Option(ApplicationRationingPolicy, {
+        max_active_applicants: new BN(32) as u32,
+      }),
+      max_review_period_length: new BN(32) as u32,
+      application_staking_policy: new Option(StakingPolicy, {
+        amount: new BN(1),
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: new BN(1),
+        review_period_expired_unstaking_period_length: new BN(1),
+      }),
+      role_staking_policy: new Option(StakingPolicy, {
+        amount: new BN(1),
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: new BN(1),
+        review_period_expired_unstaking_period_length: new BN(1),
+      }),
+      role_slashing_terms: new SlashingTerms({
+        Slashable: {
+          max_count: new BN(0),
+          max_percent_pts_per_time: new BN(0),
+        },
+      }),
+      fill_opening_successful_applicant_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      fill_opening_failed_applicant_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      fill_opening_failed_applicant_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      terminate_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      terminate_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      exit_role_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      exit_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+    })
+
     return this.estimateTxFee(
-      this.api.tx[module].addOpening(
-        opening.getActivateAt(),
-        opening.getCommitment(),
-        opening.getText(),
-        opening.getOpeningType()
-      )
+      this.api.tx[module].addOpening('CurrentBlock', commitment, 'Human readable text', 'Worker')
     )
   }
 
@@ -325,25 +369,37 @@ export class ApiWrapper {
   }
 
   public estimateProposeCreateWorkingGroupLeaderOpeningFee(): BN {
-    const opening: WorkingGroupOpening = new WorkingGroupOpening()
-      .setActivateAtBlock(undefined)
-      .setMaxActiveApplicants(new BN(32))
-      .setMaxReviewPeriodLength(new BN(32))
-      .setApplicationStakingPolicyAmount(new BN(1))
-      .setApplicationCrowdedOutUnstakingPeriodLength(new BN(1))
-      .setApplicationExpiredUnstakingPeriodLength(new BN(1))
-      .setRoleStakingPolicyAmount(new BN(1))
-      .setRoleCrowdedOutUnstakingPeriodLength(new BN(1))
-      .setRoleExpiredUnstakingPeriodLength(new BN(1))
-      .setSlashableMaxCount(new BN(0))
-      .setSlashableMaxPercentPtsPerTime(new BN(0))
-      .setSuccessfulApplicantApplicationStakeUnstakingPeriod(new BN(1))
-      .setFailedApplicantApplicationStakeUnstakingPeriod(new BN(1))
-      .setFailedApplicantRoleStakeUnstakingPeriod(new BN(1))
-      .setTerminateApplicationStakeUnstakingPeriod(new BN(1))
-      .setTerminateRoleStakeUnstakingPeriod(new BN(1))
-      .setExitRoleApplicationStakeUnstakingPeriod(new BN(1))
-      .setExitRoleStakeUnstakingPeriod(new BN(1))
+    const commitment: WorkingGroupOpeningPolicyCommitment = new WorkingGroupOpeningPolicyCommitment({
+      application_rationing_policy: new Option(ApplicationRationingPolicy, {
+        max_active_applicants: new BN(32) as u32,
+      }),
+      max_review_period_length: new BN(32) as u32,
+      application_staking_policy: new Option(StakingPolicy, {
+        amount: new BN(1),
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: new BN(1),
+        review_period_expired_unstaking_period_length: new BN(1),
+      }),
+      role_staking_policy: new Option(StakingPolicy, {
+        amount: new BN(1),
+        amount_mode: 'AtLeast',
+        crowded_out_unstaking_period_length: new BN(1),
+        review_period_expired_unstaking_period_length: new BN(1),
+      }),
+      role_slashing_terms: new SlashingTerms({
+        Slashable: {
+          max_count: new BN(0),
+          max_percent_pts_per_time: new BN(0),
+        },
+      }),
+      fill_opening_successful_applicant_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      fill_opening_failed_applicant_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      fill_opening_failed_applicant_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      terminate_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      terminate_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      exit_role_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      exit_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+    })
 
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
@@ -352,8 +408,8 @@ export class ApiWrapper {
         'some long description for the purpose of testing',
         0,
         {
-          'activate_at': opening.getActivateAt(),
-          'commitment': opening.getCommitment(),
+          'activate_at': 'CurrentBlock',
+          'commitment': commitment,
           'human_readable_text': 'Opening readable text',
           'working_group': 'Storage',
         }
@@ -375,13 +431,27 @@ export class ApiWrapper {
   }
 
   public estimateProposeFillLeaderOpeningFee(): BN {
-    const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters()
-      .setAmountPerPayout(new BN(1))
-      .setNextPaymentAtBlock(new BN(99999))
-      .setPayoutInterval(new BN(99999))
-      .setOpeningId(new BN(0))
-      .setSuccessfulApplicationId(new BN(0))
-      .setWorkingGroup('Storage')
+    // const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters()
+    //   .setAmountPerPayout(new BN(1))
+    //   .setNextPaymentAtBlock(new BN(99999))
+    //   .setPayoutInterval(new BN(99999))
+    //   .setOpeningId(new BN(0))
+    //   .setSuccessfulApplicationId(new BN(0))
+    //   .setWorkingGroup('Storage')
+
+    const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters({
+      opening_id: new BN(0) as OpeningId,
+      successful_application_id: new BN(0) as ApplicationId,
+      reward_policy: new Option(
+        RewardPolicy,
+        new RewardPolicy({
+          amount_per_payout: new BN(1) as Balance,
+          next_payment_at_block: new BN(99999) as BlockNumber,
+          payout_interval: new Option(u32, new BN(99999) as u32),
+        })
+      ),
+      working_group: new WorkingGroup('Storage'),
+    })
 
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
@@ -389,7 +459,7 @@ export class ApiWrapper {
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
-        fillOpeningParameters.getFillOpeningParameters()
+        fillOpeningParameters
       )
     )
   }
@@ -935,16 +1005,30 @@ export class ApiWrapper {
 
   public async addOpening(
     leader: KeyringPair,
-    opening: WorkingGroupOpening,
+    actiavteAt: ActivateOpeningAt,
+    commitment: WorkingGroupOpeningPolicyCommitment,
+    text: string,
+    type: string,
     module: WorkingGroups,
     expectFailure: boolean
   ): Promise<void> {
-    return this.sender.signAndSend(this.createAddOpeningTransaction(opening, module), leader, expectFailure)
+    return this.sender.signAndSend(
+      this.createAddOpeningTransaction(actiavteAt, commitment, text, type, module),
+      leader,
+      expectFailure
+    )
   }
 
-  public async sudoAddOpening(sudo: KeyringPair, opening: WorkingGroupOpening, module: WorkingGroups): Promise<void> {
+  public async sudoAddOpening(
+    sudo: KeyringPair,
+    actiavteAt: ActivateOpeningAt,
+    commitment: WorkingGroupOpeningPolicyCommitment,
+    text: string,
+    type: string,
+    module: WorkingGroups
+  ): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.sudo.sudo(this.createAddOpeningTransaction(opening, module)),
+      this.api.tx.sudo.sudo(this.createAddOpeningTransaction(actiavteAt, commitment, text, type, module)),
       sudo,
       false
     )
@@ -980,13 +1064,14 @@ export class ApiWrapper {
     fillOpeningParameters: FillOpeningParameters
   ): Promise<void> {
     const memberId: BN = (await this.getMemberIds(account.address))[0]
+
     return this.sender.signAndSend(
       this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
         memberId,
         title,
         description,
         proposalStake,
-        fillOpeningParameters.getFillOpeningParameters()
+        fillOpeningParameters
       ),
       account,
       false
@@ -1121,15 +1206,13 @@ export class ApiWrapper {
   }
 
   private createAddOpeningTransaction(
-    opening: WorkingGroupOpening,
+    actiavteAt: ActivateOpeningAt,
+    commitment: WorkingGroupOpeningPolicyCommitment,
+    text: string,
+    type: string,
     module: WorkingGroups
   ): SubmittableExtrinsic<'promise'> {
-    return this.api.tx[module].addOpening(
-      opening.getActivateAt(),
-      opening.getCommitment(),
-      opening.getText(),
-      opening.getOpeningType()
-    )
+    return this.api.tx[module].addOpening(actiavteAt, commitment, text, type)
   }
 
   public async acceptApplications(leader: KeyringPair, openingId: BN, module: WorkingGroups): Promise<void> {

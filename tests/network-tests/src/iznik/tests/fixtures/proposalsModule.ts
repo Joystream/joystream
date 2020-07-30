@@ -3,10 +3,14 @@ import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
 import { v4 as uuid } from 'uuid'
 import BN from 'bn.js'
 import { WorkingGroupOpening } from '../../dto/workingGroupOpening'
-import { FillOpeningParameters } from '../../dto/fillOpeningParameters'
+import { FillOpeningParameters } from '@nicaea/types/proposals'
 import { Fixture } from './interfaces/fixture'
-import { Bytes } from '@polkadot/types'
+import { Bytes, Option, u32 } from '@polkadot/types'
+import { Balance, BlockNumber } from '@polkadot/types/interfaces'
 import { assert } from 'chai'
+import { ApplicationId, OpeningId } from '@nicaea/types/hiring'
+import { RewardPolicy } from '@nicaea/types/working-group'
+import { WorkingGroup } from '@nicaea/types/common'
 
 export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
   private apiWrapper: ApiWrapper
@@ -196,13 +200,20 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
       await this.apiWrapper.getActiveApplicationsIdsByRoleAccount(this.applicantRoleAccountAddress, this.workingGroup)
     )[0]
     const now = await this.apiWrapper.getBestBlock()
-    const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters()
-      .setAmountPerPayout(this.payoutAmount)
-      .setNextPaymentAtBlock(now.add(this.firstRewardInterval))
-      .setPayoutInterval(this.rewardInterval)
-      .setOpeningId(this.openingId)
-      .setSuccessfulApplicationId(applicationId)
-      .setWorkingGroup(workingGroupString)
+
+    const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters({
+      opening_id: this.openingId as OpeningId,
+      successful_application_id: applicationId as ApplicationId,
+      reward_policy: new Option(
+        RewardPolicy,
+        new RewardPolicy({
+          amount_per_payout: this.payoutAmount as Balance,
+          next_payment_at_block: now.add(this.firstRewardInterval) as BlockNumber,
+          payout_interval: new Option(u32, this.rewardInterval as u32),
+        })
+      ),
+      working_group: new WorkingGroup(workingGroupString),
+    })
 
     const proposalPromise = this.apiWrapper.expectProposalCreated()
     await this.apiWrapper.proposeFillLeaderOpening(
