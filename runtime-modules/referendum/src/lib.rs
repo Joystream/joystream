@@ -7,15 +7,16 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // used dependencies
-use codec::{ Decode, Encode};
+use codec::{Decode, Encode};
+use srml_support::Parameter;
 use srml_support::{decl_event, decl_module, decl_storage, dispatch};
 use std::marker::PhantomData;
 
-//use srml_support::{Parameter};
 //use sr_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
+//use codec::{Codec};
 
 // conditioned dependencies
-//[cfg(feature = "std")]
+//#[cfg(feature = "std")]
 //use serde::serde_derive::{Deserialize, Serialize};
 
 // declared modules
@@ -36,17 +37,25 @@ pub enum ReferendumStage<BlockNumber> {
 pub trait Trait<I: Instance>: system::Trait {
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
+
+    // we need to use at least one type belogning to `Trait` to supress `decl_storage` macro's errors
+    type TmpDummy: Parameter + Default;
 }
 
 decl_storage! {
     trait Store for Module<T: Trait<I>, I: Instance> as Referendum {
-
         // Current stage if there is an election running
-        Stage get(stage) config(): Option<ReferendumStage<T::BlockNumber>>;
+        //Stage get(stage) config(): Option<ReferendumStage<T::BlockNumber>>;
 
-        // TODO: remove after `unused parameter` error for `I: Instance` is resolved
-        Tmp: PhantomData<I>;
+        Stage get(stage) config(): Option<T::TmpDummy>;
     }
+
+    /* This might be needed in some cases
+    // add_extra_genesis has to be present in Instantiable Modules - see https://github.com/paritytech/substrate/blob/master/frame/support/procedural/src/lib.rs#L217
+    add_extra_genesis {
+        config(phantom): PhantomData<I>;
+    }
+    */
 }
 
 decl_event! {
@@ -114,7 +123,6 @@ decl_module! {
 
 /////////////////// Inner logic ////////////////////////////////////////////
 impl<T: Trait<I>, I: Instance> Module<T, I> {
-
     fn start_revealing_period() -> dispatch::Result {
         // do necessary actions to start commitment revealing phase
 
@@ -135,7 +143,6 @@ pub struct EnsureChecks<T: Trait<I>, I: Instance> {
 
 impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
     fn can_start_referendum(origin: T::Origin) -> dispatch::Result {
-
         Ok(())
     }
 }
