@@ -1,22 +1,40 @@
 #![cfg(test)]
 
+/////////////////// Configuration //////////////////////////////////////////////
 use crate::*;
 
-use srml_support::{impl_outer_origin, parameter_types};
 use primitives::H256;
-use sr_primitives::{traits::{BlakeTwo256, IdentityLookup}, testing::{Header}, Perbill};
 use runtime_io;
+use sr_primitives::{
+    testing::Header,
+    traits::{BlakeTwo256, IdentityLookup},
+    Perbill,
+};
+use srml_support::{impl_outer_origin, parameter_types};
 
-use crate::{GenesisConfig};
+use crate::GenesisConfig;
 
+pub const USER_ADMIN: u64 = 1;
+
+/////////////////// Runtime and Instances //////////////////////////////////////
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Runtime;
 
+// module instances
+
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Instance0;
 
+impl<I: Instance> Trait<I> for Runtime {
+    type Event = Event<Self, I>;
+
+    type TmpDummy = u64;
+}
+
 pub type TestModule = Module<Runtime, Instance0>;
+
+/////////////////// Module implementation //////////////////////////////////////
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}
@@ -31,10 +49,12 @@ parameter_types! {
 }
 
 impl Instance for Instance0 {
+    const PREFIX: &'static str = "Instance0";
 
+    #[allow(non_upper_case_globals)] // `decl_storage` macro defines this weird name
+    const PREFIX_FOR_Stage: &'static str = "Instance0_stage";
 }
 
-//impl system::Trait for Runtime<Instance0> {
 impl system::Trait for Runtime {
     type Origin = Origin;
     type Index = u64;
@@ -45,7 +65,6 @@ impl system::Trait for Runtime {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    // type WeightMultiplierUpdate = ();
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
@@ -54,56 +73,51 @@ impl system::Trait for Runtime {
     type Version = ();
 }
 
-impl<I: Instance> Trait<I> for Runtime {
-    type Event = Event<Self, I>;
-}
-
-/*
-impl timestamp::Trait for Runtime {
-    type Moment = u64;
-    type OnTimestampSet = ();
-    type MinimumPeriod = MinimumPeriod;
-}
-
-impl Trait for Runtime {
-    type Event = ();
-    type MembershipRegistry = registry::TestMembershipRegistryModule;
-    type ThreadId = u64;
-    type PostId = u64;
-}
-*/
-
+#[allow(dead_code)]
 #[derive(Clone)]
-//pub enum OriginType<I: Instance> {
 pub enum OriginType {
     Signed(<Runtime as system::Trait>::AccountId),
     //Inherent, <== did not find how to make such an origin yet
     Root,
 }
 
-pub fn mock_start_referendum(
-    origin: OriginType,
-    expected_result: dispatch::Result,
-) {
-    assert_eq!(
-        //TestModule::start_referendum(
-        TestModule::finish_voting(
-            origin.clone(),
-        ),
-        expected_result,
-    )
-}
+/////////////////// Utility mocks //////////////////////////////////////////////
 
-pub fn default_genesis_config() -> GenesisConfig<Runtime, Instance0> {
-    GenesisConfig::<Runtime> {
-        Stage: ReferendumStage::Void,
+pub fn mock_origin(origin: OriginType) -> mock::Origin {
+    match origin {
+        OriginType::Signed(account_id) => Origin::signed(account_id),
+        _ => panic!("not implemented"),
     }
 }
 
-pub fn build_test_externalities(config: GenesisConfig<Runtime, Instance0>) -> runtime_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+pub fn default_genesis_config_generic<I: Instance>() -> GenesisConfig<Runtime, I> {
+    GenesisConfig::<Runtime, I> {
+        //stage: ReferendumStage::Void,
+        stage: 0,
+    }
+}
+
+pub fn default_genesis_config() -> GenesisConfig<Runtime, Instance0> {
+    default_genesis_config_generic::<Instance0>()
+}
+
+pub fn build_test_externalities<I: Instance>(
+    config: GenesisConfig<Runtime, I>,
+) -> runtime_io::TestExternalities {
+    let mut t = system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
 
+    config.assimilate_storage(&mut t).unwrap();
+
     t.into()
+}
+
+/////////////////// Mocks of Module's actions //////////////////////////////////
+
+pub fn mock_start_referendum(origin: OriginType, expected_result: dispatch::Result) {
+    assert_eq!(
+        TestModule::start_referendum(mock_origin(origin),),
+        expected_result,
+    )
 }
