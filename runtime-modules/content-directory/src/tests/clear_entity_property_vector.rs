@@ -25,7 +25,7 @@ fn clear_entity_property_vector_success() {
 
         // Ensure first entity properties updated succesfully
         if let Some(second_schema_old_property_value) = first_entity
-            .values
+            .get_values_mut()
             .get_mut(&SECOND_PROPERTY_ID)
             .and_then(|property_value| property_value.as_vec_property_value_mut())
         {

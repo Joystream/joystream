@@ -116,12 +116,14 @@ pub fn add_entity_schemas_support() -> (Entity<Runtime>, Entity<Runtime>) {
     ));
 
     // Update supported schemas set and properties of first entity
-    first_entity.supported_schemas =
+    *first_entity.get_supported_schemas_mut() =
         BTreeSet::from_iter(vec![FIRST_SCHEMA_ID, SECOND_SCHEMA_ID].into_iter());
 
     first_schema_property_values.append(&mut second_schema_property_values);
 
-    first_entity.values = TestModule::make_output_property_values(first_schema_property_values);
+    first_entity.set_values(TestModule::make_output_property_values(
+        first_schema_property_values,
+    ));
 
     // Update reference counter of second entity
     let inbound_rc = InboundReferenceCounter::new(3, true);

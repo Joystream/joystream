@@ -36,8 +36,8 @@ fn update_class_schema_status_success() {
         let mut schema = Schema::new(BTreeSet::from_iter(vec![FIRST_PROPERTY_ID].into_iter()));
 
         schema.set_status(false);
-        class.properties = vec![property];
-        class.schemas = vec![schema];
+        class.set_properties(vec![property]);
+        *class.get_schemas_mut() = vec![schema];
 
         assert_eq!(class_by_id(FIRST_CLASS_ID), class);
 

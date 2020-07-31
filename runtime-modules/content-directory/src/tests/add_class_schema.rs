@@ -38,8 +38,8 @@ fn add_class_schema_success() {
         // Ensure class schemas added succesfully
         let mut class = create_class_with_default_permissions();
 
-        class.properties = vec![first_property, second_property];
-        class.schemas = vec![
+        class.set_properties(vec![first_property, second_property]);
+        *class.get_schemas_mut() = vec![
             Schema::new(BTreeSet::from_iter(vec![FIRST_PROPERTY_ID].into_iter())),
             Schema::new(BTreeSet::from_iter(
                 vec![FIRST_PROPERTY_ID, SECOND_PROPERTY_ID].into_iter(),
@@ -397,7 +397,7 @@ fn add_class_schema_property_description_too_short() {
 }
 
 #[test]
-fn add_class_schema_property_text_property_is_too_long() {
+fn add_class_schema_text_property_is_too_long() {
     with_test_externalities(|| {
         // Create simple class with default permissions
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
@@ -417,6 +417,33 @@ fn add_class_schema_property_text_property_is_too_long() {
         assert_failure(
             add_class_schema_result,
             ERROR_TEXT_PROP_IS_TOO_LONG,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
+fn add_class_schema_text_hash_property_is_too_long() {
+    with_test_externalities(|| {
+        // Create simple class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+        // Runtime tested state before call
+
+        // Events number before tested calls
+        let number_of_events_before_call = System::events().len();
+
+        let property = Property::<Runtime>::invalid(InvalidPropertyType::TextHashIsTooLong);
+
+        // Make an attempt to add class schema, providing property with Hash type,
+        // which HashedTextMaxLength exceeds corresponding HashedTextMaxLengthConstraint
+        let add_class_schema_result =
+            add_class_schema(LEAD_ORIGIN, FIRST_CLASS_ID, BTreeSet::new(), vec![property]);
+
+        // Failure checked
+        assert_failure(
+            add_class_schema_result,
+            ERROR_HASHED_TEXT_PROP_IS_TOO_LONG,
             number_of_events_before_call,
         );
     })

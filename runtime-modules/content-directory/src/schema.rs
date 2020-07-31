@@ -19,7 +19,7 @@ pub type VecMaxLength = u16;
 pub type TextMaxLength = u16;
 
 /// Type representing max length of text property type, that will be subsequently hashed
-pub type HashedTextMaxLength = u16;
+pub type HashedTextMaxLength = Option<u16>;
 
 /// Type identificator for property id
 pub type PropertyId = u16;
@@ -130,7 +130,7 @@ impl<T: Trait> Default for SingleValuePropertyType<T> {
 }
 
 impl<T: Trait> SingleValuePropertyType<T> {
-    /// Ensure `Type` specific `TextMaxLengthConstraint` satisfied
+    /// Ensure `Type` specific `TextMaxLengthConstraint` or `HashedTextMaxLengthConstraint` satisfied
     fn ensure_property_type_size_is_valid(&self) -> dispatch::Result {
         if let Type::Text(text_max_len) = self.0 {
             ensure!(
@@ -138,6 +138,14 @@ impl<T: Trait> SingleValuePropertyType<T> {
                 ERROR_TEXT_PROP_IS_TOO_LONG
             );
         }
+
+        if let Type::Hash(hashed_text_max_len) = self.0 {
+            ensure!(
+                hashed_text_max_len <= T::HashedTextMaxLengthConstraint::get(),
+                ERROR_HASHED_TEXT_PROP_IS_TOO_LONG
+            );
+        }
+
         Ok(())
     }
 }
@@ -429,6 +437,16 @@ impl<T: Trait> Property<T> {
                 validate_property_vector_length_after_value_insert(vec, max_vec_len)
             }
             (
+                InputValue::TextToHash(text_item),
+                VecOutputValue::Hash(vec),
+                Type::Hash(text_max_len),
+            ) => {
+                if let Some(text_max_len) = text_max_len {
+                    Self::validate_max_len_of_text_to_be_hashed(text_item, *text_max_len)?;
+                }
+                validate_property_vector_length_after_value_insert(vec, max_vec_len)
+            }
+            (
                 InputValue::Reference(entity_id),
                 VecOutputValue::Reference(vec),
                 Type::Reference(class_id, same_controller_status),
@@ -462,7 +480,7 @@ impl<T: Trait> Property<T> {
             }
             (
                 Some(InputValue::TextToHash(text_to_be_hashed)),
-                Some(Type::Hash(text_to_be_hashed_max_len)),
+                Some(Type::Hash(Some(text_to_be_hashed_max_len))),
             ) => Self::validate_max_len_of_text_to_be_hashed(
                 text_to_be_hashed,
                 *text_to_be_hashed_max_len,
@@ -481,7 +499,7 @@ impl<T: Trait> Property<T> {
 
     pub fn validate_max_len_of_text_to_be_hashed(
         text_to_be_hashed: &[u8],
-        text_to_be_hashed_max_len: HashedTextMaxLength,
+        text_to_be_hashed_max_len: u16,
     ) -> dispatch::Result {
         ensure!(
             text_to_be_hashed.len() <= text_to_be_hashed_max_len as usize,
@@ -520,7 +538,9 @@ impl<T: Trait> Property<T> {
             VecInputValue::Int64(vec) => Self::validate_vec_len(vec, max_len),
             VecInputValue::TextToHash(vec) => {
                 Self::validate_vec_len(vec, max_len)?;
-                if let Type::Hash(text_to_be_hashed_max_len) = vec_property_type.get_vec_type() {
+                if let Type::Hash(Some(text_to_be_hashed_max_len)) =
+                    vec_property_type.get_vec_type()
+                {
                     for text_to_be_hashed_item in vec.iter() {
                         Self::validate_max_len_of_text_to_be_hashed(
                             text_to_be_hashed_item,
@@ -574,6 +594,7 @@ impl<T: Trait> Property<T> {
                 | (InputValue::Int32(_), Type::Int32)
                 | (InputValue::Int64(_), Type::Int64)
                 | (InputValue::Text(_), Type::Text(_))
+                | (InputValue::TextToHash(_), Type::Hash(_))
                 | (InputValue::Reference(_), Type::Reference(_, _)) => true,
                 _ => false,
             },
@@ -589,6 +610,7 @@ impl<T: Trait> Property<T> {
                 | (VecInputValue::Int32(_), Type::Int32)
                 | (VecInputValue::Int64(_), Type::Int64)
                 | (VecInputValue::Text(_), Type::Text(_))
+                | (VecInputValue::TextToHash(_), Type::Hash(_))
                 | (VecInputValue::Reference(_), Type::Reference(_, _)) => true,
                 _ => false,
             },
@@ -666,7 +688,7 @@ impl<T: Trait> Property<T> {
 
         let entity = Module::<T>::entity_by_id(entity_id);
         ensure!(
-            entity.class_id == class_id,
+            entity.get_class_id() == class_id,
             ERROR_REFERENCED_ENTITY_DOES_NOT_MATCH_ITS_CLASS
         );
         Ok(entity)

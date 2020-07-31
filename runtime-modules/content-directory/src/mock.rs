@@ -106,7 +106,7 @@ thread_local! {
 
     static VEC_MAX_LENGTH_CONSTRAINT: RefCell<VecMaxLength> = RefCell::new(0);
     static TEXT_MAX_LENGTH_CONSTRAINT: RefCell<TextMaxLength> = RefCell::new(0);
-    static HASHED_TEXT_MAX_LENGTH_CONSTRAINT: RefCell<TextMaxLength> = RefCell::new(0);
+    static HASHED_TEXT_MAX_LENGTH_CONSTRAINT: RefCell<HashedTextMaxLength> = RefCell::new(Some(0));
 
     static INDIVIDUAL_ENTITIES_CREATION_LIMIT: RefCell<EntityId> = RefCell::new(0);
 }
@@ -343,7 +343,7 @@ impl Default for ExtBuilder {
 
             vec_max_length_constraint: 200,
             text_max_length_constraint: 5000,
-            hashed_text_max_length_constraint: 25000,
+            hashed_text_max_length_constraint: Some(25000),
 
             individual_entities_creation_limit: 50,
         }
@@ -545,30 +545,37 @@ pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> Result<()
     match class_type {
         ClassType::Valid => (),
         ClassType::NameTooShort => {
-            class.name = generate_text(ClassNameLengthConstraint::get().min() as usize - 1);
+            class.set_name(generate_text(
+                ClassNameLengthConstraint::get().min() as usize - 1,
+            ));
         }
         ClassType::NameTooLong => {
-            class.name = generate_text(ClassNameLengthConstraint::get().max() as usize + 1);
+            class.set_name(generate_text(
+                ClassNameLengthConstraint::get().max() as usize + 1,
+            ));
         }
         ClassType::DescriptionTooLong => {
-            class.description =
-                generate_text(ClassDescriptionLengthConstraint::get().max() as usize + 1);
+            class.set_description(generate_text(
+                ClassDescriptionLengthConstraint::get().max() as usize + 1,
+            ));
         }
         ClassType::DescriptionTooShort => {
-            class.description =
-                generate_text(ClassDescriptionLengthConstraint::get().min() as usize - 1);
+            class.set_description(generate_text(
+                ClassDescriptionLengthConstraint::get().min() as usize - 1,
+            ));
         }
         ClassType::InvalidMaximumEntitiesCount => {
-            class.maximum_entities_count = MaxNumberOfEntitiesPerClass::get() + 1;
+            class.set_maximum_entities_count(MaxNumberOfEntitiesPerClass::get() + 1);
         }
         ClassType::InvalidDefaultVoucherUpperBound => {
-            class.default_entity_creation_voucher_upper_bound =
-                IndividualEntitiesCreationLimit::get() + 1;
+            class.set_default_entity_creation_voucher_upper_bound(
+                IndividualEntitiesCreationLimit::get() + 1,
+            );
         }
         ClassType::DefaultVoucherUpperBoundExceedsMaximumEntitiesCount => {
-            class.default_entity_creation_voucher_upper_bound = 5;
+            class.set_maximum_entities_count(5);
 
-            class.maximum_entities_count = 3;
+            class.set_maximum_entities_count(3);
         }
         ClassType::MaintainersLimitReached => {
             let mut maintainers = BTreeSet::new();
@@ -584,11 +591,11 @@ pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> Result<()
     };
     TestModule::create_class(
         Origin::signed(lead_origin),
-        class.name,
-        class.description,
-        class.class_permissions,
-        class.maximum_entities_count,
-        class.default_entity_creation_voucher_upper_bound,
+        class.get_name().to_owned(),
+        class.get_description().to_owned(),
+        class.get_permissions_ref().to_owned(),
+        class.get_maximum_entities_count(),
+        class.get_default_entity_creation_voucher_upper_bound(),
     )
 }
 
@@ -864,6 +871,7 @@ pub enum InvalidPropertyType {
     DescriptionTooLong,
     DescriptionTooShort,
     TextIsTooLong,
+    TextHashIsTooLong,
     VecIsTooLong,
 }
 
@@ -921,6 +929,12 @@ impl<T: Trait> Property<T> {
                 default_property.property_type =
                     PropertyType::<Runtime>::single_text(TextMaxLengthConstraint::get() + 1);
             }
+            InvalidPropertyType::TextHashIsTooLong => {
+                if let Some(hashed_text_max_len) = HashedTextMaxLengthConstraint::get() {
+                    default_property.property_type =
+                        PropertyType::<Runtime>::single_text_hash(Some(hashed_text_max_len + 1));
+                }
+            }
             InvalidPropertyType::VecIsTooLong => {
                 default_property.property_type = PropertyType::<Runtime>::vec_reference(
                     FIRST_CLASS_ID,
@@ -957,6 +971,20 @@ impl<T: Trait> PropertyType<T> {
         let text_type = SingleValuePropertyType(Type::<Runtime>::Text(text_max_len));
         PropertyType::<Runtime>::Single(text_type)
     }
+
+    pub fn single_text_hash(text_hash_max_len: HashedTextMaxLength) -> PropertyType<Runtime> {
+        let text_type = SingleValuePropertyType(Type::<Runtime>::Hash(text_hash_max_len));
+        PropertyType::<Runtime>::Single(text_type)
+    }
+
+    pub fn vec_text_hash(
+        text_hash_max_len: HashedTextMaxLength,
+        vec_max_length: VecMaxLength,
+    ) -> PropertyType<Runtime> {
+        let vec_type = Type::<Runtime>::Hash(text_hash_max_len);
+        let vec_text_hash = VecPropertyType::<Runtime>::new(vec_type, vec_max_length);
+        PropertyType::<Runtime>::Vector(vec_text_hash)
+    }
 }
 
 impl<T: Trait> InputPropertyValue<T> {
@@ -970,8 +998,18 @@ impl<T: Trait> InputPropertyValue<T> {
         InputPropertyValue::<Runtime>::Vector(vec_value)
     }
 
+    pub fn vec_text_to_hash(texts: Vec<Vec<u8>>) -> InputPropertyValue<Runtime> {
+        let vec_value = VecInputValue::<Runtime>::TextToHash(texts);
+        InputPropertyValue::<Runtime>::Vector(vec_value)
+    }
+
     pub fn single_text(text_len: TextMaxLength) -> InputPropertyValue<Runtime> {
         let text_value = InputValue::<Runtime>::Text(generate_text(text_len as usize));
+        InputPropertyValue::<Runtime>::Single(text_value)
+    }
+
+    pub fn single_text_to_hash(text_len: TextMaxLength) -> InputPropertyValue<Runtime> {
+        let text_value = InputValue::<Runtime>::TextToHash(generate_text(text_len as usize));
         InputPropertyValue::<Runtime>::Single(text_value)
     }
 }

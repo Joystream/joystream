@@ -44,7 +44,7 @@ fn create_entity_success() {
 
         // Ensure  entity creation voucher with `default_entity_creation_voucher_upper_bound` for given entity controller created succesfully.
         let mut entity_voucher =
-            EntityCreationVoucher::new(class.default_entity_creation_voucher_upper_bound);
+            EntityCreationVoucher::new(class.get_default_entity_creation_voucher_upper_bound());
         entity_voucher.increment_created_entities_count();
 
         let entity_controller = EntityController::from_actor(&actor);
