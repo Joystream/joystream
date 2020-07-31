@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
+    <link rel="shortcut icon" href="favicon.ico">
+    <title><%= htmlWebpackPlugin.options.PAGE_TITLE %></title>
+    <script type="text/javascript" src="/env-config.js"></script>
+  </head>
+  <body>
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <div id="root"></div>
+    <div id="tooltips"></div>
+    <script>
+      if (window.self !== window.top) {
+        window.top.location.href = window.location.href;
+      }
+    </script>
+  </body>
+</html>
