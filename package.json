@@ -15,8 +15,6 @@
     "tests/network-tests",
     "cli",
     "types",
-    "pioneer",
-    "pioneer/packages/*",
     "storage-node",
     "storage-node/packages/*",
     "devops/eslint-config",
