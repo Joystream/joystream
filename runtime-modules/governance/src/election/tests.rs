@@ -1224,14 +1224,6 @@ fn locks_expires_on_next_council_election() {
 
 #[test]
 #[ignore]
-fn locks_expires_on_next_council_election() {
-    initial_test_ext().execute_with(|| {
-        // check that lock expires when next election starts reveal period
-    })
-}
-
-#[test]
-#[ignore]
 fn locks_can_be_reused_for_following_election() {
     initial_test_ext().execute_with(|| {
         // check that locked funds can be used for candidacy in following council election
