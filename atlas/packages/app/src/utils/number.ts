@@ -14,5 +14,10 @@ export const formatNumberShort = (num: number): string => {
     suffix = 'K'
   }
 
-  return `${value % 1 === 0 ? value : value.toFixed(1)}${suffix}`
+  let formattedValue = value.toFixed(1)
+  if (formattedValue.endsWith('.0')) {
+    formattedValue = formattedValue.slice(0, formattedValue.length - 2)
+  }
+
+  return `${formattedValue}${suffix}`
 }
