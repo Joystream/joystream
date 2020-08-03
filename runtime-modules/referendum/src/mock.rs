@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 /////////////////// Configuration //////////////////////////////////////////////
-use crate::*;
+use crate::{Error, Event, Instance, Module, ReferendumStage, Trait};
 
 use primitives::H256;
 use runtime_io;
@@ -10,7 +10,9 @@ use sr_primitives::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_origin, parameter_types};
+use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use std::marker::PhantomData;
+use system::RawOrigin;
 
 use crate::GenesisConfig;
 
@@ -27,22 +29,40 @@ pub struct Runtime;
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Instance0;
 
-impl<I: Instance> Trait<I> for Runtime {
-    type Event = Event<Self, I>;
+parameter_types! {
+    pub const MaxReferendumOptions: u64 = 10;
+    pub const VoteStageDuration: u64 = 5;
+}
 
-    type TmpDummy = u64;
+impl<I: Instance> Trait<I> for Runtime {
+    //type Event = Event<Self, I>;
+    type Event = ();
+
+    type MaxReferendumOptions = MaxReferendumOptions;
+    type ReferendumOption = u64;
+
+    type VoteStageDuration = VoteStageDuration;
 
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool {
         *account_id == USER_ADMIN
     }
 }
 
-pub type TestModule = Module<Runtime, Instance0>;
-
 /////////////////// Module implementation //////////////////////////////////////
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}
+}
+
+mod event_mod {
+    pub use crate::Event;
+}
+
+// TODO: there seems to be bug in substrate - it can't handle instantiable pallet without default instance - report the bug + don't test events for now
+impl_outer_event! {
+    pub enum TestEvent for Runtime {
+        //event_mod<T>, // not working due to bug in substrate
+    }
 }
 
 parameter_types! {
@@ -58,8 +78,8 @@ parameter_types! {
 impl Instance for Instance0 {
     const PREFIX: &'static str = "Instance0";
 
-    const PREFIX_FOR_Tmp: &'static str = "Instance0_tmp";
     const PREFIX_FOR_Stage: &'static str = "Instance0_stage";
+    const PREFIX_FOR_ReferendumOptions: &'static str = "Instance0_referendum_options";
 }
 
 impl system::Trait for Runtime {
@@ -72,6 +92,7 @@ impl system::Trait for Runtime {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
+    //type Event = TestEvent;
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
@@ -84,17 +105,17 @@ impl system::Trait for Runtime {
 
 #[allow(dead_code)]
 #[derive(Clone)]
-pub enum OriginType {
-    Signed(<Runtime as system::Trait>::AccountId),
+pub enum OriginType<AccountId> {
+    Signed(AccountId),
     //Inherent, <== did not find how to make such an origin yet
     Root,
 }
 
 /////////////////// Utility mocks //////////////////////////////////////////////
 
-pub fn mock_origin(origin: OriginType) -> mock::Origin {
+pub fn mock_origin<T: Trait<I>, I: Instance>(origin: OriginType<T::AccountId>) -> T::Origin {
     match origin {
-        OriginType::Signed(account_id) => Origin::signed(account_id),
+        OriginType::Signed(account_id) => T::Origin::from(RawOrigin::Signed(account_id)),
         _ => panic!("not implemented"),
     }
 }
@@ -102,7 +123,8 @@ pub fn mock_origin(origin: OriginType) -> mock::Origin {
 pub fn default_genesis_config_generic<I: Instance>() -> GenesisConfig<Runtime, I> {
     GenesisConfig::<Runtime, I> {
         stage: (ReferendumStage::default(), 0),
-        tmp: 0,
+        //referendum_options: None,
+        referendum_options: vec![],
     }
 }
 
@@ -124,9 +146,29 @@ pub fn build_test_externalities<I: Instance>(
 
 /////////////////// Mocks of Module's actions //////////////////////////////////
 
-pub fn mock_start_referendum(origin: OriginType, expected_result: Result<(), Error>) -> () {
-    assert_eq!(
-        TestModule::start_referendum(mock_origin(origin),),
-        expected_result,
-    )
+pub struct InstanceMocks<T: Trait<I>, I: Instance> {
+    _dummy: PhantomData<(T, I)>, // 0-sized data meant only to bound generic parameters
+}
+
+impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
+    pub fn start_referendum(
+        origin: OriginType<T::AccountId>,
+        options: Vec<T::ReferendumOption>,
+        expected_result: Result<(), Error>,
+    ) -> () {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T, I>::start_referendum(mock_origin::<T, I>(origin), options,),
+            expected_result,
+        );
+        /*
+        // check event was emitted
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::event_mod(RawEvent::ReferendumStarted(
+                options
+            ))
+        );
+        */
+    }
 }
