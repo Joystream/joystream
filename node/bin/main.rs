@@ -14,27 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Substrate Node Template CLI library.
+//! Joystream Node.
 
 #![warn(missing_docs)]
-#![warn(unused_extern_crates)]
 
-use joystream_node::cli;
-pub use substrate_cli::{error, IntoExit, VersionInfo};
-
-fn main() {
-    let version = VersionInfo {
-        name: "Joystream Node",
-        commit: env!("VERGEN_SHA_SHORT"),
-        version: env!("CARGO_PKG_VERSION"),
-        executable_name: "joystream-node",
-        author: "Joystream",
-        description: "Joystream substrate node",
-        support_url: "https://www.joystream.org/",
-    };
-
-    if let Err(e) = cli::run(::std::env::args(), cli::Exit, version) {
-        eprintln!("Fatal error: {}\n\n{:?}", e, e);
-        std::process::exit(1)
-    }
+fn main() -> sc_cli::Result<()> {
+    joystream_node::command::run()
 }
