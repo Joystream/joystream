@@ -4,14 +4,12 @@ use super::{Error, Trait};
 use crate::mock::*;
 
 type Mocks = InstanceMocks<Runtime, Instance0>;
+type MockUtils = InstanceMockUtils<Runtime, Instance0>;
 
 /////////////////// Lifetime - referendum start ////////////////////////////////
 #[test]
 fn referendum_start() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        let origin = OriginType::Signed(USER_ADMIN);
+    MockUtils::origin_access(USER_ADMIN, |origin| {
         let options = vec![0];
 
         Mocks::start_referendum(origin, options, Ok(()));
@@ -20,10 +18,7 @@ fn referendum_start() {
 
 #[test]
 fn referendum_start_access_restricted() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        let origin = OriginType::Signed(USER_REGULAR);
+    MockUtils::origin_access(USER_REGULAR, |origin| {
         let options = vec![0];
 
         Mocks::start_referendum(origin, options, Err(Error::OriginNotSuperUser));
@@ -98,13 +93,115 @@ fn referendum_start_not_unique_options() {
     });
 }
 
+/////////////////// Lifetime - voting //////////////////////////////////////////
+#[test]
+fn voting() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+
+        let options = vec![0];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let commitment = MockUtils::vote_commitment(account_id, options[0]);
+
+        Mocks::start_referendum(origin.clone(), options, Ok(()));
+
+        Mocks::vote(origin.clone(), commitment, stake, Ok(()));
+    });
+}
+
+#[test]
+fn voting_referendum_not_running() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+
+        let options = vec![0];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let commitment = MockUtils::vote_commitment(account_id, options[0]);
+
+        Mocks::vote(origin.clone(), commitment, stake, Err(Error::ReferendumNotRunning));
+    });
+}
+
 /////////////////// Lifetime - voting finish ///////////////////////////////////
 
 #[test]
-#[ignore]
-fn finish_voting() {}
+fn finish_voting() {
+    MockUtils::origin_access(USER_ADMIN, |origin| {
+        let options = vec![0];
 
-/////////////////// Lifetime - start revealing /////////////////////////////////
+        Mocks::start_referendum(origin.clone(), options, Ok(()));
+
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::finish_voting(origin.clone(), Ok(()));
+    });
+}
+
+#[test]
+fn finish_voting_access_restricted() {
+    MockUtils::origin_access(USER_REGULAR, |origin| {
+        let options = vec![0];
+
+        let superuser_origin = OriginType::Signed(USER_ADMIN);
+
+        Mocks::start_referendum(superuser_origin, options, Ok(()));
+        Mocks::finish_voting(origin, Err(Error::OriginNotSuperUser));
+    });
+}
+
+#[test]
+fn finish_voting_referendum_not_running() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let origin = OriginType::Signed(USER_ADMIN);
+
+        Mocks::finish_voting(origin, Err(Error::ReferendumNotRunning));
+    });
+}
+
+#[test]
+fn finish_voting_voting_not_finished() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let origin = OriginType::Signed(USER_ADMIN);
+        let options = vec![0];
+
+        Mocks::start_referendum(origin.clone(), options, Ok(()));
+
+        for _ in 0..voting_stage_duration {
+            MockUtils::increase_block_number(1);
+
+            Mocks::finish_voting(origin.clone(), Err(Error::VotingNotFinishedYet));
+        }
+
+        MockUtils::increase_block_number(1);
+
+        Mocks::finish_voting(origin.clone(), Ok(()));
+    });
+}
+
+#[test]
+#[ignore]
+fn finish_voting_no_vote_revealed() {}
+
+/////////////////// Lifetime - revealing ///////////////////////////////////////
+
+#[test]
+#[ignore]
+fn reveal() {}
+
+/////////////////// Lifetime - revealing finish ////////////////////////////////
 
 #[test]
 #[ignore]
