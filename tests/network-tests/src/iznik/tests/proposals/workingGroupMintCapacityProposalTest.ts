@@ -12,6 +12,8 @@ import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
 import { ElectCouncilFixture } from '../fixtures/councilElectionModule'
 import { VoteForProposalFixture, WorkingGroupMintCapacityProposalFixture } from '../fixtures/proposalsModule'
 import { ExpectMintCapacityChangedFixture } from '../fixtures/workingGroupModule'
+import { PaidTermId } from '@nicaea/types/members'
+import { ProposalId } from '@nicaea/types/proposals'
 
 tap.mocha.describe('Set storage working group mint capacity scenario', async () => {
   initConfig()
@@ -28,7 +30,7 @@ tap.mocha.describe('Set storage working group mint capacity scenario', async () 
   const m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
 
-  const paidTerms: number = +process.env.MEMBERSHIP_PAID_TERMS!
+  const paidTerms: PaidTermId = new PaidTermId(+process.env.MEMBERSHIP_PAID_TERMS!)
   const K: number = +process.env.COUNCIL_ELECTION_K!
   const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!)
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!)
@@ -86,7 +88,7 @@ tap.mocha.describe('Set storage working group mint capacity scenario', async () 
       apiWrapper,
       m2KeyPairs,
       sudo,
-      workingGroupMintCapacityProposalFixture.getResult()!
+      workingGroupMintCapacityProposalFixture.getResult() as ProposalId
     )
     voteForProposalFixture.runner(false)
     await expectMintCapacityChanged.runner(false)

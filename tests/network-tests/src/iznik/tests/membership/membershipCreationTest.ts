@@ -8,6 +8,7 @@ import { ApiWrapper } from '../../utils/apiWrapper'
 import { closeApi } from '../../utils/closeApi'
 import { BuyMembershipHappyCaseFixture, BuyMembershipWithInsufficienFundsFixture } from '../fixtures/membershipModule'
 import { Utils } from '../../utils/utils'
+import { PaidTermId } from '@nicaea/types/members'
 
 tap.mocha.describe('Membership creation scenario', async () => {
   initConfig()
@@ -23,7 +24,7 @@ tap.mocha.describe('Membership creation scenario', async () => {
   const N: number = +process.env.MEMBERSHIP_CREATION_N!
   const nKeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const aKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
-  const paidTerms: number = +process.env.MEMBERSHIP_PAID_TERMS!
+  const paidTerms: PaidTermId = new PaidTermId(+process.env.MEMBERSHIP_PAID_TERMS!)
 
   const durationInBlocks = 7
 

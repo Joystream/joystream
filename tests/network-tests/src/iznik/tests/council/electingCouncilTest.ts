@@ -10,6 +10,7 @@ import { closeApi } from '../../utils/closeApi'
 import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
 import { ElectCouncilFixture } from '../fixtures/councilElectionModule'
 import { Utils } from '../../utils/utils'
+import { PaidTermId } from '@nicaea/types/members'
 
 tap.mocha.describe('Electing council scenario', async () => {
   initConfig()
@@ -25,7 +26,7 @@ tap.mocha.describe('Electing council scenario', async () => {
   const N: number = +process.env.MEMBERSHIP_CREATION_N!
   const m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
-  const paidTerms: number = +process.env.MEMBERSHIP_PAID_TERMS!
+  const paidTerms: PaidTermId = new PaidTermId(+process.env.MEMBERSHIP_PAID_TERMS!)
   const K: number = +process.env.COUNCIL_ELECTION_K!
   const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!)
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!)

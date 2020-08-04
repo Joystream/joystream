@@ -2,28 +2,26 @@ import { ApiPromise, WsProvider } from '@polkadot/api'
 import { Bytes, Option, u32, Vec } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { MemberId, PaidMembershipTerms, UserInfo } from '@nicaea/types/members'
+import { MemberId, PaidMembershipTerms, PaidTermId, UserInfo } from '@nicaea/types/members'
 import { Mint, MintId } from '@nicaea/types/mint'
 import { Lead, LeadId } from '@nicaea/types/content-working-group'
 import {
   Application,
   ApplicationIdToWorkerIdMap,
-  Opening,
   RewardPolicy,
   SlashingTerms,
   Worker,
   WorkerId,
   WorkingGroupOpeningPolicyCommitment,
 } from '@nicaea/types/working-group'
-import { RoleParameters } from '@nicaea/types/roles'
-import { Seat } from '@nicaea/types/council'
+import { ElectionStake, Seat } from '@nicaea/types/council'
 import { AccountId, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender } from './sender'
 import { Utils } from './utils'
-import { Stake, StakedState } from '@nicaea/types/stake'
-import { RewardRelationship } from '@nicaea/types/recurring-rewards'
+import { Stake, StakedState, StakeId } from '@nicaea/types/stake'
+import { RewardRelationship, RewardRelationshipId } from '@nicaea/types/recurring-rewards'
 import {
   ActivateOpeningAt,
   Application as HiringApplication,
@@ -33,7 +31,7 @@ import {
   OpeningId,
   StakingPolicy,
 } from '@nicaea/types/hiring'
-import { FillOpeningParameters } from '@nicaea/types/proposals'
+import { FillOpeningParameters, ProposalId } from '@nicaea/types/proposals'
 import { WorkingGroup } from '@nicaea/types/common'
 
 export enum WorkingGroups {
@@ -69,12 +67,15 @@ export class ApiWrapper {
 
   public async buyMembership(
     account: KeyringPair,
-    paidTermsId: number,
+    paidTermsId: PaidTermId,
     name: string,
     expectFailure = false
   ): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ 'handle': name, 'avatar_uri': '', 'about': '' })),
+      (this.api.tx.members.buyMembership(
+        paidTermsId,
+        new UserInfo({ 'handle': name, 'avatar_uri': '', 'about': '' })
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       expectFailure
     )
@@ -92,12 +93,12 @@ export class ApiWrapper {
     return this.sender.signAndSend(this.api.tx.balances.transfer(to, amount), from)
   }
 
-  public getPaidMembershipTerms(paidTermsId: number): Promise<Option<PaidMembershipTerms>> {
+  public getPaidMembershipTerms(paidTermsId: PaidTermId): Promise<Option<PaidMembershipTerms>> {
     return this.api.query.members.paidMembershipTermsById<Option<PaidMembershipTerms>>(paidTermsId)
   }
 
-  public getMembershipFee(paidTermsId: number): Promise<BN> {
-    return this.getPaidMembershipTerms(paidTermsId).then((terms) => terms.unwrap().fee.toBn())
+  public getMembershipFee(paidTermsId: PaidTermId): Promise<BN> {
+    return this.getPaidMembershipTerms(paidTermsId).then((terms) => terms.unwrap().fee)
   }
 
   public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN): Promise<void[]> {
@@ -109,18 +110,21 @@ export class ApiWrapper {
   }
 
   private getBaseTxFee(): BN {
-    return this.api.createType('BalanceOf', this.api.consts.transactionPayment.transactionBaseFee).toBn()
+    return this.api.createType('BalanceOf', this.api.consts.transactionPayment.transactionBaseFee)
   }
 
   private estimateTxFee(tx: SubmittableExtrinsic<'promise'>): BN {
     const baseFee: BN = this.getBaseTxFee()
-    const byteFee: BN = this.api.createType('BalanceOf', this.api.consts.transactionPayment.transactionByteFee).toBn()
+    const byteFee: BN = this.api.createType('BalanceOf', this.api.consts.transactionPayment.transactionByteFee)
     return Utils.calcTxLength(tx).mul(byteFee).add(baseFee)
   }
 
-  public estimateBuyMembershipFee(account: KeyringPair, paidTermsId: number, name: string): BN {
+  public estimateBuyMembershipFee(account: KeyringPair, paidTermsId: PaidTermId, name: string): BN {
     return this.estimateTxFee(
-      this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ 'handle': name, 'avatar_uri': '', 'about': '' }))
+      (this.api.tx.members.buyMembership(
+        paidTermsId,
+        new UserInfo({ 'handle': name, 'avatar_uri': '', 'about': '' })
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
@@ -254,7 +258,13 @@ export class ApiWrapper {
   }
 
   public estimateVoteForProposalFee(): BN {
-    return this.estimateTxFee(this.api.tx.proposalsEngine.vote(0, 0, 'Approve'))
+    return this.estimateTxFee(
+      (this.api.tx.proposalsEngine.vote(
+        new MemberId(0),
+        new ProposalId(0),
+        'Approve'
+      ) as unknown) as SubmittableExtrinsic<'promise'>
+    )
   }
 
   public estimateAddOpeningFee(module: WorkingGroups): BN {
@@ -296,75 +306,97 @@ export class ApiWrapper {
   }
 
   public estimateAcceptApplicationsFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].acceptApplications(0))
+    return this.estimateTxFee(
+      (this.api.tx[module].acceptApplications(new OpeningId(0)) as unknown) as SubmittableExtrinsic<'promise'>
+    )
   }
 
   public estimateApplyOnOpeningFee(account: KeyringPair, module: WorkingGroups): BN {
     return this.estimateTxFee(
-      this.api.tx[module].applyOnOpening(
-        0,
-        0,
+      (this.api.tx[module].applyOnOpening(
+        new MemberId(0),
+        new OpeningId(0),
         account.address,
         0,
         0,
         'Some testing text used for estimation purposes which is longer than text expected during the test'
-      )
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateBeginApplicantReviewFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].beginApplicantReview(0))
+    return this.estimateTxFee(
+      (this.api.tx[module].beginApplicantReview(new OpeningId(0)) as unknown) as SubmittableExtrinsic<'promise'>
+    )
   }
 
   public estimateFillOpeningFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      this.api.tx[module].fillOpening(0, [0], {
+      (this.api.tx[module].fillOpening(new OpeningId(0), [new ApplicationId(0)], {
         'amount_per_payout': 0,
         'next_payment_at_block': 0,
         'payout_interval': 0,
-      })
+      }) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateIncreaseStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].increaseStake(0, 0))
+    return this.estimateTxFee(
+      (this.api.tx[module].increaseStake(new WorkerId(0), 0) as unknown) as SubmittableExtrinsic<'promise'>
+    )
   }
 
   public estimateDecreaseStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].decreaseStake(0, 0))
+    return this.estimateTxFee(
+      (this.api.tx[module].decreaseStake(new WorkerId(0), 0) as unknown) as SubmittableExtrinsic<'promise'>
+    )
   }
 
   public estimateUpdateRoleAccountFee(address: string, module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].updateRoleAccount(0, address))
+    return this.estimateTxFee(
+      (this.api.tx[module].updateRoleAccount(new WorkerId(0), address) as unknown) as SubmittableExtrinsic<'promise'>
+    )
   }
 
   public estimateUpdateRewardAccountFee(address: string, module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].updateRewardAccount(0, address))
+    return this.estimateTxFee(
+      (this.api.tx[module].updateRewardAccount(new WorkerId(0), address) as unknown) as SubmittableExtrinsic<'promise'>
+    )
   }
 
   public estimateLeaveRoleFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].leaveRole(0, 'Long justification text'))
+    return this.estimateTxFee(
+      (this.api.tx[module].leaveRole(new WorkerId(0), 'Long justification text') as unknown) as SubmittableExtrinsic<
+        'promise'
+      >
+    )
   }
 
   public estimateWithdrawApplicationFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].withdrawApplication(0))
+    return this.estimateTxFee(
+      (this.api.tx[module].withdrawApplication(new ApplicationId(0)) as unknown) as SubmittableExtrinsic<'promise'>
+    )
   }
 
   public estimateTerminateApplicationFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].terminateApplication(0))
+    return this.estimateTxFee(
+      (this.api.tx[module].terminateApplication(new ApplicationId(0)) as unknown) as SubmittableExtrinsic<'promise'>
+    )
   }
 
   public estimateSlashStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(this.api.tx[module].slashStake(0, 0))
+    return this.estimateTxFee(
+      (this.api.tx[module].slashStake(new WorkerId(0), 0) as unknown) as SubmittableExtrinsic<'promise'>
+    )
   }
 
   public estimateTerminateRoleFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      this.api.tx[module].terminateRole(
-        0,
+      (this.api.tx[module].terminateRole(
+        new WorkerId(0),
         'Long justification text explaining why the worker role will be terminated',
         false
-      )
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
@@ -402,8 +434,8 @@ export class ApiWrapper {
     })
 
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
-        0,
+      (this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
+        new MemberId(0),
         'some long title for the purpose of testing',
         'some long description for the purpose of testing',
         0,
@@ -413,118 +445,118 @@ export class ApiWrapper {
           'human_readable_text': 'Opening readable text',
           'working_group': 'Storage',
         }
-      )
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateProposeBeginWorkingGroupLeaderApplicationReviewFee(): BN {
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
-        0,
+      (this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
+        new MemberId(0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
-        0,
+        new OpeningId(0),
         'Storage'
-      )
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateProposeFillLeaderOpeningFee(): BN {
     const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters({
-      opening_id: new BN(0) as OpeningId,
-      successful_application_id: new BN(0) as ApplicationId,
+      opening_id: new OpeningId(0),
+      successful_application_id: new ApplicationId(0),
       reward_policy: new Option(
         RewardPolicy,
         new RewardPolicy({
           amount_per_payout: new BN(1) as Balance,
           next_payment_at_block: new BN(99999) as BlockNumber,
-          payout_interval: new Option(u32, new BN(99999) as u32),
+          payout_interval: new Option(u32, new u32(99999)),
         })
       ),
       working_group: new WorkingGroup('Storage'),
     })
 
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
-        0,
+      (this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
+        new MemberId(0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
         fillOpeningParameters
-      )
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateProposeTerminateLeaderRoleFee(): BN {
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
-        0,
+      (this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
+        new MemberId(0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
         {
-          'worker_id': 0,
+          'worker_id': new WorkerId(0),
           'rationale': 'Exceptionaly long and extraordinary descriptive rationale',
           'slash': true,
           'working_group': 'Storage',
         }
-      )
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateProposeLeaderRewardFee(): BN {
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
-        0,
+      (this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
+        new MemberId(0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
-        0,
+        new WorkerId(0),
         0,
         'Storage'
-      )
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateProposeDecreaseLeaderStakeFee(): BN {
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
-        0,
+      (this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
+        new MemberId(0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
-        0,
+        new WorkerId(0),
         0,
         'Storage'
-      )
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateProposeSlashLeaderStakeFee(): BN {
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
-        0,
+      (this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
+        new MemberId(0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
-        0,
+        new WorkerId(0),
         0,
         'Storage'
-      )
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateProposeWorkingGroupMintCapacityFee(): BN {
     return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
-        0,
+      (this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
+        new MemberId(0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
         0,
         'Storage'
-      )
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
@@ -541,11 +573,7 @@ export class ApiWrapper {
   }
 
   public async getCouncilElectionStake(address: string): Promise<BN> {
-    // TODO alter then `applicantStake` type will be introduced
-    return this.api.query.councilElection.applicantStakes(address).then((stake) => {
-      const parsed = JSON.parse(stake.toString())
-      return new BN(parsed.new)
-    })
+    return (((await this.api.query.councilElection.applicantStakes(address)) as unknown) as ElectionStake).new
   }
 
   private voteForCouncilMember(account: KeyringPair, nominee: string, salt: string, stake: BN): Promise<void> {
@@ -612,10 +640,6 @@ export class ApiWrapper {
     )
   }
 
-  public sudoSetWorkingGroupMintCapacity(sudo: KeyringPair, capacity: BN, module: WorkingGroups): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.sudo.sudo(this.api.tx[module].setMintCapacity(capacity)), sudo, false)
-  }
-
   public getBestBlock(): Promise<BN> {
     return this.api.derive.chain.bestNumber()
   }
@@ -637,9 +661,15 @@ export class ApiWrapper {
     description: string,
     runtime: Bytes | string
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn()
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(memberId, name, description, stake, runtime),
+      (this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(
+        memberId,
+        name,
+        description,
+        stake,
+        runtime
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -652,9 +682,15 @@ export class ApiWrapper {
     description: string,
     text: string
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn()
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createTextProposal(memberId, name, description, stake, text),
+      (this.api.tx.proposalsCodex.createTextProposal(
+        memberId,
+        name,
+        description,
+        stake,
+        text
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -668,9 +704,16 @@ export class ApiWrapper {
     balance: BN,
     destination: string
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn()
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createSpendingProposal(memberId, title, description, stake, balance, destination),
+      (this.api.tx.proposalsCodex.createSpendingProposal(
+        memberId,
+        title,
+        description,
+        stake,
+        balance,
+        destination
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -683,15 +726,15 @@ export class ApiWrapper {
     stake: BN,
     balance: BN
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn()
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createSetContentWorkingGroupMintCapacityProposal(
+      (this.api.tx.proposalsCodex.createSetContentWorkingGroupMintCapacityProposal(
         memberId,
         title,
         description,
         stake,
         balance
-      ),
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -704,9 +747,15 @@ export class ApiWrapper {
     stake: BN,
     validatorCount: BN
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn()
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createSetValidatorCountProposal(memberId, title, description, stake, validatorCount),
+      (this.api.tx.proposalsCodex.createSetValidatorCountProposal(
+        memberId,
+        title,
+        description,
+        stake,
+        validatorCount
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -719,70 +768,14 @@ export class ApiWrapper {
     stake: BN,
     leadAccount: KeyringPair
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn()
-    const leadMemberId: BN = (await this.getMemberIds(leadAccount.address))[0].toBn()
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
+    const leadMemberId: MemberId = (await this.getMemberIds(leadAccount.address))[0]
     const addressString: string = leadAccount.address
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createSetLeadProposal(memberId, title, description, stake, [
+      (this.api.tx.proposalsCodex.createSetLeadProposal(memberId, title, description, stake, [
         leadMemberId,
         addressString,
-      ]),
-      account,
-      false
-    )
-  }
-
-  public async proposeEvictStorageProvider(
-    account: KeyringPair,
-    title: string,
-    description: string,
-    stake: BN,
-    storageProvider: string
-  ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn()
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createEvictStorageProviderProposal(
-        memberId,
-        title,
-        description,
-        stake,
-        storageProvider
-      ),
-      account,
-      false
-    )
-  }
-
-  public async proposeStorageRoleParameters(
-    account: KeyringPair,
-    title: string,
-    description: string,
-    stake: BN,
-    minStake: BN,
-    minActors: BN,
-    maxActors: BN,
-    reward: BN,
-    rewardPeriod: BN,
-    bondingPeriod: BN,
-    unbondingPeriod: BN,
-    minServicePeriod: BN,
-    startupGracePeriod: BN,
-    entryRequestFee: BN
-  ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn()
-    return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createSetStorageRoleParametersProposal(memberId, title, description, stake, [
-        minStake,
-        minActors,
-        maxActors,
-        reward,
-        rewardPeriod,
-        bondingPeriod,
-        unbondingPeriod,
-        minServicePeriod,
-        startupGracePeriod,
-        entryRequestFee,
-      ]),
+      ]) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -802,9 +795,9 @@ export class ApiWrapper {
     minCouncilStake: BN,
     minVotingStake: BN
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn()
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createSetElectionParametersProposal(memberId, title, description, stake, [
+      (this.api.tx.proposalsCodex.createSetElectionParametersProposal(memberId, title, description, stake, [
         announcingPeriod,
         votingPeriod,
         revealingPeriod,
@@ -813,7 +806,7 @@ export class ApiWrapper {
         newTermDuration,
         minCouncilStake,
         minVotingStake,
-      ]),
+      ]) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -824,48 +817,52 @@ export class ApiWrapper {
     title: string,
     description: string,
     stake: BN,
-    openingId: BN,
+    openingId: OpeningId,
     workingGroup: string
-  ) {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn()
+  ): Promise<void> {
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
+      (this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
         memberId,
         title,
         description,
         stake,
         openingId,
         workingGroup
-      ),
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
   }
 
-  public approveProposal(account: KeyringPair, memberId: BN, proposal: BN): Promise<void> {
-    return this.sender.signAndSend(this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve'), account, false)
+  public approveProposal(account: KeyringPair, memberId: MemberId, proposal: ProposalId): Promise<void> {
+    return this.sender.signAndSend(
+      (this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve') as unknown) as SubmittableExtrinsic<'promise'>,
+      account,
+      false
+    )
   }
 
-  public batchApproveProposal(council: KeyringPair[], proposal: BN): Promise<void[]> {
+  public batchApproveProposal(council: KeyringPair[], proposal: ProposalId): Promise<void[]> {
     return Promise.all(
       council.map(async (keyPair) => {
-        const memberId: BN = (await this.getMemberIds(keyPair.address))[0].toBn()
+        const memberId: MemberId = (await this.getMemberIds(keyPair.address))[0]
         await this.approveProposal(keyPair, memberId, proposal)
       })
     )
   }
 
   public getBlockDuration(): BN {
-    return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime).toBn()
+    return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime)
   }
 
-  public expectProposalCreated(): Promise<BN> {
+  public expectProposalCreated(): Promise<ProposalId> {
     return new Promise(async (resolve) => {
       const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
         events.forEach((record) => {
           if (record.event.method && record.event.method.toString() === 'ProposalCreated') {
             unsubscribe()
-            resolve(new BN(record.event.data[1].toString()))
+            resolve(record.event.data[1] as ProposalId)
           }
         })
       })
@@ -928,31 +925,17 @@ export class ApiWrapper {
     })
   }
 
-  public expectApplicationReviewBegan(): Promise<BN> {
+  public expectApplicationReviewBegan(): Promise<ApplicationId> {
     return new Promise(async (resolve) => {
       const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
         events.forEach((record) => {
           if (record.event.method && record.event.method.toString() === 'BeganApplicationReview') {
             unsubscribe()
-            resolve((record.event.data as unknown) as BN)
+            resolve((record.event.data as unknown) as ApplicationId)
           }
         })
       })
     })
-  }
-
-  public getTotalIssuance(): Promise<BN> {
-    return this.api.query.balances.totalIssuance<Balance>()
-  }
-
-  public async getRequiredProposalStake(numerator: number, denominator: number): Promise<BN> {
-    const issuance: number = await (await this.getTotalIssuance()).toNumber()
-    const stake = (issuance * numerator) / denominator
-    return new BN(stake.toFixed(0))
-  }
-
-  public getProposalCount(): Promise<BN> {
-    return this.api.query.proposalsEngine.proposalCount<u32>()
   }
 
   public async getContentWorkingGroupMintCapacity(): Promise<BN> {
@@ -980,18 +963,11 @@ export class ApiWrapper {
     return lead.role_account.toString()
   }
 
-  public async createStorageProvider(account: KeyringPair): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0].toBn()
-    await this.sender.signAndSend(this.api.tx.actors.roleEntryRequest('StorageProvider', memberId), account, false)
-    await this.sender.signAndSend(this.api.tx.actors.stake('StorageProvider', account.address), account, false)
-    return
-  }
-
   public async isStorageProvider(address: string): Promise<boolean> {
     const storageProviders: Vec<AccountId> = await this.api.query.actors.accountIdsByRole<Vec<AccountId>>(
       'StorageProvider'
     )
-    const accountWorkers: BN = await this.getWorkerIdByRoleAccount(address, WorkingGroups.StorageWorkingGroup)
+    const accountWorkers: WorkerId = await this.getWorkerIdByRoleAccount(address, WorkingGroups.StorageWorkingGroup)
     return accountWorkers !== undefined
   }
 
@@ -1036,9 +1012,9 @@ export class ApiWrapper {
     text: string,
     workingGroup: string
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
+      (this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
         memberId,
         title,
         description,
@@ -1049,7 +1025,7 @@ export class ApiWrapper {
           human_readable_text: text,
           working_group: workingGroup,
         }
-      ),
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -1062,16 +1038,16 @@ export class ApiWrapper {
     proposalStake: BN,
     fillOpeningParameters: FillOpeningParameters
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
 
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
+      (this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
         memberId,
         title,
         description,
         proposalStake,
         fillOpeningParameters
-      ),
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -1082,14 +1058,14 @@ export class ApiWrapper {
     title: string,
     description: string,
     proposalStake: BN,
-    leadWorkerId: BN,
+    leadWorkerId: WorkerId,
     rationale: string,
     slash: boolean,
     workingGroup: string
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
+      (this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
         memberId,
         title,
         description,
@@ -1100,7 +1076,7 @@ export class ApiWrapper {
           slash,
           'working_group': workingGroup,
         }
-      ),
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -1111,13 +1087,13 @@ export class ApiWrapper {
     title: string,
     description: string,
     proposalStake: BN,
-    workerId: BN,
+    workerId: WorkerId,
     rewardAmount: BN,
     workingGroup: string
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
+      (this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
         memberId,
         title,
         description,
@@ -1125,7 +1101,7 @@ export class ApiWrapper {
         workerId,
         rewardAmount,
         workingGroup
-      ),
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -1136,13 +1112,13 @@ export class ApiWrapper {
     title: string,
     description: string,
     proposalStake: BN,
-    workerId: BN,
+    workerId: WorkerId,
     rewardAmount: BN,
     workingGroup: string
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
+      (this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
         memberId,
         title,
         description,
@@ -1150,7 +1126,7 @@ export class ApiWrapper {
         workerId,
         rewardAmount,
         workingGroup
-      ),
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -1161,13 +1137,13 @@ export class ApiWrapper {
     title: string,
     description: string,
     proposalStake: BN,
-    workerId: BN,
+    workerId: WorkerId,
     rewardAmount: BN,
     workingGroup: string
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
+      (this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
         memberId,
         title,
         description,
@@ -1175,7 +1151,7 @@ export class ApiWrapper {
         workerId,
         rewardAmount,
         workingGroup
-      ),
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -1189,16 +1165,16 @@ export class ApiWrapper {
     mintCapacity: BN,
     workingGroup: string
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
+      (this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
         memberId,
         title,
         description,
         proposalStake,
         mintCapacity,
         workingGroup
-      ),
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
     )
@@ -1214,17 +1190,27 @@ export class ApiWrapper {
     return this.api.tx[module].addOpening(actiavteAt, commitment, text, type)
   }
 
-  public async acceptApplications(leader: KeyringPair, openingId: BN, module: WorkingGroups): Promise<void> {
-    return this.sender.signAndSend(this.api.tx[module].acceptApplications(openingId), leader, false)
-  }
-
-  public async beginApplicantReview(leader: KeyringPair, openingId: BN, module: WorkingGroups): Promise<void> {
-    return this.sender.signAndSend(this.api.tx[module].beginApplicantReview(openingId), leader, false)
-  }
-
-  public async sudoBeginApplicantReview(sudo: KeyringPair, openingId: BN, module: WorkingGroups): Promise<void> {
+  public async acceptApplications(leader: KeyringPair, openingId: OpeningId, module: WorkingGroups): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.sudo.sudo(this.api.tx[module].beginApplicantReview(openingId)),
+      (this.api.tx[module].acceptApplications(openingId) as unknown) as SubmittableExtrinsic<'promise'>,
+      leader,
+      false
+    )
+  }
+
+  public async beginApplicantReview(leader: KeyringPair, openingId: OpeningId, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(
+      (this.api.tx[module].beginApplicantReview(openingId) as unknown) as SubmittableExtrinsic<'promise'>,
+      leader,
+      false
+    )
+  }
+
+  public async sudoBeginApplicantReview(sudo: KeyringPair, openingId: OpeningId, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(
+      (this.api.tx.sudo.sudo(this.api.tx[module].beginApplicantReview(openingId)) as unknown) as SubmittableExtrinsic<
+        'promise'
+      >,
       sudo,
       false
     )
@@ -1233,16 +1219,23 @@ export class ApiWrapper {
   public async applyOnOpening(
     account: KeyringPair,
     roleAccountAddress: string,
-    openingId: BN,
+    openingId: OpeningId,
     roleStake: BN,
     applicantStake: BN,
     text: string,
     expectFailure: boolean,
     module: WorkingGroups
   ): Promise<void> {
-    const memberId: BN = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
     return this.sender.signAndSend(
-      this.api.tx[module].applyOnOpening(memberId, openingId, roleAccountAddress, roleStake, applicantStake, text),
+      (this.api.tx[module].applyOnOpening(
+        memberId,
+        openingId,
+        roleAccountAddress,
+        roleStake,
+        applicantStake,
+        text
+      ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       expectFailure
     )
@@ -1250,7 +1243,7 @@ export class ApiWrapper {
 
   public async batchApplyOnOpening(
     accounts: KeyringPair[],
-    openingId: BN,
+    openingId: OpeningId,
     roleStake: BN,
     applicantStake: BN,
     text: string,
@@ -1275,19 +1268,19 @@ export class ApiWrapper {
 
   public async fillOpening(
     leader: KeyringPair,
-    openingId: BN,
-    applicationId: BN[],
+    openingId: OpeningId,
+    applicationId: ApplicationId[],
     amountPerPayout: BN,
     nextPaymentBlock: BN,
     payoutInterval: BN,
     module: WorkingGroups
   ): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx[module].fillOpening(openingId, applicationId, {
+      (this.api.tx[module].fillOpening(openingId, applicationId, {
         'amount_per_payout': amountPerPayout,
         'next_payment_at_block': nextPaymentBlock,
         'payout_interval': payoutInterval,
-      }),
+      }) as unknown) as SubmittableExtrinsic<'promise'>,
       leader,
       false
     )
@@ -1295,8 +1288,8 @@ export class ApiWrapper {
 
   public async sudoFillOpening(
     sudo: KeyringPair,
-    openingId: BN,
-    applicationId: BN[],
+    openingId: OpeningId,
+    applicationId: ApplicationId[],
     amountPerPayout: BN,
     nextPaymentBlock: BN,
     payoutInterval: BN,
@@ -1315,63 +1308,101 @@ export class ApiWrapper {
     )
   }
 
-  public async increaseStake(worker: KeyringPair, workerId: BN, stake: BN, module: WorkingGroups): Promise<void> {
-    return this.sender.signAndSend(this.api.tx[module].increaseStake(workerId, stake), worker, false)
+  public async increaseStake(worker: KeyringPair, workerId: WorkerId, stake: BN, module: WorkingGroups): Promise<void> {
+    return this.sender.signAndSend(
+      (this.api.tx[module].increaseStake(workerId, stake) as unknown) as SubmittableExtrinsic<'promise'>,
+      worker,
+      false
+    )
   }
 
   public async decreaseStake(
     leader: KeyringPair,
-    workerId: BN,
+    workerId: WorkerId,
     stake: BN,
     module: WorkingGroups,
     expectFailure: boolean
   ): Promise<void> {
-    return this.sender.signAndSend(this.api.tx[module].decreaseStake(workerId, stake), leader, expectFailure)
+    return this.sender.signAndSend(
+      (this.api.tx[module].decreaseStake(workerId, stake) as unknown) as SubmittableExtrinsic<'promise'>,
+      leader,
+      expectFailure
+    )
   }
 
   public async slashStake(
     leader: KeyringPair,
-    workerId: BN,
+    workerId: WorkerId,
     stake: BN,
     module: WorkingGroups,
     expectFailure: boolean
   ): Promise<void> {
-    return this.sender.signAndSend(this.api.tx[module].slashStake(workerId, stake), leader, expectFailure)
+    return this.sender.signAndSend(
+      (this.api.tx[module].slashStake(workerId, stake) as unknown) as SubmittableExtrinsic<'promise'>,
+      leader,
+      expectFailure
+    )
   }
 
   public async updateRoleAccount(
     worker: KeyringPair,
-    workerId: BN,
+    workerId: WorkerId,
     newRoleAccount: string,
     module: WorkingGroups
   ): Promise<void> {
-    return this.sender.signAndSend(this.api.tx[module].updateRoleAccount(workerId, newRoleAccount), worker, false)
+    return this.sender.signAndSend(
+      (this.api.tx[module].updateRoleAccount(workerId, newRoleAccount) as unknown) as SubmittableExtrinsic<'promise'>,
+      worker,
+      false
+    )
   }
 
   public async updateRewardAccount(
     worker: KeyringPair,
-    workerId: BN,
+    workerId: WorkerId,
     newRewardAccount: string,
     module: WorkingGroups
   ): Promise<void> {
-    return this.sender.signAndSend(this.api.tx[module].updateRewardAccount(workerId, newRewardAccount), worker, false)
+    return this.sender.signAndSend(
+      (this.api.tx[module].updateRewardAccount(workerId, newRewardAccount) as unknown) as SubmittableExtrinsic<
+        'promise'
+      >,
+      worker,
+      false
+    )
   }
 
-  public async withdrawApplication(account: KeyringPair, workerId: BN, module: WorkingGroups): Promise<void> {
-    return this.sender.signAndSend(this.api.tx[module].withdrawApplication(workerId), account, false)
+  public async withdrawApplication(
+    account: KeyringPair,
+    applicationId: ApplicationId,
+    module: WorkingGroups
+  ): Promise<void> {
+    return this.sender.signAndSend(
+      (this.api.tx[module].withdrawApplication(applicationId) as unknown) as SubmittableExtrinsic<'promise'>,
+      account,
+      false
+    )
   }
 
   public async batchWithdrawApplication(accounts: KeyringPair[], module: WorkingGroups): Promise<void[]> {
     return Promise.all(
       accounts.map(async (keyPair) => {
-        const applicationIds: BN[] = await this.getApplicationsIdsByRoleAccount(keyPair.address, module)
+        const applicationIds: ApplicationId[] = await this.getApplicationsIdsByRoleAccount(keyPair.address, module)
         await this.withdrawApplication(keyPair, applicationIds[0], module)
       })
     )
   }
 
-  public async terminateApplication(leader: KeyringPair, applicationId: BN, module: WorkingGroups): Promise<void> {
-    return this.sender.signAndSend(this.api.tx[module].terminateApplication(applicationId), leader, false)
+  public async terminateApplication(
+    leader: KeyringPair,
+    applicationId: ApplicationId,
+    module: WorkingGroups
+  ): Promise<void> {
+    return this.sender.signAndSend(
+      (this.api.tx[module].terminateApplication(applicationId) as unknown) as SubmittableExtrinsic<'promise'>,
+      leader,
+      false
+    )
   }
 
   public async batchTerminateApplication(
@@ -1381,7 +1412,10 @@ export class ApiWrapper {
   ): Promise<void[]> {
     return Promise.all(
       roleAccounts.map(async (keyPair) => {
-        const applicationIds: BN[] = await this.getActiveApplicationsIdsByRoleAccount(keyPair.address, module)
+        const applicationIds: ApplicationId[] = await this.getActiveApplicationsIdsByRoleAccount(
+          keyPair.address,
+          module
+        )
         await this.terminateApplication(leader, applicationIds[0], module)
       })
     )
@@ -1389,12 +1423,16 @@ export class ApiWrapper {
 
   public async terminateRole(
     leader: KeyringPair,
-    applicationId: BN,
+    applicationId: ApplicationId,
     text: string,
     module: WorkingGroups,
     expectFailure: boolean
   ): Promise<void> {
-    return this.sender.signAndSend(this.api.tx[module].terminateRole(applicationId, text, false), leader, expectFailure)
+    return this.sender.signAndSend(
+      (this.api.tx[module].terminateRole(applicationId, text, false) as unknown) as SubmittableExtrinsic<'promise'>,
+      leader,
+      expectFailure
+    )
   }
 
   public async leaveRole(
@@ -1403,8 +1441,12 @@ export class ApiWrapper {
     expectFailure: boolean,
     module: WorkingGroups
   ): Promise<void> {
-    const workerId: BN = await this.getWorkerIdByRoleAccount(account.address, module)
-    return this.sender.signAndSend(this.api.tx[module].leaveRole(workerId, text), account, expectFailure)
+    const workerId: WorkerId = await this.getWorkerIdByRoleAccount(account.address, module)
+    return this.sender.signAndSend(
+      (this.api.tx[module].leaveRole(workerId, text) as unknown) as SubmittableExtrinsic<'promise'>,
+      account,
+      expectFailure
+    )
   }
 
   public async batchLeaveRole(
@@ -1418,10 +1460,6 @@ export class ApiWrapper {
         await this.leaveRole(keyPair, text, expectFailure, module)
       })
     )
-  }
-
-  public async getStorageRoleParameters(): Promise<RoleParameters> {
-    return (await this.api.query.actors.parameters<Option<RoleParameters>>('StorageProvider')).unwrap()
   }
 
   public async getAnnouncingPeriod(): Promise<BN> {
@@ -1456,19 +1494,7 @@ export class ApiWrapper {
     return this.api.query.councilElection.minVotingStake<BalanceOf>()
   }
 
-  public async getNextOpeningId(module: WorkingGroups): Promise<BN> {
-    return this.api.query[module].nextOpeningId<u32>()
-  }
-
-  public async getNextApplicationId(module: WorkingGroups): Promise<BN> {
-    return this.api.query[module].nextApplicationId<u32>()
-  }
-
-  public async getOpening(id: BN, module: WorkingGroups): Promise<Opening> {
-    return ((await this.api.query[module].openingById<Codec[]>(id))[0] as unknown) as Opening
-  }
-
-  public async getHiringOpening(id: BN): Promise<HiringOpening> {
+  public async getHiringOpening(id: OpeningId): Promise<HiringOpening> {
     return ((await this.api.query.hiring.openingById<Codec[]>(id))[0] as unknown) as HiringOpening
   }
 
@@ -1476,11 +1502,11 @@ export class ApiWrapper {
     return ((await this.api.query[module].workerById<Codec[]>())[1] as unknown) as Worker[]
   }
 
-  public async getWorkerById(id: BN, module: WorkingGroups): Promise<Worker> {
+  public async getWorkerById(id: WorkerId, module: WorkingGroups): Promise<Worker> {
     return ((await this.api.query[module].workerById<Codec[]>(id))[0] as unknown) as Worker
   }
 
-  public async getWorkerIdByRoleAccount(address: string, module: WorkingGroups): Promise<BN> {
+  public async getWorkerIdByRoleAccount(address: string, module: WorkingGroups): Promise<WorkerId> {
     const workersAndIds = await this.api.query[module].workerById<Codec[]>()
     const workers: Worker[] = (workersAndIds[1] as unknown) as Worker[]
     const ids: WorkerId[] = (workersAndIds[0] as unknown) as WorkerId[]
@@ -1488,24 +1514,24 @@ export class ApiWrapper {
     return ids[index]
   }
 
-  public async getApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<BN[]> {
+  public async getApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<ApplicationId[]> {
     const applicationsAndIds = await this.api.query[module].applicationById<Codec[]>()
     const applications: Application[] = (applicationsAndIds[1] as unknown) as Application[]
     const ids: ApplicationId[] = (applicationsAndIds[0] as unknown) as ApplicationId[]
     return applications
       .map((application, index) => (application.role_account_id.toString() === address ? ids[index] : undefined))
-      .filter((id) => id !== undefined) as BN[]
+      .filter((id) => id !== undefined) as ApplicationId[]
   }
 
-  public async getHiringApplicationById(id: BN): Promise<HiringApplication> {
+  public async getHiringApplicationById(id: ApplicationId): Promise<HiringApplication> {
     return ((await this.api.query.hiring.applicationById<Codec[]>(id))[0] as unknown) as HiringApplication
   }
 
-  public async getApplicationById(id: BN, module: WorkingGroups): Promise<Application> {
+  public async getApplicationById(id: ApplicationId, module: WorkingGroups): Promise<Application> {
     return ((await this.api.query[module].applicationById<Codec[]>(id))[0] as unknown) as Application
   }
 
-  public async getActiveApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<BN[]> {
+  public async getActiveApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<ApplicationId[]> {
     const applicationsAndIds = await this.api.query[module].applicationById<Codec[]>()
     const applications: Application[] = (applicationsAndIds[1] as unknown) as Application[]
     const ids: ApplicationId[] = (applicationsAndIds[0] as unknown) as ApplicationId[]
@@ -1522,30 +1548,32 @@ export class ApiWrapper {
           }
         })
       )
-    ).filter((index) => index !== undefined) as BN[]
+    ).filter((index) => index !== undefined) as ApplicationId[]
   }
 
-  public async getStake(id: BN): Promise<Stake> {
+  public async getStake(id: StakeId): Promise<Stake> {
     return ((await this.api.query.stake.stakes<Codec[]>(id))[0] as unknown) as Stake
   }
 
-  public async getWorkerStakeAmount(workerId: BN, module: WorkingGroups): Promise<BN> {
-    const stakeId: BN = (await this.getWorkerById(workerId, module)).role_stake_profile.unwrap().stake_id
+  public async getWorkerStakeAmount(workerId: WorkerId, module: WorkingGroups): Promise<BN> {
+    const stakeId: StakeId = (await this.getWorkerById(workerId, module)).role_stake_profile.unwrap().stake_id
     return (((await this.getStake(stakeId)).staking_status.value as unknown) as StakedState).staked_amount
   }
 
-  public async getRewardRelationship(id: BN): Promise<RewardRelationship> {
+  public async getRewardRelationship(id: RewardRelationshipId): Promise<RewardRelationship> {
     return ((
       await this.api.query.recurringRewards.rewardRelationships<Codec[]>(id)
     )[0] as unknown) as RewardRelationship
   }
 
-  public async getWorkerRewardAccount(workerId: BN, module: WorkingGroups): Promise<string> {
-    const rewardRelationshipId: BN = (await this.getWorkerById(workerId, module)).reward_relationship.unwrap()
+  public async getWorkerRewardAccount(workerId: WorkerId, module: WorkingGroups): Promise<string> {
+    const rewardRelationshipId: RewardRelationshipId = (
+      await this.getWorkerById(workerId, module)
+    ).reward_relationship.unwrap()
     return (await this.getRewardRelationship(rewardRelationshipId)).getField('account').toString()
   }
 
-  public async getLeadWorkerId(module: WorkingGroups): Promise<BN | undefined> {
+  public async getLeadWorkerId(module: WorkingGroups): Promise<WorkerId | undefined> {
     return (await this.api.query[module].currentLead<Option<WorkerId>>()).unwrapOr(undefined)
   }
 }
