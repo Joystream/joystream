@@ -884,6 +884,7 @@ fn insert_at_entity_property_vector_text_prop_is_too_long() {
     })
 }
 
+#[test]
 fn insert_at_entity_property_vector_hashed_text_prop_is_too_long() {
     with_test_externalities(|| {
         // Create class with default permissions

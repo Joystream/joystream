@@ -960,85 +960,85 @@ fn update_entity_property_values_same_controller_constraint_violation() {
     })
 }
 
-#[test]
-fn update_entity_property_values_property_should_be_unique() {
-    with_test_externalities(|| {
-        // Create class with default permissions
-        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+// #[test]
+// fn update_entity_property_values_property_should_be_unique() {
+//     with_test_externalities(|| {
+//         // Create class with default permissions
+//         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
-        let actor = Actor::Lead;
+//         let actor = Actor::Lead;
 
-        // Create first Entity
-        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
+//         // Create first Entity
+//         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
-        // Create class reference schema and add corresponding schema support to the Entity
-        add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
+//         // Create class reference schema and add corresponding schema support to the Entity
+//         add_class_reference_schema_and_entity_schema_support(&actor, LEAD_ORIGIN);
 
-        // Create second property with unique constraint
-        let property_type = PropertyType::<Runtime>::vec_reference(
-            FIRST_CLASS_ID,
-            true,
-            VecMaxLengthConstraint::get(),
-        );
+//         // Create second property with unique constraint
+//         let property_type = PropertyType::<Runtime>::vec_reference(
+//             FIRST_CLASS_ID,
+//             true,
+//             VecMaxLengthConstraint::get(),
+//         );
 
-        let property = Property::<Runtime>::with_name_and_type(
-            PropertyNameLengthConstraint::get().max() as usize,
-            property_type,
-            true,
-            true,
-        );
+//         let property = Property::<Runtime>::with_name_and_type(
+//             PropertyNameLengthConstraint::get().max() as usize,
+//             property_type,
+//             true,
+//             true,
+//         );
 
-        // Add second Schema to the Class
-        assert_ok!(add_class_schema(
-            LEAD_ORIGIN,
-            FIRST_CLASS_ID,
-            BTreeSet::new(),
-            vec![property]
-        ));
+//         // Add second Schema to the Class
+//         assert_ok!(add_class_schema(
+//             LEAD_ORIGIN,
+//             FIRST_CLASS_ID,
+//             BTreeSet::new(),
+//             vec![property]
+//         ));
 
-        let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
-            FIRST_ENTITY_ID,
-            FIRST_ENTITY_ID,
-            FIRST_ENTITY_ID,
-        ]);
+//         let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
+//             FIRST_ENTITY_ID,
+//             FIRST_ENTITY_ID,
+//             FIRST_ENTITY_ID,
+//         ]);
 
-        let mut schema_property_values = BTreeMap::new();
-        schema_property_values.insert(SECOND_PROPERTY_ID, schema_property_value);
+//         let mut schema_property_values = BTreeMap::new();
+//         schema_property_values.insert(SECOND_PROPERTY_ID, schema_property_value);
 
-        // Add schema support to the entity
-        assert_ok!(add_schema_support_to_entity(
-            LEAD_ORIGIN,
-            actor.to_owned(),
-            FIRST_ENTITY_ID,
-            SECOND_SCHEMA_ID,
-            schema_property_values
-        ));
+//         // Add schema support to the entity
+//         assert_ok!(add_schema_support_to_entity(
+//             LEAD_ORIGIN,
+//             actor.to_owned(),
+//             FIRST_ENTITY_ID,
+//             SECOND_SCHEMA_ID,
+//             schema_property_values
+//         ));
 
-        // Runtime state before tested call
+//         // Runtime state before tested call
 
-        // Events number before tested call
-        let number_of_events_before_call = System::events().len();
+//         // Events number before tested call
+//         let number_of_events_before_call = System::events().len();
 
-        let mut schema_new_property_values = BTreeMap::new();
-        let schema_new_property_value =
-            InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
+//         let mut schema_new_property_values = BTreeMap::new();
+//         let schema_new_property_value =
+//             InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);
 
-        schema_new_property_values.insert(SECOND_PROPERTY_ID, schema_new_property_value);
+//         schema_new_property_values.insert(SECOND_PROPERTY_ID, schema_new_property_value);
 
-        // Make an attempt to update entity property values, providing property value(s), which are identical to thouse,
-        // are already added to The Entity, though should be unique on Class Property level
-        let update_entity_property_values_result = update_entity_property_values(
-            LEAD_ORIGIN,
-            actor,
-            FIRST_ENTITY_ID,
-            schema_new_property_values,
-        );
+//         // Make an attempt to update entity property values, providing property value(s), which are identical to thouse,
+//         // are already added to The Entity, though should be unique on Class Property level
+//         let update_entity_property_values_result = update_entity_property_values(
+//             LEAD_ORIGIN,
+//             actor,
+//             FIRST_ENTITY_ID,
+//             schema_new_property_values,
+//         );
 
-        // Failure checked
-        assert_failure(
-            update_entity_property_values_result,
-            ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE,
-            number_of_events_before_call,
-        );
-    })
-}
+//         // Failure checked
+//         assert_failure(
+//             update_entity_property_values_result,
+//             ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE,
+//             number_of_events_before_call,
+//         );
+//     })
+// }
