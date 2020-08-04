@@ -62,7 +62,7 @@ impl UnstakedFixture {
                 {
                     let expected_application_stage = ApplicationStage::Inactive {
                         deactivation_initiated,
-                        deactivated: 1,
+                        deactivated: FIRST_BLOCK_HEIGHT,
                         cause,
                     };
 

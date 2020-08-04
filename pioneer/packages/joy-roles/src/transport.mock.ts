@@ -1,22 +1,19 @@
 import { Observable } from 'rxjs';
 import { Balance } from '@polkadot/types/interfaces';
-import { Option, Text, u32, u128, GenericAccountId } from '@polkadot/types';
+import { Option, u32, u128, GenericAccountId } from '@polkadot/types';
 
 import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/index';
 
 import { ITransport } from './transport';
 
-import { Actor, Role } from '@joystream/types/roles';
+import { Role, MemberId } from '@joystream/types/members';
 import {
   Opening,
-  AcceptingApplications,
-  ActiveOpeningStage,
   ApplicationRationingPolicy,
   StakingPolicy
 } from '@joystream/types/hiring';
-import { IProfile, MemberId } from '@joystream/types/members';
 
-import { WorkingGroupMembership, StorageAndDistributionMembership, GroupLeadStatus } from './tabs/WorkingGroup';
+import { WorkingGroupMembership, GroupLeadStatus } from './tabs/WorkingGroup';
 import { CuratorId } from '@joystream/types/content-working-group';
 import { WorkingGroupOpening } from './tabs/Opportunities';
 import { ActiveRole, OpeningApplication } from './tabs/MyRoles';
@@ -27,7 +24,8 @@ import { tomorrow, yesterday, newMockHumanReadableText } from './tabs/Opportunit
 import { OpeningState } from './classifiers';
 
 import * as faker from 'faker';
-import { mockProfile } from './mocks';
+import { mockProfile, mockStage } from './mocks';
+import { WorkingGroups, workerRoleNameByGroup } from './working_groups';
 
 export class Transport extends TransportBase implements ITransport {
   protected simulateApiResponse<T> (value: T): Promise<T> {
@@ -46,16 +44,18 @@ export class Transport extends TransportBase implements ITransport {
     );
   }
 
-  groupLeadStatus (): Promise<GroupLeadStatus> {
+  groupLeadStatus (group: WorkingGroups = WorkingGroups.ContentCurators): Promise<GroupLeadStatus> {
     return this.simulateApiResponse<GroupLeadStatus>({
       loaded: true
     });
   }
 
-  curationGroup (): Promise<WorkingGroupMembership> {
+  async curationGroup (): Promise<WorkingGroupMembership> {
     return this.simulateApiResponse<WorkingGroupMembership>({
-      rolesAvailable: true,
-      members: [
+      leadStatus: await this.groupLeadStatus(),
+      workerRolesAvailable: true,
+      leadRolesAvailable: false,
+      workers: [
         {
           memberId: new MemberId(1),
           roleAccount: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
@@ -112,28 +112,25 @@ export class Transport extends TransportBase implements ITransport {
     });
   }
 
-  storageGroup (): Promise<StorageAndDistributionMembership> {
-    return this.simulateApiResponse<StorageAndDistributionMembership>(
-      {
-        balances: new Map<string, Balance>([
-          ['5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew', new u128(101)]
-        ]),
-        memos: new Map<string, Text>([
-          ['5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew', new Text('This is a memo')]
-        ]),
-        profiles: new Map<number, IProfile>([
-          [1, mockProfile('bwhm0')],
-          [2, mockProfile(
+  async storageGroup (): Promise<WorkingGroupMembership> {
+    return this.simulateApiResponse<WorkingGroupMembership>({
+      leadStatus: await this.groupLeadStatus(),
+      workerRolesAvailable: true,
+      leadRolesAvailable: true,
+      workers: [
+        {
+          memberId: new MemberId(1),
+          roleAccount: new GenericAccountId('5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
+          profile: mockProfile(
             'benholdencrowther',
             'https://www.benholdencrowther.com/wp-content/uploads/2019/03/Hanging_Gardens_of_Babylon.jpg'
-          )]
-        ]),
-        actors: [
-          new Actor({ member_id: 1, account: '5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew' }),
-          new Actor({ member_id: 2, account: '5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3' })
-        ]
-      }
-    );
+          ),
+          title: 'Storage provider',
+          stake: new u128(10101),
+          earned: new u128(347829)
+        }
+      ]
+    });
   }
 
   currentOpportunities (): Promise<Array<WorkingGroupOpening>> {
@@ -142,11 +139,7 @@ export class Transport extends TransportBase implements ITransport {
         {
           opening: new Opening({
             created: new u32(50000),
-            stage: new ActiveOpeningStage({
-              acceptingApplications: new AcceptingApplications({
-                started_accepting_applicants_at_block: new u32(100)
-              })
-            }),
+            stage: mockStage,
             max_review_period_length: new u32(100),
             application_rationing_policy: new Option(ApplicationRationingPolicy),
             application_staking_policy: new Option(StakingPolicy),
@@ -190,7 +183,7 @@ export class Transport extends TransportBase implements ITransport {
           }),
           meta: {
             id: '1',
-            group: 'somegroup'
+            group: WorkingGroups.ContentCurators
           },
           stage: {
             state: OpeningState.AcceptingApplications,
@@ -217,16 +210,13 @@ export class Transport extends TransportBase implements ITransport {
     );
   }
 
-  curationGroupOpening (id: number): Promise<WorkingGroupOpening> {
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async groupOpening (group: WorkingGroups, id: number): Promise<WorkingGroupOpening> {
     return this.simulateApiResponse<WorkingGroupOpening>(
       {
         opening: new Opening({
           created: new u32(50000),
-          stage: new ActiveOpeningStage({
-            acceptingApplications: new AcceptingApplications({
-              started_accepting_applicants_at_block: new u32(100)
-            })
-          }),
+          stage: mockStage,
           max_review_period_length: new u32(100),
           application_rationing_policy: new Option(ApplicationRationingPolicy),
           application_staking_policy: new Option(StakingPolicy),
@@ -274,7 +264,7 @@ export class Transport extends TransportBase implements ITransport {
         }),
         meta: {
           id: '1',
-          group: 'group-name'
+          group: WorkingGroups.ContentCurators
         },
         stage: {
           state: OpeningState.AcceptingApplications,
@@ -301,7 +291,7 @@ export class Transport extends TransportBase implements ITransport {
     );
   }
 
-  openingApplicationRanks (openingId: number): Promise<Balance[]> {
+  openingApplicationRanks (group: WorkingGroups, openingId: number): Promise<Balance[]> {
     const slots: Balance[] = [];
     for (let i = 0; i < 20; i++) {
       slots.push(new u128((i * 100) + 10 + i + 1));
@@ -351,12 +341,12 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
-  async openingApplications (): Promise<OpeningApplication[]> {
+  async openingApplicationsByAddress (address: string): Promise<OpeningApplication[]> {
     return [{
       id: 1,
       meta: {
         id: '1',
-        group: 'group-name'
+        group: WorkingGroups.ContentCurators
       },
       stage: {
         state: OpeningState.AcceptingApplications,
@@ -366,11 +356,7 @@ export class Transport extends TransportBase implements ITransport {
       },
       opening: new Opening({
         created: new u32(50000),
-        stage: new ActiveOpeningStage({
-          acceptingApplications: new AcceptingApplications({
-            started_accepting_applicants_at_block: new u32(100)
-          })
-        }),
+        stage: mockStage,
         max_review_period_length: new u32(100),
         application_rationing_policy: new Option(ApplicationRationingPolicy),
         application_staking_policy: new Option(StakingPolicy),
@@ -424,11 +410,12 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
-  async myCurationGroupRoles (): Promise<ActiveRole[]> {
+  async myRoles (address: string): Promise<ActiveRole[]> {
     return [
       {
-        curatorId: new CuratorId(1),
-        name: 'My curation group role',
+        workerId: new CuratorId(1),
+        name: workerRoleNameByGroup[WorkingGroups.ContentCurators],
+        group: WorkingGroups.ContentCurators,
         url: 'some URL',
         reward: new u128(321),
         stake: new u128(12343200)
@@ -436,12 +423,9 @@ export class Transport extends TransportBase implements ITransport {
     ];
   }
 
-  myStorageGroupRoles (): Subscribable<ActiveRole[]> {
-    return new Observable<ActiveRole[]>(observer => { /* do nothing */ });
-  }
-
   // eslint-disable-next-line @typescript-eslint/require-await
-  async applyToCuratorOpening (
+  async applyToOpening (
+    group: WorkingGroups,
     id: number,
     roleAccountName: string,
     sourceAccount: string,
@@ -451,11 +435,11 @@ export class Transport extends TransportBase implements ITransport {
     return 0;
   }
 
-  leaveCurationRole (sourceAccount: string, id: number, rationale: string) {
+  leaveRole (group: WorkingGroups, sourceAccount: string, id: number, rationale: string) {
     /* do nothing */
   }
 
-  withdrawCuratorApplication (sourceAccount: string, id: number) {
+  withdrawApplication (group: WorkingGroups, sourceAccount: string, id: number) {
     /* do nothing */
   }
 }

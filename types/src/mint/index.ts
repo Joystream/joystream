@@ -1,6 +1,6 @@
 import { getTypeRegistry, u32, u64, u128, Option, Enum} from '@polkadot/types';
 import { Balance, BlockNumber } from '@polkadot/types/interfaces';
-import { JoyStruct } from '../JoyStruct';
+import { JoyStruct } from '../common';
 
 export class MintId extends u64 {};
 

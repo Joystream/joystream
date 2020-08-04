@@ -1,4 +1,7 @@
 module.exports = {
+  env: {
+    mocha: true,
+  },
   extends: [
     // The oclif rules have some code-style/formatting rules which may conflict with
     // our prettier global settings. Disabling for now
@@ -7,4 +10,8 @@ module.exports = {
     // "oclif",
     // "oclif-typescript",
   ],
+  rules: {
+    "no-unused-vars": "off", // Required by the typescript rule below
+    "@typescript-eslint/no-unused-vars": ["error"]
+  }
 }

@@ -1,23 +1,21 @@
 #![cfg(test)]
 
 use crate::*;
+use common::BlockAndTime;
 
-use primitives::H256;
-
-use crate::{GenesisConfig, Module, Trait};
-use runtime_primitives::{
+use frame_support::{impl_outer_origin, parameter_types};
+use sp_core::H256;
+use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_origin, parameter_types};
 
 /// Module which has a full Substrate module for
 /// mocking behaviour of MembershipRegistry
 pub mod registry {
 
     use super::*;
-    // use srml_support::*;
 
     #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
     pub struct Member<AccountId> {
@@ -26,9 +24,8 @@ pub mod registry {
 
     decl_storage! {
         trait Store for Module<T: Trait> as MockForumUserRegistry {
-
-            pub ForumUserById get(forum_user_by_id) config(): map T::AccountId => Member<T::AccountId>;
-
+            pub ForumUserById get(fn forum_user_by_id) config(): map hasher(blake2_128_concat)
+                T::AccountId => Member<T::AccountId>;
         }
     }
 
@@ -44,7 +41,7 @@ pub mod registry {
 
     impl<T: Trait> ForumUserRegistry<T::AccountId> for Module<T> {
         fn get_forum_user(id: &T::AccountId) -> Option<ForumUser<T::AccountId>> {
-            if <ForumUserById<T>>::exists(id) {
+            if <ForumUserById<T>>::contains_key(id) {
                 let m = <ForumUserById<T>>::get(id);
 
                 Some(ForumUser { id: m.id })
@@ -73,25 +70,33 @@ parameter_types! {
 }
 
 impl system::Trait for Runtime {
+    type BaseCallFilter = ();
     type Origin = Origin;
+    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    // type WeightMultiplierUpdate = ();
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = ();
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
-impl timestamp::Trait for Runtime {
+impl pallet_timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -167,7 +172,7 @@ pub struct CreateCategoryFixture {
     pub parent: Option<CategoryId>,
     pub title: Vec<u8>,
     pub description: Vec<u8>,
-    pub result: dispatch::Result,
+    pub result: DispatchResult,
 }
 
 impl CreateCategoryFixture {
@@ -189,7 +194,7 @@ pub struct UpdateCategoryFixture {
     pub category_id: CategoryId,
     pub new_archival_status: Option<bool>,
     pub new_deletion_status: Option<bool>,
-    pub result: dispatch::Result,
+    pub result: DispatchResult,
 }
 
 impl UpdateCategoryFixture {
@@ -211,7 +216,7 @@ pub struct CreateThreadFixture {
     pub category_id: CategoryId,
     pub title: Vec<u8>,
     pub text: Vec<u8>,
-    pub result: dispatch::Result,
+    pub result: DispatchResult,
 }
 
 impl CreateThreadFixture {
@@ -232,7 +237,7 @@ pub struct CreatePostFixture {
     pub origin: OriginType,
     pub thread_id: RuntimeThreadId,
     pub text: Vec<u8>,
-    pub result: dispatch::Result,
+    pub result: DispatchResult,
 }
 
 impl CreatePostFixture {
@@ -258,7 +263,7 @@ pub fn create_forum_member() -> OriginType {
 pub fn assert_create_category(
     forum_sudo: OriginType,
     parent_category_id: Option<CategoryId>,
-    expected_result: dispatch::Result,
+    expected_result: DispatchResult,
 ) {
     CreateCategoryFixture {
         origin: forum_sudo,
@@ -273,7 +278,7 @@ pub fn assert_create_category(
 pub fn assert_create_thread(
     forum_sudo: OriginType,
     category_id: CategoryId,
-    expected_result: dispatch::Result,
+    expected_result: DispatchResult,
 ) {
     CreateThreadFixture {
         origin: forum_sudo,
@@ -288,7 +293,7 @@ pub fn assert_create_thread(
 pub fn assert_create_post(
     forum_sudo: OriginType,
     thread_id: RuntimeThreadId,
-    expected_result: dispatch::Result,
+    expected_result: DispatchResult,
 ) {
     CreatePostFixture {
         origin: forum_sudo,
@@ -352,7 +357,7 @@ pub fn moderate_thread(
     forum_sudo: OriginType,
     thread_id: RuntimeThreadId,
     rationale: Vec<u8>,
-) -> dispatch::Result {
+) -> DispatchResult {
     TestForumModule::moderate_thread(mock_origin(forum_sudo), thread_id, rationale)
 }
 
@@ -360,28 +365,28 @@ pub fn moderate_post(
     forum_sudo: OriginType,
     post_id: RuntimePostId,
     rationale: Vec<u8>,
-) -> dispatch::Result {
+) -> DispatchResult {
     TestForumModule::moderate_post(mock_origin(forum_sudo), post_id, rationale)
 }
 
-pub fn archive_category(forum_sudo: OriginType, category_id: CategoryId) -> dispatch::Result {
+pub fn archive_category(forum_sudo: OriginType, category_id: CategoryId) -> DispatchResult {
     TestForumModule::update_category(mock_origin(forum_sudo), category_id, Some(true), None)
 }
 
-pub fn unarchive_category(forum_sudo: OriginType, category_id: CategoryId) -> dispatch::Result {
+pub fn unarchive_category(forum_sudo: OriginType, category_id: CategoryId) -> DispatchResult {
     TestForumModule::update_category(mock_origin(forum_sudo), category_id, Some(false), None)
 }
 
-pub fn delete_category(forum_sudo: OriginType, category_id: CategoryId) -> dispatch::Result {
+pub fn delete_category(forum_sudo: OriginType, category_id: CategoryId) -> DispatchResult {
     TestForumModule::update_category(mock_origin(forum_sudo), category_id, None, Some(true))
 }
 
-pub fn undelete_category(forum_sudo: OriginType, category_id: CategoryId) -> dispatch::Result {
+pub fn undelete_category(forum_sudo: OriginType, category_id: CategoryId) -> DispatchResult {
     TestForumModule::update_category(mock_origin(forum_sudo), category_id, None, Some(false))
 }
 
 pub fn assert_not_forum_sudo_cannot_update_category(
-    update_operation: fn(OriginType, CategoryId) -> dispatch::Result,
+    update_operation: fn(OriginType, CategoryId) -> DispatchResult,
 ) {
     let config = default_genesis_config();
     let origin = OriginType::Signed(config.forum_sudo);
@@ -451,26 +456,27 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
 pub type RuntimeMap<K, V> = std::vec::Vec<(K, V)>;
 pub type RuntimeCategory = Category<
     <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
+    <Runtime as pallet_timestamp::Trait>::Moment,
     <Runtime as system::Trait>::AccountId,
 >;
 pub type RuntimeThread = Thread<
     <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
+    <Runtime as pallet_timestamp::Trait>::Moment,
     <Runtime as system::Trait>::AccountId,
     RuntimeThreadId,
 >;
 pub type RuntimePost = Post<
     <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
+    <Runtime as pallet_timestamp::Trait>::Moment,
     <Runtime as system::Trait>::AccountId,
     RuntimeThreadId,
     RuntimePostId,
 >;
-pub type RuntimeBlockchainTimestamp = BlockchainTimestamp<
+pub type RuntimeBlockchainTimestamp = BlockAndTime<
     <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
+    <Runtime as pallet_timestamp::Trait>::Moment,
 >;
+
 pub type RuntimeThreadId = <Runtime as Trait>::ThreadId;
 pub type RuntimePostId = <Runtime as Trait>::PostId;
 
@@ -516,7 +522,7 @@ pub fn default_mock_forum_user_registry_genesis_config() -> registry::GenesisCon
 // NB!:
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
-pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities {
+pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();

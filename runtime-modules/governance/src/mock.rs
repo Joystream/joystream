@@ -2,17 +2,15 @@
 
 pub use super::{council, election};
 pub use common::currency::GovernanceCurrency;
-pub use system;
 
-pub use primitives::{Blake2Hasher, H256};
-pub use sr_primitives::{
-    testing::{Digest, DigestItem, Header, UintAuthorityId},
-    traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize},
-    weights::Weight,
-    BuildStorage, Perbill,
+use frame_support::{impl_outer_origin, parameter_types};
+use sp_core::H256;
+use sp_runtime::{
+    testing::Header,
+    traits::{BlakeTwo256, IdentityLookup},
+    Perbill,
 };
-
-use srml_support::{impl_outer_origin, parameter_types};
+pub use system;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -30,10 +28,11 @@ parameter_types! {
 }
 
 impl system::Trait for Test {
+    type BaseCallFilter = ();
     type Origin = Origin;
+    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
@@ -42,12 +41,20 @@ impl system::Trait for Test {
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
-impl timestamp::Trait for Test {
+impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -62,13 +69,12 @@ impl election::Trait for Test {
 
     type CouncilElected = (Council,);
 }
-impl membership::members::Trait for Test {
+impl membership::Trait for Test {
     type Event = ();
     type MemberId = u32;
     type SubscriptionId = u32;
     type PaidTermId = u32;
     type ActorId = u32;
-    type InitialMembersBalance = InitialMembersBalance;
 }
 impl minting::Trait for Test {
     type Currency = Balances;
@@ -81,28 +87,14 @@ impl recurringrewards::Trait for Test {
 }
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
-    pub const TransferFee: u32 = 0;
-    pub const CreationFee: u32 = 0;
-    pub const TransactionBaseFee: u32 = 1;
-    pub const TransactionByteFee: u32 = 0;
-    pub const InitialMembersBalance: u32 = 0;
 }
 
 impl balances::Trait for Test {
-    /// The type for recording an account's balance.
     type Balance = u64;
-    /// What to do if an account's free balance gets zeroed.
-    type OnFreeBalanceZero = ();
-    /// What to do if a new account is created.
-    type OnNewAccount = ();
-    /// The ubiquitous event type.
-    type Event = ();
-
     type DustRemoval = ();
-    type TransferPayment = ();
+    type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
-    type TransferFee = TransferFee;
-    type CreationFee = CreationFee;
+    type AccountStore = System;
 }
 
 impl GovernanceCurrency for Test {
@@ -113,12 +105,12 @@ impl GovernanceCurrency for Test {
 
 // This function basically just builds a genesis storage key/value store according to
 // our desired mockup.
-pub fn initial_test_ext() -> runtime_io::TestExternalities {
+pub fn initial_test_ext() -> sp_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
-    membership::members::GenesisConfig::<Test> {
+    membership::GenesisConfig::<Test> {
         default_paid_membership_fee: 0,
         members: vec![
             (1, "member1".into(), "".into(), "".into()),

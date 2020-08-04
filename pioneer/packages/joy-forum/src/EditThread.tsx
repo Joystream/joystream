@@ -12,7 +12,8 @@ import { withMulti } from '@polkadot/react-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Text } from '@polkadot/types';
-import { ThreadId, Thread, CategoryId } from '@joystream/types/forum';
+import { ThreadId } from '@joystream/types/common';
+import { Thread, CategoryId } from '@joystream/types/forum';
 import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';

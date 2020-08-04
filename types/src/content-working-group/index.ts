@@ -1,21 +1,20 @@
-import { getTypeRegistry, BTreeMap, Enum, bool, u8, u32, u128, Text, GenericAccountId, Null , Option, Vec, u16 } from '@polkadot/types';
-import { BlockNumber, AccountId, Balance } from '@polkadot/types/interfaces';
+import { getTypeRegistry, BTreeMap, Enum, bool, u8, u32, Text, GenericAccountId, Null , Option, Vec, u16 } from '@polkadot/types';
+import { BlockNumber, AccountId } from '@polkadot/types/interfaces';
+import { BTreeSet, JoyStruct, OptionText, Credential } from '../common';
 import { ActorId, MemberId } from '../members';
-import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index';
-import { Credential } from '../versioned-store/permissions/credentials';
-import { RewardRelationshipId } from '../recurring-rewards';
 import { StakeId } from '../stake';
-import { JoyStruct } from '../JoyStruct';
-import { BTreeSet } from '../';
+import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index';
+import { RewardRelationshipId } from '../recurring-rewards';
 
-export class ChannelId extends ActorId {};
+import ChannelId from './ChannelId';
+export { ChannelId };
 export class CuratorId extends ActorId {};
 export class CuratorOpeningId extends OpeningId {};
 export class CuratorApplicationId extends ApplicationId {};
 export class LeadId extends ActorId {};
 export class PrincipalId extends Credential {};
 
-export class OptionalText extends Option.with(Text) {};
+export class OptionalText extends OptionText {};
 
 export type ChannelContentTypeValue =
   'Video' |
@@ -212,6 +211,11 @@ export class CuratorInduction extends JoyStruct<ICuratorInduction> {
     return this.getField<CuratorApplicationId>('curator_application_id')
   }
 
+  // Helper for working-group compatibility
+  get worker_application_id(): CuratorApplicationId {
+    return this.curator_application_id;
+  }
+
   get at_block(): u32 {
     return this.getField<u32>('at_block')
   }
@@ -239,6 +243,11 @@ export class Curator extends JoyStruct<ICurator> {
 
   get role_account(): GenericAccountId {
     return this.getField<GenericAccountId>('role_account')
+  }
+
+  // Helper for working-group compatibility
+  get role_account_id(): GenericAccountId {
+    return this.role_account;
   }
 
   get reward_relationship(): Option<RewardRelationshipId> {
@@ -286,8 +295,18 @@ export class CuratorApplication extends JoyStruct<ICuratorApplication> {
     return this.getField<GenericAccountId>('role_account')
   }
 
+  // Helper for working-group compatibility
+  get role_account_id(): GenericAccountId {
+    return this.role_account;
+  }
+
   get curator_opening_id(): CuratorOpeningId {
     return this.getField<CuratorOpeningId>('curator_opening_id')
+  }
+
+  // Helper for working-group compatibility
+  get opening_id(): CuratorOpeningId {
+    return this.curator_opening_id;
   }
 
   get member_id(): MemberId {
@@ -422,6 +441,11 @@ export class CuratorOpening extends JoyStruct<ICuratorOpening> {
   get opening_id(): OpeningId {
     return this.getField<OpeningId>('opening_id')
   }
+
+  // Helper for working-group compatibility
+  get hiring_opening_id(): OpeningId {
+    return this.opening_id;
+  }
 };
 
 export type IExitedLeadRole = {
@@ -467,6 +491,11 @@ export class Lead extends JoyStruct<ILead> {
     return this.getField<GenericAccountId>('role_account')
   }
 
+  // Helper for working-group compatibility
+  get role_account_id(): GenericAccountId {
+    return this.role_account;
+  }
+
   get reward_relationship(): Option<RewardRelationshipId> {
     return this.getField<Option<RewardRelationshipId>>('reward_relationship')
   }
@@ -497,21 +526,6 @@ export class CuratorApplicationIdToCuratorIdMap extends BTreeMap<ApplicationId, 
   }
 }
 
-export type IRewardPolicy = {
-  amount_per_payout: Balance,
-  next_payment_at_block: BlockNumber,
-  payout_interval: Option<BlockNumber>,
-};
-export class RewardPolicy extends JoyStruct<IRewardPolicy> {
-  constructor (value?: IRewardPolicy) {
-    super({
-      amount_per_payout: u128,
-      next_payment_at_block: u32,
-      payout_interval: Option.with(u32),
-    }, value);
-  }
-};
-
 export function registerContentWorkingGroupTypes () {
   try {
     getTypeRegistry().register({
@@ -535,8 +549,7 @@ export function registerContentWorkingGroupTypes () {
       Principal,
       WorkingGroupUnstaker,
       CuratorApplicationIdToCuratorIdMap,
-      CuratorApplicationIdSet: Vec.with(CuratorApplicationId),
-      RewardPolicy,
+      CuratorApplicationIdSet: Vec.with(CuratorApplicationId)
     });
   } catch (err) {
     console.error('Failed to register custom types of content working group module', err);

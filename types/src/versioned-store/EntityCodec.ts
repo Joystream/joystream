@@ -1,11 +1,11 @@
 import BN from 'bn.js';
 import { Text, bool, Vec, u16 } from '@polkadot/types';
 import { Codec } from '@polkadot/types/types';
+import { Class, Entity, VecClassPropertyValue, ClassPropertyValue, EntityId, ClassId, unifyPropName } from '.';
 import * as PV from './PropertyValue';
 import { PropertyValue } from './PropertyValue';
-import { Class, Entity, VecClassPropertyValue, ClassPropertyValue, EntityId, ClassId, unifyPropName } from '.';
 import PropertyTypeName from './PropertyTypeName';
-import { ChannelId } from '../content-working-group';
+import ChannelId from '../content-working-group/ChannelId';
 
 /**
  * Convert a Substrate value to a plain JavaScript value of a corresponding type

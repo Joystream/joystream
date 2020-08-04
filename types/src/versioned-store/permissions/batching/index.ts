@@ -1,7 +1,6 @@
-import { JoyStruct } from '../../../JoyStruct';
+import { JoyStruct, Credential } from '../../../common';
 import { OperationType } from './operation-types';
 import { bool, Option } from '@polkadot/types';
-import { Credential } from '../credentials';
 
 type IOperation = {
     with_credential: Option<Credential>,

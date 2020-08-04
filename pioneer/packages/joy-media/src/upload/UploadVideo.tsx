@@ -14,7 +14,7 @@ import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { FormTabs } from '../common/FormTabs';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { ChannelEntity } from '../entities/ChannelEntity';
-import { Credential } from '@joystream/types/versioned-store/permissions/credentials';
+import { Credential } from '@joystream/types/common';
 import { Class, VecClassPropertyValue } from '@joystream/types/versioned-store';
 import { TxCallback } from '@polkadot/react-components/Status/types';
 import { SubmittableResult } from '@polkadot/api';

@@ -29,7 +29,7 @@ export type MyAccountProps = MyAddressProps & {
   memberIdsByControllerAccountId?: Vec<MemberId>;
   myMemberIdChecked?: boolean;
   iAmMember?: boolean;
-  memberProfile?: Option<any>;
+  memberProfile?: Option<Profile>;
 
   // Content Working Group
   curatorEntries?: any; // entire linked_map: CuratorId => Curator
@@ -134,7 +134,7 @@ function withMyRoles<P extends MyAccountProps> (Component: React.ComponentType<P
     const myCuratorIds: Array<CuratorId> = [];
 
     if (iAmMember && memberProfile && memberProfile.isSome) {
-      const profile = memberProfile.unwrap() as Profile;
+      const profile = memberProfile.unwrap();
       profile.roles.forEach(role => {
         if (role.isContentLead) {
           myContentLeadId = role.actor_id;

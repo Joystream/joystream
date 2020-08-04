@@ -19,7 +19,7 @@ import { createType } from '@polkadot/types';
 import './forms.css';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import _ from 'lodash';
-import { ElectionParameters } from '@joystream/types/proposals';
+import { ElectionParameters } from '@joystream/types/council';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 
 type FormValues = GenericFormValues & {

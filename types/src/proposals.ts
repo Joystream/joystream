@@ -1,12 +1,14 @@
 import { Text, u32, Enum, getTypeRegistry, Tuple, GenericAccountId, u8, Vec, Option, Struct, Null, Bytes } from "@polkadot/types";
+import { bool } from "@polkadot/types/primitive";
 import { BlockNumber, Balance } from "@polkadot/types/interfaces";
-import { MemberId } from "./members";
-import { ThreadId } from "./forum";
-import { StakeId } from "./stake";
 import AccountId from "@polkadot/types/primitive/Generic/AccountId";
-import { JoyStruct } from "./JoyStruct";
-
+import { ThreadId, JoyStruct, WorkingGroup } from "./common";
+import { MemberId } from "./members";
 import { RoleParameters } from "./roles";
+import { StakeId } from "./stake";
+import { ElectionParameters } from "./council";
+import { ActivateOpeningAt, OpeningId, ApplicationId } from "./hiring";
+import { WorkingGroupOpeningPolicyCommitment, WorkerId, RewardPolicy } from "./working-group";
 
 export type IVotingResults = {
   abstensions: u32;
@@ -259,59 +261,6 @@ export type ProposalVotes = [MemberId, VoteKind][];
 
 export class ProposalId extends u32 {}
 
-export type IElectionParameters = {
-  announcing_period: BlockNumber;
-  voting_period: BlockNumber;
-  revealing_period: BlockNumber;
-  council_size: u32;
-  candidacy_limit: u32;
-  new_term_duration: BlockNumber;
-  min_council_stake: Balance;
-  min_voting_stake: Balance;
-};
-
-export class ElectionParameters extends Struct {
-  constructor(value?: any) {
-    super(
-      {
-        announcing_period: "BlockNumber",
-        voting_period: "BlockNumber",
-        revealing_period: "BlockNumber",
-        council_size: "u32",
-        candidacy_limit: "u32",
-        new_term_duration: "BlockNumber",
-        min_council_stake: "Balance",
-        min_voting_stake: "Balance"
-      },
-      value
-    );
-  }
-  get announcing_period () {
-    return this.get('announcing_period') as BlockNumber;
-  }
-  get voting_period () {
-    return this.get('voting_period') as BlockNumber;
-  }
-  get revealing_period () {
-    return this.get('revealing_period') as BlockNumber;
-  }
-  get council_size () {
-    return this.get('council_size') as u32;
-  }
-  get candidacy_limit () {
-    return this.get('candidacy_limit') as u32;
-  }
-  get new_term_duration () {
-    return this.get('new_term_duration') as BlockNumber;
-  }
-  get min_council_stake () {
-    return this.get('min_council_stake') as Balance;
-  }
-  get min_voting_stake () {
-    return this.get('min_voting_stake') as Balance;
-  }
-}
-
 export class SpendingParams extends Tuple {
   constructor(value?: any) {
     super(["Balance", "AccountId"], value);
@@ -338,7 +287,15 @@ export class ProposalDetails extends Enum {
         SetContentWorkingGroupMintCapacity: "Balance",
         EvictStorageProvider: "AccountId",
         SetValidatorCount: "u32",
-        SetStorageRoleParameters: RoleParameters
+        SetStorageRoleParameters: RoleParameters,
+        AddWorkingGroupLeaderOpening: AddOpeningParameters,
+        BeginReviewWorkingGroupLeaderApplication: Tuple.with([OpeningId, WorkingGroup]),
+        FillWorkingGroupLeaderOpening: FillOpeningParameters,
+        SetWorkingGroupMintCapacity: Tuple.with(["Balance", WorkingGroup]),
+        DecreaseWorkingGroupLeaderStake: Tuple.with([WorkerId, "Balance", WorkingGroup]),
+        SlashWorkingGroupLeaderStake: Tuple.with([WorkerId, "Balance", WorkingGroup]),
+        SetWorkingGroupLeaderReward: Tuple.with([WorkerId, "Balance", WorkingGroup]),
+        TerminateWorkingGroupLeaderRole: TerminateRoleParameters,
       },
       value,
       index
@@ -403,54 +360,6 @@ export class Proposal extends Struct {
     return this.get("votingResults") as VotingResults;
   }
 }
-
-export class Backer extends Struct {
-  constructor(value?: any) {
-    super(
-      {
-        member: "AccountId",
-        stake: "Balance"
-      },
-      value
-    );
-  }
-
-  get member(): MemberId {
-    return this.get("member") as MemberId;
-  }
-
-  get stake(): Balance {
-    return this.get("stake") as Balance;
-  }
-}
-
-export class Backers extends Vec.with(Backer) {}
-export class Seat extends Struct {
-  constructor(value?: any) {
-    super(
-      {
-        member: "AccountId",
-        stake: "Balance",
-        backers: Backers
-      },
-      value
-    );
-  }
-
-  get member(): AccountId {
-    return this.get("member") as AccountId;
-  }
-
-  get stake(): Balance {
-    return this.get("stake") as Balance;
-  }
-
-  get backers(): Backers {
-    return this.get("backers") as Backers;
-  }
-}
-
-export class Seats extends Vec.with(Seat) {}
 
 export class ThreadCounter extends Struct {
   constructor(value?: any) {
@@ -542,6 +451,117 @@ export class DiscussionPost extends Struct {
   }
 }
 
+export type IAddOpeningParameters = {
+  activate_at: ActivateOpeningAt;
+  commitment: WorkingGroupOpeningPolicyCommitment;
+  human_readable_text: Bytes;
+  working_group: WorkingGroup;
+};
+
+export class AddOpeningParameters extends JoyStruct<IAddOpeningParameters> {
+  constructor(value?: IAddOpeningParameters) {
+    super(
+      {
+        activate_at: ActivateOpeningAt,
+        commitment: WorkingGroupOpeningPolicyCommitment,
+        human_readable_text: Bytes,
+        working_group: WorkingGroup
+      },
+      value
+    );
+  }
+
+  get activate_at(): ActivateOpeningAt {
+    return this.getField<ActivateOpeningAt>('activate_at');
+  }
+
+  get commitment(): WorkingGroupOpeningPolicyCommitment {
+    return this.getField<WorkingGroupOpeningPolicyCommitment>('commitment');
+  }
+
+  get human_readable_text(): Bytes {
+    return this.getField<Bytes>('human_readable_text');
+  }
+
+  get working_group(): WorkingGroup {
+    return this.getField<WorkingGroup>('working_group');
+  }
+}
+
+export type IFillOpeningParameters = {
+  opening_id: OpeningId;
+  successful_application_id: ApplicationId;
+  reward_policy: Option<RewardPolicy>;
+  working_group: WorkingGroup;
+}
+
+export class FillOpeningParameters extends JoyStruct<IFillOpeningParameters> {
+  constructor(value?: IFillOpeningParameters) {
+    super(
+      {
+        opening_id: OpeningId,
+        successful_application_id: ApplicationId,
+        reward_policy: Option.with(RewardPolicy),
+        working_group: WorkingGroup,
+      },
+      value
+    );
+  }
+
+  get opening_id(): OpeningId {
+    return this.getField<OpeningId>('opening_id');
+  }
+
+  get successful_application_id(): ApplicationId {
+    return this.getField<ApplicationId>('successful_application_id');
+  }
+
+  get reward_policy(): Option<RewardPolicy> {
+    return this.getField<Option<RewardPolicy>>('reward_policy');
+  }
+
+  get working_group(): WorkingGroup {
+    return this.getField<WorkingGroup>('working_group');
+  }
+}
+
+export type ITerminateRoleParameters = {
+  worker_id: WorkerId;
+  rationale: Bytes;
+  slash: bool;
+  working_group: WorkingGroup;
+}
+
+export class TerminateRoleParameters extends JoyStruct<ITerminateRoleParameters> {
+  constructor(value?: ITerminateRoleParameters) {
+    super(
+      {
+        worker_id: WorkerId,
+        rationale: Bytes,
+        slash: bool,
+        working_group: WorkingGroup,
+      },
+      value
+    );
+  }
+
+  get worker_id(): WorkerId {
+    return this.getField<WorkerId>('worker_id');
+  }
+
+  get rationale(): Bytes {
+    return this.getField<Bytes>('rationale');
+  }
+
+  get slash(): bool {
+    return this.getField<bool>('slash');
+  }
+
+  get working_group(): WorkingGroup {
+    return this.getField<WorkingGroup>('working_group');
+  }
+}
+
 // export default proposalTypes;
 export function registerProposalTypes() {
   try {
@@ -550,16 +570,16 @@ export function registerProposalTypes() {
       ProposalStatus,
       ProposalOf: Proposal,
       ProposalDetails,
+      ProposalDetailsOf: ProposalDetails, // Runtime alias
       VotingResults,
       ProposalParameters,
       VoteKind,
-      Seat,
-      Seats,
-      Backer,
-      Backers,
       ThreadCounter,
       DiscussionThread,
-      DiscussionPost
+      DiscussionPost,
+      AddOpeningParameters,
+      FillOpeningParameters,
+      TerminateRoleParameters
     });
   } catch (err) {
     console.error("Failed to register custom types of proposals module", err);

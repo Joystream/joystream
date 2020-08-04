@@ -1,4 +1,5 @@
 import * as Yup from 'yup';
+import { schemaValidator, ActivateOpeningAtKeys } from '@joystream/types/hiring';
 
 // TODO: If we really need this (currency unit) we can we make "Validation" a functiction that returns an object.
 // We could then "instantialize" it in "withFormContainer" where instead of passing
@@ -70,6 +71,23 @@ const STARTUP_GRACE_PERIOD_MAX = 28800;
 const ENTRY_REQUEST_FEE_MIN = 1;
 const ENTRY_REQUEST_FEE_MAX = 100000;
 
+// Add Working Group Leader Opening Parameters
+// TODO: Discuss the actual values
+const MIN_EXACT_BLOCK_MINUS_CURRENT = 14400 * 5; // ~5 days
+const MAX_EXACT_BLOCK_MINUS_CURRENT = 14400 * 60; // 2 months
+const MAX_REVIEW_PERIOD_LENGTH_MIN = 14400 * 5; // ~5 days
+const MAX_REVIEW_PERIOD_LENGTH_MAX = 14400 * 60; // 2 months
+const MAX_APPLICATIONS_MIN = 1;
+const MAX_APPLICATIONS_MAX = 1000;
+const APPLICATION_STAKE_VALUE_MIN = 1;
+const APPLICATION_STAKE_VALUE_MAX = 1000000;
+const ROLE_STAKE_VALUE_MIN = 1;
+const ROLE_STAKE_VALUE_MAX = 1000000;
+const TERMINATE_ROLE_UNSTAKING_MIN = 0;
+const TERMINATE_ROLE_UNSTAKING_MAX = 14 * 14400; // 14 days
+const LEAVE_ROLE_UNSTAKING_MIN = 0;
+const LEAVE_ROLE_UNSTAKING_MAX = 14 * 14400; // 14 days
+
 function errorMessage (name: string, min?: number | string, max?: number | string, unit?: string): string {
   return `${name} should be at least ${min} and no more than ${max}${unit ? ` ${unit}.` : '.'}`;
 }
@@ -139,7 +157,30 @@ type ValidationType = {
     startup_grace_period: Yup.NumberSchema<number>;
     entry_request_fee: Yup.NumberSchema<number>;
   };
+  AddWorkingGroupLeaderOpening: (currentBlock: number) => {
+    applicationsLimited: Yup.BooleanSchema<boolean>;
+    activateAt: Yup.StringSchema<string>;
+    activateAtBlock: Yup.NumberSchema<number>;
+    maxReviewPeriodLength: Yup.NumberSchema<number>;
+    maxApplications: Yup.NumberSchema<number>;
+    applicationStakeRequired: Yup.BooleanSchema<boolean>;
+    applicationStakeValue: Yup.NumberSchema<number>;
+    roleStakeRequired: Yup.BooleanSchema<boolean>;
+    roleStakeValue: Yup.NumberSchema<number>;
+    terminateRoleUnstakingPeriod: Yup.NumberSchema<number>;
+    leaveRoleUnstakingPeriod: Yup.NumberSchema<number>;
+    humanReadableText: Yup.StringSchema<string>;
+  };
 };
+
+// Helpers for common validation
+function minMaxInt (min: number, max: number, fieldName: string) {
+  return Yup.number()
+    .required(`${fieldName} is required!`)
+    .integer(`${fieldName} must be an integer!`)
+    .min(min, errorMessage(fieldName, min, max))
+    .max(max, errorMessage(fieldName, min, max));
+}
 
 const Validation: ValidationType = {
   All: {
@@ -346,7 +387,70 @@ const Validation: ValidationType = {
         STARTUP_GRACE_PERIOD_MAX,
         errorMessage('The entry request fee', ENTRY_REQUEST_FEE_MIN, ENTRY_REQUEST_FEE_MAX, CURRENCY_UNIT)
       )
-  }
+  },
+  AddWorkingGroupLeaderOpening: (currentBlock: number) => ({
+    activateAt: Yup.string().required(),
+    activateAtBlock: Yup.number()
+      .when('activateAt', {
+        is: ActivateOpeningAtKeys.ExactBlock,
+        then: minMaxInt(
+          MIN_EXACT_BLOCK_MINUS_CURRENT + currentBlock,
+          MAX_EXACT_BLOCK_MINUS_CURRENT + currentBlock,
+          'Exact block'
+        )
+      }),
+    maxReviewPeriodLength: minMaxInt(MAX_REVIEW_PERIOD_LENGTH_MIN, MAX_REVIEW_PERIOD_LENGTH_MAX, 'Max. review period length'),
+    applicationsLimited: Yup.boolean(),
+    maxApplications: Yup.number()
+      .when('applicationsLimited', {
+        is: true,
+        then: minMaxInt(MAX_APPLICATIONS_MIN, MAX_APPLICATIONS_MAX, 'Max. number of applications')
+      }),
+    applicationStakeRequired: Yup.boolean(),
+    applicationStakeValue: Yup.number()
+      .when('applicationStakeRequired', {
+        is: true,
+        then: minMaxInt(APPLICATION_STAKE_VALUE_MIN, APPLICATION_STAKE_VALUE_MAX, 'Application stake value')
+      }),
+    roleStakeRequired: Yup.boolean(),
+    roleStakeValue: Yup.number()
+      .when('roleStakeRequired', {
+        is: true,
+        then: minMaxInt(ROLE_STAKE_VALUE_MIN, ROLE_STAKE_VALUE_MAX, 'Role stake value')
+      }),
+    terminateRoleUnstakingPeriod: minMaxInt(
+      TERMINATE_ROLE_UNSTAKING_MIN,
+      TERMINATE_ROLE_UNSTAKING_MAX,
+      'Terminate role unstaking period'
+    ),
+    leaveRoleUnstakingPeriod: minMaxInt(
+      LEAVE_ROLE_UNSTAKING_MIN,
+      LEAVE_ROLE_UNSTAKING_MAX,
+      'Leave role unstaking period'
+    ),
+    humanReadableText: Yup.string()
+      .required()
+      .test(
+        'schemaIsValid',
+        'Schema validation failed!',
+        function (val) {
+          let schemaObj: any;
+          try {
+            schemaObj = JSON.parse(val);
+          } catch (e) {
+            return this.createError({ message: 'Schema validation failed: Invalid JSON' });
+          }
+          const isValid = schemaValidator(schemaObj);
+          const errors = schemaValidator.errors || [];
+          if (!isValid) {
+            return this.createError({
+              message: 'Schema validation failed: ' + errors.map(e => `${e.message}${e.dataPath && ` (${e.dataPath})`}`).join(', ')
+            });
+          }
+          return true;
+        }
+      )
+  })
 };
 
 export default Validation;

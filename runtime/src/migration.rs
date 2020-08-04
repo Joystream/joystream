@@ -2,9 +2,8 @@
 #![allow(clippy::redundant_closure_call)] // disable it because of the substrate lib design
 
 use crate::VERSION;
-use rstd::prelude::*;
-// use sr_primitives::{print, traits::Zero};
-use srml_support::{debug, decl_event, decl_module, decl_storage};
+use frame_support::weights::Weight;
+use frame_support::{debug, decl_event, decl_module, decl_storage};
 
 impl<T: Trait> Module<T> {
     /// This method is called from on_initialize() when a runtime upgrade is detected. This
@@ -21,7 +20,14 @@ impl<T: Trait> Module<T> {
     }
 }
 
-pub trait Trait: system::Trait {
+pub trait Trait:
+    system::Trait
+    + minting::Trait
+    + proposals_codex::Trait
+    + working_group::Trait<working_group::Instance2>
+    + storage::data_directory::Trait
+    + storage::data_object_storage_registry::Trait
+{
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 }
 
@@ -31,8 +37,8 @@ decl_storage! {
         /// initialized to Some(VERSION.spec_version). It is an Option because the first time the module
         /// was introduced was as a runtime upgrade and type was never changed.
         /// When the runtime is upgraded the spec version be updated.
-        pub SpecVersion get(spec_version) build(|_config: &GenesisConfig| {
-            VERSION.spec_version
+        pub SpecVersion get(fn spec_version) build(|_config: &GenesisConfig| {
+            Some(VERSION.spec_version)
         }) : Option<u32>;
     }
 }
@@ -47,7 +53,7 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
-        fn on_initialize(_now: T::BlockNumber) {
+        fn on_initialize(_now: T::BlockNumber) -> Weight {
             if Self::spec_version().map_or(true, |spec_version| VERSION.spec_version > spec_version) {
                 // Mark store version with current version of the runtime
                 SpecVersion::put(VERSION.spec_version);
@@ -60,6 +66,10 @@ decl_module! {
                     VERSION.spec_version,
                 ));
             }
+
+            10_000_000 // TODO adjust weight
         }
     }
 }
+
+impl<T: Trait> Module<T> {}

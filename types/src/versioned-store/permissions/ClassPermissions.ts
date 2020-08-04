@@ -1,9 +1,8 @@
-import { JoyStruct } from '../../JoyStruct';
 import { u32, bool } from '@polkadot/types';
-import EntityPermissions from './EntityPermissions';
-import { CredentialSet } from './credentials';
-import { ReferenceConstraint } from './reference-constraint';
 import { BlockNumber } from '@polkadot/types/interfaces';
+import { JoyStruct, CredentialSet } from '../../common';
+import EntityPermissions from './EntityPermissions';
+import { ReferenceConstraint } from './reference-constraint';
 
 type IClassPermissions = {
     entity_permissions: EntityPermissions,

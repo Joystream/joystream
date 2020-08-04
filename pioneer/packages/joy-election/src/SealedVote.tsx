@@ -10,7 +10,7 @@ import { formatBalance } from '@polkadot/util';
 
 import translate from './translate';
 import { calcTotalStake } from '@polkadot/joy-utils/index';
-import { SealedVote } from '@joystream/types/';
+import { SealedVote } from '@joystream/types/council';
 import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import CandidatePreview from './CandidatePreview';
 import { findVoteByHash } from './myVotesStore';

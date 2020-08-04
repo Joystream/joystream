@@ -1,10 +1,8 @@
 #![cfg(test)]
 
 use common::currency::BalanceOf;
-use rstd::prelude::*;
-//pub use super::members::{GenesisConfig, Trait};
 
-use super::members::{self, Trait};
+use crate::{GenesisConfig, Trait};
 
 /// Builder fo membership module genesis configuration.
 pub struct GenesisConfigBuilder<T: Trait> {
@@ -34,8 +32,8 @@ impl<T: Trait> GenesisConfigBuilder<T> {
         self
     }
 
-    pub fn build(&self) -> members::GenesisConfig<T> {
-        members::GenesisConfig::<T> {
+    pub fn build(&self) -> GenesisConfig<T> {
+        GenesisConfig::<T> {
             default_paid_membership_fee: self.default_paid_membership_fee,
             members: self
                 .members

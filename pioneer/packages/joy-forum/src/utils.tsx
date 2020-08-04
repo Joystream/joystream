@@ -6,7 +6,8 @@ import styled from 'styled-components';
 import moment from 'moment';
 import Tooltip from 'react-tooltip';
 
-import { Category, CategoryId, Thread, ThreadId } from '@joystream/types/forum';
+import { ThreadId } from '@joystream/types/common';
+import { Category, CategoryId, Thread } from '@joystream/types/forum';
 import { withForumCalls } from './calls';
 import { withMulti } from '@polkadot/react-api';
 

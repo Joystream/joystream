@@ -1,184 +1,61 @@
 [package]
-name = 'substrate-proposals-codex-module'
-version = '2.0.0'
+name = 'pallet-proposals-codex'
+version = '3.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
 
+[dependencies]
+serde = { version = "1.0.101", optional = true, features = ["derive"] }
+codec = { package = 'parity-scale-codec', version = '1.3.1', default-features = false, features = ['derive'] }
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+staking = { package = 'pallet-staking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
+stake = { package = 'pallet-stake', default-features = false, path = '../../stake'}
+governance = { package = 'pallet-governance', default-features = false, path = '../../governance'}
+hiring = { package = 'pallet-hiring', default-features = false, path = '../../hiring'}
+minting = { package = 'pallet-token-mint', default-features = false, path = '../../token-minting'}
+working-group = { package = 'pallet-working-group', default-features = false, path = '../../working-group'}
+content-working-group = { package = 'pallet-content-working-group', default-features = false, path = '../../content-working-group'}
+common = { package = 'pallet-common', default-features = false, path = '../../common'}
+proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../engine'}
+proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../discussion'}
+
+[dev-dependencies]
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-staking = { package = 'sp-staking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+pallet-staking-reward-curve = { package = 'pallet-staking-reward-curve', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+recurring-rewards = { package = 'pallet-recurring-reward', default-features = false, path = '../../recurring-reward'}
+versioned-store = { package = 'pallet-versioned-store', default-features = false, path = '../../versioned-store'}
+versioned-store-permissions = { package = 'pallet-versioned-store-permissions', default-features = false, path = '../../versioned-store-permissions'}
+
 [features]
 default = ['std']
-no_std = []
 std = [
-    'codec/std',
-    'rstd/std',
-    'srml-support/std',
-    'primitives/std',
-    'sr-primitives/std',
-    'system/std',
-    'timestamp/std',
-    'staking/std',
     'serde',
-    'proposal_engine/std',
-    'proposal_discussion/std',
-    'stake/std',
+    'codec/std',
+    'sp-std/std',
+    'frame-support/std',
+    'sp-arithmetic/std',
+    'sp-runtime/std',
+    'system/std',
+    'staking/std',
+    'pallet-timestamp/std',
     'balances/std',
     'membership/std',
+    'stake/std',
     'governance/std',
-    'mint/std',
-    'roles/std',
+    'hiring/std',
+    'minting/std',
+    'content-working-group/std',
+    'working-group/std',
     'common/std',
-    'content_working_group/std',
+    'proposals-engine/std',
+    'proposals-discussion/std',
 ]
-
-
-[dependencies.num_enum]
-default_features = false
-version = "0.4.2"
-
-[dependencies.serde]
-features = ['derive']
-optional = true
-version = '1.0.101'
-
-[dependencies.codec]
-default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '1.0.0'
-
-[dependencies.primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-primitives'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.rstd]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-std'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.sr-primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-primitives'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.srml-support]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-support'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.system]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-system'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.timestamp]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-timestamp'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.balances]
-package = 'srml-balances'
-default-features = false
-git = 'https://github.com/paritytech/substrate.git'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.staking]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-staking'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.stake]
-default_features = false
-package = 'substrate-stake-module'
-path = '../../stake'
-
-[dependencies.membership]
-default_features = false
-package = 'substrate-membership-module'
-path = '../../membership'
-
-[dependencies.governance]
-default_features = false
-package = 'substrate-governance-module'
-path = '../../governance'
-
-[dependencies.mint]
-default_features = false
-package = 'substrate-token-mint-module'
-path = '../../token-minting'
-
-[dependencies.proposal_engine]
-default_features = false
-package = 'substrate-proposals-engine-module'
-path = '../engine'
-
-[dependencies.proposal_discussion]
-default_features = false
-package = 'substrate-proposals-discussion-module'
-path = '../discussion'
-
-[dependencies.common]
-default_features = false
-package = 'substrate-common-module'
-path = '../../common'
-
-[dependencies.content_working_group]
-default_features = false
-package = 'substrate-content-working-group-module'
-path = '../../content-working-group'
-
-[dependencies.roles]
-default_features = false
-package = 'substrate-roles-module'
-path = '../../roles'
-
-[dev-dependencies.hiring]
-default_features = false
-package = 'substrate-hiring-module'
-path = '../../hiring'
-
-[dev-dependencies.versioned_store]
-default_features = false
-package ='substrate-versioned-store'
-path = '../../versioned-store'
-
-[dependencies.versioned_store]
-default_features = false
-package ='substrate-versioned-store'
-path = '../../versioned-store'
-
-[dev-dependencies.versioned_store_permissions]
-default_features = false
-package = 'substrate-versioned-store-permissions-module'
-path = '../../versioned-store-permissions'
-
-[dev-dependencies.recurring_rewards]
-default_features = false
-package = 'substrate-recurring-reward-module'
-path = '../../recurring-reward'
-
-[dev-dependencies.sr-staking-primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-staking-primitives'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dev-dependencies.runtime-io]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-io'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-# don't rename the dependency it is causing some strange compiler error:
-# https://github.com/rust-lang/rust/issues/64450
-[dev-dependencies.srml-staking-reward-curve]
-package = 'srml-staking-reward-curve'
-git = 'https://github.com/paritytech/substrate.git'
-default_features = false
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'

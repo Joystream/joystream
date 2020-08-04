@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde_json::Result;
 
-use primitives::crypto::{AccountId32, Ss58Codec};
+use sp_core::crypto::{AccountId32, Ss58Codec};
 
 #[derive(Deserialize)]
 struct Member {
@@ -11,18 +11,6 @@ struct Member {
     avatar_uri: String,
     about: String,
 }
-
-// fn test_load_members() -> Result<Vec<Member>> {
-//     let data = r#"
-//         [{
-//             "address": "5Gn9n7SDJ7VgHqHQWYzkSA4vX6DCmS5TFWdHxikTXp9b4L32",
-//             "handle": "mokhtar",
-//             "avatar_uri": "http://mokhtar.net/avatar.png",
-//             "about": "Mokhtar"
-//         }]"#;
-
-//     serde_json::from_str(data)
-// }
 
 fn parse_members_json() -> Result<Vec<Member>> {
     let data = include_str!("../res/acropolis_members.json");

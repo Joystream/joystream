@@ -1,0 +1,33 @@
+openapi: '3.0.0'
+info:
+  title: 'Joystream Storage Node API.'
+  version: '1.0.0'
+paths: {} # Will be populated by express-openapi
+
+components:
+  # Re-usable parameter definitions
+  parameters: {}
+
+  # Re-usable (response) object definitions
+  schemas:
+    Error:
+      required:
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+
+    ContentDirectoryEntry: # TODO implement
+      required:
+        - name
+      properties:
+        name:
+          type: string
+
+    ContentDirectoryEntries:
+      type: array
+      items:
+        $ref: '#/components/schemas/ContentDirectoryEntry'

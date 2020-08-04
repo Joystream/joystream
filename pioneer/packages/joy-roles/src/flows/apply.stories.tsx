@@ -1,3 +1,5 @@
+// TODO: FIXME: Remove the ts-nocheck and fix errors!
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import React from 'react';
 import { number, object, select, text, withKnobs } from '@storybook/addon-knobs';

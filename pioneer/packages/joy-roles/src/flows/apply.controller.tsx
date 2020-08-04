@@ -17,6 +17,7 @@ import { keyPairDetails, FlowModal, ProgressSteps } from './apply';
 
 import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities';
 import { Min, Step, Sum } from '../balances';
+import { WorkingGroups, AvailableGroups } from '../working_groups';
 
 type State = {
   // Input data from state
@@ -38,6 +39,7 @@ type State = {
 
   // Data generated for transaction
   transactionDetails: Map<string, string>;
+  roleKeyNameBase: string;
   roleKeyName: string;
 
   // Error capture and display
@@ -51,6 +53,7 @@ const newEmptyState = (): State => {
     appDetails: {},
     hasError: false,
     transactionDetails: new Map<string, string>(),
+    roleKeyNameBase: '',
     roleKeyName: '',
     txKeyAddress: new AccountId(),
     activeStep: 0,
@@ -60,12 +63,20 @@ const newEmptyState = (): State => {
 };
 
 export class ApplyController extends Controller<State, ITransport> {
-  protected currentOpeningId = -1
+  protected currentOpeningId = -1;
+  protected currentGroup: WorkingGroups | null = null;
 
-  constructor (transport: ITransport, initialState: State = newEmptyState()) {
+  constructor (
+    transport: ITransport,
+    initialState: State = newEmptyState()
+  ) {
     super(transport, initialState);
 
     this.transport.accounts().subscribe((keys) => this.updateAccounts(keys));
+  }
+
+  protected parseGroup (group: string | undefined): WorkingGroups | undefined {
+    return AvailableGroups.find(availableGroup => availableGroup === group);
   }
 
   protected updateAccounts (keys: keyPairDetails[]) {
@@ -73,28 +84,30 @@ export class ApplyController extends Controller<State, ITransport> {
     this.dispatch();
   }
 
-  findOpening (rawId: string | undefined) {
+  findOpening (rawId: string | undefined, rawGroup: string | undefined) {
     if (!rawId) {
       return this.onError('ApplyController: no ID provided in params');
     }
     const id = parseInt(rawId);
+    const group = this.parseGroup(rawGroup);
 
-    if (this.currentOpeningId === id) {
+    if (!group) {
+      return this.onError('ApplyController: invalid group');
+    }
+
+    if (this.currentOpeningId === id && this.currentGroup === group) {
       return;
     }
 
     Promise.all(
       [
-        this.transport.curationGroupOpening(id),
-        this.transport.openingApplicationRanks(id)
+        this.transport.groupOpening(group, id),
+        this.transport.openingApplicationRanks(group, id)
       ]
     )
       .then(
         ([opening, ranks]) => {
-          const hrt = opening.opening.parse_human_readable_text();
-          if (typeof hrt !== 'object') {
-            return this.onError('human_readable_text is not an object');
-          }
+          const hrt = opening.opening.parse_human_readable_text_with_fallback();
 
           this.state.role = hrt;
           this.state.applications = opening.applications;
@@ -111,7 +124,7 @@ export class ApplyController extends Controller<State, ITransport> {
             ? ProgressSteps.ConfirmStakes
             : ProgressSteps.ApplicationDetails;
 
-          this.state.roleKeyName = hrt.job.title + ' role key';
+          this.state.roleKeyNameBase = hrt.job.title + ' role key';
 
           // When everything is collected, update the view
           this.dispatch();
@@ -120,11 +133,13 @@ export class ApplyController extends Controller<State, ITransport> {
       .catch(
         (err: any) => {
           this.currentOpeningId = -1;
+          this.currentGroup = null;
           this.onError(err);
         }
       );
 
     this.currentOpeningId = id;
+    this.currentGroup = group;
   }
 
   setApplicationStake (b: Balance): void {
@@ -182,8 +197,22 @@ export class ApplyController extends Controller<State, ITransport> {
     return true;
   }
 
+  private updateRoleKeyName () {
+    let roleKeyNamePrefix = 0;
+    do {
+      this.state.roleKeyName = `${this.state.roleKeyNameBase}${(++roleKeyNamePrefix > 1 ? ` ${roleKeyNamePrefix}` : '')}`;
+    } while (this.state.keypairs?.some(k => (
+      k.shortName.toLowerCase() === this.state.roleKeyName.toLowerCase()
+    )));
+  }
+
   async makeApplicationTransaction (): Promise<number> {
-    return this.transport.applyToCuratorOpening(
+    if (!this.currentGroup || this.currentOpeningId < 0) {
+      throw new Error('Trying to apply to unfetched opening');
+    }
+    this.updateRoleKeyName();
+    return this.transport.applyToOpening(
+      this.currentGroup,
       this.currentOpeningId,
       this.state.roleKeyName,
       this.state.txKeyAddress.toString(),
@@ -196,11 +225,10 @@ export class ApplyController extends Controller<State, ITransport> {
 
 export const ApplyView = View<ApplyController, State>(
   (state, controller, params) => {
-    controller.findOpening(params.get('id'));
+    controller.findOpening(params.get('id'), params.get('group'));
     return (
       <Container className="apply-flow">
         <div className="dimmer"></div>
-        // @ts-ignore
         <FlowModal
           role={state.role!}
           applications={state.applications!}

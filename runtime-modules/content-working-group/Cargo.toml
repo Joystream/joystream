@@ -1,130 +1,48 @@
 [package]
-name = 'substrate-content-working-group-module'
-version = '1.0.0'
+name = 'pallet-content-working-group'
+version = '3.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
+
+[dependencies]
+serde = { version = "1.0.101", optional = true, features = ["derive"] }
+codec = { package = 'parity-scale-codec', version = '1.3.1', default-features = false, features = ['derive'] }
+sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
+stake = { package = 'pallet-stake', default-features = false, path = '../stake'}
+hiring = { package = 'pallet-hiring', default-features = false, path = '../hiring'}
+minting = { package = 'pallet-token-mint', default-features = false, path = '../token-minting'}
+recurringrewards = { package = 'pallet-recurring-reward', default-features = false, path = '../recurring-reward'}
+versioned_store = { package = 'pallet-versioned-store', default-features = false, path = '../versioned-store'}
+versioned_store_permissions = { package = 'pallet-versioned-store-permissions', default-features = false, path = '../versioned-store-permissions'}
+common = { package = 'pallet-common', default-features = false, path = '../common'}
+
+[dev-dependencies]
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 
 [features]
 default = ['std']
 std = [
-	'sr-primitives/std',
-	'srml-support/std',
+	'serde',
+	'codec/std',
+	'sp-std/std',
+	'frame-support/std',
 	'system/std',
-    'serde',
-    'codec/std',
-    'primitives/std',
-    'rstd/std',
-    'membership/std',
-    'forum/std',
-    'hiring/std',
-    'stake/std',
-    'minting/std',
+	'sp-arithmetic/std',
+	'sp-runtime/std',
+	'membership/std',
+	'stake/std',
+	'hiring/std',
+	'minting/std',
+	'recurringrewards/std',
     'versioned_store/std',
     'versioned_store_permissions/std',
-    'recurringrewards/std',
+	'common/std',
 ]
-
-
-[dependencies.sr-primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-primitives'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.srml-support]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-support'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.system]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-system'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.rstd]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-std'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.serde]
-features = ['derive']
-optional = true
-version = '1.0.101'
-
-[dependencies.primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-primitives'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.codec]
-default-features = false
-features = ['derive']
-package = 'parity-scale-codec'
-version = '1.0.0'
-
-[dependencies.forum]
-default_features = false
-package = 'substrate-forum-module'
-path = '../forum'
-
-[dependencies.minting]
-default_features = false
-package = 'substrate-token-mint-module'
-path = '../token-minting'
-
-[dependencies.stake]
-default_features = false
-package = 'substrate-stake-module'
-path = '../stake'
-
-[dependencies.recurringrewards]
-default_features = false
-package = 'substrate-recurring-reward-module'
-path = '../recurring-reward'
-
-[dependencies.hiring]
-default_features = false
-package = 'substrate-hiring-module'
-path = '../hiring'
-
-[dependencies.versioned_store]
-default_features = false
-package ='substrate-versioned-store'
-path = '../versioned-store'
-
-[dependencies.versioned_store_permissions]
-default_features = false
-package = 'substrate-versioned-store-permissions-module'
-path = '../versioned-store-permissions'
-
-[dependencies.membership]
-default_features = false
-package = 'substrate-membership-module'
-path = '../membership'
-
-[dev-dependencies.runtime-io]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-io'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dev-dependencies.balances]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-balances'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dev-dependencies.timestamp]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-timestamp'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dev-dependencies.common]
-default_features = false
-package = 'substrate-common-module'
-path = '../common'

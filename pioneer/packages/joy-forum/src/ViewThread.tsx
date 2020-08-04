@@ -5,7 +5,8 @@ import styled from 'styled-components';
 import { Table, Button, Label, Icon } from 'semantic-ui-react';
 import BN from 'bn.js';
 
-import { Category, Thread, ThreadId, Post, PostId } from '@joystream/types/forum';
+import { ThreadId, PostId } from '@joystream/types/common';
+import { Category, Thread, Post } from '@joystream/types/forum';
 import { Pagination, RepliesPerPage, CategoryCrumbs, TimeAgoDate, usePagination, useQueryParam, ReplyIdxQueryParam, ReplyEditIdQueryParam } from './utils';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
