@@ -20,14 +20,13 @@ mod primitives;
 #[cfg(test)]
 mod tests; // Runtime integration tests
 
-use codec::Encode;
 use frame_support::inherent::{CheckInherentsResult, InherentData};
 use frame_support::traits::KeyOwnerProofSystem;
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
-    Weight, WeightToFeeCoefficients, WeightToFeePolynomial,
+    Weight,
 };
-use frame_support::{construct_runtime, debug, parameter_types, traits::Randomness};
+use frame_support::{construct_runtime, parameter_types, traits::Randomness};
 use pallet_contracts_rpc_runtime_api::ContractExecResult;
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
@@ -40,14 +39,13 @@ use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
 use sp_runtime::curve::PiecewiseLinear;
-use sp_runtime::generic::SignedPayload;
 use sp_runtime::traits::{
     BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys, Saturating, StaticLookup,
 };
 use sp_runtime::transaction_validity::{TransactionSource, TransactionValidity};
 use sp_runtime::{
     create_runtime_str, generic, impl_opaque_keys, ApplyExtrinsicResult, FixedPointNumber, Perbill,
-    Perquintill, SaturatedConversion,
+    Perquintill,
 };
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
@@ -180,36 +178,7 @@ where
         Call,
         <UncheckedExtrinsic as sp_runtime::traits::Extrinsic>::SignaturePayload,
     )> {
-        // take the biggest period possible.
-        let period = BlockHashCount::get()
-            .checked_next_power_of_two()
-            .map(|c| c / 2)
-            .unwrap_or(2) as u64;
-        let current_block = System::block_number()
-            .saturated_into::<u64>()
-            // The `System::block_number` is initialized with `n+1`,
-            // so the actual block number is `n`.
-            .saturating_sub(1);
-        let tip = 0;
-        let extra: SignedExtra = (
-            system::CheckSpecVersion::<Runtime>::new(),
-            system::CheckTxVersion::<Runtime>::new(),
-            system::CheckGenesis::<Runtime>::new(),
-            system::CheckEra::<Runtime>::from(generic::Era::mortal(period, current_block)),
-            system::CheckNonce::<Runtime>::from(nonce),
-            system::CheckWeight::<Runtime>::new(),
-            pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
-            pallet_grandpa::ValidateEquivocationReport::<Runtime>::new(),
-        );
-        let raw_payload = SignedPayload::new(call, extra)
-            .map_err(|e| {
-                debug::warn!("Unable to create signed payload: {:?}", e);
-            })
-            .ok()?;
-        let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
-        let address = Indices::unlookup(account);
-        let (call, extra, _) = raw_payload.deconstruct();
-        Some((call, (address, signature, extra)))
+        integration::transactions::create_transaction::<C>(call, public, account, nonce)
     }
 }
 
@@ -273,21 +242,8 @@ impl pallet_transaction_payment::Trait for Runtime {
     type Currency = Balances;
     type OnTransactionPayment = ();
     type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = NoWeights; // TODO: adjust weight
+    type WeightToFee = integration::transactions::NoWeights; // TODO: adjust weight
     type FeeMultiplierUpdate = (); // TODO: adjust fee
-}
-
-pub struct NoWeights;
-impl WeightToFeePolynomial for NoWeights {
-    type Balance = Balance;
-
-    fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-        Default::default()
-    }
-
-    fn calc(_weight: &u64) -> Self::Balance {
-        Default::default()
-    }
 }
 
 impl pallet_sudo::Trait for Runtime {
