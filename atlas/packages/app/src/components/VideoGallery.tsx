@@ -1,9 +1,11 @@
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { css, SerializedStyles } from '@emotion/core'
 import { navigate } from '@reach/router'
 
 import { Gallery, VideoPreview } from '@/shared/components'
-import { MOCK_VIDEOS } from '@/config/mockData'
+import theme from '@/shared/theme'
+import { mockVideos } from '@/config/mocks'
+import { shuffle } from 'lodash'
 
 type VideoGalleryProps = {
   title: string
@@ -15,16 +17,26 @@ const articleStyles = css`
   margin-right: 1.25rem;
 `
 
-const VideoGallery: React.FC<Partial<VideoGalleryProps>> = ({ title, action }) => {
-  const videos = [...MOCK_VIDEOS, ...MOCK_VIDEOS, ...MOCK_VIDEOS]
-  const [controlsTop, setControlsTop] = useState<SerializedStyles>(css``)
+const CAROUSEL_WHEEL_HEIGHT = theme.sizes.b12
 
-  const CAROUSEL_WHEEL_HEIGHT = 48
+const VideoGallery: React.FC<Partial<VideoGalleryProps>> = ({ title, action }) => {
+  const [posterSize, setPosterSize] = useState(0)
+  const [galleryControlCss, setGalleryControlCss] = useState<SerializedStyles>(css``)
+
+  useMemo(() => {
+    if (!posterSize) {
+      return
+    }
+
+    const topPx = posterSize / 2 - CAROUSEL_WHEEL_HEIGHT / 2
+    setGalleryControlCss(css`
+      top: ${topPx}px;
+    `)
+  }, [posterSize])
+
   const imgRef = useCallback((node: HTMLImageElement) => {
     if (node != null) {
-      setControlsTop(css`
-        top: calc(${Math.round(node.clientHeight) / 2}px - ${CAROUSEL_WHEEL_HEIGHT / 2}px);
-      `)
+      setPosterSize(node.clientHeight)
     }
   }, [])
 
@@ -32,20 +44,22 @@ const VideoGallery: React.FC<Partial<VideoGalleryProps>> = ({ title, action }) =
     navigate('/video/fake')
   }
 
+  const videos = shuffle(mockVideos)
+
   return (
-    <Gallery title={title} action={action} leftControlCss={controlsTop} rightControlCss={controlsTop}>
+    <Gallery title={title} action={action} leftControlCss={galleryControlCss} rightControlCss={galleryControlCss}>
       {videos.map((video, idx) => (
         <article css={articleStyles} key={`${title}- ${video.title} - ${idx}`}>
           <VideoPreview
             title={video.title}
-            channel={video.channel}
-            showChannel={video.showChannel}
+            channelName={video.channel.name}
+            channelAvatarURL={video.channel.avatarURL}
             views={video.views}
             createdAt={video.createdAt}
-            imgRef={idx === 0 ? imgRef : null}
-            poster={video.poster}
-            showMeta={true}
+            duration={video.duration}
+            posterURL={video.posterURL}
             onClick={handleVideoClick}
+            imgRef={idx === 0 ? imgRef : null}
           />
         </article>
       ))}

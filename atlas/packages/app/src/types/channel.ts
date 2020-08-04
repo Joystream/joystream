@@ -1,6 +1,8 @@
 type Channel = {
+  id: string
   name: string
-  avatarUrl?: string
+  avatarURL?: string
+  views: number
 }
 
 export default Channel
