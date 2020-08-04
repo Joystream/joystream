@@ -34,6 +34,7 @@ rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [dev-dependencies]
 runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+rand = "0.7.3"
 
 [features]
 default = ['std']
