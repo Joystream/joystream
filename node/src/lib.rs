@@ -5,5 +5,5 @@ pub mod members_config;
 #[macro_use]
 pub mod service;
 pub mod command;
-pub mod node_rpc;
 pub mod node_executor;
+pub mod node_rpc;

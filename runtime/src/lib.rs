@@ -13,25 +13,27 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+mod constants;
 mod integration;
-mod primitives;
 mod migration;
+mod primitives;
 #[cfg(test)]
 mod tests; // Runtime integration tests
 
 use codec::Encode;
 use frame_support::inherent::{CheckInherentsResult, InherentData};
-use frame_support::traits::{KeyOwnerProofSystem};
+use frame_support::traits::KeyOwnerProofSystem;
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
-    IdentityFee, Weight,
+    Weight, WeightToFeeCoefficients, WeightToFeePolynomial,
 };
 use frame_support::{construct_runtime, debug, parameter_types, traits::Randomness};
+use pallet_contracts_rpc_runtime_api::ContractExecResult;
 use pallet_grandpa::fg_primitives;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
-use pallet_transaction_payment::{Multiplier, TargetedFeeAdjustment};
+use pallet_transaction_payment::Multiplier;
 use pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo;
 use sp_api::impl_runtime_apis;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
@@ -39,19 +41,22 @@ use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::generic::SignedPayload;
-use sp_runtime::traits::{OpaqueKeys,
-    BlakeTwo256, Block as BlockT, NumberFor, Saturating, StaticLookup,
+use sp_runtime::traits::{
+    BlakeTwo256, Block as BlockT, NumberFor, OpaqueKeys, Saturating, StaticLookup,
 };
 use sp_runtime::transaction_validity::{TransactionSource, TransactionValidity};
-use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, ApplyExtrinsicResult, FixedPointNumber, Perbill, Perquintill, SaturatedConversion};
+use sp_runtime::{
+    create_runtime_str, generic, impl_opaque_keys, ApplyExtrinsicResult, FixedPointNumber, Perbill,
+    Perquintill, SaturatedConversion,
+};
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
 use system::EnsureRoot;
-use pallet_contracts_rpc_runtime_api::ContractExecResult;
 
+pub use constants::*;
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 pub use primitives::*;
 
@@ -61,13 +66,12 @@ use storage::{data_directory, data_object_storage_registry, data_object_type_reg
 
 // Node dependencies
 pub use common;
-pub use versioned_store;
 pub use forum;
-pub use working_group;
 pub use governance::election_params::ElectionParameters;
 pub use pallet_staking::StakerStatus;
 pub use proposals_codex::ProposalsConfigParameters;
-
+pub use versioned_store;
+pub use working_group;
 
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
@@ -79,40 +83,6 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
 };
-
-/// Constants for Babe.
-
-/// Since BABE is probabilistic this is the average expected block time that
-/// we are targetting. Blocks will be produced at a minimum duration defined
-/// by `SLOT_DURATION`, but some slots will not be allocated to any
-/// authority and hence no block will be produced. We expect to have this
-/// block time on average following the defined slot duration and the value
-/// of `c` configured for BABE (where `1 - c` represents the probability of
-/// a slot being empty).
-/// This value is only used indirectly to define the unit constants below
-/// that are expressed in blocks. The rest of the code should use
-/// `SLOT_DURATION` instead (like the timestamp module for calculating the
-/// minimum period).
-/// <https://research.web3.foundation/en/latest/polkadot/BABE/Babe/#6-practical-results>
-pub const MILLISECS_PER_BLOCK: Moment = 6000;
-pub const SECS_PER_BLOCK: Moment = MILLISECS_PER_BLOCK / 1000;
-
-pub const SLOT_DURATION: Moment = 6000;
-
-pub const EPOCH_DURATION_IN_BLOCKS: BlockNumber = 10 * MINUTES;
-pub const EPOCH_DURATION_IN_SLOTS: u64 = {
-    const SLOT_FILL_RATE: f64 = MILLISECS_PER_BLOCK as f64 / SLOT_DURATION as f64;
-
-    (EPOCH_DURATION_IN_BLOCKS as f64 * SLOT_FILL_RATE) as u64
-};
-
-// These time units are defined in number of blocks.
-pub const MINUTES: BlockNumber = 60 / (SECS_PER_BLOCK as BlockNumber);
-pub const HOURS: BlockNumber = MINUTES * 60;
-pub const DAYS: BlockNumber = HOURS * 24;
-
-// 1 in 4 blocks (on average, not counting collisions) will be primary babe blocks.
-pub const PRIMARY_PROBABILITY: (u64, u64) = (1, 4);
 
 /// The version information used to identify this runtime when compiled natively.
 #[cfg(feature = "std")]
@@ -293,38 +263,31 @@ impl pallet_balances::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const TransactionByteFee: Balance = 1; // TODO: adjust fee
+    pub const TransactionByteFee: Balance = 0; // TODO: adjust fee
     pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
     pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
     pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
 }
 
-// type NegativeImbalance = <Balances as Currency<AccountId>>::NegativeImbalance;
-//
-// pub struct DealWithFees;
-// impl OnUnbalanced<NegativeImbalance> for DealWithFees {
-//     fn on_unbalanceds<B>(mut fees_then_tips: impl Iterator<Item=NegativeImbalance>) {
-//         if let Some(fees) = fees_then_tips.next() {
-//             // // for fees, 80% to treasury, 20% to author
-//             // let mut split = fees.ration(80, 20);
-//             // if let Some(tips) = fees_then_tips.next() {
-//             //     // for tips, if any, 80% to treasury, 20% to author (though this can be anything)
-//             //     tips.ration_merge_into(80, 20, &mut split);
-//             // }
-//             // Treasury::on_unbalanced(split.0);
-//             // Author::on_unbalanced(split.1);
-//         }
-//     }
-// }
-
-
 impl pallet_transaction_payment::Trait for Runtime {
     type Currency = Balances;
-    type OnTransactionPayment = (); // TODO: adjust fee
+    type OnTransactionPayment = ();
     type TransactionByteFee = TransactionByteFee;
-    type WeightToFee = IdentityFee<Balance>; // TODO: adjust weight
-    type FeeMultiplierUpdate =
-        TargetedFeeAdjustment<Self, TargetBlockFullness, AdjustmentVariable, MinimumMultiplier>;
+    type WeightToFee = NoWeights; // TODO: adjust weight
+    type FeeMultiplierUpdate = (); // TODO: adjust fee
+}
+
+pub struct NoWeights;
+impl WeightToFeePolynomial for NoWeights {
+    type Balance = Balance;
+
+    fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
+        Default::default()
+    }
+
+    fn calc(_weight: &u64) -> Self::Balance {
+        Default::default()
+    }
 }
 
 impl pallet_sudo::Trait for Runtime {
@@ -344,12 +307,12 @@ impl pallet_authorship::Trait for Runtime {
 }
 
 impl_opaque_keys! {
-	pub struct SessionKeys {
-		pub grandpa: Grandpa,
-		pub babe: Babe,
-		pub im_online: ImOnline,
-		pub authority_discovery: AuthorityDiscovery,
-	}
+    pub struct SessionKeys {
+        pub grandpa: Grandpa,
+        pub babe: Babe,
+        pub im_online: ImOnline,
+        pub authority_discovery: AuthorityDiscovery,
+    }
 }
 // NOTE: `SessionHandler` and `SessionKeys` are co-dependent: One key will be used for each handler.
 // The number and order of items in `SessionHandler` *MUST* be the same number and order of keys in
@@ -651,10 +614,10 @@ impl proposals_codex::Trait for Runtime {
 }
 
 parameter_types! {
-	pub const TombstoneDeposit: Balance = 1; // TODO: adjust fee
-	pub const RentByteFee: Balance = 1; // TODO: adjust fee
-	pub const RentDepositOffset: Balance = 0; // no rent deposit
-	pub const SurchargeReward: Balance = 0; // no reward
+    pub const TombstoneDeposit: Balance = 1; // TODO: adjust fee
+    pub const RentByteFee: Balance = 1; // TODO: adjust fee
+    pub const RentDepositOffset: Balance = 0; // no rent deposit
+    pub const SurchargeReward: Balance = 0; // no reward
 }
 
 impl pallet_contracts::Trait for Runtime {
@@ -761,6 +724,9 @@ pub type SignedExtra = (
     pallet_grandpa::ValidateEquivocationReport<Runtime>,
 );
 
+/// Digest item type.
+pub type DigestItem = generic::DigestItem<Hash>;
+
 /// Block header type as expected by this runtime.
 pub type Header = generic::Header<BlockNumber, BlakeTwo256>;
 
@@ -778,7 +744,10 @@ pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signatu
 
 /// Executive: handles dispatch to the various modules.
 pub type Executive =
-frame_executive::Executive<Runtime, Block, system::ChainContext<Runtime>, Runtime, AllModules>;
+    frame_executive::Executive<Runtime, Block, system::ChainContext<Runtime>, Runtime, AllModules>;
+
+#[cfg(any(feature = "std", test))]
+pub use pallet_balances::Call as BalancesCall;
 
 impl_runtime_apis! {
     impl sp_api::Core<Block> for Runtime {
@@ -907,49 +876,49 @@ impl_runtime_apis! {
 
     impl pallet_contracts_rpc_runtime_api::ContractsApi<Block, AccountId, Balance, BlockNumber>
     for Runtime
-	{
-		fn call(
-			origin: AccountId,
-			dest: AccountId,
-			value: Balance,
-			gas_limit: u64,
-			input_data: Vec<u8>,
-		) -> ContractExecResult {
-			let exec_result =
-				Contracts::bare_call(origin, dest, value, gas_limit, input_data);
-			match exec_result {
-				Ok(v) => ContractExecResult::Success {
-					status: v.status,
-					data: v.data,
-				},
-				Err(_) => ContractExecResult::Error,
-			}
-		}
+    {
+        fn call(
+            origin: AccountId,
+            dest: AccountId,
+            value: Balance,
+            gas_limit: u64,
+            input_data: Vec<u8>,
+        ) -> ContractExecResult {
+            let exec_result =
+                Contracts::bare_call(origin, dest, value, gas_limit, input_data);
+            match exec_result {
+                Ok(v) => ContractExecResult::Success {
+                    status: v.status,
+                    data: v.data,
+                },
+                Err(_) => ContractExecResult::Error,
+            }
+        }
 
-		fn get_storage(
-			address: AccountId,
-			key: [u8; 32],
-		) -> pallet_contracts_primitives::GetStorageResult {
-			Contracts::get_storage(address, key)
-		}
+        fn get_storage(
+            address: AccountId,
+            key: [u8; 32],
+        ) -> pallet_contracts_primitives::GetStorageResult {
+            Contracts::get_storage(address, key)
+        }
 
-		fn rent_projection(
-			address: AccountId,
-		) -> pallet_contracts_primitives::RentProjectionResult<BlockNumber> {
-			Contracts::rent_projection(address)
-		}
-	}
+        fn rent_projection(
+            address: AccountId,
+        ) -> pallet_contracts_primitives::RentProjectionResult<BlockNumber> {
+            Contracts::rent_projection(address)
+        }
+    }
 
 
     impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<
-		Block,
-		Balance,
-		UncheckedExtrinsic,
-	> for Runtime {
-		fn query_info(uxt: UncheckedExtrinsic, len: u32) -> RuntimeDispatchInfo<Balance> {
-			TransactionPayment::query_info(uxt, len)
-		}
-	}
+        Block,
+        Balance,
+        UncheckedExtrinsic,
+    > for Runtime {
+        fn query_info(uxt: UncheckedExtrinsic, len: u32) -> RuntimeDispatchInfo<Balance> {
+            TransactionPayment::query_info(uxt, len)
+        }
+    }
 
     impl sp_session::SessionKeys<Block> for Runtime {
         fn generate_session_keys(seed: Option<Vec<u8>>) -> Vec<u8> {

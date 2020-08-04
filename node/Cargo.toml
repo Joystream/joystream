@@ -127,6 +127,19 @@ wasm-bindgen = { version = "0.2.57", optional = true }
 wasm-bindgen-futures = { version = "0.4.7", optional = true }
 browser-utils = { package = 'substrate-browser-utils', git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', optional = true}
 
+[dev-dependencies]
+#sc-keystore = { version = "2.0.0-rc4", path = "../../../client/keystore" }
+#sc-consensus = { version = "0.8.0-rc4", path = "../../../client/consensus/common" }
+sc-consensus-babe = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', features = ["test-helpers"]}
+#sc-consensus-epochs = { version = "0.8.0-rc4", path = "../../../client/consensus/epochs" }
+sc-service-test = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
+#futures = "0.3.4"
+tempfile = "3.1.0"
+#assert_cmd = "1.0"
+#nix = "0.17"
+#serde_json = "1.0"
+#regex = "1"
+#platforms = "0.2.1"
 
 #[dependencies.substrate-basic-authorship]
 #git = 'https://github.com/paritytech/substrate.git'

@@ -20,22 +20,22 @@
 #![allow(clippy::identity_op)]
 
 use node_runtime::{AccountId, GenesisConfig};
-use sp_runtime::{Perbill};
-use sp_core::{Pair, Public, sr25519};
-use sp_runtime::traits::{IdentifyAccount, Verify};
-use sp_consensus_babe::AuthorityId as BabeId;
-use sp_finality_grandpa::AuthorityId as GrandpaId;
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
-use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use serde_json as json;
+use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
+use sp_consensus_babe::AuthorityId as BabeId;
+use sp_core::{sr25519, Pair, Public};
+use sp_finality_grandpa::AuthorityId as GrandpaId;
+use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::Perbill;
 
-use node_runtime::{ContractsConfig,
+use node_runtime::{
     versioned_store::InputValidationLengthConstraint as VsInputValidation,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
-    CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
+    ContractsConfig, CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
-    MembersConfig, MigrationConfig, ProposalsCodexConfig, SessionConfig, SessionKeys,
-    Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
+    MembersConfig, MigrationConfig, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
+    StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
     VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 
@@ -100,7 +100,12 @@ fn session_keys(
     im_online: ImOnlineId,
     authority_discovery: AuthorityDiscoveryId,
 ) -> SessionKeys {
-    SessionKeys { grandpa, babe, im_online, authority_discovery }
+    SessionKeys {
+        grandpa,
+        babe,
+        im_online,
+        authority_discovery,
+    }
 }
 
 impl Alternative {
@@ -241,14 +246,16 @@ pub fn testnet_genesis(
         }),
         pallet_indices: Some(IndicesConfig { indices: vec![] }),
         pallet_session: Some(SessionConfig {
-            keys: initial_authorities.iter().map(|x| {
-                (x.0.clone(), x.0.clone(), session_keys(
-                    x.2.clone(),
-                    x.3.clone(),
-                    x.4.clone(),
-                    x.5.clone(),
-                ))
-            }).collect::<Vec<_>>(),
+            keys: initial_authorities
+                .iter()
+                .map(|x| {
+                    (
+                        x.0.clone(),
+                        x.0.clone(),
+                        session_keys(x.2.clone(), x.3.clone(), x.4.clone(), x.5.clone()),
+                    )
+                })
+                .collect::<Vec<_>>(),
         }),
         pallet_contracts: Some(ContractsConfig {
             current_schedule: pallet_contracts::Schedule {
@@ -382,5 +389,74 @@ pub fn testnet_genesis(
             terminate_working_group_leader_role_proposal_grace_period: cpcp
                 .terminate_working_group_leader_role_proposal_grace_period,
         }),
+    }
+}
+
+#[cfg(test)]
+pub(crate) mod tests {
+    use super::*;
+    use crate::service::{new_full, new_light};
+    use sc_service_test;
+
+    fn local_testnet_genesis_instant_single() -> GenesisConfig {
+        testnet_genesis(
+            vec![get_authority_keys_from_seed("Alice")],
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            vec![get_authority_keys_from_seed("Alice").0],
+        )
+    }
+
+    /// Local testnet config (single validator - Alice)
+    pub fn integration_test_config_with_single_authority() -> ChainSpec {
+        ChainSpec::from_genesis(
+            "Integration Test",
+            "test",
+            ChainType::Development,
+            local_testnet_genesis_instant_single,
+            vec![],
+            None,
+            None,
+            None,
+            Default::default(),
+        )
+    }
+
+    fn local_testnet_genesis() -> GenesisConfig {
+        testnet_genesis(
+            vec![
+                get_authority_keys_from_seed("Alice"),
+                get_authority_keys_from_seed("Bob"),
+            ],
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            vec![
+                get_authority_keys_from_seed("Alice").0,
+                get_authority_keys_from_seed("Bob").0,
+            ],
+        )
+    }
+
+    /// Local testnet config (multivalidator Alice + Bob)
+    pub fn integration_test_config_with_two_authorities() -> ChainSpec {
+        ChainSpec::from_genesis(
+            "Integration Test",
+            "test",
+            ChainType::Development,
+            local_testnet_genesis,
+            vec![],
+            None,
+            None,
+            None,
+            Default::default(),
+        )
+    }
+
+    #[test]
+    #[ignore]
+    fn test_connectivity() {
+        sc_service_test::connectivity(
+            integration_test_config_with_two_authorities(),
+            |config| new_full(config),
+            |config| new_light(config),
+        );
     }
 }
