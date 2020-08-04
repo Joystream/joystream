@@ -1198,6 +1198,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "frame-system-benchmarking"
+version = "2.0.0-rc4"
+source = "git+https://github.com/paritytech/substrate.git?rev=00768a1f21a579c478fe5d4f51e1fa71f7db9fd4#00768a1f21a579c478fe5d4f51e1fa71f7db9fd4"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "frame-system-rpc-runtime-api"
 version = "2.0.0-rc4"
 source = "git+https://github.com/paritytech/substrate.git?rev=00768a1f21a579c478fe5d4f51e1fa71f7db9fd4#00768a1f21a579c478fe5d4f51e1fa71f7db9fd4"
@@ -1944,34 +1958,23 @@ version = "3.0.0"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
- "frame-support",
  "frame-system",
  "futures 0.3.4",
- "hex-literal",
  "joystream-node-runtime",
  "jsonrpc-core",
- "log",
  "node-inspect",
- "pallet-authority-discovery",
- "pallet-balances",
  "pallet-contracts",
  "pallet-contracts-rpc",
  "pallet-grandpa",
  "pallet-im-online",
- "pallet-indices",
- "pallet-staking",
- "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc",
  "parity-scale-codec",
- "parking_lot 0.10.2",
- "rand 0.7.3",
  "sc-authority-discovery",
  "sc-basic-authorship",
  "sc-chain-spec",
  "sc-cli",
  "sc-client-api",
- "sc-client-db",
  "sc-consensus",
  "sc-consensus-babe",
  "sc-consensus-babe-rpc",
@@ -1981,13 +1984,9 @@ dependencies = [
  "sc-finality-grandpa-rpc",
  "sc-keystore",
  "sc-network",
- "sc-offchain",
- "sc-rpc",
  "sc-rpc-api",
  "sc-service",
  "sc-service-test",
- "sc-telemetry",
- "sc-tracing",
  "sc-transaction-pool",
  "serde",
  "serde_json",
@@ -2001,7 +2000,6 @@ dependencies = [
  "sp-finality-grandpa",
  "sp-finality-tracker",
  "sp-inherents",
- "sp-io",
  "sp-keyring",
  "sp-runtime",
  "sp-timestamp",
@@ -2010,8 +2008,6 @@ dependencies = [
  "substrate-browser-utils",
  "substrate-frame-rpc-system",
  "tempfile",
- "tokio 0.1.22",
- "tracing",
  "vergen",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -2021,9 +2017,11 @@ dependencies = [
 name = "joystream-node-runtime"
 version = "7.0.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-executive",
  "frame-support",
  "frame-system",
+ "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
  "pallet-authority-discovery",
  "pallet-authorship",
@@ -2045,6 +2043,7 @@ dependencies = [
  "pallet-membership",
  "pallet-memo",
  "pallet-offences",
+ "pallet-offences-benchmarking",
  "pallet-proposals-codex",
  "pallet-proposals-discussion",
  "pallet-proposals-engine",
@@ -2052,6 +2051,7 @@ dependencies = [
  "pallet-recurring-reward",
  "pallet-service-discovery",
  "pallet-session",
+ "pallet-session-benchmarking",
  "pallet-stake",
  "pallet-staking",
  "pallet-staking-reward-curve",
@@ -3244,6 +3244,7 @@ name = "pallet-collective"
 version = "2.0.0-rc4"
 source = "git+https://github.com/paritytech/substrate.git?rev=00768a1f21a579c478fe5d4f51e1fa71f7db9fd4#00768a1f21a579c478fe5d4f51e1fa71f7db9fd4"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
@@ -3449,6 +3450,7 @@ name = "pallet-im-online"
 version = "2.0.0-rc4"
 source = "git+https://github.com/paritytech/substrate.git?rev=00768a1f21a579c478fe5d4f51e1fa71f7db9fd4#00768a1f21a579c478fe5d4f51e1fa71f7db9fd4"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-authorship",
@@ -3468,6 +3470,7 @@ name = "pallet-indices"
 version = "2.0.0-rc4"
 source = "git+https://github.com/paritytech/substrate.git?rev=00768a1f21a579c478fe5d4f51e1fa71f7db9fd4#00768a1f21a579c478fe5d4f51e1fa71f7db9fd4"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "parity-scale-codec",
@@ -3519,6 +3522,27 @@ dependencies = [
  "pallet-balances",
  "parity-scale-codec",
  "serde",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-offences-benchmarking"
+version = "2.0.0-rc4"
+source = "git+https://github.com/paritytech/substrate.git?rev=00768a1f21a579c478fe5d4f51e1fa71f7db9fd4#00768a1f21a579c478fe5d4f51e1fa71f7db9fd4"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-babe",
+ "pallet-balances",
+ "pallet-grandpa",
+ "pallet-im-online",
+ "pallet-offences",
+ "pallet-session",
+ "pallet-staking",
+ "parity-scale-codec",
  "sp-runtime",
  "sp-staking",
  "sp-std",
@@ -3668,6 +3692,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-session-benchmarking"
+version = "2.0.0-rc4"
+source = "git+https://github.com/paritytech/substrate.git?rev=00768a1f21a579c478fe5d4f51e1fa71f7db9fd4#00768a1f21a579c478fe5d4f51e1fa71f7db9fd4"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "pallet-session",
+ "pallet-staking",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-stake"
 version = "3.0.0"
 dependencies = [
@@ -3688,11 +3726,13 @@ name = "pallet-staking"
 version = "2.0.0-rc4"
 source = "git+https://github.com/paritytech/substrate.git?rev=00768a1f21a579c478fe5d4f51e1fa71f7db9fd4#00768a1f21a579c478fe5d4f51e1fa71f7db9fd4"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-authorship",
  "pallet-session",
  "parity-scale-codec",
+ "rand_chacha 0.2.2",
  "serde",
  "sp-application-crypto",
  "sp-io",
@@ -3764,6 +3804,7 @@ dependencies = [
  "parity-scale-codec",
  "serde",
  "sp-inherents",
+ "sp-io",
  "sp-runtime",
  "sp-std",
  "sp-timestamp",

@@ -56,6 +56,12 @@ pallet-contracts = { package = 'pallet-contracts', default-features = false, git
 pallet-contracts-rpc-runtime-api = { package = 'pallet-contracts-rpc-runtime-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 pallet-contracts-primitives = { package = 'pallet-contracts-primitives', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 
+# Benchmarking
+frame-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', default-features = false, optional = true }
+frame-system-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', default-features = false, optional = true }
+pallet-offences-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', default-features = false, optional = true }
+pallet-session-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', default-features = false, optional = true }
+
 # Joystream
 common = { package = 'pallet-common', default-features = false, path = '../runtime-modules/common'}
 memo = { package = 'pallet-memo', default-features = false, path = '../runtime-modules/memo'}
@@ -155,6 +161,20 @@ std = [
     'proposals-discussion/std',
     'proposals-codex/std',
 ]
-
+runtime-benchmarks = [
+    "system/runtime-benchmarks",
+	"frame-support/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+	"pallet-balances/runtime-benchmarks",
+	"pallet-collective/runtime-benchmarks",
+	"pallet-im-online/runtime-benchmarks",
+	"pallet-indices/runtime-benchmarks",
+	"pallet-staking/runtime-benchmarks",
+	"pallet-timestamp/runtime-benchmarks",
+    "frame-benchmarking",
+    "frame-system-benchmarking",
+    "pallet-offences-benchmarking",
+	"pallet-session-benchmarking",
+]
 
 
