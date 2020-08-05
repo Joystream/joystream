@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 /////////////////// Configuration //////////////////////////////////////////////
-use crate::{Error, Event, Instance, Module, ReferendumStage, Trait};
+use crate::{Error, Event, Instance, Module, ReferendumOptions, ReferendumResult, ReferendumStage, RevealedVotes, SealedVote, Stage, Trait, Votes};
 
 use primitives::H256;
 use runtime_io;
@@ -10,11 +10,11 @@ use sr_primitives::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageValue, StorageMap};
 use std::marker::PhantomData;
 use system::RawOrigin;
 use rand::Rng;
-use codec::{Codec, Decode, Encode};
+use codec::{Encode};
 
 use crate::GenesisConfig;
 
@@ -243,15 +243,18 @@ impl<T: Trait<I>, I: Instance> InstanceMockUtils<T, I> {
         system::Module::<T>::set_block_number(block_number + increase);
     }
 
-    pub fn vote_commitment(account_id: <T as system::Trait>::AccountId, option: T::ReferendumOption) -> T::Hash {
+    pub fn vote_commitment(account_id: <T as system::Trait>::AccountId, option: T::ReferendumOption) -> (T::Hash, Vec<u8>) {
         let mut rng = rand::thread_rng();
-        let mut salt = rng.gen::<u64>().to_be_bytes().to_vec();
+        let salt = rng.gen::<u64>().to_be_bytes().to_vec();
+        let mut salt_tmp = salt.clone();
 
         let mut payload = account_id.encode();
-        payload.append(&mut salt);
+        payload.append(&mut salt_tmp);
         payload.append(&mut option.into().to_be_bytes().to_vec());
 
-        <T::Hashing as sr_primitives::traits::Hash>::hash(&payload)
+        let commitment = <T::Hashing as sr_primitives::traits::Hash>::hash(&payload);
+
+        (commitment, salt)
     }
 }
 
@@ -270,13 +273,23 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<T, I>::start_referendum(InstanceMockUtils::<T, I>::mock_origin(origin), options,),
+            Module::<T, I>::start_referendum(InstanceMockUtils::<T, I>::mock_origin(origin), options.clone(),),
             expected_result,
         );
 
         if expected_result.is_err() {
             return;
         }
+
+        assert_eq!(
+            Stage::<T, I>::get().0,
+            ReferendumStage::Voting,
+        );
+
+        assert_eq!(
+            ReferendumOptions::<T, I>::get(),
+            Some(options),
+        );
         /*
         // check event was emitted
         assert_eq!(
@@ -301,6 +314,12 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
         if expected_result.is_err() {
             return;
         }
+
+        assert_eq!(
+            Stage::<T, I>::get().0,
+            ReferendumStage::Revealing,
+        );
+
         /*
         // check event was emitted
         assert_eq!(
@@ -310,8 +329,39 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
         */
     }
 
+    pub fn finish_revealing_period(
+        origin: OriginType<T::AccountId>,
+        expected_result: Result<(), Error>,
+        _expected_referendum_result: Option<ReferendumResult<T::ReferendumOption>>,
+    ) -> () {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T, I>::finish_revealing_period(InstanceMockUtils::<T, I>::mock_origin(origin),),
+            expected_result,
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        assert_eq!(
+            Stage::<T, I>::get().0,
+            ReferendumStage::Void,
+        );
+        // TODO: check that rest of storage was reset as well
+
+        /*
+        // check event was emitted
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::event_mod(RawEvent::ReferendumFinished(expected_referendum_result.unwrap()))
+        );
+        */
+    }
+
     pub fn vote(
         origin: OriginType<T::AccountId>,
+        account_id: T::AccountId,
         commitment: T::Hash,
         stake: T::CurrencyBalance,
         expected_result: Result<(), Error>,
@@ -325,11 +375,44 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
         if expected_result.is_err() {
             return;
         }
+
+        assert_eq!(
+            Votes::<T, I>::get(account_id),
+            SealedVote {
+                commitment,
+                stake,
+            },
+        );
         /*
         // check event was emitted
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::event_mod(RawEvent::VoteCasted(commitment, stake))
+        );
+        */
+    }
+
+    pub fn reveal_vote(
+        origin: OriginType<T::AccountId>,
+        _account_id: T::AccountId,
+        salt: Vec<u8>,
+        vote_option: T::ReferendumOption,
+        expected_result: Result<(), Error>,
+    ) -> () {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T, I>::reveal_vote(InstanceMockUtils::<T, I>::mock_origin(origin), salt, vote_option,),
+            expected_result,
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+        /*
+        // check event was emitted
+        assert_eq!(
+            System::events().last().unwrap().event,
+            TestEvent::event_mod(RawEvent::VoteRevealed(account_id, vote_option))
         );
         */
     }
