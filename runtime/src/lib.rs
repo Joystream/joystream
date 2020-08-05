@@ -807,6 +807,22 @@ impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
 
 parameter_types! {
     pub const MaxCategoryDepth: u64 = 5;
+
+    pub const MaxSubcategories: u64 = 20;
+    pub const MaxThreadsInCategory: u64 = 20;
+    pub const MaxPostsInThread: u64 = 20;
+    pub const MaxModeratorsForCategory: u64 = 20;
+    pub const MaxCategories: u64 = 20;
+}
+
+pub struct MapLimits;
+
+impl forum::StorageLimits for MapLimits {
+    type MaxSubcategories = MaxSubcategories;
+    type MaxThreadsInCategory = MaxThreadsInCategory;
+    type MaxPostsInThread = MaxPostsInThread;
+    type MaxModeratorsForCategory = MaxModeratorsForCategory;
+    type MaxCategories = MaxCategories;
 }
 
 impl forum::Trait for Runtime {
@@ -819,6 +835,8 @@ impl forum::Trait for Runtime {
     type CategoryId = u64;
     type PostReactionId = u64;
     type MaxCategoryDepth = MaxCategoryDepth;
+
+    type MapLimits = MapLimits;
 
     fn is_lead(_account_id: &AccountId) -> bool {
         true
