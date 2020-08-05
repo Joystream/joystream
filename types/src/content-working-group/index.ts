@@ -335,7 +335,7 @@ export const contentWorkingGroupTypes = {
   Principal,
   WorkingGroupUnstaker,
   CuratorApplicationIdToCuratorIdMap,
-  CuratorApplicationIdSet
+  CuratorApplicationIdSet,
 }
 
 export default contentWorkingGroupTypes
