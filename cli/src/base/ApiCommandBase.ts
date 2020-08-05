@@ -5,7 +5,7 @@ import Api from '../Api'
 import { getTypeDef, createType, Option, Tuple, Bytes } from '@polkadot/types'
 import { Codec, TypeDef, TypeDefInfo, Constructor } from '@polkadot/types/types'
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
-import { ApiPromise } from '@polkadot/api'
+import { ApiPromise, WsProvider } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
 import { SubmittableResultImpl } from '@polkadot/api/types'
@@ -20,6 +20,7 @@ class ExtrinsicFailedError extends Error {}
  */
 export default abstract class ApiCommandBase extends StateAwareCommandBase {
   private api: Api | null = null
+  forceSkipApiUriPrompt = false
 
   getApi(): Api {
     if (!this.api) throw new CLIError('Tried to get API before initialization.', { exit: ExitCodes.ApiError })
@@ -33,8 +34,58 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
   async init() {
     await super.init()
-    const apiUri: string = this.getPreservedState().apiUri
+    let apiUri: string = this.getPreservedState().apiUri
+    if (!apiUri) {
+      this.warn("You haven't provided a node/endpoint for the CLI to connect to yet!")
+      apiUri = await this.promptForApiUri()
+    }
     this.api = await Api.create(apiUri)
+  }
+
+  async promptForApiUri(): Promise<string> {
+    let selectedNodeUri = await this.simplePrompt({
+      type: 'list',
+      message: 'Choose a node/endpoint:',
+      choices: [
+        {
+          name: 'Local node (ws://localhost:9944)',
+          value: 'ws://localhost:9944',
+        },
+        {
+          name: 'Current Testnet official Joystream node (wss://rome-rpc-endpoint.joystream.org:9944/)',
+          value: 'wss://rome-rpc-endpoint.joystream.org:9944/',
+        },
+        {
+          name: 'Custom endpoint',
+          value: '',
+        },
+      ],
+    })
+
+    if (!selectedNodeUri) {
+      do {
+        selectedNodeUri = await this.simplePrompt({
+          type: 'input',
+          message: 'Provide a WS endpoint uri',
+        })
+        if (!this.isApiUriValid(selectedNodeUri)) {
+          this.warn('Provided uri seems incorrect! Please try again...')
+        }
+      } while (!this.isApiUriValid(selectedNodeUri))
+    }
+
+    await this.setPreservedState({ apiUri: selectedNodeUri })
+
+    return selectedNodeUri
+  }
+
+  isApiUriValid(uri: string) {
+    try {
+      new WsProvider(uri)
+    } catch (e) {
+      return false
+    }
+    return true
   }
 
   // This is needed to correctly handle some structs, enums etc.
@@ -67,11 +118,15 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
   // Prompt for simple/plain value (provided as string) of given type
   async promptForSimple(typeDef: TypeDef, paramOptions?: ApiParamOptions): Promise<Codec> {
+    // If no default provided - get default value resulting from providing empty string
+    const defaultValueString =
+      paramOptions?.value?.default?.toString() || createType(typeDef.type as any, '').toString()
     const providedValue = await this.simplePrompt({
       message: `Provide value for ${this.paramName(typeDef)}`,
       type: 'input',
-      // If not default provided - show default value resulting from providing empty string
-      default: paramOptions?.value?.default?.toString() || createType(typeDef.type as any, '').toString(),
+      // We want to avoid showing default value like '0x', because it falsely suggests
+      // that user needs to provide the value as hex
+      default: (defaultValueString === '0x' ? '' : defaultValueString) || undefined,
       validate: paramOptions?.validator,
     })
     return createType(typeDef.type as any, providedValue)
@@ -137,8 +192,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       const fieldOptions = paramOptions?.nestedOptions && paramOptions.nestedOptions[subtype.name!]
       const fieldDefaultValue = fieldOptions?.value?.default || (structDefault && structDefault.get(subtype.name!))
       const finalFieldOptions: ApiParamOptions = {
-        ...fieldOptions,
         forcedName: subtype.name,
+        ...fieldOptions, // "forcedName" above should be overriden with "fieldOptions.forcedName" if available
         value: fieldDefaultValue && { ...fieldOptions?.value, default: fieldDefaultValue },
       }
       structValues[subtype.name!] = await this.promptForParam(subtype.type, finalFieldOptions)

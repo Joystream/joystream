@@ -950,7 +950,7 @@ export function DoneStage (props: DoneStageProps) {
       </p>
       <p>
         You can track the progress of your
-        application in the <Link to="#working-group/my-roles">My roles</Link> section. Note that your application is attached
+        application in the <Link to="#working-group/my-roles">My roles and applications</Link> section. Note that your application is attached
         to your role key (see below).  If you have any issues, you can message the group lead in in the <Link to="#forum">Forum</Link> or contact them directly.
       </p>
 

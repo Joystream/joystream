@@ -17,7 +17,13 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile
-        yarn workspace joystream-cli checks
+        yarn workspace @joystream/cli checks
+    - name: npm pack test
+      run: |
+        cd cli
+        npm pack | tail -1 | xargs tar xzf
+        cd package && npm link
+        joystream-cli help
 
   cli_build_osx:
     name: MacOS Checks
@@ -34,4 +40,10 @@ jobs:
     - name: checks
       run: |
         yarn install --frozen-lockfile --network-timeout 120000
-        yarn workspace joystream-cli checks
+        yarn workspace @joystream/cli checks
+    - name: npm pack test
+      run: |
+        cd cli
+        npm pack | tail -1 | xargs tar xzf
+        cd package && npm link
+        joystream-cli help

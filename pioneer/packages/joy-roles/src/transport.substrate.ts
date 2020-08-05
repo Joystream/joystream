@@ -195,14 +195,18 @@ export class Transport extends TransportBase implements ITransport {
     return this.stakeValue(stakeProfile.stake_id);
   }
 
-  protected async workerTotalReward (relationshipId: RewardRelationshipId): Promise<Balance> {
-    const relationship = new SingleLinkedMapEntry<RewardRelationship>(
+  protected async rewardRelationshipById (id: RewardRelationshipId): Promise<RewardRelationship | undefined> {
+    const rewardRelationship = new SingleLinkedMapEntry<RewardRelationship>(
       RewardRelationship,
-      await this.cachedApi.query.recurringRewards.rewardRelationships(
-        relationshipId
-      )
-    );
-    return relationship.value.total_reward_received;
+      await this.cachedApi.query.recurringRewards.rewardRelationships(id)
+    ).value;
+
+    return rewardRelationship.isEmpty ? undefined : rewardRelationship;
+  }
+
+  protected async workerTotalReward (relationshipId: RewardRelationshipId): Promise<Balance> {
+    const relationship = await this.rewardRelationshipById(relationshipId);
+    return relationship?.total_reward_received || new u128(0);
   }
 
   protected async memberIdFromRoleAndActorId (role: Role, id: ActorId): Promise<MemberId> {
@@ -232,6 +236,13 @@ export class Transport extends TransportBase implements ITransport {
     );
   }
 
+  protected async workerRewardRelationship (worker: GroupWorker): Promise<RewardRelationship | undefined> {
+    const rewardRelationship = worker.reward_relationship.isSome
+      ? await this.rewardRelationshipById(worker.reward_relationship.unwrap())
+      : undefined;
+    return rewardRelationship;
+  }
+
   protected async groupMember (
     group: WorkingGroups,
     id: GroupWorkerId,
@@ -252,18 +263,17 @@ export class Transport extends TransportBase implements ITransport {
       stakeValue = await this.workerStake(worker.role_stake_profile.unwrap());
     }
 
-    let earnedValue: Balance = new u128(0);
-    if (worker.reward_relationship && worker.reward_relationship.isSome) {
-      earnedValue = await this.workerTotalReward(worker.reward_relationship.unwrap());
-    }
+    const rewardRelationship = await this.workerRewardRelationship(worker);
 
     return ({
       roleAccount,
+      group,
       memberId,
+      workerId: id.toNumber(),
       profile: profile.unwrap(),
       title: workerRoleNameByGroup[group],
       stake: stakeValue,
-      earned: earnedValue
+      rewardRelationship
     });
   }
 
@@ -356,6 +366,14 @@ export class Transport extends TransportBase implements ITransport {
         throw new Error(`${group} lead profile not found!`);
       }
 
+      const rewardRelationshipId = currentLead.lead.reward_relationship;
+      const rewardRelationship = rewardRelationshipId.isSome
+        ? await this.rewardRelationshipById(rewardRelationshipId.unwrap())
+        : undefined;
+      const stake = group === WorkingGroups.StorageProviders && (currentLead.lead as Worker).role_stake_profile.isSome
+        ? await this.workerStake((currentLead.lead as Worker).role_stake_profile.unwrap())
+        : undefined;
+
       return {
         lead: {
           memberId: currentLead.memberId,
@@ -363,7 +381,9 @@ export class Transport extends TransportBase implements ITransport {
           roleAccount: currentLead.lead.role_account_id,
           profile: profile.unwrap(),
           title: _.startCase(group) + ' Lead',
-          stage: group === WorkingGroups.ContentCurators ? (currentLead.lead as Lead).stage : undefined
+          stage: group === WorkingGroups.ContentCurators ? (currentLead.lead as Lead).stage : undefined,
+          stake,
+          rewardRelationship
         },
         loaded: true
       };

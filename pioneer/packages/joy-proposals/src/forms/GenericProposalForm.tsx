@@ -101,6 +101,9 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
   const [afterSubmit, setAfterSubmit] = useState(null as (() => () => void) | null);
   const formContainerRef = useRef<HTMLDivElement>(null);
 
+  // Scroll to top on load
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   // After-submit effect
   // With current version of Formik, there seems to be no other viable way to handle this (ie. for sendTx)
   useEffect(() => {

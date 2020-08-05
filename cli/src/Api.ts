@@ -3,7 +3,7 @@ import { registerJoystreamTypes } from '@joystream/types/'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { QueryableStorageMultiArg } from '@polkadot/api/types'
 import { formatBalance } from '@polkadot/util'
-import { Hash, Balance, Moment } from '@polkadot/types/interfaces'
+import { Hash, Balance, Moment, BlockNumber } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Codec } from '@polkadot/types/types'
 import { Option, Vec } from '@polkadot/types'
@@ -20,6 +20,9 @@ import {
   GroupOpeningStage,
   GroupOpening,
   GroupApplication,
+  openingPolicyUnstakingPeriodsKeys,
+  UnstakingPeriods,
+  StakingPolicyUnstakingPeriodKey,
 } from './Types'
 import { DerivedFees, DerivedBalances } from '@polkadot/api-derive/types'
 import { CLIError } from '@oclif/errors'
@@ -38,6 +41,7 @@ import {
   ApplicationStageKeys,
   ApplicationId,
   OpeningId,
+  StakingPolicy,
 } from '@joystream/types/hiring'
 import { MemberId, Profile } from '@joystream/types/members'
 import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards'
@@ -46,7 +50,7 @@ import { LinkageResult } from '@polkadot/types/codec/Linkage'
 
 import { InputValidationLengthConstraint } from '@joystream/types/common'
 
-export const DEFAULT_API_URI = 'wss://rome-rpc-endpoint.joystream.org:9944/'
+export const DEFAULT_API_URI = 'ws://localhost:9944/'
 const DEFAULT_DECIMALS = new u32(12)
 
 // Mapping of working group to api module
@@ -401,10 +405,38 @@ export default class Api {
     const applications = await this.groupOpeningApplications(group, wgOpeningId)
     const stage = await this.parseOpeningStage(opening.stage)
     const type = groupOpening.opening_type
+    const { application_staking_policy: applSP, role_staking_policy: roleSP } = opening
     const stakes = {
-      application: opening.application_staking_policy.unwrapOr(undefined),
-      role: opening.role_staking_policy.unwrapOr(undefined),
+      application: applSP.unwrapOr(undefined),
+      role: roleSP.unwrapOr(undefined),
     }
+
+    const unstakingPeriod = (period: Option<BlockNumber>) => period.unwrapOr(new BN(0)).toNumber()
+    const spUnstakingPeriod = (sp: Option<StakingPolicy>, key: StakingPolicyUnstakingPeriodKey) =>
+      sp.isSome ? unstakingPeriod(sp.unwrap()[key]) : 0
+
+    const unstakingPeriods: Partial<UnstakingPeriods> = {
+      ['review_period_expired_application_stake_unstaking_period_length']: spUnstakingPeriod(
+        applSP,
+        'review_period_expired_unstaking_period_length'
+      ),
+      ['crowded_out_application_stake_unstaking_period_length']: spUnstakingPeriod(
+        applSP,
+        'crowded_out_unstaking_period_length'
+      ),
+      ['review_period_expired_role_stake_unstaking_period_length']: spUnstakingPeriod(
+        roleSP,
+        'review_period_expired_unstaking_period_length'
+      ),
+      ['crowded_out_role_stake_unstaking_period_length']: spUnstakingPeriod(
+        roleSP,
+        'crowded_out_unstaking_period_length'
+      ),
+    }
+
+    openingPolicyUnstakingPeriodsKeys.forEach((key) => {
+      unstakingPeriods[key] = unstakingPeriod(groupOpening.policy_commitment[key])
+    })
 
     return {
       wgOpeningId,
@@ -414,6 +446,7 @@ export default class Api {
       stakes,
       applications,
       type,
+      unstakingPeriods: unstakingPeriods as UnstakingPeriods,
     }
   }
 
