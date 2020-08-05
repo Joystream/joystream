@@ -8,7 +8,7 @@ import { formatBalance } from '@polkadot/util';
 import CouncilCandidate from './CandidatePreview';
 
 import { calcBackersStake } from '@polkadot/joy-utils/index';
-import { Seat } from '@joystream/types/';
+import { Seat } from '@joystream/types/council';
 import translate from './translate';
 import Section from '@polkadot/joy-utils/Section';
 

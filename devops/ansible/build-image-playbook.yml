@@ -1,0 +1,13 @@
+- hosts: 127.0.0.1
+  user: root
+  become: yes
+  become_method: sudo
+
+  tasks:
+    - name: install dependencies
+      include_role:
+        name: install_dependencies
+
+    - name: build node
+      include_role:
+        name: build_docker_image

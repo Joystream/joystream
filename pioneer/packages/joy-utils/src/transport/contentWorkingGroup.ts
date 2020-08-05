@@ -5,12 +5,13 @@ import { MintId, Mint } from '@joystream/types/mint';
 import { LeadId } from '@joystream/types/content-working-group';
 import { ApiPromise } from '@polkadot/api';
 import MembersTransport from './members';
+import { APIQueryCache } from '../APIQueryCache';
 
 export default class ContentWorkingGroupTransport extends BaseTransport {
   private membersT: MembersTransport;
 
-  constructor (api: ApiPromise, membersTransport: MembersTransport) {
-    super(api);
+  constructor (api: ApiPromise, cacheApi: APIQueryCache, membersTransport: MembersTransport) {
+    super(api, cacheApi);
     this.membersT = membersTransport;
   }
 

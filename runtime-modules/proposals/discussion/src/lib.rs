@@ -38,8 +38,6 @@
 //! # fn main() {}
 //! ```
 
-//!
-
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -58,7 +56,7 @@ use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Pa
 use srml_support::traits::Get;
 use types::{DiscussionPost, DiscussionThread, ThreadCounter};
 
-use common::origin_validator::ActorOriginValidator;
+use common::origin::ActorOriginValidator;
 use srml_support::dispatch::DispatchResult;
 
 type MemberId<T> = <T as membership::members::Trait>::MemberId;
@@ -84,7 +82,7 @@ decl_event!(
 
 /// 'Proposal discussion' substrate module Trait
 pub trait Trait: system::Trait + membership::members::Trait {
-    /// Engine event type.
+    /// Discussion event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     /// Validates post author id and origin combination

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Button, Message } from 'semantic-ui-react';
+import styled from 'styled-components';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
-import { History } from 'history';
 
 import TxButton from '@polkadot/joy-utils/TxButton';
 import { SubmittableResult } from '@polkadot/api';
@@ -10,11 +10,11 @@ import { withMulti } from '@polkadot/react-api/with';
 
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { Text } from '@polkadot/types';
-import { PostId, Post, ThreadId } from '@joystream/types/forum';
+import { PostId, ThreadId } from '@joystream/types/common';
+import { Post } from '@joystream/types/forum';
 import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 import Section from '@polkadot/joy-utils/Section';
 import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
-import { UrlHasIdProps, CategoryCrumbs } from './utils';
 import { withForumCalls } from './calls';
 import { ValidationProps, withReplyValidation } from './validation';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
@@ -39,11 +39,18 @@ const buildSchema = (props: ValidationProps) => {
   });
 };
 
+const FormActionsContainer = styled.div`
+  display: flex;
+  justify-content: space-between;
+`;
+
 type OuterProps = ValidationProps & {
-  history?: History;
   id?: PostId;
   struct?: Post;
   threadId: ThreadId;
+  quotedPost?: Post | null;
+  onEditSuccess?: () => void;
+  onEditCancel?: () => void;
 };
 
 type FormValues = {
@@ -56,7 +63,6 @@ const LabelledField = JoyForms.LabelledField<FormValues>();
 
 const InnerForm = (props: FormProps) => {
   const {
-    history,
     id,
     threadId,
     struct,
@@ -65,18 +71,16 @@ const InnerForm = (props: FormProps) => {
     isValid,
     isSubmitting,
     setSubmitting,
-    resetForm
+    resetForm,
+    onEditSuccess,
+    onEditCancel
   } = props;
 
   const {
     text
   } = values;
 
-  const goToThreadView = () => {
-    if (history) {
-      history.push('/forum/threads/' + threadId.toString());
-    }
-  };
+  const isNew = struct === undefined;
 
   const onSubmit = (sendTx: () => void) => {
     if (isValid) sendTx();
@@ -92,10 +96,11 @@ const InnerForm = (props: FormProps) => {
 
   const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
     setSubmitting(false);
-    goToThreadView();
+    resetForm();
+    if (!isNew && onEditSuccess) {
+      onEditSuccess();
+    }
   };
-
-  const isNew = struct === undefined;
 
   const buildTxParams = () => {
     if (!isValid) return [];
@@ -116,52 +121,77 @@ const InnerForm = (props: FormProps) => {
       </LabelledField>
 
       <LabelledField {...props}>
-        <TxButton
-          type='submit'
-          size='large'
-          label={isNew
-            ? 'Post a reply'
-            : 'Update a reply'
+        <FormActionsContainer>
+          <div>
+            <TxButton
+              type='submit'
+              size='large'
+              label={isNew
+                ? 'Post a reply'
+                : 'Update a reply'
+              }
+              isDisabled={!dirty || isSubmitting}
+              params={buildTxParams()}
+              tx={isNew
+                ? 'forum.addPost'
+                : 'forum.editPostText'
+              }
+              onClick={onSubmit}
+              txFailedCb={onTxFailed}
+              txSuccessCb={onTxSuccess}
+            />
+            <Button
+              type='button'
+              size='large'
+              disabled={!dirty || isSubmitting}
+              onClick={() => resetForm()}
+              content='Reset form'
+            />
+          </div>
+          {
+            !isNew && (
+              <Button
+                type='button'
+                size='large'
+                disabled={isSubmitting}
+                content='Cancel edit'
+                onClick={() => onEditCancel && onEditCancel()}
+              />
+            )
           }
-          isDisabled={!dirty || isSubmitting}
-          params={buildTxParams()}
-          tx={isNew
-            ? 'forum.addPost'
-            : 'forum.editPostText'
-          }
-          onClick={onSubmit}
-          txFailedCb={onTxFailed}
-          txSuccessCb={onTxSuccess}
-        />
-        <Button
-          type='button'
-          size='large'
-          disabled={!dirty || isSubmitting}
-          onClick={() => resetForm()}
-          content='Reset form'
-        />
+        </FormActionsContainer>
       </LabelledField>
     </Form>;
 
   const sectionTitle = isNew
     ? 'New reply'
-    : 'Edit my reply';
+    : `Edit my reply #${struct?.nr_in_thread}`;
 
-  return <>
-    <CategoryCrumbs threadId={threadId} />
+  return (
     <Section className='EditEntityBox' title={sectionTitle}>
       {form}
     </Section>
-  </>;
+  );
+};
+
+const getQuotedPostString = (post: Post) => {
+  const lines = post.current_text.split('\n');
+  return lines.reduce((acc, line) => {
+    return `${acc}> ${line}\n`;
+  }, '');
 };
 
 const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
   mapPropsToValues: props => {
-    const { struct } = props;
+    const { struct, quotedPost } = props;
     return {
-      text: (struct && struct.current_text) || ''
+      text: struct
+        ? struct.current_text
+        : quotedPost
+          ? getQuotedPostString(quotedPost)
+          : ''
     };
   },
 
@@ -192,43 +222,15 @@ function FormOrLoading (props: OuterProps) {
   return <Message error className='JoyMainStatus' header='You are not allowed edit this reply.' />;
 }
 
-function withThreadIdFromUrl (Component: React.ComponentType<OuterProps>) {
-  return function (props: UrlHasIdProps) {
-    const { match: { params: { id } } } = props;
-    try {
-      return <Component {...props} threadId={new ThreadId(id)} />;
-    } catch (err) {
-      return <em>Invalid thread ID: {id}</em>;
-    }
-  };
-}
-
-type HasPostIdProps = {
-  id: PostId;
-};
-
-function withIdFromUrl (Component: React.ComponentType<HasPostIdProps>) {
-  return function (props: UrlHasIdProps) {
-    const { match: { params: { id } } } = props;
-    try {
-      return <Component {...props} id={new PostId(id)} />;
-    } catch (err) {
-      return <em>Invalid reply ID: {id}</em>;
-    }
-  };
-}
-
 export const NewReply = withMulti(
   EditForm,
   withOnlyMembers,
-  withThreadIdFromUrl,
   withReplyValidation
 );
 
 export const EditReply = withMulti(
   FormOrLoading,
   withOnlyMembers,
-  withIdFromUrl,
   withReplyValidation,
   withForumCalls<OuterProps>(
     ['postById', { paramName: 'id', propName: 'struct' }]

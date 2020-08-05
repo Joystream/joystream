@@ -13,7 +13,6 @@ import media from './joy-media';
 import members from './joy-members';
 import proposals from './joy-proposals';
 import roles from './joy-roles';
-import storageRoles from './joy-storage';
 import pages from './joy-pages';
 
 // import template from './123code';
@@ -46,7 +45,6 @@ routes = routes.concat(
   proposals,
   election,
   forum,
-  storageRoles,
   members,
   staking,
   null,

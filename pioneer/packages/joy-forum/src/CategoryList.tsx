@@ -2,15 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import { Table, Dropdown, Button, Segment, Label } from 'semantic-ui-react';
-import { History } from 'history';
+import styled from 'styled-components';
 import orderBy from 'lodash/orderBy';
 import BN from 'bn.js';
 
 import { Option, bool } from '@polkadot/types';
-import { CategoryId, Category, ThreadId, Thread } from '@joystream/types/forum';
+import { ThreadId } from '@joystream/types/common';
+import { CategoryId, Category, Thread } from '@joystream/types/forum';
 import { ViewThread } from './ViewThread';
 import { MutedSpan } from '@polkadot/joy-utils/MutedText';
-import { UrlHasIdProps, CategoryCrumbs, Pagination, ThreadsPerPage } from './utils';
+import { UrlHasIdProps, CategoryCrumbs, Pagination, ThreadsPerPage, usePagination } from './utils';
 import Section from '@polkadot/joy-utils/Section';
 import { JoyWarn } from '@polkadot/joy-utils/JoyStatus';
 import { withForumCalls } from './calls';
@@ -99,17 +100,19 @@ function CategoryActions (props: CategoryActionsProps) {
 
 type InnerViewCategoryProps = {
   category?: Category;
-  page?: number;
   preview?: boolean;
-  history?: History;
 };
 
 type ViewCategoryProps = InnerViewCategoryProps & {
   id: CategoryId;
 };
 
+const CategoryPreviewRow = styled(Table.Row)`
+  height: 55px;
+`;
+
 function InnerViewCategory (props: InnerViewCategoryProps) {
-  const { history, category, page = 1, preview = false } = props;
+  const { category, preview = false } = props;
 
   if (!category) {
     return <em>Loading...</em>;
@@ -127,7 +130,7 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
 
   if (preview) {
     return (
-      <Table.Row>
+      <CategoryPreviewRow>
         <Table.Cell>
           <Link to={`/forum/categories/${id.toString()}`}>
             {category.archived
@@ -143,17 +146,10 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
           {category.num_direct_subcategories.toString()}
         </Table.Cell>
         <Table.Cell>
-          {renderCategoryActions()}
+          {category.description}
         </Table.Cell>
-        <Table.Cell>
-          <MemberPreview accountId={category.moderator_id} />
-        </Table.Cell>
-      </Table.Row>
+      </CategoryPreviewRow>
     );
-  }
-
-  if (!history) {
-    return <em>Error: <code>history</code> property was not found.</em>;
   }
 
   const renderSubCategoriesAndThreads = () => <>
@@ -179,7 +175,7 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
     }
 
     <Section title={`Threads (${category.num_direct_unmoderated_threads.toString()})`}>
-      <CategoryThreads category={category} page={page} history={history} />
+      <CategoryThreads category={category} />
     </Section>
   </>;
 
@@ -203,8 +199,6 @@ const ViewCategory = withForumCalls<ViewCategoryProps>(
 
 type InnerCategoryThreadsProps = {
   category: Category;
-  page: number;
-  history: History;
 };
 
 type CategoryThreadsProps = ApiProps & InnerCategoryThreadsProps & {
@@ -212,7 +206,8 @@ type CategoryThreadsProps = ApiProps & InnerCategoryThreadsProps & {
 };
 
 function InnerCategoryThreads (props: CategoryThreadsProps) {
-  const { api, category, nextThreadId, page, history } = props;
+  const { api, category, nextThreadId } = props;
+  const [currentPage, setCurrentPage] = usePagination();
 
   if (!category.hasUnmoderatedThreads) {
     return <em>No threads in this category</em>;
@@ -271,20 +266,16 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
     return <em>No threads in this category</em>;
   }
 
-  const onPageChange = (activePage?: string | number) => {
-    history.push(`/forum/categories/${category.id.toString()}/page/${activePage}`);
-  };
-
   const itemsPerPage = ThreadsPerPage;
-  const minIdx = (page - 1) * itemsPerPage;
+  const minIdx = (currentPage - 1) * itemsPerPage;
   const maxIdx = minIdx + itemsPerPage - 1;
 
   const pagination =
     <Pagination
-      currentPage={page}
+      currentPage={currentPage}
       totalItems={threadCount}
       itemsPerPage={itemsPerPage}
-      onPageChange={onPageChange}
+      onPageChange={setCurrentPage}
     />;
 
   const pageOfItems = threads
@@ -299,6 +290,7 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
           <Table.HeaderCell>Thread</Table.HeaderCell>
           <Table.HeaderCell>Replies</Table.HeaderCell>
           <Table.HeaderCell>Creator</Table.HeaderCell>
+          <Table.HeaderCell>Created</Table.HeaderCell>
         </Table.Row>
       </Table.Header>
       <Table.Body>
@@ -318,21 +310,17 @@ export const CategoryThreads = withMulti(
 );
 
 type ViewCategoryByIdProps = UrlHasIdProps & {
-  history: History;
   match: {
     params: {
       id: string;
-      page?: string;
     };
   };
 };
 
 export function ViewCategoryById (props: ViewCategoryByIdProps) {
-  const { history, match: { params: { id, page: pageStr } } } = props;
+  const { match: { params: { id } } } = props;
   try {
-    // tslint:disable-next-line:radix
-    const page = pageStr ? parseInt(pageStr) : 1;
-    return <ViewCategory id={new CategoryId(id)} page={page} history={history} />;
+    return <ViewCategory id={new CategoryId(id)} />;
   } catch (err) {
     return <em>Invalid category ID: {id}</em>;
   }
@@ -391,8 +379,7 @@ function InnerCategoryList (props: CategoryListProps) {
           <Table.HeaderCell>Category</Table.HeaderCell>
           <Table.HeaderCell>Threads</Table.HeaderCell>
           <Table.HeaderCell>Subcategories</Table.HeaderCell>
-          <Table.HeaderCell>Actions</Table.HeaderCell>
-          <Table.HeaderCell>Creator</Table.HeaderCell>
+          <Table.HeaderCell>Description</Table.HeaderCell>
         </Table.Row>
       </Table.Header>
       <Table.Body>{categories.map((category, i) => (

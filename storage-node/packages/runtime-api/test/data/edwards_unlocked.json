@@ -1,0 +1,6 @@
+{
+  "address": "5EZxbX2arChvhYL7cEgSybJL3kzEeuPqqNYyLqRBJxZx7Mao",
+  "encoded": "0x3053020101300506032b65700422042071f2096e5857177f03768478d0c006f60d1ee684f14feaede0f9c17e139e65586ec832e5db75112b0a4585b6a9ffe58fa056e5b1228f02663e9e64743e65c9a5a1230321006ec832e5db75112b0a4585b6a9ffe58fa056e5b1228f02663e9e64743e65c9a5",
+  "encoding": { "content": ["pkcs8", "ed25519"], "type": "none", "version": "2" },
+  "meta": { "name": "Unlocked keypair for testing", "whenCreated": 1558975434890 }
+}

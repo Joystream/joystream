@@ -1,228 +1,62 @@
-import { Enum, Option, Struct, Vec } from "@polkadot/types/codec";
-import { getTypeRegistry, Text } from "@polkadot/types";
-import { BlockNumber, AccountId, Balance, Hash } from "@polkadot/types/interfaces";
-import { u32, bool } from "@polkadot/types/primitive";
-import { Codec } from "@polkadot/types/types";
+import { getTypeRegistry } from '@polkadot/types'
 
-import { registerForumTypes } from "./forum";
-import { registerMediaTypes } from "./media";
-import { registerMembershipTypes } from "./members";
-import { registerRolesTypes } from "./roles";
-import { registerDiscoveryTypes } from "./discovery";
-import { registerHiringTypes } from "./hiring";
-import { registerVersionedStoreTypes } from "./versioned-store";
-import { registerVersionedStorePermissionsTypes } from "./versioned-store/permissions";
-import { registerStakeTypes } from "./stake";
-import { registerMintTypes } from "./mint";
-import { registerRecurringRewardsTypes } from "./recurring-rewards";
-import { registerContentWorkingGroupTypes } from "./content-working-group";
-import { registerProposalTypes, ProposalStatus } from "./proposals";
+import * as common from './common'
+import * as members from './members'
+import * as council from './council'
+import * as roles from './roles'
+import * as forum from './forum'
+import * as stake from './stake'
+import * as mint from './mint'
+import * as recurringRewards from './recurring-rewards'
+import * as hiring from './hiring'
+import * as versionedStore from './versioned-store'
+import * as versionedStorePermissions from './versioned-store/permissions'
+import * as contentWorkingGroup from './content-working-group'
+import * as workingGroup from './working-group'
+import * as discovery from './discovery'
+import * as media from './media'
+import * as proposals from './proposals'
 
-export function getTextPropAsString(struct: Struct, fieldName: string): string {
-  return (struct.get(fieldName) as Text).toString();
-}
-
-export function getBoolPropAsBoolean(struct: Struct, fieldName: string): boolean {
-  return (struct.get(fieldName) as bool).valueOf();
-}
-
-export function getOptionPropOrUndefined<T extends Codec>(struct: Struct, fieldName: string): T | undefined {
-  return (struct.get(fieldName) as Option<T>).unwrapOr(undefined);
-}
-
-export class OptionText extends Option.with(Text) {
-  static none(): OptionText {
-    return new Option(Text, null);
-  }
-
-  static some(text: string): OptionText {
-    return new Option(Text, text);
-  }
-}
-
-export type TransferableStake = {
-  seat: Balance;
-  backing: Balance;
-};
-
-export type Stake = {
-  new: Balance;
-  transferred: Balance;
-};
-
-export type Backer = {
-  member: AccountId;
-  stake: Balance;
-};
-
-export type Seat = {
-  member: AccountId;
-  stake: Balance;
-  backers: Backer[];
-};
-
-export type SealedVote = {
-  voter: AccountId;
-  commitment: Hash;
-  stake: Stake;
-  vote: Option<AccountId>;
-};
-
-export type ProposalVote = {
-  voter: AccountId;
-  kind: VoteKind;
-};
-
-export type TallyResult = {
-  proposal_id: u32;
-  abstentions: u32;
-  approvals: u32;
-  rejections: u32;
-  slashes: u32;
-  status: ProposalStatus;
-  finalized_at: BlockNumber;
-};
-
-export class Announcing extends u32 {}
-export class Voting extends u32 {}
-export class Revealing extends u32 {}
-
-export class ElectionStage extends Enum {
-  constructor(value?: any, index?: number) {
-    super(
-      {
-        Announcing,
-        Voting,
-        Revealing
-      },
-      value,
-      index
-    );
-  }
-
-  /** Create a new Announcing stage. */
-  static Announcing(endsAt: BlockNumber | number): ElectionStage {
-    return this.newElectionStage("Announcing", endsAt);
-  }
-
-  /** Create a new Voting stage. */
-  static Voting(endsAt: BlockNumber | number): ElectionStage {
-    return this.newElectionStage("Voting", endsAt);
-  }
-
-  /** Create a new Revealing stage. */
-  static Revealing(endsAt: BlockNumber | number): ElectionStage {
-    return this.newElectionStage("Revealing", endsAt);
-  }
-
-  static newElectionStage(stageName: string, endsAt: BlockNumber | number) {
-    return new ElectionStage({ [stageName]: endsAt });
-  }
-}
-
-export type AnyElectionStage = Announcing | Voting | Revealing;
-
-export const VoteKinds: { [key: string]: string } = {
-  Abstain: "Abstain",
-  Approve: "Approve",
-  Reject: "Reject",
-  Slash: "Slash"
-};
-
-export class VoteKind extends Enum {
-  constructor(value?: any) {
-    super(["Abstain", "Approve", "Reject", "Slash"], value);
-  }
-}
-
-export type ProposalVotes = [AccountId, VoteKind][];
-
-// Treat a BTreeSet as a Vec since it is encoded in the same way.
-export class BTreeSet<T extends Codec> extends Vec<T> {}
-
-// TODO Refactor: split this function and move to corresponding modules: election and proposals.
-function registerElectionAndProposalTypes() {
-  try {
-    const typeRegistry = getTypeRegistry();
-    // Is this enough?
-    typeRegistry.register({
-      BTreeSet
-    });
-
-    typeRegistry.register({
-      MemoText: "Text"
-    });
-    // Register parametrized enum ElectionStage:
-    typeRegistry.register({
-      ElectionStage
-    });
-    typeRegistry.register({
-      ProposalStatus,
-      VoteKind
-    });
-    typeRegistry.register({
-      ElectionStake: {
-        new: "Balance",
-        transferred: "Balance"
-      },
-      SealedVote: {
-        voter: "AccountId",
-        commitment: "Hash",
-        stake: "ElectionStake",
-        vote: "Option<AccountId>"
-      },
-      TransferableStake: {
-        seat: "Balance",
-        backing: "Balance"
-      },
-      RuntimeUpgradeProposal: {
-        id: "u32",
-        proposer: "AccountId",
-        stake: "Balance",
-        name: "Text",
-        description: "Text",
-        wasm_hash: "Hash",
-        proposed_at: "BlockNumber",
-        status: "ProposalStatus"
-      },
-      "TallyResult<BlockNumber>": {
-        proposal_id: "u32",
-        abstentions: "u32",
-        approvals: "u32",
-        rejections: "u32",
-        slashes: "u32",
-        status: "ProposalStatus",
-        finalized_at: "BlockNumber"
-      },
-      ElectionParameters: {
-        announcing_period: "BlockNumber",
-        voting_period: "BlockNumber",
-        revealing_period: "BlockNumber",
-        council_size: "u32",
-        candidacy_limit: "u32",
-        new_term_duration: "BlockNumber",
-        min_council_stake: "Balance",
-        min_voting_stake: "Balance"
-      }
-    });
-  } catch (err) {
-    console.error("Failed to register custom types of Joystream node", err);
-  }
+export {
+  common,
+  members,
+  council,
+  roles,
+  forum,
+  stake,
+  mint,
+  recurringRewards,
+  hiring,
+  versionedStore,
+  versionedStorePermissions,
+  contentWorkingGroup,
+  workingGroup,
+  discovery,
+  media,
+  proposals,
 }
 
 export function registerJoystreamTypes() {
-  registerMembershipTypes();
-  registerRolesTypes();
-  registerMediaTypes();
-  registerForumTypes();
-  registerElectionAndProposalTypes();
-  registerDiscoveryTypes();
-  registerVersionedStoreTypes();
-  registerVersionedStorePermissionsTypes();
-  registerStakeTypes();
-  registerMintTypes();
-  registerRecurringRewardsTypes();
-  registerHiringTypes();
-  registerContentWorkingGroupTypes();
-  registerProposalTypes();
+  const typeRegistry = getTypeRegistry()
+
+  typeRegistry.register({
+    MemoText: 'Text', // for the memo module
+  })
+
+  common.registerCommonTypes()
+  members.registerMembershipTypes()
+  council.registerCouncilAndElectionTypes()
+  roles.registerRolesTypes()
+  forum.registerForumTypes()
+  stake.registerStakeTypes()
+  mint.registerMintTypes()
+  recurringRewards.registerRecurringRewardsTypes()
+  hiring.registerHiringTypes()
+  versionedStore.registerVersionedStoreTypes()
+  versionedStorePermissions.registerVersionedStorePermissionsTypes()
+  contentWorkingGroup.registerContentWorkingGroupTypes()
+  workingGroup.registerWorkingGroupTypes()
+  discovery.registerDiscoveryTypes()
+  media.registerMediaTypes()
+  proposals.registerProposalTypes()
 }

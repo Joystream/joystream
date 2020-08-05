@@ -21,7 +21,7 @@ import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 import _ from 'lodash';
 import './forms.css';
 
-type FormValues = GenericFormValues & {
+export type FormValues = GenericFormValues & {
   workingGroupLead: any;
 };
 
@@ -120,7 +120,8 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
             label="New Content Working Group Lead"
             help={
               'The member you propose to set as a new Content Working Group Lead. ' +
-              'Start typing handle or use "id:[ID]" query.'
+              'Start typing handle or use "id:[ID]" query. ' +
+              'Current council members are not allowed to be selected and are excluded from the list.'
             }
           >
             {
@@ -178,7 +179,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
   }),
   validationSchema: Yup.object().shape({
     ...genericFormDefaultOptions.validationSchema,
-    workingGroupLead: Validation.SetLead.workingGroupLead
+    ...Validation.SetLead()
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,
   displayName: 'SetContentWorkingGroupLeadForm'

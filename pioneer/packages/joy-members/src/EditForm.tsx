@@ -10,7 +10,7 @@ import TxButton from '@polkadot/joy-utils/TxButton';
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { SubmittableResult } from '@polkadot/api';
 import { MemberId, UserInfo, Profile, PaidTermId, PaidMembershipTerms } from '@joystream/types/members';
-import { OptionText } from '@joystream/types/';
+import { OptionText } from '@joystream/types/common';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
 import { queryMembershipToProp } from './utils';
 import { withCalls } from '@polkadot/react-api/index';

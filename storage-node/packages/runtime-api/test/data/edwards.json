@@ -1,0 +1,6 @@
+{
+  "address": "5HDnLpCjdbUBR6eyuz5geBJWzoZdXmWFXahEYrLg44rvToCK",
+  "encoded": "0x475f0c37c7893517f5a93c88b81208346211dfa9b0fd09e08bfd34f6e14da5468f48c6d9b0b4cbfbd7dd03a6f0730f5ee9a01b0cd30265e6b1b9fb652958889d5b174624568f49f3a671b8c330c3920814e938383749aa9046366ae6881281e0d053a9aa913a54ad53bd2f1dcf6c26e6b476495ea058832a36f122d09c18154577f951298ac72e6f471a6dca41e4d5741ed5db966001ae5ffd2b99d4c7",
+  "encoding": { "content": ["pkcs8", "ed25519"], "type": "xsalsa20-poly1305", "version": "2" },
+  "meta": { "name": "Edwards keypair for testing", "whenCreated": 1558974074691 }
+}

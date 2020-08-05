@@ -6,21 +6,23 @@ import {
   ProposalVotes,
   ParsedPost,
   ParsedDiscussion,
-  DiscussionContraints
+  DiscussionContraints,
+  ProposalStatusFilter,
+  ProposalsBatch
 } from '../types/proposals';
 import { ParsedMember } from '../types/members';
 
 import BaseTransport from './base';
 
-import { ThreadId, PostId } from '@joystream/types/forum';
-import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost } from '@joystream/types/proposals';
+import { ThreadId, PostId } from '@joystream/types/common';
+import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost, ProposalDetails, Finalized, ProposalDecisionStatus } from '@joystream/types/proposals';
 import { MemberId } from '@joystream/types/members';
-import { u32, u64 } from '@polkadot/types/';
+import { u32, u64, Bytes, Null } from '@polkadot/types/';
 import { BalanceOf } from '@polkadot/types/interfaces';
 
-import { includeKeys, bytesToString } from '../functions/misc';
+import { bytesToString } from '../functions/misc';
 import _ from 'lodash';
-import proposalsConsts from '../consts/proposals';
+import { metadata as proposalsConsts, apiMethods as proposalsApiMethods } from '../consts/proposals';
 import { FIRST_MEMBER_ID } from '../consts/members';
 
 import { ApiPromise } from '@polkadot/api';
@@ -28,44 +30,84 @@ import MembersTransport from './members';
 import ChainTransport from './chain';
 import CouncilTransport from './council';
 
+import { blake2AsHex } from '@polkadot/util-crypto';
+import { APIQueryCache } from '../APIQueryCache';
+import { MultipleLinkedMapEntry } from '../LinkedMapEntry';
+
+type ProposalDetailsCacheEntry = {
+  type: ProposalType;
+  details: any[];
+}
+type ProposalDetailsCache = {
+  [id: number]: ProposalDetailsCacheEntry | undefined;
+}
+
 export default class ProposalsTransport extends BaseTransport {
   private membersT: MembersTransport;
   private chainT: ChainTransport;
   private councilT: CouncilTransport;
+  private proposalDetailsCache: ProposalDetailsCache = {};
 
   constructor (
     api: ApiPromise,
+    cacheApi: APIQueryCache,
     membersTransport: MembersTransport,
     chainTransport: ChainTransport,
     councilTransport: CouncilTransport
   ) {
-    super(api);
+    super(api, cacheApi);
     this.membersT = membersTransport;
     this.chainT = chainTransport;
     this.councilT = councilTransport;
   }
 
   proposalCount () {
-    return this.proposalsEngine.proposalCount<u32>();
+    return this.proposalsEngine.proposalCount() as Promise<u32>;
   }
 
   rawProposalById (id: ProposalId) {
-    return this.proposalsEngine.proposals<Proposal>(id);
+    return this.proposalsEngine.proposals(id) as Promise<Proposal>;
   }
 
-  proposalDetailsById (id: ProposalId) {
-    return this.proposalsCodex.proposalDetailsByProposalId(id);
+  rawProposalDetails (id: ProposalId) {
+    return this.proposalsCodex.proposalDetailsByProposalId(id) as Promise<ProposalDetails>;
   }
 
   cancellationFee (): number {
     return (this.api.consts.proposalsEngine.cancellationFee as BalanceOf).toNumber();
   }
 
-  async proposalById (id: ProposalId): Promise<ParsedProposal> {
-    const rawDetails = (await this.proposalDetailsById(id)).toJSON() as { [k: string]: any };
-    const type = Object.keys(rawDetails)[0] as ProposalType;
-    const details = Array.isArray(rawDetails[type]) ? rawDetails[type] : [rawDetails[type]];
-    const rawProposal = await this.rawProposalById(id);
+  async typeAndDetails (id: ProposalId) {
+    const cachedProposalDetails = this.proposalDetailsCache[id.toNumber()];
+    // Avoid fetching runtime upgrade proposal details if we already have them cached
+    if (cachedProposalDetails) {
+      return cachedProposalDetails;
+    } else {
+      // TODO: The right typesafe handling with JoyEnum would be very useful here
+      const rawDetails = await this.rawProposalDetails(id);
+      const type = rawDetails.type as ProposalType;
+      let details: any[];
+      if (type === 'RuntimeUpgrade') {
+        // In case of RuntimeUpgrade proposal we override details to just contain the hash and filesize
+        // (instead of full WASM bytecode)
+        const wasm = rawDetails.value as Bytes;
+        details = [blake2AsHex(wasm, 256), wasm.length];
+      } else {
+        const detailsJSON = rawDetails.value.toJSON();
+        details = Array.isArray(detailsJSON) ? detailsJSON : [detailsJSON];
+      }
+      // Save entry in cache
+      this.proposalDetailsCache[id.toNumber()] = { type, details };
+
+      return { type, details };
+    }
+  }
+
+  async proposalById (id: ProposalId, rawProposal?: Proposal): Promise<ParsedProposal> {
+    const { type, details } = await this.typeAndDetails(id);
+    if (!rawProposal) {
+      rawProposal = await this.rawProposalById(id);
+    }
     const proposer = (await this.membersT.memberProfile(rawProposal.proposerId)).toJSON() as ParsedMember;
     const proposal = rawProposal.toJSON() as {
       title: string;
@@ -96,15 +138,43 @@ export default class ProposalsTransport extends BaseTransport {
     return Array.from({ length: total }, (_, i) => new ProposalId(i + 1));
   }
 
+  async activeProposalsIds () {
+    const result = new MultipleLinkedMapEntry(ProposalId, Null, await this.proposalsEngine.activeProposalIds());
+    // linked_keys will be [0] if there are no active proposals!
+    return result.linked_keys.join('') !== '0' ? result.linked_keys : [];
+  }
+
   async proposals () {
     const ids = await this.proposalsIds();
     return Promise.all(ids.map(id => this.proposalById(id)));
   }
 
-  async activeProposals () {
-    const activeProposalIds = await this.proposalsEngine.activeProposalIds<ProposalId[]>();
+  async proposalsBatch (status: ProposalStatusFilter, batchNumber = 1, batchSize = 5): Promise<ProposalsBatch> {
+    const ids = (status === 'Active' ? await this.activeProposalsIds() : await this.proposalsIds())
+      .sort((id1, id2) => id2.cmp(id1)); // Sort by newest
+    let rawProposalsWithIds = (await Promise.all(ids.map(id => this.rawProposalById(id))))
+      .map((proposal, index) => ({ id: ids[index], proposal }));
 
-    return Promise.all(activeProposalIds.map(id => this.proposalById(id)));
+    if (status !== 'All' && status !== 'Active') {
+      rawProposalsWithIds = rawProposalsWithIds.filter(({ proposal }) => {
+        if (proposal.status.type !== 'Finalized') {
+          return false;
+        }
+        const finalStatus = ((proposal.status.value as Finalized).get('proposalStatus') as ProposalDecisionStatus);
+        return finalStatus.type === status;
+      });
+    }
+
+    const totalBatches = Math.ceil(rawProposalsWithIds.length / batchSize);
+    rawProposalsWithIds = rawProposalsWithIds.slice((batchNumber - 1) * batchSize, batchNumber * batchSize);
+    const proposals = await Promise.all(rawProposalsWithIds.map(({ proposal, id }) => this.proposalById(id, proposal)));
+
+    return {
+      batchNumber,
+      batchSize: rawProposalsWithIds.length,
+      totalBatches,
+      proposals
+    };
   }
 
   async proposedBy (member: MemberId) {
@@ -112,13 +182,9 @@ export default class ProposalsTransport extends BaseTransport {
     return proposals.filter(({ proposerId }) => member.eq(proposerId));
   }
 
-  async proposalDetails (id: ProposalId) {
-    return this.proposalsCodex.proposalDetailsByProposalId(id);
-  }
-
   async voteByProposalAndMember (proposalId: ProposalId, voterId: MemberId): Promise<VoteKind | null> {
-    const vote = await this.proposalsEngine.voteExistsByProposalByVoter<VoteKind>(proposalId, voterId);
-    const hasVoted = (await this.proposalsEngine.voteExistsByProposalByVoter.size(proposalId, voterId)).toNumber();
+    const vote = (await this.proposalsEngine.voteExistsByProposalByVoter(proposalId, voterId)) as VoteKind;
+    const hasVoted = (await this.api.query.proposalsEngine.voteExistsByProposalByVoter.size(proposalId, voterId)).toNumber();
     return hasVoted ? vote : null;
   }
 
@@ -153,34 +219,15 @@ export default class ProposalsTransport extends BaseTransport {
     };
   }
 
-  async fetchProposalMethodsFromCodex (includeKey: string) {
-    const methods = includeKeys(this.proposalsCodex, includeKey);
-    // methods = [proposalTypeVotingPeriod...]
-    return methods.reduce(async (prevProm, method) => {
-      const obj = await prevProm;
-      const period = (await this.proposalsCodex[method]()) as u32;
-      // setValidatorCountProposalVotingPeriod to SetValidatorCount
-      const key = _.words(_.startCase(method))
-        .slice(0, -3)
-        .map((w, i) => (i === 0 ? w.slice(0, 1).toUpperCase() + w.slice(1) : w))
-        .join('') as ProposalType;
-
-      return { ...obj, [`${key}`]: period.toNumber() };
-    }, Promise.resolve({}) as Promise<{ [k in ProposalType]: number }>);
-  }
-
-  async proposalTypesGracePeriod (): Promise<{ [k in ProposalType]: number }> {
-    return this.fetchProposalMethodsFromCodex('GracePeriod');
-  }
-
-  async proposalTypesVotingPeriod (): Promise<{ [k in ProposalType]: number }> {
-    return this.fetchProposalMethodsFromCodex('VotingPeriod');
-  }
-
   async parametersFromProposalType (type: ProposalType) {
-    const votingPeriod = (await this.proposalTypesVotingPeriod())[type];
-    const gracePeriod = (await this.proposalTypesGracePeriod())[type];
-    // Currently it's same for all types, but this will change soon
+    const methods = proposalsApiMethods[type];
+    let votingPeriod = 0;
+    let gracePeriod = 0;
+    if (methods) {
+      votingPeriod = ((await this.proposalsCodex[methods.votingPeriod]()) as u32).toNumber();
+      gracePeriod = ((await this.proposalsCodex[methods.gracePeriod]()) as u32).toNumber();
+    }
+    // Currently it's same for all types, but this will change soon (?)
     const cancellationFee = this.cancellationFee();
     return {
       type,
@@ -196,7 +243,7 @@ export default class ProposalsTransport extends BaseTransport {
   }
 
   async subscribeProposal (id: number|ProposalId, callback: () => void) {
-    return this.proposalsEngine.proposals(id, callback);
+    return this.api.query.proposalsEngine.proposals(id, callback);
   }
 
   async discussion (id: number|ProposalId): Promise<ParsedDiscussion | null> {

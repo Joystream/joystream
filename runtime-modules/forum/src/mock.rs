@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use crate::*;
+use common::BlockAndTime;
 
 use primitives::H256;
 
@@ -467,10 +468,9 @@ pub type RuntimePost = Post<
     RuntimeThreadId,
     RuntimePostId,
 >;
-pub type RuntimeBlockchainTimestamp = BlockchainTimestamp<
-    <Runtime as system::Trait>::BlockNumber,
-    <Runtime as timestamp::Trait>::Moment,
->;
+pub type RuntimeBlockchainTimestamp =
+    BlockAndTime<<Runtime as system::Trait>::BlockNumber, <Runtime as timestamp::Trait>::Moment>;
+
 pub type RuntimeThreadId = <Runtime as Trait>::ThreadId;
 pub type RuntimePostId = <Runtime as Trait>::PostId;
 

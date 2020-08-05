@@ -1,9 +1,9 @@
-import { Observable } from 'rxjs';
 import { map, switchMap } from 'rxjs/operators';
 
 import ApiPromise from '@polkadot/api/promise';
 import { Balance } from '@polkadot/types/interfaces';
-import { GenericAccountId, Option, u32, u64, u128, Vec } from '@polkadot/types';
+import { GenericAccountId, Option, u128, Vec } from '@polkadot/types';
+import { Constructor } from '@polkadot/types/types';
 import { Moment } from '@polkadot/types/interfaces/runtime';
 import { QueueTxExtrinsicAdd } from '@polkadot/react-components/Status/types';
 import { SubmittableExtrinsic } from '@polkadot/api/promise/types';
@@ -14,23 +14,28 @@ import { APIQueryCache, MultipleLinkedMapEntry, SingleLinkedMapEntry, Subscribab
 import { ITransport } from './transport';
 import { GroupMember } from './elements';
 
-import { Role } from '@joystream/types/roles';
 import {
   Curator, CuratorId,
   CuratorApplication, CuratorApplicationId,
-  CuratorInduction,
   CuratorRoleStakeProfile,
   CuratorOpening, CuratorOpeningId,
   Lead, LeadId
 } from '@joystream/types/content-working-group';
 
-import { Application, Opening, OpeningId } from '@joystream/types/hiring';
+import {
+  Application as WGApplication,
+  Opening as WGOpening,
+  Worker, WorkerId,
+  RoleStakeProfile
+} from '@joystream/types/working-group';
+
+import { Application, Opening, OpeningId, ApplicationId, ActiveApplicationStage } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
-import { Recipient, RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
-import { ActorInRole, Profile, MemberId, Role as MemberRole, RoleKeys, ActorId } from '@joystream/types/members';
+import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
+import { ActorInRole, Profile, MemberId, Role, RoleKeys, ActorId } from '@joystream/types/members';
 import { createAccount, generateSeed } from '@polkadot/joy-utils/accounts';
 
-import { WorkingGroupMembership, StorageAndDistributionMembership, GroupLeadStatus } from './tabs/WorkingGroup';
+import { WorkingGroupMembership, GroupLeadStatus } from './tabs/WorkingGroup';
 import { WorkingGroupOpening } from './tabs/Opportunities';
 import { ActiveRole, OpeningApplication } from './tabs/MyRoles';
 
@@ -42,8 +47,9 @@ import {
   classifyOpeningStakes,
   isApplicationHired
 } from './classifiers';
-import { WorkingGroups } from './working_groups';
+import { WorkingGroups, AvailableGroups, workerRoleNameByGroup } from './working_groups';
 import { Sort, Sum, Zero } from './balances';
+import _ from 'lodash';
 
 type WorkingGroupPair<HiringModuleType, WorkingGroupType> = {
   hiringModule: HiringModuleType;
@@ -55,12 +61,90 @@ type StakePair<T = Balance> = {
   role: T;
 }
 
-interface IRoleAccounter {
-  role_account: GenericAccountId;
-  induction?: CuratorInduction;
-  role_stake_profile?: Option<CuratorRoleStakeProfile>;
-  reward_relationship: Option<RewardRelationshipId>;
+type WGApiMethodType =
+  'nextOpeningId'
+  | 'openingById'
+  | 'nextApplicationId'
+  | 'applicationById'
+  | 'nextWorkerId'
+  | 'workerById';
+type WGApiTxMethodType =
+  'applyOnOpening'
+  | 'withdrawApplication'
+  | 'leaveRole';
+type WGApiMethodsMapping = {
+  query: { [key in WGApiMethodType]: string };
+  tx: { [key in WGApiTxMethodType]: string };
+};
+
+type GroupApplication = CuratorApplication | WGApplication;
+type GroupApplicationId = CuratorApplicationId | ApplicationId;
+type GroupOpening = CuratorOpening | WGOpening;
+type GroupOpeningId = CuratorOpeningId | OpeningId;
+type GroupWorker = Worker | Curator;
+type GroupWorkerId = CuratorId | WorkerId;
+type GroupWorkerStakeProfile = RoleStakeProfile | CuratorRoleStakeProfile;
+type GroupLead = Lead | Worker;
+type GroupLeadWithMemberId = {
+  lead: GroupLead;
+  memberId: MemberId;
+  workerId?: WorkerId; // Only when it's `working-groups` module lead
 }
+
+type WGApiMapping = {
+  [key in WorkingGroups]: {
+    module: string;
+    methods: WGApiMethodsMapping;
+    openingType: Constructor<GroupOpening>;
+    applicationType: Constructor<GroupApplication>;
+    workerType: Constructor<GroupWorker>;
+  }
+};
+
+const workingGroupsApiMapping: WGApiMapping = {
+  [WorkingGroups.StorageProviders]: {
+    module: 'storageWorkingGroup',
+    methods: {
+      query: {
+        nextOpeningId: 'nextOpeningId',
+        openingById: 'openingById',
+        nextApplicationId: 'nextApplicationId',
+        applicationById: 'applicationById',
+        nextWorkerId: 'nextWorkerId',
+        workerById: 'workerById'
+      },
+      tx: {
+        applyOnOpening: 'applyOnOpening',
+        withdrawApplication: 'withdrawApplication',
+        leaveRole: 'leaveRole'
+      }
+    },
+    openingType: WGOpening,
+    applicationType: WGApplication,
+    workerType: Worker
+  },
+  [WorkingGroups.ContentCurators]: {
+    module: 'contentWorkingGroup',
+    methods: {
+      query: {
+        nextOpeningId: 'nextCuratorOpeningId',
+        openingById: 'curatorOpeningById',
+        nextApplicationId: 'nextCuratorApplicationId',
+        applicationById: 'curatorApplicationById',
+        nextWorkerId: 'nextCuratorId',
+        workerById: 'curatorById'
+      },
+      tx: {
+        applyOnOpening: 'applyOnCuratorOpening',
+        withdrawApplication: 'withdrawCuratorApplication',
+        leaveRole: 'leaveCuratorRole'
+      }
+    },
+    openingType: CuratorOpening,
+    applicationType: CuratorApplication,
+    workerType: Curator
+  }
+};
 
 export class Transport extends TransportBase implements ITransport {
   protected api: ApiPromise
@@ -72,6 +156,20 @@ export class Transport extends TransportBase implements ITransport {
     this.api = api;
     this.cachedApi = new APIQueryCache(api);
     this.queueExtrinsic = queueExtrinsic;
+  }
+
+  cachedApiMethodByGroup (group: WorkingGroups, method: WGApiMethodType) {
+    const apiModule = workingGroupsApiMapping[group].module;
+    const apiMethod = workingGroupsApiMapping[group].methods.query[method];
+
+    return this.cachedApi.query[apiModule][apiMethod];
+  }
+
+  apiExtrinsicByGroup (group: WorkingGroups, method: WGApiTxMethodType) {
+    const apiModule = workingGroupsApiMapping[group].module;
+    const apiMethod = workingGroupsApiMapping[group].methods.tx[method];
+
+    return this.api.tx[apiModule][apiMethod];
   }
 
   unsubscribe () {
@@ -93,27 +191,25 @@ export class Transport extends TransportBase implements ITransport {
     return stake.value.value;
   }
 
-  protected async curatorStake (stakeProfile: CuratorRoleStakeProfile): Promise<Balance> {
+  protected async workerStake (stakeProfile: GroupWorkerStakeProfile): Promise<Balance> {
     return this.stakeValue(stakeProfile.stake_id);
   }
 
-  protected async curatorTotalReward (relationshipId: RewardRelationshipId): Promise<Balance> {
-    const relationship = new SingleLinkedMapEntry<RewardRelationship>(
+  protected async rewardRelationshipById (id: RewardRelationshipId): Promise<RewardRelationship | undefined> {
+    const rewardRelationship = new SingleLinkedMapEntry<RewardRelationship>(
       RewardRelationship,
-      await this.cachedApi.query.recurringRewards.rewardRelationships(
-        relationshipId
-      )
-    );
-    const recipient = new SingleLinkedMapEntry<Recipient>(
-      Recipient,
-      await this.cachedApi.query.recurringRewards.rewardRelationships(
-        relationship.value.recipient
-      )
-    );
-    return recipient.value.total_reward_received;
+      await this.cachedApi.query.recurringRewards.rewardRelationships(id)
+    ).value;
+
+    return rewardRelationship.isEmpty ? undefined : rewardRelationship;
   }
 
-  protected async memberIdFromRoleAndActorId (role: MemberRole, id: ActorId): Promise<MemberId> {
+  protected async workerTotalReward (relationshipId: RewardRelationshipId): Promise<Balance> {
+    const relationship = await this.rewardRelationshipById(relationshipId);
+    return relationship?.total_reward_received || new u128(0);
+  }
+
+  protected async memberIdFromRoleAndActorId (role: Role, id: ActorId): Promise<MemberId> {
     const memberId = (
       await this.cachedApi.query.members.membershipIdByActorInRole(
         new ActorInRole({
@@ -128,21 +224,34 @@ export class Transport extends TransportBase implements ITransport {
 
   protected memberIdFromCuratorId (curatorId: CuratorId): Promise<MemberId> {
     return this.memberIdFromRoleAndActorId(
-      new MemberRole(RoleKeys.Curator),
+      new Role(RoleKeys.Curator),
       curatorId
     );
   }
 
   protected memberIdFromLeadId (leadId: LeadId): Promise<MemberId> {
     return this.memberIdFromRoleAndActorId(
-      new MemberRole(RoleKeys.CuratorLead),
+      new Role(RoleKeys.CuratorLead),
       leadId
     );
   }
 
-  protected async groupMember (id: CuratorId, curator: IRoleAccounter): Promise<GroupMember> {
-    const roleAccount = curator.role_account;
-    const memberId = await this.memberIdFromCuratorId(id);
+  protected async workerRewardRelationship (worker: GroupWorker): Promise<RewardRelationship | undefined> {
+    const rewardRelationship = worker.reward_relationship.isSome
+      ? await this.rewardRelationshipById(worker.reward_relationship.unwrap())
+      : undefined;
+    return rewardRelationship;
+  }
+
+  protected async groupMember (
+    group: WorkingGroups,
+    id: GroupWorkerId,
+    worker: GroupWorker
+  ): Promise<GroupMember> {
+    const roleAccount = worker.role_account_id;
+    const memberId = group === WorkingGroups.ContentCurators
+      ? await this.memberIdFromCuratorId(id)
+      : (worker as Worker).member_id;
 
     const profile = await this.cachedApi.query.members.memberProfile(memberId) as Option<Profile>;
     if (profile.isNone) {
@@ -150,42 +259,48 @@ export class Transport extends TransportBase implements ITransport {
     }
 
     let stakeValue: Balance = new u128(0);
-    if (curator.role_stake_profile && curator.role_stake_profile.isSome) {
-      stakeValue = await this.curatorStake(curator.role_stake_profile.unwrap());
+    if (worker.role_stake_profile && worker.role_stake_profile.isSome) {
+      stakeValue = await this.workerStake(worker.role_stake_profile.unwrap());
     }
 
-    let earnedValue: Balance = new u128(0);
-    if (curator.reward_relationship && curator.reward_relationship.isSome) {
-      earnedValue = await this.curatorTotalReward(curator.reward_relationship.unwrap());
-    }
+    const rewardRelationship = await this.workerRewardRelationship(worker);
 
     return ({
       roleAccount,
+      group,
       memberId,
+      workerId: id.toNumber(),
       profile: profile.unwrap(),
-      title: 'Content curator',
+      title: workerRoleNameByGroup[group],
       stake: stakeValue,
-      earned: earnedValue
+      rewardRelationship
     });
   }
 
-  protected async areAnyCuratorRolesOpen (): Promise<boolean> {
-    const nextId = await this.cachedApi.query.contentWorkingGroup.nextCuratorOpeningId() as CuratorId;
+  protected async areGroupRolesOpen (group: WorkingGroups, lead = false): Promise<boolean> {
+    const nextId = await this.cachedApiMethodByGroup(group, 'nextOpeningId')() as GroupOpeningId;
 
     // This is chain specfic, but if next id is still 0, it means no openings have been added yet
     if (nextId.eq(0)) {
       return false;
     }
 
-    const curatorOpenings = new MultipleLinkedMapEntry<CuratorOpeningId, CuratorOpening>(
-      CuratorOpeningId,
-      CuratorOpening,
-      await this.cachedApi.query.contentWorkingGroup.curatorOpeningById()
+    const groupOpenings = new MultipleLinkedMapEntry<GroupOpeningId, GroupOpening>(
+      OpeningId,
+      workingGroupsApiMapping[group].openingType,
+      await this.cachedApiMethodByGroup(group, 'openingById')()
     );
 
-    for (let i = 0; i < curatorOpenings.linked_values.length; i++) {
-      const opening = await this.opening(curatorOpenings.linked_values[i].opening_id.toNumber());
-      if (opening.is_active) {
+    for (const groupOpening of groupOpenings.linked_values) {
+      const opening = await this.opening(groupOpening.hiring_opening_id.toNumber());
+      if (
+        opening.is_active &&
+        (
+          groupOpening instanceof WGOpening
+            ? (lead === groupOpening.opening_type.isOfType('Leader'))
+            : !lead // Lead opening are never available for content working group currently
+        )
+      ) {
         return true;
       }
     }
@@ -193,30 +308,82 @@ export class Transport extends TransportBase implements ITransport {
     return false;
   }
 
-  async groupLeadStatus (): Promise<GroupLeadStatus> {
+  protected async currentCuratorLead (): Promise<GroupLeadWithMemberId | null> {
     const optLeadId = (await this.cachedApi.query.contentWorkingGroup.currentLeadId()) as Option<LeadId>;
 
-    if (optLeadId.isSome) {
-      const leadId = optLeadId.unwrap();
-      const lead = new SingleLinkedMapEntry<Lead>(
-        Lead,
-        await this.cachedApi.query.contentWorkingGroup.leadById(leadId)
-      );
+    if (!optLeadId.isSome) {
+      return null;
+    }
 
-      const memberId = await this.memberIdFromLeadId(leadId);
+    const leadId = optLeadId.unwrap();
+    const lead = new SingleLinkedMapEntry<Lead>(
+      Lead,
+      await this.cachedApi.query.contentWorkingGroup.leadById(leadId)
+    );
 
-      const profile = await this.cachedApi.query.members.memberProfile(memberId) as Option<Profile>;
+    const memberId = await this.memberIdFromLeadId(leadId);
+
+    return {
+      lead: lead.value,
+      memberId
+    };
+  }
+
+  protected async currentStorageLead (): Promise <GroupLeadWithMemberId | null> {
+    const optLeadId = (await this.cachedApi.query.storageWorkingGroup.currentLead()) as Option<WorkerId>;
+
+    if (!optLeadId.isSome) {
+      return null;
+    }
+
+    const leadWorkerId = optLeadId.unwrap();
+    const leadWorkerLink = new SingleLinkedMapEntry(
+      Worker,
+      await this.cachedApi.query.storageWorkingGroup.workerById(leadWorkerId)
+    );
+    const leadWorker = leadWorkerLink.value;
+
+    if (!leadWorker.is_active) {
+      return null;
+    }
+
+    return {
+      lead: leadWorker,
+      memberId: leadWorker.member_id,
+      workerId: leadWorkerId
+    };
+  }
+
+  async groupLeadStatus (group: WorkingGroups = WorkingGroups.ContentCurators): Promise<GroupLeadStatus> {
+    const currentLead = group === WorkingGroups.ContentCurators
+      ? await this.currentCuratorLead()
+      : await this.currentStorageLead();
+
+    if (currentLead !== null) {
+      const profile = await this.cachedApi.query.members.memberProfile(currentLead.memberId) as Option<Profile>;
+
       if (profile.isNone) {
-        throw new Error('no profile found');
+        throw new Error(`${group} lead profile not found!`);
       }
+
+      const rewardRelationshipId = currentLead.lead.reward_relationship;
+      const rewardRelationship = rewardRelationshipId.isSome
+        ? await this.rewardRelationshipById(rewardRelationshipId.unwrap())
+        : undefined;
+      const stake = group === WorkingGroups.StorageProviders && (currentLead.lead as Worker).role_stake_profile.isSome
+        ? await this.workerStake((currentLead.lead as Worker).role_stake_profile.unwrap())
+        : undefined;
 
       return {
         lead: {
-          memberId,
-          roleAccount: lead.value.role_account,
+          memberId: currentLead.memberId,
+          workerId: currentLead.workerId,
+          roleAccount: currentLead.lead.role_account_id,
           profile: profile.unwrap(),
-          title: 'Content Lead',
-          stage: lead.value.stage
+          title: _.startCase(group) + ' Lead',
+          stage: group === WorkingGroups.ContentCurators ? (currentLead.lead as Lead).stage : undefined,
+          stake,
+          rewardRelationship
         },
         loaded: true
       };
@@ -227,56 +394,71 @@ export class Transport extends TransportBase implements ITransport {
     }
   }
 
-  async curationGroup (): Promise<WorkingGroupMembership> {
-    const rolesAvailable = await this.areAnyCuratorRolesOpen();
+  async groupOverview (group: WorkingGroups): Promise<WorkingGroupMembership> {
+    const workerRolesAvailable = await this.areGroupRolesOpen(group);
+    const leadRolesAvailable = await this.areGroupRolesOpen(group, true);
+    const leadStatus = await this.groupLeadStatus(group);
 
-    const nextId = await this.cachedApi.query.contentWorkingGroup.nextCuratorId() as CuratorId;
+    const nextId = await this.cachedApiMethodByGroup(group, 'nextWorkerId')() as GroupWorkerId;
 
-    // This is chain specfic, but if next id is still 0, it means no curators have been added yet
-    if (nextId.eq(0)) {
-      return {
-        members: [],
-        rolesAvailable
-      };
+    let workersWithIds: { worker: GroupWorker; id: GroupWorkerId }[] = [];
+    // This is chain specfic, but if next id is still 0, it means no workers have been added yet
+    if (!nextId.eq(0)) {
+      const values = new MultipleLinkedMapEntry<GroupWorkerId, GroupWorker>(
+        ActorId,
+        workingGroupsApiMapping[group].workerType,
+        await this.cachedApiMethodByGroup(group, 'workerById')() as GroupWorker
+      );
+
+      workersWithIds = values.linked_values
+        // First bind workers with ids
+        .map((worker, i) => ({ worker, id: values.linked_keys[i] }))
+        // Filter by: active and "not lead"
+        .filter(({ worker, id }) => worker.is_active && (!leadStatus.lead?.workerId || !id.eq(leadStatus.lead.workerId)));
     }
 
-    const values = new MultipleLinkedMapEntry<CuratorId, Curator>(
-      CuratorId,
-      Curator,
-      await this.cachedApi.query.contentWorkingGroup.curatorById()
-    );
-
-    const members = values.linked_values.filter(value => value.is_active).reverse();
-    const memberIds = values.linked_keys.filter((v, k) => values.linked_values[k].is_active).reverse();
-
     return {
-      members: await Promise.all(
-        members.map((member, k) => this.groupMember(memberIds[k], member))
+      leadStatus,
+      workers: await Promise.all(
+        workersWithIds.map(({ worker, id }) => this.groupMember(group, id, worker))
       ),
-      rolesAvailable
+      workerRolesAvailable,
+      leadRolesAvailable
     };
   }
 
-  storageGroup (): Promise<StorageAndDistributionMembership> {
-    return this.promise<StorageAndDistributionMembership>(
-      {} as StorageAndDistributionMembership
-    );
+  curationGroup (): Promise<WorkingGroupMembership> {
+    return this.groupOverview(WorkingGroups.ContentCurators);
   }
 
-  async currentOpportunities (): Promise<Array<WorkingGroupOpening>> {
+  storageGroup (): Promise<WorkingGroupMembership> {
+    return this.groupOverview(WorkingGroups.StorageProviders);
+  }
+
+  async opportunitiesByGroup (group: WorkingGroups): Promise<WorkingGroupOpening[]> {
     const output = new Array<WorkingGroupOpening>();
-    const nextId = await this.cachedApi.query.contentWorkingGroup.nextCuratorOpeningId() as CuratorOpeningId;
+    const nextId = (await this.cachedApiMethodByGroup(group, 'nextOpeningId')()) as GroupOpeningId;
 
     // This is chain specfic, but if next id is still 0, it means no curator openings have been added yet
     if (!nextId.eq(0)) {
       const highestId = nextId.toNumber() - 1;
 
       for (let i = highestId; i >= 0; i--) {
-        output.push(await this.curationGroupOpening(i));
+        output.push(await this.groupOpening(group, i));
       }
     }
 
     return output;
+  }
+
+  async currentOpportunities (): Promise<WorkingGroupOpening[]> {
+    let opportunities: WorkingGroupOpening[] = [];
+
+    for (const group of AvailableGroups) {
+      opportunities = opportunities.concat(await this.opportunitiesByGroup(group));
+    }
+
+    return opportunities.sort((a, b) => b.stage.starting_block - a.stage.starting_block);
   }
 
   protected async opening (id: number): Promise<Opening> {
@@ -288,17 +470,17 @@ export class Transport extends TransportBase implements ITransport {
     return opening.value;
   }
 
-  protected async curatorOpeningApplications (curatorOpeningId: number): Promise<Array<WorkingGroupPair<Application, CuratorApplication>>> {
-    const output = new Array<WorkingGroupPair<Application, CuratorApplication>>();
+  protected async groupOpeningApplications (group: WorkingGroups, groupOpeningId: number): Promise<WorkingGroupPair<Application, GroupApplication>[]> {
+    const output = new Array<WorkingGroupPair<Application, GroupApplication>>();
 
-    const nextAppid = await this.cachedApi.query.contentWorkingGroup.nextCuratorApplicationId() as u64;
+    const nextAppid = (await this.cachedApiMethodByGroup(group, 'nextApplicationId')()) as GroupApplicationId;
     for (let i = 0; i < nextAppid.toNumber(); i++) {
-      const cApplication = new SingleLinkedMapEntry<CuratorApplication>(
-        CuratorApplication,
-        await this.cachedApi.query.contentWorkingGroup.curatorApplicationById(i)
+      const cApplication = new SingleLinkedMapEntry<GroupApplication>(
+        workingGroupsApiMapping[group].applicationType,
+        await this.cachedApiMethodByGroup(group, 'applicationById')(i)
       );
 
-      if (cApplication.value.curator_opening_id.toNumber() !== curatorOpeningId) {
+      if (cApplication.value.opening_id.toNumber() !== groupOpeningId) {
         continue;
       }
 
@@ -319,29 +501,30 @@ export class Transport extends TransportBase implements ITransport {
     return output;
   }
 
-  async curationGroupOpening (id: number): Promise<WorkingGroupOpening> {
-    const nextId = (await this.cachedApi.query.contentWorkingGroup.nextCuratorOpeningId() as u32).toNumber();
+  async groupOpening (group: WorkingGroups, id: number): Promise<WorkingGroupOpening> {
+    const nextId = (await this.cachedApiMethodByGroup(group, 'nextOpeningId')() as GroupOpeningId).toNumber();
     if (id < 0 || id >= nextId) {
       throw new Error('invalid id');
     }
 
-    const curatorOpening = new SingleLinkedMapEntry<CuratorOpening>(
-      CuratorOpening,
-      await this.cachedApi.query.contentWorkingGroup.curatorOpeningById(id)
-    );
+    const groupOpening = new SingleLinkedMapEntry<GroupOpening>(
+      workingGroupsApiMapping[group].openingType,
+      await this.cachedApiMethodByGroup(group, 'openingById')(id)
+    ).value;
 
     const opening = await this.opening(
-      curatorOpening.value.getField<OpeningId>('opening_id').toNumber()
+      groupOpening.hiring_opening_id.toNumber()
     );
 
-    const applications = await this.curatorOpeningApplications(id);
+    const applications = await this.groupOpeningApplications(group, id);
     const stakes = classifyOpeningStakes(opening);
 
     return ({
       opening: opening,
       meta: {
         id: id.toString(),
-        group: WorkingGroups.ContentCurators
+        group,
+        type: groupOpening instanceof WGOpening ? groupOpening.opening_type : undefined
       },
       stage: await classifyOpeningStage(this, opening),
       applications: {
@@ -369,13 +552,14 @@ export class Transport extends TransportBase implements ITransport {
     return Sum(await Promise.all(promises));
   }
 
-  async openingApplicationRanks (openingId: number): Promise<Balance[]> {
-    const applications = await this.curatorOpeningApplications(openingId);
+  async openingApplicationRanks (group: WorkingGroups, openingId: number): Promise<Balance[]> {
+    const applications = await this.groupOpeningApplications(group, openingId);
     return Sort(
       (await Promise.all(
-        applications.map(application => this.openingApplicationTotalStake(application.hiringModule))
+        applications
+          .filter(a => a.hiringModule.stage.value instanceof ActiveApplicationStage)
+          .map(application => this.openingApplicationTotalStake(application.hiringModule))
       ))
-        .filter((b) => !b.eq(Zero))
     );
   }
 
@@ -439,11 +623,12 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   protected async myApplicationRank (myApp: Application, applications: Array<Application>): Promise<number> {
+    const activeApplications = applications.filter(app => app.stage.value instanceof ActiveApplicationStage);
     const stakes = await Promise.all(
-      applications.map(app => this.openingApplicationTotalStake(app))
+      activeApplications.map(app => this.openingApplicationTotalStake(app))
     );
 
-    const appvalues = applications.map((app, key) => {
+    const appvalues = activeApplications.map((app, key) => {
       return {
         app: app,
         value: stakes[key]
@@ -463,15 +648,15 @@ export class Transport extends TransportBase implements ITransport {
     return appvalues.findIndex(v => v.app.eq(myApp)) + 1;
   }
 
-  async openingApplications (roleKeyId: string): Promise<OpeningApplication[]> {
-    const curatorApps = new MultipleLinkedMapEntry<CuratorApplicationId, CuratorApplication>(
-      CuratorApplicationId,
-      CuratorApplication,
-      await this.cachedApi.query.contentWorkingGroup.curatorApplicationById()
+  async openingApplicationsByAddressAndGroup (group: WorkingGroups, roleKey: string): Promise<OpeningApplication[]> {
+    const applications = new MultipleLinkedMapEntry<GroupApplicationId, GroupApplication>(
+      ApplicationId,
+      workingGroupsApiMapping[group].applicationType,
+      await this.cachedApiMethodByGroup(group, 'applicationById')()
     );
 
-    const myApps = curatorApps.linked_values.filter(app => app.role_account.eq(roleKeyId));
-    const myAppIds = curatorApps.linked_keys.filter((id, key) => curatorApps.linked_values[key].role_account.eq(roleKeyId));
+    const myApps = applications.linked_values.filter(app => app.role_account_id.eq(roleKey));
+    const myAppIds = applications.linked_keys.filter((id, key) => applications.linked_values[key].role_account_id.eq(roleKey));
 
     const hiringAppPairs = await Promise.all(
       myApps.map(
@@ -490,73 +675,98 @@ export class Transport extends TransportBase implements ITransport {
       hiringApps.map(app => this.applicationStakes(app))
     );
 
-    const wgs = await Promise.all(
-      myApps.map(curatorOpening => {
-        return this.curationGroupOpening(curatorOpening.curator_opening_id.toNumber());
+    const openings = await Promise.all(
+      myApps.map(application => {
+        return this.groupOpening(group, application.opening_id.toNumber());
       })
     );
 
     const allAppsByOpening = (await Promise.all(
-      myApps.map(curatorOpening => {
-        return this.curatorOpeningApplications(curatorOpening.curator_opening_id.toNumber());
+      myApps.map(application => {
+        return this.groupOpeningApplications(group, application.opening_id.toNumber());
       })
     ));
 
     return await Promise.all(
-      wgs.map(async (wg, key) => {
+      openings.map(async (o, key) => {
         return {
           id: myAppIds[key].toNumber(),
           hired: isApplicationHired(hiringApps[key]),
           cancelledReason: classifyApplicationCancellation(hiringApps[key]),
           rank: await this.myApplicationRank(hiringApps[key], allAppsByOpening[key].map(a => a.hiringModule)),
-          capacity: wg.applications.maxNumberOfApplications,
-          stage: wg.stage,
-          opening: wg.opening,
-          meta: wg.meta,
+          capacity: o.applications.maxNumberOfApplications,
+          stage: o.stage,
+          opening: o.opening,
+          meta: o.meta,
           applicationStake: stakes[key].application,
           roleStake: stakes[key].role,
-          review_end_time: wg.stage.review_end_time,
-          review_end_block: wg.stage.review_end_block
+          review_end_time: o.stage.review_end_time,
+          review_end_block: o.stage.review_end_block
         };
       })
     );
   }
 
-  async myCurationGroupRoles (roleKeyId: string): Promise<ActiveRole[]> {
-    const curators = new MultipleLinkedMapEntry<CuratorId, Curator>(
-      CuratorId,
-      Curator,
-      await this.cachedApi.query.contentWorkingGroup.curatorById()
+  // Get opening applications for all groups by address
+  async openingApplicationsByAddress (roleKey: string): Promise<OpeningApplication[]> {
+    let applications: OpeningApplication[] = [];
+    for (const group of AvailableGroups) {
+      applications = applications.concat(await this.openingApplicationsByAddressAndGroup(group, roleKey));
+    }
+
+    return applications;
+  }
+
+  async myRolesByGroup (group: WorkingGroups, roleKeyId: string): Promise<ActiveRole[]> {
+    const workers = new MultipleLinkedMapEntry<GroupWorkerId, GroupWorker>(
+      ActorId,
+      workingGroupsApiMapping[group].workerType,
+      await this.cachedApiMethodByGroup(group, 'workerById')()
     );
 
+    const groupLead = (await this.groupLeadStatus(group)).lead;
+
     return Promise.all(
-      curators
+      workers
         .linked_values
         .toArray()
-        .filter(curator => curator.role_account.eq(roleKeyId) && curator.is_active)
-        .map(async (curator, key) => {
+        // We need to associate worker ids with workers BEFORE filtering the array
+        .map((worker, index) => ({ worker, id: workers.linked_keys[index] }))
+        .filter(({ worker }) => worker.role_account_id.eq(roleKeyId) && worker.is_active)
+        .map(async workerWithId => {
+          const { worker, id } = workerWithId;
+
           let stakeValue: Balance = new u128(0);
-          if (curator.role_stake_profile && curator.role_stake_profile.isSome) {
-            stakeValue = await this.curatorStake(curator.role_stake_profile.unwrap());
+          if (worker.role_stake_profile && worker.role_stake_profile.isSome) {
+            stakeValue = await this.workerStake(worker.role_stake_profile.unwrap());
           }
 
           let earnedValue: Balance = new u128(0);
-          if (curator.reward_relationship && curator.reward_relationship.isSome) {
-            earnedValue = await this.curatorTotalReward(curator.reward_relationship.unwrap());
+          if (worker.reward_relationship && worker.reward_relationship.isSome) {
+            earnedValue = await this.workerTotalReward(worker.reward_relationship.unwrap());
           }
 
           return {
-            curatorId: curators.linked_keys[key],
-            name: 'Content curator',
+            workerId: id,
+            name: (groupLead?.workerId && groupLead.workerId.eq(id))
+              ? _.startCase(group) + ' Lead'
+              : workerRoleNameByGroup[group],
             reward: earnedValue,
-            stake: stakeValue
+            stake: stakeValue,
+            group
           };
         })
     );
   }
 
-  myStorageGroupRoles (): Subscribable<ActiveRole[]> {
-    return new Observable<ActiveRole[]>(observer => { /* do nothing */ });
+  // All groups roles by key
+  async myRoles (roleKey: string): Promise<ActiveRole[]> {
+    let roles: ActiveRole[] = [];
+    for (const group of AvailableGroups) {
+      roles = roles.concat(await this.myRolesByGroup(group, roleKey));
+    }
+
+    return roles;
   }
 
   protected generateRoleAccount (name: string, password = ''): string | null {
@@ -571,7 +781,8 @@ export class Transport extends TransportBase implements ITransport {
     return status.account as string;
   }
 
-  applyToCuratorOpening (
+  applyToOpening (
+    group: WorkingGroups,
     id: number,
     roleAccountName: string,
     sourceAccount: string,
@@ -589,13 +800,14 @@ export class Transport extends TransportBase implements ITransport {
           if (!roleAccount) {
             reject(new Error('failed to create role account'));
           }
-          const tx = this.api.tx.contentWorkingGroup.applyOnCuratorOpening(
-            membershipIds[0],
-            new u32(id),
-            new GenericAccountId(roleAccount as string),
-            roleStake.eq(Zero) ? null : roleStake,
-            appStake.eq(Zero) ? null : appStake,
-            applicationText
+          const tx = this.apiExtrinsicByGroup(group, 'applyOnOpening')(
+            membershipIds[0], // Member id
+            id, // Worker/Curator opening id
+            roleAccount, // Role account
+            // TODO: Will need to be adjusted if AtLeast Zero stakes become possible
+            roleStake.eq(Zero) ? null : roleStake, // Role stake
+            appStake.eq(Zero) ? null : appStake, // Application stake
+            applicationText // Human readable text
           ) as unknown as SubmittableExtrinsic;
 
           const txFailedCb = () => {
@@ -616,8 +828,8 @@ export class Transport extends TransportBase implements ITransport {
     });
   }
 
-  leaveCurationRole (sourceAccount: string, id: number, rationale: string) {
-    const tx = this.api.tx.contentWorkingGroup.leaveCuratorRole(
+  leaveRole (group: WorkingGroups, sourceAccount: string, id: number, rationale: string) {
+    const tx = this.apiExtrinsicByGroup(group, 'leaveRole')(
       id,
       rationale
     ) as unknown as SubmittableExtrinsic;
@@ -628,8 +840,8 @@ export class Transport extends TransportBase implements ITransport {
     });
   }
 
-  withdrawCuratorApplication (sourceAccount: string, id: number) {
-    const tx = this.api.tx.contentWorkingGroup.withdrawCuratorApplication(
+  withdrawApplication (group: WorkingGroups, sourceAccount: string, id: number) {
+    const tx = this.apiExtrinsicByGroup(group, 'withdrawApplication')(
       id
     ) as unknown as SubmittableExtrinsic;
 

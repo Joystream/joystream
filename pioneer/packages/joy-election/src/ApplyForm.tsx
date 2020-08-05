@@ -10,13 +10,13 @@ import { Balance } from '@polkadot/types/interfaces';
 import translate from './translate';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import InputStake from '@polkadot/joy-utils/InputStake';
-import { Stake } from '@joystream/types/';
+import { ElectionStake } from '@joystream/types/council';
 import { calcTotalStake, ZERO } from '@polkadot/joy-utils/index';
 import { MyAddressProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
 
 type Props = ApiProps & I18nProps & MyAddressProps & {
   minStake?: Balance;
-  alreadyStaked?: Stake;
+  alreadyStaked?: ElectionStake;
   myBalance?: Balance;
 };
 

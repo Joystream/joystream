@@ -13,7 +13,7 @@ import './Proposal.css';
 import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses, ExecutionFailedStatus } from '@joystream/types/proposals';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import { MemberId } from '@joystream/types/members';
-import { Seat } from '@joystream/types/';
+import { Seat } from '@joystream/types/council';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 import ProposalDiscussion from './discussion/ProposalDiscussion';
 

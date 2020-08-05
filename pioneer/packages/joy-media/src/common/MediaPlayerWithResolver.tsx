@@ -6,7 +6,7 @@ import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { withMulti } from '@polkadot/react-api/with';
 import { Option } from '@polkadot/types/codec';
-import { AccountId } from '@polkadot/types/interfaces';
+import { StorageProviderId, Worker } from '@joystream/types/working-group';
 
 import translate from '../translate';
 import { DiscoveryProviderProps, withDiscoveryProvider } from '../DiscoveryProvider';
@@ -14,6 +14,7 @@ import { DataObjectStorageRelationshipId, DataObjectStorageRelationship } from '
 import { Message } from 'semantic-ui-react';
 import { MediaPlayerView, RequiredMediaPlayerProps } from './MediaPlayerView';
 import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
+import { MultipleLinkedMapEntry } from '@polkadot/joy-utils/index';
 
 type Props = ApiProps & I18nProps & DiscoveryProviderProps & RequiredMediaPlayerProps;
 
@@ -29,6 +30,23 @@ function InnerComponent (props: Props) {
   const [contentType, setContentType] = useState<string>();
   const [cancelSource, setCancelSource] = useState<CancelTokenSource>(newCancelSource());
 
+  const getActiveStorageProviderIds = async (): Promise<StorageProviderId[]> => {
+    const nextId = await api.query.storageWorkingGroup.nextWorkerId() as StorageProviderId;
+    // This is chain specfic, but if next id is still 0, it means no workers have been added,
+    // so the workerById is empty
+    if (nextId.eq(0)) {
+      return [];
+    }
+
+    const workers = new MultipleLinkedMapEntry<StorageProviderId, Worker>(
+      StorageProviderId,
+      Worker,
+      await api.query.storageWorkingGroup.workerById()
+    );
+
+    return workers.linked_keys;
+  };
+
   const resolveAsset = async () => {
     setError(undefined);
     setCancelSource(newCancelSource());
@@ -37,6 +55,7 @@ function InnerComponent (props: Props) {
 
     const allRelationships: Option<DataObjectStorageRelationship>[] = await Promise.all(rids.map((id) => api.query.dataObjectStorageRegistry.relationships(id))) as any;
 
+    // Providers that have signalled onchain that they have the asset
     let readyProviders = allRelationships.filter(r => r.isSome).map(r => r.unwrap())
       .filter(r => r.ready)
       .map(r => r.storage_provider);
@@ -49,10 +68,11 @@ function InnerComponent (props: Props) {
       return;
     }
 
-    // filter out providers no longer in actors list
-    const stakedActors = await api.query.actors.actorAccountIds() as unknown as AccountId[];
+    // filter out providers no longer active - relationships of providers that have left
+    // are not pruned onchain.
+    const activeProviders = await getActiveStorageProviderIds();
+    readyProviders = _.intersectionBy(activeProviders, readyProviders, provider => provider.toString());
 
-    readyProviders = _.intersectionBy(stakedActors, readyProviders, provider => provider.toString());
     console.log(`Found ${readyProviders.length} providers ready to serve content: ${readyProviders}`);
 
     // shuffle to spread the load

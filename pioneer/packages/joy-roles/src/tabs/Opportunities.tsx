@@ -4,7 +4,7 @@ import NumberFormat from 'react-number-format';
 import marked from 'marked';
 import CopyToClipboard from 'react-copy-to-clipboard';
 
-import { Link } from 'react-router-dom';
+import { Link, useHistory, useLocation } from 'react-router-dom';
 import {
   Button,
   Card,
@@ -14,7 +14,9 @@ import {
   Label,
   List,
   Message,
-  Statistic
+  Statistic,
+  Dropdown,
+  DropdownProps
 } from 'semantic-ui-react';
 
 import { formatBalance } from '@polkadot/util';
@@ -37,6 +39,9 @@ import {
 } from '../openingStateMarkup';
 
 import { Loadable } from '@polkadot/joy-utils/index';
+import styled from 'styled-components';
+import _ from 'lodash';
+import { WorkingGroups, AvailableGroups, workerRoleNameByGroup } from '../working_groups';
 
 type OpeningStage = OpeningMetadataProps & {
   stage: OpeningStageClassification;
@@ -83,6 +88,9 @@ export function OpeningHeader (props: OpeningStage) {
                 thousandSeparator={true}
               />
             </Link>
+          </Label.Detail>
+          <Label.Detail>
+            <Icon name="hashtag" /> {props.meta.id}
           </Label.Detail>
         </Label>
         <a>
@@ -458,22 +466,30 @@ export type WorkingGroupOpening = OpeningStage & DefactoMinimumStake & OpeningMe
   applications: OpeningStakeAndApplicationStatus;
 }
 
+const OpeningTitle = styled.h2`
+  display: flex;
+  align-items: flex-end;
+`;
+const OpeningLabel = styled(Label)`
+  margin-left: auto !important;
+`;
+
 type OpeningViewProps = WorkingGroupOpening & BlockTimeProps & MemberIdProps
 
 export const OpeningView = Loadable<OpeningViewProps>(
   ['opening', 'block_time_in_seconds'],
   props => {
-    const hrt = props.opening.parse_human_readable_text();
-
-    if (typeof hrt === 'undefined' || typeof hrt === 'string') {
-      return null;
-    }
-
-    const text = hrt;
+    const text = props.opening.parse_human_readable_text_with_fallback();
+    const isLeadOpening = props.meta.type?.isOfType('Leader');
 
     return (
       <Container className={'opening ' + openingClass(props.stage.state)}>
-        <h2>{text.job.title}</h2>
+        <OpeningTitle>
+          {text.job.title}
+          <OpeningLabel>
+            { _.startCase(props.meta.group) }{ isLeadOpening ? ' Lead' : '' }
+          </OpeningLabel>
+        </OpeningTitle>
         <Card fluid className="container">
           <Card.Content className="header">
             <OpeningHeader stage={props.stage} meta={props.meta} />
@@ -497,19 +513,76 @@ export const OpeningView = Loadable<OpeningViewProps>(
   }
 );
 
+const FilterOpportunities = styled.div`
+  display: flex;
+  width: 100%;
+  margin-bottom: 1rem;
+`;
+const FilterOpportunitiesDropdown = styled(Dropdown)`
+  margin-left: auto !important;
+  width: 250px !important;
+`;
+
 export type OpeningsViewProps = MemberIdProps & {
   openings?: Array<WorkingGroupOpening>;
   block_time_in_seconds?: number;
+  group?: WorkingGroups;
+  lead?: boolean;
 }
 
 export const OpeningsView = Loadable<OpeningsViewProps>(
   ['openings', 'block_time_in_seconds'],
   props => {
+    const history = useHistory();
+    const location = useLocation();
+    const basePath = '/working-groups/opportunities';
+    const { group = null, lead = false } = props;
+    const onFilterChange: DropdownProps['onChange'] = (e, data) => {
+      const newPath = data.value || basePath;
+      if (newPath !== location.pathname) { history.push(newPath as string); }
+    };
+    const groupOption = (group: WorkingGroups | null, lead = false) => ({
+      value: `${basePath}${group ? `/${group}` : ''}${lead ? '/lead' : ''}`,
+      text: _.startCase(`${group || 'All opportunities'}`) + (lead ? ' (Lead)' : '')
+    });
+    // Can assert "props.openings!" because we're using "Loadable" which prevents them from beeing undefined
+    const filteredOpenings = props.openings!.filter(o =>
+      (!group || o.meta.group === group) &&
+      (!group || !o.meta.type || (lead === o.meta.type.isOfType('Leader')))
+    );
+
     return (
       <Container>
-        {props.openings && props.openings.map((opening, key) => (
-          <OpeningView key={key} {...opening} block_time_in_seconds={props.block_time_in_seconds as number} member_id={props.member_id} />
-        ))}
+        <FilterOpportunities>
+          <FilterOpportunitiesDropdown
+            placeholder="All opportunities"
+            options={
+              [groupOption(null, false)]
+                .concat(AvailableGroups.map(g => groupOption(g)))
+                // Currently we filter-out content curators, because they don't use the new working-group module yet
+                .concat(AvailableGroups.filter(g => g !== WorkingGroups.ContentCurators).map(g => groupOption(g, true)))
+            }
+            value={groupOption(group, lead).value}
+            onChange={onFilterChange}
+            selection
+          />
+        </FilterOpportunities>
+        { (
+          filteredOpenings.length
+            ? filteredOpenings.map((opening, key) => (
+              <OpeningView
+                key={key}
+                {...opening}
+                block_time_in_seconds={props.block_time_in_seconds as number}
+                member_id={props.member_id} />
+            ))
+            : (
+              <h2>
+                No openings{group ? ` for ${workerRoleNameByGroup[group]}${lead ? ' Lead' : ''} role ` : ' '}
+                are currently available!
+              </h2>
+            )
+        ) }
       </Container>
     );
   }

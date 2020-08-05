@@ -7,6 +7,11 @@ export default class MembersTransport extends BaseTransport {
     return this.members.memberProfile(id) as Promise<Option<Profile>>;
   }
 
+  // Throws if profile not found
+  async expectedMemberProfile (id: MemberId | number): Promise<Profile> {
+    return (await this.memberProfile(id)).unwrap();
+  }
+
   async membersCreated (): Promise<number> {
     return (await this.members.membersCreated() as MemberId).toNumber();
   }

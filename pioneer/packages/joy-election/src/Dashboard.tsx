@@ -11,7 +11,7 @@ import { formatNumber, formatBalance } from '@polkadot/util';
 
 import Section from '@polkadot/joy-utils/Section';
 import { queryToProp } from '@polkadot/joy-utils/index';
-import { ElectionStage, Seat } from '@joystream/types/';
+import { ElectionStage, Seat } from '@joystream/types/council';
 import translate from './translate';
 
 type Props = ApiProps & I18nProps & {

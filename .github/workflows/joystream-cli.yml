@@ -1,0 +1,49 @@
+name: joystream-cli
+on: [pull_request, push]
+
+jobs:
+  cli_build_ubuntu:
+    name: Ubuntu Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: checks
+      run: |
+        yarn install --frozen-lockfile
+        yarn workspace @joystream/cli checks
+    - name: npm pack test
+      run: |
+        cd cli
+        npm pack | tail -1 | xargs tar xzf
+        cd package && npm link
+        joystream-cli help
+
+  cli_build_osx:
+    name: MacOS Checks
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: checks
+      run: |
+        yarn install --frozen-lockfile --network-timeout 120000
+        yarn workspace @joystream/cli checks
+    - name: npm pack test
+      run: |
+        cd cli
+        npm pack | tail -1 | xargs tar xzf
+        cd package && npm link
+        joystream-cli help

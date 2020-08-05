@@ -1,7 +1,7 @@
 import BN from 'bn.js';
 import { MediaTransport, ChannelValidationConstraints } from './transport';
 import { ClassId, Class, EntityId, Entity, ClassName } from '@joystream/types/versioned-store';
-import { InputValidationLengthConstraint } from '@joystream/types/forum';
+import { InputValidationLengthConstraint } from '@joystream/types/common';
 import { PlainEntity, EntityCodecResolver } from '@joystream/types/versioned-store/EntityCodec';
 import { MusicTrackType } from './schemas/music/MusicTrack';
 import { MusicAlbumType } from './schemas/music/MusicAlbum';

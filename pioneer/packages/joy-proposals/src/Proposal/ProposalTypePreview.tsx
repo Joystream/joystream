@@ -3,8 +3,7 @@ import React from 'react';
 import { History } from 'history';
 import { Item, Icon, Button, Label } from 'semantic-ui-react';
 
-import { Category } from './ChooseProposalType';
-import { ProposalType } from '@polkadot/joy-utils/types/proposals';
+import { ProposalType, Category } from '@polkadot/joy-utils/types/proposals';
 import _ from 'lodash';
 import styled from 'styled-components';
 import useVoteStyles from './useVoteStyles';
