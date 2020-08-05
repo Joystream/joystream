@@ -300,13 +300,24 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
     fn calculate_hash(text: &[u8]) -> Self::Hash;
 }
 
-// upper bounds for storage maps and double maps; needed to prevent potential block exhaustion during deletion, etc.
+/// Upper bounds for storage maps and double maps. Needed to prevent potential block exhaustion during deletion, etc.
+/// MaxSubcategories, MaxThreadsInCategory, and MaxPostsInThread should be reasonably small because when the category is deleted
+/// all of it's subcategories with their threads and posts will be iterated over and deleted.
 pub trait StorageLimits {
-    type MaxSubcategories: Get<u64>; // done
-    type MaxThreadsInCategory: Get<u64>; // done
-    type MaxPostsInThread: Get<u64>; // done
+    /// Maximum direct subcategories in a category
+    type MaxSubcategories: Get<u64>;
+
+    /// Maximum direct threads in a category
+    type MaxThreadsInCategory: Get<u64>;
+
+    /// Maximum posts in a thread
+    type MaxPostsInThread: Get<u64>;
+
+    /// Maximum moderator count for a single category
     type MaxModeratorsForCategory: Get<u64>;
-    type MaxCategories: Get<u64>; // max categories in total
+
+    /// Maximum total of all existing categories
+    type MaxCategories: Get<u64>;
 }
 
 /*
@@ -596,7 +607,7 @@ decl_storage! {
         /// Category identifier value to be used for the next Category created.
         pub NextCategoryId get(next_category_id) config(): T::CategoryId;
 
-        /// Category identifier value to be used for the next Category created.
+        /// Counter for all existing categories.
         pub CategoryCounter get(category_counter) config(): T::CategoryId;
 
         /// Map thread identifier to corresponding thread.
