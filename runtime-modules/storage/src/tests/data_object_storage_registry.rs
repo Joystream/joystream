@@ -22,7 +22,7 @@ fn add_relationship_fails_with_invalid_authorization() {
             storage_provider_id,
             TEST_MOCK_EXISTING_CID,
         );
-        assert_eq!(res, Err(working_group::Error::WorkerDoesNotExist.into()));
+        assert_eq!(res, Err(working_group::Error::<Test, crate::StorageWorkingGroupInstance>::WorkerDoesNotExist.into()));
     });
 }
 
@@ -44,7 +44,7 @@ fn set_relationship_ready_fails_with_invalid_authorization() {
             invalid_storage_provider_id,
             TEST_MOCK_EXISTING_CID,
         );
-        assert_eq!(res, Err(working_group::Error::WorkerDoesNotExist.into()));
+        assert_eq!(res, Err(working_group::Error::<Test, crate::StorageWorkingGroupInstance>::WorkerDoesNotExist.into()));
     });
 }
 
@@ -66,7 +66,7 @@ fn unset_relationship_ready_fails_with_invalid_authorization() {
             invalid_storage_provider_id,
             TEST_MOCK_EXISTING_CID,
         );
-        assert_eq!(res, Err(working_group::Error::WorkerDoesNotExist.into()));
+        assert_eq!(res, Err(working_group::Error::<Test, crate::StorageWorkingGroupInstance>::WorkerDoesNotExist.into()));
     });
 }
 
@@ -100,6 +100,13 @@ fn test_fail_adding_relationship_with_bad_content() {
 #[test]
 fn test_toggle_ready() {
     with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let (account_id, storage_provider_id) = hire_storage_provider();
         // Create a DOSR
         let res = TestDataObjectStorageRegistry::add_relationship(

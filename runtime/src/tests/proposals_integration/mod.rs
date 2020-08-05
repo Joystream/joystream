@@ -4,26 +4,27 @@
 
 mod working_group_proposals;
 
-use crate::{BlockNumber, ElectionParameters, ProposalCancellationFee, Runtime};
+use crate::{BlockNumber, ProposalCancellationFee, Runtime};
 use codec::Encode;
+use governance::election_params::ElectionParameters;
 use membership;
 use proposals_engine::{
-    ActiveStake, ApprovedProposalStatus, BalanceOf, Error, FinalizationData, Proposal,
+    ActiveStake, ApprovedProposalStatus, BalanceOf, FinalizationData, Proposal,
     ProposalDecisionStatus, ProposalParameters, ProposalStatus, VoteKind, VotersParameters,
     VotingResults,
 };
 
-use sr_primitives::traits::{DispatchResult, OnFinalize, OnInitialize};
-use sr_primitives::AccountId32;
-use srml_support::traits::Currency;
-use srml_support::{StorageLinkedMap, StorageValue};
+use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_support::{StorageMap, StorageValue};
+use sp_runtime::AccountId32;
 use system::RawOrigin;
 
 use super::initial_test_ext;
 
 use crate::CouncilManager;
 
-pub type Balances = balances::Module<Runtime>;
+pub type Balances = pallet_balances::Module<Runtime>;
 pub type System = system::Module<Runtime>;
 pub type Membership = membership::Module<Runtime>;
 pub type ProposalsEngine = proposals_engine::Module<Runtime>;
@@ -75,7 +76,7 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(
     account_id: AccountId32,
     balance: u128,
 ) {
-    type Balances = balances::Module<Runtime>;
+    type Balances = pallet_balances::Module<Runtime>;
     let initial_balance = Balances::total_issuance();
     {
         let _ = <Runtime as stake::Trait>::Currency::deposit_creating(&account_id, balance);
@@ -119,11 +120,11 @@ impl VoteGenerator {
         self.vote_and_assert(vote_kind, Ok(()));
     }
 
-    fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: DispatchResult<Error>) {
+    fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: DispatchResult) {
         assert_eq!(self.vote(vote_kind.clone()), expected_result);
     }
 
-    fn vote(&mut self, vote_kind: VoteKind) -> DispatchResult<Error> {
+    fn vote(&mut self, vote_kind: VoteKind) -> DispatchResult {
         if self.auto_increment_voter_id {
             self.current_account_id_seed += 1;
             self.current_voter_id += 1;
@@ -211,7 +212,7 @@ impl DummyProposalFixture {
         }
     }
 
-    fn create_proposal_and_assert(self, result: Result<u32, Error>) -> Option<u32> {
+    fn create_proposal_and_assert(self, result: Result<u32, DispatchError>) -> Option<u32> {
         let proposal_id_result = ProposalsEngine::create_proposal(
             self.account_id,
             self.proposer_id,
@@ -250,7 +251,7 @@ impl CancelProposalFixture {
         }
     }
 
-    fn cancel_and_assert(self, expected_result: DispatchResult<Error>) {
+    fn cancel_and_assert(self, expected_result: DispatchResult) {
         assert_eq!(
             ProposalsEngine::cancel_proposal(
                 self.origin.into(),
@@ -308,7 +309,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         let mut expected_proposal = Proposal {
             parameters,
             proposer_id: member_id,
-            created_at: 1,
+            created_at: 0,
             status: ProposalStatus::Active(Some(ActiveStake {
                 stake_id: 0,
                 source_account_id: account_id.clone(),
@@ -329,7 +330,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 
         expected_proposal.status = ProposalStatus::Finalized(FinalizationData {
             proposal_status: ProposalDecisionStatus::Canceled,
-            finalized_at: 1,
+            finalized_at: 0,
             encoded_unstaking_error_due_to_broken_runtime: None,
             stake_data_after_unstaking_error: None,
         });
@@ -359,9 +360,7 @@ fn proposal_reset_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
         vote_generator.vote_and_assert_ok(VoteKind::Slash);
 
-        assert!(<proposals_engine::ActiveProposalIds<Runtime>>::exists(
-            proposal_id
-        ));
+        assert!(<proposals_engine::ActiveProposalIds<Runtime>>::contains_key(proposal_id));
 
         // check
         let proposal = ProposalsEngine::proposals(proposal_id);
@@ -443,7 +442,7 @@ fn elect_single_councilor() {
 
 struct CodexProposalTestFixture<SuccessfulCall>
 where
-    SuccessfulCall: Fn() -> DispatchResult<proposals_codex::Error>,
+    SuccessfulCall: Fn() -> DispatchResult,
 {
     successful_call: SuccessfulCall,
     member_id: u64,
@@ -454,7 +453,7 @@ where
 
 impl<SuccessfulCall> CodexProposalTestFixture<SuccessfulCall>
 where
-    SuccessfulCall: Fn() -> DispatchResult<proposals_codex::Error>,
+    SuccessfulCall: Fn() -> DispatchResult,
 {
     fn default_for_call(call: SuccessfulCall) -> Self {
         Self {
@@ -500,7 +499,7 @@ where
 
 impl<SuccessfulCall> CodexProposalTestFixture<SuccessfulCall>
 where
-    SuccessfulCall: Fn() -> DispatchResult<proposals_codex::Error>,
+    SuccessfulCall: Fn() -> DispatchResult,
 {
     fn call_extrinsic_and_assert(&self) {
         let account_id: [u8; 32] = [self.member_id as u8; 32];
@@ -530,7 +529,7 @@ where
             Proposal {
                 status: ProposalStatus::approved(
                     ApprovedProposalStatus::Executed,
-                    self.run_to_block - 1
+                    self.run_to_block - 2
                 ),
                 title: b"title".to_vec(),
                 description: b"body".to_vec(),
@@ -618,17 +617,12 @@ fn spending_proposal_execution_succeeds() {
         })
         .with_member_id(member_id as u64);
 
-        assert_eq!(
-            Balances::free_balance::<AccountId32>(target_account_id.clone().into()),
-            0
-        );
+        let converted_account_id: AccountId32 = target_account_id.clone().into();
+        assert_eq!(Balances::free_balance(converted_account_id.clone()), 0);
 
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
-        assert_eq!(
-            Balances::free_balance::<AccountId32>(target_account_id.into()),
-            new_balance
-        );
+        assert_eq!(Balances::free_balance(converted_account_id), new_balance);
     });
 }
 
@@ -703,7 +697,7 @@ fn set_validator_count_proposal_execution_succeeds() {
         let account_id: [u8; 32] = [member_id; 32];
 
         let new_validator_count = 8;
-        assert_eq!(<staking::ValidatorCount>::get(), 0);
+        assert_eq!(<pallet_staking::ValidatorCount>::get(), 0);
 
         let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
             ProposalCodex::create_set_validator_count_proposal(
@@ -717,6 +711,6 @@ fn set_validator_count_proposal_execution_succeeds() {
         });
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
-        assert_eq!(<staking::ValidatorCount>::get(), new_validator_count);
+        assert_eq!(<pallet_staking::ValidatorCount>::get(), new_validator_count);
     });
 }

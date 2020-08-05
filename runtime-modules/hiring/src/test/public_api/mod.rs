@@ -15,9 +15,9 @@ pub use add_opening::{AddOpeningFixture, HUMAN_READABLE_TEXT};
 pub use deactivate_application::DeactivateApplicationFixture;
 
 use crate::mock::Test;
-use rstd::cell::RefCell;
-use rstd::collections::btree_map::BTreeMap;
-use rstd::rc::Rc;
+use sp_std::cell::RefCell;
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::rc::Rc;
 
 fn default_mock_for_creating_stake() -> Rc<RefCell<crate::MockStakeHandler<Test>>> {
     let mut mock = crate::MockStakeHandler::<Test>::new();
@@ -25,7 +25,7 @@ fn default_mock_for_creating_stake() -> Rc<RefCell<crate::MockStakeHandler<Test>
     mock.expect_stake().times(1).returning(|_, _| Ok(()));
     mock.expect_create_stake().times(1).returning(|| 0);
 
-    Rc::new(rstd::cell::RefCell::new(mock))
+    Rc::new(sp_std::cell::RefCell::new(mock))
 }
 
 fn default_mock_for_unstaking() -> Rc<RefCell<crate::MockStakeHandler<Test>>> {

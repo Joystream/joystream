@@ -1,5 +1,5 @@
-use sr_primitives::traits::Convert;
-use srml_support::traits::{Currency, LockableCurrency, ReservableCurrency};
+use frame_support::traits::{Currency, LockableCurrency, ReservableCurrency};
+use sp_runtime::traits::Convert;
 
 pub trait GovernanceCurrency: system::Trait + Sized {
     type Currency: Currency<Self::AccountId>

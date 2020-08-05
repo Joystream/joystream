@@ -1,8 +1,11 @@
-use srml_support::decl_error;
+#![warn(missing_docs)]
+
+use crate::{Instance, Module, Trait};
+use frame_support::decl_error;
 
 decl_error! {
     /// Discussion module predefined errors
-    pub enum Error {
+    pub enum Error for Module<T: Trait<I>, I: Instance>{
         /// Provided stake balance cannot be zero.
         StakeBalanceCannotBeZero,
 
@@ -299,17 +302,9 @@ decl_error! {
         /// Invalid OpeningPolicyCommitment parameter (application_rationing_policy):
         /// max_active_applicants should be non-zero.
         ApplicationRationingPolicyMaxActiveApplicantsIsZero,
-    }
-}
 
-impl From<system::Error> for Error {
-    fn from(error: system::Error) -> Self {
-        match error {
-            system::Error::Other(msg) => Error::Other(msg),
-            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
-            system::Error::RequireSignedOrigin => Error::RequireSignedOrigin,
-            _ => Error::Other(error.into()),
-        }
+        /// Minting error: NextAdjustmentInPast
+        MintingErrorNextAdjustmentInPast,
     }
 }
 
@@ -323,11 +318,19 @@ pub struct WrappedError<E> {
 #[macro_export]
 macro_rules! ensure_on_wrapped_error {
     ($call:expr) => {{
-        { $call }.map_err(|err| crate::WrappedError { error: err })
+        { $call }
+            .map_err(|err| crate::WrappedError { error: err })
+            .map_err(|err| {
+                let e: Error<T, I> = err.into();
+
+                e
+            })
     }};
 }
 
-impl rstd::convert::From<WrappedError<hiring::BeginAcceptingApplicationsError>> for Error {
+impl<T: Trait<I>, I: Instance>
+    sp_std::convert::From<WrappedError<hiring::BeginAcceptingApplicationsError>> for Error<T, I>
+{
     fn from(wrapper: WrappedError<hiring::BeginAcceptingApplicationsError>) -> Self {
         match wrapper.error {
             hiring::BeginAcceptingApplicationsError::OpeningDoesNotExist => {
@@ -340,7 +343,9 @@ impl rstd::convert::From<WrappedError<hiring::BeginAcceptingApplicationsError>> 
     }
 }
 
-impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for Error {
+impl<T: Trait<I>, I: Instance> sp_std::convert::From<WrappedError<hiring::AddOpeningError>>
+    for Error<T, I>
+{
     fn from(wrapper: WrappedError<hiring::AddOpeningError>) -> Self {
         match wrapper.error {
             hiring::AddOpeningError::OpeningMustActivateInTheFuture => {
@@ -367,7 +372,9 @@ impl rstd::convert::From<WrappedError<hiring::AddOpeningError>> for Error {
     }
 }
 
-impl rstd::convert::From<WrappedError<hiring::BeginReviewError>> for Error {
+impl<T: Trait<I>, I: Instance> sp_std::convert::From<WrappedError<hiring::BeginReviewError>>
+    for Error<T, I>
+{
     fn from(wrapper: WrappedError<hiring::BeginReviewError>) -> Self {
         match wrapper.error {
             hiring::BeginReviewError::OpeningDoesNotExist => {
@@ -380,7 +387,9 @@ impl rstd::convert::From<WrappedError<hiring::BeginReviewError>> for Error {
     }
 }
 
-impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError<T>>> for Error {
+impl<T: Trait<I>, I: Instance> sp_std::convert::From<WrappedError<hiring::FillOpeningError<T>>>
+    for Error<T, I>
+{
     fn from(wrapper: WrappedError<hiring::FillOpeningError<T>>) -> Self {
         match wrapper.error {
             hiring::FillOpeningError::<T>::OpeningDoesNotExist => {
@@ -444,7 +453,9 @@ impl<T: hiring::Trait> rstd::convert::From<WrappedError<hiring::FillOpeningError
     }
 }
 
-impl rstd::convert::From<WrappedError<hiring::DeactivateApplicationError>> for Error {
+impl<T: Trait<I>, I: Instance>
+    sp_std::convert::From<WrappedError<hiring::DeactivateApplicationError>> for Error<T, I>
+{
     fn from(wrapper: WrappedError<hiring::DeactivateApplicationError>) -> Self {
         match wrapper.error {
             hiring::DeactivateApplicationError::ApplicationDoesNotExist => {
@@ -466,7 +477,9 @@ impl rstd::convert::From<WrappedError<hiring::DeactivateApplicationError>> for E
     }
 }
 
-impl rstd::convert::From<WrappedError<hiring::AddApplicationError>> for Error {
+impl<T: Trait<I>, I: Instance> sp_std::convert::From<WrappedError<hiring::AddApplicationError>>
+    for Error<T, I>
+{
     fn from(wrapper: WrappedError<hiring::AddApplicationError>) -> Self {
         match wrapper.error {
             hiring::AddApplicationError::OpeningDoesNotExist => {
@@ -491,7 +504,10 @@ impl rstd::convert::From<WrappedError<hiring::AddApplicationError>> for Error {
     }
 }
 
-impl rstd::convert::From<WrappedError<membership::MemberControllerAccountDidNotSign>> for Error {
+impl<T: Trait<I>, I: Instance>
+    sp_std::convert::From<WrappedError<membership::MemberControllerAccountDidNotSign>>
+    for Error<T, I>
+{
     fn from(wrapper: WrappedError<membership::MemberControllerAccountDidNotSign>) -> Self {
         match wrapper.error {
             membership::MemberControllerAccountDidNotSign::UnsignedOrigin => {
@@ -507,7 +523,9 @@ impl rstd::convert::From<WrappedError<membership::MemberControllerAccountDidNotS
     }
 }
 
-impl rstd::convert::From<WrappedError<recurringrewards::RewardsError>> for Error {
+impl<T: Trait<I>, I: Instance> sp_std::convert::From<WrappedError<recurringrewards::RewardsError>>
+    for Error<T, I>
+{
     fn from(wrapper: WrappedError<recurringrewards::RewardsError>) -> Self {
         match wrapper.error {
             recurringrewards::RewardsError::NextPaymentNotInFuture => {
@@ -526,8 +544,9 @@ impl rstd::convert::From<WrappedError<recurringrewards::RewardsError>> for Error
     }
 }
 
-impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::InitiateUnstakingError>>>
-    for Error
+impl<T: Trait<I>, I: Instance>
+    sp_std::convert::From<WrappedError<stake::StakeActionError<stake::InitiateUnstakingError>>>
+    for Error<T, I>
 {
     fn from(wrapper: WrappedError<stake::StakeActionError<stake::InitiateUnstakingError>>) -> Self {
         match wrapper.error {
@@ -554,10 +573,10 @@ impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::InitiateUns
     }
 }
 
-impl
-    rstd::convert::From<
+impl<T: Trait<I>, I: Instance>
+    sp_std::convert::From<
         WrappedError<stake::StakeActionError<stake::IncreasingStakeFromAccountError>>,
-    > for Error
+    > for Error<T, I>
 {
     fn from(
         wrapper: WrappedError<stake::StakeActionError<stake::IncreasingStakeFromAccountError>>,
@@ -586,8 +605,9 @@ impl
     }
 }
 
-impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::IncreasingStakeError>>>
-    for Error
+impl<T: Trait<I>, I: Instance>
+    sp_std::convert::From<WrappedError<stake::StakeActionError<stake::IncreasingStakeError>>>
+    for Error<T, I>
 {
     fn from(wrapper: WrappedError<stake::StakeActionError<stake::IncreasingStakeError>>) -> Self {
         match wrapper.error {
@@ -607,8 +627,9 @@ impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::IncreasingS
     }
 }
 
-impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::DecreasingStakeError>>>
-    for Error
+impl<T: Trait<I>, I: Instance>
+    sp_std::convert::From<WrappedError<stake::StakeActionError<stake::DecreasingStakeError>>>
+    for Error<T, I>
 {
     fn from(wrapper: WrappedError<stake::StakeActionError<stake::DecreasingStakeError>>) -> Self {
         match wrapper.error {
@@ -634,8 +655,9 @@ impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::DecreasingS
     }
 }
 
-impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::ImmediateSlashingError>>>
-    for Error
+impl<T: Trait<I>, I: Instance>
+    sp_std::convert::From<WrappedError<stake::StakeActionError<stake::ImmediateSlashingError>>>
+    for Error<T, I>
 {
     fn from(wrapper: WrappedError<stake::StakeActionError<stake::ImmediateSlashingError>>) -> Self {
         match wrapper.error {
@@ -650,11 +672,13 @@ impl rstd::convert::From<WrappedError<stake::StakeActionError<stake::ImmediateSl
     }
 }
 
-impl rstd::convert::From<WrappedError<minting::GeneralError>> for Error {
+impl<T: Trait<I>, I: Instance> sp_std::convert::From<WrappedError<minting::GeneralError>>
+    for Error<T, I>
+{
     fn from(wrapper: WrappedError<minting::GeneralError>) -> Self {
         match wrapper.error {
             minting::GeneralError::MintNotFound => Error::CannotFindMint,
-            minting::GeneralError::NextAdjustmentInPast => Error::Other("NextAdjustmentInPast"),
+            minting::GeneralError::NextAdjustmentInPast => Error::MintingErrorNextAdjustmentInPast,
         }
     }
 }
