@@ -8,7 +8,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 0"
   },
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "dependencies": {
     "@joystream/storage-runtime-api": "^0.1.0",
     "@types/bn.js": "^4.11.5",
