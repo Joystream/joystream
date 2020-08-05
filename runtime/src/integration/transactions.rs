@@ -3,11 +3,10 @@ use frame_support::debug;
 use frame_support::weights::{WeightToFeeCoefficients, WeightToFeePolynomial};
 use sp_runtime::generic;
 use sp_runtime::generic::SignedPayload;
-use sp_runtime::traits::StaticLookup;
 use sp_runtime::SaturatedConversion;
 
 use crate::{AccountId, Balance, BlockHashCount, Index, SignedExtra, UncheckedExtrinsic};
-use crate::{Call, Indices, Runtime, System};
+use crate::{Call, Runtime, System};
 
 /// Stub for zero transaction weights.
 pub struct NoWeights;
@@ -65,7 +64,6 @@ pub(crate) fn create_transaction<
         })
         .ok()?;
     let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
-    let address = Indices::unlookup(account);
     let (call, extra, _) = raw_payload.deconstruct();
-    Some((call, (address, signature, extra)))
+    Some((call, (account, signature, extra)))
 }

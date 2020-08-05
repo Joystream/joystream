@@ -15,7 +15,6 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod constants;
 mod integration;
-mod migration;
 mod primitives;
 mod runtime_api;
 #[cfg(test)]
@@ -30,14 +29,11 @@ use frame_support::{construct_runtime, parameter_types};
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
-use pallet_transaction_payment::Multiplier;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
 use sp_core::crypto::KeyTypeId;
 use sp_runtime::curve::PiecewiseLinear;
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, OpaqueKeys, Saturating};
-use sp_runtime::{
-    create_runtime_str, generic, impl_opaque_keys, FixedPointNumber, Perbill, Perquintill,
-};
+use sp_runtime::traits::{BlakeTwo256, Block as BlockT, IdentityLookup, OpaqueKeys, Saturating};
+use sp_runtime::{create_runtime_str, generic, impl_opaque_keys, Perbill};
 use sp_std::boxed::Box;
 use sp_std::vec::Vec;
 #[cfg(feature = "std")]
@@ -110,7 +106,7 @@ impl system::Trait for Runtime {
     type Hash = Hash;
     type Hashing = BlakeTwo256;
     type AccountId = AccountId;
-    type Lookup = Indices;
+    type Lookup = IdentityLookup<AccountId>;
     type Header = generic::Header<BlockNumber, BlakeTwo256>;
     type Event = Event;
     type BlockHashCount = BlockHashCount;
@@ -191,17 +187,6 @@ where
 }
 
 parameter_types! {
-    pub const IndexDeposit: Balance = 0; // no minimum deposit
-}
-
-impl pallet_indices::Trait for Runtime {
-    type AccountIndex = AccountIndex;
-    type Currency = Balances;
-    type Deposit = IndexDeposit;
-    type Event = Event;
-}
-
-parameter_types! {
     pub const MinimumPeriod: Moment = SLOT_DURATION / 2;
 }
 
@@ -228,9 +213,6 @@ impl pallet_balances::Trait for Runtime {
 
 parameter_types! {
     pub const TransactionByteFee: Balance = 0; // TODO: adjust fee
-    pub const TargetBlockFullness: Perquintill = Perquintill::from_percent(25);
-    pub AdjustmentVariable: Multiplier = Multiplier::saturating_from_rational(1, 100_000);
-    pub MinimumMultiplier: Multiplier = Multiplier::saturating_from_rational(1, 1_000_000_000u128);
 }
 
 impl pallet_transaction_payment::Trait for Runtime {
@@ -487,9 +469,6 @@ impl forum::Trait for Runtime {
     type PostId = PostId;
 }
 
-impl migration::Trait for Runtime {
-    type Event = Event;
-}
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
@@ -618,7 +597,6 @@ construct_runtime!(
         Babe: pallet_babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
         Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
         Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
-        Indices: pallet_indices::{Module, Call, Storage, Config<T>, Event<T>},
         Balances: pallet_balances::{Module, Call, Storage, Config<T>, Event<T>},
         TransactionPayment: pallet_transaction_payment::{Module, Storage},
         Staking: pallet_staking::{Module, Call, Config<T>, Storage, Event<T>, ValidateUnsigned},
@@ -633,7 +611,6 @@ construct_runtime!(
         Sudo: pallet_sudo::{Module, Call, Config<T>, Storage, Event<T>},
         Contracts: pallet_contracts::{Module, Call, Config, Storage, Event<T>},
         // Joystream
-        Migration: migration::{Module, Call, Storage, Event<T>, Config},
         CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},

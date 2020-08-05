@@ -423,8 +423,8 @@ mod tests {
     use codec::{Decode, Encode};
     use node_runtime::RuntimeApi;
     use node_runtime::{currency::CENTS, SLOT_DURATION};
-    use node_runtime::{opaque::Block, DigestItem, Signature};
-    use node_runtime::{Address, BalancesCall, Call, UncheckedExtrinsic};
+    use node_runtime::{opaque::Block, AccountId, DigestItem, Signature};
+    use node_runtime::{BalancesCall, Call, UncheckedExtrinsic};
     use sc_consensus_babe::{BabeIntermediate, CompatibleDigestItem, INTERMEDIATE_KEY};
     use sc_consensus_epochs::descendent_query;
     use sc_finality_grandpa::{self as grandpa};
@@ -590,8 +590,8 @@ mod tests {
             },
             |service, _| {
                 let amount = 5 * CENTS;
-                let to: Address = AccountPublic::from(bob.public()).into_account().into();
-                let from: Address = AccountPublic::from(charlie.public()).into_account().into();
+                let to: AccountId = AccountPublic::from(bob.public()).into_account().into();
+                let from: AccountId = AccountPublic::from(charlie.public()).into_account().into();
                 let genesis_hash = service.client().block_hash(0).unwrap().unwrap();
                 let best_block_id = BlockId::number(service.client().chain_info().best_number);
                 let (spec_version, transaction_version) = {

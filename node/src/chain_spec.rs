@@ -33,10 +33,9 @@ use node_runtime::{
     versioned_store::InputValidationLengthConstraint as VsInputValidation,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
     ContractsConfig, CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
-    MembersConfig, MigrationConfig, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
-    StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
-    VersionedStoreConfig, DAYS, WASM_BINARY,
+    DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, MembersConfig,
+    ProposalsCodexConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
+    StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 
 type AccountPublic = <Signature as Verify>::Signer;
@@ -244,7 +243,6 @@ pub fn testnet_genesis(
         pallet_grandpa: Some(GrandpaConfig {
             authorities: vec![],
         }),
-        pallet_indices: Some(IndicesConfig { indices: vec![] }),
         pallet_session: Some(SessionConfig {
             keys: initial_authorities
                 .iter()
@@ -334,7 +332,6 @@ pub fn testnet_genesis(
             channel_banner_constraint: InputValidationLengthConstraint::new(5, 1024),
             channel_title_constraint: InputValidationLengthConstraint::new(5, 1024),
         }),
-        migration: Some(MigrationConfig {}),
         proposals_codex: Some(ProposalsCodexConfig {
             set_validator_count_proposal_voting_period: cpcp
                 .set_validator_count_proposal_voting_period,

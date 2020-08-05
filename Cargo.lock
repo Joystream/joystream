@@ -2039,7 +2039,6 @@ dependencies = [
  "pallet-grandpa",
  "pallet-hiring",
  "pallet-im-online",
- "pallet-indices",
  "pallet-membership",
  "pallet-memo",
  "pallet-offences",
@@ -3462,23 +3461,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-staking",
- "sp-std",
-]
-
-[[package]]
-name = "pallet-indices"
-version = "2.0.0-rc4"
-source = "git+https://github.com/paritytech/substrate.git?rev=00768a1f21a579c478fe5d4f51e1fa71f7db9fd4#00768a1f21a579c478fe5d4f51e1fa71f7db9fd4"
-dependencies = [
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "parity-scale-codec",
- "serde",
- "sp-core",
- "sp-io",
- "sp-keyring",
- "sp-runtime",
  "sp-std",
 ]
 

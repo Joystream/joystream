@@ -7,7 +7,7 @@ use pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo;
 use sp_api::impl_runtime_apis;
 use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
-use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor, StaticLookup};
+use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
@@ -17,12 +17,10 @@ use crate::{
     GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
-    AllModules, AuthorityDiscovery, Babe, Call, Contracts, Grandpa, Historical, Indices,
-    InherentDataExt, RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
+    AllModules, AuthorityDiscovery, Babe, Call, Contracts, Grandpa, Historical, InherentDataExt,
+    RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
 };
 
-/// The address format for describing accounts.
-pub type Address = <Indices as StaticLookup>::Source;
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
     system::CheckSpecVersion<Runtime>,
@@ -51,7 +49,7 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 pub type BlockId = generic::BlockId<Block>;
 
 /// Unchecked extrinsic type as expected by this runtime.
-pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<Address, Call, Signature, SignedExtra>;
+pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
 
 /// Executive: handles dispatch to the various modules.
 pub type Executive =

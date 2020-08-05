@@ -230,29 +230,6 @@ where
 
 pub type Extrinsic = TestXt<Call, ()>;
 
-/*
-    type Currency = Balances;
-    type UnixTime = Timestamp;
-    type CurrencyToVote = CurrencyToVoteHandler;
-    type RewardRemainder = RewardRemainderMock;
-    type Event = MetaEvent;
-    type Slash = ();
-    type Reward = ();
-    type SessionsPerEra = SessionsPerEra;
-    type SlashDeferDuration = SlashDeferDuration;
-    type SlashCancelOrigin = frame_system::EnsureRoot<Self::AccountId>;
-    type BondingDuration = BondingDuration;
-    type SessionInterface = Self;
-    type RewardCurve = RewardCurve;
-    type NextNewSession = Session;
-    type ElectionLookahead = ElectionLookahead;
-    type Call = Call;
-    type MaxIterations = MaxIterations;
-    type MinSolutionScoreBump = MinSolutionScoreBump;
-    type MaxNominatorRewardedPerValidator = MaxNominatorRewardedPerValidator;
-    type UnsignedPriority = UnsignedPriority;
-*/
-
 impl staking::SessionInterface<u64> for Test {
     fn disable_validator(_: &u64) -> Result<bool, ()> {
         unimplemented!()
