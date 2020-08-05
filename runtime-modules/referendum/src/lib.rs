@@ -393,12 +393,6 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             (None, _, false) => ReferendumResult::NoVotesRevealed,
             _ => ReferendumResult::NoVotesRevealed,
         };
-        /*
-        let referendum_result = match max.2 {
-            true => None, // multiple options recieved the same amount of votes
-            false => max.0,
-        };
-        */
 
         // reset referendum state
         Stage::<T, I>::put((ReferendumStage::Void, <system::Module<T>>::block_number()));
@@ -620,7 +614,14 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         match ReferendumOptions::<T, I>::get() {
             Some(options) => {
                 // ensure vote option exists
-                if (*vote_option).into() >= options.len() as u64 {
+                let mut vote_exists = false;
+                for tmp_option in options.iter() {
+                    if vote_option == tmp_option {
+                        vote_exists = true;
+                        break;
+                    }
+                }
+                if !vote_exists {
                     return Err(Error::InvalidVote);
                 }
             }

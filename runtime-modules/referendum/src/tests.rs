@@ -278,7 +278,6 @@ fn reveal() {
 
     build_test_externalities(config).execute_with(|| {
         let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
-        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
         let options = vec![0, 1, 2];
@@ -293,9 +292,36 @@ fn reveal() {
 
         Mocks::finish_voting(origin.clone(), Ok(()));
         Mocks::reveal_vote(origin.clone(), account_id, salt, option_to_vote_for, Ok(()));
-        MockUtils::increase_block_number(reveal_stage_duration + 1);
+    });
+}
 
+#[test]
+fn reveal_reveal_stage_not_running() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+        let options = vec![0, 1, 2];
+
+        let option_to_vote_for = options[1];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, salt) = MockUtils::vote_commitment(account_id, option_to_vote_for);
+
+        Mocks::start_referendum(origin.clone(), options.clone(), Ok(()));
+
+        Mocks::reveal_vote(origin.clone(), account_id, salt.clone(), option_to_vote_for, Err(Error::RevealingNotInProgress));
+
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::finish_voting(origin.clone(), Ok(()));
+        MockUtils::increase_block_number(reveal_stage_duration + 1);
         Mocks::finish_revealing_period(origin.clone(), Ok(()), Some(ReferendumResult::NoVotesRevealed));
+
+        Mocks::reveal_vote(origin.clone(), account_id, salt.clone(), option_to_vote_for, Err(Error::RevealingNotInProgress));
     });
 }
 
@@ -327,7 +353,103 @@ fn reveal_no_vote() {
 }
 
 #[test]
-fn reveal_no_vote_revealed() {
+fn reveal_invalid_vote() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+        let options = vec![0, 1, 2];
+
+        let invalid_option = 1000;
+        let option_to_vote_for = options[1];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, salt) = MockUtils::vote_commitment(account_id, option_to_vote_for);
+
+        Mocks::start_referendum(origin.clone(), options.clone(), Ok(()));
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::reveal_vote(origin.clone(), account_id, salt, invalid_option, Err(Error::InvalidVote));
+    });
+}
+
+#[test]
+fn reveal_invalid_commitment_proof() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+        let options = vec![0, 1, 2];
+
+        let option_to_vote_for = options[0];
+        let invalid_option = option_to_vote_for + 1;
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, salt) = MockUtils::vote_commitment(account_id, option_to_vote_for);
+
+        Mocks::start_referendum(origin.clone(), options.clone(), Ok(()));
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::reveal_vote(origin.clone(), account_id, salt, invalid_option, Err(Error::InvalidReveal));
+    });
+}
+
+/////////////////// Lifetime - revealing finish ////////////////////////////////
+
+#[test]
+fn finish_revealing_period() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+        let options = vec![0, 1, 2];
+
+        let option_to_vote_for = options[0];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, salt) = MockUtils::vote_commitment(account_id, option_to_vote_for);
+
+        Mocks::start_referendum(origin.clone(), options.clone(), Ok(()));
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::reveal_vote(origin.clone(), account_id, salt, option_to_vote_for, Ok(()));
+        MockUtils::increase_block_number(reveal_stage_duration + 1);
+
+        Mocks::finish_revealing_period(origin.clone(), Ok(()), Some(ReferendumResult::Winner(option_to_vote_for)));
+    });
+}
+
+#[test]
+fn finish_revealing_period_no_revealing_stage() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+        let options = vec![0, 1, 2];
+
+        let option_to_vote_for = options[0];
+        let (_, salt) = MockUtils::vote_commitment(account_id, option_to_vote_for);
+
+        Mocks::reveal_vote(origin.clone(), account_id, salt.clone(), option_to_vote_for, Err(Error::RevealingNotInProgress));
+
+        Mocks::start_referendum(origin.clone(), options.clone(), Ok(()));
+        Mocks::reveal_vote(origin.clone(), account_id, salt.clone(), option_to_vote_for, Err(Error::RevealingNotInProgress));
+    });
+}
+
+#[test]
+fn finish_revealing_period_no_vote_revealed() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
@@ -344,17 +466,9 @@ fn reveal_no_vote_revealed() {
     });
 }
 
-
-
-
-/////////////////// Lifetime - revealing finish ////////////////////////////////
-
-#[test]
-#[ignore]
-fn finish_revealing_period() {}
-
 /////////////////// Lifetime - complete ////////////////////////////////////////
 
+// whole process is actually tested in finish_revealing_period; use the following test to test complex some situation (many options, many votes, some reveals, etc.)
 #[test]
 #[ignore]
 fn referendum_whole_process() {}
