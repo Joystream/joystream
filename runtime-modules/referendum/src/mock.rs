@@ -38,6 +38,9 @@ parameter_types! {
     pub const MinimumStake: u64 = 10000;
 }
 
+// TODO: rework this - it causes concurency problems for test resulting in unexpected fails
+static mut IS_LOCKING_ENABLED: (bool, bool, bool) = (true, true, true); // global switch for stake locking features; use it to simulate lock fails
+
 impl<I: Instance> Trait<I> for Runtime {
     //type Event = Event<Self, I>;
     type Event = ();
@@ -56,10 +59,17 @@ impl<I: Instance> Trait<I> for Runtime {
         *account_id == USER_ADMIN
     }
 
-    fn can_lock_currency(
+    fn has_sufficient_balance(
         account_id: &<Self as system::Trait>::AccountId,
         _balance: &Self::CurrencyBalance,
     ) -> bool {
+        // trigger fail when requested to do so
+        unsafe {
+            if !IS_LOCKING_ENABLED.0 {
+                return false;
+            }
+        }
+
         match *account_id {
             USER_ADMIN => true,
             _ => false,
@@ -70,18 +80,41 @@ impl<I: Instance> Trait<I> for Runtime {
         account_id: &<Self as system::Trait>::AccountId,
         balance: &Self::CurrencyBalance,
     ) -> bool {
+        // trigger fail when requested to do so
+        unsafe {
+            if !IS_LOCKING_ENABLED.1 {
+                return false;
+            }
+        }
+
         // simple mock reusing can_lock check
-        <Self as Trait<I>>::can_lock_currency(account_id, balance)
+        <Self as Trait<I>>::has_sufficient_balance(account_id, balance)
     }
 
     fn free_currency(
         account_id: &<Self as system::Trait>::AccountId,
         balance: &Self::CurrencyBalance,
     ) -> bool {
+        // trigger fail when requested to do so
+        unsafe {
+            if !IS_LOCKING_ENABLED.2 {
+                return false;
+            }
+        }
+
         // simple mock reusing can_lock check
-        <Self as Trait<I>>::can_lock_currency(account_id, balance)
+        <Self as Trait<I>>::has_sufficient_balance(account_id, balance)
     }
 }
+
+impl Runtime {
+    pub fn feature_stack_lock(ensure_check_enabled: bool, lock_enabled: bool, free_enabled: bool) -> () {
+        unsafe {
+            IS_LOCKING_ENABLED = (ensure_check_enabled, lock_enabled, free_enabled);
+        }
+    }
+}
+
 
 /////////////////// Module implementation //////////////////////////////////////
 
@@ -171,6 +204,9 @@ pub fn build_test_externalities<I: Instance>(
 
     config.assimilate_storage(&mut t).unwrap();
 
+    // reset the static lock feature state
+    Runtime::feature_stack_lock(true, true, true);
+
     t.into()
 }
 
@@ -211,6 +247,7 @@ impl<T: Trait<I>, I: Instance> InstanceMockUtils<T, I> {
 
         let mut payload = account_id.encode();
         payload.append(&mut salt);
+        payload.append(&mut option.into().to_be_bytes().to_vec());
 
         <T::Hashing as sr_primitives::traits::Hash>::hash(&payload)
     }
