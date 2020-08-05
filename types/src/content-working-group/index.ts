@@ -6,7 +6,6 @@ import { StakeId } from '../stake'
 import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index'
 import { RewardRelationshipId } from '../recurring-rewards'
 import ChannelId from './ChannelId'
-import { Constructor } from '@polkadot/types/types'
 import AccountId from '@polkadot/types/generic/AccountId'
 
 export { ChannelId }
@@ -21,7 +20,7 @@ export class OptionalText extends OptionText {}
 export const ChannelContentTypeAllValues = ['Video', 'Music', 'Ebook'] as const
 // FIXME: Naming conventions (Keys?)
 export type ChannelContentTypeValue = typeof ChannelContentTypeAllValues[number]
-export const ChannelContentTypeDef: { [k in ChannelContentTypeValue]: Constructor } = {
+export const ChannelContentTypeDef = {
   Video: Null,
   Music: Null,
   Ebook: Null,
@@ -31,7 +30,7 @@ export class ChannelContentType extends JoyEnum(ChannelContentTypeDef) {}
 export const ChannelPublicationStatusAllValues = ['Public', 'Unlisted'] as const
 // FIXME: Naming conventions (Keys?)
 export type ChannelPublicationStatusValue = typeof ChannelPublicationStatusAllValues[number]
-export const ChannelPublicationStatusDef: { [k in ChannelPublicationStatusValue]: Constructor } = {
+export const ChannelPublicationStatusDef = {
   Public: Null,
   Unlisted: Null,
 } as const
@@ -40,7 +39,7 @@ export class ChannelPublicationStatus extends JoyEnum(ChannelPublicationStatusDe
 export const ChannelCurationStatusAllValues = ['Normal', 'Censored'] as const
 // FIXME: Naming conventions (Keys?)
 export type ChannelCurationStatusValue = typeof ChannelCurationStatusAllValues[number]
-export const ChannelCurationStatusDef: { [k in ChannelCurationStatusValue]: Constructor } = {
+export const ChannelCurationStatusDef = {
   Normal: Null,
   Censored: Null,
 } as const
@@ -127,7 +126,7 @@ export enum CuratorRoleStageKeys {
   Unstaking = 'Unstaking',
   Exited = 'Exited',
 }
-export const CuratorRoleStageDef: { [k in CuratorRoleStageKeys]: Constructor } = {
+export const CuratorRoleStageDef = {
   Active: Null,
   Unstaking: CuratorExitSummary,
   Exited: CuratorExitSummary,
@@ -313,6 +312,8 @@ export class WorkingGroupUnstaker extends JoyEnum({
 
 export class CuratorApplicationIdToCuratorIdMap extends BTreeMap.with(ApplicationId, CuratorId) {}
 
+export class CuratorApplicationIdSet extends Vec.with(CuratorApplicationId) {}
+
 export const contentWorkingGroupTypes = {
   ChannelId: 'u64',
   CuratorId: 'u64',
@@ -334,7 +335,7 @@ export const contentWorkingGroupTypes = {
   Principal,
   WorkingGroupUnstaker,
   CuratorApplicationIdToCuratorIdMap,
-  CuratorApplicationIdSet: Vec.with(CuratorApplicationId),
+  CuratorApplicationIdSet
 }
 
 export default contentWorkingGroupTypes

@@ -9,7 +9,6 @@ import { StakeId } from './stake'
 import { ElectionParameters } from './council'
 import { ActivateOpeningAt, OpeningId, ApplicationId } from './hiring'
 import { WorkingGroupOpeningPolicyCommitment, WorkerId, RewardPolicy } from './working-group'
-import { Constructor } from '@polkadot/types/types'
 
 export type IVotingResults = {
   abstensions: u32
@@ -43,7 +42,7 @@ export type ProposalParametersType = {
   requiredStake: Option<Balance>
 }
 
-class ProposalParameters
+export class ProposalParameters
   extends JoyStructDecorated({
     votingPeriod: u32,
     gracePeriod: u32,
@@ -140,7 +139,7 @@ export class ProposalStatus extends JoyEnum({
 
 export const VoteKinds = ['Approve', 'Reject', 'Slash', 'Abstain'] as const
 export type VoteKindKey = typeof VoteKinds[number]
-export const VoteKindDef: { [key in VoteKindKey]: Constructor } = {
+export const VoteKindDef = {
   Approve: Null,
   Reject: Null,
   Slash: Null,

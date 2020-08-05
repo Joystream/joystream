@@ -182,6 +182,12 @@ export class RewardPolicy
   })
   implements IRewardPolicy {}
 
+// Needed for types augment tool
+export {
+  OpeningId,
+  ApplicationId
+}
+
 export const workingGroupTypes: RegistryTypes = {
   RationaleText,
   ApplicationOf: Application,

@@ -9,7 +9,7 @@ import { GenericJoyStreamRoleSchema } from './schemas/role.schema.typings'
 import ajv from 'ajv'
 
 import * as role_schema_json from './schemas/role.schema.json'
-import { RegistryTypes, Constructor } from '@polkadot/types/types'
+import { RegistryTypes } from '@polkadot/types/types'
 
 export class ApplicationId extends u64 {}
 export class OpeningId extends u64 {}
@@ -38,7 +38,7 @@ export enum ApplicationDeactivationCauseKeys {
   ReviewPeriodExpired = 'ReviewPeriodExpired',
   OpeningFilled = 'OpeningFilled',
 }
-const ApplicationDeactivationCauseDef: { [k in ApplicationDeactivationCauseKeys]: Constructor } = {
+const ApplicationDeactivationCauseDef = {
   External: Null,
   Hired: Null,
   NotHired: Null,
@@ -80,7 +80,7 @@ export enum ApplicationStageKeys {
   Unstaking = 'Unstaking',
   Inactive = 'Inactive',
 }
-export const ApplicationStageDef: { [k in ApplicationStageKeys]: Constructor } = {
+export const ApplicationStageDef = {
   Active: ActiveApplicationStage,
   Unstaking: UnstakingApplicationStage,
   Inactive: InactiveApplicationStage,
@@ -113,7 +113,7 @@ export enum OpeningDeactivationCauseKeys {
   ReviewPeriodExpired = 'ReviewPeriodExpired',
   Filled = 'Filled',
 }
-const OpeningDeactivationCauseDef: { [k in OpeningDeactivationCauseKeys]: Constructor } = {
+const OpeningDeactivationCauseDef = {
   CancelledBeforeActivation: Null,
   CancelledAcceptingApplications: Null,
   CancelledInReviewPeriod: Null,
@@ -189,7 +189,7 @@ export enum OpeningStageKeys {
   WaitingToBegin = 'WaitingToBegin',
   Active = 'Active',
 }
-export const OpeningStageDef: { [k in OpeningStageKeys]: Constructor } = {
+export const OpeningStageDef = {
   WaitingToBegin: WaitingToBeingOpeningStageVariant,
   Active: ActiveOpeningStageVariant,
 } as const
@@ -200,7 +200,7 @@ export enum StakingAmountLimitModeKeys {
   AtLeast = 'AtLeast',
   Exact = 'Exact',
 }
-export const StakingAmountLimitModeDef: { [k in StakingAmountLimitModeKeys]: Constructor } = {
+export const StakingAmountLimitModeDef = {
   AtLeast: Null,
   Exact: Null,
 } as const
@@ -339,7 +339,7 @@ export const hiringTypes: RegistryTypes = {
   OpeningId: 'u64',
   Application,
   ApplicationStage,
-  'hiring::ActivateOpeningAt': ActivateOpeningAt,
+  ActivateOpeningAt,
   ApplicationRationingPolicy,
   OpeningStage,
   StakingPolicy,

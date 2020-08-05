@@ -13,7 +13,7 @@ export class AccountInfo extends JoyStructDecorated({
 export const discoveryTypes: RegistryTypes = {
   Url,
   IPNSIdentity,
-  AccountInfo,
+  // AccountInfo, FIXME: This overrides core Substrate type
 }
 
 export default discoveryTypes
