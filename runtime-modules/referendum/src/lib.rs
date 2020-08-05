@@ -44,9 +44,21 @@ pub struct SealedVote<Hash, CurrencyBalance> {
     stake: CurrencyBalance,
 }
 
+#[derive(Encode, Decode, PartialEq, Eq, Debug)]
+pub enum ReferendumResult<ReferendumOption> {
+    Winner(ReferendumOption),
+    MultipleWinners(Vec<ReferendumOption>),
+    NoVotesRevealed,
+}
+
+impl<T> Default for ReferendumResult<T> {
+    fn default() -> ReferendumResult<T> {
+        ReferendumResult::NoVotesRevealed
+    }
+}
+
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
-//pub trait Trait<I: Instance>: system::Trait + Sized {
 pub trait Trait<I: Instance>: system::Trait {
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
@@ -121,6 +133,7 @@ decl_event! {
     pub enum Event<T, I>
     where
         <T as Trait<I>>::ReferendumOption,
+        ReferendumResult = ReferendumResult<<T as Trait<I>>::ReferendumOption>,
         <T as Trait<I>>::CurrencyBalance,
         <T as system::Trait>::Hash,
         <T as system::Trait>::AccountId,
@@ -132,7 +145,7 @@ decl_event! {
         RevealingStageStarted(),
 
         /// Referendum ended and winning option was selected
-        ReferendumFinished(Option<ReferendumOption>),
+        ReferendumFinished(ReferendumResult),
 
         /// User casted a vote in referendum
         VoteCasted(Hash, CurrencyBalance),
@@ -266,10 +279,10 @@ decl_module! {
             //
 
             // start revealing phase
-            let winning_option = Mutations::<T, I>::conclude_referendum();
+            let referendum_result = Mutations::<T, I>::conclude_referendum();
 
             // emit event
-            Self::deposit_event(RawEvent::ReferendumFinished(winning_option));
+            Self::deposit_event(RawEvent::ReferendumFinished(referendum_result));
 
             Ok(())
         }
@@ -294,14 +307,14 @@ decl_module! {
         }
 
         pub fn reveal_vote(origin, salt: Vec<u8>, vote_option: T::ReferendumOption) -> Result<(), Error> {
-            let (account_id, sealed_vote) = EnsureChecks::<T, I>::can_reveal_vote(origin, salt, &vote_option)?;
+            let (account_id, sealed_vote) = EnsureChecks::<T, I>::can_reveal_vote(origin, &salt, &vote_option)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            // reveal the vote
-            Mutations::<T, I>::reveal_vote(&account_id, &vote_option, &sealed_vote);
+            // reveal the vote - it can return error when stake fails to unlock
+            Mutations::<T, I>::reveal_vote(&account_id, &vote_option, &sealed_vote)?;
 
             // emit event
             Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option));
@@ -323,7 +336,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         Stage::<T, I>::put((ReferendumStage::Voting, <system::Module<T>>::block_number()));
 
         // store new options
-        ReferendumOptions::<T, I>::mutate(|_| Some(options));
+        ReferendumOptions::<T, I>::put(options.clone());
     }
 
     fn start_revealing_period() -> () {
@@ -334,37 +347,68 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         ));
     }
 
-    fn conclude_referendum() -> Option<T::ReferendumOption> {
+    fn conclude_referendum() -> ReferendumResult<T::ReferendumOption> {
         // select winning option
         // TODO - try to iterate ovet RevealedVotes when newer version of substrate is used (`RevealedVotes::<T, I>::iter_values(|option| ...)`)
         // TODO - decide what to do when two options recieve same amount of votes
-        let mut max = (None, 0, false); // `(winning_option, votes_count_for_winning_option, multiple_options_with_same_votes_count)`
+        let mut max: (Option<Vec<&T::ReferendumOption>>, u64, bool) = (None, 0, false); // `(referendum_result, votes_count_for_winning_option, multiple_options_with_same_votes_count)`
         let options = ReferendumOptions::<T, I>::get();
-        if let Some(tmp_options) = options {
+        if let Some(tmp_options) = &options {
             for option in tmp_options.iter() {
+                // skip option with 0 votes
                 if !RevealedVotes::<T, I>::exists(option) {
                     continue;
                 }
                 let vote_sum = RevealedVotes::<T, I>::get(option);
 
+                // skip this option if it is not a winner
                 if vote_sum < max.1 {
                     continue;
                 }
 
-                max = (Some(*option), vote_sum, max.2 || vote_sum == max.1);
+                // multiple votes have the same amount of votes?
+                if vote_sum == max.1 {
+                    let current_winners = match max.0 {
+                        Some(tmp) => tmp,
+                        None => vec![],
+                    };
+
+                    let new_winners = [current_winners, vec![option]].concat().to_vec();
+                    max = (Some(new_winners), max.1, true);
+                    continue;
+                }
+
+                max = (Some(vec![option]), vote_sum, false);
             }
         }
-        let winning_option = match max.2 {
+        let referendum_result = match max {
+            (Some(winners), _, true) => ReferendumResult::MultipleWinners(winners.iter().map(|item| **item).collect()), // multiple options recieved the same amount of votes
+            (Some(winners), _, false) => {
+                if winners.len() > 0 {
+                    return ReferendumResult::Winner(*winners[0]);
+                }
+
+                ReferendumResult::NoVotesRevealed
+            },
+            (None, _, false) => ReferendumResult::NoVotesRevealed,
+            _ => ReferendumResult::NoVotesRevealed,
+        };
+        /*
+        let referendum_result = match max.2 {
             true => None, // multiple options recieved the same amount of votes
             false => max.0,
         };
+        */
 
         // reset referendum state
         Stage::<T, I>::put((ReferendumStage::Void, <system::Module<T>>::block_number()));
         ReferendumOptions::<T, I>::mutate(|_| None::<Vec<T::ReferendumOption>>);
+        // TODO clear votes maps
+        //RevealedVotes::...
+        //Votes::...
 
         // return winning option
-        winning_option
+        referendum_result
     }
 
     /// Can return error when stake fails to lock
@@ -380,7 +424,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         }
 
         // store vote
-        Votes::<T, I>::mutate(account_id, |_| SealedVote { commitment, stake });
+        Votes::<T, I>::insert(account_id, SealedVote { commitment: *commitment, stake: *stake });
 
         Ok(())
     }
@@ -493,7 +537,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         let current_block = <system::Module<T>>::block_number();
 
         // ensure voting stage is complete
-        if current_block < T::VoteStageDuration::get() + starting_block_number + One::one() {
+        if current_block < T::RevealStageDuration::get() + starting_block_number + One::one() {
             return Err(Error::RevealingNotFinishedYet);
         }
 
@@ -538,16 +582,34 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(account_id)
     }
 
-    fn can_reveal_vote(origin: T::Origin, salt: Vec<u8>, vote_option: &T::ReferendumOption) -> Result<(T::AccountId, SealedVote<T::Hash, T::CurrencyBalance>), Error> {
-        fn calculate_commitment<T: Trait<I>, I: Instance>(account_id: &T::AccountId, mut salt: Vec<u8>, vote_option: &T::ReferendumOption) -> T::Hash {
+    fn can_reveal_vote(origin: T::Origin, salt: &Vec<u8>, vote_option: &T::ReferendumOption) -> Result<(T::AccountId, SealedVote<T::Hash, T::CurrencyBalance>), Error> {
+        fn calculate_commitment<T: Trait<I>, I: Instance>(account_id: &T::AccountId, salt: &Vec<u8>, vote_option: &T::ReferendumOption) -> T::Hash {
             let mut payload = account_id.encode();
-            payload.append(&mut salt);
+            let mut mut_option = vote_option.clone().into().to_be_bytes().to_vec();
+            let mut salt_tmp = salt.clone();
+
+            payload.append(&mut salt_tmp);
+            payload.append(&mut mut_option);
 
             <T::Hashing as sr_primitives::traits::Hash>::hash(&payload)
         }
 
         // ensure superuser requested action
         let account_id = Self::ensure_super_user(origin)?;
+
+        let (stage, starting_block_number) = Stage::<T, I>::get();
+
+        // ensure referendum is running
+        if stage != ReferendumStage::Revealing {
+            return Err(Error::RevealingNotInProgress);
+        }
+
+        let current_block = <system::Module<T>>::block_number();
+
+        // ensure voting stage is not expired (it can happend when superuser haven't call `finish_voting_start_revealing` yet)
+        if current_block >= T::RevealStageDuration::get() + starting_block_number + One::one() {
+            return Err(Error::RevealingNotInProgress);
+        }
 
         // ensure account voted
         if !Votes::<T, I>::exists(&account_id) {
@@ -558,7 +620,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         match ReferendumOptions::<T, I>::get() {
             Some(options) => {
                 // ensure vote option exists
-                if (*vote_option).into() > options.len() as u64 {
+                if (*vote_option).into() >= options.len() as u64 {
                     return Err(Error::InvalidVote);
                 }
             }

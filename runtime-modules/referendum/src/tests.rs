@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::{Error, Trait};
+use super::{Error, Trait, ReferendumResult};
 use crate::mock::*;
 
 type Mocks = InstanceMocks<Runtime, Instance0>;
@@ -104,11 +104,11 @@ fn voting() {
 
         let options = vec![0];
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let commitment = MockUtils::vote_commitment(account_id, options[0]);
+        let (commitment, _) = MockUtils::vote_commitment(account_id, options[0]);
 
         Mocks::start_referendum(origin.clone(), options, Ok(()));
 
-        Mocks::vote(origin.clone(), commitment, stake, Ok(()));
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
     });
 }
 
@@ -122,9 +122,9 @@ fn voting_referendum_not_running() {
 
         let options = vec![0];
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let commitment = MockUtils::vote_commitment(account_id, options[0]);
+        let (commitment, _) = MockUtils::vote_commitment(account_id, options[0]);
 
-        Mocks::vote(origin.clone(), commitment, stake, Err(Error::ReferendumNotRunning));
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Err(Error::ReferendumNotRunning));
     });
 }
 
@@ -138,14 +138,14 @@ fn voting_voting_stage_overdue() {
 
         let options = vec![0];
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let commitment = MockUtils::vote_commitment(account_id, options[0]);
+        let (commitment, _) = MockUtils::vote_commitment(account_id, options[0]);
 
         Mocks::start_referendum(origin.clone(), options, Ok(()));
 
         let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::vote(origin.clone(), commitment, stake, Err(Error::ReferendumNotRunning));
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Err(Error::ReferendumNotRunning));
     });
 }
 
@@ -159,10 +159,10 @@ fn voting_stake_too_low() {
 
         let options = vec![0];
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get() - 1;
-        let commitment = MockUtils::vote_commitment(account_id, options[0]);
+        let (commitment, _) = MockUtils::vote_commitment(account_id, options[0]);
 
         Mocks::start_referendum(origin.clone(), options, Ok(()));
-        Mocks::vote(origin.clone(), commitment, stake, Err(Error::InsufficientStake));
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Err(Error::InsufficientStake));
     });
 }
 
@@ -176,15 +176,15 @@ fn voting_cant_lock_stake() {
 
         let options = vec![0];
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let commitment = MockUtils::vote_commitment(account_id, options[0]);
+        let (commitment, _) = MockUtils::vote_commitment(account_id, options[0]);
 
         Mocks::start_referendum(origin.clone(), options, Ok(()));
 
         Runtime::feature_stack_lock(false, true, true);
-        Mocks::vote(origin.clone(), commitment, stake, Err(Error::InsufficientBalanceToStakeCurrency));
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Err(Error::InsufficientBalanceToStakeCurrency));
 
         Runtime::feature_stack_lock(true, false, true);
-        Mocks::vote(origin.clone(), commitment, stake, Err(Error::AccountStakeCurrencyFailed));
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Err(Error::AccountStakeCurrencyFailed));
     });
 }
 
@@ -198,12 +198,12 @@ fn voting_user_already_voted() {
 
         let options = vec![0];
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let commitment = MockUtils::vote_commitment(account_id, options[0]);
+        let (commitment, _) = MockUtils::vote_commitment(account_id, options[0]);
 
         Mocks::start_referendum(origin.clone(), options, Ok(()));
-        Mocks::vote(origin.clone(), commitment, stake, Ok(()));
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
 
-        Mocks::vote(origin.clone(), commitment, stake, Err(Error::AlreadyVoted));
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Err(Error::AlreadyVoted));
     });
 }
 
@@ -270,19 +270,82 @@ fn finish_voting_voting_not_finished() {
     });
 }
 
-#[test]
-#[ignore]
-fn finish_voting_no_vote_revealed() {}
-
-#[test]
-#[ignore]
-fn finish_voting_multiple_options_win() {}
-
 /////////////////// Lifetime - revealing ///////////////////////////////////////
 
 #[test]
-#[ignore]
-fn reveal() {}
+fn reveal() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+        let options = vec![0, 1, 2];
+
+        let option_to_vote_for = options[1];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, salt) = MockUtils::vote_commitment(account_id, option_to_vote_for);
+
+        Mocks::start_referendum(origin.clone(), options.clone(), Ok(()));
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::reveal_vote(origin.clone(), account_id, salt, option_to_vote_for, Ok(()));
+        MockUtils::increase_block_number(reveal_stage_duration + 1);
+
+        Mocks::finish_revealing_period(origin.clone(), Ok(()), Some(ReferendumResult::NoVotesRevealed));
+    });
+}
+
+#[test]
+fn reveal_no_vote() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+        let options = vec![0, 1, 2];
+
+        let option_to_vote_for = options[1];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, salt) = MockUtils::vote_commitment(account_id, option_to_vote_for);
+
+        Mocks::start_referendum(origin.clone(), options.clone(), Ok(()));
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::reveal_vote(origin.clone(), account_id, salt, option_to_vote_for, Ok(()));
+        MockUtils::increase_block_number(reveal_stage_duration + 1);
+
+        Mocks::finish_revealing_period(origin.clone(), Ok(()), Some(ReferendumResult::NoVotesRevealed));
+    });
+}
+
+#[test]
+fn reveal_no_vote_revealed() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
+        let origin = OriginType::Signed(USER_ADMIN);
+        let options = vec![0];
+
+        Mocks::start_referendum(origin.clone(), options, Ok(()));
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+        Mocks::finish_voting(origin.clone(), Ok(()));
+        MockUtils::increase_block_number(reveal_stage_duration + 1);
+        Mocks::finish_revealing_period(origin.clone(), Ok(()), Some(ReferendumResult::NoVotesRevealed));
+    });
+}
+
+
+
 
 /////////////////// Lifetime - revealing finish ////////////////////////////////
 
