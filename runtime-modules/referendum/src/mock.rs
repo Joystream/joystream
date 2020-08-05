@@ -149,6 +149,7 @@ impl Instance for Instance0 {
     const PREFIX_FOR_Stage: &'static str = "Instance0_stage";
     const PREFIX_FOR_ReferendumOptions: &'static str = "Instance0_referendum_options";
     const PREFIX_FOR_Votes: &'static str = "Instance0_votes";
+    const PREFIX_FOR_RevealedVotes: &'static str = "Instance0_revealed_votes";
 }
 
 impl system::Trait for Runtime {
@@ -188,6 +189,7 @@ pub fn default_genesis_config_generic<I: Instance>() -> GenesisConfig<Runtime, I
         //referendum_options: None
         referendum_options: vec![], // not sure why it doesn't accept `None` here
         votes: vec![],
+        revealed_votes: vec![],
     }
 }
 

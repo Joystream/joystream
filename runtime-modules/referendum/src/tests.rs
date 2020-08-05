@@ -274,6 +274,10 @@ fn finish_voting_voting_not_finished() {
 #[ignore]
 fn finish_voting_no_vote_revealed() {}
 
+#[test]
+#[ignore]
+fn finish_voting_multiple_options_win() {}
+
 /////////////////// Lifetime - revealing ///////////////////////////////////////
 
 #[test]
