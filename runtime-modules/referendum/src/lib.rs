@@ -80,7 +80,7 @@ pub trait Trait<I: Instance>: system::Trait {
 
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool;
 
-    fn can_lock_currency(
+    fn has_sufficient_balance(
         account: &<Self as system::Trait>::AccountId,
         balance: &Self::CurrencyBalance,
     ) -> bool;
@@ -132,6 +132,9 @@ decl_event! {
 
         /// User casted a vote in referendum
         VoteCasted(Hash, CurrencyBalance),
+
+        /// User revealed his vote
+        VoteRevealed(ReferendumOption),
     }
 }
 
@@ -180,6 +183,12 @@ decl_error! {
 
         /// Account already voted
         AlreadyVoted,
+
+        /// Salt and referendum option provided don't correspond to the commitment
+        InvalidReveal,
+
+        /// Vote for not existing option was revealed
+        InvalidVote,
     }
 }
 
@@ -235,6 +244,7 @@ decl_module! {
             // start revealing phase
             Mutations::<T, I>::start_revealing_period();
 
+            // emit event
             Self::deposit_event(RawEvent::RevealingStageStarted());
 
             Ok(())
@@ -251,6 +261,7 @@ decl_module! {
             // start revealing phase
             let winning_option = Mutations::<T, I>::conclude_referendum();
 
+            // emit event
             Self::deposit_event(RawEvent::ReferendumFinished(winning_option));
 
             Ok(())
@@ -260,7 +271,7 @@ decl_module! {
 
         pub fn vote(origin, commitment: T::Hash, stake: T::CurrencyBalance) -> Result<(), Error> {
             // ensure action can be started
-            let account_id = EnsureChecks::<T, I>::can_vote(origin, stake)?;
+            let account_id = EnsureChecks::<T, I>::can_vote(origin, &stake)?;
 
             //
             // == MUTATION SAFE ==
@@ -269,13 +280,25 @@ decl_module! {
             // start revealing phase - it can return error when stake fails to lock
             Mutations::<T, I>::vote(account_id, commitment, stake)?;
 
+            // emit event
             Self::deposit_event(RawEvent::VoteCasted(commitment, stake));
 
             Ok(())
         }
 
-        pub fn reveal_vote(origin) -> Result<(), Error> {
-            // reveals user's commitment
+        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option: T::ReferendumOption) -> Result<(), Error> {
+            let account_id = EnsureChecks::<T, I>::can_reveal_vote(origin, salt, &vote_option)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // reveal the vote
+            //Mutations::<T, I>::reveal_vote(account_id, salt, vote_option);
+            Mutations::<T, I>::reveal_vote(); // TODO
+
+            // emit event
+            Self::deposit_event(RawEvent::VoteRevealed(vote_option));
 
             Ok(())
         }
@@ -352,6 +375,9 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         Votes::<T, I>::mutate(account_id, |_| SealedVote { commitment, stake });
 
         Ok(())
+    }
+
+    fn reveal_vote() -> () {
     }
 }
 
@@ -455,7 +481,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(())
     }
 
-    fn can_vote(origin: T::Origin, stake: T::CurrencyBalance) -> Result<T::AccountId, Error> {
+    fn can_vote(origin: T::Origin, stake: &T::CurrencyBalance) -> Result<T::AccountId, Error> {
         // ensure superuser requested action
         let account_id = Self::ensure_super_user(origin)?;
 
@@ -474,18 +500,51 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ensure stake is enough for voting
-        if stake < T::MinimumStake::get() {
+        if stake < &T::MinimumStake::get() {
             return Err(Error::InsufficientStake);
         }
 
         // ensure account can lock the stake
-        if !T::can_lock_currency(&account_id, &stake) {
+        if !T::has_sufficient_balance(&account_id, &stake) {
             return Err(Error::InsufficientBalanceToStakeCurrency);
         }
 
         // ensure user haven't vote yet
         if Votes::<T, I>::exists(&account_id) {
             return Err(Error::AlreadyVoted);
+        }
+
+        Ok(account_id)
+    }
+
+    fn can_reveal_vote(origin: T::Origin, salt: Vec<u8>, vote_option: &T::ReferendumOption) -> Result<T::AccountId, Error> {
+        fn calculate_commitment<T: Trait<I>, I: Instance>(account_id: T::AccountId, mut salt: Vec<u8>, vote_option: &T::ReferendumOption) {
+            let mut payload = account_id.encode();
+            payload.append(&mut salt);
+
+            // TODO
+            //<T::Hashing as sr_primitives::traits::Hash>::hash(&payload)
+        }
+
+        // ensure superuser requested action
+        let account_id = Self::ensure_super_user(origin)?;
+
+        // ensure vote is ok
+        match ReferendumOptions::<T, I>::get() {
+            Some(options) => {
+                // ensure vote corresponds to commitment
+                if (*vote_option).into() > options.len() as u64 {
+                    return Err(Error::InvalidReveal);
+                }
+
+                // ensure vote option exists
+                if (*vote_option).into() > options.len() as u64 {
+                    return Err(Error::InvalidVote);
+                }
+            }
+            None => { // this branch shouldn't ever happen
+                return Err(Error::InvalidReveal);
+            }
         }
 
         Ok(account_id)

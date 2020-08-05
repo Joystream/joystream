@@ -128,6 +128,85 @@ fn voting_referendum_not_running() {
     });
 }
 
+#[test]
+fn voting_voting_stage_overdue() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+
+        let options = vec![0];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let commitment = MockUtils::vote_commitment(account_id, options[0]);
+
+        Mocks::start_referendum(origin.clone(), options, Ok(()));
+
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::vote(origin.clone(), commitment, stake, Err(Error::ReferendumNotRunning));
+    });
+}
+
+#[test]
+fn voting_stake_too_low() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+
+        let options = vec![0];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get() - 1;
+        let commitment = MockUtils::vote_commitment(account_id, options[0]);
+
+        Mocks::start_referendum(origin.clone(), options, Ok(()));
+        Mocks::vote(origin.clone(), commitment, stake, Err(Error::InsufficientStake));
+    });
+}
+
+#[test]
+fn voting_cant_lock_stake() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+
+        let options = vec![0];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let commitment = MockUtils::vote_commitment(account_id, options[0]);
+
+        Mocks::start_referendum(origin.clone(), options, Ok(()));
+
+        Runtime::feature_stack_lock(false, true, true);
+        Mocks::vote(origin.clone(), commitment, stake, Err(Error::InsufficientBalanceToStakeCurrency));
+
+        Runtime::feature_stack_lock(true, false, true);
+        Mocks::vote(origin.clone(), commitment, stake, Err(Error::AccountStakeCurrencyFailed));
+    });
+}
+
+#[test]
+fn voting_user_already_voted() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+
+        let options = vec![0];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let commitment = MockUtils::vote_commitment(account_id, options[0]);
+
+        Mocks::start_referendum(origin.clone(), options, Ok(()));
+        Mocks::vote(origin.clone(), commitment, stake, Ok(()));
+
+        Mocks::vote(origin.clone(), commitment, stake, Err(Error::AlreadyVoted));
+    });
+}
+
 /////////////////// Lifetime - voting finish ///////////////////////////////////
 
 #[test]
