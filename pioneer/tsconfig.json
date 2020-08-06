@@ -4,7 +4,16 @@
     "build/**/*",
     "**/build/**/*",
     "packages/old-apps/**",
-    "packages/joy-*/**"
+    "packages/joy-members/**/*",
+    "packages/joy-election/**/*",
+    "packages/joy-forum/**/*",
+    "packages/joy-help/**/*",
+    "packages/joy-media/**/*",
+    "packages/joy-pages/**/*",
+    "packages/joy-proposals/**/*",
+    "packages/joy-roles/**/*",
+    "packages/joy-settings/**/*",
+    "packages/joy-utils/**/*",
   ],
   "compilerOptions": {
     "jsx": "react",
@@ -97,9 +106,8 @@
     },
     "skipLibCheck": true,
     "typeRoots": [
-      // TODO: Change to ../node_modules at later stage
-      "node_modules/@polkadot/ts",
-      "node_modules/@types",
+      "../node_modules/@polkadot/ts",
+      "../node_modules/@types",
       "src/@types"
     ]
   }
