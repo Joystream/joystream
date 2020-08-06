@@ -185,7 +185,7 @@ export type IWorkingGroupOpeningPolicyCommitment = {
 // very fragile atm and any change to this type in working-group module could result in "unsolvable" inconsistencies
 // (this won't be an issue after CWG gets refactored to use the working-grpup module too)
 export class WorkingGroupOpeningPolicyCommitment extends JoyStruct<IWorkingGroupOpeningPolicyCommitment> {
-  constructor(value?: WorkingGroupOpeningPolicyCommitment) {
+  constructor(value?: IWorkingGroupOpeningPolicyCommitment) {
     super(
       {
         application_rationing_policy: Option.with(ApplicationRationingPolicy),
