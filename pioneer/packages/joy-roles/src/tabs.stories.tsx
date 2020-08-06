@@ -27,7 +27,7 @@ export const RolesPage = () => {
   const panes = [
     { menuItem: 'Working groups', render: renderWorkingGroups },
     { menuItem: 'Opportunities', render: renderOpportunitySandbox },
-    { menuItem: 'My roles', render: renderMyRolesSandbox }
+    { menuItem: 'My roles and applications', render: renderMyRolesSandbox }
   ];
 
   return (

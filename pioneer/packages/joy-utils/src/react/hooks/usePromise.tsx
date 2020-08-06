@@ -16,6 +16,7 @@ export default function usePromise<T> (
 
   let isSubscribed = true;
   const execute = useCallback(() => {
+    setState({ value: state.value, error: null, isPending: true });
     return promise()
       .then(value => {
         if (isSubscribed) {

@@ -1,12 +1,17 @@
-- name: install dependencies
-  import_playbook: install-dependencies-playbook.yml
-
 - hosts: 127.0.0.1
   user: root
   become: yes
   become_method: sudo
+
   tasks:
+    - name: install dependencies
+      include_role:
+        name: install_dependencies
+
     - name: build node
-      include: build-image-tasklist.yml
-- name: run tests
-  import_playbook: run-tests-single-node-playbook.yml
+      include_role:
+        name: build_docker_image
+        
+    - name: run tests
+      include_role:
+        name: run_tests_single_node

@@ -92,6 +92,24 @@ async function syncCallback(api, storage) {
 async function syncPeriodic(api, flags, storage) {
   try {
     debug('Starting sync run...')
+
+    const chainIsSyncing = await api.chainIsSyncing()
+    if (chainIsSyncing) {
+      debug('Chain is syncing. Postponing sync run.')
+      return setTimeout(syncPeriodic, flags.syncPeriod, api, flags, storage)
+    }
+
+    const recommendedBalance = await api.providerHasMinimumBalance(300)
+    if (!recommendedBalance) {
+      debug('Warning: Provider role account is running low on balance.')
+    }
+
+    const sufficientBalance = await api.providerHasMinimumBalance(100)
+    if (!sufficientBalance) {
+      debug('Provider role account does not have sufficient balance. Postponing sync run!')
+      return setTimeout(syncPeriodic, flags.syncPeriod, api, flags, storage)
+    }
+
     await syncCallback(api, storage)
     debug('sync run complete')
   } catch (err) {

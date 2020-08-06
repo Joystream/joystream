@@ -97,7 +97,7 @@ const GroupOverview = Loadable<GroupOverviewProps>(
       <GroupOverviewSection>
         <h2>{ groupName }</h2>
         <p>{ description }</p>
-        <Card.Group>
+        <Card.Group style={{ alignItems: 'flex-start' }}>
           { workers!.map((worker, key) => (
             <GroupMemberView key={key} {...worker} />
           )) }

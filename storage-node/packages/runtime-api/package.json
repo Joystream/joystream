@@ -12,7 +12,7 @@
     "type": "git",
     "url": "https://github.com/Joystream/joystream.git"
   },
-  "license": "GPL-3.0",
+  "license": "GPL-3.0-only",
   "contributors": [
     {
       "name": "Joystream",
@@ -45,6 +45,7 @@
     "temp": "^0.9.0"
   },
   "dependencies": {
+    "@joystream/storage-utils": "^0.1.0",
     "@joystream/types": "^0.12.0",
     "@polkadot/api": "^0.96.1",
     "async-lock": "^1.2.0",

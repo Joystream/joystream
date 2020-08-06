@@ -6,16 +6,18 @@ import {
   ProposalVotes,
   ParsedPost,
   ParsedDiscussion,
-  DiscussionContraints
+  DiscussionContraints,
+  ProposalStatusFilter,
+  ProposalsBatch
 } from '../types/proposals';
 import { ParsedMember } from '../types/members';
 
 import BaseTransport from './base';
 
 import { ThreadId, PostId } from '@joystream/types/common';
-import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost, ProposalDetails } from '@joystream/types/proposals';
+import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost, ProposalDetails, Finalized, ProposalDecisionStatus } from '@joystream/types/proposals';
 import { MemberId } from '@joystream/types/members';
-import { u32, u64, Bytes, Vec } from '@polkadot/types/';
+import { u32, u64, Bytes, Null } from '@polkadot/types/';
 import { BalanceOf } from '@polkadot/types/interfaces';
 
 import { bytesToString } from '../functions/misc';
@@ -30,6 +32,7 @@ import CouncilTransport from './council';
 
 import { blake2AsHex } from '@polkadot/util-crypto';
 import { APIQueryCache } from '../APIQueryCache';
+import { MultipleLinkedMapEntry } from '../LinkedMapEntry';
 
 type ProposalDetailsCacheEntry = {
   type: ProposalType;
@@ -100,9 +103,11 @@ export default class ProposalsTransport extends BaseTransport {
     }
   }
 
-  async proposalById (id: ProposalId): Promise<ParsedProposal> {
+  async proposalById (id: ProposalId, rawProposal?: Proposal): Promise<ParsedProposal> {
     const { type, details } = await this.typeAndDetails(id);
-    const rawProposal = await this.rawProposalById(id);
+    if (!rawProposal) {
+      rawProposal = await this.rawProposalById(id);
+    }
     const proposer = (await this.membersT.expectedMembership(rawProposal.proposerId)).toJSON() as ParsedMember;
     const proposal = rawProposal.toJSON() as {
       title: string;
@@ -133,15 +138,43 @@ export default class ProposalsTransport extends BaseTransport {
     return Array.from({ length: total }, (_, i) => new ProposalId(i + 1));
   }
 
+  async activeProposalsIds () {
+    const result = new MultipleLinkedMapEntry(ProposalId, Null, await this.proposalsEngine.activeProposalIds());
+    // linked_keys will be [0] if there are no active proposals!
+    return result.linked_keys.join('') !== '0' ? result.linked_keys : [];
+  }
+
   async proposals () {
     const ids = await this.proposalsIds();
     return Promise.all(ids.map(id => this.proposalById(id)));
   }
 
-  async activeProposals () {
-    const activeProposalIds = (await this.proposalsEngine.activeProposalIds()) as Vec<ProposalId>;
+  async proposalsBatch (status: ProposalStatusFilter, batchNumber = 1, batchSize = 5): Promise<ProposalsBatch> {
+    const ids = (status === 'Active' ? await this.activeProposalsIds() : await this.proposalsIds())
+      .sort((id1, id2) => id2.cmp(id1)); // Sort by newest
+    let rawProposalsWithIds = (await Promise.all(ids.map(id => this.rawProposalById(id))))
+      .map((proposal, index) => ({ id: ids[index], proposal }));
 
-    return Promise.all(activeProposalIds.map(id => this.proposalById(id)));
+    if (status !== 'All' && status !== 'Active') {
+      rawProposalsWithIds = rawProposalsWithIds.filter(({ proposal }) => {
+        if (proposal.status.type !== 'Finalized') {
+          return false;
+        }
+        const finalStatus = ((proposal.status.value as Finalized).get('proposalStatus') as ProposalDecisionStatus);
+        return finalStatus.type === status;
+      });
+    }
+
+    const totalBatches = Math.ceil(rawProposalsWithIds.length / batchSize);
+    rawProposalsWithIds = rawProposalsWithIds.slice((batchNumber - 1) * batchSize, batchNumber * batchSize);
+    const proposals = await Promise.all(rawProposalsWithIds.map(({ proposal, id }) => this.proposalById(id, proposal)));
+
+    return {
+      batchNumber,
+      batchSize: rawProposalsWithIds.length,
+      totalBatches,
+      proposals
+    };
   }
 
   async proposedBy (member: MemberId) {
