@@ -46,7 +46,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
       ? (await this.rewardRelationship(worker.reward_relationship.unwrap()))
       : undefined;
 
-    const profile = await this.membersT.expectedMemberProfile(worker.member_id);
+    const profile = await this.membersT.expectedMembership(worker.member_id);
 
     return { group, workerId, worker, profile, stake, reward };
   }
@@ -135,7 +135,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
     return {
       wgApplicationId,
       applicationId: appId.toNumber(),
-      member: await this.membersT.expectedMemberProfile(wgApplication.member_id),
+      member: await this.membersT.expectedMembership(wgApplication.member_id),
       roleAccout: wgApplication.role_account_id,
       stakes: {
         application: appStakingId.isSome ? (await this.stakeValue(appStakingId.unwrap())).toNumber() : 0,

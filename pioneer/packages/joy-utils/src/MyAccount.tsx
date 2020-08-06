@@ -8,7 +8,7 @@ import accountObservable from '@polkadot/ui-keyring/observable/accounts';
 import { withCalls, withMulti, withObservable } from '@polkadot/react-api/index';
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
-import { MemberId, Profile } from '@joystream/types/members';
+import { MemberId, Membership } from '@joystream/types/members';
 import { CuratorId, LeadId, Lead, CurationActor, Curator } from '@joystream/types/content-working-group';
 
 import { queryMembershipToProp } from '@polkadot/joy-members/utils';
@@ -29,19 +29,13 @@ export type MyAccountProps = MyAddressProps & {
   memberIdsByControllerAccountId?: Vec<MemberId>;
   myMemberIdChecked?: boolean;
   iAmMember?: boolean;
-  memberProfile?: Option<Profile>;
+  myMembership?: Membership | null;
 
   // Content Working Group
   curatorEntries?: any; // entire linked_map: CuratorId => Curator
   isLeadSet?: Option<LeadId>;
   contentLeadId?: LeadId;
   contentLeadEntry?: any; // linked_map value
-
-  // From member's roles
-  myContentLeadId?: LeadId;
-  myCuratorIds?: CuratorId[];
-  memberIsCurator?: boolean;
-  memberIsContentLead?: boolean;
 
   curationActor?: any;
   allAccounts?: SubjectInfo;
@@ -92,7 +86,23 @@ function withMyMembership<P extends MyAccountProps> (Component: React.ComponentT
   return ResultComponent;
 }
 
-const withMyProfile = withCalls<MyAccountProps>(queryMembershipToProp('memberProfile', 'myMemberId'));
+function resolveMyProfile<P extends { myMembership?: Membership | null }> (Component: React.ComponentType<P>) {
+  const ResultComponent: React.FunctionComponent<P> = (props: P) => {
+    let { myMembership } = props;
+    myMembership = (!myMembership || myMembership.handle.isEmpty) ? null : myMembership;
+    return <Component {...props} myMembership={ myMembership } />;
+  };
+  ResultComponent.displayName = `resolveMyProfile(${componentName(Component)})`;
+  return ResultComponent;
+}
+
+const withMyProfileCall = withCalls<MyAccountProps>(queryMembershipToProp('membershipById', {
+  paramName: 'myMemberId',
+  propName: 'myMembership'
+}));
+
+const withMyProfile = <P extends MyAccountProps>(Component: React.ComponentType<P>) =>
+  withMulti(Component, withMyProfileCall, resolveMyProfile);
 
 const withContentWorkingGroupDetails = withCalls<MyAccountProps>(
   queryToProp('query.contentWorkingGroup.currentLeadId', { propName: 'isLeadSet' }),
@@ -126,146 +136,73 @@ const resolveLeadEntry = withCalls<MyAccountProps>(
 const withContentWorkingGroup = <P extends MyAccountProps>(Component: React.ComponentType<P>) =>
   withMulti(Component, withContentWorkingGroupDetails, resolveLead, resolveLeadEntry);
 
-function withMyRoles<P extends MyAccountProps> (Component: React.ComponentType<P>) {
-  const ResultComponent: React.FunctionComponent<P> = (props: P) => {
-    const { iAmMember, memberProfile } = props;
-
-    let myContentLeadId;
-    const myCuratorIds: Array<CuratorId> = [];
-
-    if (iAmMember && memberProfile && memberProfile.isSome) {
-      const profile = memberProfile.unwrap();
-      profile.roles.forEach(role => {
-        if (role.isContentLead) {
-          myContentLeadId = role.actor_id;
-        } else if (role.isCurator) {
-          myCuratorIds.push(role.actor_id);
-        }
-      });
-    }
-
-    const memberIsContentLead = myContentLeadId !== undefined;
-    const memberIsCurator = myCuratorIds.length > 0;
-
-    const newProps = {
-      memberIsContentLead,
-      memberIsCurator,
-      myContentLeadId,
-      myCuratorIds
-    };
-
-    return <Component {...props} {...newProps} />;
-  };
-  ResultComponent.displayName = `withMyRoles(${componentName(Component)})`;
-  return ResultComponent;
-}
-
-const canUseAccount = (account: AccountId, allAccounts: SubjectInfo | undefined) => {
-  if (!allAccounts || !Object.keys(allAccounts).length) {
-    return false;
-  }
-
-  const ix = Object.keys(allAccounts).findIndex(key => {
-    return account.eq(allAccounts[key].json.address);
-  });
-
-  return ix !== -1;
-};
-
 function withCurationActor<P extends MyAccountProps> (Component: React.ComponentType<P>) {
   const ResultComponent: React.FunctionComponent<P> = (props: P) => {
     const {
       myAccountId,
       isLeadSet,
       contentLeadEntry,
-      myCuratorIds,
       curatorEntries,
-      allAccounts,
-      memberIsContentLead,
-      memberIsCurator
+      allAccounts
     } = props;
 
     if (!myAccountId || !isLeadSet || !contentLeadEntry || !curatorEntries || !allAccounts) {
       return <Component {...props} />;
     }
 
-    const leadRoleAccount = isLeadSet.isSome
-      ? new SingleLinkedMapEntry<Lead>(Lead, contentLeadEntry).value.role_account
+    let lead = isLeadSet.isSome
+      ? new SingleLinkedMapEntry<Lead>(Lead, contentLeadEntry).value
       : null;
 
-    // Is current key the content lead key?
-    if (leadRoleAccount && leadRoleAccount.eq(myAccountId)) {
-      return <Component {...props} curationActor={[new CurationActor('Lead'), myAccountId]} />;
+    // Ignore lead if he's not active
+    // TODO: Does if ever happen if we query currentLeadById?
+    if (!(lead?.stage.isOfType('Active'))) {
+      lead = null;
     }
 
-    const curators = new MultipleLinkedMapEntry<CuratorId, Curator>(CuratorId, Curator, curatorEntries);
+    const curators = new MultipleLinkedMapEntry(CuratorId, Curator, curatorEntries);
 
-    const correspondingCurationActor = (accountId: AccountId, curators: MultipleLinkedMapEntry<CuratorId, Curator>) => {
-      const ix = curators.linked_values.findIndex(curator => myAccountId.eq(curator.role_account) && curator.is_active);
+    const curationActorByAccount = (accountId: AccountId | string) => {
+      if (lead && lead.role_account.toString() === accountId.toString()) {
+        return new CurationActor({ Lead: null });
+      }
 
-      return ix >= 0
+      const matchingCuratorIndex = curators.linked_values.findIndex(curator =>
+        curator.is_active && accountId.toString() === curator.role_account.toString()
+      );
+
+      return matchingCuratorIndex >= 0
         ? new CurationActor({
-          Curator: curators.linked_keys[ix]
+          Curator: curators.linked_keys[matchingCuratorIndex]
         })
         : null;
     };
 
-    const firstMatchingCurationActor = correspondingCurationActor(myAccountId, curators);
-
-    // Is the current key corresponding to an active curator role key?
-    if (firstMatchingCurationActor) {
-      return <Component {...props} curationActor={[firstMatchingCurationActor, myAccountId]} />;
-    }
-
-    // See if we have the member's lead role account
-    if (leadRoleAccount && memberIsContentLead && canUseAccount(leadRoleAccount, allAccounts)) {
-      return <Component {...props} curationActor={[new CurationActor('Lead'), leadRoleAccount]} />;
-    }
-
-    // See if we have one of the member's curator role accounts
-    if (memberIsCurator && myCuratorIds && curators.linked_keys.length) {
-      for (let i = 0; i < myCuratorIds.length; i++) {
-        const curator_id = myCuratorIds[i];
-        const ix = curators.linked_keys.findIndex(id => id.eq(curator_id));
-
-        if (ix >= 0) {
-          const curator = curators.linked_values[ix];
-          if (curator.is_active && canUseAccount(curator.role_account, allAccounts)) {
-            return (
-              <Component
-                {...props}
-                curationActor={[new CurationActor({ Curator: curator_id }), curator.role_account]}
-              />
-            );
-          }
-        }
+    // First priority - currently selected account
+    let actor = curationActorByAccount(myAccountId);
+    let actorKey: AccountId | null = myAccountId;
+    // Second priority - check other keys and find best role
+    // TODO: Prioritize current member?
+    // TODO: Perhaps just don't do that at all and force the user to select the correct key to avoid confision?
+    if (!actor) {
+      const allActorsWithKeys = Object.keys(allAccounts).map(accKey => ({
+        actor: curationActorByAccount(allAccounts[accKey].json.address),
+        key: new GenericAccountId(allAccounts[accKey].json.address)
+      }));
+      let actorWithKey = allActorsWithKeys.find(({ actor }) => actor?.isOfType('Lead'));
+      if (!actorWithKey) {
+        actorWithKey = allActorsWithKeys.find(({ actor }) => actor?.isOfType('Curator'));
       }
+      actor = actorWithKey?.actor || null;
+      actorKey = actorWithKey?.key || null;
     }
 
-    // selected key doesn't have any special role, check other available keys..
-
-    // Use lead role key if available
-    if (leadRoleAccount && canUseAccount(leadRoleAccount, allAccounts)) {
-      return <Component {...props} curationActor={[new CurationActor('Lead'), leadRoleAccount]} />;
+    if (actor && actorKey) {
+      return <Component {...props} curationActor={[actor, actorKey]} />;
+    } else {
+      // we don't have any key that can fulfill a curation action
+      return <Component {...props} />;
     }
-
-    // Use first available active curator role key if available
-    if (curators.linked_keys.length) {
-      for (let i = 0; i < curators.linked_keys.length; i++) {
-        const curator = curators.linked_values[i];
-        if (curator.is_active && canUseAccount(curator.role_account, allAccounts)) {
-          return (
-            <Component
-              {...props}
-              curationActor={[new CurationActor({ Curator: curators.linked_keys[i] }), curator.role_account]}
-            />
-          );
-        }
-      }
-    }
-
-    // we don't have any key that can fulfill a curation action
-    return <Component {...props} />;
   };
   ResultComponent.displayName = `withCurationActor(${componentName(Component)})`;
   return ResultComponent;
@@ -280,7 +217,6 @@ export const withMyAccount = <P extends MyAccountProps>(Component: React.Compone
     withMyMembership,
     withMyProfile,
     withContentWorkingGroup,
-    withMyRoles,
     withCurationActor
   );
 

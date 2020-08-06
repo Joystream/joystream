@@ -108,7 +108,7 @@ export default class ProposalsTransport extends BaseTransport {
     if (!rawProposal) {
       rawProposal = await this.rawProposalById(id);
     }
-    const proposer = (await this.membersT.memberProfile(rawProposal.proposerId)).toJSON() as ParsedMember;
+    const proposer = (await this.membersT.expectedMembership(rawProposal.proposerId)).toJSON() as ParsedMember;
     const proposal = rawProposal.toJSON() as {
       title: string;
       description: string;
@@ -193,7 +193,7 @@ export default class ProposalsTransport extends BaseTransport {
       'proposalsEngine.voteExistsByProposalByVoter', // Double map of intrest
       proposalId, // First double-map key value
       (v) => new VoteKind(v), // Converter from hex
-      async () => (await this.membersT.membersCreated()), // A function that returns the number of iterations to go through when chekcing possible values for the second double-map key (memberId)
+      async () => (await this.membersT.nextMemberId()), // A function that returns the number of iterations to go through when chekcing possible values for the second double-map key (memberId)
       FIRST_MEMBER_ID.toNumber() // Min. possible value for second double-map key (memberId)
     );
 
@@ -201,7 +201,7 @@ export default class ProposalsTransport extends BaseTransport {
     for (const voteEntry of voteEntries) {
       const memberId = voteEntry.secondKey;
       const vote = voteEntry.value;
-      const parsedMember = (await this.membersT.memberProfile(memberId)).toJSON() as ParsedMember;
+      const parsedMember = (await this.membersT.expectedMembership(memberId)).toJSON() as ParsedMember;
       votesWithMembers.push({
         vote,
         member: {
@@ -270,7 +270,7 @@ export default class ProposalsTransport extends BaseTransport {
         updatedAt: await this.chainT.blockTimestamp(post.updated_at.toNumber()),
         updatedAtBlock: post.updated_at.toNumber(),
         authorId: post.author_id,
-        author: (await this.membersT.memberProfile(post.author_id)).unwrapOr(null),
+        author: (await this.membersT.expectedMembership(post.author_id)),
         editsCount: post.edition_number.toNumber()
       });
     }

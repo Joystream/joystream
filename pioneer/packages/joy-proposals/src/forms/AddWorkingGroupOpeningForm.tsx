@@ -188,15 +188,15 @@ const valuesToAddOpeningParams = (values: FormValues): SimplifiedTypeInterface<I
 };
 
 const AddWorkingGroupOpeningForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { handleChange, errors, touched, values, setFieldValue, myMemberId, memberProfile } = props;
+  const { handleChange, errors, touched, values, setFieldValue, myMemberId, myMembership } = props;
   useEffect(() => {
-    if (memberProfile?.isSome && !touched.humanReadableText) {
+    if (myMembership && !touched.humanReadableText) {
       setFieldValue(
         'humanReadableText',
-        JSON.stringify(HRTDefault(memberProfile.unwrap().handle.toString(), values.workingGroup), undefined, 4)
+        JSON.stringify(HRTDefault(myMembership.handle.toString(), values.workingGroup), undefined, 4)
       );
     }
-  }, [values.workingGroup, memberProfile]);
+  }, [values.workingGroup, myMembership]);
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
 
   return (

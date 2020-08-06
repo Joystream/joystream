@@ -12,7 +12,7 @@ import AddressMini from '@polkadot/react-components/AddressMiniJoy';
 import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
-import { MemberId, Profile, EntryMethod, Paid, Screening, Genesis, SubscriptionId } from '@joystream/types/members';
+import { MemberId, Membership, EntryMethod, Paid, Screening, Genesis, SubscriptionId } from '@joystream/types/members';
 import { queryMembershipToProp } from './utils';
 import { Seat } from '@joystream/types/council';
 import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/index';
@@ -21,17 +21,15 @@ import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
 type Props = ApiProps & I18nProps & MyAccountProps & {
   preview?: boolean;
   memberId: MemberId;
-  // This cannot be named just "memberProfile", since it will conflict with "withAccount's" memberProfile
-  // (which holds  member profile associated with currently selected account)
-  detailsMemberProfile?: Option<any>; // TODO refactor to Option<Profile>
+  membership?: Membership;
   activeCouncil?: Seat[];
 };
 
 class Component extends React.PureComponent<Props> {
   render () {
-    const { detailsMemberProfile } = this.props;
-    return detailsMemberProfile
-      ? this.renderProfile(detailsMemberProfile.unwrap() as Profile)
+    const { membership } = this.props;
+    return membership && !membership.handle.isEmpty
+      ? this.renderProfile(membership)
       : (
         <div className={'item ProfileDetails'}>
           <Loader active inline/>
@@ -39,7 +37,7 @@ class Component extends React.PureComponent<Props> {
       );
   }
 
-  private renderProfile (memberProfile: Profile) {
+  private renderProfile (membership: Membership) {
     const {
       preview = false,
       myAddress,
@@ -51,7 +49,7 @@ class Component extends React.PureComponent<Props> {
       avatar_uri,
       root_account,
       controller_account
-    } = memberProfile;
+    } = membership;
 
     const hasAvatar = avatar_uri && nonEmptyStr(avatar_uri.toString());
     const isMyProfile = myAddress && (myAddress === root_account.toString() || myAddress === controller_account.toString());
@@ -83,12 +81,12 @@ class Component extends React.PureComponent<Props> {
           </div>
         </div>
       </div>
-      {!preview && this.renderDetails(memberProfile, isCouncilor)}
+      {!preview && this.renderDetails(membership, isCouncilor)}
       </>
     );
   }
 
-  private renderDetails (memberProfile: Profile, isCouncilor: boolean) {
+  private renderDetails (membership: Membership, isCouncilor: boolean) {
     const {
       about,
       registered_at_block,
@@ -99,7 +97,7 @@ class Component extends React.PureComponent<Props> {
       root_account,
       controller_account
 
-    } = memberProfile;
+    } = membership;
 
     const { memberId } = this.props;
 
@@ -173,8 +171,8 @@ export default translate(withMyAccount(
   withCalls<Props>(
     queryToProp('query.council.activeCouncil'),
     queryMembershipToProp(
-      'memberProfile',
-      { paramName: 'memberId', propName: 'detailsMemberProfile' }
+      'membershipById',
+      { paramName: 'memberId', propName: 'membership' }
     )
   )(Component)
 ));

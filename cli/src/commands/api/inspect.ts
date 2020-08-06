@@ -35,9 +35,9 @@ export default class ApiInspect extends ApiCommandBase {
     '$ api:inspect',
     '$ api:inspect -t=query',
     '$ api:inspect -t=query -M=members',
-    '$ api:inspect -t=query -M=members -m=memberProfile',
-    '$ api:inspect -t=query -M=members -m=memberProfile -e',
-    '$ api:inspect -t=query -M=members -m=memberProfile -e -a=1',
+    '$ api:inspect -t=query -M=members -m=membershipById',
+    '$ api:inspect -t=query -M=members -m=membershipById -e',
+    '$ api:inspect -t=query -M=members -m=membershipById -e -a=1',
   ]
 
   static flags = {

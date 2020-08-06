@@ -1,18 +1,24 @@
 import BaseTransport from './base';
-import { MemberId, Profile } from '@joystream/types/members';
-import { Option } from '@polkadot/types/';
+import { MemberId, Membership } from '@joystream/types/members';
 
 export default class MembersTransport extends BaseTransport {
-  memberProfile (id: MemberId | number): Promise<Option<Profile>> {
-    return this.members.memberProfile(id) as Promise<Option<Profile>>;
+  async membershipById (id: MemberId | number): Promise<Membership | null> {
+    const member = (await this.members.membershipById(id)) as Membership;
+    // Can't just use member.isEmpty because member.suspended is Bool (which isEmpty method always returns false)
+    return member.handle.isEmpty ? null : member;
   }
 
   // Throws if profile not found
-  async expectedMemberProfile (id: MemberId | number): Promise<Profile> {
-    return (await this.memberProfile(id)).unwrap();
+  async expectedMembership (id: MemberId | number): Promise<Membership> {
+    const member = await this.membershipById(id);
+    if (!member) {
+      throw new Error(`Expected member profile not found! ID: ${id.toString()}`);
+    }
+
+    return member;
   }
 
-  async membersCreated (): Promise<number> {
-    return (await this.members.membersCreated() as MemberId).toNumber();
+  async nextMemberId (): Promise<number> {
+    return (await this.members.nextMemberId() as MemberId).toNumber();
   }
 }

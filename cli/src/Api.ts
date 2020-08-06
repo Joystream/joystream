@@ -43,7 +43,7 @@ import {
   OpeningId,
   StakingPolicy,
 } from '@joystream/types/hiring'
-import { MemberId, Profile } from '@joystream/types/members'
+import { MemberId, Membership } from '@joystream/types/members'
 import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards'
 import { Stake, StakeId } from '@joystream/types/stake'
 import { LinkageResult } from '@polkadot/types/codec/Linkage'
@@ -193,10 +193,11 @@ export default class Api {
     return this._api.query[module]
   }
 
-  protected async memberProfileById(memberId: MemberId): Promise<Profile | null> {
-    const profile = (await this._api.query.members.memberProfile(memberId)) as Option<Profile>
+  protected async membershipById(memberId: MemberId): Promise<Membership | null> {
+    const profile = (await this._api.query.members.membershipById(memberId)) as Membership
 
-    return profile.unwrapOr(null)
+    // Can't just use profile.isEmpty because profile.suspended is Bool (which isEmpty method always returns false)
+    return profile.handle.isEmpty ? null : profile
   }
 
   async groupLead(group: WorkingGroups): Promise<GroupMember | null> {
@@ -238,7 +239,7 @@ export default class Api {
     const roleAccount = worker.role_account_id
     const memberId = worker.member_id
 
-    const profile = await this.memberProfileById(memberId)
+    const profile = await this.membershipById(memberId)
 
     if (!profile) {
       throw new Error(`Group member profile not found! (member id: ${memberId.toNumber()})`)
@@ -358,7 +359,7 @@ export default class Api {
       wgApplicationId,
       applicationId: appId.toNumber(),
       wgOpeningId: wgApplication.opening_id.toNumber(),
-      member: await this.memberProfileById(wgApplication.member_id),
+      member: await this.membershipById(wgApplication.member_id),
       roleAccout: wgApplication.role_account_id,
       stakes: {
         application: appStakingId.isSome ? (await this.stakeValue(appStakingId.unwrap())).toNumber() : 0,

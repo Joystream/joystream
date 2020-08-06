@@ -22,12 +22,12 @@ import { RouteComponentProps } from 'react-router-dom';
 
 // define out internal types
 type Props = AppProps & ApiProps & I18nProps & MyAccountProps & {
-  membersCreated?: BN;
+  nextMemberId?: BN;
 };
 
 class App extends React.PureComponent<Props> {
   private buildTabs (): TabItem[] {
-    const { t, membersCreated: memberCount, iAmMember } = this.props;
+    const { t, nextMemberId: memberCount, iAmMember } = this.props;
 
     return [
       {
@@ -47,9 +47,9 @@ class App extends React.PureComponent<Props> {
   }
 
   private renderList (routeProps: RouteComponentProps) {
-    const { membersCreated, ...otherProps } = this.props;
-    return membersCreated
-      ? <List firstMemberId={FIRST_MEMBER_ID} membersCreated={membersCreated} {...otherProps} {...routeProps}/>
+    const { nextMemberId, ...otherProps } = this.props;
+    return nextMemberId
+      ? <List firstMemberId={FIRST_MEMBER_ID} membersCreated={nextMemberId} {...otherProps} {...routeProps}/>
       : <em>Loading...</em>;
   }
 
@@ -79,6 +79,6 @@ export default withMulti(
   translate,
   withMyAccount,
   withCalls<Props>(
-    queryMembershipToProp('membersCreated')
+    queryMembershipToProp('nextMemberId')
   )
 );

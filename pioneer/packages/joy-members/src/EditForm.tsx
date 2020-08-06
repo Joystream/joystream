@@ -4,12 +4,12 @@ import { Link } from 'react-router-dom';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
-import { Option, Vec } from '@polkadot/types';
+import { Vec } from '@polkadot/types';
 import Section from '@polkadot/joy-utils/Section';
 import TxButton from '@polkadot/joy-utils/TxButton';
 import * as JoyForms from '@polkadot/joy-utils/forms';
 import { SubmittableResult } from '@polkadot/api';
-import { MemberId, UserInfo, Profile, PaidTermId, PaidMembershipTerms } from '@joystream/types/members';
+import { MemberId, Membership, PaidTermId, PaidMembershipTerms } from '@joystream/types/members';
 import { OptionText } from '@joystream/types/common';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
 import { queryMembershipToProp } from './utils';
@@ -43,7 +43,7 @@ type ValidationProps = {
 };
 
 type OuterProps = ValidationProps & {
-  profile?: Profile;
+  profile?: Membership;
   paidTerms: PaidMembershipTerms;
   paidTermId: PaidTermId;
   memberId?: MemberId;
@@ -108,18 +108,18 @@ const InnerForm = (props: FormProps) => {
   const buildTxParams = () => {
     if (!isValid) return [];
 
-    const userInfo = new UserInfo({
-      handle: fieldToTextOption('handle'),
-      avatar_uri: fieldToTextOption('avatar'),
-      about: fieldToTextOption('about')
-    });
+    const userInfo = [
+      fieldToTextOption('handle'),
+      fieldToTextOption('avatar'),
+      fieldToTextOption('about')
+    ];
 
     if (profile) {
       // update profile
-      return [memberId, userInfo];
+      return [memberId, ...userInfo];
     } else {
       // register as new member
-      return [paidTermId, userInfo];
+      return [paidTermId, ...userInfo];
     }
   };
 
@@ -171,7 +171,7 @@ const InnerForm = (props: FormProps) => {
             label={profile ? 'Update my profile' : 'Register'}
             isDisabled={!dirty || isSubmitting}
             params={buildTxParams()}
-            tx={profile ? 'members.updateProfile' : 'members.buyMembership'}
+            tx={profile ? 'members.updateMembership' : 'members.buyMembership'}
             onClick={onSubmit}
             txFailedCb={onTxFailed}
             txSuccessCb={onTxSuccess}
@@ -207,19 +207,19 @@ const EditForm = withFormik<OuterProps, FormValues>({
   }
 })(InnerForm);
 
-type WithMyProfileProps = {
+type WithMembershipDataProps = {
   memberId?: MemberId;
-  memberProfile?: Option<any>; // TODO refactor to Option<Profile>
+  membership?: Membership;
   paidTermsId: PaidTermId;
-  paidTerms?: Option<PaidMembershipTerms>;
+  paidTerms?: PaidMembershipTerms;
   minHandleLength?: BN;
   maxHandleLength?: BN;
   maxAvatarUriLength?: BN;
   maxAboutTextLength?: BN;
 };
 
-function WithMyProfileInner (p: WithMyProfileProps) {
-  const triedToFindProfile = !p.memberId || p.memberProfile;
+function WithMembershipDataInner (p: WithMembershipDataProps) {
+  const triedToFindProfile = !p.memberId || p.membership;
   if (
     triedToFindProfile &&
     p.paidTerms &&
@@ -228,9 +228,9 @@ function WithMyProfileInner (p: WithMyProfileProps) {
     p.maxAvatarUriLength &&
     p.maxAboutTextLength
   ) {
-    const profile = p.memberProfile ? p.memberProfile.unwrapOr(undefined) : undefined;
+    const membership = p.membership && !p.membership.handle.isEmpty ? p.membership : undefined;
 
-    if (!profile && p.paidTerms.isNone) {
+    if (!membership && p.paidTerms.isEmpty) {
       console.error('Could not find active paid membership terms');
     }
 
@@ -240,8 +240,8 @@ function WithMyProfileInner (p: WithMyProfileProps) {
         maxHandleLength={p.maxHandleLength.toNumber()}
         maxAvatarUriLength={p.maxAvatarUriLength.toNumber()}
         maxAboutTextLength={p.maxAboutTextLength.toNumber()}
-        profile={profile as Profile}
-        paidTerms={p.paidTerms.unwrap()}
+        profile={membership}
+        paidTerms={p.paidTerms}
         paidTermId={p.paidTermsId}
         memberId={p.memberId}
       />
@@ -249,22 +249,22 @@ function WithMyProfileInner (p: WithMyProfileProps) {
   } else return <em>Loading...</em>;
 }
 
-const WithMyProfile = withCalls<WithMyProfileProps>(
+const WithMembershipData = withCalls<WithMembershipDataProps>(
   queryMembershipToProp('minHandleLength'),
   queryMembershipToProp('maxHandleLength'),
   queryMembershipToProp('maxAvatarUriLength'),
   queryMembershipToProp('maxAboutTextLength'),
-  queryMembershipToProp('memberProfile', 'memberId'),
+  queryMembershipToProp('membershipById', { paramName: 'memberId', propName: 'membership' }),
   queryMembershipToProp('paidMembershipTermsById', { paramName: 'paidTermsId', propName: 'paidTerms' })
-)(WithMyProfileInner);
+)(WithMembershipDataInner);
 
-type WithMyMemberIdProps = MyAccountProps & {
+type WithMembershipDataWrapperProps = MyAccountProps & {
   memberIdsByRootAccountId?: Vec<MemberId>;
   memberIdsByControllerAccountId?: Vec<MemberId>;
   paidTermsIds?: Vec<PaidTermId>;
 };
 
-function WithMyMemberIdInner (p: WithMyMemberIdProps) {
+function WithMembershipDataWrapperInner (p: WithMembershipDataWrapperProps) {
   if (p.allAccounts && !Object.keys(p.allAccounts).length) {
     return (
       <Message warning className="JoyMainStatus">
@@ -284,7 +284,7 @@ function WithMyMemberIdInner (p: WithMyMemberIdProps) {
       p.memberIdsByRootAccountId.concat(p.memberIdsByControllerAccountId);
       const memberId = p.memberIdsByRootAccountId.length ? p.memberIdsByRootAccountId[0] : undefined;
 
-      return <WithMyProfile memberId={memberId} paidTermsId={p.paidTermsIds[0]} />;
+      return <WithMembershipData memberId={memberId} paidTermsId={p.paidTermsIds[0]} />;
     } else {
       console.error('Active paid membership terms is empty');
     }
@@ -293,12 +293,12 @@ function WithMyMemberIdInner (p: WithMyMemberIdProps) {
   return <em>Loading...</em>;
 }
 
-const WithMyMemberId = withMyAccount(
-  withCalls<WithMyMemberIdProps>(
+const WithMembershipDataWrapper = withMyAccount(
+  withCalls<WithMembershipDataWrapperProps>(
     queryMembershipToProp('memberIdsByRootAccountId', 'myAddress'),
     queryMembershipToProp('memberIdsByControllerAccountId', 'myAddress'),
     queryMembershipToProp('activePaidMembershipTerms', { propName: 'paidTermsIds' })
-  )(WithMyMemberIdInner)
+  )(WithMembershipDataWrapperInner)
 );
 
-export default WithMyMemberId;
+export default WithMembershipDataWrapper;

@@ -20,6 +20,7 @@ import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } f
 import { RewardRelationshipId } from '../recurring-rewards'
 
 import ChannelId from './ChannelId'
+import { JoyEnum } from '../JoyEnum'
 export { ChannelId }
 export class CuratorId extends ActorId {}
 export class CuratorOpeningId extends OpeningId {}
@@ -97,18 +98,10 @@ export class Channel extends JoyStruct<IChannel> {
   }
 }
 
-export class CurationActor extends Enum {
-  constructor(value?: any, index?: number) {
-    super(
-      {
-        Lead: Null,
-        Curator: CuratorId,
-      },
-      value,
-      index
-    )
-  }
-}
+export class CurationActor extends JoyEnum({
+  Lead: Null,
+  Curator: CuratorId,
+}) {}
 
 export class Principal extends Enum {
   constructor(value?: any, index?: number) {
@@ -489,20 +482,13 @@ export class ExitedLeadRole extends JoyStruct<IExitedLeadRole> {
   }
 }
 
-export class LeadRoleState extends Enum {
-  constructor(value?: any, index?: number) {
-    super(
-      {
-        Active: Null,
-        Exited: ExitedLeadRole,
-      },
-      value,
-      index
-    )
-  }
-}
+export class LeadRoleState extends JoyEnum({
+  Active: Null,
+  Exited: ExitedLeadRole,
+} as const) {}
 
 export type ILead = {
+  member_id: MemberId
   role_account: AccountId
   reward_relationship: Option<RewardRelationshipId>
   inducted: BlockNumber
@@ -512,6 +498,7 @@ export class Lead extends JoyStruct<ILead> {
   constructor(value?: ILead) {
     super(
       {
+        member_id: MemberId,
         role_account: GenericAccountId,
         reward_relationship: Option.with(RewardRelationshipId),
         inducted: u32,
@@ -519,6 +506,10 @@ export class Lead extends JoyStruct<ILead> {
       },
       value
     )
+  }
+
+  get member_id(): MemberId {
+    return this.getField<MemberId>('member_id')
   }
 
   get role_account(): GenericAccountId {

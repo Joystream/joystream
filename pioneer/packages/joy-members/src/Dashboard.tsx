@@ -16,7 +16,7 @@ import { FIRST_MEMBER_ID } from './constants';
 
 type Props = ApiProps & I18nProps & {
   newMembershipsAllowed?: Bool;
-  membersCreated?: BN;
+  nextMemberId?: BN;
   minHandleLength?: BN;
   maxHandleLength?: BN;
   maxAvatarUriLength?: BN;
@@ -36,7 +36,7 @@ class Dashboard extends React.PureComponent<Props> {
         {isAllowed && (isAllowed.eq(true) ? 'Yes' : 'No')}
       </Bubble>
       <Bubble label='Next member ID'>
-        {formatNumber(p.membersCreated)}
+        {formatNumber(p.nextMemberId)}
       </Bubble>
       <Bubble label='First member ID'>
         {formatNumber(FIRST_MEMBER_ID)}
@@ -75,7 +75,7 @@ class Dashboard extends React.PureComponent<Props> {
 export default translate(
   withCalls<Props>(
     queryMembershipToProp('newMembershipsAllowed'),
-    queryMembershipToProp('membersCreated'),
+    queryMembershipToProp('nextMemberId'),
     queryMembershipToProp('minHandleLength'),
     queryMembershipToProp('maxHandleLength'),
     queryMembershipToProp('maxAvatarUriLength'),

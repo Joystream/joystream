@@ -4,12 +4,12 @@ import { Link } from 'react-router-dom';
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { withCalls, withMulti } from '@polkadot/react-api/with';
-import { Option, Vec } from '@polkadot/types';
+import { Vec } from '@polkadot/types';
 import { AccountId } from '@polkadot/types/interfaces';
 import IdentityIcon from '@polkadot/react-components/IdentityIcon';
 
 import translate from './translate';
-import { MemberId, Profile } from '@joystream/types/members';
+import { MemberId, Membership } from '@joystream/types/members';
 import { queryMembershipToProp } from './utils';
 import { Seat } from '@joystream/types/council';
 import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/index';
@@ -22,7 +22,7 @@ const InlineAvatarSizePx = 24;
 type MemberPreviewProps = ApiProps & I18nProps & {
   accountId: AccountId;
   memberId?: MemberId;
-  memberProfile?: Option<any>; // TODO refactor to Option<Profile>
+  membership?: Membership;
   activeCouncil?: Seat[];
   prefixLabel?: string;
   inline?: boolean;
@@ -32,15 +32,15 @@ type MemberPreviewProps = ApiProps & I18nProps & {
 
 class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
   render () {
-    const { memberProfile } = this.props;
-    return memberProfile
-      ? this.renderProfile(memberProfile.unwrap() as Profile)
+    const { membership } = this.props;
+    return membership && !membership.handle.isEmpty
+      ? this.renderProfile(membership)
       : null;
   }
 
-  private renderProfile (memberProfile: Profile) {
+  private renderProfile (membership: Membership) {
     const { activeCouncil = [], accountId, prefixLabel, inline, className, style } = this.props;
-    const { handle, avatar_uri } = memberProfile;
+    const { handle, avatar_uri } = membership;
 
     const hasAvatar = avatar_uri && nonEmptyStr(avatar_uri.toString());
     const isCouncilor: boolean = accountId !== undefined && activeCouncil.find(x => accountId.eq(x.member)) !== undefined;
@@ -113,6 +113,6 @@ export const MemberPreview = withMulti(
   setMemberIdByAccountId,
   withCalls<MemberPreviewProps>(
     queryToProp('query.council.activeCouncil'), // TODO Refactor: extract ActiveCouncilContext
-    queryMembershipToProp('memberProfile', 'memberId')
+    queryMembershipToProp('membershipById', { paramName: 'memberId', propName: 'membership' })
   )
 );
