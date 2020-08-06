@@ -19,7 +19,6 @@
 // Example:  voting_period: 1 * DAY
 #![allow(clippy::identity_op)]
 
-use node_runtime::{AccountId, GenesisConfig};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
@@ -37,6 +36,8 @@ use node_runtime::{
     ProposalsCodexConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
     StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
+
+pub use node_runtime::{AccountId, GenesisConfig};
 
 type AccountPublic = <Signature as Verify>::Signer;
 

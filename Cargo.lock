@@ -561,6 +561,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "chain-spec-builder"
+version = "3.0.0"
+dependencies = [
+ "ansi_term 0.12.1",
+ "joystream-node",
+ "rand 0.7.3",
+ "sc-chain-spec",
+ "sc-keystore",
+ "sc-telemetry",
+ "sp-core",
+ "structopt",
+]
+
+[[package]]
 name = "chrono"
 version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
