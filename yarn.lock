@@ -1833,7 +1833,6 @@
     "@types/yargs" "^13.0.0"
 
 "@joystream/types@^0.12.0", "@nicaea/types@npm:@joystream/types@^0.12.0":
-  name "@nicaea/types"
   version "0.12.0"
   resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.12.0.tgz#4033967ae2ac111f894fb4100e414f7cdbe95611"
   integrity sha512-pHHYTbIa6V1C4k9aj+M6Fkwa2I2Br+4x7cuvREmrVh21GHjGuzoIwB74MfqFajdSTDQDZbjdixcYDES6uo3sUg==
