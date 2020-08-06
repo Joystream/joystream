@@ -1,32 +1,23 @@
-import { Enum, u32 } from '@polkadot/types'
+import { u32 } from '@polkadot/types'
 import EntityId from '../../EntityId'
+import { Registry } from '@polkadot/types/types'
+import { JoyEnum } from '../../../common'
 
 export class InternalEntityJustAdded extends u32 {}
 export class ExistingEntity extends EntityId {}
 
-export type ParametrizedEntityVariant = InternalEntityJustAdded | ExistingEntity
+export const ParametrizedEntityDef = {
+  InternalEntityJustAdded,
+  ExistingEntity,
+} as const
 
-type ParametrizedEntityValue = {
-  [typeName: string]: ParametrizedEntityVariant
-}
-
-export class ParametrizedEntity extends Enum {
-  constructor(value?: ParametrizedEntityValue, index?: number) {
-    super(
-      {
-        InternalEntityJustAdded,
-        ExistingEntity,
-      },
-      value,
-      index
-    )
+export class ParametrizedEntity extends JoyEnum(ParametrizedEntityDef) {
+  // TODO: Are those worth preserving?
+  static InternalEntityJustAdded(registry: Registry, index: u32): ParametrizedEntity {
+    return new ParametrizedEntity(registry, { InternalEntityJustAdded: new InternalEntityJustAdded(registry, index) })
   }
 
-  static InternalEntityJustAdded(index: u32): ParametrizedEntity {
-    return new ParametrizedEntity({ InternalEntityJustAdded: new InternalEntityJustAdded(index) })
-  }
-
-  static ExistingEntity(entity_id: EntityId): ParametrizedEntity {
-    return new ParametrizedEntity({ ExistingEntity: new ExistingEntity(entity_id) })
+  static ExistingEntity(registry: Registry, entity_id: EntityId): ParametrizedEntity {
+    return new ParametrizedEntity(registry, { ExistingEntity: new ExistingEntity(registry, entity_id) })
   }
 }

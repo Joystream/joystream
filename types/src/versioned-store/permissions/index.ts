@@ -1,21 +1,16 @@
-import { getTypeRegistry } from '@polkadot/types'
-
 import EntityPermissions from './EntityPermissions'
 import { ReferenceConstraint } from './reference-constraint'
 import ClassPermissionsType from './ClassPermissions'
 import { Operation } from './batching/'
+import { RegistryTypes } from '@polkadot/types/types'
 
 export { EntityPermissions, ReferenceConstraint, ClassPermissionsType, Operation }
 
-export function registerVersionedStorePermissionsTypes() {
-  try {
-    getTypeRegistry().register({
-      EntityPermissions,
-      ReferenceConstraint,
-      ClassPermissionsType,
-      Operation,
-    })
-  } catch (err) {
-    console.error('Failed to register custom types of versioned store module', err)
-  }
+export const versionedStorePermissionsTypes: RegistryTypes = {
+  EntityPermissions,
+  ReferenceConstraint,
+  ClassPermissionsType,
+  Operation,
 }
+
+export default versionedStorePermissionsTypes
