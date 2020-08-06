@@ -4715,6 +4715,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "substrate-council-module"
+version = "1.0.0"
+dependencies = [
+ "parity-scale-codec",
+ "serde",
+ "sr-io",
+ "sr-primitives",
+ "srml-support",
+ "srml-system",
+ "substrate-primitives",
+]
+
+[[package]]
 name = "substrate-debug-derive"
 version = "2.0.0"
 source = "git+https://github.com/paritytech/substrate.git?rev=c37bb08535c49a12320af7facfd555ce05cce2e8#c37bb08535c49a12320af7facfd555ce05cce2e8"
@@ -5196,7 +5209,7 @@ dependencies = [
 
 [[package]]
 name = "substrate-referendum-module"
-version = "2.0.0"
+version = "1.0.0"
 dependencies = [
  "parity-scale-codec",
  "rand 0.7.3",
