@@ -331,7 +331,7 @@ struct Mutations<T: Trait<I>, I: Instance> {
 }
 
 impl<T: Trait<I>, I: Instance> Mutations<T, I> {
-    fn start_voting_period(options: &Vec<T::ReferendumOption>) -> () {
+    fn start_voting_period(options: &Vec<T::ReferendumOption>) {
         // change referendum state
         Stage::<T, I>::put((ReferendumStage::Voting, <system::Module<T>>::block_number()));
 
@@ -339,7 +339,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         ReferendumOptions::<T, I>::put(options.clone());
     }
 
-    fn start_revealing_period() -> () {
+    fn start_revealing_period() {
         // change referendum state
         Stage::<T, I>::put((
             ReferendumStage::Revealing,
@@ -382,14 +382,16 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             }
         }
         let referendum_result = match max {
-            (Some(winners), _, true) => ReferendumResult::MultipleWinners(winners.iter().map(|item| **item).collect()), // multiple options recieved the same amount of votes
+            (Some(winners), _, true) => {
+                ReferendumResult::MultipleWinners(winners.iter().map(|item| **item).collect())
+            } // multiple options recieved the same amount of votes
             (Some(winners), _, false) => {
                 if winners.len() > 0 {
                     return ReferendumResult::Winner(*winners[0]);
                 }
 
                 ReferendumResult::NoVotesRevealed
-            },
+            }
             (None, _, false) => ReferendumResult::NoVotesRevealed,
             _ => ReferendumResult::NoVotesRevealed,
         };
@@ -418,12 +420,22 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         }
 
         // store vote
-        Votes::<T, I>::insert(account_id, SealedVote { commitment: *commitment, stake: *stake });
+        Votes::<T, I>::insert(
+            account_id,
+            SealedVote {
+                commitment: *commitment,
+                stake: *stake,
+            },
+        );
 
         Ok(())
     }
 
-    fn reveal_vote(account_id: &T::AccountId, vote_option: &T::ReferendumOption, sealed_vote: &SealedVote<T::Hash, T::CurrencyBalance>) -> Result<(), Error> {
+    fn reveal_vote(
+        account_id: &T::AccountId,
+        vote_option: &T::ReferendumOption,
+        sealed_vote: &SealedVote<T::Hash, T::CurrencyBalance>,
+    ) -> Result<(), Error> {
         // IMPORTANT - because unlocking currency can fail it has to be the first mutation!
         // unlock stake amount
         if !T::free_currency(&account_id, &sealed_vote.stake) {
@@ -576,8 +588,16 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(account_id)
     }
 
-    fn can_reveal_vote(origin: T::Origin, salt: &Vec<u8>, vote_option: &T::ReferendumOption) -> Result<(T::AccountId, SealedVote<T::Hash, T::CurrencyBalance>), Error> {
-        fn calculate_commitment<T: Trait<I>, I: Instance>(account_id: &T::AccountId, salt: &Vec<u8>, vote_option: &T::ReferendumOption) -> T::Hash {
+    fn can_reveal_vote(
+        origin: T::Origin,
+        salt: &Vec<u8>,
+        vote_option: &T::ReferendumOption,
+    ) -> Result<(T::AccountId, SealedVote<T::Hash, T::CurrencyBalance>), Error> {
+        fn calculate_commitment<T: Trait<I>, I: Instance>(
+            account_id: &T::AccountId,
+            salt: &Vec<u8>,
+            vote_option: &T::ReferendumOption,
+        ) -> T::Hash {
             let mut payload = account_id.encode();
             let mut mut_option = vote_option.clone().into().to_be_bytes().to_vec();
             let mut salt_tmp = salt.clone();
@@ -625,7 +645,8 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
                     return Err(Error::InvalidVote);
                 }
             }
-            None => { // this branch shouldn't ever happen
+            None => {
+                // this branch shouldn't ever happen
                 return Err(Error::InvalidReveal);
             }
         }

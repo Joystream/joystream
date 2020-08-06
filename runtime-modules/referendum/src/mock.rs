@@ -1,20 +1,25 @@
 #![cfg(test)]
 
 /////////////////// Configuration //////////////////////////////////////////////
-use crate::{Error, Event, Instance, Module, ReferendumOptions, ReferendumResult, ReferendumStage, RevealedVotes, SealedVote, Stage, Trait, Votes};
+use crate::{
+    Error, Event, Instance, Module, ReferendumOptions, ReferendumResult, ReferendumStage,
+    RevealedVotes, SealedVote, Stage, Trait, Votes,
+};
 
+use codec::Encode;
 use primitives::H256;
+use rand::Rng;
 use runtime_io;
 use sr_primitives::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageValue, StorageMap};
+use srml_support::{
+    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
+};
 use std::marker::PhantomData;
 use system::RawOrigin;
-use rand::Rng;
-use codec::{Encode};
 
 use crate::GenesisConfig;
 
@@ -108,13 +113,16 @@ impl<I: Instance> Trait<I> for Runtime {
 }
 
 impl Runtime {
-    pub fn feature_stack_lock(ensure_check_enabled: bool, lock_enabled: bool, free_enabled: bool) -> () {
+    pub fn feature_stack_lock(
+        ensure_check_enabled: bool,
+        lock_enabled: bool,
+        free_enabled: bool,
+    ) -> () {
         unsafe {
             IS_LOCKING_ENABLED = (ensure_check_enabled, lock_enabled, free_enabled);
         }
     }
 }
-
 
 /////////////////// Module implementation //////////////////////////////////////
 
@@ -217,7 +225,6 @@ pub struct InstanceMockUtils<T: Trait<I>, I: Instance> {
 }
 
 impl<T: Trait<I>, I: Instance> InstanceMockUtils<T, I> {
-
     pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::Origin {
         match origin {
             OriginType::Signed(account_id) => T::Origin::from(RawOrigin::Signed(account_id)),
@@ -243,7 +250,10 @@ impl<T: Trait<I>, I: Instance> InstanceMockUtils<T, I> {
         system::Module::<T>::set_block_number(block_number + increase);
     }
 
-    pub fn vote_commitment(account_id: <T as system::Trait>::AccountId, option: T::ReferendumOption) -> (T::Hash, Vec<u8>) {
+    pub fn vote_commitment(
+        account_id: <T as system::Trait>::AccountId,
+        option: T::ReferendumOption,
+    ) -> (T::Hash, Vec<u8>) {
         let mut rng = rand::thread_rng();
         let salt = rng.gen::<u64>().to_be_bytes().to_vec();
         let mut salt_tmp = salt.clone();
@@ -265,7 +275,6 @@ pub struct InstanceMocks<T: Trait<I>, I: Instance> {
 }
 
 impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
-
     pub fn start_referendum(
         origin: OriginType<T::AccountId>,
         options: Vec<T::ReferendumOption>,
@@ -273,7 +282,10 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<T, I>::start_referendum(InstanceMockUtils::<T, I>::mock_origin(origin), options.clone(),),
+            Module::<T, I>::start_referendum(
+                InstanceMockUtils::<T, I>::mock_origin(origin),
+                options.clone(),
+            ),
             expected_result,
         );
 
@@ -281,15 +293,9 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
             return;
         }
 
-        assert_eq!(
-            Stage::<T, I>::get().0,
-            ReferendumStage::Voting,
-        );
+        assert_eq!(Stage::<T, I>::get().0, ReferendumStage::Voting,);
 
-        assert_eq!(
-            ReferendumOptions::<T, I>::get(),
-            Some(options),
-        );
+        assert_eq!(ReferendumOptions::<T, I>::get(), Some(options),);
         /*
         // check event was emitted
         assert_eq!(
@@ -307,7 +313,9 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<T, I>::finish_voting_start_revealing(InstanceMockUtils::<T, I>::mock_origin(origin),),
+            Module::<T, I>::finish_voting_start_revealing(InstanceMockUtils::<T, I>::mock_origin(
+                origin
+            ),),
             expected_result,
         );
 
@@ -315,10 +323,7 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
             return;
         }
 
-        assert_eq!(
-            Stage::<T, I>::get().0,
-            ReferendumStage::Revealing,
-        );
+        assert_eq!(Stage::<T, I>::get().0, ReferendumStage::Revealing,);
 
         /*
         // check event was emitted
@@ -344,10 +349,7 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
             return;
         }
 
-        assert_eq!(
-            Stage::<T, I>::get().0,
-            ReferendumStage::Void,
-        );
+        assert_eq!(Stage::<T, I>::get().0, ReferendumStage::Void,);
         // TODO: check that rest of storage was reset as well
 
         /*
@@ -368,7 +370,11 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<T, I>::vote(InstanceMockUtils::<T, I>::mock_origin(origin), commitment, stake,),
+            Module::<T, I>::vote(
+                InstanceMockUtils::<T, I>::mock_origin(origin),
+                commitment,
+                stake,
+            ),
             expected_result,
         );
 
@@ -378,10 +384,7 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
 
         assert_eq!(
             Votes::<T, I>::get(account_id),
-            SealedVote {
-                commitment,
-                stake,
-            },
+            SealedVote { commitment, stake },
         );
         /*
         // check event was emitted
@@ -401,7 +404,11 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<T, I>::reveal_vote(InstanceMockUtils::<T, I>::mock_origin(origin), salt, vote_option,),
+            Module::<T, I>::reveal_vote(
+                InstanceMockUtils::<T, I>::mock_origin(origin),
+                salt,
+                vote_option,
+            ),
             expected_result,
         );
 

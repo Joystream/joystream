@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::{Error, Trait, ReferendumResult};
+use super::{Error, ReferendumResult, Trait};
 use crate::mock::*;
 
 type Mocks = InstanceMocks<Runtime, Instance0>;
@@ -124,7 +124,13 @@ fn voting_referendum_not_running() {
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
         let (commitment, _) = MockUtils::vote_commitment(account_id, options[0]);
 
-        Mocks::vote(origin.clone(), account_id, commitment, stake, Err(Error::ReferendumNotRunning));
+        Mocks::vote(
+            origin.clone(),
+            account_id,
+            commitment,
+            stake,
+            Err(Error::ReferendumNotRunning),
+        );
     });
 }
 
@@ -145,7 +151,13 @@ fn voting_voting_stage_overdue() {
         let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::vote(origin.clone(), account_id, commitment, stake, Err(Error::ReferendumNotRunning));
+        Mocks::vote(
+            origin.clone(),
+            account_id,
+            commitment,
+            stake,
+            Err(Error::ReferendumNotRunning),
+        );
     });
 }
 
@@ -162,7 +174,13 @@ fn voting_stake_too_low() {
         let (commitment, _) = MockUtils::vote_commitment(account_id, options[0]);
 
         Mocks::start_referendum(origin.clone(), options, Ok(()));
-        Mocks::vote(origin.clone(), account_id, commitment, stake, Err(Error::InsufficientStake));
+        Mocks::vote(
+            origin.clone(),
+            account_id,
+            commitment,
+            stake,
+            Err(Error::InsufficientStake),
+        );
     });
 }
 
@@ -181,10 +199,22 @@ fn voting_cant_lock_stake() {
         Mocks::start_referendum(origin.clone(), options, Ok(()));
 
         Runtime::feature_stack_lock(false, true, true);
-        Mocks::vote(origin.clone(), account_id, commitment, stake, Err(Error::InsufficientBalanceToStakeCurrency));
+        Mocks::vote(
+            origin.clone(),
+            account_id,
+            commitment,
+            stake,
+            Err(Error::InsufficientBalanceToStakeCurrency),
+        );
 
         Runtime::feature_stack_lock(true, false, true);
-        Mocks::vote(origin.clone(), account_id, commitment, stake, Err(Error::AccountStakeCurrencyFailed));
+        Mocks::vote(
+            origin.clone(),
+            account_id,
+            commitment,
+            stake,
+            Err(Error::AccountStakeCurrencyFailed),
+        );
     });
 }
 
@@ -203,7 +233,13 @@ fn voting_user_already_voted() {
         Mocks::start_referendum(origin.clone(), options, Ok(()));
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
 
-        Mocks::vote(origin.clone(), account_id, commitment, stake, Err(Error::AlreadyVoted));
+        Mocks::vote(
+            origin.clone(),
+            account_id,
+            commitment,
+            stake,
+            Err(Error::AlreadyVoted),
+        );
     });
 }
 
@@ -312,16 +348,32 @@ fn reveal_reveal_stage_not_running() {
 
         Mocks::start_referendum(origin.clone(), options.clone(), Ok(()));
 
-        Mocks::reveal_vote(origin.clone(), account_id, salt.clone(), option_to_vote_for, Err(Error::RevealingNotInProgress));
+        Mocks::reveal_vote(
+            origin.clone(),
+            account_id,
+            salt.clone(),
+            option_to_vote_for,
+            Err(Error::RevealingNotInProgress),
+        );
 
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         Mocks::finish_voting(origin.clone(), Ok(()));
         MockUtils::increase_block_number(reveal_stage_duration + 1);
-        Mocks::finish_revealing_period(origin.clone(), Ok(()), Some(ReferendumResult::NoVotesRevealed));
+        Mocks::finish_revealing_period(
+            origin.clone(),
+            Ok(()),
+            Some(ReferendumResult::NoVotesRevealed),
+        );
 
-        Mocks::reveal_vote(origin.clone(), account_id, salt.clone(), option_to_vote_for, Err(Error::RevealingNotInProgress));
+        Mocks::reveal_vote(
+            origin.clone(),
+            account_id,
+            salt.clone(),
+            option_to_vote_for,
+            Err(Error::RevealingNotInProgress),
+        );
     });
 }
 
@@ -348,7 +400,11 @@ fn reveal_no_vote() {
         Mocks::reveal_vote(origin.clone(), account_id, salt, option_to_vote_for, Ok(()));
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        Mocks::finish_revealing_period(origin.clone(), Ok(()), Some(ReferendumResult::NoVotesRevealed));
+        Mocks::finish_revealing_period(
+            origin.clone(),
+            Ok(()),
+            Some(ReferendumResult::NoVotesRevealed),
+        );
     });
 }
 
@@ -372,7 +428,13 @@ fn reveal_invalid_vote() {
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         Mocks::finish_voting(origin.clone(), Ok(()));
-        Mocks::reveal_vote(origin.clone(), account_id, salt, invalid_option, Err(Error::InvalidVote));
+        Mocks::reveal_vote(
+            origin.clone(),
+            account_id,
+            salt,
+            invalid_option,
+            Err(Error::InvalidVote),
+        );
     });
 }
 
@@ -396,7 +458,13 @@ fn reveal_invalid_commitment_proof() {
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         Mocks::finish_voting(origin.clone(), Ok(()));
-        Mocks::reveal_vote(origin.clone(), account_id, salt, invalid_option, Err(Error::InvalidReveal));
+        Mocks::reveal_vote(
+            origin.clone(),
+            account_id,
+            salt,
+            invalid_option,
+            Err(Error::InvalidReveal),
+        );
     });
 }
 
@@ -425,7 +493,11 @@ fn finish_revealing_period() {
         Mocks::reveal_vote(origin.clone(), account_id, salt, option_to_vote_for, Ok(()));
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        Mocks::finish_revealing_period(origin.clone(), Ok(()), Some(ReferendumResult::Winner(option_to_vote_for)));
+        Mocks::finish_revealing_period(
+            origin.clone(),
+            Ok(()),
+            Some(ReferendumResult::Winner(option_to_vote_for)),
+        );
     });
 }
 
@@ -441,10 +513,22 @@ fn finish_revealing_period_no_revealing_stage() {
         let option_to_vote_for = options[0];
         let (_, salt) = MockUtils::vote_commitment(account_id, option_to_vote_for);
 
-        Mocks::reveal_vote(origin.clone(), account_id, salt.clone(), option_to_vote_for, Err(Error::RevealingNotInProgress));
+        Mocks::reveal_vote(
+            origin.clone(),
+            account_id,
+            salt.clone(),
+            option_to_vote_for,
+            Err(Error::RevealingNotInProgress),
+        );
 
         Mocks::start_referendum(origin.clone(), options.clone(), Ok(()));
-        Mocks::reveal_vote(origin.clone(), account_id, salt.clone(), option_to_vote_for, Err(Error::RevealingNotInProgress));
+        Mocks::reveal_vote(
+            origin.clone(),
+            account_id,
+            salt.clone(),
+            option_to_vote_for,
+            Err(Error::RevealingNotInProgress),
+        );
     });
 }
 
@@ -462,7 +546,11 @@ fn finish_revealing_period_no_vote_revealed() {
         MockUtils::increase_block_number(voting_stage_duration + 1);
         Mocks::finish_voting(origin.clone(), Ok(()));
         MockUtils::increase_block_number(reveal_stage_duration + 1);
-        Mocks::finish_revealing_period(origin.clone(), Ok(()), Some(ReferendumResult::NoVotesRevealed));
+        Mocks::finish_revealing_period(
+            origin.clone(),
+            Ok(()),
+            Some(ReferendumResult::NoVotesRevealed),
+        );
     });
 }
 
