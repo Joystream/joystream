@@ -2,9 +2,9 @@ import { ApiPromise, WsProvider } from '@polkadot/api'
 import { Bytes, Option, u32, Vec } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { MemberId, PaidMembershipTerms, UserInfo } from '@nicaea/types/members'
-import { Mint, MintId } from '@nicaea/types/mint'
-import { Lead, LeadId } from '@nicaea/types/content-working-group'
+import { MemberId, PaidMembershipTerms } from '@alexandria/types/members'
+import { Mint, MintId } from '@alexandria/types/mint'
+import { Lead, LeadId } from '@alexandria/types/content-working-group'
 import {
   Application,
   ApplicationIdToWorkerIdMap,
@@ -14,16 +14,16 @@ import {
   Worker,
   WorkerId,
   WorkingGroupOpeningPolicyCommitment,
-} from '@nicaea/types/working-group'
-import { RoleParameters } from '@nicaea/types/roles'
-import { Seat } from '@nicaea/types/council'
+} from '@alexandria/types/working-group'
+import { RoleParameters } from '@alexandria/types/roles'
+import { Seat } from '@alexandria/types/council'
 import { AccountId, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender } from './sender'
 import { Utils } from './utils'
-import { Stake, StakedState } from '@nicaea/types/stake'
-import { RewardRelationship } from '@nicaea/types/recurring-rewards'
+import { Stake, StakedState } from '@alexandria/types/stake'
+import { RewardRelationship } from '@alexandria/types/recurring-rewards'
 import {
   ActivateOpeningAt,
   Application as HiringApplication,
@@ -32,9 +32,9 @@ import {
   Opening as HiringOpening,
   OpeningId,
   StakingPolicy,
-} from '@nicaea/types/hiring'
-import { FillOpeningParameters } from '@nicaea/types/proposals'
-import { WorkingGroup } from '@nicaea/types/common'
+} from '@alexandria/types/hiring'
+import { FillOpeningParameters } from '@alexandria/types/proposals'
+import { WorkingGroup } from '@alexandria/types/common'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -74,7 +74,7 @@ export class ApiWrapper {
     expectFailure = false
   ): Promise<void> {
     return this.sender.signAndSend(
-      this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ 'handle': name, 'avatar_uri': '', 'about': '' })),
+      this.api.tx.members.buyMembership(paidTermsId, /* Handle: */ name, /* Avatar uri: */ '', /* About: */ ''),
       account,
       expectFailure
     )
@@ -120,7 +120,7 @@ export class ApiWrapper {
 
   public estimateBuyMembershipFee(account: KeyringPair, paidTermsId: number, name: string): BN {
     return this.estimateTxFee(
-      this.api.tx.members.buyMembership(paidTermsId, new UserInfo({ 'handle': name, 'avatar_uri': '', 'about': '' }))
+      this.api.tx.members.buyMembership(paidTermsId, /* Handle: */ name, /* Avatar uri: */ '', /* About: */ '')
     )
   }
 

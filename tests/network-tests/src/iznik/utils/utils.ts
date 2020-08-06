@@ -4,7 +4,7 @@ import { blake2AsHex } from '@polkadot/util-crypto'
 import BN from 'bn.js'
 import fs from 'fs'
 import Keyring, { decodeAddress } from '@polkadot/keyring'
-import { Seat } from '@nicaea/types/council'
+import { Seat } from '@alexandria/types/council'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { v4 as uuid } from 'uuid'
 

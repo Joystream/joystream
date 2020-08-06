@@ -2,6 +2,10 @@
 # yarn lockfile v1
 
 
+"@alexandria/types@link:types":
+  version "0.0.0"
+  uid ""
+
 "@babel/cli@^7.7.4":
   version "7.7.4"
   resolved "https://registry.yarnpkg.com/@babel/cli/-/cli-7.7.4.tgz#38804334c8db40209f88c69a5c90998e60cca18b"
