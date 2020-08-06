@@ -7,8 +7,16 @@ set -e
 #  - rustup - rust insaller
 #  - rust compiler and toolchains
 #  - skips installing substrate and subkey
-curl https://getsubstrate.io -sSf | bash -s -- --fast \
-    && rustup component add rustfmt
+curl https://getsubstrate.io -sSf | bash -s -- --fast
+
+source ~/.cargo/env
+
+rustup component add rustfmt clippy
 
 # TODO: Install additional tools...
+
 # - b2sum
+# - nodejs
+# - npm
+# - yarn
+# .... ?

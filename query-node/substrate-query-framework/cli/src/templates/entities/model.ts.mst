@@ -1,0 +1,137 @@
+import {
+  BaseModel,
+  {{#has.bool}}BooleanField,{{/has.bool}}
+  {{#has.date}}DateField,{{/has.date}}
+  {{#has.float}}FloatField,{{/has.float}}
+  {{#has.int}}IntField,{{/has.int}}
+  {{#has.numeric}}NumericField,{{/has.numeric}}
+  {{#has.json}}JSONField,{{/has.json}}
+  {{#has.bytes}}BytesField,{{/has.bytes}}
+  Model,
+  {{#has.mto}}ManyToOne,{{/has.mto}}
+  {{#has.mtm}}ManyToMany,{{/has.mtm}}
+  {{#has.otm}}OneToMany,{{/has.otm}}
+  {{#has.oto}}OneToOne, OneToOneJoin,{{/has.oto}}
+  {{#has.array}}CustomField,{{/has.array}}
+  {{#has.enum}}EnumField,{{/has.enum}}
+  StringField
+} from 'warthog';  {{! we don't need extra twists here }}
+
+{{#has.numeric}}import * as BN from 'bn.js' {{/has.numeric}}
+
+{{#has.union}}
+import { Column } from 'typeorm';
+import { Field } from 'type-graphql';
+import { WarthogField } from 'warthog';
+{{#fields}}
+  {{#is.union}}
+  import { {{tsType}} } from '../variants/variants.model';
+  {{/is.union}}
+{{/fields}}
+{{/has.union}}
+
+{{#isInterface}}
+import { InterfaceType } from 'type-graphql';
+{{/isInterface}}
+
+{{#has.mtm}}import { JoinTable } from 'typeorm';{{/has.mtm}}
+
+{{#relatedEntityImports}}
+  {{{ . }}}
+{{/relatedEntityImports}}
+
+{{#enums}}
+  import { {{name}} } from '../enums/enums';
+  {{#export}}
+  export { {{name}} }; {{! we need to re-export enums for type-GraphQL to resolve types correctly, but only once }}
+  {{/export}}
+{{/enums}}
+
+{{#interfaces}}
+  import { {{className}} } from '../{{kebabName}}/{{kebabName}}.model';
+{{/interfaces}}
+
+{{^isInterface}}
+@Model({ api: { {{#interfaces}}implements: {{className}},{{/interfaces}} {{#description}} description: `{{{description}}}`{{/description}} }}) {{! only a single interface can be here }}
+{{/isInterface}}
+{{#isInterface}}
+@InterfaceType({{#description}} { description: `{{{description}}}` } {{/description}})
+{{/isInterface}}
+export {{#isInterface}}abstract{{/isInterface}} class {{className}} 
+  extends {{^interfaces}}BaseModel{{/interfaces}} {{#interfaces}} {{className}} {{/interfaces}} {
+
+{{#fields}}
+  {{#is.otm}}
+    @OneToMany(() => {{relation.columnType}}, (param: {{relation.columnType}}) => param.{{relation.relatedTsProp}})
+    {{camelName}}?: {{relation.columnType}}[];  
+  {{/is.otm}}
+
+  {{#is.mto}}
+    @ManyToOne(() => {{relation.columnType}},
+      {{#relation.relatedTsProp}}
+        (param: {{relation.columnType}}) => param.{{relation.relatedTsProp}},
+      {{/relation.relatedTsProp}}
+      { 
+        skipGraphQLField: true{{^required}},
+        nullable: true{{/required}} 
+    })
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{relation.columnType}};
+  {{/is.mto}}
+
+  {{#is.oto}}
+    {{^relation.joinColumn}}@OneToOne{{/relation.joinColumn}}
+    {{#relation.joinColumn}}@OneToOneJoin{{/relation.joinColumn}}
+    (() => {{relation.columnType}},(param: {{relation.columnType}}) => param.{{relation.relatedTsProp}})
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{relation.columnType}};
+  {{/is.oto}}
+
+  {{#is.mtm}}
+    @ManyToMany(() => {{relation.columnType}}, (param: {{relation.columnType}}) => param.{{relation.relatedTsProp}})
+    {{#relation.joinTable}}
+      @JoinTable({
+        name: '{{relation.joinTable.tableName}}',
+        joinColumn: {name: '{{relation.joinTable.joinColumn}}' },
+        inverseJoinColumn: {name: '{{relation.joinTable.inverseJoinColumn}}' }
+      })
+    {{/relation.joinTable}}
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{relation.columnType}}[];
+  {{/is.mtm}}
+  
+  {{#is.array}}
+    @CustomField({
+      db: { type: '{{dbType}}', array: true,{{^required}}nullable: true,{{/required}} {{#unique}}unique: true,{{/unique}}}, 
+      api: { type: '{{apiType}}', {{^required}}nullable: true,{{/required}}
+        {{#description}}description: `{{{description}}}`{{/description}} }
+    })
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{tsType}}[];
+  {{/is.array}}
+
+  {{! TODO: add enums here }}
+  {{#is.scalar}}
+    @{{decorator}}({
+      {{^required}}nullable: true,{{/required}}
+      {{#description}}description: `{{{description}}}`,{{/description}}
+      {{#unique}}unique: true,{{/unique}}
+    })
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{tsType}};
+  {{/is.scalar}}
+
+  {{#is.enum}}
+    @EnumField('{{tsType}}', {{tsType}}, { 
+      {{^required}}nullable: true,{{/required}} 
+      {{#description}}description: `{{{description}}}`{{/description}} })
+    {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}:{{tsType}} 
+  {{/is.enum}}
+
+
+  {{#is.union}} 
+	@Column('jsonb')
+	@WarthogField('json')
+	@Field(type => {{tsType}}, {
+      {{^required}}nullable: true,{{/required}} 
+      {{#description}}description: `{{{description}}}`{{/description}} })
+	{{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: typeof {{tsType}}
+  {{/is.union}}
+
+{{/fields}}
+}

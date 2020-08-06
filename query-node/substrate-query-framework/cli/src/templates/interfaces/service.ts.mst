@@ -1,0 +1,65 @@
+import { Service } from 'typedi';
+import { getConnection } from 'typeorm';
+import { BaseService, WhereInput } from 'warthog';
+import { orderBy } from 'lodash';
+
+{{#subclasses}}
+import { {{className}}Service } from '../{{kebabName}}/{{kebabName}}.service'
+{{/subclasses}}
+
+import { Inject } from 'typedi';
+import _ from 'lodash';
+import { {{className}} } from './{{kebabName}}.model';
+
+@Service('{{className}}Service')
+export class {{className}}Service {
+  constructor(
+    {{#subclasses}}
+     @Inject('{{className}}Service') public readonly {{camelName}}Service: {{className}}Service,
+    {{/subclasses}}
+  ) {}
+
+  async find<W extends WhereInput>(where?: any, ob?: string, limit?: number, offset?: number, fields?: string[]): Promise<{{className}}[]> {
+    let _limit = limit || 50;
+		let _offset = offset || 0;
+
+		if (_limit + _offset > 1000) {
+			throw new Error('Limit or offset are too large');
+		}
+
+		const connection = getConnection();
+		const queryRunner = connection.createQueryRunner();
+		// establish real database connection using our new query runner
+		await queryRunner.connect();
+		await queryRunner.startTransaction('REPEATABLE READ');
+
+		{{#subclasses}}
+      let  {{camelNamePlural}} = [];
+    {{/subclasses}}
+		try {
+      // fetching all the fields to allow type-dependent field resolutions
+			{{#subclasses}}
+        {{camelNamePlural}} = await this.{{camelName}}Service.find(where, ob, 0, _limit + _offset);
+      {{/subclasses}}
+		} finally {
+			await queryRunner.commitTransaction();
+		}
+
+		let collect = [{{#subclasses}}...{{camelNamePlural}}, {{/subclasses}}];
+		if (ob) {
+			// NB: copied from warthog's BaseService
+			// TODO: allow multiple sorts
+			const parts = ob.toString().split('_');
+			// TODO: ensure attr is one of the properties on the model
+			const attr = parts[0];
+			const direction: 'asc' | 'desc' = parts[1] as 'asc' | 'desc';
+
+			collect = orderBy(collect, [attr], [direction]);
+		}
+
+		const _end = Math.min(collect.length, _limit + _offset);
+		_offset = Math.min(collect.length, _offset);
+
+		return collect.slice(_offset, _end);
+  }
+}

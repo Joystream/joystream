@@ -1,0 +1,46 @@
+enum MembershipType {
+  SINGLE_PASS
+  MONTHLY_PASS
+  YEARLY_PASS
+}
+
+type Membership @entity {
+  # Member's root account id
+  accountId: String!
+
+  # Member's id
+  memberId: Int!
+
+  # The unique handle chosen by member
+  handle: String @fulltext(query: "handles")
+
+  # A Url to member's Avatar image
+  avatarUri: String
+
+  # Short text chosen by member to share information about themselves
+  about: String
+
+  membershipType: MembershipType
+
+  field1: enum1
+
+  field2: enum2
+}
+
+type Account @entity {
+  membershipType: MembershipType
+  isAdmin: Boolean
+}
+
+enum enum1 {
+  NEWHOPE
+  EMPIRE
+  JEDI
+}
+
+enum enum2 {
+  NEWHOPE
+  EMPIRE
+  JEDI
+}
+

@@ -1,0 +1,39 @@
+version: "3.4"
+
+services:
+  db:
+    image: postgres:12
+    restart: always
+    ports:
+      - "${DB_PORT}:5432"
+    volumes:
+      - /var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+  
+  # Run after Run after `yarn codegen:server` and `yarn docker:server:build`
+  graphql-server:
+    image: hydra-graphql-server:latest
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=db
+    ports:
+      - "8080:${GRAPHQL_SERVER_PORT}"
+    depends_on: 
+      - db
+    command: >
+      sh -c "yarn run config && yarn start:dev"
+  
+  # Run after `yarn codegen:indexer` and `yarn docker:indexer:build`
+  indexer:
+    image: hydra-indexer:latest
+    env_file:
+      - .env 
+    environment:
+      - TYPEORM_HOST=db
+      - DEBUG=index-builder:*
+    depends_on: 
+      - db

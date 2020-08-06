@@ -1,0 +1,57 @@
+import { MigrationInterface, QueryRunner } from "typeorm";
+
+export class {{query.typePrefix}}Migration{{query.ts}} implements MigrationInterface {
+    name = '{{query.name}}Migration{{query.ts}}'
+
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        // TODO: escape 
+    {{#query.documents}}    
+        await queryRunner.query(`
+            ALTER TABLE {{table}} 
+            ADD COLUMN {{tsvColumn}} tsvector 
+            GENERATED ALWAYS AS (  
+                {{#fields}}
+                    setweight(to_tsvector('{{query.language}}', coalesce({{{column}}}, '')), '{{weight}}') {{^last}} || {{/last}}
+                {{/fields}}
+                ) 
+            STORED;
+        `);
+        await queryRunner.query(`
+            ALTER TABLE {{table}} 
+            ADD COLUMN {{docColumn}} text 
+            GENERATED ALWAYS AS (  
+                {{#fields}}
+                    coalesce({{{column}}}, '') {{^last}} || {{/last}}
+                {{/fields}}
+                ) 
+            STORED;
+        `);
+        await queryRunner.query(`CREATE INDEX {{index_name}} ON {{table}} USING GIN ({{tsvColumn}})`);
+    {{/query.documents}}
+
+        await queryRunner.query(`
+            CREATE VIEW {{query.viewName}} AS
+        {{#query.documents}}    
+            SELECT 
+                text '{{table}}' AS origin_table, id, {{tsvColumn}} AS tsv, {{docColumn}} AS document 
+            FROM
+                {{table}}
+            {{^last}}    
+            UNION ALL
+            {{/last}}
+        {{/query.documents}}    
+        `);
+
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`DROP VIEW {{query.viewName}}`);
+    {{#query.documents}}    
+        await queryRunner.query(`DROP INDEX {{index_name}}`);
+        await queryRunner.query(`ALTER TABLE {{table}} DROP COLUMN {{tsvColumn}}`);
+        await queryRunner.query(`ALTER TABLE {{table}} DROP COLUMN {{docColumn}}`);
+    {{/query.documents}}    
+    }
+
+
+}

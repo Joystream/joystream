@@ -1,0 +1,45 @@
+{
+  "name": "@joystream/types",
+  "version": "0.10.0",
+  "description": "Types for Joystream Substrate Runtime 6.15.0",
+  "main": "lib/index.js",
+  "scripts": {
+    "prepublish": "npm run build",
+    "build": "tsc --build tsconfig.json"
+  },
+  "author": "Joystream contributors",
+  "maintainers": [],
+  "dependencies": {
+    "@polkadot/types": "^0.96.1",
+    "@types/vfile": "^4.0.0",
+    "ajv": "^6.11.0",
+    "lodash": "^4.17.15"
+  },
+  "directories": {
+    "lib": "lib"
+  },
+  "devDependencies": {
+    "typescript": "^3.6.4"
+  },
+  "engines": {
+    "node": ">=10.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Joystream/apps.git"
+  },
+  "keywords": [
+    "substrate",
+    "joystream",
+    "runtime"
+  ],
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Joystream/apps/issues"
+  },
+  "homepage": "https://github.com/Joystream/packages/joy-types/README.md"
+}

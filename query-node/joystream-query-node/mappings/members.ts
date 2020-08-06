@@ -1,73 +1,82 @@
 import * as assert from 'assert';
+import { CheckedUserInfo } from '@joystream/types/lib/members';
 
-import { Membership } from '../generated/indexer/entities/Membership';
-import { DB } from '../generated/indexer';
-import { ApiPromise } from '../generated/indexer/node_modules/@polkadot/api';
-import { QueryRunner, DeepPartial } from '../generated/indexer/node_modules/typeorm';
-import { Hash } from '../generated/indexer/node_modules/@polkadot/types/interfaces';
-import { Option } from '../generated/indexer/node_modules/@polkadot/types/codec';
-import type { Profile } from '../generated/indexer/node_modules/@joystream/types/lib/members';
-import { fillRequiredWarthogFields } from  '../generated/indexer/node_modules/index-builder/lib/db/helper'
-const debug = require('debug')('indexer:mappings')
+import { Member } from '../generated/graphql-server/src/modules/member/member.model';
+import { DB, SubstrateEvent } from '../generated/indexer';
 
-export async function handleMemberRegistered(db: DB) {
-  // Get event data
-  const { AccountId, MemberId } = db.event.event_params;
+export async function handleMemberRegistered(db: DB, event: SubstrateEvent) {
+  const { AccountId, MemberId } = event.event_params;
 
-  let member = new Membership({ accountId: AccountId.toString(), memberId: +MemberId });
+  // Not safe type casting!
+  const userInfo = (event.extrinsic?.args[1].toJSON() as unknown) as CheckedUserInfo;
 
-  // Save to database.
-  db.save<Membership>(member);
+  let member = new Member();
+  member.registeredAtBlock = event.block_number.toString();
+  member.memberId = MemberId.toString();
+  member.rootAccount = Buffer.from(AccountId);
+  member.controllerAccount = Buffer.from(AccountId);
+  member.handle = userInfo.handle.toString();
+  member.avatarUri = userInfo.avatar_uri.toString();
+  member.about = userInfo.about.toString();
+
+  db.save<Member>(member);
 }
 
-export async function handleMemberUpdatedAboutText(db: DB) {
-  // Get event data
-  const { MemberId } = db.event.event_params;
-
-  // Query from database since it is an existsing user
-  const member = await db.get(Membership, { where: { memberId: MemberId } });
+export async function handleMemberUpdatedAboutText(db: DB, event: SubstrateEvent) {
+  const { MemberId } = event.event_params;
+  const member = await db.get(Member, { where: { memberId: MemberId.toString() } });
 
   assert(member);
 
-  // Member data is updated at: now
-  member.updatedAt = new Date();
+  // Not safe type casting!
+  const userInfo = (event.extrinsic?.args[1].toJSON() as unknown) as CheckedUserInfo;
+  member.about = userInfo.about.toString();
 
-  // Save back to database.
-  db.save<Membership>(member);
+  db.save<Member>(member);
 }
 
-export async function bootMembers(api: ApiPromise, queryRunner: QueryRunner) {
-    let blkHash: Hash = await api.rpc.chain.getBlockHash(0);
-    let ids = await api.query.members.membersCreated.at(blkHash);
-    let num: number = parseInt(ids.toString())
-    let members = [];
-    for (let i = 0; i < num; i++) {
-        let profileOpt = await api.query.members.memberProfile.at(blkHash, i) as Option<Profile>;
-        let profile: Profile | null = profileOpt.unwrapOr(null);
-        
-        if (!profile) {
-            continue
-        }
+export async function handleMemberUpdatedAvatar(db: DB, event: SubstrateEvent) {
+  const { MemberId } = event.event_params;
+  const member = await db.get(Member, { where: { memberId: MemberId.toString() } });
 
-        let member: DeepPartial<Memberships> = new Memberships({ 
-            accountId: profile.root_account.toString(), 
-            handle: profile.handle.toString(),
-            avatarUri: profile.avatar_uri.toString(),
-            about: profile.about.toString(),
-            memberId: i // what should be here?
-        });
-        
-        member = fillRequiredWarthogFields(member);
-        members.push(member);
-        debug(`BootstrapEnitity: ${JSON.stringify(member, null, 2)}`);
-        if ((members.length == 25) || (i == num - 1)) {
-            if (members.length == 0) {
-                continue;
-            }
-            await queryRunner.manager.insert(Memberships, members);
-            members = [];
-        }
-    }
-    debug(`Done bootstrapping members!`);
-        
+  assert(member);
+
+  // Not safe type casting!
+  const userInfo = (event.extrinsic?.args[1].toJSON() as unknown) as CheckedUserInfo;
+  member.avatarUri = userInfo.avatar_uri.toString();
+
+  db.save<Member>(member);
+}
+
+export async function handleMemberUpdatedHandle(db: DB, event: SubstrateEvent) {
+  const { MemberId } = event.event_params;
+  const member = await db.get(Member, { where: { memberId: MemberId.toString() } });
+
+  assert(member);
+
+  // Not safe type casting!
+  const userInfo = (event.extrinsic?.args[1].toJSON() as unknown) as CheckedUserInfo;
+  member.handle = userInfo.handle.toString();
+
+  db.save<Member>(member);
+}
+
+export async function handleMemberSetRootAccount(db: DB, event: SubstrateEvent) {
+  const { MemberId, AccountId } = event.event_params;
+  const member = await db.get(Member, { where: { memberId: MemberId.toString() } });
+
+  assert(member);
+
+  member.rootAccount = Buffer.from(AccountId);
+  db.save<Member>(member);
+}
+
+export async function handleMemberSetControllerAccount(db: DB, event: SubstrateEvent) {
+  const { MemberId, AccountId } = event.event_params;
+  const member = await db.get(Member, { where: { memberId: MemberId.toString() } });
+
+  assert(member);
+
+  member.controllerAccount = Buffer.from(AccountId);
+  db.save<Member>(member);
 }

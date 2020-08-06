@@ -1,11 +1,9 @@
 // @ts-check
 
 import { ApiPromise, WsProvider /*RuntimeVersion*/ } from '@polkadot/api';
+import * as BN from 'bn.js';
 
-import { makeQueryService, IndexBuilder, QueryEventProcessingPack } from '.';
-import { getConnection } from 'typeorm';
-
-import BootstrapPack from './BootstrapPack';
+import { makeQueryService, IndexBuilder, QueryEventProcessingPack, QueryNodeStartUpOptions } from '.';
 
 export enum QueryNodeState {
   NOT_STARTED,
@@ -30,40 +28,39 @@ export default class QueryNode {
 
   // Query index building node.
   private _indexBuilder: IndexBuilder;
-  
 
-  private constructor(websocketProvider: WsProvider, api: ApiPromise, 
-    indexBuilder: IndexBuilder) {
+  private _atBlock?: BN;
+
+  private constructor(websocketProvider: WsProvider, api: ApiPromise, indexBuilder: IndexBuilder, atBlock?: BN) {
     this._state = QueryNodeState.NOT_STARTED;
     this._websocketProvider = websocketProvider;
     this._api = api;
     this._indexBuilder = indexBuilder;
+    this._atBlock = atBlock;
   }
 
-  static async create(
-    ws_provider_endpoint_uri: string,
-    processing_pack: QueryEventProcessingPack,
-    type_registrator: () => void,
-  ) {
+  static async create(options: QueryNodeStartUpOptions) {
     // TODO: Do we really need to do it like this?
     // Its pretty ugly, but the registrtion appears to be
     // accessing some sort of global state, and has to be done after
     // the provider is created.
 
+    const { wsProviderURI, typeRegistrator, processingPack, atBlock } = options;
+
     // Initialise the provider to connect to the local node
-    const provider = new WsProvider(ws_provider_endpoint_uri);
+    const provider = new WsProvider(wsProviderURI);
 
     // Register types before creating the api
-    type_registrator();
+    typeRegistrator ? typeRegistrator() : null;
 
     // Create the API and wait until ready
     const api = await ApiPromise.create({ provider });
 
     const service = makeQueryService(api);
 
-    const index_buider = IndexBuilder.create(service, processing_pack);
+    const index_buider = IndexBuilder.create(service, processingPack as QueryEventProcessingPack);
 
-    return new QueryNode(provider, api, index_buider);
+    return new QueryNode(provider, api, index_buider, atBlock);
   }
 
   async start() {
@@ -72,34 +69,9 @@ export default class QueryNode {
     this._state = QueryNodeState.STARTING;
 
     // Start the
-    await this._indexBuilder.start();
+    await this._indexBuilder.start(this._atBlock);
 
     this._state = QueryNodeState.STARTED;
-  }
-
-  async bootstrap(bootstrapPack: BootstrapPack) {
-    debug("Bootstraping the database");
-    const queryRunner = getConnection().createQueryRunner();
-    const api = this._api;
-    await queryRunner.connect();
-      
-    try {
-      // establish real database connection
-      // perform all the bootstrap logic in one large
-      // atomic transaction 
-      for (const boot of bootstrapPack.pack) {
-        await queryRunner.startTransaction();
-        await boot(api, queryRunner)
-        await queryRunner.commitTransaction();
-      }
-      debug("Database bootstrap successfull");
-      
-    } catch (error) {
-      console.error(error);
-      await queryRunner.rollbackTransaction();
-    } finally {
-      await queryRunner.release();
-    }
   }
 
   async stop() {

@@ -1,5 +1,7 @@
 import * as shortid from 'shortid';
-import { DeepPartial } from 'typeorm';
+import { DeepPartial, createConnection, Connection, getConnectionOptions } from 'typeorm';
+
+import { SnakeNamingStrategy } from './SnakeNamingStrategy';
 /**
  * Fixes compatibility between typeorm and warthog models.
  *
@@ -10,10 +12,18 @@ import { DeepPartial } from 'typeorm';
  * @param entity: DeepPartial<T>
  */
 export function fillRequiredWarthogFields<T>(entity: DeepPartial<T>): DeepPartial<T> {
+  // Modifying an existing entity so do not add warthog fields
+  if (entity.hasOwnProperty('id')) return entity;
+
   const requiredFields = {
     id: shortid.generate(),
     createdById: shortid.generate(),
     version: 1,
   };
   return Object.assign(entity, requiredFields);
+}
+
+export async function createDBConnection(): Promise<Connection> {
+  const connectionOptions = await getConnectionOptions();
+  return createConnection(Object.assign(connectionOptions, { namingStrategy: new SnakeNamingStrategy() }));
 }

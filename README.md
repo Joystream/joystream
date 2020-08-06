@@ -1,12 +1,18 @@
-# Joystream
+# Joystream [![Build Status](https://travis-ci.org/Joystream/joystream.svg?branch=master)](https://travis-ci.org/Joystream/joystream)
 
 This is the main code reposity for all joystream software. It will  house the substrate chain project, the full node and runtime and all reusable substrate runtime modules that make up the joystream runtime. In addition to all front-end apps and infrastructure servers necessary for operating the network.
 
 The repository is currently just a cargo workspace, but eventually will also contain yarn workspaces, and possibly other project type workspaces.
 
+## Build Status
+
+Development [![Development Branch Build Status](https://travis-ci.org/Joystream/joystream.svg?branch=development)](https://travis-ci.org/Joystream/joystream)
+
+More detailed build history on [Travis CI](https://travis-ci.org/github/Joystream/joystream/builds)
+
 ## Overview
 
-The joystream network builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional
+The Joystream network builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional
 functionality to support the [various roles](https://www.joystream.org/roles) that can be entered into on the platform.
 
 
@@ -20,7 +26,7 @@ To setup a full node and validator review the [advanced guide from the helpdesk]
 
 ###  Pre-built Binaries
 
-The latest pre-built binaries can be downloads from the [releases](https://github.com/Joystream/substrate-runtime-joystream/releases) page.
+The latest pre-built binaries can be downloaded from the [releases](https://github.com/Joystream/joystream/releases) page.
 
 
 ### Building from source
@@ -28,9 +34,9 @@ The latest pre-built binaries can be downloads from the [releases](https://githu
 Clone the repository and install build tools:
 
 ```bash
-git clone https://github.com/Joystream/substrate-runtime-joystream.git
+git clone https://github.com/Joystream/joystream.git
 
-cd substrate-runtime-joystream/
+cd joystream/
 
 ./setup.sh
 ```
@@ -46,10 +52,10 @@ cargo build --release
 Run the node and connect to the public testnet.
 
 ```bash
-cargo run --release -- --chain ./rome-tesnet.json
+cargo run --release -- --chain ./rome-testnet.json
 ```
 
-The `rome-testnet.json` chain file can be ontained from the [release page](https://github.com/Joystream/substrate-runtime-joystream/releases/tag/v6.8.0)
+The `rome-testnet.json` chain file can be obtained from the [releases page](https://github.com/Joystream/joystream/releases/tag/v6.8.0)
 
 
 ### Installing a release build
@@ -62,7 +68,7 @@ cargo install joystream-node --path node/
 Now you can run
 
 ```bash
-joystream-node --chain rome-testnet.json
+joystream-node --chain ./rome-testnet.json
 ```
 
 ### Local development
@@ -79,14 +85,23 @@ This will build and run a fresh new local development chain purging existing one
 cargo test
 ```
 
-### API integration tests
+### Network tests
 
 ```bash
-./scripts/run-dev-chain.sh
+./scripts/run-test-chain.sh
 yarn test
 ```
 
 To run the integration tests with a different chain, you can omit step running the local development chain and set the node URL using `NODE_URL` environment variable.
+Proposal grace periods should be set to 0, otherwise proposal network tests will fail.
+
+### Rome-Constantinople migration network test
+
+Ensure Rome node is up and running, and node URL is set using `NODE_URL` environment variable (default value is `localhost:9944`).
+
+```bash
+yarn test-migration
+```
 
 ## Joystream Runtime
 
@@ -113,7 +128,7 @@ Deploying the compiled runtime on a live system can be done in one of two ways:
 ### Versioning the runtime
 
 Versioning of the runtime is set in `runtime/src/lib.rs`
-For detailed information about how to set correct version numbers when developing a new runtime, [see this](https://github.com/Joystream/substrate-runtime-joystream/issues/1)
+For detailed information about how to set correct version numbers when developing a new runtime, [see this](https://github.com/Joystream/joystream/issues/1)
 
 
 ## Coding style
@@ -134,15 +149,15 @@ cargo-fmt
 
 ## Contributing
 
-Please see our [contributing guidlines](https://github.com/Joystream/joystream#contribute) for details on our code of conduct, and the process for submitting pull requests to us.
+Please see our [contributing guidlines](./CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Authors
 
-See also the list of [CONTRIBUTORS](./CONTRIBUTORS) who participated in this project.
+See also the list of [CONTRIBUTORS](https://github.com/Joystream/joystream/graphs/contributors) who participated in this project.
 
 ## License
 
-This project is licensed under the GPLv3 License - see the [LICENSE](LICENSE) file for details
+This project is licensed under the GPLv3 License - see the [LICENSE](./LICENSE) file for details
 
 ## Acknowledgments
 

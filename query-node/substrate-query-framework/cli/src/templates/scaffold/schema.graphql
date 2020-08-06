@@ -1,0 +1,25 @@
+enum ProposalStatus {
+  NONE
+  REJECTED
+  APPROVED
+}
+
+"A spending proposal"
+type Proposal @entity {
+  "The account proposing it"
+  proposer: Bytes!
+
+  "The (total) amount that should be paid if the proposal is accepted"
+  value: BigInt!
+
+  "The account to whom the payment should be made if the proposal is accepted"
+  beneficiary: Bytes!
+
+  "The amount held on deposit (reserved) for making this proposal"
+  bond: BigInt!
+
+  proposalIndex: BigInt! @unique
+
+  status: ProposalStatus
+}
+

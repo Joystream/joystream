@@ -1,26 +1,21 @@
-const cli = require('warthog/dist/cli/cli');
 import { Command, flags } from '@oclif/command';
 
+import { resetLastProcessedEvent } from '../helpers/db';
+
 export default class DB extends Command {
-  static description = 'Database management';
+  static description = 'Typeorm commands';
 
   static flags = {
-    create: flags.boolean({ char: 'c', description: 'Create database' }),
-    migrate: flags.boolean({ char: 'm', description: 'Run database migration' }),
-    generatemigration: flags.string({ char: 'g', description: 'Generate database migration' }),
+    reset: flags.boolean({ char: 'r', default: true, description: 'Reset last processed event to genesis' }),
   };
 
-  async run() {
+  async run(): Promise<void> {
     const { flags } = this.parse(DB);
 
-    if (flags.create) {
-      cli.run('db:create');
-    }
-    if (flags.migrate) {
-      cli.run('db:migrate');
-    }
-    if (flags.generatemigration) {
-      cli.run(`db:migrate:generate --name=${flags.generatemigration}`);
+    if (flags.reset) {
+      this.log('Resetting the last processed event...');
+      await resetLastProcessedEvent();
+      this.log('Done...');
     }
   }
 }

@@ -1,9 +1,9 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 
-export function createDir(path: string, del: boolean = false) {
+export function createDir(path: string, del = false, recursive = false): void {
   if (!fs.existsSync(path)) {
-    fs.mkdirSync(path);
+    fs.mkdirSync(path, { recursive });
   }
   if (del) {
     fs.removeSync(path);
@@ -11,13 +11,13 @@ export function createDir(path: string, del: boolean = false) {
   }
 }
 
-export function createFile(path: string, content: string = '') {
-  if (!fs.existsSync(path)) {
+export function createFile(path: string, content = '', replace = false): void {
+  if (!fs.existsSync(path) || replace) {
     fs.writeFileSync(path, content);
   }
 }
 
-export async function copyFiles(from: string, to: string) {
+export async function copyFiles(from: string, to: string): Promise<void> {
   try {
     await fs.copy(from, to);
   } catch (err) {
@@ -32,4 +32,14 @@ export function getTemplatePath(template: string): string {
     process.exit(1);
   }
   return templatePath;
+}
+
+/**
+ * Copies the template to the current directory of the process under the <filename>
+ *
+ * @param template Template file int templates/<templateName>
+ * @param fileName Filename of the file to be created
+ */
+export async function copyTemplateToCWD(templateName: string, fileName: string): Promise<void> {
+  await fs.copyFile(getTemplatePath(templateName), path.join(process.cwd(), fileName));
 }

@@ -1,0 +1,30 @@
+import { Arg, Args, Mutation, Query, Resolver } from 'type-graphql';
+import { Inject } from 'typedi';
+import { Fields, StandardDeleteResponse, UserId } from 'warthog';
+
+import {
+  {{className}}CreateInput,
+  {{className}}CreateManyArgs,
+  {{className}}UpdateArgs,
+  {{className}}WhereArgs,
+  {{className}}WhereInput,
+  {{className}}WhereUniqueInput
+} from '{{{generatedFolderRelPath}}}';
+
+import { {{className}} } from './{{kebabName}}.model';
+import { {{className}}Service } from './{{kebabName}}.service';
+
+@Resolver()
+export class {{className}}Resolver {
+  constructor(@Inject('{{className}}Service') public readonly service: {{className}}Service) {}
+
+  @Query(() => [{{className}}])
+  async {{camelNamePlural}}(
+    @Args() { where, orderBy, limit, offset }: {{className}}WhereArgs,
+    @Fields() fields: string[]
+  ): Promise<{{className}}[]> {
+    return this.service.find<{{className}}WhereInput>(where, orderBy, limit, offset, fields);
+  }
+
+  
+}

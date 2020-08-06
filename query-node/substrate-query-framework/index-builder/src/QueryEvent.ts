@@ -1,18 +1,28 @@
 import { EventRecord, Extrinsic } from '@polkadot/types/interfaces';
 import { Codec } from '@polkadot/types/types';
+import * as BN from 'bn.js';
 
 interface EventParameters {
   [key: string]: Codec;
 }
 
-export default class QueryEvent {
+export interface SubstrateEvent {
+  event_name: string;
+  event_method: string;
+  event_params: EventParameters;
+  index: BN;
+  block_number: BN;
+  extrinsic?: Extrinsic;
+}
+
+export default class QueryEvent implements SubstrateEvent {
   readonly event_record: EventRecord;
 
-  readonly block_number: number;
+  readonly block_number: BN;
 
   readonly extrinsic?: Extrinsic;
 
-  constructor(event_record: EventRecord, block_number: number, extrinsic?: Extrinsic) {
+  constructor(event_record: EventRecord, block_number: BN, extrinsic?: Extrinsic) {
     this.event_record = event_record;
     this.extrinsic = extrinsic;
     this.block_number = block_number;
@@ -30,8 +40,10 @@ export default class QueryEvent {
 
   get event_params(): EventParameters {
     const { event } = this.event_record;
-
     let params: EventParameters = {};
+
+    // Event data can be Null(polkadot type)
+    if (!event.data.length) return params;
 
     event.data.forEach((data, index) => {
       params[event.typeDef[index].type] = data;
@@ -40,18 +52,16 @@ export default class QueryEvent {
   }
 
   // Get event index as number
-  get index(): number {
-    // Uint8Array
-    const event_index = this.event_record.event.index;
-
-    // Convert to number
-    let buffer = Buffer.from(event_index);
-    return buffer.readUIntBE(0, event_index.length);
+  get index(): BN {
+    return new BN(this.event_record.event.index);
   }
 
   log(indent: number, logger: (str: string) => void): void {
     // Extract the phase, event
     const { event, phase } = this.event_record;
+
+    // Event data can be Null(polkadot type)
+    if (!event.data.length) return;
 
     logger(`\t\t\tParameters:`);
     event.data.forEach((data, index) => {

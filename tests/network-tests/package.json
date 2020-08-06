@@ -1,0 +1,35 @@
+{
+  "name": "joystream-testing",
+  "version": "0.1.0",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "build": "tsc --build tsconfig.json",
+    "test": "tap --files ts-node/register src/constantinople/tests/proposals/*Test.ts",
+    "test-migration": "tap --files src/rome/tests/romeRuntimeUpgradeTest.ts --files src/constantinople/tests/electingCouncilTest.ts",
+    "lint": "tslint --project tsconfig.json",
+    "prettier": "prettier --write ./src"
+  },
+  "dependencies": {
+    "@constantinople/types@npm:@joystream/types": "^0.10.0",
+    "@polkadot/api": "^0.96.1",
+    "@polkadot/keyring": "^1.7.0-beta.5",
+    "@rome/types@npm:@joystream/types": "^0.7.0",
+    "@types/bn.js": "^4.11.5",
+    "bn.js": "^4.11.8",
+    "dotenv": "^8.2.0",
+    "fs": "^0.0.1-security",
+    "uuid": "^7.0.3"
+  },
+  "devDependencies": {
+    "@polkadot/ts": "^0.3.14",
+    "@types/chai": "^4.2.11",
+    "@types/tap": "^14.10.0",
+    "@types/uuid": "^7.0.2",
+    "chai": "^4.2.0",
+    "prettier": "2.0.2",
+    "tap": "^14.10.7",
+    "ts-node": "^8.8.1",
+    "tslint": "^6.1.0",
+    "typescript": "^3.8.3"
+  }
+}

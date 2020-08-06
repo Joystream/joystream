@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+echo '+cargo test --release --all'
+BUILD_DUMMY_WASM_BINARY=1 cargo test --all
+
+echo '+cargo clippy --release --all -- -D warnings'
+BUILD_DUMMY_WASM_BINARY=1 cargo clippy --all -- -D warnings
+
+

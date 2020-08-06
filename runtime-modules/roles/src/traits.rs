@@ -1,5 +1,4 @@
 use crate::actors;
-use system;
 
 // Roles
 pub trait Roles<T: system::Trait> {

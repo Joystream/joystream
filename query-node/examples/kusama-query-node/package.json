@@ -1,0 +1,9 @@
+{
+  "name": "kusama-query-node",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "tslib": "^2.0.0"
+  }
+}

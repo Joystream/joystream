@@ -1,0 +1,7 @@
+{{#enums}}
+  export enum {{name}} {
+  {{#values}}  
+    {{name}} = '{{value}}',
+  {{/values}}
+  }
+{{/enums}}

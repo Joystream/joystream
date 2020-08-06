@@ -1,0 +1,39 @@
+import { Service } from 'typedi';
+import { Repository } from 'typeorm';
+import { InjectRepository } from 'typeorm-typedi-extensions';
+import { BaseService, WhereInput } from 'warthog';
+
+import { {{className}} } from './{{kebabName}}.model';
+
+@Service('{{className}}Service')
+export class {{className}}Service extends BaseService<{{className}}> {
+  constructor(
+    @InjectRepository({{className}}) protected readonly repository: Repository<{{className}}>
+  ) {
+    super({{className}}, repository);
+  }
+
+
+  async find<W extends WhereInput>(
+		where?: any,
+		orderBy?: string,
+		limit?: number,
+		offset?: number,
+		fields?: string[]
+	): Promise<{{className}}[]> {
+		let f = fields;
+		if (f == undefined) {
+			f = [];
+		}
+    {{#fields}}
+      {{#is.union}}
+        if (!f.includes('{{camelName}}')) {
+          f = [...f, '{{camelName}}'];
+        }
+      {{/is.union}}
+    {{/fields}}
+
+		return super.find<W>(where, orderBy, limit, offset, f);
+	}
+
+}

@@ -1,14 +1,22 @@
-//! The Substrate Node Template runtime. This can be compiled with `#[no_std]`, ready for Wasm.
+//! The Joystream Substrate Node runtime.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
+// srml_staking_reward_curve::build! - substrate macro produces a warning.
+// TODO: remove after post-Rome substrate upgrade
+#![allow(array_into_iter)]
+
+// Runtime integration tests
+mod test;
 
 // Make the WASM binary available.
 // This is required only by the node build.
 // A dummy wasm_binary.rs will be built for the IDE.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
+
+mod integration;
 
 use authority_discovery_primitives::{
     AuthorityId as EncodedAuthorityId, Signature as EncodedSignature,
@@ -51,6 +59,9 @@ pub use srml_support::{
 pub use staking::StakerStatus;
 pub use timestamp::Call as TimestampCall;
 
+use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
+pub use proposals_codex::ProposalsConfigParameters;
+
 /// An index to a block.
 pub type BlockNumber = u32;
 
@@ -82,6 +93,22 @@ pub type Moment = u64;
 
 /// Credential type
 pub type Credential = u64;
+
+/// Represents a thread identifier for both Forum and Proposals Discussion
+///
+/// Note: Both modules expose type names ThreadId and PostId (which are defined on their Trait) and
+/// used in state storage and dispatchable method's argument types,
+/// and are therefore part of the public API/metadata of the runtime.
+/// In the currenlty version the polkadot-js/api that is used and is compatible with the runtime,
+/// the type registry has flat namespace and its not possible
+/// to register identically named types from different modules, separately. And so we MUST configure
+/// the underlying types to be identicaly to avoid issues with encoding/decoding these types on the client side.
+pub type ThreadId = u64;
+
+/// Represents a post identifier for both Forum and Proposals Discussion
+///
+/// See the Note about ThreadId
+pub type PostId = u64;
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
@@ -115,7 +142,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 6,
-    spec_version: 12,
+    spec_version: 15,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
 };
@@ -165,7 +192,7 @@ pub fn native_version() -> NativeVersion {
 
 parameter_types! {
     pub const BlockHashCount: BlockNumber = 250;
-    pub const MaximumBlockWeight: Weight = 1_000_000;
+    pub const MaximumBlockWeight: Weight = 1_000_000_000;
     pub const AvailableBlockRatio: Perbill = Perbill::from_percent(75);
     pub const MaximumBlockLength: u32 = 5 * 1024 * 1024;
     pub const Version: RuntimeVersion = VERSION;
@@ -331,17 +358,17 @@ impl session::historical::Trait for Runtime {
 srml_staking_reward_curve::build! {
     const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_025_000,
-        max_inflation: 0_100_000,
-        ideal_stake: 0_500_000,
+        max_inflation: 0_300_000,
+        ideal_stake: 0_300_000,
         falloff: 0_050_000,
-        max_piece_count: 40,
+        max_piece_count: 100,
         test_precision: 0_005_000,
     );
 }
 
 parameter_types! {
     pub const SessionsPerEra: sr_staking_primitives::SessionIndex = 6;
-    pub const BondingDuration: staking::EraIndex = 24 * 28;
+    pub const BondingDuration: staking::EraIndex = 24;
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
 }
 
@@ -397,20 +424,15 @@ impl finality_tracker::Trait for Runtime {
 
 pub use forum;
 pub use governance::election_params::ElectionParameters;
-use governance::{council, election, proposals};
+use governance::{council, election};
 use membership::members;
 use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
 pub use versioned_store;
-use versioned_store_permissions;
 
 pub use content_working_group as content_wg;
 mod migration;
-use hiring;
-use minting;
-use recurringrewards;
 use roles::actors;
 use service_discovery::discovery;
-use stake;
 
 /// Alias for ContentId, used in various places.
 pub type ContentId = primitives::H256;
@@ -473,7 +495,7 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
                     }
                 }
 
-                return false;
+                false
             }
             // Any Active Channel Owner
             credential if credential == AnyActiveChannelOwnerCredential::get() => {
@@ -488,7 +510,7 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
                     }
                 }
 
-                return false;
+                false
             }
             // mapping to workging group principal id
             n if n >= PrincipalIdMappingStartsAtCredential::get() => {
@@ -578,7 +600,10 @@ parameter_types! {
 impl stake::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type StakePoolId = StakePoolId;
-    type StakingEventsHandler = ContentWorkingGroupStakingEventHandler;
+    type StakingEventsHandler = (
+        ContentWorkingGroupStakingEventHandler,
+        crate::integration::proposals::StakingEventsHandler<Self>,
+    );
     type StakeId = u64;
     type SlashId = u64;
 }
@@ -658,13 +683,9 @@ impl common::currency::GovernanceCurrency for Runtime {
     type Currency = balances::Module<Self>;
 }
 
-impl governance::proposals::Trait for Runtime {
-    type Event = Event;
-}
-
 impl governance::election::Trait for Runtime {
     type Event = Event;
-    type CouncilElected = (Council,);
+    type CouncilElected = (Council, integration::proposals::CouncilElectedHandler);
 }
 
 impl governance::council::Trait for Runtime {
@@ -728,7 +749,7 @@ impl roles::traits::Roles<Runtime> for LookupRoles {
             .filter(|id| !<discovery::Module<Runtime>>::is_account_info_expired(id))
             .collect();
 
-        if live_ids.len() == 0 {
+        if live_ids.is_empty() {
             Err("no staked account found")
         } else {
             let index = random_index(live_ids.len());
@@ -779,6 +800,8 @@ impl forum::ForumUserRegistry<AccountId> for ShimMembershipRegistry {
 impl forum::Trait for Runtime {
     type Event = Event;
     type MembershipRegistry = ShimMembershipRegistry;
+    type ThreadId = ThreadId;
+    type PostId = PostId;
 }
 
 impl migration::Trait for Runtime {
@@ -802,12 +825,70 @@ impl discovery::Trait for Runtime {
     type Roles = LookupRoles;
 }
 
+parameter_types! {
+    pub const ProposalCancellationFee: u64 = 10000;
+    pub const ProposalRejectionFee: u64 = 5000;
+    pub const ProposalTitleMaxLength: u32 = 40;
+    pub const ProposalDescriptionMaxLength: u32 = 3000;
+    pub const ProposalMaxActiveProposalLimit: u32 = 5;
+}
+
+impl proposals_engine::Trait for Runtime {
+    type Event = Event;
+    type ProposerOriginValidator = MembershipOriginValidator<Self>;
+    type VoterOriginValidator = CouncilManager<Self>;
+    type TotalVotersCounter = CouncilManager<Self>;
+    type ProposalId = u32;
+    type StakeHandlerProvider = proposals_engine::DefaultStakeHandlerProvider;
+    type CancellationFee = ProposalCancellationFee;
+    type RejectionFee = ProposalRejectionFee;
+    type TitleMaxLength = ProposalTitleMaxLength;
+    type DescriptionMaxLength = ProposalDescriptionMaxLength;
+    type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
+    type DispatchableCallCode = Call;
+}
+impl Default for Call {
+    fn default() -> Self {
+        panic!("shouldn't call default for Call");
+    }
+}
+
+parameter_types! {
+    pub const ProposalMaxPostEditionNumber: u32 = 0; // post update is disabled
+    pub const ProposalMaxThreadInARowNumber: u32 = 100_000; // will not be used
+    pub const ProposalThreadTitleLengthLimit: u32 = 40;
+    pub const ProposalPostLengthLimit: u32 = 1000;
+}
+
+impl proposals_discussion::Trait for Runtime {
+    type Event = Event;
+    type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
+    type ThreadId = ThreadId;
+    type PostId = PostId;
+    type MaxPostEditionNumber = ProposalMaxPostEditionNumber;
+    type ThreadTitleLengthLimit = ProposalThreadTitleLengthLimit;
+    type PostLengthLimit = ProposalPostLengthLimit;
+    type MaxThreadInARowNumber = ProposalMaxThreadInARowNumber;
+}
+
+parameter_types! {
+    pub const TextProposalMaxLength: u32 = 5_000;
+    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 2_000_000;
+}
+
+impl proposals_codex::Trait for Runtime {
+    type MembershipOriginValidator = MembershipOriginValidator<Self>;
+    type TextProposalMaxLength = TextProposalMaxLength;
+    type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
+    type ProposalEncoder = ExtrinsicProposalEncoder;
+}
+
 construct_runtime!(
-	pub enum Runtime where
-		Block = Block,
-		NodeBlock = opaque::Block,
-		UncheckedExtrinsic = UncheckedExtrinsic
-	{
+    pub enum Runtime where
+        Block = Block,
+        NodeBlock = opaque::Block,
+        UncheckedExtrinsic = UncheckedExtrinsic
+    {
         // Substrate
         System: system::{Module, Call, Storage, Config, Event},
         Babe: babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
@@ -826,13 +907,12 @@ construct_runtime!(
         RandomnessCollectiveFlip: randomness_collective_flip::{Module, Call, Storage},
         Sudo: sudo,
         // Joystream
-        Proposals: proposals::{Module, Call, Storage, Event<T>, Config<T>},
+        Migration: migration::{Module, Call, Storage, Event<T>, Config},
         CouncilElection: election::{Module, Call, Storage, Event<T>, Config<T>},
         Council: council::{Module, Call, Storage, Event<T>, Config<T>},
         Memo: memo::{Module, Call, Storage, Event<T>},
         Members: members::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
-        Migration: migration::{Module, Call, Storage, Event<T>},
         Actors: actors::{Module, Call, Storage, Event<T>, Config},
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
@@ -845,7 +925,12 @@ construct_runtime!(
         RecurringRewards: recurringrewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
         ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
-	}
+        // --- Proposals
+        ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
+        ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
+        ProposalsCodex: proposals_codex::{Module, Call, Storage, Error, Config<T>},
+        // ---
+    }
 );
 
 /// The address format for describing accounts.
