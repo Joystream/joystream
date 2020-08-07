@@ -313,4 +313,18 @@ describe('ModelRenderer', () => {
     expect(rendered).to.include('(type) => Poor', 'Should render the correct union type');
     expect(rendered).to.include('status!: typeof Poor', 'Should render the correct union type');
   });
+
+  it('Should add transformer for BigInt fields', () => {
+    const model = fromStringSchema(`
+    type Tip @entity {
+      value: BigInt!
+    }
+    `);
+    generator = new ModelRenderer(model, model.lookupEntity('Tip'), enumCtxProvider);
+    const rendered = generator.render(modelTemplate);
+    expect(rendered).to.include(`transformer`);
+    expect(rendered).to.include(`to: (entityValue: BN) => entityValue.toString(10)`),
+    expect(rendered).to.include(`from: (dbValue: string): BN => new BN(dbValue, 10)`)
+
+  });
 });
