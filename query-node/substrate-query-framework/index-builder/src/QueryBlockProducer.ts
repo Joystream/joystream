@@ -168,7 +168,7 @@ export default class QueryBlockProducer extends EventEmitter {
 
     extrinsics_array = signed_block.block.extrinsics.toArray();
     let query_events: QueryEvent[] = records.map(
-      (record, index): QueryEvent => {
+      (record): QueryEvent => {
           // Extract the phase, event
         const { phase } = record;
 

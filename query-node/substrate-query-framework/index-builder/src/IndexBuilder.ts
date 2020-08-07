@@ -79,8 +79,11 @@ export default class IndexBuilder {
     debug('Started worker.');
   }
 
-  stop(): void { 
-    debug('Stopped (NOOP)');
+  async stop(): Promise<void> { 
+    return new Promise<void>((resolve) => {
+      debug('Index builder has been stopped (NOOP)');
+      resolve();
+    });
   }
 
   async _onQueryEventBlock(query_event_block: QueryEventBlock): Promise<void> {

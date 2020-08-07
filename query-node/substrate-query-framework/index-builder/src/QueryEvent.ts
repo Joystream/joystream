@@ -65,7 +65,7 @@ export default class QueryEvent implements SubstrateEvent {
 
     logger(`\t\t\tParameters:`);
     event.data.forEach((data, index) => {
-      logger(`\t\t\t\t${event.typeDef[index]}: ${data.toString()}`);
+      logger(`\t\t\t\t${JSON.stringify(event.typeDef[index], null, 2)}: ${data.toString()}`);
     });
 
     logger(
@@ -77,7 +77,7 @@ export default class QueryEvent implements SubstrateEvent {
 
     if (this.extrinsic) {
       logger(`\t\t\t\tParameters:`);
-      this.extrinsic.args.forEach((arg, index) => {
+      this.extrinsic.args.forEach((arg) => {
         logger(`\t\t\t\t\t${arg.toRawType()}: ${arg.toString()}`);
       });
     }

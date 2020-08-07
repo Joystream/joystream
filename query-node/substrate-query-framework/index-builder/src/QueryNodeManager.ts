@@ -1,6 +1,4 @@
 import QueryNode, { QueryNodeState } from './QueryNode';
-import { QueryEventProcessingPack } from '.';
-import { EventEmitter } from 'events';
 import { Bootstrapper } from './bootstrap';
 import { QueryNodeStartUpOptions } from '.';
 
@@ -12,28 +10,29 @@ import { QueryNodeStartUpOptions } from '.';
 export default class QueryNodeManager {
   private _query_node!: QueryNode;
 
-  constructor(exitEmitter: EventEmitter) {
+  constructor() {
     // Hook into application
-    process.on('exit', this._onProcessExit);
+    process.on('exit', () => this._onProcessExit());
   }
 
-  async start(options: QueryNodeStartUpOptions) {
+  async start(options: QueryNodeStartUpOptions): Promise<void> {
     if (this._query_node) throw Error('Cannot start the same manager multiple times.');
 
     this._query_node = await QueryNode.create(options);
     await this._query_node.start();
   }
 
-  async bootstrap(options: QueryNodeStartUpOptions) {
+  async bootstrap(options: QueryNodeStartUpOptions): Promise<void> {
     const bootstrapper = await Bootstrapper.create(options);
     await bootstrapper.bootstrap();
   }
 
-  async _onProcessExit(code: number) {
+   _onProcessExit(): void  {
     // Stop if query node has been constructed and started.
     if (this._query_node && this._query_node.state == QueryNodeState.STARTED) {
-      await this._query_node.stop();
+      // we can't to better as the process is exiting, so leaving the promise floating
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
+      this._query_node.stop();
     }
-    code;
-  }
+   }
 }
