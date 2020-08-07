@@ -72,7 +72,11 @@ export default class IndexBuilder {
     }
 
     for await (const eventBlock of this._producer.blocks()) {
-      await this._onQueryEventBlock(eventBlock);
+      try {
+        await this._onQueryEventBlock(eventBlock);
+      } catch (e) {
+        throw new Error(e);
+      }
       debug(`Successfully processed block ${eventBlock.block_number.toString()}`)
     }
 
