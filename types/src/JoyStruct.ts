@@ -1,44 +1,73 @@
-import { Option, Struct, Enum } from '@polkadot/types/codec'
-import { Text, bool as Bool } from '@polkadot/types'
-import { Codec } from '@polkadot/types/types'
+import { Struct } from '@polkadot/types/codec'
+import { Codec, Constructor, Registry } from '@polkadot/types/types'
 
-export class JoyStruct<
-  T extends {
-    [K: string]: Codec
+export interface ExtendedStruct<FieldTypes extends Record<string, Constructor>> extends Struct<FieldTypes> {
+  getField<FieldKey extends keyof FieldTypes>(key: FieldKey): InstanceType<FieldTypes[FieldKey]>
+  getString<FieldKey extends keyof FieldTypes>(key: FieldKey): string
+  cloneValues(): { [k in keyof FieldTypes]: FieldTypes[k] }
+}
+
+// Those getters are automatically added via Object.defineProperty when using Struct.with
+export type ExtendedStructGetters<FieldTypes extends Record<string, Constructor>> = {
+  [k in keyof FieldTypes]: InstanceType<FieldTypes[k]>
+}
+// More rich TypeScript definition of the Struct (includes automatically created getters)
+export type ExtendedStructDecorated<FieldTypes extends Record<string, Constructor>> = ExtendedStructGetters<
+  FieldTypes
+> &
+  ExtendedStruct<FieldTypes>
+
+export interface StructConstructor<
+  FieldTypes extends Record<string, Constructor>,
+  StructType extends Struct<FieldTypes>
+> {
+  new (registry: Registry, value?: { [k in keyof FieldTypes]: InstanceType<FieldTypes[k]> }): StructType
+}
+
+export type ExtendedStructConstructor<FieldTypes extends Record<string, Constructor>> = StructConstructor<
+  FieldTypes,
+  ExtendedStruct<FieldTypes>
+>
+
+export type ExtendedStructDecoratedConstructor<FieldTypes extends Record<string, Constructor>> = StructConstructor<
+  FieldTypes,
+  ExtendedStructDecorated<FieldTypes>
+>
+
+// Helper for creating extended Struct type with TS-compatible interface
+// It's called JoyStructCustom, because eventually we'd want to migrate all structs to JoyStructDecorated,
+// but the latter won't allow specifying getters that return different type than the original field type.
+// (ie. by using getString() instead of getField())
+export function JoyStructCustom<FieldTypes extends Record<string, Constructor>>(
+  fields: FieldTypes
+): ExtendedStructConstructor<FieldTypes> {
+  return class JoyStructObject extends Struct.with(fields) {
+    constructor(registry: Registry, value?: { [k in keyof FieldTypes]: InstanceType<FieldTypes[k]> }) {
+      super(registry, value)
+    }
+    getField<FieldKey extends keyof FieldTypes>(key: FieldKey): InstanceType<FieldTypes[FieldKey]> {
+      return this.get(key as string) as InstanceType<FieldTypes[FieldKey]>
+    }
+    getString<FieldKey extends keyof FieldTypes>(key: FieldKey): string {
+      return this.getField(key).toString()
+    }
+    // TODO: Check why would this ever be needed
+    cloneValues(): { [k in keyof FieldTypes]: FieldTypes[k] } {
+      const objectClone = {} as Partial<{ [k in keyof FieldTypes]: Codec }>
+
+      super.forEach((v, k) => {
+        objectClone[k] = v // shallow copy acceptable ?
+      })
+
+      return (objectClone as unknown) as { [k in keyof FieldTypes]: FieldTypes[k] }
+    }
   }
-> extends Struct {
-  getField<C extends Codec>(name: keyof T): C {
-    return super.get(name as string) as C
-  }
+}
 
-  getString(name: keyof T): string {
-    return this.getField<Text>(name).toString()
-  }
-
-  getBoolean(name: keyof T): boolean {
-    return this.getField<Bool>(name).valueOf()
-  }
-
-  getEnumAsString<EnumValue extends string>(name: keyof T): EnumValue {
-    return this.getField<Enum>(name).toString() as EnumValue
-  }
-
-  unwrapOrUndefined<C extends Codec>(name: keyof T): C | undefined {
-    return this.getField<Option<C>>(name).unwrapOr(undefined)
-  }
-
-  getOptionalString(name: keyof T): string | undefined {
-    const text = this.unwrapOrUndefined<Text>(name)
-    return text ? text.toString() : undefined
-  }
-
-  cloneValues(): T {
-    const objectClone = {} as { [K: string]: Codec }
-
-    super.forEach((v, k) => {
-      objectClone[k] = v // shallow copy acceptable ?
-    })
-
-    return objectClone as T
-  }
+// JoyStruct enriched with typescript definitions for getters automatically added by polkadot-js
+export function JoyStructDecorated<FieldTypes extends Record<string, Constructor>>(
+  fields: FieldTypes
+): ExtendedStructDecoratedConstructor<FieldTypes> {
+  // We need to cast here because there's no way to make TS aware of getters added with Object.defineProperty
+  return JoyStructCustom(fields) as ExtendedStructDecoratedConstructor<FieldTypes>
 }
