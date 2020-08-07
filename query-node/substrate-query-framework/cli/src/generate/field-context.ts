@@ -82,6 +82,7 @@ export function buildFieldContext(f: Field, entity: ObjectType): GeneratorContex
     ...withTsTypeAndDecorator(f),
     ...withDerivedNames(f, entity),
     ...withDescription(f),
+    ...withTransformer(f),
   };
 }
 
@@ -171,4 +172,16 @@ export function withRelation(f: Field): GeneratorContext {
   return {
     relation: f.relation,
   };
+}
+
+export function withTransformer(f: Field): GeneratorContext {
+  if (TYPE_FIELDS[f.columnType()] && TYPE_FIELDS[f.columnType()].tsType === 'BN') {
+    return {
+      transformer: `{
+        to: (entityValue: BN) => entityValue.toString(10),
+        from: (dbValue: string): BN => new BN(dbValue, 10)
+      }`,
+    };
+  }
+  return {};
 }
