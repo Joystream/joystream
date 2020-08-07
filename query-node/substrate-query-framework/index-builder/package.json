@@ -1,7 +1,7 @@
 {
   "name": "index-builder",
   "description": "Block index builder for substrate based chains",
-  "version": "0.0.6-alpha",
+  "version": "0.0.7-alpha",
   "main": "index.js",
   "license": "MIT",
   "repository": "git@github.com:Joystream/joystream.git",
