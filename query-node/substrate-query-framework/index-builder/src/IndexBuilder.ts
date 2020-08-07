@@ -35,18 +35,18 @@ export default class IndexBuilder {
     return new IndexBuilder(producer, processing_pack);
   }
 
-  async start(atBlock?: BN) {
+  async start(atBlock?: BN): Promise<void> {
     // check state
 
     // STORE THIS SOMEWHERE
-    this._producer.on('QueryEventBlock', (query_event_block: QueryEventBlock) => {
-      this._onQueryEventBlock(query_event_block);
-    });
+    //this._producer.on('QueryEventBlock', (query_event_block: QueryEventBlock) => {
+    //  this._onQueryEventBlock(query_event_block);
+    //});
 
     debug('Spawned worker.');
 
     if (atBlock) {
-      debug(`Got block height hint: ${atBlock}`);
+      debug(`Got block height hint: ${atBlock.toString()}`);
     }
     
     const lastProcessedEvent = await getRepository(SavedEntityEvent).findOne({ where: { id: 1 } });
@@ -69,6 +69,11 @@ export default class IndexBuilder {
     } else {
       // Setup worker
       await this._producer.start(atBlock);
+    }
+
+    for await (const eventBlock of this._producer.blocks()) {
+      await this._onQueryEventBlock(eventBlock);
+      debug(`Successfully processed block ${eventBlock.block_number.toString()}`)
     }
 
     debug('Started worker.');
