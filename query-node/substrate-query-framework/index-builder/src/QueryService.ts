@@ -49,7 +49,7 @@ export class QueryService implements ISubstrateQueryService {
         api.registry.setMetadata(meta);
       }
     } catch (error) {
-      console.error(`Failed to get Metadata for block ${blockHash}, using latest.`);
+      console.error(`Failed to get Metadata for block ${JSON.stringify(blockHash, null, 2)}, using latest.`);
       console.error(error);
       this._specVersion = api.createType('u32', this._versionReset);
     }
@@ -57,7 +57,7 @@ export class QueryService implements ISubstrateQueryService {
     return api;
   }
 
-  async getHeader(hash: Hash | Uint8Array | string) {
+  async getHeader(hash: Hash | Uint8Array | string): Promise<void> {
     const api = await this.ensureMeta(hash);
     return api.rpc.chain.getHeader(hash);
   }
@@ -66,7 +66,7 @@ export class QueryService implements ISubstrateQueryService {
     return this._api.rpc.chain.getFinalizedHead();
   }
 
-  subscribeNewHeads(v: Callback<Header>) {
+  subscribeNewHeads(v: Callback<Header>): Promise {
     return this._api.rpc.chain.subscribeNewHeads(v);
   }
 

@@ -25,7 +25,7 @@ export default class QueryNodeManager {
   }
 
   async bootstrap(options: QueryNodeStartUpOptions) {
-    let bootstrapper = await Bootstrapper.create(options);
+    const bootstrapper = await Bootstrapper.create(options);
     await bootstrapper.bootstrap();
   }
 

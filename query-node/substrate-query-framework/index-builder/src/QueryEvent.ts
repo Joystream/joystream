@@ -29,7 +29,7 @@ export default class QueryEvent implements SubstrateEvent {
   }
 
   get event_name(): string {
-    let event = this.event_record.event;
+    const event = this.event_record.event;
 
     return event.section + '.' + event.method;
   }
@@ -40,7 +40,7 @@ export default class QueryEvent implements SubstrateEvent {
 
   get event_params(): EventParameters {
     const { event } = this.event_record;
-    let params: EventParameters = {};
+    const params: EventParameters = {};
 
     // Event data can be Null(polkadot type)
     if (!event.data.length) return params;

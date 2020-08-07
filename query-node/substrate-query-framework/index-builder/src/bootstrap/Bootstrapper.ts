@@ -48,13 +48,13 @@ export default class Bootstrapper {
       // perform all the bootstrap logic in one large
       // atomic transaction
       for (const boot of this._bootstrapPack.pack) {
-        let shouldBootstrap = await this.shouldBootstrap(queryRunner.manager, boot);
+        const shouldBootstrap = await this.shouldBootstrap(queryRunner.manager, boot);
         if (!shouldBootstrap) {
           debug(`${boot.name} already bootstrapped, skipping`);
           continue;
         }
 
-        let bootEvent = this.createBootEvent(boot);
+        const bootEvent = this.createBootEvent(boot);
         await boot(api, makeDatabaseManager(queryRunner.manager));
 
         // Save the bootstrap events so

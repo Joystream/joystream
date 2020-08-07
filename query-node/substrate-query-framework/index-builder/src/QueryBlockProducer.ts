@@ -23,7 +23,7 @@ const POLL_INTERVAL_MS = 100;
 // the period of time after which the API calls are failed by timeout.
 const FETCH_TIMEOUT_MS = 5000;
 
-var debug = require('debug')(DEBUG_TOPIC);
+const debug = require('debug')(DEBUG_TOPIC);
 
 export default class QueryBlockProducer extends EventEmitter {
   private _started: boolean;
@@ -126,8 +126,8 @@ export default class QueryBlockProducer extends EventEmitter {
    */
   private async _withTimeout<T>(promiseFn: Promise<T>, rejectMsg?: string): Promise<T> {
     // Create a promise that rejects in <ms> milliseconds
-    let timeoutPromise = new Promise((resolve, reject) => {
-      let id = setTimeout(() => {
+    const timeoutPromise = new Promise((resolve, reject) => {
+      const id = setTimeout(() => {
         clearTimeout(id);
         reject(`${rejectMsg || 'Execution time-out'}`);
       }, FETCH_TIMEOUT_MS)
@@ -148,7 +148,7 @@ export default class QueryBlockProducer extends EventEmitter {
   private async _doBlockProduce() {
     debug(`Fetching block #${this._block_to_be_produced_next}`);
 
-    let block_hash_of_target = await this._withTimeout(
+    const block_hash_of_target = await this._withTimeout(
          this._query_service.getBlockHash(this._block_to_be_produced_next.toString()),
         `Timeout: failed to fetch the block hash at height ${this._block_to_be_produced_next.toString()}`);
     
@@ -163,7 +163,7 @@ export default class QueryBlockProducer extends EventEmitter {
     debug(`\tRead ${records.length} events.`);
 
     let extrinsics_array: Extrinsic[] = [];
-    let signed_block = await this._withTimeout(
+    const signed_block = await this._withTimeout(
       this._query_service.getBlock(block_hash_of_target),
       `Timeout: failed to fetch the block ${this._block_to_be_produced_next.toString()}`);
 
@@ -177,12 +177,12 @@ export default class QueryBlockProducer extends EventEmitter {
 
           // Try to recover extrinsic: only possible if its right phase, and extrinsics arra is non-empty, the last constraint
           // is needed to avoid events from build config code in genesis, and possibly other cases.
-        let extrinsic =
+        const extrinsic =
           phase.isApplyExtrinsic && extrinsics_array.length
             ? extrinsics_array[phase.asApplyExtrinsic.toBn()]
               : undefined;
 
-        let query_event = new QueryEvent(record, this._block_to_be_produced_next, extrinsic);
+        const query_event = new QueryEvent(record, this._block_to_be_produced_next, extrinsic);
 
           // Logging
         query_event.log(0, debug);
@@ -196,7 +196,7 @@ export default class QueryBlockProducer extends EventEmitter {
       query_events = query_events.filter((event) => event.index.gt(this._last_processed_event_index));
     }
 
-    let query_block = new QueryEventBlock(this._block_to_be_produced_next, query_events);
+    const query_block = new QueryEventBlock(this._block_to_be_produced_next, query_events);
 
     this.emit('QueryEventBlock', query_block);
 
