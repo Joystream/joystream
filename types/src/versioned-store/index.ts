@@ -1,11 +1,12 @@
-import { getTypeRegistry, u16, Text, bool as Bool } from '@polkadot/types'
+import { u16, Text, bool as Bool } from '@polkadot/types'
 import { Vec as Vector } from '@polkadot/types/codec'
-import { JoyStruct } from '../common'
 import EntityId from './EntityId'
 import ClassId from './ClassId'
 import PropertyType from './PropertyType'
 import PropertyValue from './PropertyValue'
 import { camelCase, upperFirst } from 'lodash'
+import { RegistryTypes } from '@polkadot/types/types'
+import { JoyStructDecorated, JoyStructCustom } from '../common'
 
 export { ClassId, EntityId, PropertyType, PropertyValue }
 
@@ -16,25 +17,20 @@ export type PropertyTsType = {
   description: Text
 }
 
-export class Property extends JoyStruct<PropertyTsType> {
-  constructor(value: PropertyTsType) {
-    super(
-      {
-        prop_type: PropertyType,
-        required: Bool,
-        name: Text,
-        description: Text,
-      },
-      value
-    )
-  }
-
+export class Property extends JoyStructCustom({
+  prop_type: PropertyType,
+  required: Bool,
+  name: Text,
+  description: Text,
+})
+// FIXME: Make it JoyStructDecorated compatible
+{
   get prop_type(): PropertyType {
     return this.getField('prop_type')
   }
 
   get required(): boolean {
-    return this.getBoolean('required')
+    return this.getField('required').valueOf()
   }
 
   get name(): string {
@@ -54,20 +50,11 @@ export type ClassSchemaType = {
   properties: VecU16
 }
 
-export class ClassSchema extends JoyStruct<ClassSchemaType> {
-  constructor(value: ClassSchemaType) {
-    super(
-      {
-        properties: VecU16,
-      },
-      value
-    )
-  }
-
-  get properties(): VecU16 {
-    return this.getField('properties')
-  }
-}
+export class ClassSchema
+  extends JoyStructDecorated({
+    properties: VecU16,
+  })
+  implements ClassSchemaType {}
 
 export class VecClassSchema extends Vector.with(ClassSchema) {}
 
@@ -76,25 +63,12 @@ export type ClassPropertyValueType = {
   value: PropertyValue
 }
 
-export class ClassPropertyValue extends JoyStruct<ClassPropertyValueType> {
-  constructor(value: ClassPropertyValueType) {
-    super(
-      {
-        in_class_index: u16,
-        value: PropertyValue,
-      },
-      value
-    )
-  }
-
-  get in_class_index(): u16 {
-    return this.getField('in_class_index')
-  }
-
-  get value(): PropertyValue {
-    return this.getField('value')
-  }
-}
+export class ClassPropertyValue
+  extends JoyStructDecorated({
+    in_class_index: u16,
+    value: PropertyValue,
+  })
+  implements ClassPropertyValueType {}
 
 export class VecClassPropertyValue extends Vector.with(ClassPropertyValue) {}
 
@@ -106,20 +80,15 @@ export type ClassType = {
   description: Text
 }
 
-export class Class extends JoyStruct<ClassType> {
-  constructor(value: ClassType) {
-    super(
-      {
-        id: ClassId,
-        properties: VecProperty,
-        schemas: VecClassSchema,
-        name: Text,
-        description: Text,
-      },
-      value
-    )
-  }
-
+export class Class extends JoyStructCustom({
+  id: ClassId,
+  properties: VecProperty,
+  schemas: VecClassSchema,
+  name: Text,
+  description: Text,
+})
+// FIXME: Make it JoyStructDecorated compatible
+{
   get id(): ClassId {
     return this.getField('id')
   }
@@ -148,32 +117,13 @@ export type EntityType = {
   values: VecClassPropertyValue
 }
 
-export class Entity extends JoyStruct<EntityType> {
-  constructor(value: EntityType) {
-    super(
-      {
-        id: EntityId,
-        class_id: ClassId,
-        in_class_schema_indexes: VecU16,
-        values: VecClassPropertyValue,
-      },
-      value
-    )
-  }
-
-  get id(): EntityId {
-    return this.getField('id')
-  }
-
-  get class_id(): ClassId {
-    return this.getField('class_id')
-  }
-
-  get in_class_schema_indexes(): VecU16 {
-    return this.getField('in_class_schema_indexes')
-  }
-
-  /** NOTE: Renamed to `entity_values` because `values` is already in use. */
+export class Entity extends JoyStructDecorated({
+  id: EntityId,
+  class_id: ClassId,
+  in_class_schema_indexes: VecU16,
+  values: VecClassPropertyValue,
+}) {
+  /** NOTE: Renamed to `entity_values` because `values` is already in use (Map's original method). */
   get entity_values(): VecClassPropertyValue {
     return this.getField('values')
   }
@@ -205,20 +155,16 @@ export function unifyPropName(propName: string): string {
   return camelCase(propName)
 }
 
-export function registerVersionedStoreTypes() {
-  try {
-    getTypeRegistry().register({
-      ClassId: 'u64',
-      EntityId: 'u64',
-      Class,
-      Entity,
-      ClassSchema,
-      Property,
-      PropertyType,
-      PropertyValue,
-      ClassPropertyValue,
-    })
-  } catch (err) {
-    console.error('Failed to register custom types of Versioned Store module', err)
-  }
+export const versionedStoreTypes: RegistryTypes = {
+  ClassId: 'u64',
+  EntityId: 'u64',
+  Class,
+  Entity,
+  ClassSchema,
+  Property,
+  PropertyType,
+  PropertyValue,
+  ClassPropertyValue,
 }
+
+export default versionedStoreTypes

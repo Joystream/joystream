@@ -6,7 +6,7 @@ import { Balance, BlockNumber, Event } from '@polkadot/types/interfaces'
 import { Keyring } from '@polkadot/api'
 import { Option, u32 } from '@polkadot/types'
 import { v4 as uuid } from 'uuid'
-import { RewardRelationship } from '@nicaea/types/recurring-rewards'
+import { RewardRelationship } from '@alexandria/types/recurring-rewards'
 import {
   Application,
   ApplicationIdToWorkerIdMap,
@@ -14,7 +14,7 @@ import {
   Worker,
   WorkerId,
   WorkingGroupOpeningPolicyCommitment,
-} from '@nicaea/types/working-group'
+} from '@alexandria/types/working-group'
 import { Utils } from '../../utils/utils'
 import {
   ActivateOpeningAt,
@@ -23,7 +23,7 @@ import {
   Opening as HiringOpening,
   OpeningId,
   StakingPolicy,
-} from '@nicaea/types/hiring'
+} from '@alexandria/types/hiring'
 import { Fixture } from './interfaces/fixture'
 
 export class AddWorkerOpeningFixture implements Fixture {

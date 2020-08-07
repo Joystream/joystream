@@ -4,7 +4,6 @@ export type ParsedMember = {
   handle: string;
   registered_at_block: number;
   registered_at_time: number;
-  roles: any[];
   entry: { [k: string]: any };
   root_account: string;
   controller_account: string;

@@ -1,7 +1,7 @@
 import { ParsedMember } from '../types/members';
 import BaseTransport from './base';
 import { Seats, ElectionParameters } from '@joystream/types/council';
-import { MemberId, Profile } from '@joystream/types/members';
+import { MemberId, Membership } from '@joystream/types/members';
 import { u32, Vec } from '@polkadot/types/';
 import { Balance, BlockNumber } from '@polkadot/types/interfaces';
 import { FIRST_MEMBER_ID } from '../consts/members';
@@ -34,7 +34,7 @@ export default class CouncilTransport extends BaseTransport {
     return Promise.all(
       council.map(async seat => {
         const memberIds = (await this.members.memberIdsByControllerAccountId(seat.member)) as Vec<MemberId>;
-        const member = (await this.membersT.memberProfile(memberIds[0])).toJSON() as ParsedMember;
+        const member = (await this.membersT.expectedMembership(memberIds[0])).toJSON() as ParsedMember;
         return {
           ...member,
           memberId: memberIds[0]
@@ -43,13 +43,13 @@ export default class CouncilTransport extends BaseTransport {
     );
   }
 
-  async membersExceptCouncil (): Promise<{ id: number; profile: Profile }[]> {
+  async membersExceptCouncil (): Promise<{ id: number; profile: Membership }[]> {
     // Council members to filter out
     const activeCouncil = (await this.council.activeCouncil()) as Seats;
-    const membersCount = ((await this.members.membersCreated()) as MemberId).toNumber();
-    const profiles: { id: number; profile: Profile }[] = [];
+    const membersCount = ((await this.members.nextMemberId()) as MemberId).toNumber();
+    const profiles: { id: number; profile: Membership }[] = [];
     for (let id = FIRST_MEMBER_ID.toNumber(); id < membersCount; ++id) {
-      const profile = (await this.membersT.memberProfile(new MemberId(id))).unwrapOr(null);
+      const profile = (await this.membersT.membershipById(new MemberId(id)));
       if (
         !profile ||
         // Filter out council members

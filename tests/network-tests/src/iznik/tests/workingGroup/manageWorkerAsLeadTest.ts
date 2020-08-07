@@ -1,5 +1,5 @@
 import { initConfig } from '../../utils/config'
-import { registerJoystreamTypes } from '@nicaea/types'
+import { registerJoystreamTypes } from '@alexandria/types'
 import { closeApi } from '../../utils/closeApi'
 import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
 import { WsProvider, Keyring } from '@polkadot/api'

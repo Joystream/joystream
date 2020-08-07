@@ -2,9 +2,9 @@ import { ApiPromise, WsProvider } from '@polkadot/api'
 import { Bytes, Option, u32, Vec } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { MemberId, PaidMembershipTerms, PaidTermId, UserInfo } from '@nicaea/types/members'
-import { Mint, MintId } from '@nicaea/types/mint'
-import { Lead, LeadId } from '@nicaea/types/content-working-group'
+import { MemberId, PaidMembershipTerms, PaidTermId, UserInfo } from '@alexandria/types/members'
+import { Mint, MintId } from '@alexandria/types/mint'
+import { Lead, LeadId } from '@alexandria/types/content-working-group'
 import {
   Application,
   ApplicationIdToWorkerIdMap,
@@ -13,15 +13,15 @@ import {
   Worker,
   WorkerId,
   WorkingGroupOpeningPolicyCommitment,
-} from '@nicaea/types/working-group'
-import { ElectionStake, Seat } from '@nicaea/types/council'
+} from '@alexandria/types/working-group'
+import { ElectionStake, Seat } from '@alexandria/types/council'
 import { AccountId, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender } from './sender'
 import { Utils } from './utils'
-import { Stake, StakedState, StakeId } from '@nicaea/types/stake'
-import { RewardRelationship, RewardRelationshipId } from '@nicaea/types/recurring-rewards'
+import { Stake, StakedState, StakeId } from '@alexandria/types/stake'
+import { RewardRelationship, RewardRelationshipId } from '@alexandria/types/recurring-rewards'
 import {
   ActivateOpeningAt,
   Application as HiringApplication,
@@ -30,9 +30,9 @@ import {
   Opening as HiringOpening,
   OpeningId,
   StakingPolicy,
-} from '@nicaea/types/hiring'
-import { FillOpeningParameters, ProposalId } from '@nicaea/types/proposals'
-import { WorkingGroup } from '@nicaea/types/common'
+} from '@alexandria/types/hiring'
+import { FillOpeningParameters, ProposalId } from '@alexandria/types/proposals'
+import { WorkingGroup } from '@alexandria/types/common'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -74,7 +74,9 @@ export class ApiWrapper {
     return this.sender.signAndSend(
       (this.api.tx.members.buyMembership(
         paidTermsId,
-        new UserInfo({ 'handle': name, 'avatar_uri': '', 'about': '' })
+        /* Handle: */ name,
+        /* Avatar uri: */ '',
+        /* About: */ ''
       ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       expectFailure
@@ -123,7 +125,9 @@ export class ApiWrapper {
     return this.estimateTxFee(
       (this.api.tx.members.buyMembership(
         paidTermsId,
-        new UserInfo({ 'handle': name, 'avatar_uri': '', 'about': '' })
+        /* Handle: */ name,
+        /* Avatar uri: */ '',
+        /* About: */ ''
       ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
@@ -301,7 +305,12 @@ export class ApiWrapper {
     })
 
     return this.estimateTxFee(
-      this.api.tx[module].addOpening('CurrentBlock', commitment, 'Human readable text', 'Worker')
+      (this.api.tx[module].addOpening(
+        'CurrentBlock',
+        commitment,
+        'Human readable text',
+        'Worker'
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
@@ -1187,7 +1196,9 @@ export class ApiWrapper {
     type: string,
     module: WorkingGroups
   ): SubmittableExtrinsic<'promise'> {
-    return this.api.tx[module].addOpening(actiavteAt, commitment, text, type)
+    return (this.api.tx[module].addOpening(actiavteAt, commitment, text, type) as unknown) as SubmittableExtrinsic<
+      'promise'
+    >
   }
 
   public async acceptApplications(leader: KeyringPair, openingId: OpeningId, module: WorkingGroups): Promise<void> {

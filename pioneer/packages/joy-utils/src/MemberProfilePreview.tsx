@@ -4,7 +4,7 @@ import { IdentityIcon } from '@polkadot/react-components';
 import { Link } from 'react-router-dom';
 import { Text } from '@polkadot/types';
 import { AccountId } from '@polkadot/types/interfaces';
-import { MemberId, Profile } from '@joystream/types/members';
+import { MemberId, Membership } from '@joystream/types/members';
 import styled from 'styled-components';
 
 type ProfileItemProps = {
@@ -68,7 +68,7 @@ export default function ProfilePreview (
 }
 
 type ProfilePreviewFromStructProps = {
-  profile: Profile;
+  profile: Membership;
   link?: boolean;
   id?: number | MemberId;
 };

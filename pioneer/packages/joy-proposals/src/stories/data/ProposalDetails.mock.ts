@@ -31,7 +31,6 @@ const mockedProposal: ParsedProposal = {
     handle: 'bob55',
     registered_at_block: 18,
     registered_at_time: 1588087314000,
-    roles: [],
     entry: {
       Paid: 0
     },

@@ -244,9 +244,9 @@ EXAMPLES
   $ api:inspect
   $ api:inspect -t=query
   $ api:inspect -t=query -M=members
-  $ api:inspect -t=query -M=members -m=memberProfile
-  $ api:inspect -t=query -M=members -m=memberProfile -e
-  $ api:inspect -t=query -M=members -m=memberProfile -e -a=1
+  $ api:inspect -t=query -M=members -m=membershipById
+  $ api:inspect -t=query -M=members -m=membershipById -e
+  $ api:inspect -t=query -M=members -m=membershipById -e -a=1
 ```
 
 _See code: [src/commands/api/inspect.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/inspect.ts)_

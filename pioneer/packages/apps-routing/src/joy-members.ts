@@ -6,7 +6,7 @@ export default [
   {
     Component: Members,
     display: {
-      needsApi: ['query.members.membersCreated']
+      needsApi: ['query.members.nextMemberId']
     },
     i18n: {
       defaultValue: 'Membership'

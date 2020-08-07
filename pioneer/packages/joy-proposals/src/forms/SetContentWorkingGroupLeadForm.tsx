@@ -16,7 +16,7 @@ import Validation from '../validationSchema';
 import { FormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
-import { Profile } from '@joystream/types/members';
+import { Membership } from '@joystream/types/members';
 import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 import _ from 'lodash';
 import './forms.css';
@@ -35,7 +35,7 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-function memberOptionKey (id: number, profile: Profile) {
+function memberOptionKey (id: number, profile: Membership) {
   return `${id}:${profile.root_account.toString()}`;
 }
 
@@ -46,7 +46,7 @@ const MEMBERS_NONE_OPTION: DropdownItemProps = {
   value: 'none'
 };
 
-function membersToOptions (members: { id: number; profile: Profile }[]) {
+function membersToOptions (members: { id: number; profile: Membership }[]) {
   return [MEMBERS_NONE_OPTION].concat(
     members
       .map(({ id, profile }) => ({
@@ -66,7 +66,7 @@ function filterMembers (options: DropdownItemProps[], query: string) {
   return options.filter((opt) => regexp.test((opt.text || '').toString()));
 }
 
-type MemberWithId = { id: number; profile: Profile };
+type MemberWithId = { id: number; profile: Membership };
 
 const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> = props => {
   const { handleChange, errors, touched, values } = props;

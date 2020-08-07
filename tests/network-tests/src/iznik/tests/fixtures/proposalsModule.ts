@@ -2,7 +2,7 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
 import { v4 as uuid } from 'uuid'
 import BN from 'bn.js'
-import { FillOpeningParameters, ProposalId } from '@nicaea/types/proposals'
+import { FillOpeningParameters, ProposalId } from '@alexandria/types/proposals'
 import { Fixture } from './interfaces/fixture'
 import { Bytes, Option, u32 } from '@polkadot/types'
 import { Balance, BlockNumber } from '@polkadot/types/interfaces'
@@ -13,9 +13,9 @@ import {
   ApplicationRationingPolicy,
   OpeningId,
   StakingPolicy,
-} from '@nicaea/types/hiring'
-import { RewardPolicy, SlashingTerms, WorkerId, WorkingGroupOpeningPolicyCommitment } from '@nicaea/types/working-group'
-import { WorkingGroup } from '@nicaea/types/common'
+} from '@alexandria/types/hiring'
+import { RewardPolicy, SlashingTerms, WorkerId, WorkingGroupOpeningPolicyCommitment } from '@alexandria/types/working-group'
+import { WorkingGroup } from '@alexandria/types/common'
 
 export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
   private apiWrapper: ApiWrapper
