@@ -12,13 +12,16 @@ import {
   ApplicationIdToWorkerIdMap,
   SlashingTerms,
   Worker,
+  WorkerId,
   WorkingGroupOpeningPolicyCommitment,
 } from '@alexandria/types/working-group'
 import { Utils } from '../../utils/utils'
 import {
   ActivateOpeningAt,
+  ApplicationId,
   ApplicationRationingPolicy,
   Opening as HiringOpening,
+  OpeningId,
   StakingPolicy,
 } from '@alexandria/types/hiring'
 import { Fixture } from './interfaces/fixture'
@@ -34,9 +37,9 @@ export class AddWorkerOpeningFixture implements Fixture {
   private unstakingPeriod: BN
   private module: WorkingGroups
 
-  private result: BN | undefined
+  private result: OpeningId | undefined
 
-  public getResult(): BN | undefined {
+  public getResult(): OpeningId | undefined {
     return this.result
   }
 
@@ -123,8 +126,7 @@ export class AddWorkerOpeningFixture implements Fixture {
       expectFailure
     )
     if (!expectFailure) {
-      const openingId: BN = ((await addOpeningPromise).data[0] as unknown) as BN
-      console.log('received opening id ' + openingId)
+      const openingId: OpeningId = (await addOpeningPromise).data[0] as OpeningId
       this.result = openingId
     }
   }
@@ -139,9 +141,9 @@ export class AddLeaderOpeningFixture implements Fixture {
   private activationDelay: BN
   private module: WorkingGroups
 
-  private result: BN | undefined
+  private result: OpeningId | undefined
 
-  public getResult(): BN | undefined {
+  public getResult(): OpeningId | undefined {
     return this.result
   }
 
@@ -211,8 +213,7 @@ export class AddLeaderOpeningFixture implements Fixture {
       'Leader',
       this.module
     )
-    const openingId: BN = ((await addOpeningPromise).data[0] as unknown) as BN
-    this.result = openingId
+    this.result = (await addOpeningPromise).data[0] as OpeningId
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -223,14 +224,14 @@ export class AcceptApplicationsFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private lead: KeyringPair
   private sudo: KeyringPair
-  private openingId: BN
+  private openingId: OpeningId
   private module: WorkingGroups
 
   public constructor(
     apiWrapper: ApiWrapper,
     lead: KeyringPair,
     sudo: KeyringPair,
-    openingId: BN,
+    openingId: OpeningId,
     module: WorkingGroups
   ) {
     this.apiWrapper = apiWrapper
@@ -242,7 +243,7 @@ export class AcceptApplicationsFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
-    const acceptApplicationsFee = this.apiWrapper.estimateAcceptApplicationsFee(this.module)
+    const acceptApplicationsFee: BN = this.apiWrapper.estimateAcceptApplicationsFee(this.module)
     await this.apiWrapper.transferBalance(this.sudo, this.lead.address, acceptApplicationsFee)
 
     // Begin accepting applications
@@ -262,7 +263,7 @@ export class ApplyForOpeningFixture implements Fixture {
   private sudo: KeyringPair
   private applicationStake: BN
   private roleStake: BN
-  private openingId: BN
+  private openingId: OpeningId
   private module: WorkingGroups
 
   public constructor(
@@ -271,7 +272,7 @@ export class ApplyForOpeningFixture implements Fixture {
     sudo: KeyringPair,
     applicationStake: BN,
     roleStake: BN,
-    openingId: BN,
+    openingId: OpeningId,
     module: WorkingGroups
   ) {
     this.apiWrapper = apiWrapper
@@ -327,7 +328,7 @@ export class WithdrawApplicationFixture implements Fixture {
 
     // Assertions
     this.membersKeyPairs.forEach(async (keyPair) => {
-      const activeApplications: BN[] = await this.apiWrapper.getActiveApplicationsIdsByRoleAccount(
+      const activeApplications: ApplicationId[] = await this.apiWrapper.getActiveApplicationsIdsByRoleAccount(
         keyPair.address,
         this.module
       )
@@ -343,10 +344,16 @@ export class BeginApplicationReviewFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private lead: KeyringPair
   private sudo: KeyringPair
-  private openingId: BN
+  private openingId: OpeningId
   private module: WorkingGroups
 
-  constructor(apiWrapper: ApiWrapper, lead: KeyringPair, sudo: KeyringPair, openingId: BN, module: WorkingGroups) {
+  constructor(
+    apiWrapper: ApiWrapper,
+    lead: KeyringPair,
+    sudo: KeyringPair,
+    openingId: OpeningId,
+    module: WorkingGroups
+  ) {
     this.apiWrapper = apiWrapper
     this.lead = lead
     this.sudo = sudo
@@ -360,7 +367,7 @@ export class BeginApplicationReviewFixture implements Fixture {
     await this.apiWrapper.transferBalance(this.sudo, this.lead.address, beginReviewFee)
 
     // Begin application review
-    const beginApplicantReviewPromise: Promise<BN> = this.apiWrapper.expectApplicationReviewBegan()
+    const beginApplicantReviewPromise: Promise<ApplicationId> = this.apiWrapper.expectApplicationReviewBegan()
     await this.apiWrapper.beginApplicantReview(this.lead, this.openingId, this.module)
     await beginApplicantReviewPromise
     if (expectFailure) {
@@ -372,10 +379,10 @@ export class BeginApplicationReviewFixture implements Fixture {
 export class BeginLeaderApplicationReviewFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private sudo: KeyringPair
-  private openingId: BN
+  private openingId: OpeningId
   private module: WorkingGroups
 
-  constructor(apiWrapper: ApiWrapper, sudo: KeyringPair, openingId: BN, module: WorkingGroups) {
+  constructor(apiWrapper: ApiWrapper, sudo: KeyringPair, openingId: OpeningId, module: WorkingGroups) {
     this.apiWrapper = apiWrapper
     this.sudo = sudo
     this.openingId = openingId
@@ -396,7 +403,7 @@ export class FillOpeningFixture implements Fixture {
   private membersKeyPairs: KeyringPair[]
   private lead: KeyringPair
   private sudo: KeyringPair
-  private openingId: BN
+  private openingId: OpeningId
   private firstPayoutInterval: BN
   private payoutInterval: BN
   private amountPerPayout: BN
@@ -407,7 +414,7 @@ export class FillOpeningFixture implements Fixture {
     membersKeyPairs: KeyringPair[],
     lead: KeyringPair,
     sudo: KeyringPair,
-    openingId: BN,
+    openingId: OpeningId,
     firstPayoutInterval: BN,
     payoutInterval: BN,
     amountPerPayout: BN,
@@ -426,9 +433,9 @@ export class FillOpeningFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
-    const beginReviewFee: BN = this.apiWrapper.estimateBeginApplicantReviewFee(this.module)
+    const beginReviewFee: BN = this.apiWrapper.estimateFillOpeningFee(this.module)
     await this.apiWrapper.transferBalance(this.sudo, this.lead.address, beginReviewFee)
-    const applicationIds: BN[] = (
+    const applicationIds: ApplicationId[] = (
       await Promise.all(
         this.membersKeyPairs.map(async (keypair) =>
           this.apiWrapper.getActiveApplicationsIdsByRoleAccount(keypair.address, this.module)
@@ -475,7 +482,7 @@ export class FillLeaderOpeningFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private membersKeyPairs: KeyringPair[]
   private sudo: KeyringPair
-  private openingId: BN
+  private openingId: OpeningId
   private firstPayoutInterval: BN
   private payoutInterval: BN
   private amountPerPayout: BN
@@ -485,7 +492,7 @@ export class FillLeaderOpeningFixture implements Fixture {
     apiWrapper: ApiWrapper,
     membersKeyPairs: KeyringPair[],
     sudo: KeyringPair,
-    openingId: BN,
+    openingId: OpeningId,
     firstPayoutInterval: BN,
     payoutInterval: BN,
     amountPerPayout: BN,
@@ -502,7 +509,7 @@ export class FillLeaderOpeningFixture implements Fixture {
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
-    const applicationIds: BN[] = (
+    const applicationIds: ApplicationId[] = (
       await Promise.all(
         this.membersKeyPairs.map(async (keypair) =>
           this.apiWrapper.getActiveApplicationsIdsByRoleAccount(keypair.address, this.module)
@@ -533,7 +540,7 @@ export class FillLeaderOpeningFixture implements Fixture {
         `Role account ids does not match, leader account: ${worker.role_account_id}, application account ${application.role_account_id}`
       )
     })
-    const leadWorkerId: BN = (await this.apiWrapper.getLeadWorkerId(this.module))!
+    const leadWorkerId: WorkerId = (await this.apiWrapper.getLeadWorkerId(this.module))!
     const openingLeaderAccount: string = (
       await this.apiWrapper.getWorkerById(leadWorkerId, this.module)
     ).role_account_id.toString()
@@ -569,7 +576,10 @@ export class IncreaseStakeFixture implements Fixture {
       this.membersKeyPairs[0].address,
       increaseStakeFee.add(stakeIncrement)
     )
-    const workerId: BN = await this.apiWrapper.getWorkerIdByRoleAccount(this.membersKeyPairs[0].address, this.module)
+    const workerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
+      this.membersKeyPairs[0].address,
+      this.module
+    )
 
     // Increase worker stake
     const increasedWorkerStake: BN = (await this.apiWrapper.getWorkerStakeAmount(workerId, this.module)).add(
@@ -612,7 +622,10 @@ export class UpdateRewardAccountFixture implements Fixture {
     // Fee estimation and transfer
     const updateRewardAccountFee: BN = this.apiWrapper.estimateUpdateRewardAccountFee(this.sudo.address, this.module)
     await this.apiWrapper.transferBalance(this.sudo, this.membersKeyPairs[0].address, updateRewardAccountFee)
-    const workerId: BN = await this.apiWrapper.getWorkerIdByRoleAccount(this.membersKeyPairs[0].address, this.module)
+    const workerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
+      this.membersKeyPairs[0].address,
+      this.module
+    )
 
     // Update reward account
     const createdAccount: KeyringPair = this.keyring.addFromUri(uuid().substring(0, 8))
@@ -653,7 +666,10 @@ export class UpdateRoleAccountFixture implements Fixture {
     // Fee estimation and transfer
     const updateRoleAccountFee: BN = this.apiWrapper.estimateUpdateRoleAccountFee(this.sudo.address, this.module)
     await this.apiWrapper.transferBalance(this.sudo, this.membersKeyPairs[0].address, updateRoleAccountFee)
-    const workerId: BN = await this.apiWrapper.getWorkerIdByRoleAccount(this.membersKeyPairs[0].address, this.module)
+    const workerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
+      this.membersKeyPairs[0].address,
+      this.module
+    )
 
     // Update role account
     const createdAccount: KeyringPair = this.keyring.addFromUri(uuid().substring(0, 8))
@@ -696,7 +712,7 @@ export class TerminateApplicationsFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
-    const terminateApplicationFee = this.apiWrapper.estimateTerminateApplicationFee(this.module)
+    const terminateApplicationFee: BN = this.apiWrapper.estimateTerminateApplicationFee(this.module)
     await this.apiWrapper.transferBalance(
       this.sudo,
       this.lead.address,
@@ -706,7 +722,7 @@ export class TerminateApplicationsFixture implements Fixture {
     // Terminate worker applications
     await this.apiWrapper.batchTerminateApplication(this.lead, this.membersKeyPairs, this.module)
     this.membersKeyPairs.forEach(async (keyPair) => {
-      const activeApplications = await this.apiWrapper.getActiveApplicationsIdsByRoleAccount(
+      const activeApplications: ApplicationId[] = await this.apiWrapper.getActiveApplicationsIdsByRoleAccount(
         keyPair.address,
         this.module
       )
@@ -741,10 +757,13 @@ export class DecreaseStakeFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
-    const decreaseStakeFee = this.apiWrapper.estimateDecreaseStakeFee(this.module)
+    const decreaseStakeFee: BN = this.apiWrapper.estimateDecreaseStakeFee(this.module)
     await this.apiWrapper.transferBalance(this.sudo, this.lead.address, decreaseStakeFee)
-    const workerStakeDecrement = new BN(1)
-    const workerId: BN = await this.apiWrapper.getWorkerIdByRoleAccount(this.membersKeyPairs[0].address, this.module)
+    const workerStakeDecrement: BN = new BN(1)
+    const workerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
+      this.membersKeyPairs[0].address,
+      this.module
+    )
 
     // Worker stake decrement
     const decreasedWorkerStake: BN = (await this.apiWrapper.getWorkerStakeAmount(workerId, this.module)).sub(
@@ -786,10 +805,13 @@ export class SlashFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
-    const slashStakeFee = this.apiWrapper.estimateSlashStakeFee(this.module)
+    const slashStakeFee: BN = this.apiWrapper.estimateSlashStakeFee(this.module)
     await this.apiWrapper.transferBalance(this.sudo, this.lead.address, slashStakeFee)
-    const slashAmount = new BN(1)
-    const workerId: BN = await this.apiWrapper.getWorkerIdByRoleAccount(this.membersKeyPairs[0].address, this.module)
+    const slashAmount: BN = new BN(1)
+    const workerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
+      this.membersKeyPairs[0].address,
+      this.module
+    )
 
     // Slash worker
     const slashedStake: BN = (await this.apiWrapper.getWorkerStakeAmount(workerId, this.module)).sub(slashAmount)
@@ -824,16 +846,22 @@ export class TerminateRoleFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
-    const terminateRoleFee = this.apiWrapper.estimateTerminateRoleFee(this.module)
+    const terminateRoleFee: BN = this.apiWrapper.estimateTerminateRoleFee(this.module)
     await this.apiWrapper.transferBalance(this.sudo, this.lead.address, terminateRoleFee)
-    const workerId: BN = await this.apiWrapper.getWorkerIdByRoleAccount(this.membersKeyPairs[0].address, this.module)
+    const workerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
+      this.membersKeyPairs[0].address,
+      this.module
+    )
 
     // Slash worker
     await this.apiWrapper.terminateRole(this.lead, workerId, uuid().substring(0, 8), this.module, expectFailure)
 
     // Assertions
     this.apiWrapper.getWorkerIdByRoleAccount(this.membersKeyPairs[0].address, this.module)
-    const newWorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(this.membersKeyPairs[0].address, this.module)
+    const newWorkerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
+      this.membersKeyPairs[0].address,
+      this.module
+    )
     assert(newWorkerId === undefined, `Worker with account ${this.membersKeyPairs[0].address} is not terminated`)
   }
 }
@@ -853,7 +881,7 @@ export class LeaveRoleFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
-    const leaveRoleFee = this.apiWrapper.estimateLeaveRoleFee(this.module)
+    const leaveRoleFee: BN = this.apiWrapper.estimateLeaveRoleFee(this.module)
     await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.membersKeyPairs, leaveRoleFee)
 
     await this.apiWrapper.batchLeaveRole(this.membersKeyPairs, uuid().substring(0, 8), expectFailure, this.module)
@@ -861,7 +889,7 @@ export class LeaveRoleFixture implements Fixture {
     // Assertions
     this.membersKeyPairs.forEach(async (keyPair) => {
       this.apiWrapper.getWorkerIdByRoleAccount(keyPair.address, this.module)
-      const newWorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(keyPair.address, this.module)
+      const newWorkerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(keyPair.address, this.module)
       assert(newWorkerId === undefined, `Worker with account ${keyPair.address} is not terminated`)
     })
   }
@@ -879,7 +907,10 @@ export class AwaitPayoutFixture implements Fixture {
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
-    const workerId: BN = await this.apiWrapper.getWorkerIdByRoleAccount(this.membersKeyPairs[0].address, this.module)
+    const workerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
+      this.membersKeyPairs[0].address,
+      this.module
+    )
     const worker: Worker = await this.apiWrapper.getWorkerById(workerId, this.module)
     const reward: RewardRelationship = await this.apiWrapper.getRewardRelationship(worker.reward_relationship.unwrap())
     const now: BN = await this.apiWrapper.getBestBlock()
@@ -888,23 +919,23 @@ export class AwaitPayoutFixture implements Fixture {
     const amountPerPayout: BN = new BN(reward.getField('amount_per_payout').toString())
 
     assert(now.lt(nextPaymentBlock), `Payout already happened in block ${nextPaymentBlock} now ${now}`)
-    const balance = await this.apiWrapper.getBalance(this.membersKeyPairs[0].address)
+    const balance: BN = await this.apiWrapper.getBalance(this.membersKeyPairs[0].address)
 
-    const firstPayoutWaitingPeriod = nextPaymentBlock.sub(now).addn(1)
+    const firstPayoutWaitingPeriod: BN = nextPaymentBlock.sub(now).addn(1)
     await Utils.wait(this.apiWrapper.getBlockDuration().mul(firstPayoutWaitingPeriod).toNumber())
 
-    const balanceAfterFirstPayout = await this.apiWrapper.getBalance(this.membersKeyPairs[0].address)
-    const expectedBalanceFirst = balance.add(amountPerPayout)
+    const balanceAfterFirstPayout: BN = await this.apiWrapper.getBalance(this.membersKeyPairs[0].address)
+    const expectedBalanceFirst: BN = balance.add(amountPerPayout)
     assert(
       balanceAfterFirstPayout.eq(expectedBalanceFirst),
       `Unexpected balance, expected ${expectedBalanceFirst} got ${balanceAfterFirstPayout}`
     )
 
-    const secondPayoutWaitingPeriod = payoutInterval.addn(1)
+    const secondPayoutWaitingPeriod: BN = payoutInterval.addn(1)
     await Utils.wait(this.apiWrapper.getBlockDuration().mul(secondPayoutWaitingPeriod).toNumber())
 
-    const balanceAfterSecondPayout = await this.apiWrapper.getBalance(this.membersKeyPairs[0].address)
-    const expectedBalanceSecond = expectedBalanceFirst.add(amountPerPayout)
+    const balanceAfterSecondPayout: BN = await this.apiWrapper.getBalance(this.membersKeyPairs[0].address)
+    const expectedBalanceSecond: BN = expectedBalanceFirst.add(amountPerPayout)
     assert(
       balanceAfterSecondPayout.eq(expectedBalanceSecond),
       `Unexpected balance, expected ${expectedBalanceSecond} got ${balanceAfterSecondPayout}`
@@ -918,15 +949,14 @@ export class AwaitPayoutFixture implements Fixture {
 export class ExpectLeadOpeningAddedFixture implements Fixture {
   private apiWrapper: ApiWrapper
 
-  // Opening id
-  private result: BN | undefined
+  private result: OpeningId | undefined
   private events: Event[] = []
 
   constructor(apiWrapper: ApiWrapper) {
     this.apiWrapper = apiWrapper
   }
 
-  public getResult(): BN | undefined {
+  public getResult(): OpeningId | undefined {
     return this.result
   }
 
@@ -937,7 +967,7 @@ export class ExpectLeadOpeningAddedFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     const event: Event = await this.apiWrapper.expectEvent('OpeningAdded')
     this.events.push(event)
-    this.result = (event.data as unknown) as BN
+    this.result = (event.data as unknown) as OpeningId
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -949,8 +979,7 @@ export class ExpectLeaderSetFixture implements Fixture {
   private leaderAddress: string
   private module: WorkingGroups
 
-  // Lead worker id
-  private result: BN | undefined
+  private result: WorkerId | undefined
   private events: Event[] = []
 
   constructor(apiWrapper: ApiWrapper, leaderAddress: string, module: WorkingGroups) {
@@ -959,7 +988,7 @@ export class ExpectLeaderSetFixture implements Fixture {
     this.module = module
   }
 
-  public getResult(): BN | undefined {
+  public getResult(): WorkerId | undefined {
     return this.result
   }
 
@@ -970,9 +999,9 @@ export class ExpectLeaderSetFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     const event: Event = await this.apiWrapper.expectEvent('LeaderSet')
     this.events.push(event)
-    const leadWorkerId: BN = (event.data as unknown) as BN
+    const leadWorkerId: WorkerId = (event.data as unknown) as WorkerId
     const worker: Worker = await this.apiWrapper.getWorkerById(leadWorkerId, this.module)
-    const leaderApplicationId = (
+    const leaderApplicationId: ApplicationId = (
       await this.apiWrapper.getApplicationsIdsByRoleAccount(this.leaderAddress, this.module)
     )[0]
     const application: Application = await this.apiWrapper.getApplicationById(leaderApplicationId, this.module)
@@ -990,14 +1019,14 @@ export class ExpectLeaderSetFixture implements Fixture {
 export class ExpectBeganApplicationReviewFixture implements Fixture {
   private apiWrapper: ApiWrapper
 
-  private result: BN | undefined
+  private result: ApplicationId | undefined
   private events: Event[] = []
 
   constructor(apiWrapper: ApiWrapper) {
     this.apiWrapper = apiWrapper
   }
 
-  public getResult(): BN | undefined {
+  public getResult(): ApplicationId | undefined {
     return this.result
   }
 
@@ -1008,7 +1037,7 @@ export class ExpectBeganApplicationReviewFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     const event: Event = await this.apiWrapper.expectEvent('BeganApplicationReview')
     this.events.push(event)
-    this.result = (event.data as unknown) as BN
+    this.result = (event.data as unknown) as ApplicationId
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -1038,7 +1067,7 @@ export class ExpectLeaderRoleTerminatedFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     const event: Event = await this.apiWrapper.expectEvent('TerminatedLeader')
     this.events.push(event)
-    const leadWorkerId: BN | undefined = await this.apiWrapper.getLeadWorkerId(this.module)
+    const leadWorkerId: WorkerId | undefined = await this.apiWrapper.getLeadWorkerId(this.module)
     assert(leadWorkerId === undefined, `Unexpected lead worker id: ${leadWorkerId}, expected none`)
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
@@ -1071,7 +1100,7 @@ export class ExpectLeaderRewardAmountUpdatedFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     const event: Event = await this.apiWrapper.expectEvent('WorkerRewardAmountUpdated')
     this.events.push(event)
-    const leadWorkerId: BN = (await this.apiWrapper.getLeadWorkerId(this.module))!
+    const leadWorkerId: WorkerId = (await this.apiWrapper.getLeadWorkerId(this.module))!
     const receivedReward: BN = (await this.apiWrapper.getRewardRelationship(leadWorkerId)).getField<Balance>(
       'amount_per_payout'
     )
@@ -1110,7 +1139,7 @@ export class ExpectLeaderStakeDecreasedFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     const event: Event = await this.apiWrapper.expectEvent('StakeDecreased')
     this.events.push(event)
-    const leadWorkerId: BN = (await this.apiWrapper.getLeadWorkerId(this.module))!
+    const leadWorkerId: WorkerId = (await this.apiWrapper.getLeadWorkerId(this.module))!
     const receivedStake: BN = await this.apiWrapper.getWorkerStakeAmount(leadWorkerId, this.module)
     assert(
       receivedStake.eq(this.expectedStake),
@@ -1147,7 +1176,7 @@ export class ExpectLeaderSlashedFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     const event: Event = await this.apiWrapper.expectEvent('StakeSlashed')
     this.events.push(event)
-    const leadWorkerId: BN = (await this.apiWrapper.getLeadWorkerId(this.module))!
+    const leadWorkerId: WorkerId = (await this.apiWrapper.getLeadWorkerId(this.module))!
     const receivedStake: BN = await this.apiWrapper.getWorkerStakeAmount(leadWorkerId, this.module)
     assert(
       receivedStake.eq(this.expectedStake),
@@ -1182,7 +1211,7 @@ export class ExpectMintCapacityChangedFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     const event: Event = await this.apiWrapper.expectEvent('MintCapacityChanged')
     this.events.push(event)
-    const receivedMintCapacity = (event.data[1] as unknown) as BN
+    const receivedMintCapacity: BN = (event.data[1] as unknown) as BN
     assert(
       receivedMintCapacity.eq(this.expectedMintCapacity),
       `Unexpected mint capacity: ${receivedMintCapacity}, expected ${this.expectedMintCapacity}`

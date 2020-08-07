@@ -3,14 +3,15 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import BN from 'bn.js'
 import { assert } from 'chai'
 import { Fixture } from './interfaces/fixture'
+import { PaidTermId } from '@nicaea/types/members'
 
 export class BuyMembershipHappyCaseFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private sudo: KeyringPair
   private keyPairs: KeyringPair[]
-  private paidTerms: number
+  private paidTerms: PaidTermId
 
-  public constructor(apiWrapper: ApiWrapper, sudo: KeyringPair, keyPairs: KeyringPair[], paidTerms: number) {
+  public constructor(apiWrapper: ApiWrapper, sudo: KeyringPair, keyPairs: KeyringPair[], paidTerms: PaidTermId) {
     this.apiWrapper = apiWrapper
     this.sudo = sudo
     this.keyPairs = keyPairs
@@ -58,9 +59,9 @@ export class BuyMembershipWithInsufficienFundsFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private sudo: KeyringPair
   private aKeyPair: KeyringPair
-  private paidTerms: number
+  private paidTerms: PaidTermId
 
-  public constructor(apiWrapper: ApiWrapper, sudo: KeyringPair, aKeyPair: KeyringPair, paidTerms: number) {
+  public constructor(apiWrapper: ApiWrapper, sudo: KeyringPair, aKeyPair: KeyringPair, paidTerms: PaidTermId) {
     this.apiWrapper = apiWrapper
     this.sudo = sudo
     this.aKeyPair = aKeyPair
