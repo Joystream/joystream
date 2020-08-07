@@ -1,10 +1,11 @@
-import { Hash, Header, BlockNumber } from '@polkadot/types/interfaces';
-import { Callback } from '@polkadot/types/types';
+import { Hash, Header, BlockNumber, EventRecord, SignedBlock } from '@polkadot/types/interfaces';
+import { Callback, Codec } from '@polkadot/types/types';
 import { u32 } from '@polkadot/types/primitive';
 import { ApiPromise } from '@polkadot/api';
 import { getSpecTypes } from '@polkadot/types-known';
 
 import { ISubstrateQueryService } from '.';
+import { UnsubscribePromise } from '@polkadot/api/types';
 
 export class QueryService implements ISubstrateQueryService {
   // Enough large number
@@ -31,7 +32,7 @@ export class QueryService implements ISubstrateQueryService {
    * Makes sure the api has correct types and metadata before fetching the block data
    * @param blockHash Hash | Uint8Array | string
    */
-  async ensureMeta(blockHash: Hash | Uint8Array | string) {
+  async ensureMeta(blockHash: Hash | Uint8Array | string): Promise<ApiPromise> {
     const api = this._api;
 
     try {
@@ -57,29 +58,29 @@ export class QueryService implements ISubstrateQueryService {
     return api;
   }
 
-  async getHeader(hash: Hash | Uint8Array | string): Promise<void> {
+  async getHeader(hash: Hash | Uint8Array | string): Promise<Header> {
     const api = await this.ensureMeta(hash);
     return api.rpc.chain.getHeader(hash);
   }
 
-  getFinalizedHead() {
+  getFinalizedHead(): Promise<Hash> {
     return this._api.rpc.chain.getFinalizedHead();
   }
 
-  subscribeNewHeads(v: Callback<Header>): Promise {
+  subscribeNewHeads(v: Callback<Header>): UnsubscribePromise {
     return this._api.rpc.chain.subscribeNewHeads(v);
   }
 
-  getBlockHash(blockNumber?: BlockNumber | Uint8Array | number | string) {
+  getBlockHash(blockNumber?: BlockNumber | Uint8Array | number | string): Promise<Hash> {
     return this._api.rpc.chain.getBlockHash(blockNumber);
   }
 
-  async getBlock(hash: Hash | Uint8Array | string) {
+  async getBlock(hash: Hash | Uint8Array | string): Promise<SignedBlock> {
     const api = await this.ensureMeta(hash);
     return api.rpc.chain.getBlock(hash);
   }
 
-  async eventsAt(hash: Hash | Uint8Array | string) {
+  async eventsAt(hash: Hash | Uint8Array | string): Promise<EventRecord[] & Codec> {
     const api = await this.ensureMeta(hash);
     return api.query.system.events.at(hash);
   }
