@@ -20,7 +20,8 @@
     "storage-node",
     "storage-node/packages/*",
     "devops/eslint-config",
-    "devops/prettier-config"
+    "devops/prettier-config",
+    "api-examples"
   ],
   "resolutions": {
     "@polkadot/api": "^1.26.1",
