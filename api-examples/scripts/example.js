@@ -5,7 +5,7 @@
 //
 // or copy and paste the code into the pioneer javascript toolbox at:
 // https://testnet.joystream.org/#/js
-// 
+//
 // Example works on nicaea release+
 
 const script = async ({ api, hashing, keyring, types, util, joy }) => {
@@ -15,7 +15,7 @@ const script = async ({ api, hashing, keyring, types, util, joy }) => {
     api.rpc.system.name(),
     api.rpc.system.version(),
     api.runtimeVersion,
-  ]);
+  ])
 
   console.log(`Chain: ${chain}`)
   console.log(`Software: ${nodeName} v${nodeVersion}`)

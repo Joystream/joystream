@@ -10,12 +10,16 @@
 const script = async ({ api, joy }) => {
   const ids = await api.query.dataDirectory.knownContentIds()
 
-  await Promise.all(ids.map(async (id) => {
-    let obj = await api.query.dataDirectory.dataObjectByContentId(id)
-    if (obj.isNone) { return }
-    obj = obj.unwrap()
-    console.log(`contentId: ${new joy.media.ContentId(id).encode()}, ipfs: ${obj.ipfs_content_id}`)
-  }))
+  await Promise.all(
+    ids.map(async (id) => {
+      let obj = await api.query.dataDirectory.dataObjectByContentId(id)
+      if (obj.isNone) {
+        return
+      }
+      obj = obj.unwrap()
+      console.log(`contentId: ${new joy.media.ContentId(id).encode()}, ipfs: ${obj.ipfs_content_id}`)
+    })
+  )
 
   console.error(`Data Directory contains ${ids.length} objects`)
 }

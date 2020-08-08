@@ -8,10 +8,12 @@
     "strict": true,
     "target": "es2017",
     "esModuleInterop": true,
-    "types" : [ "node" ],
-    "noUnusedLocals": true
+    "types": ["node"],
+    "noUnusedLocals": true,
+    "baseUrl": "./",
+    "paths": {
+      "@polkadot/types/augment": ["../types/src/definitions/augment-types.ts"]
+    }
   },
-  "include": [
-    "src/**/*"
-  ]
+  "include": ["src/**/*"]
 }

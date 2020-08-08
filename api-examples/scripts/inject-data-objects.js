@@ -1,6 +1,6 @@
 /* global api, hashing, keyring, types, util, window */
 
-const { isJSDocTypeExpression } = require("typescript")
+const { isJSDocTypeExpression } = require('typescript')
 
 // run this script with:
 // yarn script injectDataObjects
@@ -21,7 +21,7 @@ const script = async ({ api, keyring, types, joy }) => {
 
   const sudoAddress = (await api.query.sudo.key()).toString()
   let sudo
-  if (typeof window === 'undefined'){
+  if (typeof window === 'undefined') {
     // In node, get the keyPair if the keyring was provided
     sudo = keyring.getPair(sudoAddress)
   } else {
@@ -36,20 +36,17 @@ const script = async ({ api, keyring, types, joy }) => {
   console.log(`Before injection there are ${preInjectionIds.length} known object ids`)
 
   // split injection into batches of max objects
-  while(parsed.length) {
+  while (parsed.length) {
     const batch = parsed.splice(0, max)
     const objectsMap = api.createType('DataObjectsMap') // new joy.media.DataObjectsMap(api.registry)
     batch.forEach(([id, object]) => {
-      objectsMap.set(
-        api.createType('ContentId', id),
-        api.createType('DataObject', object)
-      )
+      objectsMap.set(api.createType('ContentId', id), api.createType('DataObject', object))
     })
 
     const injectTx = api.tx.dataDirectory.injectDataObjects(objectsMap)
     const sudoTx = api.tx.sudo.sudo(injectTx)
     console.log(`injecting ${batch.length} objects`)
-    const signed = sudoTx.sign(sudo, {nonce})
+    const signed = sudoTx.sign(sudo, { nonce })
     await signed.send()
     console.log(`nonce: ${nonce.toNumber()}, tx hash: ${signed.hash}`)
     nonce = nonce.addn(1)

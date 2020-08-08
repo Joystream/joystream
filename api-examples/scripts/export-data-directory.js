@@ -20,20 +20,28 @@ const script = async ({ api, hashing, keyring, types, util }) => {
   // it if its not sorted.
   ids.sort()
 
-  let transformed = await Promise.all(ids.map(async (id) => {
-    let obj = await api.query.dataDirectory.dataObjectByContentId(id)
-    if (obj.isNone) { return null }
-    obj = obj.unwrap()
+  let transformed = await Promise.all(
+    ids.map(async (id) => {
+      let obj = await api.query.dataDirectory.dataObjectByContentId(id)
+      if (obj.isNone) {
+        return null
+      }
+      obj = obj.unwrap()
 
-    return [id, {
-      owner: runtimeSpecVersion <= 15 ? await ownerAccountToMemberId(obj.owner) : obj.owner,
-      added_at: obj.added_at,
-      type_id: obj.type_id,
-      size: obj.size_in_bytes,
-      liaison: runtimeSpecVersion <= 15 ? new types.u64(0) : obj.liaison,
-      liaison_judgement: obj.liaison_judgement,
-      ipfs_content_id: obj.ipfs_content_id }]
-  }))
+      return [
+        id,
+        {
+          owner: runtimeSpecVersion <= 15 ? await ownerAccountToMemberId(obj.owner) : obj.owner,
+          added_at: obj.added_at,
+          type_id: obj.type_id,
+          size: obj.size_in_bytes,
+          liaison: runtimeSpecVersion <= 15 ? new types.u64(0) : obj.liaison,
+          liaison_judgement: obj.liaison_judgement,
+          ipfs_content_id: obj.ipfs_content_id,
+        },
+      ]
+    })
+  )
 
   console.log(JSON.stringify(transformed))
   console.error(`Exported ${transformed.length} objects`)
