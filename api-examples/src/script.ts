@@ -10,9 +10,7 @@ import { Keyring } from '@polkadot/keyring'
 
 const scripts = require('../scripts')
 
-async function main () {
-  
-
+async function main() {
   const scriptArg = process.argv[2]
   const script = scripts[scriptArg]
 
@@ -48,7 +46,7 @@ async function main () {
     console.error(err)
   }
 
-  api.disconnect();
+  api.disconnect()
 }
 
 main()
