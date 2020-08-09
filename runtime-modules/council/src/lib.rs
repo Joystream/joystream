@@ -27,6 +27,10 @@ impl Default for CouncilStage {
     }
 }
 
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
+pub struct Candidate {
+    tmp: u64,
+}
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
@@ -42,6 +46,9 @@ pub trait Trait: system::Trait {
         + Copy
         + MaybeSerialize
         + PartialEq;
+
+    /// Minimum number of candidates needed to conclude announcing period
+    type MinNumberOfCandidates: Get<u64>;
 
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool;
 }
@@ -59,7 +66,19 @@ decl_event! {
         <T as Trait>::Tmp
     {
         /// New council was elected
-        ElectionCycleStarted(Tmp),
+        AnnouncingPeriodStarted(Tmp),
+
+        /// Announcing period can't finish because of insufficient candidtate count
+        NotEnoughCandidates(),
+
+        /// Candidates are announced and voting starts
+        VotingPeriodStarted(Vec<Candidate>),
+
+        /// Revealing periods has started
+        RevealingPeriodStarted,
+
+        /// Revealing period has finished and new council was elected
+        RevealingPeriodFinished(/* TODO */),
     }
 }
 
@@ -94,20 +113,81 @@ decl_module! {
 
         /////////////////// Lifetime ///////////////////////////////////////////
 
-        // start new council election period
-        pub fn start_election_cycle(origin) -> Result<(), Error> {
+        /// Start new council election.
+        pub fn start_announcing_period(origin) -> Result<(), Error> {
             // ensure action can be started
-            EnsureChecks::<T>::can_start_election_cycle(origin)?;
+            EnsureChecks::<T>::can_start_announcing_period(origin)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // update state
-            Mutations::<T>::start_election_cycle();
+            Mutations::<T>::start_announcing_period();
 
             // emit event
-            Self::deposit_event(RawEvent::ElectionCycleStarted(1.into())); // TODO
+            Self::deposit_event(RawEvent::AnnouncingPeriodStarted(1.into())); // TODO
+
+            Ok(())
+        }
+
+        /// Finalize the announcing period and start voting if there are enough candidates.
+        pub fn finalize_announcing_period(origin) -> Result<(), Error> {
+            // ensure action can be started
+            let candidates = EnsureChecks::<T>::can_finalize_announcing_period(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            if (candidates.len() as u64) < T::MinNumberOfCandidates::get() {
+                // emit event
+                Self::deposit_event(RawEvent::NotEnoughCandidates());
+
+                return Ok(());
+            }
+
+            // update state
+            Mutations::<T>::finalize_announcing_period(&candidates);
+
+            // emit event
+            Self::deposit_event(RawEvent::VotingPeriodStarted(candidates));
+
+            Ok(())
+        }
+
+        /// Start revealing period.
+        pub fn start_revealing_period(origin) -> Result<(), Error> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_start_revealing_period(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::start_revealing_period();
+
+            // emit event
+            Self::deposit_event(RawEvent::RevealingPeriodStarted);
+
+            Ok(())
+        }
+
+        /// Finish revealing period and conclude election cycle.
+        pub fn finish_revealing_period(origin) -> Result<(), Error> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_finish_revealing_period(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::finish_revealing_period();
+
+            // emit event
+            Self::deposit_event(RawEvent::RevealingPeriodFinished());
 
             Ok(())
         }
@@ -121,7 +201,19 @@ struct Mutations<T: Trait> {
 }
 
 impl<T: Trait> Mutations<T> {
-    fn start_election_cycle() -> () {
+    fn start_announcing_period() -> () {
+
+    }
+
+    fn finalize_announcing_period(candidates: &Vec<Candidate>) -> () {
+
+    }
+
+    fn start_revealing_period() -> () {
+
+    }
+
+    fn finish_revealing_period() -> () {
 
     }
 }
@@ -148,7 +240,34 @@ impl<T: Trait> EnsureChecks<T> {
 
     /////////////////// Action checks //////////////////////////////////////////
 
-    fn can_start_election_cycle(
+    fn can_start_announcing_period(
+        origin: T::Origin,
+    ) -> Result<(), Error> {
+        // ensure superuser requested action
+        Self::ensure_super_user(origin)?;
+
+        Ok(())
+    }
+
+    fn can_finalize_announcing_period(
+        origin: T::Origin,
+    ) -> Result<Vec<Candidate>, Error> {
+        // ensure superuser requested action
+        Self::ensure_super_user(origin)?;
+
+        Ok(vec![])
+    }
+
+    fn can_start_revealing_period(
+        origin: T::Origin,
+    ) -> Result<(), Error> {
+        // ensure superuser requested action
+        Self::ensure_super_user(origin)?;
+
+        Ok(())
+    }
+
+    fn can_finish_revealing_period(
         origin: T::Origin,
     ) -> Result<(), Error> {
         // ensure superuser requested action
