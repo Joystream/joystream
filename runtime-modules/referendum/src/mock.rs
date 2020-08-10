@@ -25,6 +25,7 @@ use crate::GenesisConfig;
 
 pub const USER_ADMIN: u64 = 1;
 pub const USER_REGULAR: u64 = 2;
+pub const USER_REGULAR_POWER_VOTES: u64 = 3;
 
 /////////////////// Runtime and Instances //////////////////////////////////////
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -54,6 +55,7 @@ impl<I: Instance> Trait<I> for Runtime {
     type ReferendumOption = u64;
 
     type CurrencyBalance = u64;
+    type VotePower = u64;
 
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
@@ -62,6 +64,15 @@ impl<I: Instance> Trait<I> for Runtime {
 
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool {
         *account_id == USER_ADMIN
+    }
+
+    fn caclulate_vote_power(account_id: &<Self as system::Trait>::AccountId, stake: <Self as Trait<I>>::CurrencyBalance) -> <Self as Trait<I>>::VotePower {
+        let stake: u64 = stake.into();
+        if *account_id == USER_REGULAR_POWER_VOTES {
+            return stake * 10;
+        }
+
+        stake
     }
 
     fn has_sufficient_balance(
@@ -77,6 +88,8 @@ impl<I: Instance> Trait<I> for Runtime {
 
         match *account_id {
             USER_ADMIN => true,
+            USER_REGULAR => true,
+            USER_REGULAR_POWER_VOTES => true,
             _ => false,
         }
     }

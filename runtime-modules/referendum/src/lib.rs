@@ -85,12 +85,23 @@ pub trait Trait<I: Instance>: system::Trait {
         + MaybeSerialize
         + PartialEq;
 
+    type VotePower: Parameter
+        + Member
+        + SimpleArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
     type VoteStageDuration: Get<Self::BlockNumber>;
     type RevealStageDuration: Get<Self::BlockNumber>;
 
     type MinimumStake: Get<Self::CurrencyBalance>;
 
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool;
+
+    fn caclulate_vote_power(account_id: &<Self as system::Trait>::AccountId, stake: <Self as Trait<I>>::CurrencyBalance) -> <Self as Trait<I>>::VotePower;
 
     fn has_sufficient_balance(
         account: &<Self as system::Trait>::AccountId,
@@ -118,7 +129,7 @@ decl_storage! {
         pub Votes get(votes) config(): map T::AccountId => SealedVote<T::Hash, T::CurrencyBalance>;
 
         /// Revealed votes counter
-        pub RevealedVotes get(revealed_votes) config(): map T::ReferendumOption => u64;
+        pub RevealedVotes get(revealed_votes) config(): map T::ReferendumOption => T::VotePower;
     }
 
     /* This might be needed in some cases
@@ -351,7 +362,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         // select winning option
         // TODO - try to iterate ovet RevealedVotes when newer version of substrate is used (`RevealedVotes::<T, I>::iter_values(|option| ...)`)
         // TODO - decide what to do when two options recieve same amount of votes
-        let mut max: (Option<Vec<&T::ReferendumOption>>, u64, bool) = (None, 0, false); // `(referendum_result, votes_count_for_winning_option, multiple_options_with_same_votes_count)`
+        let mut max: (Option<Vec<&T::ReferendumOption>>, T::VotePower, bool) = (None, 0.into(), false); // `(referendum_result, votes_power_sum, multiple_options_with_same_votes_count)`
         let options = ReferendumOptions::<T, I>::get();
         if let Some(tmp_options) = &options {
             for option in tmp_options.iter() {
@@ -442,8 +453,11 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             return Err(Error::AccountRelaseStakeCurrencyFailed);
         }
 
+        // calculate vote power
+        let vote_power = T::caclulate_vote_power(account_id, sealed_vote.stake);
+
         // store revealed vote
-        RevealedVotes::<T, I>::mutate(vote_option, |counter| *counter + 1);
+        RevealedVotes::<T, I>::mutate(vote_option, |counter| *counter + vote_power);
 
         // remove user commitment to prevent repeated revealing
         Votes::<T, I>::remove(account_id);
@@ -468,6 +482,12 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         if !T::is_super_user(&account_id) {
             return Err(Error::OriginNotSuperUser);
         }
+
+        Ok(account_id)
+    }
+
+    fn ensure_regular_user(origin: T::Origin) -> Result<T::AccountId, Error> {
+        let account_id = ensure_signed(origin)?;
 
         Ok(account_id)
     }
@@ -554,7 +574,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     fn can_vote(origin: T::Origin, stake: &T::CurrencyBalance) -> Result<T::AccountId, Error> {
         // ensure superuser requested action
-        let account_id = Self::ensure_super_user(origin)?;
+        let account_id = Self::ensure_regular_user(origin)?;
 
         let (stage, starting_block_number) = Stage::<T, I>::get();
 
@@ -609,7 +629,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ensure superuser requested action
-        let account_id = Self::ensure_super_user(origin)?;
+        let account_id = Self::ensure_regular_user(origin)?;
 
         let (stage, starting_block_number) = Stage::<T, I>::get();
 

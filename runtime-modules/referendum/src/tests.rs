@@ -554,6 +554,43 @@ fn finish_revealing_period_no_vote_revealed() {
     });
 }
 
+#[test]
+fn finish_revealing_vote_power() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
+        let account_superuser = USER_ADMIN;
+        let account_id1 = USER_REGULAR;
+        let account_id2 = USER_REGULAR_POWER_VOTES;
+        let origin = OriginType::Signed(account_superuser);
+        let origin_voter1 = OriginType::Signed(account_id1);
+        let origin_voter2 = OriginType::Signed(account_id2);
+        let options = vec![0, 1, 2];
+
+        let option_to_vote_for1 = options[0];
+        let option_to_vote_for2 = options[1];
+        let stake_bigger = <Runtime as Trait<Instance0>>::MinimumStake::get() * 2;
+        let stake_smaller = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment1, salt1) = MockUtils::vote_commitment(account_id1, option_to_vote_for1);
+        let (commitment2, salt2) = MockUtils::vote_commitment(account_id2, option_to_vote_for2);
+
+        Mocks::start_referendum(origin.clone(), options.clone(), Ok(()));
+        Mocks::vote(origin_voter1.clone(), account_id1, commitment1, stake_bigger, Ok(())); // vote for first option by regular user
+        Mocks::vote(origin_voter2.clone(), account_id2, commitment2, stake_smaller, Ok(())); // vote for second option by prominent user
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::reveal_vote(origin_voter1.clone(), account_id1, salt1, option_to_vote_for1, Ok(()));
+        Mocks::reveal_vote(origin_voter2.clone(), account_id2, salt2, option_to_vote_for2, Ok(()));
+        MockUtils::increase_block_number(reveal_stage_duration + 1);
+
+        // option 2 should win because prominent user has more powerfull vote with the same stake
+        Mocks::finish_revealing_period(origin.clone(), Ok(()), Some(ReferendumResult::Winner(option_to_vote_for2)));
+    });
+}
+
 /////////////////// Lifetime - complete ////////////////////////////////////////
 
 // whole process is actually tested in finish_revealing_period; use the following test to test complex some situation (many options, many votes, some reveals, etc.)
