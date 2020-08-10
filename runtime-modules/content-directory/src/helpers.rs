@@ -98,6 +98,12 @@ impl<'a, T: Trait> OutputValueForExistingProperty<'a, T> {
     pub fn unzip(&self) -> (&Property<T>, &OutputPropertyValue<T>) {
         (self.0, self.1)
     }
+
+    /// Check if Property is default and non `required`
+    pub fn is_default(&self) -> bool {
+        let (property, property_value) = self.unzip();
+        !property.required && *property_value == OutputPropertyValue::<T>::default()
+    }
 }
 
 /// Mapping, used to represent `PropertyId` relation to its respective `OutputValuesForExistingProperties` structure
@@ -149,16 +155,12 @@ impl<'a, T: Trait> OutputValuesForExistingProperties<'a, T> {
     /// (skip `PropertyId`s, which respective `property values` under this `Entity` are default and non `required`)
     pub fn compute_unique_hashes(&self) -> BTreeMap<PropertyId, T::Hash> {
         self.iter()
-            .filter(|(property_id, _)| {
-                match self
-                    .get(property_id)
-                    .map(|value_for_property| value_for_property.unzip())
-                {
-                    Some((property, property_value)) if property.unique => {
-                        // skip `PropertyId`s, which respective `property values` under this `Entity` are default and non `required`
-                        property.required || *property_value != OutputPropertyValue::<T>::default()
-                    }
-                    _ => false,
+            .filter(|(_, value_for_property)| {
+                if value_for_property.get_property().unique {
+                    // skip `PropertyId`s, which respective `property values` under this `Entity` are default and non `required`
+                    !value_for_property.is_default()
+                } else {
+                    false
                 }
             })
             .map(|(&property_id, property_value)| {
