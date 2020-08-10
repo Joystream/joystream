@@ -397,7 +397,9 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
                 return ReferendumResult::NoVotesRevealed;
             }
 
+            // sort winners
             winning_order.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+
             let voted_options_count = winning_order.len();
             let target_count = WinningTargetCount::<I>::get();
 
@@ -427,64 +429,17 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
                 );
             }
 
+            // return winning options
             ReferendumResult::Winners(winning_order[..(target_count as usize)].to_vec())
         }
 
         let referendum_result = calculate_votes::<T, I>();
 
-        /*
-        // TODO - try to iterate ovet RevealedVotes when newer version of substrate is used (`RevealedVotes::<T, I>::iter_values(|option| ...)`)
-        // TODO - decide what to do when two options recieve same amount of votes
-        let mut max: (Option<Vec<&T::ReferendumOption>>, T::VotePower, bool) = (None, 0.into(), false); // `(referendum_result, votes_power_sum, multiple_options_with_same_votes_count)`
-        let options = ReferendumOptions::<T, I>::get();
-        if let Some(tmp_options) = &options {
-            for option in tmp_options.iter() {
-                // skip option with 0 votes
-                if !RevealedVotes::<T, I>::exists(option) {
-                    continue;
-                }
-                let vote_sum = RevealedVotes::<T, I>::get(option);
-
-                // skip this option if it is not a winner
-                if vote_sum < max.1 {
-                    continue;
-                }
-
-                // multiple votes have the same amount of votes?
-                if vote_sum == max.1 {
-                    let current_winners = match max.0 {
-                        Some(tmp) => tmp,
-                        None => vec![],
-                    };
-
-                    let new_winners = [current_winners, vec![option]].concat().to_vec();
-                    max = (Some(new_winners), max.1, true);
-                    continue;
-                }
-
-                max = (Some(vec![option]), vote_sum, false);
-            }
-        }
-        let referendum_result = match max {
-            (Some(winners), _, true) => {
-                ReferendumResult::MultipleWinners(winners.iter().map(|item| **item).collect())
-            } // multiple options recieved the same amount of votes
-            (Some(winners), _, false) => {
-                if winners.len() > 0 {
-                    return ReferendumResult::Winner(*winners[0]);
-                }
-
-                ReferendumResult::NoVotesRevealed
-            }
-            (None, _, false) => ReferendumResult::NoVotesRevealed,
-            _ => ReferendumResult::NoVotesRevealed,
-        };
-        */
-
         // reset referendum state
         Stage::<T, I>::put((ReferendumStage::Void, <system::Module<T>>::block_number()));
         ReferendumOptions::<T, I>::mutate(|_| None::<Vec<T::ReferendumOption>>);
         // TODO clear votes maps
+        //RevealedVotes::remove_all();
         //RevealedVotes::...
         //Votes::...
         //WinningTargetCount::...
