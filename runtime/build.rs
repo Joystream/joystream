@@ -19,7 +19,7 @@ use wasm_builder_runner::WasmBuilder;
 
 fn main() {
     if !in_real_cargo_environment() {
-        env::set_var("DUMMY_WASM_BINARY_ENV", "1");
+        env::set_var("BUILD_DUMMY_WASM_BINARY", "1");
         println!("Building DUMMY Wasm binary");
     }
 
