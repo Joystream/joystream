@@ -1,13 +1,5 @@
 use super::*;
-
-/// Enum, representing either `OutputValue` or `VecOutputValue`
-/// Simplified version, without nonces
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum SimplifiedOutputPropertyValue<T: Trait> {
-    Single(OutputValue<T>),
-    Vector(VecOutputValue<T>),
-}
+use runtime_primitives::traits::Hash;
 
 /// Enum, representing either `OutputValue` or `VecOutputPropertyValue`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -69,8 +61,19 @@ impl<T: Trait> OutputPropertyValue<T> {
         }
     }
 
-    pub fn simplify(&self) -> SimplifiedOutputPropertyValue<T> {
-        self.clone().into()
+    /// Compute hash from unique property value and its respective property_id 
+    pub fn compute_unique_hash(&self, property_id: PropertyId) -> T::Hash {
+        match self {
+            OutputPropertyValue::Single(output_value) => {
+                (property_id, output_value).using_encoded(<T as system::Trait>::Hashing::hash)
+            }
+            OutputPropertyValue::Vector(vector_output_value) => {
+                // Do not hash nonce
+                let vector_output_value = vector_output_value.get_vec_value_ref();
+
+                (property_id, vector_output_value).using_encoded(<T as system::Trait>::Hashing::hash)
+            }
+        }
     }
 }
 
@@ -82,7 +85,7 @@ impl<T: Trait> Default for OutputPropertyValue<T> {
 
 /// OutputValue enum representation, related to corresponding `SingleOutputPropertyValue` structure
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Hash, Clone, PartialEq, PartialOrd, Ord, Eq, Debug)]
 pub enum OutputValue<T: Trait> {
     Bool(bool),
     Uint16(u16),
@@ -267,7 +270,7 @@ impl<T: Trait> VecOutputPropertyValue<T> {
 
 /// Vector value enum representation, related to corresponding `VecOutputPropertyValue` structure
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub enum VecOutputValue<T: Trait> {
     Bool(Vec<bool>),
     Uint16(Vec<u16>),

@@ -61,15 +61,3 @@ impl<T: Trait> From<VecInputValue<T>> for VecOutputValue<T> {
     }
 }
 
-impl<T: Trait> From<OutputPropertyValue<T>> for SimplifiedOutputPropertyValue<T> {
-    fn from(output_property_value: OutputPropertyValue<T>) -> Self {
-        match output_property_value {
-            OutputPropertyValue::Single(output_value) => {
-                SimplifiedOutputPropertyValue::Single(output_value)
-            }
-            OutputPropertyValue::Vector(vector_output_value) => {
-                SimplifiedOutputPropertyValue::Vector(vector_output_value.get_vec_value())
-            }
-        }
-    }
-}
