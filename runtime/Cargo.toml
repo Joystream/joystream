@@ -51,9 +51,6 @@ pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git
 pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 pallet-collective = { package = 'pallet-collective', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-contracts = { package = 'pallet-contracts', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-contracts-rpc-runtime-api = { package = 'pallet-contracts-rpc-runtime-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
-pallet-contracts-primitives = { package = 'pallet-contracts-primitives', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 
 # Benchmarking
 frame-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', default-features = false, optional = true }
@@ -135,9 +132,6 @@ std = [
     'pallet-im-online/std',
     'pallet-collective/std',
     'pallet-offences/std',
-    'pallet-contracts/std',
-    'pallet-contracts-rpc-runtime-api/std',
-    'pallet-contracts-primitives/std',
 
     # Joystream
     'common/std',

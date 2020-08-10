@@ -1,7 +1,6 @@
 use frame_support::inherent::{CheckInherentsResult, InherentData};
 use frame_support::traits::{KeyOwnerProofSystem, Randomness};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
-use pallet_contracts_rpc_runtime_api::ContractExecResult;
 use pallet_grandpa::fg_primitives;
 use pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo;
 use sp_api::impl_runtime_apis;
@@ -17,7 +16,7 @@ use crate::{
     GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
 };
 use crate::{
-    AllModules, AuthorityDiscovery, Babe, Call, Contracts, Grandpa, Historical, InherentDataExt,
+    AllModules, AuthorityDiscovery, Babe, Call, Grandpa, Historical, InherentDataExt,
     RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
 };
 
@@ -181,43 +180,6 @@ impl_runtime_apis! {
             System::account_nonce(account)
         }
     }
-
-
-    impl pallet_contracts_rpc_runtime_api::ContractsApi<Block, AccountId, Balance, BlockNumber>
-    for Runtime
-    {
-        fn call(
-            origin: AccountId,
-            dest: AccountId,
-            value: Balance,
-            gas_limit: u64,
-            input_data: Vec<u8>,
-        ) -> ContractExecResult {
-            let exec_result =
-                Contracts::bare_call(origin, dest, value, gas_limit, input_data);
-            match exec_result {
-                Ok(v) => ContractExecResult::Success {
-                    status: v.status,
-                    data: v.data,
-                },
-                Err(_) => ContractExecResult::Error,
-            }
-        }
-
-        fn get_storage(
-            address: AccountId,
-            key: [u8; 32],
-        ) -> pallet_contracts_primitives::GetStorageResult {
-            Contracts::get_storage(address, key)
-        }
-
-        fn rent_projection(
-            address: AccountId,
-        ) -> pallet_contracts_primitives::RentProjectionResult<BlockNumber> {
-            Contracts::rent_projection(address)
-        }
-    }
-
 
     impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentApi<
         Block,

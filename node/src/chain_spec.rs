@@ -31,7 +31,7 @@ use sp_runtime::Perbill;
 use node_runtime::{
     versioned_store::InputValidationLengthConstraint as VsInputValidation,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
-    ContractsConfig, CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
+    CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, MembersConfig,
     ProposalsCodexConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
     StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
@@ -205,8 +205,6 @@ pub fn testnet_genesis(
     const STASH: Balance = 20 * DOLLARS;
     const ENDOWMENT: Balance = 100_000 * DOLLARS;
 
-    let enable_println = false;
-
     // default codex proposals config parameters
     let cpcp = node_runtime::ProposalsConfigParameters::default();
     let default_text_constraint = node_runtime::working_group::default_text_constraint();
@@ -255,12 +253,6 @@ pub fn testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
-        }),
-        pallet_contracts: Some(ContractsConfig {
-            current_schedule: pallet_contracts::Schedule {
-                enable_println, // this should only be enabled on development chains
-                ..Default::default()
-            },
         }),
         council: Some(CouncilConfig {
             active_council: vec![],
