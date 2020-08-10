@@ -61,7 +61,7 @@ impl<T: Trait> OutputPropertyValue<T> {
         }
     }
 
-    /// Compute hash from unique property value and its respective property_id 
+    /// Compute hash from unique property value and its respective property_id
     pub fn compute_unique_hash(&self, property_id: PropertyId) -> T::Hash {
         match self {
             OutputPropertyValue::Single(output_value) => {
@@ -71,7 +71,8 @@ impl<T: Trait> OutputPropertyValue<T> {
                 // Do not hash nonce
                 let vector_output_value = vector_output_value.get_vec_value_ref();
 
-                (property_id, vector_output_value).using_encoded(<T as system::Trait>::Hashing::hash)
+                (property_id, vector_output_value)
+                    .using_encoded(<T as system::Trait>::Hashing::hash)
             }
         }
     }

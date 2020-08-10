@@ -1238,8 +1238,8 @@ decl_module! {
             );
 
             let class_id = entity.get_class_id();
-            
-            // Compute hash from unique property value and its respective property id 
+
+            // Compute hash from unique property value and its respective property id
             let property_value_hash = property_value_vector_updated.compute_unique_hash(in_class_schema_property_id);
 
             // Ensure `Property` with `unique` flag set is `unique` on `Class` level
@@ -1334,7 +1334,7 @@ decl_module! {
 
             let class_id = entity.get_class_id();
 
-            // Compute hash from unique property value and its respective property id 
+            // Compute hash from unique property value and its respective property id
             let property_value_hash = property_value_vector_updated.compute_unique_hash(in_class_schema_property_id);
 
             // Ensure `Property` with `unique` flag set is `unique` on `Class` level
@@ -1796,7 +1796,10 @@ impl<T: Trait> Module<T> {
         unique_property_value_hash: &T::Hash,
     ) -> Result<(), &'static str> {
         ensure!(
-            !<UniquePropertyValueHashes<T>>::exists((class_id, property_id), unique_property_value_hash),
+            !<UniquePropertyValueHashes<T>>::exists(
+                (class_id, property_id),
+                unique_property_value_hash
+            ),
             ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
         );
         Ok(())
@@ -1808,7 +1811,11 @@ impl<T: Trait> Module<T> {
         unique_property_value_hashes: &BTreeMap<PropertyId, T::Hash>,
     ) -> Result<(), &'static str> {
         for (&property_id, unique_property_value_hash) in unique_property_value_hashes {
-            Self::ensure_property_hash_unique_option_satisfied(class_id, property_id, unique_property_value_hash)?;
+            Self::ensure_property_hash_unique_option_satisfied(
+                class_id,
+                property_id,
+                unique_property_value_hash,
+            )?;
         }
         Ok(())
     }

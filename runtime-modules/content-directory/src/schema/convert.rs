@@ -60,4 +60,3 @@ impl<T: Trait> From<VecInputValue<T>> for VecOutputValue<T> {
         }
     }
 }
-
