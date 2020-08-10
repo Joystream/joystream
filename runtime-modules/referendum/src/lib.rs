@@ -45,14 +45,15 @@ pub struct SealedVote<Hash, CurrencyBalance> {
 }
 
 #[derive(Encode, Decode, PartialEq, Eq, Debug)]
-pub enum ReferendumResult<ReferendumOption> {
-    Winner(ReferendumOption),
-    MultipleWinners(Vec<ReferendumOption>),
+pub enum ReferendumResult<ReferendumOption, VotePower> {
+    Winners(Vec<(ReferendumOption, VotePower)>),
+    ExtraWinners(Vec<(ReferendumOption, VotePower)>),
+    NotEnoughWinners(Vec<(ReferendumOption, VotePower)>),
     NoVotesRevealed,
 }
 
-impl<T> Default for ReferendumResult<T> {
-    fn default() -> ReferendumResult<T> {
+impl<T, U> Default for ReferendumResult<T, U> {
+    fn default() -> ReferendumResult<T, U> {
         ReferendumResult::NoVotesRevealed
     }
 }
@@ -63,7 +64,7 @@ pub trait Trait<I: Instance>: system::Trait {
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
 
-    // maximum number of options in one referendum
+    /// Maximum number of options in one referendum.
     type MaxReferendumOptions: Get<u64>;
     type ReferendumOption: Parameter
         + Member
@@ -76,6 +77,7 @@ pub trait Trait<I: Instance>: system::Trait {
         + From<u64>
         + Into<u64>;
 
+    /// Currency balance used for stakes.
     type CurrencyBalance: Parameter
         + Member
         + SimpleArithmetic
@@ -101,7 +103,10 @@ pub trait Trait<I: Instance>: system::Trait {
 
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool;
 
-    fn caclulate_vote_power(account_id: &<Self as system::Trait>::AccountId, stake: <Self as Trait<I>>::CurrencyBalance) -> <Self as Trait<I>>::VotePower;
+    fn caclulate_vote_power(
+        account_id: &<Self as system::Trait>::AccountId,
+        stake: <Self as Trait<I>>::CurrencyBalance,
+    ) -> <Self as Trait<I>>::VotePower;
 
     fn has_sufficient_balance(
         account: &<Self as system::Trait>::AccountId,
@@ -130,6 +135,9 @@ decl_storage! {
 
         /// Revealed votes counter
         pub RevealedVotes get(revealed_votes) config(): map T::ReferendumOption => T::VotePower;
+
+        /// Target count of referendum winners
+        pub WinningTargetCount get(winning_target_count) config(): u64;
     }
 
     /* This might be needed in some cases
@@ -144,13 +152,13 @@ decl_event! {
     pub enum Event<T, I>
     where
         <T as Trait<I>>::ReferendumOption,
-        ReferendumResult = ReferendumResult<<T as Trait<I>>::ReferendumOption>,
         <T as Trait<I>>::CurrencyBalance,
+        ReferendumResult = ReferendumResult<<T as Trait<I>>::ReferendumOption, <T as Trait<I>>::VotePower>,
         <T as system::Trait>::Hash,
         <T as system::Trait>::AccountId,
     {
         /// Referendum started
-        ReferendumStarted(Vec<ReferendumOption>),
+        ReferendumStarted(Vec<ReferendumOption>, u64),
 
         /// Revealing phase has begun
         RevealingStageStarted(),
@@ -246,7 +254,7 @@ decl_module! {
         /////////////////// Lifetime ///////////////////////////////////////////
 
         // start voting period
-        pub fn start_referendum(origin, options: Vec<T::ReferendumOption>) -> Result<(), Error> {
+        pub fn start_referendum(origin, options: Vec<T::ReferendumOption>, winning_target_count: u64) -> Result<(), Error> {
             // ensure action can be started
             EnsureChecks::<T, I>::can_start_referendum(origin, &options)?;
 
@@ -255,10 +263,10 @@ decl_module! {
             //
 
             // update state
-            Mutations::<T, I>::start_voting_period(&options);
+            Mutations::<T, I>::start_voting_period(&options, &winning_target_count);
 
             // emit event
-            Self::deposit_event(RawEvent::ReferendumStarted(options));
+            Self::deposit_event(RawEvent::ReferendumStarted(options, winning_target_count));
 
             Ok(())
         }
@@ -342,12 +350,15 @@ struct Mutations<T: Trait<I>, I: Instance> {
 }
 
 impl<T: Trait<I>, I: Instance> Mutations<T, I> {
-    fn start_voting_period(options: &Vec<T::ReferendumOption>) {
+    fn start_voting_period(options: &Vec<T::ReferendumOption>, winning_target_count: &u64) -> () {
         // change referendum state
         Stage::<T, I>::put((ReferendumStage::Voting, <system::Module<T>>::block_number()));
 
         // store new options
         ReferendumOptions::<T, I>::put(options.clone());
+
+        // store winning target
+        WinningTargetCount::<I>::put(winning_target_count);
     }
 
     fn start_revealing_period() {
@@ -358,8 +369,70 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         ));
     }
 
-    fn conclude_referendum() -> ReferendumResult<T::ReferendumOption> {
+    fn conclude_referendum() -> ReferendumResult<T::ReferendumOption, T::VotePower> {
         // select winning option
+        fn calculate_votes<T: Trait<I>, I: Instance>(
+        ) -> ReferendumResult<T::ReferendumOption, T::VotePower> {
+            //let mut max: (Option<Vec<&T::ReferendumOption>>, T::VotePower, bool) = (None, 0.into(), false); // `(referendum_result, votes_power_sum, multiple_options_with_same_votes_count)`
+
+            // ordered vector - order from the most to the least
+            let mut winning_order: Vec<(T::ReferendumOption, T::VotePower)> = vec![];
+
+            // walk through all options
+            let options = ReferendumOptions::<T, I>::get();
+            if let Some(tmp_options) = &options {
+                // formal condition - there will always be options
+                for option in tmp_options.iter() {
+                    // skip option with 0 votes
+                    if !RevealedVotes::<T, I>::exists(option) {
+                        continue;
+                    }
+                    let vote_sum = RevealedVotes::<T, I>::get(option);
+                    winning_order.push((option.clone(), vote_sum));
+                }
+            }
+
+            // no votes revealed?
+            if winning_order.len() == 0 {
+                return ReferendumResult::NoVotesRevealed;
+            }
+
+            winning_order.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+            let voted_options_count = winning_order.len();
+            let target_count = WinningTargetCount::<I>::get();
+
+            // is there enough options with votes to have requested amount of winners?
+            if (voted_options_count as u64) < target_count {
+                return ReferendumResult::NotEnoughWinners(winning_order);
+            }
+
+            // is there as many options voted for as requested winner count?
+            if (voted_options_count as u64) == target_count {
+                return ReferendumResult::Winners(winning_order);
+            }
+
+            // is there draw in the last winning place?
+            if winning_order[(target_count as usize) - 1].1
+                == winning_order[target_count as usize].1
+            {
+                let mut draw_end_index = target_count as usize;
+                while voted_options_count > draw_end_index + 1
+                    && winning_order[draw_end_index].1 == winning_order[draw_end_index + 1].1
+                {
+                    draw_end_index += 1;
+                }
+
+                return ReferendumResult::ExtraWinners(
+                    winning_order[..(target_count as usize)].to_vec(),
+                );
+            }
+
+            ReferendumResult::Winners(winning_order[..(target_count as usize)].to_vec())
+        }
+
+        let referendum_result = calculate_votes::<T, I>();
+
+        /*
         // TODO - try to iterate ovet RevealedVotes when newer version of substrate is used (`RevealedVotes::<T, I>::iter_values(|option| ...)`)
         // TODO - decide what to do when two options recieve same amount of votes
         let mut max: (Option<Vec<&T::ReferendumOption>>, T::VotePower, bool) = (None, 0.into(), false); // `(referendum_result, votes_power_sum, multiple_options_with_same_votes_count)`
@@ -406,6 +479,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             (None, _, false) => ReferendumResult::NoVotesRevealed,
             _ => ReferendumResult::NoVotesRevealed,
         };
+        */
 
         // reset referendum state
         Stage::<T, I>::put((ReferendumStage::Void, <system::Module<T>>::block_number()));
@@ -413,6 +487,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         // TODO clear votes maps
         //RevealedVotes::...
         //Votes::...
+        //WinningTargetCount::...
 
         // return winning option
         referendum_result
