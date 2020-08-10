@@ -86,7 +86,11 @@ pallet-transaction-payment = { package = 'pallet-transaction-payment', git = 'ht
 pallet-grandpa = { package = 'pallet-grandpa', git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
 
 [build-dependencies]
-vergen = '3'
+structopt = { version = "0.3.8", optional = true }
+node-inspect = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', optional = true}
+sc-cli = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', optional = true}
+frame-benchmarking-cli = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', optional = true }
+substrate-build-script-utils = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', optional = true }
 
 [features]
 default = [ "cli" ]
@@ -101,6 +105,7 @@ cli = [
 	"frame-benchmarking-cli",
 	"sc-service/db",
 	"structopt",
+	"substrate-build-script-utils",
 ]
 runtime-benchmarks = [
 	"node-runtime/runtime-benchmarks",
