@@ -607,30 +607,7 @@ fn finish_revealing_period_no_revealing_stage() {
 }
 
 #[test]
-fn finish_revealing_period_no_vote_revealed() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
-        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
-        let origin = OriginType::Signed(USER_ADMIN);
-        let options = vec![0];
-        let winning_target_count = 1;
-
-        Mocks::start_referendum(origin.clone(), options, winning_target_count, Ok(()));
-        MockUtils::increase_block_number(voting_stage_duration + 1);
-        Mocks::finish_voting(origin.clone(), Ok(()));
-        MockUtils::increase_block_number(reveal_stage_duration + 1);
-        Mocks::finish_revealing_period(
-            origin.clone(),
-            Ok(()),
-            Some(ReferendumResult::NoVotesRevealed),
-        );
-    });
-}
-
-#[test]
-fn finish_revealing_vote_power() {
+fn finish_revealing_period_vote_power() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
@@ -699,6 +676,181 @@ fn finish_revealing_vote_power() {
         );
     });
 }
+
+/////////////////// Referendum Winners ////////////////////////////////////////////////////
+
+#[test]
+fn winners_no_vote_revealed() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
+        let origin = OriginType::Signed(USER_ADMIN);
+        let options = vec![0];
+        let winning_target_count = 1;
+
+        Mocks::start_referendum(origin.clone(), options, winning_target_count, Ok(()));
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+        Mocks::finish_voting(origin.clone(), Ok(()));
+        MockUtils::increase_block_number(reveal_stage_duration + 1);
+        Mocks::finish_revealing_period(
+            origin.clone(),
+            Ok(()),
+            Some(ReferendumResult::NoVotesRevealed),
+        );
+    });
+}
+
+#[test]
+fn winners_multiple_winners() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
+        let account_superuser = USER_ADMIN;
+        let account_id1 = USER_REGULAR;
+        let account_id2 = USER_REGULAR_2;
+        let account_id3 = USER_REGULAR_3;
+        let origin = OriginType::Signed(account_superuser);
+        let origin_voter1 = OriginType::Signed(account_id1);
+        let origin_voter2 = OriginType::Signed(account_id2);
+        let origin_voter3 = OriginType::Signed(account_id3);
+        let options = vec![0, 1, 2];
+        let winning_target_count = 2;
+
+        let option_to_vote_for1 = options[0];
+        let option_to_vote_for2 = options[1];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment1, salt1) = MockUtils::vote_commitment(account_id1, option_to_vote_for1);
+        let (commitment2, salt2) = MockUtils::vote_commitment(account_id2, option_to_vote_for1);
+        let (commitment3, salt3) = MockUtils::vote_commitment(account_id3, option_to_vote_for2);
+
+        Mocks::start_referendum(
+            origin.clone(),
+            options.clone(),
+            winning_target_count,
+            Ok(()),
+        );
+        Mocks::vote(origin_voter1.clone(), account_id1, commitment1, stake, Ok(()));
+        Mocks::vote(origin_voter2.clone(), account_id2, commitment2, stake, Ok(()));
+        Mocks::vote(origin_voter3.clone(), account_id3, commitment3, stake, Ok(()));
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::reveal_vote(origin_voter1.clone(), account_id1, salt1, option_to_vote_for1, Ok(()));
+        Mocks::reveal_vote(origin_voter2.clone(), account_id2, salt2, option_to_vote_for1, Ok(()));
+        Mocks::reveal_vote(origin_voter3.clone(), account_id3, salt3, option_to_vote_for2, Ok(()));
+        MockUtils::increase_block_number(reveal_stage_duration + 1);
+
+        let expected_winners = vec![
+            (option_to_vote_for1, 2),
+            (option_to_vote_for2, 1),
+        ];
+
+        Mocks::finish_revealing_period(
+            origin.clone(),
+            Ok(()),
+            Some(ReferendumResult::Winners(expected_winners)),
+        );
+    });
+}
+
+#[test]
+// option 1 and option 2 has the same amount of votes but only 1 winner is expected
+fn winners_multiple_winners_extra() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
+        let account_superuser = USER_ADMIN;
+        let account_id1 = USER_REGULAR;
+        let account_id2 = USER_REGULAR_2;
+        let origin = OriginType::Signed(account_superuser);
+        let origin_voter1 = OriginType::Signed(account_id1);
+        let origin_voter2 = OriginType::Signed(account_id2);
+        let options = vec![0, 1, 2];
+        let winning_target_count = 1;
+
+        let option_to_vote_for1 = options[0];
+        let option_to_vote_for2 = options[1];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment1, salt1) = MockUtils::vote_commitment(account_id1, option_to_vote_for1);
+        let (commitment2, salt2) = MockUtils::vote_commitment(account_id2, option_to_vote_for2);
+
+        Mocks::start_referendum(
+            origin.clone(),
+            options.clone(),
+            winning_target_count,
+            Ok(()),
+        );
+        Mocks::vote(origin_voter1.clone(), account_id1, commitment1, stake, Ok(()));
+        Mocks::vote(origin_voter2.clone(), account_id2, commitment2, stake, Ok(()));
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::reveal_vote(origin_voter1.clone(), account_id1, salt1, option_to_vote_for1, Ok(()));
+        Mocks::reveal_vote(origin_voter2.clone(), account_id2, salt2, option_to_vote_for2, Ok(()));
+        MockUtils::increase_block_number(reveal_stage_duration + 1);
+
+        let expected_winners = vec![
+            (option_to_vote_for1, 1),
+            (option_to_vote_for2, 1),
+        ];
+
+        Mocks::finish_revealing_period(
+            origin.clone(),
+            Ok(()),
+            Some(ReferendumResult::ExtraWinners(expected_winners)),
+        );
+    });
+}
+
+#[test]
+fn winners_multiple_not_enough() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
+        let account_superuser = USER_ADMIN;
+        let account_id1 = USER_REGULAR;
+        let origin = OriginType::Signed(account_superuser);
+        let origin_voter1 = OriginType::Signed(account_id1);
+        let options = vec![0, 1, 2];
+        let winning_target_count = 2;
+
+        let option_to_vote_for1 = options[0];
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment1, salt1) = MockUtils::vote_commitment(account_id1, option_to_vote_for1);
+
+        Mocks::start_referendum(
+            origin.clone(),
+            options.clone(),
+            winning_target_count,
+            Ok(()),
+        );
+        Mocks::vote(origin_voter1.clone(), account_id1, commitment1, stake, Ok(()));
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::reveal_vote(origin_voter1.clone(), account_id1, salt1, option_to_vote_for1, Ok(()));
+        MockUtils::increase_block_number(reveal_stage_duration + 1);
+
+        let expected_winners = vec![
+            (option_to_vote_for1, 1),
+        ];
+
+        Mocks::finish_revealing_period(
+            origin.clone(),
+            Ok(()),
+            Some(ReferendumResult::NotEnoughWinners(expected_winners)),
+        );
+    });
+}
+
 
 /////////////////// Lifetime - complete ////////////////////////////////////////
 

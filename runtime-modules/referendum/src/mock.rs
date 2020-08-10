@@ -26,6 +26,8 @@ use crate::GenesisConfig;
 pub const USER_ADMIN: u64 = 1;
 pub const USER_REGULAR: u64 = 2;
 pub const USER_REGULAR_POWER_VOTES: u64 = 3;
+pub const USER_REGULAR_2: u64 = 4;
+pub const USER_REGULAR_3: u64 = 5;
 
 /////////////////// Runtime and Instances //////////////////////////////////////
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -93,6 +95,8 @@ impl<I: Instance> Trait<I> for Runtime {
             USER_ADMIN => true,
             USER_REGULAR => true,
             USER_REGULAR_POWER_VOTES => true,
+            USER_REGULAR_2 => true,
+            USER_REGULAR_3 => true,
             _ => false,
         }
     }
