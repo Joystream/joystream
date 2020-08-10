@@ -2,7 +2,7 @@ import { makeStyles, StyleFn } from '../../utils'
 import { colors, spacing } from '../../theme'
 
 export type AvatarStyleProps = {
-  size: 'small' | 'default' | 'large'
+  size?: 'small' | 'default' | 'large'
 }
 
 const container: StyleFn = (_, { size = 'default' }) => {
@@ -31,7 +31,7 @@ const img: StyleFn = () => ({
   borderRadius: 999,
 })
 
-export const useCSS = (props: Partial<AvatarStyleProps>) => ({
+export const useCSS = (props: AvatarStyleProps) => ({
   container: makeStyles([container])(props),
   img: makeStyles([img])(props),
 })

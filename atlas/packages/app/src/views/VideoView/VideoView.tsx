@@ -16,14 +16,24 @@ import {
   TitleActionsContainer,
 } from './VideoView.style'
 import { Button, VideoPlayer } from '@/shared/components'
-import { formatDateShort } from '@/utils/time'
+import { formatDateAgo } from '@/utils/time'
 import { formatNumber } from '@/utils/number'
-import { mockVideos } from '@/config/mocks'
+import { useQuery } from '@apollo/client'
+import { GET_NEWEST_VIDEOS } from '@/api/queries'
+import { GetNewestVideos } from '@/api/queries/__generated__/GetNewestVideos'
 
 const VideoView: React.FC<RouteComponentProps> = () => {
-  const { title, views, createdAt, channel, description } = mockVideos[0]
+  const { loading, data } = useQuery<GetNewestVideos>(GET_NEWEST_VIDEOS)
+
+  if (loading || !data) {
+    return <p>Loading</p>
+  }
+
+  const { title, views, publishedOnJoystreamAt, channel, description } = data.videos[0]
 
   const descriptionLines = description.split('\n')
+
+  const moreVideos = Array.from({ length: 10 }, () => data.videos[0])
 
   return (
     <Container>
@@ -38,26 +48,26 @@ const VideoView: React.FC<RouteComponentProps> = () => {
           </ActionsContainer>
         </TitleActionsContainer>
         <Meta>
-          {formatNumber(views)} views • {formatDateShort(createdAt)}
+          {formatNumber(views)} views • {formatDateAgo(publishedOnJoystreamAt)}
         </Meta>
-        <StyledChannelAvatar {...channel} />
+        <StyledChannelAvatar name={channel.handle} avatarUrl={channel.avatarPhotoURL} />
         <DescriptionContainer>
           {descriptionLines.map((line, idx) => (
             <p key={idx}>{line}</p>
           ))}
         </DescriptionContainer>
         <MoreVideosContainer>
-          <MoreVideosHeader>More from {channel.name}</MoreVideosHeader>
+          <MoreVideosHeader>More from {channel.handle}</MoreVideosHeader>
           <MoreVideosGrid>
-            {mockVideos.map((v, idx) => (
+            {moreVideos.map((v, idx) => (
               <MoreVideosPreview
                 key={idx}
                 title={v.title}
-                channelName={v.channel.name}
-                createdAt={v.createdAt}
+                channelName={v.channel.handle}
+                createdAt={v.publishedOnJoystreamAt}
                 duration={v.duration}
                 views={v.views}
-                posterURL={v.posterURL}
+                posterURL={v.thumbnailURL}
               />
             ))}
           </MoreVideosGrid>

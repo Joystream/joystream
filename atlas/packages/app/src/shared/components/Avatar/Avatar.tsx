@@ -3,10 +3,10 @@ import { SerializedStyles } from '@emotion/core'
 import { AvatarStyleProps, useCSS } from './Avatar.style'
 
 export type AvatarProps = {
-  onClick: (e: React.MouseEvent<HTMLElement>) => void
+  onClick?: (e: React.MouseEvent<HTMLElement>) => void
   outerStyles?: SerializedStyles
-  img: string
-  name: string
+  img?: string | null
+  name?: string
   className?: string
 } & AvatarStyleProps
 
@@ -16,14 +16,7 @@ function initialsFromName(name: string): string {
   return vowels.includes(second) ? first : `${first}${second}`
 }
 
-const Avatar: React.FC<Partial<AvatarProps>> = ({
-  img,
-  outerStyles,
-  onClick = () => {},
-  name,
-  className,
-  ...styleProps
-}) => {
+const Avatar: React.FC<AvatarProps> = ({ img, outerStyles, onClick = () => {}, name, className, ...styleProps }) => {
   const styles = useCSS({ ...styleProps })
   return (
     <div css={[styles.container, outerStyles]} className={className} onClick={onClick}>

@@ -4,12 +4,13 @@ import { navigate } from '@reach/router'
 
 import { Gallery, VideoPreview } from '@/shared/components'
 import theme from '@/shared/theme'
-import { mockVideos } from '@/config/mocks'
-import { shuffle } from 'lodash'
+import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 
 type VideoGalleryProps = {
   title: string
-  action: string
+  action?: string
+  videos?: VideoFields[]
+  loading?: boolean
 }
 
 const articleStyles = css`
@@ -19,7 +20,7 @@ const articleStyles = css`
 
 const CAROUSEL_WHEEL_HEIGHT = theme.sizes.b12
 
-const VideoGallery: React.FC<Partial<VideoGalleryProps>> = ({ title, action }) => {
+const VideoGallery: React.FC<VideoGalleryProps> = ({ title, action, videos, loading }) => {
   const [posterSize, setPosterSize] = useState(0)
   const [galleryControlCss, setGalleryControlCss] = useState<SerializedStyles>(css``)
 
@@ -44,7 +45,9 @@ const VideoGallery: React.FC<Partial<VideoGalleryProps>> = ({ title, action }) =
     navigate('/video/fake')
   }
 
-  const videos = shuffle(mockVideos)
+  if (loading || !videos) {
+    return <p>Loading</p>
+  }
 
   return (
     <Gallery title={title} action={action} leftControlCss={galleryControlCss} rightControlCss={galleryControlCss}>
@@ -52,12 +55,12 @@ const VideoGallery: React.FC<Partial<VideoGalleryProps>> = ({ title, action }) =
         <article css={articleStyles} key={`${title}- ${video.title} - ${idx}`}>
           <VideoPreview
             title={video.title}
-            channelName={video.channel.name}
-            channelAvatarURL={video.channel.avatarURL}
+            channelName={video.channel.handle}
+            channelAvatarURL={video.channel.avatarPhotoURL}
             views={video.views}
-            createdAt={video.createdAt}
+            createdAt={video.publishedOnJoystreamAt}
             duration={video.duration}
-            posterURL={video.posterURL}
+            posterURL={video.thumbnailURL}
             onClick={handleVideoClick}
             imgRef={idx === 0 ? imgRef : null}
           />

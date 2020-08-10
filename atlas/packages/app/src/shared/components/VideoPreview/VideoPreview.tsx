@@ -15,16 +15,15 @@ import {
   TextContainer,
   TitleHeader,
 } from './VideoPreview.styles'
-import { DateTime, Duration } from 'luxon'
-import { formatDateShort, formatDurationShort } from '@/utils/time'
+import { formatDateAgo, formatDurationShort } from '@/utils/time'
 import { formatNumberShort } from '@/utils/number'
 
 type VideoPreviewProps = {
   title: string
   channelName: string
-  channelAvatarURL?: string
-  createdAt: DateTime
-  duration?: Duration
+  channelAvatarURL?: string | null
+  createdAt: Date
+  duration?: number
   // video watch progress in percent (0-100)
   progress?: number
   views: number
@@ -106,7 +105,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
           )}
           {showMeta && (
             <MetaText>
-              {formatDateShort(createdAt)}・{formatNumberShort(views)} views
+              {formatDateAgo(createdAt)}・{formatNumberShort(views)} views
             </MetaText>
           )}
         </TextContainer>
