@@ -7,44 +7,27 @@ edition = '2018'
 [dependencies]
 codec = { package = 'parity-scale-codec', version = '1.0.0', default-features = false, features = ['derive'] }
 serde = { version = '1.0.101', optional = true}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 
-[dependencies.srml-support]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-support'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.system]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-system'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.sr-primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-primitives'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-primitives'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
 
 [dev-dependencies]
-runtime-io = { package = 'sr-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 rand = "0.7.3"
 
 [features]
 default = ['std']
 std = [
     'codec/std',
-    'primitives/std',
-    'runtime-io/std',
+    'sp-core/std',
+    'sp-io/std',
     'serde',
-    'sr-primitives/std',
-    'srml-support/std',
+    'sp-runtime/std',
+    'sp-arithmetic/std',
+    'frame-support/std',
     'system/std',
 ]
 

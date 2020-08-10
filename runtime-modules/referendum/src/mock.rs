@@ -7,15 +7,15 @@ use crate::{
 };
 
 use codec::Encode;
-use primitives::H256;
+use sp_core::H256;
 use rand::Rng;
-use runtime_io;
-use sr_primitives::{
+//use sp_io;
+use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{
+use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
 use std::marker::PhantomData;
@@ -169,23 +169,17 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-// TODO: find a way to derive the trait
-#[allow(non_upper_case_globals)] // `decl_storage` macro defines this weird name
+//#[allow(non_upper_case_globals)] // `decl_storage` macro defines this weird name
 impl Instance for Instance0 {
     const PREFIX: &'static str = "Instance0";
-
-    const PREFIX_FOR_Stage: &'static str = "Instance0_stage";
-    const PREFIX_FOR_ReferendumOptions: &'static str = "Instance0_referendum_options";
-    const PREFIX_FOR_Votes: &'static str = "Instance0_votes";
-    const PREFIX_FOR_RevealedVotes: &'static str = "Instance0_revealed_votes";
-    const PREFIX_FOR_WinningTargetCount: &'static str = "Instance0_winning_target_count";
 }
 
 impl system::Trait for Runtime {
+    type BaseCallFilter = ();
     type Origin = Origin;
+    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
@@ -195,9 +189,17 @@ impl system::Trait for Runtime {
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = ();
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
 /////////////////// Data structures ////////////////////////////////////////////
@@ -229,7 +231,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime, Instance0> {
 
 pub fn build_test_externalities<I: Instance>(
     config: GenesisConfig<Runtime, I>,
-) -> runtime_io::TestExternalities {
+) -> sp_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
@@ -284,7 +286,7 @@ impl<T: Trait<I>, I: Instance> InstanceMockUtils<T, I> {
         payload.append(&mut salt_tmp);
         payload.append(&mut option.into().to_be_bytes().to_vec());
 
-        let commitment = <T::Hashing as sr_primitives::traits::Hash>::hash(&payload);
+        let commitment = <T::Hashing as sp_runtime::traits::Hash>::hash(&payload);
 
         (commitment, salt)
     }
@@ -301,7 +303,7 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
         origin: OriginType<T::AccountId>,
         options: Vec<T::ReferendumOption>,
         winning_target_count: u64,
-        expected_result: Result<(), Error>,
+        expected_result: Result<(), Error<T, I>>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
@@ -333,7 +335,7 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
 
     pub fn finish_voting(
         origin: OriginType<T::AccountId>,
-        expected_result: Result<(), Error>,
+        expected_result: Result<(), Error<T, I>>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
@@ -360,7 +362,7 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
 
     pub fn finish_revealing_period(
         origin: OriginType<T::AccountId>,
-        expected_result: Result<(), Error>,
+        expected_result: Result<(), Error<T, I>>,
         _expected_referendum_result: Option<ReferendumResult<T::ReferendumOption, T::VotePower>>,
     ) -> () {
         // check method returns expected result
@@ -390,7 +392,7 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
         account_id: T::AccountId,
         commitment: T::Hash,
         stake: T::CurrencyBalance,
-        expected_result: Result<(), Error>,
+        expected_result: Result<(), Error<T, I>>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
@@ -424,7 +426,7 @@ impl<T: Trait<I>, I: Instance> InstanceMocks<T, I> {
         _account_id: T::AccountId,
         salt: Vec<u8>,
         vote_option: T::ReferendumOption,
-        expected_result: Result<(), Error>,
+        expected_result: Result<(), Error<T, I>>,
     ) -> () {
         // check method returns expected result
         assert_eq!(

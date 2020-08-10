@@ -115,6 +115,7 @@ fn referendum_start_not_unique_options() {
             Err(Error::DuplicateReferendumOptions),
         );
     });
+
 }
 
 /////////////////// Lifetime - voting //////////////////////////////////////////

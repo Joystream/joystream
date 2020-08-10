@@ -1,4 +1,5 @@
 // TODO: module documentation
+// TODO: adjust all extrinsic weights
 
 // NOTE: This module is instantiable pallet as described here https://substrate.dev/recipes/3-entrees/instantiable.html
 // No default instance is provided.
@@ -8,8 +9,9 @@
 
 // used dependencies
 use codec::{Codec, Decode, Encode};
-use sr_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
-use srml_support::{decl_error, decl_event, decl_module, decl_storage, traits::Get, Parameter};
+use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_arithmetic::traits::{BaseArithmetic, One};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, traits::Get, Parameter, StorageValue, error::BadOrigin};
 use std::marker::PhantomData;
 use system::ensure_signed;
 
@@ -68,7 +70,7 @@ pub trait Trait<I: Instance>: system::Trait {
     type MaxReferendumOptions: Get<u64>;
     type ReferendumOption: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -80,7 +82,7 @@ pub trait Trait<I: Instance>: system::Trait {
     /// Currency balance used for stakes.
     type CurrencyBalance: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -89,7 +91,7 @@ pub trait Trait<I: Instance>: system::Trait {
 
     type VotePower: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -125,19 +127,19 @@ pub trait Trait<I: Instance>: system::Trait {
 decl_storage! {
     trait Store for Module<T: Trait<I>, I: Instance> as Referendum {
         /// Current referendum stage
-        pub Stage get(stage) config(): (ReferendumStage, T::BlockNumber);
+        pub Stage get(fn stage) config(): (ReferendumStage, T::BlockNumber);
 
         /// Options of current referendum
-        pub ReferendumOptions get(referendum_options) config(): Option<Vec<T::ReferendumOption>>;
+        pub ReferendumOptions get(fn referendum_options) config(): Option<Vec<T::ReferendumOption>>;
 
         /// Votes in current referendum
-        pub Votes get(votes) config(): map T::AccountId => SealedVote<T::Hash, T::CurrencyBalance>;
+        pub Votes get(fn votes) config(): map hasher(blake2_128_concat) T::AccountId => SealedVote<T::Hash, T::CurrencyBalance>;
 
         /// Revealed votes counter
-        pub RevealedVotes get(revealed_votes) config(): map T::ReferendumOption => T::VotePower;
+        pub RevealedVotes get(fn revealed_votes) config(): map hasher(blake2_128_concat) T::ReferendumOption => T::VotePower;
 
         /// Target count of referendum winners
-        pub WinningTargetCount get(winning_target_count) config(): u64;
+        pub WinningTargetCount get(fn winning_target_count) config(): u64;
     }
 
     /* This might be needed in some cases
@@ -175,9 +177,15 @@ decl_event! {
 }
 
 decl_error! {
-    #[derive(Copy)]
+    //#[derive(Copy)]
+
     /// Referendum errors
-    pub enum Error {
+    //#[derive(PartialEq, Eq)]
+    #[repr(u64)]
+    pub enum Error for Module<T: Trait<I>, I: Instance> {
+        /// Origin is invalid
+        BadOrigin,
+
         /// Origin doesn't correspond to any superuser
         OriginNotSuperUser,
 
@@ -231,13 +239,15 @@ decl_error! {
     }
 }
 
-impl From<system::Error> for Error {
-    fn from(error: system::Error) -> Self {
-        match error {
-            system::Error::Other(msg) => Error::Other(msg),
-            system::Error::RequireRootOrigin => Error::OriginNotSuperUser,
-            _ => Error::Other(error.into()),
-        }
+impl<T: Trait<I>, I: Instance> PartialEq for Error<T, I> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_u8() == other.as_u8()
+    }
+}
+
+impl<T: Trait<I>, I: Instance> From<BadOrigin> for Error<T, I> {
+    fn from(_error: BadOrigin) -> Self {
+        Error::<T, I>::BadOrigin
     }
 }
 
@@ -246,7 +256,7 @@ impl From<system::Error> for Error {
 decl_module! {
     pub struct Module<T: Trait<I>, I: Instance> for enum Call where origin: T::Origin {
         /// Predefined errors
-        type Error = Error;
+        type Error = Error<T, I>;
 
         /// Setup events
         fn deposit_event() = default;
@@ -254,7 +264,8 @@ decl_module! {
         /////////////////// Lifetime ///////////////////////////////////////////
 
         // start voting period
-        pub fn start_referendum(origin, options: Vec<T::ReferendumOption>, winning_target_count: u64) -> Result<(), Error> {
+        #[weight = 10_000_000]
+        pub fn start_referendum(origin, options: Vec<T::ReferendumOption>, winning_target_count: u64) -> Result<(), Error<T, I>> {
             // ensure action can be started
             EnsureChecks::<T, I>::can_start_referendum(origin, &options)?;
 
@@ -272,7 +283,8 @@ decl_module! {
         }
 
         // finish voting period
-        pub fn finish_voting_start_revealing(origin) -> Result<(), Error> {
+        #[weight = 10_000_000]
+        pub fn finish_voting_start_revealing(origin) -> Result<(), Error<T, I>> {
             // ensure action can be started
             EnsureChecks::<T, I>::can_finish_voting(origin)?;
 
@@ -289,7 +301,8 @@ decl_module! {
             Ok(())
         }
 
-        pub fn finish_revealing_period(origin) -> Result<(), Error> {
+        #[weight = 10_000_000]
+        pub fn finish_revealing_period(origin) -> Result<(), Error<T, I>> {
             // ensure action can be started
             EnsureChecks::<T, I>::can_finish_revealing(origin)?;
 
@@ -308,7 +321,8 @@ decl_module! {
 
         /////////////////// User actions ///////////////////////////////////////
 
-        pub fn vote(origin, commitment: T::Hash, stake: T::CurrencyBalance) -> Result<(), Error> {
+        #[weight = 10_000_000]
+        pub fn vote(origin, commitment: T::Hash, stake: T::CurrencyBalance) -> Result<(), Error<T, I>> {
             // ensure action can be started
             let account_id = EnsureChecks::<T, I>::can_vote(origin, &stake)?;
 
@@ -325,7 +339,8 @@ decl_module! {
             Ok(())
         }
 
-        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option: T::ReferendumOption) -> Result<(), Error> {
+        #[weight = 10_000_000]
+        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option: T::ReferendumOption) -> Result<(), Error<T, I>> {
             let (account_id, sealed_vote) = EnsureChecks::<T, I>::can_reveal_vote(origin, &salt, &vote_option)?;
 
             //
@@ -384,7 +399,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
                 // formal condition - there will always be options
                 for option in tmp_options.iter() {
                     // skip option with 0 votes
-                    if !RevealedVotes::<T, I>::exists(option) {
+                    if !RevealedVotes::<T, I>::contains_key(option) {
                         continue;
                     }
                     let vote_sum = RevealedVotes::<T, I>::get(option);
@@ -453,7 +468,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         account_id: &T::AccountId,
         commitment: &T::Hash,
         stake: &T::CurrencyBalance,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<T, I>> {
         // IMPORTANT - because locking currency can fail it has to be the first mutation!
         // lock stake amount
         if !T::lock_currency(&account_id, &stake) {
@@ -476,7 +491,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         account_id: &T::AccountId,
         vote_option: &T::ReferendumOption,
         sealed_vote: &SealedVote<T::Hash, T::CurrencyBalance>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<T, I>> {
         // IMPORTANT - because unlocking currency can fail it has to be the first mutation!
         // unlock stake amount
         if !T::free_currency(&account_id, &sealed_vote.stake) {
@@ -505,7 +520,7 @@ struct EnsureChecks<T: Trait<I>, I: Instance> {
 impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
     /////////////////// Common checks //////////////////////////////////////////
 
-    fn ensure_super_user(origin: T::Origin) -> Result<T::AccountId, Error> {
+    fn ensure_super_user(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
         let account_id = ensure_signed(origin)?;
 
         // ensure superuser requested action
@@ -516,7 +531,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(account_id)
     }
 
-    fn ensure_regular_user(origin: T::Origin) -> Result<T::AccountId, Error> {
+    fn ensure_regular_user(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
         let account_id = ensure_signed(origin)?;
 
         Ok(account_id)
@@ -527,7 +542,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
     fn can_start_referendum(
         origin: T::Origin,
         options: &[T::ReferendumOption],
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<T, I>> {
         // ensure superuser requested action
         Self::ensure_super_user(origin)?;
 
@@ -558,7 +573,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(())
     }
 
-    fn can_finish_voting(origin: T::Origin) -> Result<(), Error> {
+    fn can_finish_voting(origin: T::Origin) -> Result<(), Error<T, I>> {
         // ensure superuser requested action
         Self::ensure_super_user(origin)?;
 
@@ -579,7 +594,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(())
     }
 
-    fn can_finish_revealing(origin: T::Origin) -> Result<(), Error> {
+    fn can_finish_revealing(origin: T::Origin) -> Result<(), Error<T, I>> {
         // ensure superuser requested action
         Self::ensure_super_user(origin)?;
 
@@ -602,7 +617,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(())
     }
 
-    fn can_vote(origin: T::Origin, stake: &T::CurrencyBalance) -> Result<T::AccountId, Error> {
+    fn can_vote(origin: T::Origin, stake: &T::CurrencyBalance) -> Result<T::AccountId, Error<T, I>> {
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;
 
@@ -631,7 +646,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ensure user haven't vote yet
-        if Votes::<T, I>::exists(&account_id) {
+        if Votes::<T, I>::contains_key(&account_id) {
             return Err(Error::AlreadyVoted);
         }
 
@@ -642,7 +657,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         origin: T::Origin,
         salt: &Vec<u8>,
         vote_option: &T::ReferendumOption,
-    ) -> Result<(T::AccountId, SealedVote<T::Hash, T::CurrencyBalance>), Error> {
+    ) -> Result<(T::AccountId, SealedVote<T::Hash, T::CurrencyBalance>), Error<T, I>> {
         fn calculate_commitment<T: Trait<I>, I: Instance>(
             account_id: &T::AccountId,
             salt: &Vec<u8>,
@@ -655,7 +670,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             payload.append(&mut salt_tmp);
             payload.append(&mut mut_option);
 
-            <T::Hashing as sr_primitives::traits::Hash>::hash(&payload)
+            <T::Hashing as sp_runtime::traits::Hash>::hash(&payload)
         }
 
         // ensure superuser requested action
@@ -676,7 +691,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ensure account voted
-        if !Votes::<T, I>::exists(&account_id) {
+        if !Votes::<T, I>::contains_key(&account_id) {
             return Err(Error::NoVoteToReveal);
         }
 
