@@ -1364,3 +1364,95 @@ fn add_schema_support_property_should_be_unique() {
         );
     })
 }
+
+#[test]
+fn add_schema_support_properties_should_be_unique() {
+    with_test_externalities(|| {
+        // Create class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+
+        let actor = Actor::Lead;
+
+        // Create first entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.to_owned()));
+
+        // Create second entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.to_owned()));
+
+        // Create third entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.to_owned()));
+
+        let property_type = PropertyType::<Runtime>::single_text(TextMaxLengthConstraint::get());
+
+        // Create text property
+
+        let property = Property::<Runtime>::with_name_and_type(
+            PropertyNameLengthConstraint::get().max() as usize,
+            property_type,
+            true,
+            true,
+        );
+
+        // Add Schema to the Class
+        assert_ok!(add_class_schema(
+            LEAD_ORIGIN,
+            FIRST_CLASS_ID,
+            BTreeSet::new(),
+            vec![property]
+        ));
+
+        let mut first_schema_property_values = BTreeMap::new();
+
+        let first_schema_property_value =
+            InputPropertyValue::<Runtime>::single_text(TextMaxLengthConstraint::get());
+
+        first_schema_property_values.insert(FIRST_PROPERTY_ID, first_schema_property_value);
+
+        // Add Entity Schema support to the first Entity (property unique on the Class level added)
+        assert_ok!(add_schema_support_to_entity(
+            LEAD_ORIGIN,
+            actor.to_owned(),
+            FIRST_ENTITY_ID,
+            FIRST_SCHEMA_ID,
+            first_schema_property_values.clone(),
+        ));
+
+        let mut second_schema_property_values = BTreeMap::new();
+
+        let second_schema_property_value =
+            InputPropertyValue::<Runtime>::single_text(TextMaxLengthConstraint::get() - 1);
+
+        second_schema_property_values.insert(FIRST_PROPERTY_ID, second_schema_property_value);
+
+        // Add Entity Schema support to the second Entity (property unique on the Class level added)
+        assert_ok!(add_schema_support_to_entity(
+            LEAD_ORIGIN,
+            actor.to_owned(),
+            SECOND_ENTITY_ID,
+            FIRST_SCHEMA_ID,
+            second_schema_property_values,
+        ));
+
+        // Runtime state before tested call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // Make an attempt to add schema support to the Entity, providing property values, which respective Class properties have
+        // unique flag set and same property values under same property_ids were already added to any Entity of this Class
+        let add_schema_support_to_entity_result = add_schema_support_to_entity(
+            LEAD_ORIGIN,
+            actor,
+            THIRD_ENTITY_ID,
+            FIRST_SCHEMA_ID,
+            first_schema_property_values,
+        );
+
+        // Failure checked
+        assert_failure(
+            add_schema_support_to_entity_result,
+            ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE,
+            number_of_events_before_call,
+        );
+    })
+}
