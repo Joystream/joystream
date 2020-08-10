@@ -54,9 +54,7 @@ sc-rpc-api = { package = 'sc-rpc-api', git = 'https://github.com/paritytech/subs
 sc-executor = { package = 'sc-executor', git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
 
 # frame dependencies
-pallet-contracts = { package = 'pallet-contracts', git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
 pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
-pallet-contracts-rpc = { package = 'pallet-contracts-rpc', git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
 pallet-transaction-payment-rpc = { package = 'pallet-transaction-payment-rpc', git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
 substrate-frame-rpc-system = { package = 'substrate-frame-rpc-system', git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
 frame-benchmarking = { package = 'frame-benchmarking', git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
