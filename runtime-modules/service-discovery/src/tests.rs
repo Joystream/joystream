@@ -27,7 +27,7 @@ fn set_ipns_id() {
         let account_info = Discovery::account_info_by_storage_provider_id(&storage_provider_id);
         assert_eq!(
             account_info,
-            AccountInfo {
+            StorageProviderAccountInfo {
                 identity: identity.clone(),
                 expires_at: current_block_number + ttl
             }
@@ -70,7 +70,7 @@ fn unset_ipns_id() {
 
         <AccountInfoByStorageProviderId<Test>>::insert(
             &storage_provider_id,
-            AccountInfo {
+            StorageProviderAccountInfo {
                 expires_at: 1000,
                 identity: "alice".as_bytes().to_vec(),
             },
@@ -120,7 +120,7 @@ fn is_account_info_expired() {
         let id = "alice".as_bytes().to_vec();
         <AccountInfoByStorageProviderId<Test>>::insert(
             &storage_provider_id,
-            AccountInfo {
+            StorageProviderAccountInfo {
                 expires_at,
                 identity: id.clone(),
             },
