@@ -10,7 +10,6 @@ import {
   ISubstrateQueryService,
   SavedEntityEvent,
   makeDatabaseManager,
-  QueryEvent,
   SubstrateEvent,
 } from '.';
 
