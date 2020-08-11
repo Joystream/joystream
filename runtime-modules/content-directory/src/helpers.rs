@@ -80,7 +80,7 @@ pub struct OutputValueForExistingProperty<'a, T: Trait>(
 
 impl<'a, T: Trait> OutputValueForExistingProperty<'a, T> {
     /// Create single instance of `OutputValueForExistingProperty` from provided `property` and `value`
-    fn new(property: &'a Property<T>, value: &'a OutputPropertyValue<T>) -> Self {
+    pub fn new(property: &'a Property<T>, value: &'a OutputPropertyValue<T>) -> Self {
         Self(property, value)
     }
 
@@ -97,6 +97,12 @@ impl<'a, T: Trait> OutputValueForExistingProperty<'a, T> {
     /// Retrieve `Property` and `OutputPropertyValue` references
     pub fn unzip(&self) -> (&Property<T>, &OutputPropertyValue<T>) {
         (self.0, self.1)
+    }
+
+    /// Check if Property is default and non `required`
+    pub fn is_default(&self) -> bool {
+        let (property, property_value) = self.unzip();
+        !property.required && *property_value == OutputPropertyValue::<T>::default()
     }
 }
 
@@ -145,25 +151,31 @@ impl<'a, T: Trait> OutputValuesForExistingProperties<'a, T> {
         Ok(values_for_existing_properties)
     }
 
-    /// Used to retrieve `OutputPropertyValue`s, which respective `Properties` have `unique` flag set
+    /// Used to compute hashes from `OutputPropertyValue`s and their respective property ids, which respective `Properties` have `unique` flag set
     /// (skip `PropertyId`s, which respective `property values` under this `Entity` are default and non `required`)
-    pub fn compute_unique(&self) -> BTreeMap<PropertyId, SimplifiedOutputPropertyValue<T>> {
+    pub fn compute_unique_hashes(&self) -> BTreeMap<PropertyId, T::Hash> {
         self.iter()
-            .filter(|(property_id, _)| {
-                match self
-                    .get(property_id)
-                    .map(|value_for_property| value_for_property.unzip())
-                {
-                    Some((property, property_value)) if property.unique => {
-                        // skip `PropertyId`s, which respective `property values` under this `Entity` are default and non `required`
-                        property.required || *property_value != OutputPropertyValue::<T>::default()
-                    }
-                    _ => false,
-                }
+            .filter(|(_, value_for_property)| {
+                // skip `PropertyId`s, which respective `property values` under this `Entity` are default and non `required`
+                value_for_property.get_property().unique && !value_for_property.is_default()
             })
-            .map(|(property_id, property_value)| {
-                (*property_id, property_value.get_value().to_owned().into())
+            .map(|(&property_id, property_value)| {
+                (
+                    property_id,
+                    property_value.get_value().compute_unique_hash(property_id),
+                )
             })
+            .collect()
+    }
+
+    /// Compute ids of property values, that are unique and default.
+    pub fn compute_unique_default_non_required_ids(&self) -> BTreeSet<PropertyId> {
+        self.iter()
+            .filter(|(_, value_for_property)| {
+                value_for_property.get_property().unique && value_for_property.is_default()
+            })
+            .map(|(property_id, _)| property_id)
+            .copied()
             .collect()
     }
 }

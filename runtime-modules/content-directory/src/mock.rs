@@ -414,7 +414,6 @@ fn default_content_directory_genesis_config() -> GenesisConfig<Runtime> {
         class_by_id: vec![],
         entity_by_id: vec![],
         curator_group_by_id: vec![],
-        unique_property_values: vec![],
         next_class_id: 1,
         next_entity_id: 1,
         next_curator_group_id: 1,
