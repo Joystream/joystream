@@ -59,7 +59,7 @@ import { Class as Class, Entity as Entity, ClassSchema as ClassSchema, Property 
 import { EntityPermissions as EntityPermissions, ReferenceConstraint as ReferenceConstraint, ClassPermissionsType as ClassPermissionsType, Operation as Operation } from '../versioned-store/permissions'
 import { OptionalText as OptionalText, Channel as Channel, ChannelContentType as ChannelContentType, ChannelCurationStatus as ChannelCurationStatus, ChannelPublicationStatus as ChannelPublicationStatus, CurationActor as CurationActor, Curator as Curator, CuratorApplication as CuratorApplication, CuratorOpening as CuratorOpening, Lead as Lead, OpeningPolicyCommitment as OpeningPolicyCommitment, Principal as Principal, WorkingGroupUnstaker as WorkingGroupUnstaker, CuratorApplicationIdToCuratorIdMap as CuratorApplicationIdToCuratorIdMap, CuratorApplicationIdSet as CuratorApplicationIdSet } from '../content-working-group'
 import { RationaleText as RationaleText, Application as ApplicationOf, ApplicationIdSet as ApplicationIdSet, ApplicationIdToWorkerIdMap as ApplicationIdToWorkerIdMap, WorkerId as WorkerId, Worker as WorkerOf, Opening as OpeningOf, StorageProviderId as StorageProviderId, OpeningType as OpeningType, ApplicationId as HiringApplicationId, RewardPolicy as RewardPolicy, OpeningId as working_group__OpeningId, WorkerId as working_group__WorkerId } from '../working-group'
-import { Url as Url, IPNSIdentity as IPNSIdentity } from '../discovery'
+import { Url as Url, IPNSIdentity as IPNSIdentity, StorageProviderAccountInfo as StorageProviderAccountInfo } from '../discovery'
 import { ContentId as ContentId, LiaisonJudgement as LiaisonJudgement, DataObject as DataObject, DataObjectStorageRelationshipId as DataObjectStorageRelationshipId, DataObjectStorageRelationship as DataObjectStorageRelationship, DataObjectTypeId as DataObjectTypeId, DataObjectType as DataObjectType, DataObjectsMap as DataObjectsMap } from '../media'
 import { ProposalId as ProposalId, ProposalStatus as ProposalStatus, Proposal as ProposalOf, ProposalDetails as ProposalDetails, ProposalDetails as ProposalDetailsOf, VotingResults as VotingResults, ProposalParameters as ProposalParameters, VoteKind as VoteKind, ThreadCounter as ThreadCounter, DiscussionThread as DiscussionThread, DiscussionPost as DiscussionPost, AddOpeningParameters as AddOpeningParameters, FillOpeningParameters as FillOpeningParameters, TerminateRoleParameters as TerminateRoleParameters } from '../proposals'
 /** /CUSTOMIMPORTS **/
@@ -2177,6 +2177,9 @@ declare module '@polkadot/types/types/registry' {
     "IPNSIdentity": IPNSIdentity;
     "Option<IPNSIdentity>": Option<IPNSIdentity>;
     "Vec<IPNSIdentity>": Vec<IPNSIdentity>;
+    "StorageProviderAccountInfo": StorageProviderAccountInfo;
+    "Option<StorageProviderAccountInfo>": Option<StorageProviderAccountInfo>;
+    "Vec<StorageProviderAccountInfo>": Vec<StorageProviderAccountInfo>;
     "ContentId": ContentId;
     "Option<ContentId>": Option<ContentId>;
     "Vec<ContentId>": Vec<ContentId>;
