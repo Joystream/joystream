@@ -2,7 +2,7 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Error, Event, RawEvent, Instance, Module, ReferendumOptions, ReferendumResult, ReferendumStage,
+    Error, RawEvent, Instance, Module, ReferendumOptions, ReferendumResult, ReferendumStage,
     RevealedVotes, SealedVote, Stage, Trait, Votes,
 };
 
@@ -19,6 +19,7 @@ use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
 use std::marker::PhantomData;
+use std::cell::RefCell;
 use system::RawOrigin;
 
 use crate::GenesisConfig;
@@ -48,8 +49,9 @@ parameter_types! {
     pub const MinimumStake: u64 = 10000;
 }
 
-// TODO: rework this - it causes concurency problems for test resulting in unexpected fails
-static mut IS_LOCKING_ENABLED: (bool, bool, bool) = (true, true, true); // global switch for stake locking features; use it to simulate lock fails
+thread_local! {
+    pub static IS_LOCKING_ENABLED: RefCell<(bool, bool, bool)> = RefCell::new((true, true, true)); // global switch for stake locking features; use it to simulate lock fails
+}
 
 impl Trait<Instance0> for Runtime {
     type Event = TestEvent;
@@ -86,10 +88,8 @@ impl Trait<Instance0> for Runtime {
         _balance: &Self::CurrencyBalance,
     ) -> bool {
         // trigger fail when requested to do so
-        unsafe {
-            if !IS_LOCKING_ENABLED.0 {
-                return false;
-            }
+        if !IS_LOCKING_ENABLED.with(|value| value.borrow().0) {
+            return false;
         }
 
         match *account_id {
@@ -107,10 +107,8 @@ impl Trait<Instance0> for Runtime {
         balance: &Self::CurrencyBalance,
     ) -> bool {
         // trigger fail when requested to do so
-        unsafe {
-            if !IS_LOCKING_ENABLED.1 {
-                return false;
-            }
+        if !IS_LOCKING_ENABLED.with(|value| value.borrow().1) {
+            return false;
         }
 
         // simple mock reusing can_lock check
@@ -121,11 +119,8 @@ impl Trait<Instance0> for Runtime {
         account_id: &<Self as system::Trait>::AccountId,
         balance: &Self::CurrencyBalance,
     ) -> bool {
-        // trigger fail when requested to do so
-        unsafe {
-            if !IS_LOCKING_ENABLED.2 {
-                return false;
-            }
+        if !IS_LOCKING_ENABLED.with(|value| value.borrow().2) {
+            return false;
         }
 
         // simple mock reusing can_lock check
@@ -139,9 +134,7 @@ impl Runtime {
         lock_enabled: bool,
         free_enabled: bool,
     ) -> () {
-        unsafe {
-            IS_LOCKING_ENABLED = (ensure_check_enabled, lock_enabled, free_enabled);
-        }
+        IS_LOCKING_ENABLED.with(|value| {*value.borrow_mut() = (ensure_check_enabled, lock_enabled, free_enabled);});
     }
 }
 

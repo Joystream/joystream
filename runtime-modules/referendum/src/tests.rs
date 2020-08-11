@@ -9,9 +9,6 @@ type MockUtils = InstanceMockUtils<Runtime, Instance0>;
 /////////////////// Lifetime - referendum start ////////////////////////////////
 #[test]
 fn referendum_start() {
-    let config = default_genesis_config();
-    let winning_target_count = 1;
-
     MockUtils::origin_access(USER_ADMIN, |origin| {
         let options = vec![0];
         let winning_target_count = 1;
