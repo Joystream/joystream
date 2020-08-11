@@ -40,7 +40,7 @@
   "devDependencies": {
     "@types/chai": "^4.2.11",
     "@types/mocha": "^7.0.2",
-    "eslint": "^5.16.0",
+    "eslint": "^7.6.0",
     "eslint-config-esnext": "^4.1.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-babel": "^5.3.1",
