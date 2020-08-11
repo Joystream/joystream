@@ -758,7 +758,7 @@ decl_module! {
             Self::ensure_property_hashes_unique_option_satisfied(class_id, &new_unique_hashes)?;
 
             // Used to remove unique values, that were substituted with default and non required ones (if some).
-            let deafault_non_required_hashes = Self::compute_default_non_required_hashes(new_output_values_for_existing_properties, &entity_property_values);
+            let default_non_required_hashes = Self::compute_default_non_required_hashes(new_output_values_for_existing_properties, &entity_property_values);
 
             //
             // == MUTATION SAFE ==
@@ -768,7 +768,7 @@ decl_module! {
             Self::update_unique_property_value_hashes(class_id, new_unique_hashes);
 
             // Remove unique values, that were substituted with default and non required ones (if some).
-            Self::remove_unique_property_value_hashes(class_id, deafault_non_required_hashes);
+            Self::remove_unique_property_value_hashes(class_id, default_non_required_hashes);
 
             // Make updated entity_property_values from parameters provided
             let entity_property_values_updated =
@@ -1107,7 +1107,7 @@ decl_module! {
 
 
             // Used to remove unique values, that were substituted with default and non required ones (if some).
-            let deafault_non_required_hashes = Self::compute_default_non_required_hashes(new_output_values_for_existing_properties, &entity_property_values);
+            let default_non_required_hashes = Self::compute_default_non_required_hashes(new_output_values_for_existing_properties, &entity_property_values);
 
             //
             // == MUTATION SAFE ==
@@ -1117,7 +1117,7 @@ decl_module! {
             Self::update_unique_property_value_hashes(class_id, new_unique_property_value_hashes);
 
             // Remove unique values, that were substituted with default and non required ones (if some).
-            Self::remove_unique_property_value_hashes(class_id, deafault_non_required_hashes);
+            Self::remove_unique_property_value_hashes(class_id, default_non_required_hashes);
 
             // Make updated entity_property_values from current entity_property_values and new_output_property_values provided
             let entity_property_values_updated =
@@ -1180,7 +1180,7 @@ decl_module! {
             if OutputValueForExistingProperty::new(&property, &empty_property_value_vector).is_default() {
                 Self::remove_unique_property_value_hash(class_id, in_class_schema_property_id, property_value_hash)
             } else {
-                // Ensure provided `Property` with `unique` flag set is `unique` on `Class` level
+                // Ensure there is no another empty vector for this, possible, unique property
                 Self::ensure_property_hash_unique_option_satisfied(class_id, in_class_schema_property_id, &property_value_hash)?;
             }
 
