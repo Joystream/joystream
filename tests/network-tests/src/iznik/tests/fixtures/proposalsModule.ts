@@ -14,7 +14,12 @@ import {
   OpeningId,
   StakingPolicy,
 } from '@alexandria/types/hiring'
-import { RewardPolicy, SlashingTerms, WorkerId, WorkingGroupOpeningPolicyCommitment } from '@alexandria/types/working-group'
+import {
+  RewardPolicy,
+  SlashingTerms,
+  WorkerId,
+  WorkingGroupOpeningPolicyCommitment,
+} from '@alexandria/types/working-group'
 import { WorkingGroup } from '@alexandria/types/common'
 
 export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
