@@ -233,7 +233,9 @@ pub fn testnet_genesis(
             slash_reward_fraction: Perbill::from_percent(10),
             ..Default::default()
         }),
-        pallet_sudo: Some(SudoConfig { key: root_key }),
+        pallet_sudo: Some(SudoConfig {
+            key: root_key.clone(),
+        }),
         pallet_babe: Some(BabeConfig {
             authorities: vec![],
         }),
@@ -275,9 +277,7 @@ pub fn testnet_genesis(
             default_paid_membership_fee: 100u128,
             members: vec![],
         }),
-        forum: Some(crate::forum_config::from_serialized::create(
-            endowed_accounts[0].clone(),
-        )),
+        forum: Some(crate::forum_config::from_serialized::create(root_key)),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),
