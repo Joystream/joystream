@@ -1,4 +1,4 @@
-# GraphQL Entity Relationships
+# Entity Relationships
 
 ### One-To-One \(1:1\) Relationships
 

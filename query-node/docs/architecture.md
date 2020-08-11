@@ -6,7 +6,7 @@ description: A more in-depth look at how Hydra works under the hood
 
 A Hydra query node consists of the following core parts:
 
-* Blockchain [Indexer]()
+* Blockchain Indexer
 * PostgreSQL \(Data Storage\)
 * GraphQL Server
 * GraphQL-like data [schema](https://github.com/dzhelezov/joystream/tree/f07cb27a73ec74292811648cee8a92d8fab3b6c9/query-node/docs/schema.md) & event [mappings](https://github.com/dzhelezov/joystream/tree/f07cb27a73ec74292811648cee8a92d8fab3b6c9/query-node/docs/mappings.md)
