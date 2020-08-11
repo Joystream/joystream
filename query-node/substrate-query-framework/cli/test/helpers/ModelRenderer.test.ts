@@ -323,8 +323,11 @@ describe('ModelRenderer', () => {
     generator = new ModelRenderer(model, model.lookupEntity('Tip'), enumCtxProvider);
     const rendered = generator.render(modelTemplate);
     expect(rendered).to.include(`transformer`);
-    expect(rendered).to.include(`to: (entityValue: BN) => entityValue.toString(10)`),
-    expect(rendered).to.include(`from: (dbValue: string): BN => new BN(dbValue, 10)`)
-
+    expect(rendered).to.include(
+      `to: (entityValue: BN) => (entityValue !== undefined ? entityValue.toString(10) : null)`
+    ),
+      expect(rendered).to.include(
+        `dbValue !== undefined && dbValue !== null && dbValue.length > 0 ? new BN(dbValue, 10) : undefined`
+      );
   });
 });

@@ -178,8 +178,8 @@ export function withTransformer(f: Field): GeneratorContext {
   if (TYPE_FIELDS[f.columnType()] && TYPE_FIELDS[f.columnType()].tsType === 'BN') {
     return {
       transformer: `{
-        to: (entityValue: BN) => entityValue.toString(10),
-        from: (dbValue: string): BN => new BN(dbValue, 10)
+        to: (entityValue: BN) => (entityValue !== undefined) ? entityValue.toString(10) : null,
+        from: (dbValue: string) => dbValue !== undefined && dbValue !== null && dbValue.length > 0 ? new BN(dbValue, 10): undefined,
       }`,
     };
   }
