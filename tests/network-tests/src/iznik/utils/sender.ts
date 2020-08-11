@@ -14,7 +14,7 @@ export class Sender {
   }
 
   private async getNonce(address: string): Promise<BN> {
-    let oncahinNonce: BN = await this.api.query.system.accountNonce<Index>(address)
+    const oncahinNonce: BN = await this.api.query.system.accountNonce<Index>(address)
     let nonce: BN
     if (!this.db.hasNonce(address)) {
       nonce = oncahinNonce

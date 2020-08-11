@@ -13,7 +13,7 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
   private m1KeyPairs: KeyringPair[]
   private m2KeyPairs: KeyringPair[]
   private paidTerms: PaidTermId
-  private K: number
+  private k: number
   private greaterStake: BN
   private lesserStake: BN
 
@@ -23,7 +23,7 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
     m1KeyPairs: KeyringPair[],
     m2KeyPairs: KeyringPair[],
     paidTerms: PaidTermId,
-    K: number,
+    k: number,
     greaterStake: BN,
     lesserStake: BN
   ) {
@@ -32,7 +32,7 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
     this.m1KeyPairs = m1KeyPairs
     this.m2KeyPairs = m2KeyPairs
     this.paidTerms = paidTerms
-    this.K = K
+    this.k = k
     this.greaterStake = greaterStake
     this.lesserStake = lesserStake
   }
@@ -58,7 +58,7 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
       this.apiWrapper,
       this.m1KeyPairs,
       this.m2KeyPairs,
-      this.K,
+      this.k,
       this.sudo,
       this.greaterStake,
       this.lesserStake
