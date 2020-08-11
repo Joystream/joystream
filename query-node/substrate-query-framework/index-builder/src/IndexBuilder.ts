@@ -11,6 +11,7 @@ import {
   SavedEntityEvent,
   makeDatabaseManager,
   QueryEvent,
+  SubstrateEvent,
 } from '.';
 
 import Debug from 'debug';
@@ -93,10 +94,10 @@ export default class IndexBuilder {
   async _onQueryEventBlock(query_event_block: QueryEventBlock): Promise<void> {
     debug(`Yay, block producer at height: #${query_event_block.block_number.toString()}`);
 
-    await asyncForEach(query_event_block.query_events, async (query_event: QueryEvent, i: number) => {
+    await asyncForEach(query_event_block.query_events, async (query_event: SubstrateEvent, i: number) => {
       
       debug(`Processing event ${query_event.event_name}, index: ${i}`)
-      query_event.log(0, debug);
+      //query_event.log(0, debug);
   
 
       const queryRunner = getConnection().createQueryRunner();
