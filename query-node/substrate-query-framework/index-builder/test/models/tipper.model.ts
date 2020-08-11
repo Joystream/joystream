@@ -16,8 +16,8 @@ export class Tipper extends BaseModel {
 
   @NumericField({
     transformer: {
-      to: (entityValue: BN) => (entityValue) ? entityValue.toString(10) : null,
-      from: (dbValue: string) => dbValue && dbValue.length > 0 ? new BN(dbValue, 10): undefined,
+      to: (entityValue: BN) => (entityValue !== undefined ? entityValue.toString(10) : null),
+      from: (dbValue: string) => dbValue !== undefined && dbValue !== null && dbValue.length > 0 ? new BN(dbValue, 10) : undefined,
     },
   })
   tipValue!: BN;
