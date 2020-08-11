@@ -195,6 +195,7 @@ pub struct InputValidationLengthConstraint {
 }
 
 impl InputValidationLengthConstraint {
+    /// Create new `InputValidationLengthConstraint` constraint
     pub fn new(min: u16, max_min_diff: u16) -> Self {
         Self { min, max_min_diff }
     }
@@ -204,10 +205,12 @@ impl InputValidationLengthConstraint {
         self.min + self.max_min_diff
     }
 
+    /// Retrieve min length value
     pub fn min(self) -> u16 {
         self.min
     }
 
+    /// Ensure length is valid
     pub fn ensure_valid(
         self,
         len: usize,

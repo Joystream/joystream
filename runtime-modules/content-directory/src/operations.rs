@@ -3,6 +3,7 @@ use codec::{Decode, Encode};
 use rstd::collections::btree_map::BTreeMap;
 use rstd::prelude::*;
 
+/// Parametrized entity property value
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub enum ParametrizedPropertyValue<T: Trait> {
     /// Same fields as normal InputPropertyValue
@@ -15,12 +16,14 @@ pub enum ParametrizedPropertyValue<T: Trait> {
     InternalEntityVec(Vec<ParameterizedEntity<T>>),
 }
 
+/// Parametrized entity
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub enum ParameterizedEntity<T: Trait> {
     InternalEntityJustAdded(u32),
     ExistingEntity(T::EntityId),
 }
 
+/// Parametrized class property value
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct ParametrizedClassPropertyValue<T: Trait> {
     /// Index is into properties vector of class.
@@ -30,24 +33,34 @@ pub struct ParametrizedClassPropertyValue<T: Trait> {
     pub value: ParametrizedPropertyValue<T>,
 }
 
+/// Operation, that represents `Entity` creation
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct CreateEntityOperation<T: Trait> {
+    /// Class of an Entity
     pub class_id: T::ClassId,
 }
 
+/// Operation, that represents property values update
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct UpdatePropertyValuesOperation<T: Trait> {
+    /// Entity id to perfrom operation
     pub entity_id: ParameterizedEntity<T>,
+    /// Property values, that should be updated
     pub new_parametrized_property_values: Vec<ParametrizedClassPropertyValue<T>>,
 }
 
+/// Operation, that represents adding `Entity` `Schema` support
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct AddSchemaSupportToEntityOperation<T: Trait> {
+    /// Entity id to perfrom operation
     pub entity_id: ParameterizedEntity<T>,
+    /// Schema id defined on `Class` level to be added to the `Entity`
     pub schema_id: SchemaId,
+    /// Property values, that should be added for the underlying schema_id
     pub parametrized_property_values: Vec<ParametrizedClassPropertyValue<T>>,
 }
 
+/// The type of operation performed
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub enum OperationType<T: Trait> {
     CreateEntity(CreateEntityOperation<T>),
@@ -55,6 +68,7 @@ pub enum OperationType<T: Trait> {
     AddSchemaSupportToEntity(AddSchemaSupportToEntityOperation<T>),
 }
 
+/// Retrieve entity_id of parametrized `Entity`
 pub fn parametrized_entity_to_entity_id<T: Trait>(
     created_entities: &BTreeMap<usize, T::EntityId>,
     entity: ParameterizedEntity<T>,
@@ -70,6 +84,7 @@ pub fn parametrized_entity_to_entity_id<T: Trait>(
     }
 }
 
+/// Convert parametrized property values into property values
 pub fn parametrized_property_values_to_property_values<T: Trait>(
     created_entities: &BTreeMap<usize, T::EntityId>,
     parametrized_property_values: Vec<ParametrizedClassPropertyValue<T>>,

@@ -10,6 +10,7 @@ pub enum OutputPropertyValue<T: Trait> {
 }
 
 impl<T: Trait> OutputPropertyValue<T> {
+    /// Returns single property value by reference if `OutputPropertyValue` is Single
     pub fn as_single_value(&self) -> Option<&OutputValue<T>> {
         if let OutputPropertyValue::Single(single_value) = self {
             Some(single_value)
@@ -18,6 +19,7 @@ impl<T: Trait> OutputPropertyValue<T> {
         }
     }
 
+    /// Returns vector property value by reference if `OutputPropertyValue` is Single
     pub fn as_vec_property_value(&self) -> Option<&VecOutputPropertyValue<T>> {
         if let OutputPropertyValue::Vector(vec_property_value) = self {
             Some(vec_property_value)
@@ -26,6 +28,7 @@ impl<T: Trait> OutputPropertyValue<T> {
         }
     }
 
+    /// Returns vector property value by mutable reference if `OutputPropertyValue` is Single
     pub fn as_vec_property_value_mut(&mut self) -> Option<&mut VecOutputPropertyValue<T>> {
         if let OutputPropertyValue::Vector(vec_property_value) = self {
             Some(vec_property_value)
@@ -132,6 +135,7 @@ impl<T: Trait> VecOutputPropertyValue<T> {
         self.nonce
     }
 
+    /// Create new `VecOutputPropertyValue` from `vec value` provided and `nonce`
     pub fn new(vec_value: VecOutputValue<T>, nonce: T::Nonce) -> Self {
         Self { vec_value, nonce }
     }

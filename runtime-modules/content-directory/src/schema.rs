@@ -34,7 +34,9 @@ pub type SameController = bool;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Default, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct PropertyLockingPolicy {
+    /// If property is locked from maintainer
     pub is_locked_from_maintainer: bool,
+    /// If property is locked from controller
     pub is_locked_from_controller: bool,
 }
 
@@ -81,7 +83,7 @@ impl<T: Trait> Default for VecPropertyType<T> {
 }
 
 impl<T: Trait> VecPropertyType<T> {
-    pub fn new(vec_type: Type<T>, max_length: VecMaxLength) -> Self {
+    fn new(vec_type: Type<T>, max_length: VecMaxLength) -> Self {
         Self {
             vec_type,
             max_length,
@@ -109,11 +111,11 @@ impl<T: Trait> VecPropertyType<T> {
         Ok(())
     }
 
-    pub fn get_vec_type(&self) -> &Type<T> {
+    fn get_vec_type(&self) -> &Type<T> {
         &self.vec_type
     }
 
-    pub fn get_max_len(&self) -> VecMaxLength {
+    fn get_max_len(&self) -> VecMaxLength {
         self.max_length
     }
 }
@@ -173,7 +175,7 @@ impl<T: Trait> Default for PropertyType<T> {
 }
 
 impl<T: Trait> PropertyType<T> {
-    pub fn as_single_value_type(&self) -> Option<&Type<T>> {
+    fn as_single_value_type(&self) -> Option<&Type<T>> {
         if let PropertyType::Single(single_value_property_type) = self {
             Some(single_value_property_type)
         } else {
@@ -181,7 +183,7 @@ impl<T: Trait> PropertyType<T> {
         }
     }
 
-    pub fn as_vec_type(&self) -> Option<&VecPropertyType<T>> {
+    fn as_vec_type(&self) -> Option<&VecPropertyType<T>> {
         if let PropertyType::Vector(single_value_property_type) = self {
             Some(single_value_property_type)
         } else {
@@ -189,7 +191,7 @@ impl<T: Trait> PropertyType<T> {
         }
     }
 
-    pub fn get_inner_type(&self) -> &Type<T> {
+    fn get_inner_type(&self) -> &Type<T> {
         match self {
             PropertyType::Single(single_property_type) => single_property_type,
             PropertyType::Vector(vec_property_type) => vec_property_type.get_vec_type(),
@@ -284,13 +286,17 @@ impl Schema {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub struct Property<T: Trait> {
+    /// The type of `Property`
     pub property_type: PropertyType<T>,
     /// If property value can be skipped, when adding entity schema support
     pub required: bool,
     /// Used to enforce uniquness of a property across all entities that have this property
     pub unique: bool,
+    /// Property name
     pub name: Vec<u8>,
+    /// Property description
     pub description: Vec<u8>,
+    /// Locking policy, representing `Property` locking status for both controller and maintainer
     pub locking_policy: PropertyLockingPolicy,
 }
 
@@ -466,7 +472,7 @@ impl<T: Trait> Property<T> {
         }
     }
 
-    pub fn validate_max_len_of_text(text: &[u8], text_max_len: TextMaxLength) -> DispatchResult {
+    fn validate_max_len_of_text(text: &[u8], text_max_len: TextMaxLength) -> DispatchResult {
         ensure!(
             text.len() <= text_max_len as usize,
             ERROR_TEXT_PROP_IS_TOO_LONG
@@ -474,7 +480,7 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    pub fn validate_max_len_of_text_to_be_hashed(
+    fn validate_max_len_of_text_to_be_hashed(
         text_to_be_hashed: &[u8],
         text_to_be_hashed_max_len: u16,
     ) -> DispatchResult {

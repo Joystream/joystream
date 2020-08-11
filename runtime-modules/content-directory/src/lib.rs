@@ -1,6 +1,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
+#![warn(missing_docs)]
 
 #[cfg(test)]
 mod tests;
@@ -45,6 +46,7 @@ type MaxNumber = u32;
 /// Result with string error message. This exists for backward compatibility purpose.
 pub type DispatchResult = Result<(), &'static str>;
 
+/// Module configuration trait for this Substrate module.
 pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -96,8 +98,6 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
         + Eq
         + PartialEq
         + Ord;
-
-    //type SimplifiedPropertyHash: From<Self::Hash> + EncodeLike + Hash + Default + PartialEq + Eq + Ord + Codec + MaybeSerializeDeserialize;
 
     /// Security/configuration constraints
 
@@ -185,7 +185,7 @@ decl_module! {
         // Next set of extrinsics can only be invoked by lead.
         // ======
 
-        // Initializing events
+        /// Initializing events
         fn deposit_event() = default;
 
         /// Add new curator group to runtime storage
@@ -1934,8 +1934,8 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    // Ensure all ids of provided `new_property_value_references_with_same_owner_flag_set`
-    // corresponding to property ids of respective Class Property references with same owner flag set
+    /// Ensure all ids of provided `new_property_value_references_with_same_owner_flag_set`
+    /// corresponding to property ids of respective Class Property references with same owner flag set
     pub fn ensure_only_reference_ids_with_same_owner_flag_set_provided(
         entity_property_id_references_with_same_owner_flag_set: &BTreeSet<PropertyId>,
         new_property_value_references_with_same_owner_flag_set: &BTreeMap<
@@ -2014,7 +2014,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
+    /// Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
     pub fn update_entities_rcs(
         entities_inbound_rcs_delta: &Option<ReferenceCounterSideEffects<T>>,
     ) {
