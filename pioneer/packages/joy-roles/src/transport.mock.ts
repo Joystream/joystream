@@ -6,7 +6,7 @@ import { Subscribable, Transport as TransportBase } from '@polkadot/joy-utils/in
 
 import { ITransport } from './transport';
 
-import { Role, MemberId } from '@joystream/types/members';
+import { MemberId } from '@joystream/types/members';
 import {
   Opening,
   ApplicationRationingPolicy,
@@ -34,14 +34,6 @@ export class Transport extends TransportBase implements ITransport {
 
   protected randomTimeout (min = 1, max = 20): number {
     return Math.random() * (max - min) + min;
-  }
-
-  roles (): Promise<Array<Role>> {
-    return this.promise<Array<Role>>(
-      [
-        new Role('StorageProvider')
-      ]
-    );
   }
 
   groupLeadStatus (group: WorkingGroups = WorkingGroups.ContentCurators): Promise<GroupLeadStatus> {

@@ -1,15 +1,12 @@
-import { Struct, Option, Text, bool, Vec, u16, u32, u64, getTypeRegistry, Null } from '@polkadot/types'
+import { Struct, Option, Text, bool, Vec, u16, u32, u64, Null } from '@polkadot/types'
 import { BlockNumber, Moment } from '@polkadot/types/interfaces'
-import { Codec } from '@polkadot/types/types'
+import { Codec, RegistryTypes } from '@polkadot/types/types'
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment'
-import { JoyStruct } from './JoyStruct'
+import { JoyStructCustom, JoyStructDecorated } from './JoyStruct'
 import { JoyEnum } from './JoyEnum'
-export { JoyStruct } from './JoyStruct'
-export { JoyEnum } from './JoyEnum'
 
-// Treat a BTreeSet as a Vec since it is encoded in the same way
-export class BTreeSet<T extends Codec> extends Vec<T> {}
+export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 
 export class Credential extends u64 {}
 export class CredentialSet extends Vec.with(Credential) {} // BtreeSet ?
@@ -23,29 +20,7 @@ export type BlockAndTimeType = {
   time: Moment
 }
 
-export class BlockAndTime extends Struct {
-  constructor(value?: BlockAndTimeType) {
-    super(
-      {
-        block: u32, // BlockNumber
-        time: u64, // Moment
-      },
-      value
-    )
-  }
-
-  get block(): BlockNumber {
-    return this.get('block') as BlockNumber
-  }
-
-  get time(): Moment {
-    return this.get('time') as Moment
-  }
-
-  static newEmpty(): BlockAndTime {
-    return new BlockAndTime({} as BlockAndTime)
-  }
-
+export class BlockAndTime extends JoyStructDecorated({ block: u32, time: u64 }) implements BlockAndTimeType {
   get momentDate(): moment.Moment {
     const YEAR_2000_MILLISECONDS = 946684801000
 
@@ -76,49 +51,17 @@ export function getOptionPropOrUndefined<T extends Codec>(struct: Struct, fieldN
   return (struct.get(fieldName) as Option<T>).unwrapOr(undefined)
 }
 
-export class OptionText extends Option.with(Text) {
-  static none(): OptionText {
-    return new Option(Text, null)
-  }
-
-  static some(text: string): OptionText {
-    return new Option(Text, text)
-  }
-}
+export class OptionText extends Option.with(Text) {}
 
 export type InputValidationLengthConstraintType = {
   min: u16
   max_min_diff: u16
 }
 
-export class InputValidationLengthConstraint extends JoyStruct<InputValidationLengthConstraintType> {
-  constructor(value: InputValidationLengthConstraintType) {
-    super(
-      {
-        min: u16,
-        max_min_diff: u16,
-      },
-      value
-    )
-  }
-
-  static createWithMaxAllowed() {
-    return new InputValidationLengthConstraint({
-      min: new u16(1),
-      max_min_diff: new u16(65534), // Max allowed without causing u16 overflow
-    })
-  }
-
-  get min(): u16 {
-    return this.getField('min')
-  }
-
-  get max_min_diff(): u16 {
-    return this.getField('max_min_diff')
-  }
-
+export class InputValidationLengthConstraint extends JoyStructDecorated({ min: u16, max_min_diff: u16 })
+  implements InputValidationLengthConstraintType {
   get max(): u16 {
-    return new u16(this.min.add(this.max_min_diff))
+    return new u16(this.registry, this.min.add(this.max_min_diff))
   }
 }
 
@@ -128,17 +71,14 @@ export const WorkingGroupDef = {
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
 
-export function registerCommonTypes() {
-  const typeRegistry = getTypeRegistry()
-
-  typeRegistry.register({
-    Credential,
-    CredentialSet,
-    BlockAndTime,
-    ThreadId,
-    PostId,
-    InputValidationLengthConstraint,
-    BTreeSet, // Is this even necessary?
-    WorkingGroup,
-  })
+export const commonTypes: RegistryTypes = {
+  Credential,
+  CredentialSet,
+  BlockAndTime,
+  ThreadId,
+  PostId,
+  InputValidationLengthConstraint,
+  WorkingGroup,
 }
+
+export default commonTypes
