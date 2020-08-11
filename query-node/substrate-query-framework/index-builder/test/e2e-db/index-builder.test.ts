@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 // we should set env variables before all other imports to avoid config errors or warthog caused by DI
-dotenv.config( { path: './test/e2e-db/.env' });
+dotenv.config( { path: './test/.env' });
 
 import { createDb, dropDb } from '../utils';
 import { expect, assert } from 'chai';
