@@ -454,19 +454,22 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             ReferendumResult::Winners(winning_order[..(target_count as usize)].to_vec())
         }
 
+        // calculate votes and select winner(s)
         let referendum_result = calculate_votes::<T, I>();
 
         // reset referendum state
-        Stage::<T, I>::put((ReferendumStage::Void, <system::Module<T>>::block_number()));
-        ReferendumOptions::<T, I>::mutate(|_| None::<Vec<T::ReferendumOption>>);
-        // TODO clear votes maps
-        //RevealedVotes::remove_all();
-        //RevealedVotes::...
-        //Votes::...
-        //WinningTargetCount::...
+        Self::reset_referendum();
 
         // return winning option
         referendum_result
+    }
+
+    fn reset_referendum() {
+        Stage::<T, I>::put((ReferendumStage::Void, <system::Module<T>>::block_number()));
+        ReferendumOptions::<T, I>::mutate(|value| *value = None::<Vec<T::ReferendumOption>>);
+        Votes::<T, I>::remove_all();
+        RevealedVotes::<T, I>::remove_all();
+        WinningTargetCount::<I>::put(0);
     }
 
     /// Can return error when stake fails to lock
@@ -617,8 +620,6 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         if current_block < T::RevealStageDuration::get() + starting_block_number + One::one() {
             return Err(Error::RevealingNotFinishedYet);
         }
-
-        // TODO: what should happen when 0 votes were cast/revealed???
 
         Ok(())
     }

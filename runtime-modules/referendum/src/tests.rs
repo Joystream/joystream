@@ -844,11 +844,3 @@ fn winners_multiple_not_enough() {
         );
     });
 }
-
-
-/////////////////// Lifetime - complete ////////////////////////////////////////
-
-// whole process is actually tested in finish_revealing_period; use the following test to test complex some situation (many options, many votes, some reveals, etc.)
-#[test]
-#[ignore]
-fn referendum_whole_process() {}

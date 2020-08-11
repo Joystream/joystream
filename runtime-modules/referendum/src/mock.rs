@@ -3,7 +3,7 @@
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
     Error, RawEvent, Instance, Module, ReferendumOptions, ReferendumResult, ReferendumStage,
-    RevealedVotes, SealedVote, Stage, Trait, Votes,
+    RevealedVotes, SealedVote, Stage, WinningTargetCount, Trait, Votes,
 };
 
 use codec::Encode;
@@ -16,7 +16,7 @@ use sp_runtime::{
     Perbill,
 };
 use frame_support::{
-    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
+    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StoragePrefixedMap, StorageValue,
 };
 use std::marker::PhantomData;
 use std::cell::RefCell;
@@ -370,7 +370,11 @@ impl InstanceMocks<Runtime, Instance0> {
         }
 
         assert_eq!(Stage::<Runtime, Instance0>::get().0, ReferendumStage::Void,);
-        // TODO: check that rest of storage was reset as well
+        assert_eq!(ReferendumOptions::<Runtime, Instance0>::get(), None,);
+        assert_eq!(Votes::<Runtime, Instance0>::iter_values().count(), 0,);
+        assert_eq!(RevealedVotes::<Runtime, Instance0>::iter_values().count(), 0,);
+        assert_eq!(WinningTargetCount::<Instance0>::get(), 0,);
+
 
         // check event was emitted
         assert_eq!(
