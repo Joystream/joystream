@@ -80,7 +80,7 @@ pub struct OutputValueForExistingProperty<'a, T: Trait>(
 
 impl<'a, T: Trait> OutputValueForExistingProperty<'a, T> {
     /// Create single instance of `OutputValueForExistingProperty` from provided `property` and `value`
-    fn new(property: &'a Property<T>, value: &'a OutputPropertyValue<T>) -> Self {
+    pub fn new(property: &'a Property<T>, value: &'a OutputPropertyValue<T>) -> Self {
         Self(property, value)
     }
 
@@ -156,12 +156,8 @@ impl<'a, T: Trait> OutputValuesForExistingProperties<'a, T> {
     pub fn compute_unique_hashes(&self) -> BTreeMap<PropertyId, T::Hash> {
         self.iter()
             .filter(|(_, value_for_property)| {
-                if value_for_property.get_property().unique {
-                    // skip `PropertyId`s, which respective `property values` under this `Entity` are default and non `required`
-                    !value_for_property.is_default()
-                } else {
-                    false
-                }
+                // skip `PropertyId`s, which respective `property values` under this `Entity` are default and non `required`
+                value_for_property.get_property().unique && !value_for_property.is_default()
             })
             .map(|(&property_id, property_value)| {
                 (
@@ -169,6 +165,17 @@ impl<'a, T: Trait> OutputValuesForExistingProperties<'a, T> {
                     property_value.get_value().compute_unique_hash(property_id),
                 )
             })
+            .collect()
+    }
+
+    /// Compute ids of property values, that are unique and default.
+    pub fn compute_unique_default_non_required_ids(&self) -> BTreeSet<PropertyId> {
+        self.iter()
+            .filter(|(_, value_for_property)| {
+                value_for_property.get_property().unique && value_for_property.is_default()
+            })
+            .map(|(property_id, _)| property_id)
+            .copied()
             .collect()
     }
 }

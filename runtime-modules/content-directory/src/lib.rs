@@ -757,12 +757,18 @@ decl_module! {
             // Ensure all provided Properties with unique flag set are unique on Class level
             Self::ensure_property_hashes_unique_option_satisfied(class_id, &new_unique_hashes)?;
 
+            // Used to remove unique values, that were substituted with default and non required ones (if some).
+            let deafault_non_required_hashes = Self::compute_default_non_required_hashes(new_output_values_for_existing_properties, &entity_property_values);
+
             //
             // == MUTATION SAFE ==
             //
 
-            // Add property values, that should be unique on Class level
-            Self::add_unique_property_value_hashes(class_id, new_unique_hashes);
+            // Add/update property values, that should be unique on Class level
+            Self::update_unique_property_value_hashes(class_id, new_unique_hashes);
+
+            // Remove unique values, that were substituted with default and non required ones (if some).
+            Self::remove_unique_property_value_hashes(class_id, deafault_non_required_hashes);
 
             // Make updated entity_property_values from parameters provided
             let entity_property_values_updated =
@@ -1018,7 +1024,7 @@ decl_module! {
             //
 
             // Add property values, that should be unique on Class level
-            Self::add_unique_property_value_hashes(class_id, new_unique_property_value_hashes);
+            Self::update_unique_property_value_hashes(class_id, new_unique_property_value_hashes);
 
             // Calculate entities reference counter side effects for current operation
             let entities_inbound_rcs_delta = Self::calculate_entities_inbound_rcs_delta(
@@ -1092,17 +1098,26 @@ decl_module! {
 
             // Compute OutputPropertyValues, which respective Properties have unique flag set
             // (skip PropertyIds, which respective property values under this Entity are default and non required)
-            let new_unique_property_value_hashes = OutputValuesForExistingProperties::from(&class_properties, &new_output_property_values)?.compute_unique_hashes();
+            let new_output_values_for_existing_properties = OutputValuesForExistingProperties::from(&class_properties, &new_output_property_values)?;
+
+            let new_unique_property_value_hashes = new_output_values_for_existing_properties.compute_unique_hashes();
 
             // Ensure all provided Properties with unique flag set are unique on Class level
             Self::ensure_property_hashes_unique_option_satisfied(class_id, &new_unique_property_value_hashes)?;
+
+
+            // Used to remove unique values, that were substituted with default and non required ones (if some).
+            let deafault_non_required_hashes = Self::compute_default_non_required_hashes(new_output_values_for_existing_properties, &entity_property_values);
 
             //
             // == MUTATION SAFE ==
             //
 
             // Update property values, that should be unique on Class level
-            Self::add_unique_property_value_hashes(class_id, new_unique_property_value_hashes);
+            Self::update_unique_property_value_hashes(class_id, new_unique_property_value_hashes);
+
+            // Remove unique values, that were substituted with default and non required ones (if some).
+            Self::remove_unique_property_value_hashes(class_id, deafault_non_required_hashes);
 
             // Make updated entity_property_values from current entity_property_values and new_output_property_values provided
             let entity_property_values_updated =
@@ -1155,15 +1170,19 @@ decl_module! {
             let class_id = entity.get_class_id();
 
             // Calculate side effects for clear_property_vector operation, based on property_value_vector provided and its respective property.
-            let entities_inbound_rcs_delta = Self::make_side_effects_for_clear_property_vector_operation(&property_value_vector, property);
+            let entities_inbound_rcs_delta = Self::make_side_effects_for_clear_property_vector_operation(&property_value_vector, &property);
 
             // Clear property_value_vector.
             let empty_property_value_vector = Self::clear_property_vector(property_value_vector);
 
             let property_value_hash = empty_property_value_vector.compute_unique_hash(in_class_schema_property_id);
 
-            // Ensure provided `Property` with `unique` flag set is `unique` on `Class` level
-            Self::ensure_property_hash_unique_option_satisfied(class_id, in_class_schema_property_id, &property_value_hash)?;
+            if OutputValueForExistingProperty::new(&property, &empty_property_value_vector).is_default() {
+                Self::remove_unique_property_value_hash(class_id, in_class_schema_property_id, property_value_hash)
+            } else {
+                // Ensure provided `Property` with `unique` flag set is `unique` on `Class` level
+                Self::ensure_property_hash_unique_option_satisfied(class_id, in_class_schema_property_id, &property_value_hash)?;
+            }
 
             //
             // == MUTATION SAFE ==
@@ -1242,8 +1261,12 @@ decl_module! {
             // Compute hash from unique property value and its respective property id
             let property_value_hash = property_value_vector_updated.compute_unique_hash(in_class_schema_property_id);
 
-            // Ensure `Property` with `unique` flag set is `unique` on `Class` level
-            Self::ensure_property_hash_unique_option_satisfied(class_id, in_class_schema_property_id, &property_value_hash)?;
+            if OutputValueForExistingProperty::new(&property, &property_value_vector_updated).is_default() {
+                Self::remove_unique_property_value_hash(class_id, in_class_schema_property_id, property_value_hash)
+            } else {
+                // Ensure provided `Property` with `unique` flag set is `unique` on `Class` level
+                Self::ensure_property_hash_unique_option_satisfied(class_id, in_class_schema_property_id, &property_value_hash)?;
+            }
 
             //
             // == MUTATION SAFE ==
@@ -1451,7 +1474,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Add/update property value hash, that should be unique on `Class` level
-    pub fn add_unique_property_value_hash(
+    pub fn update_unique_property_value_hash(
         class_id: T::ClassId,
         property_id: PropertyId,
         hash: T::Hash,
@@ -1468,15 +1491,15 @@ impl<T: Trait> Module<T> {
         <UniquePropertyValueHashes<T>>::remove((class_id, property_id), hash);
     }
 
-    /// Add property value hashes, that should be unique on `Class` level
-    pub fn add_unique_property_value_hashes(
+    /// Add/update property value hashes, that should be unique on `Class` level
+    pub fn update_unique_property_value_hashes(
         class_id: T::ClassId,
         unique_property_value_hashes: BTreeMap<PropertyId, T::Hash>,
     ) {
         unique_property_value_hashes
             .into_iter()
             .for_each(|(property_id, hash)| {
-                Self::add_unique_property_value_hash(class_id, property_id, hash);
+                Self::update_unique_property_value_hash(class_id, property_id, hash);
             });
     }
 
@@ -1540,7 +1563,7 @@ impl<T: Trait> Module<T> {
     /// Returns calculated `ReferenceCounterSideEffects`
     pub fn make_side_effects_for_clear_property_vector_operation(
         property_value_vector: &VecOutputPropertyValue<T>,
-        property: Property<T>,
+        property: &Property<T>,
     ) -> Option<ReferenceCounterSideEffects<T>> {
         let entity_ids_to_decrease_rc = property_value_vector
             .get_vec_value_ref()
@@ -1987,6 +2010,23 @@ impl<T: Trait> Module<T> {
         property_ids
             .difference(&property_value_indices)
             .copied()
+            .collect()
+    }
+
+    /// Used to remove unique values, that were substituted with default and non required ones (if some).
+    pub fn compute_default_non_required_hashes(
+        new_output_values_for_existing_properties: OutputValuesForExistingProperties<T>,
+        entity_values: &BTreeMap<PropertyId, OutputPropertyValue<T>>,
+    ) -> BTreeMap<PropertyId, T::Hash> {
+        let unique_default_non_required_ids =
+            new_output_values_for_existing_properties.compute_unique_default_non_required_ids();
+
+        entity_values
+            .iter()
+            .filter(|(property_id, _)| unique_default_non_required_ids.contains(property_id))
+            .map(|(&property_id, property_value)| {
+                (property_id, property_value.compute_unique_hash(property_id))
+            })
             .collect()
     }
 
