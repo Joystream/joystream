@@ -7,11 +7,11 @@ import tap from 'tap'
 import { registerJoystreamTypes } from '@nicaea/types'
 import { closeApi } from '../../utils/closeApi'
 import { ApiWrapper } from '../../utils/apiWrapper'
-import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
-import { ElectCouncilFixture } from '../fixtures/councilElectionModule'
 import { Utils } from '../../utils/utils'
 import { ElectionParametersProposalFixture } from '../fixtures/proposalsModule'
 import { PaidTermId } from '@nicaea/types/members'
+import { CouncilElectionHappyCaseFixture } from '../fixtures/councilElectionHappyCase'
+import { DbService } from '../../services/dbService'
 
 tap.mocha.describe('Election parameters proposal scenario', async () => {
   initConfig()
@@ -23,10 +23,11 @@ tap.mocha.describe('Election parameters proposal scenario', async () => {
   const provider = new WsProvider(nodeUrl)
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider)
   const sudo: KeyringPair = keyring.addFromUri(sudoUri)
+  const db: DbService = DbService.getInstance()
 
   const N: number = +process.env.MEMBERSHIP_CREATION_N!
-  const m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
-  const m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
+  let m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
+  let m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
 
   const paidTerms: PaidTermId = new PaidTermId(+process.env.MEMBERSHIP_PAID_TERMS!)
   const K: number = +process.env.COUNCIL_ELECTION_K!
@@ -37,32 +38,22 @@ tap.mocha.describe('Election parameters proposal scenario', async () => {
 
   setTestTimeout(apiWrapper, durationInBlocks)
 
-  const firstMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
-    apiWrapper,
-    sudo,
-    m1KeyPairs,
-    paidTerms
-  )
-  tap.test('Creating first set of members', async () => firstMemberSetFixture.runner(false))
-
-  const secondMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
-    apiWrapper,
-    sudo,
-    m2KeyPairs,
-    paidTerms
-  )
-  tap.test('Creating second set of members', async () => secondMemberSetFixture.runner(false))
-
-  const electCouncilFixture: ElectCouncilFixture = new ElectCouncilFixture(
-    apiWrapper,
-    m1KeyPairs,
-    m2KeyPairs,
-    K,
-    sudo,
-    greaterStake,
-    lesserStake
-  )
-  tap.test('Elect council', async () => electCouncilFixture.runner(false))
+  if (db.hasCouncil()) {
+    m1KeyPairs = db.getMembers()
+    m2KeyPairs = db.getCouncil()
+  } else {
+    const councilElectionHappyCaseFixture = new CouncilElectionHappyCaseFixture(
+      apiWrapper,
+      sudo,
+      m1KeyPairs,
+      m2KeyPairs,
+      paidTerms,
+      K,
+      greaterStake,
+      lesserStake
+    )
+    councilElectionHappyCaseFixture.runner(false)
+  }
 
   const electionParametersProposalFixture: ElectionParametersProposalFixture = new ElectionParametersProposalFixture(
     apiWrapper,
