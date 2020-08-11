@@ -13,11 +13,8 @@ This is exactly where Hydra gets you covered. Define your data model and the Hyd
 ## What's next?
 
 * Explore live Hydra GraphQL server [playground](https://hakusama.joystream.app/graphql) and query historical Kusama Treasury proposals 
+* [Install](install-hydra.md) Hydra toolkit 
 * Hydra [tutorial](quick-start.md): spin a Hydra Indexer and GraphQL server in under five minutes
 * Look at the [examples](../examples/) 
 * Learn how to define your own data [schema](schema-spec/) and [mappings](mappings.md) to run a Hydra Indexer
-
-
-
-
 
