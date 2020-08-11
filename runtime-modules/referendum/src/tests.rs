@@ -9,6 +9,9 @@ type MockUtils = InstanceMockUtils<Runtime, Instance0>;
 /////////////////// Lifetime - referendum start ////////////////////////////////
 #[test]
 fn referendum_start() {
+    let config = default_genesis_config();
+    let winning_target_count = 1;
+
     MockUtils::origin_access(USER_ADMIN, |origin| {
         let options = vec![0];
         let winning_target_count = 1;
@@ -115,7 +118,6 @@ fn referendum_start_not_unique_options() {
             Err(Error::DuplicateReferendumOptions),
         );
     });
-
 }
 
 /////////////////// Lifetime - voting //////////////////////////////////////////
@@ -434,21 +436,15 @@ fn reveal_no_vote() {
         let options = vec![0, 1, 2];
         let winning_target_count = 1;
 
-        let option_to_vote_for = options[1];
-        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let (commitment, salt) = MockUtils::vote_commitment(account_id, option_to_vote_for);
-
         Mocks::start_referendum(
             origin.clone(),
             options.clone(),
             winning_target_count,
             Ok(()),
         );
-        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         Mocks::finish_voting(origin.clone(), Ok(()));
-        Mocks::reveal_vote(origin.clone(), account_id, salt, option_to_vote_for, Ok(()));
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
         Mocks::finish_revealing_period(
@@ -565,7 +561,7 @@ fn finish_revealing_period() {
         Mocks::finish_revealing_period(
             origin.clone(),
             Ok(()),
-            Some(ReferendumResult::Winners(vec![(option_to_vote_for, 1)])),
+            Some(ReferendumResult::Winners(vec![(option_to_vote_for, 1 * stake)])),
         );
     });
 }
@@ -673,7 +669,7 @@ fn finish_revealing_period_vote_power() {
         Mocks::finish_revealing_period(
             origin.clone(),
             Ok(()),
-            Some(ReferendumResult::Winners(vec![(option_to_vote_for2, 1)])),
+            Some(ReferendumResult::Winners(vec![(option_to_vote_for2, 1 * stake_smaller * POWER_VOTE_STRENGTH)])),
         );
     });
 }
@@ -746,8 +742,8 @@ fn winners_multiple_winners() {
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
         let expected_winners = vec![
-            (option_to_vote_for1, 2),
-            (option_to_vote_for2, 1),
+            (option_to_vote_for1, 2 * stake),
+            (option_to_vote_for2, 1 * stake),
         ];
 
         Mocks::finish_revealing_period(
@@ -797,8 +793,8 @@ fn winners_multiple_winners_extra() {
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
         let expected_winners = vec![
-            (option_to_vote_for1, 1),
-            (option_to_vote_for2, 1),
+            (option_to_vote_for1, 1 * stake),
+            (option_to_vote_for2, 1 * stake),
         ];
 
         Mocks::finish_revealing_period(
@@ -841,7 +837,7 @@ fn winners_multiple_not_enough() {
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
         let expected_winners = vec![
-            (option_to_vote_for1, 1),
+            (option_to_vote_for1, 1 * stake),
         ];
 
         Mocks::finish_revealing_period(

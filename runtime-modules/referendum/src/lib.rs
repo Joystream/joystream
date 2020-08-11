@@ -46,7 +46,7 @@ pub struct SealedVote<Hash, CurrencyBalance> {
     stake: CurrencyBalance,
 }
 
-#[derive(Encode, Decode, PartialEq, Eq, Debug)]
+#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
 pub enum ReferendumResult<ReferendumOption, VotePower> {
     Winners(Vec<(ReferendumOption, VotePower)>),
     ExtraWinners(Vec<(ReferendumOption, VotePower)>),
@@ -87,7 +87,9 @@ pub trait Trait<I: Instance>: system::Trait {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + From<u64>
+        + Into<u64>;
 
     type VotePower: Parameter
         + Member
@@ -96,7 +98,9 @@ pub trait Trait<I: Instance>: system::Trait {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + From<u64>
+        + Into<u64>;
 
     type VoteStageDuration: Get<Self::BlockNumber>;
     type RevealStageDuration: Get<Self::BlockNumber>;
@@ -177,11 +181,7 @@ decl_event! {
 }
 
 decl_error! {
-    //#[derive(Copy)]
-
     /// Referendum errors
-    //#[derive(PartialEq, Eq)]
-    #[repr(u64)]
     pub enum Error for Module<T: Trait<I>, I: Instance> {
         /// Origin is invalid
         BadOrigin,
@@ -403,6 +403,12 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
                         continue;
                     }
                     let vote_sum = RevealedVotes::<T, I>::get(option);
+
+                    // skip option with 0 votes
+                    if vote_sum.into() == 0 {
+                        continue;
+                    }
+
                     winning_order.push((option.clone(), vote_sum));
                 }
             }
@@ -413,7 +419,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             }
 
             // sort winners
-            winning_order.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+            winning_order.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap().reverse());
 
             let voted_options_count = winning_order.len();
             let target_count = WinningTargetCount::<I>::get();
@@ -440,7 +446,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
                 }
 
                 return ReferendumResult::ExtraWinners(
-                    winning_order[..(target_count as usize)].to_vec(),
+                    winning_order[..(draw_end_index as usize + 1)].to_vec(),
                 );
             }
 
@@ -502,7 +508,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         let vote_power = T::caclulate_vote_power(account_id, sealed_vote.stake);
 
         // store revealed vote
-        RevealedVotes::<T, I>::mutate(vote_option, |counter| *counter + vote_power);
+        RevealedVotes::<T, I>::mutate(vote_option, |counter| *counter += vote_power);
 
         // remove user commitment to prevent repeated revealing
         Votes::<T, I>::remove(account_id);
