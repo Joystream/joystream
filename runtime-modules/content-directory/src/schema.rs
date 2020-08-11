@@ -83,7 +83,8 @@ impl<T: Trait> Default for VecPropertyType<T> {
 }
 
 impl<T: Trait> VecPropertyType<T> {
-    fn new(vec_type: Type<T>, max_length: VecMaxLength) -> Self {
+    /// Create new `VecPropertyType` from provided `type` and `max_length`
+    pub fn new(vec_type: Type<T>, max_length: VecMaxLength) -> Self {
         Self {
             vec_type,
             max_length,

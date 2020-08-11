@@ -1,7 +1,7 @@
 use crate::{InputPropertyValue, InputValue, PropertyId, SchemaId, Trait, VecInputValue};
 use codec::{Decode, Encode};
-use rstd::collections::btree_map::BTreeMap;
-use rstd::prelude::*;
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::prelude::*;
 
 /// Parametrized entity property value
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]

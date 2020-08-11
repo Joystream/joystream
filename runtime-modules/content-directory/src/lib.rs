@@ -1,7 +1,6 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
-#![warn(missing_docs)]
 
 #[cfg(test)]
 mod tests;
@@ -30,10 +29,10 @@ use core::ops::AddAssign;
 use codec::{Codec, Decode, Encode};
 use frame_support::storage::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter};
-use rstd::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use rstd::vec::Vec;
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
+use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use sp_std::vec::Vec;
 use system::ensure_signed;
 
 #[cfg(feature = "std")]
