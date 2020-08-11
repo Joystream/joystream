@@ -1,0 +1,18 @@
+- name: run network
+  block:
+
+    - name: run two nodes containerized network
+      docker_compose:
+        project_src: ./
+        state: present
+
+    - name: execute network tests
+      shell: yarn test >> ../../.tmp/tests.log
+      args:
+        chdir: ../../tests/network-tests/
+        
+  always:
+    - name: stop containers
+      docker_compose:
+        project_src: ./
+        state: absent
