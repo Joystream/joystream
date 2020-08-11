@@ -1,4 +1,4 @@
-import { BaseModel, NumericField, BytesField, Model, ManyToOne, StringField } from 'warthog';
+import { BaseModel, NumericField, BytesField, Model, ManyToOne } from 'warthog';
 
 import * as BN from 'bn.js';
 

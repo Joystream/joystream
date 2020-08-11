@@ -1,11 +1,14 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 //import { dropdb, createdb } from 'pgtools';
 import * as util from 'util';
 const pgtools = require('pgtools');
-const dropdb: Function = pgtools.dropdb as Function;
-const createdb: Function = pgtools.createdb as Function;
+const dropdb = pgtools.dropdb;
+const createdb = pgtools.createdb;
 
 
-export function getPgConfig(): { [index: string] : any } {
+export function getPgConfig(): { [index: string] : unknown } {
   return {
     host: process.env.DB_HOST,
     user: process.env.DB_USERNAME,

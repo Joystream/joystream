@@ -1,4 +1,5 @@
 import * as dotenv from 'dotenv';
+// we should set env variables before all other imports to avoid config errors or warthog caused by DI
 dotenv.config( { path: './test/e2e-db/.env' });
 
 import { createDb, dropDb } from '../utils';
@@ -12,9 +13,6 @@ import { tipEventPack, newTipEvent_report_awesome, tipClosingEvent } from './fix
 
 import { createConnection,  Connection } from 'typeorm';
 import { Tip } from '../models/tip.model';
-import Debug from 'debug';
-
-const debug = Debug('index-builder:e2e-db');
 
 
 describe('IndexBuiler', () => {
@@ -71,7 +69,7 @@ describe('IndexBuiler', () => {
     if (tip == undefined)  {
       throw new Error('Tip should be saved');
     }
-    // TODO: should the tippers be saved?
+    // TODO: The two expects below are failing. should the tippers be saved?
     //expect(tip.tippers).to.be.of.length(1, "The tip should have a tipper");
     //expect(tip.tippers[0].tipValue.toString()).to.be.equal('500000000', "Tip value should match the event param");
 
