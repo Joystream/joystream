@@ -1,8 +1,8 @@
-### Docker
+# Docker
 
-#### Building localy
+## Building localy
 
-A joystream-node can be compiled with given [Dockerfile](./Dockerfile) file:
+A joystream-node can be compiled with given [Dockerfile](https://github.com/dzhelezov/joystream/tree/f07cb27a73ec74292811648cee8a92d8fab3b6c9/docs/using-docker/Dockerfile/README.md) file:
 
 ```bash
 # Build and tag a new image, which will compile joystream-node from source
@@ -12,13 +12,13 @@ docker build . -t joystream-node
 docker run -p 9944:9944 joystream-node --dev --ws-external
 ```
 
-#### Downloading joystream pre-built images from Docker Hub
+## Downloading joystream pre-built images from Docker Hub
 
 ```bash
 docker pull joystream/node
 ```
 
-#### Running a public node as a service
+## Running a public node as a service
 
 Create a working directory to store the node's data and where you will need to place the chain file.
 
@@ -38,3 +38,4 @@ docker ps
 # monitor logs
 docker logs --tail 100 -f my-node
 ```
+

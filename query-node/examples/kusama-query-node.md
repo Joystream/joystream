@@ -1,0 +1,2 @@
+# kusama-query-node
+

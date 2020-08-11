@@ -1,109 +1,104 @@
-# Getting started
+---
+description: Build a Hydra Indexer and GraphQL server from scratch under five minutes
+---
 
-This guide provides step-by-step instructions on how to deploy a Hydra query node from scratch.
+# Tutorial
 
-## Prerequisites
+{% hint style="info" %}
+Before starting, make sure`hydra-cli`is [installed](install-hydra.md) on your machine together with all the prerequisites. 
+{% endhint %}
 
-- Both Hydra-CLI and the generated project files have dependencies that require Node v10.16 or higher
-
-- `npm` and (optional, but recommended) [`npx`](https://www.npmjs.com/package/npx)
-
-- Hydra stores the substrate data in an external PostgresSQL 12 instance. The scaffolding tool provides a convenient shortcut for running the database instance from a Docker image. In this case the standard docker environment (`docker` and `docker-compose`) should be available.
-
-- (Optional) [Docker engine](https://docs.docker.com/engine/install/). The scaffolding tool provides targets for building Docker images for external deployment.
-
-## Installation
-
-*Global installation:*
-
-```sh
-npm install -g @joystream/hydra-cli
-```
-
-The path to `hydra-cli` binaries will be added to the system-wide `$PATH`.
-
-*Local installation:*
-
-```sh
-npm install @joystream/hydra-cli
-```
-
-The binaries will be installed to the local `.bin` folder. You can execute `hydra-cli` commands by adding the `.bin` folder within your local `node_modules` to `$PATH`.
-
-*Isolated set-up:*
-
-Execute `hydra-cli` commands directly by typing
-
-```sh
-npx @joystream/hydra-cli <command>
-```
-
-This provides an isolated way to execute `hydra-cli` commands.
-
-## Hello-hydra project
+## 0. Hello Hydra!
 
 Start off by setting up a project folder
 
-```sh
+```bash
 mkdir hello-hydra && cd hello-hydra
 ```
 
+## 1. From zero to one
+
 Next, run the scaffold command, which generates all the required files:
 
-```sh
+```bash
 hydra-cli scaffold
 ```
 
-Answer the prompts and the scaffoder will generate a sample backbone for our Hydra project. This includes:
+Answer the prompts and the scaffolder will generate a sample backbone for our Hydra project. This includes:
 
-- Sample graphql data schema in `schema.graphql` describing proposals in the Kusama network
-  
-- Sample mapping scripts in the `mapping` folder translating substrate events into the `Proposal` entity CRUD operations
+* Sample GraphWL data [schema](schema-spec/) in `schema.graphql` describing proposals in the Kusama network
+* Sample [mapping](mappings.md) scripts in the `mapping` folder translating substrate events into the `Proposal` entity CRUD operations
+* `docker-compose.yml` for running a Postgres instance locally as a Docker service.
+* `.env` with all the necessary environment variables
 
-- `docker-compose.yml` for running a Postgres instance locally as a Docker service.
+## 2. Codegen
 
-- `.env` with all the necessary environment variables
+Now all is set for generating the Graphql server and the indexer for Kusama proposals:
 
-Now all is set for generating the graphql server and the indexer for Kusama proposals:
-
-```sh
+```bash
 hydra-cli codegen:all
 ```
 
-The codegen tool creates two separate projects:
+The codegen command creates two separate projects:
 
-- `./generated/graphql-server`: this is a GraphQL for quering the proposals
- 
-- `./generated/indexer`: this is a background indexer tool that fetches the blocks from the Substrate chain (in this case the public Kusama network) and updates the database calling the mapping scripts.
+* `./generated/graphql-server`: this is a GraphQL for querying the proposals
+* `./generated/indexer`: this is a background indexer tool that fetches the blocks from the Substrate chain \(in this case the public Kusama network\) and updates the database calling the mapping scripts.
 
+## 3. Set up the database
 
 Now it's time to set up the database:
 
-```sh
+```bash
 hydra-cli db:start
 ```
 
 This command simply spins up a Postgres Docker image.
 
-```sh
+```bash
 hydra-cli db:bootstrap
 ```
 
 This creates a DB schema for our data model described in `schema.graphql`.
 
+## 4. Start Hydra Indexer
+
 Finally, we're ready to run the indexer and the GraphQL server:
 
-```sh
+```bash
 hydra-cli indexer:start
 ```
 
+Keep an eye on the output to keep track of the indexer's progress.
+
+## 5. Start Hydra GraphQL server
+
 In a separate terminal window:
 
-```sh
+```bash
 hydra-cli server:start:dev
 ```
 
-The last command starts the server in the dev mode, so that the GraphQL playground at `localhost:4000/graphql` opens up. It's time to explore all the GraphQL queries supported out-of-the box! Note, that it takes considerable time before the indexer processes all the outstanding blocks of the Kusama network, so it will take a while before the queries return non-empty results.
+The last command starts the server in the dev mode and you will see a GraphQL playground opening in your browser \(if not, navigate manually to `localhost:4000/graphql`\). It's time to explore all the GraphQL queries supported out-of-the-box! Note, that depending on the starting block it may take a considerable time for the indexer to catch up with the Kusama network, and until then queries may return empty results.
 
-## What's next?
+## 6. Dockerize
+
+Among other things, the scaffolder generates a top-level `package.json`with a bunch of convenient `yarn` targets. For example, putting your Hydra Indexer and GraphQL server is easy as running the following targets:
+
+```bash
+yarn docker:indexer:build
+```
+
+```bash
+yarn docker:server:build
+```
+
+This will create Docker images named `hydra-indexer` and `hydra-graphql-server`
+
+## What to do next?
+
+* Describe your own [schema](schema-spec/) in `schema.graphql`
+* Write your indexer [mappings](mappings.md)
+* Push your Hydra indexer and GraphQL Docker images to [Docker Hub](https://hub.docker.com/) and deploy  
+
+
 
