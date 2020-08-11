@@ -558,7 +558,10 @@ fn finish_revealing_period() {
         Mocks::finish_revealing_period(
             origin.clone(),
             Ok(()),
-            Some(ReferendumResult::Winners(vec![(option_to_vote_for, 1 * stake)])),
+            Some(ReferendumResult::Winners(vec![(
+                option_to_vote_for,
+                1 * stake,
+            )])),
         );
     });
 }
@@ -666,7 +669,10 @@ fn finish_revealing_period_vote_power() {
         Mocks::finish_revealing_period(
             origin.clone(),
             Ok(()),
-            Some(ReferendumResult::Winners(vec![(option_to_vote_for2, 1 * stake_smaller * POWER_VOTE_STRENGTH)])),
+            Some(ReferendumResult::Winners(vec![(
+                option_to_vote_for2,
+                1 * stake_smaller * POWER_VOTE_STRENGTH,
+            )])),
         );
     });
 }
@@ -727,15 +733,51 @@ fn winners_multiple_winners() {
             winning_target_count,
             Ok(()),
         );
-        Mocks::vote(origin_voter1.clone(), account_id1, commitment1, stake, Ok(()));
-        Mocks::vote(origin_voter2.clone(), account_id2, commitment2, stake, Ok(()));
-        Mocks::vote(origin_voter3.clone(), account_id3, commitment3, stake, Ok(()));
+        Mocks::vote(
+            origin_voter1.clone(),
+            account_id1,
+            commitment1,
+            stake,
+            Ok(()),
+        );
+        Mocks::vote(
+            origin_voter2.clone(),
+            account_id2,
+            commitment2,
+            stake,
+            Ok(()),
+        );
+        Mocks::vote(
+            origin_voter3.clone(),
+            account_id3,
+            commitment3,
+            stake,
+            Ok(()),
+        );
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         Mocks::finish_voting(origin.clone(), Ok(()));
-        Mocks::reveal_vote(origin_voter1.clone(), account_id1, salt1, option_to_vote_for1, Ok(()));
-        Mocks::reveal_vote(origin_voter2.clone(), account_id2, salt2, option_to_vote_for1, Ok(()));
-        Mocks::reveal_vote(origin_voter3.clone(), account_id3, salt3, option_to_vote_for2, Ok(()));
+        Mocks::reveal_vote(
+            origin_voter1.clone(),
+            account_id1,
+            salt1,
+            option_to_vote_for1,
+            Ok(()),
+        );
+        Mocks::reveal_vote(
+            origin_voter2.clone(),
+            account_id2,
+            salt2,
+            option_to_vote_for1,
+            Ok(()),
+        );
+        Mocks::reveal_vote(
+            origin_voter3.clone(),
+            account_id3,
+            salt3,
+            option_to_vote_for2,
+            Ok(()),
+        );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
         let expected_winners = vec![
@@ -780,13 +822,37 @@ fn winners_multiple_winners_extra() {
             winning_target_count,
             Ok(()),
         );
-        Mocks::vote(origin_voter1.clone(), account_id1, commitment1, stake, Ok(()));
-        Mocks::vote(origin_voter2.clone(), account_id2, commitment2, stake, Ok(()));
+        Mocks::vote(
+            origin_voter1.clone(),
+            account_id1,
+            commitment1,
+            stake,
+            Ok(()),
+        );
+        Mocks::vote(
+            origin_voter2.clone(),
+            account_id2,
+            commitment2,
+            stake,
+            Ok(()),
+        );
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         Mocks::finish_voting(origin.clone(), Ok(()));
-        Mocks::reveal_vote(origin_voter1.clone(), account_id1, salt1, option_to_vote_for1, Ok(()));
-        Mocks::reveal_vote(origin_voter2.clone(), account_id2, salt2, option_to_vote_for2, Ok(()));
+        Mocks::reveal_vote(
+            origin_voter1.clone(),
+            account_id1,
+            salt1,
+            option_to_vote_for1,
+            Ok(()),
+        );
+        Mocks::reveal_vote(
+            origin_voter2.clone(),
+            account_id2,
+            salt2,
+            option_to_vote_for2,
+            Ok(()),
+        );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
         let expected_winners = vec![
@@ -826,16 +892,26 @@ fn winners_multiple_not_enough() {
             winning_target_count,
             Ok(()),
         );
-        Mocks::vote(origin_voter1.clone(), account_id1, commitment1, stake, Ok(()));
+        Mocks::vote(
+            origin_voter1.clone(),
+            account_id1,
+            commitment1,
+            stake,
+            Ok(()),
+        );
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         Mocks::finish_voting(origin.clone(), Ok(()));
-        Mocks::reveal_vote(origin_voter1.clone(), account_id1, salt1, option_to_vote_for1, Ok(()));
+        Mocks::reveal_vote(
+            origin_voter1.clone(),
+            account_id1,
+            salt1,
+            option_to_vote_for1,
+            Ok(()),
+        );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        let expected_winners = vec![
-            (option_to_vote_for1, 1 * stake),
-        ];
+        let expected_winners = vec![(option_to_vote_for1, 1 * stake)];
 
         Mocks::finish_revealing_period(
             origin.clone(),

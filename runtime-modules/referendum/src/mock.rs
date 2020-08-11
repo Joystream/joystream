@@ -2,24 +2,25 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Error, RawEvent, Instance, Module, ReferendumOptions, ReferendumResult, ReferendumStage,
-    RevealedVotes, SealedVote, Stage, WinningTargetCount, Trait, Votes,
+    Error, Instance, Module, RawEvent, ReferendumOptions, ReferendumResult, ReferendumStage,
+    RevealedVotes, SealedVote, Stage, Trait, Votes, WinningTargetCount,
 };
 
 use codec::Encode;
-use sp_core::H256;
 use rand::Rng;
+use sp_core::H256;
 //use sp_io;
+use frame_support::{
+    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StoragePrefixedMap,
+    StorageValue,
+};
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use frame_support::{
-    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StoragePrefixedMap, StorageValue,
-};
-use std::marker::PhantomData;
 use std::cell::RefCell;
+use std::marker::PhantomData;
 use system::RawOrigin;
 
 use crate::GenesisConfig;
@@ -134,7 +135,9 @@ impl Runtime {
         lock_enabled: bool,
         free_enabled: bool,
     ) -> () {
-        IS_LOCKING_ENABLED.with(|value| {*value.borrow_mut() = (ensure_check_enabled, lock_enabled, free_enabled);});
+        IS_LOCKING_ENABLED.with(|value| {
+            *value.borrow_mut() = (ensure_check_enabled, lock_enabled, free_enabled);
+        });
     }
 }
 
@@ -228,7 +231,6 @@ pub fn build_test_externalities(
 
     config.assimilate_storage(&mut t).unwrap();
 
-
     // reset the static lock feature state
     Runtime::feature_stack_lock(true, true, true);
 
@@ -295,7 +297,6 @@ pub struct InstanceMocks<T: Trait<I>, I: Instance> {
 }
 
 impl InstanceMocks<Runtime, Instance0> {
-
     pub fn start_referendum(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         options: Vec<<Runtime as Trait<Instance0>>::ReferendumOption>,
@@ -316,16 +317,19 @@ impl InstanceMocks<Runtime, Instance0> {
             return;
         }
 
-        assert_eq!(Stage::<Runtime, Instance0>::get().0, ReferendumStage::Voting,);
+        assert_eq!(
+            Stage::<Runtime, Instance0>::get().0,
+            ReferendumStage::Voting,
+        );
 
-        assert_eq!(ReferendumOptions::<Runtime, Instance0>::get(), Some(options.clone()),);
+        assert_eq!(
+            ReferendumOptions::<Runtime, Instance0>::get(),
+            Some(options.clone()),
+        );
 
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::from(RawEvent::ReferendumStarted(
-                options,
-                winning_target_count,
-            ))
+            TestEvent::from(RawEvent::ReferendumStarted(options, winning_target_count,))
         );
     }
 
@@ -335,7 +339,10 @@ impl InstanceMocks<Runtime, Instance0> {
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<Runtime, Instance0>::finish_voting_start_revealing(InstanceMockUtils::<Runtime, Instance0>::mock_origin(
+            Module::<Runtime, Instance0>::finish_voting_start_revealing(InstanceMockUtils::<
+                Runtime,
+                Instance0,
+            >::mock_origin(
                 origin
             ),),
             expected_result,
@@ -345,7 +352,10 @@ impl InstanceMocks<Runtime, Instance0> {
             return;
         }
 
-        assert_eq!(Stage::<Runtime, Instance0>::get().0, ReferendumStage::Revealing,);
+        assert_eq!(
+            Stage::<Runtime, Instance0>::get().0,
+            ReferendumStage::Revealing,
+        );
 
         // check event was emitted
         assert_eq!(
@@ -357,11 +367,21 @@ impl InstanceMocks<Runtime, Instance0> {
     pub fn finish_revealing_period(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         expected_result: Result<(), Error<Runtime, Instance0>>,
-        expected_referendum_result: Option<ReferendumResult<<Runtime as Trait<Instance0>>::ReferendumOption, <Runtime as Trait<Instance0>>::VotePower>>,
+        expected_referendum_result: Option<
+            ReferendumResult<
+                <Runtime as Trait<Instance0>>::ReferendumOption,
+                <Runtime as Trait<Instance0>>::VotePower,
+            >,
+        >,
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<Runtime, Instance0>::finish_revealing_period(InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),),
+            Module::<Runtime, Instance0>::finish_revealing_period(InstanceMockUtils::<
+                Runtime,
+                Instance0,
+            >::mock_origin(
+                origin
+            ),),
             expected_result,
         );
 
@@ -372,14 +392,18 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(Stage::<Runtime, Instance0>::get().0, ReferendumStage::Void,);
         assert_eq!(ReferendumOptions::<Runtime, Instance0>::get(), None,);
         assert_eq!(Votes::<Runtime, Instance0>::iter_values().count(), 0,);
-        assert_eq!(RevealedVotes::<Runtime, Instance0>::iter_values().count(), 0,);
+        assert_eq!(
+            RevealedVotes::<Runtime, Instance0>::iter_values().count(),
+            0,
+        );
         assert_eq!(WinningTargetCount::<Instance0>::get(), 0,);
-
 
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::event_mod_Instance0(RawEvent::ReferendumFinished(expected_referendum_result.unwrap()))
+            TestEvent::event_mod_Instance0(RawEvent::ReferendumFinished(
+                expected_referendum_result.unwrap()
+            ))
         );
     }
 

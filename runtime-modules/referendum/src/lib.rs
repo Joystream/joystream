@@ -5,21 +5,21 @@
 // No default instance is provided.
 
 /////////////////// Configuration //////////////////////////////////////////////
+#![allow(clippy::type_complexity)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // used dependencies
 use codec::{Codec, Decode, Encode};
-use sp_runtime::traits::{MaybeSerialize, Member};
+use frame_support::{
+    decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, traits::Get, Parameter,
+    StorageValue,
+};
 use sp_arithmetic::traits::{BaseArithmetic, One};
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, traits::Get, Parameter, StorageValue, error::BadOrigin};
+use sp_runtime::traits::{MaybeSerialize, Member};
 use std::marker::PhantomData;
 use system::ensure_signed;
 
 use std::collections::HashSet;
-
-// conditioned dependencies
-//#[cfg(feature = "std")]
-//use serde_derive::{Deserialize, Serialize};
 
 // declared modules
 mod mock;
@@ -365,12 +365,13 @@ struct Mutations<T: Trait<I>, I: Instance> {
 }
 
 impl<T: Trait<I>, I: Instance> Mutations<T, I> {
-    fn start_voting_period(options: &Vec<T::ReferendumOption>, winning_target_count: &u64) -> () {
+    fn start_voting_period(options: &[T::ReferendumOption], winning_target_count: &u64) {
         // change referendum state
         Stage::<T, I>::put((ReferendumStage::Voting, <system::Module<T>>::block_number()));
 
         // store new options
-        ReferendumOptions::<T, I>::put(options.clone());
+        //ReferendumOptions::<T, I>::put(options.clone());
+        ReferendumOptions::<T, I>::put(options);
 
         // store winning target
         WinningTargetCount::<I>::put(winning_target_count);
@@ -409,12 +410,12 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
                         continue;
                     }
 
-                    winning_order.push((option.clone(), vote_sum));
+                    winning_order.push((*option, vote_sum));
                 }
             }
 
             // no votes revealed?
-            if winning_order.len() == 0 {
+            if winning_order.is_empty() {
                 return ReferendumResult::NoVotesRevealed;
             }
 
@@ -561,7 +562,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ensure some options were given
-        if options.len() == 0 {
+        if options.is_empty() {
             return Err(Error::NoReferendumOptions);
         }
 
@@ -624,7 +625,10 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(())
     }
 
-    fn can_vote(origin: T::Origin, stake: &T::CurrencyBalance) -> Result<T::AccountId, Error<T, I>> {
+    fn can_vote(
+        origin: T::Origin,
+        stake: &T::CurrencyBalance,
+    ) -> Result<T::AccountId, Error<T, I>> {
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;
 
@@ -662,17 +666,17 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     fn can_reveal_vote(
         origin: T::Origin,
-        salt: &Vec<u8>,
+        salt: &[u8],
         vote_option: &T::ReferendumOption,
     ) -> Result<(T::AccountId, SealedVote<T::Hash, T::CurrencyBalance>), Error<T, I>> {
         fn calculate_commitment<T: Trait<I>, I: Instance>(
             account_id: &T::AccountId,
-            salt: &Vec<u8>,
+            salt: &[u8],
             vote_option: &T::ReferendumOption,
         ) -> T::Hash {
             let mut payload = account_id.encode();
             let mut mut_option = vote_option.clone().into().to_be_bytes().to_vec();
-            let mut salt_tmp = salt.clone();
+            let mut salt_tmp = salt.to_vec();
 
             payload.append(&mut salt_tmp);
             payload.append(&mut mut_option);
