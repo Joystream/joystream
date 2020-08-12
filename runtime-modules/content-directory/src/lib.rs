@@ -757,18 +757,18 @@ decl_module! {
             // Ensure all provided Properties with unique flag set are unique on Class level
             Self::ensure_property_hashes_unique_option_satisfied(class_id, &new_unique_hashes)?;
 
-            // Used to remove unique values, that were substituted with default and non required ones (if some).
-            let default_non_required_hashes = Self::compute_default_non_required_hashes(new_output_values_for_existing_properties, &entity_property_values);
+            // Used to remove unique hashes, that were substituted with new ones.
+            let old_unique_hashes = Self::compute_old_unique_hashes(&new_output_property_value_references_with_same_owner_flag_set, &entity_property_values);
 
             //
             // == MUTATION SAFE ==
             //
 
             // Add/update property values, that should be unique on Class level
-            Self::update_unique_property_value_hashes(class_id, new_unique_hashes);
+            Self::add_unique_property_value_hashes(class_id, new_unique_hashes);
 
-            // Remove unique values, that were substituted with default and non required ones (if some).
-            Self::remove_unique_property_value_hashes(class_id, default_non_required_hashes);
+            // Remove unique hashes, that were substituted with new ones.
+            Self::remove_unique_property_value_hashes(class_id, old_unique_hashes);
 
             // Make updated entity_property_values from parameters provided
             let entity_property_values_updated =
@@ -1023,8 +1023,8 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // Add property values, that should be unique on Class level
-            Self::update_unique_property_value_hashes(class_id, new_unique_property_value_hashes);
+            // Add property value hashes, that should be unique on Class level
+            Self::add_unique_property_value_hashes(class_id, new_unique_property_value_hashes);
 
             // Calculate entities reference counter side effects for current operation
             let entities_inbound_rcs_delta = Self::calculate_entities_inbound_rcs_delta(
@@ -1106,18 +1106,18 @@ decl_module! {
             Self::ensure_property_hashes_unique_option_satisfied(class_id, &new_unique_property_value_hashes)?;
 
 
-            // Used to remove unique values, that were substituted with default and non required ones (if some).
-            let default_non_required_hashes = Self::compute_default_non_required_hashes(new_output_values_for_existing_properties, &entity_property_values);
+            // Used to compute old unique hashes, that should be substituted with new ones.
+            let old_unique_hashes = Self::compute_old_unique_hashes(&new_output_property_values, &entity_property_values);
 
             //
             // == MUTATION SAFE ==
             //
 
-            // Update property values, that should be unique on Class level
-            Self::update_unique_property_value_hashes(class_id, new_unique_property_value_hashes);
+            // Update property value hashes, that should be unique on Class level
+            Self::add_unique_property_value_hashes(class_id, new_unique_property_value_hashes);
 
-            // Remove unique values, that were substituted with default and non required ones (if some).
-            Self::remove_unique_property_value_hashes(class_id, default_non_required_hashes);
+            // Remove unique hashes, that were substituted with new ones. (if some).
+            Self::remove_unique_property_value_hashes(class_id, old_unique_hashes);
 
             // Make updated entity_property_values from current entity_property_values and new_output_property_values provided
             let entity_property_values_updated =
@@ -1167,26 +1167,35 @@ decl_module! {
             let property_value_vector =
                 entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
 
-            let class_id = entity.get_class_id();
-
             // Calculate side effects for clear_property_vector operation, based on property_value_vector provided and its respective property.
             let entities_inbound_rcs_delta = Self::make_side_effects_for_clear_property_vector_operation(&property_value_vector, &property);
 
             // Clear property_value_vector.
-            let empty_property_value_vector = Self::clear_property_vector(property_value_vector);
+            let empty_property_value_vector = Self::clear_property_vector(property_value_vector.clone());
 
-            let property_value_hash = empty_property_value_vector.compute_unique_hash(in_class_schema_property_id);
+            if property.unique {
+                let class_id = entity.get_class_id();
 
-            if OutputValueForExistingProperty::new(&property, &empty_property_value_vector).is_default() {
-                Self::remove_unique_property_value_hash(class_id, in_class_schema_property_id, property_value_hash)
-            } else {
-                // Ensure there is no another empty vector for this, possible, unique property
-                Self::ensure_property_hash_unique_option_satisfied(class_id, in_class_schema_property_id, &property_value_hash)?;
+                // Compute new hash from unique property value and its respective property id
+                let new_property_value_hash = empty_property_value_vector.compute_unique_hash(in_class_schema_property_id);
+
+                // Ensure `Property` with `unique` flag set is `unique` on `Class` level
+                Self::ensure_property_hash_unique_option_satisfied(class_id, in_class_schema_property_id, &new_property_value_hash)?;
+
+                // Compute old hash from the old unique property value and its respective property id
+                let old_property_value_hash = property_value_vector.compute_unique_hash(in_class_schema_property_id);
+
+
+                //
+                // == MUTATION SAFE ==
+                //
+
+                // Add new property value hash, that should be unique on `Class` level
+                Self::add_unique_property_value_hash(class_id, in_class_schema_property_id, new_property_value_hash);
+
+                // Remove old property value hash, that should be unique on `Class` level
+                Self::remove_unique_property_value_hash(class_id, in_class_schema_property_id, old_property_value_hash);
             }
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             // Decrease reference counters of involved entities (if some)
             Self::update_entities_rcs(&entities_inbound_rcs_delta);
@@ -1253,24 +1262,31 @@ decl_module! {
             // Remove value at in_class_schema_property_id in property value vector
             // Get VecInputPropertyValue wrapped in InputPropertyValue
             let property_value_vector_updated = Self::remove_at_index_in_property_vector(
-                property_value_vector, index_in_property_vector
+                property_value_vector.clone(), index_in_property_vector
             );
 
-            let class_id = entity.get_class_id();
+            if property.unique {
+                let class_id = entity.get_class_id();
 
-            // Compute hash from unique property value and its respective property id
-            let property_value_hash = property_value_vector_updated.compute_unique_hash(in_class_schema_property_id);
+                // Compute new hash from unique property value and its respective property id
+                let new_property_value_hash = property_value_vector_updated.compute_unique_hash(in_class_schema_property_id);
 
-            if OutputValueForExistingProperty::new(&property, &property_value_vector_updated).is_default() {
-                Self::remove_unique_property_value_hash(class_id, in_class_schema_property_id, property_value_hash)
-            } else {
-                // Ensure provided `Property` with `unique` flag set is `unique` on `Class` level
-                Self::ensure_property_hash_unique_option_satisfied(class_id, in_class_schema_property_id, &property_value_hash)?;
+                // Ensure `Property` with `unique` flag set is `unique` on `Class` level
+                Self::ensure_property_hash_unique_option_satisfied(class_id, in_class_schema_property_id, &new_property_value_hash)?;
+
+                // Compute old hash from the old unique property value and its respective property id
+                let old_property_value_hash = property_value_vector.compute_unique_hash(in_class_schema_property_id);
+
+                //
+                // == MUTATION SAFE ==
+                //
+
+                // Add new property value hash, that should be unique on `Class` level
+                Self::add_unique_property_value_hash(class_id, in_class_schema_property_id, new_property_value_hash);
+
+                // Remove old property value hash, that should be unique on `Class` level
+                Self::remove_unique_property_value_hash(class_id, in_class_schema_property_id, old_property_value_hash);
             }
-
-            //
-            // == MUTATION SAFE ==
-            //
 
             // Insert updated propery value into entity_property_values mapping at in_class_schema_property_id.
             let entity_values_updated = Self::insert_at_in_class_schema_property_id(
@@ -1288,8 +1304,6 @@ decl_module! {
             } else {
                 None
             };
-
-
 
             // Update entity property values
             <EntityById<T>>::mutate(entity_id, |entity| {
@@ -1324,7 +1338,7 @@ decl_module! {
 
             // Ensure Property under given PropertyId is unlocked from actor with given EntityAccessLevel
             // Retrieve corresponding Property by value
-            let class_property = class.ensure_class_property_type_unlocked_from(
+            let property = class.ensure_class_property_type_unlocked_from(
                 in_class_schema_property_id,
                 access_level,
             )?;
@@ -1340,7 +1354,7 @@ decl_module! {
             let entity_controller = entity.get_permissions_ref().get_controller();
 
             // Ensure property_value type is equal to the property_value_vector type and check all constraints
-            class_property.ensure_property_value_can_be_inserted_at_property_vector(
+            property.ensure_property_value_can_be_inserted_at_property_vector(
                 &value,
                 &property_value_vector,
                 index_in_property_vector,
@@ -1352,20 +1366,31 @@ decl_module! {
             // Insert SingleInputPropertyValue at in_class_schema_property_id into property value vector
             // Get VecInputPropertyValue wrapped in InputPropertyValue
             let property_value_vector_updated = Self::insert_at_index_in_property_vector(
-                property_value_vector, index_in_property_vector, value
+                property_value_vector.clone(), index_in_property_vector, value
             );
 
-            let class_id = entity.get_class_id();
+            if property.unique {
+                let class_id = entity.get_class_id();
 
-            // Compute hash from unique property value and its respective property id
-            let property_value_hash = property_value_vector_updated.compute_unique_hash(in_class_schema_property_id);
+                // Compute new hash from unique property value and its respective property id
+                let new_property_value_hash = property_value_vector_updated.compute_unique_hash(in_class_schema_property_id);
 
-            // Ensure `Property` with `unique` flag set is `unique` on `Class` level
-            Self::ensure_property_hash_unique_option_satisfied(class_id, in_class_schema_property_id, &property_value_hash)?;
+                // Ensure `Property` with `unique` flag set is `unique` on `Class` level
+                Self::ensure_property_hash_unique_option_satisfied(class_id, in_class_schema_property_id, &new_property_value_hash)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
+                // Compute old hash from the old unique property value and its respective property id
+                let old_property_value_hash = property_value_vector.compute_unique_hash(in_class_schema_property_id);
+
+                //
+                // == MUTATION SAFE ==
+                //
+
+                // Add property value hash, that should be unique on `Class` level
+                Self::add_unique_property_value_hash(class_id, in_class_schema_property_id, new_property_value_hash);
+
+                // Remove property value hash, that should be unique on `Class` level
+                Self::remove_unique_property_value_hash(class_id, in_class_schema_property_id, old_property_value_hash);
+            }
 
             // Insert updated property value into entity_property_values mapping at in_class_schema_property_id.
             // Retrieve updated entity_property_values
@@ -1375,7 +1400,7 @@ decl_module! {
 
             // Increase reference counter of involved entity (if some)
             let involved_entity_and_side_effect = if let Some(entity_rc_to_increment) = involved_entity {
-                let same_controller_status = class_property.property_type.same_controller_status();
+                let same_controller_status = property.property_type.same_controller_status();
                 let rc_delta = EntityReferenceCounterSideEffect::atomic(same_controller_status, DeltaMode::Increment);
 
                 // Update InboundReferenceCounter of involved entity, based on previously calculated ReferenceCounterSideEffect
@@ -1473,8 +1498,8 @@ impl<T: Trait> Module<T> {
         })
     }
 
-    /// Add/update property value hash, that should be unique on `Class` level
-    pub fn update_unique_property_value_hash(
+    /// Add property value hash, that should be unique on `Class` level
+    pub fn add_unique_property_value_hash(
         class_id: T::ClassId,
         property_id: PropertyId,
         hash: T::Hash,
@@ -1491,15 +1516,15 @@ impl<T: Trait> Module<T> {
         <UniquePropertyValueHashes<T>>::remove((class_id, property_id), hash);
     }
 
-    /// Add/update property value hashes, that should be unique on `Class` level
-    pub fn update_unique_property_value_hashes(
+    /// Add property value hashes, that should be unique on `Class` level
+    pub fn add_unique_property_value_hashes(
         class_id: T::ClassId,
         unique_property_value_hashes: BTreeMap<PropertyId, T::Hash>,
     ) {
         unique_property_value_hashes
             .into_iter()
             .for_each(|(property_id, hash)| {
-                Self::update_unique_property_value_hash(class_id, property_id, hash);
+                Self::add_unique_property_value_hash(class_id, property_id, hash);
             });
     }
 
@@ -2013,17 +2038,15 @@ impl<T: Trait> Module<T> {
             .collect()
     }
 
-    /// Used to remove unique values, that were substituted with default and non required ones (if some).
-    pub fn compute_default_non_required_hashes(
-        new_output_values_for_existing_properties: OutputValuesForExistingProperties<T>,
+    /// Used to compute old unique hashes, that should be substituted with new ones.
+    pub fn compute_old_unique_hashes(
+        new_output_property_values: &BTreeMap<PropertyId, OutputPropertyValue<T>>,
         entity_values: &BTreeMap<PropertyId, OutputPropertyValue<T>>,
     ) -> BTreeMap<PropertyId, T::Hash> {
-        let unique_default_non_required_ids =
-            new_output_values_for_existing_properties.compute_unique_default_non_required_ids();
 
         entity_values
             .iter()
-            .filter(|(property_id, _)| unique_default_non_required_ids.contains(property_id))
+            .filter(|(property_id, _)| new_output_property_values.contains_key(property_id))
             .map(|(&property_id, property_value)| {
                 (property_id, property_value.compute_unique_hash(property_id))
             })
