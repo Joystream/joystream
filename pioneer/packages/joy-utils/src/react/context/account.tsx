@@ -5,7 +5,7 @@ export const ACCOUNT_CHANGED_EVENT_NAME = 'account-changed';
 export const MY_ADDRESS_STORAGE_KEY = 'joy.myAddress';
 
 function readMyAddress (): string | undefined {
-  const myAddress: string | undefined = store.get(MY_ADDRESS_STORAGE_KEY);
+  const myAddress = store.get(MY_ADDRESS_STORAGE_KEY) as string | undefined;
 
   console.log('Read my address from the local storage:', myAddress);
 
@@ -98,7 +98,7 @@ const contextStub: MyAccountContextProps = {
 
 export const MyAccountContext = createContext<MyAccountContextProps>(contextStub);
 
-export function MyAccountProvider (props: React.PropsWithChildren<{}>) {
+export function MyAccountProvider (props: React.PropsWithChildren<unknown>) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   const handleAccountChangeEvent = (e: Event) => {

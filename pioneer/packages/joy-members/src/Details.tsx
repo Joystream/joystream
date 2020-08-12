@@ -61,7 +61,7 @@ class Component extends React.PureComponent<Props> {
 
     return (
       <>
-        <div className={`item ProfileDetails ${isMyProfile && 'MyProfile'}`}>
+        <div className={`item ProfileDetails${isMyProfile ? ' MyProfile' : ''}`}>
           {hasAvatar
             ? <img className='ui avatar image' src={avatar_uri.toString()} />
             : <IdentityIcon className='image' value={root_account} size={40} />

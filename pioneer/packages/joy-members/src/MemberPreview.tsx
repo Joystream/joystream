@@ -47,7 +47,7 @@ class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
 
     const avatarSize = inline ? InlineAvatarSizePx : AvatarSizePx;
 
-    return <div className={`JoyMemberPreview ${className}`} style={style}>
+    return <div className={`JoyMemberPreview ${className || ''}`} style={style}>
       <FlexCenter>
         {prefixLabel &&
           <MutedSpan className='PrefixLabel'>{prefixLabel}</MutedSpan>

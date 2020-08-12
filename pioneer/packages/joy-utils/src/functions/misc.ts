@@ -33,10 +33,10 @@ export const isNum = (x: any): boolean =>
   typeof x === 'number';
 
 export const isEmptyStr = (x: any): boolean =>
-  notDefined(x) || (isStr(x) && x.trim().length === 0);
+  notDefined(x) || (isStr(x) && (x as string).trim().length === 0);
 
 export const nonEmptyStr = (x?: any) =>
-  isStr(x) && x.trim().length > 0;
+  isStr(x) && (x as string).trim().length > 0;
 
 export const parseNumStr = (num: string): number | undefined => {
   try {

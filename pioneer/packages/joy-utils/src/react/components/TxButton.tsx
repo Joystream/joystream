@@ -68,7 +68,7 @@ class TxButtonInner extends React.PureComponent<PropsWithApi & InjectedProps> {
 
     queueExtrinsic({
       accountId: origin,
-      extrinsic: api.tx[section][method](...params) as any, // ???
+      extrinsic: api.tx[section][method](...params),
       txFailedCb,
       txSuccessCb,
       txStartCb,

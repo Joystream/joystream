@@ -23,7 +23,7 @@ type Props = ApiProps & I18nProps & RouteComponentProps & {
   match: { params: { page?: string } };
 };
 
-type State = {};
+type State = Record<any, never>;
 
 const MEMBERS_PER_PAGE = 20;
 
@@ -33,7 +33,7 @@ class Component extends React.PureComponent<Props, State> {
   onPageChange = (e: React.MouseEvent, data: PaginationProps) => {
     const { history } = this.props;
 
-    history.push(`/members/list/${data.activePage}`);
+    history.push(`/members/list/${data.activePage || 1}`);
   }
 
   renderPagination (currentPage: number, pagesCount: number) {

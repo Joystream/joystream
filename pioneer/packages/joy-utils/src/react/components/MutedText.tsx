@@ -9,7 +9,7 @@ type Props = React.PropsWithChildren<{
 function getClassNames (props: Props): string {
   const { smaller = false, className } = props;
 
-  return `grey text ${smaller ? 'smaller' : ''} ${className}`;
+  return `grey text ${smaller ? 'smaller' : ''} ${className || ''}`;
 }
 
 export const MutedSpan = (props: Props) => {

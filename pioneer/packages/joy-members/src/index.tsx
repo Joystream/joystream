@@ -36,7 +36,7 @@ class App extends React.PureComponent<Props> {
     return [
       {
         name: 'list',
-        text: t('All members') + ` (${memberCount})`,
+        text: t('All members') + ` (${memberCount?.toString() || '-'})`,
         forceMatchParams: true
       },
       {

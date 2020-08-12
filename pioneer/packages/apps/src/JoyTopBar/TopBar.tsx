@@ -5,8 +5,6 @@ import { Available } from '@polkadot/react-query';
 import styled from 'styled-components';
 import { useApi } from '@polkadot/react-hooks';
 
-type Props = {};
-
 const StyledTopBar = styled.div`
   padding: 0.75rem;
   background-color: #3f3f3f;
@@ -25,7 +23,7 @@ const StyledTopBar = styled.div`
   }
 `;
 
-function JoyTopBar (_props: Props) {
+function JoyTopBar () {
   const {
     allAccounts,
     myAddress

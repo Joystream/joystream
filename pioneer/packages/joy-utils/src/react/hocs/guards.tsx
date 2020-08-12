@@ -36,7 +36,7 @@ export type MyAccountProps = MyAddressProps & {
   allAccounts?: SubjectInfo;
 };
 
-export function MembershipRequired<P extends {}> (Component: React.ComponentType<P>): React.ComponentType<P> {
+export function MembershipRequired<P extends Record<string, unknown>> (Component: React.ComponentType<P>): React.ComponentType<P> {
   const ResultComponent: React.FunctionComponent<P> = (props: P) => {
     const { myMemberIdChecked, iAmMember } = useMyMembership();
 
@@ -67,7 +67,7 @@ export function MembershipRequired<P extends {}> (Component: React.ComponentType
   return ResultComponent;
 }
 
-export function AccountRequired<P extends {}> (Component: React.ComponentType<P>): React.ComponentType<P> {
+export function AccountRequired<P extends Record<string, unknown>> (Component: React.ComponentType<P>): React.ComponentType<P> {
   const ResultComponent: React.FunctionComponent<P> = (props: P) => {
     const { allAccounts } = useMyMembership();
 
@@ -97,7 +97,7 @@ export function AccountRequired<P extends {}> (Component: React.ComponentType<P>
 export const withOnlyAccounts = <P extends MyAccountProps>(Component: React.ComponentType<P>): React.ComponentType<P> =>
   withMulti(Component, withMyAccount, AccountRequired);
 
-export const withMembershipRequired = <P extends {}> (Component: React.ComponentType<P>): React.ComponentType<P> =>
+export const withMembershipRequired = <P extends Record<string, unknown>> (Component: React.ComponentType<P>): React.ComponentType<P> =>
   withMulti(Component, AccountRequired, MembershipRequired);
 
 export const withOnlyMembers = <P extends MyAccountProps>(Component: React.ComponentType<P>): React.ComponentType<P> =>
