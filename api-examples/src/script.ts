@@ -3,8 +3,7 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import * as types from '@polkadot/types'
 import * as util from '@polkadot/util'
-import { types as joyTypes } from '@joystream/types'
-import * as joy from '@joystream/types'
+import joy, { types as joyTypes } from '@joystream/types'
 import * as hashing from '@polkadot/util-crypto'
 import { Keyring } from '@polkadot/keyring'
 

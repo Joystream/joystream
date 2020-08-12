@@ -8,7 +8,7 @@
 //
 // requires nicaea release+
 
-const script = async ({ api, keyring, types, joy }) => {
+const script = async ({ api, keyring }) => {
   const sudoAddress = (await api.query.sudo.key()).toString()
   let sudo
   if (typeof window === 'undefined') {
@@ -19,10 +19,7 @@ const script = async ({ api, keyring, types, joy }) => {
     sudo = sudoAddress
   }
 
-  const nonce = (await api.query.system.account(sudoAddress)).nonce
-
   const transfer = api.tx.balances.transfer(sudoAddress, 100)
-  console.log(transfer)
   await transfer.signAndSend(sudo)
 }
 
