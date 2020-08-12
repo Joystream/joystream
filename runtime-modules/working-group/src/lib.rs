@@ -1475,7 +1475,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(())
     }
 
-    fn initialize_working_group(
+    // Initialize working group constraints and mint.
+    pub(crate) fn initialize_working_group(
         opening_human_readable_text_constraint: InputValidationLengthConstraint,
         worker_application_human_readable_text_constraint: InputValidationLengthConstraint,
         worker_exit_rationale_text_constraint: InputValidationLengthConstraint,
