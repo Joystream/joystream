@@ -103,10 +103,7 @@ type VideoMedia {
   size: Float
 
   # where to find
-  # FIXME: This should be MediaLocation instead. However, some issues arose when trying to implement this with a union type
-  # Let's keep it directly typed for now and resolve later
-  # See https://github.com/miragejs/graphql/issues/12
-  location: HTTPVideoMediaLocation!
+  location: MediaLocation!
 }
 
 type Video {
