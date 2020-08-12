@@ -36,7 +36,7 @@ Answer the prompts and the scaffolder will generate a sample backbone for our Hy
 Now all is set for generating the Graphql server and the indexer for Kusama proposals:
 
 ```bash
-hydra-cli codegen:all
+hydra-cli codegen
 ```
 
 The codegen command creates two separate projects:

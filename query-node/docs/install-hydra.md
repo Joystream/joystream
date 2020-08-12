@@ -35,7 +35,7 @@ npx @joystream/hydra-cli <command>
 
 This provides an isolated way to execute `hydra-cli` commands.
 
-{% hint style="success" %}
+{% hint style="info" %}
 Run `hydra-cli --version` to check your installation
 {% endhint %}
 
