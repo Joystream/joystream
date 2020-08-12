@@ -1,7 +1,7 @@
 {
   "name": "index-builder",
   "description": "Block index builder for substrate based chains",
-  "version": "0.0.6-alpha",
+  "version": "0.0.7-alpha",
   "main": "index.js",
   "license": "MIT",
   "repository": "git@github.com:Joystream/joystream.git",
@@ -11,18 +11,34 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rm -rf lib && tsc --build tsconfig.json"
+    "build": "rm -rf lib && tsc --build tsconfig.json",
+    "lint": "eslint . --cache --ext .ts --config .eslintrc.js"
   },
   "dependencies": {
     "@polkadot/api": "^1.24.1",
     "@types/shortid": "^0.0.29",
+    "debug": "^4.1.1",
     "shortid": "^2.2.15",
     "typeorm": "^0.2.25"
   },
   "devDependencies": {
     "@polkadot/ts": "^0.3.14",
+    "@types/debug": "^4.1.5",
     "@types/node": "^10",
+    "@typescript-eslint/eslint-plugin": "^3.8.0",
+    "@typescript-eslint/parser": "^3.0.2",
+    "eslint": "^7.1.0",
+    "husky": "^4.2.5",
+    "lint-staged": "^10.2.6",
     "ts-node": "^8",
     "typescript": "^3.8"
+  },
+  "husky": {
+    "hooks": {
+      "pre-push": "yarn lint"
+    }
+  },
+  "lint-staged": {
+    "*.ts": "yarn lint"
   }
 }

@@ -13,7 +13,9 @@ import {
   QueryEvent,
 } from '.';
 
-const debug = require('debug')('index-builder:indexer');
+import Debug from 'debug';
+
+const debug = Debug('index-builder:indexer');
 
 export default class IndexBuilder {
   private _producer: QueryBlockProducer;
@@ -33,18 +35,18 @@ export default class IndexBuilder {
     return new IndexBuilder(producer, processing_pack);
   }
 
-  async start(atBlock?: BN) {
+  async start(atBlock?: BN): Promise<void> {
     // check state
 
     // STORE THIS SOMEWHERE
-    this._producer.on('QueryEventBlock', (query_event_block: QueryEventBlock): void => {
-      this._onQueryEventBlock(query_event_block);
-    });
+    //this._producer.on('QueryEventBlock', (query_event_block: QueryEventBlock) => {
+    //  this._onQueryEventBlock(query_event_block);
+    //});
 
     debug('Spawned worker.');
 
     if (atBlock) {
-      debug(`Got block height hint: ${atBlock}`);
+      debug(`Got block height hint: ${atBlock.toString()}`);
     }
     
     const lastProcessedEvent = await getRepository(SavedEntityEvent).findOne({ where: { id: 1 } });
@@ -69,17 +71,31 @@ export default class IndexBuilder {
       await this._producer.start(atBlock);
     }
 
+    for await (const eventBlock of this._producer.blocks()) {
+      try {
+        await this._onQueryEventBlock(eventBlock);
+      } catch (e) {
+        throw new Error(e);
+      }
+      debug(`Successfully processed block ${eventBlock.block_number.toString()}`)
+    }
+
     debug('Started worker.');
   }
 
-  async stop() {}
+  async stop(): Promise<void> { 
+    return new Promise<void>((resolve) => {
+      debug('Index builder has been stopped (NOOP)');
+      resolve();
+    });
+  }
 
-  _onQueryEventBlock(query_event_block: QueryEventBlock): void {
-    debug(`Yay, block producer at height: #${query_event_block.block_number}`);
+  async _onQueryEventBlock(query_event_block: QueryEventBlock): Promise<void> {
+    debug(`Yay, block producer at height: #${query_event_block.block_number.toString()}`);
 
-    asyncForEach(query_event_block.query_events, async (query_event: QueryEvent) => {
+    await asyncForEach(query_event_block.query_events, async (query_event: QueryEvent, i: number) => {
       
-      debug(`Processing event ${query_event.event_name}`)
+      debug(`Processing event ${query_event.event_name}, index: ${i}`)
       query_event.log(0, debug);
   
 
@@ -101,7 +117,7 @@ export default class IndexBuilder {
 
         await queryRunner.commitTransaction();
       } catch (error) {
-        debug(`There are errors. Rolling back the transaction. Reason: ${error.message}`);
+        debug(`There are errors. Rolling back the transaction. Reason: ${JSON.stringify(error, null, 2)}`);
 
         // Since we have errors lets rollback changes we made
         await queryRunner.rollbackTransaction();
@@ -115,7 +131,7 @@ export default class IndexBuilder {
   }
 }
 
-async function asyncForEach(array: Array<any>, callback: Function) {
+async function asyncForEach<T>(array: Array<T>, callback: (o: T, i: number, a: Array<T>) => Promise<void>): Promise<void> {
   for (let index = 0; index < array.length; index++) {
     await callback(array[index], index, array);
   }
