@@ -1,95 +1,6 @@
-// Validation errors
-// --------------------------------------
 
-pub const ERROR_PROPERTY_NAME_TOO_SHORT: &str = "Property name is too short";
-pub const ERROR_PROPERTY_NAME_TOO_LONG: &str = "Property name is too long";
-pub const ERROR_PROPERTY_DESCRIPTION_TOO_SHORT: &str = "Property description is too short";
-pub const ERROR_PROPERTY_DESCRIPTION_TOO_LONG: &str = "Property description is too long";
+use frame_support::decl_error;
 
-pub const ERROR_CLASS_NAME_TOO_SHORT: &str = "Class name is too short";
-pub const ERROR_CLASS_NAME_TOO_LONG: &str = "Class name is too long";
-pub const ERROR_CLASS_DESCRIPTION_TOO_SHORT: &str = "Class description is too long";
-pub const ERROR_CLASS_DESCRIPTION_TOO_LONG: &str = "Class description is too long";
-
-pub const ERROR_CLASS_LIMIT_REACHED: &str = "Maximum number of classes limit reached";
-pub const ERROR_CLASS_SCHEMAS_LIMIT_REACHED: &str =
-    "Maximum number of given class schemas limit reached";
-pub const ERROR_SCHEMA_PROPERTIES_LIMIT_REACHED: &str =
-    "Maximum number of properties in schema limit reached";
-pub const ERROR_PER_CONTROLLER_ENTITIES_CREATION_LIMIT_EXCEEDS_OVERALL_LIMIT: &str =
-    "Entities creation limit per controller should be less than overall entities creation limit";
-pub const ERROR_ENTITIES_NUMBER_PER_CLASS_CONSTRAINT_VIOLATED: &str =
-    "Number of entities per class is to big";
-pub const ERROR_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_CONSTRAINT_VIOLATED: &str =
-    "Number of class entities per actor constraint violated";
-pub const ERROR_INDIVIDUAL_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_IS_TOO_BIG: &str =
-    "Individual number of class entities per actor is too big";
-pub const ERROR_NEW_ENTITIES_MAX_COUNT_IS_LESS_THAN_NUMBER_OF_ALREADY_CREATED: &str =
-    "Cannot set voucher entities count to be less than number of already created entities";
-pub const ERROR_MAX_NUMBER_OF_OPERATIONS_DURING_ATOMIC_BATCHING_LIMIT_REACHED: &str =
-    "Number of operations during atomic batching limit reached";
-pub const ERROR_TEXT_PROP_IS_TOO_LONG: &str = "Text property is too long";
-pub const ERROR_HASHED_TEXT_PROP_IS_TOO_LONG: &str = "Text property to be hashed is too long";
-pub const ERROR_VEC_PROP_IS_TOO_LONG: &str = "Vector property is too long";
-pub const ERROR_ENTITY_PROP_VALUE_VECTOR_IS_TOO_LONG: &str =
-    "Propery value vector can`t contain more values";
-pub const ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE: &str =
-    "Given property value vector index is out of range";
-
-// Main logic errors
-// --------------------------------------
-
-pub const ERROR_CLASS_NOT_FOUND: &str = "Class was not found by id";
-pub const ERROR_UNKNOWN_CLASS_SCHEMA_ID: &str = "Unknown class schema id";
-pub const ERROR_CLASS_SCHEMA_NOT_ACTIVE: &str = "Given class schema is not active";
-pub const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX: &str =
-    "New class schema refers to an unknown property index";
-pub const ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_CLASS: &str =
-    "New class schema refers to an unknown class id";
-pub const ERROR_NO_PROPS_IN_CLASS_SCHEMA: &str =
-    "Cannot add a class schema with an empty list of properties";
-pub const ERROR_ENTITY_NOT_FOUND: &str = "Entity was not found by id";
-pub const ERROR_SCHEMA_ALREADY_ADDED_TO_THE_ENTITY: &str =
-    "Cannot add a schema that is already added to this entity";
-pub const ERROR_PROP_VALUE_DONT_MATCH_TYPE: &str =
-    "Some of the provided property values don't match the expected property type";
-pub const ERROR_PROP_VALUE_DONT_MATCH_VEC_TYPE: &str =
-    "Property value don't match the expected vector property type";
-pub const ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR: &str =
-    "Property value under given index is not a vector";
-pub const ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH: &str =
-    "Current property value vector nonce does not equal to provided one";
-pub const ERROR_PROP_NAME_NOT_UNIQUE_IN_A_CLASS: &str =
-    "Property name is not unique within its class";
-pub const ERROR_MISSING_REQUIRED_PROP: &str =
-    "Some required property was not found when adding schema support to entity";
-pub const ERROR_SCHEMA_DOES_NOT_CONTAIN_PROVIDED_PROPERTY_ID: &str =
-    "Schema under provided schema_id does not contain given property";
-pub const ERROR_UNKNOWN_ENTITY_PROP_ID: &str =
-    "Some of the provided property ids cannot be found on the current list of propery values of this entity";
-pub const ERROR_ENTITY_ALREADY_CONTAINS_GIVEN_PROPERTY_ID: &str =
-    "Entity already contains property under provided index";
-pub const ERROR_PROP_VALUE_TYPE_DOESNT_MATCH_INTERNAL_ENTITY_VECTOR_TYPE: &str =
-    "Propery value type does not match internal entity vector type";
-pub const ERROR_REFERENCED_ENTITY_DOES_NOT_MATCH_ITS_CLASS: &str
-     = "Provided property references entity, which class_id is not equal to class_id, declared in corresponding property type";
-pub const ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO: &str =
-    "Entity removal can`t be completed, as there are some property values pointing to given entity";
-pub const ERROR_ENTITY_SAME_OWNER_RC_DOES_NOT_EQUAL_TO_ZERO: &str =
-    "Entity removal can`t be completed, as there are some property value references with same owner flag set pointing to given entity";
-pub const ERROR_ENTITY_INBOUND_SAME_OWNER_RC_DOES_NOT_EQUAL_TO_ZERO: &str =
-    "Entity ownership transfer can`t be completed, as there are some property values pointing to given entity with same owner flag set";
-pub const ERROR_CLASS_PROP_NOT_FOUND: &str = "Class property under given index not found";
-pub const ERROR_CURATOR_GROUP_REMOVAL_FORBIDDEN: &str =
-    "Curator group can`t be removed, as it currently maintains at least one class";
-pub const ERROR_PROVIDED_ENTITY_CONTROLLER_IS_EQUAL_TO_CURRENT_ONE: &str =
-    "Provided entity controller is equal to the current one";
-pub const ERROR_ALL_PROVIDED_PROPERTY_VALUE_IDS_MUST_BE_REFERENCES_WITH_SAME_OWNER_FLAG_SET: &str =
-    "All ids of new property value references with same owner flag set should match their respective Properties defined on Class level";
-// Permission errors
-
-pub const ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL: &str =
-    "All property values, related to a given entity were locked on class level";
 pub const ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP: &str =
     "Curator under provided curator id is not a member of curaror group under given id";
 pub const ERROR_CURATOR_GROUP_DOES_NOT_EXIST: &str = "Given curator group does not exist";
@@ -124,3 +35,170 @@ pub const ERROR_ORIGIN_CANNOT_BE_MADE_INTO_RAW_ORIGIN: &str =
     "Origin cannot be made into raw origin";
 pub const ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE: &str =
     "Property value should be unique across all Entities of this Class";
+
+decl_error! {
+    #[derive(Copy)]
+    /// Content directory errors
+    pub enum Error {
+
+        /// Validation errors
+        /// --------------------------------------
+
+
+        /// Property name is too short
+        PropertyNameTooShort,
+
+        /// Property name is too long
+        PropertyNameTooLong,
+
+        /// Property description is too short 
+        PropertyDescriptionTooShort,
+
+        /// Property description is too long 
+        PropertyDescriptionTooLong,
+
+        /// Class name is too short
+        ClassNameTooShort,
+
+        /// Class name is too long
+        ClassNameTooLong,
+
+        /// Class description is too short
+        ClassDescriptionTooShort,
+
+        /// Class description is too long
+        ClassDescriptionTooLong,
+
+        /// Maximum number of classes limit reached
+        ClassLimitReached,
+
+        /// Maximum number of given class schemas limit reached
+        ClassSchemasLimitReached,
+
+        /// Maximum number of properties in schema limit reached
+        SchemaPropertiesLimitReached,
+
+        /// Entities creation limit per controller should be less than overall entities creation limit
+        PerControllerEntitiesCreationLimitExceedsOverallLimit,
+
+        /// Number of entities per class is to big
+        EntitiesNumberPerClassConstraintViolated,
+
+        /// Number of class entities per actor constraint violated
+        NumberOfClassEntitiesPerActorConstraintViolated,
+
+        /// Individual number of class entities per actor is too big
+        IndividualNumberOfClassEntitiesPerActorIsTooBig,
+
+        /// Cannot set voucher entities count to be less than number of already created entities
+        NewEntitiesMaxCountIsLessThanNumberOfAlreadyCreated,
+
+        /// Number of operations during atomic batching limit reached
+        NumberOfOperationsDuringAtomicBatchingLimitReached,
+
+        /// Text property is too long
+        TextPropertyTooLong,
+
+        /// Text property to be hashed is too long
+        HashedTextPropertyTooLong,
+
+        /// Vector property is too long
+        VecPropertyTooLong,
+
+        /// Propery value vector can`t contain more values
+        EntityPropertyValueVectorIsTooLong,
+
+        /// Given property value vector index is out of range
+        EntityPropValueVectorIndexIsOutOfRange,
+
+
+        /// Main logic errors
+        /// --------------------------------------
+
+
+        /// Class was not found by id
+        ClassNotFound,
+
+        /// Class property under given index not found
+        ClassPropertyNotFound,
+
+        /// Unknown class schema id
+        UnknownClassSchemaId,
+
+        /// Given class schema is not active
+        ClassSchemaNotActive,
+
+        /// New class schema refers to an unknown property index
+        ClassSchemaRefersUnknownPropertyIndex,
+
+        /// New class schema refers to an unknown class id
+        ClassSchemaRefersUnknownClass,
+
+        /// Cannot add a class schema with an empty list of properties
+        NoPropertiesInClassSchema,
+
+        /// Entity was not found by id
+        EntityNotFound,
+
+        /// Cannot add a schema that is already added to this entity
+        SchemaAlreadyAddedToTheEntity,
+
+        /// Some of the provided property values don't match the expected property type
+        PropertyValueDoNotMatchType,
+
+        /// Property value don't match the expected vector property type
+        PropertyValueDoNotMatchVecType,
+
+        /// Property value under given index is not a vector
+        PropertyValueUnderGivenIndexIsNotAVector,
+
+        /// Current property value vector nonce does not equal to provided one
+        PropertyValueVecNoncesDoesNotMatch,
+
+        /// Property name is not unique within its class
+        PropertyNameNotUniqueInAClass,
+
+        /// Some required property was not found when adding schema support to entity
+        MissingRequiredProperty,
+
+        /// Schema under provided schema_id does not contain given property
+        SchemaDoesNotContainProvidedPropertyId,
+
+        /// Some of the provided property ids cannot be found on the current list of propery values of this entity
+        UnknownEntityPropertyId,
+
+        /// Entity already contains property under provided index
+        EntityAlreadyContainsGivenPropertyId,
+
+        /// Propery value type does not match internal entity vector type
+        PropertyValueTypeDoesNotMatchInternalVectorType,
+
+        /// Provided property references entity, which class_id is not equal to class_id, declared in corresponding property type
+        ReferencedEntityDoesNotMatchItsClass,
+
+        /// Entity removal can`t be completed, as there are some property values pointing to given entity
+        EntityRcDoesNotEqualToZero,
+
+        /// Entity removal can`t be completed, as there are some property value references with same owner flag set pointing to given entity
+        EntitySameOwnerRcDoesNotEqualToZero,
+
+        /// Entity ownership transfer can`t be completed, as there are some property values pointing to given entity with same owner flag set
+        EntityInboundSameOwnerRcDoesNotEqualToZero,
+
+        /// Provided entity controller is equal to the current one
+        ProvidedEntityControllerIsEqualToTheCurrentOne
+
+        /// All ids of new property value references with same owner flag set should match their respective Properties defined on Class level
+        AllProvidedPropertyValueIdsMustBeReferencesWithSameOwnerFlagSet
+
+        /// Permission errors
+        /// --------------------------------------
+
+        /// Curator group can`t be removed, as it currently maintains at least one class
+        CuratorGroupRemovalForbidden,
+
+        /// All property values, related to a given Entity were locked on Class level
+        AllPropertiesWereLockedOnClassLevel
+
+    }
+}
