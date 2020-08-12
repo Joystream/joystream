@@ -47,21 +47,23 @@ export function MembershipRequired<P extends {}> (Component: React.ComponentType
     }
 
     return (
-      <Message warning className="JoyMainStatus">
+      <Message warning className='JoyMainStatus'>
         <Message.Header>Only members can access this functionality.</Message.Header>
         <div style={{ marginTop: '1rem' }}>
-          <Link to={'/members/edit'} className="ui button orange">
+          <Link to={'/members/edit'} className='ui button orange'>
             Register here
           </Link>
           <span style={{ margin: '0 .5rem' }}> or </span>
-          <Link to={'/accounts'} className="ui button">
+          <Link to={'/accounts'} className='ui button'>
             Change key
           </Link>
         </div>
       </Message>
     );
   };
+
   ResultComponent.displayName = `MembershipRequired(${componentName(Component)})`;
+
   return ResultComponent;
 }
 
@@ -71,10 +73,10 @@ export function AccountRequired<P extends {}> (Component: React.ComponentType<P>
 
     if (allAccounts && !Object.keys(allAccounts).length) {
       return (
-        <Message warning className="JoyMainStatus">
+        <Message warning className='JoyMainStatus'>
           <Message.Header>Please create a key to get started.</Message.Header>
           <div style={{ marginTop: '1rem' }}>
-            <Link to={'/accounts'} className="ui button orange">
+            <Link to={'/accounts'} className='ui button orange'>
               Create key
             </Link>
           </div>
@@ -84,7 +86,9 @@ export function AccountRequired<P extends {}> (Component: React.ComponentType<P>
 
     return <Component {...props} />;
   };
+
   ResultComponent.displayName = `AccountRequired(${componentName(Component)})`;
+
   return ResultComponent;
 }
 

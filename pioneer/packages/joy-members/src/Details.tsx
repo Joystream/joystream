@@ -28,6 +28,7 @@ type Props = ApiProps & I18nProps & MyAccountProps & {
 class Component extends React.PureComponent<Props> {
   render () {
     const { membership } = this.props;
+
     return membership && !membership.handle.isEmpty
       ? this.renderProfile(membership)
       : (
@@ -54,34 +55,34 @@ class Component extends React.PureComponent<Props> {
     const hasAvatar = avatar_uri && nonEmptyStr(avatar_uri.toString());
     const isMyProfile = myAddress && (myAddress === root_account.toString() || myAddress === controller_account.toString());
     const isCouncilor: boolean = (
-      (activeCouncil.find(x => root_account.eq(x.member)) !== undefined) ||
-      (activeCouncil.find(x => controller_account.eq(x.member)) !== undefined)
+      (activeCouncil.find((x) => root_account.eq(x.member)) !== undefined) ||
+      (activeCouncil.find((x) => controller_account.eq(x.member)) !== undefined)
     );
 
     return (
       <>
-      <div className={`item ProfileDetails ${isMyProfile && 'MyProfile'}`}>
-        {hasAvatar
-          ? <img className='ui avatar image' src={avatar_uri.toString()} />
-          : <IdentityIcon className='image' value={root_account} size={40} />
-        }
-        <div className='content'>
-          <div className='header'>
-            <Link to={`/members/${handle.toString()}`} className='handle'>{handle.toString()}</Link>
-            {isMyProfile && <Link to={'/members/edit'} className='ui tiny button'>Edit my profile</Link>}
-          </div>
-          <div className='description'>
-            {isCouncilor &&
+        <div className={`item ProfileDetails ${isMyProfile && 'MyProfile'}`}>
+          {hasAvatar
+            ? <img className='ui avatar image' src={avatar_uri.toString()} />
+            : <IdentityIcon className='image' value={root_account} size={40} />
+          }
+          <div className='content'>
+            <div className='header'>
+              <Link to={`/members/${handle.toString()}`} className='handle'>{handle.toString()}</Link>
+              {isMyProfile && <Link to={'/members/edit'} className='ui tiny button'>Edit my profile</Link>}
+            </div>
+            <div className='description'>
+              {isCouncilor &&
               <b className='muted text' style={{ color: '#607d8b' }}>
                 <i className='university icon'></i>
                 Council member
               </b>}
-            <BalanceDisplay label='Balance(root): ' params={root_account} />
-            <div>MemberId: {this.props.memberId.toString()}</div>
+              <BalanceDisplay label='Balance(root): ' params={root_account} />
+              <div>MemberId: {this.props.memberId.toString()}</div>
+            </div>
           </div>
         </div>
-      </div>
-      {!preview && this.renderDetails(membership, isCouncilor)}
+        {!preview && this.renderDetails(membership, isCouncilor)}
       </>
     );
   }
@@ -147,11 +148,14 @@ class Component extends React.PureComponent<Props> {
 
   private renderEntryMethod (entry: EntryMethod) {
     const etype = entry.type;
+
     if (etype === Paid.name) {
       const paid = entry.value as Paid;
+
       return <div>Paid, terms ID: {paid.toNumber()}</div>;
     } else if (etype === Screening.name) {
       const accountId = entry.value as Screening;
+
       return <div>Screened by <AddressMini value={accountId} isShort={false} isPadded={false} withBalance /></div>;
     } else if (etype === Genesis.name) {
       return <div>Created at Genesis</div>;

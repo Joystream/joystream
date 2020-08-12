@@ -52,6 +52,7 @@ class App extends React.PureComponent<Props> {
 
   private renderList (routeProps: RouteComponentProps) {
     const { nextMemberId, ...otherProps } = this.props;
+
     return nextMemberId
       ? <List firstMemberId={FIRST_MEMBER_ID} membersCreated={nextMemberId} {...otherProps} {...routeProps}/>
       : <em>Loading...</em>;
@@ -69,9 +70,9 @@ class App extends React.PureComponent<Props> {
         <Switch>
           <Route path={`${basePath}/edit`} component={EditForm} />
           <Route path={`${basePath}/dashboard`} component={Dashboard} />
-          <Route path={`${basePath}/list/:page([0-9]+)?`} render={ props => this.renderList(props) } />
+          <Route path={`${basePath}/list/:page([0-9]+)?`} render={ (props) => this.renderList(props) } />
           <Route exact={true} path={`${basePath}/:handle`} component={DetailsByHandle} />
-          <Route render={ props => this.renderList(props) } />
+          <Route render={ (props) => this.renderList(props) } />
         </Switch>
       </MembersMain>
     );

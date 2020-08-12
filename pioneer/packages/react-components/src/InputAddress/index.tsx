@@ -117,6 +117,7 @@ function setLastValue (type: KeyringOption$Type = DEFAULT_TYPE, value: string): 
 
   options.defaults[type] = value;
   store.set(STORAGE_KEY, options);
+
   if (type === 'account') {
     // This lets us update joy-utils account context in order to always be in sync
     // with options:InputAddress: { defaults: { account } }) from local storage

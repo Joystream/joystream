@@ -54,6 +54,7 @@ export const isEmptyArr = (x: any): boolean =>
 
 export function findNameByAddress (address: string): string | undefined {
   let keyring_address;
+
   try {
     keyring_address = keyring.getAccount(address);
   } catch (error) {
@@ -63,6 +64,7 @@ export function findNameByAddress (address: string): string | undefined {
       // do nothing
     }
   }
+
   return keyring_address ? keyring_address.meta.name : undefined;
 }
 
@@ -74,7 +76,9 @@ export function calcTotalStake (stakes: ElectionStake | ElectionStake[] | undefi
   if (typeof stakes === 'undefined') {
     return ZERO;
   }
+
   const total = (stake: ElectionStake) => stake.new.add(stake.transferred);
+
   try {
     if (Array.isArray(stakes)) {
       return stakes.reduce((accum, stake) => {
@@ -85,12 +89,13 @@ export function calcTotalStake (stakes: ElectionStake | ElectionStake[] | undefi
     }
   } catch (err) {
     console.log('Failed to calculate a total stake', stakes, err);
+
     return ZERO;
   }
 }
 
 export function calcBackersStake (backers: Backer[]): BN {
-  return backers.map(b => b.stake).reduce((accum, stake) => {
+  return backers.map((b) => b.stake).reduce((accum, stake) => {
     return accum.add(stake);
   }, ZERO);
 }
@@ -120,31 +125,36 @@ export function queryToProp (
 
 export function getUrlParam (location: Location, paramName: string, deflt: string | null = null): string | null {
   const params = queryString.parse(location.search);
+
   return params[paramName] ? params[paramName] as string : deflt;
 }
 
 export function filterSubstrateEventsAndExtractData (txResult: SubmittableResult, eventName: string): Codec[][] {
   const res: Codec[][] = [];
+
   txResult.events.forEach((event) => {
     const { event: { method, data } } = event;
+
     if (method === eventName) {
       res.push(data.toArray());
     }
   });
+
   return res;
 }
 
 export function findFirstParamOfSubstrateEvent<T extends Codec> (txResult: SubmittableResult, eventName: string): T | undefined {
   const data = filterSubstrateEventsAndExtractData(txResult, eventName);
+
   if (data && data.length) {
     return data[0][0] as T;
   }
+
   return undefined;
 }
 
-
 export function includeKeys<T extends { [k: string]: any }> (obj: T, ...allowedKeys: string[]) {
-  return Object.keys(obj).filter(objKey => {
+  return Object.keys(obj).filter((objKey) => {
     return allowedKeys.reduce(
       (hasAllowed: boolean, allowedKey: string) => hasAllowed || objKey.includes(allowedKey),
       false

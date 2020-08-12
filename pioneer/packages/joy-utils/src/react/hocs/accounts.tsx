@@ -45,9 +45,12 @@ function withMyAddress<P extends MyAccountProps> (Component: React.ComponentType
     const myAccountId = (address && api.isReady)
       ? api.createType('AccountId', address)
       : undefined;
+
     return <Component myAddress={address} myAccountId={myAccountId} {...props} />;
   };
+
   ResultComponent.displayName = `withMyAddress(${componentName(Component)})`;
+
   return ResultComponent;
 }
 
@@ -63,8 +66,10 @@ function withMyMembership<P extends MyAccountProps> (Component: React.ComponentT
     const myMemberIdChecked = memberIdsByRootAccountId && memberIdsByControllerAccountId;
 
     let myMemberId: MemberId | undefined;
+
     if (memberIdsByRootAccountId && memberIdsByControllerAccountId) {
-      let [ memberIdByAccount ] = memberIdsByRootAccountId.toArray().concat(memberIdsByControllerAccountId.toArray());
+      const [memberIdByAccount] = memberIdsByRootAccountId.toArray().concat(memberIdsByControllerAccountId.toArray());
+
       myMemberId = memberIdByAccount;
     }
 
@@ -78,17 +83,23 @@ function withMyMembership<P extends MyAccountProps> (Component: React.ComponentT
 
     return <Component {...props} {...newProps} />;
   };
+
   ResultComponent.displayName = `withMyMembership(${componentName(Component)})`;
+
   return ResultComponent;
 }
 
 function resolveMyProfile<P extends { myMembership?: Membership | null }> (Component: React.ComponentType<P>) {
   const ResultComponent: React.FunctionComponent<P> = (props: P) => {
     let { myMembership } = props;
+
     myMembership = (!myMembership || myMembership.handle.isEmpty) ? null : myMembership;
+
     return <Component {...props} myMembership={ myMembership } />;
   };
+
   ResultComponent.displayName = `resolveMyProfile(${componentName(Component)})`;
+
   return ResultComponent;
 }
 
@@ -107,7 +118,7 @@ export const withMyAccount = <P extends MyAccountProps>(Component: React.Compone
     withMyAddress,
     withMyMemberIds,
     withMyMembership,
-    withMyProfile,
+    withMyProfile
     // withContentWorkingGroup,
     // withCurationActor
   );

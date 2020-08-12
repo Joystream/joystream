@@ -32,6 +32,7 @@ type MemberPreviewProps = ApiProps & I18nProps & {
 class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
   render () {
     const { membership } = this.props;
+
     return membership && !membership.handle.isEmpty
       ? this.renderProfile(membership)
       : null;
@@ -42,7 +43,7 @@ class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
     const { handle, avatar_uri } = membership;
 
     const hasAvatar = avatar_uri && nonEmptyStr(avatar_uri.toString());
-    const isCouncilor: boolean = accountId !== undefined && activeCouncil.find(x => accountId.eq(x.member)) !== undefined;
+    const isCouncilor: boolean = accountId !== undefined && activeCouncil.find((x) => accountId.eq(x.member)) !== undefined;
 
     const avatarSize = inline ? InlineAvatarSizePx : AvatarSizePx;
 
@@ -52,9 +53,9 @@ class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
           <MutedSpan className='PrefixLabel'>{prefixLabel}</MutedSpan>
         }
         {hasAvatar ? (
-          <img className="Avatar" src={avatar_uri.toString()} width={avatarSize} height={avatarSize} />
+          <img className='Avatar' src={avatar_uri.toString()} width={avatarSize} height={avatarSize} />
         ) : (
-          <IdentityIcon className="Avatar" value={accountId} size={avatarSize} />
+          <IdentityIcon className='Avatar' value={accountId} size={avatarSize} />
         )
         }
         <div className='Content'>

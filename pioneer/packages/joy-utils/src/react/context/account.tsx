@@ -6,7 +6,9 @@ export const MY_ADDRESS_STORAGE_KEY = 'joy.myAddress';
 
 function readMyAddress (): string | undefined {
   const myAddress: string | undefined = store.get(MY_ADDRESS_STORAGE_KEY);
+
   console.log('Read my address from the local storage:', myAddress);
+
   return myAddress;
 }
 
@@ -24,6 +26,7 @@ function reducer (state: MyAccountState, action: MyAccountAction): MyAccountStat
   function forget () {
     console.log('Forget my address');
     store.remove(MY_ADDRESS_STORAGE_KEY);
+
     return { ...state, address: undefined };
   }
 
@@ -33,29 +36,35 @@ function reducer (state: MyAccountState, action: MyAccountAction): MyAccountStat
     case 'reload': {
       address = readMyAddress();
       console.log('Reload my address:', address);
+
       return { ...state, address, inited: true };
     }
 
     case 'set': {
       address = action.address;
+
       if (address !== state.address) {
         if (address) {
           console.log('Set my new address:', address);
           store.set(MY_ADDRESS_STORAGE_KEY, address);
+
           return { ...state, address, inited: true };
         } else {
           return forget();
         }
       }
+
       return state;
     }
 
     case 'forget': {
       address = action.address;
       const isMyAddress = address && address === readMyAddress();
+
       if (!address || isMyAddress) {
         return forget();
       }
+
       return state;
     }
 
@@ -94,15 +103,17 @@ export function MyAccountProvider (props: React.PropsWithChildren<{}>) {
 
   const handleAccountChangeEvent = (e: Event) => {
     const { detail: address } = e as CustomEvent<string>;
+
     dispatch({ type: 'set', address });
-  }
+  };
 
   useEffect(() => {
     window.addEventListener(ACCOUNT_CHANGED_EVENT_NAME, handleAccountChangeEvent);
+
     return () => {
       window.removeEventListener(ACCOUNT_CHANGED_EVENT_NAME, handleAccountChangeEvent);
-    }
-  })
+    };
+  });
 
   useEffect(() => {
     if (!state.inited) {

@@ -37,9 +37,9 @@ export function LabelledField<FormValues> () {
       const renderLabel = () =>
         nonEmptyStr(label)
           ? <>
-              {required && <b style={{ color: 'red' }} title='This field is required'>* </b>}
-              {label}
-            </>
+            {required && <b style={{ color: 'red' }} title='This field is required'>* </b>}
+            {label}
+          </>
           : null;
 
       return (label || invisibleLabel)
@@ -56,6 +56,7 @@ export function LabelledField<FormValues> () {
           {fieldWithError}
         </div>;
     };
+
   return LabelledFieldInner;
 }
 
