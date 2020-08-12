@@ -26,37 +26,36 @@ hydra-cli scaffold
 
 Answer the prompts and the scaffolder will generate a sample backbone for our Hydra project. This includes:
 
-* Sample GraphQL data [schema](schema-spec/) in `schema.graphql` describing proposals in the Kusama network
-* Sample [mapping](mappings.md) scripts in the `./mapping` folder translating substrate events into the `Proposal` entity CRUD operations
+* Sample GraphWL data [schema](schema-spec/) in `schema.graphql` describing proposals in the Kusama network
+* Sample [mapping](mappings.md) scripts in the `mapping` folder translating substrate events into the `Proposal` entity CRUD operations
 * `docker-compose.yml` for running a Postgres instance locally as a Docker service.
-* `.env` with all the necessary environment variables.
-* `package.json` with a few utility yarn scripts to be used later on.
+* `.env` with all the necessary environment variables
 
 ## 2. Codegen
 
 Now all is set for generating the Graphql server and the indexer for Kusama proposals:
 
 ```bash
-hydra-cli codegen
+hydra-cli codegen:all
 ```
 
 The codegen command creates two separate projects:
 
 * `./generated/graphql-server`: this is a GraphQL for querying the proposals
-* `./generated/indexer`: this is a background indexer tool that fetches the blocks from the Substrate chain \(in this case the public Kusama network\) and updates the database calling the mapping scripts
+* `./generated/indexer`: this is a background indexer tool that fetches the blocks from the Substrate chain \(in this case the public Kusama network\) and updates the database calling the mapping scripts.
 
 ## 3. Set up the database
 
 Now it's time to set up the database:
 
 ```bash
-yarn db:start
+hydra-cli db:start
 ```
 
 This command simply spins up a Postgres Docker image.
 
 ```bash
-yarn db:bootstrap
+hydra-cli db:bootstrap
 ```
 
 This creates a DB schema for our data model described in `schema.graphql`.
@@ -66,7 +65,7 @@ This creates a DB schema for our data model described in `schema.graphql`.
 Finally, we're ready to run the indexer and the GraphQL server:
 
 ```bash
-yarn indexer:start
+hydra-cli indexer:start
 ```
 
 Keep an eye on the output to keep track of the indexer's progress.
@@ -76,7 +75,7 @@ Keep an eye on the output to keep track of the indexer's progress.
 In a separate terminal window:
 
 ```bash
-yarn server:start:dev
+hydra-cli server:start:dev
 ```
 
 The last command starts the server in the dev mode and you will see a GraphQL playground opening in your browser \(if not, navigate manually to `localhost:4000/graphql`\). It's time to explore all the GraphQL queries supported out-of-the-box! Note, that depending on the starting block it may take a considerable time for the indexer to catch up with the Kusama network, and until then queries may return empty results.
