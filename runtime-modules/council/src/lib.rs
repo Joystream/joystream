@@ -1,12 +1,17 @@
 // TODO: module documentation
+// TODO: adjust all extrinsic weights
 
 /////////////////// Configuration //////////////////////////////////////////////
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // used dependencies
 use codec::{Codec, Decode, Encode};
-use sr_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
-use srml_support::{decl_error, decl_event, decl_module, decl_storage, traits::Get, Parameter};
+use sp_runtime::traits::{MaybeSerialize, Member};
+use frame_support::{
+    decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, traits::Get, Parameter
+};
+use sp_arithmetic::traits::{BaseArithmetic, One};
+
 use std::marker::PhantomData;
 use system::ensure_signed;
 
@@ -40,7 +45,7 @@ pub trait Trait: system::Trait {
 
     type Tmp: Parameter // needed to provide some parameter to event
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -56,7 +61,7 @@ pub trait Trait: system::Trait {
 decl_storage! {
     trait Store for Module<T: Trait> as Referendum {
         /// Current referendum stage
-        pub Stage get(stage) config(): (CouncilStage, T::BlockNumber);
+        pub Stage get(fn stage) config(): (CouncilStage, T::BlockNumber);
     }
 }
 
@@ -83,21 +88,25 @@ decl_event! {
 }
 
 decl_error! {
-    #[derive(Copy)]
     /// Referendum errors
-    pub enum Error {
+    pub enum Error for Module<T: Trait> {
+        /// Origin is invalid
+        BadOrigin,
+
         /// Origin doesn't correspond to any superuser
         OriginNotSuperUser,
     }
 }
 
-impl From<system::Error> for Error {
-    fn from(error: system::Error) -> Self {
-        match error {
-            system::Error::Other(msg) => Error::Other(msg),
-            system::Error::RequireRootOrigin => Error::OriginNotSuperUser,
-            _ => Error::Other(error.into()),
-        }
+impl<T: Trait> PartialEq for Error<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_u8() == other.as_u8()
+    }
+}
+
+impl<T: Trait> From<BadOrigin> for Error<T> {
+    fn from(_error: BadOrigin) -> Self {
+        Error::<T>::BadOrigin
     }
 }
 
@@ -106,7 +115,7 @@ impl From<system::Error> for Error {
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         /// Predefined errors
-        type Error = Error;
+        type Error = Error<T>;
 
         /// Setup events
         fn deposit_event() = default;
@@ -114,7 +123,8 @@ decl_module! {
         /////////////////// Lifetime ///////////////////////////////////////////
 
         /// Start new council election.
-        pub fn start_announcing_period(origin) -> Result<(), Error> {
+        #[weight = 10_000_000]
+        pub fn start_announcing_period(origin) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_start_announcing_period(origin)?;
 
@@ -132,7 +142,8 @@ decl_module! {
         }
 
         /// Finalize the announcing period and start voting if there are enough candidates.
-        pub fn finalize_announcing_period(origin) -> Result<(), Error> {
+        #[weight = 10_000_000]
+        pub fn finalize_announcing_period(origin) -> Result<(), Error<T>> {
             // ensure action can be started
             let candidates = EnsureChecks::<T>::can_finalize_announcing_period(origin)?;
 
@@ -157,7 +168,8 @@ decl_module! {
         }
 
         /// Start revealing period.
-        pub fn start_revealing_period(origin) -> Result<(), Error> {
+        #[weight = 10_000_000]
+        pub fn start_revealing_period(origin) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_start_revealing_period(origin)?;
 
@@ -175,7 +187,8 @@ decl_module! {
         }
 
         /// Finish revealing period and conclude election cycle.
-        pub fn finish_revealing_period(origin) -> Result<(), Error> {
+        #[weight = 10_000_000]
+        pub fn finish_revealing_period(origin) -> Result<(), Error<T>> {
             // ensure action can be started
             EnsureChecks::<T>::can_finish_revealing_period(origin)?;
 
@@ -227,7 +240,7 @@ struct EnsureChecks<T: Trait> {
 impl<T: Trait> EnsureChecks<T> {
     /////////////////// Common checks //////////////////////////////////////////
 
-    fn ensure_super_user(origin: T::Origin) -> Result<T::AccountId, Error> {
+    fn ensure_super_user(origin: T::Origin) -> Result<T::AccountId, Error<T>> {
         let account_id = ensure_signed(origin)?;
 
         // ensure superuser requested action
@@ -242,7 +255,7 @@ impl<T: Trait> EnsureChecks<T> {
 
     fn can_start_announcing_period(
         origin: T::Origin,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<T>> {
         // ensure superuser requested action
         Self::ensure_super_user(origin)?;
 
@@ -251,7 +264,7 @@ impl<T: Trait> EnsureChecks<T> {
 
     fn can_finalize_announcing_period(
         origin: T::Origin,
-    ) -> Result<Vec<Candidate>, Error> {
+    ) -> Result<Vec<Candidate>, Error<T>> {
         // ensure superuser requested action
         Self::ensure_super_user(origin)?;
 
@@ -260,7 +273,7 @@ impl<T: Trait> EnsureChecks<T> {
 
     fn can_start_revealing_period(
         origin: T::Origin,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<T>> {
         // ensure superuser requested action
         Self::ensure_super_user(origin)?;
 
@@ -269,7 +282,7 @@ impl<T: Trait> EnsureChecks<T> {
 
     fn can_finish_revealing_period(
         origin: T::Origin,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Error<T>> {
         // ensure superuser requested action
         Self::ensure_super_user(origin)?;
 

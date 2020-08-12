@@ -3,14 +3,14 @@
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{Error, Event, Module, CouncilStage, GenesisConfig, Trait};
 
-use primitives::H256;
-use runtime_io;
-use sr_primitives::{
+use sp_core::H256;
+use sp_io;
+use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageValue, StorageMap};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageValue, StorageMap};
 use std::marker::PhantomData;
 use system::RawOrigin;
 use codec::{Encode};
@@ -23,22 +23,16 @@ pub const USER_REGULAR: u64 = 2;
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Runtime;
 
-// module instances
-
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Instance0;
-
 parameter_types! {
-    pub const MaxReferendumOptions: u64 = 10;
-    pub const VoteStageDuration: u64 = 5;
-    pub const RevealStageDuration: u64 = 5;
-    pub const MinimumStake: u64 = 10000;
+    pub const MinNumberOfCandidates: u64 = 2;
 }
 
 impl Trait for Runtime {
     type Event = TestEvent;
 
     type Tmp = u64;
+
+    type MinNumberOfCandidates = MinNumberOfCandidates;
 
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool {
         *account_id == USER_ADMIN
@@ -58,6 +52,7 @@ mod event_mod {
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         event_mod<T>,
+        system<T>,
     }
 }
 
@@ -70,6 +65,7 @@ parameter_types! {
 }
 
 impl system::Trait for Runtime {
+    type BaseCallFilter = ();
     type Origin = Origin;
     type Index = u64;
     type BlockNumber = u64;
@@ -82,9 +78,17 @@ impl system::Trait for Runtime {
     type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = ();
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
 /////////////////// Data structures ////////////////////////////////////////////
@@ -107,7 +111,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
 
 pub fn build_test_externalities(
     config: GenesisConfig<Runtime>,
-) -> runtime_io::TestExternalities {
+) -> sp_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
@@ -152,13 +156,13 @@ pub struct InstanceMocks<T: Trait> {
 
 impl<T: Trait> InstanceMocks<T> {
 
-    pub fn start_election_cycle(
+    pub fn start_announcing_period(
         origin: OriginType<T::AccountId>,
-        expected_result: Result<(), Error>,
+        expected_result: Result<(), Error<T>>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<T>::start_election_cycle(InstanceMockUtils::<T>::mock_origin(origin),),
+            Module::<T>::start_announcing_period(InstanceMockUtils::<T>::mock_origin(origin),),
             expected_result,
         );
     }

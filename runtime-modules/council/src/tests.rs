@@ -13,6 +13,6 @@ fn election_() {
     MockUtils::origin_access(USER_ADMIN, |origin| {
         let options = vec![0];
 
-        Mocks::start_election_cycle(origin, Ok(()));
+        Mocks::start_announcing_period(origin, Ok(()));
     });
 }
