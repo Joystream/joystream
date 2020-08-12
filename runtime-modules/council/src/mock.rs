@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 /////////////////// Configuration //////////////////////////////////////////////
-use crate::{Error, Event, Module, CouncilStage, GenesisConfig, Trait};
+use crate::{Error, Event, Module, CouncilElectionStage, GenesisConfig, Trait};
 
 use sp_core::H256;
 use sp_io;
@@ -25,6 +25,8 @@ pub struct Runtime;
 
 parameter_types! {
     pub const MinNumberOfCandidates: u64 = 2;
+    pub const AnnouncingPeriodDuration: u64 = 10;
+    pub const IdlePeriodDuration: u64 = 10;
 }
 
 impl Trait for Runtime {
@@ -33,6 +35,8 @@ impl Trait for Runtime {
     type Tmp = u64;
 
     type MinNumberOfCandidates = MinNumberOfCandidates;
+    type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
+    type IdlePeriodDuration = IdlePeriodDuration;
 
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool {
         *account_id == USER_ADMIN
@@ -105,7 +109,8 @@ pub enum OriginType<AccountId> {
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
-        stage: (CouncilStage::default(), 0),
+        stage: (CouncilElectionStage::default(), 0),
+        council_members: vec![],
     }
 }
 
