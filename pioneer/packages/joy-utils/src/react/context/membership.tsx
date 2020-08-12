@@ -1,5 +1,5 @@
-import React, { createContext, useContext } from 'react';
-import { MyAccountProps, withMyAccount } from './MyAccount';
+import React, { createContext } from 'react';
+import { MyAccountProps, withMyAccount } from '../hocs/accounts';
 
 export const MyMembershipContext = createContext<MyAccountProps>({});
 
@@ -12,7 +12,3 @@ function InnerMyMembershipProvider (props: React.PropsWithChildren<MyAccountProp
 }
 
 export const MyMembershipProvider = withMyAccount(InnerMyMembershipProvider);
-
-export function useMyMembership () {
-  return useContext(MyMembershipContext);
-}

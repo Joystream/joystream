@@ -1,19 +1,18 @@
 import BN from 'bn.js';
-import React from 'react';
+import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
 import { Vec } from '@polkadot/types';
-import Section from '@polkadot/joy-utils/Section';
-import TxButton from '@polkadot/joy-utils/TxButton';
-import * as JoyForms from '@polkadot/joy-utils/forms';
+import { Section, TxButton } from '@polkadot/joy-utils/react/components';
+import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { SubmittableResult } from '@polkadot/api';
 import { MemberId, Membership, PaidTermId, PaidMembershipTerms } from '@joystream/types/members';
 import { OptionText } from '@joystream/types/common';
-import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
+import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/react/hocs/accounts';
 import { queryMembershipToProp } from './utils';
-import { withCalls } from '@polkadot/react-api/index';
+import { withCalls, ApiContext } from '@polkadot/react-api/index';
 import { Button, Message } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
@@ -79,6 +78,8 @@ const InnerForm = (props: FormProps) => {
     memberId
   } = props;
 
+  const { api } = useContext(ApiContext)
+
   const onSubmit = (sendTx: () => void) => {
     if (isValid) sendTx();
   };
@@ -102,7 +103,9 @@ const InnerForm = (props: FormProps) => {
 
   // TODO extract to forms.tsx
   const fieldToTextOption = (field: FieldName): OptionText => {
-    return isFieldChanged(field) ? OptionText.some(values[field]) : OptionText.none();
+    return isFieldChanged(field)
+      ? api.createType('Option<Text>', values[field])
+      : api.createType('Option<Text>', null)
   };
 
   const buildTxParams = () => {
@@ -165,24 +168,26 @@ const InnerForm = (props: FormProps) => {
           </Message>
         )}
         <LabelledField invisibleLabel {...props}>
-          <TxButton
-            type="submit"
-            size="large"
-            label={profile ? 'Update my profile' : 'Register'}
-            isDisabled={!dirty || isSubmitting}
-            params={buildTxParams()}
-            tx={profile ? 'members.updateMembership' : 'members.buyMembership'}
-            onClick={onSubmit}
-            txFailedCb={onTxFailed}
-            txSuccessCb={onTxSuccess}
-          />
-          <Button
-            type="button"
-            size="large"
-            disabled={!dirty || isSubmitting}
-            onClick={() => resetForm()}
-            content="Reset form"
-          />
+          <div style={{ display: "flex" }}>
+            <TxButton
+              type="submit"
+              size="large"
+              label={profile ? 'Update my profile' : 'Register'}
+              isDisabled={!dirty || isSubmitting}
+              params={buildTxParams()}
+              tx={profile ? 'members.updateMembership' : 'members.buyMembership'}
+              onClick={onSubmit}
+              txFailedCb={onTxFailed}
+              txSuccessCb={onTxSuccess}
+            />
+            <Button
+              type="button"
+              size="large"
+              disabled={!dirty || isSubmitting}
+              onClick={() => resetForm()}
+              content="Reset form"
+            />
+          </div>
         </LabelledField>
       </Form>
     </Section>
@@ -228,7 +233,9 @@ function WithMembershipDataInner (p: WithMembershipDataProps) {
     p.maxAvatarUriLength &&
     p.maxAboutTextLength
   ) {
-    const membership = p.membership && !p.membership.handle.isEmpty ? p.membership : undefined;
+    const membership = (p.memberId && p.membership && !p.membership.handle.isEmpty)
+      ? p.membership
+      : undefined;
 
     if (!membership && p.paidTerms.isEmpty) {
       console.error('Could not find active paid membership terms');
@@ -280,9 +287,7 @@ function WithMembershipDataWrapperInner (p: WithMembershipDataWrapperProps) {
 
   if (p.memberIdsByRootAccountId && p.memberIdsByControllerAccountId && p.paidTermsIds) {
     if (p.paidTermsIds.length) {
-      // let member_ids = p.memberIdsByRootAccountId.slice(); // u8a.subarray is not a function!!
-      p.memberIdsByRootAccountId.concat(p.memberIdsByControllerAccountId);
-      const memberId = p.memberIdsByRootAccountId.length ? p.memberIdsByRootAccountId[0] : undefined;
+      const [ memberId ] = p.memberIdsByRootAccountId.toArray().concat(p.memberIdsByControllerAccountId.toArray());
 
       return <WithMembershipData memberId={memberId} paidTermsId={p.paidTermsIds[0]} />;
     } else {

@@ -5,18 +5,18 @@ import ReactMarkdown from 'react-markdown';
 import { IdentityIcon } from '@polkadot/react-components';
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
-import { withCalls } from '@polkadot/react-api/with';
+import { withCalls } from '@polkadot/react-api/hoc';
 import { Option } from '@polkadot/types';
 import BalanceDisplay from '@polkadot/react-components/Balance';
-import AddressMini from '@polkadot/react-components/AddressMiniJoy';
+import AddressMini from '@polkadot/react-components/AddressMini';
 import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
 import { MemberId, Membership, EntryMethod, Paid, Screening, Genesis, SubscriptionId } from '@joystream/types/members';
 import { queryMembershipToProp } from './utils';
 import { Seat } from '@joystream/types/council';
-import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/index';
-import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
+import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/react/hocs/accounts';
 
 type Props = ApiProps & I18nProps & MyAccountProps & {
   preview?: boolean;

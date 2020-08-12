@@ -94,14 +94,6 @@ export default css`
     }
   }
 
-  .apps--SideBar-logo {
-    max-height: 26px !important;
-    margin: 1rem 1.5rem 2.5rem 0.75rem !important;
-  }
-  .collapsed .apps--SideBar-logo {
-    margin: 1rem 0.75rem 2.5rem 0.5rem !important;
-  }
-
   .JoyForm {
     margin-bottom: 1.5rem;
 
@@ -191,5 +183,21 @@ export default css`
   }
   .text-blue {
     color: #3b83c0;
+  }
+
+  /* Overrides */
+  .ui--IdentityIcon {
+    border: none !important;
+  }
+  /* Normalize SideBar icons width */
+  .apps--SideBar-Item-NavLink svg {
+    width: 20px !important;
+  }
+  /* Fix "collapsed" sidebar on mobile */
+  .apps--Wrapper:not(.menu-open) .apps--SideBar-Scroll {
+    padding: 0 !important;
+  }
+  h1 {
+    text-transform: none;
   }
 `;

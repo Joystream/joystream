@@ -20,6 +20,8 @@ import Dropdown from '../Dropdown';
 import createHeader from './createHeader';
 import createItem from './createItem';
 
+import { ACCOUNT_CHANGED_EVENT_NAME } from '@polkadot/joy-utils/react/context/account';
+
 interface Props {
   className?: string;
   defaultValue?: Uint8Array | string | null;
@@ -115,6 +117,11 @@ function setLastValue (type: KeyringOption$Type = DEFAULT_TYPE, value: string): 
 
   options.defaults[type] = value;
   store.set(STORAGE_KEY, options);
+  if (type === 'account') {
+    // This lets us update joy-utils account context in order to always be in sync
+    // with options:InputAddress: { defaults: { account } }) from local storage
+    window.dispatchEvent(new CustomEvent<string>(ACCOUNT_CHANGED_EVENT_NAME, { detail: value }));
+  }
 }
 
 class InputAddress extends React.PureComponent<Props, State> {

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
-import { withCalls, withMulti } from '@polkadot/react-api/with';
+import { withCalls, withMulti } from '@polkadot/react-api/hoc';
 import { Vec } from '@polkadot/types';
 import { AccountId } from '@polkadot/types/interfaces';
 import IdentityIcon from '@polkadot/react-components/IdentityIcon';
@@ -12,9 +12,8 @@ import translate from './translate';
 import { MemberId, Membership } from '@joystream/types/members';
 import { queryMembershipToProp } from './utils';
 import { Seat } from '@joystream/types/council';
-import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/index';
-import { FlexCenter } from '@polkadot/joy-utils/FlexCenter';
-import { MutedSpan } from '@polkadot/joy-utils/MutedText';
+import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { FlexCenter, MutedSpan } from '@polkadot/joy-utils/react/components';
 
 const AvatarSizePx = 36;
 const InlineAvatarSizePx = 24;

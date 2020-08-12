@@ -1,7 +1,6 @@
 import React from 'react';
 import { Field, FormikErrors, FormikTouched } from 'formik';
-
-import { nonEmptyStr } from '@polkadot/joy-utils/index';
+import { nonEmptyStr } from '../../functions/misc';
 import { Popup, Icon } from 'semantic-ui-react';
 
 export type LabelledProps<FormValues> = {

@@ -30,6 +30,11 @@ function createDev (t: TFunction): LinkOption[] {
 function createLive (t: TFunction): LinkOption[] {
   return [
     {
+      info: 'joystream',
+      text: t<string>('rpc.joystream', 'Joystream (Current Testnet, hosted by Jsgenesis)', { ns: 'apps-config' }),
+      value: 'wss://rome-rpc-endpoint.joystream.org:9944'
+    },
+    {
       dnslink: 'polkadot',
       info: 'polkadot',
       text: t<string>('rpc.polkadot.parity', 'Polkadot (Live, hosted by Parity)', { ns: 'apps-config' }),

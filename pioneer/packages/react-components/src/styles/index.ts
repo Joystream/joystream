@@ -10,12 +10,13 @@ import cssMedia from './media';
 import cssRx from './rx';
 import cssSemantic from './semantic';
 import cssTheme from './theme';
+import cssJoystream from './joystream';
 
 interface Props {
   uiHighlight?: string;
 }
 
-const defaultHighlight = '#f19135'; // #999
+const defaultHighlight = '#4038FF'; // #999
 
 const getHighlight = (props: Props): string =>
   (props.uiHighlight || defaultHighlight);
@@ -281,4 +282,5 @@ export default createGlobalStyle<Props>`
   ${cssMedia}
   ${cssRx}
   ${cssComponents}
+  ${cssJoystream}
 `;
