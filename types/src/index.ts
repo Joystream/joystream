@@ -53,4 +53,7 @@ export const types: RegistryTypes = {
   ...discovery,
   ...media,
   ...proposals,
+  // https://polkadot.js.org/api/start/FAQ.html#the-node-returns-a-could-not-convert-error-on-send
+  'Address': 'AccountId',
+  'LookupSource': 'AccountId',
 }
