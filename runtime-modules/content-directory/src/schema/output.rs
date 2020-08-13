@@ -71,11 +71,7 @@ impl<T: Trait> OutputPropertyValue<T> {
                 (property_id, output_value).using_encoded(<T as system::Trait>::Hashing::hash)
             }
             OutputPropertyValue::Vector(vector_output_value) => {
-                // Do not hash nonce
-                let vector_output_value = vector_output_value.get_vec_value_ref();
-
-                (property_id, vector_output_value)
-                    .using_encoded(<T as system::Trait>::Hashing::hash)
+                vector_output_value.compute_unique_hash(property_id)
             }
         }
     }
@@ -129,6 +125,12 @@ pub struct VecOutputPropertyValue<T: Trait> {
 }
 
 impl<T: Trait> VecOutputPropertyValue<T> {
+    /// Compute hash from unique vec property value and its respective property_id
+    pub fn compute_unique_hash(&self, property_id: PropertyId) -> T::Hash {
+        // Do not hash nonce
+        (property_id, &self.vec_value).using_encoded(<T as system::Trait>::Hashing::hash)
+    }
+
     /// Increase nonce by 1
     fn increment_nonce(&mut self) -> T::Nonce {
         self.nonce += T::Nonce::one();

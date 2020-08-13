@@ -167,17 +167,6 @@ impl<'a, T: Trait> OutputValuesForExistingProperties<'a, T> {
             })
             .collect()
     }
-
-    /// Compute ids of property values, that are unique and default.
-    pub fn compute_unique_default_non_required_ids(&self) -> BTreeSet<PropertyId> {
-        self.iter()
-            .filter(|(_, value_for_property)| {
-                value_for_property.get_property().unique && value_for_property.is_default()
-            })
-            .map(|(property_id, _)| property_id)
-            .copied()
-            .collect()
-    }
 }
 
 /// Length constraint for input validation
