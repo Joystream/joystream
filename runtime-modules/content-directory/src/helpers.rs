@@ -57,12 +57,12 @@ impl<'a, T: Trait> InputValuesForExistingProperties<'a, T> {
     pub fn from(
         properties: &'a [Property<T>],
         property_values: &'a BTreeMap<PropertyId, InputPropertyValue<T>>,
-    ) -> Result<Self, &'static str> {
+    ) -> Result<Self, Error<T>> {
         let mut values_for_existing_properties = InputValuesForExistingProperties::<T>::default();
         for (&property_id, property_value) in property_values {
             let property = properties
                 .get(property_id as usize)
-                .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
+                .ok_or(Error::<T>::ClassPropertyNotFound)?;
             values_for_existing_properties.insert(
                 property_id,
                 InputValueForExistingProperty::new(property, property_value),
@@ -137,12 +137,12 @@ impl<'a, T: Trait> OutputValuesForExistingProperties<'a, T> {
     pub fn from(
         properties: &'a [Property<T>],
         property_values: &'a BTreeMap<PropertyId, OutputPropertyValue<T>>,
-    ) -> Result<Self, &'static str> {
+    ) -> Result<Self, Error<T>> {
         let mut values_for_existing_properties = OutputValuesForExistingProperties::<T>::default();
         for (&property_id, property_value) in property_values {
             let property = properties
                 .get(property_id as usize)
-                .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
+                .ok_or(Error::<T>::ClassPropertyNotFound)?;
             values_for_existing_properties.insert(
                 property_id,
                 OutputValueForExistingProperty::new(property, property_value),
@@ -200,12 +200,12 @@ impl InputValidationLengthConstraint {
     }
 
     /// Ensure length is valid
-    pub fn ensure_valid(
+    pub fn ensure_valid<T: Trait>(
         self,
         len: usize,
-        too_short_msg: &'static str,
-        too_long_msg: &'static str,
-    ) -> DispatchResult {
+        too_short_msg: Error<T>,
+        too_long_msg: Error<T>,
+    ) -> Result<(), Error<T>> {
         let length = len as u16;
         if length < self.min {
             Err(too_short_msg)

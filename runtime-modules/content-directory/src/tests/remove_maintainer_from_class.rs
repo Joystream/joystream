@@ -89,7 +89,7 @@ fn remove_maintainer_from_class_lead_auth_failed() {
         // Failure checked
         assert_failure(
             remove_maintainer_from_class_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -113,7 +113,7 @@ fn remove_maintainer_from_non_existent_class() {
         // Failure checked
         assert_failure(
             remove_maintainer_from_class_result,
-            ERROR_CLASS_NOT_FOUND,
+            Error::<Runtime>::ClassNotFound,
             number_of_events_before_call,
         );
     })
@@ -140,7 +140,7 @@ fn remove_maintainer_that_was_not_added_to_class_maintainers_set() {
         // Failure checked
         assert_failure(
             remove_maintainer_from_class_result,
-            ERROR_MAINTAINER_DOES_NOT_EXIST,
+            Error::<Runtime>::MaintainerDoesNotExist,
             number_of_events_before_call,
         );
     })

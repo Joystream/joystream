@@ -41,7 +41,7 @@ fn create_class_lead_auth_failed() {
         // Failure checked
         assert_failure(
             create_class_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -76,7 +76,7 @@ fn create_class_limit_reached() {
         // Failure checked
         assert_failure(
             create_class_result,
-            ERROR_CLASS_LIMIT_REACHED,
+            Error::<Runtime>::ClassLimitReached,
             number_of_events_before_call + number_of_classes_created,
         );
     })
@@ -96,7 +96,7 @@ fn create_class_name_is_too_long() {
         // Failure checked
         assert_failure(
             create_class_result,
-            ERROR_CLASS_NAME_TOO_LONG,
+            Error::<Runtime>::ClassNameTooLong,
             number_of_events_before_call,
         );
     })
@@ -116,7 +116,7 @@ fn create_class_name_is_too_short() {
         // Failure checked
         assert_failure(
             create_class_result,
-            ERROR_CLASS_NAME_TOO_SHORT,
+            Error::<Runtime>::ClassNameTooShort,
             number_of_events_before_call,
         );
     })
@@ -136,7 +136,7 @@ fn create_class_description_is_too_long() {
         // Failure checked
         assert_failure(
             create_class_result,
-            ERROR_CLASS_DESCRIPTION_TOO_LONG,
+            Error::<Runtime>::ClassDescriptionTooLong,
             number_of_events_before_call,
         );
     })
@@ -156,7 +156,7 @@ fn create_class_description_is_too_short() {
         // Failure checked
         assert_failure(
             create_class_result,
-            ERROR_CLASS_DESCRIPTION_TOO_SHORT,
+            Error::<Runtime>::ClassDescriptionTooShort,
             number_of_events_before_call,
         );
     })
@@ -177,7 +177,7 @@ fn create_class_invalid_maximum_entities_count() {
         // Failure checked
         assert_failure(
             create_class_result,
-            ERROR_ENTITIES_NUMBER_PER_CLASS_CONSTRAINT_VIOLATED,
+            Error::<Runtime>::EntitiesNumberPerClassConstraintViolated,
             number_of_events_before_call,
         );
     })
@@ -198,7 +198,7 @@ fn create_class_invalid_default_voucher_upper_bound() {
         // Failure checked
         assert_failure(
             create_class_result,
-            ERROR_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_CONSTRAINT_VIOLATED,
+            Error::<Runtime>::NumberOfClassEntitiesPerActorConstraintViolated,
             number_of_events_before_call,
         );
     })
@@ -221,7 +221,7 @@ fn create_class_per_controller_creation_limit_exceeds_overall_limit() {
         // Failure checked
         assert_failure(
             create_class_result,
-            ERROR_PER_CONTROLLER_ENTITIES_CREATION_LIMIT_EXCEEDS_OVERALL_LIMIT,
+            Error::<Runtime>::PerControllerEntitiesCreationLimitExceedsOverallLimit,
             number_of_events_before_call,
         );
     })
@@ -247,7 +247,7 @@ fn create_class_maintainers_limit_reached() {
         // Failure checked
         assert_failure(
             create_class_result,
-            ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED,
+            Error::<Runtime>::ClassMaintainersLimitReached,
             number_of_events_before_call,
         );
     })
@@ -268,7 +268,7 @@ fn create_class_curator_group_does_not_exist() {
         // Failure checked
         assert_failure(
             create_class_result,
-            ERROR_CURATOR_GROUP_DOES_NOT_EXIST,
+            Error::<Runtime>::CuratorGroupDoesNotExist,
             number_of_events_before_call,
         );
     })

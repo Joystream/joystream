@@ -71,41 +71,39 @@ pub trait ActorAuthenticator: system::Trait + Debug {
 }
 
 /// Ensure curator authorization performed succesfully
-pub fn ensure_curator_auth_success<T: ActorAuthenticator>(
+pub fn ensure_curator_auth_success<T: Trait>(
     curator_id: &T::CuratorId,
     account_id: &T::AccountId,
-) -> DispatchResult {
+) -> Result<(), Error<T>> {
     ensure!(
         T::is_curator(curator_id, account_id),
-        ERROR_CURATOR_AUTH_FAILED
+        Error::<T>::CuratorAuthFailed
     );
     Ok(())
 }
 
 /// Ensure member authorization performed succesfully
-pub fn ensure_member_auth_success<T: ActorAuthenticator>(
+pub fn ensure_member_auth_success<T: Trait>(
     member_id: &T::MemberId,
     account_id: &T::AccountId,
-) -> DispatchResult {
+) -> Result<(), Error<T>> {
     ensure!(
         T::is_member(member_id, account_id),
-        ERROR_MEMBER_AUTH_FAILED
+        Error::<T>::MemberAuthFailed
     );
     Ok(())
 }
 
 /// Ensure lead authorization performed succesfully
-pub fn ensure_lead_auth_success<T: ActorAuthenticator>(
-    account_id: &T::AccountId,
-) -> DispatchResult {
-    ensure!(T::is_lead(account_id), ERROR_LEAD_AUTH_FAILED);
+pub fn ensure_lead_auth_success<T: Trait>(account_id: &T::AccountId) -> Result<(), Error<T>> {
+    ensure!(T::is_lead(account_id), Error::<T>::LeadAuthFailed);
     Ok(())
 }
 
 /// Ensure given `Origin` is lead
-pub fn ensure_is_lead<T: ActorAuthenticator>(origin: T::Origin) -> DispatchResult {
+pub fn ensure_is_lead<T: Trait>(origin: T::Origin) -> DispatchResult {
     let account_id = ensure_signed(origin)?;
-    ensure_lead_auth_success::<T>(&account_id)
+    Ok(ensure_lead_auth_success::<T>(&account_id)?)
 }
 
 /// Enum, representing all possible `Actor`s

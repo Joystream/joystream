@@ -98,7 +98,7 @@ fn remove_at_entity_property_vector_entity_not_found() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_ENTITY_NOT_FOUND,
+            Error::<Runtime>::EntityNotFound,
             number_of_events_before_call,
         );
     })
@@ -136,7 +136,7 @@ fn remove_at_entity_property_vector_lead_auth_failed() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -174,7 +174,7 @@ fn remove_at_entity_property_vector_member_auth_failed() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_MEMBER_AUTH_FAILED,
+            Error::<Runtime>::MemberAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -219,7 +219,7 @@ fn remove_at_entity_property_vector_curator_group_is_not_active() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_CURATOR_GROUP_IS_NOT_ACTIVE,
+            Error::<Runtime>::CuratorGroupIsNotActive,
             number_of_events_before_call,
         );
     })
@@ -257,7 +257,7 @@ fn remove_at_entity_property_vector_curator_auth_failed() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_CURATOR_AUTH_FAILED,
+            Error::<Runtime>::CuratorAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -299,7 +299,7 @@ fn remove_at_entity_property_vector_curator_not_found_in_curator_group() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP,
+            Error::<Runtime>::CuratorIsNotAMemberOfGivenCuratorGroup,
             number_of_events_before_call,
         );
     })
@@ -338,7 +338,7 @@ fn remove_at_entity_property_vector_access_denied() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_ENTITY_ACCESS_DENIED,
+            Error::<Runtime>::EntityAccessDenied,
             number_of_events_before_call,
         );
     })
@@ -377,7 +377,7 @@ fn remove_at_entity_property_vector_values_locked_on_class_level() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL,
+            Error::<Runtime>::AllPropertiesWereLockedOnClassLevel,
             number_of_events_before_call,
         );
     })
@@ -417,7 +417,7 @@ fn remove_at_entity_property_vector_class_property_not_found() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_CLASS_PROP_NOT_FOUND,
+            Error::<Runtime>::ClassPropertyNotFound,
             number_of_events_before_call,
         );
     })
@@ -493,7 +493,7 @@ fn remove_at_entity_property_vector_is_locked_for_given_actor() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR,
+            Error::<Runtime>::ClassPropertyTypeLockedForGivenActor,
             number_of_events_before_call,
         );
     })
@@ -536,7 +536,7 @@ fn remove_at_entity_property_vector_unknown_entity_property_id() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_UNKNOWN_ENTITY_PROP_ID,
+            Error::<Runtime>::UnknownEntityPropertyId,
             number_of_events_before_call,
         );
     })
@@ -601,7 +601,7 @@ fn remove_at_entity_property_vector_value_under_given_index_is_not_a_vector() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR,
+            Error::<Runtime>::PropertyValueUnderGivenIndexIsNotAVector,
             number_of_events_before_call,
         );
     })
@@ -644,7 +644,7 @@ fn remove_at_entity_property_vector_nonces_does_not_match() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH,
+            Error::<Runtime>::PropertyValueVecNoncesDoesNotMatch,
             number_of_events_before_call,
         );
     })
@@ -703,7 +703,7 @@ fn remove_at_entity_property_vector_index_is_out_of_range() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE,
+            Error::<Runtime>::EntityPropertyValueVectorIndexIsOutOfRange,
             number_of_events_before_call,
         );
     })
@@ -769,7 +769,7 @@ fn remove_at_entity_property_vector_property_should_be_unique() {
         // Failure checked
         assert_failure(
             remove_at_entity_property_vector_result,
-            ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE,
+            Error::<Runtime>::PropertyValueShouldBeUnique,
             number_of_events_before_call,
         );
     })

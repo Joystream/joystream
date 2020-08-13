@@ -81,7 +81,7 @@ fn add_class_schema_lead_auth_failied() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -109,7 +109,7 @@ fn add_class_schema_class_does_not_exist() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_CLASS_NOT_FOUND,
+            Error::<Runtime>::ClassNotFound,
             number_of_events_before_call,
         );
     })
@@ -155,7 +155,7 @@ fn add_class_schema_limit_reached() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_CLASS_SCHEMAS_LIMIT_REACHED,
+            Error::<Runtime>::ClassSchemasLimitReached,
             number_of_events_before_call + number_of_schemas_added,
         );
     })
@@ -179,7 +179,7 @@ fn add_class_schema_no_props_in_schema() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_NO_PROPS_IN_CLASS_SCHEMA,
+            Error::<Runtime>::NoPropertiesInClassSchema,
             number_of_events_before_call,
         );
     })
@@ -213,7 +213,7 @@ fn add_class_schema_properties_limit_reached() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_SCHEMA_PROPERTIES_LIMIT_REACHED,
+            Error::<Runtime>::SchemaPropertiesLimitReached,
             number_of_events_before_call,
         );
     })
@@ -255,7 +255,7 @@ fn add_class_schema_prop_name_not_unique() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_PROP_NAME_NOT_UNIQUE_IN_A_CLASS,
+            Error::<Runtime>::PropertyNameNotUniqueInAClass,
             number_of_events_before_call,
         );
     })
@@ -286,7 +286,7 @@ fn add_class_schema_refers_invalid_property_index() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX,
+            Error::<Runtime>::ClassSchemaRefersUnknownPropertyIndex,
             number_of_events_before_call,
         );
     })
@@ -312,7 +312,7 @@ fn add_class_schema_property_name_too_long() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_PROPERTY_NAME_TOO_LONG,
+            Error::<Runtime>::PropertyNameTooLong,
             number_of_events_before_call,
         );
     })
@@ -338,7 +338,7 @@ fn add_class_schema_property_name_too_short() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_PROPERTY_NAME_TOO_SHORT,
+            Error::<Runtime>::PropertyNameTooShort,
             number_of_events_before_call,
         );
     })
@@ -364,7 +364,7 @@ fn add_class_schema_property_description_too_long() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_PROPERTY_DESCRIPTION_TOO_LONG,
+            Error::<Runtime>::PropertyDescriptionTooLong,
             number_of_events_before_call,
         );
     })
@@ -390,7 +390,7 @@ fn add_class_schema_property_description_too_short() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_PROPERTY_DESCRIPTION_TOO_SHORT,
+            Error::<Runtime>::PropertyDescriptionTooShort,
             number_of_events_before_call,
         );
     })
@@ -416,7 +416,7 @@ fn add_class_schema_text_property_is_too_long() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_TEXT_PROP_IS_TOO_LONG,
+            Error::<Runtime>::TextPropertyTooLong,
             number_of_events_before_call,
         );
     })
@@ -443,7 +443,7 @@ fn add_class_schema_text_hash_property_is_too_long() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_HASHED_TEXT_PROP_IS_TOO_LONG,
+            Error::<Runtime>::HashedTextPropertyTooLong,
             number_of_events_before_call,
         );
     })
@@ -469,7 +469,7 @@ fn add_class_schema_property_vec_property_is_too_long() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_VEC_PROP_IS_TOO_LONG,
+            Error::<Runtime>::VecPropertyTooLong,
             number_of_events_before_call,
         );
     })
@@ -500,7 +500,7 @@ fn add_class_schema_property_refers_unknown_class() {
         // Failure checked
         assert_failure(
             add_class_schema_result,
-            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_CLASS,
+            Error::<Runtime>::ClassSchemaRefersUnknownClass,
             number_of_events_before_call,
         );
     })

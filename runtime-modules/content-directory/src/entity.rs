@@ -104,9 +104,9 @@ impl<T: Trait> Entity<T> {
     }
 
     /// Ensure `Schema` under given id is not added to given `Entity` yet
-    pub fn ensure_schema_id_is_not_added(&self, schema_id: SchemaId) -> DispatchResult {
+    pub fn ensure_schema_id_is_not_added(&self, schema_id: SchemaId) -> Result<(), Error<T>> {
         let schema_not_added = !self.supported_schemas.contains(&schema_id);
-        ensure!(schema_not_added, ERROR_SCHEMA_ALREADY_ADDED_TO_THE_ENTITY);
+        ensure!(schema_not_added, Error::<T>::SchemaAlreadyAddedToTheEntity);
         Ok(())
     }
 
@@ -114,12 +114,12 @@ impl<T: Trait> Entity<T> {
     pub fn ensure_property_values_are_not_added(
         &self,
         property_values: &BTreeMap<PropertyId, InputPropertyValue<T>>,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         ensure!(
             property_values
                 .keys()
                 .all(|key| !self.values.contains_key(key)),
-            ERROR_ENTITY_ALREADY_CONTAINS_GIVEN_PROPERTY_ID
+            Error::<T>::EntityAlreadyContainsGivenPropertyId
         );
         Ok(())
     }
@@ -128,32 +128,32 @@ impl<T: Trait> Entity<T> {
     pub fn ensure_property_value_is_vec(
         &self,
         in_class_schema_property_id: PropertyId,
-    ) -> Result<VecOutputPropertyValue<T>, &'static str> {
+    ) -> Result<VecOutputPropertyValue<T>, Error<T>> {
         self.values
             .get(&in_class_schema_property_id)
             // Throw an error if a property was not found on entity
             // by an in-class index of a property.
-            .ok_or(ERROR_UNKNOWN_ENTITY_PROP_ID)?
+            .ok_or(Error::<T>::UnknownEntityPropertyId)?
             .as_vec_property_value()
             .map(|property_value_vec| property_value_vec.to_owned())
             // Ensure prop value under given class schema property id is vector
-            .ok_or(ERROR_PROP_VALUE_UNDER_GIVEN_INDEX_IS_NOT_A_VECTOR)
+            .ok_or(Error::<T>::PropertyValueUnderGivenIndexIsNotAVector)
     }
 
     /// Ensure any `InputPropertyValue` from external entity does not point to the given `Entity`
-    pub fn ensure_rc_is_zero(&self) -> DispatchResult {
+    pub fn ensure_rc_is_zero(&self) -> Result<(), Error<T>> {
         ensure!(
             self.reference_counter.is_total_equal_to_zero(),
-            ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO
+            Error::<T>::EntityRcDoesNotEqualToZero
         );
         Ok(())
     }
 
     /// Ensure any inbound `InputPropertyValue` with `same_owner` flag set points to the given `Entity`
-    pub fn ensure_inbound_same_owner_rc_is_zero(&self) -> DispatchResult {
+    pub fn ensure_inbound_same_owner_rc_is_zero(&self) -> Result<(), Error<T>> {
         ensure!(
             self.reference_counter.is_same_owner_equal_to_zero(),
-            ERROR_ENTITY_SAME_OWNER_RC_DOES_NOT_EQUAL_TO_ZERO
+            Error::<T>::EntityInboundSameOwnerRcDoesNotEqualToZero
         );
         Ok(())
     }

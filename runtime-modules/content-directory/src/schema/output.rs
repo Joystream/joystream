@@ -253,10 +253,10 @@ impl<T: Trait> VecOutputPropertyValue<T> {
 
     /// Ensure `VecOutputPropertyValue` nonce is equal to the provided one.
     /// Used to to avoid possible data races, when performing vector specific operations
-    pub fn ensure_nonce_equality(&self, new_nonce: T::Nonce) -> DispatchResult {
+    pub fn ensure_nonce_equality(&self, new_nonce: T::Nonce) -> Result<(), Error<T>> {
         ensure!(
             self.nonce == new_nonce,
-            ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH
+            Error::<T>::PropertyValueVecNoncesDoesNotMatch
         );
         Ok(())
     }
@@ -265,10 +265,10 @@ impl<T: Trait> VecOutputPropertyValue<T> {
     pub fn ensure_index_in_property_vector_is_valid(
         &self,
         index_in_property_vec: VecMaxLength,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         ensure!(
             (index_in_property_vec as usize) <= self.len(),
-            ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE
+            Error::<T>::EntityPropertyValueVectorIndexIsOutOfRange
         );
 
         Ok(())

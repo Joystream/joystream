@@ -1,45 +1,9 @@
-
+use crate::*;
 use frame_support::decl_error;
 
-pub const ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP: &str =
-    "Curator under provided curator id is not a member of curaror group under given id";
-pub const ERROR_CURATOR_GROUP_DOES_NOT_EXIST: &str = "Given curator group does not exist";
-pub const ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION: &str =
-    "Entity should be referenced from the entity, owned by the same controller";
-pub const ERROR_MAINTAINER_DOES_NOT_EXIST: &str = "Given maintainer does not exist";
-pub const ERROR_MAINTAINER_ALREADY_EXISTS: &str = "Given maintainer already exist";
-pub const ERROR_ACTOR_CAN_NOT_CREATE_ENTITIES: &str =
-    "Provided actor can`t create entities of given class";
-pub const ERROR_MAX_NUMBER_OF_ENTITIES_PER_CLASS_LIMIT_REACHED: &str =
-    "Maximum numbers of entities per class limit reached";
-pub const ERROR_ENTITY_CREATION_BLOCKED: &str = "Current class entities creation blocked";
-pub const ERROR_VOUCHER_LIMIT_REACHED: &str = "Entities voucher limit reached";
-pub const ERROR_LEAD_AUTH_FAILED: &str = "Lead authentication failed";
-pub const ERROR_MEMBER_AUTH_FAILED: &str = "Member authentication failed";
-pub const ERROR_CURATOR_AUTH_FAILED: &str = "Curator authentication failed";
-pub const ERROR_BAD_ORIGIN: &str = "Expected root or signed origin";
-pub const ERROR_ENTITY_REMOVAL_ACCESS_DENIED: &str = "Entity removal access denied";
-pub const ERROR_ENTITY_ADD_SCHEMA_SUPPORT_ACCESS_DENIED: &str =
-    "Add entity schema support access denied";
-pub const ERROR_CLASS_ACCESS_DENIED: &str = "Class access denied";
-pub const ERROR_ENTITY_ACCESS_DENIED: &str = "Entity access denied";
-pub const ERROR_ENTITY_CAN_NOT_BE_REFERENCED: &str = "Given entity can`t be referenced";
-pub const ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR: &str =
-    "Given class property type is locked for given actor";
-pub const ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED: &str =
-    "Class maintainers limit reached";
-pub const ERROR_NUMBER_OF_CURATORS_PER_GROUP_LIMIT_REACHED: &str =
-    "Max number of curators per group limit reached";
-pub const ERROR_CURATOR_GROUP_IS_NOT_ACTIVE: &str = "Curator group is not active";
-pub const ERROR_ORIGIN_CANNOT_BE_MADE_INTO_RAW_ORIGIN: &str =
-    "Origin cannot be made into raw origin";
-pub const ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE: &str =
-    "Property value should be unique across all Entities of this Class";
-
 decl_error! {
-    #[derive(Copy)]
     /// Content directory errors
-    pub enum Error {
+    pub enum Error for Module<T: Trait> {
 
         /// Validation errors
         /// --------------------------------------
@@ -51,10 +15,10 @@ decl_error! {
         /// Property name is too long
         PropertyNameTooLong,
 
-        /// Property description is too short 
+        /// Property description is too short
         PropertyDescriptionTooShort,
 
-        /// Property description is too long 
+        /// Property description is too long
         PropertyDescriptionTooLong,
 
         /// Class name is too short
@@ -90,9 +54,6 @@ decl_error! {
         /// Individual number of class entities per actor is too big
         IndividualNumberOfClassEntitiesPerActorIsTooBig,
 
-        /// Cannot set voucher entities count to be less than number of already created entities
-        NewEntitiesMaxCountIsLessThanNumberOfAlreadyCreated,
-
         /// Number of operations during atomic batching limit reached
         NumberOfOperationsDuringAtomicBatchingLimitReached,
 
@@ -109,7 +70,7 @@ decl_error! {
         EntityPropertyValueVectorIsTooLong,
 
         /// Given property value vector index is out of range
-        EntityPropValueVectorIndexIsOutOfRange,
+        EntityPropertyValueVectorIndexIsOutOfRange,
 
 
         /// Main logic errors
@@ -179,17 +140,17 @@ decl_error! {
         /// Entity removal can`t be completed, as there are some property values pointing to given entity
         EntityRcDoesNotEqualToZero,
 
-        /// Entity removal can`t be completed, as there are some property value references with same owner flag set pointing to given entity
-        EntitySameOwnerRcDoesNotEqualToZero,
-
         /// Entity ownership transfer can`t be completed, as there are some property values pointing to given entity with same owner flag set
         EntityInboundSameOwnerRcDoesNotEqualToZero,
 
         /// Provided entity controller is equal to the current one
-        ProvidedEntityControllerIsEqualToTheCurrentOne
+        ProvidedEntityControllerIsEqualToTheCurrentOne,
 
         /// All ids of new property value references with same owner flag set should match their respective Properties defined on Class level
-        AllProvidedPropertyValueIdsMustBeReferencesWithSameOwnerFlagSet
+        AllProvidedPropertyValueIdsMustBeReferencesWithSameOwnerFlagSet,
+
+        /// Entity was not created in batched transaction
+        EntityNotCreatedByOperation,
 
         /// Permission errors
         /// --------------------------------------
@@ -198,7 +159,78 @@ decl_error! {
         CuratorGroupRemovalForbidden,
 
         /// All property values, related to a given Entity were locked on Class level
-        AllPropertiesWereLockedOnClassLevel
+        AllPropertiesWereLockedOnClassLevel,
 
+        /// Curator under provided curator id is not a member of curaror group under given id
+        CuratorIsNotAMemberOfGivenCuratorGroup,
+
+        /// Given curator group does not exist
+        CuratorGroupDoesNotExist,
+
+        /// Entity should be referenced from the entity, owned by the same controller
+        SameControllerConstraintViolation,
+
+        /// Given maintainer does not exist
+        MaintainerDoesNotExist,
+
+        /// Given maintainer already exist
+        MaintainerAlreadyExists,
+
+        /// Provided actor can`t create entities of given class
+        ActorCanNotCreateEntities,
+
+        /// Maximum numbers of entities per class limit reached
+        NumberOfEntitiesPerClassLimitReached,
+
+        /// Current class entities creation blocked
+        EntitiesCreationBlocked,
+
+        /// Entities voucher limit reached
+        VoucherLimitReached,
+
+        /// Lead authentication failed
+        LeadAuthFailed,
+
+        /// Member authentication failed
+        MemberAuthFailed,
+
+        /// Curator authentication failed
+        CuratorAuthFailed,
+
+        /// Expected root or signed origin
+        BadOrigin,
+
+        /// Entity removal access denied
+        EntityRemovalAccessDenied,
+
+        /// Add entity schema support access denied
+        EntityAddSchemaSupportAccessDenied,
+
+        /// Class access denied
+        ClassAccessDenied,
+
+        /// Entity access denied
+        EntityAccessDenied,
+
+        /// Given entity can`t be referenced
+        EntityCanNotBeReferenced,
+
+        /// Given class property type is locked for given actor
+        ClassPropertyTypeLockedForGivenActor,
+
+        /// Number of maintainers per class limit reached
+        ClassMaintainersLimitReached,
+
+        /// Max number of curators per group limit reached
+        CuratorsPerGroupLimitReached,
+
+        /// Curator group is not active
+        CuratorGroupIsNotActive,
+
+        /// Origin cannot be made into raw origin
+        OriginCanNotBeMadeIntoRawOrigin,
+
+        /// Property value should be unique across all Entities of this Class
+        PropertyValueShouldBeUnique
     }
 }

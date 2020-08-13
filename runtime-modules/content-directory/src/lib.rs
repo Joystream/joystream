@@ -28,7 +28,9 @@ use core::ops::AddAssign;
 
 use codec::{Codec, Decode, Encode};
 use frame_support::storage::IterableStorageMap;
-use frame_support::{decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter};
+use frame_support::{
+    decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
+};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
@@ -38,12 +40,10 @@ use system::ensure_signed;
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
 
+pub use errors::Error;
+
 /// Type, used in diffrent numeric constraints representations
 type MaxNumber = u32;
-
-// TODO: Convert errors to the Substrate decl_error! macro.
-/// Result with string error message. This exists for backward compatibility purpose.
-pub type DispatchResult = Result<(), &'static str>;
 
 /// Type representing a map for both new and old property values hashes
 type PropertyValuesHashes<T> = (
@@ -926,8 +926,10 @@ decl_module! {
             entity_id: T::EntityId,
         ) -> DispatchResult {
 
-            // Retrieve Entity and EntityAccessLevel for the actor, attemting to perform operation
-            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
+            let account_id = ensure_signed(origin)?;
+
+            // Retrieve Class, Entity and EntityAccessLevel for the actor, attemting to perform operation
+            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(account_id, entity_id, &actor)?;
 
             // Ensure actor with given EntityAccessLevel can remove entity
             EntityPermissions::<T>::ensure_group_can_remove_entity(access_level)?;
@@ -978,8 +980,10 @@ decl_module! {
             new_property_values: BTreeMap<PropertyId, InputPropertyValue<T>>
         ) -> DispatchResult {
 
-            // Retrieve Class, Entity and ensure given have access to the Entity under given entity_id
-            let (class, entity, _) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
+            let account_id = ensure_signed(origin)?;
+
+            // Retrieve Class, Entity and EntityAccessLevel for the actor, attemting to perform operation
+            let (class, entity, _) = Self::ensure_class_entity_and_access_level(account_id, entity_id, &actor)?;
 
             // Ensure Class Schema under given index exists, return corresponding Schema
             let schema = class.ensure_schema_exists(schema_id)?.to_owned();
@@ -996,7 +1000,7 @@ decl_module! {
             entity.ensure_property_values_are_not_added(&new_property_values)?;
 
             // Ensure provided schema can be added to the Entity
-            schema.ensure_is_active()?;
+            schema.ensure_is_active::<T>()?;
 
             // Ensure all provided new property values are for properties in the given schema
             schema.ensure_has_properties(&new_property_values)?;
@@ -1075,8 +1079,10 @@ decl_module! {
             new_property_values: BTreeMap<PropertyId, InputPropertyValue<T>>
         ) -> DispatchResult {
 
+            let account_id = ensure_signed(origin)?;
+
             // Retrieve Class, Entity and EntityAccessLevel for the actor, attemting to perform operation
-            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
+            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(account_id, entity_id, &actor)?;
 
             // Ensure property values were not locked on Class level
             class.ensure_property_values_unlocked()?;
@@ -1163,8 +1169,10 @@ decl_module! {
             in_class_schema_property_id: PropertyId
         ) -> DispatchResult {
 
+            let account_id = ensure_signed(origin)?;
+
             // Retrieve Class, Entity and EntityAccessLevel for the actor, attemting to perform operation
-            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
+            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(account_id, entity_id, &actor)?;
 
             // Ensure Property under given PropertyId is unlocked from actor with given EntityAccessLevel
             // Retrieve corresponding Property by value
@@ -1243,8 +1251,10 @@ decl_module! {
             nonce: T::Nonce
         ) -> DispatchResult {
 
+            let account_id = ensure_signed(origin)?;
+
             // Retrieve Class, Entity and EntityAccessLevel for the actor, attemting to perform operation
-            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
+            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(account_id, entity_id, &actor)?;
 
             // Ensure Property under given PropertyId is unlocked from actor with given EntityAccessLevel
             // Retrieve corresponding Property by value
@@ -1346,8 +1356,10 @@ decl_module! {
             nonce: T::Nonce
         ) -> DispatchResult {
 
+            let account_id = ensure_signed(origin)?;
+
             // Retrieve Class, Entity and EntityAccessLevel for the actor, attemting to perform operation
-            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(origin, entity_id, &actor)?;
+            let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(account_id, entity_id, &actor)?;
 
             // Ensure Property under given PropertyId is unlocked from actor with given EntityAccessLevel
             // Retrieve corresponding Property by value
@@ -1454,7 +1466,7 @@ decl_module! {
             let mut entity_created_in_operation = BTreeMap::new();
 
             // Create raw origin
-            let raw_origin = origin.into().map_err(|_| ERROR_ORIGIN_CANNOT_BE_MADE_INTO_RAW_ORIGIN)?;
+            let raw_origin = origin.into().map_err(|_| Error::<T>::OriginCanNotBeMadeIntoRawOrigin)?;
 
             for (index, operation_type) in operations.into_iter().enumerate() {
                 let origin = T::Origin::from(raw_origin.clone());
@@ -1718,7 +1730,7 @@ impl<T: Trait> Module<T> {
         class_properties: Vec<Property<T>>,
         entity_property_values: BTreeMap<PropertyId, OutputPropertyValue<T>>,
         new_output_property_values: BTreeMap<PropertyId, OutputPropertyValue<T>>,
-    ) -> Result<Option<ReferenceCounterSideEffects<T>>, &'static str> {
+    ) -> Result<Option<ReferenceCounterSideEffects<T>>, Error<T>> {
         // Filter entity_property_values to get only those, which will be substituted with new_property_values
         let entity_property_values_to_update: BTreeMap<PropertyId, OutputPropertyValue<T>> =
             entity_property_values
@@ -1857,13 +1869,13 @@ impl<T: Trait> Module<T> {
         class_id: T::ClassId,
         property_id: PropertyId,
         unique_property_value_hash: &T::Hash,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         ensure!(
             !<UniquePropertyValueHashes<T>>::contains_key(
                 (class_id, property_id),
                 unique_property_value_hash
             ),
-            ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE
+            Error::<T>::PropertyValueShouldBeUnique
         );
         Ok(())
     }
@@ -1872,7 +1884,7 @@ impl<T: Trait> Module<T> {
     pub fn ensure_property_value_hashes_unique_option_satisfied(
         class_id: T::ClassId,
         unique_property_value_hashes: &BTreeMap<PropertyId, T::Hash>,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         for (&property_id, unique_property_value_hash) in unique_property_value_hashes {
             Self::ensure_property_value_hash_unique_option_satisfied(
                 class_id,
@@ -1890,7 +1902,7 @@ impl<T: Trait> Module<T> {
         in_class_schema_property_id: PropertyId,
         property_value_vector_updated: &OutputPropertyValue<T>,
         property_value_vector: VecOutputPropertyValue<T>,
-    ) -> Result<(T::Hash, T::Hash), &'static str> {
+    ) -> Result<(T::Hash, T::Hash), Error<T>> {
         // Compute new hash from unique property value and its respective property id
         let new_property_value_hash =
             property_value_vector_updated.compute_unique_hash(in_class_schema_property_id);
@@ -1916,7 +1928,7 @@ impl<T: Trait> Module<T> {
         class_properties: &[Property<T>],
         new_output_property_values: &BTreeMap<PropertyId, OutputPropertyValue<T>>,
         entity_property_values: &BTreeMap<PropertyId, OutputPropertyValue<T>>,
-    ) -> Result<PropertyValuesHashes<T>, &'static str> {
+    ) -> Result<PropertyValuesHashes<T>, Error<T>> {
         // Compute OutputPropertyValues, which respective Properties have unique flag set
         // (skip PropertyIds, which respective property values under this Entity are default and non required)
         let new_output_values_for_existing_properties = OutputValuesForExistingProperties::from(
@@ -1941,22 +1953,20 @@ impl<T: Trait> Module<T> {
     }
 
     /// Returns the stored `Class` if exist, error otherwise.
-    fn ensure_class_exists(class_id: T::ClassId) -> Result<Class<T>, &'static str> {
+    fn ensure_class_exists(class_id: T::ClassId) -> Result<Class<T>, Error<T>> {
         ensure!(
             <ClassById<T>>::contains_key(class_id),
-            ERROR_CLASS_NOT_FOUND
+            Error::<T>::ClassNotFound
         );
         Ok(Self::class_by_id(class_id))
     }
 
     /// Returns `Class` and `Entity` under given id, if exists, and `EntityAccessLevel` corresponding to `origin`, if permitted
     fn ensure_class_entity_and_access_level(
-        origin: T::Origin,
+        account_id: T::AccountId,
         entity_id: T::EntityId,
         actor: &Actor<T>,
-    ) -> Result<(Class<T>, Entity<T>, EntityAccessLevel), &'static str> {
-        let account_id = ensure_signed(origin)?;
-
+    ) -> Result<(Class<T>, Entity<T>, EntityAccessLevel), Error<T>> {
         // Ensure Entity under given id exists, retrieve corresponding one
         let entity = Self::ensure_known_entity_id(entity_id)?;
 
@@ -1977,7 +1987,7 @@ impl<T: Trait> Module<T> {
     /// Ensure `Entity` under given `entity_id` exists, retrieve corresponding `Entity` & `Class`
     pub fn ensure_known_entity_and_class(
         entity_id: T::EntityId,
-    ) -> Result<(Entity<T>, Class<T>), &'static str> {
+    ) -> Result<(Entity<T>, Class<T>), Error<T>> {
         // Ensure Entity under given id exists, retrieve corresponding one
         let entity = Self::ensure_known_entity_id(entity_id)?;
 
@@ -2018,7 +2028,7 @@ impl<T: Trait> Module<T> {
             PropertyId,
             InputPropertyValue<T>,
         >,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         let new_property_value_id_references_with_same_owner_flag_set: BTreeSet<PropertyId> =
             new_property_value_references_with_same_owner_flag_set
                 .keys()
@@ -2028,7 +2038,7 @@ impl<T: Trait> Module<T> {
         ensure!(
             new_property_value_id_references_with_same_owner_flag_set
                 .is_subset(entity_property_id_references_with_same_owner_flag_set),
-            ERROR_ALL_PROVIDED_PROPERTY_VALUE_IDS_MUST_BE_REFERENCES_WITH_SAME_OWNER_FLAG_SET
+            Error::<T>::AllProvidedPropertyValueIdsMustBeReferencesWithSameOwnerFlagSet
         );
         Ok(())
     }
@@ -2037,7 +2047,7 @@ impl<T: Trait> Module<T> {
     fn ensure_are_valid_references_with_same_owner_flag_set(
         new_property_value_references_with_same_owner_flag_set: InputValuesForExistingProperties<T>,
         new_controller: &EntityController<T>,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         for updated_value_for_existing_property in
             new_property_value_references_with_same_owner_flag_set.values()
         {
@@ -2131,14 +2141,17 @@ impl<T: Trait> Module<T> {
     pub fn ensure_all_required_properties_provided(
         class_properties: &[Property<T>],
         unused_schema_property_ids: &BTreeSet<PropertyId>,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         for &unused_schema_property_id in unused_schema_property_ids {
             let class_property = &class_properties
                 .get(unused_schema_property_id as usize)
-                .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
+                .ok_or(Error::<T>::ClassPropertyNotFound)?;
 
             // All required property values should be provided
-            ensure!(!class_property.required, ERROR_MISSING_REQUIRED_PROP);
+            ensure!(
+                !class_property.required,
+                Error::<T>::MissingRequiredProperty
+            );
         }
         Ok(())
     }
@@ -2148,7 +2161,7 @@ impl<T: Trait> Module<T> {
     pub fn ensure_property_values_are_valid(
         entity_controller: &EntityController<T>,
         values_for_existing_properties: &InputValuesForExistingProperties<T>,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         for value_for_existing_property in values_for_existing_properties.values() {
             let (property, value) = value_for_existing_property.unzip();
 
@@ -2163,12 +2176,12 @@ impl<T: Trait> Module<T> {
     pub fn ensure_all_property_values_are_already_added(
         entity_property_values: &BTreeMap<PropertyId, OutputPropertyValue<T>>,
         new_property_values: &BTreeMap<PropertyId, InputPropertyValue<T>>,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         ensure!(
             new_property_values
                 .keys()
                 .all(|key| entity_property_values.contains_key(key)),
-            ERROR_UNKNOWN_ENTITY_PROP_ID
+            Error::<T>::UnknownEntityPropertyId
         );
         Ok(())
     }
@@ -2177,7 +2190,7 @@ impl<T: Trait> Module<T> {
     pub fn ensure_all_property_values_are_unlocked_from(
         new_values_for_existing_properties: &InputValuesForExistingProperties<T>,
         access_level: EntityAccessLevel,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         for value_for_new_property in new_values_for_existing_properties.values() {
             // Ensure Property is unlocked from Actor with given EntityAccessLevel
             value_for_new_property
@@ -2272,19 +2285,19 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure `Class` under given id exists, return corresponding one
-    pub fn ensure_known_class_id(class_id: T::ClassId) -> Result<Class<T>, &'static str> {
+    pub fn ensure_known_class_id(class_id: T::ClassId) -> Result<Class<T>, Error<T>> {
         ensure!(
             <ClassById<T>>::contains_key(class_id),
-            ERROR_CLASS_NOT_FOUND
+            Error::<T>::ClassNotFound
         );
         Ok(Self::class_by_id(class_id))
     }
 
     /// Ensure `Entity` under given id exists, return corresponding one
-    pub fn ensure_known_entity_id(entity_id: T::EntityId) -> Result<Entity<T>, &'static str> {
+    pub fn ensure_known_entity_id(entity_id: T::EntityId) -> Result<Entity<T>, Error<T>> {
         ensure!(
             <EntityById<T>>::contains_key(entity_id),
-            ERROR_ENTITY_NOT_FOUND
+            Error::<T>::EntityNotFound
         );
         Ok(Self::entity_by_id(entity_id))
     }
@@ -2292,10 +2305,10 @@ impl<T: Trait> Module<T> {
     /// Ensure `CuratorGroup` under given id exists
     pub fn ensure_curator_group_under_given_id_exists(
         curator_group_id: &T::CuratorGroupId,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         ensure!(
             <CuratorGroupById<T>>::contains_key(curator_group_id),
-            ERROR_CURATOR_GROUP_DOES_NOT_EXIST
+            Error::<T>::CuratorGroupDoesNotExist
         );
         Ok(())
     }
@@ -2303,7 +2316,7 @@ impl<T: Trait> Module<T> {
     /// Ensure `CuratorGroup` under given id exists, return corresponding one
     pub fn ensure_curator_group_exists(
         curator_group_id: &T::CuratorGroupId,
-    ) -> Result<CuratorGroup<T>, &'static str> {
+    ) -> Result<CuratorGroup<T>, Error<T>> {
         Self::ensure_curator_group_under_given_id_exists(curator_group_id)?;
         Ok(Self::curator_group_by_id(curator_group_id))
     }
@@ -2311,10 +2324,10 @@ impl<T: Trait> Module<T> {
     /// Ensure `MaxNumberOfMaintainersPerClass` constraint satisfied
     pub fn ensure_maintainers_limit_not_reached(
         curator_groups: &BTreeSet<T::CuratorGroupId>,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         ensure!(
             curator_groups.len() < T::MaxNumberOfMaintainersPerClass::get() as usize,
-            ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED
+            Error::<T>::ClassMaintainersLimitReached
         );
         Ok(())
     }
@@ -2322,7 +2335,7 @@ impl<T: Trait> Module<T> {
     /// Ensure all `CuratorGroup`'s under given ids exist
     pub fn ensure_curator_groups_exist(
         curator_groups: &BTreeSet<T::CuratorGroupId>,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         for curator_group in curator_groups {
             // Ensure CuratorGroup under given id exists
             Self::ensure_curator_group_exists(curator_group)?;
@@ -2333,11 +2346,11 @@ impl<T: Trait> Module<T> {
     /// Perform security checks to ensure provided `class_maintainers` are valid
     pub fn ensure_class_maintainers_are_valid(
         class_maintainers: &BTreeSet<T::CuratorGroupId>,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         // Ensure max number of maintainers per Class constraint satisfied
         ensure!(
             class_maintainers.len() <= T::MaxNumberOfMaintainersPerClass::get() as usize,
-            ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED
+            Error::<T>::ClassMaintainersLimitReached
         );
 
         // Ensure all curator groups provided are already exist in runtime
@@ -2349,36 +2362,36 @@ impl<T: Trait> Module<T> {
     pub fn ensure_non_empty_schema(
         existing_properties: &BTreeSet<PropertyId>,
         new_properties: &[Property<T>],
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         // Schema is empty if both existing_properties and new_properties are empty
         let non_empty_schema = !existing_properties.is_empty() || !new_properties.is_empty();
-        ensure!(non_empty_schema, ERROR_NO_PROPS_IN_CLASS_SCHEMA);
+        ensure!(non_empty_schema, Error::<T>::NoPropertiesInClassSchema);
         Ok(())
     }
 
     /// Ensure `ClassNameLengthConstraint` conditions satisfied
-    pub fn ensure_class_name_is_valid(text: &[u8]) -> DispatchResult {
+    pub fn ensure_class_name_is_valid(text: &[u8]) -> Result<(), Error<T>> {
         T::ClassNameLengthConstraint::get().ensure_valid(
             text.len(),
-            ERROR_CLASS_NAME_TOO_SHORT,
-            ERROR_CLASS_NAME_TOO_LONG,
+            Error::<T>::ClassNameTooShort,
+            Error::<T>::ClassNameTooLong,
         )
     }
 
     /// Ensure `ClassDescriptionLengthConstraint` conditions satisfied
-    pub fn ensure_class_description_is_valid(text: &[u8]) -> DispatchResult {
+    pub fn ensure_class_description_is_valid(text: &[u8]) -> Result<(), Error<T>> {
         T::ClassDescriptionLengthConstraint::get().ensure_valid(
             text.len(),
-            ERROR_CLASS_DESCRIPTION_TOO_SHORT,
-            ERROR_CLASS_DESCRIPTION_TOO_LONG,
+            Error::<T>::ClassDescriptionTooShort,
+            Error::<T>::ClassDescriptionTooLong,
         )
     }
 
     /// Ensure `MaxNumberOfClasses` constraint satisfied
-    pub fn ensure_class_limit_not_reached() -> DispatchResult {
+    pub fn ensure_class_limit_not_reached() -> Result<(), Error<T>> {
         ensure!(
             (<ClassById<T>>::iter().count() as MaxNumber) < T::MaxNumberOfClasses::get(),
-            ERROR_CLASS_LIMIT_REACHED
+            Error::<T>::ClassLimitReached
         );
         Ok(())
     }
@@ -2386,10 +2399,10 @@ impl<T: Trait> Module<T> {
     /// Ensure `MaxNumberOfEntitiesPerClass` constraint satisfied
     pub fn ensure_valid_number_of_entities_per_class(
         maximum_entities_count: T::EntityId,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         ensure!(
             maximum_entities_count <= T::MaxNumberOfEntitiesPerClass::get(),
-            ERROR_ENTITIES_NUMBER_PER_CLASS_CONSTRAINT_VIOLATED
+            Error::<T>::EntitiesNumberPerClassConstraintViolated
         );
         Ok(())
     }
@@ -2397,10 +2410,10 @@ impl<T: Trait> Module<T> {
     /// Ensure `IndividualEntitiesCreationLimit` constraint satisfied
     pub fn ensure_valid_number_of_class_entities_per_actor_constraint(
         number_of_class_entities_per_actor: T::EntityId,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         ensure!(
             number_of_class_entities_per_actor <= T::IndividualEntitiesCreationLimit::get(),
-            ERROR_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_CONSTRAINT_VIOLATED
+            Error::<T>::NumberOfClassEntitiesPerActorConstraintViolated
         );
         Ok(())
     }
@@ -2409,11 +2422,11 @@ impl<T: Trait> Module<T> {
     pub fn ensure_entities_creation_limits_are_valid(
         maximum_entities_count: T::EntityId,
         default_entity_creation_voucher_upper_bound: T::EntityId,
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         // Ensure `per_controller_entities_creation_limit` does not exceed
         ensure!(
             default_entity_creation_voucher_upper_bound < maximum_entities_count,
-            ERROR_PER_CONTROLLER_ENTITIES_CREATION_LIMIT_EXCEEDS_OVERALL_LIMIT
+            Error::<T>::PerControllerEntitiesCreationLimitExceedsOverallLimit
         );
 
         // Ensure maximum_entities_count does not exceed MaxNumberOfEntitiesPerClass limit
@@ -2428,16 +2441,16 @@ impl<T: Trait> Module<T> {
     /// Ensure maximum number of operations during atomic batching constraint satisfied
     pub fn ensure_number_of_operations_during_atomic_batching_limit_not_reached(
         operations: &[OperationType<T>],
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         ensure!(
             operations.len() <= T::MaxNumberOfOperationsDuringAtomicBatching::get() as usize,
-            ERROR_MAX_NUMBER_OF_OPERATIONS_DURING_ATOMIC_BATCHING_LIMIT_REACHED
+            Error::<T>::NumberOfOperationsDuringAtomicBatchingLimitReached
         );
         Ok(())
     }
 
     /// Complete all checks to ensure each `Property` is valid
-    pub fn ensure_all_properties_are_valid(new_properties: &[Property<T>]) -> DispatchResult {
+    pub fn ensure_all_properties_are_valid(new_properties: &[Property<T>]) -> Result<(), Error<T>> {
         for new_property in new_properties.iter() {
             // Ensure PropertyNameLengthConstraint satisfied
             new_property.ensure_name_is_valid()?;
@@ -2458,7 +2471,7 @@ impl<T: Trait> Module<T> {
     pub fn ensure_all_property_names_are_unique(
         class_properties: &[Property<T>],
         new_properties: &[Property<T>],
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         // Used to ensure all property names are unique within class
         let mut unique_prop_names = BTreeSet::new();
 
@@ -2470,7 +2483,7 @@ impl<T: Trait> Module<T> {
             // Ensure name of a new property is unique within its class.
             ensure!(
                 !unique_prop_names.contains(&new_property.name),
-                ERROR_PROP_NAME_NOT_UNIQUE_IN_A_CLASS
+                Error::<T>::PropertyNameNotUniqueInAClass
             );
 
             unique_prop_names.insert(new_property.name.to_owned());
@@ -2483,13 +2496,13 @@ impl<T: Trait> Module<T> {
     pub fn ensure_schema_properties_are_valid_indices(
         existing_properties: &BTreeSet<PropertyId>,
         class_properties: &[Property<T>],
-    ) -> DispatchResult {
+    ) -> Result<(), Error<T>> {
         let has_unknown_properties = existing_properties
             .iter()
             .any(|&prop_id| prop_id >= class_properties.len() as PropertyId);
         ensure!(
             !has_unknown_properties,
-            ERROR_CLASS_SCHEMA_REFERS_UNKNOWN_PROP_INDEX
+            Error::<T>::ClassSchemaRefersUnknownPropertyIndex
         );
         Ok(())
     }
