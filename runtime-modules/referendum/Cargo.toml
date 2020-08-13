@@ -23,7 +23,6 @@ default = ['std']
 std = [
     'codec/std',
     'sp-core/std',
-    'sp-io/std',
     'serde',
     'sp-runtime/std',
     'sp-arithmetic/std',

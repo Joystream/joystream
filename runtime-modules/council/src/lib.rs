@@ -17,6 +17,10 @@ use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 use system::ensure_signed;
 
+use referendum;
+use referendum::Instance as ReferendumInstanceGeneric;
+use referendum::Trait as ReferendumTrait;
+
 // declared modules
 mod mock;
 mod tests;
@@ -45,7 +49,15 @@ pub struct Candidate {
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
-pub trait Trait: system::Trait {
+// TODO: look for ways to check that selected instance is only used in this module to prevent unexpected behaviour
+// The storage alias for referendum instance.
+pub(crate) type ReferendumInstance = referendum::Instance0;
+
+// Alias for referendum's storage.
+//pub(crate) type Referendum<T> = referendum::Module<T, ReferendumInstance>;
+
+
+pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -60,18 +72,19 @@ pub trait Trait: system::Trait {
 
     /// Minimum number of candidates needed to conclude announcing period
     type MinNumberOfCandidates: Get<u64>;
+    /// Council member count
+    type CouncilSize: Get<u64>;
     /// Duration of annoncing period
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
     /// Duration of idle period
     type IdlePeriodDuration: Get<Self::BlockNumber>;
-
 
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool;
 }
 
 decl_storage! {
     trait Store for Module<T: Trait> as Referendum {
-        /// Current referendum stage
+        /// Current council voting stage
         pub Stage get(fn stage) config(): (CouncilElectionStage, T::BlockNumber);
 
         pub CouncilMembers get(fn council_members) config(): Vec<Candidate>;
@@ -118,8 +131,17 @@ decl_error! {
         /// Idle period is still running
         IdlePeriodNotFinished,
 
-        // User cant unlock stake because idle period is not running right now.
+        /// User can't unlock stake because idle period is not running right now
         IdlePeriodNotRunning,
+
+        /// Election is still running
+        ElectionNotFinished,
+    }
+}
+
+impl<T: Trait, RT: ReferendumTrait<I>, I: ReferendumInstanceGeneric> From<referendum::Error<RT, I>> for Error<T> {
+    fn from(other: referendum::Error<RT, I>) -> Error<T> {
+        Error::<T>::BadOrigin // TODO: find way to select proper error
     }
 }
 
@@ -170,7 +192,7 @@ decl_module! {
         #[weight = 10_000_000]
         pub fn finalize_announcing_period(origin) -> Result<(), Error<T>> {
             // ensure action can be started
-            let candidates = EnsureChecks::<T>::can_finalize_announcing_period(origin)?;
+            let candidates = EnsureChecks::<T>::can_finalize_announcing_period(origin.clone())?;
 
             //
             // == MUTATION SAFE ==
@@ -187,7 +209,7 @@ decl_module! {
             }
 
             // update state
-            Mutations::<T>::finalize_announcing_period(&candidates);
+            Mutations::<T>::finalize_announcing_period(origin, &candidates);
 
             // emit event
             Self::deposit_event(RawEvent::VotingPeriodStarted(candidates));
@@ -252,14 +274,18 @@ impl<T: Trait> Mutations<T> {
         Stage::<T>::mutate(|value| *value = (CouncilElectionStage::Announcing, block_number));
     }
 
-    fn finalize_announcing_period(candidates: &Vec<Candidate>) -> () {
+    fn finalize_announcing_period(origin: T::Origin, candidates: &Vec<Candidate>) -> Result<(), Error<T>> {
+        let options = (0..candidates.len() as u64).map(|item| item.into()).collect();
+        let winning_target_count = T::CouncilSize::get();
+
+        // IMPORTANT - because locking currency can fail it has to be the first mutation!
+        <referendum::Module<T, ReferendumInstance>>::start_referendum(origin, options, winning_target_count)?;
+
         let block_number = <system::Module<T>>::block_number();
 
         Stage::<T>::mutate(|value| *value = (CouncilElectionStage::Election, block_number));
 
-        // TODO: start election
-        // let max_counil_members =  T::MaxCouncilMembers::get();
-        // ...start_election(candidates, max_counil_members)
+        Ok(())
     }
 
     fn start_idle_period(elected_members: &Vec<Candidate>) -> () {
@@ -288,7 +314,7 @@ impl<T: Trait> EnsureChecks<T> {
         let account_id = ensure_signed(origin)?;
 
         // ensure superuser requested action
-        if !T::is_super_user(&account_id) {
+        if !<T as Trait>::is_super_user(&account_id) {
             return Err(Error::OriginNotSuperUser);
         }
 
@@ -348,7 +374,11 @@ impl<T: Trait> EnsureChecks<T> {
         // ensure superuser requested action
         Self::ensure_super_user(origin)?;
 
-        // TODO: check referendum ended
+        // check that referendum have ended
+        let referendum_stage = referendum::Stage::<T, ReferendumInstance>::get().0;
+        if referendum_stage != referendum::ReferendumStage::Void {
+            return Err(Error::ElectionNotFinished);
+        }
 
         let elected_members = vec![]; // TODO: retrieve real list of elected council members
 
