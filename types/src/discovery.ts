@@ -5,7 +5,7 @@ import { JoyStructDecorated } from './common'
 export class IPNSIdentity extends Text {}
 export class Url extends Text {}
 
-export class StorageProviderAccountInfo extends JoyStructDecorated({
+export class ServiceProviderRecord extends JoyStructDecorated({
   identity: IPNSIdentity,
   expires_at: u32, // BlockNumber
 }) {}
@@ -13,7 +13,7 @@ export class StorageProviderAccountInfo extends JoyStructDecorated({
 export const discoveryTypes: RegistryTypes = {
   Url,
   IPNSIdentity,
-  StorageProviderAccountInfo,
+  ServiceProviderRecord,
 }
 
 export default discoveryTypes
