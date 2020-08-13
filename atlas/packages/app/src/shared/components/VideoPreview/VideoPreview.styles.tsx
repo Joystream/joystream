@@ -2,29 +2,13 @@ import styled from '@emotion/styled'
 import { colors, spacing, typography } from '../../theme'
 import Avatar from '../Avatar'
 import { PlayIcon } from '../../icons'
-
-const HOVER_BORDER_SIZE = '2px'
+import { HOVER_BORDER_SIZE } from './VideoPreviewBase.styles'
 
 type CoverImageProps = Record<string, unknown>
-
-type ContainerProps = {
-  clickable: boolean
-}
 
 type ChannelProps = {
   channelClickable: boolean
 }
-
-export const CoverContainer = styled.div`
-  width: 320px;
-  height: 190px;
-
-  transition-property: box-shadow, transform;
-  transition-duration: 0.4s;
-  transition-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
-
-  position: relative;
-`
 
 export const CoverImage = styled.img<CoverImageProps>`
   width: 100%;
@@ -77,34 +61,6 @@ export const ProgressBar = styled.div`
   background-color: ${colors.blue['500']};
 `
 
-export const Container = styled.div<ContainerProps>`
-  color: ${colors.gray[300]};
-  cursor: ${({ clickable }) => (clickable ? 'pointer' : 'auto')};
-  display: inline-block;
-  ${({ clickable }) =>
-    clickable &&
-    `
-				&:hover {
-					${CoverContainer} {
-						transform: translate(-${spacing.xs}, -${spacing.xs});
-						box-shadow: ${spacing.xs} ${spacing.xs} 0 ${colors.blue['500']};
-					}
-
-					${CoverHoverOverlay} {
-						opacity: 1;
-					}
-					
-					${CoverPlayIcon} {
-						transform: translateY(0);
-					}
-
-					${ProgressOverlay} {
-						bottom: ${HOVER_BORDER_SIZE};
-					}
-				}
-			`}
-`
-
 export const CoverDurationOverlay = styled.div`
   position: absolute;
   bottom: ${spacing.xs};
@@ -115,23 +71,10 @@ export const CoverDurationOverlay = styled.div`
   font-size: ${typography.sizes.body2};
 `
 
-export const InfoContainer = styled.div`
-  display: flex;
-  margin-top: ${spacing.s};
-`
-
 export const StyledAvatar = styled(Avatar)<ChannelProps>`
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
-  margin-right: ${spacing.xs};
+  width: 100%;
+  height: 100%;
   cursor: ${({ channelClickable }) => (channelClickable ? 'pointer' : 'auto')};
-`
-
-export const TextContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: start;
 `
 
 export const TitleHeader = styled.h3`
@@ -151,6 +94,5 @@ export const ChannelName = styled.span<ChannelProps>`
 `
 
 export const MetaText = styled.span`
-  margin-top: ${spacing.xs};
   font-size: ${typography.sizes.subtitle2};
 `

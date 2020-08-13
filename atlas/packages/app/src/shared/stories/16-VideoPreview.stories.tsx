@@ -1,5 +1,5 @@
 import React from 'react'
-import { VideoPreview } from '../components'
+import { VideoPreview, VideoPreviewBase } from '../components'
 import { boolean, number, text, withKnobs } from '@storybook/addon-knobs'
 import { action } from '@storybook/addon-actions'
 import { formatISO, parseISO, subWeeks } from 'date-fns'
@@ -31,4 +31,8 @@ export const Primary = () => {
       onChannelClick={boolean('Channel clickable', true) ? action('on channel click') : undefined}
     />
   )
+}
+
+export const Placeholder = () => {
+  return <VideoPreviewBase />
 }

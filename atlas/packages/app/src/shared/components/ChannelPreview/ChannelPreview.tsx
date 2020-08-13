@@ -1,27 +1,33 @@
 import React from 'react'
-import { SerializedStyles } from '@emotion/core'
-import { useCSS } from './ChannelPreview.style'
+import styled from '@emotion/styled'
 import Avatar from '../Avatar'
 import { formatNumberShort } from '@/utils/number'
+import ChannelPreviewBase from './ChannelPreviewBase'
+import { typography } from '../../theme'
 
 type ChannelPreviewProps = {
   name: string
   views: number
   avatarURL?: string
-  outerContainerCss?: SerializedStyles
+  className?: string
 }
 
-export default function ChannelPreview({ name, avatarURL, views, outerContainerCss }: ChannelPreviewProps) {
-  const styles = useCSS({})
-  return (
-    <article css={[styles.outerContainer, outerContainerCss]}>
-      <div css={styles.innerContainer}>
-        <Avatar outerStyles={styles.avatar} img={avatarURL} />
-        <div css={styles.info}>
-          <h2>{name}</h2>
-          <span>{formatNumberShort(views)} views</span>
-        </div>
-      </div>
-    </article>
-  )
+const ChannelPreview: React.FC<ChannelPreviewProps> = ({ name, avatarURL, views, className }) => {
+  const avatarNode = <Avatar img={avatarURL} />
+  const nameNode = <NameHeader>{name}</NameHeader>
+  const metaNode = <MetaSpan>{formatNumberShort(views)} views</MetaSpan>
+
+  return <ChannelPreviewBase className={className} avatarNode={avatarNode} nameNode={nameNode} metaNode={metaNode} />
 }
+
+const NameHeader = styled.h2`
+  margin: 0;
+  font-size: ${typography.sizes.h6};
+`
+
+const MetaSpan = styled.span`
+  font-size: ${typography.sizes.subtitle2};
+  line-height: 1.43;
+`
+
+export default ChannelPreview

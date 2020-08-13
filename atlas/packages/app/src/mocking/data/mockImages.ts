@@ -1,8 +1,8 @@
 export const channelSources = [
-  'https://source.unsplash.com/collection/781477/160x160',
-  'https://source.unsplash.com/collection/895539/160x160',
-  'https://source.unsplash.com/collection/162326/160x160',
-  'https://source.unsplash.com/collection/472913/160x160',
+  'https://source.unsplash.com/collection/781477/320x320',
+  'https://source.unsplash.com/collection/895539/320x320',
+  'https://source.unsplash.com/collection/162326/320x320',
+  'https://source.unsplash.com/collection/472913/320x320',
 ]
 
 export const posterSources = [

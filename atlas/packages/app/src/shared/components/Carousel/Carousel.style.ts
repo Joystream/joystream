@@ -1,7 +1,10 @@
 import { makeStyles, StyleFn } from '../../utils'
 import { spacing } from '../../theme'
+import theme from '@/shared/theme'
 
 export type CarouselStyleProps = Record<string, unknown>
+
+export const CAROUSEL_CONTROL_SIZE = theme.sizes.b12
 
 const container: StyleFn = () => ({
   position: 'relative',
@@ -18,23 +21,23 @@ const innerItemsContainer: StyleFn = () => ({
 })
 
 const navBase: StyleFn = () => ({
-  minWidth: spacing.xxxxl,
-  minHeight: spacing.xxxxl,
-  width: spacing.xxxxl,
-  height: spacing.xxxxl,
+  minWidth: `${CAROUSEL_CONTROL_SIZE}px`,
+  minHeight: `${CAROUSEL_CONTROL_SIZE}px`,
+  width: `${CAROUSEL_CONTROL_SIZE}px`,
+  height: `${CAROUSEL_CONTROL_SIZE}px`,
   position: 'absolute',
 })
 
 const navLeft: StyleFn = (styles) => ({
   ...styles,
   left: 0,
-  top: `calc(50% - ${Math.round((parseInt(spacing.xxxxl) + 1) / 2)}px)`,
+  top: `calc(50% - ${Math.round((CAROUSEL_CONTROL_SIZE + 1) / 2)}px)`,
 })
 
 const navRight: StyleFn = (styles) => ({
   ...styles,
   right: 0,
-  top: `calc(50% - ${Math.round((parseInt(spacing.xxxxl) + 1) / 2)}px)`,
+  top: `calc(50% - ${Math.round((CAROUSEL_CONTROL_SIZE + 1) / 2)}px)`,
 })
 
 export const useCSS = (props: CarouselStyleProps) => ({

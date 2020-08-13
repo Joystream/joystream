@@ -19,7 +19,7 @@ export default {
     h5: '1.25rem',
     h6: '1rem',
     subtitle1: '1.1rem',
-    subtitle2: '0.9rem',
+    subtitle2: '0.875rem',
     body1: '1.1rem',
     body2: '0.9rem',
     caption: '0.8rem',

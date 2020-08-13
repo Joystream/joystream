@@ -17,7 +17,7 @@ const Hero: React.FC<Partial<HeroProps>> = ({ backgroundImg }) => {
         font-size: 18px;
         line-height: 1.33;
         & h1 {
-          ${fluidRange({ prop: 'font-size', fromSize: '40px', toSize: '72px' })};
+          ${fluidRange({ prop: 'fontSize', fromSize: '40px', toSize: '72px' })};
           line-height: 0.94;
         }
       `}
