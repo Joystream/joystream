@@ -9,7 +9,7 @@ import { closeApi } from '../../utils/closeApi'
 import { ApiWrapper } from '../../utils/apiWrapper'
 import { ContentWorkingGroupMintCapacityProposalFixture } from '../fixtures/proposalsModule'
 import { Utils } from '../../utils/utils'
-import { PaidTermId } from '@nicaea/types/members'
+import { PaidTermId } from '@alexandria/types/members'
 import { CouncilElectionHappyCaseFixture } from '../fixtures/councilElectionHappyCase'
 import { DbService } from '../../services/dbService'
 

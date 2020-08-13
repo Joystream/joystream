@@ -10,7 +10,7 @@ import { ApiWrapper } from '../../utils/apiWrapper'
 import { Utils } from '../../utils/utils'
 import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
 import { UpdateRuntimeFixture } from '../fixtures/proposalsModule'
-import { PaidTermId } from '@nicaea/types/members'
+import { PaidTermId } from '@alexandria/types/members'
 import { CouncilElectionHappyCaseFixture } from '../fixtures/councilElectionHappyCase'
 import { DbService } from '../../services/dbService'
 

@@ -1,5 +1,4 @@
 import { initConfig } from '../utils/config'
-import { registerJoystreamTypes } from '@nicaea/types'
 import { closeApi } from '../utils/closeApi'
 import { ApiWrapper, WorkingGroups } from '../utils/apiWrapper'
 import { WsProvider, Keyring } from '@polkadot/api'
@@ -8,14 +7,12 @@ import { setTestTimeout } from '../utils/setTestTimeout'
 import BN from 'bn.js'
 import tap from 'tap'
 import { Utils } from '../utils/utils'
-import { PaidTermId } from '@nicaea/types/members'
+import { PaidTermId } from '@alexandria/types/members'
 import { DbService } from '../services/dbService'
 import { LeaderHiringHappyCaseFixture } from './fixtures/leaderHiringHappyCase'
 
 tap.mocha.describe('Worker application happy case scenario', async () => {
   initConfig()
-  registerJoystreamTypes()
-
   const nodeUrl: string = process.env.NODE_URL!
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!
   const keyring = new Keyring({ type: 'sr25519' })

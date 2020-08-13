@@ -17,8 +17,8 @@ import {
 import { Utils } from '../../utils/utils'
 import BN from 'bn.js'
 import tap from 'tap'
-import { PaidTermId } from '@nicaea/types/members'
-import { OpeningId } from '@nicaea/types/hiring'
+import { PaidTermId } from '@alexandria/types/members'
+import { OpeningId } from '@alexandria/types/hiring'
 import { DbService } from '../../services/dbService'
 import { LeaderHiringHappyCaseFixture } from '../fixtures/leaderHiringHappyCase'
 

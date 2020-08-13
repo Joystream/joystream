@@ -8,9 +8,9 @@ import {
 } from './workingGroupModule'
 import { BuyMembershipHappyCaseFixture } from './membershipModule'
 import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
-import { OpeningId } from '@nicaea/types/hiring'
+import { OpeningId } from '@alexandria/types/hiring'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { PaidTermId } from '@nicaea/types/members'
+import { PaidTermId } from '@alexandria/types/members'
 import BN from 'bn.js'
 
 export class LeaderHiringHappyCaseFixture implements Fixture {

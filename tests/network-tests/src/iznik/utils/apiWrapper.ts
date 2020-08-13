@@ -2,7 +2,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api'
 import { Bytes, Option, u32, Vec } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { MemberId, PaidMembershipTerms, PaidTermId, UserInfo } from '@alexandria/types/members'
+import { MemberId, PaidMembershipTerms, PaidTermId } from '@alexandria/types/members'
 import { Mint, MintId } from '@alexandria/types/mint'
 import { Lead, LeadId } from '@alexandria/types/content-working-group'
 import {
@@ -63,6 +63,10 @@ export class ApiWrapper {
       default:
         throw new Error(`Invalid working group string representation: ${workingGroup}`)
     }
+  }
+
+  public createPaidTermId(value: BN): PaidTermId {
+    return this.api.createType('PaidTermId', value)
   }
 
   public async buyMembership(
@@ -264,44 +268,44 @@ export class ApiWrapper {
   public estimateVoteForProposalFee(): BN {
     return this.estimateTxFee(
       (this.api.tx.proposalsEngine.vote(
-        new MemberId(0),
-        new ProposalId(0),
+        this.api.createType('MemberId', 0),
+        this.api.createType('ProposalId', 0),
         'Approve'
       ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateAddOpeningFee(module: WorkingGroups): BN {
-    const commitment: WorkingGroupOpeningPolicyCommitment = new WorkingGroupOpeningPolicyCommitment({
-      application_rationing_policy: new Option(ApplicationRationingPolicy, {
+    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment', {
+      application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: new BN(32) as u32,
       }),
       max_review_period_length: new BN(32) as u32,
-      application_staking_policy: new Option(StakingPolicy, {
+      application_staking_policy: this.api.createType('Option<StakingPolicy>', {
         amount: new BN(1),
         amount_mode: 'AtLeast',
         crowded_out_unstaking_period_length: new BN(1),
         review_period_expired_unstaking_period_length: new BN(1),
       }),
-      role_staking_policy: new Option(StakingPolicy, {
+      role_staking_policy: this.api.createType('Option<StakingPolicy>', {
         amount: new BN(1),
         amount_mode: 'AtLeast',
         crowded_out_unstaking_period_length: new BN(1),
         review_period_expired_unstaking_period_length: new BN(1),
       }),
-      role_slashing_terms: new SlashingTerms({
+      role_slashing_terms: this.api.createType('SlashingTerms', {
         Slashable: {
           max_count: new BN(0),
           max_percent_pts_per_time: new BN(0),
         },
       }),
-      fill_opening_successful_applicant_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      fill_opening_failed_applicant_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      fill_opening_failed_applicant_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      terminate_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      terminate_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      exit_role_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      exit_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      terminate_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      terminate_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      exit_role_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      exit_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
     })
 
     return this.estimateTxFee(
@@ -316,15 +320,15 @@ export class ApiWrapper {
 
   public estimateAcceptApplicationsFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].acceptApplications(new OpeningId(0)) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].acceptApplications(this.api.createType('OpeningId',0)) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateApplyOnOpeningFee(account: KeyringPair, module: WorkingGroups): BN {
     return this.estimateTxFee(
       (this.api.tx[module].applyOnOpening(
-        new MemberId(0),
-        new OpeningId(0),
+          this.api.createType('MemberId', 0),
+          this.api.createType('OpeningId', 0),
         account.address,
         0,
         0,
@@ -335,13 +339,13 @@ export class ApiWrapper {
 
   public estimateBeginApplicantReviewFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].beginApplicantReview(new OpeningId(0)) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].beginApplicantReview(this.api.createType('OpeningId', 0)) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateFillOpeningFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].fillOpening(new OpeningId(0), [new ApplicationId(0)], {
+      (this.api.tx[module].fillOpening(this.api.createType('OpeningId', 0), [this.api.createType('ApplicationId', 0)], {
         'amount_per_payout': 0,
         'next_payment_at_block': 0,
         'payout_interval': 0,
@@ -351,31 +355,31 @@ export class ApiWrapper {
 
   public estimateIncreaseStakeFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].increaseStake(new WorkerId(0), 0) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].increaseStake(this.api.createType('WorkerId',0), 0) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateDecreaseStakeFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].decreaseStake(new WorkerId(0), 0) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].decreaseStake(this.api.createType('WorkerId',0), 0) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateUpdateRoleAccountFee(address: string, module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].updateRoleAccount(new WorkerId(0), address) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].updateRoleAccount(this.api.createType('WorkerId',0), address) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateUpdateRewardAccountFee(address: string, module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].updateRewardAccount(new WorkerId(0), address) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].updateRewardAccount(this.api.createType('WorkerId',0), address) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateLeaveRoleFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].leaveRole(new WorkerId(0), 'Long justification text') as unknown) as SubmittableExtrinsic<
+      (this.api.tx[module].leaveRole(this.api.createType('WorkerId',0), 'Long justification text') as unknown) as SubmittableExtrinsic<
         'promise'
       >
     )
@@ -383,26 +387,26 @@ export class ApiWrapper {
 
   public estimateWithdrawApplicationFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].withdrawApplication(new ApplicationId(0)) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].withdrawApplication(this.api.createType('ApplicationId',0)) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateTerminateApplicationFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].terminateApplication(new ApplicationId(0)) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].terminateApplication(this.api.createType('ApplicationId',0)) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateSlashStakeFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].slashStake(new WorkerId(0), 0) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].slashStake(this.api.createType('WorkerId',0), 0) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateTerminateRoleFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
       (this.api.tx[module].terminateRole(
-        new WorkerId(0),
+        this.api.createType('WorkerId',0),
         'Long justification text explaining why the worker role will be terminated',
         false
       ) as unknown) as SubmittableExtrinsic<'promise'>
@@ -410,41 +414,41 @@ export class ApiWrapper {
   }
 
   public estimateProposeCreateWorkingGroupLeaderOpeningFee(): BN {
-    const commitment: WorkingGroupOpeningPolicyCommitment = new WorkingGroupOpeningPolicyCommitment({
-      application_rationing_policy: new Option(ApplicationRationingPolicy, {
+    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment',{
+      application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: new BN(32) as u32,
       }),
       max_review_period_length: new BN(32) as u32,
-      application_staking_policy: new Option(StakingPolicy, {
+      application_staking_policy: this.api.createType('Option<StakingPolicy>', {
         amount: new BN(1),
         amount_mode: 'AtLeast',
         crowded_out_unstaking_period_length: new BN(1),
         review_period_expired_unstaking_period_length: new BN(1),
       }),
-      role_staking_policy: new Option(StakingPolicy, {
+      role_staking_policy: this.api.createType('Option<StakingPolicy>', {
         amount: new BN(1),
         amount_mode: 'AtLeast',
         crowded_out_unstaking_period_length: new BN(1),
         review_period_expired_unstaking_period_length: new BN(1),
       }),
-      role_slashing_terms: new SlashingTerms({
+      role_slashing_terms: this.api.createType('SlashingTerms',{
         Slashable: {
           max_count: new BN(0),
           max_percent_pts_per_time: new BN(0),
         },
       }),
-      fill_opening_successful_applicant_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      fill_opening_failed_applicant_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      fill_opening_failed_applicant_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      terminate_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      terminate_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      exit_role_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      exit_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
+      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      terminate_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      terminate_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      exit_role_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      exit_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
     })
 
     return this.estimateTxFee(
       (this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
-        new MemberId(0),
+          this.api.createType('MemberId',0),
         'some long title for the purpose of testing',
         'some long description for the purpose of testing',
         0,
@@ -461,34 +465,31 @@ export class ApiWrapper {
   public estimateProposeBeginWorkingGroupLeaderApplicationReviewFee(): BN {
     return this.estimateTxFee(
       (this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
-        new MemberId(0),
+        this.api.createType('MemberId',0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
-        new OpeningId(0),
+        this.api.createType('OpeningId',0),
         'Storage'
       ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateProposeFillLeaderOpeningFee(): BN {
-    const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters({
-      opening_id: new OpeningId(0),
-      successful_application_id: new ApplicationId(0),
-      reward_policy: new Option(
-        RewardPolicy,
-        new RewardPolicy({
+    const fillOpeningParameters: FillOpeningParameters = this.api.createType('FillOpeningParameters',{
+      opening_id: this.api.createType('OpeningId',0),
+      successful_application_id: this.api.createType('ApplicationId',0),
+      reward_policy: this.api.createType('Option<RewardPolicy>', {
           amount_per_payout: new BN(1) as Balance,
           next_payment_at_block: new BN(99999) as BlockNumber,
-          payout_interval: new Option(u32, new u32(99999)),
-        })
-      ),
-      working_group: new WorkingGroup('Storage'),
+          payout_interval: this.api.createType('Option<u32>', new BN(99999)),
+        }),
+      working_group: this.api.createType('WorkingGroup','Storage'),
     })
 
     return this.estimateTxFee(
       (this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
-        new MemberId(0),
+        this.api.createType('MemberId',0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
@@ -500,12 +501,12 @@ export class ApiWrapper {
   public estimateProposeTerminateLeaderRoleFee(): BN {
     return this.estimateTxFee(
       (this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
-        new MemberId(0),
+          this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
         {
-          'worker_id': new WorkerId(0),
+          'worker_id': this.api.createType('WorkerId', 0),
           'rationale': 'Exceptionaly long and extraordinary descriptive rationale',
           'slash': true,
           'working_group': 'Storage',
@@ -517,11 +518,11 @@ export class ApiWrapper {
   public estimateProposeLeaderRewardFee(): BN {
     return this.estimateTxFee(
       (this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
-        new MemberId(0),
+        this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
-        new WorkerId(0),
+        this.api.createType('WorkerId', 0),
         0,
         'Storage'
       ) as unknown) as SubmittableExtrinsic<'promise'>
@@ -531,11 +532,11 @@ export class ApiWrapper {
   public estimateProposeDecreaseLeaderStakeFee(): BN {
     return this.estimateTxFee(
       (this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
-        new MemberId(0),
+        this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
-        new WorkerId(0),
+        this.api.createType('WorkerId', 0),
         0,
         'Storage'
       ) as unknown) as SubmittableExtrinsic<'promise'>
@@ -545,11 +546,11 @@ export class ApiWrapper {
   public estimateProposeSlashLeaderStakeFee(): BN {
     return this.estimateTxFee(
       (this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
-        new MemberId(0),
+        this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
-        new WorkerId(0),
+        this.api.createType('WorkerId', 0),
         0,
         'Storage'
       ) as unknown) as SubmittableExtrinsic<'promise'>
@@ -559,7 +560,7 @@ export class ApiWrapper {
   public estimateProposeWorkingGroupMintCapacityFee(): BN {
     return this.estimateTxFee(
       (this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
-        new MemberId(0),
+        this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
@@ -951,14 +952,14 @@ export class ApiWrapper {
     const mintId: MintId = await this.api.query.contentWorkingGroup.mint<MintId>()
     const mintCodec = await this.api.query.minting.mints<Codec[]>(mintId)
     const mint: Mint = (mintCodec[0] as unknown) as Mint
-    return mint.getField<Balance>('capacity')
+    return mint.capacity
   }
 
   public async getWorkingGroupMintCapacity(module: WorkingGroups): Promise<BN> {
     const mintId: MintId = await this.api.query[module].mint<MintId>()
     const mintCodec = await this.api.query.minting.mints<Codec[]>(mintId)
     const mint: Mint = (mintCodec[0] as unknown) as Mint
-    return mint.getField<Balance>('capacity')
+    return mint.capacity
   }
 
   public getValidatorCount(): Promise<BN> {

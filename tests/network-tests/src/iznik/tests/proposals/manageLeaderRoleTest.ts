@@ -29,9 +29,9 @@ import {
   ExpectLeadOpeningAddedFixture,
 } from '../fixtures/workingGroupModule'
 import { Utils } from '../../utils/utils'
-import { PaidTermId } from '@nicaea/types/members'
-import { OpeningId } from '@nicaea/types/hiring'
-import { ProposalId } from '@nicaea/types/proposals'
+import { PaidTermId } from '@alexandria/types/members'
+import { OpeningId } from '@alexandria/types/hiring'
+import { ProposalId } from '@alexandria/types/proposals'
 import { DbService } from '../../services/dbService'
 import { CouncilElectionHappyCaseFixture } from '../fixtures/councilElectionHappyCase'
 

@@ -4,10 +4,10 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "build": "tsc --build tsconfig.json",
-    "test": "tap --files src/iznik/tests/proposals/*Test.ts --files src/iznik/tests/workingGroup/*Test.ts -T",
+    "test": "tap --files src/iznik/tests/unknown.unknown src/iznik/tests/councilSetup.ts src/iznik/tests/proposals/*Test.ts src/iznik/tests/leaderSetup.ts src/iznik/tests/workingGroup/*Test.ts -T",
     "test-migration-constantinople": "tap --files src/rome/tests/romeRuntimeUpgradeTest.ts --files src/constantinople/tests/electingCouncilTest.ts -T",
     "test-migration-nicaea": "tap --files src/constantinople/tests/proposals/updateRuntimeTest.ts --files src/nicaea/tests/electingCouncilTest.ts -T",
-    "debug": "tap --files src/iznik/tests/unknown.unknown src/iznik/tests/councilSetup.ts src/iznik/tests/proposals/*Test.ts src/iznik/tests/leaderSetup.ts src/iznik/tests/workingGroup/*Test.ts -T",
+    "debug": "tap --files src/iznik/tests/councilSetup.ts -T",
     "lint": "eslint . --quiet --ext .ts",
     "checks": "yarn lint && tsc --noEmit --pretty && prettier ./ --check",
     "format": "prettier ./ --write "
@@ -15,9 +15,9 @@
   "dependencies": {
     "@constantinople/types@npm:@joystream/types": "^0.10.0",
     "@nicaea/types@npm:@joystream/types": "^0.12.0",
-    "@alexandria/types": "link:../../types",
-    "@polkadot/api": "^0.96.1",
-    "@polkadot/keyring": "^1.7.0-beta.5",
+    "@alexandria/types": "./types",
+    "@polkadot/api": "1.26.1",
+    "@polkadot/keyring": "3.0.1",
     "@rome/types@npm:@joystream/types": "^0.7.0",
     "@types/bn.js": "^4.11.5",
     "@types/lowdb": "^1.0.9",

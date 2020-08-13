@@ -16,8 +16,8 @@ import {
   LeaveRoleFixture,
   WithdrawApplicationFixture,
 } from '../fixtures/workingGroupModule'
-import { PaidTermId } from '@nicaea/types/members'
-import { OpeningId } from '@nicaea/types/hiring'
+import { PaidTermId } from '@alexandria/types/members'
+import { OpeningId } from '@alexandria/types/hiring'
 import { DbService } from '../../services/dbService'
 import { LeaderHiringHappyCaseFixture } from '../fixtures/leaderHiringHappyCase'
 

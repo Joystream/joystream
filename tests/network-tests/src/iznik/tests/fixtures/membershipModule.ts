@@ -3,7 +3,7 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import BN from 'bn.js'
 import { assert } from 'chai'
 import { Fixture } from './interfaces/fixture'
-import { PaidTermId } from '@nicaea/types/members'
+import { PaidTermId } from '@alexandria/types/members'
 
 export class BuyMembershipHappyCaseFixture implements Fixture {
   private apiWrapper: ApiWrapper

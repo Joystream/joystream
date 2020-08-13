@@ -2,8 +2,7 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { Keyring, WsProvider } from '@polkadot/api'
 import BN from 'bn.js'
 import tap from 'tap'
-import { registerJoystreamTypes } from '@nicaea/types'
-import { PaidTermId } from '@nicaea/types/members'
+import { PaidTermId } from '@alexandria/types/members'
 import { DbService } from '../services/dbService'
 import { initConfig } from '../utils/config'
 import { ApiWrapper } from '../utils/apiWrapper'
@@ -14,7 +13,6 @@ import { CouncilElectionHappyCaseFixture } from './fixtures/councilElectionHappy
 
 tap.mocha.describe('Electing council scenario', async () => {
   initConfig()
-  registerJoystreamTypes()
 
   const nodeUrl: string = process.env.NODE_URL!
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!
@@ -31,7 +29,8 @@ tap.mocha.describe('Electing council scenario', async () => {
   const N: number = +process.env.MEMBERSHIP_CREATION_N!
   const m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
-  const paidTerms: PaidTermId = new PaidTermId(+process.env.MEMBERSHIP_PAID_TERMS!)
+  // const paidTerms: PaidTermId = new PaidTermId(+process.env.MEMBERSHIP_PAID_TERMS!)
+  const paidTerms: PaidTermId = apiWrapper.createPaidTermId(+process.env.MEMBERSHIP_PAID_TERMS!)
   const K: number = +process.env.COUNCIL_ELECTION_K!
   const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!)
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!)

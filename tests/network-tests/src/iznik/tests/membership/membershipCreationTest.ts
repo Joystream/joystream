@@ -8,7 +8,7 @@ import { ApiWrapper } from '../../utils/apiWrapper'
 import { closeApi } from '../../utils/closeApi'
 import { BuyMembershipHappyCaseFixture, BuyMembershipWithInsufficienFundsFixture } from '../fixtures/membershipModule'
 import { Utils } from '../../utils/utils'
-import { PaidTermId } from '@nicaea/types/members'
+import { PaidTermId } from '@alexandria/types/members'
 
 tap.mocha.describe('Membership creation scenario', async () => {
   initConfig()

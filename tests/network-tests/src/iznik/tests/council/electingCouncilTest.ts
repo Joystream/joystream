@@ -10,7 +10,7 @@ import { closeApi } from '../../utils/closeApi'
 import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
 import { ElectCouncilFixture } from '../fixtures/councilElectionModule'
 import { Utils } from '../../utils/utils'
-import { PaidTermId } from '@nicaea/types/members'
+import { PaidTermId } from '@alexandria/types/members'
 
 tap.mocha.describe('Electing council scenario', async () => {
   initConfig()

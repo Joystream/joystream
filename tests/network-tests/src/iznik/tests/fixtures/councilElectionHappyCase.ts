@@ -4,7 +4,7 @@ import tap from 'tap'
 import { ElectCouncilFixture } from './councilElectionModule'
 import { ApiWrapper } from '../../utils/apiWrapper'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { PaidTermId } from '@nicaea/types/members'
+import { PaidTermId } from '@alexandria/types/members'
 import BN from 'bn.js'
 
 export class CouncilElectionHappyCaseFixture implements Fixture {
