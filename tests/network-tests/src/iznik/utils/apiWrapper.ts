@@ -8,8 +8,6 @@ import { Lead, LeadId } from '@alexandria/types/content-working-group'
 import {
   Application,
   ApplicationIdToWorkerIdMap,
-  RewardPolicy,
-  SlashingTerms,
   Worker,
   WorkerId,
   WorkingGroupOpeningPolicyCommitment,
@@ -22,17 +20,15 @@ import { Sender } from './sender'
 import { Utils } from './utils'
 import { Stake, StakedState, StakeId } from '@alexandria/types/stake'
 import { RewardRelationship, RewardRelationshipId } from '@alexandria/types/recurring-rewards'
+import { types } from '@alexandria/types';
 import {
   ActivateOpeningAt,
   Application as HiringApplication,
   ApplicationId,
-  ApplicationRationingPolicy,
   Opening as HiringOpening,
   OpeningId,
-  StakingPolicy,
 } from '@alexandria/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@alexandria/types/proposals'
-import { WorkingGroup } from '@alexandria/types/common'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -43,7 +39,8 @@ export class ApiWrapper {
   private readonly sender: Sender
 
   public static async create(provider: WsProvider): Promise<ApiWrapper> {
-    const api = await ApiPromise.create({ provider })
+    const api = await ApiPromise.create({ provider, types })
+    // ApiPromise.create({ types });
     return new ApiWrapper(api)
   }
 
@@ -99,12 +96,13 @@ export class ApiWrapper {
     return this.sender.signAndSend(this.api.tx.balances.transfer(to, amount), from)
   }
 
-  public getPaidMembershipTerms(paidTermsId: PaidTermId): Promise<Option<PaidMembershipTerms>> {
-    return this.api.query.members.paidMembershipTermsById<Option<PaidMembershipTerms>>(paidTermsId)
+  public getPaidMembershipTerms(paidTermsId: PaidTermId): Promise<PaidMembershipTerms> {
+    return this.api.query.members.paidMembershipTermsById<PaidMembershipTerms>(paidTermsId)
   }
 
-  public getMembershipFee(paidTermsId: PaidTermId): Promise<BN> {
-    return this.getPaidMembershipTerms(paidTermsId).then((terms) => terms.unwrap().fee)
+  public async getMembershipFee(paidTermsId: PaidTermId): Promise<BN> {
+    const terms: PaidMembershipTerms = (await this.getPaidMembershipTerms(paidTermsId));
+    return terms.fee
   }
 
   public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN): Promise<void[]> {
