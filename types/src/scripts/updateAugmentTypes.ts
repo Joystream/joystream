@@ -88,6 +88,8 @@ const addAugmentTypes = (typeName: string, constructorName: string) => {
 }
 
 Object.entries(typesByModule).forEach(([moduleName, types]) => {
+  console.log('Module: ', moduleName)
+  console.log('Types found:', Object.keys(types))
   Object.entries(types).forEach(([typeName, codecOrName]) => {
     if (typeof codecOrName === 'function') {
       const constructorName = codecOrName.name

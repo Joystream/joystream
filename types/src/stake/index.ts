@@ -87,5 +87,11 @@ export class Stake
 export const stakeTypes: RegistryTypes = {
   StakeId: 'u64',
   Stake,
+  // Expose in registry for api.createType purposes:
+  StakingStatus,
+  Staked,
+  StakedStatus,
+  Unstaking,
+  Slash,
 }
 export default stakeTypes

@@ -1,12 +1,12 @@
 import { Bytes, BTreeMap, BTreeSet, Option } from '@polkadot/types'
-import { u16, Null, u32, u128 } from '@polkadot/types/primitive'
+import { Null, u32, u128 } from '@polkadot/types/primitive'
 import AccountId from '@polkadot/types/generic/AccountId'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { MemberId, ActorId } from '../members'
 import { RewardRelationshipId } from '../recurring-rewards'
 import { StakeId } from '../stake'
 import { ApplicationId, OpeningId, ApplicationRationingPolicy, StakingPolicy } from '../hiring'
-import { JoyEnum, JoyStructDecorated } from '../common'
+import { JoyEnum, JoyStructDecorated, SlashingTerms } from '../common'
 import { RegistryTypes } from '@polkadot/types/types'
 
 export class RationaleText extends Bytes {}
@@ -72,29 +72,6 @@ export class Worker
     return !this.isEmpty
   }
 }
-
-export type ISlashableTerms = {
-  max_count: u16
-  max_percent_pts_per_time: u16
-}
-
-// This type is also defined in /content-working-group, but currently both those definitions are identical
-// (I added this defininition here too, because techinicaly those are 2 different types in the runtime.
-// Later the definition in /content-working-group will be removed and we can just register this type here)
-export class SlashableTerms
-  extends JoyStructDecorated({
-    max_count: u16,
-    max_percent_pts_per_time: u16,
-  })
-  implements ISlashableTerms {}
-
-export class UnslashableTerms extends Null {}
-
-// This type is also defined in /content-working-group (as above)
-export class SlashingTerms extends JoyEnum({
-  Unslashable: UnslashableTerms,
-  Slashable: SlashableTerms,
-} as const) {}
 
 export type IWorkingGroupOpeningPolicyCommitment = {
   application_rationing_policy: Option<ApplicationRationingPolicy>
@@ -200,6 +177,9 @@ export const workingGroupTypes: RegistryTypes = {
   RewardPolicy,
   'working_group::OpeningId': OpeningId,
   'working_group::WorkerId': WorkerId,
+  // Expose in registry for api.createType purposes:
+  WorkingGroupOpeningPolicyCommitment,
+  RoleStakeProfile,
 }
 
 export default workingGroupTypes
