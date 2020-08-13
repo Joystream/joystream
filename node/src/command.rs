@@ -29,18 +29,6 @@ impl SubstrateCli for Cli {
         "Joystream Node"
     }
 
-    fn impl_version() -> &'static str {
-        "3.0.0"
-    }
-
-    fn description() -> &'static str {
-        "Joystream substrate node"
-    }
-
-    fn author() -> &'static str {
-        "Joystream contributors"
-    }
-
     fn support_url() -> &'static str {
         "https://www.joystream.org/"
     }
@@ -53,10 +41,22 @@ impl SubstrateCli for Cli {
         "joystream-node"
     }
 
+    fn impl_version() -> &'static str {
+        env!("SUBSTRATE_CLI_IMPL_VERSION")
+    }
+
+    fn description() -> &'static str {
+        env!("CARGO_PKG_DESCRIPTION")
+    }
+
+    fn author() -> &'static str {
+        env!("CARGO_PKG_AUTHORS")
+    }
+
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
         Ok(match id {
-            "dev" => Box::new(chain_spec::Alternative::Development.load().unwrap()), //TODO
-            "local" => Box::new(chain_spec::Alternative::LocalTestnet.load().unwrap()),
+            "dev" => Box::new(chain_spec::Alternative::Development.load()?),
+            "local" => Box::new(chain_spec::Alternative::LocalTestnet.load()?),
             path => Box::new(chain_spec::ChainSpec::from_json_file(
                 std::path::PathBuf::from(path),
             )?),

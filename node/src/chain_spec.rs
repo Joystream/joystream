@@ -19,7 +19,6 @@
 // Example:  voting_period: 1 * DAY
 #![allow(clippy::identity_op)]
 
-use node_runtime::{AccountId, GenesisConfig};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
@@ -32,11 +31,13 @@ use sp_runtime::Perbill;
 use node_runtime::{
     versioned_store::InputValidationLengthConstraint as VsInputValidation,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
-    ContractsConfig, CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
+    CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, MembersConfig,
     ProposalsCodexConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
     StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
+
+pub use node_runtime::{AccountId, GenesisConfig};
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -204,8 +205,6 @@ pub fn testnet_genesis(
     const STASH: Balance = 20 * DOLLARS;
     const ENDOWMENT: Balance = 100_000 * DOLLARS;
 
-    let enable_println = false;
-
     // default codex proposals config parameters
     let cpcp = node_runtime::ProposalsConfigParameters::default();
     let default_text_constraint = node_runtime::working_group::default_text_constraint();
@@ -234,7 +233,9 @@ pub fn testnet_genesis(
             slash_reward_fraction: Perbill::from_percent(10),
             ..Default::default()
         }),
-        pallet_sudo: Some(SudoConfig { key: root_key }),
+        pallet_sudo: Some(SudoConfig {
+            key: root_key.clone(),
+        }),
         pallet_babe: Some(BabeConfig {
             authorities: vec![],
         }),
@@ -254,12 +255,6 @@ pub fn testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
-        }),
-        pallet_contracts: Some(ContractsConfig {
-            current_schedule: pallet_contracts::Schedule {
-                enable_println, // this should only be enabled on development chains
-                ..Default::default()
-            },
         }),
         council: Some(CouncilConfig {
             active_council: vec![],
@@ -282,9 +277,7 @@ pub fn testnet_genesis(
             default_paid_membership_fee: 100u128,
             members: vec![],
         }),
-        forum: Some(crate::forum_config::from_serialized::create(
-            endowed_accounts[0].clone(),
-        )),
+        forum: Some(crate::forum_config::from_serialized::create(root_key)),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),
