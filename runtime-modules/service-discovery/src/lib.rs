@@ -10,8 +10,8 @@
 //!
 //! ## Supported extrinsics
 //!
-//! - [set_ipns_id](./struct.Module.html#method.set_ipns_id) - Creates the StorageProviderAccountInfo to save an IPNS identity for the storage provider.
-//! - [unset_ipns_id](./struct.Module.html#method.unset_ipns_id) - Deletes the StorageProviderAccountInfo with the IPNS identity for the storage provider.
+//! - [set_ipns_id](./struct.Module.html#method.set_ipns_id) - Creates the ServiceProviderRecord to save an IPNS identity for the storage provider.
+//! - [unset_ipns_id](./struct.Module.html#method.unset_ipns_id) - Deletes the ServiceProviderRecord with the IPNS identity for the storage provider.
 //! - [set_default_lifetime](./struct.Module.html#method.set_default_lifetime) - Sets default lifetime for storage providers accounts info.
 //! - [set_bootstrap_endpoints](./struct.Module.html#method.set_bootstrap_endpoints) - Sets bootstrap endpoints for the Colossus.
 //!
@@ -63,7 +63,7 @@ pub(crate) const DEFAULT_LIFETIME: u32 = MINIMUM_LIFETIME * 24; // 24hr
 /// Defines the expiration date for the storage provider.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct StorageProviderAccountInfo<BlockNumber> {
+pub struct ServiceProviderRecord<BlockNumber> {
     /// IPNS Identity.
     pub identity: IPNSIdentity,
     /// Block at which information expires.
@@ -81,11 +81,11 @@ decl_storage! {
         /// Bootstrap endpoints maintained by root
         pub BootstrapEndpoints get(fn bootstrap_endpoints): Vec<Url>;
 
-        /// Mapping of service providers' storage provider id to their StorageProviderAccountInfo
+        /// Mapping of service providers' storage provider id to their ServiceProviderRecord
         pub AccountInfoByStorageProviderId get(fn account_info_by_storage_provider_id):
-            map hasher(blake2_128_concat) StorageProviderId<T> => StorageProviderAccountInfo<T::BlockNumber>;
+            map hasher(blake2_128_concat) StorageProviderId<T> => ServiceProviderRecord<T::BlockNumber>;
 
-        /// Lifetime of an StorageProviderAccountInfo record in AccountInfoByAccountId map
+        /// Lifetime of an ServiceProviderRecord record in AccountInfoByAccountId map
         pub DefaultLifetime get(fn default_lifetime) config():
             T::BlockNumber = T::BlockNumber::from(DEFAULT_LIFETIME);
     }
@@ -115,7 +115,7 @@ decl_module! {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
-        /// Creates the StorageProviderAccountInfo to save an IPNS identity for the storage provider.
+        /// Creates the ServiceProviderRecord to save an IPNS identity for the storage provider.
         /// Requires signed storage provider credentials.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_ipns_id(
@@ -131,7 +131,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            <AccountInfoByStorageProviderId<T>>::insert(storage_provider_id, StorageProviderAccountInfo {
+            <AccountInfoByStorageProviderId<T>>::insert(storage_provider_id, ServiceProviderRecord {
                 identity: id.clone(),
                 expires_at: <system::Module<T>>::block_number() + Self::default_lifetime(),
             });
@@ -139,7 +139,7 @@ decl_module! {
             Self::deposit_event(RawEvent::AccountInfoUpdated(storage_provider_id, id));
         }
 
-        /// Deletes the StorageProviderAccountInfo with the IPNS identity for the storage provider.
+        /// Deletes the ServiceProviderRecord with the IPNS identity for the storage provider.
         /// Requires signed storage provider credentials.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn unset_ipns_id(origin, storage_provider_id: StorageProviderId<T>) {

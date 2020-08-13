@@ -28,7 +28,7 @@ fn storage_provider_helper_succeeds() {
 		let random_provider_result = <StorageProviderHelper as storage::data_directory::StorageProviderHelper<Runtime>>::get_random_storage_provider();
 		assert!(random_provider_result.is_err());
 
-		let account_info = service_discovery::StorageProviderAccountInfo{
+		let account_info = service_discovery::ServiceProviderRecord{
 			identity: Vec::new(),
 			expires_at: 1000
 		};
