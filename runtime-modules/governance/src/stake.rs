@@ -1,11 +1,11 @@
 use codec::{Decode, Encode};
-use rstd::cmp::Ordering;
-use sr_primitives::traits::SimpleArithmetic;
+use sp_arithmetic::traits::BaseArithmetic;
+use sp_std::cmp::Ordering;
 
 #[derive(Encode, Decode, Clone, Copy, Default, Debug)]
 pub struct Stake<Balance>
 where
-    Balance: Copy + SimpleArithmetic,
+    Balance: Copy + BaseArithmetic,
 {
     pub new: Balance,
     pub transferred: Balance,
@@ -13,7 +13,7 @@ where
 
 impl<Balance> Stake<Balance>
 where
-    Balance: Copy + SimpleArithmetic,
+    Balance: Copy + BaseArithmetic,
 {
     pub fn total(&self) -> Balance {
         self.new + self.transferred
@@ -27,25 +27,25 @@ where
     }
 }
 
-impl<T: Copy + SimpleArithmetic> PartialOrd for Stake<T> {
+impl<T: Copy + BaseArithmetic> PartialOrd for Stake<T> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(&other))
     }
 }
 
-impl<T: Copy + SimpleArithmetic> Ord for Stake<T> {
+impl<T: Copy + BaseArithmetic> Ord for Stake<T> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.total().cmp(&other.total())
     }
 }
 
-impl<T: Copy + SimpleArithmetic> PartialEq for Stake<T> {
+impl<T: Copy + BaseArithmetic> PartialEq for Stake<T> {
     fn eq(&self, other: &Self) -> bool {
         self.total() == other.total()
     }
 }
 
-impl<T: Copy + SimpleArithmetic> Eq for Stake<T> {}
+impl<T: Copy + BaseArithmetic> Eq for Stake<T> {}
 
 #[cfg(test)]
 mod tests {

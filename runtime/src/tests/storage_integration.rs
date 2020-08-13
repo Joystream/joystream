@@ -2,12 +2,14 @@ use super::initial_test_ext;
 use crate::integration::storage::StorageProviderHelper;
 use crate::Runtime;
 
-use srml_support::{StorageLinkedMap, StorageMap};
+use frame_support::StorageMap;
 use working_group::{Instance2, Worker};
 
 #[test]
 fn storage_provider_helper_succeeds() {
     initial_test_ext().execute_with(|| {
+		// Bug in random module requires move the initial block number.
+		<system::Module<Runtime>>::set_block_number(1);
 
 		// Error - no workers.
 		let random_provider_result = <StorageProviderHelper

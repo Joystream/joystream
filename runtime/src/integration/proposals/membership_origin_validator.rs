@@ -1,6 +1,6 @@
 #![warn(missing_docs)]
 
-use rstd::marker::PhantomData;
+use sp_std::marker::PhantomData;
 
 use common::origin::ActorOriginValidator;
 use system::ensure_signed;
@@ -47,12 +47,12 @@ mod tests {
     use super::MembershipOriginValidator;
     use crate::Runtime;
     use common::origin::ActorOriginValidator;
-    use sr_primitives::AccountId32;
+    use sp_runtime::AccountId32;
     use system::RawOrigin;
 
     type Membership = membership::Module<Runtime>;
 
-    fn initial_test_ext() -> runtime_io::TestExternalities {
+    fn initial_test_ext() -> sp_io::TestExternalities {
         let t = system::GenesisConfig::default()
             .build_storage::<Runtime>()
             .unwrap();

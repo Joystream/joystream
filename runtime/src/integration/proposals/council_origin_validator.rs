@@ -1,6 +1,6 @@
 #![warn(missing_docs)]
 
-use rstd::marker::PhantomData;
+use sp_std::marker::PhantomData;
 
 use common::origin::ActorOriginValidator;
 use proposals_engine::VotersParameters;
@@ -46,12 +46,12 @@ mod tests {
     use crate::Runtime;
     use common::origin::ActorOriginValidator;
     use proposals_engine::VotersParameters;
-    use sr_primitives::AccountId32;
+    use sp_runtime::AccountId32;
     use system::RawOrigin;
 
     type Council = governance::council::Module<Runtime>;
 
-    fn initial_test_ext() -> runtime_io::TestExternalities {
+    fn initial_test_ext() -> sp_io::TestExternalities {
         let t = system::GenesisConfig::default()
             .build_storage::<Runtime>()
             .unwrap();

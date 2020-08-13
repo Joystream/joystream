@@ -1,18 +1,20 @@
-use crate::{BalanceOf, Module, NegativeImbalance, Trait};
-use common::constraints::InputValidationLengthConstraint;
-use primitives::H256;
-use sr_primitives::{
+use frame_support::storage::StorageMap;
+use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use sp_core::H256;
+use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{
-    impl_outer_event, impl_outer_origin, parameter_types, StorageLinkedMap, StorageMap,
-};
 use std::marker::PhantomData;
+use system;
+
+use crate::{BalanceOf, Module, NegativeImbalance, Trait};
+use common::constraints::InputValidationLengthConstraint;
 
 impl_outer_origin! {
-        pub enum Origin for Test {}
+    pub enum Origin for Test {}
 }
 
 mod working_group {
@@ -29,6 +31,7 @@ impl_outer_event! {
         balances<T>,
         working_group TestWorkingGroupInstance <T>,
         membership_mod<T>,
+        system<T>,
     }
 }
 
@@ -40,8 +43,6 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
     pub const StakePoolId: [u8; 8] = *b"joystake";
     pub const ExistentialDeposit: u32 = 0;
-    pub const TransferFee: u32 = 0;
-    pub const CreationFee: u32 = 0;
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 - remove when sorted.
@@ -49,6 +50,7 @@ parameter_types! {
 pub struct Test;
 
 impl system::Trait for Test {
+    type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
     type Index = u64;
@@ -61,9 +63,17 @@ impl system::Trait for Test {
     type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
 impl hiring::Trait for Test {
@@ -98,7 +108,7 @@ impl common::currency::GovernanceCurrency for Test {
     type Currency = Balances;
 }
 
-impl timestamp::Trait for Test {
+impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -106,14 +116,10 @@ impl timestamp::Trait for Test {
 
 impl balances::Trait for Test {
     type Balance = u64;
-    type OnFreeBalanceZero = ();
-    type OnNewAccount = ();
-    type TransferPayment = ();
     type DustRemoval = ();
     type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
-    type TransferFee = TransferFee;
-    type CreationFee = CreationFee;
+    type AccountStore = System;
 }
 
 impl recurringrewards::Trait for Test {
@@ -143,7 +149,7 @@ pub(crate) const WORKING_GROUP_MINT_CAPACITY: u64 = 40000;
 pub(crate) const WORKING_GROUP_CONSTRAINT_MIN: u16 = 1;
 pub(crate) const WORKING_GROUP_CONSTRAINT_DIFF: u16 = 40;
 
-pub fn build_test_externalities() -> runtime_io::TestExternalities {
+pub fn build_test_externalities() -> sp_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
@@ -184,13 +190,13 @@ impl<T: stake::Trait + crate::Trait<TestWorkingGroupInstance>> stake::StakingEve
         remaining_imbalance: NegativeImbalance<T>,
     ) -> NegativeImbalance<T> {
         // Stake not related to a staked role managed by the hiring module.
-        if !hiring::ApplicationIdByStakingId::<T>::exists(*stake_id) {
+        if !hiring::ApplicationIdByStakingId::<T>::contains_key(*stake_id) {
             return remaining_imbalance;
         }
 
         let hiring_application_id = hiring::ApplicationIdByStakingId::<T>::get(*stake_id);
 
-        if crate::MemberIdByHiringApplicationId::<T, TestWorkingGroupInstance>::exists(
+        if crate::MemberIdByHiringApplicationId::<T, TestWorkingGroupInstance>::contains_key(
             hiring_application_id,
         ) {
             return <crate::Module<T, TestWorkingGroupInstance>>::refund_working_group_stake(
@@ -211,5 +217,17 @@ impl<T: stake::Trait + crate::Trait<TestWorkingGroupInstance>> stake::StakingEve
         remaining_imbalance: NegativeImbalance<T>,
     ) -> NegativeImbalance<T> {
         remaining_imbalance
+    }
+}
+
+// Recommendation from Parity on testing on_finalize
+// https://substrate.dev/docs/en/next/development/module/tests
+pub fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        <TestWorkingGroup as OnFinalize<u64>>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <TestWorkingGroup as OnInitialize<u64>>::on_initialize(System::block_number());
     }
 }

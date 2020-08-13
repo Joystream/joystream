@@ -1,6 +1,6 @@
 use crate::mock::*;
 use crate::test::*;
-use rstd::collections::btree_map::BTreeMap;
+use sp_std::collections::btree_map::BTreeMap;
 use stake::NegativeImbalance;
 
 use crate::test::public_api::*;
@@ -66,12 +66,16 @@ impl AddApplicationFixture {
             // Check next application id has been updated
             assert_eq!(Hiring::next_application_id(), expected_application_id + 1);
             // Check application exists
-            assert!(<ApplicationById<Test>>::exists(expected_application_id));
+            assert!(<ApplicationById<Test>>::contains_key(
+                expected_application_id
+            ));
         } else {
             // Check next application id has not been updated
             assert_eq!(Hiring::next_application_id(), expected_application_id);
             // Check application does not exist
-            assert!(!<ApplicationById<Test>>::exists(expected_application_id));
+            assert!(!<ApplicationById<Test>>::contains_key(
+                expected_application_id
+            ));
         };
 
         //Check application content
@@ -115,7 +119,7 @@ impl AddApplicationFixture {
             let expected_application = Application {
                 opening_id: self.opening_id,
                 application_index_in_opening: expected_application_index_in_opening,
-                add_to_opening_in_block: 1,
+                add_to_opening_in_block: 0,
                 active_role_staking_id: expected_active_role_staking_id,
                 active_application_staking_id: expected_active_application_staking_id,
                 stage: ApplicationStage::Active,
@@ -166,7 +170,7 @@ impl AddApplicationFixture {
         let expected_opening = Opening {
             stage: OpeningStage::Active {
                 stage: ActiveOpeningStage::AcceptingApplications {
-                    started_accepting_applicants_at_block: 1,
+                    started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT,
                 },
                 applications_added: expected_added_apps_in_opening,
                 active_application_count: expected_active_application_count,
@@ -289,7 +293,7 @@ fn add_application_succeeds_with_created_application_stake() {
 
         let stake = Hiring::staking().get_stake(application_stake_id);
         let expected_stake = stake::Stake {
-            created: 1,
+            created: FIRST_BLOCK_HEIGHT,
             staking_status: stake::StakingStatus::Staked(stake::StakedState {
                 staked_amount: 100,
                 staked_status: stake::StakedStatus::Normal,

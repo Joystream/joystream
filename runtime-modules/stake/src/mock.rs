@@ -1,17 +1,15 @@
 #![cfg(test)]
 
 use crate::*;
-
-use primitives::H256;
-
 use crate::{Module, Trait};
 use balances;
-use runtime_primitives::{
+use frame_support::{impl_outer_origin, parameter_types};
+use sp_core::H256;
+use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -25,14 +23,14 @@ parameter_types! {
     pub const MaximumBlockWeight: u32 = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
-    pub const MinimumPeriod: u64 = 5;
 }
 
 impl system::Trait for Test {
+    type BaseCallFilter = ();
     type Origin = Origin;
+    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
@@ -41,35 +39,30 @@ impl system::Trait for Test {
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 500;
-    pub const TransferFee: u32 = 5;
-    pub const CreationFee: u32 = 5;
-    pub const TransactionBaseFee: u32 = 5;
-    pub const TransactionByteFee: u32 = 0;
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl balances::Trait for Test {
-    /// The type for recording an account's balance.
     type Balance = u64;
-    /// What to do if an account's free balance gets zeroed.
-    type OnFreeBalanceZero = ();
-    /// What to do if a new account is created.
-    type OnNewAccount = ();
-    /// The ubiquitous event type.
-    type Event = ();
-
     type DustRemoval = ();
-    type TransferPayment = ();
+    type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
-    type TransferFee = TransferFee;
-    type CreationFee = CreationFee;
+    type AccountStore = System;
 }
 
 impl Trait for Test {
@@ -80,7 +73,7 @@ impl Trait for Test {
     type SlashId = u64;
 }
 
-pub fn build_test_externalities() -> runtime_io::TestExternalities {
+pub fn build_test_externalities() -> sp_io::TestExternalities {
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
@@ -99,17 +92,4 @@ pub mod fixtures {
         <Test as Trait>::SlashId,
         Slash<<Test as system::Trait>::BlockNumber, BalanceOf<Test>>,
     >;
-    // pub enum StakeInState {
-    //     NotStaked,
-    //     StakedNormal(BalanceOf<Test>, OngoingSlashes),
-    //     StakedUnstaking(BalanceOf<Test>, OngoingSlashes, <Test as system::Trait>::BlockNumber),
-    // }
-    // fn get_next_slash_id() -> SlashId {
-    // }
-    // pub fn make_stake(state: StakeInState) -> StakeId {
-    //     let id = StakePool::create_stake();
-    //     <Stakes<Test>>::mutate(id, |stake| {});
-    //     id
-    // }
-    // fn stake_in_state_to_stake(StakeInState) -> StakedState {}
 }

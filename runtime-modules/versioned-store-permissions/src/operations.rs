@@ -1,6 +1,7 @@
 use codec::{Decode, Encode};
-use rstd::collections::btree_map::BTreeMap;
-use rstd::prelude::*;
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::vec;
+use sp_std::vec::Vec;
 use versioned_store::{ClassId, ClassPropertyValue, EntityId, PropertyValue};
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]

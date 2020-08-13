@@ -1,8 +1,11 @@
-use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sr_primitives::traits::Zero;
-use srml_support::{dispatch::Result, ensure};
+
+use codec::{Decode, Encode};
+use frame_support::ensure;
+use sp_arithmetic::traits::Zero;
+
+use crate::DispatchResult;
 
 pub static MSG_PERIOD_CANNOT_BE_ZERO: &str = "PeriodCannotBeZero";
 pub static MSG_COUNCIL_SIZE_CANNOT_BE_ZERO: &str = "CouncilSizeCannotBeZero";
@@ -24,20 +27,20 @@ pub struct ElectionParameters<Balance, BlockNumber> {
 }
 
 impl<Balance, BlockNumber: PartialOrd + Zero> ElectionParameters<Balance, BlockNumber> {
-    pub fn ensure_valid(&self) -> Result {
+    pub fn ensure_valid(&self) -> DispatchResult {
         self.ensure_periods_are_valid()?;
         self.ensure_council_size_and_candidacy_limit_are_valid()?;
         Ok(())
     }
 
-    fn ensure_periods_are_valid(&self) -> Result {
+    fn ensure_periods_are_valid(&self) -> DispatchResult {
         ensure!(!self.announcing_period.is_zero(), MSG_PERIOD_CANNOT_BE_ZERO);
         ensure!(!self.voting_period.is_zero(), MSG_PERIOD_CANNOT_BE_ZERO);
         ensure!(!self.revealing_period.is_zero(), MSG_PERIOD_CANNOT_BE_ZERO);
         Ok(())
     }
 
-    fn ensure_council_size_and_candidacy_limit_are_valid(&self) -> Result {
+    fn ensure_council_size_and_candidacy_limit_are_valid(&self) -> DispatchResult {
         ensure!(self.council_size > 0, MSG_COUNCIL_SIZE_CANNOT_BE_ZERO);
         ensure!(
             self.council_size <= self.candidacy_limit,

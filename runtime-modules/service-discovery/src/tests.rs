@@ -2,8 +2,7 @@
 
 use super::mock::*;
 
-use srml_support::*;
-use system::{self, EventRecord, Phase};
+use system::{EventRecord, Phase, RawOrigin};
 
 #[test]
 fn set_ipns_id() {
@@ -22,7 +21,7 @@ fn set_ipns_id() {
         )
         .is_ok());
 
-        assert!(<AccountInfoByStorageProviderId<Test>>::exists(
+        assert!(<AccountInfoByStorageProviderId<Test>>::contains_key(
             &storage_provider_id
         ));
         let account_info = Discovery::account_info_by_storage_provider_id(&storage_provider_id);
@@ -37,7 +36,7 @@ fn set_ipns_id() {
         assert_eq!(
             *System::events().last().unwrap(),
             EventRecord {
-                phase: Phase::ApplyExtrinsic(0),
+                phase: Phase::Initialization,
                 event: MetaEvent::discovery(RawEvent::AccountInfoUpdated(
                     storage_provider_id,
                     identity.clone()
@@ -55,7 +54,7 @@ fn set_ipns_id() {
             identity.clone(),
         )
         .is_err());
-        assert!(!<AccountInfoByStorageProviderId<Test>>::exists(
+        assert!(!<AccountInfoByStorageProviderId<Test>>::contains_key(
             &invalid_storage_provider_id
         ));
     });
@@ -64,6 +63,9 @@ fn set_ipns_id() {
 #[test]
 fn unset_ipns_id() {
     initial_test_ext().execute_with(|| {
+        let current_block_number = 1000;
+        System::set_block_number(current_block_number);
+
         let (storage_provider_account_id, storage_provider_id) = hire_storage_provider();
 
         <AccountInfoByStorageProviderId<Test>>::insert(
@@ -74,7 +76,7 @@ fn unset_ipns_id() {
             },
         );
 
-        assert!(<AccountInfoByStorageProviderId<Test>>::exists(
+        assert!(<AccountInfoByStorageProviderId<Test>>::contains_key(
             &storage_provider_account_id
         ));
 
@@ -83,14 +85,14 @@ fn unset_ipns_id() {
             storage_provider_id
         )
         .is_ok());
-        assert!(!<AccountInfoByStorageProviderId<Test>>::exists(
+        assert!(!<AccountInfoByStorageProviderId<Test>>::contains_key(
             &storage_provider_account_id
         ));
 
         assert_eq!(
             *System::events().last().unwrap(),
             EventRecord {
-                phase: Phase::ApplyExtrinsic(0),
+                phase: Phase::Initialization,
                 event: MetaEvent::discovery(RawEvent::AccountInfoRemoved(storage_provider_id)),
                 topics: vec![]
             }
@@ -104,7 +106,7 @@ fn unset_ipns_id() {
             invalid_storage_provider_account_id,
         )
         .is_err());
-        assert!(!<AccountInfoByStorageProviderId<Test>>::exists(
+        assert!(!<AccountInfoByStorageProviderId<Test>>::contains_key(
             &invalid_storage_provider_id
         ));
     });
@@ -142,7 +144,7 @@ fn set_default_lifetime() {
             ""
         );
         assert!(
-            Discovery::set_default_lifetime(Origin::ROOT, lifetime).is_ok(),
+            Discovery::set_default_lifetime(RawOrigin::Root.into(), lifetime).is_ok(),
             ""
         );
         assert_eq!(Discovery::default_lifetime(), lifetime, "");
@@ -151,7 +153,8 @@ fn set_default_lifetime() {
         let less_than_min_lifetime =
             <Test as system::Trait>::BlockNumber::from(MINIMUM_LIFETIME - 1);
         assert!(
-            Discovery::set_default_lifetime(Origin::ROOT, less_than_min_lifetime).is_err(),
+            Discovery::set_default_lifetime(RawOrigin::Root.into(), less_than_min_lifetime)
+                .is_err(),
             ""
         );
     });
@@ -167,7 +170,7 @@ fn set_bootstrap_endpoints() {
             ""
         );
         assert!(
-            Discovery::set_bootstrap_endpoints(Origin::ROOT, endpoints.clone()).is_ok(),
+            Discovery::set_bootstrap_endpoints(RawOrigin::Root.into(), endpoints.clone()).is_ok(),
             ""
         );
         assert_eq!(Discovery::bootstrap_endpoints(), endpoints, "");

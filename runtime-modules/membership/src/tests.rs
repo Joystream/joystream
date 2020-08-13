@@ -3,10 +3,10 @@
 use super::genesis;
 use super::mock::*;
 
-use srml_support::*;
+use frame_support::*;
 
 fn get_membership_by_id(member_id: u32) -> crate::Membership<Test> {
-    if <crate::MembershipById<Test>>::exists(member_id) {
+    if <crate::MembershipById<Test>>::contains_key(member_id) {
         Members::membership(member_id)
     } else {
         panic!("member profile not created");
@@ -52,15 +52,16 @@ fn get_bob_info() -> TestUserInfo {
 
 const ALICE_ACCOUNT_ID: u64 = 1;
 
-fn buy_default_membership_as_alice() -> dispatch::Result {
+fn buy_default_membership_as_alice() -> crate::DispatchResult {
     let info = get_alice_info();
     Members::buy_membership(
         Origin::signed(ALICE_ACCOUNT_ID),
-        DEFAULT_PAID_TERM_ID,
+        DEFAULT_PAID_TERM_ID as u32,
         info.handle,
         info.avatar_uri,
         info.about,
     )
+    .map_err(|err| err.into())
 }
 
 fn set_alice_free_balance(balance: u64) {
@@ -81,12 +82,13 @@ fn initial_state() {
         )
         .build()
         .execute_with(|| {
-            let default_terms =
-                if <crate::PaidMembershipTermsById<Test>>::exists(DEFAULT_PAID_TERM_ID) {
-                    Members::paid_membership_terms_by_id(DEFAULT_PAID_TERM_ID)
-                } else {
-                    panic!("default terms not initialized");
-                };
+            let default_terms = if <crate::PaidMembershipTermsById<Test>>::contains_key(
+                DEFAULT_PAID_TERM_ID as u32,
+            ) {
+                Members::paid_membership_terms_by_id(DEFAULT_PAID_TERM_ID as u32)
+            } else {
+                panic!("default terms not initialized");
+            };
 
             assert_eq!(default_terms.fee, DEFAULT_FEE);
         });

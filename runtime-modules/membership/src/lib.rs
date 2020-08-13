@@ -10,21 +10,27 @@ pub(crate) mod mock;
 mod tests;
 
 use codec::{Codec, Decode, Encode};
-use rstd::borrow::ToOwned;
-use rstd::prelude::*;
-use sr_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
-use srml_support::traits::Currency;
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
-use system::{self, ensure_root, ensure_signed};
+use frame_support::traits::Currency;
+use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
+use sp_arithmetic::traits::{BaseArithmetic, One};
+use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_std::borrow::ToOwned;
+use sp_std::vec;
+use sp_std::vec::Vec;
+use system::{ensure_root, ensure_signed};
 
 use common::currency::{BalanceOf, GovernanceCurrency};
 
-pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
+//TODO: Convert errors to the Substrate decl_error! macro.
+/// Result with string error message. This exists for backward compatibility purpose.
+pub type DispatchResult = Result<(), &'static str>;
+
+pub trait Trait: system::Trait + GovernanceCurrency + pallet_timestamp::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type MemberId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -33,7 +39,7 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
 
     type PaidTermId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -42,7 +48,7 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
 
     type SubscriptionId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -52,7 +58,7 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
     /// Describes the common type for the working group members (workers).
     type ActorId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -61,10 +67,10 @@ pub trait Trait: system::Trait + GovernanceCurrency + timestamp::Trait {
         + Ord;
 }
 
-const FIRST_PAID_TERMS_ID: u32 = 1;
+const FIRST_PAID_TERMS_ID: u8 = 1;
 
 // Default paid membership terms
-pub const DEFAULT_PAID_TERM_ID: u32 = 0;
+pub const DEFAULT_PAID_TERM_ID: u8 = 0;
 
 // Default user info constraints
 const DEFAULT_MIN_HANDLE_LENGTH: u32 = 5;
@@ -75,7 +81,7 @@ const DEFAULT_MAX_ABOUT_TEXT_LENGTH: u32 = 2048;
 /// Public membership object alias.
 pub type Membership<T> = MembershipObject<
     <T as system::Trait>::BlockNumber,
-    <T as timestamp::Trait>::Moment,
+    <T as pallet_timestamp::Trait>::Moment,
     <T as Trait>::PaidTermId,
     <T as Trait>::SubscriptionId,
     <T as system::Trait>::AccountId,
@@ -154,27 +160,32 @@ decl_storage! {
     trait Store for Module<T: Trait> as Membership {
         /// MemberId to assign to next member that is added to the registry, and is also the
         /// total number of members created. MemberIds start at Zero.
-        pub NextMemberId get(members_created) : T::MemberId;
+        pub NextMemberId get(fn members_created) : T::MemberId;
 
         /// Mapping of member's id to their membership profile
-        pub MembershipById get(membership) : map T::MemberId => Membership<T>;
+        pub MembershipById get(fn membership) : map hasher(blake2_128_concat)
+            T::MemberId => Membership<T>;
 
         /// Mapping of a root account id to vector of member ids it controls.
-        pub(crate) MemberIdsByRootAccountId : map T::AccountId => Vec<T::MemberId>;
+        pub(crate) MemberIdsByRootAccountId : map hasher(blake2_128_concat)
+            T::AccountId => Vec<T::MemberId>;
 
         /// Mapping of a controller account id to vector of member ids it controls
-        pub(crate) MemberIdsByControllerAccountId : map T::AccountId => Vec<T::MemberId>;
+        pub(crate) MemberIdsByControllerAccountId : map hasher(blake2_128_concat)
+            T::AccountId => Vec<T::MemberId>;
 
         /// Registered unique handles and their mapping to their owner
-        pub MemberIdByHandle get(handles) : map Vec<u8> => T::MemberId;
+        pub MemberIdByHandle get(fn handles) : map hasher(blake2_128_concat)
+            Vec<u8> => T::MemberId;
 
         /// Next paid membership terms id
-        pub NextPaidMembershipTermsId get(next_paid_membership_terms_id) : T::PaidTermId = T::PaidTermId::from(FIRST_PAID_TERMS_ID);
+        pub NextPaidMembershipTermsId get(fn next_paid_membership_terms_id) :
+            T::PaidTermId = T::PaidTermId::from(FIRST_PAID_TERMS_ID);
 
         /// Paid membership terms record
         // Remember to add _genesis_phantom_data: std::marker::PhantomData{} to membership
         // genesis config if not providing config() or extra_genesis
-        pub PaidMembershipTermsById get(paid_membership_terms_by_id) build(|config: &GenesisConfig<T>| {
+        pub PaidMembershipTermsById get(fn paid_membership_terms_by_id) build(|config: &GenesisConfig<T>| {
             // This method only gets called when initializing storage, and is
             // compiled as native code. (Will be called when building `raw` chainspec)
             // So it can't be relied upon to initialize storage for runtimes updates.
@@ -184,22 +195,23 @@ decl_storage! {
                 text: Vec::default(),
             };
             vec![(T::PaidTermId::from(DEFAULT_PAID_TERM_ID), terms)]
-        }) : map T::PaidTermId => PaidMembershipTerms<BalanceOf<T>>;
+        }) : map hasher(blake2_128_concat) T::PaidTermId => PaidMembershipTerms<BalanceOf<T>>;
 
         /// Active Paid membership terms
-        pub ActivePaidMembershipTerms get(active_paid_membership_terms) : Vec<T::PaidTermId> = vec![T::PaidTermId::from(DEFAULT_PAID_TERM_ID)];
+        pub ActivePaidMembershipTerms get(fn active_paid_membership_terms) :
+            Vec<T::PaidTermId> = vec![T::PaidTermId::from(DEFAULT_PAID_TERM_ID)];
 
         /// Is the platform is accepting new members or not
-        pub NewMembershipsAllowed get(new_memberships_allowed) : bool = true;
+        pub NewMembershipsAllowed get(fn new_memberships_allowed) : bool = true;
 
-        pub ScreeningAuthority get(screening_authority) : T::AccountId;
+        pub ScreeningAuthority get(fn screening_authority) : T::AccountId;
 
         // User Input Validation parameters - do these really need to be state variables
         // I don't see a need to adjust these in future?
-        pub MinHandleLength get(min_handle_length) : u32 = DEFAULT_MIN_HANDLE_LENGTH;
-        pub MaxHandleLength get(max_handle_length) : u32 = DEFAULT_MAX_HANDLE_LENGTH;
-        pub MaxAvatarUriLength get(max_avatar_uri_length) : u32 = DEFAULT_MAX_AVATAR_URI_LENGTH;
-        pub MaxAboutTextLength get(max_about_text_length) : u32 = DEFAULT_MAX_ABOUT_TEXT_LENGTH;
+        pub MinHandleLength get(fn min_handle_length) : u32 = DEFAULT_MIN_HANDLE_LENGTH;
+        pub MaxHandleLength get(fn max_handle_length) : u32 = DEFAULT_MAX_HANDLE_LENGTH;
+        pub MaxAvatarUriLength get(fn max_avatar_uri_length) : u32 = DEFAULT_MAX_AVATAR_URI_LENGTH;
+        pub MaxAboutTextLength get(fn max_about_text_length) : u32 = DEFAULT_MAX_ABOUT_TEXT_LENGTH;
 
     }
     add_extra_genesis {
@@ -238,6 +250,7 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Non-members can buy membership
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn buy_membership(
             origin,
             paid_terms_id: T::PaidTermId,
@@ -268,6 +281,7 @@ decl_module! {
         }
 
         /// Change member's about text
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn change_member_about_text(origin, member_id: T::MemberId, text: Vec<u8>) {
             let sender = ensure_signed(origin)?;
 
@@ -279,6 +293,7 @@ decl_module! {
         }
 
         /// Change member's avatar
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn change_member_avatar(origin, member_id: T::MemberId, uri: Vec<u8>) {
             let sender = ensure_signed(origin)?;
 
@@ -291,6 +306,7 @@ decl_module! {
 
         /// Change member's handle. Will ensure new handle is unique and old one will be available
         /// for other members to use.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn change_member_handle(origin, member_id: T::MemberId, handle: Vec<u8>) {
             let sender = ensure_signed(origin)?;
 
@@ -302,6 +318,7 @@ decl_module! {
         }
 
         /// Update member's all or some of handle, avatar and about text.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_membership(
             origin,
             member_id: T::MemberId,
@@ -326,6 +343,7 @@ decl_module! {
             }
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_controller_account(origin, member_id: T::MemberId, new_controller_account: T::AccountId) {
             let sender = ensure_signed(origin)?;
 
@@ -349,6 +367,7 @@ decl_module! {
             }
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_root_account(origin, member_id: T::MemberId, new_root_account: T::AccountId) {
             let sender = ensure_signed(origin)?;
 
@@ -371,6 +390,7 @@ decl_module! {
             }
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_screened_member(
             origin,
             new_member_account: T::AccountId,
@@ -385,7 +405,7 @@ decl_module! {
                 ensure!(sender == Self::screening_authority(), "not screener");
             } else {
                 // no screening authority defined. Cannot accept this request
-                return Err("no screening authority defined");
+                return Err("no screening authority defined".into());
             }
 
             // make sure we are accepting new memberships
@@ -401,6 +421,7 @@ decl_module! {
             Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member_account));
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_screening_authority(origin, authority: T::AccountId) {
             ensure_root(origin)?;
             <ScreeningAuthority<T>>::put(authority);
@@ -432,7 +453,7 @@ pub enum MemberRootAccountMismatch {
 impl<T: Trait> Module<T> {
     /// Provided that the member_id exists return its membership. Returns error otherwise.
     pub fn ensure_membership(id: T::MemberId) -> Result<Membership<T>, &'static str> {
-        if <MembershipById<T>>::exists(&id) {
+        if <MembershipById<T>>::contains_key(&id) {
             Ok(Self::membership(&id))
         } else {
             Err("member profile not found")
@@ -444,7 +465,7 @@ impl<T: Trait> Module<T> {
         member_id: &T::MemberId,
         account: &T::AccountId,
     ) -> Result<Membership<T>, ControllerAccountForMemberCheckFailed> {
-        if MembershipById::<T>::exists(member_id) {
+        if MembershipById::<T>::contains_key(member_id) {
             let membership = MembershipById::<T>::get(member_id);
 
             if membership.controller_account == *account {
@@ -459,8 +480,8 @@ impl<T: Trait> Module<T> {
 
     /// Returns true if account is either a member's root or controller account
     pub fn is_member_account(who: &T::AccountId) -> bool {
-        <MemberIdsByRootAccountId<T>>::exists(who)
-            || <MemberIdsByControllerAccountId<T>>::exists(who)
+        <MemberIdsByRootAccountId<T>>::contains_key(who)
+            || <MemberIdsByControllerAccountId<T>>::contains_key(who)
     }
 
     fn ensure_active_terms_id(
@@ -472,7 +493,7 @@ impl<T: Trait> Module<T> {
             "paid terms id not active"
         );
 
-        if <PaidMembershipTermsById<T>>::exists(terms_id) {
+        if <PaidMembershipTermsById<T>>::contains_key(terms_id) {
             Ok(Self::paid_membership_terms_by_id(terms_id))
         } else {
             Err("paid membership term id does not exist")
@@ -480,15 +501,15 @@ impl<T: Trait> Module<T> {
     }
 
     #[allow(clippy::ptr_arg)] // cannot change to the "&[u8]" suggested by clippy
-    fn ensure_unique_handle(handle: &Vec<u8>) -> dispatch::Result {
+    fn ensure_unique_handle(handle: &Vec<u8>) -> DispatchResult {
         ensure!(
-            !<MemberIdByHandle<T>>::exists(handle),
+            !<MemberIdByHandle<T>>::contains_key(handle),
             "handle already registered"
         );
         Ok(())
     }
 
-    fn validate_handle(handle: &[u8]) -> dispatch::Result {
+    fn validate_handle(handle: &[u8]) -> DispatchResult {
         ensure!(
             handle.len() >= Self::min_handle_length() as usize,
             "handle too short"
@@ -506,7 +527,7 @@ impl<T: Trait> Module<T> {
         text
     }
 
-    fn validate_avatar(uri: &[u8]) -> dispatch::Result {
+    fn validate_avatar(uri: &[u8]) -> DispatchResult {
         ensure!(
             uri.len() <= Self::max_avatar_uri_length() as usize,
             "avatar uri too long"
@@ -547,7 +568,7 @@ impl<T: Trait> Module<T> {
             avatar_uri: user_info.avatar_uri.clone(),
             about: user_info.about.clone(),
             registered_at_block: <system::Module<T>>::block_number(),
-            registered_at_time: <timestamp::Module<T>>::now(),
+            registered_at_time: <pallet_timestamp::Module<T>>::now(),
             entry: entry_method,
             suspended: false,
             subscription: None,
@@ -569,7 +590,7 @@ impl<T: Trait> Module<T> {
         new_member_id
     }
 
-    fn _change_member_about_text(id: T::MemberId, text: &[u8]) -> dispatch::Result {
+    fn _change_member_about_text(id: T::MemberId, text: &[u8]) -> DispatchResult {
         let mut membership = Self::ensure_membership(id)?;
         let text = Self::validate_text(text);
         membership.about = text;
@@ -578,7 +599,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn _change_member_avatar(id: T::MemberId, uri: &[u8]) -> dispatch::Result {
+    fn _change_member_avatar(id: T::MemberId, uri: &[u8]) -> DispatchResult {
         let mut membership = Self::ensure_membership(id)?;
         Self::validate_avatar(uri)?;
         membership.avatar_uri = uri.to_owned();
@@ -587,7 +608,7 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    fn _change_member_handle(id: T::MemberId, handle: Vec<u8>) -> dispatch::Result {
+    fn _change_member_handle(id: T::MemberId, handle: Vec<u8>) -> DispatchResult {
         let mut membership = Self::ensure_membership(id)?;
         Self::validate_handle(&handle)?;
         Self::ensure_unique_handle(&handle)?;

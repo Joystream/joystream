@@ -23,12 +23,12 @@ mod mock;
 mod tests;
 
 use codec::{Decode, Encode};
-use rstd::prelude::*;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
-use srml_support::{decl_event, decl_module, decl_storage, ensure};
-use system::{self, ensure_root};
+use frame_support::{decl_event, decl_module, decl_storage, ensure};
+use sp_std::vec::Vec;
+use system::ensure_root;
 /*
   Although there is support for ed25519 keys as the IPNS identity key and we could potentially
   reuse the same key for the role account and ipns (and make this discovery module obselete)
@@ -79,14 +79,14 @@ pub trait Trait: system::Trait + working_group::Trait<StorageWorkingGroupInstanc
 decl_storage! {
     trait Store for Module<T: Trait> as Discovery {
         /// Bootstrap endpoints maintained by root
-        pub BootstrapEndpoints get(bootstrap_endpoints): Vec<Url>;
+        pub BootstrapEndpoints get(fn bootstrap_endpoints): Vec<Url>;
 
         /// Mapping of service providers' storage provider id to their AccountInfo
-        pub AccountInfoByStorageProviderId get(account_info_by_storage_provider_id):
-            map StorageProviderId<T> => AccountInfo<T::BlockNumber>;
+        pub AccountInfoByStorageProviderId get(fn account_info_by_storage_provider_id):
+            map hasher(blake2_128_concat) StorageProviderId<T> => AccountInfo<T::BlockNumber>;
 
         /// Lifetime of an AccountInfo record in AccountInfoByAccountId map
-        pub DefaultLifetime get(default_lifetime) config():
+        pub DefaultLifetime get(fn default_lifetime) config():
             T::BlockNumber = T::BlockNumber::from(DEFAULT_LIFETIME);
     }
 }
@@ -117,6 +117,7 @@ decl_module! {
 
         /// Creates the AccountInfo to save an IPNS identity for the storage provider.
         /// Requires signed storage provider credentials.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_ipns_id(
             origin,
             storage_provider_id: StorageProviderId<T>,
@@ -140,12 +141,13 @@ decl_module! {
 
         /// Deletes the AccountInfo with the IPNS identity for the storage provider.
         /// Requires signed storage provider credentials.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn unset_ipns_id(origin, storage_provider_id: StorageProviderId<T>) {
             <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
             // == MUTATION SAFE ==
 
-            if <AccountInfoByStorageProviderId<T>>::exists(storage_provider_id) {
+            if <AccountInfoByStorageProviderId<T>>::contains_key(storage_provider_id) {
                 <AccountInfoByStorageProviderId<T>>::remove(storage_provider_id);
                 Self::deposit_event(RawEvent::AccountInfoRemoved(storage_provider_id));
             }
@@ -154,6 +156,7 @@ decl_module! {
         // Privileged methods
 
         /// Sets default lifetime for storage providers accounts info. Requires root privileges.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_default_lifetime(origin, lifetime: T::BlockNumber) {
             ensure_root(origin)?;
             ensure!(lifetime >= T::BlockNumber::from(MINIMUM_LIFETIME),
@@ -165,6 +168,7 @@ decl_module! {
         }
 
         /// Sets bootstrap endpoints for the Colossus. Requires root privileges.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_bootstrap_endpoints(origin, endpoints: Vec<Url>) {
             ensure_root(origin)?;
 
@@ -178,7 +182,7 @@ decl_module! {
 impl<T: Trait> Module<T> {
     /// Verifies that account info for the storage provider is still valid.
     pub fn is_account_info_expired(storage_provider_id: &StorageProviderId<T>) -> bool {
-        !<AccountInfoByStorageProviderId<T>>::exists(storage_provider_id)
+        !<AccountInfoByStorageProviderId<T>>::contains_key(storage_provider_id)
             || <system::Module<T>>::block_number()
                 > <AccountInfoByStorageProviderId<T>>::get(storage_provider_id).expires_at
     }
