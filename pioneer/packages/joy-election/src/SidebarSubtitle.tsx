@@ -17,7 +17,7 @@ type StyledSubtitleProps = {
 const StyledSubtitle = styled.div`
   display: block;
   font-size: 0.85rem;
-  color: ${ (props: StyledSubtitleProps) => props.stage ? colorByStage[props.stage] : 'grey' };
+  color: ${(props: StyledSubtitleProps) => props.stage ? colorByStage[props.stage] : 'grey'};
 `;
 
 export default function SidebarSubtitle () {
@@ -27,6 +27,7 @@ export default function SidebarSubtitle () {
   if (electionStage) {
     const stageName = electionStage.unwrapOr(undefined)?.type;
     const text = stageName ? `${stageName} stage` : 'No active election';
+
     return <StyledSubtitle stage={stageName}>{text}</StyledSubtitle>;
   }
 

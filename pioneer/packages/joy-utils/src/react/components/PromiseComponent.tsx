@@ -7,6 +7,7 @@ type ErrorProps = {
 
 export function Error ({ error }: ErrorProps) {
   console.error(error);
+
   return (
     <Container style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <Message negative>
@@ -34,6 +35,7 @@ type PromiseComponentProps = {
   error: any;
   message: string;
 }
+
 const PromiseComponent: React.FunctionComponent<PromiseComponentProps> = ({ loading, error, message, children }) => {
   if (loading && !error) {
     return <Loading text={ message }/>;

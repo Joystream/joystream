@@ -14,7 +14,8 @@ const StyledMembersDropdown = styled(Dropdown)`
 `;
 
 function membersToOptions (members: MemberFromAccount[]) {
-  const validMembers = members.filter(m => m.profile !== undefined) as (MemberFromAccount & { profile: Membership })[];
+  const validMembers = members.filter((m) => m.profile !== undefined) as (MemberFromAccount & { profile: Membership })[];
+
   return validMembers
     .map(({ memberId, profile, account }) => ({
       key: profile.handle,
@@ -37,17 +38,20 @@ const MembersDropdown: React.FunctionComponent<Props> = ({ accounts, ...passedPr
   // State
   const [loading, setLoading] = useState(true);
   const [membersOptions, setMembersOptions] = useState([] as DropdownItemProps[]);
+
   // Generate members options array on load
   useEffect(() => {
     let isSubscribed = true;
+
     Promise
-      .all(accounts.map(acc => transport.members.membershipFromAccount(acc)))
-      .then(members => {
+      .all(accounts.map((acc) => transport.members.membershipFromAccount(acc)))
+      .then((members) => {
         if (isSubscribed) {
           setMembersOptions(membersToOptions(members));
           setLoading(false);
         }
       });
+
     return () => { isSubscribed = false; };
   }, [accounts]);
 

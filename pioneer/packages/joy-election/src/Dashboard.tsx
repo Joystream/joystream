@@ -45,13 +45,13 @@ class Dashboard extends React.PureComponent<Props, State> {
     const title = `Council ${activeCouncil.length > 0 ? '' : '(not elected)'}`;
 
     return <Section title={title}>
-      <Label.Group color="grey" size="large">
+      <Label.Group color='grey' size='large'>
         <Label>
           Council members
           <Label.Detail>{activeCouncil.length}</Label.Detail>
         </Label>
         <Label>
-          <Icon name="flag checkered"/>
+          <Icon name='flag checkered'/>
           Term ends at block #
           <Label.Detail>{formatNumber(p.termEndsAt)}</Label.Detail>
         </Label>
@@ -64,13 +64,16 @@ class Dashboard extends React.PureComponent<Props, State> {
 
     let stageName: string | undefined;
     let stageEndsAt: BlockNumber | undefined;
+
     if (stage && stage.isSome) {
       const stageValue = stage.value as ElectionStage;
+
       stageEndsAt = stageValue.value as BlockNumber; // contained value
       stageName = stageValue.type; // name of Enum variant
     }
 
     let leftBlocks: BN | undefined;
+
     if (stageEndsAt && bestNumber) {
       leftBlocks = stageEndsAt.sub(bestNumber);
     }
@@ -81,9 +84,9 @@ class Dashboard extends React.PureComponent<Props, State> {
     const title = <>Election (<span className={stateClass}>{stateText}</span>)</>;
 
     return <Section title={title}>
-      <Label.Group color="grey" size="large">
+      <Label.Group color='grey' size='large'>
         <Label>
-          <Icon name="target"/>
+          <Icon name='target'/>
           Election round #
           <Label.Detail>{formatNumber(round)}</Label.Detail>
         </Label>
@@ -97,7 +100,7 @@ class Dashboard extends React.PureComponent<Props, State> {
             <Label.Detail>{formatNumber(leftBlocks)}</Label.Detail>
           </Label>
           <Label>
-            <Icon name="flag checkered"/>
+            <Icon name='flag checkered'/>
             Stage ends at block #
             <Label.Detail>{formatNumber(stageEndsAt)}</Label.Detail>
           </Label>
@@ -111,7 +114,7 @@ class Dashboard extends React.PureComponent<Props, State> {
     const isAutoStart = (p.autoStart || false).valueOf();
 
     return <Section title='Configuration'>
-      <Label.Group color="grey" size="large">
+      <Label.Group color='grey' size='large'>
         <Label>
           Auto-start elections
           <Label.Detail>{isAutoStart ? 'Yes' : 'No'}</Label.Detail>
@@ -137,7 +140,7 @@ class Dashboard extends React.PureComponent<Props, State> {
           <Label.Detail>{formatBalance(p.minVotingStake)}</Label.Detail>
         </Label>
       </Label.Group>
-      <Label.Group color="grey" size="large">
+      <Label.Group color='grey' size='large'>
         <Label>
           Announcing period
           <Label.Detail>{formatNumber(p.announcingPeriod)} blocks</Label.Detail>

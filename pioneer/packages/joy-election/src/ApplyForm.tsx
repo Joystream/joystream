@@ -75,6 +75,7 @@ class ApplyForm extends React.PureComponent<Props, State> {
     stake = stake || ZERO;
     const isStakeGteMinStake = stake.add(this.alreadyStaked()).gte(this.minStake());
     const isStakeValid = !stake.isZero() && isStakeGteMinStake;
+
     this.setState({ stake, isStakeValid });
   }
 }

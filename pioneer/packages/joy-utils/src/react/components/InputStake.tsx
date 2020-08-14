@@ -14,6 +14,7 @@ type Props = {
 export default class Component extends React.PureComponent<Props> {
   render () {
     const { min, label, isValid, onChange } = this.props;
+
     return (
       <div className='ui--row' style={{ display: 'flex' }}>
         <InputBalance
@@ -33,7 +34,7 @@ export default class Component extends React.PureComponent<Props> {
               color={ isValid ? 'green' : 'red' }
               icon={isValid ? 'check' : 'warning sign'}
               label='Minimum stake'
-              pointing="left"
+              pointing='left'
             >
               Minimum stake
               <Label.Detail>{formatBalance(min)}</Label.Detail>

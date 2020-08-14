@@ -30,6 +30,7 @@ class RevealVoteForm extends React.PureComponent<Props, State> {
   constructor (props: Props) {
     super(props);
     let { applicantId, location } = this.props;
+
     applicantId = applicantId || getUrlParam(location, 'applicantId');
     const hashedVote = getUrlParam(location, 'hashedVote');
 
@@ -45,6 +46,7 @@ class RevealVoteForm extends React.PureComponent<Props, State> {
     const applicantOpts = accountIdsToOptions(this.props.applicants || []);
 
     const myVote = hashedVote ? findVoteByHash(hashedVote) : undefined;
+
     if (myVote) {
       // Try to substitue applicantId and salt from local sotre:
       if (!applicantId) applicantId = myVote.applicantId;

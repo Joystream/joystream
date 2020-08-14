@@ -7,6 +7,7 @@ import { MemberFromAccount } from '../types/members';
 export default class MembersTransport extends BaseTransport {
   async membershipById (id: MemberId | number): Promise<Membership | null> {
     const member = (await this.members.membershipById(id)) as Membership;
+
     // Can't just use member.isEmpty because member.suspended is Bool (which isEmpty method always returns false)
     return member.handle.isEmpty ? null : member;
   }
@@ -14,6 +15,7 @@ export default class MembersTransport extends BaseTransport {
   // Throws if profile not found
   async expectedMembership (id: MemberId | number): Promise<Membership> {
     const member = await this.membershipById(id);
+
     if (!member) {
       throw new Error(`Expected member profile not found! ID: ${id.toString()}`);
     }
@@ -34,7 +36,7 @@ export default class MembersTransport extends BaseTransport {
     return {
       account: accountId.toString(),
       memberId: memberId && memberId.toNumber(),
-      profile,
+      profile
     };
   }
 }

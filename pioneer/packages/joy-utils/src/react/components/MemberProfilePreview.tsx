@@ -48,9 +48,9 @@ export default function ProfilePreview (
   const Preview = (
     <StyledProfilePreview>
       {avatar_uri.toString() ? (
-        <Image src={avatar_uri.toString()} avatar floated="left" />
+        <Image src={avatar_uri.toString()} avatar floated='left' />
       ) : (
-        <IdentityIcon className="image" value={root_account.toString()} size={40} />
+        <IdentityIcon className='image' value={root_account.toString()} size={40} />
       )}
       <Details>
         <DetailsHandle>{handle.toString()}</DetailsHandle>
@@ -77,6 +77,7 @@ export function ProfilePreviewFromStruct (
   { profile, link, id, children }: React.PropsWithChildren<ProfilePreviewFromStructProps>
 ) {
   const { avatar_uri, root_account, handle } = profile;
+
   return (
     <ProfilePreview {...{ avatar_uri, root_account, handle, link, id }}>
       {children}

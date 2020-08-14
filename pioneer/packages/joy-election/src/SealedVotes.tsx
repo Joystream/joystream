@@ -23,10 +23,12 @@ type Props = ApiProps & I18nProps & MyAddressProps & {
 class Comp extends React.PureComponent<Props> {
   private filterVotes = (myVotesOnly: boolean): Hash[] => {
     const { myVotes = [], commitments = [] } = this.props;
+
     const isMyVote = (hash: string): boolean => {
-      return myVotes.find(x => x.hash === hash) !== undefined;
+      return myVotes.find((x) => x.hash === hash) !== undefined;
     };
-    return commitments.filter(x => myVotesOnly === isMyVote(x.toHex()));
+
+    return commitments.filter((x) => myVotesOnly === isMyVote(x.toHex()));
   }
 
   private renderVotes = (votes: Hash[], areVotesMine: boolean) => {
@@ -45,12 +47,12 @@ class Comp extends React.PureComponent<Props> {
 
     return <>
       <Section title={`My previous votes (${myVotes.length})`}>
-      {
-        !myVotes.length
-          ? <em>No votes by the current account found on the current browser.</em>
-          : this.renderVotes(myVotes, true)
-      }
-      { this.props.isStageRevealing && <Button primary as={Link} to="reveals">Reveal other vote</Button> }
+        {
+          !myVotes.length
+            ? <em>No votes by the current account found on the current browser.</em>
+            : this.renderVotes(myVotes, true)
+        }
+        { this.props.isStageRevealing && <Button primary as={Link} to='reveals'>Reveal other vote</Button> }
       </Section>
       <Section title={`Other votes (${otherVotes.length})`}>
         {

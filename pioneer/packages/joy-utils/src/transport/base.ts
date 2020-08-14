@@ -61,6 +61,7 @@ export default abstract class BaseTransport {
 
   protected queryMethodByName (name: string) {
     const [module, method] = name.split('.');
+
     return this.api.query[module][method];
   }
 }

@@ -26,7 +26,7 @@ class Component extends React.PureComponent<Props> {
 
     return <>
       <Section title='My vote'>
-      { stage?.unwrapOr(undefined)?.isOfType('Voting')
+        { stage?.unwrapOr(undefined)?.isOfType('Voting')
           ? (
             <VoteForm {...this.props} myAddress={myAddress} />
           )
@@ -35,7 +35,7 @@ class Component extends React.PureComponent<Props> {
               Voting is only possible during <i><b>Voting</b></i> stage.
             </Message>
           )
-      }
+        }
       </Section>
       <SealedVotes
         isStageRevealing={stage?.unwrapOr(undefined)?.isOfType('Revealing') || false}

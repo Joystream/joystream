@@ -19,7 +19,7 @@ import TxButton from '@polkadot/joy-utils/react/components/TxButton';
 import InputStake from '@polkadot/joy-utils/react/components/InputStake';
 import CandidatePreview from './CandidatePreview';
 import { MyAccountProps } from '@polkadot/joy-utils/react/hocs/accounts';
-import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards'
+import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
 import MembersDropdown from '@polkadot/joy-utils/react/components/MembersDropdown';
 import { saveVote, NewVote } from './myVotesStore';
 import { TxFailedCallback } from '@polkadot/react-components/Status/types';
@@ -50,6 +50,7 @@ class Component extends React.PureComponent<Props, State> {
     super(props);
 
     let { applicantId, location } = this.props;
+
     applicantId = applicantId || getUrlParam(location, 'applicantId');
 
     this.state = {
@@ -118,7 +119,7 @@ class Component extends React.PureComponent<Props, State> {
               onChange={ (event, data) => this.onChangeApplicant(data.value as string) }
               accounts={this.props.applicants || []}
               value={applicantId || ''}
-              placeholder="Select an applicant you support"
+              placeholder='Select an applicant you support'
             />
           </div>
           <InputStake
@@ -181,12 +182,15 @@ class Component extends React.PureComponent<Props, State> {
 
   private onTxSuccess = (vote: NewVote, txResult: SubmittableResult): void => {
     let hasVotedEvent = false;
+
     txResult.events.forEach((event, i) => {
       const { section, method } = event.event;
+
       if (section === 'councilElection' && method === 'Voted') {
         hasVotedEvent = true;
       }
     });
+
     if (hasVotedEvent) {
       saveVote(vote);
       this.setState({ isFormSubmitted: true });
@@ -203,6 +207,7 @@ class Component extends React.PureComponent<Props, State> {
 
   private onChangeStake = (stake?: BN) => {
     const isStakeValid = stake && stake.gte(this.minStake());
+
     this.setState({ stake, isStakeValid });
   }
 

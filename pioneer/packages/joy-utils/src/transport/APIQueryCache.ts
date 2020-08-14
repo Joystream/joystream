@@ -40,22 +40,28 @@ export class APIQueryCache {
   }
 
   protected buildQuery () {
-    const modules = Object.keys(this.api.query).map(key => ({ name: key, storage: this.api.query[key] }));
+    const modules = Object.keys(this.api.query).map((key) => ({ name: key, storage: this.api.query[key] }));
+
     modules.map((module) => {
       this.query[module.name] = {};
 
-      const funcs = Object.keys(module.storage).map(key => ({ name: key, storage: module.storage[key] }));
+      const funcs = Object.keys(module.storage).map((key) => ({ name: key, storage: module.storage[key] }));
+
       funcs.map((func) => {
         this.query[module.name][func.name] = async (...args: any): Promise<Codec> => {
           const cacheKey = module.name + func.name + JSON.stringify(args);
           const cacheValue = this.cache.get(cacheKey);
+
           if (cacheValue) {
             this.cacheHits++;
+
             return cacheValue;
           }
 
           const toCache = await this.api.query[module.name][func.name](...args);
+
           this.cache.set(cacheKey, toCache);
+
           return toCache;
         };
       });

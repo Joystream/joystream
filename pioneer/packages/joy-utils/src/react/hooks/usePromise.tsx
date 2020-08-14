@@ -17,18 +17,21 @@ export default function usePromise<T> (
   let isSubscribed = true;
   const execute = useCallback(() => {
     setState({ value: state.value, error: null, isPending: true });
+
     return promise()
-      .then(value => {
+      .then((value) => {
         if (isSubscribed) {
           setState({ value, error: null, isPending: false });
+
           if (onUpdate) {
             onUpdate(value);
           }
         }
       })
-      .catch(error => {
+      .catch((error) => {
         if (isSubscribed) {
           setState({ value: defaultValue, error: error, isPending: false });
+
           if (onUpdate) {
             onUpdate(defaultValue); // This should represent an empty value in most cases
           }
@@ -38,11 +41,13 @@ export default function usePromise<T> (
 
   useEffect(() => {
     execute();
+
     return () => {
       isSubscribed = false;
     };
   }, dependsOn);
 
   const { value, error, isPending } = state;
+
   return [value, error, isPending, execute];
 }

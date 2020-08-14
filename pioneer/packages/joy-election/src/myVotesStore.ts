@@ -20,22 +20,25 @@ export type SavedVote = NewVote & {
 /** Get all votes that are stored in a local sotrage.  */
 export const getAllVotes = (): SavedVote[] => {
   const votes = store.get(MY_VOTES);
+
   return nonEmptyArr(votes) ? votes as SavedVote[] : [];
 };
 
 export const getVotesByVoter = (voterId: string): SavedVote[] => {
-  return getAllVotes().filter(v => v.voterId === voterId);
+  return getAllVotes().filter((v) => v.voterId === voterId);
 };
 
 export const findVoteByHash = (hash: string): SavedVote | undefined => {
-  return getAllVotes().find(v => v.hash === hash);
+  return getAllVotes().find((v) => v.hash === hash);
 };
 
 export const saveVote = (vote: NewVote): void => {
   const votes = getAllVotes();
-  const similarVote = votes.find(v => v.hash === vote.hash);
+  const similarVote = votes.find((v) => v.hash === vote.hash);
+
   if (similarVote) {
     console.log('There is a vote with the same hash in a storage:', similarVote);
+
     return;
   }
 
@@ -45,7 +48,8 @@ export const saveVote = (vote: NewVote): void => {
 
 export const revealVote = (hash: string): void => {
   const votes = getAllVotes();
-  const savedVote = votes.find(v => v.hash === hash);
+  const savedVote = votes.find((v) => v.hash === hash);
+
   if (savedVote && !savedVote.isRevealed) {
     savedVote.isRevealed = true;
     savedVote.revealedOnTime = Date.now();

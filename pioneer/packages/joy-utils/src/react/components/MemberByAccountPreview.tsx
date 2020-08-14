@@ -23,7 +23,7 @@ const MemberByAccountPreview: React.FunctionComponent<Props> = ({ accountId }) =
   );
 
   return (
-    <PromiseComponent error={error} loading={loading} message="Fetching member profile...">
+    <PromiseComponent error={error} loading={loading} message='Fetching member profile...'>
       <MemberByAccount>
         { member && (
           member.profile

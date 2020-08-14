@@ -53,9 +53,10 @@ class Council extends React.PureComponent<Props, State> {
 
   render () {
     const { council = [] } = this.props;
+
     // console.log({ council });
     return (
-      <Section title="Active council members">
+      <Section title='Active council members'>
         {!council.length ? <em>Council is not elected yet</em> : this.renderTable(council)}
       </Section>
     );

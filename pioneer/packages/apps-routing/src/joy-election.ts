@@ -13,5 +13,5 @@ export default function create (t: <T = string> (key: string, text: string, opti
     icon: 'university',
     name: 'council',
     SubtitleComponent: SidebarSubtitle
-  }
+  };
 }

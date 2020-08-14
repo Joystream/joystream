@@ -38,6 +38,7 @@ class App extends React.PureComponent<Props, State> {
 
   private buildTabs (): TabItem[] {
     const { t, activeCouncil = [], applicants = [], commitments = [] } = this.props;
+
     return [
       {
         isRoot: true,
@@ -62,6 +63,7 @@ class App extends React.PureComponent<Props, State> {
   render () {
     const { basePath } = this.props;
     const tabs = this.buildTabs();
+
     return (
       <ElectionMain className='election--App'>
         <header>

@@ -25,22 +25,23 @@ type Props = ApiProps & I18nProps & {
 class Comp extends React.PureComponent<Props> {
   renderCandidateOrAction () {
     const { hash, sealedVote, isStageRevealing, isMyVote } = this.props;
+
     if (!sealedVote) {
       return <em>Unknown hashed vote: {hash.toHex()}</em>;
     }
 
     if (sealedVote.vote.isSome) {
       const candidateId = sealedVote.vote.unwrap();
+
       return <CandidatePreview accountId={candidateId} />;
     } else if (isStageRevealing && isMyVote) {
       const revealUrl = `/council/reveals?hashedVote=${hash.toHex()}`;
+
       return <Link to={revealUrl} className='ui button primary inverted'>Reveal this vote</Link>;
-    }
-    else if (isMyVote) {
-      return <Message warning>Wait until <i><b>Revealing</b></i> stage in order to reveal this vote.</Message>
-    }
-    else {
-      return <Message info>This vote has not been revealed yet.</Message>
+    } else if (isMyVote) {
+      return <Message warning>Wait until <i><b>Revealing</b></i> stage in order to reveal this vote.</Message>;
+    } else {
+      return <Message info>This vote has not been revealed yet.</Message>;
     }
   }
 
