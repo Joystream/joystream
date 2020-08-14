@@ -8,13 +8,9 @@ description: >-
 
 ## Overview
 
-The query node schema is a graphql schema file encriched with directives explained below. The schema is used by `cli codegen` in order to generate a GraphQL API server for quering the substrate blockchain data.
+Hydra input schema is a dialect of the GraphQL schema definition language enriched with the additional directives and built-in primitive types described in what follows. The input schema is consumed by `hydra-cli codegen` to generate the entity classes for the database and the final API GraphQL schema served by the server. The latter is auto-generated and can be previewed by running 
 
-## Entities
-
-TBD
-
-## Derivatives
-
-TBD
+```text
+$ hydra-cli preview && cat apipreview.graphql
+```
 

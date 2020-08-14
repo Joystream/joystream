@@ -10,7 +10,7 @@ description: >-
 
 All the scalar entity types enjoy first-class support in the output schema when it comes to filtering. The standard is known as [OpenCRUD](https://www.opencrud.org/) and dictates who filtering should look like depending on the field type. For example, if the input schema defines the following type:
 
-```text
+```graphql
 type Person @entity {
     name: String!
     married: Boolean

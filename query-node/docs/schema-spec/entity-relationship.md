@@ -1,3 +1,7 @@
+---
+description: 'Define one-to-one, one-to-many and many-to-many relationships between entities'
+---
+
 # Entity Relationships
 
 ### One-To-One \(1:1\) Relationships
@@ -37,7 +41,7 @@ Database tables:
 
 ### One-To-Many \(1:n\) Relationships
 
-In One-To-Many relation, one entity instance is related to multiple instance of the other entity.
+In One-To-Many relation, one entity instance is related to multiple instances of the other entity.
 
 ```graphql
 type User @entity {
@@ -65,7 +69,7 @@ The only difference between `1:1` and `1:n` is the unique constraint that `1:1` 
 
 ### Many-To-Many \(n:n\) Relationships
 
-Many-To-Many is a relationship where one entity instance is related to many instance of other entity and vice-versa. In this relationship one side of the relation must derive.
+Many-To-Many is a relationship where one entity instance is related to a collection of instances of other entities and vice-versa. In this relationship, one side of the relation must derive.
 
 ```graphql
 type User @entity {
@@ -101,7 +105,7 @@ Database tables:
 
 ### Reverse Lookups
 
-Defining reverse lookups on an entity allows you to query other side of the relation. Use `@derivedFrom` directive to add reverse lookup to an entity.
+Defining reverse lookups on an entity allows you to query the other side of the relation. Use `@derivedFrom` directive to add a reverse lookup to an entity.
 
 **Example** If we want to access a user's `posts` from the user entity we should add a derived field to `User` entity:
 
@@ -119,7 +123,7 @@ type Post @entity {
 
 ## Relationships In Mappings
 
-Each GraphQL entity has a corresponding typeorm entity and we use these entities to perform CRUD operations.
+Each GraphQL entity has a corresponding TypeORM entity and we use these entities to perform CRUD operations.
 
 **Example**
 
