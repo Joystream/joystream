@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from 'semantic-ui-react';
+import { Button, Message } from 'semantic-ui-react';
 
 import { I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
@@ -49,7 +49,7 @@ class Comp extends React.PureComponent<Props> {
       <Section title={`My previous votes (${myVotes.length})`}>
         {
           !myVotes.length
-            ? <em>No votes by the current account found on the current browser.</em>
+            ? <Message info>No votes by the current account found on the current browser.</Message>
             : this.renderVotes(myVotes, true)
         }
         { this.props.isStageRevealing && <Button primary as={Link} to='reveals'>Reveal other vote</Button> }

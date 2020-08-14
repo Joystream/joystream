@@ -17,11 +17,12 @@ type Props = ApiProps & I18nProps & {
   index: number;
   accountId: AccountId;
   stake?: ElectionStake;
+  isVotingStage: boolean;
 };
 
 class Applicant extends React.PureComponent<Props> {
   render () {
-    const { index, accountId, stake } = this.props;
+    const { index, accountId, stake, isVotingStage } = this.props;
     const voteUrl = `/council/votes?applicantId=${accountId.toString()}`;
 
     return (
@@ -33,9 +34,11 @@ class Applicant extends React.PureComponent<Props> {
         <Table.Cell style={{ textAlign: 'right' }}>
           {formatBalance(calcTotalStake(stake))}
         </Table.Cell>
-        <Table.Cell>
-          <Link to={voteUrl} className='ui button primary inverted'>Vote</Link>
-        </Table.Cell>
+        { isVotingStage && (
+          <Table.Cell>
+            <Link to={voteUrl} className='ui button primary inverted'>Vote</Link>
+          </Table.Cell>
+        ) }
       </Table.Row>
     );
   }

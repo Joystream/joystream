@@ -25,21 +25,27 @@ type Props = RouteProps & ApiProps & I18nProps & MyAccountProps & {
 };
 
 class Applicants extends React.PureComponent<Props> {
-  private renderTable = (applicants: Array<AccountId>) => (
-    <Table celled selectable compact>
-      <Table.Header>
-        <Table.Row>
-          <Table.HeaderCell>#</Table.HeaderCell>
-          <Table.HeaderCell>Applicant</Table.HeaderCell>
-          <Table.HeaderCell>Total stake</Table.HeaderCell>
-          <Table.HeaderCell style={{ width: '1%' }}>Actions</Table.HeaderCell>
-        </Table.Row>
-      </Table.Header>
-      <Table.Body>{applicants.map((accountId, index) => (
-        <Applicant key={index} index={index} accountId={accountId} />
-      ))}</Table.Body>
-    </Table>
-  )
+  private renderTable = (applicants: Array<AccountId>) => {
+    const isVotingStage = this.props.stage?.unwrapOr(undefined)?.isOfType('Voting') || false;
+
+    return (
+      <Table celled selectable compact>
+        <Table.Header>
+          <Table.Row>
+            <Table.HeaderCell>#</Table.HeaderCell>
+            <Table.HeaderCell>Applicant</Table.HeaderCell>
+            <Table.HeaderCell>Total stake</Table.HeaderCell>
+            { isVotingStage && (
+              <Table.HeaderCell style={{ width: '1%' }}>Actions</Table.HeaderCell>
+            ) }
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>{applicants.map((accountId, index) => (
+          <Applicant key={index} index={index} accountId={accountId} isVotingStage={isVotingStage}/>
+        ))}</Table.Body>
+      </Table>
+    );
+  }
 
   render () {
     const { myAddress, applicants = [], candidacyLimit = new BN(0), stage } = this.props;
