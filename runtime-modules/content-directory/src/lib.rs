@@ -1727,12 +1727,10 @@ impl<T: Trait> Module<T> {
 
         // Add up both net decremental_reference_counter_side_effects and incremental_reference_counter_side_effects
         // to get one net sideffect per entity.
-        let reference_counter_side_effects = Self::calculate_updated_inbound_rcs_delta(
+        Self::calculate_updated_inbound_rcs_delta(
             decremental_reference_counter_side_effects,
             incremental_reference_counter_side_effects,
-        );
-
-        reference_counter_side_effects
+        )
     }
 
     /// Add up both net first_reference_counter_side_effects and second_reference_counter_side_effects (if some)
