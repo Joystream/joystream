@@ -11,8 +11,9 @@ $ hydra-cli [COMMAND]
 COMMANDS
 
 ```bash
-scaffold  Generate sample project with a schema file and mappings
-codegen   Generate ready to run graphql server and block indexer
+scaffold  Generate a starter project with a sample schema file and mappings
+codegen   Generate a ready to run graphql server and block indexer
+preview   Preview the output schema served by the GraphQL server
 ```
 
 ## Using Hydra CLI
