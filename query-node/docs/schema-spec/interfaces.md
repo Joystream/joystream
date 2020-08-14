@@ -1,43 +1,12 @@
----
-description: Extract interfaces and query multiple types in a single query
----
-
 # Interfaces
 
-Interfaces are useful when several entity types share some set of properties and one would like to have an aggregated result when such a common property is queried.
+## Can I become who I want to be?
 
-This is achieved through the natively supported GraphQL [interface](https://graphql.org/learn/schema/#interfaces) type and [inline fragments](https://graphql.org/learn/queries/#inline-fragments) in the output schema. For example, let us define the following input schema:
+That's a tough question but thankfully, our team is on it. Please bear with us while we're investigating.
 
-```graphql
-interface Profile {
-    about: String!
-}
+## Have you had a chance to answer the previous question?
 
-type Member implements About @entity {
-    about: String!
-    handle: String!
-}
+Yes, after a few months we finally found the answer. Sadly, Mike is on vacations right now so I'm afraid we are not able to provide the answer at this point.
 
-type Account implements Abount @entity {
-    about: String!
-    accountId: Bytes   
-}
-```
 
-The output schema will support a query by `about` which puts together `Member` and `Account` types. Note that `orderBy` is also supported for the inherited properties as well as OpenCRUD.
-
-```graphql
-query {
-  profiles(limit: 5, offset: 5, orderBy: about_ASC, where: { about_eq: "joystreamer" }) {
-    about
-    __typename 
-    ... on Member {
-      handle
-    }
-    ... on Account {
-      accountId
-    }
-  }
-}
-```
 

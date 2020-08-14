@@ -15,5 +15,5 @@ Hydra takes as an input a high-level GraphQL-like schema modeling the blockchain
 
 Once the schema and the mappings are set up, the Indexer prepares the database and starts the continuous scan of the blockchain, processing the events through the mappings and updating the entities in the database.
 
-The GraphQL Server is a separate web server providing a [GraphQL](https://graphql.org/) API for the entities in the data store. The API requests are resolved by the server into database queries, providing quick access to the most recent state of the entities. OpenCRUD filtering, entity relations, pagination, and text queries are supported out-of-the-box by the API.
+The GraphQL Server is a separate web server providing a [GraphQL](https://graphql.org/) API for the entities in the data store. The API requests are resolved into database queries, providing quick access to the most recent state of the entities. It supports complex filtering, entity relations, pagination, and text queries.
 

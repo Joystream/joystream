@@ -4,7 +4,7 @@ description: >-
   ordering
 ---
 
-# The Query Goodies
+# The Goodies
 
 ### Filtering
 

@@ -84,7 +84,7 @@
     * [Architecture](query-node/docs/architecture.md)
     * [Schema](query-node/docs/schema-spec/README.md)
       * [Entities](query-node/docs/schema-spec/entities.md)
-      * [The Query Goodies](query-node/docs/schema-spec/the-query-goodies.md)
+      * [The Goodies](query-node/docs/schema-spec/the-query-goodies.md)
       * [Entity Relationships](query-node/docs/schema-spec/entity-relationship.md)
       * [Enums](query-node/docs/schema-spec/enums.md)
       * [Algebraic types](query-node/docs/schema-spec/variant-types.md)
