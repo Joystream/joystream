@@ -1,7 +1,7 @@
 #![cfg(test)]
 
 /////////////////// Configuration //////////////////////////////////////////////
-use crate::{Error, Event, Module, CouncilElectionStage, GenesisConfig, Trait};
+use crate::{Error, Event, Module, CouncilElectionStage, GenesisConfig, RawEvent, Trait, Candidate};
 
 use sp_core::H256;
 use sp_io;
@@ -23,6 +23,8 @@ pub const USER_REGULAR_3: u64 = 5;
 
 pub const POWER_VOTE_STRENGTH: u64 = 10;
 
+pub const CANDIDATE_BASE_ID: u64 = 5000;
+
 
 /////////////////// Runtime and Instances //////////////////////////////////////
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -40,6 +42,7 @@ impl Trait for Runtime {
     type Event = TestEvent;
 
     type Tmp = u64;
+    type CurrencyBalance = u64;
 
     type MinNumberOfCandidates = MinNumberOfCandidates;
     type CouncilSize = CouncilSize;
@@ -200,6 +203,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
         stage: (CouncilElectionStage::default(), 0),
         council_members: vec![],
+        candidates: vec![],
     }
 }
 
@@ -212,14 +216,19 @@ pub fn build_test_externalities(
 
     config.assimilate_storage(&mut t).unwrap();
 
-    t.into()
+    let mut result = Into::<sp_io::TestExternalities>::into(t.clone());
+
+    // Make sure we are not in block 1 where no events are emitted - see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
+    result.execute_with(|| InstanceMockUtils::<Runtime>::increase_block_number(1));
+
+    result
 }
 
 pub struct InstanceMockUtils<T: Trait> {
     _dummy: PhantomData<T>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait> InstanceMockUtils<T> {
+impl<T: Trait> InstanceMockUtils<T> where T::AccountId: From<u64> {
 
     pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::Origin {
         match origin {
@@ -240,6 +249,22 @@ impl<T: Trait> InstanceMockUtils<T> {
             f(origin)
         });
     }
+
+    pub fn increase_block_number(increase: T::BlockNumber) -> () {
+        let block_number = system::Module::<T>::block_number();
+        system::Module::<T>::set_block_number(block_number + increase);
+    }
+
+    pub fn generate_candidate(index: u64) -> (OriginType<T::AccountId>, Candidate) {
+        let account_id = CANDIDATE_BASE_ID + index;
+        let origin = OriginType::Signed(account_id.into());
+        let candidate = Candidate {
+            tmp: 0
+        };
+
+        (origin, candidate)
+    }
+
 }
 
 /////////////////// Mocks of Module's actions //////////////////////////////////
@@ -248,7 +273,7 @@ pub struct InstanceMocks<T: Trait> {
     _dummy: PhantomData<T>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait> InstanceMocks<T> {
+impl<T: Trait> InstanceMocks<T> where T::AccountId: From<u64> {
 
     pub fn start_announcing_period(
         origin: OriginType<T::AccountId>,
@@ -258,6 +283,49 @@ impl<T: Trait> InstanceMocks<T> {
         assert_eq!(
             Module::<T>::start_announcing_period(InstanceMockUtils::<T>::mock_origin(origin),),
             expected_result,
+        );
+    }
+
+    pub fn candidate(
+        origin: OriginType<T::AccountId>,
+        stake: <T as Trait>::CurrencyBalance,
+        expected_result: Result<(), Error<T>>,
+    ) -> () {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::candidate(InstanceMockUtils::<T>::mock_origin(origin), stake),
+            expected_result,
+        );
+    }
+
+    pub fn finalize_announcing_period(
+        origin: OriginType<T::AccountId>,
+        expected_result: Result<(), Error<T>>,
+        expect_candidates: Option<Vec<Candidate>>,
+    ) -> () {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::finalize_announcing_period(InstanceMockUtils::<T>::mock_origin(origin),),
+            expected_result,
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        if expect_candidates.is_none() {
+            // check event was emitted
+            assert_eq!(
+                system::Module::<Runtime>::events().last().unwrap().event,
+                TestEvent::event_mod(RawEvent::NotEnoughCandidates())
+            );
+            return;
+        }
+
+        // check event was emitted
+        assert_eq!(
+            system::Module::<Runtime>::events().last().unwrap().event,
+            TestEvent::event_mod(RawEvent::VotingPeriodStarted(expect_candidates.unwrap()))
         );
     }
 }

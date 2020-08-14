@@ -70,6 +70,19 @@ pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
         + MaybeSerialize
         + PartialEq;
 
+    //type CurrencyBalance = <Self as referendum::Trait<ReferendumInstance>>::CurrencyBalance;
+    /// Currency balance used for stakes.
+    type CurrencyBalance: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq
+        + From<u64>
+        + Into<u64>;
+
     /// Minimum number of candidates needed to conclude announcing period
     type MinNumberOfCandidates: Get<u64>;
     /// Council member count
@@ -87,7 +100,11 @@ decl_storage! {
         /// Current council voting stage
         pub Stage get(fn stage) config(): (CouncilElectionStage, T::BlockNumber);
 
+        /// Current council members
         pub CouncilMembers get(fn council_members) config(): Vec<Candidate>;
+
+        /// Current candidates to council
+        pub Candidates get(fn candidates) config(): Vec<(Candidate, <T as Trait>::CurrencyBalance)>;
     }
 }
 
@@ -113,6 +130,9 @@ decl_event! {
 
         /// Idle period started
         IdlePeriodStarted(),
+
+        /// New candidate announced
+        NewCandidate(Candidate),
     }
 }
 
@@ -209,10 +229,10 @@ decl_module! {
             }
 
             // update state
-            Mutations::<T>::finalize_announcing_period(origin, &candidates);
+            Mutations::<T>::finalize_announcing_period(origin, &candidates)?;
 
             // emit event
-            Self::deposit_event(RawEvent::VotingPeriodStarted(candidates));
+            Self::deposit_event(RawEvent::VotingPeriodStarted(candidates.iter().map(|item| item.0.clone()).collect()));
 
             Ok(())
         }
@@ -232,6 +252,25 @@ decl_module! {
 
             // emit event
             Self::deposit_event(RawEvent::IdlePeriodStarted());
+
+            Ok(())
+        }
+
+        /// Subscribe candidate
+        #[weight = 10_000_000]
+        pub fn candidate(origin, stake: <T as Trait>::CurrencyBalance) -> Result<(), Error<T>> {
+            // ensure action can be started
+            let candidate = EnsureChecks::<T>::can_candidate(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T>::candidate(&candidate, &stake);
+
+            // emit event
+            Self::deposit_event(RawEvent::NewCandidate(candidate));
 
             Ok(())
         }
@@ -274,7 +313,7 @@ impl<T: Trait> Mutations<T> {
         Stage::<T>::mutate(|value| *value = (CouncilElectionStage::Announcing, block_number));
     }
 
-    fn finalize_announcing_period(origin: T::Origin, candidates: &Vec<Candidate>) -> Result<(), Error<T>> {
+    fn finalize_announcing_period(origin: T::Origin, candidates: &Vec<(Candidate, <T as Trait>::CurrencyBalance)>) -> Result<(), Error<T>> {
         let options = (0..candidates.len() as u64).map(|item| item.into()).collect();
         let winning_target_count = T::CouncilSize::get();
 
@@ -296,8 +335,31 @@ impl<T: Trait> Mutations<T> {
         CouncilMembers::mutate(|value| *value = elected_members.clone());
     }
 
+    fn candidate(candidate: &Candidate, stake: &<T as Trait>::CurrencyBalance) -> () {
+        Candidates::<T>::mutate(|current_candidates| {
+            let mut inserted = false;
+            for (i, c) in current_candidates.iter().enumerate() {
+                if stake > &c.1 {
+                    current_candidates.insert(i, (candidate.clone(), stake.clone()));
+                    inserted = true;
+                    break;
+                }
+            }
+
+            if (!inserted) {
+                current_candidates.push((candidate.clone(), stake.clone()));
+            }
+
+            let council_size = T::CouncilSize::get();
+            if current_candidates.len() as u64 > council_size {
+                *current_candidates = current_candidates[..council_size as usize].to_vec();
+            }
+        });
+    }
+
     fn unlock_stake(account_id: T::AccountId) -> () {
         // TODO
+
     }
 }
 
@@ -359,13 +421,13 @@ impl<T: Trait> EnsureChecks<T> {
 
     fn can_finalize_announcing_period(
         origin: T::Origin,
-    ) -> Result<Vec<Candidate>, Error<T>> {
+    ) -> Result<Vec<(Candidate, <T as Trait>::CurrencyBalance)>, Error<T>> {
         // ensure superuser requested action
         Self::ensure_super_user(origin)?;
 
-        let candidates = vec![]; // TODO: retrieve real list of candidates
+        let candidates_info = Candidates::<T>::get();
 
-        Ok(candidates)
+        Ok(candidates_info)
     }
 
     fn can_start_idle_period(
@@ -383,6 +445,18 @@ impl<T: Trait> EnsureChecks<T> {
         let elected_members = vec![]; // TODO: retrieve real list of elected council members
 
         Ok(elected_members)
+    }
+
+    fn can_candidate(origin: T::Origin) -> Result<Candidate, Error<T>> {
+        // ensure superuser requested action
+        Self::ensure_regular_user(origin)?;
+
+        // TODO: create proper candidate
+        let candidate = Candidate {
+            tmp: 0
+        };
+
+        Ok(candidate)
     }
 
     fn can_unlock_stake(
