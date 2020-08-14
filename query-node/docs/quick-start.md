@@ -27,7 +27,7 @@ hydra-cli scaffold
 Answer the prompts and the scaffolder will generate a sample backbone for our Hydra project. This includes:
 
 * Sample GraphQL data [schema](schema-spec/) in `schema.graphql` describing proposals in the Kusama network
-* Sample [mapping](mappings.md) scripts in the `./mapping` folder translating substrate events into the `Proposal` entity CRUD operations
+* Sample [mapping](mappings/) scripts in the `./mapping` folder translating substrate events into the `Proposal` entity CRUD operations
 * `docker-compose.yml` for running a Postgres instance locally as a Docker service.
 * `.env` with all the necessary environment variables.
 * `package.json` with a few utility yarn scripts to be used later on.
@@ -99,7 +99,7 @@ This will create Docker images named `hydra-indexer` and `hydra-graphql-server`
 
 * Explore more [examples](../examples/)
 * Describe your own [schema](schema-spec/) in `schema.graphql`
-* Write your indexer [mappings](mappings.md)
+* Write your indexer [mappings](mappings/)
 * Push your Hydra indexer and GraphQL Docker images to [Docker Hub](https://hub.docker.com/) and deploy  
 
 

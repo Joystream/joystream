@@ -16,5 +16,5 @@ That's where Hydra gets you covered. Define your data model and the Hydra indexe
 * [Install](install-hydra.md) Hydra toolkit 
 * Hydra [tutorial](quick-start.md): spin a Hydra Indexer and GraphQL server in under five minutes
 * Look at the [examples](../examples/) 
-* Learn how to define your own data [schema](schema-spec/) and [mappings](mappings.md) to run a Hydra Indexer
+* Learn how to define your own data [schema](schema-spec/) and [mappings](mappings/) to run a Hydra Indexer
 
