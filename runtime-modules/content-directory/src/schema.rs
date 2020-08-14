@@ -375,7 +375,7 @@ impl<T: Trait> Property<T> {
     pub fn ensure_property_value_can_be_inserted_at_property_vector(
         &self,
         single_value: &InputValue<T>,
-        vec_value: &VecOutputPropertyValue<T>,
+        vec_value: &VecStoredPropertyValue<T>,
         index_in_property_vec: VecMaxLength,
         current_entity_controller: &EntityController<T>,
     ) -> Result<(), Error<T>> {
@@ -395,34 +395,34 @@ impl<T: Trait> Property<T> {
             property_type_vec.get_vec_type(),
         ) {
             // Single values
-            (InputValue::Bool(_), VecOutputValue::Bool(vec), Type::Bool) => {
+            (InputValue::Bool(_), VecStoredValue::Bool(vec), Type::Bool) => {
                 Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
             }
-            (InputValue::Uint16(_), VecOutputValue::Uint16(vec), Type::Uint16) => {
+            (InputValue::Uint16(_), VecStoredValue::Uint16(vec), Type::Uint16) => {
                 Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
             }
-            (InputValue::Uint32(_), VecOutputValue::Uint32(vec), Type::Uint32) => {
+            (InputValue::Uint32(_), VecStoredValue::Uint32(vec), Type::Uint32) => {
                 Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
             }
-            (InputValue::Uint64(_), VecOutputValue::Uint64(vec), Type::Uint64) => {
+            (InputValue::Uint64(_), VecStoredValue::Uint64(vec), Type::Uint64) => {
                 Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
             }
-            (InputValue::Int16(_), VecOutputValue::Int16(vec), Type::Int16) => {
+            (InputValue::Int16(_), VecStoredValue::Int16(vec), Type::Int16) => {
                 Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
             }
-            (InputValue::Int32(_), VecOutputValue::Int32(vec), Type::Int32) => {
+            (InputValue::Int32(_), VecStoredValue::Int32(vec), Type::Int32) => {
                 Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
             }
-            (InputValue::Int64(_), VecOutputValue::Int64(vec), Type::Int64) => {
+            (InputValue::Int64(_), VecStoredValue::Int64(vec), Type::Int64) => {
                 Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
             }
-            (InputValue::Text(text_item), VecOutputValue::Text(vec), Type::Text(text_max_len)) => {
+            (InputValue::Text(text_item), VecStoredValue::Text(vec), Type::Text(text_max_len)) => {
                 Self::validate_max_len_of_text(text_item, *text_max_len)?;
                 Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
             }
             (
                 InputValue::TextToHash(text_item),
-                VecOutputValue::Hash(vec),
+                VecStoredValue::Hash(vec),
                 Type::Hash(text_max_len),
             ) => {
                 if let Some(text_max_len) = text_max_len {
@@ -432,7 +432,7 @@ impl<T: Trait> Property<T> {
             }
             (
                 InputValue::Reference(entity_id),
-                VecOutputValue::Reference(vec),
+                VecStoredValue::Reference(vec),
                 Type::Reference(class_id, same_controller_status),
             ) => {
                 // Ensure class_id of Entity under provided entity_id references Entity,

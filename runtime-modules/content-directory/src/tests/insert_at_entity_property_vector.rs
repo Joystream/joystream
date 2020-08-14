@@ -14,7 +14,7 @@ fn insert_at_entity_property_vector_success() {
         let number_of_events_before_calls = System::events().len();
 
         // Insert `InputValue` at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id`
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id`
         let nonce = 0;
         let index_in_property_vector = 1;
         let input_value = InputValue::Reference(SECOND_ENTITY_ID);
@@ -39,7 +39,7 @@ fn insert_at_entity_property_vector_success() {
         {
             second_schema_old_property_value.insert_at(
                 index_in_property_vector,
-                OutputValue::Reference(SECOND_ENTITY_ID),
+                StoredValue::Reference(SECOND_ENTITY_ID),
             );
         }
 
@@ -91,7 +91,7 @@ fn insert_at_entity_property_vector_entity_not_found() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` in case when corresponding Entity does not exist
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` in case when corresponding Entity does not exist
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             LEAD_ORIGIN,
             actor.clone(),
@@ -131,7 +131,7 @@ fn insert_at_entity_property_vector_lead_auth_failed() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` using unknown origin and lead actor
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` using unknown origin and lead actor
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             UNKNOWN_ORIGIN,
             actor,
@@ -171,7 +171,7 @@ fn insert_at_entity_property_vector_member_auth_failed() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` using unknown origin and member actor
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` using unknown origin and member actor
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             UNKNOWN_ORIGIN,
             actor,
@@ -218,7 +218,7 @@ fn insert_at_entity_property_vector_curator_group_is_not_active() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` using curator group, which is not active as actor
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` using curator group, which is not active as actor
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             FIRST_CURATOR_ORIGIN,
             actor,
@@ -261,7 +261,7 @@ fn insert_at_entity_property_vector_curator_auth_failed() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` using unknown origin and curator actor
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` using unknown origin and curator actor
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             UNKNOWN_ORIGIN,
             actor,
@@ -304,7 +304,7 @@ fn insert_at_entity_property_vector_curator_not_found_in_curator_group() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id`,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id`,
         // using actor in group, which curator id was not added to corresponding group set
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             SECOND_CURATOR_ORIGIN,
@@ -345,7 +345,7 @@ fn insert_at_entity_property_vector_access_denied() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id`,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id`,
         // using origin, which corresponding actor is neither entity maintainer, nor controller.
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             SECOND_CURATOR_ORIGIN,
@@ -386,7 +386,7 @@ fn insert_at_entity_property_vector_values_locked_on_class_level() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id`,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id`,
         // in the case, when all property values were locked on Class level.
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             LEAD_ORIGIN,
@@ -428,7 +428,7 @@ fn insert_at_entity_property_vector_class_property_not_found() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id`,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id`,
         // in the case, when Property under corresponding PropertyId was not found on Class level.
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             LEAD_ORIGIN,
@@ -505,7 +505,7 @@ fn insert_at_entity_property_vector_is_locked_for_given_actor() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to remove value at given `index_in_property_vector`
-        // from `VecOutputPropertyValue` under `in_class_schema_property_id`,
+        // from `VecStoredPropertyValue` under `in_class_schema_property_id`,
         // under lead origin, which is current Entity controller, in the case,
         // when corresponding class Property was locked from controller on Class level
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
@@ -551,7 +551,7 @@ fn insert_at_entity_property_vector_unknown_entity_property_id() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id`,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id`,
         // in the case, when property value was not added to current Entity values yet.
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             LEAD_ORIGIN,
@@ -618,7 +618,7 @@ fn insert_at_entity_property_vector_value_under_given_index_is_not_a_vector() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id`,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id`,
         // in the case, when entity property value corresponding to a given in_class_schema_property_id is not a vector.
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             LEAD_ORIGIN,
@@ -663,7 +663,7 @@ fn insert_at_entity_property_vector_nonces_does_not_match() {
         let input_value = InputValue::Reference(FIRST_ENTITY_ID);
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id`,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id`,
         // providing nonce that does not corresponding property value vector one.
         let insert_at_entity_property_vector_result = insert_at_entity_property_vector(
             LEAD_ORIGIN,
@@ -720,7 +720,7 @@ fn insert_at_entity_property_vector_index_is_out_of_range() {
         let number_of_events_before_call = System::events().len();
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` in case,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` in case,
         // when provided index_in_property_vector is out of range of the related vector
         let nonce = 0;
         let index_in_property_vector = entity_ids.len() as u16 + 1;
@@ -781,7 +781,7 @@ fn insert_at_entity_property_vector_is_too_long() {
         let number_of_events_before_call = System::events().len();
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` in case,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` in case,
         // when corresponding property_vector can not contain more values
         let nonce = 0;
         let index_in_property_vector = 1;
@@ -858,7 +858,7 @@ fn insert_at_entity_property_vector_text_prop_is_too_long() {
         let number_of_events_before_call = System::events().len();
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` in case,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` in case,
         // when corresponding property text value is too long
         let nonce = 0;
         let index_in_property_vector = 0;
@@ -938,7 +938,7 @@ fn insert_at_entity_property_vector_hashed_text_prop_is_too_long() {
         let number_of_events_before_call = System::events().len();
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` in case,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` in case,
         // when corresponding property text to hash value is too long
         let nonce = 0;
         let index_in_property_vector = 0;
@@ -1017,7 +1017,7 @@ fn insert_at_entity_property_vector_prop_type_does_not_match_internal_vec_proper
         let number_of_events_before_call = System::events().len();
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` in case,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` in case,
         // when corresponding property type does not match internal vector property type
         let nonce = 0;
         let index_in_property_vector = 0;
@@ -1062,7 +1062,7 @@ fn insert_at_entity_property_vector_referenced_entity_not_found() {
         let number_of_events_before_call = System::events().len();
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` in case,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` in case,
         // when corresponding input_value referes to unknown Entity
         let nonce = 0;
         let index_in_property_vector = 0;
@@ -1118,7 +1118,7 @@ fn insert_at_entity_property_vector_entity_can_not_be_referenced() {
         let number_of_events_before_call = System::events().len();
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` in case,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` in case,
         // when corresponding Entity can not be referenced
         let nonce = 0;
         let index_in_property_vector = 0;
@@ -1180,7 +1180,7 @@ fn insert_at_entity_property_vector_same_controller_constraint_violation() {
         let number_of_events_before_call = System::events().len();
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` in case,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` in case,
         // when corresponding Entity can only be referenced from Entity with the same controller.
         let nonce = 0;
         let index_in_property_vector = 0;
@@ -1244,7 +1244,7 @@ fn insert_at_entity_property_vector_property_should_be_unique() {
         let number_of_events_before_call = System::events().len();
 
         // Make an attempt to insert value at given `index_in_property_vector`
-        // into `VecOutputPropertyValue` under `in_class_schema_property_id` in case,
+        // into `VecStoredPropertyValue` under `in_class_schema_property_id` in case,
         // when in result we`ll get required & unique property value vector,
         // which is already added to another Entity of this Class.
         let nonce = 0;
