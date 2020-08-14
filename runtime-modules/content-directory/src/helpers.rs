@@ -133,22 +133,20 @@ impl<'a, T: Trait> DerefMut for StoredValuesForExistingProperties<'a, T> {
 
 impl<'a, T: Trait> StoredValuesForExistingProperties<'a, T> {
     /// Create `StoredValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
-    /// Throws an error, when `Class` `Property` under `property_id`, corresponding to provided `property_value` not found
     pub fn from(
         properties: &'a [Property<T>],
         property_values: &'a BTreeMap<PropertyId, StoredPropertyValue<T>>,
-    ) -> Result<Self, &'static str> {
+    ) -> Self {
         let mut values_for_existing_properties = StoredValuesForExistingProperties::<T>::default();
         for (&property_id, property_value) in property_values {
-            let property = properties
-                .get(property_id as usize)
-                .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
-            values_for_existing_properties.insert(
-                property_id,
-                StoredValueForExistingProperty::new(property, property_value),
-            );
+            if let Some(property) = properties.get(property_id as usize) {
+                values_for_existing_properties.insert(
+                    property_id,
+                    StoredValueForExistingProperty::new(property, property_value),
+                );
+            }
         }
-        Ok(values_for_existing_properties)
+        values_for_existing_properties
     }
 
     /// Used to compute hashes from `StoredPropertyValue`s and their respective property ids, which respective `Properties` have `unique` flag set

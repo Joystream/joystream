@@ -717,7 +717,7 @@ decl_module! {
             let entity_property_values = entity.get_values();
 
             // Create wrapper structure from provided entity_property_values and their corresponding Class properties
-            let values_for_existing_properties = StoredValuesForExistingProperties::from(&class_properties, &entity_property_values)?;
+            let values_for_existing_properties = StoredValuesForExistingProperties::from(&class_properties, &entity_property_values);
 
             // Filter provided values_for_existing_properties, leaving only `Reference`'s with `SameOwner` flag set
             // Retrieve the set of corresponding property ids
@@ -783,7 +783,7 @@ decl_module! {
                 let entities_inbound_rcs_delta =
                     Self::get_updated_inbound_rcs_delta(
                         entity_id, class_properties, entity_property_values, new_output_property_value_references_with_same_owner_flag_set
-                    )?;
+                    );
 
                 // Update InboundReferenceCounter, based on previously calculated ReferenceCounterSideEffects, for each Entity involved
                 Self::update_entities_rcs(&entities_inbound_rcs_delta);
@@ -925,7 +925,7 @@ decl_module! {
 
             let entity_values = entity.get_values();
 
-            let unique_property_value_hashes = StoredValuesForExistingProperties::from(&class_properties, &entity_values)?.compute_unique_hashes();
+            let unique_property_value_hashes = StoredValuesForExistingProperties::from(&class_properties, &entity_values).compute_unique_hashes();
 
             //
             // == MUTATION SAFE ==
@@ -1008,7 +1008,7 @@ decl_module! {
                 schema, entity_property_values, &new_output_property_values
             );
 
-            let new_output_values_for_existing_properties = StoredValuesForExistingProperties::from(&class_properties, &new_output_property_values)?;
+            let new_output_values_for_existing_properties = StoredValuesForExistingProperties::from(&class_properties, &new_output_property_values);
 
             // Retrieve StoredPropertyValues, which respective Properties have unique flag set
             // (skip PropertyIds, which respective property values under this Entity are default and non required)
@@ -1119,7 +1119,7 @@ decl_module! {
 
                 // Calculate entities reference counter side effects for current operation (should always be safe)
                 let entities_inbound_rcs_delta =
-                    Self::get_updated_inbound_rcs_delta(entity_id, class_properties, entity_property_values, new_output_property_values)?;
+                    Self::get_updated_inbound_rcs_delta(entity_id, class_properties, entity_property_values, new_output_property_values);
 
                 // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
                 Self::update_entities_rcs(&entities_inbound_rcs_delta);
@@ -1696,7 +1696,7 @@ impl<T: Trait> Module<T> {
         class_properties: Vec<Property<T>>,
         entity_property_values: BTreeMap<PropertyId, StoredPropertyValue<T>>,
         new_output_property_values: BTreeMap<PropertyId, StoredPropertyValue<T>>,
-    ) -> Result<Option<ReferenceCounterSideEffects<T>>, &'static str> {
+    ) -> Option<ReferenceCounterSideEffects<T>> {
         // Filter entity_property_values to get only those, which will be substituted with new_property_values
         let entity_property_values_to_update: BTreeMap<PropertyId, StoredPropertyValue<T>> =
             entity_property_values
@@ -1713,7 +1713,7 @@ impl<T: Trait> Module<T> {
             StoredValuesForExistingProperties::from(
                 &class_properties,
                 &entity_property_values_to_update,
-            )?,
+            ),
             DeltaMode::Decrement,
         );
 
@@ -1721,10 +1721,7 @@ impl<T: Trait> Module<T> {
         // as involved InputPropertyValue References will substitute the old ones
         let incremental_reference_counter_side_effects = Self::calculate_entities_inbound_rcs_delta(
             current_entity_id,
-            StoredValuesForExistingProperties::from(
-                &class_properties,
-                &new_output_property_values,
-            )?,
+            StoredValuesForExistingProperties::from(&class_properties, &new_output_property_values),
             DeltaMode::Increment,
         );
 
@@ -1735,7 +1732,7 @@ impl<T: Trait> Module<T> {
             incremental_reference_counter_side_effects,
         );
 
-        Ok(reference_counter_side_effects)
+        reference_counter_side_effects
     }
 
     /// Add up both net first_reference_counter_side_effects and second_reference_counter_side_effects (if some)
@@ -1897,10 +1894,8 @@ impl<T: Trait> Module<T> {
     ) -> Result<PropertyValuesHashes<T>, &'static str> {
         // Compute StoredPropertyValues, which respective Properties have unique flag set
         // (skip PropertyIds, which respective property values under this Entity are default and non required)
-        let new_output_values_for_existing_properties = StoredValuesForExistingProperties::from(
-            &class_properties,
-            &new_output_property_values,
-        )?;
+        let new_output_values_for_existing_properties =
+            StoredValuesForExistingProperties::from(&class_properties, &new_output_property_values);
 
         let new_unique_property_value_hashes =
             new_output_values_for_existing_properties.compute_unique_hashes();
