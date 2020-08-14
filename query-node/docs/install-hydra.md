@@ -47,7 +47,7 @@ Run `hydra-cli --version` to check your installation
 It may be convenient to create an alias for quick access to `hydra-cli` e.g.
 
 ```text
-alias hydra-cli='npx @dzlzv/hydra-cli@0.0.5-alpha'
+alias hydra-cli='npx @dzlzv/hydra-cli'
 ```
 {% endhint %}
 
