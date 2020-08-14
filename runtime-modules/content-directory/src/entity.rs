@@ -18,7 +18,7 @@ pub struct Entity<T: Trait> {
 
     /// Values for properties on class that are used by some schema used by this entity
     /// Length is no more than Class.properties.
-    values: BTreeMap<PropertyId, OutputPropertyValue<T>>,
+    values: BTreeMap<PropertyId, StoredPropertyValue<T>>,
 
     /// Number of property values referencing current entity
     reference_counter: InboundReferenceCounter,
@@ -42,7 +42,7 @@ impl<T: Trait> Entity<T> {
         controller: EntityController<T>,
         class_id: T::ClassId,
         supported_schemas: BTreeSet<SchemaId>,
-        values: BTreeMap<PropertyId, OutputPropertyValue<T>>,
+        values: BTreeMap<PropertyId, StoredPropertyValue<T>>,
     ) -> Self {
         Self {
             entity_permissions: EntityPermissions::<T>::default_with_controller(controller),
@@ -64,22 +64,22 @@ impl<T: Trait> Entity<T> {
     }
 
     /// Get `Entity` values by value
-    pub fn get_values(self) -> BTreeMap<PropertyId, OutputPropertyValue<T>> {
+    pub fn get_values(self) -> BTreeMap<PropertyId, StoredPropertyValue<T>> {
         self.values
     }
 
     /// Get `Entity` values by reference
-    pub fn get_values_ref(&self) -> &BTreeMap<PropertyId, OutputPropertyValue<T>> {
+    pub fn get_values_ref(&self) -> &BTreeMap<PropertyId, StoredPropertyValue<T>> {
         &self.values
     }
 
     /// Get `Entity` values by mutable reference
-    pub fn get_values_mut(&mut self) -> &mut BTreeMap<PropertyId, OutputPropertyValue<T>> {
+    pub fn get_values_mut(&mut self) -> &mut BTreeMap<PropertyId, StoredPropertyValue<T>> {
         &mut self.values
     }
 
     /// Get mutable reference to `Entity` values
-    pub fn set_values(&mut self, new_values: BTreeMap<PropertyId, OutputPropertyValue<T>>) {
+    pub fn set_values(&mut self, new_values: BTreeMap<PropertyId, StoredPropertyValue<T>>) {
         self.values = new_values;
     }
 
@@ -128,7 +128,7 @@ impl<T: Trait> Entity<T> {
     pub fn ensure_property_value_is_vec(
         &self,
         in_class_schema_property_id: PropertyId,
-    ) -> Result<VecOutputPropertyValue<T>, &'static str> {
+    ) -> Result<VecStoredPropertyValue<T>, &'static str> {
         self.values
             .get(&in_class_schema_property_id)
             // Throw an error if a property was not found on entity
