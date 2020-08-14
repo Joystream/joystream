@@ -73,7 +73,7 @@ class Component extends React.PureComponent<Props> {
             </div>
             <div className='description'>
               {isCouncilor &&
-              <b className='muted text' style={{ color: '#607d8b' }}>
+              <b className='muted text' style={{ color: '#607d8b', display: 'block' }}>
                 <i className='university icon'></i>
                 Council member
               </b>}

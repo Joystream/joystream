@@ -40,7 +40,7 @@ type PropsWithApi = BareProps & ApiProps & MyAccountProps & PartialQueueTxExtrin
 
 class TxButtonInner extends React.PureComponent<PropsWithApi & InjectedProps> {
   render () {
-    const { myAddress, accountId, isDisabled, icon = 'paper-plane', onClick } = this.props;
+    const { myAddress, accountId, isDisabled, icon = 'check', onClick } = this.props;
     const origin = accountId || myAddress;
 
     return (
