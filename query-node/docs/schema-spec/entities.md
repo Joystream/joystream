@@ -21,7 +21,7 @@ The following scalar types are supported:
 * `String`
 * `Int`
 * `Float`
-* `BigInt` supports arbitrarily large numbers and is useful for representing e.g. data `uint256`
+* `BigInt` supports arbitrarily large numbers and is useful for representing e.g. large numbers `uint256`
 * `Bytes`
 
 Arrays follow the GraphQL [spec](https://spec.graphql.org/June2018/).
