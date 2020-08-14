@@ -42,12 +42,6 @@ pub use serde::{Deserialize, Serialize};
 /// Type, used in diffrent numeric constraints representations
 type MaxNumber = u32;
 
-/// Type representing a map for both new and old property values hashes
-type PropertyValuesHashes<T> = (
-    BTreeMap<PropertyId, <T as system::Trait>::Hash>,
-    BTreeMap<PropertyId, <T as system::Trait>::Hash>,
-);
-
 pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -752,15 +746,24 @@ decl_module! {
 
             let new_output_property_value_references_with_same_owner_flag_set = Self::make_output_property_values(new_property_value_references_with_same_owner_flag_set);
 
-            // Compute old and new unique property value hashes.
+            // Compute StoredPropertyValues, which respective Properties have unique flag set
+            // (skip PropertyIds, which respective property values under this Entity are default and non required)
+            let new_output_values_for_existing_properties =
+                StoredValuesForExistingProperties::from(&class_properties, &new_output_property_value_references_with_same_owner_flag_set);
+
+            // Compute new unique property value hashes.
             // Ensure new property value hashes with `unique` flag set are `unique` on `Class` level
-            let (new_unique_hashes, old_unique_hashes) = Self::ensure_property_values_hashes(
-                class_id, &class_properties, &new_output_property_value_references_with_same_owner_flag_set, &entity_property_values
+            let new_unique_hashes = Self::ensure_new_property_values_respect_uniquness(
+                class_id, new_output_values_for_existing_properties,
             )?;
 
             //
             // == MUTATION SAFE ==
             //
+
+            // Used to compute old unique hashes, that should be substituted with new ones.
+            let old_unique_hashes =
+                Self::compute_old_unique_hashes(&new_output_property_value_references_with_same_owner_flag_set, &entity_property_values);
 
             // Add property values, that should be unique on Class level
             Self::add_unique_property_value_hashes(class_id, new_unique_hashes);
@@ -1094,15 +1097,24 @@ decl_module! {
 
             let new_output_property_values = Self::make_output_property_values(new_property_values);
 
-            // Compute old and new unique property value hashes.
+            // Compute StoredPropertyValues, which respective Properties have unique flag set
+            // (skip PropertyIds, which respective property values under this Entity are default and non required)
+            let new_output_values_for_existing_properties =
+                StoredValuesForExistingProperties::from(&class_properties, &new_output_property_values);
+
+            // Compute new unique property value hashes.
             // Ensure new property value hashes with `unique` flag set are `unique` on `Class` level
-            let (new_unique_hashes, old_unique_hashes) = Self::ensure_property_values_hashes(
-                class_id, &class_properties, &new_output_property_values, &entity_property_values
+            let new_unique_hashes = Self::ensure_new_property_values_respect_uniquness(
+                class_id, new_output_values_for_existing_properties,
             )?;
 
             //
             // == MUTATION SAFE ==
             //
+
+            // Used to compute old unique hashes, that should be substituted with new ones.
+            let old_unique_hashes =
+                Self::compute_old_unique_hashes(&new_output_property_values, &entity_property_values);
 
             // Add property value hashes, that should be unique on Class level
             Self::add_unique_property_value_hashes(class_id, new_unique_hashes);
@@ -1882,19 +1894,12 @@ impl<T: Trait> Module<T> {
         Ok((new_property_value_hash, old_property_value_hash))
     }
 
-    /// Compute old and new unique property value hashes.
+    /// Compute new unique property value hashes.
     /// Ensure new property value hashes with `unique` flag set are `unique` on `Class` level
-    pub fn ensure_property_values_hashes(
+    pub fn ensure_new_property_values_respect_uniquness(
         class_id: T::ClassId,
-        class_properties: &[Property<T>],
-        new_output_property_values: &BTreeMap<PropertyId, StoredPropertyValue<T>>,
-        entity_property_values: &BTreeMap<PropertyId, StoredPropertyValue<T>>,
-    ) -> Result<PropertyValuesHashes<T>, &'static str> {
-        // Compute StoredPropertyValues, which respective Properties have unique flag set
-        // (skip PropertyIds, which respective property values under this Entity are default and non required)
-        let new_output_values_for_existing_properties =
-            StoredValuesForExistingProperties::from(&class_properties, &new_output_property_values);
-
+        new_output_values_for_existing_properties: StoredValuesForExistingProperties<T>,
+    ) -> Result<BTreeMap<PropertyId, T::Hash>, &'static str> {
         let new_unique_property_value_hashes =
             new_output_values_for_existing_properties.compute_unique_hashes();
 
@@ -1904,11 +1909,7 @@ impl<T: Trait> Module<T> {
             &new_unique_property_value_hashes,
         )?;
 
-        // Used to compute old unique hashes, that should be substituted with new ones.
-        let old_unique_hashes =
-            Self::compute_old_unique_hashes(&new_output_property_values, entity_property_values);
-
-        Ok((new_unique_property_value_hashes, old_unique_hashes))
+        Ok(new_unique_property_value_hashes)
     }
 
     /// Returns the stored `Class` if exist, error otherwise.
