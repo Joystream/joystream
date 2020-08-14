@@ -47,5 +47,5 @@ and this is where all the auto-generated classes live by default.
 Next, the body of the handler transforms the event parameters and extrinsic arguments into the properties of the entity. There is currently no way to enforce type safety here and one should instead inspect the event parameters and extrinsics for the event in question. In the example above, we can consult the Kusama [explorer](https://kusama.subscan.io/extrinsic/0x1bba67ddb62117fc64710e35b6ccbef64d4df528d78310ccca725137e75823d4?event=2022835-5) and check that 
 
 * `ProposalIndex` is a single named param of `treasury.Proposed` event
-* The extrinsic has to arguments: `value` and `beneficiary` which are propagated to the entity in a straightforward way.
+* The extrinsic has to arguments: `value` and `beneficiary`, propagated to the entity in a straightforward fashion.
 
