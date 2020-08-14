@@ -92,20 +92,18 @@ Hydra Cli creates a folder named `generated` and puts everthing inside it.
 $ hydra-cli codegen
 ```
 
-Start graphql server:
+Make sure `package.json` is in you cwd. Start graphql server with a GraphQL playground:
 
 ```
-$ cd generated/graphql-server
-$ yarn start:dev
+$ yarn server:start:dev
 ```
 
 Start block indexer:
 
 ```
-$ cd generated/indexer
-$ yarn start
+$ yarn indexer:start
 ```
 
 ## Examples
 
-Check out [sample projects](../../examples) for inspiration!
+Check out [sample projects](https://github.com/dzhelezov/joystream/tree/qnode_dzlzv_publish/query-node/examples) for inspiration!
