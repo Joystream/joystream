@@ -1,23 +1,26 @@
 import React from 'react';
-import { Table } from 'semantic-ui-react';
+import { Table, Message } from 'semantic-ui-react';
 import BN from 'bn.js';
 
 import { I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
-import { withCalls } from '@polkadot/react-api/with';
+import { withCalls } from '@polkadot/react-api/hoc';
 import { AccountId } from '@polkadot/types/interfaces';
+import { Option } from '@polkadot/types';
 import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
 import Applicant from './Applicant';
 import ApplyForm from './ApplyForm';
-import Section from '@polkadot/joy-utils/Section';
-import { queryToProp } from '@polkadot/joy-utils/index';
-import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
+import Section from '@polkadot/joy-utils/react/components/Section';
+import { queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/react/hocs/accounts';
+import { ElectionStage } from '@joystream/types/src/council';
 
 type Props = ApiProps & I18nProps & MyAccountProps & {
   candidacyLimit?: BN;
   applicants?: Array<AccountId>;
+  stage?: Option<ElectionStage>;
 };
 
 class Applicants extends React.PureComponent<Props> {
@@ -38,12 +41,21 @@ class Applicants extends React.PureComponent<Props> {
   )
 
   render () {
-    const { myAddress, applicants = [], candidacyLimit = new BN(0) } = this.props;
+    const { myAddress, applicants = [], candidacyLimit = new BN(0), stage } = this.props;
     const title = <span>Applicants <sup>{applicants.length}/{formatNumber(candidacyLimit)}</sup></span>;
 
     return <>
       <Section title='My application'>
-        <ApplyForm myAddress={myAddress} />
+        { stage?.unwrapOr(undefined)?.isOfType('Announcing')
+          ? (
+            <ApplyForm myAddress={myAddress} />
+          )
+          : (
+            <Message warning>
+              Applying to council is only possible during <i><b>Announcing</b></i> stage.
+            </Message>
+          )
+        }
       </Section>
       <Section title={title}>
         {!applicants.length
@@ -59,6 +71,7 @@ class Applicants extends React.PureComponent<Props> {
 export default translate(
   withCalls<Props>(
     queryToProp('query.councilElection.candidacyLimit'),
-    queryToProp('query.councilElection.applicants')
+    queryToProp('query.councilElection.applicants'),
+    queryToProp('query.councilElection.stage')
   )(withMyAccount(Applicants))
 );

@@ -1,5 +1,5 @@
 import store from 'store';
-import { nonEmptyArr } from '@polkadot/joy-utils/index';
+import { nonEmptyArr } from '@polkadot/joy-utils/functions/misc';
 
 const MY_VOTES = 'joy.myVotes';
 

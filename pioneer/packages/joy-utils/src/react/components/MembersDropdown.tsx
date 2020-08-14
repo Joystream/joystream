@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dropdown, DropdownItemProps, DropdownProps } from 'semantic-ui-react';
 import { Membership } from '@joystream/types/members';
-import { memberFromAccount, MemberFromAccount } from './accounts';
+import { MemberFromAccount } from '../../types/members';
+import { useTransport } from '../hooks';
 import { AccountId } from '@polkadot/types/interfaces';
-import { ApiContext } from '@polkadot/react-api';
 import styled from 'styled-components';
 
 const StyledMembersDropdown = styled(Dropdown)`
@@ -16,9 +16,9 @@ const StyledMembersDropdown = styled(Dropdown)`
 function membersToOptions (members: MemberFromAccount[]) {
   const validMembers = members.filter(m => m.profile !== undefined) as (MemberFromAccount & { profile: Membership })[];
   return validMembers
-    .map(({ id, profile, account }) => ({
+    .map(({ memberId, profile, account }) => ({
       key: profile.handle,
-      text: `${profile.handle} (id:${id})`,
+      text: `${profile.handle} (id:${memberId})`,
       value: account,
       image: profile.avatar_uri.toString() ? { avatar: true, src: profile.avatar_uri } : null
     }));
@@ -33,7 +33,7 @@ type Props = {
 };
 
 const MembersDropdown: React.FunctionComponent<Props> = ({ accounts, ...passedProps }) => {
-  const { api } = useContext(ApiContext);
+  const transport = useTransport();
   // State
   const [loading, setLoading] = useState(true);
   const [membersOptions, setMembersOptions] = useState([] as DropdownItemProps[]);
@@ -41,7 +41,7 @@ const MembersDropdown: React.FunctionComponent<Props> = ({ accounts, ...passedPr
   useEffect(() => {
     let isSubscribed = true;
     Promise
-      .all(accounts.map(acc => memberFromAccount(api, acc)))
+      .all(accounts.map(acc => transport.members.membershipFromAccount(acc)))
       .then(members => {
         if (isSubscribed) {
           setMembersOptions(membersToOptions(members));

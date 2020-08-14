@@ -4,13 +4,13 @@ import { Table } from 'semantic-ui-react';
 
 import { I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
-import { withCalls } from '@polkadot/react-api/with';
+import { withCalls } from '@polkadot/react-api/hoc';
 import { AccountId } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
 import CandidatePreview from './CandidatePreview';
 
 import translate from './translate';
-import { calcTotalStake } from '@polkadot/joy-utils/index';
+import { calcTotalStake } from '@polkadot/joy-utils/functions/misc';
 import { ElectionStake } from '@joystream/types/council';
 
 type Props = ApiProps & I18nProps & {

@@ -1,3 +1,5 @@
+import { Membership } from '@joystream/types/members';
+
 export type ParsedMember = {
   about: string;
   avatar_uri: string;
@@ -10,3 +12,5 @@ export type ParsedMember = {
   subscription: any;
   suspended: boolean;
 };
+
+export type MemberFromAccount = { account: string; memberId?: number; profile?: Membership };

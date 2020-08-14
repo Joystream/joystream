@@ -4,19 +4,20 @@ import { Button } from 'semantic-ui-react';
 
 import { I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
-import { withCalls } from '@polkadot/react-api/with';
+import { withCalls } from '@polkadot/react-api/hoc';
 import { Hash } from '@polkadot/types/interfaces';
 
 import translate from './translate';
 import SealedVote from './SealedVote';
-import { queryToProp } from '@polkadot/joy-utils/index';
-import { MyAddressProps } from '@polkadot/joy-utils/MyAccount';
+import { queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { MyAddressProps } from '@polkadot/joy-utils/react/hocs/accounts';
 import { SavedVote } from './myVotesStore';
-import Section from '@polkadot/joy-utils/Section';
+import Section from '@polkadot/joy-utils/react/components/Section';
 
 type Props = ApiProps & I18nProps & MyAddressProps & {
   myVotes?: SavedVote[];
   commitments?: Hash[];
+  isStageRevealing: boolean;
 };
 
 class Comp extends React.PureComponent<Props> {
@@ -28,9 +29,13 @@ class Comp extends React.PureComponent<Props> {
     return commitments.filter(x => myVotesOnly === isMyVote(x.toHex()));
   }
 
-  private renderVotes = (votes: Hash[]) => {
+  private renderVotes = (votes: Hash[], areVotesMine: boolean) => {
     return votes.map((hash, index) =>
-      <SealedVote key={index} hash={hash} />
+      <SealedVote
+        key={index}
+        hash={hash}
+        isStageRevealing={this.props.isStageRevealing}
+        isMyVote={areVotesMine}/>
     );
   }
 
@@ -39,17 +44,19 @@ class Comp extends React.PureComponent<Props> {
     const otherVotes = this.filterVotes(false);
 
     return <>
-      <Section title={`My previous votes (${myVotes.length})`}>{
+      <Section title={`My previous votes (${myVotes.length})`}>
+      {
         !myVotes.length
           ? <em>No votes by the current account found on the current browser.</em>
-          : this.renderVotes(myVotes)
-      }</Section>
+          : this.renderVotes(myVotes, true)
+      }
+      { this.props.isStageRevealing && <Button primary as={Link} to="reveals">Reveal other vote</Button> }
+      </Section>
       <Section title={`Other votes (${otherVotes.length})`}>
-        <Button primary as={Link} to="reveals">Reveal a vote</Button>
         {
           !otherVotes.length
             ? <em>No votes submitted by other accounts yet.</em>
-            : this.renderVotes(otherVotes)
+            : this.renderVotes(otherVotes, false)
         }
       </Section>
     </>;

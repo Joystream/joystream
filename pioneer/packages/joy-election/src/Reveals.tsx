@@ -2,16 +2,16 @@ import React from 'react';
 
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
-import { withCalls, withMulti } from '@polkadot/react-api/with';
+import { withCalls, withMulti } from '@polkadot/react-api/hoc';
 import { AccountId } from '@polkadot/types/interfaces';
 import { Input, Labelled, InputAddress } from '@polkadot/react-components/index';
 
 import translate from './translate';
-import { nonEmptyStr, queryToProp, getUrlParam } from '@polkadot/joy-utils/index';
+import { nonEmptyStr, queryToProp, getUrlParam } from '@polkadot/joy-utils/functions/misc';
 import { accountIdsToOptions, hashVote } from './utils';
-import TxButton from '@polkadot/joy-utils/TxButton';
+import TxButton from '@polkadot/joy-utils/react/components/TxButton';
 import { findVoteByHash } from './myVotesStore';
-import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
+import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
 
 // AppsProps is needed to get a location from the route.
 type Props = AppProps & ApiProps & I18nProps & {
@@ -81,15 +81,17 @@ class RevealVoteForm extends React.PureComponent<Props, State> {
             onChange={this.onChangeSalt}
           />
         </div>}
-        <Labelled style={{ marginTop: '.5rem' }}>
-          <TxButton
-            size='large'
-            isDisabled={!isVoteRevealed}
-            label='Reveal this vote'
-            params={[hashedVote, applicantId, salt]}
-            tx='councilElection.reveal'
-          />
-        </Labelled>
+        <div style={{ marginTop: '.5rem' }}>
+          <Labelled>
+            <TxButton
+              size='large'
+              isDisabled={!isVoteRevealed}
+              label='Reveal this vote'
+              params={[hashedVote, applicantId, salt]}
+              tx='councilElection.reveal'
+            />
+          </Labelled>
+        </div>
       </div>
     );
   }

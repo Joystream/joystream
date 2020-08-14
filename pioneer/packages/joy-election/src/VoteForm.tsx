@@ -6,7 +6,7 @@ import { Message, Table } from 'semantic-ui-react';
 
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
-import { withCalls, withMulti } from '@polkadot/react-api/with';
+import { withCalls, withMulti } from '@polkadot/react-api/hoc';
 import { AccountId, Balance } from '@polkadot/types/interfaces';
 import { Button, Input, Labelled } from '@polkadot/react-components/index';
 import { SubmittableResult } from '@polkadot/api';
@@ -14,12 +14,13 @@ import { formatBalance } from '@polkadot/util';
 
 import translate from './translate';
 import { hashVote } from './utils';
-import { queryToProp, ZERO, getUrlParam, nonEmptyStr } from '@polkadot/joy-utils/index';
-import TxButton from '@polkadot/joy-utils/TxButton';
-import InputStake from '@polkadot/joy-utils/InputStake';
+import { queryToProp, ZERO, getUrlParam, nonEmptyStr } from '@polkadot/joy-utils/functions/misc';
+import TxButton from '@polkadot/joy-utils/react/components/TxButton';
+import InputStake from '@polkadot/joy-utils/react/components/InputStake';
 import CandidatePreview from './CandidatePreview';
-import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
-import MembersDropdown from '@polkadot/joy-utils/MembersDropdown';
+import { MyAccountProps } from '@polkadot/joy-utils/react/hocs/accounts';
+import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards'
+import MembersDropdown from '@polkadot/joy-utils/react/components/MembersDropdown';
 import { saveVote, NewVote } from './myVotesStore';
 import { TxFailedCallback } from '@polkadot/react-components/Status/types';
 
@@ -103,14 +104,11 @@ class Component extends React.PureComponent<Props, State> {
               </Table.Row>
             </Table.Body>
           </Table>
-          <Labelled style={{ marginTop: '.5rem' }}>
-            <Button
-              size='large'
-              label='Submit another vote'
-              onClick={this.resetForm}
-              icon=''
-            />
-          </Labelled>
+          <Button
+            label='Submit another vote'
+            onClick={this.resetForm}
+            icon='arrow-left'
+          />
         </div>
 
       // New vote form:
@@ -137,7 +135,7 @@ class Component extends React.PureComponent<Props, State> {
               onChange={this.onChangeSalt}
             />
             <div className='medium' style={{ margin: '.5rem' }}>
-              <Button onClick={this.newRandomSalt} icon=''>Generate</Button>
+              <Button onClick={this.newRandomSalt} icon='cubes' label='Generate' />
               <Message compact warning size='tiny' content='You need to remember this salt!' />
             </div>
           </div>
@@ -148,18 +146,20 @@ class Component extends React.PureComponent<Props, State> {
               value={hashedVote}
             />
           </div>
-          <Labelled style={{ marginTop: '.5rem' }}>
-            <TxButton
-              size='large'
-              isDisabled={!isFormValid}
-              label='Submit my vote'
-              params={[hashedVote, stake]}
-              tx='councilElection.vote'
-              txStartCb={this.onFormSubmitted}
-              txFailedCb={this.onTxFailed}
-              txSuccessCb={(txResult: SubmittableResult) => this.onTxSuccess(buildNewVote() as NewVote, txResult)}
-            />
-          </Labelled>
+          <div style={{ marginTop: '.5rem' }}>
+            <Labelled>
+              <TxButton
+                size='large'
+                isDisabled={!isFormValid}
+                label='Submit my vote'
+                params={[hashedVote, stake]}
+                tx='councilElection.vote'
+                txStartCb={this.onFormSubmitted}
+                txFailedCb={this.onTxFailed}
+                txSuccessCb={(txResult: SubmittableResult) => this.onTxSuccess(buildNewVote() as NewVote, txResult)}
+              />
+            </Labelled>
+          </div>
         </div>}
       </>
     );

@@ -1,10 +1,11 @@
+// TODO: Move to joy-utils?
 import { AccountId } from '@polkadot/types/interfaces';
 
 // Keyring / identicon / address
 // -----------------------------------
 
 import createItem from '@polkadot/ui-keyring/options/item';
-import { findNameByAddress } from '@polkadot/joy-utils/index';
+import { findNameByAddress } from '@polkadot/joy-utils/functions/misc';
 
 // Hash
 // -----------------------------------

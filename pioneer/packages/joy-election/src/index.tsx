@@ -1,14 +1,16 @@
 import React from 'react';
 import { Route, Switch } from 'react-router';
 
-import { AppProps, I18nProps } from '@polkadot/react-components/types';
-import { ApiProps } from '@polkadot/react-api/types';
-import { withCalls } from '@polkadot/react-api/with';
+import { I18nProps } from '@polkadot/react-components/types';
+import { RouteProps } from '@polkadot/apps-routing/types';
+import { withCalls } from '@polkadot/react-api/hoc';
 import { AccountId, Hash } from '@polkadot/types/interfaces';
-import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
+import Tabs from '@polkadot/react-components/Tabs';
+import { TabItem } from '@polkadot/react-components/Tabs/types';
 
 // our app-specific styles
-import './index.css';
+import style from './style';
+import styled from 'styled-components';
 
 // local imports and components
 import translate from './translate';
@@ -17,11 +19,13 @@ import Council from './Council';
 import Applicants from './Applicants';
 import Votes from './Votes';
 import Reveals from './Reveals';
-import { queryToProp } from '@polkadot/joy-utils/index';
+import { queryToProp } from '@polkadot/joy-utils/functions/misc';
 import { Seat } from '@joystream/types/council';
 
+const ElectionMain = styled.main`${style}`;
+
 // define out internal types
-type Props = AppProps & ApiProps & I18nProps & {
+type Props = RouteProps & I18nProps & {
   activeCouncil?: Seat[];
   applicants?: AccountId[];
   commitments?: Hash[];
@@ -59,7 +63,7 @@ class App extends React.PureComponent<Props, State> {
     const { basePath } = this.props;
     const tabs = this.buildTabs();
     return (
-      <main className='election--App'>
+      <ElectionMain className='election--App'>
         <header>
           <Tabs basePath={basePath} items={tabs} />
         </header>
@@ -70,7 +74,7 @@ class App extends React.PureComponent<Props, State> {
           <Route path={`${basePath}/reveals`} component={Reveals} />
           <Route component={Dashboard} />
         </Switch>
-      </main>
+      </ElectionMain>
     );
   }
 }

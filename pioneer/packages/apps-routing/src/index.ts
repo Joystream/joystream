@@ -20,11 +20,13 @@ import transfer from './transfer';
 // Joy packages
 import members from './joy-members';
 import { terms, privacyPolicy } from './joy-pages';
+import election from './joy-election';
 
 export default function create (t: <T = string> (key: string, text: string, options: { ns: string }) => T): Routes {
   return appSettings.uiMode === 'light'
     ? [
       members(t),
+      election(t),
       null,
       transfer(t),
       accounts(t),
@@ -32,6 +34,7 @@ export default function create (t: <T = string> (key: string, text: string, opti
     ]
     : [
       members(t),
+      election(t),
       null,
       transfer(t),
       accounts(t),

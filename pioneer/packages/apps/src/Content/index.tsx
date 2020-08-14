@@ -16,6 +16,11 @@ import { useTranslation } from '../translate';
 import NotFound from './NotFound';
 import Status from './Status';
 
+// Joystream-specific
+// We must use transport provider here instead of /apps/src/index
+// to avoid "Cannot create Transport: The Substrate API is not ready yet." error
+import { TransportProvider } from '@polkadot/joy-utils/react/context';
+
 interface Props {
   className?: string;
 }
@@ -60,11 +65,25 @@ function Content ({ className }: Props): React.ReactElement<Props> {
                 ? <NotFound />
                 : (
                   <ErrorBoundary trigger={name}>
-                    <Component
-                      basePath={`/${name}`}
-                      location={location}
-                      onStatusChange={queueAction}
-                    />
+                    { needsApi
+                      // Add transport provider for routes that need the api
+                      // (the above condition makes sure it's aleady initialized at this point)
+                      ? (
+                        <TransportProvider>
+                          <Component
+                            basePath={`/${name}`}
+                            location={location}
+                            onStatusChange={queueAction}
+                          />
+                        </TransportProvider>
+                      )
+                      : (
+                        <Component
+                          basePath={`/${name}`}
+                          location={location}
+                          onStatusChange={queueAction}
+                        />
+                      ) }
                   </ErrorBoundary>
                 )
               }

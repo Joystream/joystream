@@ -2,7 +2,6 @@
 **/coverage/*
 **/node_modules/*
 packages/old-apps/*
-packages/joy-election/*
 packages/joy-forum/*
 packages/joy-help/*
 packages/joy-media/*

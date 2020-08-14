@@ -2,15 +2,15 @@ import React from 'react';
 
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
-import { withCalls } from '@polkadot/react-api/with';
+import { withCalls } from '@polkadot/react-api/hoc';
 import { Table } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import CouncilCandidate from './CandidatePreview';
 
-import { calcBackersStake } from '@polkadot/joy-utils/index';
+import { calcBackersStake } from '@polkadot/joy-utils/functions/misc';
 import { Seat } from '@joystream/types/council';
 import translate from './translate';
-import Section from '@polkadot/joy-utils/Section';
+import Section from '@polkadot/joy-utils/react/components/Section';
 
 type Props = ApiProps &
 I18nProps & {
