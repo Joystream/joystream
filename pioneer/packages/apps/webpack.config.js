@@ -20,6 +20,7 @@ module.exports = merge(
     devtool: process.env.BUILD_ANALYZE ? 'source-map' : false,
     plugins: [
       new HtmlWebpackPlugin({
+        IS_PROD: ENV === 'production',
         PAGE_TITLE: 'Joystream Network Portal',
         inject: true,
         template: path.join(context, `${hasPublic ? 'public/' : ''}index.html`)
