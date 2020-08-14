@@ -5,25 +5,24 @@ Repo with examples on how to use the @joystream/types package along with @polkad
 ## Examples
 
 ```
-yarn && yarn build
+yarn
 yarn run status
 ```
 
 ## Example code
 
 ```javascript
-import { registerJoystreamTypes } from '@joystream/types'
+import { types } from '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 
 async function main() {
   // Initialise the provider to connect to the local node
   const provider = new WsProvider('ws://127.0.0.1:9944')
 
-  // Register types before creating the API
-  registerJoystreamTypes()
-
   // Create the API and wait until ready
-  const api = await ApiPromise.create({ provider })
+  const api = await ApiPromise.create({ provider, types })
+
+  await api.isReady
 
   // Retrieve the chain & node information information via rpc calls
   const [chain, nodeName, nodeVersion] = await Promise.all([

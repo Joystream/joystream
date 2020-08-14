@@ -1,12 +1,11 @@
 /* global api, hashing, keyring, types, util, window */
 
 // run this script with:
-// yarn script injectDataObjects
+// yarn script testTransfer
 //
 // or copy and paste the code into the pioneer javascript toolbox at:
 // https://testnet.joystream.org/#/js
 //
-// requires nicaea release+
 
 const script = async ({ api, keyring }) => {
   const sudoAddress = (await api.query.sudo.key()).toString()

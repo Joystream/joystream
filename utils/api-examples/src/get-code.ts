@@ -6,12 +6,11 @@ async function main() {
 
   const api = await ApiPromise.create({ provider, types })
 
-  let current_block_hash = await api.rpc.chain.getBlockHash()
+  const currentBlockHash = await api.rpc.chain.getBlockHash(1)
 
-  console.log('getting code as of block hash', current_block_hash.toString())
+  console.log('getting code as of block hash', currentBlockHash.toString())
 
-  const substrateWasm = await api.query.substrate.code.at(current_block_hash.toString())
-  // const substrateWasm = await api.rpc.state.getStorage('0x'+Buffer.from(':code').toString('hex'), current_block_hash);
+  const substrateWasm = await api.query.substrate.code.at(currentBlockHash)
 
   console.log(substrateWasm.toHex())
 

@@ -7,6 +7,7 @@ import joy, { types as joyTypes } from '@joystream/types'
 import * as hashing from '@polkadot/util-crypto'
 import { Keyring } from '@polkadot/keyring'
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const scripts = require('../scripts')
 
 async function main() {

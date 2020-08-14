@@ -7,9 +7,10 @@ async function main() {
   const provider = new WsProvider('ws://127.0.0.1:9944')
   const api = await ApiPromise.create({ provider, types })
 
-  let wgId = [1, 2]
+  const wgId = [1, 2]
 
-  let set = new BTreeSet<CuratorApplicationId>(api.registry, CuratorApplicationId, [])
+  // Is it not possible to create the registry without actually connecting to a node?
+  const set = new BTreeSet<CuratorApplicationId>(api.registry, CuratorApplicationId, [])
 
   wgId.forEach((id) => {
     set.add(new CuratorApplicationId(api.registry, id))

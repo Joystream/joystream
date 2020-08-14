@@ -1,4 +1,4 @@
-/* global api, hashing, keyring, types, util */
+/* global api, hashing, keyring, types, util, joy */
 
 // run this script with:
 // yarn script listDataDirectory

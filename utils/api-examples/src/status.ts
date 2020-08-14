@@ -3,12 +3,9 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { types } from '@joystream/types'
 import { Seat } from '@joystream/types/council'
-// import { SubscriptionResult, QueryableStorageFunction } from '@polkadot/api/promise/types';
-// import { GenericAccountId } from '@polkadot/types';
 import { ValidatorId } from '@polkadot/types/interfaces'
 
-// import BN from 'bn.js';
-const BN = require('bn.js')
+import BN from 'bn.js'
 
 async function main() {
   // Initialise the provider to connect to the local node
@@ -26,9 +23,9 @@ async function main() {
 
   console.log(`Chain ${chain} using ${nodeName} v${nodeVersion}`)
 
-  let council = ((await api.query.council.activeCouncil()) as unknown) as Seat[]
-  let validators = ((await api.query.session.validators()) as unknown) as ValidatorId[]
-  let version = (await api.rpc.state.getRuntimeVersion()) as any
+  const council = ((await api.query.council.activeCouncil()) as unknown) as Seat[]
+  const validators = ((await api.query.session.validators()) as unknown) as ValidatorId[]
+  const version = (await api.rpc.state.getRuntimeVersion()) as any
 
   console.log(`Runtime Version: ${version.authoringVersion}.${version.specVersion}.${version.implVersion}`)
 
@@ -46,7 +43,7 @@ async function main() {
       validators.map((authorityId) => api.query.balances.account(authorityId))
     )
 
-    let totalValidatorBalances = validatorBalances.reduce((total, value) => total.add(value.free), new BN(0))
+    const totalValidatorBalances = validatorBalances.reduce((total, value) => total.add(value.free), new BN(0))
 
     // TODO: to get the staked amounts we need to read the account lock information.
 

@@ -1,4 +1,4 @@
-/* global api, hashing, keyring, types, util, window, joy */
+/* global api, hashing, keyring, types, util, joy */
 
 // run this script with:
 // yarn script example

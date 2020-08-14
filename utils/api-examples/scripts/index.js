@@ -1,5 +1,3 @@
-const typesVersion = require('@joystream/types/package.json')
-
 const exportedScripts = {}
 
 exportedScripts.example = require('./example.js')
