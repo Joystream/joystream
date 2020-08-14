@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import { I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
 import { withCalls, withMulti } from '@polkadot/react-api/hoc';
 import { AccountId } from '@polkadot/types/interfaces';
@@ -12,12 +12,12 @@ import { accountIdsToOptions, hashVote } from './utils';
 import TxButton from '@polkadot/joy-utils/react/components/TxButton';
 import { findVoteByHash } from './myVotesStore';
 import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
+import { RouteProps } from 'react-router-dom';
 
 // AppsProps is needed to get a location from the route.
-type Props = AppProps & ApiProps & I18nProps & {
+type Props = RouteProps & ApiProps & I18nProps & {
   applicantId?: string | null;
   applicants?: AccountId[];
-  location: any;
 };
 
 type State = {
@@ -31,8 +31,8 @@ class RevealVoteForm extends React.PureComponent<Props, State> {
     super(props);
     let { applicantId, location } = this.props;
 
-    applicantId = applicantId || getUrlParam(location, 'applicantId');
-    const hashedVote = getUrlParam(location, 'hashedVote');
+    applicantId = applicantId || (location && getUrlParam(location, 'applicantId'));
+    const hashedVote = location && getUrlParam(location, 'hashedVote');
 
     this.state = {
       applicantId,

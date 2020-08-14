@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Dropdown, DropdownItemProps, DropdownProps } from 'semantic-ui-react';
-import { Membership } from '@joystream/types/members';
 import { MemberFromAccount } from '../../types/members';
 import { useTransport } from '../hooks';
 import { AccountId } from '@polkadot/types/interfaces';
@@ -14,14 +13,15 @@ const StyledMembersDropdown = styled(Dropdown)`
 `;
 
 function membersToOptions (members: MemberFromAccount[]) {
-  const validMembers = members.filter((m) => m.profile !== undefined) as (MemberFromAccount & { profile: Membership })[];
+  const validMembers = members.filter((m) => m.profile !== undefined);
 
+  // Here we can assert "profile!" and "memberId!", because we filtered out those that don't have it.
   return validMembers
     .map(({ memberId, profile, account }) => ({
-      key: profile.handle,
-      text: `${profile.handle} (id:${memberId})`,
+      key: profile!.handle.toString(),
+      text: `${profile!.handle.toString()} (id:${memberId!})`,
       value: account,
-      image: profile.avatar_uri.toString() ? { avatar: true, src: profile.avatar_uri } : null
+      image: profile!.avatar_uri.toString() ? { avatar: true, src: profile!.avatar_uri } : null
     }));
 }
 
@@ -50,9 +50,12 @@ const MembersDropdown: React.FunctionComponent<Props> = ({ accounts, ...passedPr
           setMembersOptions(membersToOptions(members));
           setLoading(false);
         }
-      });
+      })
+      .catch((e) => { throw e; });
 
     return () => { isSubscribed = false; };
+    // We don't need transport.members as dependency here, because we assume it's always the same, so:
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts]);
 
   return (

@@ -24,15 +24,17 @@ export class APIQueryCache {
     this.api = api;
     this.buildQuery();
     this.cache = new Map<string, Codec>();
-    this.breakCacheOnNewBlocks();
+    this.breakCacheOnNewBlocks()
+      .then((unsub) => { this.unsubscribeFn = unsub; })
+      .catch((e) => { throw e; });
   }
 
   unsubscribe () {
     this.unsubscribeFn();
   }
 
-  protected async breakCacheOnNewBlocks () {
-    this.unsubscribeFn = await this.api.rpc.chain.subscribeNewHeads((header) => {
+  protected breakCacheOnNewBlocks () {
+    return this.api.rpc.chain.subscribeNewHeads((header) => {
       this.cache = new Map<string, Codec>();
       // console.log("cache hits in this block", this.cacheHits)
       this.cacheHits = 0;

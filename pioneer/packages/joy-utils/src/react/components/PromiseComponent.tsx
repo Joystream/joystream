@@ -2,7 +2,7 @@ import React from 'react';
 import { Container, Message, Loader } from 'semantic-ui-react';
 
 type ErrorProps = {
-  error: any;
+  error: string | null;
 };
 
 export function Error ({ error }: ErrorProps) {
@@ -12,7 +12,7 @@ export function Error ({ error }: ErrorProps) {
     <Container style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <Message negative>
         <Message.Header>Oops! We got an error!</Message.Header>
-        <p>{error.message}</p>
+        <p>{error}</p>
       </Message>
     </Container>
   );
@@ -32,7 +32,7 @@ export function Loading ({ text }: LoadingProps) {
 
 type PromiseComponentProps = {
   loading: boolean;
-  error: any;
+  error: string | null;
   message: string;
 }
 

@@ -13,8 +13,9 @@ import Section from '@polkadot/joy-utils/react/components/Section';
 import { queryToProp } from '@polkadot/joy-utils/functions/misc';
 import { ElectionStage, Seat } from '@joystream/types/council';
 import translate from './translate';
+import { RouteProps } from 'react-router-dom';
 
-type Props = ApiProps & I18nProps & {
+type Props = RouteProps & ApiProps & I18nProps & {
   bestNumber?: BN;
 
   activeCouncil?: Seat[];
@@ -34,7 +35,7 @@ type Props = ApiProps & I18nProps & {
   stage?: Option<ElectionStage>;
 };
 
-type State = {};
+type State = Record<any, never>;
 
 class Dashboard extends React.PureComponent<Props, State> {
   state: State = {};

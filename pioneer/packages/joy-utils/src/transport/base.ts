@@ -1,5 +1,4 @@
 import { ApiPromise } from '@polkadot/api';
-import { Codec } from '@polkadot/types/types';
 import { APIQueryCache } from './APIQueryCache';
 
 export default abstract class BaseTransport {

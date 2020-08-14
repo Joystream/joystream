@@ -11,13 +11,13 @@ import { calcBackersStake } from '@polkadot/joy-utils/functions/misc';
 import { Seat } from '@joystream/types/council';
 import translate from './translate';
 import Section from '@polkadot/joy-utils/react/components/Section';
+import { RouteProps } from 'react-router-dom';
 
-type Props = ApiProps &
-I18nProps & {
+type Props = RouteProps & ApiProps & I18nProps & {
   council?: Seat[];
 };
 
-type State = {};
+type State = Record<any, never>;
 
 class Council extends React.PureComponent<Props, State> {
   state: State = {};

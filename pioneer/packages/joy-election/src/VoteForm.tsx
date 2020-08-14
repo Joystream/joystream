@@ -4,7 +4,7 @@ import uuid from 'uuid/v4';
 import React from 'react';
 import { Message, Table } from 'semantic-ui-react';
 
-import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import { I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
 import { withCalls, withMulti } from '@polkadot/react-api/hoc';
 import { AccountId, Balance } from '@polkadot/types/interfaces';
@@ -23,6 +23,7 @@ import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
 import MembersDropdown from '@polkadot/joy-utils/react/components/MembersDropdown';
 import { saveVote, NewVote } from './myVotesStore';
 import { TxFailedCallback } from '@polkadot/react-components/Status/types';
+import { RouteProps } from 'react-router-dom';
 
 // TODO use a crypto-prooven generator instead of UUID 4.
 function randomSalt () {
@@ -30,11 +31,10 @@ function randomSalt () {
 }
 
 // AppsProps is needed to get a location from the route.
-type Props = AppProps & ApiProps & I18nProps & MyAccountProps & {
+type Props = RouteProps & ApiProps & I18nProps & MyAccountProps & {
   applicantId?: string | null;
   minVotingStake?: Balance;
   applicants?: AccountId[];
-  location?: any;
 };
 
 type State = {
@@ -51,7 +51,7 @@ class Component extends React.PureComponent<Props, State> {
 
     let { applicantId, location } = this.props;
 
-    applicantId = applicantId || getUrlParam(location, 'applicantId');
+    applicantId = applicantId || (location && getUrlParam(location, 'applicantId'));
 
     this.state = {
       applicantId,

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import { I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
 import { withCalls } from '@polkadot/react-api/hoc';
 import { Message } from 'semantic-ui-react';
@@ -14,8 +14,9 @@ import { getVotesByVoter } from './myVotesStore';
 import VoteForm from './VoteForm';
 import { queryToProp } from '@polkadot/joy-utils/functions/misc';
 import { ElectionStage } from '@joystream/types/src/council';
+import { RouteProps } from 'react-router-dom';
 
-type Props = AppProps & ApiProps & I18nProps & MyAccountProps & {
+type Props = RouteProps & ApiProps & I18nProps & MyAccountProps & {
   stage?: Option<ElectionStage>;
 };
 

@@ -6,6 +6,7 @@ import { Options as QueryOptions } from '@polkadot/react-api/hoc/types';
 import queryString from 'query-string';
 import { SubmittableResult } from '@polkadot/api';
 import { Codec } from '@polkadot/types/types';
+import { Location } from 'history';
 
 export const ZERO = new BN(0);
 
@@ -164,4 +165,17 @@ export function includeKeys<T extends { [k: string]: any }> (obj: T, ...allowedK
 
 export function bytesToString (bytes: Bytes) {
   return Buffer.from(bytes.toString().substr(2), 'hex').toString();
+}
+
+export function normalizeError (e: any): string {
+  let message: string;
+
+  if (e instanceof Error) {
+    message = e.message;
+  } else {
+    message = JSON.stringify(e);
+  }
+
+  // Prevent returning falsely value
+  return message || 'Unexpected error';
 }

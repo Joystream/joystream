@@ -16,8 +16,9 @@ import Section from '@polkadot/joy-utils/react/components/Section';
 import { queryToProp } from '@polkadot/joy-utils/functions/misc';
 import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/react/hocs/accounts';
 import { ElectionStage } from '@joystream/types/src/council';
+import { RouteProps } from 'react-router-dom';
 
-type Props = ApiProps & I18nProps & MyAccountProps & {
+type Props = RouteProps & ApiProps & I18nProps & MyAccountProps & {
   candidacyLimit?: BN;
   applicants?: Array<AccountId>;
   stage?: Option<ElectionStage>;

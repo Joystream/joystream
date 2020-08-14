@@ -2,7 +2,7 @@ import React from 'react';
 import { Route, Switch } from 'react-router';
 
 import { I18nProps } from '@polkadot/react-components/types';
-import { RouteProps } from '@polkadot/apps-routing/types';
+import { RouteProps as AppMainRouteProps } from '@polkadot/apps-routing/types';
 import { withCalls } from '@polkadot/react-api/hoc';
 import { AccountId, Hash } from '@polkadot/types/interfaces';
 import Tabs from '@polkadot/react-components/Tabs';
@@ -21,17 +21,18 @@ import Votes from './Votes';
 import Reveals from './Reveals';
 import { queryToProp } from '@polkadot/joy-utils/functions/misc';
 import { Seat } from '@joystream/types/council';
+import { ApiProps } from '@polkadot/react-api/types';
 
 const ElectionMain = styled.main`${style}`;
 
 // define out internal types
-type Props = RouteProps & I18nProps & {
+type Props = AppMainRouteProps & ApiProps & I18nProps & {
   activeCouncil?: Seat[];
   applicants?: AccountId[];
   commitments?: Hash[];
 };
 
-type State = {};
+type State = Record<any, never>;
 
 class App extends React.PureComponent<Props, State> {
   state: State = {};

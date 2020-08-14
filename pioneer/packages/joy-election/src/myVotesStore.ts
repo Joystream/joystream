@@ -19,7 +19,7 @@ export type SavedVote = NewVote & {
 
 /** Get all votes that are stored in a local sotrage.  */
 export const getAllVotes = (): SavedVote[] => {
-  const votes = store.get(MY_VOTES);
+  const votes = store.get(MY_VOTES) as unknown;
 
   return nonEmptyArr(votes) ? votes as SavedVote[] : [];
 };
