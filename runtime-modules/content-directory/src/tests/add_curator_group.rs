@@ -52,7 +52,7 @@ fn add_curator_group_lead_auth_failed() {
         // Failure checked
         assert_failure(
             add_curator_group_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })

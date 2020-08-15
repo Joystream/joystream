@@ -59,7 +59,7 @@ fn add_curator_to_group_lead_auth_failed() {
         // Failure checked
         assert_failure(
             add_curator_to_group_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -80,7 +80,7 @@ fn add_curator_to_non_existent_group() {
         // Failure checked
         assert_failure(
             add_curator_to_group_result,
-            ERROR_CURATOR_GROUP_DOES_NOT_EXIST,
+            Error::<Runtime>::CuratorGroupDoesNotExist,
             number_of_events_before_call,
         );
     })
@@ -124,7 +124,7 @@ fn add_curator_to_group_curators_limit_reached() {
         // Failure checked
         assert_failure(
             add_curator_to_group_result,
-            ERROR_NUMBER_OF_CURATORS_PER_GROUP_LIMIT_REACHED,
+            Error::<Runtime>::CuratorsPerGroupLimitReached,
             number_of_events_before_call + number_of_curators_added as usize,
         );
     })

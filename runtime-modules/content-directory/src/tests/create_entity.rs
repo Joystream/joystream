@@ -94,7 +94,7 @@ fn create_entity_of_non_existent_class() {
         // Failure checked
         assert_failure(
             create_entity_result,
-            ERROR_CLASS_NOT_FOUND,
+            Error::<Runtime>::ClassNotFound,
             number_of_events_before_call,
         );
     })
@@ -148,7 +148,7 @@ fn create_entity_creation_limit_reached() {
         // Failure checked
         assert_failure(
             create_entity_result,
-            ERROR_MAX_NUMBER_OF_ENTITIES_PER_CLASS_LIMIT_REACHED,
+            Error::<Runtime>::NumberOfEntitiesPerClassLimitReached,
             number_of_events_before_call + number_of_entities_created as usize,
         );
     })
@@ -185,7 +185,7 @@ fn create_entity_creation_blocked_on_class_level() {
         // Failure checked
         assert_failure(
             create_entity_result,
-            ERROR_ENTITY_CREATION_BLOCKED,
+            Error::<Runtime>::EntitiesCreationBlocked,
             number_of_events_before_call,
         );
     })
@@ -210,7 +210,7 @@ fn create_entity_lead_auth_failed() {
         // Failure checked
         assert_failure(
             create_entity_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -245,7 +245,7 @@ fn create_entity_member_auth_failed() {
         // Failure checked
         assert_failure(
             create_entity_result,
-            ERROR_MEMBER_AUTH_FAILED,
+            Error::<Runtime>::MemberAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -270,7 +270,7 @@ fn create_entity_actor_can_not_create_entities() {
         // Failure checked
         assert_failure(
             create_entity_result,
-            ERROR_ACTOR_CAN_NOT_CREATE_ENTITIES,
+            Error::<Runtime>::ActorCanNotCreateEntities,
             number_of_events_before_call,
         );
     })
@@ -313,7 +313,7 @@ fn create_entity_unknown_curator_id() {
         // Failure checked
         assert_failure(
             create_entity_result,
-            ERROR_CURATOR_AUTH_FAILED,
+            Error::<Runtime>::CuratorAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -356,7 +356,7 @@ fn create_entity_curator_group_is_not_active() {
         // Failure checked
         assert_failure(
             create_entity_result,
-            ERROR_CURATOR_GROUP_IS_NOT_ACTIVE,
+            Error::<Runtime>::CuratorGroupIsNotActive,
             number_of_events_before_call,
         );
     })
@@ -399,7 +399,7 @@ fn create_entity_curator_not_found_in_curator_group() {
         // Failure checked
         assert_failure(
             create_entity_result,
-            ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP,
+            Error::<Runtime>::CuratorIsNotAMemberOfGivenCuratorGroup,
             number_of_events_before_call,
         );
     })
@@ -439,7 +439,7 @@ fn create_entity_voucher_limit_reached() {
         // Failure checked
         assert_failure(
             create_entity_result,
-            ERROR_VOUCHER_LIMIT_REACHED,
+            Error::<Runtime>::VoucherLimitReached,
             number_of_events_before_call + number_of_entities_created as usize,
         );
     })

@@ -84,7 +84,7 @@ fn update_class_schema_status_lead_auth_failed() {
         // Failure checked
         assert_failure(
             update_class_schema_status_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -103,7 +103,7 @@ fn update_class_schema_status_of_non_existent_class() {
         // Failure checked
         assert_failure(
             update_class_schema_status_result,
-            ERROR_CLASS_NOT_FOUND,
+            Error::<Runtime>::ClassNotFound,
             number_of_events_before_call,
         );
     })
@@ -138,7 +138,7 @@ fn update_class_schema_status_for_non_existent_schema() {
         // Failure checked
         assert_failure(
             update_class_schema_status_result,
-            ERROR_UNKNOWN_CLASS_SCHEMA_ID,
+            Error::<Runtime>::UnknownClassSchemaId,
             number_of_events_before_call,
         );
     })

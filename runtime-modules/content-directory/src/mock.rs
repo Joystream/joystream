@@ -69,12 +69,6 @@ pub const SECOND_SCHEMA_ID: SchemaId = 1;
 pub const FIRST_PROPERTY_ID: SchemaId = 0;
 pub const SECOND_PROPERTY_ID: SchemaId = 1;
 
-// Nonces
-
-// pub const ZERO_NONCE: Nonce = 0;
-// pub const FIRST_NONCE: Nonce = 1;
-// pub const SECOND_NONCE: Nonce = 2;
-
 impl_outer_origin! {
     pub enum Origin for Runtime {}
 }
@@ -414,7 +408,6 @@ fn default_content_directory_genesis_config() -> GenesisConfig<Runtime> {
         class_by_id: vec![],
         entity_by_id: vec![],
         curator_group_by_id: vec![],
-        unique_property_values: vec![],
         next_class_id: 1,
         next_entity_id: 1,
         next_curator_group_id: 1,
@@ -488,8 +481,8 @@ pub fn assert_event_success(tested_event: TestEvent, number_of_events_after_call
 }
 
 pub fn assert_failure(
-    call_result: Result<(), &str>,
-    expected_error: &str,
+    call_result: DispatchResult,
+    expected_error: Error<Runtime>,
     number_of_events_before_call: usize,
 ) {
     // Ensure  call result is equal to expected error
