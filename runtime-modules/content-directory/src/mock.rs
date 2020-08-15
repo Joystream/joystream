@@ -69,12 +69,6 @@ pub const SECOND_SCHEMA_ID: SchemaId = 1;
 pub const FIRST_PROPERTY_ID: SchemaId = 0;
 pub const SECOND_PROPERTY_ID: SchemaId = 1;
 
-// Nonces
-
-// pub const ZERO_NONCE: Nonce = 0;
-// pub const FIRST_NONCE: Nonce = 1;
-// pub const SECOND_NONCE: Nonce = 2;
-
 impl_outer_origin! {
     pub enum Origin for Runtime {}
 }
@@ -487,7 +481,7 @@ pub fn assert_event_success(tested_event: TestEvent, number_of_events_after_call
 }
 
 pub fn assert_failure(
-    call_result: Result<(), Error<Runtime>>,
+    call_result: DispatchResult,
     expected_error: Error<Runtime>,
     number_of_events_before_call: usize,
 ) {
@@ -504,14 +498,11 @@ pub fn next_curator_group_id() -> CuratorGroupId {
     TestModule::next_curator_group_id()
 }
 
-pub fn add_curator_group(lead_origin: u64) -> Result<(), Error<T>> {
+pub fn add_curator_group(lead_origin: u64) -> DispatchResult {
     TestModule::add_curator_group(Origin::signed(lead_origin))
 }
 
-pub fn remove_curator_group(
-    lead_origin: u64,
-    curator_group_id: CuratorGroupId,
-) -> Result<(), Error<T>> {
+pub fn remove_curator_group(lead_origin: u64, curator_group_id: CuratorGroupId) -> DispatchResult {
     TestModule::remove_curator_group(Origin::signed(lead_origin), curator_group_id)
 }
 
@@ -519,7 +510,7 @@ pub fn add_curator_to_group(
     lead_origin: u64,
     curator_group_id: CuratorGroupId,
     curator_id: CuratorId,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::add_curator_to_group(Origin::signed(lead_origin), curator_group_id, curator_id)
 }
 
@@ -527,7 +518,7 @@ pub fn remove_curator_from_group(
     lead_origin: u64,
     curator_group_id: CuratorGroupId,
     curator_id: CuratorId,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::remove_curator_from_group(Origin::signed(lead_origin), curator_group_id, curator_id)
 }
 
@@ -535,7 +526,7 @@ pub fn set_curator_group_status(
     lead_origin: u64,
     curator_group_id: CuratorGroupId,
     is_active: bool,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::set_curator_group_status(Origin::signed(lead_origin), curator_group_id, is_active)
 }
 
@@ -562,7 +553,7 @@ pub enum ClassType {
     CuratorGroupDoesNotExist,
 }
 
-pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> Result<(), Error<T>> {
+pub fn create_simple_class(lead_origin: u64, class_type: ClassType) -> DispatchResult {
     let mut class = create_class_with_default_permissions();
     match class_type {
         ClassType::Valid => (),
@@ -635,7 +626,7 @@ pub fn add_maintainer_to_class(
     lead_origin: u64,
     class_id: ClassId,
     curator_group_id: CuratorGroupId,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::add_maintainer_to_class(Origin::signed(lead_origin), class_id, curator_group_id)
 }
 
@@ -643,7 +634,7 @@ pub fn remove_maintainer_from_class(
     lead_origin: u64,
     class_id: ClassId,
     curator_group_id: CuratorGroupId,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::remove_maintainer_from_class(
         Origin::signed(lead_origin),
         class_id,
@@ -658,7 +649,7 @@ pub fn update_class_permissions(
     updated_entity_creation_blocked: Option<bool>,
     updated_all_entity_property_values_locked: Option<bool>,
     updated_maintainers: Option<BTreeSet<CuratorGroupId>>,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::update_class_permissions(
         Origin::signed(lead_origin),
         class_id,
@@ -674,7 +665,7 @@ pub fn add_class_schema(
     class_id: ClassId,
     existing_properties: BTreeSet<PropertyId>,
     new_properties: Vec<Property<Runtime>>,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::add_class_schema(
         Origin::signed(lead_origin),
         class_id,
@@ -688,7 +679,7 @@ pub fn update_class_schema_status(
     class_id: ClassId,
     schema_id: SchemaId,
     status: bool,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::update_class_schema_status(Origin::signed(lead_origin), class_id, schema_id, status)
 }
 
@@ -711,7 +702,7 @@ pub fn update_entity_creation_voucher(
     class_id: ClassId,
     controller: EntityController<Runtime>,
     maximum_entities_count: EntityId,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::update_entity_creation_voucher(
         Origin::signed(lead_origin),
         class_id,
@@ -748,19 +739,11 @@ pub fn next_entity_id() -> EntityId {
     TestModule::next_entity_id()
 }
 
-pub fn create_entity(
-    origin: u64,
-    class_id: ClassId,
-    actor: Actor<Runtime>,
-) -> Result<(), Error<T>> {
+pub fn create_entity(origin: u64, class_id: ClassId, actor: Actor<Runtime>) -> DispatchResult {
     TestModule::create_entity(Origin::signed(origin), class_id, actor)
 }
 
-pub fn remove_entity(
-    origin: u64,
-    actor: Actor<Runtime>,
-    entity_id: EntityId,
-) -> Result<(), Error<T>> {
+pub fn remove_entity(origin: u64, actor: Actor<Runtime>, entity_id: EntityId) -> DispatchResult {
     TestModule::remove_entity(Origin::signed(origin), actor, entity_id)
 }
 
@@ -769,7 +752,7 @@ pub fn update_entity_permissions(
     entity_id: EntityId,
     updated_frozen: Option<bool>,
     updated_referenceable: Option<bool>,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::update_entity_permissions(
         Origin::signed(lead_origin),
         entity_id,
@@ -784,7 +767,7 @@ pub fn add_schema_support_to_entity(
     entity_id: EntityId,
     schema_id: SchemaId,
     new_property_values: BTreeMap<PropertyId, InputPropertyValue<Runtime>>,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::add_schema_support_to_entity(
         Origin::signed(origin),
         actor,
@@ -799,7 +782,7 @@ pub fn update_entity_property_values(
     actor: Actor<Runtime>,
     entity_id: EntityId,
     new_property_values: BTreeMap<PropertyId, InputPropertyValue<Runtime>>,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::update_entity_property_values(
         Origin::signed(origin),
         actor,
@@ -813,7 +796,7 @@ pub fn clear_entity_property_vector(
     actor: Actor<Runtime>,
     entity_id: EntityId,
     in_class_schema_property_id: PropertyId,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::clear_entity_property_vector(
         Origin::signed(origin),
         actor,
@@ -830,7 +813,7 @@ pub fn insert_at_entity_property_vector(
     index_in_property_vector: VecMaxLength,
     property_value: InputValue<Runtime>,
     nonce: Nonce,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::insert_at_entity_property_vector(
         Origin::signed(origin),
         actor,
@@ -849,7 +832,7 @@ pub fn remove_at_entity_property_vector(
     in_class_schema_property_id: PropertyId,
     index_in_property_vector: VecMaxLength,
     nonce: Nonce,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::remove_at_entity_property_vector(
         Origin::signed(origin),
         actor,
@@ -868,7 +851,7 @@ pub fn transfer_entity_ownership(
         PropertyId,
         InputPropertyValue<Runtime>,
     >,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::transfer_entity_ownership(
         Origin::signed(origin),
         entity_id,
@@ -883,7 +866,7 @@ pub fn transaction(
     origin: u64,
     actor: Actor<Runtime>,
     operations: Vec<OperationType<Runtime>>,
-) -> Result<(), Error<T>> {
+) -> DispatchResult {
     TestModule::transaction(Origin::signed(origin), actor, operations)
 }
 

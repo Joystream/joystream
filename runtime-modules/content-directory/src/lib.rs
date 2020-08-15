@@ -1938,7 +1938,6 @@ impl<T: Trait> Module<T> {
         property_value_vector_updated: &StoredPropertyValue<T>,
         property_value_vector: VecStoredPropertyValue<T>,
     ) -> Result<(T::Hash, T::Hash), Error<T>> {
-     
         // Compute new hash from unique property value and its respective property id
         let new_property_value_hash =
             property_value_vector_updated.compute_unique_hash(in_class_schema_property_id);
