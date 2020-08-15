@@ -79,7 +79,7 @@ fn remove_curator_from_group_lead_auth_failed() {
         // Failure checked
         assert_failure(
             remove_curator_from_group_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -103,7 +103,7 @@ fn remove_curator_from_group_curator_is_not_a_member() {
         // Failure checked
         assert_failure(
             remove_curator_from_group_result,
-            ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP,
+            Error::<Runtime>::CuratorIsNotAMemberOfGivenCuratorGroup,
             number_of_events_before_call,
         );
     })
@@ -124,7 +124,7 @@ fn remove_curator_from_non_existent_group() {
         // Failure checked
         assert_failure(
             remove_curator_from_group_result,
-            ERROR_CURATOR_GROUP_DOES_NOT_EXIST,
+            Error::<Runtime>::CuratorGroupDoesNotExist,
             number_of_events_before_call,
         );
     })

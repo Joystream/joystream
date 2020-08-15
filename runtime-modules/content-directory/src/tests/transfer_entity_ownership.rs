@@ -88,7 +88,7 @@ fn transfer_entity_ownership_lead_auth_failed() {
         // Failure checked
         assert_failure(
             transfer_entity_ownership_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -119,7 +119,7 @@ fn transfer_entity_ownership_entity_not_found() {
         // Failure checked
         assert_failure(
             transfer_entity_ownership_result,
-            ERROR_ENTITY_NOT_FOUND,
+            Error::<Runtime>::EntityNotFound,
             number_of_events_before_call,
         );
     })
@@ -155,7 +155,7 @@ fn transfer_entity_ownership_provided_entity_controller_is_equal_to_the_current_
         // Failure checked
         assert_failure(
             transfer_entity_ownership_result,
-            ERROR_PROVIDED_ENTITY_CONTROLLER_IS_EQUAL_TO_CURRENT_ONE,
+            Error::<Runtime>::ProvidedEntityControllerIsEqualToTheCurrentOne,
             number_of_events_before_call,
         );
     })
@@ -212,7 +212,7 @@ fn transfer_entity_ownership_inbound_same_owner_rc_does_not_equal_to_zero() {
         // Failure checked
         assert_failure(
             transfer_entity_ownership_result,
-            ERROR_ENTITY_SAME_OWNER_RC_DOES_NOT_EQUAL_TO_ZERO,
+            Error::<Runtime>::EntityInboundSameOwnerRcDoesNotEqualToZero,
             number_of_events_before_call,
         );
     })
@@ -295,7 +295,7 @@ fn transfer_entity_ownership_provided_property_value_ids_must_be_references_with
         // Failure checked
         assert_failure(
             transfer_entity_ownership_result,
-            ERROR_ALL_PROVIDED_PROPERTY_VALUE_IDS_MUST_BE_REFERENCES_WITH_SAME_OWNER_FLAG_SET,
+            Error::<Runtime>::AllProvidedPropertyValueIdsMustBeReferencesWithSameOwnerFlagSet,
             number_of_events_before_call,
         );
     })
@@ -386,7 +386,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_entity_that
         // Failure checked
         assert_failure(
             transfer_entity_ownership_result,
-            ERROR_ENTITY_CAN_NOT_BE_REFERENCED,
+            Error::<Runtime>::EntityCanNotBeReferenced,
             number_of_events_before_call,
         );
     })
@@ -451,7 +451,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_non_existen
         // Failure checked
         assert_failure(
             transfer_entity_ownership_result,
-            ERROR_ENTITY_NOT_FOUND,
+            Error::<Runtime>::EntityNotFound,
             number_of_events_before_call,
         );
     })
@@ -530,7 +530,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_entity_cont
         // Failure checked
         assert_failure(
             transfer_entity_ownership_result,
-            ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION,
+            Error::<Runtime>::SameControllerConstraintViolation,
             number_of_events_before_call,
         );
     })
@@ -603,7 +603,7 @@ fn transfer_entity_ownership_required_property_was_not_provided() {
         // Failure checked
         assert_failure(
             transfer_entity_ownership_result,
-            ERROR_MISSING_REQUIRED_PROP,
+            Error::<Runtime>::MissingRequiredProperty,
             number_of_events_before_call,
         );
     })
@@ -731,7 +731,7 @@ fn transfer_entity_ownership_unique_constraint_violation() {
         // Failure checked
         assert_failure(
             transfer_entity_ownership_result,
-            ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE,
+            Error::<Runtime>::PropertyValueShouldBeUnique,
             number_of_events_before_call,
         );
     })

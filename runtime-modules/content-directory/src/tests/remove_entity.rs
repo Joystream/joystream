@@ -60,7 +60,7 @@ fn remove_non_existent_entity() {
         // Failure checked
         assert_failure(
             remove_entity_result,
-            ERROR_ENTITY_NOT_FOUND,
+            Error::<Runtime>::EntityNotFound,
             number_of_events_before_call,
         );
     })
@@ -84,7 +84,7 @@ fn remove_entity_lead_auth_failed() {
         // Failure checked
         assert_failure(
             remove_entity_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -108,7 +108,7 @@ fn remove_entity_member_auth_failed() {
         // Failure checked
         assert_failure(
             remove_entity_result,
-            ERROR_MEMBER_AUTH_FAILED,
+            Error::<Runtime>::MemberAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -139,7 +139,7 @@ fn create_entity_curator_group_is_not_active() {
         // Failure checked
         assert_failure(
             remove_entity_result,
-            ERROR_CURATOR_GROUP_IS_NOT_ACTIVE,
+            Error::<Runtime>::CuratorGroupIsNotActive,
             number_of_events_before_call,
         );
     })
@@ -163,7 +163,7 @@ fn remove_entity_curator_auth_failed() {
         // Failure checked
         assert_failure(
             remove_entity_result,
-            ERROR_CURATOR_AUTH_FAILED,
+            Error::<Runtime>::CuratorAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -188,7 +188,7 @@ fn remove_entity_curator_not_found_in_curator_group() {
         // Failure checked
         assert_failure(
             remove_entity_result,
-            ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP,
+            Error::<Runtime>::CuratorIsNotAMemberOfGivenCuratorGroup,
             number_of_events_before_call,
         );
     })
@@ -212,7 +212,7 @@ fn remove_entity_access_denied() {
         // Failure checked
         assert_failure(
             remove_entity_result,
-            ERROR_ENTITY_ACCESS_DENIED,
+            Error::<Runtime>::EntityAccessDenied,
             number_of_events_before_call,
         );
     })
@@ -264,7 +264,7 @@ fn remove_entity_removal_access_denied() {
         // Failure checked
         assert_failure(
             remove_entity_result,
-            ERROR_ENTITY_REMOVAL_ACCESS_DENIED,
+            Error::<Runtime>::EntityRemovalAccessDenied,
             number_of_events_before_call,
         );
     })
@@ -289,7 +289,7 @@ fn remove_entity_rc_does_not_equal_to_zero() {
         // Failure checked
         assert_failure(
             remove_entity_result,
-            ERROR_ENTITY_RC_DOES_NOT_EQUAL_TO_ZERO,
+            Error::<Runtime>::EntityRcDoesNotEqualToZero,
             number_of_events_before_call,
         );
     })
