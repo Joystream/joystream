@@ -1,39 +1,40 @@
 use super::*;
+use runtime_primitives::traits::Hash;
 
-/// Enum, representing either `OutputValue` or `VecOutputPropertyValue`
+/// Enum, representing either `StoredValue` or `VecStoredPropertyValue`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum OutputPropertyValue<T: Trait> {
-    Single(OutputValue<T>),
-    Vector(VecOutputPropertyValue<T>),
+pub enum StoredPropertyValue<T: Trait> {
+    Single(StoredValue<T>),
+    Vector(VecStoredPropertyValue<T>),
 }
 
-impl<T: Trait> OutputPropertyValue<T> {
-    pub fn as_single_value(&self) -> Option<&OutputValue<T>> {
-        if let OutputPropertyValue::Single(single_value) = self {
+impl<T: Trait> StoredPropertyValue<T> {
+    pub fn as_single_value(&self) -> Option<&StoredValue<T>> {
+        if let StoredPropertyValue::Single(single_value) = self {
             Some(single_value)
         } else {
             None
         }
     }
 
-    pub fn as_vec_property_value(&self) -> Option<&VecOutputPropertyValue<T>> {
-        if let OutputPropertyValue::Vector(vec_property_value) = self {
+    pub fn as_vec_property_value(&self) -> Option<&VecStoredPropertyValue<T>> {
+        if let StoredPropertyValue::Vector(vec_property_value) = self {
             Some(vec_property_value)
         } else {
             None
         }
     }
 
-    pub fn as_vec_property_value_mut(&mut self) -> Option<&mut VecOutputPropertyValue<T>> {
-        if let OutputPropertyValue::Vector(vec_property_value) = self {
+    pub fn as_vec_property_value_mut(&mut self) -> Option<&mut VecStoredPropertyValue<T>> {
+        if let StoredPropertyValue::Vector(vec_property_value) = self {
             Some(vec_property_value)
         } else {
             None
         }
     }
 
-    /// Update `Self` with provided `OutputPropertyValue`
+    /// Update `Self` with provided `StoredPropertyValue`
     pub fn update(&mut self, mut new_value: Self) {
         if let (Some(vec_property_value), Some(new_vec_property_value)) = (
             self.as_vec_property_value_mut(),
@@ -44,33 +45,45 @@ impl<T: Trait> OutputPropertyValue<T> {
         *self = new_value
     }
 
-    /// Retrieve all involved `entity_id`'s, if current `OutputPropertyValue` is reference
+    /// Retrieve all involved `entity_id`'s, if current `StoredPropertyValue` is reference
     pub fn get_involved_entities(&self) -> Option<Vec<T::EntityId>> {
         match self {
-            OutputPropertyValue::Single(single_property_value) => {
+            StoredPropertyValue::Single(single_property_value) => {
                 if let Some(entity_id) = single_property_value.get_involved_entity() {
                     Some(vec![entity_id])
                 } else {
                     None
                 }
             }
-            OutputPropertyValue::Vector(vector_property_value) => vector_property_value
-                .get_vec_value()
+            StoredPropertyValue::Vector(vector_property_value) => vector_property_value
+                .get_vec_value_ref()
                 .get_involved_entities(),
+        }
+    }
+
+    /// Compute hash from unique property value and its respective property_id
+    pub fn compute_unique_hash(&self, property_id: PropertyId) -> T::Hash {
+        match self {
+            StoredPropertyValue::Single(output_value) => {
+                (property_id, output_value).using_encoded(<T as system::Trait>::Hashing::hash)
+            }
+            StoredPropertyValue::Vector(vector_output_value) => {
+                vector_output_value.compute_unique_hash(property_id)
+            }
         }
     }
 }
 
-impl<T: Trait> Default for OutputPropertyValue<T> {
+impl<T: Trait> Default for StoredPropertyValue<T> {
     fn default() -> Self {
-        OutputPropertyValue::Single(OutputValue::default())
+        StoredPropertyValue::Single(StoredValue::default())
     }
 }
 
-/// OutputValue enum representation, related to corresponding `SingleOutputPropertyValue` structure
+/// StoredValue enum representation, related to corresponding `SingleStoredPropertyValue` structure
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum OutputValue<T: Trait> {
+#[derive(Encode, Decode, Hash, Clone, PartialEq, PartialOrd, Ord, Eq, Debug)]
+pub enum StoredValue<T: Trait> {
     Bool(bool),
     Uint16(u16),
     Uint32(u32),
@@ -83,16 +96,16 @@ pub enum OutputValue<T: Trait> {
     Reference(T::EntityId),
 }
 
-impl<T: Trait> Default for OutputValue<T> {
-    fn default() -> OutputValue<T> {
+impl<T: Trait> Default for StoredValue<T> {
+    fn default() -> StoredValue<T> {
         Self::Bool(false)
     }
 }
 
-impl<T: Trait> OutputValue<T> {
-    /// Retrieve involved `entity_id`, if current `OutputValue` is reference
+impl<T: Trait> StoredValue<T> {
+    /// Retrieve involved `entity_id`, if current `StoredValue` is reference
     pub fn get_involved_entity(&self) -> Option<T::EntityId> {
-        if let OutputValue::Reference(entity_id) = self {
+        if let StoredValue::Reference(entity_id) = self {
             Some(*entity_id)
         } else {
             None
@@ -100,58 +113,69 @@ impl<T: Trait> OutputValue<T> {
     }
 }
 
-/// Consists of `VecOutputPropertyValue` enum representation and `nonce`, used to avoid vector data race update conditions
+/// Consists of `VecStoredPropertyValue` enum representation and `nonce`, used to avoid vector data race update conditions
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct VecOutputPropertyValue<T: Trait> {
-    vec_value: VecOutputValue<T>,
+#[derive(Encode, Decode, Default, Clone, Debug, PartialEq, Eq)]
+pub struct VecStoredPropertyValue<T: Trait> {
+    vec_value: VecStoredValue<T>,
     nonce: T::Nonce,
 }
 
-impl<T: Trait> VecOutputPropertyValue<T> {
+impl<T: Trait> VecStoredPropertyValue<T> {
+    /// Compute hash from unique vec property value and its respective property_id
+    pub fn compute_unique_hash(&self, property_id: PropertyId) -> T::Hash {
+        // Do not hash nonce
+        (property_id, &self.vec_value).using_encoded(<T as system::Trait>::Hashing::hash)
+    }
+
     /// Increase nonce by 1
     fn increment_nonce(&mut self) -> T::Nonce {
         self.nonce += T::Nonce::one();
         self.nonce
     }
 
-    pub fn new(vec_value: VecOutputValue<T>, nonce: T::Nonce) -> Self {
+    pub fn new(vec_value: VecStoredValue<T>, nonce: T::Nonce) -> Self {
         Self { vec_value, nonce }
     }
 
-    /// Retrieve `VecOutputValue` by reference
-    pub fn get_vec_value(&self) -> &VecOutputValue<T> {
+    /// Retrieve `VecStoredValue`
+    pub fn get_vec_value(self) -> VecStoredValue<T> {
+        self.vec_value
+    }
+
+    /// Retrieve `VecStoredValue` by reference
+    pub fn get_vec_value_ref(&self) -> &VecStoredValue<T> {
         &self.vec_value
     }
 
     fn len(&self) -> usize {
         match &self.vec_value {
-            VecOutputValue::Bool(vec) => vec.len(),
-            VecOutputValue::Uint16(vec) => vec.len(),
-            VecOutputValue::Uint32(vec) => vec.len(),
-            VecOutputValue::Uint64(vec) => vec.len(),
-            VecOutputValue::Int16(vec) => vec.len(),
-            VecOutputValue::Int32(vec) => vec.len(),
-            VecOutputValue::Int64(vec) => vec.len(),
-            VecOutputValue::Text(vec) => vec.len(),
-            VecOutputValue::Hash(vec) => vec.len(),
-            VecOutputValue::Reference(vec) => vec.len(),
+            VecStoredValue::Bool(vec) => vec.len(),
+            VecStoredValue::Uint16(vec) => vec.len(),
+            VecStoredValue::Uint32(vec) => vec.len(),
+            VecStoredValue::Uint64(vec) => vec.len(),
+            VecStoredValue::Int16(vec) => vec.len(),
+            VecStoredValue::Int32(vec) => vec.len(),
+            VecStoredValue::Int64(vec) => vec.len(),
+            VecStoredValue::Text(vec) => vec.len(),
+            VecStoredValue::Hash(vec) => vec.len(),
+            VecStoredValue::Reference(vec) => vec.len(),
         }
     }
 
     /// Clear current `vec_value`
     pub fn clear(&mut self) {
         match &mut self.vec_value {
-            VecOutputValue::Bool(vec) => *vec = vec![],
-            VecOutputValue::Uint16(vec) => *vec = vec![],
-            VecOutputValue::Uint32(vec) => *vec = vec![],
-            VecOutputValue::Uint64(vec) => *vec = vec![],
-            VecOutputValue::Int16(vec) => *vec = vec![],
-            VecOutputValue::Int32(vec) => *vec = vec![],
-            VecOutputValue::Int64(vec) => *vec = vec![],
-            VecOutputValue::Text(vec) => *vec = vec![],
-            VecOutputValue::Hash(vec) => *vec = vec![],
-            VecOutputValue::Reference(vec) => *vec = vec![],
+            VecStoredValue::Bool(vec) => *vec = vec![],
+            VecStoredValue::Uint16(vec) => *vec = vec![],
+            VecStoredValue::Uint32(vec) => *vec = vec![],
+            VecStoredValue::Uint64(vec) => *vec = vec![],
+            VecStoredValue::Int16(vec) => *vec = vec![],
+            VecStoredValue::Int32(vec) => *vec = vec![],
+            VecStoredValue::Int64(vec) => *vec = vec![],
+            VecStoredValue::Text(vec) => *vec = vec![],
+            VecStoredValue::Hash(vec) => *vec = vec![],
+            VecStoredValue::Reference(vec) => *vec = vec![],
         }
     }
 
@@ -164,23 +188,23 @@ impl<T: Trait> VecOutputPropertyValue<T> {
         }
 
         match &mut self.vec_value {
-            VecOutputValue::Bool(vec) => remove_at_checked(vec, index_in_property_vec),
-            VecOutputValue::Uint16(vec) => remove_at_checked(vec, index_in_property_vec),
-            VecOutputValue::Uint32(vec) => remove_at_checked(vec, index_in_property_vec),
-            VecOutputValue::Uint64(vec) => remove_at_checked(vec, index_in_property_vec),
-            VecOutputValue::Int16(vec) => remove_at_checked(vec, index_in_property_vec),
-            VecOutputValue::Int32(vec) => remove_at_checked(vec, index_in_property_vec),
-            VecOutputValue::Int64(vec) => remove_at_checked(vec, index_in_property_vec),
-            VecOutputValue::Text(vec) => remove_at_checked(vec, index_in_property_vec),
-            VecOutputValue::Hash(vec) => remove_at_checked(vec, index_in_property_vec),
-            VecOutputValue::Reference(vec) => remove_at_checked(vec, index_in_property_vec),
+            VecStoredValue::Bool(vec) => remove_at_checked(vec, index_in_property_vec),
+            VecStoredValue::Uint16(vec) => remove_at_checked(vec, index_in_property_vec),
+            VecStoredValue::Uint32(vec) => remove_at_checked(vec, index_in_property_vec),
+            VecStoredValue::Uint64(vec) => remove_at_checked(vec, index_in_property_vec),
+            VecStoredValue::Int16(vec) => remove_at_checked(vec, index_in_property_vec),
+            VecStoredValue::Int32(vec) => remove_at_checked(vec, index_in_property_vec),
+            VecStoredValue::Int64(vec) => remove_at_checked(vec, index_in_property_vec),
+            VecStoredValue::Text(vec) => remove_at_checked(vec, index_in_property_vec),
+            VecStoredValue::Hash(vec) => remove_at_checked(vec, index_in_property_vec),
+            VecStoredValue::Reference(vec) => remove_at_checked(vec, index_in_property_vec),
         }
 
         self.increment_nonce();
     }
 
-    /// Insert provided `OutputValue` at given `index_in_property_vec`, increment `nonce`
-    pub fn insert_at(&mut self, index_in_property_vec: VecMaxLength, single_value: OutputValue<T>) {
+    /// Insert provided `StoredValue` at given `index_in_property_vec`, increment `nonce`
+    pub fn insert_at(&mut self, index_in_property_vec: VecMaxLength, single_value: StoredValue<T>) {
         fn insert_at<T>(vec: &mut Vec<T>, index_in_property_vec: VecMaxLength, value: T) {
             if (index_in_property_vec as usize) < vec.len() {
                 vec.insert(index_in_property_vec as usize, value);
@@ -188,33 +212,33 @@ impl<T: Trait> VecOutputPropertyValue<T> {
         }
 
         match (&mut self.vec_value, single_value) {
-            (VecOutputValue::Bool(vec), OutputValue::Bool(value)) => {
+            (VecStoredValue::Bool(vec), StoredValue::Bool(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
-            (VecOutputValue::Uint16(vec), OutputValue::Uint16(value)) => {
+            (VecStoredValue::Uint16(vec), StoredValue::Uint16(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
-            (VecOutputValue::Uint32(vec), OutputValue::Uint32(value)) => {
+            (VecStoredValue::Uint32(vec), StoredValue::Uint32(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
-            (VecOutputValue::Uint64(vec), OutputValue::Uint64(value)) => {
+            (VecStoredValue::Uint64(vec), StoredValue::Uint64(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
-            (VecOutputValue::Int16(vec), OutputValue::Int16(value)) => {
+            (VecStoredValue::Int16(vec), StoredValue::Int16(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
-            (VecOutputValue::Int32(vec), OutputValue::Int32(value)) => {
+            (VecStoredValue::Int32(vec), StoredValue::Int32(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
-            (VecOutputValue::Int64(vec), OutputValue::Int64(value)) => {
+            (VecStoredValue::Int64(vec), StoredValue::Int64(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
 
             // Match by move, when https://github.com/rust-lang/rust/issues/68354 stableize
-            (VecOutputValue::Text(vec), OutputValue::Text(ref value)) => {
+            (VecStoredValue::Text(vec), StoredValue::Text(ref value)) => {
                 insert_at(vec, index_in_property_vec, value.to_owned())
             }
-            (VecOutputValue::Reference(vec), OutputValue::Reference(value)) => {
+            (VecStoredValue::Reference(vec), StoredValue::Reference(value)) => {
                 insert_at(vec, index_in_property_vec, value)
             }
             _ => return,
@@ -223,7 +247,7 @@ impl<T: Trait> VecOutputPropertyValue<T> {
         self.increment_nonce();
     }
 
-    /// Ensure `VecOutputPropertyValue` nonce is equal to the provided one.
+    /// Ensure `VecStoredPropertyValue` nonce is equal to the provided one.
     /// Used to to avoid possible data races, when performing vector specific operations
     pub fn ensure_nonce_equality(&self, new_nonce: T::Nonce) -> dispatch::Result {
         ensure!(
@@ -233,7 +257,7 @@ impl<T: Trait> VecOutputPropertyValue<T> {
         Ok(())
     }
 
-    /// Ensure, provided `index_in_property_vec` is valid index of `VecOutputValue`
+    /// Ensure, provided `index_in_property_vec` is valid index of `VecStoredValue`
     pub fn ensure_index_in_property_vector_is_valid(
         &self,
         index_in_property_vec: VecMaxLength,
@@ -247,10 +271,10 @@ impl<T: Trait> VecOutputPropertyValue<T> {
     }
 }
 
-/// Vector value enum representation, related to corresponding `VecOutputPropertyValue` structure
+/// Vector value enum representation, related to corresponding `VecStoredPropertyValue` structure
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum VecOutputValue<T: Trait> {
+#[derive(Encode, Decode, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
+pub enum VecStoredValue<T: Trait> {
     Bool(Vec<bool>),
     Uint16(Vec<u16>),
     Uint32(Vec<u32>),
@@ -263,14 +287,14 @@ pub enum VecOutputValue<T: Trait> {
     Reference(Vec<T::EntityId>),
 }
 
-impl<T: Trait> Default for VecOutputValue<T> {
+impl<T: Trait> Default for VecStoredValue<T> {
     fn default() -> Self {
         Self::Bool(vec![])
     }
 }
 
-impl<T: Trait> VecOutputValue<T> {
-    /// Retrieve all involved `entity_id`'s, if current `VecOutputValue` is reference
+impl<T: Trait> VecStoredValue<T> {
+    /// Retrieve all involved `entity_id`'s, if current `VecStoredValue` is reference
     pub fn get_involved_entities(&self) -> Option<Vec<T::EntityId>> {
         if let Self::Reference(entity_ids) = self {
             Some(entity_ids.to_owned())

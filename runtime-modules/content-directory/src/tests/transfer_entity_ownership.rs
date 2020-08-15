@@ -167,7 +167,7 @@ fn transfer_entity_ownership_inbound_same_owner_rc_does_not_equal_to_zero() {
         // Create class with default permissions
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
-        add_class_reference_schema();
+        add_unique_class_reference_schema();
 
         let actor = Actor::Lead;
 
@@ -225,7 +225,7 @@ fn transfer_entity_ownership_provided_property_value_ids_must_be_references_with
         // Create class with default permissions
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
-        add_class_reference_schema();
+        add_unique_class_reference_schema();
 
         // Update class permissions to force any member be available to create Entities
         assert_ok!(update_class_permissions(
@@ -308,7 +308,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_entity_that
         // Create class with default permissions
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
-        add_class_reference_schema();
+        add_unique_class_reference_schema();
 
         // Update class permissions to force any member be available to create Entities
         assert_ok!(update_class_permissions(
@@ -398,7 +398,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_non_existen
         // Create class with default permissions
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
-        add_class_reference_schema();
+        add_unique_class_reference_schema();
 
         let actor = Actor::Lead;
 
@@ -464,7 +464,7 @@ fn transfer_entity_ownership_provided_new_property_value_referencing_entity_cont
         // Create class with default permissions
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
-        add_class_reference_schema();
+        add_unique_class_reference_schema();
 
         // Update class permissions to force any member be available to create Entities
         assert_ok!(update_class_permissions(
@@ -542,7 +542,7 @@ fn transfer_entity_ownership_required_property_was_not_provided() {
         // Create class with default permissions
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
-        add_class_reference_schema();
+        add_unique_class_reference_schema();
 
         // Update class permissions to force any member be available to create Entities
         assert_ok!(update_class_permissions(
@@ -609,139 +609,130 @@ fn transfer_entity_ownership_required_property_was_not_provided() {
     })
 }
 
-// #[test]
-// fn transfer_entity_ownership_unique_constraint_violation() {
-//     with_test_externalities(|| {
-//         // Create class with default permissions
-//         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
+#[test]
+fn transfer_entity_ownership_unique_constraint_violation() {
+    with_test_externalities(|| {
+        // Create class with default permissions
+        assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
-//         // Create first unique reference property with same_controller flag set
-//         let property_type = PropertyType::<Runtime>::vec_reference(
-//             FIRST_CLASS_ID,
-//             true,
-//             VecMaxLengthConstraint::get(),
-//         );
+        // Create unique reference property with same_controller flag set
+        let property_type = PropertyType::<Runtime>::vec_reference(
+            FIRST_CLASS_ID,
+            true,
+            VecMaxLengthConstraint::get(),
+        );
 
-//         let first_property = Property::<Runtime>::with_name_and_type(
-//             (PropertyNameLengthConstraint::get().max() - 1) as usize,
-//             property_type.clone(),
-//             true,
-//             true,
-//         );
+        let property = Property::<Runtime>::with_name_and_type(
+            PropertyNameLengthConstraint::get().max() as usize,
+            property_type,
+            true,
+            true,
+        );
 
-//         // Add first Schema to the Class
-//         assert_ok!(add_class_schema(
-//             LEAD_ORIGIN,
-//             FIRST_CLASS_ID,
-//             BTreeSet::new(),
-//             vec![first_property]
-//         ));
+        // Add Schema to the Class
+        assert_ok!(add_class_schema(
+            LEAD_ORIGIN,
+            FIRST_CLASS_ID,
+            BTreeSet::new(),
+            vec![property]
+        ));
 
-//         // Create second reference property with same_controller flag set
-//         let second_property = Property::<Runtime>::with_name_and_type(
-//             PropertyNameLengthConstraint::get().max() as usize,
-//             property_type,
-//             true,
-//             false,
-//         );
+        // Update class permissions to force any member be available to create Entities
+        assert_ok!(update_class_permissions(
+            LEAD_ORIGIN,
+            FIRST_CLASS_ID,
+            Some(true),
+            None,
+            None,
+            None
+        ));
 
-//         // Add second Schema to the Class
-//         assert_ok!(add_class_schema(
-//             LEAD_ORIGIN,
-//             FIRST_CLASS_ID,
-//             BTreeSet::new(),
-//             vec![second_property]
-//         ));
+        let actor = Actor::Lead;
 
-//         // Update class permissions to force any member be available to create Entities
-//         assert_ok!(update_class_permissions(
-//             LEAD_ORIGIN,
-//             FIRST_CLASS_ID,
-//             Some(true),
-//             None,
-//             None,
-//             None
-//         ));
+        // Create first entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
-//         let actor = Actor::Lead;
+        // Create second entity
+        assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
-//         // Create first entity
-//         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
+        let first_schema_property_value =
+            InputPropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
 
-//         // Create second entity
-//         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
+        let mut schema_property_values = BTreeMap::new();
+        schema_property_values.insert(FIRST_PROPERTY_ID, first_schema_property_value);
 
-//         let first_schema_property_value =
-//             InputPropertyValue::<Runtime>::vec_reference(vec![SECOND_ENTITY_ID, SECOND_ENTITY_ID]);
+        // Add schema support to the first Entity
+        assert_ok!(add_schema_support_to_entity(
+            LEAD_ORIGIN,
+            actor.to_owned(),
+            FIRST_ENTITY_ID,
+            FIRST_SCHEMA_ID,
+            schema_property_values
+        ));
 
-//         let mut schema_property_values = BTreeMap::new();
-//         schema_property_values.insert(FIRST_PROPERTY_ID, first_schema_property_value);
+        let second_schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
+            SECOND_ENTITY_ID,
+            SECOND_ENTITY_ID,
+            SECOND_ENTITY_ID,
+        ]);
 
-//         // Add first schema support to the first Entity
-//         assert_ok!(add_schema_support_to_entity(
-//             LEAD_ORIGIN,
-//             actor.to_owned(),
-//             FIRST_ENTITY_ID,
-//             FIRST_SCHEMA_ID,
-//             schema_property_values
-//         ));
+        let mut schema_property_values = BTreeMap::new();
+        schema_property_values.insert(FIRST_PROPERTY_ID, second_schema_property_value);
 
-//         let second_schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
-//             SECOND_ENTITY_ID,
-//             SECOND_ENTITY_ID,
-//             SECOND_ENTITY_ID,
-//         ]);
+        // Add schema support to the second Entity
+        assert_ok!(add_schema_support_to_entity(
+            LEAD_ORIGIN,
+            actor,
+            SECOND_ENTITY_ID,
+            FIRST_SCHEMA_ID,
+            schema_property_values
+        ));
 
-//         let mut schema_property_values = BTreeMap::new();
-//         schema_property_values.insert(SECOND_PROPERTY_ID, second_schema_property_value);
+        // Create third entity
+        assert_ok!(create_entity(
+            FIRST_MEMBER_ORIGIN,
+            FIRST_CLASS_ID,
+            Actor::Member(FIRST_MEMBER_ID)
+        ));
 
-//         // Add second schema support to the first Entity
-//         assert_ok!(add_schema_support_to_entity(
-//             LEAD_ORIGIN,
-//             actor,
-//             FIRST_ENTITY_ID,
-//             SECOND_SCHEMA_ID,
-//             schema_property_values
-//         ));
+        let new_controller = EntityController::Member(FIRST_MEMBER_ID);
 
-//         // Create third entity
-//         assert_ok!(create_entity(
-//             FIRST_MEMBER_ORIGIN,
-//             FIRST_CLASS_ID,
-//             Actor::Member(FIRST_MEMBER_ID)
-//         ));
+        let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
+            THIRD_ENTITY_ID,
+            THIRD_ENTITY_ID,
+            THIRD_ENTITY_ID,
+        ]);
 
-//         let new_controller = EntityController::Member(FIRST_MEMBER_ID);
+        let mut schema_property_values = BTreeMap::new();
+        schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value);
 
-//         let schema_property_value = InputPropertyValue::<Runtime>::vec_reference(vec![
-//             THIRD_ENTITY_ID,
-//             THIRD_ENTITY_ID,
-//             THIRD_ENTITY_ID,
-//         ]);
+        assert_ok!(transfer_entity_ownership(
+            LEAD_ORIGIN,
+            FIRST_ENTITY_ID,
+            new_controller.clone(),
+            schema_property_values.clone(),
+        ));
 
-//         let mut schema_property_values = BTreeMap::new();
-//         schema_property_values.insert(FIRST_PROPERTY_ID, schema_property_value.clone());
-//         schema_property_values.insert(SECOND_PROPERTY_ID, schema_property_value);
+        // Runtime state before tested call
 
-//         // Runtime state before tested call
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
 
-//         // Events number before tested call
-//         let number_of_events_before_call = System::events().len();
+        // Make an attempt to transfer ownership of Entity, providing new property value reference(s)
+        // with same owner flag set, which are identical to thouse, are already added to the another Entity of this Class,
+        // though should be unique on Class Property level
+        let transfer_entity_ownership_result = transfer_entity_ownership(
+            LEAD_ORIGIN,
+            SECOND_ENTITY_ID,
+            new_controller,
+            schema_property_values,
+        );
 
-//         // Make an attempt to transfer ownership of Entity, providing new property value reference(s) with same owner flag set,
-//         // which have duplicates or identical to thouse, are already added to The Entity, though should be unique on Class Property level
-//         let transfer_entity_ownership_result = transfer_entity_ownership(
-//             LEAD_ORIGIN,
-//             FIRST_ENTITY_ID,
-//             new_controller,
-//             schema_property_values,
-//         );
-
-//         // Failure checked
-//         assert_failure(
-//             transfer_entity_ownership_result,
-//             ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE,
-//             number_of_events_before_call,
-//         );
-//     })
-// }
+        // Failure checked
+        assert_failure(
+            transfer_entity_ownership_result,
+            ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE,
+            number_of_events_before_call,
+        );
+    })
+}

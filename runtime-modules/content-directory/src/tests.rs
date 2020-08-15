@@ -301,7 +301,8 @@ pub fn emulate_entity_access_state_for_failure_case(
     }
 }
 
-pub fn add_class_reference_schema() {
+///  Create class reference schema
+pub fn add_unique_class_reference_schema() {
     // Create property
     let property_type =
         PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, VecMaxLengthConstraint::get());
@@ -310,7 +311,7 @@ pub fn add_class_reference_schema() {
         (PropertyNameLengthConstraint::get().max() - 1) as usize,
         property_type,
         true,
-        false,
+        true,
     );
 
     // Add Schema to the Class
@@ -322,8 +323,12 @@ pub fn add_class_reference_schema() {
     ));
 }
 
-pub fn add_class_reference_schema_and_entity_schema_support(actor: &Actor<Runtime>, origin: u64) {
-    add_class_reference_schema();
+///  Create class reference schema and add corresponding schema support to the Entity
+pub fn add_unique_class_reference_schema_and_entity_schema_support(
+    actor: &Actor<Runtime>,
+    origin: u64,
+) {
+    add_unique_class_reference_schema();
 
     let schema_property_value =
         InputPropertyValue::<Runtime>::vec_reference(vec![FIRST_ENTITY_ID, FIRST_ENTITY_ID]);

@@ -72,15 +72,15 @@ impl<'a, T: Trait> InputValuesForExistingProperties<'a, T> {
     }
 }
 
-/// Wrapper for existing `OutputPropertyValue` and its respective `Class` `Property`
-pub struct OutputValueForExistingProperty<'a, T: Trait>(
+/// Wrapper for existing `StoredPropertyValue` and its respective `Class` `Property`
+pub struct StoredValueForExistingProperty<'a, T: Trait>(
     &'a Property<T>,
-    &'a OutputPropertyValue<T>,
+    &'a StoredPropertyValue<T>,
 );
 
-impl<'a, T: Trait> OutputValueForExistingProperty<'a, T> {
-    /// Create single instance of `OutputValueForExistingProperty` from provided `property` and `value`
-    fn new(property: &'a Property<T>, value: &'a OutputPropertyValue<T>) -> Self {
+impl<'a, T: Trait> StoredValueForExistingProperty<'a, T> {
+    /// Create single instance of `StoredValueForExistingProperty` from provided `property` and `value`
+    pub fn new(property: &'a Property<T>, value: &'a StoredPropertyValue<T>) -> Self {
         Self(property, value)
     }
 
@@ -89,60 +89,83 @@ impl<'a, T: Trait> OutputValueForExistingProperty<'a, T> {
         self.0
     }
 
-    /// Retrieve `OutputPropertyValue` reference
-    pub fn get_value(&self) -> &OutputPropertyValue<T> {
+    /// Retrieve `StoredPropertyValue` reference
+    pub fn get_value(&self) -> &StoredPropertyValue<T> {
         self.1
     }
 
-    /// Retrieve `Property` and `OutputPropertyValue` references
-    pub fn unzip(&self) -> (&Property<T>, &OutputPropertyValue<T>) {
+    /// Retrieve `Property` and `StoredPropertyValue` references
+    pub fn unzip(&self) -> (&Property<T>, &StoredPropertyValue<T>) {
         (self.0, self.1)
+    }
+
+    /// Check if Property is default and non `required`
+    pub fn is_default(&self) -> bool {
+        let (property, property_value) = self.unzip();
+        !property.required && *property_value == StoredPropertyValue::<T>::default()
     }
 }
 
-/// Mapping, used to represent `PropertyId` relation to its respective `OutputValuesForExistingProperties` structure
-pub struct OutputValuesForExistingProperties<'a, T: Trait>(
-    BTreeMap<PropertyId, OutputValueForExistingProperty<'a, T>>,
+/// Mapping, used to represent `PropertyId` relation to its respective `StoredValuesForExistingProperties` structure
+pub struct StoredValuesForExistingProperties<'a, T: Trait>(
+    BTreeMap<PropertyId, StoredValueForExistingProperty<'a, T>>,
 );
 
-impl<'a, T: Trait> Default for OutputValuesForExistingProperties<'a, T> {
+impl<'a, T: Trait> Default for StoredValuesForExistingProperties<'a, T> {
     fn default() -> Self {
         Self(BTreeMap::default())
     }
 }
 
-impl<'a, T: Trait> Deref for OutputValuesForExistingProperties<'a, T> {
-    type Target = BTreeMap<PropertyId, OutputValueForExistingProperty<'a, T>>;
+impl<'a, T: Trait> Deref for StoredValuesForExistingProperties<'a, T> {
+    type Target = BTreeMap<PropertyId, StoredValueForExistingProperty<'a, T>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<'a, T: Trait> DerefMut for OutputValuesForExistingProperties<'a, T> {
+impl<'a, T: Trait> DerefMut for StoredValuesForExistingProperties<'a, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<'a, T: Trait> OutputValuesForExistingProperties<'a, T> {
-    /// Create `OutputValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
-    /// Throws an error, when `Class` `Property` under `property_id`, corresponding to provided `property_value` not found
+impl<'a, T: Trait> StoredValuesForExistingProperties<'a, T> {
+    /// Create `StoredValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
     pub fn from(
         properties: &'a [Property<T>],
-        property_values: &'a BTreeMap<PropertyId, OutputPropertyValue<T>>,
+        property_values: &'a BTreeMap<PropertyId, StoredPropertyValue<T>>,
     ) -> Result<Self, &'static str> {
-        let mut values_for_existing_properties = OutputValuesForExistingProperties::<T>::default();
+        let mut values_for_existing_properties = StoredValuesForExistingProperties::<T>::default();
+
         for (&property_id, property_value) in property_values {
             let property = properties
                 .get(property_id as usize)
                 .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
             values_for_existing_properties.insert(
                 property_id,
-                OutputValueForExistingProperty::new(property, property_value),
+                StoredValueForExistingProperty::new(property, property_value),
             );
         }
         Ok(values_for_existing_properties)
+    }
+
+    /// Used to compute hashes from `StoredPropertyValue`s and their respective property ids, which respective `Properties` have `unique` flag set
+    /// (skip `PropertyId`s, which respective `property values` under this `Entity` are default and non `required`)
+    pub fn compute_unique_hashes(&self) -> BTreeMap<PropertyId, T::Hash> {
+        self.iter()
+            .filter(|(_, value_for_property)| {
+                // skip `PropertyId`s, which respective `property values` under this `Entity` are default and non `required`
+                value_for_property.get_property().unique && !value_for_property.is_default()
+            })
+            .map(|(&property_id, property_value)| {
+                (
+                    property_id,
+                    property_value.get_value().compute_unique_hash(property_id),
+                )
+            })
+            .collect()
     }
 }
 
