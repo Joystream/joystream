@@ -42,14 +42,10 @@ pub use serde::{Deserialize, Serialize};
 
 pub use errors::Error;
 
+use core::debug_assert;
+
 /// Type, used in diffrent numeric constraints representations
 type MaxNumber = u32;
-
-/// Type representing a map for both new and old property values hashes
-type PropertyValuesHashes<T> = (
-    BTreeMap<PropertyId, <T as system::Trait>::Hash>,
-    BTreeMap<PropertyId, <T as system::Trait>::Hash>,
-);
 
 /// Module configuration trait for this Substrate module.
 pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
@@ -731,7 +727,13 @@ decl_module! {
             let entity_property_values = entity.get_values();
 
             // Create wrapper structure from provided entity_property_values and their corresponding Class properties
-            let values_for_existing_properties = StoredValuesForExistingProperties::from(&class_properties, &entity_property_values);
+            let values_for_existing_properties = match StoredValuesForExistingProperties::from(&class_properties, &entity_property_values) {
+                Ok(values_for_existing_properties) => values_for_existing_properties,
+                Err(e) => {
+                    debug_assert!(false, "Should not fail! {:?}", e);
+                    return Err(e.into())
+                }
+            };
 
             // Filter provided values_for_existing_properties, leaving only `Reference`'s with `SameOwner` flag set
             // Retrieve the set of corresponding property ids
@@ -766,15 +768,24 @@ decl_module! {
 
             let new_output_property_value_references_with_same_owner_flag_set = Self::make_output_property_values(new_property_value_references_with_same_owner_flag_set);
 
-            // Compute old and new unique property value hashes.
+            // Compute StoredPropertyValues, which respective Properties have unique flag set
+            // (skip PropertyIds, which respective property values under this Entity are default and non required)
+            let new_output_values_for_existing_properties =
+                StoredValuesForExistingProperties::from(&class_properties, &new_output_property_value_references_with_same_owner_flag_set)?;
+
+            // Compute new unique property value hashes.
             // Ensure new property value hashes with `unique` flag set are `unique` on `Class` level
-            let (new_unique_hashes, old_unique_hashes) = Self::ensure_property_values_hashes(
-                class_id, &class_properties, &new_output_property_value_references_with_same_owner_flag_set, &entity_property_values
+            let new_unique_hashes = Self::ensure_new_property_values_respect_uniquness(
+                class_id, new_output_values_for_existing_properties,
             )?;
 
             //
             // == MUTATION SAFE ==
             //
+
+            // Used to compute old unique hashes, that should be substituted with new ones.
+            let old_unique_hashes =
+                Self::compute_old_unique_hashes(&new_output_property_value_references_with_same_owner_flag_set, &entity_property_values);
 
             // Add property values, that should be unique on Class level
             Self::add_unique_property_value_hashes(class_id, new_unique_hashes);
@@ -797,7 +808,7 @@ decl_module! {
                 let entities_inbound_rcs_delta =
                     Self::get_updated_inbound_rcs_delta(
                         entity_id, class_properties, entity_property_values, new_output_property_value_references_with_same_owner_flag_set
-                    );
+                    )?;
 
                 // Update InboundReferenceCounter, based on previously calculated ReferenceCounterSideEffects, for each Entity involved
                 Self::update_entities_rcs(&entities_inbound_rcs_delta);
@@ -943,7 +954,13 @@ decl_module! {
 
             let entity_values = entity.get_values();
 
-            let unique_property_value_hashes = StoredValuesForExistingProperties::from(&class_properties, &entity_values).compute_unique_hashes();
+            let unique_property_value_hashes = match StoredValuesForExistingProperties::from(&class_properties, &entity_values) {
+                Ok(values_for_existing_properties) => values_for_existing_properties.compute_unique_hashes(),
+                Err(e) => {
+                    debug_assert!(false, "Should not fail! {:?}", e);
+                    return Err(e.into())
+                }
+            };
 
             //
             // == MUTATION SAFE ==
@@ -1029,7 +1046,7 @@ decl_module! {
                 schema, entity_property_values, &new_output_property_values
             );
 
-            let new_output_values_for_existing_properties = StoredValuesForExistingProperties::from(&class_properties, &new_output_property_values);
+            let new_output_values_for_existing_properties = StoredValuesForExistingProperties::from(&class_properties, &new_output_property_values)?;
 
             // Retrieve StoredPropertyValues, which respective Properties have unique flag set
             // (skip PropertyIds, which respective property values under this Entity are default and non required)
@@ -1118,15 +1135,24 @@ decl_module! {
 
             let new_output_property_values = Self::make_output_property_values(new_property_values);
 
-            // Compute old and new unique property value hashes.
+            // Compute StoredPropertyValues, which respective Properties have unique flag set
+            // (skip PropertyIds, which respective property values under this Entity are default and non required)
+            let new_output_values_for_existing_properties =
+                StoredValuesForExistingProperties::from(&class_properties, &new_output_property_values)?;
+
+            // Compute new unique property value hashes.
             // Ensure new property value hashes with `unique` flag set are `unique` on `Class` level
-            let (new_unique_hashes, old_unique_hashes) = Self::ensure_property_values_hashes(
-                class_id, &class_properties, &new_output_property_values, &entity_property_values
+            let new_unique_hashes = Self::ensure_new_property_values_respect_uniquness(
+                class_id, new_output_values_for_existing_properties,
             )?;
 
             //
             // == MUTATION SAFE ==
             //
+
+            // Used to compute old unique hashes, that should be substituted with new ones.
+            let old_unique_hashes =
+                Self::compute_old_unique_hashes(&new_output_property_values, &entity_property_values);
 
             // Add property value hashes, that should be unique on Class level
             Self::add_unique_property_value_hashes(class_id, new_unique_hashes);
@@ -1143,7 +1169,7 @@ decl_module! {
 
                 // Calculate entities reference counter side effects for current operation (should always be safe)
                 let entities_inbound_rcs_delta =
-                    Self::get_updated_inbound_rcs_delta(entity_id, class_properties, entity_property_values, new_output_property_values);
+                    Self::get_updated_inbound_rcs_delta(entity_id, class_properties, entity_property_values, new_output_property_values)?;
 
                 // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
                 Self::update_entities_rcs(&entities_inbound_rcs_delta);
@@ -1730,7 +1756,7 @@ impl<T: Trait> Module<T> {
         class_properties: Vec<Property<T>>,
         entity_property_values: BTreeMap<PropertyId, StoredPropertyValue<T>>,
         new_output_property_values: BTreeMap<PropertyId, StoredPropertyValue<T>>,
-    ) -> Option<ReferenceCounterSideEffects<T>> {
+    ) -> Result<Option<ReferenceCounterSideEffects<T>>, Error<T>> {
         // Filter entity_property_values to get only those, which will be substituted with new_property_values
         let entity_property_values_to_update: BTreeMap<PropertyId, StoredPropertyValue<T>> =
             entity_property_values
@@ -1740,14 +1766,25 @@ impl<T: Trait> Module<T> {
 
         // Calculate entities reference counter side effects for update operation
 
+        let stored_values_for_entity_property_values_to_update =
+            match StoredValuesForExistingProperties::from(
+                &class_properties,
+                &entity_property_values_to_update,
+            ) {
+                Ok(stored_values_for_entity_property_values_to_update) => {
+                    stored_values_for_entity_property_values_to_update
+                }
+                Err(e) => {
+                    debug_assert!(false, "Should not fail! {:?}", e);
+                    return Err(e);
+                }
+            };
+
         // Calculate entities inbound reference counter delta with Decrement DeltaMode for entity_property_values_to_update,
         // as involved InputPropertyValue References will be substituted with new ones
         let decremental_reference_counter_side_effects = Self::calculate_entities_inbound_rcs_delta(
             current_entity_id,
-            StoredValuesForExistingProperties::from(
-                &class_properties,
-                &entity_property_values_to_update,
-            ),
+            stored_values_for_entity_property_values_to_update,
             DeltaMode::Decrement,
         );
 
@@ -1755,18 +1792,19 @@ impl<T: Trait> Module<T> {
         // as involved InputPropertyValue References will substitute the old ones
         let incremental_reference_counter_side_effects = Self::calculate_entities_inbound_rcs_delta(
             current_entity_id,
-            StoredValuesForExistingProperties::from(&class_properties, &new_output_property_values),
+            StoredValuesForExistingProperties::from(
+                &class_properties,
+                &new_output_property_values,
+            )?,
             DeltaMode::Increment,
         );
 
         // Add up both net decremental_reference_counter_side_effects and incremental_reference_counter_side_effects
         // to get one net sideffect per entity.
-        let reference_counter_side_effects = Self::calculate_updated_inbound_rcs_delta(
+        Ok(Self::calculate_updated_inbound_rcs_delta(
             decremental_reference_counter_side_effects,
             incremental_reference_counter_side_effects,
-        );
-
-        reference_counter_side_effects
+        ))
     }
 
     /// Add up both net first_reference_counter_side_effects and second_reference_counter_side_effects (if some)
@@ -1919,20 +1957,12 @@ impl<T: Trait> Module<T> {
         Ok((new_property_value_hash, old_property_value_hash))
     }
 
-    /// Compute old and new unique property value hashes.
+    /// Compute new unique property value hashes.
     /// Ensure new property value hashes with `unique` flag set are `unique` on `Class` level
-    pub fn ensure_property_values_hashes(
+    pub fn ensure_new_property_values_respect_uniquness(
         class_id: T::ClassId,
-        class_properties: &[Property<T>],
-        new_output_property_values: &BTreeMap<PropertyId, StoredPropertyValue<T>>,
-        entity_property_values: &BTreeMap<PropertyId, StoredPropertyValue<T>>,
-    ) -> Result<PropertyValuesHashes<T>, Error<T>> {
-        
-        // Compute StoredPropertyValues, which respective Properties have unique flag set
-        // (skip PropertyIds, which respective property values under this Entity are default and non required)
-        let new_output_values_for_existing_properties =
-            StoredValuesForExistingProperties::from(&class_properties, &new_output_property_values);
-
+        new_output_values_for_existing_properties: StoredValuesForExistingProperties<T>,
+    ) -> Result<BTreeMap<PropertyId, T::Hash>, Error<T>> {
         let new_unique_property_value_hashes =
             new_output_values_for_existing_properties.compute_unique_hashes();
 
@@ -1942,11 +1972,7 @@ impl<T: Trait> Module<T> {
             &new_unique_property_value_hashes,
         )?;
 
-        // Used to compute old unique hashes, that should be substituted with new ones.
-        let old_unique_hashes =
-            Self::compute_old_unique_hashes(&new_output_property_values, entity_property_values);
-
-        Ok((new_unique_property_value_hashes, old_unique_hashes))
+        Ok(new_unique_property_value_hashes)
     }
 
     /// Returns the stored `Class` if exist, error otherwise.

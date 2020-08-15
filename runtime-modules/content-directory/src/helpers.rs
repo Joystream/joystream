@@ -136,17 +136,19 @@ impl<'a, T: Trait> StoredValuesForExistingProperties<'a, T> {
     pub fn from(
         properties: &'a [Property<T>],
         property_values: &'a BTreeMap<PropertyId, StoredPropertyValue<T>>,
-    ) -> Self {
+    ) -> Result<Self, Error<T>> {
         let mut values_for_existing_properties = StoredValuesForExistingProperties::<T>::default();
+
         for (&property_id, property_value) in property_values {
-            if let Some(property) = properties.get(property_id as usize) {
-                values_for_existing_properties.insert(
-                    property_id,
-                    StoredValueForExistingProperty::new(property, property_value),
-                );
-            }
+            let property = properties
+                .get(property_id as usize)
+                .ok_or(Error::<T>::ClassPropertyNotFound)?;
+            values_for_existing_properties.insert(
+                property_id,
+                StoredValueForExistingProperty::new(property, property_value),
+            );
         }
-        values_for_existing_properties
+        Ok(values_for_existing_properties)
     }
 
     /// Used to compute hashes from `StoredPropertyValue`s and their respective property ids, which respective `Properties` have `unique` flag set
