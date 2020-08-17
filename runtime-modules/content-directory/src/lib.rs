@@ -97,13 +97,13 @@
 //! use frame_support::{decl_module, assert_ok};
 //! use system::{self as system, ensure_signed};
 //!
-//! pub trait Trait: substrate_content_directory_module::Trait {}
+//! pub trait Trait: pallet_content_directory::Trait {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 //!         #[weight = 10_000_000]
 //!         pub fn add_curator_group(origin) -> Result<(), &'static str> {
-//!             <substrate_content_directory_module::Module<T>>::add_curator_group(origin)?;
+//!             <pallet_content_directory::Module<T>>::add_curator_group(origin)?;
 //!             Ok(())
 //!         }
 //!     }
