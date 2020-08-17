@@ -1,27 +1,27 @@
-// Copyright 2017-2019 @polkadot/app-accounts authors & contributors
+// Copyright 2017-2020 @polkadot/app-accounts authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
-
-import { I18nProps } from '@polkadot/react-components/types';
 
 import React from 'react';
 import { Modal } from '@polkadot/react-components';
 import General from '@polkadot/app-settings/General';
 
-import translate from '../translate';
+import { useTranslation } from '../translate';
 
-interface Props extends I18nProps {
+interface Props {
+  className?: string;
   onClose: () => void;
 }
 
-function NetworkModal ({ className, onClose, t }: Props): React.ReactElement<Props> {
+function NetworkModal ({ className = '', onClose }: Props): React.ReactElement<Props> {
+  const { t } = useTranslation();
+
   return (
     <Modal
       className={className}
-      dimmer='inverted'
-      open
+      header={t<string>('Select Network')}
+      size='large'
     >
-      <Modal.Header>{t('Select Network')}</Modal.Header>
       <Modal.Content>
         <General
           isModalContent
@@ -32,4 +32,4 @@ function NetworkModal ({ className, onClose, t }: Props): React.ReactElement<Pro
   );
 }
 
-export default translate(NetworkModal);
+export default React.memo(NetworkModal);

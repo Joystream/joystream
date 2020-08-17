@@ -1,26 +1,21 @@
-// Copyright 2017-2019 @polkadot/apps-routing authors & contributors
+// Copyright 2017-2020 @polkadot/apps-routing authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { Routes } from './types';
+import { Route } from './types';
 
-import Staking from '@polkadot/app-staking';
+import Component from '@polkadot/app-staking';
 
-export default ([
-  {
-    Component: Staking,
+export default function create (t: <T = string> (key: string, text: string, options: { ns: string }) => T): Route {
+  return {
+    Component,
     display: {
       needsApi: [
-        [
-          'tx.staking.bond' // current bonding API
-          // 'tx.staking.stake' // previous staking API
-        ]
+        ['tx.staking.bond']
       ]
     },
-    i18n: {
-      defaultValue: 'Validators'
-    },
     icon: 'certificate',
-    name: 'staking'
-  }
-] as Routes);
+    name: 'staking',
+    text: t<string>('nav.staking', 'Staking', { ns: 'apps-routing' })
+  };
+}

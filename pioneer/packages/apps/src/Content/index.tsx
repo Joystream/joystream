@@ -1,101 +1,98 @@
-// Copyright 2017-2019 @polkadot/apps authors & contributors
+// Copyright 2017-2020 @polkadot/apps authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { I18nProps } from '@polkadot/react-components/types';
+import { Route } from '@polkadot/apps-routing/types';
 
-import React, { useContext } from 'react';
-import { withRouter, RouteComponentProps } from 'react-router';
+import React, { Suspense, useContext, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import routing from '@polkadot/apps-routing';
-import { ApiContext } from '@polkadot/react-api';
-import { StatusContext } from '@polkadot/react-components';
+import createRoutes from '@polkadot/apps-routing';
+import { ErrorBoundary, Spinner, StatusContext } from '@polkadot/react-components';
+import { useApi } from '@polkadot/react-hooks';
 
-import Status from './Status';
-import translate from '../translate';
+import { findMissingApis } from '../endpoint';
+import { useTranslation } from '../translate';
 import NotFound from './NotFound';
-import TopBar from '../TopBar';
+import Status from './Status';
 
-interface Props extends I18nProps, RouteComponentProps {}
+interface Props {
+  className?: string;
+}
 
-const Wrapper = styled.div`
-  background: #fafafa;
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  height: 100%;
-  min-height: 100vh;
-  overflow-x: hidden;
-  overflow-y: auto;
-  width: 100%;
-  padding: 0 2rem;
-  @media(max-width: 768px) {
-    padding: 0 0.5rem;
-  }
-`;
-
-const unknown = {
+const NOT_FOUND: Route = {
+  Component: NotFound,
   display: {
     needsApi: undefined
   },
-  Component: NotFound,
-  name: ''
+  icon: 'times',
+  isIgnored: false,
+  name: 'unknown',
+  text: 'Unknown'
 };
 
-function Content ({ className, location, t }: Props): React.ReactElement<Props> {
-  const { isApiConnected, isApiReady } = useContext(ApiContext);
-  const { queueAction, stqueue, txqueue } = useContext(StatusContext);
-  const app = location.pathname.slice(1) || '';
-  const { Component, display: { needsApi }, name } = routing.routes.find((route): boolean =>
-    !!(route && app.startsWith(route.name))
-  ) || unknown;
+function Content ({ className }: Props): React.ReactElement<Props> {
+  const location = useLocation();
+  const { t } = useTranslation();
+  const { api, isApiConnected, isApiReady } = useApi();
+  const { queueAction } = useContext(StatusContext);
+  const { Component, display: { needsApi }, name } = useMemo(
+    (): Route => {
+      const app = location.pathname.slice(1) || '';
+
+      return createRoutes(t).find((route) => !!(route && app.startsWith(route.name))) || NOT_FOUND;
+    },
+    [location, t]
+  );
 
   return (
     <div className={className}>
       {needsApi && (!isApiReady || !isApiConnected)
-        ? <div className='connecting'>{t('Waiting for API to be connected and ready.')}</div>
+        ? (
+          <div className='connecting'>
+            <Spinner label={t<string>('Initializing connection')} />
+          </div>
+        )
         : (
-          <Wrapper>
-            <TopBar />
-            <Component
-              basePath={`/${name}`}
-              location={location}
-              onStatusChange={queueAction}
-            />
-            <Status
-              queueAction={queueAction}
-              stqueue={stqueue}
-              txqueue={txqueue}
-            />
-          </Wrapper>
+          <>
+            <Suspense fallback='...'>
+              {findMissingApis(api, needsApi).length
+                ? <NotFound />
+                : (
+                  <ErrorBoundary trigger={name}>
+                    <Component
+                      basePath={`/${name}`}
+                      location={location}
+                      onStatusChange={queueAction}
+                    />
+                  </ErrorBoundary>
+                )
+              }
+            </Suspense>
+            <Status />
+          </>
         )
       }
     </div>
   );
 }
 
-// React-router needs to be first, otherwise we have blocked updates
-export default translate(
-  withRouter(
-    styled(Content)`
-      background: #fafafa;
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-      height: 100%;
-      min-height: 100vh;
-      overflow-x: hidden;
-      overflow-y: auto;
-      width: 100%;
-      padding: 0;
+export default React.memo(styled(Content)`
+  background: #f5f4f3;
+  flex-grow: 1;
+  height: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 1.5rem;
+  position: relative;
+  width: 100%;
 
-      @media(max-width: 768px) {
-        padding: 0 0.5rem;
-      }
+  @media(max-width: 768px) {
+    padding: 0 0.5rem;
+  }
 
-      .connecting {
-        padding: 1rem 0;
-      }
-    `
-  )
-);
+  .connecting {
+    padding: 3.5rem 0;
+  }
+`);

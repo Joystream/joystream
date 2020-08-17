@@ -15,12 +15,14 @@
     "tests/network-tests",
     "cli",
     "types",
-    "pioneer",
-    "pioneer/packages/*",
     "storage-node",
     "storage-node/packages/*",
     "devops/eslint-config",
     "devops/prettier-config",
+    "pioneer",
+    "pioneer/packages/apps*",
+    "pioneer/packages/page*",
+    "pioneer/packages/react*",
     "utils/api-examples"
   ],
   "resolutions": {
@@ -37,7 +39,7 @@
   "devDependencies": {
     "husky": "^4.2.5",
     "prettier": "2.0.2",
-    "eslint": "^5.16.0"
+    "eslint": "^7.6.0"
   },
   "husky": {
     "hooks": {
