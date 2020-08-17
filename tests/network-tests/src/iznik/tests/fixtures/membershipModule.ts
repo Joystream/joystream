@@ -7,13 +7,13 @@ import { PaidTermId } from '@alexandria/types/members'
 
 export class BuyMembershipHappyCaseFixture implements Fixture {
   private apiWrapper: ApiWrapper
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private keyPairs: KeyringPair[]
   private paidTerms: PaidTermId
 
-  public constructor(apiWrapper: ApiWrapper, sudo: KeyringPair, keyPairs: KeyringPair[], paidTerms: PaidTermId) {
+  public constructor(apiWrapper: ApiWrapper, treasury: KeyringPair, keyPairs: KeyringPair[], paidTerms: PaidTermId) {
     this.apiWrapper = apiWrapper
-    this.sudo = sudo
+    this.treasury = treasury
     this.keyPairs = keyPairs
     this.paidTerms = paidTerms
   }
@@ -22,12 +22,12 @@ export class BuyMembershipHappyCaseFixture implements Fixture {
     // Fee estimation and transfer
     const membershipFee: BN = await this.apiWrapper.getMembershipFee(this.paidTerms)
     const membershipTransactionFee: BN = this.apiWrapper.estimateBuyMembershipFee(
-      this.sudo,
+      this.treasury,
       this.paidTerms,
       'member_name_which_is_longer_than_expected'
     )
     await this.apiWrapper.transferBalanceToAccounts(
-      this.sudo,
+      this.treasury,
       this.keyPairs,
       membershipTransactionFee.add(new BN(membershipFee))
     )
@@ -57,13 +57,13 @@ export class BuyMembershipHappyCaseFixture implements Fixture {
 
 export class BuyMembershipWithInsufficienFundsFixture implements Fixture {
   private apiWrapper: ApiWrapper
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private aKeyPair: KeyringPair
   private paidTerms: PaidTermId
 
-  public constructor(apiWrapper: ApiWrapper, sudo: KeyringPair, aKeyPair: KeyringPair, paidTerms: PaidTermId) {
+  public constructor(apiWrapper: ApiWrapper, treasury: KeyringPair, aKeyPair: KeyringPair, paidTerms: PaidTermId) {
     this.apiWrapper = apiWrapper
-    this.sudo = sudo
+    this.treasury = treasury
     this.aKeyPair = aKeyPair
     this.paidTerms = paidTerms
   }
@@ -72,11 +72,11 @@ export class BuyMembershipWithInsufficienFundsFixture implements Fixture {
     // Fee estimation and transfer
     const membershipFee: BN = await this.apiWrapper.getMembershipFee(this.paidTerms)
     const membershipTransactionFee: BN = this.apiWrapper.estimateBuyMembershipFee(
-      this.sudo,
+      this.treasury,
       this.paidTerms,
       'member_name_which_is_longer_than_expected'
     )
-    await this.apiWrapper.transferBalance(this.sudo, this.aKeyPair.address, membershipTransactionFee)
+    await this.apiWrapper.transferBalance(this.treasury, this.aKeyPair.address, membershipTransactionFee)
 
     // Balance assertion
     await this.apiWrapper

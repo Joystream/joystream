@@ -10,8 +10,8 @@ import BN from 'bn.js'
 export class CouncilElectionHappyCaseFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private sudo: KeyringPair
-  private m1KeyPairs: KeyringPair[]
-  private m2KeyPairs: KeyringPair[]
+  private membersKeyPairs: KeyringPair[]
+  private councilKeyPairs: KeyringPair[]
   private paidTerms: PaidTermId
   private k: number
   private greaterStake: BN
@@ -20,8 +20,8 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
   constructor(
     apiWrapper: ApiWrapper,
     sudo: KeyringPair,
-    m1KeyPairs: KeyringPair[],
-    m2KeyPairs: KeyringPair[],
+    membersKeyPairs: KeyringPair[],
+    councilKeyPairs: KeyringPair[],
     paidTerms: PaidTermId,
     k: number,
     greaterStake: BN,
@@ -29,8 +29,8 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
   ) {
     this.apiWrapper = apiWrapper
     this.sudo = sudo
-    this.m1KeyPairs = m1KeyPairs
-    this.m2KeyPairs = m2KeyPairs
+    this.membersKeyPairs = membersKeyPairs
+    this.councilKeyPairs = councilKeyPairs
     this.paidTerms = paidTerms
     this.k = k
     this.greaterStake = greaterStake
@@ -41,7 +41,7 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
     const firstMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
       this.apiWrapper,
       this.sudo,
-      this.m1KeyPairs,
+      this.membersKeyPairs,
       this.paidTerms
     )
     tap.test('Creating first set of members', async () => firstMemberSetFixture.runner(false))
@@ -49,15 +49,15 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
     const secondMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
       this.apiWrapper,
       this.sudo,
-      this.m2KeyPairs,
+      this.councilKeyPairs,
       this.paidTerms
     )
     tap.test('Creating second set of members', async () => secondMemberSetFixture.runner(false))
 
     const electCouncilFixture: ElectCouncilFixture = new ElectCouncilFixture(
       this.apiWrapper,
-      this.m1KeyPairs,
-      this.m2KeyPairs,
+      this.membersKeyPairs,
+      this.councilKeyPairs,
       this.k,
       this.sudo,
       this.greaterStake,

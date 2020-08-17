@@ -15,7 +15,7 @@ export class AddWorkerOpeningFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private membersKeyPairs: KeyringPair[]
   private lead: KeyringPair
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private applicationStake: BN
   private roleStake: BN
   private activationDelay: BN
@@ -32,7 +32,7 @@ export class AddWorkerOpeningFixture implements Fixture {
     apiWrapper: ApiWrapper,
     membersKeyPairs: KeyringPair[],
     lead: KeyringPair,
-    sudo: KeyringPair,
+    treasury: KeyringPair,
     applicationStake: BN,
     roleStake: BN,
     activationDelay: BN,
@@ -42,7 +42,7 @@ export class AddWorkerOpeningFixture implements Fixture {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
     this.lead = lead
-    this.sudo = sudo
+    this.treasury = treasury
     this.applicationStake = applicationStake
     this.roleStake = roleStake
     this.activationDelay = activationDelay
@@ -53,7 +53,7 @@ export class AddWorkerOpeningFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
     const addOpeningFee: BN = this.apiWrapper.estimateAddOpeningFee(this.module)
-    await this.apiWrapper.transferBalance(this.sudo, this.lead.address, addOpeningFee)
+    await this.apiWrapper.transferBalance(this.treasury, this.lead.address, addOpeningFee)
 
     // Worker opening creation
     const addOpeningPromise: Promise<Event> = this.apiWrapper.expectEvent('OpeningAdded')
@@ -158,20 +158,20 @@ export class AddLeaderOpeningFixture implements Fixture {
 export class AcceptApplicationsFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private lead: KeyringPair
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private openingId: OpeningId
   private module: WorkingGroups
 
   public constructor(
     apiWrapper: ApiWrapper,
     lead: KeyringPair,
-    sudo: KeyringPair,
+    treasury: KeyringPair,
     openingId: OpeningId,
     module: WorkingGroups
   ) {
     this.apiWrapper = apiWrapper
     this.lead = lead
-    this.sudo = sudo
+    this.treasury = treasury
     this.openingId = openingId
     this.module = module
   }
@@ -179,7 +179,7 @@ export class AcceptApplicationsFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
     const acceptApplicationsFee: BN = this.apiWrapper.estimateAcceptApplicationsFee(this.module)
-    await this.apiWrapper.transferBalance(this.sudo, this.lead.address, acceptApplicationsFee)
+    await this.apiWrapper.transferBalance(this.treasury, this.lead.address, acceptApplicationsFee)
 
     // Begin accepting applications
     await this.apiWrapper.acceptApplications(this.lead, this.openingId, this.module)
@@ -195,7 +195,7 @@ export class AcceptApplicationsFixture implements Fixture {
 export class ApplyForOpeningFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private membersKeyPairs: KeyringPair[]
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private applicationStake: BN
   private roleStake: BN
   private openingId: OpeningId
@@ -204,7 +204,7 @@ export class ApplyForOpeningFixture implements Fixture {
   public constructor(
     apiWrapper: ApiWrapper,
     membersKeyPairs: KeyringPair[],
-    sudo: KeyringPair,
+    treasury: KeyringPair,
     applicationStake: BN,
     roleStake: BN,
     openingId: OpeningId,
@@ -212,7 +212,7 @@ export class ApplyForOpeningFixture implements Fixture {
   ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
-    this.sudo = sudo
+    this.treasury = treasury
     this.applicationStake = applicationStake
     this.roleStake = roleStake
     this.openingId = openingId
@@ -222,10 +222,10 @@ export class ApplyForOpeningFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
     const applyOnOpeningFee: BN = this.apiWrapper
-      .estimateApplyOnOpeningFee(this.sudo, this.module)
+      .estimateApplyOnOpeningFee(this.treasury, this.module)
       .add(this.applicationStake)
       .add(this.roleStake)
-    await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.membersKeyPairs, applyOnOpeningFee)
+    await this.apiWrapper.transferBalanceToAccounts(this.treasury, this.membersKeyPairs, applyOnOpeningFee)
 
     // Applying for created worker opening
     await this.apiWrapper.batchApplyOnOpening(
@@ -243,20 +243,20 @@ export class ApplyForOpeningFixture implements Fixture {
 export class WithdrawApplicationFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private membersKeyPairs: KeyringPair[]
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private module: WorkingGroups
 
-  constructor(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], sudo: KeyringPair, module: WorkingGroups) {
+  constructor(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], treasury: KeyringPair, module: WorkingGroups) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
-    this.sudo = sudo
+    this.treasury = treasury
     this.module = module
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
     const withdrawApplicaitonFee: BN = this.apiWrapper.estimateWithdrawApplicationFee(this.module)
-    await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.membersKeyPairs, withdrawApplicaitonFee)
+    await this.apiWrapper.transferBalanceToAccounts(this.treasury, this.membersKeyPairs, withdrawApplicaitonFee)
 
     // Application withdrawal
     await this.apiWrapper.batchWithdrawApplication(this.membersKeyPairs, this.module)
@@ -278,20 +278,20 @@ export class WithdrawApplicationFixture implements Fixture {
 export class BeginApplicationReviewFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private lead: KeyringPair
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private openingId: OpeningId
   private module: WorkingGroups
 
   constructor(
     apiWrapper: ApiWrapper,
     lead: KeyringPair,
-    sudo: KeyringPair,
+    treasury: KeyringPair,
     openingId: OpeningId,
     module: WorkingGroups
   ) {
     this.apiWrapper = apiWrapper
     this.lead = lead
-    this.sudo = sudo
+    this.treasury = treasury
     this.openingId = openingId
     this.module = module
   }
@@ -299,7 +299,7 @@ export class BeginApplicationReviewFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
     const beginReviewFee: BN = this.apiWrapper.estimateBeginApplicantReviewFee(this.module)
-    await this.apiWrapper.transferBalance(this.sudo, this.lead.address, beginReviewFee)
+    await this.apiWrapper.transferBalance(this.treasury, this.lead.address, beginReviewFee)
 
     // Begin application review
     const beginApplicantReviewPromise: Promise<ApplicationId> = this.apiWrapper.expectApplicationReviewBegan()
@@ -337,7 +337,7 @@ export class FillOpeningFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private membersKeyPairs: KeyringPair[]
   private lead: KeyringPair
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private openingId: OpeningId
   private firstPayoutInterval: BN
   private payoutInterval: BN
@@ -348,7 +348,7 @@ export class FillOpeningFixture implements Fixture {
     apiWrapper: ApiWrapper,
     membersKeyPairs: KeyringPair[],
     lead: KeyringPair,
-    sudo: KeyringPair,
+    treasury: KeyringPair,
     openingId: OpeningId,
     firstPayoutInterval: BN,
     payoutInterval: BN,
@@ -358,7 +358,7 @@ export class FillOpeningFixture implements Fixture {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
     this.lead = lead
-    this.sudo = sudo
+    this.treasury = treasury
     this.openingId = openingId
     this.firstPayoutInterval = firstPayoutInterval
     this.payoutInterval = payoutInterval
@@ -369,7 +369,7 @@ export class FillOpeningFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
     const beginReviewFee: BN = this.apiWrapper.estimateFillOpeningFee(this.module)
-    await this.apiWrapper.transferBalance(this.sudo, this.lead.address, beginReviewFee)
+    await this.apiWrapper.transferBalance(this.treasury, this.lead.address, beginReviewFee)
     const applicationIds: ApplicationId[] = (
       await Promise.all(
         this.membersKeyPairs.map(async (keypair) =>
@@ -492,13 +492,13 @@ export class FillLeaderOpeningFixture implements Fixture {
 export class IncreaseStakeFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private membersKeyPairs: KeyringPair[]
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private module: WorkingGroups
 
-  constructor(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], sudo: KeyringPair, module: WorkingGroups) {
+  constructor(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], treasury: KeyringPair, module: WorkingGroups) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
-    this.sudo = sudo
+    this.treasury = treasury
     this.module = module
   }
 
@@ -507,7 +507,7 @@ export class IncreaseStakeFixture implements Fixture {
     const increaseStakeFee: BN = this.apiWrapper.estimateIncreaseStakeFee(this.module)
     const stakeIncrement: BN = new BN(1)
     await this.apiWrapper.transferBalance(
-      this.sudo,
+      this.treasury,
       this.membersKeyPairs[0].address,
       increaseStakeFee.add(stakeIncrement)
     )
@@ -536,27 +536,27 @@ export class UpdateRewardAccountFixture implements Fixture {
   public apiWrapper: ApiWrapper
   public membersKeyPairs: KeyringPair[]
   public keyring: Keyring
-  public sudo: KeyringPair
+  public treasury: KeyringPair
   public module: WorkingGroups
 
   constructor(
     apiWrapper: ApiWrapper,
     membersKeyPairs: KeyringPair[],
     keyring: Keyring,
-    sudo: KeyringPair,
+    treasury: KeyringPair,
     module: WorkingGroups
   ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
     this.keyring = keyring
-    this.sudo = sudo
+    this.treasury = treasury
     this.module = module
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
-    const updateRewardAccountFee: BN = this.apiWrapper.estimateUpdateRewardAccountFee(this.sudo.address, this.module)
-    await this.apiWrapper.transferBalance(this.sudo, this.membersKeyPairs[0].address, updateRewardAccountFee)
+    const updateRewardAccountFee: BN = this.apiWrapper.estimateUpdateRewardAccountFee(this.treasury.address, this.module)
+    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, updateRewardAccountFee)
     const workerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
       this.membersKeyPairs[0].address,
       this.module
@@ -580,27 +580,27 @@ export class UpdateRoleAccountFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private membersKeyPairs: KeyringPair[]
   private keyring: Keyring
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private module: WorkingGroups
 
   constructor(
     apiWrapper: ApiWrapper,
     membersKeyPairs: KeyringPair[],
     keyring: Keyring,
-    sudo: KeyringPair,
+    treasury: KeyringPair,
     module: WorkingGroups
   ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
     this.keyring = keyring
-    this.sudo = sudo
+    this.treasury = treasury
     this.module = module
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
-    const updateRoleAccountFee: BN = this.apiWrapper.estimateUpdateRoleAccountFee(this.sudo.address, this.module)
-    await this.apiWrapper.transferBalance(this.sudo, this.membersKeyPairs[0].address, updateRoleAccountFee)
+    const updateRoleAccountFee: BN = this.apiWrapper.estimateUpdateRoleAccountFee(this.treasury.address, this.module)
+    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, updateRoleAccountFee)
     const workerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
       this.membersKeyPairs[0].address,
       this.module
@@ -628,20 +628,20 @@ export class TerminateApplicationsFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private membersKeyPairs: KeyringPair[]
   private lead: KeyringPair
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private module: WorkingGroups
 
   constructor(
     apiWrapper: ApiWrapper,
     membersKeyPairs: KeyringPair[],
     lead: KeyringPair,
-    sudo: KeyringPair,
+    treasury: KeyringPair,
     module: WorkingGroups
   ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
     this.lead = lead
-    this.sudo = sudo
+    this.treasury = treasury
     this.module = module
   }
 
@@ -649,7 +649,7 @@ export class TerminateApplicationsFixture implements Fixture {
     // Fee estimation and transfer
     const terminateApplicationFee: BN = this.apiWrapper.estimateTerminateApplicationFee(this.module)
     await this.apiWrapper.transferBalance(
-      this.sudo,
+      this.treasury,
       this.lead.address,
       terminateApplicationFee.muln(this.membersKeyPairs.length)
     )
@@ -673,27 +673,27 @@ export class DecreaseStakeFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private membersKeyPairs: KeyringPair[]
   private lead: KeyringPair
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private module: WorkingGroups
 
   constructor(
     apiWrapper: ApiWrapper,
     membersKeyPairs: KeyringPair[],
     lead: KeyringPair,
-    sudo: KeyringPair,
+    treasury: KeyringPair,
     module: WorkingGroups
   ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
     this.lead = lead
-    this.sudo = sudo
+    this.treasury = treasury
     this.module = module
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
     const decreaseStakeFee: BN = this.apiWrapper.estimateDecreaseStakeFee(this.module)
-    await this.apiWrapper.transferBalance(this.sudo, this.lead.address, decreaseStakeFee)
+    await this.apiWrapper.transferBalance(this.treasury, this.lead.address, decreaseStakeFee)
     const workerStakeDecrement: BN = new BN(1)
     const workerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
       this.membersKeyPairs[0].address,
@@ -721,27 +721,27 @@ export class SlashFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private membersKeyPairs: KeyringPair[]
   private lead: KeyringPair
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private module: WorkingGroups
 
   constructor(
     apiWrapper: ApiWrapper,
     membersKeyPairs: KeyringPair[],
     lead: KeyringPair,
-    sudo: KeyringPair,
+    treasury: KeyringPair,
     module: WorkingGroups
   ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
     this.lead = lead
-    this.sudo = sudo
+    this.treasury = treasury
     this.module = module
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
     const slashStakeFee: BN = this.apiWrapper.estimateSlashStakeFee(this.module)
-    await this.apiWrapper.transferBalance(this.sudo, this.lead.address, slashStakeFee)
+    await this.apiWrapper.transferBalance(this.treasury, this.lead.address, slashStakeFee)
     const slashAmount: BN = new BN(1)
     const workerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
       this.membersKeyPairs[0].address,
@@ -762,27 +762,27 @@ export class TerminateRoleFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private membersKeyPairs: KeyringPair[]
   private lead: KeyringPair
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private module: WorkingGroups
 
   constructor(
     apiWrapper: ApiWrapper,
     membersKeyPairs: KeyringPair[],
     lead: KeyringPair,
-    sudo: KeyringPair,
+    treasury: KeyringPair,
     module: WorkingGroups
   ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
     this.lead = lead
-    this.sudo = sudo
+    this.treasury = treasury
     this.module = module
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
     const terminateRoleFee: BN = this.apiWrapper.estimateTerminateRoleFee(this.module)
-    await this.apiWrapper.transferBalance(this.sudo, this.lead.address, terminateRoleFee)
+    await this.apiWrapper.transferBalance(this.treasury, this.lead.address, terminateRoleFee)
     const workerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
       this.membersKeyPairs[0].address,
       this.module
@@ -800,20 +800,20 @@ export class TerminateRoleFixture implements Fixture {
 export class LeaveRoleFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private membersKeyPairs: KeyringPair[]
-  private sudo: KeyringPair
+  private treasury: KeyringPair
   private module: WorkingGroups
 
-  constructor(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], sudo: KeyringPair, module: WorkingGroups) {
+  constructor(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], treasury: KeyringPair, module: WorkingGroups) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
-    this.sudo = sudo
+    this.treasury = treasury
     this.module = module
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
     const leaveRoleFee: BN = this.apiWrapper.estimateLeaveRoleFee(this.module)
-    await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.membersKeyPairs, leaveRoleFee)
+    await this.apiWrapper.transferBalanceToAccounts(this.treasury, this.membersKeyPairs, leaveRoleFee)
 
     await this.apiWrapper.batchLeaveRole(this.membersKeyPairs, uuid().substring(0, 8), expectFailure, this.module)
 
