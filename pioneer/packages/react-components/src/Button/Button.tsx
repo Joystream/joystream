@@ -1,62 +1,135 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { ButtonProps } from './types';
 
-import React, { useState } from 'react';
-import SUIButton from 'semantic-ui-react/dist/commonjs/elements/Button/Button';
-import { isUndefined } from '@polkadot/util';
+import React, { useCallback } from 'react';
+import styled from 'styled-components';
 
 import Icon from '../Icon';
-import Tooltip from '../Tooltip';
+import Spinner from '../Spinner';
 
-let idCounter = 0;
-
-export default function Button ({ children, className, floated, icon, isBasic = false, isCircular = false, isDisabled = false, isFluid = false, isLoading = false, isNegative = false, isPositive = false, isPrimary = false, label, labelPosition, onClick, size, style, tabIndex, tooltip }: ButtonProps): React.ReactElement<ButtonProps> {
-  const [triggerId] = useState(`button-${++idCounter}`);
-  const props = {
-    basic: isBasic,
-    circular: isCircular,
-    className,
-    'data-tip': !!tooltip,
-    'data-for': triggerId,
-    disabled: isDisabled,
-    floated,
-    fluid: isFluid,
-    labelPosition,
-    loading: isLoading,
-    negative: isNegative,
-    onClick,
-    positive: isPositive,
-    primary: isPrimary,
-    size,
-    secondary: !isBasic && !(isPositive || isPrimary || isNegative),
-    style,
-    tabIndex
-  };
+function Button ({ children, className = '', icon, isBasic, isBusy, isCircular, isDisabled, isFull, isIcon, isSelected, label, onClick, onMouseEnter, onMouseLeave, tabIndex }: ButtonProps): React.ReactElement<ButtonProps> {
+  const _onClick = useCallback(
+    () => !(isBusy || isDisabled) && onClick && onClick(),
+    [isBusy, isDisabled, onClick]
+  );
 
   return (
-    <>
-      {isUndefined(label) && isUndefined(children)
-        ? <SUIButton {...props} icon={icon} />
-        : (
-          <SUIButton {...props}>
-            {icon && (
-              <><Icon className={icon} />{'  '}</>
-            )}
-            {label}
-            {children}
-          </SUIButton>
-        )
-      }
-      {tooltip && (
-        <Tooltip
-          place='top'
-          text={tooltip}
-          trigger={triggerId}
-        />
-      )}
-    </>
+    <button
+      className={`ui--Button${label ? ' hasLabel' : ''}${isBasic ? ' isBasic' : ''}${isCircular ? ' isCircular' : ''}${isFull ? ' isFull' : ''}${isIcon ? ' isIcon' : ''}${(isBusy || isDisabled) ? ' isDisabled' : ''}${isBusy ? ' isBusy' : ''}${!onClick ? ' isReadOnly' : ''}${isSelected ? ' isSelected' : ''} ${className}`}
+      onClick={_onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      tabIndex={tabIndex}
+    >
+      <Icon icon={icon} />
+      {label}
+      {children}
+      <Spinner
+        className='ui--Button-spinner'
+        variant='cover'
+      />
+    </button>
   );
 }
+
+const ICON_PADDING = 0.5;
+
+export default React.memo(styled(Button)`
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1;
+  margin: 0;
+  position: relative;
+  vertical-align: middle;
+  text-align: center;
+
+  &:not(.hasLabel) {
+    padding: 0.7em;
+
+    .ui--Icon {
+      padding: 0.6rem;
+      margin: -0.6rem;
+    }
+  }
+
+  &:not(.isCircular) {
+    border-radius: 0.25rem;
+  }
+
+  &:focus {
+    outline:0;
+  }
+
+  &.hasLabel {
+    padding: 0.7rem 1.1rem 0.7rem ${1.1 - ICON_PADDING}rem;
+
+    .ui--Icon {
+      margin-right: 0.425rem !important;
+    }
+  }
+
+  &.isBasic {
+    background: #fff;
+  }
+
+  &.isCircular {
+    border-radius: 10rem;
+  }
+
+  &.isDisabled, &.isReadOnly {
+    background: none;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+
+  &.isBusy {
+    cursor: wait;
+  }
+
+  &.isFull {
+    display: block;
+    width: 100%;
+  }
+
+  &.isIcon {
+    background: transparent;
+  }
+
+  .ui--Button-spinner {
+    visibility: hidden;
+  }
+
+  .ui--Button-overlay {
+    background: rgba(253, 252, 251, 0.75);
+    bottom: 0;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    visibility: hidden;
+  }
+
+  .ui--Icon {
+    border-radius: 50%;
+    box-sizing: content-box;
+    height: 1rem;
+    margin: -${ICON_PADDING}rem 0;
+    padding: ${ICON_PADDING}rem;
+    width: 1rem;
+  }
+
+  &.isBusy {
+    .ui--Button-spinner {
+      visibility: visible;
+    }
+  }
+
+  &.isDisabled {
+    color: #bcbbba;
+  }
+`);

@@ -1,4 +1,17 @@
 **/build/*
 **/coverage/*
 **/node_modules/*
+packages/old-apps/*
+packages/joy-members/*
+packages/joy-election/*
+packages/joy-forum/*
+packages/joy-help/*
+packages/joy-media/*
+packages/joy-pages/*
+packages/joy-proposals/*
+packages/joy-roles/*
+packages/joy-settings/*
+packages/joy-utils/*
+packages/joy-utils-old/*
+.eslintrc.js
 i18next-scanner.config.js

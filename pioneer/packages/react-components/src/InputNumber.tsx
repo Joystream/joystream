@@ -1,353 +1,299 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { BareProps, BitLength, I18nProps } from './types';
+import { SiDef } from '@polkadot/util/types';
+import { BitLength } from './types';
 
 import BN from 'bn.js';
-import React from 'react';
-import { formatBalance, isUndefined } from '@polkadot/util';
+import React, { useCallback, useEffect, useState } from 'react';
+import styled from 'styled-components';
+import { BN_ZERO, BN_TEN, formatBalance, isBn } from '@polkadot/util';
 
 import { classes } from './util';
 import { BitLengthOption } from './constants';
-import Button from './Button';
 import Dropdown from './Dropdown';
-import Input, { KEYS, KEYS_PRE } from './Input';
-import translate from './translate';
+import Input, { KEYS_PRE } from './Input';
+import { useTranslation } from './translate';
 
-const ALLOW_MAX = false;
-
-interface Props extends BareProps, I18nProps {
+interface Props {
   autoFocus?: boolean;
   bitLength?: BitLength;
-  defaultValue?: BN | string;
+  children?: React.ReactNode;
+  className?: string;
+  defaultValue?: string;
   help?: React.ReactNode;
   isDisabled?: boolean;
   isError?: boolean;
+  isFull?: boolean;
   isSi?: boolean;
   isDecimal?: boolean;
+  isWarning?: boolean;
+  isZeroable?: boolean;
   label?: React.ReactNode;
   labelExtra?: React.ReactNode;
   maxLength?: number;
   maxValue?: BN;
   onChange?: (value?: BN) => void;
   onEnter?: () => void;
+  onEscape?: () => void;
   placeholder?: string;
-  value?: BN | string;
+  value?: BN | null;
   withEllipsis?: boolean;
   withLabel?: boolean;
   withMax?: boolean;
 }
 
-interface State {
-  isPreKeyDown: boolean;
-  isValid: boolean;
-  siOptions: { value: string; text: string }[];
-  siUnit: string;
-  value: string;
-  valueBN: BN;
+const DEFAULT_BITLENGTH = BitLengthOption.NORMAL_NUMBERS as BitLength;
+
+export class TokenUnit {
+  public static abbr = 'Unit';
+
+  public static setAbbr (abbr: string = TokenUnit.abbr): void {
+    TokenUnit.abbr = abbr;
+  }
 }
 
-const DEFAULT_BITLENGTH = BitLengthOption.NORMAL_NUMBERS as BitLength;
-const ZERO = new BN(0);
-const TEN = new BN(10);
+function getGlobalMaxValue (bitLength?: number): BN {
+  return new BN(2).pow(new BN(bitLength || DEFAULT_BITLENGTH)).subn(1);
+}
 
-class InputNumber extends React.PureComponent<Props, State> {
-  constructor (props: Props) {
-    super(props);
+function getRegex (isDecimal: boolean): RegExp {
+  const decimal = '.';
 
-    const { defaultValue, isSi, value } = this.props;
-    const valueBN = new BN(value || 0);
-    const si = formatBalance.findSi('-');
+  return new RegExp(
+    isDecimal
+      ? `^(0|[1-9]\\d*)(\\${decimal}\\d*)?$`
+      : '^(0|[1-9]\\d*)$'
+  );
+}
 
-    this.state = {
-      value: isSi
-        ? new BN(defaultValue || valueBN).div(new BN(10).pow(new BN(si.power))).toString()
-        : (defaultValue || valueBN).toString(),
-      isPreKeyDown: false,
-      isValid: !isUndefined(value),
-      siOptions: formatBalance.getOptions().map(({ power, text, value }): { text: string; value: string } => ({
-        value,
-        text: power === 0
-          ? InputNumber.units
-          : text
-      })),
-      siUnit: si.value,
-      valueBN
-    };
+function getSiOptions (): { text: string; value: string }[] {
+  return formatBalance.getOptions().map(({ power, text, value }): { text: string; value: string } => ({
+    text: power === 0
+      ? TokenUnit.abbr
+      : text,
+    value
+  }));
+}
+
+function getSiPowers (si: SiDef | null): [BN, number, number] {
+  if (!si) {
+    return [BN_ZERO, 0, 0];
   }
 
-  public static units = 'Unit';
+  const basePower = formatBalance.getDefaults().decimals;
 
-  public static setUnit (units: string = InputNumber.units): void {
-    InputNumber.units = units;
+  return [new BN(basePower + si.power), basePower, si.power];
+}
+
+function isValidNumber (bn: BN, bitLength: BitLength, isZeroable: boolean, maxValue?: BN): boolean {
+  if (
+    // cannot be negative
+    bn.lt(BN_ZERO) ||
+    // cannot be > than allowed max
+    !bn.lt(getGlobalMaxValue(bitLength)) ||
+    // check if 0 and it should be a value
+    (!isZeroable && bn.isZero()) ||
+    // check that the bitlengths fit
+    bn.bitLength() > (bitLength || DEFAULT_BITLENGTH) ||
+    // cannot be > max (if specified)
+    (maxValue && maxValue.gtn(0) && bn.gt(maxValue))
+  ) {
+    return false;
   }
 
-  public static getDerivedStateFromProps ({ isDisabled, isSi, defaultValue = '0' }: Props): Partial<State> | null {
-    if (!isDisabled || !isSi) {
-      return null;
+  return true;
+}
+
+function inputToBn (input: string, si: SiDef | null, bitLength: BitLength, isZeroable: boolean, maxValue?: BN): [BN, boolean] {
+  const [siPower, basePower, siUnitPower] = getSiPowers(si);
+
+  // eslint-disable-next-line @typescript-eslint/prefer-regexp-exec
+  const isDecimalValue = input.match(/^(\d+)\.(\d+)$/);
+
+  let result;
+
+  if (isDecimalValue) {
+    if (siUnitPower - isDecimalValue[2].length < -basePower) {
+      result = new BN(-1);
     }
 
-    return {
-      value: formatBalance(defaultValue, false),
-      siUnit: formatBalance.calcSi(defaultValue.toString(), formatBalance.getDefaults().decimals).value
-    };
+    const div = new BN(input.replace(/\.\d*$/, ''));
+    const modString = input.replace(/^\d+\./, '');
+    const mod = new BN(modString);
+
+    result = div
+      .mul(BN_TEN.pow(siPower))
+      .add(mod.mul(BN_TEN.pow(new BN(basePower + siUnitPower - modString.length))));
+  } else {
+    result = new BN(input.replace(/[^\d]/g, ''))
+      .mul(BN_TEN.pow(siPower));
   }
 
-  public render (): React.ReactNode {
-    const { bitLength = DEFAULT_BITLENGTH, className, help, isSi, isDisabled, isError = false, maxLength, maxValue, onEnter, placeholder, style, withMax, t } = this.props;
-    const { isValid, value } = this.state;
-    const maxValueLength = this.maxValue(bitLength).toString().length - 1;
+  return [
+    result,
+    isValidNumber(result, bitLength, isZeroable, maxValue)
+  ];
+}
 
-    return (
-      <Input
-        {...this.props}
-        className={classes('ui--InputNumber', className)}
-        help={help}
-        isAction={isSi}
-        isDisabled={isDisabled}
-        isError={!isValid || isError}
-        maxLength={maxLength || maxValueLength}
-        onChange={this.onChange}
-        onEnter={onEnter}
-        onKeyDown={this.onKeyDown}
-        onKeyUp={this.onKeyUp}
-        onPaste={this.onPaste}
-        placeholder={placeholder || t('Positive number')}
-        style={style}
-        type='text'
-        value={value}
-      >
-        {(ALLOW_MAX && withMax && !!maxValue) && this.renderMaxButton()}
-        {isSi && this.renderSiDropdown()}
-      </Input>
-    );
-  }
+function getValuesFromString (value: string, si: SiDef | null, bitLength: BitLength, isZeroable: boolean, maxValue?: BN): [string, BN, boolean] {
+  const [valueBn, isValid] = inputToBn(value, si, bitLength, isZeroable, maxValue);
 
-  private renderSiDropdown (): React.ReactNode {
-    const { siOptions, siUnit } = this.state;
+  return [
+    value,
+    valueBn,
+    isValid
+  ];
+}
 
-    return (
-      <Dropdown
-        /* isPrimary={false} */
-        dropdownClassName='ui--SiDropdown'
-        isButton
-        defaultValue={siUnit}
-        onChange={this.selectSiUnit}
-        options={siOptions}
-      />
-    );
-  }
+function getValuesFromBn (valueBn: BN, si: SiDef | null): [string, BN, boolean] {
+  const value = si
+    ? valueBn.div(BN_TEN.pow(new BN(formatBalance.getDefaults().decimals + si.power))).toString()
+    : valueBn.toString();
 
-  private renderMaxButton (): React.ReactNode {
-    const { valueBN } = this.state;
-    const { maxValue } = this.props;
+  return [
+    value,
+    valueBn,
+    true
+  ];
+}
 
-    if (!maxValue || valueBN.eq(maxValue)) {
-      return;
-    }
+function getValues (value: BN | string = BN_ZERO, si: SiDef | null, bitLength: BitLength, isZeroable: boolean, maxValue?: BN): [string, BN, boolean] {
+  return isBn(value)
+    ? getValuesFromBn(value, si)
+    : getValuesFromString(value, si, bitLength, isZeroable, maxValue);
+}
 
-    return (
-      <Button
-        className='ui--MaxButton'
-        icon=''
-        onClick={this.setToMaxValue}
-      >
-        Max
-      </Button>
-    );
-  }
+function InputNumber ({ autoFocus, bitLength = DEFAULT_BITLENGTH, children, className = '', defaultValue, help, isDecimal, isFull, isSi, isDisabled, isError = false, isWarning, isZeroable = true, label, labelExtra, maxLength, maxValue, onChange, onEnter, onEscape, placeholder, value: propsValue }: Props): React.ReactElement<Props> {
+  const { t } = useTranslation();
+  const [si, setSi] = useState<SiDef | null>(isSi ? formatBalance.findSi('-') : null);
+  const [isPreKeyDown, setIsPreKeyDown] = useState(false);
+  const [[value, valueBn, isValid], setValues] = useState<[string, BN, boolean]>(
+    getValues(propsValue || defaultValue, si, bitLength, isZeroable, maxValue)
+  );
 
-  private maxValue (bitLength?: number): BN {
-    return new BN(2).pow(new BN(bitLength || DEFAULT_BITLENGTH)).subn(1);
-  }
+  useEffect((): void => {
+    onChange && onChange(valueBn);
+  }, [onChange, valueBn]);
 
-  private isValidBitLength (value: BN, bitLength?: number): boolean {
-    return value.bitLength() <= (bitLength || DEFAULT_BITLENGTH);
-  }
+  const _onChangeWithSi = useCallback(
+    (input: string, si: SiDef | null) => setValues(
+      getValuesFromString(input, si, bitLength, isZeroable, maxValue)
+    ),
+    [bitLength, isZeroable, maxValue]
+  );
 
-  private isValidNumber (input: BN, bitLength: number = DEFAULT_BITLENGTH): boolean {
-    const { maxValue, withMax } = this.props;
-    const maxBN = this.maxValue(bitLength);
+  const _onChange = useCallback(
+    (input: string) => _onChangeWithSi(input, si),
+    [_onChangeWithSi, si]
+  );
 
-    if (
-      input.lt(new BN(0)) ||
-      !input.lt(maxBN) ||
-      !this.isValidBitLength(input, bitLength) ||
-      (withMax && maxValue !== undefined && maxValue.gtn(0) && input.gt(maxValue))
-    ) {
-      return false;
-    }
+  useEffect((): void => {
+    defaultValue && _onChange(defaultValue);
+  }, [_onChange, defaultValue]);
 
-    return true;
-  }
+  const _onKeyDown = useCallback(
+    (event: React.KeyboardEvent<Element>): void => {
+      if (KEYS_PRE.includes(event.key)) {
+        setIsPreKeyDown(true);
 
-  private regex = (): RegExp => {
-    const { isDecimal, isSi } = this.props;
-    return new RegExp(
-      (isSi || isDecimal)
-        ? `^(0|[1-9]\\d*)(\\${KEYS.DECIMAL}\\d*)?$`
-        : '^(0|[1-9]\\d*)$'
-    );
-  }
+        return;
+      }
 
-  private onChange = (value: string): void => {
-    const { bitLength, onChange } = this.props;
-    const { siUnit } = this.state;
+      if (event.key.length === 1 && !isPreKeyDown) {
+        const { selectionEnd: j, selectionStart: i, value } = event.target as HTMLInputElement;
+        const newValue = `${value.substring(0, i || 0)}${event.key}${value.substring(j || 0)}`;
 
-    try {
-      const valueBN = this.inputValueToBn(value, siUnit);
-      const isValid = this.isValidNumber(valueBN, bitLength);
+        if (!getRegex(isDecimal || !!si).test(newValue)) {
+          event.preventDefault();
+        }
+      }
+    },
+    [isDecimal, isPreKeyDown, si]
+  );
 
-      this.setState({ isValid, value, valueBN });
+  const _onKeyUp = useCallback(
+    (event: React.KeyboardEvent<Element>): void => {
+      if (KEYS_PRE.includes(event.key)) {
+        setIsPreKeyDown(false);
+      }
+    },
+    []
+  );
 
-      onChange && onChange(
-        isValid
-          ? valueBN
-          : undefined
-      );
-    } catch (error) {
-      console.error(error);
-    }
-  }
+  const _onPaste = useCallback(
+    (event: React.ClipboardEvent<Element>): void => {
+      const { value: newValue } = event.target as HTMLInputElement;
 
-  private onKeyDown = (event: React.KeyboardEvent<Element>): void => {
-    const { isPreKeyDown } = this.state;
-
-    if (KEYS_PRE.includes(event.key)) {
-      this.setState({ isPreKeyDown: true });
-      return;
-    }
-
-    if (event.key.length === 1 && !isPreKeyDown) {
-      const { selectionStart: i, selectionEnd: j, value } = event.target as HTMLInputElement;
-      const newValue = `${value.substring(0, i || 0)}${event.key}${value.substring(j || 0)}`;
-
-      if (!this.regex().test(newValue)) {
+      if (!getRegex(isDecimal || !!si).test(newValue)) {
         event.preventDefault();
       }
-    }
-  }
+    },
+    [isDecimal, si]
+  );
 
-  private onKeyUp = (event: React.KeyboardEvent<Element>): void => {
-    if (KEYS_PRE.includes(event.key)) {
-      this.setState({ isPreKeyDown: false });
-    }
-  }
+  const _onSelectSiUnit = useCallback(
+    (siUnit: string): void => {
+      const si = formatBalance.findSi(siUnit);
 
-  private onPaste = (event: React.ClipboardEvent<Element>): void => {
-    const { value: newValue } = event.target as HTMLInputElement;
+      setSi(si);
+      _onChangeWithSi(value, si);
+    },
+    [_onChangeWithSi, value]
+  );
 
-    if (!this.regex().test(newValue)) {
-      event.preventDefault();
-    }
-  }
+  const maxValueLength = getGlobalMaxValue(bitLength).toString().length - 1;
 
-  private selectSiUnit = (siUnit: string): void => {
-    this.setState((prevState: State): Pick<State, never> => {
-      const { bitLength, onChange } = this.props;
-      const valueBN = this.inputValueToBn(prevState.value, siUnit);
-      const isValid = this.isValidNumber(valueBN, bitLength);
-
-      onChange && onChange(
-        isValid
-          ? prevState.valueBN
-          : undefined
-      );
-
-      return {
-        isValid,
-        siUnit,
-        valueBN
-      };
-    });
-  }
-
-  private setToMaxValue = (): void => {
-    this.setState((prevState: State): Pick<State, never> => {
-      const { bitLength, maxValue, onChange } = this.props;
-      const { siUnit = prevState.siUnit } = this.state;
-
-      if (!maxValue) {
-        return {};
-      }
-
-      const isValid = this.isValidNumber(maxValue, bitLength);
-
-      onChange && onChange(
-        isValid
-          ? maxValue
-          : undefined
-      );
-
-      return {
-        value: this.bnToInputValue(maxValue, siUnit),
-        valueBN: maxValue,
-        isValid
-      };
-    });
-  }
-
-  private inputValueToBn = (value: string, siUnit?: string): BN => {
-    const [siPower, basePower, siUnitPower] = this.getSiPowers(siUnit);
-
-    // eslint-disable-next-line @typescript-eslint/prefer-regexp-exec
-    const isDecimalValue = value.match(/^(\d+)\.(\d+)$/);
-
-    if (isDecimalValue) {
-      if (siUnitPower - isDecimalValue[2].length < -basePower) {
-        return new BN(-1);
-      }
-
-      const div = new BN(value.replace(/\.\d*$/, ''));
-      const modString = value.replace(/^\d+\./, '');
-      const mod = new BN(modString);
-
-      return div
-        .mul(TEN.pow(siPower))
-        .add(mod.mul(TEN.pow(new BN(basePower + siUnitPower - modString.length))));
-    } else {
-      return new BN(value.replace(/[^\d]/g, ''))
-        .mul(TEN.pow(siPower));
-    }
-  }
-
-  private bnToInputValue = (bn: BN, siUnit?: string): string => {
-    const [siPower] = this.getSiPowers(siUnit);
-
-    const base = TEN.pow(siPower);
-    const div = bn.div(base);
-    const mod = bn.mod(base);
-
-    return `${
-      div.gt(ZERO) ? div.toString() : '0'
-    }${
-      mod.gt(ZERO)
-        ? ((): string => {
-          const padding = Math.max(
-            mod.toString().length,
-            base.toString().length - div.toString().length,
-            bn.toString().length - div.toString().length
-          );
-
-          return `.${mod.toString(10, padding).replace(/0*$/, '')}`;
-        })()
-        : ''
-    }`;
-  }
-
-  private getSiPowers = (siUnit = this.state.siUnit): [BN, number, number] => {
-    const { isSi } = this.props;
-
-    const basePower = isSi ? formatBalance.getDefaults().decimals : 0;
-    const siUnitPower = isSi ? formatBalance.findSi(siUnit).power : 0;
-
-    return [new BN(basePower + siUnitPower), basePower, siUnitPower];
-  }
+  return (
+    <Input
+      autoFocus={autoFocus}
+      className={classes('ui--InputNumber', isDisabled && 'isDisabled', className)}
+      help={help}
+      isAction={isSi}
+      isDisabled={isDisabled}
+      isError={!isValid || isError}
+      isFull={isFull}
+      isWarning={isWarning}
+      label={label}
+      labelExtra={labelExtra}
+      maxLength={maxLength || maxValueLength}
+      onChange={_onChange}
+      onEnter={onEnter}
+      onEscape={onEscape}
+      onKeyDown={_onKeyDown}
+      onKeyUp={_onKeyUp}
+      onPaste={_onPaste}
+      placeholder={placeholder || t<string>('Positive number')}
+      type='text'
+      value={value}
+    >
+      {!!si && (
+        <Dropdown
+          defaultValue={si.value}
+          dropdownClassName='ui--SiDropdown'
+          isButton
+          onChange={_onSelectSiUnit}
+          options={getSiOptions()}
+        />
+      )}
+      {children}
+    </Input>
+  );
 }
 
-export {
-  InputNumber
-};
+export default React.memo(styled(InputNumber)`
+  &.isDisabled {
+    .ui--SiDropdown {
+      background: transparent;
+      border-color: rgba(34, 36, 38, .15) !important;
+      border-style: dashed;
+      color: #666 !important;
+      cursor: default !important;
 
-export default translate(InputNumber);
+      .dropdown.icon {
+        display: none;
+      }
+    }
+  }
+`);

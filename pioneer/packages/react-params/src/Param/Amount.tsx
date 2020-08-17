@@ -1,36 +1,40 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-params authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { Props } from '../types';
 
 import BN from 'bn.js';
-import React from 'react';
-// import { ClassOf } from '@polkadot/types';
+import React, { useCallback, useState } from 'react';
+import { registry } from '@polkadot/react-api';
 import { Input } from '@polkadot/react-components';
-// import { bnToBn, formatNumber } from '@polkadot/util';
+import { ClassOf } from '@polkadot/types';
+import { bnToBn, formatNumber } from '@polkadot/util';
 
 import Bare from './Bare';
 
-function onChange ({ onChange }: Props): (_: string) => void {
-  return function (value: string): void {
-    onChange && onChange({
-      isValid: !!value,
-      value: new BN(value || 0)
-    });
-  };
-}
+function Amount ({ className = '', defaultValue: { value }, isDisabled, isError, label, onChange, onEnter, withLabel }: Props): React.ReactElement<Props> {
+  const [defaultValue] = useState(
+    isDisabled
+      ? (
+        value instanceof ClassOf(registry, 'AccountIndex')
+          ? value.toString()
+          : formatNumber(value as number)
+      )
+      : bnToBn((value as number) || 0).toString()
+  );
 
-export default function Amount (props: Props): React.ReactElement<Props> {
-  const { className, defaultValue: { value }, isDisabled, isError, label, onEnter, style, withLabel } = props;
-
-  const defaultValue = value ? value.toString() : '0';
+  const _onChange = useCallback(
+    (value: string) =>
+      onChange && onChange({
+        isValid: true,
+        value: new BN(value || 0)
+      }),
+    [onChange]
+  );
 
   return (
-    <Bare
-      className={className}
-      style={style}
-    >
+    <Bare className={className}>
       <Input
         className='full'
         defaultValue={defaultValue}
@@ -38,7 +42,7 @@ export default function Amount (props: Props): React.ReactElement<Props> {
         isError={isError}
         label={label}
         min={0}
-        onChange={onChange(props)}
+        onChange={_onChange}
         onEnter={onEnter}
         type={
           isDisabled
@@ -51,3 +55,5 @@ export default function Amount (props: Props): React.ReactElement<Props> {
     </Bare>
   );
 }
+
+export default React.memo(Amount);

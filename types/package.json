@@ -29,7 +29,8 @@
   "devDependencies": {
     "@polkadot/typegen": "1.26.1",
     "ts-node": "^8.6.2",
-    "typescript": "^3.7.2"
+    "typescript": "^3.7.2",
+    "madge": "^3.9.2"
   },
   "engines": {
     "node": ">=12.18.0",
