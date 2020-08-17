@@ -1,6 +1,6 @@
 use codec::{Decode, Encode};
-use rstd::vec::Vec;
-use srml_support::ensure;
+use frame_support::ensure;
+use sp_std::vec::Vec;
 
 #[derive(Clone, Copy, Encode, Decode, Default)]
 pub struct SealedVote<AccountId, Stake, Hash, Vote>

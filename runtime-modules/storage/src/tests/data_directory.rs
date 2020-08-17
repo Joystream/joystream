@@ -1,9 +1,10 @@
 #![cfg(test)]
 
-use super::mock::*;
-use crate::data_directory::Error;
-use rstd::collections::btree_map::BTreeMap;
+use frame_support::dispatch::DispatchError;
+use sp_std::collections::btree_map::BTreeMap;
 use system::RawOrigin;
+
+use super::mock::*;
 
 #[test]
 fn succeed_adding_content() {
@@ -36,13 +37,20 @@ fn add_content_fails_with_invalid_origin() {
             0,
             vec![1, 3, 3, 7],
         );
-        assert_eq!(res, Err(Error::Other("RequireSignedOrigin")));
+        assert_eq!(res, Err(DispatchError::Other("Bad origin")));
     });
 }
 
 #[test]
 fn accept_and_reject_content_fail_with_invalid_storage_provider() {
     with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let sender = 1u64;
         let member_id = 1u64;
 
@@ -72,20 +80,27 @@ fn accept_and_reject_content_fail_with_invalid_storage_provider() {
             storage_provider_id,
             content_id,
         );
-        assert_eq!(res, Err(Error::Other("WorkerDoesNotExist")));
+        assert_eq!(res, Err(working_group::Error::<Test, crate::StorageWorkingGroupInstance>::WorkerDoesNotExist.into()));
 
         let res = TestDataDirectory::reject_content(
             Origin::signed(storage_provider_account_id),
             storage_provider_id,
             content_id,
         );
-        assert_eq!(res, Err(Error::Other("WorkerDoesNotExist")));
+        assert_eq!(res, Err(working_group::Error::<Test, crate::StorageWorkingGroupInstance>::WorkerDoesNotExist.into()));
     });
 }
 
 #[test]
 fn accept_content_as_liaison() {
     with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let sender = 1u64;
         let member_id = 1u64;
 
@@ -130,6 +145,13 @@ fn accept_content_as_liaison() {
 #[test]
 fn reject_content_as_liaison() {
     with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let sender = 1u64;
         let member_id = 1u64;
 
@@ -199,7 +221,7 @@ fn data_object_injection_works() {
         let content_id_2 = 2;
         objects.insert(content_id_2, object.clone());
 
-        let res = TestDataDirectory::inject_data_objects(Origin::ROOT, objects);
+        let res = TestDataDirectory::inject_data_objects(RawOrigin::Root.into(), objects);
         assert!(res.is_ok());
 
         assert_eq!(
@@ -279,7 +301,7 @@ fn data_object_injection_overwrites_and_removes_duplicate_ids() {
         objects.insert(content_id_1, object1.clone());
         objects.insert(content_id_2, object2.clone());
 
-        let res = TestDataDirectory::inject_data_objects(Origin::ROOT, objects);
+        let res = TestDataDirectory::inject_data_objects(RawOrigin::Root.into(), objects);
         assert!(res.is_ok());
 
         assert_eq!(

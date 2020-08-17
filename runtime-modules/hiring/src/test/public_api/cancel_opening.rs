@@ -2,7 +2,7 @@ use crate::mock::*;
 use crate::test::*;
 
 use crate::test::public_api::*;
-use rstd::collections::btree_map::BTreeMap;
+use sp_std::collections::btree_map::BTreeMap;
 
 /*
 Not covered:
@@ -96,7 +96,7 @@ impl CancelOpeningFixture {
                         started_accepting_applicants_at_block,
                     } => ActiveOpeningStage::Deactivated {
                         cause: OpeningDeactivationCause::CancelledAcceptingApplications,
-                        deactivated_at_block: 1,
+                        deactivated_at_block: FIRST_BLOCK_HEIGHT,
                         started_accepting_applicants_at_block,
                         started_review_period_at_block: None,
                     },
@@ -105,7 +105,7 @@ impl CancelOpeningFixture {
                         started_review_period_at_block,
                     } => ActiveOpeningStage::Deactivated {
                         cause: OpeningDeactivationCause::CancelledInReviewPeriod,
-                        deactivated_at_block: 1,
+                        deactivated_at_block: FIRST_BLOCK_HEIGHT,
                         started_accepting_applicants_at_block,
                         started_review_period_at_block: Some(started_review_period_at_block),
                     },

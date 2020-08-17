@@ -7,14 +7,14 @@
 //!
 
 #![cfg(test)]
-pub use primitives::{Blake2Hasher, H256};
-pub use sr_primitives::{
-    testing::{Digest, DigestItem, Header, UintAuthorityId},
-    traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize, Zero},
-    weights::Weight,
-    BuildStorage, DispatchError, Perbill,
+
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use sp_core::H256;
+use sp_runtime::{
+    testing::Header,
+    traits::{BlakeTwo256, IdentityLookup},
+    Perbill,
 };
-use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 pub use system;
 
 mod balance_manager;
@@ -46,30 +46,20 @@ impl_outer_event! {
         balances<T>,
         engine<T>,
         membership_mod<T>,
+        system<T>,
     }
 }
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
-    pub const TransferFee: u32 = 0;
-    pub const CreationFee: u32 = 0;
 }
 
 impl balances::Trait for Test {
-    /// The type for recording an account's balance.
     type Balance = u64;
-    /// What to do if an account's free balance gets zeroed.
-    type OnFreeBalanceZero = ();
-    /// What to do if a new account is created.
-    type OnNewAccount = ();
-
-    type TransferPayment = ();
-
     type DustRemoval = ();
     type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
-    type TransferFee = TransferFee;
-    type CreationFee = CreationFee;
+    type AccountStore = System;
 }
 
 impl common::currency::GovernanceCurrency for Test {
@@ -149,6 +139,7 @@ parameter_types! {
 }
 
 impl system::Trait for Test {
+    type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
     type Index = u64;
@@ -161,18 +152,26 @@ impl system::Trait for Test {
     type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
-impl timestamp::Trait for Test {
+impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
 }
 
-pub fn initial_test_ext() -> runtime_io::TestExternalities {
+pub fn initial_test_ext() -> sp_io::TestExternalities {
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();

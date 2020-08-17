@@ -1,21 +1,20 @@
 mod mock;
 
-use governance::election_params::ElectionParameters;
-use srml_support::traits::Currency;
-use srml_support::StorageMap;
+use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::storage::StorageMap;
+use frame_support::traits::Currency;
 use system::RawOrigin;
 
-use crate::*;
-use crate::{BalanceOf, Error, ProposalDetails};
-use proposal_engine::ProposalParameters;
-use srml_support::dispatch::DispatchResult;
+use common::working_group::WorkingGroup;
+use governance::election_params::ElectionParameters;
+use hiring::ActivateOpeningAt;
+use proposals_engine::ProposalParameters;
+use working_group::OpeningPolicyCommitment;
 
 use crate::proposal_types::ProposalsConfigParameters;
+use crate::*;
+use crate::{BalanceOf, Error, ProposalDetails};
 pub use mock::*;
-
-use common::working_group::WorkingGroup;
-use hiring::ActivateOpeningAt;
-use working_group::OpeningPolicyCommitment;
 
 pub(crate) fn increase_total_balance_issuance(balance: u64) {
     increase_total_balance_issuance_using_account_id(999, balance);
@@ -31,10 +30,10 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, 
 
 struct ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
 where
-    InsufficientRightsCall: Fn() -> DispatchResult<crate::Error>,
-    EmptyStakeCall: Fn() -> DispatchResult<crate::Error>,
-    InvalidStakeCall: Fn() -> DispatchResult<crate::Error>,
-    SuccessfulCall: Fn() -> DispatchResult<crate::Error>,
+    InsufficientRightsCall: Fn() -> DispatchResult,
+    EmptyStakeCall: Fn() -> DispatchResult,
+    InvalidStakeCall: Fn() -> DispatchResult,
+    SuccessfulCall: Fn() -> DispatchResult,
 {
     insufficient_rights_call: InsufficientRightsCall,
     empty_stake_call: EmptyStakeCall,
@@ -47,24 +46,27 @@ where
 impl<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
     ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
 where
-    InsufficientRightsCall: Fn() -> DispatchResult<crate::Error>,
-    EmptyStakeCall: Fn() -> DispatchResult<crate::Error>,
-    InvalidStakeCall: Fn() -> DispatchResult<crate::Error>,
-    SuccessfulCall: Fn() -> DispatchResult<crate::Error>,
+    InsufficientRightsCall: Fn() -> DispatchResult,
+    EmptyStakeCall: Fn() -> DispatchResult,
+    InvalidStakeCall: Fn() -> DispatchResult,
+    SuccessfulCall: Fn() -> DispatchResult,
 {
     fn check_for_invalid_stakes(&self) {
-        assert_eq!((self.empty_stake_call)(), Err(Error::Other("EmptyStake")));
+        assert_eq!(
+            (self.empty_stake_call)(),
+            Err(proposals_engine::Error::<Test>::EmptyStake.into())
+        );
 
         assert_eq!(
             (self.invalid_stake_call)(),
-            Err(Error::Other("StakeDiffersFromRequired"))
+            Err(proposals_engine::Error::<Test>::StakeDiffersFromRequired.into())
         );
     }
 
     fn check_call_for_insufficient_rights(&self) {
         assert_eq!(
             (self.insufficient_rights_call)(),
-            Err(Error::Other("RequireSignedOrigin"))
+            Err(DispatchError::Other("Bad origin"))
         );
     }
 
@@ -163,7 +165,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
                 None,
                 long_text,
             ),
-            Err(Error::TextProposalSizeExceeded)
+            Err(Error::<Test>::TextProposalSizeExceeded.into())
         );
 
         assert_eq!(
@@ -175,7 +177,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
                 None,
                 Vec::new(),
             ),
-            Err(Error::TextProposalIsEmpty)
+            Err(Error::<Test>::TextProposalIsEmpty.into())
         );
     });
 }
@@ -248,7 +250,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
                 None,
                 long_wasm,
             ),
-            Err(Error::RuntimeProposalSizeExceeded)
+            Err(Error::<Test>::RuntimeProposalSizeExceeded.into())
         );
 
         assert_eq!(
@@ -260,7 +262,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
                 None,
                 Vec::new(),
             ),
-            Err(Error::RuntimeProposalIsEmpty)
+            Err(Error::<Test>::RuntimeProposalIsEmpty.into())
         );
     });
 }
@@ -323,7 +325,7 @@ fn create_set_election_parameters_proposal_common_checks_succeed() {
 
 fn assert_failed_election_parameters_call(
     election_parameters: ElectionParameters<u64, u64>,
-    error: Error,
+    error: DispatchError,
 ) {
     assert_eq!(
         ProposalCodex::create_set_election_parameters_proposal(
@@ -360,111 +362,111 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
         election_parameters.council_size = 2;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterCouncilSize,
+            Error::<Test>::InvalidCouncilElectionParameterCouncilSize.into(),
         );
 
         election_parameters.council_size = 21;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterCouncilSize,
+            Error::<Test>::InvalidCouncilElectionParameterCouncilSize.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.candidacy_limit = 22;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterCandidacyLimit,
+            Error::<Test>::InvalidCouncilElectionParameterCandidacyLimit.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.candidacy_limit = 122;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterCandidacyLimit,
+            Error::<Test>::InvalidCouncilElectionParameterCandidacyLimit.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.min_voting_stake = 0;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterMinVotingStake,
+            Error::<Test>::InvalidCouncilElectionParameterMinVotingStake.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.min_voting_stake = 200000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterMinVotingStake,
+            Error::<Test>::InvalidCouncilElectionParameterMinVotingStake.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.new_term_duration = 10000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterNewTermDuration,
+            Error::<Test>::InvalidCouncilElectionParameterNewTermDuration.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.new_term_duration = 500000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterNewTermDuration,
+            Error::<Test>::InvalidCouncilElectionParameterNewTermDuration.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.min_council_stake = 0;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterMinCouncilStake,
+            Error::<Test>::InvalidCouncilElectionParameterMinCouncilStake.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.min_council_stake = 200000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterMinCouncilStake,
+            Error::<Test>::InvalidCouncilElectionParameterMinCouncilStake.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.voting_period = 10000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterVotingPeriod,
+            Error::<Test>::InvalidCouncilElectionParameterVotingPeriod.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.voting_period = 50000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterVotingPeriod,
+            Error::<Test>::InvalidCouncilElectionParameterVotingPeriod.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.revealing_period = 10000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterRevealingPeriod,
+            Error::<Test>::InvalidCouncilElectionParameterRevealingPeriod.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.revealing_period = 50000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterRevealingPeriod,
+            Error::<Test>::InvalidCouncilElectionParameterRevealingPeriod.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.announcing_period = 10000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterAnnouncingPeriod,
+            Error::<Test>::InvalidCouncilElectionParameterAnnouncingPeriod.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.announcing_period = 50000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterAnnouncingPeriod,
+            Error::<Test>::InvalidCouncilElectionParameterAnnouncingPeriod.into(),
         );
     });
 }
@@ -483,7 +485,7 @@ fn create_content_working_group_mint_capacity_proposal_fails_with_invalid_parame
                 Some(<BalanceOf<Test>>::from(50000u32)),
                 (crate::CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
             ),
-            Err(Error::InvalidContentWorkingGroupMintCapacity)
+            Err(Error::<Test>::InvalidContentWorkingGroupMintCapacity.into())
         );
     });
 }
@@ -613,7 +615,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
                 0,
                 2,
             ),
-            Err(Error::InvalidSpendingProposalBalance)
+            Err(Error::<Test>::InvalidSpendingProposalBalance.into())
         );
 
         assert_eq!(
@@ -626,7 +628,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
                 2000001,
                 2,
             ),
-            Err(Error::InvalidSpendingProposalBalance)
+            Err(Error::<Test>::InvalidSpendingProposalBalance.into())
         );
     });
 }
@@ -652,7 +654,7 @@ fn create_set_lead_proposal_fails_with_proposed_councilor() {
                 Some(<BalanceOf<Test>>::from(1250u32)),
                 Some((20, lead_account_id)),
             ),
-            Err(Error::InvalidSetLeadParameterCannotBeCouncilor)
+            Err(Error::<Test>::InvalidSetLeadParameterCannotBeCouncilor.into())
         );
     });
 }
@@ -777,7 +779,7 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 Some(<BalanceOf<Test>>::from(500u32)),
                 3,
             ),
-            Err(Error::InvalidValidatorCount)
+            Err(Error::<Test>::InvalidValidatorCount.into())
         );
 
         assert_eq!(
@@ -789,7 +791,7 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 Some(<BalanceOf<Test>>::from(1001u32)),
                 3,
             ),
-            Err(Error::InvalidValidatorCount)
+            Err(Error::<Test>::InvalidValidatorCount.into())
         );
     });
 }
@@ -1130,7 +1132,7 @@ fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
                 (crate::WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
                 WorkingGroup::Storage,
             ),
-            Err(Error::InvalidWorkingGroupMintCapacity)
+            Err(Error::<Test>::InvalidWorkingGroupMintCapacity.into())
         );
     });
 }
@@ -1356,7 +1358,7 @@ fn slash_stake_with_zero_staking_balance_fails() {
                 0,
                 WorkingGroup::Storage,
             ),
-            Err(Error::SlashingStakeIsZero)
+            Err(Error::<Test>::SlashingStakeIsZero.into())
         );
     });
 }
@@ -1384,7 +1386,7 @@ fn decrease_stake_with_zero_staking_balance_fails() {
                 0,
                 WorkingGroup::Storage,
             ),
-            Err(Error::DecreasingStakeIsZero)
+            Err(Error::<Test>::DecreasingStakeIsZero.into())
         );
     });
 }

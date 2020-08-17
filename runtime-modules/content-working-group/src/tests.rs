@@ -1,20 +1,28 @@
 #![cfg(test)]
 
 use super::genesis;
-use super::mock::{self, *};
-use hiring;
-use rstd::collections::btree_map::BTreeMap;
-use rstd::collections::btree_set::BTreeSet;
-use sr_primitives::traits::One;
-use srml_support::{assert_err, assert_ok, StorageLinkedMap, StorageValue};
+use super::mock::*;
+
+use frame_support::{assert_err, assert_ok, traits::Currency, StorageValue};
+use sp_arithmetic::traits::One;
+use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use system::RawOrigin;
 
 use common::constraints::InputValidationLengthConstraint;
+use hiring;
 
 #[test]
 fn create_channel_success() {
     TestExternalitiesBuilder::<Test>::default()
         .build()
         .execute_with(|| {
+            /*
+               Events are not emitted on block 0.
+               So any dispatchable calls made during genesis block formation will have no events emitted.
+               https://substrate.dev/recipes/2-appetizers/4-events.html
+            */
+            run_to_block(1);
+
             // Add channel creator as member
             let channel_creator_member_root_and_controller_account = 12312;
 
@@ -171,6 +179,13 @@ fn transfer_channel_ownership_success() {
     TestExternalitiesBuilder::<Test>::default()
         .build()
         .execute_with(|| {
+            /*
+               Events are not emitted on block 0.
+               So any dispatchable calls made during genesis block formation will have no events emitted.
+               https://substrate.dev/recipes/2-appetizers/4-events.html
+            */
+            run_to_block(1);
+
             // Add channel creator as member
             let channel_creator_member_root_and_controller_account_1 = 1111;
             let channel_creator_member_root_and_controller_account_2 = 2222;
@@ -242,6 +257,7 @@ impl UpdateChannelAsCurationActorFixture {
             self.new_verified,
             self.new_curation_status,
         )
+        .map_err(<&str>::from)
     }
 
     pub fn call_and_assert_success(&self, channel_id: ChannelId<Test>) {
@@ -284,7 +300,7 @@ impl UpdateChannelAsCurationActorFixture {
         assert_eq!(event_channel_id, channel_id);
 
         // Channel has been updated correctly
-        assert!(ChannelById::<Test>::exists(channel_id));
+        assert!(ChannelById::<Test>::contains_key(channel_id));
 
         let updated_channel = ChannelById::<Test>::get(channel_id);
 
@@ -394,7 +410,7 @@ fn add_curator_opening_success() {
 
             // Assert that given opening id has been added,
             // and has the right properties.
-            assert!(crate::CuratorOpeningById::<Test>::exists(
+            assert!(crate::CuratorOpeningById::<Test>::contains_key(
                 expected_curator_opening_id
             ));
 
@@ -748,7 +764,7 @@ fn apply_on_curator_opening_success() {
                 )
             );
 
-            assert!(CuratorApplicationById::<Test>::exists(
+            assert!(CuratorApplicationById::<Test>::contains_key(
                 new_curator_application_id
             ));
 
@@ -874,6 +890,7 @@ impl UpdateCuratorRoleAccountFixture {
             self.curator_id,
             self.new_role_account,
         )
+        .map_err(<&str>::from)
     }
 
     pub fn call_and_assert_success(&self) {
@@ -950,6 +967,7 @@ impl UpdateCuratorRewardAccountFixture {
             self.curator_id,
             self.new_reward_account,
         )
+        .map_err(<&str>::from)
     }
 
     #[allow(dead_code)] // delete if the method is unnecessary
@@ -1016,6 +1034,7 @@ impl LeaveCuratorRoleFixture {
             self.curator_id,
             self.rationale_text.clone(),
         )
+        .map_err(<&str>::from)
     }
 
     pub fn call_and_assert_success(&self) {
@@ -1046,7 +1065,9 @@ impl LeaveCuratorRoleFixture {
         // Tracking unstaking
         let curator_role_stake_id = original_curator.role_stake_profile.unwrap().stake_id;
 
-        assert!(UnstakerByStakeId::<Test>::exists(curator_role_stake_id));
+        assert!(UnstakerByStakeId::<Test>::contains_key(
+            curator_role_stake_id
+        ));
 
         let unstaker = UnstakerByStakeId::<Test>::get(curator_role_stake_id);
 
@@ -1089,6 +1110,7 @@ impl TerminateCuratorRoleFixture {
             self.curator_id,
             self.rationale_text.clone(),
         )
+        .map_err(<&str>::from)
     }
 
     pub fn call_and_assert_success(&self) {
@@ -1119,7 +1141,9 @@ impl TerminateCuratorRoleFixture {
         // Tracking unstaking
         let curator_role_stake_id = original_curator.role_stake_profile.unwrap().stake_id;
 
-        assert!(UnstakerByStakeId::<Test>::exists(curator_role_stake_id));
+        assert!(UnstakerByStakeId::<Test>::contains_key(
+            curator_role_stake_id
+        ));
 
         let unstaker = UnstakerByStakeId::<Test>::get(curator_role_stake_id);
 
@@ -1161,6 +1185,7 @@ impl SetLeadFixture {
             self.origin.clone(),
             Some((self.member_id, self.new_role_account)),
         )
+        .map_err(<&str>::from)
     }
 
     pub fn call_and_assert_success(&self) {
@@ -1204,11 +1229,18 @@ fn set_lead_success() {
     TestExternalitiesBuilder::<Test>::default()
         .build()
         .execute_with(|| {
+            /*
+               Events are not emitted on block 0.
+               So any dispatchable calls made during genesis block formation will have no events emitted.
+               https://substrate.dev/recipes/2-appetizers/4-events.html
+            */
+            run_to_block(1);
+
             let member_id =
                 add_member(LEAD_ROOT_AND_CONTROLLER_ACCOUNT, to_vec(LEAD_MEMBER_HANDLE));
 
             SetLeadFixture {
-                origin: Origin::system(system::RawOrigin::Root),
+                origin: RawOrigin::Root.into(),
                 member_id,
                 new_role_account: 44444,
             }
@@ -1222,7 +1254,7 @@ struct UnsetLeadFixture {
 
 impl UnsetLeadFixture {
     fn call(&self) -> Result<(), &'static str> {
-        ContentWorkingGroup::replace_lead(self.origin.clone(), None)
+        ContentWorkingGroup::replace_lead(self.origin.clone(), None).map_err(<&str>::from)
     }
 
     pub fn call_and_assert_success(&self) {
@@ -1261,7 +1293,7 @@ fn unset_lead_success() {
             let _ = add_member_and_set_as_lead();
 
             UnsetLeadFixture {
-                origin: Origin::system(system::RawOrigin::Root),
+                origin: RawOrigin::Root.into(),
             }
             .call_and_assert_success();
         });
@@ -1311,7 +1343,7 @@ impl UnstakedFixture {
         );
 
         // Unstaker gone
-        assert!(!UnstakerByStakeId::<Test>::exists(self.stake_id));
+        assert!(!UnstakerByStakeId::<Test>::contains_key(self.stake_id));
     }
 
     // pub fn call_and_assert_failed_result(&self, error_message: &'static str) {
@@ -1405,39 +1437,6 @@ pub fn get_baseline_opening_policy(
 pub fn to_vec(s: &str) -> Vec<u8> {
     s.as_bytes().to_vec()
 }
-
-/*
- * Setups
- */
-
-//type TestSeed = u128;
-
-/*
-fn account_from_seed(TestSeed: seed) -> <Test as system::Trait>::AccountId {
-
-}
-
-fn vector_from_seed(TestSeed: seed) {
-
-}
-*/
-
-/*
-static INITIAL_SEED_VALUE: u128 = 0;
-static CURRENT_SEED: u128 = INITIAL_SEED_VALUE;
-
-fn get_current_seed() {
-
-}
-
-fn update_seed() {
-
-}
-
-fn reset_seed() {
-    CURRENT_SEED: u128 = INITIAL_SEED_VALUE;
-}
-*/
 
 // MOVE THIS LATER WHEN fill_opening is factored out
 #[derive(Clone)]
@@ -1568,7 +1567,7 @@ fn add_member_and_apply_on_opening(
         crate::RawEvent::AppliedOnCuratorOpening(curator_opening_id, new_curator_application_id)
     );
 
-    assert!(CuratorApplicationById::<Test>::exists(
+    assert!(CuratorApplicationById::<Test>::contains_key(
         new_curator_application_id
     ));
 
@@ -1718,7 +1717,6 @@ fn setup_and_fill_opening(
     let applicants_to_hire_iter = applicants.iter().filter(|params| params.hire);
 
     let num_applicants_hired = applicants_to_hire_iter.cloned().count();
-    //let num_applicants_not_to_hire = (applicants.len() - num_applicants_hired) as usize;
 
     let hired_applicant_and_result = setup_opening_in_review
         .added_members_application_result
@@ -1799,7 +1797,7 @@ fn setup_and_fill_opening(
         let expected_added_principal_id: u64 = (hired_index as u64) + original_next_principal_id;
 
         // Curator added
-        assert!(CuratorById::<Test>::exists(expected_added_curator_id));
+        assert!(CuratorById::<Test>::contains_key(expected_added_curator_id));
 
         let added_curator = CuratorById::<Test>::get(expected_added_curator_id);
 
@@ -1848,7 +1846,9 @@ fn setup_and_fill_opening(
         assert_eq!(expected_curator, added_curator);
 
         // Principal added
-        assert!(PrincipalById::<Test>::exists(expected_added_principal_id));
+        assert!(PrincipalById::<Test>::contains_key(
+            expected_added_principal_id
+        ));
 
         let added_principal = PrincipalById::<Test>::get(expected_added_principal_id);
 
@@ -1978,6 +1978,7 @@ impl CreateChannelFixture {
             self.banner.clone(),
             self.publication_status.clone(),
         )
+        .map_err(<&str>::from)
     }
 
     pub fn call_and_assert_error(&self, err_message: &'static str) {
@@ -2010,7 +2011,7 @@ impl CreateChannelFixture {
 
         // Assert that given channel id has been added,
         // and has the right properties.
-        assert!(crate::ChannelById::<Test>::exists(channel_id));
+        assert!(crate::ChannelById::<Test>::contains_key(channel_id));
 
         let created_channel = crate::ChannelById::<Test>::get(channel_id);
 
@@ -2044,7 +2045,7 @@ impl CreateChannelFixture {
         );
 
         // Check that principal actually has been added
-        assert!(crate::PrincipalById::<Test>::exists(
+        assert!(crate::PrincipalById::<Test>::contains_key(
             created_channel.principal_id
         ));
 
@@ -2113,15 +2114,18 @@ pub fn set_lead(
     member_id: <Test as membership::Trait>::MemberId,
     new_role_account: <Test as system::Trait>::AccountId,
 ) -> LeadId<Test> {
-    // Get controller account
-    //let lead_member_controller_account = membership::Module::<Test>::ensure_membership(member_id).unwrap().controller_account;
+    /*
+       Events are not emitted on block 0.
+       So any dispatchable calls made during genesis block formation will have no events emitted.
+       https://substrate.dev/recipes/2-appetizers/4-events.html
+    */
+    run_to_block(1);
 
     let expected_lead_id = NextLeadId::<Test>::get();
-
     // Set lead
     assert_eq!(
         ContentWorkingGroup::replace_lead(
-            mock::Origin::system(system::RawOrigin::Root),
+            RawOrigin::Root.into(),
             Some((member_id, new_role_account))
         )
         .unwrap(),
@@ -2136,7 +2140,6 @@ pub fn set_lead(
     expected_lead_id
 }
 
-// lead_role_account: <Test as system::Trait>::AccountId
 pub fn add_curator_opening() -> CuratorOpeningId<Test> {
     let activate_at = hiring::ActivateOpeningAt::ExactBlock(34);
 
@@ -2195,6 +2198,13 @@ fn increasing_mint_capacity() {
         )
         .build()
         .execute_with(|| {
+            /*
+               Events are not emitted on block 0.
+               So any dispatchable calls made during genesis block formation will have no events emitted.
+               https://substrate.dev/recipes/2-appetizers/4-events.html
+            */
+            run_to_block(1);
+
             let mint_id = ContentWorkingGroup::mint();
             let mint = Minting::mints(mint_id);
             assert_eq!(mint.capacity(), MINT_CAPACITY);
@@ -2203,7 +2213,7 @@ fn increasing_mint_capacity() {
             // Increasing mint capacity
             let expected_new_capacity = MINT_CAPACITY + increase;
             assert_ok!(ContentWorkingGroup::increase_mint_capacity(
-                Origin::ROOT,
+                RawOrigin::Root.into(),
                 increase
             ));
             // Excpected event after increasing
@@ -2229,6 +2239,13 @@ fn setting_mint_capacity() {
         )
         .build()
         .execute_with(|| {
+            /*
+               Events are not emitted on block 0.
+               So any dispatchable calls made during genesis block formation will have no events emitted.
+               https://substrate.dev/recipes/2-appetizers/4-events.html
+            */
+            run_to_block(1);
+
             let mint_id = ContentWorkingGroup::mint();
             let mint = Minting::mints(mint_id);
             assert_eq!(mint.capacity(), MINT_CAPACITY);
@@ -2237,7 +2254,7 @@ fn setting_mint_capacity() {
             let new_lower_capacity = 10000;
             let decrease = MINT_CAPACITY - new_lower_capacity;
             assert_ok!(ContentWorkingGroup::set_mint_capacity(
-                Origin::ROOT,
+                RawOrigin::Root.into(),
                 new_lower_capacity
             ));
             // Correct event after decreasing
@@ -2253,7 +2270,7 @@ fn setting_mint_capacity() {
             let new_higher_capacity = 25000;
             let increase = new_higher_capacity - mint.capacity();
             assert_ok!(ContentWorkingGroup::set_mint_capacity(
-                Origin::ROOT,
+                RawOrigin::Root.into(),
                 new_higher_capacity
             ));
             // Excpected event after increasing
