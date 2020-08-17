@@ -69,6 +69,11 @@ export class BuyMembershipWithInsufficienFundsFixture implements Fixture {
   }
 
   public async runner(expectFailure: boolean) {
+    // Assertions
+    this.apiWrapper
+      .getMemberIds(this.aKeyPair.address)
+      .then((membership) => assert(membership.length === 0, 'Account A is a member'))
+
     // Fee estimation and transfer
     const membershipFee: BN = await this.apiWrapper.getMembershipFee(this.paidTerms)
     const membershipTransactionFee: BN = this.apiWrapper.estimateBuyMembershipFee(

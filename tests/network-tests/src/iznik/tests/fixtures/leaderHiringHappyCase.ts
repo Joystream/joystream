@@ -91,7 +91,7 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
         this.sudo,
         this.applicationStake,
         this.roleStake,
-        addLeaderOpeningFixture.getResult() as OpeningId,
+        addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
         this.workingGroup
       )
       await applyForLeaderOpeningFixture.runner(false)
@@ -102,7 +102,7 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
       beginLeaderApplicationReviewFixture = new BeginLeaderApplicationReviewFixture(
         this.apiWrapper,
         this.sudo,
-        addLeaderOpeningFixture.getResult() as OpeningId,
+        addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
         this.workingGroup
       )
       await beginLeaderApplicationReviewFixture.runner(false)
@@ -114,7 +114,7 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
         this.apiWrapper,
         this.leadKeyPair,
         this.sudo,
-        addLeaderOpeningFixture.getResult() as OpeningId,
+        addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
         this.firstRewardInterval,
         this.rewardInterval,
         this.payoutAmount,

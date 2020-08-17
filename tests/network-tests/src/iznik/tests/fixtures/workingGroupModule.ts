@@ -24,7 +24,7 @@ export class AddWorkerOpeningFixture implements Fixture {
 
   private result: OpeningId | undefined
 
-  public getResult(): OpeningId | undefined {
+  public getCreatedOpeningId(): OpeningId | undefined {
     return this.result
   }
 
@@ -100,7 +100,7 @@ export class AddLeaderOpeningFixture implements Fixture {
 
   private result: OpeningId | undefined
 
-  public getResult(): OpeningId | undefined {
+  public getCreatedOpeningId(): OpeningId | undefined {
     return this.result
   }
 
@@ -886,7 +886,7 @@ export class ExpectLeadOpeningAddedFixture implements Fixture {
     this.apiWrapper = apiWrapper
   }
 
-  public getResult(): OpeningId | undefined {
+  public getCreatedOpeningId(): OpeningId | undefined {
     return this.result
   }
 
@@ -918,7 +918,7 @@ export class ExpectLeaderSetFixture implements Fixture {
     this.module = module
   }
 
-  public getResult(): WorkerId | undefined {
+  public getLeaderWorkerId(): WorkerId | undefined {
     return this.result
   }
 
@@ -956,7 +956,7 @@ export class ExpectBeganApplicationReviewFixture implements Fixture {
     this.apiWrapper = apiWrapper
   }
 
-  public getResult(): ApplicationId | undefined {
+  public getApplicationId(): ApplicationId | undefined {
     return this.result
   }
 
@@ -978,16 +978,11 @@ export class ExpectLeaderRoleTerminatedFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private module: WorkingGroups
 
-  private result: BN | undefined
   private events: Event[] = []
 
   constructor(apiWrapper: ApiWrapper, module: WorkingGroups) {
     this.apiWrapper = apiWrapper
     this.module = module
-  }
-
-  public getResult(): BN | undefined {
-    return this.result
   }
 
   public getEvents(): Event[] {
@@ -1010,17 +1005,12 @@ export class ExpectLeaderRewardAmountUpdatedFixture implements Fixture {
   private expectedReward: BN
   private module: WorkingGroups
 
-  private result: BN | undefined
   private events: Event[] = []
 
   constructor(apiWrapper: ApiWrapper, expectedReward: BN, module: WorkingGroups) {
     this.apiWrapper = apiWrapper
     this.expectedReward = expectedReward
     this.module = module
-  }
-
-  public getResult(): BN | undefined {
-    return this.result
   }
 
   public getEvents(): Event[] {
@@ -1047,17 +1037,12 @@ export class ExpectLeaderStakeDecreasedFixture implements Fixture {
   private expectedStake: BN
   private module: WorkingGroups
 
-  private result: BN | undefined
   private events: Event[] = []
 
   constructor(apiWrapper: ApiWrapper, expectedStake: BN, module: WorkingGroups) {
     this.apiWrapper = apiWrapper
     this.expectedStake = expectedStake
     this.module = module
-  }
-
-  public getResult(): BN | undefined {
-    return this.result
   }
 
   public getEvents(): Event[] {
@@ -1084,17 +1069,12 @@ export class ExpectLeaderSlashedFixture implements Fixture {
   private expectedStake: BN
   private module: WorkingGroups
 
-  private result: BN | undefined
   private events: Event[] = []
 
   constructor(apiWrapper: ApiWrapper, expectedStake: BN, module: WorkingGroups) {
     this.apiWrapper = apiWrapper
     this.expectedStake = expectedStake
     this.module = module
-  }
-
-  public getResult(): BN | undefined {
-    return this.result
   }
 
   public getEvents(): Event[] {

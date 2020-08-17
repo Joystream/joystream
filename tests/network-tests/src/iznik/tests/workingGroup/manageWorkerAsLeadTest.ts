@@ -95,7 +95,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       sudo,
       applicationStake,
       roleStake,
-      addWorkerOpeningFixture.getResult() as OpeningId,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await applyForWorkerOpeningFixture.runner(false)
@@ -107,7 +107,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       apiWrapper,
       leadKeyPair[0],
       sudo,
-      addWorkerOpeningFixture.getResult() as OpeningId,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await beginApplicationReviewFixture.runner(false)
@@ -120,7 +120,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       nKeyPairs,
       leadKeyPair[0],
       sudo,
-      addWorkerOpeningFixture.getResult() as OpeningId,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       firstRewardInterval,
       rewardInterval,
       payoutAmount,
@@ -165,7 +165,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       sudo,
       applicationStake,
       roleStake,
-      addNewLeaderOpeningFixture.getResult() as OpeningId,
+      addNewLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await applyForNewLeaderOpeningFixture.runner(false)
@@ -176,7 +176,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
     beginNewLeaderApplicationReviewFixture = new BeginLeaderApplicationReviewFixture(
       apiWrapper,
       sudo,
-      addNewLeaderOpeningFixture.getResult() as OpeningId,
+      addNewLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await beginNewLeaderApplicationReviewFixture.runner(false)
@@ -188,7 +188,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       apiWrapper,
       leadKeyPair,
       sudo,
-      addNewLeaderOpeningFixture.getResult() as OpeningId,
+      addNewLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
       firstRewardInterval,
       rewardInterval,
       payoutAmount,

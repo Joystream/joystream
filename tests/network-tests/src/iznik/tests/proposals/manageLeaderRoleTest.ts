@@ -109,7 +109,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      createWorkingGroupLeaderOpeningFixture.getResult() as OpeningId
+      createWorkingGroupLeaderOpeningFixture.getCreatedProposalId() as OpeningId
     )
     voteForCreateOpeningProposalFixture.runner(false)
     await expectLeadOpeningAddedFixture.runner(false)
@@ -123,7 +123,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       sudo,
       applicationStake,
       roleStake,
-      expectLeadOpeningAddedFixture.getResult() as OpeningId,
+      expectLeadOpeningAddedFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await applyForLeaderOpeningFixture.runner(false)
@@ -135,7 +135,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m1KeyPairs,
       sudo,
-      expectLeadOpeningAddedFixture.getResult() as OpeningId,
+      expectLeadOpeningAddedFixture.getCreatedOpeningId() as OpeningId,
       'Storage'
     )
     await beginWorkingGroupLeaderApplicationReviewFixture.runner(false)
@@ -150,7 +150,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      beginWorkingGroupLeaderApplicationReviewFixture.getResult() as ProposalId
+      beginWorkingGroupLeaderApplicationReviewFixture.getCreatedProposalId() as ProposalId
     )
     voteForBeginReviewProposal.runner(false)
     await expectBeganApplicationReviewFixture.runner(false)
@@ -166,7 +166,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       firstRewardInterval,
       rewardInterval,
       payoutAmount,
-      expectLeadOpeningAddedFixture.getResult() as OpeningId,
+      expectLeadOpeningAddedFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await fillLeaderOpeningProposalFixture.runner(false)
@@ -183,7 +183,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      fillLeaderOpeningProposalFixture.getResult() as ProposalId
+      fillLeaderOpeningProposalFixture.getCreatedProposalId() as ProposalId
     )
     voteForFillLeaderProposalFixture.runner(false)
     await expectLeaderSetFixture.runner(false)
@@ -209,7 +209,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      setLeaderRewardProposalFixture.getResult() as ProposalId
+      setLeaderRewardProposalFixture.getCreatedProposalId() as ProposalId
     )
     voteForeLeaderRewardFixture.runner(false)
     await expectLeaderRewardAmountUpdatedFixture.runner(false)
@@ -233,7 +233,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      decreaseLeaderStakeProposalFixture.getResult() as ProposalId
+      decreaseLeaderStakeProposalFixture.getCreatedProposalId() as ProposalId
     )
     voteForDecreaseStakeProposal.runner(false)
     expectLeaderStakeDecreasedFixture = new ExpectLeaderStakeDecreasedFixture(
@@ -261,7 +261,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      slashLeaderProposalFixture.getResult() as ProposalId
+      slashLeaderProposalFixture.getCreatedProposalId() as ProposalId
     )
     voteForSlashProposalFixture.runner(false)
     expectLeaderSlashedFixture = new ExpectLeaderSlashedFixture(apiWrapper, newStake, WorkingGroups.StorageWorkingGroup)
@@ -288,7 +288,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      terminateLeaderRoleProposalFixture.getResult() as ProposalId
+      terminateLeaderRoleProposalFixture.getCreatedProposalId() as ProposalId
     )
     voteForLeaderRoleTerminationFixture.runner(false)
     await expectLeaderRoleTerminatedFixture.runner(false)

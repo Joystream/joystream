@@ -35,7 +35,7 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
     this.workingGroup = workingGroup
   }
 
-  public getResult(): ProposalId | undefined {
+  public getCreatedProposalId(): ProposalId | undefined {
     return this.result
   }
 
@@ -107,7 +107,7 @@ export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture 
     this.workingGroup = workingGroup
   }
 
-  public getResult(): ProposalId | undefined {
+  public getCreatedProposalId(): ProposalId | undefined {
     return this.result
   }
 
@@ -173,7 +173,7 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
     this.workingGroup = workingGroup
   }
 
-  public getResult(): ProposalId | undefined {
+  public getCreatedProposalId(): ProposalId | undefined {
     return this.result
   }
 
@@ -240,7 +240,7 @@ export class TerminateLeaderRoleProposalFixture implements Fixture {
     this.workingGroup = workingGroup
   }
 
-  public getResult(): ProposalId | undefined {
+  public getCreatedProposalId(): ProposalId | undefined {
     return this.result
   }
 
@@ -302,7 +302,7 @@ export class SetLeaderRewardProposalFixture implements Fixture {
     this.workingGroup = workingGroup
   }
 
-  public getResult(): ProposalId | undefined {
+  public getCreatedProposalId(): ProposalId | undefined {
     return this.result
   }
 
@@ -359,7 +359,7 @@ export class DecreaseLeaderStakeProposalFixture implements Fixture {
     this.workingGroup = workingGroup
   }
 
-  public getResult(): ProposalId | undefined {
+  public getCreatedProposalId(): ProposalId | undefined {
     return this.result
   }
 
@@ -416,7 +416,7 @@ export class SlashLeaderProposalFixture implements Fixture {
     this.workingGroup = workingGroup
   }
 
-  public getResult(): ProposalId | undefined {
+  public getCreatedProposalId(): ProposalId | undefined {
     return this.result
   }
 
@@ -473,7 +473,7 @@ export class WorkingGroupMintCapacityProposalFixture implements Fixture {
     this.workingGroup = workingGroup
   }
 
-  public getResult(): ProposalId | undefined {
+  public getCreatedProposalId(): ProposalId | undefined {
     return this.result
   }
 

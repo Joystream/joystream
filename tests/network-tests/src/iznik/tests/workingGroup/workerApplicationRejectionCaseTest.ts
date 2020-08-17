@@ -91,7 +91,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       sudo,
       applicationStake,
       roleStake,
-      addWorkerOpeningFixture.getResult() as OpeningId,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await applyForWorkerOpeningBeforeAcceptanceFixture.runner(true)
@@ -103,7 +103,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       apiWrapper,
       leadKeyPair[0],
       sudo,
-      addWorkerOpeningFixture.getResult() as OpeningId,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     acceptApplicationsFixture.runner(false)
@@ -117,7 +117,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       sudo,
       applicationStake,
       roleStake,
-      addWorkerOpeningFixture.getResult() as OpeningId,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await applyForWorkerOpeningAsNonMemberFixture.runner(true)
@@ -131,7 +131,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       sudo,
       applicationStake,
       roleStake,
-      addWorkerOpeningFixture.getResult() as OpeningId,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await applyForWorkerOpeningFixture.runner(false)

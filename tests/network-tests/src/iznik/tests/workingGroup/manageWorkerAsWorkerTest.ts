@@ -91,7 +91,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       sudo,
       applicationStake,
       roleStake,
-      addWorkerOpeningFixture.getResult() as OpeningId,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await applyForWorkerOpeningFixture.runner(false)
@@ -103,7 +103,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       apiWrapper,
       leadKeyPair[0],
       sudo,
-      addWorkerOpeningFixture.getResult() as OpeningId,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await beginApplicationReviewFixture.runner(false)
@@ -116,7 +116,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       nKeyPairs,
       leadKeyPair[0],
       sudo,
-      addWorkerOpeningFixture.getResult() as OpeningId,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       firstRewardInterval,
       rewardInterval,
       payoutAmount,

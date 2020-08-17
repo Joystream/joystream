@@ -77,7 +77,7 @@ tap.mocha.describe('Set storage working group mint capacity scenario', async () 
       apiWrapper,
       m2KeyPairs,
       sudo,
-      workingGroupMintCapacityProposalFixture.getResult() as ProposalId
+      workingGroupMintCapacityProposalFixture.getCreatedProposalId() as ProposalId
     )
     voteForProposalFixture.runner(false)
     await expectMintCapacityChanged.runner(false)

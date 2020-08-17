@@ -116,7 +116,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      workingGroupMintCapacityProposalFixture.getResult() as ProposalId
+      workingGroupMintCapacityProposalFixture.getCreatedProposalId() as ProposalId
     )
     voteForProposalFixture.runner(false)
     await expectMintCapacityChanged.runner(false)
@@ -143,7 +143,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       sudo,
       applicationStake,
       roleStake,
-      addWorkerOpeningFixture.getResult() as OpeningId,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await applyForWorkerOpeningFixture.runner(false)
@@ -155,7 +155,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       apiWrapper,
       leadKeyPair[0],
       sudo,
-      addWorkerOpeningFixture.getResult() as OpeningId,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await beginApplicationReviewFixture.runner(false)
@@ -168,7 +168,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       m1KeyPairs,
       leadKeyPair[0],
       sudo,
-      addWorkerOpeningFixture.getResult() as OpeningId,
+      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       firstRewardInterval,
       rewardInterval,
       payoutAmount,
