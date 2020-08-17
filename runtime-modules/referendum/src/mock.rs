@@ -2,7 +2,7 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Error, Instance, Module, RawEvent, ReferendumOptions, ReferendumResult, ReferendumStage,
+    Error, Instance, Module, RawEvent, ReferendumOptions, ReferendumManager, ReferendumResult, ReferendumStage,
     RevealedVotes, SealedVote, Stage, Trait, Votes, WinningTargetCount,
 };
 
@@ -307,7 +307,7 @@ pub struct InstanceMocks<T: Trait<I>, I: Instance> {
 }
 
 impl InstanceMocks<Runtime, Instance0> {
-    pub fn start_referendum(
+    pub fn start_referendum_extrinsic(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         options: Vec<<Runtime as Trait<Instance0>>::ReferendumOption>,
         winning_target_count: u64,
@@ -323,6 +323,31 @@ impl InstanceMocks<Runtime, Instance0> {
             expected_result,
         );
 
+        Self::start_referendum_inner(options, winning_target_count, expected_result)
+    }
+
+    pub fn start_referendum_manager(
+        options: Vec<<Runtime as Trait<Instance0>>::ReferendumOption>,
+        winning_target_count: u64,
+        expected_result: Result<(), Error<Runtime, Instance0>>,
+    ) -> () {
+        // check method returns expected result
+        assert_eq!(
+            <Module::<Runtime, Instance0> as ReferendumManager<Runtime, Instance0>>::start_referendum(
+                options.clone(),
+                winning_target_count
+            ),
+            expected_result,
+        );
+
+        Self::start_referendum_inner(options, winning_target_count, expected_result)
+    }
+
+    fn start_referendum_inner(
+        options: Vec<<Runtime as Trait<Instance0>>::ReferendumOption>,
+        winning_target_count: u64,
+        expected_result: Result<(), Error<Runtime, Instance0>>,
+    ) {
         if expected_result.is_err() {
             return;
         }

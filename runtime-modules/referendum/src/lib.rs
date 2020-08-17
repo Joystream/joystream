@@ -62,7 +62,12 @@ impl<T, U> Default for ReferendumResult<T, U> {
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
-pub trait Trait<I: Instance>: system::Trait {
+// TODO: get rid of dependency on Error<T, I> - create some nongeneric error
+pub trait ReferendumManager<T: Trait<I>, I: Instance> {
+    fn start_referendum(options: Vec<T::ReferendumOption>, winning_target_count: u64) -> Result<(), Error<T, I>>;
+}
+
+pub trait Trait<I: Instance>: system::Trait/* + ReferendumManager<Self, I>*/ {
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
 
@@ -262,24 +267,12 @@ decl_module! {
             Self::try_progress_stage(now);
         }
 
-
         // start voting period
         #[weight = 10_000_000]
         pub fn start_referendum(origin, options: Vec<T::ReferendumOption>, winning_target_count: u64) -> Result<(), Error<T, I>> {
-            // ensure action can be started
-            EnsureChecks::<T, I>::can_start_referendum(origin, &options)?;
+            EnsureChecks::<T, I>::can_start_referendum_extrinsic(origin, &options)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // update state
-            Mutations::<T, I>::start_voting_period(&options, &winning_target_count);
-
-            // emit event
-            Self::deposit_event(RawEvent::ReferendumStarted(options, winning_target_count));
-
-            Ok(())
+            <Self as ReferendumManager<T, I>>::start_referendum(options, winning_target_count)
         }
 
         /////////////////// User actions ///////////////////////////////////////
@@ -355,6 +348,28 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         // emit event
         Self::deposit_event(RawEvent::ReferendumFinished(referendum_result));
+    }
+}
+
+/////////////////// ReferendumManager //////////////////////////////////////////
+
+impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
+
+    fn start_referendum(options: Vec<T::ReferendumOption>, winning_target_count: u64) -> Result<(), Error<T, I>> {
+        // ensure action can be started
+        EnsureChecks::<T, I>::can_start_referendum(&options)?;
+
+        //
+        // == MUTATION SAFE ==
+        //
+
+        // update state
+        Mutations::<T, I>::start_voting_period(&options, &winning_target_count);
+
+        // emit event
+        Self::deposit_event(RawEvent::ReferendumStarted(options, winning_target_count));
+
+        Ok(())
     }
 }
 
@@ -548,13 +563,19 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     /////////////////// Action checks //////////////////////////////////////////
 
-    fn can_start_referendum(
+    fn can_start_referendum_extrinsic(
         origin: T::Origin,
-        options: &[T::ReferendumOption],
+        _options: &[T::ReferendumOption],
     ) -> Result<(), Error<T, I>> {
         // ensure superuser requested action
         Self::ensure_super_user(origin)?;
 
+        Ok(())
+    }
+
+    fn can_start_referendum(
+        options: &[T::ReferendumOption],
+    ) -> Result<(), Error<T, I>> {
         // ensure referendum is not already running
         if Stage::<T, I>::get().0 != ReferendumStage::Void {
             return Err(Error::ReferendumAlreadyRunning);
