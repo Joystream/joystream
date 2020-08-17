@@ -1,5 +1,4 @@
 import { initConfig } from '../../utils/config'
-import { registerJoystreamTypes } from '@alexandria/types'
 import { closeApi } from '../../utils/closeApi'
 import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
 import { WsProvider, Keyring } from '@polkadot/api'
@@ -27,7 +26,6 @@ import { LeaderHiringHappyCaseFixture } from '../fixtures/leaderHiringHappyCase'
 
 tap.mocha.describe('Worker application happy case scenario', async () => {
   initConfig()
-  registerJoystreamTypes()
 
   const nodeUrl: string = process.env.NODE_URL!
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!
@@ -43,7 +41,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   let m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const leadKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
 
-  const paidTerms: PaidTermId = new PaidTermId(+process.env.MEMBERSHIP_PAID_TERMS!)
+  const paidTerms: PaidTermId = apiWrapper.createPaidTermId(new BN(+process.env.MEMBERSHIP_PAID_TERMS!))
   const K: number = +process.env.COUNCIL_ELECTION_K!
   const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!)
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!)

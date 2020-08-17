@@ -7,14 +7,14 @@
         image: "joystream/node-testing"
         ports:
           - "9944:9944"
-        entrypoint: ./node --chain=chainspec.json --alice --validator --ws-external --rpc-cors=all
+        entrypoint: ./node --chain=chainspec.json --alice --validator --unsafe-ws-external --rpc-cors=all
         state: started
 
     - name: execute network tests
       shell: yarn debug >> ../../.tmp/tests.log
       args:
         chdir: ../../tests/network-tests/
-        
+
   always:
     - name: stop docker container
       docker_container:

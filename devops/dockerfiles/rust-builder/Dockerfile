@@ -1,4 +1,4 @@
-FROM liuchong/rustup:1.43.0 AS builder
+FROM liuchong/rustup:nightly AS builder
 LABEL description="Rust and WASM build environment for joystream and substrate"
 
 WORKDIR /setup

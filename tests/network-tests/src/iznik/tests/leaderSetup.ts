@@ -28,7 +28,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const nKeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const leadKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
 
-  const paidTerms: PaidTermId = new PaidTermId(+process.env.MEMBERSHIP_PAID_TERMS!)
+  const paidTerms: PaidTermId = apiWrapper.createPaidTermId(new BN(+process.env.MEMBERSHIP_PAID_TERMS!))
   const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!)
   const firstRewardInterval: BN = new BN(process.env.LONG_REWARD_INTERVAL!)

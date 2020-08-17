@@ -1,7 +1,7 @@
 import BN from 'bn.js'
-import { ApiPromise, Keyring } from '@polkadot/api'
-import { Index } from '@polkadot/types/interfaces'
+import { ApiPromise } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { AccountInfo } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { DbService } from '../services/dbService'
 
@@ -14,7 +14,7 @@ export class Sender {
   }
 
   private async getNonce(address: string): Promise<BN> {
-    const oncahinNonce: BN = await this.api.query.system.accountNonce<Index>(address)
+    const oncahinNonce: BN = (await this.api.query.system.account<AccountInfo>(address)).nonce
     let nonce: BN
     if (!this.db.hasNonce(address)) {
       nonce = oncahinNonce
@@ -43,7 +43,7 @@ export class Sender {
       const signedTx = tx.sign(account, { nonce })
       await signedTx
         .send(async (result) => {
-          if (result.status.isFinalized === true && result.events !== undefined) {
+          if (result.status.isInBlock && result.events !== undefined) {
             result.events.forEach((event) => {
               if (event.event.method === 'ExtrinsicFailed') {
                 if (expectFailure) {

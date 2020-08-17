@@ -4,7 +4,6 @@ import { Keyring, WsProvider } from '@polkadot/api'
 import BN from 'bn.js'
 import { setTestTimeout } from '../../utils/setTestTimeout'
 import tap from 'tap'
-import { registerJoystreamTypes } from '@alexandria/types'
 import { closeApi } from '../../utils/closeApi'
 import { ApiWrapper } from '../../utils/apiWrapper'
 import { Utils } from '../../utils/utils'
@@ -15,7 +14,6 @@ import { DbService } from '../../services/dbService'
 
 tap.mocha.describe('Text proposal scenario', async () => {
   initConfig()
-  registerJoystreamTypes()
 
   const nodeUrl: string = process.env.NODE_URL!
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!
@@ -29,7 +27,7 @@ tap.mocha.describe('Text proposal scenario', async () => {
   let m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   let m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
 
-  const paidTerms: PaidTermId = new PaidTermId(+process.env.MEMBERSHIP_PAID_TERMS!)
+  const paidTerms: PaidTermId = apiWrapper.createPaidTermId(new BN(+process.env.MEMBERSHIP_PAID_TERMS!))
   const K: number = +process.env.COUNCIL_ELECTION_K!
   const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!)
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!)

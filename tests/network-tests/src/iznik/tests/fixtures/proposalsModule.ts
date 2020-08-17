@@ -1,26 +1,13 @@
-import { KeyringPair } from '@polkadot/keyring/types'
-import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
-import { v4 as uuid } from 'uuid'
+import {KeyringPair} from '@polkadot/keyring/types'
+import {ApiWrapper, WorkingGroups} from '../../utils/apiWrapper'
+import {v4 as uuid} from 'uuid'
 import BN from 'bn.js'
-import { FillOpeningParameters, ProposalId } from '@alexandria/types/proposals'
-import { Fixture } from './interfaces/fixture'
-import { Bytes, Option, u32 } from '@polkadot/types'
-import { Balance, BlockNumber } from '@polkadot/types/interfaces'
-import { assert } from 'chai'
-import {
-  ActivateOpeningAt,
-  ApplicationId,
-  ApplicationRationingPolicy,
-  OpeningId,
-  StakingPolicy,
-} from '@alexandria/types/hiring'
-import {
-  RewardPolicy,
-  SlashingTerms,
-  WorkerId,
-  WorkingGroupOpeningPolicyCommitment,
-} from '@alexandria/types/working-group'
-import { WorkingGroup } from '@alexandria/types/common'
+import {ProposalId} from '@alexandria/types/proposals'
+import {Fixture} from './interfaces/fixture'
+import {Bytes} from '@polkadot/types'
+import {assert} from 'chai'
+import {ApplicationId, OpeningId,} from '@alexandria/types/hiring'
+import {WorkerId,} from '@alexandria/types/working-group'
 
 export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
   private apiWrapper: ApiWrapper
@@ -62,51 +49,34 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
     const proposalFee: BN = this.apiWrapper.estimateProposeCreateWorkingGroupLeaderOpeningFee()
     await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, proposalFee.add(proposalStake))
 
-    // Opening construction
-    const activateAtBlock: ActivateOpeningAt = new ActivateOpeningAt('CurrentBlock')
-    const commitment: WorkingGroupOpeningPolicyCommitment = new WorkingGroupOpeningPolicyCommitment({
-      application_rationing_policy: new Option(ApplicationRationingPolicy, {
-        max_active_applicants: new BN(this.m1KeyPairs.length) as u32,
-      }),
-      max_review_period_length: new BN(32) as u32,
-      application_staking_policy: new Option(StakingPolicy, {
-        amount: this.applicationStake,
-        amount_mode: 'AtLeast',
-        crowded_out_unstaking_period_length: new BN(1),
-        review_period_expired_unstaking_period_length: new BN(1),
-      }),
-      role_staking_policy: new Option(StakingPolicy, {
-        amount: this.roleStake,
-        amount_mode: 'AtLeast',
-        crowded_out_unstaking_period_length: new BN(1),
-        review_period_expired_unstaking_period_length: new BN(1),
-      }),
-      role_slashing_terms: new SlashingTerms({
-        Slashable: {
-          max_count: new BN(1),
-          max_percent_pts_per_time: new BN(100),
-        },
-      }),
-      fill_opening_successful_applicant_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      fill_opening_failed_applicant_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      fill_opening_failed_applicant_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      terminate_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      terminate_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      exit_role_application_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-      exit_role_stake_unstaking_period: new Option(u32, new BN(1) as BlockNumber),
-    })
-
     // Proposal creation
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
     await this.apiWrapper.proposeCreateWorkingGroupLeaderOpening(
-      this.m1KeyPairs[0],
-      proposalTitle,
-      description,
-      proposalStake,
-      activateAtBlock,
-      commitment,
-      uuid().substring(0, 8),
-      this.workingGroup
+      {
+        account: this.m1KeyPairs[0],
+        title: proposalTitle,
+        description: description,
+        proposalStake: proposalStake,
+        actiavteAt: 'CurrentBlock',
+        maxActiveApplicants: new BN(this.m1KeyPairs.length),
+        maxReviewPeriodLength: new BN(32),
+        applicationStakingPolicyAmount: this.applicationStake,
+        applicationCrowdedOutUnstakingPeriodLength: new BN(1),
+        applicationReviewPeriodExpiredUnstakingPeriodLength: new BN(1),
+        roleStakingPolicyAmount: this.roleStake,
+        roleCrowdedOutUnstakingPeriodLength: new BN(1),
+        roleReviewPeriodExpiredUnstakingPeriodLength: new BN(1),
+        slashableMaxCount: new BN(1),
+        slashableMaxPercentPtsPerTime: new BN(100),
+        fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: new BN(1),
+        fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: new BN(1),
+        fillOpeningFailedApplicantRoleStakeUnstakingPeriod: new BN(1),
+        terminateApplicationStakeUnstakingPeriod: new BN(1),
+        terminateRoleStakeUnstakingPeriod: new BN(1),
+        exitRoleApplicationStakeUnstakingPeriod: new BN(1),
+        exitRoleStakeUnstakingPeriod: new BN(1),
+        text: uuid().substring(0, 8),
+        workingGroup: this.workingGroup}
     )
     this.result = await proposalPromise
     if (expectFailure) {
@@ -220,32 +190,27 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
     await this.apiWrapper.transferBalance(this.sudo, this.m1KeyPairs[0].address, proposalFee.add(proposalStake))
 
     // Proposal creation
-    const applicationId: BN = (
+    const applicationId: ApplicationId = (
       await this.apiWrapper.getActiveApplicationsIdsByRoleAccount(this.applicantRoleAccountAddress, this.workingGroup)
     )[0]
     const now: BN = await this.apiWrapper.getBestBlock()
 
-    const fillOpeningParameters: FillOpeningParameters = new FillOpeningParameters({
-      opening_id: this.openingId as OpeningId,
-      successful_application_id: applicationId as ApplicationId,
-      reward_policy: new Option(
-        RewardPolicy,
-        new RewardPolicy({
-          amount_per_payout: this.payoutAmount as Balance,
-          next_payment_at_block: now.add(this.firstRewardInterval) as BlockNumber,
-          payout_interval: new Option(u32, this.rewardInterval as u32),
-        })
-      ),
-      working_group: new WorkingGroup(workingGroupString),
-    })
+    console.log('Successfull application id ' + applicationId)
 
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
     await this.apiWrapper.proposeFillLeaderOpening(
-      this.m1KeyPairs[0],
-      proposalTitle,
-      description,
-      proposalStake,
-      fillOpeningParameters
+      {
+        account: this.m1KeyPairs[0],
+        title: proposalTitle,
+        description: description,
+        proposalStake: proposalStake,
+        openingId: this.openingId,
+        successfulApplicationId: applicationId,
+        amountPerPayout: this.payoutAmount,
+        nextPaymentAtBlock: now.add(this.firstRewardInterval),
+        payoutInterval: this.rewardInterval,
+        workingGroup: workingGroupString
+      }
     )
     this.result = await proposalPromise
     if (expectFailure) {
