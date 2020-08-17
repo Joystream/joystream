@@ -59,11 +59,13 @@ impl<BlockNumber, VotePower> ReferendumStage<BlockNumber, VotePower> {
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageVoting<BlockNumber> {
     start: BlockNumber,
+    winning_target_count: u64,
 }
 
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
     start: BlockNumber,
+    winning_target_count: u64,
     revealed_votes: Vec<VotePower>,
 }
 
@@ -171,9 +173,6 @@ decl_storage! {
 
         /// Votes in current referendum
         pub Votes get(fn votes) config(): map hasher(blake2_128_concat) T::AccountId => SealedVote<T::Hash, T::CurrencyBalance>;
-
-        /// Target count of referendum winners
-        pub WinningTargetCount get(fn winning_target_count) config(): u64;
     }
 
     /* This might be needed in some cases
@@ -412,17 +411,16 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             T::BlockNumber,
         > {
             start: <system::Module<T>>::block_number(),
+            winning_target_count: *winning_target_count,
         }));
 
         // store new options
         ReferendumOptions::<T, I>::put(options);
-
-        // store winning target
-        WinningTargetCount::<I>::put(winning_target_count);
     }
 
     fn start_revealing_period() {
         let options_len = ReferendumOptions::<T, I>::get().unwrap().len();
+        let old_stage = Stage::<T, I>::get().voting();
 
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Revealing(ReferendumStageRevealing::<
@@ -430,6 +428,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             T::VotePower,
         > {
             start: <system::Module<T>>::block_number(),
+            winning_target_count: old_stage.winning_target_count,
             revealed_votes: (0..options_len).map(|_| 0.into()).collect(),
         }));
     }
@@ -454,18 +453,6 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
                     if vote_sum.into() == 0 {
                         continue;
                     }
-                    /*
-                    if !RevealedVotes::<T, I>::contains_key(option) {
-                        continue;
-                    }
-
-                    let vote_sum = RevealedVotes::<T, I>::get(option);
-
-                    // skip option with 0 votes
-                    if vote_sum.into() == 0 {
-                        continue;
-                    }
-                    */
 
                     winning_order.push((*option, vote_sum));
                 }
@@ -480,7 +467,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             winning_order.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap().reverse());
 
             let voted_options_count = winning_order.len();
-            let target_count = WinningTargetCount::<I>::get();
+            let target_count = revealing_stage.winning_target_count;
 
             // is there enough options with votes to have requested amount of winners?
             if (voted_options_count as u64) < target_count {
@@ -526,7 +513,6 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         Stage::<T, I>::put(ReferendumStage::Inactive);
         ReferendumOptions::<T, I>::mutate(|value| *value = None::<Vec<T::ReferendumOption>>);
         Votes::<T, I>::remove_all();
-        WinningTargetCount::<I>::put(0);
     }
 
     /// Can return error when stake fails to lock
@@ -568,15 +554,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         let vote_power = T::caclulate_vote_power(account_id, sealed_vote.stake);
 
         // store revealed vote
-        //RevealedVotes::<T, I>::mutate(vote_option, |counter| *counter += vote_power);
         Stage::<T, I>::mutate(|stage| {
-            //*stage.revealing().revealed_votes[Into::<u64>::into(*vote_option) as usize] += vote_power;
-            /*
-                        *stage = ReferendumStage(ReferendumStageRevealing::<T::BlockNumber, T::VotePower> {
-                            start: stage.start,
-            //                revealed_votes =
-                        })
-                        */
             match stage {
                 ReferendumStage::Revealing(stage_data) => {
                     stage_data.revealed_votes[Into::<u64>::into(*vote_option) as usize] +=

@@ -4,7 +4,7 @@
 use crate::{
     Error, Instance, Module, RawEvent, ReferendumManager, ReferendumOptions, ReferendumResult,
     ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, SealedVote, Stage, Trait,
-    Votes, WinningTargetCount,
+    Votes,
 };
 
 use codec::Encode;
@@ -219,7 +219,6 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime, Instance0> {
         //referendum_options: None
         referendum_options: vec![], // not sure why it doesn't accept `None` here
         votes: vec![],
-        winning_target_count: 0,
     }
 }
 
@@ -358,6 +357,7 @@ impl InstanceMocks<Runtime, Instance0> {
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Voting(ReferendumStageVoting {
                 start: block_number,
+                winning_target_count,
             }),
         );
 
@@ -372,7 +372,7 @@ impl InstanceMocks<Runtime, Instance0> {
         );
     }
 
-    pub fn check_voting_finished() {
+    pub fn check_voting_finished(winning_target_count: u64) {
         let block_number = system::Module::<Runtime>::block_number();
         let options_len = ReferendumOptions::<Runtime, Instance0>::get()
             .unwrap()
@@ -382,6 +382,7 @@ impl InstanceMocks<Runtime, Instance0> {
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Revealing(ReferendumStageRevealing {
                 start: block_number - 1,
+                winning_target_count,
                 revealed_votes: (0..options_len).map(|_| 0).collect(),
             }),
         );
@@ -407,7 +408,6 @@ impl InstanceMocks<Runtime, Instance0> {
         );
         assert_eq!(ReferendumOptions::<Runtime, Instance0>::get(), None,);
         assert_eq!(Votes::<Runtime, Instance0>::iter_values().count(), 0,);
-        assert_eq!(WinningTargetCount::<Instance0>::get(), 0,);
 
         // check event was emitted
         assert_eq!(
