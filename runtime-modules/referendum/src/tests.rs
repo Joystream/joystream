@@ -290,54 +290,6 @@ fn finish_voting() {
     });
 }
 
-#[test]
-fn finish_voting_access_restricted() {
-    MockUtils::origin_access(USER_REGULAR, |origin| {
-        let options = vec![0];
-        let winning_target_count = 1;
-
-        let superuser_origin = OriginType::Signed(USER_ADMIN);
-
-        Mocks::start_referendum(superuser_origin, options, winning_target_count, Ok(()));
-        Mocks::finish_voting(origin, Err(Error::OriginNotSuperUser));
-    });
-}
-
-#[test]
-fn finish_voting_referendum_not_running() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        let origin = OriginType::Signed(USER_ADMIN);
-
-        Mocks::finish_voting(origin, Err(Error::ReferendumNotRunning));
-    });
-}
-
-#[test]
-fn finish_voting_voting_not_finished() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
-        let origin = OriginType::Signed(USER_ADMIN);
-        let options = vec![0];
-        let winning_target_count = 1;
-
-        Mocks::start_referendum(origin.clone(), options, winning_target_count, Ok(()));
-
-        for _ in 0..voting_stage_duration {
-            MockUtils::increase_block_number(1);
-
-            Mocks::finish_voting(origin.clone(), Err(Error::VotingNotFinishedYet));
-        }
-
-        MockUtils::increase_block_number(1);
-
-        Mocks::finish_voting(origin.clone(), Ok(()));
-    });
-}
-
 /////////////////// Lifetime - revealing ///////////////////////////////////////
 
 #[test]

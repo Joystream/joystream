@@ -10,6 +10,7 @@ use codec::Encode;
 use rand::Rng;
 use sp_core::H256;
 //use sp_io;
+use frame_support::traits::OnFinalize;
 use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StoragePrefixedMap,
     StorageValue,
@@ -246,7 +247,10 @@ pub struct InstanceMockUtils<T: Trait<I>, I: Instance> {
     _dummy: PhantomData<(T, I)>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait<I>, I: Instance> InstanceMockUtils<T, I> {
+impl<T: Trait<I>, I: Instance> InstanceMockUtils<T, I>
+where
+    T::BlockNumber: From<u64> + Into<u64>,
+{
     pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::Origin {
         match origin {
             OriginType::Signed(account_id) => T::Origin::from(RawOrigin::Signed(account_id)),
@@ -267,9 +271,15 @@ impl<T: Trait<I>, I: Instance> InstanceMockUtils<T, I> {
         });
     }
 
-    pub fn increase_block_number(increase: T::BlockNumber) -> () {
+    pub fn increase_block_number(increase: u64) -> () {
         let block_number = system::Module::<T>::block_number();
-        system::Module::<T>::set_block_number(block_number + increase);
+
+        for i in 0..increase {
+            let tmp_index: T::BlockNumber = block_number + i.into();
+
+            <Module<T, I> as OnFinalize<T::BlockNumber>>::on_finalize(tmp_index);
+            system::Module::<T>::set_block_number(tmp_index + 1.into());
+        }
     }
 
     pub fn vote_commitment(
@@ -333,10 +343,26 @@ impl InstanceMocks<Runtime, Instance0> {
         );
     }
 
+    pub fn check_voting_finished() {
+        assert_eq!(
+            Stage::<Runtime, Instance0>::get().0,
+            ReferendumStage::Revealing,
+        );
+
+        // check event was emitted
+        assert_eq!(
+            system::Module::<Runtime>::events().last().unwrap().event,
+            TestEvent::event_mod_Instance0(RawEvent::RevealingStageStarted())
+        );
+    }
+
     pub fn finish_voting(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
+        Self::check_voting_finished();
+
+        /*
         // check method returns expected result
         assert_eq!(
             Module::<Runtime, Instance0>::finish_voting_start_revealing(InstanceMockUtils::<
@@ -362,33 +388,17 @@ impl InstanceMocks<Runtime, Instance0> {
             system::Module::<Runtime>::events().last().unwrap().event,
             TestEvent::event_mod_Instance0(RawEvent::RevealingStageStarted())
         );
+        */
     }
 
-    pub fn finish_revealing_period(
-        origin: OriginType<<Runtime as system::Trait>::AccountId>,
-        expected_result: Result<(), Error<Runtime, Instance0>>,
+    pub fn check_revealing_finished(
         expected_referendum_result: Option<
             ReferendumResult<
                 <Runtime as Trait<Instance0>>::ReferendumOption,
                 <Runtime as Trait<Instance0>>::VotePower,
             >,
         >,
-    ) -> () {
-        // check method returns expected result
-        assert_eq!(
-            Module::<Runtime, Instance0>::finish_revealing_period(InstanceMockUtils::<
-                Runtime,
-                Instance0,
-            >::mock_origin(
-                origin
-            ),),
-            expected_result,
-        );
-
-        if expected_result.is_err() {
-            return;
-        }
-
+    ) {
         assert_eq!(Stage::<Runtime, Instance0>::get().0, ReferendumStage::Void,);
         assert_eq!(ReferendumOptions::<Runtime, Instance0>::get(), None,);
         assert_eq!(Votes::<Runtime, Instance0>::iter_values().count(), 0,);
@@ -405,6 +415,19 @@ impl InstanceMocks<Runtime, Instance0> {
                 expected_referendum_result.unwrap()
             ))
         );
+    }
+
+    pub fn finish_revealing_period(
+        origin: OriginType<<Runtime as system::Trait>::AccountId>,
+        expected_result: Result<(), Error<Runtime, Instance0>>,
+        expected_referendum_result: Option<
+            ReferendumResult<
+                <Runtime as Trait<Instance0>>::ReferendumOption,
+                <Runtime as Trait<Instance0>>::VotePower,
+            >,
+        >,
+    ) -> () {
+        Self::check_revealing_finished(expected_referendum_result);
     }
 
     pub fn vote(

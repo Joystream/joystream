@@ -263,6 +263,12 @@ decl_module! {
 
         /////////////////// Lifetime ///////////////////////////////////////////
 
+        // No origin so this is a priviledged call
+        fn on_finalize(now: T::BlockNumber) {
+            Self::try_progress_stage(now);
+        }
+
+
         // start voting period
         #[weight = 10_000_000]
         pub fn start_referendum(origin, options: Vec<T::ReferendumOption>, winning_target_count: u64) -> Result<(), Error<T, I>> {
@@ -278,43 +284,6 @@ decl_module! {
 
             // emit event
             Self::deposit_event(RawEvent::ReferendumStarted(options, winning_target_count));
-
-            Ok(())
-        }
-
-        // finish voting period
-        #[weight = 10_000_000]
-        pub fn finish_voting_start_revealing(origin) -> Result<(), Error<T, I>> {
-            // ensure action can be started
-            EnsureChecks::<T, I>::can_finish_voting(origin)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // start revealing phase
-            Mutations::<T, I>::start_revealing_period();
-
-            // emit event
-            Self::deposit_event(RawEvent::RevealingStageStarted());
-
-            Ok(())
-        }
-
-        #[weight = 10_000_000]
-        pub fn finish_revealing_period(origin) -> Result<(), Error<T, I>> {
-            // ensure action can be started
-            EnsureChecks::<T, I>::can_finish_revealing(origin)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // start revealing phase
-            let referendum_result = Mutations::<T, I>::conclude_referendum();
-
-            // emit event
-            Self::deposit_event(RawEvent::ReferendumFinished(referendum_result));
 
             Ok(())
         }
@@ -355,6 +324,43 @@ decl_module! {
 
             Ok(())
         }
+    }
+}
+
+/////////////////// Inner logic ////////////////////////////////////////////////
+
+impl<T: Trait<I>, I: Instance> Module<T, I> {
+    fn try_progress_stage(now: T::BlockNumber) {
+        let (stage, start_block_number) = Stage::<T, I>::get();
+        match stage {
+            ReferendumStage::Void => (),
+            ReferendumStage::Voting => {
+                if now == start_block_number + T::VoteStageDuration::get() {
+                    Self::end_voting_period(now);
+                }
+            }
+            ReferendumStage::Revealing => {
+                if now == start_block_number + T::RevealStageDuration::get() {
+                    Self::end_reveal_period(now);
+                }
+            }
+        }
+    }
+
+    fn end_voting_period(now: T::BlockNumber) {
+        // start revealing phase
+        Mutations::<T, I>::start_revealing_period();
+
+        // emit event
+        Self::deposit_event(RawEvent::RevealingStageStarted());
+    }
+
+    fn end_reveal_period(now: T::BlockNumber) {
+        // conclude referendum
+        let referendum_result = Mutations::<T, I>::conclude_referendum();
+
+        // emit event
+        Self::deposit_event(RawEvent::ReferendumFinished(referendum_result));
     }
 }
 
@@ -582,49 +588,49 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         Ok(())
     }
+    /*
+        fn can_finish_voting(origin: T::Origin) -> Result<(), Error<T, I>> {
+            // ensure superuser requested action
+            Self::ensure_super_user(origin)?;
 
-    fn can_finish_voting(origin: T::Origin) -> Result<(), Error<T, I>> {
-        // ensure superuser requested action
-        Self::ensure_super_user(origin)?;
+            let (stage, starting_block_number) = Stage::<T, I>::get();
 
-        let (stage, starting_block_number) = Stage::<T, I>::get();
+            // ensure voting is running
+            if stage != ReferendumStage::Voting {
+                return Err(Error::ReferendumNotRunning);
+            }
 
-        // ensure voting is running
-        if stage != ReferendumStage::Voting {
-            return Err(Error::ReferendumNotRunning);
+            let current_block = <system::Module<T>>::block_number();
+
+            // ensure voting stage is complete
+            if current_block < T::VoteStageDuration::get() + starting_block_number + One::one() {
+                return Err(Error::VotingNotFinishedYet);
+            }
+
+            Ok(())
         }
 
-        let current_block = <system::Module<T>>::block_number();
+        fn can_finish_revealing(origin: T::Origin) -> Result<(), Error<T, I>> {
+            // ensure superuser requested action
+            Self::ensure_super_user(origin)?;
 
-        // ensure voting stage is complete
-        if current_block < T::VoteStageDuration::get() + starting_block_number + One::one() {
-            return Err(Error::VotingNotFinishedYet);
+            let (stage, starting_block_number) = Stage::<T, I>::get();
+
+            // ensure revealing is running
+            if stage != ReferendumStage::Revealing {
+                return Err(Error::RevealingNotInProgress);
+            }
+
+            let current_block = <system::Module<T>>::block_number();
+
+            // ensure voting stage is complete
+            if current_block < T::RevealStageDuration::get() + starting_block_number + One::one() {
+                return Err(Error::RevealingNotFinishedYet);
+            }
+
+            Ok(())
         }
-
-        Ok(())
-    }
-
-    fn can_finish_revealing(origin: T::Origin) -> Result<(), Error<T, I>> {
-        // ensure superuser requested action
-        Self::ensure_super_user(origin)?;
-
-        let (stage, starting_block_number) = Stage::<T, I>::get();
-
-        // ensure revealing is running
-        if stage != ReferendumStage::Revealing {
-            return Err(Error::RevealingNotInProgress);
-        }
-
-        let current_block = <system::Module<T>>::block_number();
-
-        // ensure voting stage is complete
-        if current_block < T::RevealStageDuration::get() + starting_block_number + One::one() {
-            return Err(Error::RevealingNotFinishedYet);
-        }
-
-        Ok(())
-    }
-
+    */
     fn can_vote(
         origin: T::Origin,
         stake: &T::CurrencyBalance,
