@@ -1,13 +1,13 @@
-import {KeyringPair} from '@polkadot/keyring/types'
-import {ApiWrapper, WorkingGroups} from '../../utils/apiWrapper'
-import {v4 as uuid} from 'uuid'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
+import { v4 as uuid } from 'uuid'
 import BN from 'bn.js'
-import {ProposalId} from '@alexandria/types/proposals'
-import {Fixture} from './interfaces/fixture'
-import {Bytes} from '@polkadot/types'
-import {assert} from 'chai'
-import {ApplicationId, OpeningId,} from '@alexandria/types/hiring'
-import {WorkerId,} from '@alexandria/types/working-group'
+import { ProposalId } from '@alexandria/types/proposals'
+import { Fixture } from './interfaces/fixture'
+import { Bytes } from '@polkadot/types'
+import { assert } from 'chai'
+import { ApplicationId, OpeningId } from '@alexandria/types/hiring'
+import { WorkerId } from '@alexandria/types/working-group'
 
 export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
   private apiWrapper: ApiWrapper
@@ -51,33 +51,32 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
 
     // Proposal creation
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
-    await this.apiWrapper.proposeCreateWorkingGroupLeaderOpening(
-      {
-        account: this.m1KeyPairs[0],
-        title: proposalTitle,
-        description: description,
-        proposalStake: proposalStake,
-        actiavteAt: 'CurrentBlock',
-        maxActiveApplicants: new BN(this.m1KeyPairs.length),
-        maxReviewPeriodLength: new BN(32),
-        applicationStakingPolicyAmount: this.applicationStake,
-        applicationCrowdedOutUnstakingPeriodLength: new BN(1),
-        applicationReviewPeriodExpiredUnstakingPeriodLength: new BN(1),
-        roleStakingPolicyAmount: this.roleStake,
-        roleCrowdedOutUnstakingPeriodLength: new BN(1),
-        roleReviewPeriodExpiredUnstakingPeriodLength: new BN(1),
-        slashableMaxCount: new BN(1),
-        slashableMaxPercentPtsPerTime: new BN(100),
-        fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: new BN(1),
-        fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: new BN(1),
-        fillOpeningFailedApplicantRoleStakeUnstakingPeriod: new BN(1),
-        terminateApplicationStakeUnstakingPeriod: new BN(1),
-        terminateRoleStakeUnstakingPeriod: new BN(1),
-        exitRoleApplicationStakeUnstakingPeriod: new BN(1),
-        exitRoleStakeUnstakingPeriod: new BN(1),
-        text: uuid().substring(0, 8),
-        workingGroup: this.workingGroup}
-    )
+    await this.apiWrapper.proposeCreateWorkingGroupLeaderOpening({
+      account: this.m1KeyPairs[0],
+      title: proposalTitle,
+      description: description,
+      proposalStake: proposalStake,
+      actiavteAt: 'CurrentBlock',
+      maxActiveApplicants: new BN(this.m1KeyPairs.length),
+      maxReviewPeriodLength: new BN(32),
+      applicationStakingPolicyAmount: this.applicationStake,
+      applicationCrowdedOutUnstakingPeriodLength: new BN(1),
+      applicationReviewPeriodExpiredUnstakingPeriodLength: new BN(1),
+      roleStakingPolicyAmount: this.roleStake,
+      roleCrowdedOutUnstakingPeriodLength: new BN(1),
+      roleReviewPeriodExpiredUnstakingPeriodLength: new BN(1),
+      slashableMaxCount: new BN(1),
+      slashableMaxPercentPtsPerTime: new BN(100),
+      fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: new BN(1),
+      fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: new BN(1),
+      fillOpeningFailedApplicantRoleStakeUnstakingPeriod: new BN(1),
+      terminateApplicationStakeUnstakingPeriod: new BN(1),
+      terminateRoleStakeUnstakingPeriod: new BN(1),
+      exitRoleApplicationStakeUnstakingPeriod: new BN(1),
+      exitRoleStakeUnstakingPeriod: new BN(1),
+      text: uuid().substring(0, 8),
+      workingGroup: this.workingGroup,
+    })
     this.result = await proposalPromise
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
@@ -198,20 +197,18 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
     console.log('Successfull application id ' + applicationId)
 
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
-    await this.apiWrapper.proposeFillLeaderOpening(
-      {
-        account: this.m1KeyPairs[0],
-        title: proposalTitle,
-        description: description,
-        proposalStake: proposalStake,
-        openingId: this.openingId,
-        successfulApplicationId: applicationId,
-        amountPerPayout: this.payoutAmount,
-        nextPaymentAtBlock: now.add(this.firstRewardInterval),
-        payoutInterval: this.rewardInterval,
-        workingGroup: workingGroupString
-      }
-    )
+    await this.apiWrapper.proposeFillLeaderOpening({
+      account: this.m1KeyPairs[0],
+      title: proposalTitle,
+      description: description,
+      proposalStake: proposalStake,
+      openingId: this.openingId,
+      successfulApplicationId: applicationId,
+      amountPerPayout: this.payoutAmount,
+      nextPaymentAtBlock: now.add(this.firstRewardInterval),
+      payoutInterval: this.rewardInterval,
+      workingGroup: workingGroupString,
+    })
     this.result = await proposalPromise
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')

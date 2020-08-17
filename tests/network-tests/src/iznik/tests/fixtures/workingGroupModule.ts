@@ -1,15 +1,15 @@
 import BN from 'bn.js'
-import {assert} from 'chai'
-import {ApiWrapper, WorkingGroups} from '../../utils/apiWrapper'
-import {KeyringPair} from '@polkadot/keyring/types'
-import {Event} from '@polkadot/types/interfaces'
-import {Keyring} from '@polkadot/api'
-import {v4 as uuid} from 'uuid'
-import {RewardRelationship} from '@alexandria/types/recurring-rewards'
-import {Application, ApplicationIdToWorkerIdMap, Worker, WorkerId,} from '@alexandria/types/working-group'
-import {Utils} from '../../utils/utils'
-import {ApplicationId, Opening as HiringOpening, OpeningId,} from '@alexandria/types/hiring'
-import {Fixture} from './interfaces/fixture'
+import { assert } from 'chai'
+import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { Event } from '@polkadot/types/interfaces'
+import { Keyring } from '@polkadot/api'
+import { v4 as uuid } from 'uuid'
+import { RewardRelationship } from '@alexandria/types/recurring-rewards'
+import { Application, ApplicationIdToWorkerIdMap, Worker, WorkerId } from '@alexandria/types/working-group'
+import { Utils } from '../../utils/utils'
+import { ApplicationId, Opening as HiringOpening, OpeningId } from '@alexandria/types/hiring'
+import { Fixture } from './interfaces/fixture'
 
 export class AddWorkerOpeningFixture implements Fixture {
   private apiWrapper: ApiWrapper
@@ -57,8 +57,7 @@ export class AddWorkerOpeningFixture implements Fixture {
 
     // Worker opening creation
     const addOpeningPromise: Promise<Event> = this.apiWrapper.expectEvent('OpeningAdded')
-    await this.apiWrapper.addOpening(
-    {
+    await this.apiWrapper.addOpening({
       leader: this.lead,
       activationDelay: this.activationDelay,
       maxActiveApplicants: new BN(this.membersKeyPairs.length),
@@ -81,8 +80,8 @@ export class AddWorkerOpeningFixture implements Fixture {
       text: uuid().substring(0, 8),
       type: 'Worker',
       module: this.module,
-      expectFailure: expectFailure}
-    )
+      expectFailure: expectFailure,
+    })
     if (!expectFailure) {
       const openingId: OpeningId = (await addOpeningPromise).data[0] as OpeningId
       this.result = openingId
@@ -125,10 +124,9 @@ export class AddLeaderOpeningFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     const addOpeningPromise: Promise<Event> = this.apiWrapper.expectEvent('OpeningAdded')
-    await this.apiWrapper.sudoAddOpening(
-    {
+    await this.apiWrapper.sudoAddOpening({
       sudo: this.sudo,
-        activationDelay: this.activationDelay,
+      activationDelay: this.activationDelay,
       maxActiveApplicants: new BN(this.membersKeyPairs.length),
       maxReviewPeriodLength: new BN(32),
       applicationStakingPolicyAmount: this.applicationStake,
@@ -148,9 +146,8 @@ export class AddLeaderOpeningFixture implements Fixture {
       exitRoleStakeUnstakingPeriod: new BN(1),
       text: uuid().substring(0, 8),
       type: 'Leader',
-      module: this.module
-    }
-    )
+      module: this.module,
+    })
     this.result = (await addOpeningPromise).data[0] as OpeningId
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')

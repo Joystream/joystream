@@ -1,10 +1,10 @@
-import {ApiPromise, WsProvider} from '@polkadot/api'
-import {Bytes, Option, u32, Vec, StorageKey} from '@polkadot/types'
-import {Codec} from '@polkadot/types/types'
-import {KeyringPair} from '@polkadot/keyring/types'
-import {MemberId, PaidMembershipTerms, PaidTermId} from '@alexandria/types/members'
-import {Mint, MintId} from '@alexandria/types/mint'
-import {Lead, LeadId} from '@alexandria/types/content-working-group'
+import { ApiPromise, WsProvider } from '@polkadot/api'
+import { Bytes, Option, u32, Vec, StorageKey } from '@polkadot/types'
+import { Codec } from '@polkadot/types/types'
+import { KeyringPair } from '@polkadot/keyring/types'
+import { MemberId, PaidMembershipTerms, PaidTermId } from '@alexandria/types/members'
+import { Mint, MintId } from '@alexandria/types/mint'
+import { Lead, LeadId } from '@alexandria/types/content-working-group'
 import {
   Application,
   ApplicationIdToWorkerIdMap,
@@ -12,15 +12,15 @@ import {
   WorkerId,
   WorkingGroupOpeningPolicyCommitment,
 } from '@alexandria/types/working-group'
-import {ElectionStake, Seat} from '@alexandria/types/council'
-import {AccountId, AccountInfo, Balance, BalanceOf, BlockNumber, Event, EventRecord} from '@polkadot/types/interfaces'
+import { ElectionStake, Seat } from '@alexandria/types/council'
+import { AccountId, AccountInfo, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
-import {SubmittableExtrinsic} from '@polkadot/api/types'
-import {Sender} from './sender'
-import {Utils} from './utils'
-import {Stake, StakedState, StakeId} from '@alexandria/types/stake'
-import {RewardRelationship, RewardRelationshipId} from '@alexandria/types/recurring-rewards'
-import {types} from '@alexandria/types';
+import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { Sender } from './sender'
+import { Utils } from './utils'
+import { Stake, StakedState, StakeId } from '@alexandria/types/stake'
+import { RewardRelationship, RewardRelationshipId } from '@alexandria/types/recurring-rewards'
+import { types } from '@alexandria/types'
 import {
   ActivateOpeningAt,
   Application as HiringApplication,
@@ -28,7 +28,7 @@ import {
   Opening as HiringOpening,
   OpeningId,
 } from '@alexandria/types/hiring'
-import {FillOpeningParameters, ProposalId} from '@alexandria/types/proposals'
+import { FillOpeningParameters, ProposalId } from '@alexandria/types/proposals'
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
@@ -105,7 +105,7 @@ export class ApiWrapper {
   }
 
   public async getMembershipFee(paidTermsId: PaidTermId): Promise<BN> {
-    const terms: PaidMembershipTerms = (await this.getPaidMembershipTerms(paidTermsId));
+    const terms: PaidMembershipTerms = await this.getPaidMembershipTerms(paidTermsId)
     return terms.fee
   }
 
@@ -301,8 +301,14 @@ export class ApiWrapper {
           max_percent_pts_per_time: new BN(0),
         },
       }),
-      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
-      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        new BN(1)
+      ),
+      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        new BN(1)
+      ),
       fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
       terminate_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
       terminate_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
@@ -322,15 +328,17 @@ export class ApiWrapper {
 
   public estimateAcceptApplicationsFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].acceptApplications(this.api.createType('OpeningId',0)) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].acceptApplications(this.api.createType('OpeningId', 0)) as unknown) as SubmittableExtrinsic<
+        'promise'
+      >
     )
   }
 
   public estimateApplyOnOpeningFee(account: KeyringPair, module: WorkingGroups): BN {
     return this.estimateTxFee(
       (this.api.tx[module].applyOnOpening(
-          this.api.createType('MemberId', 0),
-          this.api.createType('OpeningId', 0),
+        this.api.createType('MemberId', 0),
+        this.api.createType('OpeningId', 0),
         account.address,
         0,
         0,
@@ -341,7 +349,9 @@ export class ApiWrapper {
 
   public estimateBeginApplicantReviewFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].beginApplicantReview(this.api.createType('OpeningId', 0)) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].beginApplicantReview(
+        this.api.createType('OpeningId', 0)
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
@@ -357,58 +367,75 @@ export class ApiWrapper {
 
   public estimateIncreaseStakeFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].increaseStake(this.api.createType('WorkerId',0), 0) as unknown) as SubmittableExtrinsic<'promise'>
-    )
-  }
-
-  public estimateDecreaseStakeFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].decreaseStake(this.api.createType('WorkerId',0), 0) as unknown) as SubmittableExtrinsic<'promise'>
-    )
-  }
-
-  public estimateUpdateRoleAccountFee(address: string, module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].updateRoleAccount(this.api.createType('WorkerId',0), address) as unknown) as SubmittableExtrinsic<'promise'>
-    )
-  }
-
-  public estimateUpdateRewardAccountFee(address: string, module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].updateRewardAccount(this.api.createType('WorkerId',0), address) as unknown) as SubmittableExtrinsic<'promise'>
-    )
-  }
-
-  public estimateLeaveRoleFee(module: WorkingGroups): BN {
-    return this.estimateTxFee(
-      (this.api.tx[module].leaveRole(this.api.createType('WorkerId',0), 'Long justification text') as unknown) as SubmittableExtrinsic<
+      (this.api.tx[module].increaseStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
         'promise'
       >
     )
   }
 
+  public estimateDecreaseStakeFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(
+      (this.api.tx[module].decreaseStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
+        'promise'
+      >
+    )
+  }
+
+  public estimateUpdateRoleAccountFee(address: string, module: WorkingGroups): BN {
+    return this.estimateTxFee(
+      (this.api.tx[module].updateRoleAccount(
+        this.api.createType('WorkerId', 0),
+        address
+      ) as unknown) as SubmittableExtrinsic<'promise'>
+    )
+  }
+
+  public estimateUpdateRewardAccountFee(address: string, module: WorkingGroups): BN {
+    return this.estimateTxFee(
+      (this.api.tx[module].updateRewardAccount(
+        this.api.createType('WorkerId', 0),
+        address
+      ) as unknown) as SubmittableExtrinsic<'promise'>
+    )
+  }
+
+  public estimateLeaveRoleFee(module: WorkingGroups): BN {
+    return this.estimateTxFee(
+      (this.api.tx[module].leaveRole(
+        this.api.createType('WorkerId', 0),
+        'Long justification text'
+      ) as unknown) as SubmittableExtrinsic<'promise'>
+    )
+  }
+
   public estimateWithdrawApplicationFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].withdrawApplication(this.api.createType('ApplicationId',0)) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].withdrawApplication(
+        this.api.createType('ApplicationId', 0)
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateTerminateApplicationFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].terminateApplication(this.api.createType('ApplicationId',0)) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].terminateApplication(
+        this.api.createType('ApplicationId', 0)
+      ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateSlashStakeFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
-      (this.api.tx[module].slashStake(this.api.createType('WorkerId',0), 0) as unknown) as SubmittableExtrinsic<'promise'>
+      (this.api.tx[module].slashStake(this.api.createType('WorkerId', 0), 0) as unknown) as SubmittableExtrinsic<
+        'promise'
+      >
     )
   }
 
   public estimateTerminateRoleFee(module: WorkingGroups): BN {
     return this.estimateTxFee(
       (this.api.tx[module].terminateRole(
-        this.api.createType('WorkerId',0),
+        this.api.createType('WorkerId', 0),
         'Long justification text explaining why the worker role will be terminated',
         false
       ) as unknown) as SubmittableExtrinsic<'promise'>
@@ -416,7 +443,7 @@ export class ApiWrapper {
   }
 
   public estimateProposeCreateWorkingGroupLeaderOpeningFee(): BN {
-    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment',{
+    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment', {
       application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: new BN(32) as u32,
       }),
@@ -433,14 +460,20 @@ export class ApiWrapper {
         crowded_out_unstaking_period_length: new BN(1),
         review_period_expired_unstaking_period_length: new BN(1),
       }),
-      role_slashing_terms: this.api.createType('SlashingTerms',{
+      role_slashing_terms: this.api.createType('SlashingTerms', {
         Slashable: {
           max_count: new BN(0),
           max_percent_pts_per_time: new BN(0),
         },
       }),
-      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
-      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
+      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        new BN(1)
+      ),
+      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        new BN(1)
+      ),
       fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
       terminate_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
       terminate_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', new BN(1)),
@@ -450,7 +483,7 @@ export class ApiWrapper {
 
     return this.estimateTxFee(
       (this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
-          this.api.createType('MemberId',0),
+        this.api.createType('MemberId', 0),
         'some long title for the purpose of testing',
         'some long description for the purpose of testing',
         0,
@@ -467,31 +500,31 @@ export class ApiWrapper {
   public estimateProposeBeginWorkingGroupLeaderApplicationReviewFee(): BN {
     return this.estimateTxFee(
       (this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
-        this.api.createType('MemberId',0),
+        this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
-        this.api.createType('OpeningId',0),
+        this.api.createType('OpeningId', 0),
         'Storage'
       ) as unknown) as SubmittableExtrinsic<'promise'>
     )
   }
 
   public estimateProposeFillLeaderOpeningFee(): BN {
-    const fillOpeningParameters: FillOpeningParameters = this.api.createType('FillOpeningParameters',{
-      opening_id: this.api.createType('OpeningId',0),
-      successful_application_id: this.api.createType('ApplicationId',0),
+    const fillOpeningParameters: FillOpeningParameters = this.api.createType('FillOpeningParameters', {
+      opening_id: this.api.createType('OpeningId', 0),
+      successful_application_id: this.api.createType('ApplicationId', 0),
       reward_policy: this.api.createType('Option<RewardPolicy>', {
-          amount_per_payout: new BN(1) as Balance,
-          next_payment_at_block: new BN(99999) as BlockNumber,
-          payout_interval: this.api.createType('Option<u32>', new BN(99999)),
-        }),
-      working_group: this.api.createType('WorkingGroup','Storage'),
+        amount_per_payout: new BN(1) as Balance,
+        next_payment_at_block: new BN(99999) as BlockNumber,
+        payout_interval: this.api.createType('Option<u32>', new BN(99999)),
+      }),
+      working_group: this.api.createType('WorkingGroup', 'Storage'),
     })
 
     return this.estimateTxFee(
       (this.api.tx.proposalsCodex.createFillWorkingGroupLeaderOpeningProposal(
-        this.api.createType('MemberId',0),
+        this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
@@ -503,7 +536,7 @@ export class ApiWrapper {
   public estimateProposeTerminateLeaderRoleFee(): BN {
     return this.estimateTxFee(
       (this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
-          this.api.createType('MemberId', 0),
+        this.api.createType('MemberId', 0),
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         'Some testing text used for estimation purposes which is longer than text expected during the test',
         0,
@@ -981,31 +1014,32 @@ export class ApiWrapper {
   }
 
   public async addOpening(openingParameters: {
-    leader: KeyringPair,
-    activationDelay: BN,
-    maxActiveApplicants: BN,
-    maxReviewPeriodLength: BN,
-    applicationStakingPolicyAmount: BN,
-    applicationCrowdedOutUnstakingPeriodLength: BN,
-    applicationReviewPeriodExpiredUnstakingPeriodLength: BN,
-    roleStakingPolicyAmount: BN,
-    roleCrowdedOutUnstakingPeriodLength: BN,
-    roleReviewPeriodExpiredUnstakingPeriodLength: BN,
-    slashableMaxCount: BN,
-    slashableMaxPercentPtsPerTime: BN,
-    fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BN,
-    fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BN,
-    fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BN,
-    terminateApplicationStakeUnstakingPeriod: BN,
-    terminateRoleStakeUnstakingPeriod: BN,
-    exitRoleApplicationStakeUnstakingPeriod: BN,
-    exitRoleStakeUnstakingPeriod: BN,
-    text: string,
-    type: string,
-    module: WorkingGroups,
-    expectFailure: boolean}
-  ): Promise<void> {
-    const activateAt: ActivateOpeningAt = this.api.createType('ActivateOpeningAt',
+    leader: KeyringPair
+    activationDelay: BN
+    maxActiveApplicants: BN
+    maxReviewPeriodLength: BN
+    applicationStakingPolicyAmount: BN
+    applicationCrowdedOutUnstakingPeriodLength: BN
+    applicationReviewPeriodExpiredUnstakingPeriodLength: BN
+    roleStakingPolicyAmount: BN
+    roleCrowdedOutUnstakingPeriodLength: BN
+    roleReviewPeriodExpiredUnstakingPeriodLength: BN
+    slashableMaxCount: BN
+    slashableMaxPercentPtsPerTime: BN
+    fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BN
+    fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BN
+    fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BN
+    terminateApplicationStakeUnstakingPeriod: BN
+    terminateRoleStakeUnstakingPeriod: BN
+    exitRoleApplicationStakeUnstakingPeriod: BN
+    exitRoleStakeUnstakingPeriod: BN
+    text: string
+    type: string
+    module: WorkingGroups
+    expectFailure: boolean
+  }): Promise<void> {
+    const activateAt: ActivateOpeningAt = this.api.createType(
+      'ActivateOpeningAt',
       openingParameters.activationDelay.eqn(0)
         ? 'CurrentBlock'
         : { ExactBlock: (await this.getBestBlock()).add(openingParameters.activationDelay) }
@@ -1020,7 +1054,8 @@ export class ApiWrapper {
         amount: openingParameters.applicationStakingPolicyAmount,
         amount_mode: 'AtLeast',
         crowded_out_unstaking_period_length: openingParameters.applicationCrowdedOutUnstakingPeriodLength,
-        review_period_expired_unstaking_period_length: openingParameters.applicationReviewPeriodExpiredUnstakingPeriodLength,
+        review_period_expired_unstaking_period_length:
+          openingParameters.applicationReviewPeriodExpiredUnstakingPeriodLength,
       }),
       role_staking_policy: this.api.createType('Option<StakingPolicy>', {
         amount: openingParameters.roleStakingPolicyAmount,
@@ -1034,48 +1069,75 @@ export class ApiWrapper {
           max_percent_pts_per_time: openingParameters.slashableMaxPercentPtsPerTime,
         },
       }),
-      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod),
-      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.fillOpeningFailedApplicantApplicationStakeUnstakingPeriod),
-      fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.fillOpeningFailedApplicantRoleStakeUnstakingPeriod),
-      terminate_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.terminateApplicationStakeUnstakingPeriod),
-      terminate_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.terminateRoleStakeUnstakingPeriod),
-      exit_role_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.exitRoleApplicationStakeUnstakingPeriod),
-      exit_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.exitRoleStakeUnstakingPeriod),
+      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod
+      ),
+      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.fillOpeningFailedApplicantApplicationStakeUnstakingPeriod
+      ),
+      fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.fillOpeningFailedApplicantRoleStakeUnstakingPeriod
+      ),
+      terminate_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.terminateApplicationStakeUnstakingPeriod
+      ),
+      terminate_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.terminateRoleStakeUnstakingPeriod
+      ),
+      exit_role_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.exitRoleApplicationStakeUnstakingPeriod
+      ),
+      exit_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.exitRoleStakeUnstakingPeriod
+      ),
     })
 
     return this.sender.signAndSend(
-      this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, openingParameters.module),
+      this.createAddOpeningTransaction(
+        activateAt,
+        commitment,
+        openingParameters.text,
+        openingParameters.type,
+        openingParameters.module
+      ),
       openingParameters.leader,
       openingParameters.expectFailure
     )
   }
 
   public async sudoAddOpening(openingParameters: {
-    sudo: KeyringPair,
-                                activationDelay: BN,
-                                maxActiveApplicants: BN,
-                                maxReviewPeriodLength: BN,
-                                applicationStakingPolicyAmount: BN,
-                                applicationCrowdedOutUnstakingPeriodLength: BN,
-                                applicationReviewPeriodExpiredUnstakingPeriodLength: BN,
-                                roleStakingPolicyAmount: BN,
-                                roleCrowdedOutUnstakingPeriodLength: BN,
-                                roleReviewPeriodExpiredUnstakingPeriodLength: BN,
-                                slashableMaxCount: BN,
-                                slashableMaxPercentPtsPerTime: BN,
-                                fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BN,
-                                fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BN,
-                                fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BN,
-                                terminateApplicationStakeUnstakingPeriod: BN,
-                                terminateRoleStakeUnstakingPeriod: BN,
-                                exitRoleApplicationStakeUnstakingPeriod: BN,
-                                exitRoleStakeUnstakingPeriod: BN,
-    text: string,
-    type: string,
+    sudo: KeyringPair
+    activationDelay: BN
+    maxActiveApplicants: BN
+    maxReviewPeriodLength: BN
+    applicationStakingPolicyAmount: BN
+    applicationCrowdedOutUnstakingPeriodLength: BN
+    applicationReviewPeriodExpiredUnstakingPeriodLength: BN
+    roleStakingPolicyAmount: BN
+    roleCrowdedOutUnstakingPeriodLength: BN
+    roleReviewPeriodExpiredUnstakingPeriodLength: BN
+    slashableMaxCount: BN
+    slashableMaxPercentPtsPerTime: BN
+    fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BN
+    fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BN
+    fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BN
+    terminateApplicationStakeUnstakingPeriod: BN
+    terminateRoleStakeUnstakingPeriod: BN
+    exitRoleApplicationStakeUnstakingPeriod: BN
+    exitRoleStakeUnstakingPeriod: BN
+    text: string
+    type: string
     module: WorkingGroups
-  }
-  ): Promise<void> {
-    const activateAt: ActivateOpeningAt = this.api.createType('ActivateOpeningAt',
+  }): Promise<void> {
+    const activateAt: ActivateOpeningAt = this.api.createType(
+      'ActivateOpeningAt',
       openingParameters.activationDelay.eqn(0)
         ? 'CurrentBlock'
         : { ExactBlock: (await this.getBestBlock()).add(openingParameters.activationDelay) }
@@ -1090,7 +1152,8 @@ export class ApiWrapper {
         amount: openingParameters.applicationStakingPolicyAmount,
         amount_mode: 'AtLeast',
         crowded_out_unstaking_period_length: openingParameters.applicationCrowdedOutUnstakingPeriodLength,
-        review_period_expired_unstaking_period_length: openingParameters.applicationReviewPeriodExpiredUnstakingPeriodLength,
+        review_period_expired_unstaking_period_length:
+          openingParameters.applicationReviewPeriodExpiredUnstakingPeriodLength,
       }),
       role_staking_policy: this.api.createType('Option<StakingPolicy>', {
         amount: openingParameters.roleStakingPolicyAmount,
@@ -1104,50 +1167,78 @@ export class ApiWrapper {
           max_percent_pts_per_time: openingParameters.slashableMaxPercentPtsPerTime,
         },
       }),
-      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod),
-      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.fillOpeningFailedApplicantApplicationStakeUnstakingPeriod),
-      fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.fillOpeningFailedApplicantRoleStakeUnstakingPeriod),
-      terminate_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.terminateApplicationStakeUnstakingPeriod),
-      terminate_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.terminateRoleStakeUnstakingPeriod),
-      exit_role_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.exitRoleApplicationStakeUnstakingPeriod),
-      exit_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', openingParameters.exitRoleStakeUnstakingPeriod),
+      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod
+      ),
+      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.fillOpeningFailedApplicantApplicationStakeUnstakingPeriod
+      ),
+      fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.fillOpeningFailedApplicantRoleStakeUnstakingPeriod
+      ),
+      terminate_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.terminateApplicationStakeUnstakingPeriod
+      ),
+      terminate_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.terminateRoleStakeUnstakingPeriod
+      ),
+      exit_role_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.exitRoleApplicationStakeUnstakingPeriod
+      ),
+      exit_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        openingParameters.exitRoleStakeUnstakingPeriod
+      ),
     })
 
     return this.sender.signAndSend(
-      this.api.tx.sudo.sudo(this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, openingParameters.module)),
+      this.api.tx.sudo.sudo(
+        this.createAddOpeningTransaction(
+          activateAt,
+          commitment,
+          openingParameters.text,
+          openingParameters.type,
+          openingParameters.module
+        )
+      ),
       openingParameters.sudo,
       false
     )
   }
 
-  public async proposeCreateWorkingGroupLeaderOpening(leaderOpening:
-    {
-      account: KeyringPair,
-    title: string,
-    description: string,
-    proposalStake: BN,
-    actiavteAt: string,
-    maxActiveApplicants: BN,
-    maxReviewPeriodLength: BN,
-    applicationStakingPolicyAmount: BN,
-    applicationCrowdedOutUnstakingPeriodLength: BN,
-    applicationReviewPeriodExpiredUnstakingPeriodLength: BN,
-    roleStakingPolicyAmount: BN,
-    roleCrowdedOutUnstakingPeriodLength: BN,
-    roleReviewPeriodExpiredUnstakingPeriodLength: BN,
-    slashableMaxCount: BN,
-    slashableMaxPercentPtsPerTime: BN,
-    fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BN,
-    fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BN,
-    fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BN,
-    terminateApplicationStakeUnstakingPeriod: BN,
-    terminateRoleStakeUnstakingPeriod: BN,
-    exitRoleApplicationStakeUnstakingPeriod: BN,
-    exitRoleStakeUnstakingPeriod: BN,
-    text: string,
-    workingGroup: string}
-  ): Promise<void> {
-    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment',{
+  public async proposeCreateWorkingGroupLeaderOpening(leaderOpening: {
+    account: KeyringPair
+    title: string
+    description: string
+    proposalStake: BN
+    actiavteAt: string
+    maxActiveApplicants: BN
+    maxReviewPeriodLength: BN
+    applicationStakingPolicyAmount: BN
+    applicationCrowdedOutUnstakingPeriodLength: BN
+    applicationReviewPeriodExpiredUnstakingPeriodLength: BN
+    roleStakingPolicyAmount: BN
+    roleCrowdedOutUnstakingPeriodLength: BN
+    roleReviewPeriodExpiredUnstakingPeriodLength: BN
+    slashableMaxCount: BN
+    slashableMaxPercentPtsPerTime: BN
+    fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BN
+    fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BN
+    fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BN
+    terminateApplicationStakeUnstakingPeriod: BN
+    terminateRoleStakeUnstakingPeriod: BN
+    exitRoleApplicationStakeUnstakingPeriod: BN
+    exitRoleStakeUnstakingPeriod: BN
+    text: string
+    workingGroup: string
+  }): Promise<void> {
+    const commitment: WorkingGroupOpeningPolicyCommitment = this.api.createType('WorkingGroupOpeningPolicyCommitment', {
       application_rationing_policy: this.api.createType('Option<ApplicationRationingPolicy>', {
         max_active_applicants: leaderOpening.maxActiveApplicants as u32,
       }),
@@ -1156,7 +1247,8 @@ export class ApiWrapper {
         amount: leaderOpening.applicationStakingPolicyAmount,
         amount_mode: 'AtLeast',
         crowded_out_unstaking_period_length: leaderOpening.applicationCrowdedOutUnstakingPeriodLength,
-        review_period_expired_unstaking_period_length: leaderOpening.applicationReviewPeriodExpiredUnstakingPeriodLength,
+        review_period_expired_unstaking_period_length:
+          leaderOpening.applicationReviewPeriodExpiredUnstakingPeriodLength,
       }),
       role_staking_policy: this.api.createType('Option<StakingPolicy>', {
         amount: leaderOpening.roleStakingPolicyAmount,
@@ -1164,19 +1256,40 @@ export class ApiWrapper {
         crowded_out_unstaking_period_length: leaderOpening.roleCrowdedOutUnstakingPeriodLength,
         review_period_expired_unstaking_period_length: leaderOpening.roleReviewPeriodExpiredUnstakingPeriodLength,
       }),
-      role_slashing_terms: this.api.createType('SlashingTerms',{
+      role_slashing_terms: this.api.createType('SlashingTerms', {
         Slashable: {
           max_count: leaderOpening.slashableMaxCount,
           max_percent_pts_per_time: leaderOpening.slashableMaxPercentPtsPerTime,
         },
       }),
-      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', leaderOpening.fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod),
-      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', leaderOpening.fillOpeningFailedApplicantApplicationStakeUnstakingPeriod),
-      fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', leaderOpening.fillOpeningFailedApplicantRoleStakeUnstakingPeriod),
-      terminate_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', leaderOpening.terminateApplicationStakeUnstakingPeriod),
-      terminate_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', leaderOpening.terminateRoleStakeUnstakingPeriod),
-      exit_role_application_stake_unstaking_period: this.api.createType('Option<BlockNumber>', leaderOpening.exitRoleApplicationStakeUnstakingPeriod),
-      exit_role_stake_unstaking_period: this.api.createType('Option<BlockNumber>', leaderOpening.exitRoleStakeUnstakingPeriod),
+      fill_opening_successful_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod
+      ),
+      fill_opening_failed_applicant_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.fillOpeningFailedApplicantApplicationStakeUnstakingPeriod
+      ),
+      fill_opening_failed_applicant_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.fillOpeningFailedApplicantRoleStakeUnstakingPeriod
+      ),
+      terminate_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.terminateApplicationStakeUnstakingPeriod
+      ),
+      terminate_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.terminateRoleStakeUnstakingPeriod
+      ),
+      exit_role_application_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.exitRoleApplicationStakeUnstakingPeriod
+      ),
+      exit_role_stake_unstaking_period: this.api.createType(
+        'Option<BlockNumber>',
+        leaderOpening.exitRoleStakeUnstakingPeriod
+      ),
     })
 
     const memberId: MemberId = (await this.getMemberIds(leaderOpening.account.address))[0]
@@ -1198,23 +1311,21 @@ export class ApiWrapper {
     )
   }
 
-  public async proposeFillLeaderOpening(fillOpening:
-    {
-    account: KeyringPair,
-    title: string,
-    description: string,
-    proposalStake: BN,
-      openingId: OpeningId,
-      successfulApplicationId: ApplicationId,
-      amountPerPayout: BN,
-      nextPaymentAtBlock: BN,
-      payoutInterval: BN,
-      workingGroup: string
-    }
-  ): Promise<void> {
+  public async proposeFillLeaderOpening(fillOpening: {
+    account: KeyringPair
+    title: string
+    description: string
+    proposalStake: BN
+    openingId: OpeningId
+    successfulApplicationId: ApplicationId
+    amountPerPayout: BN
+    nextPaymentAtBlock: BN
+    payoutInterval: BN
+    workingGroup: string
+  }): Promise<void> {
     const memberId: MemberId = (await this.getMemberIds(fillOpening.account.address))[0]
 
-    const fillOpeningParameters: FillOpeningParameters = this.api.createType('FillOpeningParameters',{
+    const fillOpeningParameters: FillOpeningParameters = this.api.createType('FillOpeningParameters', {
       opening_id: fillOpening.openingId,
       successful_application_id: fillOpening.successfulApplicationId,
       reward_policy: this.api.createType('Option<RewardPolicy>', {
@@ -1222,7 +1333,7 @@ export class ApiWrapper {
         next_payment_at_block: fillOpening.nextPaymentAtBlock as BlockNumber,
         payout_interval: this.api.createType('Option<u32>', fillOpening.payoutInterval),
       }),
-      working_group: this.api.createType('WorkingGroup',fillOpening.workingGroup),
+      working_group: this.api.createType('WorkingGroup', fillOpening.workingGroup),
     })
 
     return this.sender.signAndSend(
@@ -1574,7 +1685,10 @@ export class ApiWrapper {
   public async batchWithdrawApplication(accounts: KeyringPair[], module: WorkingGroups): Promise<void[]> {
     return Promise.all(
       accounts.map(async (keyPair) => {
-        const applicationIds: ApplicationId[] = await this.getActiveApplicationsIdsByRoleAccount(keyPair.address, module)
+        const applicationIds: ApplicationId[] = await this.getActiveApplicationsIdsByRoleAccount(
+          keyPair.address,
+          module
+        )
         console.log('application ids ' + applicationIds)
         await this.withdrawApplication(keyPair, applicationIds[0], module)
       })
@@ -1687,7 +1801,7 @@ export class ApiWrapper {
   }
 
   public async getWorkers(module: WorkingGroups): Promise<Worker[]> {
-    return (await this.api.query[module].workerById.entries<Worker>()).map(workerWithId => workerWithId[1])
+    return (await this.api.query[module].workerById.entries<Worker>()).map((workerWithId) => workerWithId[1])
   }
 
   public async getWorkerById(id: WorkerId, module: WorkingGroups): Promise<Worker> {
@@ -1696,22 +1810,31 @@ export class ApiWrapper {
 
   public async getWorkerIdByRoleAccount(address: string, module: WorkingGroups): Promise<WorkerId> {
     const workersAndIds: [StorageKey, Worker][] = await this.api.query[module].workerById.entries<Worker>()
-    const index: number = workersAndIds.findIndex((workersAndId) => workersAndId[1].role_account_id.toString() === address)
+    const index: number = workersAndIds.findIndex(
+      (workersAndId) => workersAndId[1].role_account_id.toString() === address
+    )
     return workersAndIds[index][0].args[0] as WorkerId
   }
 
   public async isWorker(address: string, module: WorkingGroups): Promise<boolean> {
     const workersAndIds: [StorageKey, Worker][] = await this.api.query[module].workerById.entries<Worker>()
-    const index: number = workersAndIds.findIndex((workersAndId) => workersAndId[1].role_account_id.toString() === address)
-    return index !== -1;
+    const index: number = workersAndIds.findIndex(
+      (workersAndId) => workersAndId[1].role_account_id.toString() === address
+    )
+    return index !== -1
   }
 
   public async getApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<ApplicationId[]> {
-    const applicationsAndIds: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<Application>()
+    const applicationsAndIds: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<
+      Application
+    >()
     return applicationsAndIds
       .map((applicationWithId) => {
         const application: Application = applicationWithId[1]
-        return (application.role_account_id.toString() === address ? applicationWithId[0].args[0] as ApplicationId : undefined)})
+        return application.role_account_id.toString() === address
+          ? (applicationWithId[0].args[0] as ApplicationId)
+          : undefined
+      })
       .filter((id) => id !== undefined) as ApplicationId[]
   }
 
@@ -1724,7 +1847,9 @@ export class ApiWrapper {
   }
 
   public async getActiveApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<ApplicationId[]> {
-    const applicationsAndIds: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<Application>()
+    const applicationsAndIds: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<
+      Application
+    >()
     console.log('applications here 1 ' + applicationsAndIds)
     return (
       await Promise.all(
