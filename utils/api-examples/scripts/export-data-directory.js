@@ -6,14 +6,7 @@
 // or copy and paste the code into the pioneer javascript toolbox at:
 // https://testnet.joystream.org/#/js
 
-const script = async ({ api, hashing, keyring, types, util }) => {
-  const runtimeSpecVersion = api.runtimeVersion.specVersion
-
-  const ownerAccountToMemberId = async (accountId) => {
-    const memberIds = await api.query.members.memberIdsByRootAccountId(accountId)
-    return memberIds[0] || null
-  }
-
+const script = async ({ api }) => {
   const ids = await api.query.dataDirectory.knownContentIds()
 
   // When a BTreeMap is constructed for injection the node will fail to decode
@@ -31,11 +24,11 @@ const script = async ({ api, hashing, keyring, types, util }) => {
       return [
         id,
         {
-          owner: runtimeSpecVersion <= 15 ? await ownerAccountToMemberId(obj.owner) : obj.owner,
+          owner: obj.owner,
           added_at: obj.added_at,
           type_id: obj.type_id,
           size: obj.size_in_bytes,
-          liaison: runtimeSpecVersion <= 15 ? api.createType('u64', 0) : obj.liaison,
+          liaison: obj.liaison,
           liaison_judgement: obj.liaison_judgement,
           ipfs_content_id: obj.ipfs_content_id,
         },
