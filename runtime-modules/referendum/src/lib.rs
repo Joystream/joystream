@@ -204,14 +204,8 @@ decl_error! {
         /// Referendum is not running when expected to
         ReferendumNotRunning,
 
-        /// Voting stage hasn't finished yet
-        VotingNotFinishedYet,
-
         /// Revealing stage is not in progress right now
         RevealingNotInProgress,
-
-        /// Revealing stage hasn't finished yet
-        RevealingNotFinishedYet,
 
         /// Account can't stake enough currency (now)
         InsufficientBalanceToStakeCurrency,
@@ -376,7 +370,6 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         Stage::<T, I>::put((ReferendumStage::Voting, <system::Module<T>>::block_number()));
 
         // store new options
-        //ReferendumOptions::<T, I>::put(options.clone());
         ReferendumOptions::<T, I>::put(options);
 
         // store winning target
@@ -588,49 +581,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         Ok(())
     }
-    /*
-        fn can_finish_voting(origin: T::Origin) -> Result<(), Error<T, I>> {
-            // ensure superuser requested action
-            Self::ensure_super_user(origin)?;
 
-            let (stage, starting_block_number) = Stage::<T, I>::get();
-
-            // ensure voting is running
-            if stage != ReferendumStage::Voting {
-                return Err(Error::ReferendumNotRunning);
-            }
-
-            let current_block = <system::Module<T>>::block_number();
-
-            // ensure voting stage is complete
-            if current_block < T::VoteStageDuration::get() + starting_block_number + One::one() {
-                return Err(Error::VotingNotFinishedYet);
-            }
-
-            Ok(())
-        }
-
-        fn can_finish_revealing(origin: T::Origin) -> Result<(), Error<T, I>> {
-            // ensure superuser requested action
-            Self::ensure_super_user(origin)?;
-
-            let (stage, starting_block_number) = Stage::<T, I>::get();
-
-            // ensure revealing is running
-            if stage != ReferendumStage::Revealing {
-                return Err(Error::RevealingNotInProgress);
-            }
-
-            let current_block = <system::Module<T>>::block_number();
-
-            // ensure voting stage is complete
-            if current_block < T::RevealStageDuration::get() + starting_block_number + One::one() {
-                return Err(Error::RevealingNotFinishedYet);
-            }
-
-            Ok(())
-        }
-    */
     fn can_vote(
         origin: T::Origin,
         stake: &T::CurrencyBalance,
