@@ -3,16 +3,15 @@ import { Keyring, WsProvider } from '@polkadot/api'
 import { initConfig } from '../../utils/config'
 import { setTestTimeout } from '../../utils/setTestTimeout'
 import tap from 'tap'
-import { registerJoystreamTypes } from '@alexandria/types'
 import { ApiWrapper } from '../../utils/apiWrapper'
 import { closeApi } from '../../utils/closeApi'
 import { BuyMembershipHappyCaseFixture, BuyMembershipWithInsufficienFundsFixture } from '../fixtures/membershipModule'
 import { Utils } from '../../utils/utils'
 import { PaidTermId } from '@alexandria/types/members'
+import BN from "bn.js";
 
 tap.mocha.describe('Membership creation scenario', async () => {
   initConfig()
-  registerJoystreamTypes()
 
   const nodeUrl: string = process.env.NODE_URL!
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!
@@ -24,7 +23,7 @@ tap.mocha.describe('Membership creation scenario', async () => {
   const N: number = +process.env.MEMBERSHIP_CREATION_N!
   const nKeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const aKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
-  const paidTerms: PaidTermId = new PaidTermId(+process.env.MEMBERSHIP_PAID_TERMS!)
+  const paidTerms: PaidTermId = apiWrapper.createPaidTermId(new BN(+process.env.MEMBERSHIP_PAID_TERMS!))
 
   const durationInBlocks = 7
 
