@@ -89,10 +89,6 @@ export class ApiWrapper {
 
   public async getBalance(address: string): Promise<Balance> {
     const accountData: AccountInfo = await this.api.query.system.account<AccountInfo>(address)
-    console.log('free ' + accountData.data.free)
-    console.log('reserved ' + accountData.data.reserved)
-    console.log('feeFrozen ' + accountData.data.feeFrozen)
-    console.log('miscFrozen ' + accountData.data.miscFrozen)
     return (await this.api.query.system.account<AccountInfo>(address)).data.free
   }
 
@@ -1689,7 +1685,6 @@ export class ApiWrapper {
           keyPair.address,
           module
         )
-        console.log('application ids ' + applicationIds)
         await this.withdrawApplication(keyPair, applicationIds[0], module)
       })
     )
@@ -1850,7 +1845,6 @@ export class ApiWrapper {
     const applicationsAndIds: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<
       Application
     >()
-    console.log('applications here 1 ' + applicationsAndIds)
     return (
       await Promise.all(
         applicationsAndIds.map(async (applicationWithId) => {

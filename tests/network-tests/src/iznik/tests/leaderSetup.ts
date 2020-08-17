@@ -58,13 +58,5 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   db.setMembers(nKeyPairs)
   db.setLeader(leadKeyPair[0], apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))
 
-  // const leaveRoleFixture: LeaveRoleFixture = new LeaveRoleFixture(
-  //   apiWrapper,
-  //   leadKeyPair,
-  //   sudo,
-  //   WorkingGroups.StorageWorkingGroup
-  // )
-  // tap.test('Leaving lead role', async () => leaveRoleFixture.runner(false))
-
   closeApi(apiWrapper)
 })

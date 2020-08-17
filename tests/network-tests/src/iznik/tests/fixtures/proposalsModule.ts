@@ -194,8 +194,6 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
     )[0]
     const now: BN = await this.apiWrapper.getBestBlock()
 
-    console.log('Successfull application id ' + applicationId)
-
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
     await this.apiWrapper.proposeFillLeaderOpening({
       account: this.m1KeyPairs[0],
