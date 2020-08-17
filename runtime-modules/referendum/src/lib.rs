@@ -336,18 +336,18 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             ReferendumStage::Void => (),
             ReferendumStage::Voting => {
                 if now == start_block_number + T::VoteStageDuration::get() {
-                    Self::end_voting_period(now);
+                    Self::end_voting_period();
                 }
             }
             ReferendumStage::Revealing => {
                 if now == start_block_number + T::RevealStageDuration::get() {
-                    Self::end_reveal_period(now);
+                    Self::end_reveal_period();
                 }
             }
         }
     }
 
-    fn end_voting_period(now: T::BlockNumber) {
+    fn end_voting_period() {
         // start revealing phase
         Mutations::<T, I>::start_revealing_period();
 
@@ -355,7 +355,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Self::deposit_event(RawEvent::RevealingStageStarted());
     }
 
-    fn end_reveal_period(now: T::BlockNumber) {
+    fn end_reveal_period() {
         // conclude referendum
         let referendum_result = Mutations::<T, I>::conclude_referendum();
 

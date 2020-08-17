@@ -286,7 +286,7 @@ fn finish_voting() {
 
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::check_voting_finished();
     });
 }
 
@@ -316,7 +316,7 @@ fn reveal() {
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::check_voting_finished();
         Mocks::reveal_vote(origin.clone(), account_id, salt, option_to_vote_for, Ok(()));
     });
 }
@@ -355,11 +355,9 @@ fn reveal_reveal_stage_not_running() {
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::check_voting_finished();
         MockUtils::increase_block_number(reveal_stage_duration + 1);
-        Mocks::finish_revealing_period(
-            origin.clone(),
-            Ok(()),
+        Mocks::check_revealing_finished(
             Some(ReferendumResult::NoVotesRevealed),
         );
 
@@ -393,12 +391,10 @@ fn reveal_no_vote() {
         );
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::check_voting_finished();
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        Mocks::finish_revealing_period(
-            origin.clone(),
-            Ok(()),
+        Mocks::check_revealing_finished(
             Some(ReferendumResult::NoVotesRevealed),
         );
     });
@@ -429,7 +425,7 @@ fn reveal_invalid_vote() {
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::check_voting_finished();
         Mocks::reveal_vote(
             origin.clone(),
             account_id,
@@ -465,7 +461,7 @@ fn reveal_invalid_commitment_proof() {
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::check_voting_finished();
         Mocks::reveal_vote(
             origin.clone(),
             account_id,
@@ -503,13 +499,11 @@ fn finish_revealing_period() {
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::check_voting_finished();
         Mocks::reveal_vote(origin.clone(), account_id, salt, option_to_vote_for, Ok(()));
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        Mocks::finish_revealing_period(
-            origin.clone(),
-            Ok(()),
+        Mocks::check_revealing_finished(
             Some(ReferendumResult::Winners(vec![(
                 option_to_vote_for,
                 1 * stake,
@@ -600,7 +594,7 @@ fn finish_revealing_period_vote_power() {
         ); // vote for second option by prominent user
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::check_voting_finished();
         Mocks::reveal_vote(
             origin_voter1.clone(),
             account_id1,
@@ -618,9 +612,7 @@ fn finish_revealing_period_vote_power() {
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
         // option 2 should win because prominent user has more powerfull vote with the same stake
-        Mocks::finish_revealing_period(
-            origin.clone(),
-            Ok(()),
+        Mocks::check_revealing_finished(
             Some(ReferendumResult::Winners(vec![(
                 option_to_vote_for2,
                 1 * stake_smaller * POWER_VOTE_STRENGTH,
@@ -644,11 +636,9 @@ fn winners_no_vote_revealed() {
 
         Mocks::start_referendum(origin.clone(), options, winning_target_count, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
-        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::check_voting_finished();
         MockUtils::increase_block_number(reveal_stage_duration + 1);
-        Mocks::finish_revealing_period(
-            origin.clone(),
-            Ok(()),
+        Mocks::check_revealing_finished(
             Some(ReferendumResult::NoVotesRevealed),
         );
     });
@@ -708,7 +698,7 @@ fn winners_multiple_winners() {
         );
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::check_voting_finished();
         Mocks::reveal_vote(
             origin_voter1.clone(),
             account_id1,
@@ -737,9 +727,7 @@ fn winners_multiple_winners() {
             (option_to_vote_for2, 1 * stake),
         ];
 
-        Mocks::finish_revealing_period(
-            origin.clone(),
-            Ok(()),
+        Mocks::check_revealing_finished(
             Some(ReferendumResult::Winners(expected_winners)),
         );
     });
@@ -790,7 +778,7 @@ fn winners_multiple_winners_extra() {
         );
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::check_voting_finished();
         Mocks::reveal_vote(
             origin_voter1.clone(),
             account_id1,
@@ -812,9 +800,7 @@ fn winners_multiple_winners_extra() {
             (option_to_vote_for2, 1 * stake),
         ];
 
-        Mocks::finish_revealing_period(
-            origin.clone(),
-            Ok(()),
+        Mocks::check_revealing_finished(
             Some(ReferendumResult::ExtraWinners(expected_winners)),
         );
     });
@@ -853,7 +839,7 @@ fn winners_multiple_not_enough() {
         );
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::finish_voting(origin.clone(), Ok(()));
+        Mocks::check_voting_finished();
         Mocks::reveal_vote(
             origin_voter1.clone(),
             account_id1,
@@ -865,9 +851,7 @@ fn winners_multiple_not_enough() {
 
         let expected_winners = vec![(option_to_vote_for1, 1 * stake)];
 
-        Mocks::finish_revealing_period(
-            origin.clone(),
-            Ok(()),
+        Mocks::check_revealing_finished(
             Some(ReferendumResult::NotEnoughWinners(expected_winners)),
         );
     });

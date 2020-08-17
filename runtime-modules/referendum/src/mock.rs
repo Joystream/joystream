@@ -356,41 +356,6 @@ impl InstanceMocks<Runtime, Instance0> {
         );
     }
 
-    pub fn finish_voting(
-        origin: OriginType<<Runtime as system::Trait>::AccountId>,
-        expected_result: Result<(), Error<Runtime, Instance0>>,
-    ) -> () {
-        Self::check_voting_finished();
-
-        /*
-        // check method returns expected result
-        assert_eq!(
-            Module::<Runtime, Instance0>::finish_voting_start_revealing(InstanceMockUtils::<
-                Runtime,
-                Instance0,
-            >::mock_origin(
-                origin
-            ),),
-            expected_result,
-        );
-
-        if expected_result.is_err() {
-            return;
-        }
-
-        assert_eq!(
-            Stage::<Runtime, Instance0>::get().0,
-            ReferendumStage::Revealing,
-        );
-
-        // check event was emitted
-        assert_eq!(
-            system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::event_mod_Instance0(RawEvent::RevealingStageStarted())
-        );
-        */
-    }
-
     pub fn check_revealing_finished(
         expected_referendum_result: Option<
             ReferendumResult<
@@ -415,19 +380,6 @@ impl InstanceMocks<Runtime, Instance0> {
                 expected_referendum_result.unwrap()
             ))
         );
-    }
-
-    pub fn finish_revealing_period(
-        origin: OriginType<<Runtime as system::Trait>::AccountId>,
-        expected_result: Result<(), Error<Runtime, Instance0>>,
-        expected_referendum_result: Option<
-            ReferendumResult<
-                <Runtime as Trait<Instance0>>::ReferendumOption,
-                <Runtime as Trait<Instance0>>::VotePower,
-            >,
-        >,
-    ) -> () {
-        Self::check_revealing_finished(expected_referendum_result);
     }
 
     pub fn vote(
