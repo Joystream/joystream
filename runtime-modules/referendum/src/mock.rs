@@ -64,6 +64,7 @@ impl Trait<Instance0> for Runtime {
 
     type CurrencyBalance = u64;
     type VotePower = u64;
+    type ReferendumUserId = u64;
 
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
@@ -72,6 +73,13 @@ impl Trait<Instance0> for Runtime {
 
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool {
         *account_id == USER_ADMIN
+    }
+
+    fn is_referendum_member(
+        account_id: &<Self as system::Trait>::AccountId,
+        referendum_user_id: &Self::ReferendumUserId,
+    ) -> bool {
+        account_id == referendum_user_id
     }
 
     fn caclulate_vote_power(
@@ -421,6 +429,7 @@ impl InstanceMocks<Runtime, Instance0> {
     pub fn vote(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         account_id: <Runtime as system::Trait>::AccountId,
+        referendum_user_id: <Runtime as Trait<Instance0>>::ReferendumUserId,
         commitment: <Runtime as system::Trait>::Hash,
         stake: <Runtime as Trait<Instance0>>::CurrencyBalance,
         expected_result: Result<(), Error<Runtime, Instance0>>,
@@ -429,6 +438,7 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(
             Module::<Runtime, Instance0>::vote(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
+                referendum_user_id,
                 commitment,
                 stake,
             ),
@@ -454,6 +464,7 @@ impl InstanceMocks<Runtime, Instance0> {
     pub fn reveal_vote(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         account_id: <Runtime as system::Trait>::AccountId,
+        referendum_user_id: <Runtime as Trait<Instance0>>::ReferendumUserId,
         salt: Vec<u8>,
         vote_option: <Runtime as Trait<Instance0>>::ReferendumOption,
         expected_result: Result<(), Error<Runtime, Instance0>>,
@@ -462,6 +473,7 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(
             Module::<Runtime, Instance0>::reveal_vote(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
+                referendum_user_id,
                 salt,
                 vote_option,
             ),

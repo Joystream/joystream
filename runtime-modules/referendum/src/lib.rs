@@ -105,6 +105,8 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
 
     /// Maximum number of options in one referendum.
     type MaxReferendumOptions: Get<u64>;
+
+    // Representation of the referendum option that can be voted for.
     type ReferendumOption: Parameter
         + Member
         + BaseArithmetic
@@ -126,6 +128,7 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
         + MaybeSerialize
         + PartialEq;
 
+    /// Power of vote(s) used to determine the referendum winner(s).
     type VotePower: Parameter
         + Member
         + BaseArithmetic
@@ -137,12 +140,29 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
         + From<u64>
         + Into<u64>;
 
+    /// User that can vote in referendum.
+    type ReferendumUserId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    /// Duration of voting stage (in blocks)
     type VoteStageDuration: Get<Self::BlockNumber>;
+    /// Duration of revealing stage (in blocks)
     type RevealStageDuration: Get<Self::BlockNumber>;
 
+    /// Minimum stake needed for voting
     type MinimumStake: Get<Self::CurrencyBalance>;
 
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool;
+    fn is_referendum_member(
+        account_id: &<Self as system::Trait>::AccountId,
+        referendum_user_id: &Self::ReferendumUserId,
+    ) -> bool;
 
     fn caclulate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
@@ -259,6 +279,9 @@ decl_error! {
 
         /// Trying to reveal vote that was not casted
         NoVoteToReveal,
+
+        /// Referendum user id not match its account.
+        ReferendumUserIdNotMatchAccount,
     }
 }
 
@@ -302,9 +325,9 @@ decl_module! {
         /////////////////// User actions ///////////////////////////////////////
 
         #[weight = 10_000_000]
-        pub fn vote(origin, commitment: T::Hash, stake: T::CurrencyBalance) -> Result<(), Error<T, I>> {
+        pub fn vote(origin, referendum_user_id: T::ReferendumUserId, commitment: T::Hash, stake: T::CurrencyBalance) -> Result<(), Error<T, I>> {
             // ensure action can be started
-            let account_id = EnsureChecks::<T, I>::can_vote(origin, &stake)?;
+            let account_id = EnsureChecks::<T, I>::can_vote(origin, &referendum_user_id, &stake)?;
 
             //
             // == MUTATION SAFE ==
@@ -320,8 +343,8 @@ decl_module! {
         }
 
         #[weight = 10_000_000]
-        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option: T::ReferendumOption) -> Result<(), Error<T, I>> {
-            let (account_id, sealed_vote) = EnsureChecks::<T, I>::can_reveal_vote(origin, &salt, &vote_option)?;
+        pub fn reveal_vote(origin, referendum_user_id: T::ReferendumUserId, salt: Vec<u8>, vote_option: T::ReferendumOption) -> Result<(), Error<T, I>> {
+            let (account_id, sealed_vote) = EnsureChecks::<T, I>::can_reveal_vote(origin, &referendum_user_id, &salt, &vote_option)?;
 
             //
             // == MUTATION SAFE ==
@@ -591,8 +614,16 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(account_id)
     }
 
-    fn ensure_regular_user(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
+    fn ensure_regular_user(
+        origin: T::Origin,
+        referendum_user_id: &T::ReferendumUserId,
+    ) -> Result<T::AccountId, Error<T, I>> {
         let account_id = ensure_signed(origin)?;
+
+        let is_member = T::is_referendum_member(&account_id, referendum_user_id);
+        if !is_member {
+            return Err(Error::ReferendumUserIdNotMatchAccount);
+        }
 
         Ok(account_id)
     }
@@ -641,10 +672,11 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     fn can_vote(
         origin: T::Origin,
+        referendum_user_id: &T::ReferendumUserId,
         stake: &T::CurrencyBalance,
     ) -> Result<T::AccountId, Error<T, I>> {
         // ensure superuser requested action
-        let account_id = Self::ensure_regular_user(origin)?;
+        let account_id = Self::ensure_regular_user(origin, referendum_user_id)?;
 
         let stage = Stage::<T, I>::get();
 
@@ -683,6 +715,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     fn can_reveal_vote(
         origin: T::Origin,
+        referendum_user_id: &T::ReferendumUserId,
         salt: &[u8],
         vote_option: &T::ReferendumOption,
     ) -> Result<(T::AccountId, SealedVote<T::Hash, T::CurrencyBalance>), Error<T, I>> {
@@ -702,7 +735,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ensure superuser requested action
-        let account_id = Self::ensure_regular_user(origin)?;
+        let account_id = Self::ensure_regular_user(origin, referendum_user_id)?;
 
         let stage = Stage::<T, I>::get();
 
