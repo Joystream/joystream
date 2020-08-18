@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FormikProps } from 'formik';
 import { Icon, Loader } from 'semantic-ui-react';
-import Dropzone from 'react-dropzone';
+import Dropzone, { FileRejection } from 'react-dropzone';
 
 enum Status {
   Accepted = 'accepted',
@@ -13,13 +13,13 @@ enum Status {
 
 const determineStatus = (
   acceptedFiles: File[],
-  rejectedFiles: File[],
+  fileRejections: FileRejection[],
   error: string | undefined,
   isDragActive: boolean,
   parsing: boolean
 ): Status => {
   if (parsing) return Status.Parsing;
-  if (error || rejectedFiles.length) return Status.Rejected;
+  if (error || fileRejections.length) return Status.Rejected;
   if (acceptedFiles.length) return Status.Accepted;
   if (isDragActive) return Status.Active;
 
@@ -130,8 +130,8 @@ export default function FileDropdown<ValuesT = Record<string, any>> (props: File
       multiple={false}
       accept={acceptedFormats}
     >
-      {({ getRootProps, getInputProps, acceptedFiles, rejectedFiles, isDragActive }) => {
-        const status = determineStatus(acceptedFiles, rejectedFiles, error, isDragActive, parsing);
+      {({ getRootProps, getInputProps, acceptedFiles, fileRejections, isDragActive }) => {
+        const status = determineStatus(acceptedFiles, fileRejections, error, isDragActive, parsing);
 
         return (
           <section>
