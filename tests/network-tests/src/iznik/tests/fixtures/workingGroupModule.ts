@@ -555,7 +555,10 @@ export class UpdateRewardAccountFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
-    const updateRewardAccountFee: BN = this.apiWrapper.estimateUpdateRewardAccountFee(this.treasury.address, this.module)
+    const updateRewardAccountFee: BN = this.apiWrapper.estimateUpdateRewardAccountFee(
+      this.treasury.address,
+      this.module
+    )
     await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, updateRewardAccountFee)
     const workerId: WorkerId = await this.apiWrapper.getWorkerIdByRoleAccount(
       this.membersKeyPairs[0].address,

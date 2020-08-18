@@ -47,7 +47,11 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(100000)
     const proposalFee: BN = this.apiWrapper.estimateProposeCreateWorkingGroupLeaderOpeningFee()
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      proposalFee.add(proposalStake)
+    )
 
     // Proposal creation
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
@@ -119,7 +123,11 @@ export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture 
     // Proposal stake calculation
     const proposalStake: BN = new BN(25000)
     const proposalFee: BN = this.apiWrapper.estimateProposeBeginWorkingGroupLeaderApplicationReviewFee()
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      proposalFee.add(proposalStake)
+    )
 
     // Proposal creation
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
@@ -186,7 +194,11 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(50000)
     const proposalFee: BN = this.apiWrapper.estimateProposeFillLeaderOpeningFee()
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      proposalFee.add(proposalStake)
+    )
 
     // Proposal creation
     const applicationId: ApplicationId = (
@@ -258,7 +270,11 @@ export class TerminateLeaderRoleProposalFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(100000)
     const proposalFee: BN = this.apiWrapper.estimateProposeTerminateLeaderRoleFee()
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      proposalFee.add(proposalStake)
+    )
 
     // Proposal creation
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
@@ -316,7 +332,11 @@ export class SetLeaderRewardProposalFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(50000)
     const proposalFee: BN = this.apiWrapper.estimateProposeLeaderRewardFee()
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      proposalFee.add(proposalStake)
+    )
 
     // Proposal creation
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
@@ -373,7 +393,11 @@ export class DecreaseLeaderStakeProposalFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(50000)
     const proposalFee: BN = this.apiWrapper.estimateProposeDecreaseLeaderStakeFee()
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      proposalFee.add(proposalStake)
+    )
 
     // Proposal creation
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
@@ -430,7 +454,11 @@ export class SlashLeaderProposalFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(50000)
     const proposalFee: BN = this.apiWrapper.estimateProposeSlashLeaderStakeFee()
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      proposalFee.add(proposalStake)
+    )
 
     // Proposal creation
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
@@ -486,7 +514,11 @@ export class WorkingGroupMintCapacityProposalFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(50000)
     const proposalFee: BN = this.apiWrapper.estimateProposeWorkingGroupMintCapacityFee()
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      proposalFee.add(proposalStake)
+    )
 
     // Proposal creation
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
@@ -511,7 +543,12 @@ export class ElectionParametersProposalFixture implements Fixture {
   private councilKeyPairs: KeyringPair[]
   private treasury: KeyringPair
 
-  constructor(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], councilKeyPairs: KeyringPair[], treasury: KeyringPair) {
+  constructor(
+    apiWrapper: ApiWrapper,
+    membersKeyPairs: KeyringPair[],
+    councilKeyPairs: KeyringPair[],
+    treasury: KeyringPair
+  ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
     this.councilKeyPairs = councilKeyPairs
@@ -548,7 +585,11 @@ export class ElectionParametersProposalFixture implements Fixture {
       minCouncilStake,
       minVotingStake
     )
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      proposalFee.add(proposalStake)
+    )
 
     // Proposal creation
     const proposedAnnouncingPeriod: BN = announcingPeriod.subn(1)
@@ -634,7 +675,12 @@ export class SetLeadProposalFixture implements Fixture {
   private councilKeyPairs: KeyringPair[]
   private treasury: KeyringPair
 
-  constructor(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], councilKeyPairs: KeyringPair[], treasury: KeyringPair) {
+  constructor(
+    apiWrapper: ApiWrapper,
+    membersKeyPairs: KeyringPair[],
+    councilKeyPairs: KeyringPair[],
+    treasury: KeyringPair
+  ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
     this.councilKeyPairs = councilKeyPairs
@@ -656,11 +702,21 @@ export class SetLeadProposalFixture implements Fixture {
       proposalStake,
       this.treasury.address
     )
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      proposalFee.add(proposalStake)
+    )
 
     // Proposal creation
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
-    await this.apiWrapper.proposeLead(this.membersKeyPairs[0], proposalTitle, description, proposalStake, this.membersKeyPairs[1])
+    await this.apiWrapper.proposeLead(
+      this.membersKeyPairs[0],
+      proposalTitle,
+      description,
+      proposalStake,
+      this.membersKeyPairs[1]
+    )
     const proposalNumber: ProposalId = await proposalPromise
 
     // Approving the proposal
@@ -716,7 +772,11 @@ export class SpendingProposalFixture implements Fixture {
       this.spendingBalance,
       this.sudo.address
     )
-    await this.apiWrapper.transferBalance(this.sudo, this.membersKeyPairs[0].address, runtimeProposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.sudo,
+      this.membersKeyPairs[0].address,
+      runtimeProposalFee.add(proposalStake)
+    )
     await this.apiWrapper.transferBalanceToAccounts(this.sudo, this.councilKeyPairs, runtimeVoteFee)
     await this.apiWrapper.sudoSetCouncilMintCapacity(this.sudo, this.mintCapacity)
 
@@ -756,7 +816,12 @@ export class TextProposalFixture implements Fixture {
   private councilKeyPairs: KeyringPair[]
   private treasury: KeyringPair
 
-  constructor(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], councilKeyPairs: KeyringPair[], treasury: KeyringPair) {
+  constructor(
+    apiWrapper: ApiWrapper,
+    membersKeyPairs: KeyringPair[],
+    councilKeyPairs: KeyringPair[],
+    treasury: KeyringPair
+  ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
     this.councilKeyPairs = councilKeyPairs
@@ -779,7 +844,11 @@ export class TextProposalFixture implements Fixture {
       description,
       proposalText
     )
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, runtimeProposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      runtimeProposalFee.add(proposalStake)
+    )
 
     // Proposal creation
     const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
@@ -827,7 +896,11 @@ export class ValidatorCountProposalFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(100000)
     const proposalFee: BN = this.apiWrapper.estimateProposeValidatorCountFee(description, description, proposalStake)
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      proposalFee.add(proposalStake)
+    )
     const validatorCount: BN = await this.apiWrapper.getValidatorCount()
 
     // Proposal creation
@@ -892,7 +965,11 @@ export class ContentWorkingGroupMintCapacityProposalFixture implements Fixture {
       proposalStake,
       initialMintingCapacity.add(this.mintingCapacityIncrement)
     )
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, runtimeProposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      runtimeProposalFee.add(proposalStake)
+    )
     await this.apiWrapper.transferBalanceToAccounts(this.treasury, this.councilKeyPairs, runtimeVoteFee)
 
     // Proposal creation
@@ -928,7 +1005,12 @@ export class UpdateRuntimeFixture implements Fixture {
   private councilKeyPairs: KeyringPair[]
   private treasury: KeyringPair
 
-  constructor(apiWrapper: ApiWrapper, membersKeyPairs: KeyringPair[], councilKeyPairs: KeyringPair[], treasury: KeyringPair) {
+  constructor(
+    apiWrapper: ApiWrapper,
+    membersKeyPairs: KeyringPair[],
+    councilKeyPairs: KeyringPair[],
+    treasury: KeyringPair
+  ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
     this.councilKeyPairs = councilKeyPairs
@@ -949,7 +1031,11 @@ export class UpdateRuntimeFixture implements Fixture {
       description,
       runtime
     )
-    await this.apiWrapper.transferBalance(this.treasury, this.membersKeyPairs[0].address, runtimeProposalFee.add(proposalStake))
+    await this.apiWrapper.transferBalance(
+      this.treasury,
+      this.membersKeyPairs[0].address,
+      runtimeProposalFee.add(proposalStake)
+    )
     await this.apiWrapper.transferBalanceToAccounts(this.treasury, this.councilKeyPairs, runtimeVoteFee)
 
     // Proposal creation
@@ -979,7 +1065,12 @@ export class VoteForProposalFixture implements Fixture {
   private treasury: KeyringPair
   private proposalNumber: ProposalId
 
-  constructor(apiWrapper: ApiWrapper, councilKeyPairs: KeyringPair[], treasury: KeyringPair, proposalNumber: ProposalId) {
+  constructor(
+    apiWrapper: ApiWrapper,
+    councilKeyPairs: KeyringPair[],
+    treasury: KeyringPair,
+    proposalNumber: ProposalId
+  ) {
     this.apiWrapper = apiWrapper
     this.councilKeyPairs = councilKeyPairs
     this.treasury = treasury
