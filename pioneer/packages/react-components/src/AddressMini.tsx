@@ -1,74 +1,85 @@
-// Copyright 2017-2019 @polkadot/app-staking authors & contributors
+// Copyright 2017-2020 @polkadot/app-staking authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { AccountId, AccountIndex, Address } from '@polkadot/types/interfaces';
-import { BareProps } from './types';
 
 import BN from 'bn.js';
 import React from 'react';
 import styled from 'styled-components';
-import { AccountName } from '@polkadot/react-query';
 import { KeyringItemType } from '@polkadot/ui-keyring/types';
 
 import { classes, toShortAddress } from './util';
+import AccountName from './AccountName';
 import BalanceDisplay from './Balance';
 import BondedDisplay from './Bonded';
 import IdentityIcon from './IdentityIcon';
 import LockedVote from './LockedVote';
 
-interface Props extends BareProps {
+interface Props {
   balance?: BN | BN[];
   bonded?: BN | BN[];
   children?: React.ReactNode;
+  className?: string;
   iconInfo?: React.ReactNode;
+  isHighlight?: boolean;
   isPadded?: boolean;
   isShort?: boolean;
+  label?: React.ReactNode;
+  labelBalance?: React.ReactNode;
+  noLookup?: boolean;
+  summary?: React.ReactNode;
   type?: KeyringItemType;
-  value?: AccountId | AccountIndex | Address | string;
+  value?: AccountId | AccountIndex | Address | string | null | Uint8Array;
   withAddress?: boolean;
   withBalance?: boolean;
   withBonded?: boolean;
   withLockedVote?: boolean;
+  withSidebar?: boolean;
   withName?: boolean;
+  withShrink?: boolean;
 }
 
-function AddressMini ({ balance, bonded, children, className, iconInfo, isPadded = true, style, value, withAddress = true, withBalance = false, withBonded = false, withLockedVote = false, withName = true }: Props): React.ReactElement<Props> | null {
+function AddressMini ({ balance, bonded, children, className = '', iconInfo, isHighlight, isPadded = true, label, labelBalance, noLookup, summary, value, withAddress = true, withBalance = false, withBonded = false, withLockedVote = false, withName = true, withShrink = false, withSidebar = true }: Props): React.ReactElement<Props> | null {
   if (!value) {
     return null;
   }
 
   return (
-    <div
-      className={classes('ui--AddressMini', isPadded ? 'padded' : '', className)}
-      style={style}
-    >
-      <div className='ui--AddressMini-info'>
-        {withAddress && (
-          <div className='ui--AddressMini-address'>
-            {withName
-              ? <AccountName params={value} />
-              : toShortAddress(value)
-            }
-          </div>
-        )}
-        {children}
-      </div>
+    <div className={classes('ui--AddressMini', isHighlight ? 'isHighlight' : '', isPadded ? 'padded' : '', withShrink ? 'withShrink' : '', className)}>
+      {label && (
+        <label className='ui--AddressMini-label'>{label}</label>
+      )}
       <div className='ui--AddressMini-icon'>
-        <IdentityIcon
-          size={24}
-          value={value}
-        />
+        <IdentityIcon value={value as Uint8Array} />
         {iconInfo && (
           <div className='ui--AddressMini-icon-info'>
             {iconInfo}
           </div>
         )}
       </div>
+      <div className='ui--AddressMini-info'>
+        {withAddress && (
+          <div className='ui--AddressMini-address'>
+            {withName
+              ? (
+                <AccountName
+                  noLookup={noLookup}
+                  value={value}
+                  withSidebar={withSidebar}
+                />
+              )
+              : toShortAddress(value)
+            }
+          </div>
+        )}
+        {children}
+      </div>
       <div className='ui--AddressMini-balances'>
         {withBalance && (
           <BalanceDisplay
             balance={balance}
+            label={labelBalance}
             params={value}
           />
         )}
@@ -82,19 +93,23 @@ function AddressMini ({ balance, bonded, children, className, iconInfo, isPadded
         {withLockedVote && (
           <LockedVote params={value} />
         )}
+        {summary && (
+          <div className='ui--AddressMini-summary'>{summary}</div>
+        )}
       </div>
     </div>
   );
 }
 
-export default styled(AddressMini)`
+export default React.memo(styled(AddressMini)`
   display: inline-block;
   padding: 0 0.25rem 0 1rem;
+  text-align: left;
   white-space: nowrap;
 
   &.padded {
     display: inline-block;
-    padding: 0.25rem 0 0 1rem;
+    padding: 0 1rem 0 0;
   }
 
   &.summary {
@@ -102,29 +117,79 @@ export default styled(AddressMini)`
     top: -0.2rem;
   }
 
+  .ui--AddressMini-info {
+    max-width: 12rem;
+    min-width: 12rem;
+
+    @media only screen and (max-width: 1800px) {
+      max-width: 11.5rem;
+      min-width: 11.5rem;
+    }
+
+    @media only screen and (max-width: 1700px) {
+      max-width: 11rem;
+      min-width: 11rem;
+    }
+
+    @media only screen and (max-width: 1600px) {
+      max-width: 10.5rem;
+      min-width: 10.5rem;
+    }
+
+    @media only screen and (max-width: 1500px) {
+      max-width: 10rem;
+      min-width: 10rem;
+    }
+
+    @media only screen and (max-width: 1400px) {
+      max-width: 9.5rem;
+      min-width: 9.5rem;
+    }
+
+    @media only screen and (max-width: 1300px) {
+      max-width: 9rem;
+      min-width: 9rem;
+    }
+  }
+
   .ui--AddressMini-address {
-    font-family: monospace;
-    max-width: 9rem;
-    min-width: 9em;
     overflow: hidden;
-    text-align: right;
+    text-align: left;
     text-overflow: ellipsis;
+    width: fit-content;
+    max-width: inherit;
+
+    > div {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  &.withShrink {
+    .ui--AddressMini-address {
+      min-width: 3rem;
+    }
+  }
+
+  .ui--AddressMini-label {
+    margin: 0 0 -0.5rem 2.25rem;
   }
 
   .ui--AddressMini-balances {
     display: grid;
 
+    .ui--Balance,
     .ui--Bonded,
     .ui--LockedVote {
       font-size: 0.75rem;
-      margin-right: 2.25rem;
+      margin-left: 2.25rem;
       margin-top: -0.5rem;
-      text-align: right;
+      text-align: left;
     }
   }
 
   .ui--AddressMini-icon {
-    margin: 0 0 0 0.5rem;
+    margin: 0 0.5rem 0 0;
 
     .ui--AddressMini-icon-info {
       position: absolute;
@@ -145,4 +210,12 @@ export default styled(AddressMini)`
     position: relative;
     vertical-align: middle;
   }
-`;
+
+  .ui--AddressMini-summary {
+    font-size: 0.75rem;
+    line-height: 1.2;
+    margin-left: 2.25rem;
+    margin-top: -0.2rem;
+    text-align: left;
+  }
+`);

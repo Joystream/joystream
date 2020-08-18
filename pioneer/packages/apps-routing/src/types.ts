@@ -1,8 +1,8 @@
-// Copyright 2017-2019 @polkadot/apps-routing authors & contributors
+// Copyright 2017-2020 @polkadot/apps-routing authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { SemanticICONS } from 'semantic-ui-react/dist/commonjs/generic';
+import { IconName } from '@fortawesome/fontawesome-svg-core';
 import { AppProps, BareProps } from '@polkadot/react-components/types';
 
 export interface RouteProps extends AppProps, BareProps {
@@ -19,16 +19,11 @@ export interface Route {
     needsApi?: (string | string[])[];
     needsSudo?: boolean;
   };
-  i18n: {
-    defaultValue: string;
-  };
-  icon: SemanticICONS;
+  icon: IconName;
+  isIgnored?: boolean;
   name: string;
+  text: string;
+  useCounter?: () => number | string | null;
 }
 
 export type Routes = (Route | null)[];
-
-export interface Routing {
-  default: string;
-  routes: Routes;
-}

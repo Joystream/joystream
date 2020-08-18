@@ -1,25 +1,18 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-params authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { I18nProps } from '@polkadot/react-components/types';
-import { BaseProps, Props as CProps, ComponentMap } from '../types';
+import { Props, Props as CProps } from '../types';
 
 import React, { useRef } from 'react';
 import { classes } from '@polkadot/react-components/util';
+import { displayType } from '@polkadot/types';
 import { isUndefined } from '@polkadot/util';
 
-import translate from '../translate';
 import findComponent from './findComponent';
 import Static from './Static';
 
-interface Props extends I18nProps, BaseProps {
-  isDisabled?: boolean;
-  isOptional?: boolean;
-  overrides?: ComponentMap;
-}
-
-function Param ({ className, defaultValue, isDisabled, isOptional, name, onChange, onEnter, overrides, style, type }: Props): React.ReactElement<Props> | null {
+function Param ({ className = '', defaultValue, isDisabled, isInOption, isOptional, name, onChange, onEnter, onEscape, overrides, type }: Props): React.ReactElement<Props> | null {
   const compRef = useRef<React.ComponentType<CProps> | null>(findComponent(type, overrides));
 
   if (!compRef.current) {
@@ -27,8 +20,8 @@ function Param ({ className, defaultValue, isDisabled, isOptional, name, onChang
   }
 
   const label = isUndefined(name)
-    ? (type.displayName || type.type)
-    : `${name}: ${type.displayName || type.type}`;
+    ? displayType(type)
+    : `${name}: ${displayType(type)}`;
 
   return isOptional
     ? (
@@ -42,16 +35,18 @@ function Param ({ className, defaultValue, isDisabled, isOptional, name, onChang
       <compRef.current
         className={classes('ui--Param', className)}
         defaultValue={defaultValue}
-        key={`${name}:${type}`}
         isDisabled={isDisabled}
+        isInOption={isInOption}
+        key={`${name || 'unknown'}:${type.toString()}`}
         label={label}
         name={name}
         onChange={onChange}
         onEnter={onEnter}
-        style={style}
+        onEscape={onEscape}
+        overrides={overrides}
         type={type}
       />
     );
 }
 
-export default translate(Param);
+export default React.memo(Param);

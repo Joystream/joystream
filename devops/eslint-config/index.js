@@ -43,7 +43,7 @@ module.exports = {
     // should prefer using 'debug' package at least to allow control of
     // output verbosity if logging to console.
     'no-console': 'off',
-    '@typescript-eslint/camelcase': 'off',
+    'camelcase': 'off',
     '@typescript-eslint/class-name-casing': 'off',
     "@typescript-eslint/naming-convention": [
       "error",
