@@ -1,39 +1,41 @@
 import { useState, useEffect } from 'react';
-import { ParsedProposal, ProposalVotes } from '../../../types/proposals';
-import { useTransport, usePromise } from '../';
+import { useTransport } from '../';
 import { ProposalId } from '@joystream/types/proposals';
+import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
 
 // Take advantage of polkadot api subscriptions to re-fetch proposal data and votes
 // each time there is some runtime change in the proposal
 const useProposalSubscription = (id: ProposalId) => {
   const transport = useTransport();
-  // State holding an "unsubscribe method"
-  const [unsubscribeProposal, setUnsubscribeProposal] = useState<(() => void) | null>(null);
-
-  const [proposal, proposalError, proposalLoading, refreshProposal] = usePromise<ParsedProposal>(
-    () => transport.proposals.proposalById(id),
-    {} as ParsedProposal
-  );
-
-  const [votes, votesError, votesLoading, refreshVotes] = usePromise<ProposalVotes | null>(
-    () => transport.proposals.votes(id),
-    null
-  );
-
-  // Function to re-fetch the data using transport
-  const refreshProposalData = () => {
-    refreshProposal();
-    refreshVotes();
-  };
+  // State holding current proposal data
+  const [data, setData] = useState<ParsedProposal | null>(null);
+  const [error, setError] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     // onMount...
     let unmounted = false;
+    let unsubscribeProposal: (() => void) | undefined;
+    const refreshProposalData = () => {
+      transport.proposals.proposalById(id)
+        .then(newData => {
+          if (!unmounted) {
+            setData(newData);
+            setLoading(false);
+          }
+        })
+        .catch(error => {
+          if (!unmounted) {
+            setError(error);
+            setLoading(false);
+          }
+        });
+    };
     // Create the subscription
     transport.proposals.subscribeProposal(id, refreshProposalData)
       .then(unsubscribe => {
         if (!unmounted) {
-          setUnsubscribeProposal(() => unsubscribe);
+          unsubscribeProposal = unsubscribe;
         } else {
           unsubscribe(); // If already unmounted - unsubscribe immedietally!
         }
@@ -42,14 +44,13 @@ const useProposalSubscription = (id: ProposalId) => {
       // onUnmount...
       // Clean the subscription
       unmounted = true;
-      if (unsubscribeProposal !== null) unsubscribeProposal();
+      if (unsubscribeProposal) {
+        unsubscribeProposal();
+      }
     };
   }, []);
 
-  return {
-    proposal: { data: proposal, error: proposalError, loading: proposalLoading },
-    votes: { data: votes, error: votesError, loading: votesLoading }
-  };
+  return { data, error, loading };
 };
 
 export default useProposalSubscription;
