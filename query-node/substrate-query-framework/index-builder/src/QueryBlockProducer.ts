@@ -142,12 +142,12 @@ export default class QueryBlockProducer extends EventEmitter {
    * It can throw errors which should be handled by the top-level code 
    * (in this case _produce_block())
    */
-  private async _doBlockProduce(): Promise<QueryEventBlock> {
-    debug(`Fetching block #${this._block_to_be_produced_next.toString()}`);
+  private async _doBlockProduce(height: BN = this._block_to_be_produced_next): Promise<QueryEventBlock> {
+    debug(`Fetching block #${height.toString()}`);
 
     const block_hash_of_target = await this._withTimeout(
-         this._query_service.getBlockHash(this._block_to_be_produced_next.toString()),
-        `Timeout: failed to fetch the block hash at height ${this._block_to_be_produced_next.toString()}`);
+         this._query_service.getBlockHash(height.toString()),
+        `Timeout: failed to fetch the block hash at height ${height.toString()}`);
     
     debug(`\tHash ${block_hash_of_target.toString()}.`);
 
@@ -155,19 +155,19 @@ export default class QueryBlockProducer extends EventEmitter {
 
     records = await this._withTimeout(
         this._query_service.eventsAt(block_hash_of_target), 
-      `Timeout: failed to fetch events for block ${this._block_to_be_produced_next.toString()}`);
+      `Timeout: failed to fetch events for block ${height.toString()}`);
     
     debug(`\tRead ${records.length} events.`);
 
     let extrinsics_array: Extrinsic[] = [];
     const signed_block = await this._withTimeout(
       this._query_service.getBlock(block_hash_of_target),
-      `Timeout: failed to fetch the block ${this._block_to_be_produced_next.toString()}`);
+      `Timeout: failed to fetch the block ${height.toString()}`);
 
     debug(`\tFetched full block.`);
 
     extrinsics_array = signed_block.block.extrinsics.toArray();
-    let query_events: QueryEvent[] = records.map(
+    const query_events: QueryEvent[] = records.map(
       (record): QueryEvent => {
           // Extract the phase, event
         const { phase } = record;
@@ -179,7 +179,7 @@ export default class QueryBlockProducer extends EventEmitter {
             ? extrinsics_array[(phase.asApplyExtrinsic.toBn() as BN).toNumber()]
               : undefined;
 
-        const query_event = new QueryEvent(record, this._block_to_be_produced_next, extrinsic);
+        const query_event = new QueryEvent(record, height, extrinsic);
 
           // Logging
         query_event.log(0, debug);
@@ -188,12 +188,7 @@ export default class QueryBlockProducer extends EventEmitter {
       }
     );
 
-      // Remove processed events from the list.
-    if (this._block_to_be_produced_next.eq(this._at_block)) {
-      query_events = query_events.filter((event) => event.index.gt(this._last_processed_event_index));
-    }
-
-    const query_block = new QueryEventBlock(this._block_to_be_produced_next, query_events);
+    const query_block = new QueryEventBlock(height, query_events);
     //this.emit('QueryEventBlock', query_block);
     debug(`Produced query event block.`);
     return query_block;
@@ -233,7 +228,7 @@ export default class QueryBlockProducer extends EventEmitter {
       }
       checkHeight();
     });
-}
+  }
 
   public async * blocks(): AsyncGenerator<QueryEventBlock> {
     if (!this._started) {
@@ -248,7 +243,14 @@ export default class QueryBlockProducer extends EventEmitter {
       // Wait if we are already at the head of the chain
       await this.checkHeightOrWait();
       try {
-        yield await this._doBlockProduce();
+        const qeb = await this._doBlockProduce();
+        let eventsToProduce: QueryEvent[] = qeb.query_events;
+        // Remove processed events from the list.
+        if (this._block_to_be_produced_next.eq(this._at_block)) {
+          eventsToProduce = qeb.query_events.filter((event) => event.index.gt(this._last_processed_event_index));
+        }
+
+        yield new QueryEventBlock(this._block_to_be_produced_next, eventsToProduce);
         // all went fine, so reset the back-off time
         this._resetBackOffTime();
         // and proceed to the next block
