@@ -19,8 +19,6 @@ use sp_runtime::traits::{MaybeSerialize, Member};
 use std::marker::PhantomData;
 use system::ensure_signed;
 
-use std::collections::HashSet;
-
 // declared modules
 mod mock;
 mod tests;
@@ -175,9 +173,7 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq
-        + From<u64>
-        + Into<u64>;
+        + PartialEq;
 
     /// Currency balance used for stakes.
     type CurrencyBalance: Parameter
@@ -197,9 +193,7 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq
-        + From<u64>
-        + Into<u64>;
+        + PartialEq;
 
     /// User that can vote in referendum.
     type ReferendumUserId: Parameter
@@ -581,7 +575,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
                     let vote_sum = revealing_stage.revealed_votes[i];
 
                     // skip option with 0 votes
-                    if vote_sum.into() == 0 {
+                    if vote_sum == 0.into() {
                         continue;
                     }
 
@@ -768,11 +762,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ensure no two options are the same
-        let mut options_by_id = HashSet::<u64>::new();
-        for option in options {
-            options_by_id.insert((*option).into());
-        }
-        if options_by_id.len() != options.len() {
+        if has_duplicates(options.to_vec()) {
             return Err(Error::DuplicateReferendumOptions);
         }
 
