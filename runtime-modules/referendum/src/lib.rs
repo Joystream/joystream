@@ -27,6 +27,7 @@ mod tests;
 
 /////////////////// Data Structures ////////////////////////////////////////////
 
+/// Possible referendum states.
 #[derive(Encode, Decode, PartialEq, Eq, Debug)]
 pub enum ReferendumStage<BlockNumber, VotePower> {
     Inactive,
@@ -40,7 +41,9 @@ impl<BlockNumber, VotePower> Default for ReferendumStage<BlockNumber, VotePower>
     }
 }
 
+/// Implement secure ways to retrieve expected referendum stage's state data.
 impl<BlockNumber, VotePower> ReferendumStage<BlockNumber, VotePower> {
+    /// Get voting stage state.
     fn voting(self) -> ReferendumStageVoting<BlockNumber> {
         match self {
             ReferendumStage::Voting(stage_data) => stage_data,
@@ -48,6 +51,7 @@ impl<BlockNumber, VotePower> ReferendumStage<BlockNumber, VotePower> {
         }
     }
 
+    /// Get revealing stage state.
     fn revealing(self) -> ReferendumStageRevealing<BlockNumber, VotePower> {
         match self {
             ReferendumStage::Revealing(stage_data) => stage_data,
@@ -56,12 +60,14 @@ impl<BlockNumber, VotePower> ReferendumStage<BlockNumber, VotePower> {
     }
 }
 
+/// Representation for voting stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageVoting<BlockNumber> {
     start: BlockNumber,
     winning_target_count: u64,
 }
 
+/// Representation for revealing stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
     start: BlockNumber,
@@ -69,17 +75,24 @@ pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
     revealed_votes: Vec<VotePower>,
 }
 
+/// Vote casted in referendum but not revealed yet.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct SealedVote<Hash, CurrencyBalance> {
     commitment: Hash,
     stake: CurrencyBalance,
 }
 
+/// Possible referendum outcomes.
 #[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
 pub enum ReferendumResult<ReferendumOption, VotePower> {
+    /// There are X winners as requested.
     Winners(Vec<(ReferendumOption, VotePower)>),
+    /// X winners were expected, but Xth winning option has the same number of votes (X+1)th option.
+    /// In other words, can't decide only X winners because there is a tie in a significant place.
     ExtraWinners(Vec<(ReferendumOption, VotePower)>),
+    /// X winners were expected, but only Y (Y < X) options received any votes.
     NotEnoughWinners(Vec<(ReferendumOption, VotePower)>),
+    /// Nobody revealed a valid vote in a referendum.
     NoVotesRevealed,
 }
 
@@ -158,25 +171,34 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
     /// Minimum stake needed for voting
     type MinimumStake: Get<Self::CurrencyBalance>;
 
+    /// Decide if user can control referendum (start referendum) via extrinsic(s).
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool;
+
+    /// Decide if user can vote in referendum.
     fn is_referendum_member(
         account_id: &<Self as system::Trait>::AccountId,
         referendum_user_id: &Self::ReferendumUserId,
     ) -> bool;
 
+    /// Calculate the vote's power for user and his stake.
     fn caclulate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
         stake: <Self as Trait<I>>::CurrencyBalance,
     ) -> <Self as Trait<I>>::VotePower;
 
+    /// Check if user can lock the stake.
     fn has_sufficient_balance(
         account: &<Self as system::Trait>::AccountId,
         balance: &Self::CurrencyBalance,
     ) -> bool;
+
+    // Try to lock the stake lock.
     fn lock_currency(
         account: &<Self as system::Trait>::AccountId,
         balance: &Self::CurrencyBalance,
     ) -> bool;
+
+    // Try to release the stake lock.
     fn free_currency(
         account: &<Self as system::Trait>::AccountId,
         balance: &Self::CurrencyBalance,
@@ -314,7 +336,7 @@ decl_module! {
             Self::try_progress_stage(now);
         }
 
-        // start voting period
+        /// Start a new referendum.
         #[weight = 10_000_000]
         pub fn start_referendum(origin, options: Vec<T::ReferendumOption>, winning_target_count: u64) -> Result<(), Error<T, I>> {
             EnsureChecks::<T, I>::can_start_referendum_extrinsic(origin, &options)?;
@@ -324,6 +346,7 @@ decl_module! {
 
         /////////////////// User actions ///////////////////////////////////////
 
+        /// Cast a sealed vote in the referendum.
         #[weight = 10_000_000]
         pub fn vote(origin, referendum_user_id: T::ReferendumUserId, commitment: T::Hash, stake: T::CurrencyBalance) -> Result<(), Error<T, I>> {
             // ensure action can be started
@@ -342,6 +365,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Reveal a sealed vote in the referendum.
         #[weight = 10_000_000]
         pub fn reveal_vote(origin, referendum_user_id: T::ReferendumUserId, salt: Vec<u8>, vote_option: T::ReferendumOption) -> Result<(), Error<T, I>> {
             let (account_id, sealed_vote) = EnsureChecks::<T, I>::can_reveal_vote(origin, &referendum_user_id, &salt, &vote_option)?;
@@ -364,6 +388,8 @@ decl_module! {
 /////////////////// Inner logic ////////////////////////////////////////////////
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
+
+    /// Checkout expire of referendum stage.
     fn try_progress_stage(now: T::BlockNumber) {
         match Stage::<T, I>::get() {
             ReferendumStage::Inactive => (),
@@ -380,6 +406,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         }
     }
 
+    /// Finish voting and start ravealing.
     fn end_voting_period() {
         // start revealing phase
         Mutations::<T, I>::start_revealing_period();
@@ -388,6 +415,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Self::deposit_event(RawEvent::RevealingStageStarted());
     }
 
+    /// Conclude the referendum.
     fn end_reveal_period() {
         // conclude referendum
         let referendum_result = Mutations::<T, I>::conclude_referendum();
@@ -400,6 +428,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 /////////////////// ReferendumManager //////////////////////////////////////////
 
 impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
+
+    /// Start new referendum run.
     fn start_referendum(
         options: Vec<T::ReferendumOption>,
         winning_target_count: u64,
