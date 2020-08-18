@@ -5,7 +5,7 @@ import Body from './Body';
 import VotingSection from './VotingSection';
 import Votes from './Votes';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
-import { ParsedProposal, ProposalVotes } from '@polkadot/joy-utils/types/proposals';
+import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
 import { withCalls } from '@polkadot/react-api';
 import { withMulti } from '@polkadot/react-api/with';
 
@@ -14,7 +14,6 @@ import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses, Executi
 import { BlockNumber } from '@polkadot/types/interfaces';
 import { MemberId } from '@joystream/types/members';
 import { Seat } from '@joystream/types/council';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
 import ProposalDiscussion from './discussion/ProposalDiscussion';
 
 import styled from 'styled-components';
@@ -115,7 +114,6 @@ export function getExtendedStatus (proposal: ParsedProposal, bestNumber: BlockNu
 type ProposalDetailsProps = MyAccountProps & {
   proposal: ParsedProposal;
   proposalId: ProposalId;
-  votesListState: { data: ProposalVotes | null; error: any; loading: boolean };
   bestNumber?: BlockNumber;
   council?: Seat[];
 };
@@ -127,8 +125,7 @@ function ProposalDetails ({
   myMemberId,
   iAmMember,
   council,
-  bestNumber,
-  votesListState
+  bestNumber
 }: ProposalDetailsProps) {
   const iAmCouncilMember = Boolean(iAmMember && council && council.some(seat => seat.member.toString() === myAddress));
   const iAmProposer = Boolean(iAmMember && myMemberId !== undefined && proposal.proposerId === myMemberId.toNumber());
@@ -156,12 +153,7 @@ function ProposalDetails ({
               memberId={ myMemberId as MemberId }
               isVotingPeriod={ isVotingPeriod }/>
           ) }
-          <PromiseComponent
-            error={votesListState.error}
-            loading={votesListState.loading}
-            message="Fetching the votes...">
-            <Votes votes={votesListState.data as ProposalVotes} />
-          </PromiseComponent>
+          <Votes proposal={proposal}/>
         </ProposalDetailsVoting>
       </ProposalDetailsMain>
       <ProposalDetailsDiscussion>
