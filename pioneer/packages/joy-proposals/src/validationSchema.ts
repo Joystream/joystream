@@ -105,7 +105,7 @@ const DECREASE_LEAD_STAKE_MIN = 1;
 const SLASH_LEAD_STAKE_MIN = 1;
 // Max is validated in form component, because it depends on selected working group's leader stake
 
-function errorMessage (name: string, min?: number | string, max?: number | string, unit?: string): string {
+function errorMessage (name: string, min: number | string, max: number | string, unit?: string): string {
   return `${name} should be at least ${min} and no more than ${max}${unit ? ` ${unit}.` : '.'}`;
 }
 
@@ -119,7 +119,7 @@ Ex:
 import Validation from 'path/to/validationSchema'
 ...
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All()
     ...Validation.Text()
   }),
 
@@ -159,7 +159,7 @@ type ValidationSchemaFuncParamsByType<T extends ValidationTypeKeys> =
 
 /* eslint-enable @typescript-eslint/indent */
 
-type ValidationSchemaFunc<FieldValuesT extends {}, ParamsT extends any[] = []> = (...params: ParamsT) =>
+type ValidationSchemaFunc<FieldValuesT extends Record<string, any>, ParamsT extends any[] = []> = (...params: ParamsT) =>
 ({ [fieldK in keyof FieldValuesT]: Yup.Schema<any> });
 
 type ValidationType = {
@@ -212,9 +212,9 @@ const Validation: ValidationType = {
   }),
   RuntimeUpgrade: () => ({
     WASM: Yup.mixed()
-      .test('fileArrayBuffer', 'Unexpected data format, file cannot be processed.', (value) => typeof value.byteLength !== 'undefined')
-      .test('fileSizeMin', `Minimum file size is ${FILE_SIZE_BYTES_MIN} bytes.`, (value) => value.byteLength >= FILE_SIZE_BYTES_MIN)
-      .test('fileSizeMax', `Maximum file size is ${FILE_SIZE_BYTES_MAX} bytes.`, (value) => value.byteLength <= FILE_SIZE_BYTES_MAX)
+      .test('fileArrayBuffer', 'Unexpected data format, file cannot be processed.', (value) => value instanceof ArrayBuffer)
+      .test('fileSizeMin', `Minimum file size is ${FILE_SIZE_BYTES_MIN} bytes.`, (value: ArrayBuffer) => value.byteLength >= FILE_SIZE_BYTES_MIN)
+      .test('fileSizeMax', `Maximum file size is ${FILE_SIZE_BYTES_MAX} bytes.`, (value: ArrayBuffer) => value.byteLength <= FILE_SIZE_BYTES_MAX)
   }),
   SetElectionParameters: () => ({
     announcingPeriod: Yup.number()
@@ -368,11 +368,11 @@ const Validation: ValidationType = {
       .test(
         'schemaIsValid',
         'Schema validation failed!',
-        function (val) {
-          let schemaObj: any;
+        function (val: string) {
+          let schemaObj: Record<string, unknown>;
 
           try {
-            schemaObj = JSON.parse(val);
+            schemaObj = JSON.parse(val) as Record<string, unknown>;
           } catch (e) {
             return this.createError({ message: 'Schema validation failed: Invalid JSON' });
           }
@@ -382,7 +382,7 @@ const Validation: ValidationType = {
 
           if (!isValid) {
             return this.createError({
-              message: 'Schema validation failed: ' + errors.map((e) => `${e.message}${e.dataPath && ` (${e.dataPath})`}`).join(', ')
+              message: 'Schema validation failed: ' + errors.map((e) => `${e.message || ''}${e.dataPath && ` (${e.dataPath})`}`).join(', ')
             });
           }
 

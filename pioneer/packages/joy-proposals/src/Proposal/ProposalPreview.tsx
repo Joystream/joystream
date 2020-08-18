@@ -33,7 +33,7 @@ export default function ProposalPreview ({ proposal, bestNumber }: ProposalPrevi
   return (
     <Card
       fluid
-      href={`#/proposals/${proposal.id}`}>
+      href={`#/proposals/${proposal.id.toString()}`}>
       <ProposalIdBox>{ `#${proposal.id.toString()}` }</ProposalIdBox>
       <Card.Content>
         <Card.Header>

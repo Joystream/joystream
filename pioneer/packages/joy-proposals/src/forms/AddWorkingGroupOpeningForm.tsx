@@ -4,8 +4,7 @@ import * as Yup from 'yup';
 import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps,
-  genericFormDefaultOptions } from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
   defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
@@ -92,7 +91,7 @@ const HRTDefault: (memberHandle: string, group: WorkingGroupKey) => GenericJoySt
     }
   });
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export component into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export component into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps> & {
   currentBlock?: BlockNumber;
@@ -193,7 +192,7 @@ const valuesToAddOpeningParams = (values: FormValues): SimplifiedTypeInterface<I
 };
 
 const AddWorkingGroupOpeningForm: React.FunctionComponent<FormInnerProps> = (props) => {
-  const { handleChange, errors, touched, values, setFieldValue, myMemberId, myMembership } = props;
+  const { handleChange, errors, touched, values, setFieldValue, myMembership } = props;
 
   useEffect(() => {
     if (myMembership && !touched.humanReadableText) {
@@ -202,7 +201,8 @@ const AddWorkingGroupOpeningForm: React.FunctionComponent<FormInnerProps> = (pro
         JSON.stringify(HRTDefault(myMembership.handle.toString(), values.workingGroup), undefined, 4)
       );
     }
-  }, [values.workingGroup, myMembership]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [values.workingGroup, myMembership, touched.humanReadableText]);
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
 
   return (
@@ -210,13 +210,7 @@ const AddWorkingGroupOpeningForm: React.FunctionComponent<FormInnerProps> = (pro
       {...props}
       txMethod='createAddWorkingGroupLeaderOpeningProposal'
       proposalType='AddWorkingGroupLeaderOpening'
-      submitParams={[
-        myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
-        valuesToAddOpeningParams(values)
-      ]}
+      submitParams={[valuesToAddOpeningParams(values)]}
     >
       <Grid columns='4' doubling stackable verticalAlign='bottom'>
         <Grid.Row>
@@ -350,13 +344,13 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: (props: FormContainerProps) => Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.AddWorkingGroupLeaderOpening(
       props.currentBlock?.toNumber() || 0,
       props.HRTConstraint
     )
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'AddWorkingGroupOpeningForm'
 })(AddWorkingGroupOpeningForm);
 

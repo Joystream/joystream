@@ -1,6 +1,6 @@
 import { SemanticCOLORS, SemanticICONS } from 'semantic-ui-react';
 
-export default function useVoteStyles (
+export default function getVoteStyles (
   value: 'Approve' | 'Abstain' | 'Reject' | 'Slash'
 ): { textColor: string; icon: SemanticICONS; color: SemanticCOLORS } {
   let textColor;

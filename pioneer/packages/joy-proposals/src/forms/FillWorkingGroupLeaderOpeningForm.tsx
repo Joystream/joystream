@@ -3,14 +3,13 @@ import * as Yup from 'yup';
 import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps,
-  genericFormDefaultOptions } from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
   defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
 import { FormField, RewardPolicyFields } from './FormFields';
 import { withFormContainer } from './FormContainer';
-import { Dropdown, DropdownItemProps, Header, Checkbox, Message } from 'semantic-ui-react';
+import { Dropdown, DropdownItemProps, DropdownProps, Header, Checkbox, Message } from 'semantic-ui-react';
 import _ from 'lodash';
 import Validation from '../validationSchema';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
@@ -45,7 +44,7 @@ const defaultValues: FormValues = {
   rewardInterval: ''
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export component into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export component into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps> & {
   currentBlock?: BlockNumber;
@@ -69,7 +68,7 @@ const valuesToFillOpeningParams = (values: FormValues): SimplifiedTypeInterface<
 );
 
 const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps> = (props) => {
-  const { handleChange, setFieldValue, values, myMemberId, errors, touched } = props;
+  const { handleChange, setFieldValue, values, errors, touched } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
   const [openings, openingsError, openingsLoading] = usePromise<OpeningData[]>(
@@ -97,11 +96,11 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
   const applicationsOptions = activeApplications
     .map((a) => {
       return {
-        text: `${a.wgApplicationId}: ${a.member.handle}`,
+        text: `${a.wgApplicationId}: ${a.member.handle.toString()}`,
         image: a.member.avatar_uri.toString() ? { avatar: true, src: a.member.avatar_uri.toString() } : undefined,
         description:
           (a.stakes.application ? `Appl. stake: ${formatBalance(a.stakes.application)}` : '') +
-          (a.stakes.role ? (a.stakes.application && ', ') + `Role stake: ${formatBalance(a.stakes.role)}` : ''),
+          (a.stakes.role ? `${(a.stakes.application && ', ')} Role stake: ${formatBalance(a.stakes.role)}` : ''),
         value: a.wgApplicationId.toString()
       };
     });
@@ -112,13 +111,7 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
       txMethod='createFillWorkingGroupLeaderOpeningProposal'
       proposalType='FillWorkingGroupLeaderOpening'
       disabled={!openingsOptions.length || !applicationsOptions.length}
-      submitParams={[
-        myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
-        valuesToFillOpeningParams(values)
-      ]}
+      submitParams={[valuesToFillOpeningParams(values)]}
     >
       <PromiseComponent error={openingsError} loading={openingsLoading} message='Fetching openings...'>
         { !openingsOptions.length
@@ -139,8 +132,8 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
                 onChange={(...args) => {
                   setFieldValue('successfulApplicants', []);
 
-                  // "as any" assert is required due to some invalid typing of Formik's "handleChange" function (it takes 2 args, not 1)
-                  return (handleChange as any)(...args);
+                  // This assert is required due to some invalid typing of Formik's "handleChange" function (it takes 2 args, not 1)
+                  return (handleChange as Exclude<DropdownProps['onChange'], undefined>)(...args);
                 }}
                 placeholder={'Select an opening'}
                 name={'openingId'}
@@ -208,10 +201,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: (props: FormContainerProps) => Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.FillWorkingGroupLeaderOpening(props.currentBlock?.toNumber() || 0)
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'FillWorkingGroupLeaderOpeningForm'
 })(FillWorkingGroupLeaderOpeningForm);
 

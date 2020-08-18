@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Switch } from 'react-router';
+import { Route, Switch, RouteComponentProps } from 'react-router';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { Breadcrumb } from 'semantic-ui-react';
@@ -49,7 +49,7 @@ function App (props: Props): React.ReactElement<Props> {
       <StyledHeader>
         <Breadcrumb>
           <Switch>
-            <Route path={`${basePath}/new/:type`} render={(props) => (
+            <Route path={`${basePath}/new/:type`} render={(props: RouteComponentProps<{ type?: string }>) => (
               <>
                 <Breadcrumb.Section link as={Link} to={basePath}>Proposals</Breadcrumb.Section>
                 <Breadcrumb.Divider icon='right angle' />

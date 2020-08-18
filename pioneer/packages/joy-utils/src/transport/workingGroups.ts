@@ -94,7 +94,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
     const wgApplication = (await this.queryByGroup(group).applicationById(wgApplicationId)) as WGApplication;
 
     if (wgApplication.isEmpty) {
-      throw new Error(`Working group application not found (ID: ${wgApplicationId})!`);
+      throw new Error(`Working group application not found (ID: ${wgApplicationId.toString()})!`);
     }
 
     return wgApplication;

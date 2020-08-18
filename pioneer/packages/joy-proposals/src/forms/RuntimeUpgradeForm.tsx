@@ -3,7 +3,6 @@ import { Form } from 'semantic-ui-react';
 import * as Yup from 'yup';
 import { GenericProposalForm,
   GenericFormValues,
-  genericFormDefaultOptions,
   genericFormDefaultValues,
   withProposalFormData,
   ProposalFormExportProps,
@@ -23,7 +22,7 @@ const defaultValues: FormValues = {
   WASM: new ArrayBuffer(0)
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export comonent into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
@@ -36,7 +35,7 @@ const RuntimeUpgradeForm: React.FunctionComponent<FormInnerProps> = (props) => {
       {...props}
       txMethod='createRuntimeUpgradeProposal'
       proposalType='RuntimeUpgrade'
-      submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.WASM]}
+      submitParams={[values.WASM]}
     >
       <Form.Field>
         <FileDropdown<FormValues>
@@ -59,10 +58,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.RuntimeUpgrade()
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'RuntimeUpgradeForm'
 })(RuntimeUpgradeForm);
 

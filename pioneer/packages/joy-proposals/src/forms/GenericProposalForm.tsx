@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { FormikProps, WithFormikConfig } from 'formik';
+import { FormikProps } from 'formik';
 import { Form, Icon, Button, Message } from 'semantic-ui-react';
 import { getFormErrorLabelsProps } from './errorHandling';
-import Validation from '../validationSchema';
 import { InputFormField, TextareaFormField } from './FormFields';
 import TxButton from '@polkadot/joy-utils/react/components/TxButton';
 import { SubmittableResult } from '@polkadot/api';
@@ -47,9 +46,9 @@ export type ProposalFormInnerProps<ContainerPropsT, FormValuesT> = ContainerProp
 
 // Types only used in this file
 type GenericProposalFormAdditionalProps = {
-  txMethod?: string;
+  txMethod: string;
   submitParams?: any[];
-  proposalType?: ProposalType;
+  proposalType: ProposalType;
   disabled?: boolean;
 };
 
@@ -59,21 +58,6 @@ ProposalFormExportProps<GenericProposalFormAdditionalProps, GenericFormValues>
 
 >;
 type GenericFormInnerProps = ProposalFormInnerProps<GenericFormContainerProps, GenericFormValues>;
-type GenericFormDefaultOptions = WithFormikConfig<GenericFormContainerProps, GenericFormValues>;
-
-// Default "withFormik" options that can be extended in specific forms
-export const genericFormDefaultOptions: GenericFormDefaultOptions = {
-  mapPropsToValues: (props: GenericFormContainerProps) => ({
-    ...genericFormDefaultValues,
-    ...(props.initialData || {})
-  }),
-  validationSchema: {
-    ...Validation.All()
-  },
-  handleSubmit: (values, { setSubmitting, resetForm }) => {
-    // This is handled via TxButton
-  }
-};
 
 const StyledGenericProposalForm = styled.div`
   .proposal-form {
@@ -106,6 +90,7 @@ const StyledGenericProposalForm = styled.div`
 // Other fields can be passed as children
 export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps> = (props) => {
   const {
+    myMemberId,
     handleChange,
     handleSubmit,
     errors,
@@ -121,7 +106,6 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
     submitParams,
     setSubmitting,
     history,
-    balances_totalIssuance,
     proposalType,
     disabled = false
   } = props;
@@ -143,6 +127,8 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
       setAfterSubmit(null);
       setSubmitting(false);
     }
+    // setSubmitting shouldn't change, so we don't specify it as dependency to avoid complications
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isValidating, isValid, afterSubmit]);
 
   // Focus first error field when isValidating changes to false (which happens after form is validated)
@@ -187,13 +173,13 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
     }
 
     setSubmitting(false);
-    history.push(`/proposals/${createdProposalId}`);
+
+    if (createdProposalId !== null) {
+      history.push(`/proposals/${createdProposalId}`);
+    }
   };
 
-  const requiredStake: number | undefined =
-    balances_totalIssuance &&
-    proposalType &&
-    proposalsConsts[proposalType].stake;
+  const requiredStake = proposalType && proposalsConsts[proposalType].stake;
 
   return (
     <StyledGenericProposalForm ref={formContainerRef}>
@@ -234,7 +220,15 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
               type='button' // Tx button uses custom submit handler - "onTxButtonClick"
               label='Submit proposal'
               isDisabled={disabled || isSubmitting}
-              params={(submitParams || []).map((p) => (p === '{STAKE}' ? requiredStake : p))}
+              params={[
+                myMemberId,
+                values.title,
+                values.rationale,
+                requiredStake,
+                // submitParams is any[], but it's not much of an issue (params can vary a lot)
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                ...(submitParams || [])
+              ]}
               tx={`proposalsCodex.${txMethod}`}
               txFailedCb={onTxFailed}
               txSuccessCb={onTxSuccess}

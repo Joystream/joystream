@@ -3,7 +3,6 @@ import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
 import { GenericProposalForm,
   GenericFormValues,
-  genericFormDefaultOptions,
   genericFormDefaultValues,
   withProposalFormData,
   ProposalFormExportProps,
@@ -22,7 +21,7 @@ const defaultValues: FormValues = {
   description: ''
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export comonent into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
@@ -36,7 +35,7 @@ const SignalForm: React.FunctionComponent<FormInnerProps> = (props) => {
       {...props}
       txMethod='createTextProposal'
       proposalType='Text'
-      submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.description]}
+      submitParams={[values.description]}
     >
       <TextareaFormField
         label='Description'
@@ -57,10 +56,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.Text()
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'SignalForm'
 })(SignalForm);
 

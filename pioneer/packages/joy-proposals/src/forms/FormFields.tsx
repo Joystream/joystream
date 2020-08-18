@@ -1,5 +1,5 @@
 import React from 'react';
-import { Form, FormInputProps, FormTextAreaProps, Label, LabelProps, Checkbox } from 'semantic-ui-react';
+import { Form, StrictFormInputProps, StrictFormTextAreaProps, Label, LabelProps, Checkbox } from 'semantic-ui-react';
 import { FormikProps } from 'formik';
 import LabelWithHelp from './LabelWithHelp';
 import { FormErrorLabelsProps } from './errorHandling';
@@ -14,13 +14,13 @@ import styled from 'styled-components';
  * and to easily switch the structure/display of a typical form field.
 */
 
-type InputFormFieldProps = Omit<FormInputProps, 'error'> & {
+type StrictInputFormFieldProps = Omit<StrictFormInputProps, 'error'> & {
   help?: string;
   unit?: string;
   error?: LabelProps;
 };
 
-export function InputFormField (props: InputFormFieldProps) {
+export function InputFormField (props: { [key: string]: any } & StrictInputFormFieldProps) {
   const { unit } = props;
   const fieldProps = { ...props, label: undefined, error: undefined };
 
@@ -36,12 +36,12 @@ export function InputFormField (props: InputFormFieldProps) {
   );
 }
 
-type TextareaFormFieldProps = Omit<FormTextAreaProps, 'error'> & {
+type StrictTextareaFormFieldProps = Omit<StrictFormTextAreaProps, 'error'> & {
   help?: string;
   error?: LabelProps;
 };
 
-export function TextareaFormField (props: TextareaFormFieldProps) {
+export function TextareaFormField (props: { [key: string]: any } & StrictTextareaFormFieldProps) {
   const fieldProps = { ...props, label: undefined, error: undefined };
 
   return (
@@ -51,7 +51,7 @@ export function TextareaFormField (props: TextareaFormFieldProps) {
   );
 }
 
-type FormFieldProps = Omit<(InputFormFieldProps | TextareaFormFieldProps), 'error'> & {
+type StrictFormFieldProps = Omit<(StrictInputFormFieldProps | StrictTextareaFormFieldProps), 'error'> & {
   error?: LabelProps;
   showErrorMsg?: boolean;
 };
@@ -62,7 +62,7 @@ const StyledFormField = styled(Form.Field)`
   }
 `;
 
-export function FormField (props: React.PropsWithChildren<FormFieldProps>) {
+export function FormField (props: React.PropsWithChildren<{ [key: string]: any } & StrictFormFieldProps>) {
   const { error, showErrorMsg = false, label, help, children } = props;
 
   return (

@@ -2,7 +2,7 @@ import { ProposalId, VoteKind } from '@joystream/types/proposals';
 import { MemberId, Membership } from '@joystream/types/members';
 import { ThreadId, PostId } from '@joystream/types/common';
 import { ParsedMember } from './members';
-import { ProposalDetails } from '@joystream/types/src/proposals';
+import { ProposalDetails, ProposalStatus, VotingResults, ProposalParameters } from '@joystream/types/src/proposals';
 
 export const ProposalTypes = [
   'Text',
@@ -46,22 +46,14 @@ export type ParsedProposal = {
   type: ProposalType;
   title: string;
   description: string;
-  status: any;
+  status: ProposalStatus;
   proposer: ParsedMember;
   proposerId: number;
   createdAtBlock: number;
   createdAt: Date;
   details: ParsedProposalDetails;
-  votingResults: any;
-  parameters: {
-    approvalQuorumPercentage: number;
-    approvalThresholdPercentage: number;
-    gracePeriod: number;
-    requiredStake: number;
-    slashingQuorumPercentage: number;
-    slashingThresholdPercentage: number;
-    votingPeriod: number;
-  };
+  votingResults: VotingResults;
+  parameters: ProposalParameters;
   cancellationFee: number;
 };
 

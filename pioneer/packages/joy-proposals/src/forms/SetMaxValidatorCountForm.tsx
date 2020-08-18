@@ -3,7 +3,6 @@ import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
 import { GenericProposalForm,
   GenericFormValues,
-  genericFormDefaultOptions,
   genericFormDefaultValues,
   withProposalFormData,
   ProposalFormExportProps,
@@ -23,7 +22,7 @@ const defaultValues: FormValues = {
   maxValidatorCount: ''
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export comonent into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
@@ -38,6 +37,7 @@ const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = (props
     if (validatorCount) {
       setFieldValue('maxValidatorCount', validatorCount);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [validatorCount]);
 
   return (
@@ -45,7 +45,7 @@ const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = (props
       {...props}
       txMethod='createSetValidatorCountProposal'
       proposalType='SetValidatorCount'
-      submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.maxValidatorCount]}
+      submitParams={[values.maxValidatorCount]}
     >
       <InputFormField
         error={errorLabelsProps.maxValidatorCount}
@@ -66,10 +66,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.SetValidatorCount()
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'SetMaxValidatorCountForm'
 })(SetMaxValidatorCountForm);
 

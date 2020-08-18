@@ -3,8 +3,7 @@ import * as Yup from 'yup';
 import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps,
-  genericFormDefaultOptions } from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
   defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
@@ -27,13 +26,13 @@ const defaultValues: FormValues = {
   openingId: ''
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export component into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export component into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> = (props) => {
-  const { handleChange, values, myMemberId, errors, touched } = props;
+  const { handleChange, values, errors, touched } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
   const [openings, openingsError, openingsLoading] = usePromise(
@@ -59,10 +58,6 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
       proposalType='BeginReviewWorkingGroupLeaderApplication'
       disabled={!openingsOptions.length}
       submitParams={[
-        myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
         values.openingId,
         values.workingGroup
       ]}
@@ -104,10 +99,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.BeginReviewWorkingGroupLeaderApplication()
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'BeginReviewLeadeApplicationsForm'
 })(BeginReviewLeadeApplicationsForm);
 

@@ -4,7 +4,6 @@ import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
 import { GenericProposalForm,
   GenericFormValues,
-  genericFormDefaultOptions,
   genericFormDefaultValues,
   withProposalFormData,
   ProposalFormExportProps,
@@ -19,7 +18,7 @@ import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseCompon
 import _ from 'lodash';
 
 export type FormValues = GenericFormValues & {
-  workingGroupLead: any;
+  workingGroupLead: string;
 };
 
 const defaultValues: FormValues = {
@@ -27,7 +26,7 @@ const defaultValues: FormValues = {
   workingGroupLead: ''
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export comonent into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
@@ -48,7 +47,7 @@ function membersToOptions (members: { id: number; profile: Membership }[]) {
     members
       .map(({ id, profile }) => ({
         key: profile.handle,
-        text: `${profile.handle} (id:${id})`,
+        text: `${profile.handle.toString()} (id:${id})`,
         value: memberOptionKey(id, profile),
         image: profile.avatar_uri.toString() ? { avatar: true, src: profile.avatar_uri } : null
       }))
@@ -94,7 +93,7 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
   // Filter options on search query change (we "pulled-out" this logic here to avoid lags)
   useEffect(() => {
     setFilteredOptions(filterMembers(membersOptions, membersSearchQuery));
-  }, [membersSearchQuery]);
+  }, [membersSearchQuery, membersOptions]);
 
   return (
     <PromiseComponent error={clError} loading={clLoading} message='Fetching current lead...'>
@@ -103,10 +102,6 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
         txMethod='createSetLeadProposal'
         proposalType='SetLead'
         submitParams={[
-          props.myMemberId,
-          values.title,
-          values.rationale,
-          '{STAKE}',
           values.workingGroupLead !== MEMBERS_NONE_OPTION.value ? values.workingGroupLead.split(':') : undefined
         ]}
       >
@@ -180,10 +175,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.SetLead()
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'SetContentWorkingGroupLeadForm'
 })(SetContentWorkingGroupsLeadForm);
 

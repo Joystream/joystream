@@ -4,7 +4,6 @@ import * as Yup from 'yup';
 import { Label } from 'semantic-ui-react';
 import { GenericProposalForm,
   GenericFormValues,
-  genericFormDefaultOptions,
   genericFormDefaultValues,
   withProposalFormData,
   ProposalFormExportProps,
@@ -17,7 +16,7 @@ import { InputAddress } from '@polkadot/react-components/index';
 import { formatBalance } from '@polkadot/util';
 
 export type FormValues = GenericFormValues & {
-  destinationAccount: any;
+  destinationAccount: string;
   tokens: string;
 };
 
@@ -27,7 +26,7 @@ const defaultValues: FormValues = {
   tokens: ''
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export comonent into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
@@ -42,10 +41,6 @@ const SpendingProposalForm: React.FunctionComponent<FormInnerProps> = (props) =>
       txMethod='createSpendingProposal'
       proposalType='Spending'
       submitParams={[
-        props.myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
         values.tokens,
         values.destinationAccount
       ]}
@@ -83,10 +78,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.Spending()
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'SpendingProposalsForm'
 })(SpendingProposalForm);
 

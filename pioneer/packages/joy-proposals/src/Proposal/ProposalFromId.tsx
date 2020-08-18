@@ -5,7 +5,9 @@ import { useProposalSubscription } from '@polkadot/joy-utils/react/hooks';
 import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { useApi } from '@polkadot/react-hooks';
 
-export default function ProposalFromId (props: RouteComponentProps<any>) {
+type RouteParams = { id?: string | undefined };
+
+export default function ProposalFromId (props: RouteComponentProps<RouteParams>) {
   const {
     match: {
       params: { id }

@@ -4,8 +4,7 @@ import * as Yup from 'yup';
 import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps,
-  genericFormDefaultOptions } from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
   defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
@@ -26,13 +25,13 @@ const defaultValues: FormValues = {
   amount: ''
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export component into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export component into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const DecreaseWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps> = (props) => {
-  const { handleChange, errors, touched, values, myMemberId, setFieldError } = props;
+  const { handleChange, errors, touched, values, setFieldError } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const [lead, setLead] = useState<WorkerData | null>(null);
 
@@ -54,10 +53,6 @@ const DecreaseWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps>
       leadStakeRequired={true}
       onLeadChange={(lead: WorkerData | null) => setLead(lead)}
       submitParams={[
-        myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
         lead?.workerId,
         values.amount,
         values.workingGroup
@@ -87,10 +82,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.DecreaseWorkingGroupLeaderStake()
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'DecreaseWorkingGroupLeadStakeForm'
 })(DecreaseWorkingGroupLeadStakeForm);
 

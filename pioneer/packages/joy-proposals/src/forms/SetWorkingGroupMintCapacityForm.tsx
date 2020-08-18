@@ -4,8 +4,7 @@ import * as Yup from 'yup';
 import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps,
-  genericFormDefaultOptions } from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
   defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
@@ -25,13 +24,13 @@ const defaultValues: FormValues = {
   capacity: ''
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export component into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export component into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const SetWorkingGroupMintCapacityForm: React.FunctionComponent<FormInnerProps> = (props) => {
-  const { handleChange, errors, touched, values, myMemberId } = props;
+  const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
 
   return (
@@ -40,10 +39,6 @@ const SetWorkingGroupMintCapacityForm: React.FunctionComponent<FormInnerProps> =
       txMethod='createSetWorkingGroupMintCapacityProposal'
       proposalType='SetWorkingGroupMintCapacity'
       submitParams={[
-        myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
         values.capacity,
         values.workingGroup
       ]}
@@ -71,10 +66,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.SetWorkingGroupMintCapacity()
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'SetWorkingGroupMintCapacityForm'
 })(SetWorkingGroupMintCapacityForm);
 

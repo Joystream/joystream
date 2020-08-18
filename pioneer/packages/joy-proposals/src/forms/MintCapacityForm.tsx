@@ -3,7 +3,6 @@ import * as Yup from 'yup';
 import { getFormErrorLabelsProps } from './errorHandling';
 import { GenericProposalForm,
   GenericFormValues,
-  genericFormDefaultOptions,
   genericFormDefaultValues,
   withProposalFormData,
   ProposalFormExportProps,
@@ -45,7 +44,7 @@ const MintCapacityForm: React.FunctionComponent<FormInnerProps> = (props) => {
       {...props}
       txMethod={txMethod}
       proposalType={proposalType}
-      submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.capacity]}
+      submitParams={[values.capacity]}
     >
       <InputFormField
         error={errorLabelsProps.capacity}
@@ -67,10 +66,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.SetContentWorkingGroupMintCapacity()
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'MintCapacityForm'
 })(MintCapacityForm);
 

@@ -22,8 +22,9 @@ export default class CouncilTransport extends BaseTransport {
   async councilMembersLength (atBlock?: number): Promise<number> {
     if (atBlock) {
       const blockHash = await this.chainT.blockHash(atBlock);
+      const seats = await this.api.query.council.activeCouncil.at<Seats>(blockHash);
 
-      return ((await this.api.query.council.activeCouncil.at(blockHash))).length;
+      return seats.length;
     }
 
     return ((await this.council.activeCouncil()) as Seats).length;

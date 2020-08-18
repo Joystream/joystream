@@ -50,16 +50,11 @@ function ProposedAddress (props: { accountId?: AccountId }) {
   );
 }
 
-function ProposedMember (props: { memberId?: MemberId | number | null }) {
-  if (props.memberId === null || props.memberId === undefined) {
-    return <>NONE</>;
-  }
-
-  const memberId: MemberId | number = props.memberId;
-
+function ProposedMember (props: { memberId: MemberId | number }) {
   const transport = useTransport();
+
   const [member, error, loading] = usePromise<Membership | null>(
-    () => transport.members.membershipById(memberId),
+    () => transport.members.membershipById(props.memberId),
     null
   );
 
@@ -112,15 +107,15 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>) 
   ],
   RuntimeUpgrade: ([hash, filesize]) => [
     new ParsedParam('Blake2b256 hash of WASM code', hash, true),
-    new ParsedParam('File size', filesize + ' bytes')
+    new ParsedParam('File size', `${filesize} bytes`)
   ],
   SetElectionParameters: (params) => [
-    new ParsedParam('Announcing period', params.announcing_period.toString() + ' blocks'),
-    new ParsedParam('Voting period', params.voting_period.toString() + ' blocks'),
-    new ParsedParam('Revealing period', params.revealing_period.toString() + ' blocks'),
-    new ParsedParam('Council size', params.council_size.toString() + ' members'),
-    new ParsedParam('Candidacy limit', params.candidacy_limit.toString() + ' members'),
-    new ParsedParam('New term duration', params.new_term_duration.toString() + ' blocks'),
+    new ParsedParam('Announcing period', `${params.announcing_period.toString()} blocks`),
+    new ParsedParam('Voting period', `${params.voting_period.toString()} blocks`),
+    new ParsedParam('Revealing period', `${params.revealing_period.toString()} blocks`),
+    new ParsedParam('Council size', `${params.council_size.toString()} members`),
+    new ParsedParam('Candidacy limit', `${params.candidacy_limit.toString()} members`),
+    new ParsedParam('New term duration', `${params.new_term_duration.toString()} blocks`),
     new ParsedParam('Min. council stake', formatBalance(params.min_council_stake)),
     new ParsedParam('Min. voting stake', formatBalance(params.min_voting_stake))
   ],
@@ -129,7 +124,10 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>) 
     new ParsedParam('Account', <ProposedAddress accountId={account as AccountId} />)
   ],
   SetLead: (params) => [
-    new ParsedParam('Member', <ProposedMember memberId={params.unwrapOr([])[0] as MemberId | undefined} />),
+    new ParsedParam(
+      'Member',
+      params.isSome ? <ProposedMember memberId={params.unwrap()[0] as MemberId} /> : 'NONE'
+    ),
     new ParsedParam('Account id', <ProposedAddress accountId={params.unwrapOr([])[1] as AccountId | undefined} />)
   ],
   SetContentWorkingGroupMintCapacity: (capacity) => [

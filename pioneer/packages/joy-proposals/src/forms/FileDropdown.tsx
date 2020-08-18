@@ -71,7 +71,7 @@ const innerSpanStyle = (): React.CSSProperties => {
 
 // Interpret the file as a UTF-8 string
 // https://developer.mozilla.org/en-US/docs/Web/API/Blob/text
-const parseFileAsUtf8 = async (file: any): Promise<string> => {
+const parseFileAsUtf8 = async (file: File): Promise<string> => {
   const text = await file.text();
 
   return text;
@@ -79,7 +79,7 @@ const parseFileAsUtf8 = async (file: any): Promise<string> => {
 
 // Interpret the file as containing binary data. This will load the entire
 // file into memory which may crash the brower with very large files.
-const parseFileAsBinary = async (file: any): Promise<ArrayBuffer> => {
+const parseFileAsBinary = async (file: File): Promise<ArrayBuffer> => {
   // return file.arrayBuffer();
   // This newer API not fully supported yet in all browsers
   // https://developer.mozilla.org/en-US/docs/Web/API/Blob/arrayBuffer
@@ -107,13 +107,13 @@ type FileDropdownProps<FormValuesT> = {
   interpretAs: 'utf-8' | 'binary';
 };
 
-export default function FileDropdown<ValuesT = {}> (props: FileDropdownProps<ValuesT>) {
+export default function FileDropdown<ValuesT = Record<string, any>> (props: FileDropdownProps<ValuesT>) {
   const [parsing, setParsing] = useState(false);
   const { error, name, setFieldValue, setFieldTouched, acceptedFormats, defaultText, interpretAs } = props;
 
   return (
     <Dropzone
-      onDropAccepted={async (acceptedFiles) => {
+      onDropAccepted={async (acceptedFiles: File[]) => {
         setParsing(true);
         let contents;
 

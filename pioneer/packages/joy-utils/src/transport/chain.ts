@@ -1,5 +1,4 @@
 import BaseTransport from './base';
-import { Moment } from '@polkadot/types/interfaces';
 
 export default class ChainTransport extends BaseTransport {
   async blockHash (height: number): Promise<string> {

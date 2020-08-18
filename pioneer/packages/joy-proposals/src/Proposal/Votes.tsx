@@ -1,6 +1,6 @@
 import React from 'react';
 import { Header, Divider, Table, Icon } from 'semantic-ui-react';
-import useVoteStyles from './useVoteStyles';
+import getVoteStyles from './getVoteStyles';
 import { VoteKind } from '@joystream/types/proposals';
 import { VoteKindStr } from './VotingSection';
 import ProfilePreview from '@polkadot/joy-utils/react/components/MemberProfilePreview';
@@ -37,7 +37,7 @@ export default function Votes ({ proposal: { id, votingResults } }: VotesProps) 
                 {votes.votes.map((proposalVote, idx) => {
                   const { vote, member } = proposalVote;
                   const voteStr = (vote as VoteKind).type.toString() as VoteKindStr;
-                  const { icon, textColor } = useVoteStyles(voteStr);
+                  const { icon, textColor } = getVoteStyles(voteStr);
 
                   return (
                     <Table.Row key={`${member.handle}-${idx}`}>

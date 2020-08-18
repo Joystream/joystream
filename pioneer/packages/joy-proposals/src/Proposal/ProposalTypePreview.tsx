@@ -6,7 +6,7 @@ import { Item, Icon, Button, Label } from 'semantic-ui-react';
 import { ProposalType, Category } from '@polkadot/joy-utils/types/proposals';
 import _ from 'lodash';
 import styled from 'styled-components';
-import useVoteStyles from './useVoteStyles';
+import getVoteStyles from './getVoteStyles';
 import { formatBalance } from '@polkadot/util';
 
 import './ProposalType.css';
@@ -114,26 +114,26 @@ export default function ProposalTypePreview (props: ProposalTypePreviewProps) {
         </div>
         <QuorumsAndThresholds>
           { approvalQuorum && (
-            <QuorumThresholdLabel color={ useVoteStyles('Approve').color }>
-              <Icon name={ useVoteStyles('Approve').icon } />
+            <QuorumThresholdLabel color={ getVoteStyles('Approve').color }>
+              <Icon name={ getVoteStyles('Approve').icon } />
               Approval Quorum: <b>{ approvalQuorum }%</b>
             </QuorumThresholdLabel>
           ) }
           { approvalThreshold && (
-            <QuorumThresholdLabel color={ useVoteStyles('Approve').color }>
-              <Icon name={ useVoteStyles('Approve').icon } />
+            <QuorumThresholdLabel color={ getVoteStyles('Approve').color }>
+              <Icon name={ getVoteStyles('Approve').icon } />
               Approval Threshold: <b>{ approvalThreshold }%</b>
             </QuorumThresholdLabel>
           ) }
           { slashingQuorum && (
-            <QuorumThresholdLabel color={ useVoteStyles('Slash').color }>
-              <Icon name={ useVoteStyles('Slash').icon } />
+            <QuorumThresholdLabel color={ getVoteStyles('Slash').color }>
+              <Icon name={ getVoteStyles('Slash').icon } />
               Slashing Quorum: <b>{ slashingQuorum }%</b>
             </QuorumThresholdLabel>
           ) }
           { slashingThreshold && (
-            <QuorumThresholdLabel color={ useVoteStyles('Slash').color }>
-              <Icon name={ useVoteStyles('Slash').icon } />
+            <QuorumThresholdLabel color={ getVoteStyles('Slash').color }>
+              <Icon name={ getVoteStyles('Slash').icon } />
               Slashing Threshold: <b>{ slashingThreshold }%</b>
             </QuorumThresholdLabel>
           ) }

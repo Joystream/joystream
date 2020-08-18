@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTransport } from '../';
 import { ProposalId } from '@joystream/types/proposals';
 import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
+import { normalizeError } from '@polkadot/joy-utils/functions/misc';
 
 // Take advantage of polkadot api subscriptions to re-fetch proposal data and votes
 // each time there is some runtime change in the proposal
@@ -9,7 +10,7 @@ const useProposalSubscription = (id: ProposalId) => {
   const transport = useTransport();
   // State holding current proposal data
   const [data, setData] = useState<ParsedProposal | null>(null);
-  const [error, setError] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -27,7 +28,7 @@ const useProposalSubscription = (id: ProposalId) => {
         })
         .catch((error) => {
           if (!unmounted) {
-            setError(error);
+            setError(normalizeError(error));
             setLoading(false);
           }
         });
@@ -41,7 +42,8 @@ const useProposalSubscription = (id: ProposalId) => {
         } else {
           unsubscribe(); // If already unmounted - unsubscribe immedietally!
         }
-      });
+      })
+      .catch((e) => { throw e; });
 
     return () => {
       // onUnmount...
@@ -52,6 +54,7 @@ const useProposalSubscription = (id: ProposalId) => {
         unsubscribeProposal();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { data, error, loading };

@@ -108,25 +108,22 @@ export default class ProposalsTransport extends BaseTransport {
     }
 
     const proposer = (await this.membersT.expectedMembership(rawProposal.proposerId)).toJSON() as ParsedMember;
-    const proposal = rawProposal.toJSON() as {
-      title: string;
-      description: string;
-      parameters: any;
-      votingResults: any;
-      proposerId: number;
-      status: any;
-    };
     const createdAtBlock = rawProposal.createdAt;
     const createdAt = await this.chainT.blockTimestamp(createdAtBlock.toNumber());
     const cancellationFee = this.cancellationFee();
 
     return {
       id,
-      ...proposal,
+      title: rawProposal.title.toString(),
+      description: rawProposal.description.toString(),
+      parameters: rawProposal.parameters,
+      votingResults: rawProposal.votingResults,
+      proposerId: rawProposal.proposerId.toNumber(),
+      status: rawProposal.status,
       details,
       type,
       proposer,
-      createdAtBlock: createdAtBlock.toJSON(),
+      createdAtBlock: createdAtBlock.toNumber(),
       createdAt,
       cancellationFee
     };

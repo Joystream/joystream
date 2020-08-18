@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 import { Icon, Message, Divider, Header } from 'semantic-ui-react';
-import useVoteStyles from './useVoteStyles';
+import getVoteStyles from './getVoteStyles';
 import { SemanticTxButton } from '@polkadot/joy-utils/react/components/TxButton';
 import { MemberId } from '@joystream/types/members';
 import { ProposalId, VoteKind, VoteKinds } from '@joystream/types/proposals';
@@ -34,7 +34,7 @@ type VoteButtonProps = {
 }
 
 function VoteButton ({ voteKind, proposalId, memberId, onSuccess }: VoteButtonProps) {
-  const { icon, color } = useVoteStyles(voteKind);
+  const { icon, color } = getVoteStyles(voteKind);
 
   return (
     <SemanticTxButton
@@ -83,7 +83,7 @@ export default function VotingSection ({
   const voteStr: VoteKindStr | null = voted || (vote && vote.type.toString() as VoteKindStr);
 
   if (voteStr) {
-    const { icon, color } = useVoteStyles(voteStr);
+    const { icon, color } = getVoteStyles(voteStr);
 
     return (
       <Message icon color={color}>

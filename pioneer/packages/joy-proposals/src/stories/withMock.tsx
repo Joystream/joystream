@@ -4,7 +4,7 @@ import { match, RouteComponentProps } from 'react-router';
 
 const history = createMemoryHistory();
 const path = '/';
-const matchObj: match<{}> = {
+const matchObj: match<Record<string, string | undefined>> = {
   isExact: false,
   path,
   url: path,

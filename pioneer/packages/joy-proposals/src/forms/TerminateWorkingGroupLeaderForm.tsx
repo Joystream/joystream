@@ -3,8 +3,7 @@ import * as Yup from 'yup';
 import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps,
-  genericFormDefaultOptions } from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
   defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
@@ -32,7 +31,7 @@ const defaultValues: FormValues = {
   slashStake: false
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export component into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export component into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps> & {
   terminationRationaleConstraint?: InputValidationLengthConstraint;
@@ -49,7 +48,7 @@ const valuesToTerminateRoleParams = (values: FormValues, lead: WorkerData): Simp
 };
 
 const TerminateWorkingGroupLeaderForm: React.FunctionComponent<FormInnerProps> = (props) => {
-  const { handleChange, errors, touched, values, myMemberId, setFieldValue } = props;
+  const { handleChange, errors, touched, values, setFieldValue } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const [lead, setLead] = useState<WorkerData | null>(null);
 
@@ -60,13 +59,7 @@ const TerminateWorkingGroupLeaderForm: React.FunctionComponent<FormInnerProps> =
       proposalType='TerminateWorkingGroupLeaderRole'
       leadRequired={true}
       onLeadChange={(lead: WorkerData | null) => setLead(lead)}
-      submitParams={[
-        myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
-        lead && valuesToTerminateRoleParams(values, lead)
-      ]}
+      submitParams={[lead && valuesToTerminateRoleParams(values, lead)]}
     >
       { lead && (<>
         <TextareaFormField
@@ -102,12 +95,12 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: (props: FormContainerProps) => Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.TerminateWorkingGroupLeaderRole(
       props.terminationRationaleConstraint
     )
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'TerminateWorkingGroupLeaderForm'
 })(TerminateWorkingGroupLeaderForm);
 
