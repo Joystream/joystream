@@ -13,14 +13,14 @@ export default function ProposalFromId (props: RouteComponentProps<any>) {
   } = props;
   const { api } = useApi();
 
-  const { proposal: proposalState, votes: votesState } = useProposalSubscription(api.createType('ProposalId', id));
+  const proposalState = useProposalSubscription(api.createType('ProposalId', id));
 
   return (
     <PromiseComponent
       error={proposalState.error}
       loading={proposalState.loading}
       message={'Fetching proposal...'}>
-      <ProposalDetails proposal={ proposalState.data } proposalId={ id } votesListState={ votesState }/>
+      <ProposalDetails proposal={ proposalState.data } proposalId={ id }/>
     </PromiseComponent>
   );
 }
