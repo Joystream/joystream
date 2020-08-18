@@ -39,7 +39,7 @@ export type ParsedProposalDetails = ProposalDetails | RuntimeUpgradeProposalDeta
 
 export type SpecificProposalDetails<T extends keyof ProposalDetails['typeDefinitions']> =
   T extends 'RuntimeUpgrade' ? RuntimeUpgradeProposalDetails :
-  InstanceType<ProposalDetails['typeDefinitions'][Exclude<T, 'RuntimeUpgrade'>]>;
+    InstanceType<ProposalDetails['typeDefinitions'][Exclude<T, 'RuntimeUpgrade'>]>;
 
 export type ParsedProposal = {
   id: ProposalId;

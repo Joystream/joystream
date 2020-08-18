@@ -49,8 +49,8 @@ export const LeadInfoFromId = ({ leadId, group }: LeadInfoFromIdProps) => {
   );
 
   return (
-    <PromiseComponent error={error} loading={loading} message="Fetching current lead...">
-      <LeadInfo lead={lead} group={group} header={false} emptyMessage="Leader no longer active!"/>
+    <PromiseComponent error={error} loading={loading} message='Fetching current lead...'>
+      <LeadInfo lead={lead} group={group} header={false} emptyMessage='Leader no longer active!'/>
     </PromiseComponent>
   );
 };

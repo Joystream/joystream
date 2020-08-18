@@ -1,16 +1,14 @@
 import React from 'react';
 import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
-import {
-  GenericProposalForm,
+import { GenericProposalForm,
   GenericFormValues,
   genericFormDefaultOptions,
   genericFormDefaultValues,
   withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps
-} from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import Validation from '../validationSchema';
 import { TextareaFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
@@ -29,23 +27,23 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const SignalForm: React.FunctionComponent<FormInnerProps> = props => {
+const SignalForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
 
   return (
     <GenericProposalForm
       {...props}
-      txMethod="createTextProposal"
-      proposalType="Text"
+      txMethod='createTextProposal'
+      proposalType='Text'
       submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.description]}
     >
       <TextareaFormField
-        label="Description"
-        help="The extensive description of your proposal"
+        label='Description'
+        help='The extensive description of your proposal'
         onChange={handleChange}
-        name="description"
-        placeholder="What I would like to propose is..."
+        name='description'
+        placeholder='What I would like to propose is...'
         error={errorLabelsProps.description}
         value={values.description}
       />

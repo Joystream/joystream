@@ -10,6 +10,7 @@ export function withFormContainer<MyFormProps, FormValues> (formikProps: any) {
           props.setFieldTouched(data.name);
         }
       };
+
       const handleChange = (e: React.ChangeEvent<HTMLInputElement>, data: any): void => {
         if (data && data.name) {
           props.setFieldValue(data.name, data.value);

@@ -1,18 +1,14 @@
 import React, { useEffect } from 'react';
 import { getFormErrorLabelsProps, FormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
-import {
-  withProposalFormData,
+import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps,
-  genericFormDefaultOptions
-} from './GenericProposalForm';
-import {
-  GenericWorkingGroupProposalForm,
+  genericFormDefaultOptions } from './GenericProposalForm';
+import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
-  defaultValues as wgFromDefaultValues
-} from './GenericWorkingGroupProposalForm';
+  defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
 import { FormField, InputFormField, TextareaFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import { ActivateOpeningAtKey, ActivateOpeningAtDef, StakingAmountLimitModeKeys, IApplicationRationingPolicy, IStakingPolicy } from '@joystream/types/hiring';
@@ -108,6 +104,7 @@ type StakeFieldsProps = Pick<FormInnerProps, 'values' | 'handleChange' | 'setFie
   errorLabelsProps: FormErrorLabelsProps<FormValues>;
   stakeType: 'role' | 'application';
 };
+
 const StakeFields: React.FunctionComponent<StakeFieldsProps> = ({
   values,
   errorLabelsProps,
@@ -116,35 +113,35 @@ const StakeFields: React.FunctionComponent<StakeFieldsProps> = ({
   setFieldValue
 }) => {
   return (
-  <>
-    <FormField label={`${_.startCase(stakeType)} stake` }>
-      <Checkbox
-        toggle
-        onChange={(e, data) => { setFieldValue(`${stakeType}StakeRequired`, data.checked); }}
-        label={ `Require ${stakeType} stake` }
-        checked={ stakeType === 'role' ? values.roleStakeRequired : values.applicationStakeRequired }/>
-    </FormField>
-    { (stakeType === 'role' ? values.roleStakeRequired : values.applicationStakeRequired) && (<>
-      <FormField label="Stake mode">
-        <Dropdown
-          onChange={handleChange}
-          name={ `${stakeType}StakeMode` }
-          selection
-          options={[StakingAmountLimitModeKeys.Exact, StakingAmountLimitModeKeys.AtLeast].map(mode => ({ text: mode, value: mode }))}
-          value={ stakeType === 'role' ? values.roleStakeMode : values.applicationStakeMode }
-        />
+    <>
+      <FormField label={`${_.startCase(stakeType)} stake` }>
+        <Checkbox
+          toggle
+          onChange={(e, data) => { setFieldValue(`${stakeType}StakeRequired`, data.checked); }}
+          label={ `Require ${stakeType} stake` }
+          checked={ stakeType === 'role' ? values.roleStakeRequired : values.applicationStakeRequired }/>
       </FormField>
-      <InputFormField
-        label="Stake value"
-        unit={formatBalance.getDefaults().unit}
-        onChange={handleChange}
-        name={ `${stakeType}StakeValue` }
-        error={ stakeType === 'role' ? errorLabelsProps.roleStakeValue : errorLabelsProps.applicationStakeValue}
-        value={ stakeType === 'role' ? values.roleStakeValue : values.applicationStakeValue}
-        placeholder={'ie. 100'}
-      />
-    </>) }
-  </>
+      { (stakeType === 'role' ? values.roleStakeRequired : values.applicationStakeRequired) && (<>
+        <FormField label='Stake mode'>
+          <Dropdown
+            onChange={handleChange}
+            name={ `${stakeType}StakeMode` }
+            selection
+            options={[StakingAmountLimitModeKeys.Exact, StakingAmountLimitModeKeys.AtLeast].map((mode) => ({ text: mode, value: mode }))}
+            value={ stakeType === 'role' ? values.roleStakeMode : values.applicationStakeMode }
+          />
+        </FormField>
+        <InputFormField
+          label='Stake value'
+          unit={formatBalance.getDefaults().unit}
+          onChange={handleChange}
+          name={ `${stakeType}StakeValue` }
+          error={ stakeType === 'role' ? errorLabelsProps.roleStakeValue : errorLabelsProps.applicationStakeValue}
+          value={ stakeType === 'role' ? values.roleStakeValue : values.applicationStakeValue}
+          placeholder={'ie. 100'}
+        />
+      </>) }
+    </>
   );
 };
 
@@ -152,32 +149,41 @@ const valuesToAddOpeningParams = (values: FormValues): SimplifiedTypeInterface<I
   const commitment: SimplifiedTypeInterface<IWorkingGroupOpeningPolicyCommitment> = {
     max_review_period_length: parseInt(values.maxReviewPeriodLength)
   };
+
   if (parseInt(values.terminateRoleUnstakingPeriod) > 0) {
     commitment.terminate_role_stake_unstaking_period = parseInt(values.terminateRoleUnstakingPeriod);
   }
+
   if (parseInt(values.leaveRoleUnstakingPeriod) > 0) {
     commitment.exit_role_stake_unstaking_period = parseInt(values.leaveRoleUnstakingPeriod);
   }
+
   if (values.applicationsLimited) {
     const rationingPolicy: SimplifiedTypeInterface<IApplicationRationingPolicy> = {
       max_active_applicants: parseInt(values.maxApplications)
     };
+
     commitment.application_rationing_policy = rationingPolicy;
   }
+
   if (values.applicationStakeRequired) {
     const applicationStakingPolicy: SimplifiedTypeInterface<IStakingPolicy> = {
       amount: parseInt(values.applicationStakeValue),
       amount_mode: values.applicationStakeMode
     };
+
     commitment.application_staking_policy = applicationStakingPolicy;
   }
+
   if (values.roleStakeRequired) {
     const roleStakingPolicy: SimplifiedTypeInterface<IStakingPolicy> = {
       amount: parseInt(values.roleStakeValue),
       amount_mode: values.roleStakeMode
     };
+
     commitment.role_staking_policy = roleStakingPolicy;
   }
+
   return {
     activate_at: { [values.activateAt]: values.activateAt === 'ExactBlock' ? parseInt(values.activateAtBlock) : null },
     commitment: commitment,
@@ -186,8 +192,9 @@ const valuesToAddOpeningParams = (values: FormValues): SimplifiedTypeInterface<I
   };
 };
 
-const AddWorkingGroupOpeningForm: React.FunctionComponent<FormInnerProps> = props => {
+const AddWorkingGroupOpeningForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { handleChange, errors, touched, values, setFieldValue, myMemberId, myMembership } = props;
+
   useEffect(() => {
     if (myMembership && !touched.humanReadableText) {
       setFieldValue(
@@ -201,8 +208,8 @@ const AddWorkingGroupOpeningForm: React.FunctionComponent<FormInnerProps> = prop
   return (
     <GenericWorkingGroupProposalForm
       {...props}
-      txMethod="createAddWorkingGroupLeaderOpeningProposal"
-      proposalType="AddWorkingGroupLeaderOpening"
+      txMethod='createAddWorkingGroupLeaderOpeningProposal'
+      proposalType='AddWorkingGroupLeaderOpening'
       submitParams={[
         myMemberId,
         values.title,
@@ -211,15 +218,15 @@ const AddWorkingGroupOpeningForm: React.FunctionComponent<FormInnerProps> = prop
         valuesToAddOpeningParams(values)
       ]}
     >
-      <Grid columns="4" doubling stackable verticalAlign="bottom">
+      <Grid columns='4' doubling stackable verticalAlign='bottom'>
         <Grid.Row>
           <Grid.Column>
-            <FormField label="Activate opening at">
+            <FormField label='Activate opening at'>
               <Dropdown
                 onChange={handleChange}
-                name="activateAt"
+                name='activateAt'
                 selection
-                options={Object.keys(ActivateOpeningAtDef).map(wgKey => ({ text: wgKey, value: wgKey }))}
+                options={Object.keys(ActivateOpeningAtDef).map((wgKey) => ({ text: wgKey, value: wgKey }))}
                 value={values.activateAt}
               />
             </FormField>
@@ -228,7 +235,7 @@ const AddWorkingGroupOpeningForm: React.FunctionComponent<FormInnerProps> = prop
             { values.activateAt === 'ExactBlock' && (
               <InputFormField
                 onChange={handleChange}
-                name="activateAtBlock"
+                name='activateAtBlock'
                 error={errorLabelsProps.activateAtBlock}
                 value={values.activateAtBlock}
                 placeholder={'Provide the block number'}
@@ -243,35 +250,35 @@ const AddWorkingGroupOpeningForm: React.FunctionComponent<FormInnerProps> = prop
           but no applicants will be able to apply yet) until current block number will equal the specified number.
         </Message>
       ) }
-      <Grid columns="4" doubling stackable verticalAlign="bottom">
+      <Grid columns='4' doubling stackable verticalAlign='bottom'>
         <Grid.Row>
           <Grid.Column>
             <InputFormField
-              label="Max. review period"
+              label='Max. review period'
               onChange={handleChange}
-              name="maxReviewPeriodLength"
+              name='maxReviewPeriodLength'
               error={errorLabelsProps.maxReviewPeriodLength}
               value={values.maxReviewPeriodLength}
               placeholder={'ie. 72000'}
-              unit="blocks"
+              unit='blocks'
             />
           </Grid.Column>
         </Grid.Row>
       </Grid>
-      <Grid columns="4" doubling stackable verticalAlign="bottom">
+      <Grid columns='4' doubling stackable verticalAlign='bottom'>
         <Grid.Row>
           <Grid.Column>
-            <FormField label="Applications limit">
+            <FormField label='Applications limit'>
               <Checkbox
                 toggle
                 onChange={(e, data) => { setFieldValue('applicationsLimited', data.checked); }}
-                label="Limit applications"
+                label='Limit applications'
                 checked={values.applicationsLimited}/>
             </FormField>
             { values.applicationsLimited && (
               <InputFormField
                 onChange={handleChange}
-                name="maxApplications"
+                name='maxApplications'
                 error={errorLabelsProps.maxApplications}
                 value={values.maxApplications}
                 placeholder={'Max. number of applications'}
@@ -280,27 +287,27 @@ const AddWorkingGroupOpeningForm: React.FunctionComponent<FormInnerProps> = prop
           </Grid.Column>
         </Grid.Row>
       </Grid>
-      <Grid columns="2" stackable style={{ marginBottom: 0 }}>
+      <Grid columns='2' stackable style={{ marginBottom: 0 }}>
         <Grid.Row>
           <Grid.Column>
-            <StakeFields stakeType="application" {...{ errorLabelsProps, values, handleChange, setFieldValue }}/>
+            <StakeFields stakeType='application' {...{ errorLabelsProps, values, handleChange, setFieldValue }}/>
           </Grid.Column>
           <Grid.Column>
-            <StakeFields stakeType="role" {...{ errorLabelsProps, values, handleChange, setFieldValue }}/>
+            <StakeFields stakeType='role' {...{ errorLabelsProps, values, handleChange, setFieldValue }}/>
           </Grid.Column>
         </Grid.Row>
       </Grid>
-      <Grid columns="2" stackable style={{ marginBottom: 0 }}>
+      <Grid columns='2' stackable style={{ marginBottom: 0 }}>
         <Grid.Row>
           <Grid.Column>
             <InputFormField
               onChange={handleChange}
-              name="terminateRoleUnstakingPeriod"
+              name='terminateRoleUnstakingPeriod'
               error={errorLabelsProps.terminateRoleUnstakingPeriod}
               value={values.terminateRoleUnstakingPeriod}
               label={'Terminate role unstaking period'}
               placeholder={'ie. 14400'}
-              unit="blocks"
+              unit='blocks'
               help={
                 'In case leader role or application is terminated - this will be the unstaking period for the role stake (in blocks).'
               }
@@ -309,12 +316,12 @@ const AddWorkingGroupOpeningForm: React.FunctionComponent<FormInnerProps> = prop
           <Grid.Column>
             <InputFormField
               onChange={handleChange}
-              name="leaveRoleUnstakingPeriod"
+              name='leaveRoleUnstakingPeriod'
               error={errorLabelsProps.leaveRoleUnstakingPeriod}
               value={values.leaveRoleUnstakingPeriod}
               label={'Leave role unstaking period'}
               placeholder={'ie. 14400'}
-              unit="blocks"
+              unit='blocks'
               help={
                 'In case leader leaves/exits his role - this will be the unstaking period for his role stake (in blocks). ' +
                 'It also applies when user is withdrawing an active leader application.'
@@ -324,11 +331,11 @@ const AddWorkingGroupOpeningForm: React.FunctionComponent<FormInnerProps> = prop
         </Grid.Row>
       </Grid>
       <TextareaFormField
-        label="Opening schema (human_readable_text)"
-        help="JSON schema that describes some characteristics of the opening presented in the UI (headers, content, application form etc.)"
+        label='Opening schema (human_readable_text)'
+        help='JSON schema that describes some characteristics of the opening presented in the UI (headers, content, application form etc.)'
         onChange={handleChange}
-        name="humanReadableText"
-        placeholder="Paste the JSON schema here..."
+        name='humanReadableText'
+        placeholder='Paste the JSON schema here...'
         error={errorLabelsProps.humanReadableText}
         value={values.humanReadableText}
         rows={20}

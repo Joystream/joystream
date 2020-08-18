@@ -20,13 +20,15 @@ export default class WorkingGroupsTransport extends BaseTransport {
     this.membersT = membersTransport;
   }
 
-  protected apiQueryByGroup(group: WorkingGroupKey) {
+  protected apiQueryByGroup (group: WorkingGroupKey) {
     const module = apiModuleByGroup[group];
+
     return this.api.query[module];
   }
 
   protected queryByGroup (group: WorkingGroupKey) {
     const module = apiModuleByGroup[group];
+
     return this.cacheApi.query[module];
   }
 
@@ -77,12 +79,12 @@ export default class WorkingGroupsTransport extends BaseTransport {
 
         return { id, opening, hiringOpening };
       })
-      .filter(openingData => !type || openingData.opening.opening_type.isOfType(type));
+      .filter((openingData) => !type || openingData.opening.opening_type.isOfType(type));
   }
 
   public async activeOpenings (group: WorkingGroupKey, substage?: ActiveOpeningStageKey, type?: OpeningTypeKey) {
     return (await this.allOpenings(group, type))
-      .filter(od =>
+      .filter((od) =>
         od.hiringOpening.stage.isOfType('Active') &&
         (!substage || od.hiringOpening.stage.asType('Active').stage.isOfType(substage))
       );
@@ -126,6 +128,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
 
   async parsedApplicationById (group: WorkingGroupKey, wgApplicationId: number): Promise<ParsedApplication> {
     const wgApplication = await this.wgApplicationById(group, wgApplicationId);
+
     return this.parseApplication(wgApplicationId, wgApplication);
   }
 
@@ -148,6 +151,6 @@ export default class WorkingGroupsTransport extends BaseTransport {
 
   async openingActiveApplications (group: WorkingGroupKey, wgOpeningId: number): Promise<ParsedApplication[]> {
     return (await this.openingApplications(group, wgOpeningId))
-      .filter(a => a.stage.isOfType('Active'));
+      .filter((a) => a.stage.isOfType('Active'));
   }
 }

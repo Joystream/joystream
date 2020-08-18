@@ -1,16 +1,14 @@
 import React, { useEffect } from 'react';
 import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
-import {
-  GenericProposalForm,
+import { GenericProposalForm,
   GenericFormValues,
   genericFormDefaultOptions,
   genericFormDefaultValues,
   withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps
-} from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import Validation from '../validationSchema';
 import { InputFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
@@ -30,7 +28,7 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = props => {
+const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const transport = useTransport();
   const [validatorCount] = usePromise<number>(() => transport.validators.maxCount(), 20);
   const { handleChange, errors, touched, values, setFieldValue } = props;
@@ -41,19 +39,20 @@ const SetMaxValidatorCountForm: React.FunctionComponent<FormInnerProps> = props 
       setFieldValue('maxValidatorCount', validatorCount);
     }
   }, [validatorCount]);
+
   return (
     <GenericProposalForm
       {...props}
-      txMethod="createSetValidatorCountProposal"
-      proposalType="SetValidatorCount"
+      txMethod='createSetValidatorCountProposal'
+      proposalType='SetValidatorCount'
       submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.maxValidatorCount]}
     >
       <InputFormField
         error={errorLabelsProps.maxValidatorCount}
-        label="Max Validator Count"
-        help="The new value for maximum number of Validators that you propose"
+        label='Max Validator Count'
+        help='The new value for maximum number of Validators that you propose'
         onChange={handleChange}
-        name="maxValidatorCount"
+        name='maxValidatorCount'
         placeholder={validatorCount}
         value={values.maxValidatorCount}
       />

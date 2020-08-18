@@ -1,17 +1,13 @@
 import React from 'react';
 import * as Yup from 'yup';
-import {
-  withProposalFormData,
+import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps,
-  genericFormDefaultOptions
-} from './GenericProposalForm';
-import {
-  GenericWorkingGroupProposalForm,
+  genericFormDefaultOptions } from './GenericProposalForm';
+import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
-  defaultValues as wgFromDefaultValues
-} from './GenericWorkingGroupProposalForm';
+  defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
 import { FormField, RewardPolicyFields } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import { Dropdown, DropdownItemProps, Header, Checkbox, Message } from 'semantic-ui-react';
@@ -72,7 +68,7 @@ const valuesToFillOpeningParams = (values: FormValues): SimplifiedTypeInterface<
   }
 );
 
-const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps> = props => {
+const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { handleChange, setFieldValue, values, myMemberId, errors, touched } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
@@ -83,8 +79,9 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
   );
   const openingsOptions: DropdownItemProps[] = openings
     // Map to options
-    .map(od => {
+    .map((od) => {
       const hrt = od.hiringOpening.parse_human_readable_text_with_fallback();
+
       return {
         text: `${od.id.toString()}: ${hrt.headline} (${hrt.job.title})`,
         value: od.id.toString()
@@ -98,7 +95,7 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
     [values.workingGroup, values.openingId]
   );
   const applicationsOptions = activeApplications
-    .map(a => {
+    .map((a) => {
       return {
         text: `${a.wgApplicationId}: ${a.member.handle}`,
         image: a.member.avatar_uri.toString() ? { avatar: true, src: a.member.avatar_uri.toString() } : undefined,
@@ -112,8 +109,8 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
   return (
     <GenericWorkingGroupProposalForm
       {...props}
-      txMethod="createFillWorkingGroupLeaderOpeningProposal"
-      proposalType="FillWorkingGroupLeaderOpening"
+      txMethod='createFillWorkingGroupLeaderOpeningProposal'
+      proposalType='FillWorkingGroupLeaderOpening'
       disabled={!openingsOptions.length || !applicationsOptions.length}
       submitParams={[
         myMemberId,
@@ -123,7 +120,7 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
         valuesToFillOpeningParams(values)
       ]}
     >
-      <PromiseComponent error={openingsError} loading={openingsLoading} message="Fetching openings...">
+      <PromiseComponent error={openingsError} loading={openingsLoading} message='Fetching openings...'>
         { !openingsOptions.length
           ? (
             <Message error visible>
@@ -136,11 +133,12 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
           )
           : (
             <FormField
-              label="Working Group Opening"
+              label='Working Group Opening'
               error={errorLabelsProps.openingId}>
               <Dropdown
                 onChange={(...args) => {
                   setFieldValue('successfulApplicants', []);
+
                   // "as any" assert is required due to some invalid typing of Formik's "handleChange" function (it takes 2 args, not 1)
                   return (handleChange as any)(...args);
                 }}
@@ -155,7 +153,7 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
         }
       </PromiseComponent>
       { values.openingId && (
-        <PromiseComponent error={applError} loading={applLoading} message="Fetching applications...">
+        <PromiseComponent error={applError} loading={applLoading} message='Fetching applications...'>
           { !applicationsOptions.length
             ? (
               <Message error visible>
@@ -169,23 +167,23 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
             : (
               <>
                 <FormField
-                  label="Successful applicant"
+                  label='Successful applicant'
                   error={errorLabelsProps.successfulApplicant}>
                   <Dropdown
-                    placeholder="Select successful applicant"
+                    placeholder='Select successful applicant'
                     fluid
                     selection
                     options={applicationsOptions}
                     value={values.successfulApplicant}
                     onChange={handleChange}
-                    name="successfulApplicant"/>
+                    name='successfulApplicant'/>
                 </FormField>
                 {values.successfulApplicant && (<>
-                  <Header as="h3">Selected applicant:</Header>
+                  <Header as='h3'>Selected applicant:</Header>
                   <ApplicationsDetails applications={
-                    [activeApplications.find(a => a.wgApplicationId.toString() === values.successfulApplicant)!]
+                    [activeApplications.find((a) => a.wgApplicationId.toString() === values.successfulApplicant)!]
                   }/>
-                  <Header as="h3">Reward policy:</Header>
+                  <Header as='h3'>Reward policy:</Header>
                   <FormField>
                     <Checkbox
                       toggle

@@ -1,18 +1,14 @@
 import React from 'react';
 import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
-import {
-  withProposalFormData,
+import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps,
-  genericFormDefaultOptions
-} from './GenericProposalForm';
-import {
-  GenericWorkingGroupProposalForm,
+  genericFormDefaultOptions } from './GenericProposalForm';
+import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
-  defaultValues as wgFromDefaultValues
-} from './GenericWorkingGroupProposalForm';
+  defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
 import { InputFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import { Grid } from 'semantic-ui-react';
@@ -34,15 +30,15 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const SetWorkingGroupMintCapacityForm: React.FunctionComponent<FormInnerProps> = props => {
+const SetWorkingGroupMintCapacityForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { handleChange, errors, touched, values, myMemberId } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
 
   return (
     <GenericWorkingGroupProposalForm
       {...props}
-      txMethod="createSetWorkingGroupMintCapacityProposal"
-      proposalType="SetWorkingGroupMintCapacity"
+      txMethod='createSetWorkingGroupMintCapacityProposal'
+      proposalType='SetWorkingGroupMintCapacity'
       submitParams={[
         myMemberId,
         values.title,
@@ -52,12 +48,12 @@ const SetWorkingGroupMintCapacityForm: React.FunctionComponent<FormInnerProps> =
         values.workingGroup
       ]}
     >
-      <Grid columns="4" doubling stackable verticalAlign="bottom">
+      <Grid columns='4' doubling stackable verticalAlign='bottom'>
         <Grid.Column>
           <InputFormField
-            label="Mint capacity"
+            label='Mint capacity'
             onChange={handleChange}
-            name="capacity"
+            name='capacity'
             error={errorLabelsProps.capacity}
             value={values.capacity}
             placeholder={'ie. 100000'}

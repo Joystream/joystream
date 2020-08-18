@@ -9,7 +9,7 @@ export default class ChainTransport extends BaseTransport {
   }
 
   async blockTimestamp (height: number): Promise<Date> {
-    const blockTime = (await this.api.query.timestamp.now.at(await this.blockHash(height))) as Moment;
+    const blockTime = (await this.api.query.timestamp.now.at(await this.blockHash(height)));
 
     return new Date(blockTime.toNumber());
   }

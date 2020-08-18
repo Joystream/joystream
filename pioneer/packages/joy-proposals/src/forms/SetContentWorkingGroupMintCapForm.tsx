@@ -9,11 +9,11 @@ const ContentWorkingGroupMintCapForm = (props: RouteComponentProps) => {
   const [mintCapacity, error, loading] = usePromise<number>(() => transport.contentWorkingGroup.currentMintCap(), 0);
 
   return (
-    <PromiseComponent error={error} loading={loading} message="Fetching current mint capacity...">
+    <PromiseComponent error={error} loading={loading} message='Fetching current mint capacity...'>
       <MintCapacityForm
-        mintCapacityGroup="Content Working Group"
-        txMethod="createSetContentWorkingGroupMintCapacityProposal"
-        proposalType="SetContentWorkingGroupMintCapacity"
+        mintCapacityGroup='Content Working Group'
+        txMethod='createSetContentWorkingGroupMintCapacityProposal'
+        proposalType='SetContentWorkingGroupMintCapacity'
         initialData={{ capacity: mintCapacity.toString() }}
         {...props} />
     </PromiseComponent>

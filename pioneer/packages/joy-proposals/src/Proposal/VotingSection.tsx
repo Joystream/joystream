@@ -32,8 +32,10 @@ type VoteButtonProps = {
   proposalId: ProposalId;
   onSuccess: () => void;
 }
+
 function VoteButton ({ voteKind, proposalId, memberId, onSuccess }: VoteButtonProps) {
   const { icon, color } = useVoteStyles(voteKind);
+
   return (
     <SemanticTxButton
       params={[
@@ -42,7 +44,7 @@ function VoteButton ({ voteKind, proposalId, memberId, onSuccess }: VoteButtonPr
         voteKind
       ]}
       tx={ 'proposalsEngine.vote' }
-      onClick={ sendTx => sendTx() }
+      onClick={ (sendTx) => sendTx() }
       txFailedCb={ () => null }
       txSuccessCb={ onSuccess }
       color={color}
@@ -87,7 +89,7 @@ export default function VotingSection ({
       <Message icon color={color}>
         <Icon name={icon} />
         <Message.Content>
-          You voted <span className="bold">{`"${voteStr}"`}</span>
+          You voted <span className='bold'>{`"${voteStr}"`}</span>
         </Message.Content>
       </Message>
     );
@@ -97,7 +99,7 @@ export default function VotingSection ({
 
   return (
     <>
-      <Header as="h3">Sumbit your vote</Header>
+      <Header as='h3'>Sumbit your vote</Header>
       <Divider />
       <VoteButtons>
         { VoteKinds.map((voteKind) =>

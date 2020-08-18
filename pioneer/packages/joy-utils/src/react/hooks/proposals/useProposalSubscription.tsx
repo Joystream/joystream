@@ -16,34 +16,38 @@ const useProposalSubscription = (id: ProposalId) => {
     // onMount...
     let unmounted = false;
     let unsubscribeProposal: (() => void) | undefined;
+
     const refreshProposalData = () => {
       transport.proposals.proposalById(id)
-        .then(newData => {
+        .then((newData) => {
           if (!unmounted) {
             setData(newData);
             setLoading(false);
           }
         })
-        .catch(error => {
+        .catch((error) => {
           if (!unmounted) {
             setError(error);
             setLoading(false);
           }
         });
     };
+
     // Create the subscription
     transport.proposals.subscribeProposal(id, refreshProposalData)
-      .then(unsubscribe => {
+      .then((unsubscribe) => {
         if (!unmounted) {
           unsubscribeProposal = unsubscribe;
         } else {
           unsubscribe(); // If already unmounted - unsubscribe immedietally!
         }
       });
+
     return () => {
       // onUnmount...
       // Clean the subscription
       unmounted = true;
+
       if (unsubscribeProposal) {
         unsubscribeProposal();
       }

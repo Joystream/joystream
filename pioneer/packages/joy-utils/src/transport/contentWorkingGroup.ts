@@ -18,6 +18,7 @@ export default class ContentWorkingGroupTransport extends BaseTransport {
   async currentMintCap (): Promise<number> {
     const WGMintId = (await this.contentWorkingGroup.mint()) as MintId;
     const WGMint = (await this.minting.mints(WGMintId)) as Mint;
+
     return (WGMint.get('capacity') as u128).toNumber();
   }
 

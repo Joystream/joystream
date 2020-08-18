@@ -10,8 +10,7 @@ import _ from 'lodash';
 
 import translate from './translate';
 import NotDone from './NotDone';
-import {
-  SignalForm,
+import { SignalForm,
   SpendingProposalForm,
   SetContentWorkingGroupLeadForm,
   SetContentWorkingGroupMintCapForm,
@@ -25,8 +24,7 @@ import {
   DecreaseWorkingGroupLeadStakeFrom,
   SlashWorkingGroupLeadStakeForm,
   SetWorkingGroupLeadRewardForm,
-  TerminateWorkingGroupLeaderForm
-} from './forms';
+  TerminateWorkingGroupLeaderForm } from './forms';
 import { RouteProps as AppMainRouteProps } from '@polkadot/apps-routing/types';
 import style from './style';
 
@@ -47,22 +45,22 @@ function App (props: Props): React.ReactElement<Props> {
   const { basePath } = props;
 
   return (
-    <ProposalsMain className="proposal--App">
+    <ProposalsMain className='proposal--App'>
       <StyledHeader>
         <Breadcrumb>
           <Switch>
-            <Route path={`${basePath}/new/:type`} render={props => (
+            <Route path={`${basePath}/new/:type`} render={(props) => (
               <>
                 <Breadcrumb.Section link as={Link} to={basePath}>Proposals</Breadcrumb.Section>
-                <Breadcrumb.Divider icon="right angle" />
+                <Breadcrumb.Divider icon='right angle' />
                 <Breadcrumb.Section link as={Link} to={`${basePath}/new`}>New proposal</Breadcrumb.Section>
-                <Breadcrumb.Divider icon="right angle" />
+                <Breadcrumb.Divider icon='right angle' />
                 <Breadcrumb.Section active>{_.startCase(props.match.params.type)}</Breadcrumb.Section>
               </>
             )} />
             <Route path={`${basePath}/new`}>
               <Breadcrumb.Section link as={Link} to={basePath}>Proposals</Breadcrumb.Section>
-              <Breadcrumb.Divider icon="right angle" />
+              <Breadcrumb.Divider icon='right angle' />
               <Breadcrumb.Section active>New proposal</Breadcrumb.Section>
             </Route>
             <Route>

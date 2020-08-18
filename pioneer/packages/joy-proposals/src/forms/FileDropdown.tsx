@@ -73,6 +73,7 @@ const innerSpanStyle = (): React.CSSProperties => {
 // https://developer.mozilla.org/en-US/docs/Web/API/Blob/text
 const parseFileAsUtf8 = async (file: any): Promise<string> => {
   const text = await file.text();
+
   return text;
 };
 
@@ -109,16 +110,19 @@ type FileDropdownProps<FormValuesT> = {
 export default function FileDropdown<ValuesT = {}> (props: FileDropdownProps<ValuesT>) {
   const [parsing, setParsing] = useState(false);
   const { error, name, setFieldValue, setFieldTouched, acceptedFormats, defaultText, interpretAs } = props;
+
   return (
     <Dropzone
-      onDropAccepted={async acceptedFiles => {
+      onDropAccepted={async (acceptedFiles) => {
         setParsing(true);
         let contents;
+
         if (interpretAs === 'utf-8') {
           contents = await parseFileAsUtf8(acceptedFiles[0]);
         } else {
           contents = await parseFileAsBinary(acceptedFiles[0]);
         }
+
         setFieldValue(name, contents, true);
         setFieldTouched(name, true);
         setParsing(false);
@@ -128,17 +132,18 @@ export default function FileDropdown<ValuesT = {}> (props: FileDropdownProps<Val
     >
       {({ getRootProps, getInputProps, acceptedFiles, rejectedFiles, isDragActive }) => {
         const status = determineStatus(acceptedFiles, rejectedFiles, error, isDragActive, parsing);
+
         return (
           <section>
             <div {...getRootProps({ style: dropdownDivStyle(status) })}>
               <input {...getInputProps()} />
               {
                 <span style={innerSpanStyle()}>
-                  <Icon name="cloud upload" size="huge" style={dropdownIconStyle()} />
+                  <Icon name='cloud upload' size='huge' style={dropdownIconStyle()} />
                   <p>
                     {status === Status.Parsing && (
                       <>
-                        <Loader style={{ marginRight: '0.5em' }} size="small" inline active /> Uploading...
+                        <Loader style={{ marginRight: '0.5em' }} size='small' inline active /> Uploading...
                       </>
                     )}
                     {status === Status.Rejected && (

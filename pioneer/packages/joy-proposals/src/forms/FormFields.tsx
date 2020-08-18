@@ -23,6 +23,7 @@ type InputFormFieldProps = Omit<FormInputProps, 'error'> & {
 export function InputFormField (props: InputFormFieldProps) {
   const { unit } = props;
   const fieldProps = { ...props, label: undefined, error: undefined };
+
   return (
     <FormField {...props} showErrorMsg={true}>
       <Form.Input
@@ -42,6 +43,7 @@ type TextareaFormFieldProps = Omit<FormTextAreaProps, 'error'> & {
 
 export function TextareaFormField (props: TextareaFormFieldProps) {
   const fieldProps = { ...props, label: undefined, error: undefined };
+
   return (
     <FormField {...props} showErrorMsg={true}>
       <Form.TextArea {...fieldProps}/>
@@ -62,6 +64,7 @@ const StyledFormField = styled(Form.Field)`
 
 export function FormField (props: React.PropsWithChildren<FormFieldProps>) {
   const { error, showErrorMsg = false, label, help, children } = props;
+
   return (
     <StyledFormField error={!!error}>
       { (label && help)
@@ -84,6 +87,7 @@ type RewardPolicyFieldsProps<ValuesT extends ReawrdPolicyFieldsType> =
   Pick<FormikProps<ValuesT>, 'values' | 'handleChange' | 'setFieldValue'> & {
     errorLabelsProps: FormErrorLabelsProps<ValuesT>;
   };
+
 export function RewardPolicyFields<ValuesT extends ReawrdPolicyFieldsType> ({
   values,
   errorLabelsProps,
@@ -93,7 +97,7 @@ export function RewardPolicyFields<ValuesT extends ReawrdPolicyFieldsType> ({
   return (
     <>
       <InputFormField
-        label="Amount per payout"
+        label='Amount per payout'
         unit={formatBalance.getDefaults().unit}
         onChange={handleChange}
         name={'rewardAmount'}
@@ -102,7 +106,7 @@ export function RewardPolicyFields<ValuesT extends ReawrdPolicyFieldsType> ({
         placeholder={'ie. 100'}
       />
       <InputFormField
-        label="Next payment at block"
+        label='Next payment at block'
         onChange={handleChange}
         name={'rewardNextBlock'}
         error={errorLabelsProps.rewardNextBlock}
@@ -117,7 +121,7 @@ export function RewardPolicyFields<ValuesT extends ReawrdPolicyFieldsType> ({
       </FormField>
       { values.rewardRecurring && (
         <InputFormField
-          label="Reward interval"
+          label='Reward interval'
           onChange={handleChange}
           name={'rewardInterval'}
           error={errorLabelsProps.rewardInterval}

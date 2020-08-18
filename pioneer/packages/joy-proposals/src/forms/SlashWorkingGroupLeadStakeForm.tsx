@@ -1,18 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
-import {
-  withProposalFormData,
+import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps,
-  genericFormDefaultOptions
-} from './GenericProposalForm';
-import {
-  GenericWorkingGroupProposalForm,
+  genericFormDefaultOptions } from './GenericProposalForm';
+import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
-  defaultValues as wgFromDefaultValues
-} from './GenericWorkingGroupProposalForm';
+  defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
 import { InputFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import { Grid } from 'semantic-ui-react';
@@ -35,10 +31,11 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const SlashWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps> = props => {
+const SlashWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { handleChange, errors, touched, values, myMemberId, setFieldError } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const [lead, setLead] = useState<WorkerData | null>(null);
+
   // Here we validate if stake <= current lead stake.
   // Because it depends on selected working group,
   // there's no easy way to do it using validationSchema
@@ -51,8 +48,8 @@ const SlashWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps> = 
   return (
     <GenericWorkingGroupProposalForm
       {...props}
-      txMethod="createSlashWorkingGroupLeaderStakeProposal"
-      proposalType="SlashWorkingGroupLeaderStake"
+      txMethod='createSlashWorkingGroupLeaderStakeProposal'
+      proposalType='SlashWorkingGroupLeaderStake'
       leadRequired={true}
       leadStakeRequired={true}
       onLeadChange={(lead: WorkerData | null) => setLead(lead)}
@@ -67,12 +64,12 @@ const SlashWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps> = 
       ]}
     >
       { (lead && lead.stake) && (
-        <Grid columns="4" doubling stackable verticalAlign="bottom">
+        <Grid columns='4' doubling stackable verticalAlign='bottom'>
           <Grid.Column>
             <InputFormField
-              label="Amount to slash"
+              label='Amount to slash'
               onChange={handleChange}
-              name="amount"
+              name='amount'
               error={errorLabelsProps.amount}
               value={values.amount}
               unit={formatBalance.getDefaults().unit}

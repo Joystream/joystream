@@ -1,17 +1,13 @@
 import React from 'react';
 import * as Yup from 'yup';
-import {
-  withProposalFormData,
+import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps,
-  genericFormDefaultOptions
-} from './GenericProposalForm';
-import {
-  GenericWorkingGroupProposalForm,
+  genericFormDefaultOptions } from './GenericProposalForm';
+import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
-  defaultValues as wgFromDefaultValues
-} from './GenericWorkingGroupProposalForm';
+  defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
 import FormField from './FormFields';
 import { withFormContainer } from './FormContainer';
 import { Dropdown, Message } from 'semantic-ui-react';
@@ -36,7 +32,7 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> = props => {
+const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { handleChange, values, myMemberId, errors, touched } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
@@ -47,8 +43,9 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
   );
   const openingsOptions = openings
     // Map to options
-    .map(od => {
+    .map((od) => {
       const hrt = od.hiringOpening.parse_human_readable_text_with_fallback();
+
       return {
         text: `${od.id.toString()}: ${hrt.headline} (${hrt.job.title})`,
         value: od.id.toString()
@@ -58,8 +55,8 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
   return (
     <GenericWorkingGroupProposalForm
       {...props}
-      txMethod="createBeginReviewWorkingGroupLeaderApplicationsProposal"
-      proposalType="BeginReviewWorkingGroupLeaderApplication"
+      txMethod='createBeginReviewWorkingGroupLeaderApplicationsProposal'
+      proposalType='BeginReviewWorkingGroupLeaderApplication'
       disabled={!openingsOptions.length}
       submitParams={[
         myMemberId,
@@ -70,7 +67,7 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
         values.workingGroup
       ]}
     >
-      <PromiseComponent error={openingsError} loading={openingsLoading} message="Fetching openings...">
+      <PromiseComponent error={openingsError} loading={openingsLoading} message='Fetching openings...'>
         { !openingsOptions.length
           ? (
             <Message error visible>
@@ -83,7 +80,7 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
           )
           : (
             <FormField
-              label="Working Group Opening"
+              label='Working Group Opening'
               error={errorLabelsProps.openingId}
               showErrorMsg>
               <Dropdown

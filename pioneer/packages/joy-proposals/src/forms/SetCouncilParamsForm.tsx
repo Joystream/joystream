@@ -2,16 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { getFormErrorLabelsProps } from './errorHandling';
 import { Divider, Form } from 'semantic-ui-react';
 import * as Yup from 'yup';
-import {
-  GenericProposalForm,
+import { GenericProposalForm,
   GenericFormValues,
   genericFormDefaultOptions,
   genericFormDefaultValues,
   withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps
-} from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import Validation from '../validationSchema';
 import { InputFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
@@ -62,13 +60,14 @@ function createElectionParameters (values: FormValues): SimplifiedTypeInterface<
   };
 }
 
-const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
+const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { handleChange, errors, touched, values, setFieldValue, setFieldError } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const [placeholders, setPlaceholders] = useState<{ [k in keyof FormValues]: string }>(defaultValues);
 
   const transport = useTransport();
   const [councilParams, error, loading] = usePromise<IElectionParameters | null>(() => transport.council.electionParameters(), null);
+
   useEffect(() => {
     if (councilParams) {
       const fetchedPlaceholders = { ...placeholders };
@@ -82,8 +81,10 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
         'candidacy_limit',
         'council_size'
       ] as const;
-      fieldsToPopulate.forEach(field => {
+
+      fieldsToPopulate.forEach((field) => {
         const camelCaseField = _.camelCase(field) as keyof FormValues;
+
         setFieldValue(camelCaseField, councilParams[field].toString());
         fetchedPlaceholders[camelCaseField] = councilParams[field].toString();
       });
@@ -97,49 +98,49 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
   }
 
   return (
-    <PromiseComponent error={error} loading={loading} message="Fetching current parameters...">
+    <PromiseComponent error={error} loading={loading} message='Fetching current parameters...'>
       <GenericProposalForm
         {...props}
-        txMethod="createSetElectionParametersProposal"
-        proposalType="SetElectionParameters"
+        txMethod='createSetElectionParametersProposal'
+        proposalType='SetElectionParameters'
         submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', createElectionParameters(values)]}
       >
         <Divider horizontal>Voting </Divider>
-        <Form.Group widths="equal" style={{ marginBottom: '8rem' }}>
+        <Form.Group widths='equal' style={{ marginBottom: '8rem' }}>
           <InputFormField
-            label="Announcing Period"
-            help="Announcing period in blocks"
+            label='Announcing Period'
+            help='Announcing period in blocks'
             onChange={handleChange}
-            name="announcingPeriod"
+            name='announcingPeriod'
             error={errorLabelsProps.announcingPeriod}
             value={values.announcingPeriod}
             placeholder={ placeholders.announcingPeriod }
           />
           <InputFormField
-            label="Voting Period"
-            help="Voting period in blocks"
+            label='Voting Period'
+            help='Voting period in blocks'
             onChange={handleChange}
-            name="votingPeriod"
+            name='votingPeriod'
             error={errorLabelsProps.votingPeriod}
             value={values.votingPeriod}
             placeholder={ placeholders.votingPeriod }
           />
           <InputFormField
-            label="Revealing Period"
-            help="Revealing period in blocks"
+            label='Revealing Period'
+            help='Revealing period in blocks'
             fluid
             onChange={handleChange}
-            name="revealingPeriod"
+            name='revealingPeriod'
             error={errorLabelsProps.revealingPeriod}
             value={values.revealingPeriod}
             placeholder={ placeholders.revealingPeriod }
           />
           <InputFormField
-            label="Minimum Voting Stake"
-            help="The minimum voting stake"
+            label='Minimum Voting Stake'
+            help='The minimum voting stake'
             fluid
             onChange={handleChange}
-            name="minVotingStake"
+            name='minVotingStake'
             error={errorLabelsProps.minVotingStake}
             value={values.minVotingStake}
             placeholder={ placeholders.minVotingStake }
@@ -147,44 +148,44 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
           />
         </Form.Group>
         <Divider horizontal>Council</Divider>
-        <Form.Group widths="equal" style={{ marginBottom: '8rem' }}>
+        <Form.Group widths='equal' style={{ marginBottom: '8rem' }}>
           <InputFormField
-            label="Minimum Council Stake"
-            help="The minimum council stake"
+            label='Minimum Council Stake'
+            help='The minimum council stake'
             fluid
             onChange={handleChange}
-            name="minCouncilStake"
+            name='minCouncilStake'
             error={errorLabelsProps.minCouncilStake}
             value={values.minCouncilStake}
             placeholder={ placeholders.minCouncilStake }
             disabled
           />
           <InputFormField
-            label="New Term Duration"
-            help="Duration of the new term in blocks"
+            label='New Term Duration'
+            help='Duration of the new term in blocks'
             fluid
             onChange={handleChange}
-            name="newTermDuration"
+            name='newTermDuration'
             error={errorLabelsProps.newTermDuration}
             value={values.newTermDuration}
             placeholder={ placeholders.newTermDuration }
           />
           <InputFormField
-            label="Council Size"
-            help="The size of the council (number of seats)"
+            label='Council Size'
+            help='The size of the council (number of seats)'
             fluid
             onChange={handleChange}
-            name="councilSize"
+            name='councilSize'
             error={errorLabelsProps.councilSize}
             value={values.councilSize}
             placeholder={ placeholders.councilSize }
           />
           <InputFormField
-            label="Candidacy Limit"
-            help="How many candidates that will be allowed in to the voting stage"
+            label='Candidacy Limit'
+            help='How many candidates that will be allowed in to the voting stage'
             fluid
             onChange={handleChange}
-            name="candidacyLimit"
+            name='candidacyLimit'
             error={errorLabelsProps.candidacyLimit}
             value={values.candidacyLimit}
             placeholder={ placeholders.candidacyLimit }

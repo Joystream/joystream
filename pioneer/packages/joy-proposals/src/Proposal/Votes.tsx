@@ -24,20 +24,21 @@ export default function Votes ({ proposal: { id, votingResults } }: VotesProps) 
     <PromiseComponent
       error={error}
       loading={loading}
-      message="Fetching the votes...">
+      message='Fetching the votes...'>
       { (votes && votes.votes.length > 0)
         ? (
           <>
-            <Header as="h3">
+            <Header as='h3'>
               All Votes: ({votes.votes.length}/{votes.councilMembersLength})
             </Header>
             <Divider />
-            <Table basic="very">
+            <Table basic='very'>
               <Table.Body>
                 {votes.votes.map((proposalVote, idx) => {
                   const { vote, member } = proposalVote;
                   const voteStr = (vote as VoteKind).type.toString() as VoteKindStr;
                   const { icon, textColor } = useVoteStyles(voteStr);
+
                   return (
                     <Table.Row key={`${member.handle}-${idx}`}>
                       <Table.Cell className={textColor}>
@@ -59,7 +60,7 @@ export default function Votes ({ proposal: { id, votingResults } }: VotesProps) 
           </>
         )
         : (
-          <Header as="h4">No votes have been submitted!</Header>
+          <Header as='h4'>No votes have been submitted!</Header>
         )
       }
     </PromiseComponent>

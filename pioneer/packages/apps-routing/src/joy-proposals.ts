@@ -10,7 +10,7 @@ export default function create (t: <T = string> (key: string, text: string, opti
     },
     text: t<string>('nav.proposals', 'Proposals', { ns: 'apps-routing' }),
     icon: 'tasks',
-    name: 'proposals',
+    name: 'proposals'
     // TODO: useCounter with active proposals count? (could be a nice addition)
   };
 }

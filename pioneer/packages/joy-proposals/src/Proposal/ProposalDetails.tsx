@@ -79,20 +79,26 @@ export function getExtendedStatus (proposal: ParsedProposal, bestNumber: BlockNu
   if (basicStatus === 'Finalized') {
     const { finalizedAt, proposalStatus } = proposal.status.Finalized;
     const decisionStatus: ProposalDecisionStatuses = Object.keys(proposalStatus)[0] as ProposalDecisionStatuses;
+
     displayStatus = decisionStatus;
     finalizedAtBlock = finalizedAt as number;
+
     if (decisionStatus === 'Approved') {
       const approvedStatus: ApprovedProposalStatuses = Object.keys(proposalStatus.Approved)[0] as ApprovedProposalStatuses;
+
       if (approvedStatus === 'PendingExecution') {
         const finalizedAge = best - finalizedAt;
+
         periodStatus = 'Grace period';
         expiresIn = Math.max(gracePeriod - finalizedAge, 0) || null;
       } else {
         // Executed / ExecutionFailed
         displayStatus = approvedStatus;
         executedAtBlock = finalizedAtBlock + gracePeriod;
+
         if (approvedStatus === 'ExecutionFailed') {
           const executionFailedStatus = proposalStatus.Approved.ExecutionFailed as ExecutionFailedStatus;
+
           executionFailReason = Buffer.from(executionFailedStatus.error.toString().replace('0x', ''), 'hex').toString();
         }
       }
@@ -125,12 +131,13 @@ function ProposalDetails ({
   council,
   bestNumber
 }: ProposalDetailsProps) {
-  const iAmCouncilMember = Boolean(iAmMember && council && council.some(seat => seat.member.toString() === myAddress));
+  const iAmCouncilMember = Boolean(iAmMember && council && council.some((seat) => seat.member.toString() === myAddress));
   const iAmProposer = Boolean(iAmMember && myMemberId !== undefined && proposal.proposerId === myMemberId.toNumber());
   const extendedStatus = getExtendedStatus(proposal, bestNumber);
   const isVotingPeriod = extendedStatus.periodStatus === 'Voting period';
+
   return (
-    <div className="Proposal">
+    <div className='Proposal'>
       <Details proposal={proposal} extendedStatus={extendedStatus} proposerLink={ true }/>
       <ProposalDetailsMain>
         <Body

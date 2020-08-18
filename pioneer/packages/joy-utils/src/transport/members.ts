@@ -39,7 +39,7 @@ export default class MembersTransport extends BaseTransport {
     };
   }
 
-  async allMembers(): Promise<[MemberId, Membership][]> {
+  async allMembers (): Promise<[MemberId, Membership][]> {
     return this.entriesByIds<MemberId, Membership>(this.api.query.members.membershipById);
   }
 }

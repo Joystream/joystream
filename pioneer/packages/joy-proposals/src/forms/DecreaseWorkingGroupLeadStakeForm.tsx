@@ -1,18 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
-import {
-  withProposalFormData,
+import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps,
-  genericFormDefaultOptions
-} from './GenericProposalForm';
-import {
-  GenericWorkingGroupProposalForm,
+  genericFormDefaultOptions } from './GenericProposalForm';
+import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
-  defaultValues as wgFromDefaultValues
-} from './GenericWorkingGroupProposalForm';
+  defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
 import { InputFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import { Grid } from 'semantic-ui-react';
@@ -35,7 +31,7 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const DecreaseWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps> = props => {
+const DecreaseWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { handleChange, errors, touched, values, myMemberId, setFieldError } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const [lead, setLead] = useState<WorkerData | null>(null);
@@ -52,8 +48,8 @@ const DecreaseWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps>
   return (
     <GenericWorkingGroupProposalForm
       {...props}
-      txMethod="createDecreaseWorkingGroupLeaderStakeProposal"
-      proposalType="DecreaseWorkingGroupLeaderStake"
+      txMethod='createDecreaseWorkingGroupLeaderStakeProposal'
+      proposalType='DecreaseWorkingGroupLeaderStake'
       leadRequired={true}
       leadStakeRequired={true}
       onLeadChange={(lead: WorkerData | null) => setLead(lead)}
@@ -68,12 +64,12 @@ const DecreaseWorkingGroupLeadStakeForm: React.FunctionComponent<FormInnerProps>
       ]}
     >
       { (lead && lead.stake) && (
-        <Grid columns="4" doubling stackable verticalAlign="bottom">
+        <Grid columns='4' doubling stackable verticalAlign='bottom'>
           <Grid.Column>
             <InputFormField
-              label="Amount to decrease"
+              label='Amount to decrease'
               onChange={handleChange}
-              name="amount"
+              name='amount'
               error={errorLabelsProps.amount}
               value={values.amount}
               unit={formatBalance.getDefaults().unit}

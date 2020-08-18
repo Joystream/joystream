@@ -14,18 +14,21 @@ export default function useVoteStyles (
       textColor = 'text-green';
       break;
     }
+
     case 'Abstain': {
       icon = 'meh';
       color = 'grey';
       textColor = 'text-grey';
       break;
     }
+
     case 'Reject': {
       icon = 'frown';
       color = 'orange';
       textColor = 'text-orange';
       break;
     }
+
     case 'Slash': {
       icon = 'times';
       color = 'red';

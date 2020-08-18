@@ -1,14 +1,12 @@
 import '../index.css';
-import {
-  SignalForm,
+import { SignalForm,
   SpendingProposalForm,
   SetCouncilParamsForm,
   SetContentWorkingGroupLeadForm,
   RuntimeUpgradeForm,
   SetContentWorkingGroupMintCapForm,
   SetCouncilMintCapForm,
-  SetMaxValidatorCountForm
-} from '../forms';
+  SetMaxValidatorCountForm } from '../forms';
 import withMock from './withMock';
 
 export default {

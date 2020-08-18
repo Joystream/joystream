@@ -1,17 +1,13 @@
 import React, { useState } from 'react';
 import * as Yup from 'yup';
-import {
-  withProposalFormData,
+import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps,
-  genericFormDefaultOptions
-} from './GenericProposalForm';
-import {
-  GenericWorkingGroupProposalForm,
+  genericFormDefaultOptions } from './GenericProposalForm';
+import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
-  defaultValues as wgFromDefaultValues
-} from './GenericWorkingGroupProposalForm';
+  defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
 import { withFormContainer } from './FormContainer';
 import _ from 'lodash';
 import Validation from '../validationSchema';
@@ -52,7 +48,7 @@ const valuesToTerminateRoleParams = (values: FormValues, lead: WorkerData): Simp
   };
 };
 
-const TerminateWorkingGroupLeaderForm: React.FunctionComponent<FormInnerProps> = props => {
+const TerminateWorkingGroupLeaderForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { handleChange, errors, touched, values, myMemberId, setFieldValue } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const [lead, setLead] = useState<WorkerData | null>(null);
@@ -60,8 +56,8 @@ const TerminateWorkingGroupLeaderForm: React.FunctionComponent<FormInnerProps> =
   return (
     <GenericWorkingGroupProposalForm
       {...props}
-      txMethod="createTerminateWorkingGroupLeaderRoleProposal"
-      proposalType="TerminateWorkingGroupLeaderRole"
+      txMethod='createTerminateWorkingGroupLeaderRoleProposal'
+      proposalType='TerminateWorkingGroupLeaderRole'
       leadRequired={true}
       onLeadChange={(lead: WorkerData | null) => setLead(lead)}
       submitParams={[
@@ -74,15 +70,15 @@ const TerminateWorkingGroupLeaderForm: React.FunctionComponent<FormInnerProps> =
     >
       { lead && (<>
         <TextareaFormField
-          label="Termination rationale"
+          label='Termination rationale'
           help={
             'This rationale is an required argument of "terminateWorkerRole" extrinsic, ' +
             'it may differ from proposal rationale and has different length constraints. ' +
             'If the propsal gets executed, this rationale will become part of "TerminatedLeader" event.'
           }
           onChange={handleChange}
-          name="terminationRationale"
-          placeholder="Provide a clear rationale for terminating the leader role..."
+          name='terminationRationale'
+          placeholder='Provide a clear rationale for terminating the leader role...'
           error={errorLabelsProps.terminationRationale}
           value={values.terminationRationale}
         />

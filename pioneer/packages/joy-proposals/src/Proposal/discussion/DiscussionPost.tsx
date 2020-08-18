@@ -61,6 +61,7 @@ export default function DiscussionPost ({
     authorId.toNumber() === memberId.toNumber() &&
     editsCount < constraints.maxPostEdits
   );
+
   const onEditSuccess = () => {
     setEditing(false);
     refreshDiscussion();
@@ -98,9 +99,9 @@ export default function DiscussionPost ({
               <CommentAction
                 onClick={() => setEditing(true)}
                 primary
-                size="tiny"
+                size='tiny'
                 icon>
-                <Icon name="pencil" />
+                <Icon name='pencil' />
               </CommentAction>
             </CommentActions>
           ) }

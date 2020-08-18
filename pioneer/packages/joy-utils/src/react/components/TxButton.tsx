@@ -33,13 +33,13 @@ const txButtonNotPassedProps: readonly (keyof TxButtonBaseProps)[] = [
   'txSuccessCb',
   'txStartCb',
   'txUpdateCb'
- ] as const;
+] as const;
 
 type SemanticButtonProps = SemanticButtonStrictProps & { style?: React.CSSProperties };
 
 type TxButtonProps<ButtonComponentProps extends Record<string, any>> = Omit<ButtonComponentProps, 'onClick'> & TxButtonBaseProps;
 
-function useTxButton(props: TxButtonBaseProps) {
+function useTxButton (props: TxButtonBaseProps) {
   const { queueExtrinsic } = useContext(QueueContext);
   const { api } = useApi();
   const { state: { address: myAddress } } = useMyAccount();
@@ -62,7 +62,7 @@ function useTxButton(props: TxButtonBaseProps) {
       txStartCb,
       txUpdateCb
     });
-  }
+  };
 
   return { origin, sendTx };
 }
@@ -86,7 +86,7 @@ export const DefaultTxButton = (props: DefaultTxButtonProps) => {
       }}
     />
   );
-}
+};
 
 type SemanticTxButtonProps = TxButtonProps<SemanticButtonProps>;
 
@@ -105,7 +105,7 @@ export const SemanticTxButton = (props: SemanticTxButtonProps) => {
       }}
     />
   );
-}
+};
 
 export default DefaultTxButton;
 

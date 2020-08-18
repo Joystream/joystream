@@ -104,7 +104,7 @@ const StyledGenericProposalForm = styled.div`
 
 // Generic proposal form with basic structure, "Title" and "Rationale" fields
 // Other fields can be passed as children
-export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps> = props => {
+export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps> = (props) => {
   const {
     handleChange,
     handleSubmit,
@@ -139,6 +139,7 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
       if (isValid) {
         afterSubmit();
       }
+
       setAfterSubmit(null);
       setSubmitting(false);
     }
@@ -149,9 +150,11 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
   useEffect(() => {
     if (!isValidating && formContainerRef.current !== null) {
       const [errorField] = formContainerRef.current.getElementsByClassName('error field');
+
       if (errorField) {
         errorField.scrollIntoView({ behavior: 'smooth' });
         const [errorInput] = errorField.querySelectorAll('input,textarea');
+
         if (errorInput) {
           (errorInput as (HTMLInputElement | HTMLTextAreaElement)).focus();
         }
@@ -173,13 +176,16 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
     if (!history) return;
     // Determine proposal id
     let createdProposalId: number | null = null;
+
     for (const e of txResult.events) {
       const event = e.get('event') as Event | undefined;
+
       if (event !== undefined && event.method === 'ProposalCreated') {
         createdProposalId = (event.data[1] as ProposalId).toNumber();
         break;
       }
     }
+
     setSubmitting(false);
     history.push(`/proposals/${createdProposalId}`);
   };
@@ -192,57 +198,57 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
   return (
     <StyledGenericProposalForm ref={formContainerRef}>
       <Form
-        className="proposal-form"
+        className='proposal-form'
         onSubmit={txMethod
           ? () => { /* Do nothing. Tx button uses custom submit handler - "onTxButtonClick" */ }
           : handleSubmit
         }>
         <InputFormField
-          label="Title"
-          help="The title of your proposal"
+          label='Title'
+          help='The title of your proposal'
           onChange={handleChange}
-          name="title"
-          placeholder="Title for your awesome proposal..."
+          name='title'
+          placeholder='Title for your awesome proposal...'
           error={errorLabelsProps.title}
           value={values.title}
         />
         <TextareaFormField
-          label="Rationale"
-          help="The rationale behind your proposal"
+          label='Rationale'
+          help='The rationale behind your proposal'
           onChange={handleChange}
-          name="rationale"
-          placeholder="This proposal is awesome because..."
+          name='rationale'
+          placeholder='This proposal is awesome because...'
           error={errorLabelsProps.rationale}
           value={values.rationale}
         />
         {children}
         <Message warning visible>
           <Message.Content>
-            <Icon name="warning circle" />
+            <Icon name='warning circle' />
             Required stake: <b>{ formatBalance(requiredStake) }</b>
           </Message.Content>
         </Message>
-        <div className="form-buttons">
+        <div className='form-buttons'>
           {txMethod ? (
             <TxButton
-              type="button" // Tx button uses custom submit handler - "onTxButtonClick"
-              label="Submit proposal"
+              type='button' // Tx button uses custom submit handler - "onTxButtonClick"
+              label='Submit proposal'
               isDisabled={disabled || isSubmitting}
-              params={(submitParams || []).map(p => (p === '{STAKE}' ? requiredStake : p))}
+              params={(submitParams || []).map((p) => (p === '{STAKE}' ? requiredStake : p))}
               tx={`proposalsCodex.${txMethod}`}
               txFailedCb={onTxFailed}
               txSuccessCb={onTxSuccess}
               onClick={onTxButtonClick} // This replaces standard submit
             />
           ) : (
-            <Button type="submit" color="blue" loading={isSubmitting}>
-              <Icon name="paper plane" />
+            <Button type='submit' color='blue' loading={isSubmitting}>
+              <Icon name='paper plane' />
               Submit
             </Button>
           )}
 
-          <Button type="button" color="grey" onClick={handleReset}>
-            <Icon name="times" />
+          <Button type='button' color='grey' onClick={handleReset}>
+            <Icon name='times' />
             Clear
           </Button>
         </div>

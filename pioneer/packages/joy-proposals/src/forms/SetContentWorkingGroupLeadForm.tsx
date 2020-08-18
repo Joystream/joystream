@@ -2,16 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Dropdown, Label, Loader, Message, Icon, DropdownItemProps, DropdownOnSearchChangeData, DropdownProps } from 'semantic-ui-react';
 import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
-import {
-  GenericProposalForm,
+import { GenericProposalForm,
   GenericFormValues,
   genericFormDefaultOptions,
   genericFormDefaultValues,
   withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps
-} from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import Validation from '../validationSchema';
 import { FormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
@@ -61,13 +59,15 @@ function filterMembers (options: DropdownItemProps[], query: string) {
   if (query.length < MEMBERS_QUERY_MIN_LENGTH) {
     return [MEMBERS_NONE_OPTION];
   }
+
   const regexp = new RegExp(_.escapeRegExp(query));
+
   return options.filter((opt) => regexp.test((opt.text || '').toString()));
 }
 
 type MemberWithId = { id: number; profile: Membership };
 
-const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> = props => {
+const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   // State
@@ -84,6 +84,7 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
     () => transport.contentWorkingGroup.currentLead(),
     null
   );
+
   // Generate members options array on load
   useEffect(() => {
     if (members.length) {
@@ -96,11 +97,11 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
   }, [membersSearchQuery]);
 
   return (
-    <PromiseComponent error={clError} loading={clLoading} message="Fetching current lead...">
+    <PromiseComponent error={clError} loading={clLoading} message='Fetching current lead...'>
       <GenericProposalForm
         {...props}
-        txMethod="createSetLeadProposal"
-        proposalType="SetLead"
+        txMethod='createSetLeadProposal'
+        proposalType='SetLead'
         submitParams={[
           props.myMemberId,
           values.title,
@@ -116,7 +117,7 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
         ) : (<>
           <FormField
             error={errorLabelsProps.workingGroupLead}
-            label="New Content Working Group Lead"
+            label='New Content Working Group Lead'
             help={
               'The member you propose to set as a new Content Working Group Lead. ' +
               'Start typing handle or use "id:[ID]" query. ' +
@@ -140,7 +141,7 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
               onSearchChange={ (e: React.SyntheticEvent, data: DropdownOnSearchChangeData) => {
                 setMembersSearchQuery(data.searchQuery);
               } }
-              name="workingGroupLead"
+              name='workingGroupLead'
               placeholder={ 'Start typing member handle or "id:[ID]" query...' }
               fluid
               selection
@@ -149,7 +150,9 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
                 (e: React.ChangeEvent<any>, data: DropdownProps) => {
                   // Fix TypeScript issue
                   const originalHandler = handleChange as (e: React.ChangeEvent<any>, data: DropdownProps) => void;
+
                   originalHandler(e, data);
+
                   if (!data.value) {
                     setMembersSearchQuery('');
                   }
@@ -161,7 +164,7 @@ const SetContentWorkingGroupsLeadForm: React.FunctionComponent<FormInnerProps> =
           </FormField>
           <Message info active={1}>
             <Message.Content>
-              <Icon name="info circle"/>
+              <Icon name='info circle'/>
               Current Content Working Group lead: <b>{ (currentLead && currentLead.profile.handle) || 'NONE' }</b>
             </Message.Content>
           </Message>

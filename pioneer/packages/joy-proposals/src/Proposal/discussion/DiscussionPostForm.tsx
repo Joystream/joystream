@@ -76,7 +76,7 @@ const DiscussionPostFormInner = (props: InnerProps) => {
   };
 
   return (
-    <Form className="ui form JoyForm">
+    <Form className='ui form JoyForm'>
       <LabelledField name='text' {...props}>
         <Field
           component='textarea'
@@ -88,7 +88,7 @@ const DiscussionPostFormInner = (props: InnerProps) => {
       </LabelledField>
       <LabelledField invisibleLabel {...props}>
         <TxButton
-          type="submit"
+          type='submit'
           label={isEditForm ? 'Update' : 'Add Post'}
           isDisabled={isSubmitting || !isValid}
           params={buildTxParams()}
@@ -99,20 +99,20 @@ const DiscussionPostFormInner = (props: InnerProps) => {
         />
         { isEditForm ? (
           <Button
-            type="button"
-            size="large"
+            type='button'
+            size='large'
             disabled={isSubmitting}
-            color="red"
+            color='red'
             onClick={() => onSuccess()}
-            content="Cancel"
+            content='Cancel'
           />
         ) : (
           <Button
-            type="button"
-            size="large"
+            type='button'
+            size='large'
             disabled={isSubmitting}
             onClick={() => resetForm()}
-            content="Clear"
+            content='Clear'
           />
         ) }
       </LabelledField>
@@ -122,8 +122,9 @@ const DiscussionPostFormInner = (props: InnerProps) => {
 
 const DiscussionPostFormOuter = withFormik<OuterProps, FormValues>({
   // Transform outer props into form values
-  mapPropsToValues: props => {
+  mapPropsToValues: (props) => {
     const { post } = props;
+
     return { text: post && post.postId ? post.text : '' };
   },
   validationSchema: ({ constraints: c }: OuterProps) => (Yup.object().shape({
@@ -132,7 +133,7 @@ const DiscussionPostFormOuter = withFormik<OuterProps, FormValues>({
       .required('Post content is required')
       .max(c.maxPostLength, `The content cannot be longer than ${c.maxPostLength} characters`)
   })),
-  handleSubmit: values => {
+  handleSubmit: (values) => {
     // do submitting things
   }
 })(DiscussionPostFormInner);

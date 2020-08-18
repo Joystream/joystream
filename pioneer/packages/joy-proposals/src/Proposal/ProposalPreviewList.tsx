@@ -41,7 +41,7 @@ function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
     [activeFilter, currentPage]
   );
 
-  const filterOptions = proposalStatusFilters.map(filter => ({
+  const filterOptions = proposalStatusFilters.map((filter) => ({
     text: filter,
     value: filter
   }));
@@ -52,20 +52,20 @@ function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
   };
 
   return (
-    <Container className="Proposal" fluid>
+    <Container className='Proposal' fluid>
       <FilterContainer>
         <Button primary as={Link} to={`${pathname}/new`}>
-          <Icon name="add" />
+          <Icon name='add' />
           New proposal
         </Button>
         <StyledDropdown
-          label="Proposal state"
+          label='Proposal state'
           options={filterOptions}
           value={activeFilter}
           onChange={_onChangePrefix}
         />
       </FilterContainer>
-      <PromiseComponent error={ error } loading={ loading } message="Fetching proposals...">
+      <PromiseComponent error={ error } loading={ loading } message='Fetching proposals...'>
         { proposalsBatch && (<>
           <PaginationBox>
             { proposalsBatch.totalBatches > 1 && (
@@ -81,16 +81,16 @@ function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
               />
             ) }
           </PaginationBox>
-           { proposalsBatch.proposals.length
-             ? (
-               <Card.Group>
-                 {proposalsBatch.proposals.map((prop: ParsedProposal, idx: number) => (
-                   <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} bestNumber={bestNumber} />
-                 ))}
-               </Card.Group>
-             )
-             : `There are currently no ${activeFilter !== 'All' ? activeFilter.toLocaleLowerCase() : 'submitted'} proposals.`
-           }
+          { proposalsBatch.proposals.length
+            ? (
+              <Card.Group>
+                {proposalsBatch.proposals.map((prop: ParsedProposal, idx: number) => (
+                  <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} bestNumber={bestNumber} />
+                ))}
+              </Card.Group>
+            )
+            : `There are currently no ${activeFilter !== 'All' ? activeFilter.toLocaleLowerCase() : 'submitted'} proposals.`
+          }
         </>) }
       </PromiseComponent>
     </Container>

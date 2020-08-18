@@ -1,13 +1,11 @@
 import React from 'react';
 import { getFormErrorLabelsProps } from './errorHandling';
-import {
-  GenericProposalForm,
+import { GenericProposalForm,
   GenericFormValues,
   genericFormDefaultValues,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps
-} from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import { FormField } from './FormFields';
 import { ProposalType } from '@polkadot/joy-utils/types/proposals';
 import { WorkingGroupKey, WorkingGroupDef } from '@joystream/types/common';
@@ -45,7 +43,7 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 export type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerProps> = props => {
+export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const {
     handleChange,
     errors,
@@ -72,17 +70,18 @@ export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerP
   const isDisabled = disabled || leadMissing || stakeMissing || rewardMissing || Boolean(leadRes.error);
 
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
+
   return (
     <GenericProposalForm {...props} disabled={isDisabled}>
       <FormField
         error={errorLabelsProps.workingGroup}
-        label="Working group"
+        label='Working group'
       >
         <Dropdown
-          name="workingGroup"
-          placeholder="Select the working group"
+          name='workingGroup'
+          placeholder='Select the working group'
           selection
-          options={Object.keys(WorkingGroupDef).map(wgKey => ({ text: wgKey + ' Working Group', value: wgKey }))}
+          options={Object.keys(WorkingGroupDef).map((wgKey) => ({ text: wgKey + ' Working Group', value: wgKey }))}
           value={values.workingGroup}
           onChange={ handleChange }
         />

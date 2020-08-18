@@ -178,8 +178,9 @@ function minMaxInt (min: number, max: number, fieldName: string) {
     .max(max, errorMessage(fieldName, min, max));
 }
 
-function minMaxStrFromConstraint(constraint: InputValidationLengthConstraint | undefined, fieldName: string) {
+function minMaxStrFromConstraint (constraint: InputValidationLengthConstraint | undefined, fieldName: string) {
   const schema = Yup.string().required(`${fieldName} is required!`);
+
   return constraint
     ? (
       schema
@@ -211,9 +212,9 @@ const Validation: ValidationType = {
   }),
   RuntimeUpgrade: () => ({
     WASM: Yup.mixed()
-      .test('fileArrayBuffer', 'Unexpected data format, file cannot be processed.', value => typeof value.byteLength !== 'undefined')
-      .test('fileSizeMin', `Minimum file size is ${FILE_SIZE_BYTES_MIN} bytes.`, value => value.byteLength >= FILE_SIZE_BYTES_MIN)
-      .test('fileSizeMax', `Maximum file size is ${FILE_SIZE_BYTES_MAX} bytes.`, value => value.byteLength <= FILE_SIZE_BYTES_MAX)
+      .test('fileArrayBuffer', 'Unexpected data format, file cannot be processed.', (value) => typeof value.byteLength !== 'undefined')
+      .test('fileSizeMin', `Minimum file size is ${FILE_SIZE_BYTES_MIN} bytes.`, (value) => value.byteLength >= FILE_SIZE_BYTES_MIN)
+      .test('fileSizeMax', `Maximum file size is ${FILE_SIZE_BYTES_MAX} bytes.`, (value) => value.byteLength <= FILE_SIZE_BYTES_MAX)
   }),
   SetElectionParameters: () => ({
     announcingPeriod: Yup.number()
@@ -369,18 +370,22 @@ const Validation: ValidationType = {
         'Schema validation failed!',
         function (val) {
           let schemaObj: any;
+
           try {
             schemaObj = JSON.parse(val);
           } catch (e) {
             return this.createError({ message: 'Schema validation failed: Invalid JSON' });
           }
+
           const isValid = schemaValidator(schemaObj);
           const errors = schemaValidator.errors || [];
+
           if (!isValid) {
             return this.createError({
-              message: 'Schema validation failed: ' + errors.map(e => `${e.message}${e.dataPath && ` (${e.dataPath})`}`).join(', ')
+              message: 'Schema validation failed: ' + errors.map((e) => `${e.message}${e.dataPath && ` (${e.dataPath})`}`).join(', ')
             });
           }
+
           return true;
         }
       )

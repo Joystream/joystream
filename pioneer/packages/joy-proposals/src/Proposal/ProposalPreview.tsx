@@ -26,8 +26,10 @@ export type ProposalPreviewProps = {
   proposal: ParsedProposal;
   bestNumber?: BlockNumber;
 };
+
 export default function ProposalPreview ({ proposal, bestNumber }: ProposalPreviewProps) {
   const extendedStatus = getExtendedStatus(proposal, bestNumber);
+
   return (
     <Card
       fluid
@@ -35,7 +37,7 @@ export default function ProposalPreview ({ proposal, bestNumber }: ProposalPrevi
       <ProposalIdBox>{ `#${proposal.id.toString()}` }</ProposalIdBox>
       <Card.Content>
         <Card.Header>
-          <Header as="h1">{proposal.title}</Header>
+          <Header as='h1'>{proposal.title}</Header>
         </Card.Header>
         <Card.Description>
           <ProposalDesc>

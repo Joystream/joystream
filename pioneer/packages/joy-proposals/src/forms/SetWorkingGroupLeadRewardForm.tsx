@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
 import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
-import {
-  withProposalFormData,
+import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
   ProposalFormInnerProps,
-  genericFormDefaultOptions
-} from './GenericProposalForm';
-import {
-  GenericWorkingGroupProposalForm,
+  genericFormDefaultOptions } from './GenericProposalForm';
+import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
-  defaultValues as wgFromDefaultValues
-} from './GenericWorkingGroupProposalForm';
+  defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
 import { InputFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import { Grid } from 'semantic-ui-react';
@@ -35,7 +31,7 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const SetWorkingGroupLeadRewardForm: React.FunctionComponent<FormInnerProps> = props => {
+const SetWorkingGroupLeadRewardForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { handleChange, errors, touched, values, myMemberId } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const [lead, setLead] = useState<WorkerData | null>(null);
@@ -43,8 +39,8 @@ const SetWorkingGroupLeadRewardForm: React.FunctionComponent<FormInnerProps> = p
   return (
     <GenericWorkingGroupProposalForm
       {...props}
-      txMethod="createSetWorkingGroupLeaderRewardProposal"
-      proposalType="SetWorkingGroupLeaderReward"
+      txMethod='createSetWorkingGroupLeaderRewardProposal'
+      proposalType='SetWorkingGroupLeaderReward'
       leadRequired={true}
       leadRewardRequired={true}
       onLeadChange={(lead: WorkerData | null) => setLead(lead)}
@@ -59,12 +55,12 @@ const SetWorkingGroupLeadRewardForm: React.FunctionComponent<FormInnerProps> = p
       ]}
     >
       { (lead && lead.reward) && (
-        <Grid columns="4" doubling stackable verticalAlign="bottom">
+        <Grid columns='4' doubling stackable verticalAlign='bottom'>
           <Grid.Column>
             <InputFormField
-              label="New reward amount"
+              label='New reward amount'
               onChange={handleChange}
-              name="amount"
+              name='amount'
               error={errorLabelsProps.amount}
               value={values.amount}
               unit={formatBalance.getDefaults().unit}

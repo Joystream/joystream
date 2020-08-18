@@ -54,6 +54,7 @@ function ProposedMember (props: { memberId?: MemberId | number | null }) {
   if (props.memberId === null || props.memberId === undefined) {
     return <>NONE</>;
   }
+
   const memberId: MemberId | number = props.memberId;
 
   const transport = useTransport();
@@ -63,7 +64,7 @@ function ProposedMember (props: { memberId?: MemberId | number | null }) {
   );
 
   return (
-    <PromiseComponent error={error} loading={loading} message="Fetching profile...">
+    <PromiseComponent error={error} loading={loading} message='Fetching profile...'>
       { (member && !member.isEmpty) ? (
         <ProfilePreview
           avatar_uri={ member.avatar_uri.toString() }
@@ -102,7 +103,7 @@ class ParsedParam {
 
 // The methods for parsing params by Proposal type.
 const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>) => ParsedParam[]} = {
-  Text: content => [
+  Text: (content) => [
     new ParsedParam(
       'Content',
       <ReactMarkdown className='TextProposalContent' source={content.toString()} linkTarget='_blank' />,
@@ -113,7 +114,7 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>) 
     new ParsedParam('Blake2b256 hash of WASM code', hash, true),
     new ParsedParam('File size', filesize + ' bytes')
   ],
-  SetElectionParameters: params => [
+  SetElectionParameters: (params) => [
     new ParsedParam('Announcing period', params.announcing_period.toString() + ' blocks'),
     new ParsedParam('Voting period', params.voting_period.toString() + ' blocks'),
     new ParsedParam('Revealing period', params.revealing_period.toString() + ' blocks'),
@@ -127,20 +128,20 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>) 
     new ParsedParam('Amount', formatBalance(amount as Balance)),
     new ParsedParam('Account', <ProposedAddress accountId={account as AccountId} />)
   ],
-  SetLead: params => [
+  SetLead: (params) => [
     new ParsedParam('Member', <ProposedMember memberId={params.unwrapOr([])[0] as MemberId | undefined} />),
     new ParsedParam('Account id', <ProposedAddress accountId={params.unwrapOr([])[1] as AccountId | undefined} />)
   ],
-  SetContentWorkingGroupMintCapacity: capacity => [
+  SetContentWorkingGroupMintCapacity: (capacity) => [
     new ParsedParam('Mint capacity', formatBalance(capacity))
   ],
-  EvictStorageProvider: accountId => [
+  EvictStorageProvider: (accountId) => [
     new ParsedParam('Storage provider account', <ProposedAddress accountId={accountId} />)
   ],
-  SetValidatorCount: count => [
+  SetValidatorCount: (count) => [
     new ParsedParam('Validator count', count.toString())
   ],
-  SetStorageRoleParameters: params => [
+  SetStorageRoleParameters: (params) => [
     new ParsedParam('Min. stake', formatBalance(params.min_stake)),
     // "Min. actors": params.min_actors,
     new ParsedParam('Max. actors', params.max_actors.toString()),
@@ -165,13 +166,16 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>) 
       application_rationing_policy: rationingPolicy
     } = commitment;
     let HRT = bytesToString(humanReadableText);
+
     try { HRT = JSON.stringify(JSON.parse(HRT), undefined, 4); } catch (e) { /* Do nothing */ }
+
     const formatStake = (stake: Option<StakingPolicy>) => (
       stake.isSome ? stake.unwrap().amount_mode.type + `(${stake.unwrap().amount.toString()})` : 'NONE'
     );
     const formatPeriod = (unstakingPeriod: Option<BlockNumber>) => (
       `${unstakingPeriod.unwrapOr(new BN(0)).toString()} blocks`
-    )
+    );
+
     return [
       new ParsedParam('Working group', workingGroup.type),
       new ParsedParam('Activate at', `${activateAt.type}${activateAtBlock ? `(${activateAtBlock.toString()})` : ''}`),
@@ -331,6 +335,7 @@ const ParamsHeader = styled.h4`
   padding: 0.3rem;
   left: 0.5rem;
 `;
+
 type ProposalParamProps = { fullWidth?: boolean };
 const ProposalParam = ({ fullWidth, children }: React.PropsWithChildren<ProposalParamProps>) => (
   <div style={{ gridColumn: (fullWidth || undefined) && '1/3' }}>
@@ -370,11 +375,12 @@ export default function Body ({
       ? params as RuntimeUpgradeProposalDetails
       : (params as ProposalDetails).asType(type)
   );
+
   return (
     <Card fluid>
       <Card.Content>
         <Card.Header>
-          <Header as="h1">{title}</Header>
+          <Header as='h1'>{title}</Header>
         </Card.Header>
         <StyledProposalDescription>
           <ReactMarkdown source={description} linkTarget='_blank' />
@@ -402,17 +408,17 @@ export default function Body ({
               <SemanticTxButton
                 params={ [proposerId, proposalId] }
                 tx={ 'proposalsEngine.cancelProposal' }
-                onClick={ sendTx => { sendTx(); } }
+                onClick={ (sendTx) => { sendTx(); } }
                 icon
                 color={ 'red' }
                 labelPosition={ 'left' }
               >
-                <Icon name="cancel" inverted />
+                <Icon name='cancel' inverted />
                 Withdraw proposal
               </SemanticTxButton>
             </Message.Content>
           </Message>
-          </>) }
+        </>) }
       </Card.Content>
     </Card>
   );

@@ -22,7 +22,8 @@ export default class CouncilTransport extends BaseTransport {
   async councilMembersLength (atBlock?: number): Promise<number> {
     if (atBlock) {
       const blockHash = await this.chainT.blockHash(atBlock);
-      return ((await this.api.query.council.activeCouncil.at(blockHash)) as Seats).length;
+
+      return ((await this.api.query.council.activeCouncil.at(blockHash))).length;
     }
 
     return ((await this.council.activeCouncil()) as Seats).length;
@@ -30,10 +31,12 @@ export default class CouncilTransport extends BaseTransport {
 
   async councilMembers (): Promise<(ParsedMember & { memberId: MemberId })[]> {
     const council = (await this.council.activeCouncil()) as Seats;
+
     return Promise.all(
-      council.map(async seat => {
+      council.map(async (seat) => {
         const memberIds = (await this.members.memberIdsByControllerAccountId(seat.member)) as Vec<MemberId>;
         const member = (await this.membersT.expectedMembership(memberIds[0])).toJSON() as ParsedMember;
+
         return {
           ...member,
           memberId: memberIds[0]
@@ -50,7 +53,7 @@ export default class CouncilTransport extends BaseTransport {
       .filter(([memberId, member]) => (
         // Filter out council members
         !activeCouncil.some((seat) =>
-            seat.member.eq(member.controller_account) ||
+          seat.member.eq(member.controller_account) ||
             seat.member.eq(member.root_account)
         )
       ))
@@ -78,6 +81,6 @@ export default class CouncilTransport extends BaseTransport {
       min_voting_stake,
       candidacy_limit,
       council_size
-    }
+    };
   }
 }

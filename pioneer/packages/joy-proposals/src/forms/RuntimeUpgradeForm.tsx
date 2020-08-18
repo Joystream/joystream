@@ -1,16 +1,14 @@
 import React from 'react';
 import { Form } from 'semantic-ui-react';
 import * as Yup from 'yup';
-import {
-  GenericProposalForm,
+import { GenericProposalForm,
   GenericFormValues,
   genericFormDefaultOptions,
   genericFormDefaultValues,
   withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps
-} from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import Validation from '../validationSchema';
 import { withFormContainer } from './FormContainer';
 import FileDropdown from './FileDropdown';
@@ -30,22 +28,23 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const RuntimeUpgradeForm: React.FunctionComponent<FormInnerProps> = props => {
+const RuntimeUpgradeForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { errors, setFieldValue, setFieldTouched, values, touched } = props;
+
   return (
     <GenericProposalForm
       {...props}
-      txMethod="createRuntimeUpgradeProposal"
-      proposalType="RuntimeUpgrade"
+      txMethod='createRuntimeUpgradeProposal'
+      proposalType='RuntimeUpgrade'
       submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.WASM]}
     >
       <Form.Field>
         <FileDropdown<FormValues>
           setFieldValue={setFieldValue}
           setFieldTouched={setFieldTouched}
-          defaultText="Drag-n-drop WASM bytecode of a runtime upgrade (*.wasm)"
-          acceptedFormats=".wasm"
-          name="WASM"
+          defaultText='Drag-n-drop WASM bytecode of a runtime upgrade (*.wasm)'
+          acceptedFormats='.wasm'
+          name='WASM'
           error={touched.WASM ? errors.WASM : undefined}
           interpretAs='binary'
         />
