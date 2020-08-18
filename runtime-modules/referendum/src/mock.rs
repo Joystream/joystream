@@ -94,7 +94,7 @@ impl Trait<Instance0> for Runtime {
         stake
     }
 
-    fn has_sufficient_balance(
+    fn can_stake_for_vote(
         account_id: &<Self as system::Trait>::AccountId,
         _balance: &Self::CurrencyBalance,
     ) -> bool {
@@ -123,7 +123,7 @@ impl Trait<Instance0> for Runtime {
         }
 
         // simple mock reusing can_lock check
-        <Self as Trait<Instance0>>::has_sufficient_balance(account_id, balance)
+        <Self as Trait<Instance0>>::can_stake_for_vote(account_id, balance)
     }
 
     fn free_currency(
@@ -135,7 +135,7 @@ impl Trait<Instance0> for Runtime {
         }
 
         // simple mock reusing can_lock check
-        <Self as Trait<Instance0>>::has_sufficient_balance(account_id, balance)
+        <Self as Trait<Instance0>>::can_stake_for_vote(account_id, balance)
     }
 }
 
