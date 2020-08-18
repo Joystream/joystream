@@ -1,23 +1,22 @@
-// Copyright 2017-2019 @polkadot/apps-routing authors & contributors
+// Copyright 2017-2020 @polkadot/apps-routing authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { Routes } from './types';
+import { Route } from './types';
 
-import Democracy from '@polkadot/app-democracy';
+import Component, { useCounter } from '@polkadot/app-democracy';
 
-export default ([
-  {
-    Component: Democracy,
+export default function create (t: <T = string> (key: string, text: string, options: { ns: string }) => T): Route {
+  return {
+    Component,
     display: {
       needsApi: [
-        'query.democracy.nextTally'
+        'tx.democracy.notePreimage'
       ]
     },
-    i18n: {
-      defaultValue: 'Democracy'
-    },
-    icon: 'calendar check',
-    name: 'democracy'
-  }
-] as Routes);
+    icon: 'calendar-check',
+    name: 'democracy',
+    text: t<string>('nav.democracy', 'Democracy', { ns: 'apps-routing' }),
+    useCounter
+  };
+}

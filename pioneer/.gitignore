@@ -10,13 +10,16 @@ tmp/
 .env.test.local
 .env.production.local
 .npmrc
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+.pnp.*
 cc-test-reporter
 package-lock.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 !patches/**
-.idea/
 
 # Built Joystream types:
 packages/joy-types/lib/

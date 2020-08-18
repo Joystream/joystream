@@ -548,7 +548,7 @@ export class Transport extends TransportBase implements ITransport {
   }
 
   async blockHash (height: number): Promise<string> {
-    const blockHash = await this.cachedApi.query.system.blockHash(height);
+    const blockHash = await this.api.rpc.chain.getBlockHash(height);
     return blockHash.toString();
   }
 

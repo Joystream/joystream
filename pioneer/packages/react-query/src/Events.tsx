@@ -1,19 +1,13 @@
-// Copyright 2017-2019 @polkadot/react-query authors & contributors
+// Copyright 2017-2020 @polkadot/react-query authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { Codec } from '@polkadot/types/types';
+import { IndexedEvent, KeyedEvent } from './types';
 
-import React, { useContext, useEffect, useState } from 'react';
-import { ApiContext } from '@polkadot/react-api';
-import { EventRecord } from '@polkadot/types/interfaces';
+import React, { useEffect, useState } from 'react';
+import { useApi } from '@polkadot/react-hooks';
 import { stringToU8a } from '@polkadot/util';
 import { xxhashAsHex } from '@polkadot/util-crypto';
-
-interface KeyedEvent {
-  key: string;
-  record: EventRecord;
-}
 
 type Events = KeyedEvent[];
 
@@ -21,33 +15,66 @@ interface Props {
   children: React.ReactNode;
 }
 
-const MAX_EVENTS = 20;
+const MAX_EVENTS = 75;
 
 const EventsContext: React.Context<Events> = React.createContext<Events>([]);
 
-function Events ({ children }: Props): React.ReactElement<Props> {
-  const { api } = useContext(ApiContext);
+function EventsBase ({ children }: Props): React.ReactElement<Props> {
+  const { api } = useApi();
   const [state, setState] = useState<Events>([]);
 
   useEffect((): void => {
-    // TODO We should really unsub - but since this should just be used once,
-    // atm I'm rather typing this than doing it the way it is supposed to be
+    // No unsub, global context - destroyed on app close
     api.isReady.then((): void => {
-      const prevEventHash = '';
-      let events: Events = [];
+      let prevBlockHash: string | null = null;
+      let prevEventHash: string | null = null;
 
-      api.query.system.events((records: EventRecord[] & Codec): void => {
-        const newEvents = records
-          .filter(({ event }): boolean => event.section !== 'system')
-          .map((record, index): KeyedEvent => ({ key: `${Date.now()}-${index}`, record }));
+      api.query.system.events((records): void => {
+        const newEvents: IndexedEvent[] = records
+          .map((record, index) => ({ indexes: [index], record }))
+          .filter(({ record: { event: { method, section } } }) => section !== 'system' && (method !== 'Deposit' || !['balances', 'treasury'].includes(section)))
+          .reduce((combined: IndexedEvent[], e): IndexedEvent[] => {
+            const prev = combined.find(({ record: { event: { method, section } } }) => e.record.event.section === section && e.record.event.method === method);
+
+            if (prev) {
+              prev.indexes.push(...e.indexes);
+            } else {
+              combined.push(e);
+            }
+
+            return combined;
+          }, [])
+          .reverse();
         const newEventHash = xxhashAsHex(stringToU8a(JSON.stringify(newEvents)));
 
-        if (newEventHash !== prevEventHash) {
-          events = [...newEvents, ...events].slice(0, MAX_EVENTS);
-          setState(events);
+        if (newEventHash !== prevEventHash && newEvents.length) {
+          prevEventHash = newEventHash;
+
+          // retrieve the last header, this will map to the current state
+          api.rpc.chain.getHeader().then((header): void => {
+            const blockNumber = header.number.unwrap();
+            const blockHash = header.hash.toHex();
+
+            if (blockHash !== prevBlockHash) {
+              prevBlockHash = blockHash;
+
+              setState((events) => [
+                ...newEvents.map(({ indexes, record }): KeyedEvent => ({
+                  blockHash,
+                  blockNumber,
+                  indexes,
+                  key: `${blockNumber.toNumber()}-${blockHash}-${indexes.join('.')}`,
+                  record
+                })),
+                // remove all events for the previous same-height blockNumber
+                ...events.filter((p) => !p.blockNumber?.eq(blockNumber))
+              ].slice(0, MAX_EVENTS));
+            }
+          }).catch(console.error);
         }
-      });
-    });
+      }).catch(console.error);
+    }).catch(console.error);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -56,5 +83,7 @@ function Events ({ children }: Props): React.ReactElement<Props> {
     </EventsContext.Provider>
   );
 }
+
+const Events = React.memo(EventsBase);
 
 export { EventsContext, Events };

@@ -1,4 +1,4 @@
-// Copyright 2017-2019 @polkadot/app-democracy authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
@@ -6,15 +6,13 @@ import { Proposal } from '@polkadot/types/interfaces';
 
 import BN from 'bn.js';
 import React from 'react';
-import { RouteComponentProps } from 'react-router';
-import { withRouter } from 'react-router-dom';
 import styled from 'styled-components';
 
 import Card from './Card';
 import ProposedAction, { styles as proposedActionStyles } from './ProposedAction';
 import { styles as rowStyles } from './Row';
 
-interface Props extends RouteComponentProps {
+interface Props {
   className?: string;
   children?: React.ReactNode;
   accessory?: React.ReactNode;
@@ -28,17 +26,17 @@ export const styles = `
   ${proposedActionStyles}
 `;
 
-function ActionItem ({ className, children, accessory, idNumber, proposal, expandNested }: Props): React.ReactElement<Props> {
+function ActionItem ({ accessory, children, className = '', expandNested, idNumber, proposal }: Props): React.ReactElement<Props> {
   return (
     <Card className={className}>
       <div className='ui--Row'>
         <div className='ui--Row-base'>
           <div className='ui--Row-details'>
             <ProposedAction
+              expandNested={expandNested}
               idNumber={idNumber}
               proposal={proposal}
               withLinks={expandNested}
-              expandNested={expandNested}
             />
           </div>
           {accessory}
@@ -49,4 +47,4 @@ function ActionItem ({ className, children, accessory, idNumber, proposal, expan
   );
 }
 
-export default withRouter(styled(ActionItem)`${styles}`);
+export default React.memo(styled(ActionItem)`${styles}`);
