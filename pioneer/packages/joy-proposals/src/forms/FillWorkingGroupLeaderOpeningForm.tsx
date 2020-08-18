@@ -14,24 +14,19 @@ import {
 } from './GenericWorkingGroupProposalForm';
 import { FormField, RewardPolicyFields } from './FormFields';
 import { withFormContainer } from './FormContainer';
-import './forms.css';
 import { Dropdown, DropdownItemProps, Header, Checkbox, Message } from 'semantic-ui-react';
 import _ from 'lodash';
 import Validation from '../validationSchema';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { OpeningData, ParsedApplication } from '@polkadot/joy-utils/types/workingGroups';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { formatBalance } from '@polkadot/util';
 import { withCalls } from '@polkadot/react-api';
-import { Option } from '@polkadot/types';
 import { BlockNumber } from '@polkadot/types/interfaces';
-import { u32 as U32, u128 as U128 } from '@polkadot/types/primitive';
 import { getFormErrorLabelsProps } from './errorHandling';
-import { RewardPolicy } from '@joystream/types/working-group';
-import { FillOpeningParameters } from '@joystream/types/proposals';
-import { WorkingGroup } from '@joystream/types/common';
-import { OpeningId, ApplicationId } from '@joystream/types/hiring';
 import { ApplicationsDetails } from '@polkadot/joy-utils/react/components/working-groups/ApplicationDetails';
+import { SimplifiedTypeInterface } from '@polkadot/joy-utils/types/common';
+import { IFillOpeningParameters } from '@joystream/types/src/proposals';
 
 export type FormValues = WGFormValues & {
   openingId: string;
@@ -61,23 +56,20 @@ type FormContainerProps = ProposalFormContainerProps<ExportComponentProps> & {
 };
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const valuesToFillOpeningParams = (values: FormValues): FillOpeningParameters => (
-  new FillOpeningParameters({
-    working_group: new WorkingGroup(values.workingGroup),
-    successful_application_id: new ApplicationId(values.successfulApplicant),
-    opening_id: new OpeningId(values.openingId),
-    reward_policy: new (Option.with(RewardPolicy))(
+const valuesToFillOpeningParams = (values: FormValues): SimplifiedTypeInterface<IFillOpeningParameters> => (
+  {
+    working_group: values.workingGroup,
+    successful_application_id: values.successfulApplicant,
+    opening_id: values.openingId,
+    reward_policy:
       values.includeReward
-        ? new RewardPolicy({
-          amount_per_payout: new U128(values.rewardAmount),
-          next_payment_at_block: new U32(values.rewardNextBlock),
-          payout_interval: new (Option.with('BlockNumber'))(
-            values.rewardRecurring ? values.rewardInterval : null
-          ) as Option<BlockNumber>
-        })
-        : null
-    ) as Option<RewardPolicy>
-  })
+        ? {
+          amount_per_payout: values.rewardAmount,
+          next_payment_at_block: values.rewardNextBlock,
+          payout_interval: values.rewardRecurring ? values.rewardInterval : undefined
+        }
+        : undefined
+  }
 );
 
 const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps> = props => {

@@ -15,12 +15,11 @@ import {
 import Validation from '../validationSchema';
 import { InputFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
-import { createType } from '@polkadot/types';
-import './forms.css';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import _ from 'lodash';
-import { ElectionParameters } from '@joystream/types/council';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
+import { IElectionParameters } from '@joystream/types/src/council';
+import { SimplifiedTypeInterface } from '@polkadot/joy-utils/types/common';
 
 export type FormValues = GenericFormValues & {
   announcingPeriod: string;
@@ -50,17 +49,17 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-function createElectionParameters (values: FormValues): ElectionParameters {
-  return new ElectionParameters({
-    announcing_period: createType('BlockNumber', parseInt(values.announcingPeriod)),
-    voting_period: createType('BlockNumber', parseInt(values.votingPeriod)),
-    revealing_period: createType('BlockNumber', parseInt(values.revealingPeriod)),
-    council_size: createType('u32', values.councilSize),
-    candidacy_limit: createType('u32', values.candidacyLimit),
-    new_term_duration: createType('BlockNumber', parseInt(values.newTermDuration)),
-    min_council_stake: createType('Balance', values.minCouncilStake),
-    min_voting_stake: createType('Balance', values.minVotingStake)
-  });
+function createElectionParameters (values: FormValues): SimplifiedTypeInterface<IElectionParameters> {
+  return {
+    announcing_period: parseInt(values.announcingPeriod),
+    voting_period: parseInt(values.votingPeriod),
+    revealing_period: parseInt(values.revealingPeriod),
+    council_size: values.councilSize,
+    candidacy_limit: values.candidacyLimit,
+    new_term_duration: parseInt(values.newTermDuration),
+    min_council_stake: values.minCouncilStake,
+    min_voting_stake: values.minVotingStake
+  };
 }
 
 const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
@@ -69,7 +68,7 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = props => {
   const [placeholders, setPlaceholders] = useState<{ [k in keyof FormValues]: string }>(defaultValues);
 
   const transport = useTransport();
-  const [councilParams, error, loading] = usePromise<ElectionParameters | null>(() => transport.council.electionParameters(), null);
+  const [councilParams, error, loading] = usePromise<IElectionParameters | null>(() => transport.council.electionParameters(), null);
   useEffect(() => {
     if (councilParams) {
       const fetchedPlaceholders = { ...placeholders };

@@ -14,7 +14,6 @@ import {
 import Validation from '../validationSchema';
 import { TextareaFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
-import './forms.css';
 
 export type FormValues = GenericFormValues & {
   description: string;

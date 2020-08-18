@@ -4,11 +4,12 @@ import { Form, Icon, Button, Message } from 'semantic-ui-react';
 import { getFormErrorLabelsProps } from './errorHandling';
 import Validation from '../validationSchema';
 import { InputFormField, TextareaFormField } from './FormFields';
-import TxButton from '@polkadot/joy-utils/TxButton';
+import TxButton from '@polkadot/joy-utils/react/components/TxButton';
 import { SubmittableResult } from '@polkadot/api';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
-import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
-import { withMulti } from '@polkadot/react-api/with';
+import { MyAccountProps } from '@polkadot/joy-utils/react/hocs/accounts';
+import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
+import { withMulti } from '@polkadot/react-api/hoc';
 import { withCalls } from '@polkadot/react-api';
 import { CallProps } from '@polkadot/react-api/types';
 import { Balance, Event } from '@polkadot/types/interfaces';
@@ -16,8 +17,8 @@ import { RouteComponentProps } from 'react-router';
 import { ProposalType } from '@polkadot/joy-utils/types/proposals';
 import proposalsConsts from '@polkadot/joy-utils/consts/proposals';
 import { formatBalance } from '@polkadot/util';
-import './forms.css';
 import { ProposalId } from '@joystream/types/proposals';
+import styled from 'styled-components';
 
 // Generic form values
 export type GenericFormValues = {
@@ -73,6 +74,33 @@ export const genericFormDefaultOptions: GenericFormDefaultOptions = {
     // This is handled via TxButton
   }
 };
+
+const StyledGenericProposalForm = styled.div`
+  .proposal-form {
+    margin: 0 auto;
+  }
+
+  .ui.form.proposal-form {
+    & label {
+      font-size: 1rem;
+    }
+
+    & input[name="tokens"] {
+      max-width: 16rem;
+    }
+  }
+
+  .form-buttons {
+    display: flex;
+    button {
+      margin-right: 0.5em;
+    }
+  }
+
+  .ui.dropdown .ui.avatar.image {
+    width: 2em !important;
+  }
+`;
 
 // Generic proposal form with basic structure, "Title" and "Rationale" fields
 // Other fields can be passed as children
@@ -162,7 +190,7 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
     proposalsConsts[proposalType].stake;
 
   return (
-    <div className="Forms" ref={formContainerRef}>
+    <StyledGenericProposalForm ref={formContainerRef}>
       <Form
         className="proposal-form"
         onSubmit={txMethod
@@ -199,7 +227,6 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
             <TxButton
               type="button" // Tx button uses custom submit handler - "onTxButtonClick"
               label="Submit proposal"
-              icon="paper plane"
               isDisabled={disabled || isSubmitting}
               params={(submitParams || []).map(p => (p === '{STAKE}' ? requiredStake : p))}
               tx={`proposalsCodex.${txMethod}`}
@@ -220,7 +247,7 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
           </Button>
         </div>
       </Form>
-    </div>
+    </StyledGenericProposalForm>
   );
 };
 

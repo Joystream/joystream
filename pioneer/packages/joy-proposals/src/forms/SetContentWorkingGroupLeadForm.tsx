@@ -17,9 +17,8 @@ import { FormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { Membership } from '@joystream/types/members';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import _ from 'lodash';
-import './forms.css';
 
 export type FormValues = GenericFormValues & {
   workingGroupLead: any;

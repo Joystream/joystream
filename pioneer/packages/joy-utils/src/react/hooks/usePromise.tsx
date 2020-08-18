@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { normalizeError } from '../../functions/misc';
 import { randomBytes } from 'crypto';
 
-export type UsePromiseReturnValues<T> = [T, string | null, boolean];
+export type UsePromiseReturnValues<T> = [T, string | null, boolean, () => void];
 
 export default function usePromise<T> (
   promise: () => Promise<T>,
@@ -65,5 +65,5 @@ export default function usePromise<T> (
 
   const { value, error, isPending } = state;
 
-  return [value, error, isPending];
+  return [value, error, isPending, executeAndSubscribePromise];
 }

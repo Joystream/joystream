@@ -1,6 +1,6 @@
 import React from 'react';
 import { WorkerData } from '../../../types/workingGroups';
-import { ProfilePreviewFromStruct as MemberPreview } from '../../../MemberProfilePreview';
+import { ProfilePreviewFromStruct as MemberPreview } from '../MemberProfilePreview';
 import { Label, Message } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import { WorkingGroupKey } from '@joystream/types/common';

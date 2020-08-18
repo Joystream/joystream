@@ -11,10 +11,9 @@ import {
 import { FormField } from './FormFields';
 import { ProposalType } from '@polkadot/joy-utils/types/proposals';
 import { WorkingGroupKey, WorkingGroupDef } from '@joystream/types/common';
-import './forms.css';
 import { Dropdown, Message } from 'semantic-ui-react';
 import { usePromise, useTransport } from '@polkadot/joy-utils/react/hooks';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { WorkerData } from '@polkadot/joy-utils/types/workingGroups';
 import { LeadInfo } from '@polkadot/joy-utils/react/components/working-groups/LeadInfo';
 
@@ -70,7 +69,7 @@ export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerP
   const leadMissing = leadRequired && (!leadRes.loading && !leadRes.error) && !leadRes.lead;
   const stakeMissing = leadStakeRequired && (!leadRes.loading && !leadRes.error) && (leadRes.lead && !leadRes.lead.stake);
   const rewardMissing = leadRewardRequired && (!leadRes.loading && !leadRes.error) && (leadRes.lead && !leadRes.lead.reward);
-  const isDisabled = disabled || leadMissing || stakeMissing || rewardMissing || leadRes.error;
+  const isDisabled = disabled || leadMissing || stakeMissing || rewardMissing || Boolean(leadRes.error);
 
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   return (

@@ -3,7 +3,7 @@ import { Divider, Header } from 'semantic-ui-react';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { ProposalId } from '@joystream/types/proposals';
 import { ParsedDiscussion } from '@polkadot/joy-utils/types/proposals';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import DiscussionPost from './DiscussionPost';
 import DiscussionPostForm from './DiscussionPostForm';
 import { MemberId } from '@joystream/types/members';

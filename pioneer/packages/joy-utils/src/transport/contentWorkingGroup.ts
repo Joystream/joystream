@@ -1,12 +1,11 @@
 import { Membership } from '@joystream/types/members';
-import { u128, Vec, Option } from '@polkadot/types/';
+import { u128, Option } from '@polkadot/types/';
 import BaseTransport from './base';
 import { MintId, Mint } from '@joystream/types/mint';
 import { LeadId, Lead } from '@joystream/types/content-working-group';
 import { ApiPromise } from '@polkadot/api';
 import MembersTransport from './members';
-import { APIQueryCache } from '../APIQueryCache';
-import { SingleLinkedMapEntry } from '..';
+import { APIQueryCache } from './APIQueryCache';
 
 export default class ContentWorkingGroupTransport extends BaseTransport {
   private membersT: MembersTransport;
@@ -18,8 +17,8 @@ export default class ContentWorkingGroupTransport extends BaseTransport {
 
   async currentMintCap (): Promise<number> {
     const WGMintId = (await this.contentWorkingGroup.mint()) as MintId;
-    const WGMint = (await this.minting.mints(WGMintId)) as Vec<Mint>;
-    return (WGMint[0].get('capacity') as u128).toNumber();
+    const WGMint = (await this.minting.mints(WGMintId)) as Mint;
+    return (WGMint.get('capacity') as u128).toNumber();
   }
 
   async currentLead (): Promise<{ id: number; profile: Membership } | null> {
@@ -28,9 +27,9 @@ export default class ContentWorkingGroupTransport extends BaseTransport {
 
     if (!leadId) return null;
 
-    const lead = new SingleLinkedMapEntry(Lead, await this.contentWorkingGroup.leadById(leadId)).value;
+    const lead = await this.contentWorkingGroup.leadById(leadId) as Lead;
 
-    if (!lead.stage.isOfType('Active')) {
+    if (lead.isEmpty || !lead.stage.isOfType('Active')) {
       return null;
     }
 

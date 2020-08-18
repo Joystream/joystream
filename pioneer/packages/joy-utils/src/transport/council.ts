@@ -1,14 +1,13 @@
 import { ParsedMember } from '../types/members';
 import BaseTransport from './base';
-import { Seats, ElectionParameters } from '@joystream/types/council';
+import { Seats, IElectionParameters } from '@joystream/types/council';
 import { MemberId, Membership } from '@joystream/types/members';
 import { u32, Vec } from '@polkadot/types/';
 import { Balance, BlockNumber } from '@polkadot/types/interfaces';
-import { FIRST_MEMBER_ID } from '../consts/members';
 import { ApiPromise } from '@polkadot/api';
 import MembersTransport from './members';
 import ChainTransport from './chain';
-import { APIQueryCache } from '../APIQueryCache';
+import { APIQueryCache } from './APIQueryCache';
 
 export default class CouncilTransport extends BaseTransport {
   private membersT: MembersTransport;
@@ -46,28 +45,21 @@ export default class CouncilTransport extends BaseTransport {
   async membersExceptCouncil (): Promise<{ id: number; profile: Membership }[]> {
     // Council members to filter out
     const activeCouncil = (await this.council.activeCouncil()) as Seats;
-    const membersCount = ((await this.members.nextMemberId()) as MemberId).toNumber();
-    const profiles: { id: number; profile: Membership }[] = [];
-    for (let id = FIRST_MEMBER_ID.toNumber(); id < membersCount; ++id) {
-      const profile = (await this.membersT.membershipById(new MemberId(id)));
-      if (
-        !profile ||
-        // Filter out council members
-        activeCouncil.some(
-          seat =>
-            seat.member.toString() === profile.controller_account.toString() ||
-            seat.member.toString() === profile.root_account.toString()
-        )
-      ) {
-        continue;
-      }
-      profiles.push({ id, profile });
-    }
 
-    return profiles;
+    return (await this.membersT.allMembers())
+      .filter(([memberId, member]) => (
+        // Filter out council members
+        !activeCouncil.some((seat) =>
+            seat.member.eq(member.controller_account) ||
+            seat.member.eq(member.root_account)
+        )
+      ))
+      .map(([memberId, member]) => (
+        { id: memberId.toNumber(), profile: member }
+      ));
   }
 
-  async electionParameters (): Promise<ElectionParameters> {
+  async electionParameters (): Promise<IElectionParameters> {
     const announcing_period = (await this.councilElection.announcingPeriod()) as BlockNumber;
     const voting_period = (await this.councilElection.votingPeriod()) as BlockNumber;
     const revealing_period = (await this.councilElection.revealingPeriod()) as BlockNumber;
@@ -77,7 +69,7 @@ export default class CouncilTransport extends BaseTransport {
     const candidacy_limit = (await this.councilElection.candidacyLimit()) as u32;
     const council_size = (await this.councilElection.councilSize()) as u32;
 
-    return new ElectionParameters({
+    return {
       announcing_period,
       voting_period,
       revealing_period,
@@ -86,6 +78,6 @@ export default class CouncilTransport extends BaseTransport {
       min_voting_stake,
       candidacy_limit,
       council_size
-    });
+    }
   }
 }

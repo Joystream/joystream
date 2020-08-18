@@ -14,13 +14,12 @@ import {
 } from './GenericWorkingGroupProposalForm';
 import FormField from './FormFields';
 import { withFormContainer } from './FormContainer';
-import './forms.css';
 import { Dropdown, Message } from 'semantic-ui-react';
 import _ from 'lodash';
 import Validation from '../validationSchema';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { OpeningData } from '@polkadot/joy-utils/types/workingGroups';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { getFormErrorLabelsProps } from './errorHandling';
 
 export type FormValues = WGFormValues & {

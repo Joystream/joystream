@@ -1,7 +1,7 @@
-.Proposal {
-  position: relative;
+import { css } from 'styled-components';
 
-  .description {
+export default css`
+  .ui.card .description {
     word-wrap: break-word;
     word-break: break-word;
   }
@@ -26,4 +26,4 @@
   .ui.tabular.list-menu {
     margin-bottom: 2rem;
   }
-}
+`;

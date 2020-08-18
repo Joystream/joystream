@@ -15,7 +15,6 @@ import Validation from '../validationSchema';
 import { InputFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
-import './forms.css';
 
 export type FormValues = GenericFormValues & {
   maxValidatorCount: string;

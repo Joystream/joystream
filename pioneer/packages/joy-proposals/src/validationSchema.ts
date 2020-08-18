@@ -152,9 +152,9 @@ type FormValuesByType<T extends ValidationTypeKeys> =
   never;
 
 type ValidationSchemaFuncParamsByType<T extends ValidationTypeKeys> =
-  T extends 'AddWorkingGroupLeaderOpening' ? [number, InputValidationLengthConstraint] :
+  T extends 'AddWorkingGroupLeaderOpening' ? [number, InputValidationLengthConstraint | undefined] :
   T extends 'FillWorkingGroupLeaderOpening' ? [number] :
-  T extends 'TerminateWorkingGroupLeaderRole' ? [InputValidationLengthConstraint] :
+  T extends 'TerminateWorkingGroupLeaderRole' ? [InputValidationLengthConstraint | undefined] :
   [];
 
 /* eslint-enable @typescript-eslint/indent */
@@ -176,6 +176,23 @@ function minMaxInt (min: number, max: number, fieldName: string) {
     .integer(`${fieldName} must be an integer!`)
     .min(min, errorMessage(fieldName, min, max))
     .max(max, errorMessage(fieldName, min, max));
+}
+
+function minMaxStrFromConstraint(constraint: InputValidationLengthConstraint | undefined, fieldName: string) {
+  const schema = Yup.string().required(`${fieldName} is required!`);
+  return constraint
+    ? (
+      schema
+        .min(
+          constraint.min.toNumber(),
+          `${fieldName} must be at least ${constraint.min.toNumber()} character(s) long`
+        )
+        .max(
+          constraint.max.toNumber(),
+          `${fieldName} cannot be more than ${constraint.max.toNumber()} character(s) long`
+        )
+    )
+    : schema;
 }
 
 const Validation: ValidationType = {
@@ -303,7 +320,7 @@ const Validation: ValidationType = {
         errorMessage('The max validator count', MAX_VALIDATOR_COUNT_MIN, MAX_VALIDATOR_COUNT_MAX)
       )
   }),
-  AddWorkingGroupLeaderOpening: (currentBlock: number, { min: HRTMin, max: HRTMax }: InputValidationLengthConstraint) => ({
+  AddWorkingGroupLeaderOpening: (currentBlock: number, HRTConstraint?: InputValidationLengthConstraint) => ({
     workingGroup: Yup.string(),
     activateAt: Yup.string().required(),
     activateAtBlock: Yup.number()
@@ -346,8 +363,7 @@ const Validation: ValidationType = {
       LEAVE_ROLE_UNSTAKING_MAX,
       'Leave role unstaking period'
     ),
-    humanReadableText: Yup.string()
-      .required()
+    humanReadableText: minMaxStrFromConstraint(HRTConstraint, 'human_readable_text')
       .test(
         'schemaIsValid',
         'Schema validation failed!',
@@ -368,8 +384,6 @@ const Validation: ValidationType = {
           return true;
         }
       )
-      .min(HRTMin.toNumber(), `human_readable_text must be at least ${HRTMin.toNumber()} character(s) long`)
-      .max(HRTMax.toNumber(), `human_readable_text cannot be more than ${HRTMax.toNumber()} character(s) long`)
   }),
   SetWorkingGroupMintCapacity: () => ({
     workingGroup: Yup.string(),
@@ -421,12 +435,9 @@ const Validation: ValidationType = {
     workingGroup: Yup.string(),
     amount: minMaxInt(MIN_REWARD_AMOUNT, MAX_REWARD_AMOUNT, 'Reward amount')
   }),
-  TerminateWorkingGroupLeaderRole: ({ min, max }: InputValidationLengthConstraint) => ({
+  TerminateWorkingGroupLeaderRole: (rationaleConstraint?: InputValidationLengthConstraint) => ({
     workingGroup: Yup.string(),
-    terminationRationale: Yup.string()
-      .required('Termination rationale is required')
-      .min(min.toNumber(), `Termination rationale must be at least ${min.toNumber()} character(s) long`)
-      .max(max.toNumber(), `Termination rationale cannot be more than ${max.toNumber()} character(s) long`),
+    terminationRationale: minMaxStrFromConstraint(rationaleConstraint, 'Termination rationale'),
     slashStake: Yup.boolean()
   })
 };

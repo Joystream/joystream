@@ -7,7 +7,6 @@
     "packages/joy-forum/**/*",
     "packages/joy-help/**/*",
     "packages/joy-media/**/*",
-    "packages/joy-proposals/**/*",
     "packages/joy-roles/**/*",
     "packages/joy-settings/**/*",
     "packages/joy-utils-old/**/*"
@@ -34,8 +33,8 @@
       "@polkadot/joy-members/*": [ "packages/joy-members/src/*" ],
       "@polkadot/joy-pages/": [ "packages/joy-pages/src/" ],
       "@polkadot/joy-pages/*": [ "packages/joy-pages/src/*" ],
-      // "@polkadot/joy-proposals/": [ "packages/joy-proposals/src/" ],
-      // "@polkadot/joy-proposals/*": [ "packages/joy-proposals/src/*" ],
+      "@polkadot/joy-proposals/": [ "packages/joy-proposals/src/" ],
+      "@polkadot/joy-proposals/*": [ "packages/joy-proposals/src/*" ],
       // "@polkadot/joy-roles/": [ "packages/joy-roles/src/" ],
       // "@polkadot/joy-roles/*": [ "packages/joy-roles/src/*" ],
       // "@polkadot/joy-settings/": [ "packages/joy-settings/src/" ],

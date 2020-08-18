@@ -15,7 +15,6 @@ import {
 } from './GenericWorkingGroupProposalForm';
 import { FormField, InputFormField, TextareaFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
-import './forms.css';
 import { ActivateOpeningAtKey, ActivateOpeningAtDef, StakingAmountLimitModeKeys, IApplicationRationingPolicy, IStakingPolicy } from '@joystream/types/hiring';
 import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings';
 import { Dropdown, Grid, Message, Checkbox } from 'semantic-ui-react';
@@ -347,7 +346,7 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...genericFormDefaultOptions.validationSchema,
     ...Validation.AddWorkingGroupLeaderOpening(
       props.currentBlock?.toNumber() || 0,
-      props.HRTConstraint || InputValidationLengthConstraint.createWithMaxAllowed()
+      props.HRTConstraint
     )
   }),
   handleSubmit: genericFormDefaultOptions.handleSubmit,

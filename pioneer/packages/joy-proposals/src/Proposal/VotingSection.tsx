@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 
-import { Icon, Button, Message, Divider, Header } from 'semantic-ui-react';
+import { Icon, Message, Divider, Header } from 'semantic-ui-react';
 import useVoteStyles from './useVoteStyles';
-import TxButton from '@polkadot/joy-utils/TxButton';
+import { SemanticTxButton } from '@polkadot/joy-utils/react/components/TxButton';
 import { MemberId } from '@joystream/types/members';
 import { ProposalId, VoteKind, VoteKinds } from '@joystream/types/proposals';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
@@ -35,24 +35,23 @@ type VoteButtonProps = {
 function VoteButton ({ voteKind, proposalId, memberId, onSuccess }: VoteButtonProps) {
   const { icon, color } = useVoteStyles(voteKind);
   return (
-    // Button.Group "cheat" to force TxButton color
-    <Button.Group color={color} style={{ marginRight: '5px' }}>
-      <TxButton
-        // isDisabled={ isSubmitting }
-        params={[
-          memberId,
-          proposalId,
-          voteKind
-        ]}
-        tx={ 'proposalsEngine.vote' }
-        onClick={ sendTx => sendTx() }
-        txFailedCb={ () => null }
-        txSuccessCb={ onSuccess }
-        className={'icon left labeled'}>
-        <Icon name={icon} inverted />
-        { voteKind }
-      </TxButton>
-    </Button.Group>
+    <SemanticTxButton
+      params={[
+        memberId,
+        proposalId,
+        voteKind
+      ]}
+      tx={ 'proposalsEngine.vote' }
+      onClick={ sendTx => sendTx() }
+      txFailedCb={ () => null }
+      txSuccessCb={ onSuccess }
+      color={color}
+      style={{ marginRight: '5px' }}
+      icon
+      labelPosition={ 'left' }>
+      <Icon name={icon} inverted />
+      { voteKind }
+    </SemanticTxButton>
   );
 }
 

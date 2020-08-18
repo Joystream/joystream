@@ -16,7 +16,6 @@ import { InputFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import { ProposalType } from '@polkadot/joy-utils/types/proposals';
 import { formatBalance } from '@polkadot/util';
-import './forms.css';
 
 export type FormValues = GenericFormValues & {
   capacity: string;

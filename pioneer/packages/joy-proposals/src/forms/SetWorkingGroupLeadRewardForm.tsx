@@ -15,7 +15,6 @@ import {
 } from './GenericWorkingGroupProposalForm';
 import { InputFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
-import './forms.css';
 import { Grid } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import _ from 'lodash';

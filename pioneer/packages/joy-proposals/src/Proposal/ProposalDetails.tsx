@@ -4,17 +4,15 @@ import Details from './Details';
 import Body from './Body';
 import VotingSection from './VotingSection';
 import Votes from './Votes';
-import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
+import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/react/hocs/accounts';
 import { ParsedProposal, ProposalVotes } from '@polkadot/joy-utils/types/proposals';
 import { withCalls } from '@polkadot/react-api';
-import { withMulti } from '@polkadot/react-api/with';
-
-import './Proposal.css';
+import { withMulti } from '@polkadot/react-api/hoc';
 import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses, ExecutionFailedStatus } from '@joystream/types/proposals';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import { MemberId } from '@joystream/types/members';
 import { Seat } from '@joystream/types/council';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import ProposalDiscussion from './discussion/ProposalDiscussion';
 
 import styled from 'styled-components';

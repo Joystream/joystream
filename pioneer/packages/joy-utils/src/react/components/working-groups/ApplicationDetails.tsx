@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ParsedApplication } from '../../../types/workingGroups';
-import { ProfilePreviewFromStruct as MemberPreview } from '../../../MemberProfilePreview';
+import { ProfilePreviewFromStruct as MemberPreview } from '../MemberProfilePreview';
 import { useTransport, usePromise } from '../../hooks';
 import { Item, Label, Button } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';

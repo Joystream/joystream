@@ -6,7 +6,7 @@ import { Link, useLocation } from 'react-router-dom';
 import ProposalPreview from './ProposalPreview';
 import { ParsedProposal, proposalStatusFilters, ProposalStatusFilter, ProposalsBatch } from '@polkadot/joy-utils/types/proposals';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { withCalls } from '@polkadot/react-api';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import { Dropdown } from '@polkadot/react-components';

@@ -51,7 +51,6 @@ class ApplyForm extends React.PureComponent<Props, State> {
         <div style={{ marginTop: '.5rem' }}>
           <Labelled>
             <TxButton
-              size='large'
               isDisabled={!isStakeValid}
               label={buttonLabel}
               params={[stake]}

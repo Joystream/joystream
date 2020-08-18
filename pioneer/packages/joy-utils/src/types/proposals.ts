@@ -2,6 +2,7 @@ import { ProposalId, VoteKind } from '@joystream/types/proposals';
 import { MemberId, Membership } from '@joystream/types/members';
 import { ThreadId, PostId } from '@joystream/types/common';
 import { ParsedMember } from './members';
+import { ProposalDetails } from '@joystream/types/src/proposals';
 
 export const ProposalTypes = [
   'Text',
@@ -28,6 +29,18 @@ export type ProposalType = typeof ProposalTypes[number];
 export const proposalStatusFilters = ['All', 'Active', 'Canceled', 'Approved', 'Rejected', 'Slashed', 'Expired'] as const;
 export type ProposalStatusFilter = typeof proposalStatusFilters[number];
 
+// Overriden for better optimalization
+export type RuntimeUpgradeProposalDetails = [
+  string, // hash as hex
+  number // file size in bytes
+]
+
+export type ParsedProposalDetails = ProposalDetails | RuntimeUpgradeProposalDetails;
+
+export type SpecificProposalDetails<T extends keyof ProposalDetails['typeDefinitions']> =
+  T extends 'RuntimeUpgrade' ? RuntimeUpgradeProposalDetails :
+  InstanceType<ProposalDetails['typeDefinitions'][Exclude<T, 'RuntimeUpgrade'>]>;
+
 export type ParsedProposal = {
   id: ProposalId;
   type: ProposalType;
@@ -38,7 +51,7 @@ export type ParsedProposal = {
   proposerId: number;
   createdAtBlock: number;
   createdAt: Date;
-  details: any[];
+  details: ParsedProposalDetails;
   votingResults: any;
   parameters: {
     approvalQuorumPercentage: number;

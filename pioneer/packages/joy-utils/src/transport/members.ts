@@ -8,8 +8,7 @@ export default class MembersTransport extends BaseTransport {
   async membershipById (id: MemberId | number): Promise<Membership | null> {
     const member = (await this.members.membershipById(id)) as Membership;
 
-    // Can't just use member.isEmpty because member.suspended is Bool (which isEmpty method always returns false)
-    return member.handle.isEmpty ? null : member;
+    return member.isEmpty ? null : member;
   }
 
   // Throws if profile not found
@@ -38,5 +37,9 @@ export default class MembersTransport extends BaseTransport {
       memberId: memberId && memberId.toNumber(),
       profile
     };
+  }
+
+  async allMembers(): Promise<[MemberId, Membership][]> {
+    return this.entriesByIds<MemberId, Membership>(this.api.query.members.membershipById);
   }
 }

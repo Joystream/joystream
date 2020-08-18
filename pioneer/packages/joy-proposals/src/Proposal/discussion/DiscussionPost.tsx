@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Icon } from 'semantic-ui-react';
 import { ParsedPost } from '@polkadot/joy-utils/types/proposals';
-import MemberProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
+import MemberProfilePreview from '@polkadot/joy-utils/react/components/MemberProfilePreview';
 import DiscussionPostForm from './DiscussionPostForm';
 import { MemberId } from '@joystream/types/members';
 import { useTransport } from '@polkadot/joy-utils/react/hooks';

@@ -17,7 +17,6 @@ import { InputFormField, FormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import { InputAddress } from '@polkadot/react-components/index';
 import { formatBalance } from '@polkadot/util';
-import './forms.css';
 
 export type FormValues = GenericFormValues & {
   destinationAccount: any;

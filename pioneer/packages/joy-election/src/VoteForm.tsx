@@ -150,7 +150,6 @@ class Component extends React.PureComponent<Props, State> {
           <div style={{ marginTop: '.5rem' }}>
             <Labelled>
               <TxButton
-                size='large'
                 isDisabled={!isFormValid}
                 label='Submit my vote'
                 params={[hashedVote, stake]}

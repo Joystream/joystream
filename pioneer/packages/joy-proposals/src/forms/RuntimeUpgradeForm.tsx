@@ -13,7 +13,6 @@ import {
 } from './GenericProposalForm';
 import Validation from '../validationSchema';
 import { withFormContainer } from './FormContainer';
-import './forms.css';
 import FileDropdown from './FileDropdown';
 
 export type FormValues = GenericFormValues & {

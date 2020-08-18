@@ -2,8 +2,8 @@ import React from 'react';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
-import TxButton from '@polkadot/joy-utils/TxButton';
-import * as JoyForms from '@polkadot/joy-utils/forms';
+import TxButton from '@polkadot/joy-utils/react/components/TxButton';
+import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { SubmittableResult } from '@polkadot/api';
 import { Button } from 'semantic-ui-react';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
@@ -89,7 +89,6 @@ const DiscussionPostFormInner = (props: InnerProps) => {
       <LabelledField invisibleLabel {...props}>
         <TxButton
           type="submit"
-          size="large"
           label={isEditForm ? 'Update' : 'Add Post'}
           isDisabled={isSubmitting || !isValid}
           params={buildTxParams()}

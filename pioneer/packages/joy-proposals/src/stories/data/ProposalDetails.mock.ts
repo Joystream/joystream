@@ -1,13 +1,13 @@
 import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
-import { ProposalId } from '@joystream/types/proposals';
+import { createMock } from '@joystream/types';
 
 const mockedProposal: ParsedProposal = {
-  id: new ProposalId(100),
+  id: createMock('ProposalId', 100),
   title: 'Awesome Proposal',
   description: 'Please send me some tokens for coffee',
   createdAtBlock: 36,
   type: 'Text',
-  details: ['Ciao'],
+  details: createMock('ProposalDetails', { Text: 'Ciao' }),
   parameters: {
     approvalQuorumPercentage: 66,
     approvalThresholdPercentage: 80,

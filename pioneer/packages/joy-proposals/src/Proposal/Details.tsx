@@ -5,7 +5,7 @@ import { metadata as proposalConsts } from '@polkadot/joy-utils/consts/proposals
 import { ExtendedProposalStatus } from './ProposalDetails';
 import styled from 'styled-components';
 
-import ProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
+import ProfilePreview from '@polkadot/joy-utils/react/components/MemberProfilePreview';
 
 const DetailsContainer = styled(Item.Group)`
   display: grid;

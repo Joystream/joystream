@@ -4,7 +4,7 @@ import useVoteStyles from './useVoteStyles';
 import { ProposalVotes } from '@polkadot/joy-utils/types/proposals';
 import { VoteKind } from '@joystream/types/proposals';
 import { VoteKindStr } from './VotingSection';
-import ProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
+import ProfilePreview from '@polkadot/joy-utils/react/components/MemberProfilePreview';
 
 type VotesProps = {
   votes: ProposalVotes;

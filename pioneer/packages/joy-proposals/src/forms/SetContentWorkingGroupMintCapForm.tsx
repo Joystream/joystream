@@ -2,7 +2,7 @@ import React from 'react';
 import MintCapacityForm from './MintCapacityForm';
 import { RouteComponentProps } from 'react-router';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 
 const ContentWorkingGroupMintCapForm = (props: RouteComponentProps) => {
   const transport = useTransport();

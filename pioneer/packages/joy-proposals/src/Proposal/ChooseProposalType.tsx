@@ -4,7 +4,7 @@ import { Item, Dropdown } from 'semantic-ui-react';
 
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { Categories } from '@polkadot/joy-utils/types/proposals';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import './ChooseProposalType.css';
 import { RouteComponentProps } from 'react-router-dom';
 
