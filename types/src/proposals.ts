@@ -89,7 +89,7 @@ export class ExecutionFailedStatus extends JoyStructDecorated({
   error: Vec.with(u8),
 }) {}
 
-class ExecutionFailed extends ExecutionFailedStatus {}
+export class ExecutionFailed extends ExecutionFailedStatus {}
 
 export const ApprovedProposalDef = {
   PendingExecution: Null,
@@ -285,6 +285,11 @@ export const proposalsTypes = {
   AddOpeningParameters,
   FillOpeningParameters,
   TerminateRoleParameters,
+  // Expose in registry for api.createType purposes:
+  ActiveStake,
+  FinalizationData,
+  ProposalDecisionStatus,
+  ExecutionFailed,
 }
 
 export default proposalsTypes

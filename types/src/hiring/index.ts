@@ -344,6 +344,17 @@ export const hiringTypes: RegistryTypes = {
   OpeningStage,
   StakingPolicy,
   Opening,
+  // Expose in registry for api.createType purposes:
+  WaitingToBeingOpeningStageVariant,
+  ActiveOpeningStageVariant,
+  ActiveOpeningStage,
+  AcceptingApplications,
+  ReviewPeriod,
+  Deactivated,
+  OpeningDeactivationCause,
+  InactiveApplicationStage,
+  UnstakingApplicationStage,
+  ApplicationDeactivationCause,
 }
 
 export default hiringTypes
