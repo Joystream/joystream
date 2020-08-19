@@ -1,5 +1,5 @@
 import BN from 'bn.js'
-import { Text, bool, Vec, u16 } from '@polkadot/types'
+import { Text, bool, Vec } from '@polkadot/types'
 import { Codec, Registry } from '@polkadot/types/types'
 import { Class, Entity, VecClassPropertyValue, ClassPropertyValue, EntityId, ClassId, unifyPropName } from '.'
 import * as PV from './PropertyValue'
@@ -12,7 +12,7 @@ import ChannelId from '../content-working-group/ChannelId'
  * like string, number, boolean, etc.
  */
 function substrateToPlain<T>(x: Codec): T | undefined {
-  let res: any = undefined
+  let res: any
 
   if (x instanceof PV.None) {
     res = undefined
@@ -262,7 +262,7 @@ export abstract class EntityCodec<T extends PlainEntity> {
             new ClassPropertyValue(
               this.registry, // FIXME: createType?
               {
-                in_class_index: new u16(this.registry, meta.index),
+                in_class_index: this.registry.createType('u16', meta.index),
                 value: codecValue,
               }
             )
