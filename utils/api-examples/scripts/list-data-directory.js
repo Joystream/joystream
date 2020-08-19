@@ -17,7 +17,7 @@ const script = async ({ api, joy }) => {
         return
       }
       obj = obj.unwrap()
-      console.log(`contentId: ${new joy.media.ContentId(id).encode()}, ipfs: ${obj.ipfs_content_id}`)
+      console.log(`contentId: ${api.createType('ContentId', id).encode()}, ipfs: ${obj.ipfs_content_id}`)
     })
   )
 
