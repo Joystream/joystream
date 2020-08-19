@@ -1,19 +1,17 @@
-import { ApiPromise, WsProvider } from '@polkadot/api'
 import { CuratorApplicationId } from '@joystream/types/content-working-group'
-import { BTreeSet } from '@polkadot/types'
+import { BTreeSet, createType, TypeRegistry } from '@polkadot/types'
 import { types } from '@joystream/types'
 
 async function main() {
-  const provider = new WsProvider('ws://127.0.0.1:9944')
-  const api = await ApiPromise.create({ provider, types })
-
   const wgId = [1, 2]
 
-  // Is it not possible to create the registry without actually connecting to a node?
-  const set = new BTreeSet<CuratorApplicationId>(api.registry, CuratorApplicationId, [])
+  const registry = new TypeRegistry()
+  registry.register(types)
+
+  const set = new BTreeSet<CuratorApplicationId>(registry, CuratorApplicationId, [])
 
   wgId.forEach((id) => {
-    set.add(new CuratorApplicationId(api.registry, id))
+    set.add(createType(registry, 'CuratorApplicationId', id))
   })
 
   /*
@@ -27,8 +25,6 @@ async function main() {
 
   console.log('copy/paste the output below to hire curator applicant(s) with WG IDs:', wgId)
   console.log(set.toHex())
-
-  api.disconnect()
 }
 
 main()
