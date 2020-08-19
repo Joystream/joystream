@@ -19,6 +19,7 @@ use system::ensure_signed;
 
 use referendum::Instance as ReferendumInstanceGeneric;
 use referendum::Trait as ReferendumTrait;
+use referendum::{StakeDistribution, VoteDistribution, ReferendumManager};
 
 // declared modules
 mod mock;
@@ -177,6 +178,11 @@ decl_module! {
 
         /////////////////// Lifetime ///////////////////////////////////////////
 
+        // No origin so this is a priviledged call
+        fn on_finalize(now: T::BlockNumber) {
+            Self::try_progress_stage(now);
+        }
+
         /// Start new council election.
         #[weight = 10_000_000]
         pub fn start_announcing_period(origin) -> Result<(), Error<T>> {
@@ -195,7 +201,7 @@ decl_module! {
 
             Ok(())
         }
-
+/*
         /// Finalize the announcing period and start voting if there are enough candidates.
         #[weight = 10_000_000]
         pub fn finalize_announcing_period(origin) -> Result<(), Error<T>> {
@@ -224,6 +230,7 @@ decl_module! {
 
             Ok(())
         }
+*/
 
         /// Start revealing period.
         #[weight = 10_000_000]
@@ -285,38 +292,59 @@ decl_module! {
         /////////////////// Referendum Wrap ////////////////////////////////////
         // start voting period
         #[weight = 10_000_000]
-        pub fn vote(origin, commitment: T::Hash, stake: T::CurrencyBalance) -> Result<(), Error<T>> {
+        pub fn vote(origin, referendum_user_id: T::ReferendumUserId, commitment: T::Hash, stake_distribution: StakeDistribution<T::AccountId, T::CurrencyBalance>) -> Result<(), Error<T>> {
             // call referendum vote extrinsic
-            <referendum::Module<T, ReferendumInstance>>::vote(origin, commitment, stake)?;
+            <referendum::Module<T, ReferendumInstance>>::vote(origin, referendum_user_id, commitment, stake_distribution)?;
 
             Ok(())
         }
 
         #[weight = 10_000_000]
-        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option: T::ReferendumOption) -> Result<(), Error<T>> {
+        pub fn reveal_vote(origin, referendum_user_id: T::ReferendumUserId, salt: Vec<u8>, vote_distribution: VoteDistribution<T::CurrencyBalance>) -> Result<(), Error<T>> {
             // call referendum reveal vote extrinsic
-            <referendum::Module<T, ReferendumInstance>>::reveal_vote(origin, salt, vote_option)?;
+            <referendum::Module<T, ReferendumInstance>>::reveal_vote(origin, referendum_user_id, salt, vote_distribution)?;
 
             Ok(())
         }
+    }
+}
 
-        // finish voting period
-        #[weight = 10_000_000]
-        pub fn finish_voting_start_revealing(origin) -> Result<(), Error<T>> {
-            // progress referendum to revealing phase
-            <referendum::Module<T, ReferendumInstance>>::finish_voting_start_revealing(origin)?;
+/////////////////// Inner logic ////////////////////////////////////////////////
 
-            Ok(())
+impl<T: Trait> Module<T> {
+    /// Checkout expire of referendum stage.
+    fn try_progress_stage(now: T::BlockNumber) {
+        match Stage::<T>::get() {
+            (CouncilElectionStage::Announcing, _) => {
+                if now == Stage::<T>::get().1 + T::AnnouncingPeriodDuration::get() {
+                    Self::end_announcement_period();
+                }
+            }
+            // TODO
+            _ => (),
+        }
+    }
+
+    /// Finish voting and start ravealing.
+    fn end_announcement_period() {
+        let candidates = Candidates::<T>::get();
+
+        // prolong announcing period when not enough candidates registered
+        if (candidates.len() as u64) < T::MinNumberOfCandidates::get() {
+            Mutations::<T>::prolong_announcing_period();
+
+            // emit event
+            Self::deposit_event(RawEvent::NotEnoughCandidates());
+
+            return;
         }
 
-        // finish revealing period
-        #[weight = 10_000_000]
-        pub fn finish_revealing_period(origin) -> Result<(), Error<T>> {
-            // conclude voting phase
-            <referendum::Module<T, ReferendumInstance>>::finish_revealing_period(origin)?;
+        // TODO: try to find way how to get rid of unwrap here or staticly ensure it will not fail here
+        // update state
+        Mutations::<T>::finalize_announcing_period(&candidates).unwrap(); // starting referendum should always start - unwrap
 
-            Ok(())
-        }
+        // emit event
+        Self::deposit_event(RawEvent::VotingPeriodStarted(candidates.iter().map(|item| item.0.clone()).collect()));
     }
 }
 
@@ -338,7 +366,6 @@ impl<T: Trait> Mutations<T> {
     }
 
     fn finalize_announcing_period(
-        origin: T::Origin,
         candidates: &Vec<(Candidate, T::CurrencyBalance)>,
     ) -> Result<(), Error<T>> {
         let options = (0..candidates.len() as u64)
@@ -347,8 +374,7 @@ impl<T: Trait> Mutations<T> {
         let winning_target_count = T::CouncilSize::get();
 
         // IMPORTANT - because locking currency can fail it has to be the first mutation!
-        <referendum::Module<T, ReferendumInstance>>::start_referendum(
-            origin,
+        <referendum::Module<T, ReferendumInstance> as ReferendumManager<T, ReferendumInstance>>::start_referendum(
             options,
             winning_target_count,
         )?;
@@ -465,8 +491,8 @@ impl<T: Trait> EnsureChecks<T> {
         Self::ensure_super_user(origin)?;
 
         // check that referendum have ended
-        let referendum_stage = referendum::Stage::<T, ReferendumInstance>::get().0;
-        if referendum_stage != referendum::ReferendumStage::Void {
+        let referendum_stage = referendum::Stage::<T, ReferendumInstance>::get();
+        if referendum_stage != referendum::ReferendumStage::Inactive {
             return Err(Error::ElectionNotFinished);
         }
 

@@ -157,7 +157,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
         stake
     }
 
-    fn has_sufficient_balance(
+    fn can_stake_for_vote(
         account_id: &<Self as system::Trait>::AccountId,
         _balance: &Self::CurrencyBalance,
     ) -> bool {
@@ -177,7 +177,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
         balance: &Self::CurrencyBalance,
     ) -> bool {
         // simple mock reusing can_lock check
-        <Self as referendum::Trait<ReferendumInstance>>::has_sufficient_balance(account_id, balance)
+        <Self as referendum::Trait<ReferendumInstance>>::can_stake_for_vote(account_id, balance)
     }
 
     fn free_currency(
@@ -185,7 +185,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
         balance: &Self::CurrencyBalance,
     ) -> bool {
         // simple mock reusing can_lock check
-        <Self as referendum::Trait<ReferendumInstance>>::has_sufficient_balance(account_id, balance)
+        <Self as referendum::Trait<ReferendumInstance>>::can_stake_for_vote(account_id, balance)
     }
 }
 
