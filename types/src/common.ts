@@ -71,6 +71,26 @@ export const WorkingGroupDef = {
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
 
+// Temporarly in "common", because used both by /working-group and /content-working-group:
+export type ISlashableTerms = {
+  max_count: u16
+  max_percent_pts_per_time: u16
+}
+
+export class SlashableTerms
+  extends JoyStructDecorated({
+    max_count: u16,
+    max_percent_pts_per_time: u16,
+  })
+  implements ISlashableTerms {}
+
+export class UnslashableTerms extends Null {}
+
+export class SlashingTerms extends JoyEnum({
+  Unslashable: UnslashableTerms,
+  Slashable: SlashableTerms,
+} as const) {}
+
 export const commonTypes: RegistryTypes = {
   Credential,
   CredentialSet,
@@ -79,6 +99,9 @@ export const commonTypes: RegistryTypes = {
   PostId,
   InputValidationLengthConstraint,
   WorkingGroup,
+  // Expose in registry for api.createType purposes:
+  SlashingTerms,
+  SlashableTerms,
 }
 
 export default commonTypes

@@ -46,22 +46,22 @@ import { Multiplier } from '@polkadot/types/interfaces/txpayment';
 import { CallHash, Multisig, Timepoint } from '@polkadot/types/interfaces/utility';
 import { VestingInfo } from '@polkadot/types/interfaces/vesting';
 /** CUSTOMIMPORTS **/
-import { Credential as Credential, CredentialSet as CredentialSet, BlockAndTime as BlockAndTime, ThreadId as ThreadId, PostId as PostId, InputValidationLengthConstraint as InputValidationLengthConstraint, WorkingGroup as WorkingGroup } from '../common'
+import { Credential as Credential, CredentialSet as CredentialSet, BlockAndTime as BlockAndTime, ThreadId as ThreadId, PostId as PostId, InputValidationLengthConstraint as InputValidationLengthConstraint, WorkingGroup as WorkingGroup, SlashingTerms as SlashingTerms, SlashableTerms as SlashableTerms } from '../common'
 import { EntryMethod as EntryMethod, MemberId as MemberId, PaidTermId as PaidTermId, SubscriptionId as SubscriptionId, Membership as Membership, PaidMembershipTerms as PaidMembershipTerms, ActorId as ActorId } from '../members'
 import { ElectionStage as ElectionStage, ElectionStake as ElectionStake, SealedVote as SealedVote, TransferableStake as TransferableStake, ElectionParameters as ElectionParameters, Seat as Seat, Seats as Seats, Backer as Backer, Backers as Backers } from '../council'
 import { RoleParameters as RoleParameters } from '../roles'
 import { PostTextChange as PostTextChange, ModerationAction as ModerationAction, ChildPositionInParentCategory as ChildPositionInParentCategory, CategoryId as CategoryId, Category as Category, Thread as Thread, Post as Post, ReplyId as ReplyId, Reply as Reply } from '../forum'
-import { Stake as Stake } from '../stake'
-import { Mint as Mint } from '../mint'
+import { Stake as Stake, StakingStatus as StakingStatus, Staked as Staked, StakedStatus as StakedStatus, Unstaking as Unstaking, Slash as Slash } from '../stake'
+import { Mint as Mint, NextAdjustment as NextAdjustment, AdjustOnInterval as AdjustOnInterval, AdjustCapacityBy as AdjustCapacityBy } from '../mint'
 import { Recipient as Recipient, RewardRelationship as RewardRelationship } from '../recurring-rewards'
-import { Application as Application, ApplicationStage as ApplicationStage, ActivateOpeningAt as ActivateOpeningAt, ApplicationRationingPolicy as ApplicationRationingPolicy, OpeningStage as OpeningStage, StakingPolicy as StakingPolicy, Opening as Opening } from '../hiring'
+import { Application as Application, ApplicationStage as ApplicationStage, ActivateOpeningAt as ActivateOpeningAt, ApplicationRationingPolicy as ApplicationRationingPolicy, OpeningStage as OpeningStage, StakingPolicy as StakingPolicy, Opening as Opening, WaitingToBeingOpeningStageVariant as WaitingToBeingOpeningStageVariant, ActiveOpeningStageVariant as ActiveOpeningStageVariant, ActiveOpeningStage as ActiveOpeningStage, AcceptingApplications as AcceptingApplications, ReviewPeriod as ReviewPeriod, Deactivated as Deactivated, OpeningDeactivationCause as OpeningDeactivationCause, InactiveApplicationStage as InactiveApplicationStage, UnstakingApplicationStage as UnstakingApplicationStage, ApplicationDeactivationCause as ApplicationDeactivationCause } from '../hiring'
 import { Class as Class, Entity as Entity, ClassSchema as ClassSchema, Property as Property, PropertyType as PropertyType, PropertyValue as PropertyValue, ClassPropertyValue as ClassPropertyValue } from '../versioned-store'
-import { EntityPermissions as EntityPermissions, ReferenceConstraint as ReferenceConstraint, ClassPermissionsType as ClassPermissionsType, Operation as Operation } from '../versioned-store/permissions'
-import { OptionalText as OptionalText, Channel as Channel, ChannelContentType as ChannelContentType, ChannelCurationStatus as ChannelCurationStatus, ChannelPublicationStatus as ChannelPublicationStatus, CurationActor as CurationActor, Curator as Curator, CuratorApplication as CuratorApplication, CuratorOpening as CuratorOpening, Lead as Lead, OpeningPolicyCommitment as OpeningPolicyCommitment, Principal as Principal, WorkingGroupUnstaker as WorkingGroupUnstaker, CuratorApplicationIdToCuratorIdMap as CuratorApplicationIdToCuratorIdMap, CuratorApplicationIdSet as CuratorApplicationIdSet } from '../content-working-group'
-import { RationaleText as RationaleText, Application as ApplicationOf, ApplicationIdSet as ApplicationIdSet, ApplicationIdToWorkerIdMap as ApplicationIdToWorkerIdMap, WorkerId as WorkerId, Worker as WorkerOf, Opening as OpeningOf, StorageProviderId as StorageProviderId, OpeningType as OpeningType, ApplicationId as HiringApplicationId, RewardPolicy as RewardPolicy, OpeningId as working_group__OpeningId, WorkerId as working_group__WorkerId } from '../working-group'
+import { EntityPermissions as EntityPermissions, ReferenceConstraint as ReferenceConstraint, ClassPermissionsType as ClassPermissionsType, Operation as Operation, OperationType as OperationType, CreateEntity as CreateEntity, UpdatePropertyValues as UpdatePropertyValues, AddSchemaSupportToEntity as AddSchemaSupportToEntity, ParametrizedEntity as ParametrizedEntity, ParametrizedClassPropertyValue as ParametrizedClassPropertyValue, ParametrizedPropertyValue as ParametrizedPropertyValue } from '../versioned-store/permissions'
+import { OptionalText as OptionalText, Channel as Channel, ChannelContentType as ChannelContentType, ChannelCurationStatus as ChannelCurationStatus, ChannelPublicationStatus as ChannelPublicationStatus, CurationActor as CurationActor, Curator as Curator, CuratorApplication as CuratorApplication, CuratorOpening as CuratorOpening, Lead as Lead, OpeningPolicyCommitment as OpeningPolicyCommitment, Principal as Principal, WorkingGroupUnstaker as WorkingGroupUnstaker, CuratorApplicationIdToCuratorIdMap as CuratorApplicationIdToCuratorIdMap, CuratorApplicationIdSet as CuratorApplicationIdSet, CuratorRoleStakeProfile as CuratorRoleStakeProfile, CuratorRoleStage as CuratorRoleStage, CuratorExitSummary as CuratorExitSummary, CuratorExitInitiationOrigin as CuratorExitInitiationOrigin, ExitedLeadRole as ExitedLeadRole, CuratorInduction as CuratorInduction } from '../content-working-group'
+import { RationaleText as RationaleText, Application as ApplicationOf, ApplicationIdSet as ApplicationIdSet, ApplicationIdToWorkerIdMap as ApplicationIdToWorkerIdMap, WorkerId as WorkerId, Worker as WorkerOf, Opening as OpeningOf, StorageProviderId as StorageProviderId, OpeningType as OpeningType, ApplicationId as HiringApplicationId, RewardPolicy as RewardPolicy, OpeningId as working_group__OpeningId, WorkerId as working_group__WorkerId, WorkingGroupOpeningPolicyCommitment as WorkingGroupOpeningPolicyCommitment, RoleStakeProfile as RoleStakeProfile } from '../working-group'
 import { Url as Url, IPNSIdentity as IPNSIdentity, ServiceProviderRecord as ServiceProviderRecord } from '../discovery'
 import { ContentId as ContentId, LiaisonJudgement as LiaisonJudgement, DataObject as DataObject, DataObjectStorageRelationshipId as DataObjectStorageRelationshipId, DataObjectStorageRelationship as DataObjectStorageRelationship, DataObjectTypeId as DataObjectTypeId, DataObjectType as DataObjectType, DataObjectsMap as DataObjectsMap } from '../media'
-import { ProposalId as ProposalId, ProposalStatus as ProposalStatus, Proposal as ProposalOf, ProposalDetails as ProposalDetails, ProposalDetails as ProposalDetailsOf, VotingResults as VotingResults, ProposalParameters as ProposalParameters, VoteKind as VoteKind, ThreadCounter as ThreadCounter, DiscussionThread as DiscussionThread, DiscussionPost as DiscussionPost, AddOpeningParameters as AddOpeningParameters, FillOpeningParameters as FillOpeningParameters, TerminateRoleParameters as TerminateRoleParameters } from '../proposals'
+import { ProposalId as ProposalId, ProposalStatus as ProposalStatus, Proposal as ProposalOf, ProposalDetails as ProposalDetails, ProposalDetails as ProposalDetailsOf, VotingResults as VotingResults, ProposalParameters as ProposalParameters, VoteKind as VoteKind, ThreadCounter as ThreadCounter, DiscussionThread as DiscussionThread, DiscussionPost as DiscussionPost, AddOpeningParameters as AddOpeningParameters, FillOpeningParameters as FillOpeningParameters, TerminateRoleParameters as TerminateRoleParameters, ActiveStake as ActiveStake, FinalizationData as FinalizationData, ProposalDecisionStatus as ProposalDecisionStatus, ExecutionFailed as ExecutionFailed } from '../proposals'
 /** /CUSTOMIMPORTS **/
 
 declare module '@polkadot/types/types/registry' {
@@ -1892,6 +1892,12 @@ declare module '@polkadot/types/types/registry' {
     "WorkingGroup": WorkingGroup;
     "Option<WorkingGroup>": Option<WorkingGroup>;
     "Vec<WorkingGroup>": Vec<WorkingGroup>;
+    "SlashingTerms": SlashingTerms;
+    "Option<SlashingTerms>": Option<SlashingTerms>;
+    "Vec<SlashingTerms>": Vec<SlashingTerms>;
+    "SlashableTerms": SlashableTerms;
+    "Option<SlashableTerms>": Option<SlashableTerms>;
+    "Vec<SlashableTerms>": Vec<SlashableTerms>;
     "EntryMethod": EntryMethod;
     "Option<EntryMethod>": Option<EntryMethod>;
     "Vec<EntryMethod>": Vec<EntryMethod>;
@@ -1976,6 +1982,21 @@ declare module '@polkadot/types/types/registry' {
     "Stake": Stake;
     "Option<Stake>": Option<Stake>;
     "Vec<Stake>": Vec<Stake>;
+    "StakingStatus": StakingStatus;
+    "Option<StakingStatus>": Option<StakingStatus>;
+    "Vec<StakingStatus>": Vec<StakingStatus>;
+    "Staked": Staked;
+    "Option<Staked>": Option<Staked>;
+    "Vec<Staked>": Vec<Staked>;
+    "StakedStatus": StakedStatus;
+    "Option<StakedStatus>": Option<StakedStatus>;
+    "Vec<StakedStatus>": Vec<StakedStatus>;
+    "Unstaking": Unstaking;
+    "Option<Unstaking>": Option<Unstaking>;
+    "Vec<Unstaking>": Vec<Unstaking>;
+    "Slash": Slash;
+    "Option<Slash>": Option<Slash>;
+    "Vec<Slash>": Vec<Slash>;
     "MintId": u64;
     "Option<MintId>": Option<u64>;
     "Vec<MintId>": Vec<u64>;
@@ -1991,6 +2012,15 @@ declare module '@polkadot/types/types/registry' {
     "minting::BalanceOf": Balance;
     "Option<minting::BalanceOf>": Option<Balance>;
     "Vec<minting::BalanceOf>": Vec<Balance>;
+    "NextAdjustment": NextAdjustment;
+    "Option<NextAdjustment>": Option<NextAdjustment>;
+    "Vec<NextAdjustment>": Vec<NextAdjustment>;
+    "AdjustOnInterval": AdjustOnInterval;
+    "Option<AdjustOnInterval>": Option<AdjustOnInterval>;
+    "Vec<AdjustOnInterval>": Vec<AdjustOnInterval>;
+    "AdjustCapacityBy": AdjustCapacityBy;
+    "Option<AdjustCapacityBy>": Option<AdjustCapacityBy>;
+    "Vec<AdjustCapacityBy>": Vec<AdjustCapacityBy>;
     "RecipientId": u64;
     "Option<RecipientId>": Option<u64>;
     "Vec<RecipientId>": Vec<u64>;
@@ -2030,6 +2060,36 @@ declare module '@polkadot/types/types/registry' {
     "Opening": Opening;
     "Option<Opening>": Option<Opening>;
     "Vec<Opening>": Vec<Opening>;
+    "WaitingToBeingOpeningStageVariant": WaitingToBeingOpeningStageVariant;
+    "Option<WaitingToBeingOpeningStageVariant>": Option<WaitingToBeingOpeningStageVariant>;
+    "Vec<WaitingToBeingOpeningStageVariant>": Vec<WaitingToBeingOpeningStageVariant>;
+    "ActiveOpeningStageVariant": ActiveOpeningStageVariant;
+    "Option<ActiveOpeningStageVariant>": Option<ActiveOpeningStageVariant>;
+    "Vec<ActiveOpeningStageVariant>": Vec<ActiveOpeningStageVariant>;
+    "ActiveOpeningStage": ActiveOpeningStage;
+    "Option<ActiveOpeningStage>": Option<ActiveOpeningStage>;
+    "Vec<ActiveOpeningStage>": Vec<ActiveOpeningStage>;
+    "AcceptingApplications": AcceptingApplications;
+    "Option<AcceptingApplications>": Option<AcceptingApplications>;
+    "Vec<AcceptingApplications>": Vec<AcceptingApplications>;
+    "ReviewPeriod": ReviewPeriod;
+    "Option<ReviewPeriod>": Option<ReviewPeriod>;
+    "Vec<ReviewPeriod>": Vec<ReviewPeriod>;
+    "Deactivated": Deactivated;
+    "Option<Deactivated>": Option<Deactivated>;
+    "Vec<Deactivated>": Vec<Deactivated>;
+    "OpeningDeactivationCause": OpeningDeactivationCause;
+    "Option<OpeningDeactivationCause>": Option<OpeningDeactivationCause>;
+    "Vec<OpeningDeactivationCause>": Vec<OpeningDeactivationCause>;
+    "InactiveApplicationStage": InactiveApplicationStage;
+    "Option<InactiveApplicationStage>": Option<InactiveApplicationStage>;
+    "Vec<InactiveApplicationStage>": Vec<InactiveApplicationStage>;
+    "UnstakingApplicationStage": UnstakingApplicationStage;
+    "Option<UnstakingApplicationStage>": Option<UnstakingApplicationStage>;
+    "Vec<UnstakingApplicationStage>": Vec<UnstakingApplicationStage>;
+    "ApplicationDeactivationCause": ApplicationDeactivationCause;
+    "Option<ApplicationDeactivationCause>": Option<ApplicationDeactivationCause>;
+    "Vec<ApplicationDeactivationCause>": Vec<ApplicationDeactivationCause>;
     "ClassId": u64;
     "Option<ClassId>": Option<u64>;
     "Vec<ClassId>": Vec<u64>;
@@ -2069,6 +2129,27 @@ declare module '@polkadot/types/types/registry' {
     "Operation": Operation;
     "Option<Operation>": Option<Operation>;
     "Vec<Operation>": Vec<Operation>;
+    "OperationType": OperationType;
+    "Option<OperationType>": Option<OperationType>;
+    "Vec<OperationType>": Vec<OperationType>;
+    "CreateEntity": CreateEntity;
+    "Option<CreateEntity>": Option<CreateEntity>;
+    "Vec<CreateEntity>": Vec<CreateEntity>;
+    "UpdatePropertyValues": UpdatePropertyValues;
+    "Option<UpdatePropertyValues>": Option<UpdatePropertyValues>;
+    "Vec<UpdatePropertyValues>": Vec<UpdatePropertyValues>;
+    "AddSchemaSupportToEntity": AddSchemaSupportToEntity;
+    "Option<AddSchemaSupportToEntity>": Option<AddSchemaSupportToEntity>;
+    "Vec<AddSchemaSupportToEntity>": Vec<AddSchemaSupportToEntity>;
+    "ParametrizedEntity": ParametrizedEntity;
+    "Option<ParametrizedEntity>": Option<ParametrizedEntity>;
+    "Vec<ParametrizedEntity>": Vec<ParametrizedEntity>;
+    "ParametrizedClassPropertyValue": ParametrizedClassPropertyValue;
+    "Option<ParametrizedClassPropertyValue>": Option<ParametrizedClassPropertyValue>;
+    "Vec<ParametrizedClassPropertyValue>": Vec<ParametrizedClassPropertyValue>;
+    "ParametrizedPropertyValue": ParametrizedPropertyValue;
+    "Option<ParametrizedPropertyValue>": Option<ParametrizedPropertyValue>;
+    "Vec<ParametrizedPropertyValue>": Vec<ParametrizedPropertyValue>;
     "ChannelId": u64;
     "Option<ChannelId>": Option<u64>;
     "Vec<ChannelId>": Vec<u64>;
@@ -2132,6 +2213,24 @@ declare module '@polkadot/types/types/registry' {
     "CuratorApplicationIdSet": CuratorApplicationIdSet;
     "Option<CuratorApplicationIdSet>": Option<CuratorApplicationIdSet>;
     "Vec<CuratorApplicationIdSet>": Vec<CuratorApplicationIdSet>;
+    "CuratorRoleStakeProfile": CuratorRoleStakeProfile;
+    "Option<CuratorRoleStakeProfile>": Option<CuratorRoleStakeProfile>;
+    "Vec<CuratorRoleStakeProfile>": Vec<CuratorRoleStakeProfile>;
+    "CuratorRoleStage": CuratorRoleStage;
+    "Option<CuratorRoleStage>": Option<CuratorRoleStage>;
+    "Vec<CuratorRoleStage>": Vec<CuratorRoleStage>;
+    "CuratorExitSummary": CuratorExitSummary;
+    "Option<CuratorExitSummary>": Option<CuratorExitSummary>;
+    "Vec<CuratorExitSummary>": Vec<CuratorExitSummary>;
+    "CuratorExitInitiationOrigin": CuratorExitInitiationOrigin;
+    "Option<CuratorExitInitiationOrigin>": Option<CuratorExitInitiationOrigin>;
+    "Vec<CuratorExitInitiationOrigin>": Vec<CuratorExitInitiationOrigin>;
+    "ExitedLeadRole": ExitedLeadRole;
+    "Option<ExitedLeadRole>": Option<ExitedLeadRole>;
+    "Vec<ExitedLeadRole>": Vec<ExitedLeadRole>;
+    "CuratorInduction": CuratorInduction;
+    "Option<CuratorInduction>": Option<CuratorInduction>;
+    "Vec<CuratorInduction>": Vec<CuratorInduction>;
     "RationaleText": RationaleText;
     "Option<RationaleText>": Option<RationaleText>;
     "Vec<RationaleText>": Vec<RationaleText>;
@@ -2171,6 +2270,12 @@ declare module '@polkadot/types/types/registry' {
     "working_group::WorkerId": working_group__WorkerId;
     "Option<working_group::WorkerId>": Option<working_group__WorkerId>;
     "Vec<working_group::WorkerId>": Vec<working_group__WorkerId>;
+    "WorkingGroupOpeningPolicyCommitment": WorkingGroupOpeningPolicyCommitment;
+    "Option<WorkingGroupOpeningPolicyCommitment>": Option<WorkingGroupOpeningPolicyCommitment>;
+    "Vec<WorkingGroupOpeningPolicyCommitment>": Vec<WorkingGroupOpeningPolicyCommitment>;
+    "RoleStakeProfile": RoleStakeProfile;
+    "Option<RoleStakeProfile>": Option<RoleStakeProfile>;
+    "Vec<RoleStakeProfile>": Vec<RoleStakeProfile>;
     "Url": Url;
     "Option<Url>": Option<Url>;
     "Vec<Url>": Vec<Url>;
@@ -2246,6 +2351,18 @@ declare module '@polkadot/types/types/registry' {
     "TerminateRoleParameters": TerminateRoleParameters;
     "Option<TerminateRoleParameters>": Option<TerminateRoleParameters>;
     "Vec<TerminateRoleParameters>": Vec<TerminateRoleParameters>;
+    "ActiveStake": ActiveStake;
+    "Option<ActiveStake>": Option<ActiveStake>;
+    "Vec<ActiveStake>": Vec<ActiveStake>;
+    "FinalizationData": FinalizationData;
+    "Option<FinalizationData>": Option<FinalizationData>;
+    "Vec<FinalizationData>": Vec<FinalizationData>;
+    "ProposalDecisionStatus": ProposalDecisionStatus;
+    "Option<ProposalDecisionStatus>": Option<ProposalDecisionStatus>;
+    "Vec<ProposalDecisionStatus>": Vec<ProposalDecisionStatus>;
+    "ExecutionFailed": ExecutionFailed;
+    "Option<ExecutionFailed>": Option<ExecutionFailed>;
+    "Vec<ExecutionFailed>": Vec<ExecutionFailed>;
     /** /CUSTOMTYPES **/
   }
 }

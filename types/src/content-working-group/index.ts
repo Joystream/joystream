@@ -1,6 +1,6 @@
-import { BTreeMap, BTreeSet, bool, u32, Text, Null, Option, Vec, u16 } from '@polkadot/types'
+import { BTreeMap, BTreeSet, bool, u32, Text, Null, Option, Vec } from '@polkadot/types'
 import { BlockNumber } from '@polkadot/types/interfaces'
-import { OptionText, Credential, JoyEnum, JoyStructDecorated } from '../common'
+import { OptionText, Credential, JoyEnum, JoyStructDecorated, SlashingTerms } from '../common'
 import { ActorId, MemberId } from '../members'
 import { StakeId } from '../stake'
 import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index'
@@ -203,22 +203,6 @@ export class CuratorApplication
   }
 }
 
-export type ISlashableTerms = {
-  max_count: u16
-  max_percent_pts_per_time: u16
-}
-export class SlashableTerms
-  extends JoyStructDecorated({
-    max_count: u16,
-    max_percent_pts_per_time: u16,
-  })
-  implements ISlashableTerms {}
-
-export class SlashingTerms extends JoyEnum({
-  Unslashable: Null,
-  Slashable: SlashableTerms,
-} as const) {}
-
 export type IOpeningPolicyCommitment = {
   application_rationing_policy: Option<ApplicationRationingPolicy>
   max_review_period_length: BlockNumber
@@ -336,6 +320,13 @@ export const contentWorkingGroupTypes = {
   WorkingGroupUnstaker,
   CuratorApplicationIdToCuratorIdMap,
   CuratorApplicationIdSet,
+  // Expose in registry for api.createType purposes:
+  CuratorRoleStakeProfile,
+  CuratorRoleStage,
+  CuratorExitSummary,
+  CuratorExitInitiationOrigin,
+  ExitedLeadRole,
+  CuratorInduction,
 }
 
 export default contentWorkingGroupTypes
