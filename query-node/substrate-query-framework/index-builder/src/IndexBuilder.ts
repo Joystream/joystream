@@ -1,6 +1,6 @@
 // @ts-check
 
-import { getRepository, getConnection } from 'typeorm';
+import { getRepository } from 'typeorm';
 import * as BN from 'bn.js';
 
 import {
@@ -14,6 +14,7 @@ import {
 } from '.';
 
 import Debug from 'debug';
+import { doInTransaction } from './db/helper';
 
 const debug = Debug('index-builder:indexer');
 
@@ -98,13 +99,7 @@ export default class IndexBuilder {
       debug(`Processing event ${query_event.event_name}, index: ${i}`)
       query_event.log(0, debug);
   
-
-      const queryRunner = getConnection().createQueryRunner();
-      try {
-        // establish real database connection
-        await queryRunner.connect();
-        await queryRunner.startTransaction();
-
+      await doInTransaction(async (queryRunner) => {
         // Call event handler
         if (this._processing_pack[query_event.event_method]) {
           debug(`Recognized: ` + query_event.event_name);
@@ -114,19 +109,7 @@ export default class IndexBuilder {
         }
         // Update last processed event
         await SavedEntityEvent.update(query_event, queryRunner.manager);
-
-        await queryRunner.commitTransaction();
-      } catch (error) {
-        debug(`There are errors. Rolling back the transaction. Reason: ${JSON.stringify(error, null, 2)}`);
-
-        // Since we have errors lets rollback changes we made
-        await queryRunner.rollbackTransaction();
-        throw new Error(error);
-      } finally {
-        // Query runner needs to be released manually.
-        await queryRunner.release();
-      }
-      
+      })
     });
   }
 }
