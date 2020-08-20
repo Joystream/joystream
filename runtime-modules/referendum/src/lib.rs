@@ -39,25 +39,6 @@ impl<BlockNumber, VotePower> Default for ReferendumStage<BlockNumber, VotePower>
     }
 }
 
-/// Implement secure ways to retrieve expected referendum stage's state data.
-impl<BlockNumber, VotePower> ReferendumStage<BlockNumber, VotePower> {
-    /// Get voting stage state.
-    fn voting(self) -> ReferendumStageVoting<BlockNumber> {
-        match self {
-            ReferendumStage::Voting(stage_data) => stage_data,
-            _ => panic!("Invalid state"),
-        }
-    }
-
-    /// Get revealing stage state.
-    fn revealing(self) -> ReferendumStageRevealing<BlockNumber, VotePower> {
-        match self {
-            ReferendumStage::Revealing(stage_data) => stage_data,
-            _ => panic!("Invalid state"),
-        }
-    }
-}
-
 /// Representation for voting stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageVoting<BlockNumber> {
@@ -452,30 +433,30 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             ReferendumStage::Inactive => (),
             ReferendumStage::Voting(stage_data) => {
                 if now == stage_data.start + T::VoteStageDuration::get() {
-                    Self::end_voting_period();
+                    Self::end_voting_period(stage_data);
                 }
             }
             ReferendumStage::Revealing(stage_data) => {
                 if now == stage_data.start + T::RevealStageDuration::get() {
-                    Self::end_reveal_period();
+                    Self::end_reveal_period(stage_data);
                 }
             }
         }
     }
 
     /// Finish voting and start ravealing.
-    fn end_voting_period() {
+    fn end_voting_period(stage_data: ReferendumStageVoting<T::BlockNumber>) {
         // start revealing phase
-        Mutations::<T, I>::start_revealing_period();
+        Mutations::<T, I>::start_revealing_period(stage_data);
 
         // emit event
         Self::deposit_event(RawEvent::RevealingStageStarted());
     }
 
     /// Conclude the referendum.
-    fn end_reveal_period() {
+    fn end_reveal_period(stage_data: ReferendumStageRevealing<T::BlockNumber, T::VotePower>) {
         // conclude referendum
-        let referendum_result = Mutations::<T, I>::conclude_referendum();
+        let referendum_result = Mutations::<T, I>::conclude_referendum(stage_data);
 
         // emit event
         Self::deposit_event(RawEvent::ReferendumFinished(referendum_result));
@@ -543,9 +524,8 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         ReferendumOptions::<T, I>::put(options);
     }
 
-    fn start_revealing_period() {
+    fn start_revealing_period(old_stage: ReferendumStageVoting<T::BlockNumber>) {
         let options_len = ReferendumOptions::<T, I>::get().unwrap().len();
-        let old_stage = Stage::<T, I>::get().voting();
 
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Revealing(ReferendumStageRevealing::<
@@ -558,14 +538,15 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         }));
     }
 
-    fn conclude_referendum() -> ReferendumResult<T::ReferendumOption, T::VotePower> {
+    fn conclude_referendum(
+        revealing_stage: ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
+    ) -> ReferendumResult<T::ReferendumOption, T::VotePower> {
         // select winning option
         fn calculate_votes<T: Trait<I>, I: Instance>(
+            revealing_stage: ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
         ) -> ReferendumResult<T::ReferendumOption, T::VotePower> {
             // ordered vector - order from the most to the least
             let mut winning_order: Vec<(T::ReferendumOption, T::VotePower)> = vec![];
-
-            let revealing_stage = Stage::<T, I>::get().revealing();
 
             // walk through all options
             let options = ReferendumOptions::<T, I>::get();
@@ -625,7 +606,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         }
 
         // calculate votes and select winner(s)
-        let referendum_result = calculate_votes::<T, I>();
+        let referendum_result = calculate_votes::<T, I>(revealing_stage);
 
         // reset referendum state
         Self::reset_referendum();
@@ -780,12 +761,10 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         let stage = Stage::<T, I>::get();
 
         // ensure referendum is running
-        match stage {
-            ReferendumStage::Voting(_) => (),
+        let voting_stage = match stage {
+            ReferendumStage::Voting(stage_data) => (stage_data),
             _ => return Err(Error::ReferendumNotRunning),
         };
-
-        let voting_stage = stage.voting();
 
         let current_block = <system::Module<T>>::block_number();
 
@@ -839,12 +818,11 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         let stage = Stage::<T, I>::get();
 
         // ensure referendum is running
-        match stage {
-            ReferendumStage::Revealing(_) => (),
+        let stage_data = match stage {
+            ReferendumStage::Revealing(tmp_stage_data) => (tmp_stage_data),
             _ => return Err(Error::RevealingNotInProgress),
         };
 
-        let stage_data = stage.revealing();
         let current_block = <system::Module<T>>::block_number();
 
         // ensure voting stage is not expired (it can happend when superuser haven't call `finish_voting_start_revealing` yet)
