@@ -44,6 +44,7 @@ impl<BlockNumber, VotePower> Default for ReferendumStage<BlockNumber, VotePower>
 pub struct ReferendumStageVoting<BlockNumber> {
     start: BlockNumber,
     winning_target_count: u64,
+    options_count: u64,
 }
 
 /// Representation for revealing stage state.
@@ -51,6 +52,7 @@ pub struct ReferendumStageVoting<BlockNumber> {
 pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
     start: BlockNumber,
     winning_target_count: u64,
+    options_count: u64,
     revealed_votes: Vec<VotePower>,
 }
 
@@ -127,10 +129,7 @@ impl<T, U> Default for ReferendumResult<T, U> {
 // TODO: get rid of dependency on Error<T, I> - create some nongeneric error
 /// Trait enabling referendum start and vote commitment calculation.
 pub trait ReferendumManager<T: Trait<I>, I: Instance> {
-    fn start_referendum(
-        options: Vec<T::ReferendumOption>,
-        winning_target_count: u64,
-    ) -> Result<(), Error<T, I>>;
+    fn start_referendum(options_count: u64, winning_target_count: u64) -> Result<(), Error<T, I>>;
 
     fn calculate_commitment(
         referendum_user_id: &T::ReferendumUserId,
@@ -145,16 +144,6 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
 
     /// Maximum number of options in one referendum.
     type MaxReferendumOptions: Get<u64>;
-
-    // Representation of the referendum option that can be voted for.
-    type ReferendumOption: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
 
     /// Currency balance used for stakes.
     type CurrencyBalance: Parameter
@@ -243,7 +232,7 @@ decl_storage! {
         pub Stage get(fn stage) config(): ReferendumStage<T::BlockNumber, T::VotePower>;
 
         /// Options of current referendum
-        pub ReferendumOptions get(fn referendum_options) config(): Option<Vec<T::ReferendumOption>>;
+        //pub ReferendumOptions get(fn referendum_options) config(): Option<Vec<T::ReferendumOption>>;
 
         /// Votes in current referendum
         pub Votes get(fn votes) config(): map hasher(blake2_128_concat) T::ReferendumUserId => SealedVote<T::Hash, T::CurrencyBalance, T::AccountId>;
@@ -260,15 +249,14 @@ decl_storage! {
 decl_event! {
     pub enum Event<T, I>
     where
-        <T as Trait<I>>::ReferendumOption,
         <T as Trait<I>>::CurrencyBalance,
-        ReferendumResult = ReferendumResult<<T as Trait<I>>::ReferendumOption, <T as Trait<I>>::VotePower>,
+        ReferendumResult = ReferendumResult<u64, <T as Trait<I>>::VotePower>,
         <T as system::Trait>::Hash,
         <T as Trait<I>>::ReferendumUserId,
         <T as system::Trait>::AccountId,
     {
         /// Referendum started
-        ReferendumStarted(Vec<ReferendumOption>, u64),
+        ReferendumStarted(u64, u64),
 
         /// Revealing phase has begun
         RevealingStageStarted(),
@@ -301,9 +289,6 @@ decl_error! {
 
         /// Number of referendum options exceeds the limit
         TooManyReferendumOptions,
-
-        /// Not all referendum options are unique
-        DuplicateReferendumOptions,
 
         /// Referendum is not running when expected to
         ReferendumNotRunning,
@@ -377,10 +362,10 @@ decl_module! {
 
         /// Start a new referendum.
         #[weight = 10_000_000]
-        pub fn start_referendum(origin, options: Vec<T::ReferendumOption>, winning_target_count: u64) -> Result<(), Error<T, I>> {
-            EnsureChecks::<T, I>::can_start_referendum_extrinsic(origin, &options)?;
+        pub fn start_referendum(origin, options_count: u64, winning_target_count: u64) -> Result<(), Error<T, I>> {
+            EnsureChecks::<T, I>::can_start_referendum_extrinsic(origin, options_count)?;
 
-            <Self as ReferendumManager<T, I>>::start_referendum(options, winning_target_count)
+            <Self as ReferendumManager<T, I>>::start_referendum(options_count, winning_target_count)
         }
 
         /////////////////// User actions ///////////////////////////////////////
@@ -467,22 +452,22 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
 impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
     /// Start new referendum run.
-    fn start_referendum(
-        options: Vec<T::ReferendumOption>,
-        winning_target_count: u64,
-    ) -> Result<(), Error<T, I>> {
+    fn start_referendum(options_count: u64, winning_target_count: u64) -> Result<(), Error<T, I>> {
         // ensure action can be started
-        EnsureChecks::<T, I>::can_start_referendum(&options)?;
+        EnsureChecks::<T, I>::can_start_referendum(options_count)?;
 
         //
         // == MUTATION SAFE ==
         //
 
         // update state
-        Mutations::<T, I>::start_voting_period(&options, &winning_target_count);
+        Mutations::<T, I>::start_voting_period(&options_count, &winning_target_count);
 
         // emit event
-        Self::deposit_event(RawEvent::ReferendumStarted(options, winning_target_count));
+        Self::deposit_event(RawEvent::ReferendumStarted(
+            options_count,
+            winning_target_count,
+        ));
 
         Ok(())
     }
@@ -511,22 +496,18 @@ struct Mutations<T: Trait<I>, I: Instance> {
 }
 
 impl<T: Trait<I>, I: Instance> Mutations<T, I> {
-    fn start_voting_period(options: &[T::ReferendumOption], winning_target_count: &u64) {
+    fn start_voting_period(options_count: &u64, winning_target_count: &u64) {
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Voting(ReferendumStageVoting::<
             T::BlockNumber,
         > {
             start: <system::Module<T>>::block_number(),
             winning_target_count: *winning_target_count,
+            options_count: *options_count,
         }));
-
-        // store new options
-        ReferendumOptions::<T, I>::put(options);
     }
 
     fn start_revealing_period(old_stage: ReferendumStageVoting<T::BlockNumber>) {
-        let options_len = ReferendumOptions::<T, I>::get().unwrap().len();
-
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Revealing(ReferendumStageRevealing::<
             T::BlockNumber,
@@ -534,34 +515,29 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         > {
             start: <system::Module<T>>::block_number(),
             winning_target_count: old_stage.winning_target_count,
-            revealed_votes: (0..options_len).map(|_| 0.into()).collect(),
+            options_count: old_stage.options_count,
+            revealed_votes: (0..old_stage.options_count).map(|_| 0.into()).collect(),
         }));
     }
 
     fn conclude_referendum(
         revealing_stage: ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
-    ) -> ReferendumResult<T::ReferendumOption, T::VotePower> {
+    ) -> ReferendumResult<u64, T::VotePower> {
         // select winning option
         fn calculate_votes<T: Trait<I>, I: Instance>(
             revealing_stage: ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
-        ) -> ReferendumResult<T::ReferendumOption, T::VotePower> {
-            // ordered vector - order from the most to the least
-            let mut winning_order: Vec<(T::ReferendumOption, T::VotePower)> = vec![];
+        ) -> ReferendumResult<u64, T::VotePower> {
+            let mut winning_order: Vec<(u64, T::VotePower)> = vec![];
 
-            // walk through all options
-            let options = ReferendumOptions::<T, I>::get();
-            if let Some(tmp_options) = &options {
-                // formal condition - there will always be options
-                for (i, option) in tmp_options.iter().enumerate() {
-                    let vote_sum = revealing_stage.revealed_votes[i];
+            for i in 0..revealing_stage.options_count {
+                let vote_sum: T::VotePower = revealing_stage.revealed_votes[i as usize];
 
-                    // skip option with 0 votes
-                    if vote_sum == 0.into() {
-                        continue;
-                    }
-
-                    winning_order.push((*option, vote_sum));
+                // skip option with 0 votes
+                if vote_sum == 0.into() {
+                    continue;
                 }
+
+                winning_order.push((i, vote_sum));
             }
 
             // no votes revealed?
@@ -617,7 +593,6 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
     fn reset_referendum() {
         Stage::<T, I>::put(ReferendumStage::Inactive);
-        ReferendumOptions::<T, I>::mutate(|value| *value = None::<Vec<T::ReferendumOption>>);
         Votes::<T, I>::remove_all();
     }
 
@@ -718,7 +693,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     fn can_start_referendum_extrinsic(
         origin: T::Origin,
-        _options: &[T::ReferendumOption],
+        _options_count: u64,
     ) -> Result<(), Error<T, I>> {
         // ensure superuser requested action
         Self::ensure_super_user(origin)?;
@@ -726,25 +701,20 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(())
     }
 
-    fn can_start_referendum(options: &[T::ReferendumOption]) -> Result<(), Error<T, I>> {
+    fn can_start_referendum(options_count: u64) -> Result<(), Error<T, I>> {
         // ensure referendum is not already running
         if Stage::<T, I>::get() != ReferendumStage::Inactive {
             return Err(Error::ReferendumAlreadyRunning);
         }
 
         // ensure some options were given
-        if options.is_empty() {
+        if options_count == 0 {
             return Err(Error::NoReferendumOptions);
         }
 
         // ensure number of options doesn't exceed limit
-        if options.len() > T::MaxReferendumOptions::get() as usize {
+        if options_count > T::MaxReferendumOptions::get() {
             return Err(Error::TooManyReferendumOptions);
-        }
-
-        // ensure no two options are the same
-        if has_duplicates(options.to_vec()) {
-            return Err(Error::DuplicateReferendumOptions);
         }
 
         Ok(())
@@ -844,19 +814,9 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             return Err(Error::DuplicateVoteOption);
         }
 
-        // ensure vote is ok
-        match ReferendumOptions::<T, I>::get() {
-            Some(options) => {
-                let options_count = options.len() as u64;
-                for subvote in vote_distribution {
-                    if subvote.option_index >= options_count {
-                        return Err(Error::InvalidVote);
-                    }
-                }
-            }
-            None => {
-                // this branch shouldn't ever happen
-                return Err(Error::InvalidReveal);
+        for subvote in vote_distribution {
+            if subvote.option_index >= stage_data.options_count {
+                return Err(Error::InvalidVote);
             }
         }
 

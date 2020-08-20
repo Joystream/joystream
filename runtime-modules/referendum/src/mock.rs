@@ -2,9 +2,9 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Error, Instance, Module, RawEvent, ReferendumManager, ReferendumOptions, ReferendumResult,
-    ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, SealedVote, Stage,
-    StakeDistribution, StakeDistributionArg, Trait, VoteDistribution, Votes,
+    Error, Instance, Module, RawEvent, ReferendumManager, ReferendumResult, ReferendumStage,
+    ReferendumStageRevealing, ReferendumStageVoting, SealedVote, Stage, StakeDistribution,
+    StakeDistributionArg, Trait, VoteDistribution, Votes,
 };
 
 use rand::Rng;
@@ -59,7 +59,6 @@ impl Trait<Instance0> for Runtime {
     type Event = TestEvent;
 
     type MaxReferendumOptions = MaxReferendumOptions;
-    type ReferendumOption = u64;
 
     type CurrencyBalance = u64;
     type VotePower = u64;
@@ -232,8 +231,6 @@ pub enum OriginType<AccountId> {
 pub fn default_genesis_config() -> GenesisConfig<Runtime, Instance0> {
     GenesisConfig::<Runtime, Instance0> {
         stage: ReferendumStage::default(),
-        //referendum_options: None
-        referendum_options: vec![], // not sure why it doesn't accept `None` here
         votes: vec![],
     }
 }
@@ -323,7 +320,7 @@ pub struct InstanceMocks<T: Trait<I>, I: Instance> {
 impl InstanceMocks<Runtime, Instance0> {
     pub fn start_referendum_extrinsic(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
-        options: Vec<<Runtime as Trait<Instance0>>::ReferendumOption>,
+        options_count: u64,
         winning_target_count: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
@@ -331,17 +328,17 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(
             Module::<Runtime, Instance0>::start_referendum(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
-                options.clone(),
-                winning_target_count
+                options_count,
+                winning_target_count,
             ),
             expected_result,
         );
 
-        Self::start_referendum_inner(options, winning_target_count, expected_result)
+        Self::start_referendum_inner(options_count, winning_target_count, expected_result)
     }
 
     pub fn start_referendum_manager(
-        options: Vec<<Runtime as Trait<Instance0>>::ReferendumOption>,
+        options: u64,
         winning_target_count: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
@@ -358,7 +355,7 @@ impl InstanceMocks<Runtime, Instance0> {
     }
 
     fn start_referendum_inner(
-        options: Vec<<Runtime as Trait<Instance0>>::ReferendumOption>,
+        options_count: u64,
         winning_target_count: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) {
@@ -373,32 +370,29 @@ impl InstanceMocks<Runtime, Instance0> {
             ReferendumStage::Voting(ReferendumStageVoting {
                 start: block_number,
                 winning_target_count,
+                options_count,
             }),
         );
 
         assert_eq!(
-            ReferendumOptions::<Runtime, Instance0>::get(),
-            Some(options.clone()),
-        );
-
-        assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::from(RawEvent::ReferendumStarted(options, winning_target_count,))
+            TestEvent::from(RawEvent::ReferendumStarted(
+                options_count,
+                winning_target_count,
+            ))
         );
     }
 
-    pub fn check_voting_finished(winning_target_count: u64) {
+    pub fn check_voting_finished(options_count: u64, winning_target_count: u64) {
         let block_number = system::Module::<Runtime>::block_number();
-        let options_len = ReferendumOptions::<Runtime, Instance0>::get()
-            .unwrap()
-            .len();
 
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Revealing(ReferendumStageRevealing {
                 start: block_number - 1,
                 winning_target_count,
-                revealed_votes: (0..options_len).map(|_| 0).collect(),
+                options_count,
+                revealed_votes: (0..options_count).map(|_| 0).collect(),
             }),
         );
 
@@ -411,17 +405,13 @@ impl InstanceMocks<Runtime, Instance0> {
 
     pub fn check_revealing_finished(
         expected_referendum_result: Option<
-            ReferendumResult<
-                <Runtime as Trait<Instance0>>::ReferendumOption,
-                <Runtime as Trait<Instance0>>::VotePower,
-            >,
+            ReferendumResult<u64, <Runtime as Trait<Instance0>>::VotePower>,
         >,
     ) {
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Inactive,
         );
-        assert_eq!(ReferendumOptions::<Runtime, Instance0>::get(), None,);
         assert_eq!(Votes::<Runtime, Instance0>::iter_values().count(), 0,);
 
         // check event was emitted
