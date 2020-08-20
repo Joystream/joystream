@@ -1,4 +1,5 @@
-// Adds Joystream types to /definitions/augment-types.ts allowing better api.createType TS support
+// Creates /augment-codec/augment-types.ts file with api augmentation that allows
+// creating custom Joystream "Codec types" with api.createType
 
 import common from '../common'
 import members from '../members'
@@ -18,6 +19,11 @@ import media from '../media'
 import proposals from '../proposals'
 import fs from 'fs'
 import path from 'path'
+import * as defaultDefinitions from '@polkadot/types/interfaces/definitions'
+import { generateInterfaceTypes } from '@polkadot/typegen/generate/interfaceRegistry'
+
+const OUTPUT_PATH = path.join(__dirname, '../../augment-codec/augment-types.ts')
+const IMPORTS_DIR = '..'
 
 const typesByModule = {
   'common': common,
@@ -44,7 +50,10 @@ type AugmentTypes = { [typeName: string]: string }
 const imports: Imports = {}
 const augmentTypes: AugmentTypes = {}
 
-const populateFileByTemplateTag = (fileContent: string, tag: string, lines: string[]) => {
+const CUSTOM_IMPORTS_TAG = 'CUSTOMIMPORTS'
+const CUSTOM_TYPES_TAG = 'CUSTOMTYPES'
+
+const populateFileByTemplateTag = (fileContent: string, tag: string, insertLines: string[]) => {
   const fileLines = fileContent.split('\n')
   const startIndex = fileLines.findIndex((line) => line.includes(`/** ${tag} **/`))
   const endIndex = fileLines.findIndex((line) => line.includes(`/** /${tag} **/`))
@@ -53,28 +62,49 @@ const populateFileByTemplateTag = (fileContent: string, tag: string, lines: stri
     throw new Error(`populateFileByTemplateTag: Invalid tag (${tag})`)
   }
 
-  const whitespaceMatch = fileLines[startIndex].match(/^(\s)+/)
-  const whitespace = whitespaceMatch ? whitespaceMatch[0] : ''
+  const [whitespace] = fileLines[startIndex].match(/^(\s)+/) || ['']
+  fileLines.splice(startIndex + 1, endIndex - (startIndex + 1), ...insertLines.map((line) => `${whitespace}${line}`))
 
-  fileLines.splice(startIndex + 1, endIndex - (startIndex + 1), ...lines.map((line) => `${whitespace}${line}`))
+  return fileLines.join('\n')
+}
+
+const addTagsIfDontExist = (fileContent: string): string => {
+  const fileLines = fileContent.split('\n')
+  // Custom imports
+  if (fileLines.findIndex((line) => line.includes(`/** ${CUSTOM_IMPORTS_TAG} **/`)) === -1) {
+    const firstImportIndex = fileLines.findIndex((line) => line.includes('import'))
+    fileLines.splice(firstImportIndex, 0, `/** ${CUSTOM_IMPORTS_TAG} **/`, `/** /${CUSTOM_IMPORTS_TAG} **/`)
+  }
+  // Custom types
+  if (fileLines.findIndex((line) => line.includes(`/** ${CUSTOM_TYPES_TAG} **/`)) === -1) {
+    const firstTypeIndex = fileLines.findIndex((line) => line.includes('export interface InterfaceTypes')) + 1
+    const [whitespace] = fileLines[firstTypeIndex].match(/^(\s)+/) || ['']
+    fileLines.splice(
+      firstTypeIndex,
+      0,
+      `${whitespace}/** ${CUSTOM_TYPES_TAG} **/`,
+      `${whitespace}/** /${CUSTOM_TYPES_TAG} **/`
+    )
+  }
 
   return fileLines.join('\n')
 }
 
 const updateAugmentTypesFile = (filePath: string, imports: Imports, augmentTypes: AugmentTypes) => {
   let fileContent = fs.readFileSync(filePath).toString()
+  fileContent = addTagsIfDontExist(fileContent)
   fileContent = populateFileByTemplateTag(
     fileContent,
-    'CUSTOMIMPORTS',
+    CUSTOM_IMPORTS_TAG,
     Object.entries(imports).map(
       ([moduleName, importStatements]) =>
         // import as to avoid namespace clashes
-        `import { ${importStatements.join(', ')} } from '../${moduleName}'`
+        `import { ${importStatements.join(', ')} } from '${IMPORTS_DIR}/${moduleName}'`
     )
   )
   fileContent = populateFileByTemplateTag(
     fileContent,
-    'CUSTOMTYPES',
+    CUSTOM_TYPES_TAG,
     Object.entries(augmentTypes).map(([typeName, constructorName]) => `"${typeName}": ${constructorName};`)
   )
 
@@ -87,7 +117,13 @@ const addAugmentTypes = (typeName: string, constructorName: string) => {
   augmentTypes[`Vec<${typeName}>`] = `Vec<${constructorName}>`
 }
 
+console.log('Generating default interface types based on current @polkadot/types definitions...')
+generateInterfaceTypes({ '@polkadot/types/interfaces': defaultDefinitions }, OUTPUT_PATH)
+
+console.log('Adding custom Joystream types...')
 Object.entries(typesByModule).forEach(([moduleName, types]) => {
+  console.log('Module: ', moduleName)
+  console.log('Types found:', Object.keys(types))
   Object.entries(types).forEach(([typeName, codecOrName]) => {
     if (typeof codecOrName === 'function') {
       const constructorName = codecOrName.name
@@ -105,4 +141,4 @@ Object.entries(typesByModule).forEach(([moduleName, types]) => {
   })
 })
 
-updateAugmentTypesFile(path.join(__dirname, '../definitions/augment-types.ts'), imports, augmentTypes)
+updateAugmentTypesFile(OUTPUT_PATH, imports, augmentTypes)

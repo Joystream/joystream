@@ -9,10 +9,14 @@
     "build": "tsc --build tsconfig.json",
     "lint": "eslint ./ --quiet --ext .ts",
     "format": "prettier ./ --write",
-    "checks": "yarn build && madge --circular ./ && yarn lint && prettier ./ --check",
-    "generate:defs": "ts-node node_modules/.bin/polkadot-types-from-defs --package ./src --input ./src/definitions",
-    "update:augment-types": "tsc --build tsconfig-scripts.json && node ./src/scripts/updateAugmentTypes.js",
-    "print:typedef": "tsc --build tsconfig-scripts.json && node ./src/scripts/defsFromTypes.js"
+    "check:augment": "tsc --build tsconfig-augment.json && tsc --build tsconfig-augment-codec.json",
+    "checks": "yarn build && madge --circular ./ && yarn lint && prettier ./ --check && yarn check:augment",
+    "generate:defs": "ts-node node_modules/.bin/polkadot-types-from-defs --package . --input ./augment",
+    "generate:meta": "ts-node node_modules/.bin/polkadot-types-from-chain --package . --endpoint ws://127.0.0.1:9944 --output ./augment --strict",
+    "generate:codec-defs": "ts-node ./src/scripts/generateCodecDefs.ts",
+    "generate:registry-json": "ts-node ./src/scripts/generateRegistryJson.ts",
+    "generate:augment": "yarn generate:registry-json && yarn generate:defs && yarn generate:meta",
+    "generate:all": "yarn generate:augment && yarn generate:codec-defs"
   },
   "author": "Joystream contributors",
   "maintainers": [],

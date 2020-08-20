@@ -89,7 +89,7 @@ export class ExecutionFailedStatus extends JoyStructDecorated({
   error: Vec.with(u8),
 }) {}
 
-class ExecutionFailed extends ExecutionFailedStatus {}
+export class ExecutionFailed extends ExecutionFailedStatus {}
 
 export const ApprovedProposalDef = {
   PendingExecution: Null,
@@ -153,7 +153,7 @@ export class ProposalId extends u32 {}
 
 export class SpendingParams extends Tuple.with(['Balance', 'AccountId']) {}
 
-class SetLeadParams extends Tuple.with([MemberId, AccountId]) {}
+export class SetLeadParams extends Tuple.with([MemberId, AccountId]) {}
 
 export class SetLead extends Option.with(SetLeadParams) {}
 
@@ -285,6 +285,13 @@ export const proposalsTypes = {
   AddOpeningParameters,
   FillOpeningParameters,
   TerminateRoleParameters,
+  // Expose in registry for api.createType purposes:
+  ActiveStake,
+  Finalized,
+  ProposalDecisionStatus,
+  ExecutionFailed,
+  Approved,
+  SetLeadParams,
 }
 
 export default proposalsTypes

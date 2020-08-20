@@ -53,6 +53,9 @@ export const mintTypes: RegistryTypes = {
   Mint,
   MintBalanceOf: 'Balance',
   BalanceOfMint: 'Balance',
-  'minting::BalanceOf': 'Balance',
+  // Expose in registry for api.createType purposes:
+  NextAdjustment,
+  AdjustOnInterval,
+  AdjustCapacityBy,
 }
 export default mintTypes

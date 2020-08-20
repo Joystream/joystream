@@ -80,12 +80,18 @@ export class Stake
       return this.staking_status.asType('Staked').staked_amount
     }
 
-    return new u128(this.registry, 0)
+    return this.registry.createType('Balance', 0)
   }
 }
 
 export const stakeTypes: RegistryTypes = {
   StakeId: 'u64',
   Stake,
+  // Expose in registry for api.createType purposes:
+  StakingStatus,
+  Staked,
+  StakedStatus,
+  Unstaking,
+  Slash,
 }
 export default stakeTypes

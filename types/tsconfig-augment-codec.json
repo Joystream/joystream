@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig-base.json",
+  "compilerOptions": {
+    "noEmit": true, // No need to actually create any output
+    "paths": {
+      "@polkadot/types/augment": ["augment-codec/augment-types.ts"]
+    }
+  },
+  "include": [
+    "augment-codec/**/*.ts"
+  ]
+}
