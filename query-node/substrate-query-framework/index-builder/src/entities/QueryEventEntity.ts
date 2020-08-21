@@ -79,7 +79,7 @@ export class QueryEventEntity {
     const _entity =  new QueryEventEntity();
     
     _entity.blockNumber = q.block_number.toNumber();
-    _entity.index = q.index.toNumber();
+    _entity.index = q.indexInBlock;
     _entity.id = `${q.block_number.toString()}-${q.indexInBlock.toString()}`;
     _entity.method = q.event_record.event.method;
     _entity.name = q.event_name;
