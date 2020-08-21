@@ -15,20 +15,16 @@ import BaseTransport from '@polkadot/joy-utils/transport/base';
 import { ITransport } from './transport';
 import { GroupMember } from './elements';
 
-import {
-  Curator, CuratorId,
+import { Curator, CuratorId,
   CuratorApplication, CuratorApplicationId,
   CuratorRoleStakeProfile,
   CuratorOpening, CuratorOpeningId,
-  Lead, LeadId
-} from '@joystream/types/content-working-group';
+  Lead, LeadId } from '@joystream/types/content-working-group';
 
-import {
-  Application as WGApplication,
+import { Application as WGApplication,
   Opening as WGOpening,
   Worker, WorkerId,
-  RoleStakeProfile
-} from '@joystream/types/working-group';
+  RoleStakeProfile } from '@joystream/types/working-group';
 
 import { Application, Opening, OpeningId, ApplicationId, ActiveApplicationStage } from '@joystream/types/hiring';
 import { Stake, StakeId } from '@joystream/types/stake';
@@ -42,12 +38,10 @@ import { ActiveRole, OpeningApplication } from './tabs/MyRoles';
 
 import { keyPairDetails } from './flows/apply';
 
-import {
-  classifyApplicationCancellation,
+import { classifyApplicationCancellation,
   classifyOpeningStage,
   classifyOpeningStakes,
-  isApplicationHired
-} from './classifiers';
+  isApplicationHired } from './classifiers';
 import { WorkingGroups, AvailableGroups, workerRoleNameByGroup } from './working_groups';
 import { Sort, Sum, Zero } from './balances';
 import _ from 'lodash';
@@ -155,7 +149,7 @@ export class Transport extends BaseTransport implements ITransport {
     this.queueExtrinsic = queueExtrinsic;
   }
 
-  apiMethodByGroup(group: WorkingGroups, method: WGApiMethodType) {
+  apiMethodByGroup (group: WorkingGroups, method: WGApiMethodType) {
     const apiModule = workingGroupsApiMapping[group].module;
     const apiMethod = workingGroupsApiMapping[group].methods.query[method];
 
@@ -182,6 +176,7 @@ export class Transport extends BaseTransport implements ITransport {
 
   protected async stakeValue (stakeId: StakeId): Promise<Balance> {
     const stake = await this.cacheApi.query.stake.stakes(stakeId) as Stake;
+
     return stake.value;
   }
 
@@ -197,6 +192,7 @@ export class Transport extends BaseTransport implements ITransport {
 
   protected async workerTotalReward (relationshipId: RewardRelationshipId): Promise<Balance> {
     const relationship = await this.rewardRelationshipById(relationshipId);
+
     return relationship?.total_reward_received || this.api.createType('Balance', 0);
   }
 
@@ -212,6 +208,7 @@ export class Transport extends BaseTransport implements ITransport {
     const rewardRelationship = worker.reward_relationship.isSome
       ? await this.rewardRelationshipById(worker.reward_relationship.unwrap())
       : undefined;
+
     return rewardRelationship;
   }
 
@@ -226,11 +223,13 @@ export class Transport extends BaseTransport implements ITransport {
       : (worker as Worker).member_id;
 
     const profile = await this.cacheApi.query.members.membershipById(memberId) as Membership;
+
     if (profile.handle.isEmpty) {
       throw new Error('No group member profile found!');
     }
 
     let stakeValue: Balance = this.api.createType('Balance', 0);
+
     if (worker.role_stake_profile && worker.role_stake_profile.isSome) {
       stakeValue = await this.workerStake(worker.role_stake_profile.unwrap());
     }
@@ -256,6 +255,7 @@ export class Transport extends BaseTransport implements ITransport {
 
     for (const [/* id */, groupOpening] of groupOpenings) {
       const opening = await this.opening(groupOpening.hiring_opening_id.toNumber());
+
       if (
         opening.is_active &&
         (
@@ -357,8 +357,8 @@ export class Transport extends BaseTransport implements ITransport {
     const leadStatus = await this.groupLeadStatus(group);
 
     const workers = (await this.entriesByIds<GroupWorkerId, GroupWorker>(
-        this.apiMethodByGroup(group, 'workerById')
-      ))
+      this.apiMethodByGroup(group, 'workerById')
+    ))
       .filter(([id, worker]) => worker.is_active && (!leadStatus.lead?.workerId || !id.eq(leadStatus.lead.workerId)));
 
     return {
@@ -431,6 +431,7 @@ export class Transport extends BaseTransport implements ITransport {
 
   async groupOpening (group: WorkingGroups, id: number): Promise<WorkingGroupOpening> {
     const nextId = (await this.cachedApiMethodByGroup(group, 'nextOpeningId')() as GroupOpeningId).toNumber();
+
     if (id < 0 || id >= nextId) {
       throw new Error('invalid id');
     }
@@ -479,11 +480,12 @@ export class Transport extends BaseTransport implements ITransport {
 
   async openingApplicationRanks (group: WorkingGroups, openingId: number): Promise<Balance[]> {
     const applications = await this.groupOpeningApplications(group, openingId);
+
     return Sort(
       (await Promise.all(
         applications
-          .filter(a => a.hiringModule.stage.value instanceof ActiveApplicationStage)
-          .map(application => this.openingApplicationTotalStake(application.hiringModule))
+          .filter((a) => a.hiringModule.stage.value instanceof ActiveApplicationStage)
+          .map((application) => this.openingApplicationTotalStake(application.hiringModule))
       ))
     );
   }
@@ -494,22 +496,23 @@ export class Transport extends BaseTransport implements ITransport {
 
   async blockHash (height: number): Promise<string> {
     const blockHash = await this.api.rpc.chain.getBlockHash(height);
+
     return blockHash.toString();
   }
 
   async blockTimestamp (height: number): Promise<Date> {
     const blockTime = await this.api.query.timestamp.now.at(
       await this.blockHash(height)
-    ) as Moment;
+    );
 
     return new Date(blockTime.toNumber());
   }
 
   accounts (): Subscribable<keyPairDetails[]> {
     return keyringOption.optionsSubject.pipe(
-      map(accounts => {
+      map((accounts) => {
         return accounts.all
-          .filter(x => x.value)
+          .filter((x) => x.value)
           .map(async (result, k) => {
             return {
               shortName: result.name,
@@ -518,7 +521,7 @@ export class Transport extends BaseTransport implements ITransport {
             };
           });
       }),
-      switchMap(async x => Promise.all(x))
+      switchMap(async (x) => Promise.all(x))
     ) as Subscribable<keyPairDetails[]>;
   }
 
@@ -529,11 +532,13 @@ export class Transport extends BaseTransport implements ITransport {
     };
 
     const appStake = app.active_application_staking_id;
+
     if (appStake.isSome) {
       stakes.application = await this.stakeValue(appStake.unwrap());
     }
 
     const roleStake = app.active_role_staking_id;
+
     if (roleStake.isSome) {
       stakes.role = await this.stakeValue(roleStake.unwrap());
     }
@@ -542,9 +547,9 @@ export class Transport extends BaseTransport implements ITransport {
   }
 
   protected async myApplicationRank (myApp: Application, applications: Array<Application>): Promise<number> {
-    const activeApplications = applications.filter(app => app.stage.value instanceof ActiveApplicationStage);
+    const activeApplications = applications.filter((app) => app.stage.value instanceof ActiveApplicationStage);
     const stakes = await Promise.all(
-      activeApplications.map(app => this.openingApplicationTotalStake(app))
+      activeApplications.map((app) => this.openingApplicationTotalStake(app))
     );
 
     const appvalues = activeApplications.map((app, key) => {
@@ -564,14 +569,14 @@ export class Transport extends BaseTransport implements ITransport {
       return 1;
     });
 
-    return appvalues.findIndex(v => v.app.eq(myApp)) + 1;
+    return appvalues.findIndex((v) => v.app.eq(myApp)) + 1;
   }
 
   async openingApplicationsByAddressAndGroup (group: WorkingGroups, roleKey: string): Promise<OpeningApplication[]> {
     const myGroupApplications = (await this.entriesByIds<GroupApplicationId, GroupApplication>(
-        await this.apiMethodByGroup(group, 'applicationById')
-      ))
-      .filter(([id, groupApplication]) => groupApplication.role_account_id.eq(roleKey))
+      await this.apiMethodByGroup(group, 'applicationById')
+    ))
+      .filter(([id, groupApplication]) => groupApplication.role_account_id.eq(roleKey));
 
     const myHiringApplications = await Promise.all(
       myGroupApplications.map(
@@ -580,7 +585,7 @@ export class Transport extends BaseTransport implements ITransport {
     ) as Application[];
 
     const stakes = await Promise.all(
-      myHiringApplications.map(app => this.applicationStakes(app))
+      myHiringApplications.map((app) => this.applicationStakes(app))
     );
 
     const openings = await Promise.all(
@@ -601,7 +606,7 @@ export class Transport extends BaseTransport implements ITransport {
           id: myGroupApplications[key][0].toNumber(),
           hired: isApplicationHired(myHiringApplications[key]),
           cancelledReason: classifyApplicationCancellation(myHiringApplications[key]),
-          rank: await this.myApplicationRank(myHiringApplications[key], allAppsByOpening[key].map(a => a.hiringModule)),
+          rank: await this.myApplicationRank(myHiringApplications[key], allAppsByOpening[key].map((a) => a.hiringModule)),
           capacity: o.applications.maxNumberOfApplications,
           stage: o.stage,
           opening: o.opening,
@@ -618,6 +623,7 @@ export class Transport extends BaseTransport implements ITransport {
   // Get opening applications for all groups by address
   async openingApplicationsByAddress (roleKey: string): Promise<OpeningApplication[]> {
     let applications: OpeningApplication[] = [];
+
     for (const group of AvailableGroups) {
       applications = applications.concat(await this.openingApplicationsByAddressAndGroup(group, roleKey));
     }
@@ -637,11 +643,13 @@ export class Transport extends BaseTransport implements ITransport {
         .filter(([id, worker]) => worker.role_account_id.eq(roleKeyId) && worker.is_active)
         .map(async ([id, worker]) => {
           let stakeValue: Balance = this.api.createType('u128', 0);
+
           if (worker.role_stake_profile && worker.role_stake_profile.isSome) {
             stakeValue = await this.workerStake(worker.role_stake_profile.unwrap());
           }
 
           let earnedValue: Balance = this.api.createType('u128', 0);
+
           if (worker.reward_relationship && worker.reward_relationship.isSome) {
             earnedValue = await this.workerTotalReward(worker.reward_relationship.unwrap());
           }
@@ -662,6 +670,7 @@ export class Transport extends BaseTransport implements ITransport {
   // All groups roles by key
   async myRoles (roleKey: string): Promise<ActiveRole[]> {
     let roles: ActiveRole[] = [];
+
     for (const group of AvailableGroups) {
       roles = roles.concat(await this.myRolesByGroup(group, roleKey));
     }
@@ -673,11 +682,13 @@ export class Transport extends BaseTransport implements ITransport {
     const { address, deriveError, derivePath, isSeedValid, pairType, seed } = generateSeed(null, '', 'bip');
 
     const isValid = !!address && !deriveError && isSeedValid;
+
     if (!isValid) {
       return null;
     }
 
     const status = createAccount(`${seed}${derivePath}`, pairType, name, password, 'created account');
+
     return status.account as string;
   }
 
@@ -691,15 +702,17 @@ export class Transport extends BaseTransport implements ITransport {
     applicationText: string): Promise<number> {
     return new Promise<number>((resolve, reject) => {
       (this.cacheApi.query.members.memberIdsByControllerAccountId(sourceAccount) as Promise<Vec<MemberId>>)
-        .then(membershipIds => {
+        .then((membershipIds) => {
           if (membershipIds.length === 0) {
             reject(new Error('No membship ID associated with this address'));
           }
 
           const roleAccount = this.generateRoleAccount(roleAccountName);
+
           if (!roleAccount) {
             reject(new Error('failed to create role account'));
           }
+
           const tx = this.apiExtrinsicByGroup(group, 'applyOnOpening')(
             membershipIds[0], // Member id
             id, // Worker/Curator opening id

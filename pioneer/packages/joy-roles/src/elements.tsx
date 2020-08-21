@@ -21,7 +21,7 @@ type BalanceProps = {
 
 export function BalanceView (props: BalanceProps) {
   return (
-    <div className="balance">
+    <div className='balance'>
       <span>Balance:</span> {formatBalance(props.balance)}
     </div>
   );
@@ -65,6 +65,7 @@ export type GroupLead = {
 
 export function GroupLeadView (props: GroupLead) {
   let avatar = <Identicon value={props.roleAccount.toString()} size={50} />;
+
   if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() !== '') {
     avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />;
   }
@@ -72,7 +73,7 @@ export function GroupLeadView (props: GroupLead) {
   const { stake, rewardRelationship } = props;
 
   return (
-    <Card color='grey' className="staked-card">
+    <Card color='grey' className='staked-card'>
       <Card.Content>
         <Image floated='right'>
           {avatar}
@@ -86,7 +87,7 @@ export function GroupLeadView (props: GroupLead) {
         </Card.Meta>
         <Card.Description>
           <Label color='teal'>
-            <Icon name="shield" />
+            <Icon name='shield' />
             { props.title }
             <Label.Detail>{/* ... */}</Label.Detail>
           </Label>
@@ -115,8 +116,8 @@ export function GroupMemberDetails (props: GroupMemberDetailsProps) {
 
   if (props.stake && props.stake.toNumber() > 0) {
     details.push(
-      <Label color="green">
-        <Icon name="shield" />
+      <Label color='green'>
+        <Icon name='shield' />
         Staked
         <Label.Detail>{formatBalance(props.stake)}</Label.Detail>
       </Label>
@@ -129,6 +130,7 @@ export function GroupMemberDetails (props: GroupMemberDetailsProps) {
 
   if (props.rewardRelationship) {
     const reward = props.rewardRelationship;
+
     details.push(
       <Label>Reward <Label.Detail>{formatReward(reward)}</Label.Detail></Label>
     );
@@ -159,7 +161,7 @@ export function GroupMemberDetails (props: GroupMemberDetailsProps) {
           </StakeAndReward>
         </Card.Description>
       ) }
-      <Button onClick={ () => setShowDetails(v => !v) } size="tiny" fluid>
+      <Button onClick={ () => setShowDetails((v) => !v) } size='tiny' fluid>
         { showDetails ? 'Hide' : 'Show'} details
       </Button>
     </Card.Content>
@@ -168,6 +170,7 @@ export function GroupMemberDetails (props: GroupMemberDetailsProps) {
 
 export function GroupMemberView (props: GroupMember) {
   let avatar = <Identicon value={props.roleAccount.toString()} size={50} />;
+
   if (typeof props.profile.avatar_uri !== 'undefined' && props.profile.avatar_uri.toString() !== '') {
     avatar = <Image src={props.profile.avatar_uri.toString()} circular className='avatar' />;
   }
@@ -175,7 +178,7 @@ export function GroupMemberView (props: GroupMember) {
   const { stake, rewardRelationship } = props;
 
   return (
-    <Card color='grey' className="staked-card">
+    <Card color='grey' className='staked-card'>
       <Card.Content>
         <Image floated='right'>
           {avatar}
@@ -209,6 +212,7 @@ export function Countdown (props: CountdownProps) {
     const then = moment(props.end);
     const now = moment();
     const d = moment.duration(then.diff(now));
+
     setDays(d.days());
     setHours(d.hours());
     setMinutes(d.minutes());
@@ -219,6 +223,7 @@ export function Countdown (props: CountdownProps) {
 
   useEffect(() => {
     update();
+
     return () => {
       clearInterval(interval);
     };
@@ -230,19 +235,19 @@ export function Countdown (props: CountdownProps) {
 
   return (
     <div className='countdown wrapper'>
-      <Statistic size="tiny">
+      <Statistic size='tiny'>
         <Statistic.Value>{days}</Statistic.Value>
         <Statistic.Label>Days</Statistic.Label>
       </Statistic>
-      <Statistic size="tiny">
+      <Statistic size='tiny'>
         <Statistic.Value>{hours}</Statistic.Value>
         <Statistic.Label>hours</Statistic.Label>
       </Statistic>
-      <Statistic size="tiny">
+      <Statistic size='tiny'>
         <Statistic.Value>{minutes}</Statistic.Value>
         <Statistic.Label>minutes</Statistic.Label>
       </Statistic>
-      <Statistic size="tiny">
+      <Statistic size='tiny'>
         <Statistic.Value>{seconds}</Statistic.Value>
         <Statistic.Label>seconds</Statistic.Label>
       </Statistic>

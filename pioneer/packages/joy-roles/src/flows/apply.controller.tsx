@@ -75,7 +75,7 @@ export class ApplyController extends Controller<State, ITransport> {
   }
 
   protected parseGroup (group: string | undefined): WorkingGroups | undefined {
-    return AvailableGroups.find(availableGroup => availableGroup === group);
+    return AvailableGroups.find((availableGroup) => availableGroup === group);
   }
 
   protected updateAccounts (keys: keyPairDetails[]) {
@@ -87,6 +87,7 @@ export class ApplyController extends Controller<State, ITransport> {
     if (!rawId) {
       return this.onError('ApplyController: no ID provided in params');
     }
+
     const id = parseInt(rawId);
     const group = this.parseGroup(rawGroup);
 
@@ -194,14 +195,16 @@ export class ApplyController extends Controller<State, ITransport> {
     this.state.transactionDetails.set('Total commitment', formatBalance(totalCommitment));
 
     this.dispatch();
+
     return true;
   }
 
   private updateRoleKeyName () {
     let roleKeyNamePrefix = 0;
+
     do {
       this.state.roleKeyName = `${this.state.roleKeyNameBase}${(++roleKeyNamePrefix > 1 ? ` ${roleKeyNamePrefix}` : '')}`;
-    } while (this.state.keypairs?.some(k => (
+    } while (this.state.keypairs?.some((k) => (
       k.shortName.toLowerCase() === this.state.roleKeyName.toLowerCase()
     )));
   }
@@ -210,7 +213,9 @@ export class ApplyController extends Controller<State, ITransport> {
     if (!this.currentGroup || this.currentOpeningId < 0) {
       throw new Error('Trying to apply to unfetched opening');
     }
+
     this.updateRoleKeyName();
+
     return this.transport.applyToOpening(
       this.currentGroup,
       this.currentOpeningId,
@@ -227,7 +232,8 @@ export const ApplyView = View<ApplyController, State>(
   ({ state, controller, params }) => {
     useEffect(() => {
       controller.findOpening(params.get('id'), params.get('group'));
-    }, [params.get('id'), params.get('group')])
+    }, [params.get('id'), params.get('group')]);
+
     return (
       <FlowModal
         role={state.role!}

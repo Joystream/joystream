@@ -14,7 +14,7 @@ export default {
 export const RolesPage = () => {
   const tab = (
     <Container>
-      <Container className="outer">
+      <Container className='outer'>
         <ContentCuratorsSection />
       </Container>
     </Container>

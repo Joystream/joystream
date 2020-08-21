@@ -11,8 +11,7 @@ import { View } from '@polkadot/joy-utils/react/hocs';
 import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 import { QueueTxExtrinsicAdd } from '@polkadot/react-components/Status/types';
 
-import {
-  Accordion,
+import { Accordion,
   Button,
   Card,
   Checkbox,
@@ -26,44 +25,33 @@ import {
   Message,
   Modal,
   Table,
-  TextArea
-} from 'semantic-ui-react';
+  TextArea } from 'semantic-ui-react';
 
 import { ITransport } from '../transport';
 
-import {
-  Application,
+import { Application,
   ApplicationStage,
   ActivateOpeningAt,
   Opening,
   OpeningStage,
   StakingPolicy,
   StakingAmountLimitModeKeys,
-  StakingAmountLimitMode
-} from '@joystream/types/hiring';
+  StakingAmountLimitMode } from '@joystream/types/hiring';
 
-import {
-  Membership,
-  MemberId
-} from '@joystream/types/members';
+import { Membership,
+  MemberId } from '@joystream/types/members';
 
 import { Stake, StakeId } from '@joystream/types/stake';
 
-import {
-  CuratorApplication, CuratorApplicationId,
+import { CuratorApplication, CuratorApplicationId,
   CuratorOpening,
-  IOpeningPolicyCommitment, CuratorOpeningId
-} from '@joystream/types/content-working-group';
+  IOpeningPolicyCommitment, CuratorOpeningId } from '@joystream/types/content-working-group';
 
-import {
-  classifyOpeningStage,
+import { classifyOpeningStage,
   OpeningStageClassification,
-  OpeningState
-} from '../classifiers';
+  OpeningState } from '../classifiers';
 
-import {
-  openingDescription
-} from '../openingStateMarkup';
+import { openingDescription } from '../openingStateMarkup';
 
 import { Add, Zero } from '../balances';
 import { createMock } from '@joystream/types';
@@ -110,46 +98,46 @@ type State = {
 
 function newHRT (title: string): Text {
   return createMock('Text', JSON.stringify({
-      version: 1,
-      headline: 'some headline',
-      job: {
-        title: title,
-        description: 'some job description'
-      },
-      application: {
-        sections: [
-          {
-            title: 'About you',
-            questions: [
-              {
-                title: 'your name',
-                type: 'text'
-              }
-            ]
-          },
-          {
-            title: 'Something else',
-            questions: [
-              {
-                title: 'another thing',
-                type: 'text area'
-              }
-            ]
-          }
-        ]
-      },
-      reward: '10 JOY per block',
-      creator: {
-        membership: {
-          handle: 'ben'
+    version: 1,
+    headline: 'some headline',
+    job: {
+      title: title,
+      description: 'some job description'
+    },
+    application: {
+      sections: [
+        {
+          title: 'About you',
+          questions: [
+            {
+              title: 'your name',
+              type: 'text'
+            }
+          ]
+        },
+        {
+          title: 'Something else',
+          questions: [
+            {
+              title: 'another thing',
+              type: 'text area'
+            }
+          ]
         }
-      },
-      process: {
-        details: [
-          'Some custom detail'
-        ]
+      ]
+    },
+    reward: '10 JOY per block',
+    creator: {
+      membership: {
+        handle: 'ben'
       }
-    })
+    },
+    process: {
+      details: [
+        'Some custom detail'
+      ]
+    }
+  })
   );
 }
 
@@ -379,15 +367,19 @@ export class AdminController extends Controller<State, ITransport> {
 
   startAcceptingApplications (accountId: string, id = 0) {
     const tx = this.api.tx.contentWorkingGroup.acceptCuratorApplications(id);
+
     this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
   async applyAsACurator (creatorAddress: string, openingId: number) {
     const membershipIds = (await this.api.query.members.memberIdsByControllerAccountId(creatorAddress)) as Vec<MemberId>;
+
     if (membershipIds.length === 0) {
       console.error('No membship ID associated with this address');
+
       return;
     }
+
     const tx = this.api.tx.contentWorkingGroup.applyOnCuratorOpening(
       membershipIds[0],
       openingId,
@@ -396,11 +388,13 @@ export class AdminController extends Controller<State, ITransport> {
       400,
       'This is my application'
     );
+
     this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId: creatorAddress });
   }
 
   beginApplicantReview (accountId: string, openingId: number) {
     const tx = this.api.tx.contentWorkingGroup.beginCuratorApplicantReview(openingId);
+
     this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
@@ -410,19 +404,23 @@ export class AdminController extends Controller<State, ITransport> {
       applications,
       null
     );
+
     this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
   protected async profile (id: MemberId): Promise<Membership> {
     const member = (await this.api.query.members.membershipById(id)) as Membership;
+
     if (member.isEmpty) {
       throw new Error(`Expected member profile not found! (id: ${id.toString()}`);
     }
+
     return member;
   }
 
   protected async stakeValue (stakeId: StakeId): Promise<Balance> {
     const stake = await this.api.query.stake.stakes(stakeId) as Stake;
+
     return stake.value;
   }
 
@@ -446,6 +444,7 @@ export class AdminController extends Controller<State, ITransport> {
     this.state.openings = new Map<number, opening>();
 
     const nextOpeningId = await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as CuratorOpeningId;
+
     for (let i = nextOpeningId.toNumber() - 1; i >= 0; i--) {
       const curatorOpening = await this.api.query.contentWorkingGroup.curatorOpeningById(i) as CuratorOpening;
 
@@ -467,6 +466,7 @@ export class AdminController extends Controller<State, ITransport> {
     }
 
     const nextAppid = await this.api.query.contentWorkingGroup.nextCuratorApplicationId() as CuratorApplicationId;
+
     for (let i = 0; i < nextAppid.toNumber(); i++) {
       const cApplication = await this.api.query.contentWorkingGroup.curatorApplicationById(i) as CuratorApplication;
 
@@ -507,12 +507,14 @@ type AdminContainerProps = {
   state: State;
   controller: AdminController;
 }
+
 const AdminContainer = ({ state, controller }: AdminContainerProps) => {
   const address = useMyAccount().state.address;
   const containerRef = useRef<HTMLDivElement>(null);
+
   return (
     <div ref={containerRef}>
-      <Container className="admin">
+      <Container className='admin'>
         <Card fluid color='orange'>
           <Card.Content>
             <Dropdown text='Create new opening...'>
@@ -544,7 +546,7 @@ const AdminContainer = ({ state, controller }: AdminContainerProps) => {
           </Card.Content>
         </Card>
         {
-          [...state.openings.keys()].map(key => <OpeningView key={key} opening={state.openings.get(key) as opening} controller={controller} />)
+          [...state.openings.keys()].map((key) => <OpeningView key={key} opening={state.openings.get(key) as opening} controller={controller} />)
         }
         <br />
       </Container>
@@ -606,6 +608,7 @@ const NewOpening = (props: NewOpeningProps) => {
 
   const onChangePolicyField = <PolicyKey extends keyof policyDescriptor>(fieldName: PolicyKey, value: policyDescriptor[PolicyKey]) => {
     const newState = { ...policy };
+
     newState[fieldName] = value;
     setPolicy(newState);
   };
@@ -642,14 +645,17 @@ const NewOpening = (props: NewOpeningProps) => {
   ) => {
     if (mode === '') {
       const policyField = policy[fieldName];
+
       mode = policyField && policyField.isSome
         ? (policyField.unwrap().amount_mode.type as StakingAmountLimitModeKeys)
         : StakingAmountLimitModeKeys.Exact; // Default
     }
+
     const value = createStakingPolicyOpt(
       stakeValue,
       mode === StakingAmountLimitModeKeys.Exact ? STAKING_MODE_EXACT : STAKING_MODE_AT_LEAST
     );
+
     onChangePolicyField(fieldName, value);
   };
 
@@ -686,7 +692,7 @@ const NewOpening = (props: NewOpeningProps) => {
         />
         {showExactBlock === true &&
           <Input
-            type="number"
+            type='number'
             value={exactBlock}
             onChange={onChangeExactBlock}
           />
@@ -696,7 +702,7 @@ const NewOpening = (props: NewOpeningProps) => {
       <Form.Field>
         <label>Max review period length (in blocks)</label>
         <Input
-          type="number"
+          type='number'
           value={policy.max_review_period_length.toNumber()}
           onChange={(e: any, { value }: any) => onChangePolicyField('max_review_period_length', createMock('u32', value))}
         />
@@ -704,7 +710,7 @@ const NewOpening = (props: NewOpeningProps) => {
 
       <Form.Field>
         <label>Application staking policy</label>
-        <Checkbox label="Require an application stake" checked={requireAppStakingPolicy} onChange={(e, { checked }: any) => onStakeModeCheckboxChange(setRequireAppStakingPolicy, 'application_staking_policy', checked, 0)} />
+        <Checkbox label='Require an application stake' checked={requireAppStakingPolicy} onChange={(e, { checked }: any) => onStakeModeCheckboxChange(setRequireAppStakingPolicy, 'application_staking_policy', checked, 0)} />
         {requireAppStakingPolicy && (
           <Message>
             <label>Stake mode</label>
@@ -717,7 +723,7 @@ const NewOpening = (props: NewOpeningProps) => {
 
             <label>Stake value</label>
             <Input
-              type="number"
+              type='number'
               value={policy.application_staking_policy?.unwrap().amount.toNumber()}
               onChange={(e: any, { value }: any) => changeStakingMode('application_staking_policy', '', value)}
             />
@@ -727,7 +733,7 @@ const NewOpening = (props: NewOpeningProps) => {
 
       <Form.Field>
         <label>Role staking policy</label>
-        <Checkbox label="Require a role stake" checked={requireRoleStakingPolicy} onChange={(e, { checked }: any) => onStakeModeCheckboxChange(setRequireRoleStakingPolicy, 'role_staking_policy', checked, 0)} />
+        <Checkbox label='Require a role stake' checked={requireRoleStakingPolicy} onChange={(e, { checked }: any) => onStakeModeCheckboxChange(setRequireRoleStakingPolicy, 'role_staking_policy', checked, 0)} />
         {requireRoleStakingPolicy && (
           <Message>
             <label>Stake mode</label>
@@ -740,7 +746,7 @@ const NewOpening = (props: NewOpeningProps) => {
 
             <label>Stake value</label>
             <Input
-              type="number"
+              type='number'
               value={policy.role_staking_policy?.unwrap().amount.toNumber()}
               onChange={(e: any, { value }: any) => changeStakingMode('role_staking_policy', '', value)}
             />
@@ -752,7 +758,7 @@ const NewOpening = (props: NewOpeningProps) => {
         <TextArea value={text} rows={10} onChange={(e: any, { value }: any) => setText(value)} />
       </Form.Field>
 
-      <Form.Field align="right">
+      <Form.Field align='right'>
         <Button positive onClick={() => submit()}>Create opening</Button>
       </Form.Field>
     </Form>
@@ -771,7 +777,7 @@ const OpeningView = (props: OpeningViewProps) => {
 
   const toggleApplication = (id: number) => {
     if (selected.includes(id)) {
-      setSelected(selected.filter(v => v !== id));
+      setSelected(selected.filter((v) => v !== id));
     } else {
       setSelected([...selected, id]);
     }
@@ -782,7 +788,7 @@ const OpeningView = (props: OpeningViewProps) => {
   switch (props.opening.classification.state) {
     case OpeningState.InReview:
       CTAs = (
-        <Container align="right">
+        <Container align='right'>
           <Button onClick={() => { props.controller.acceptCuratorApplications(address, props.opening.curatorId, selected.sort()); }}>Accept curator applications</Button>
         </Container>
       );
@@ -792,7 +798,7 @@ const OpeningView = (props: OpeningViewProps) => {
     <Card fluid>
       <Card.Content>
         <Card.Header>
-          <Label attached="top right">Opening</Label>
+          <Label attached='top right'>Opening</Label>
           <Link to={'/working-groups/opportunities/curators/' + props.opening.curatorId}>
             {props.opening.title}
           </Link>
@@ -890,7 +896,7 @@ const OpeningView = (props: OpeningViewProps) => {
                 </Dropdown.Menu>
               </Dropdown>
             </Grid.Column>
-            <Grid.Column align="right">
+            <Grid.Column align='right'>
             </Grid.Column>
           </Grid.Row>
         </Grid>

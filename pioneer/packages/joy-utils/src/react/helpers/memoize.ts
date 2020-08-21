@@ -18,6 +18,7 @@ function getNewFunction (originalMethod: () => void) {
           value: new Map<any, any>()
         });
       }
+
       const myMap: Map<any, any> = this[propMapName];
       const hashKey = args[0];
 

@@ -30,6 +30,7 @@ export const AvgDelta = (xs: Balance[]): Balance => {
 // An average value to 'step' up balances, like on the nudge controls for a slider
 export const Step = (xs: Balance[], ticks = 10): Balance => createMock('Balance', Avg(xs).divn(ticks));
 export const Min = (x: Balance, min: Balance = One): Balance => x.gte(min) ? x : min;
+
 export const Sort = (xs: Balance[]): Balance[] => {
   xs.sort((a, b): number => {
     if (a.eq(b)) {
@@ -37,7 +38,9 @@ export const Sort = (xs: Balance[]): Balance[] => {
     } else if (a.gt(b)) {
       return 1;
     }
+
     return -1;
   });
+
   return xs;
 };

@@ -7,10 +7,8 @@ import { ITransport } from '../transport';
 
 import { MemberId } from '@joystream/types/members';
 
-import {
-  WorkingGroupOpening,
-  OpeningsView
-} from './Opportunities';
+import { WorkingGroupOpening,
+  OpeningsView } from './Opportunities';
 
 import { AvailableGroups, WorkingGroups } from '../working_groups';
 
@@ -25,12 +23,12 @@ export class OpportunitiesController extends Controller<State, ITransport> {
     super(transport, initialState);
   }
 
-  refreshState() {
+  refreshState () {
     this.getOpportunities();
     this.getBlocktime();
   }
 
-  async setMemberId(memberId?: MemberId) {
+  async setMemberId (memberId?: MemberId) {
     this.state.memberId = memberId;
     this.dispatch();
   }

@@ -1,10 +1,8 @@
 import { Opening } from '@joystream/types/hiring';
 
-import {
-  OpeningState,
+import { OpeningState,
   IBlockQueryer,
-  classifyOpeningStage, OpeningStageClassification
-} from './classifiers';
+  classifyOpeningStage, OpeningStageClassification } from './classifiers';
 import { createMock } from '@joystream/types';
 
 class MockBlockQueryer {

@@ -5,14 +5,10 @@ import * as faker from 'faker';
 import { Balance } from '@polkadot/types/interfaces';
 
 import { mockStage } from '../mocks';
-import {
-  OpeningView,
-  OpeningStakeAndApplicationStatus
-} from './Opportunities';
+import { OpeningView,
+  OpeningStakeAndApplicationStatus } from './Opportunities';
 
-import {
-  stateMarkup
-} from '../openingStateMarkup';
+import { stateMarkup } from '../openingStateMarkup';
 
 import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequirement';
 import { OpeningStageClassification, OpeningState } from '../classifiers';
@@ -37,13 +33,17 @@ export default {
 
 export function tomorrow (): Date {
   const d = new Date();
+
   d.setDate(d.getDate() + 1);
+
   return d;
 }
 
 export function yesterday (): Date {
   const d = new Date();
+
   d.setDate(d.getDate() - 1);
+
   return d;
 }
 
@@ -95,9 +95,11 @@ export const opening = createMock('Opening', {
 
 const stateOptions: any = (function () {
   const options: any = {};
+
   stateMarkup.forEach((value, key) => {
     options[value.description] = key;
   });
+
   return options;
 }());
 

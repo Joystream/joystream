@@ -6,8 +6,7 @@ import { Balance } from '@polkadot/types/interfaces';
 
 import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 
-import {
-  Accordion,
+import { Accordion,
   Button,
   Container,
   Form,
@@ -20,24 +19,19 @@ import {
   Segment,
   SemanticICONS,
   Step,
-  Table
-} from 'semantic-ui-react';
+  Table } from 'semantic-ui-react';
 
 import Identicon from '@polkadot/react-identicon';
 import AccountId from '@polkadot/types/generic/AccountId';
 
-import {
-  GenericJoyStreamRoleSchema,
+import { GenericJoyStreamRoleSchema,
   ApplicationDetails,
   QuestionField,
-  QuestionSection
-} from '@joystream/types/hiring/schemas/role.schema.typings';
+  QuestionSection } from '@joystream/types/hiring/schemas/role.schema.typings';
 
-import {
-  OpeningBodyApplicationsStatus, OpeningStakeAndApplicationStatus,
+import { OpeningBodyApplicationsStatus, OpeningStakeAndApplicationStatus,
   ApplicationCount,
-  StakeRequirementProps
-} from '../tabs/Opportunities';
+  StakeRequirementProps } from '../tabs/Opportunities';
 import { IStakeRequirement } from '../StakeRequirement';
 
 import { Loadable } from '@polkadot/joy-utils/react/hocs';
@@ -50,6 +44,7 @@ type accordionProps = {
 
 function ModalAccordion (props: React.PropsWithChildren<accordionProps>) {
   const [open, setOpen] = useState(false);
+
   return (
     <Accordion>
       <Accordion.Title index={0} active={open} onClick={() => { setOpen(!open); }} >
@@ -133,12 +128,13 @@ export function FundSourceSelector (props: FundSourceSelectorProps & FundSourceC
   });
 
   let passphraseCallback = null;
+
   if (props.passphraseCallback) {
     passphraseCallback = (
       <Form.Field>
         <label>Unlock key with passphrase</label>
         <Input placeholder='Passphrase'
-          type="password"
+          type='password'
           onChange={onChangeInput}
         />
       </Form.Field>
@@ -146,7 +142,7 @@ export function FundSourceSelector (props: FundSourceSelectorProps & FundSourceC
   }
 
   return (
-    <Form className="fund-source-selector">
+    <Form className='fund-source-selector'>
       <Form.Field>
         <label>Select source of funds</label>
         <Form.Dropdown
@@ -173,6 +169,7 @@ function rankIcon (estimatedSlot: number, slots: number): SemanticICONS {
   } else if (estimatedSlot <= slots) { // Places 67-100 if slotsCount == 100
     return 'thermometer quarter';
   }
+
   return 'thermometer empty'; // Places >100 for slotsCount == 100
 }
 
@@ -194,27 +191,31 @@ export function StakeRankSelector (props: StakeRankSelectorProps) {
   const stakeSufficient = props.stake.gte(minStake);
 
   const ticks = [];
+
   for (let i = 0; i < slotCount; i++) {
-    ticks.push(<div key={i} className="tick" style={{ width: (100 / slotCount) + '%' }}>{slotCount - i}</div>);
+    ticks.push(<div key={i} className='tick' style={{ width: (100 / slotCount) + '%' }}>{slotCount - i}</div>);
   }
 
   let estimatedSlot = slotCount + 1;
-  props.slots.forEach(slotStake => props.stake.gt(slotStake.sub(props.otherStake)) && --estimatedSlot);
+
+  props.slots.forEach((slotStake) => props.stake.gt(slotStake.sub(props.otherStake)) && --estimatedSlot);
 
   const changeValue = (e: any, { value }: any) => {
     const newStake = createMock('Balance', value);
+
     props.setStake(newStake);
   };
 
   const slider = null;
+
   return (
-    <Container className="stake-rank-selector">
+    <Container className='stake-rank-selector'>
       <h4>Choose a stake</h4>
-      <Container className="controls">
-        <Input label="JOY"
-          labelPosition="right"
+      <Container className='controls'>
+        <Input label='JOY'
+          labelPosition='right'
           onChange={changeValue}
-          type="number"
+          type='number'
           step={slotCount > 1 ? props.step.toNumber() : 1}
           value={props.stake.toNumber() > 0 ? props.stake.toNumber() : 0}
           min={minStake}
@@ -228,14 +229,14 @@ export function StakeRankSelector (props: StakeRankSelectorProps) {
           </Label>
         ) }
         <Label size='large' color={stakeSufficient ? 'green' : 'red'}>
-          <Icon name="shield" />
+          <Icon name='shield' />
           Your stake
           <Label.Detail>{formatBalance(props.stake)}</Label.Detail>
         </Label>
       </Container>
       {slider}
       { !stakeSufficient && (
-        <Label color="red">Currently you need to stake at least {formatBalance(minStake)} to be considered for this position!</Label>
+        <Label color='red'>Currently you need to stake at least {formatBalance(minStake)} to be considered for this position!</Label>
       ) }
     </Container>
   );
@@ -295,6 +296,7 @@ export function ProgressStepsView (props: ProgressStepsProps) {
       display: true
     }
   ];
+
   return (
     <Step.Group stackable='tablet'>
       {steps.map((step, key) => (
@@ -322,7 +324,7 @@ type CTAProps = {
 
 function CTA (props: CTAProps) {
   return (
-    <Container className="cta">
+    <Container className='cta'>
       <Button
         content={props.negativeLabel}
         icon={props.negativeIcon}
@@ -348,6 +350,7 @@ function stakeCount (props: StakeRequirementProps): number {
 
 function zeroOrTwoStakes (props: StakeRequirementProps): boolean {
   const count = stakeCount(props);
+
   return (count === 0 || count === 2);
 }
 
@@ -389,7 +392,7 @@ export function ConfirmStakesStage (props: ConfirmStakesStageProps & StageTransi
   };
 
   return (
-    <Container className="content">
+    <Container className='content'>
       <ConfirmStakes {...props} />
       <CTA
         negativeLabel='Cancel'
@@ -415,11 +418,12 @@ function ConfirmStakes (props: StakeSelectorProps) {
 
 function ConfirmStakes1Up (props: StakeSelectorProps) {
   let applicationStake = null;
+
   if (props.applications.requiredApplicationStake.anyRequirement()) {
     applicationStake = <CaptureStake1Up
-      name="application stake"
-      stakeReturnPolicy="after the opening is resolved or your application ends"
-      colour="yellow"
+      name='application stake'
+      stakeReturnPolicy='after the opening is resolved or your application ends'
+      colour='yellow'
       requirement={props.applications.requiredApplicationStake}
       value={props.selectedApplicationStake}
       setValue={props.setSelectedApplicationStake}
@@ -431,11 +435,12 @@ function ConfirmStakes1Up (props: StakeSelectorProps) {
   }
 
   let roleStake = null;
+
   if (props.applications.requiredRoleStake.anyRequirement()) {
     roleStake = <CaptureStake1Up
-      name="role stake"
-      stakeReturnPolicy="after the opening is resolved or your application ends"
-      colour="red"
+      name='role stake'
+      stakeReturnPolicy='after the opening is resolved or your application ends'
+      colour='red'
       requirement={props.applications.requiredRoleStake}
       value={props.selectedRoleStake}
       setValue={props.setSelectedRoleStake}
@@ -447,7 +452,7 @@ function ConfirmStakes1Up (props: StakeSelectorProps) {
   }
 
   return (
-    <Container className="stakes 1-up">
+    <Container className='stakes 1-up'>
       {applicationStake}
       {roleStake}
     </Container>
@@ -474,24 +479,27 @@ export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
   const valid = combined.gte(minStake);
 
   let estimatedSlot = slotCount + 1;
-  props.slots.forEach(slotStake => combined.gt(slotStake) && --estimatedSlot);
+
+  props.slots.forEach((slotStake) => combined.gt(slotStake) && --estimatedSlot);
 
   const ticks = [];
+
   for (let i = 0; i < slotCount; i++) {
-    ticks.push(<div key={i} className="tick" style={{ width: (100 / slotCount) + '%' }}>{i + 1}</div>);
+    ticks.push(<div key={i} className='tick' style={{ width: (100 / slotCount) + '%' }}>{i + 1}</div>);
   }
 
-  const tickLabel = <div className="ui pointing below label" style={{ left: ((100 / slotCount) * (estimatedSlot - 1)) + '%' }}>
+  const tickLabel = <div className='ui pointing below label' style={{ left: ((100 / slotCount) * (estimatedSlot - 1)) + '%' }}>
     Your rank
-    <div className="detail">{estimatedSlot}/{props.applications.maxNumberOfApplications}</div>
+    <div className='detail'>{estimatedSlot}/{props.applications.maxNumberOfApplications}</div>
   </div>;
 
   let tickContainer = null;
+
   if (slotCount > 3) {
     tickContainer = (
-      <div className="ticks">
+      <div className='ticks'>
         {tickLabel}
-        <div className="scale">
+        <div className='scale'>
           {ticks}
         </div>
       </div>
@@ -499,6 +507,7 @@ export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
   }
 
   let defactoMinStakeMessage = null;
+
   if (props.applications.numberOfApplications >= props.applications.maxNumberOfApplications) {
     defactoMinStakeMessage = (
       <span>However, in order to be in the top {props.applications.maxNumberOfApplications} applications, you wil need to stake a combined total of more than <strong>{formatBalance(minStake)}</strong>.</span>
@@ -506,6 +515,7 @@ export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
   }
 
   let rankExplanation = <p>This role requires a combined stake (application stake plus role stake) of {formatBalance(minStake)}.</p>;
+
   if (props.applications.maxNumberOfApplications > 0) {
     rankExplanation = (
       <Container>
@@ -521,12 +531,12 @@ export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
   }
 
   return (
-    <Container className="confirm-stakes-2up">
+    <Container className='confirm-stakes-2up'>
       <Message info>
-        <Message.Header><Icon name="shield" /> This role requires a minimum combined stake</Message.Header>
+        <Message.Header><Icon name='shield' /> This role requires a minimum combined stake</Message.Header>
         <Message.Content>
           {rankExplanation}
-          <Grid stackable className="two-up">
+          <Grid stackable className='two-up'>
             <Grid.Row columns={2}>
               <Grid.Column>
                 <h5>Application stake</h5>
@@ -566,7 +576,7 @@ export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
               </Grid.Column>
             </Grid.Row>
             <Grid.Row columns={1}>
-              <Grid.Column className="center">
+              <Grid.Column className='center'>
                 <Label color='teal'>
                   <Icon name='shield' />
                   Minimum required stake
@@ -605,18 +615,21 @@ function StakeRankMiniSelector (props: StakeRankMiniSelectorProps) {
   const changeValue = (e: any, { value }: any) => {
     if (value < 0) {
       props.setValue(createMock('Balance', 0));
+
       return;
     }
+
     const newStake = createMock('Balance', value);
+
     props.setValue(newStake);
   };
 
   return (
-    <Container className="controls">
-      <Input label="JOY" fluid
-        labelPosition="right"
+    <Container className='controls'>
+      <Input label='JOY' fluid
+        labelPosition='right'
         onChange={changeValue}
-        type="number"
+        type='number'
         min={props.min.toNumber()}
         step={props.step.toNumber()}
         value={props.value.toNumber() > 0 ? props.value.toNumber() : null}
@@ -646,11 +659,13 @@ type CaptureStake1UpProps = {
 // this context, so let's just go with it.
 function indefiniteArticle (noun: string): 'a' | 'an' {
   const startsWithVowel = /^([aeiou])/i;
+
   return startsWithVowel.test(noun) ? 'an' : 'a';
 }
 
 function CaptureStake1Up (props: CaptureStake1UpProps) {
   let limit = null;
+
   if (props.maxNumberOfApplications > 0) {
     limit = (
       <p>
@@ -662,6 +677,7 @@ function CaptureStake1Up (props: CaptureStake1UpProps) {
 
   let slider = null;
   let atLeast = null;
+
   if (props.requirement.atLeast()) {
     slider = <StakeRankSelector
       {...props}
@@ -673,7 +689,7 @@ function CaptureStake1Up (props: CaptureStake1UpProps) {
 
   return (
     <Message info={props.colour === 'yellow'} warning={props.colour === 'red'} className={props.name}>
-      <Message.Header><Icon name="shield" /> {props.name}</Message.Header>
+      <Message.Header><Icon name='shield' /> {props.name}</Message.Header>
       <Message.Content>
         <p>
           <span>This role requires {indefiniteArticle(props.name)} <strong>{props.name}</strong> of {atLeast}<strong>{formatBalance(props.requirement.value)}</strong>.</span>
@@ -698,18 +714,23 @@ interface FinalDataMap {
 
 function applicationDetailsToObject (input: ApplicationDetails, data: FinalDataMap): any {
   const output: any = {};
+
   if (!input.sections) {
     return {};
   }
+
   input.sections.map((section) => {
     section.questions.map((question) => {
       let value: any = '';
+
       if (data[section.title] && data[section.title][question.title]) {
         value = data[section.title][question.title];
       }
+
       output[questionHash(section, question)] = value;
     });
   });
+
   return output;
 }
 
@@ -719,16 +740,20 @@ interface QuestionDataMap {
 
 function applicationDetailsToDataObject (input: ApplicationDetails, data: QuestionDataMap): any {
   const output: any = {};
+
   if (!input.sections) {
     return {};
   }
+
   input.sections.map((section) => {
     output[section.title] = {};
     section.questions.map((question) => {
       const hash = questionHash(section, question);
+
       output[section.title][question.title] = data[hash];
     });
   });
+
   return output;
 }
 
@@ -834,10 +859,10 @@ export function ApplicationDetailsStage (props: ApplicationDetailsStageProps & S
   };
 
   return (
-    <Container className="content application-questions">
+    <Container className='content application-questions'>
       <Form error={completed && !valid}>
         {props.applicationDetails && props.applicationDetails.sections && props.applicationDetails.sections.map((section, key) => (
-          <Segment padded className="section" key={key}>
+          <Segment padded className='section' key={key}>
             <h4><Label attached='top'>{section.title}</Label></h4>
             {section.questions.map((question, key) =>
               questionField(section, question, key)
@@ -878,14 +903,16 @@ export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
     }
 
     const idx = props.keypairs.findIndex((a: keyPairDetails) => a.accountId.eq(props.keyAddress));
+
     if (idx === -1) {
       return false;
     }
+
     return props.keypairs[idx].balance.gte(props.totalStake);
   };
 
   return (
-    <Container className="content">
+    <Container className='content'>
       <p>
         You need to make a transaction to apply for this role.
       </p>
@@ -893,7 +920,7 @@ export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
         Before the transaction, a new account key, called a <em>role key</em>, will be generated and downloaded automatically.
         You will need this role key to perform any duties in the role, so be sure to keep a backup.
       </p>
-      <ModalAccordion title="Transaction details">
+      <ModalAccordion title='Transaction details'>
         <Table basic='very'>
           <Table.Body>
             {[...props.transactionDetails].map((v, k) => (
@@ -934,7 +961,7 @@ export type DoneStageProps = {
 
 export function DoneStage (props: DoneStageProps) {
   return (
-    <Container className="content">
+    <Container className='content'>
       <h4>Application submitted!</h4>
       <p>
         Your application is <strong>#<ApplicationCount {...props.applications} applied={true} /></strong>.
@@ -942,8 +969,8 @@ export function DoneStage (props: DoneStageProps) {
       </p>
       <p>
         You can track the progress of your
-        application in the <Link to="#working-group/my-roles">My roles and applications</Link> section. Note that your application is attached
-        to your role key (see below).  If you have any issues, you can message the group lead in in the <Link to="#forum">Forum</Link> or contact them directly.
+        application in the <Link to='#working-group/my-roles'>My roles and applications</Link> section. Note that your application is attached
+        to your role key (see below).  If you have any issues, you can message the group lead in in the <Link to='#forum'>Forum</Link> or contact them directly.
       </p>
 
       <h4>Your new role key</h4>
@@ -953,7 +980,7 @@ export function DoneStage (props: DoneStageProps) {
       <p>
         {'We\'ve generated a new role key, '}<strong>{props.roleKeyName}</strong>, automatically.
         A copy of the backup file should have been downloaded, or you can
-        get a backup from the <Link to="/accounts">My account</Link> section.
+        get a backup from the <Link to='/accounts'>My account</Link> section.
       </p>
       <p>
         You can also switch your role key using the Accounts selector in the top right of the screen. It works like
@@ -969,7 +996,7 @@ export function DoneStage (props: DoneStageProps) {
         <Icon name='unlock' />
         <strong>
           This role key has been generated with no password!
-          We strongly recommend that you set a password for it in the <Link to="/accounts">My account</Link> section.
+          We strongly recommend that you set a password for it in the <Link to='/accounts'>My account</Link> section.
         </strong>
       </Message>
     </Container>
@@ -1014,7 +1041,7 @@ export const FlowModal = Loadable<FlowModalProps>(
     'keypairs',
     'slots'
   ],
-  props => {
+  (props) => {
     const {
       applicationStake, setApplicationStake,
       roleStake, setRoleStake,
@@ -1026,6 +1053,7 @@ export const FlowModal = Loadable<FlowModalProps>(
     } = props;
 
     const accContext = useMyAccount();
+
     useEffect(() => {
       if (txKeyAddress.isEmpty) {
         setTxKeyAddress(createMock('AccountId', accContext.state.address));
@@ -1033,11 +1061,14 @@ export const FlowModal = Loadable<FlowModalProps>(
     }, [txKeyAddress]);
 
     const history = useHistory();
+
     const cancel = () => {
       if (history.length > 1) {
         history.goBack();
+
         return;
       }
+
       history.push('/working-groups/');
     };
 
@@ -1092,56 +1123,56 @@ export const FlowModal = Loadable<FlowModalProps>(
     const cancelText = complete ? 'Close' : 'Cancel application';
 
     return (
-      <Container className="apply-flow">
-        <div className="dimmer"></div>
-        <Container className="content">
-          <Grid columns="equal">
-            <Grid.Column width={11} className="title">
+      <Container className='apply-flow'>
+        <div className='dimmer'></div>
+        <Container className='content'>
+          <Grid columns='equal'>
+            <Grid.Column width={11} className='title'>
               <Label as='h1' color='green' size='huge' ribbon>
                 <Icon name='heart' />
                 Applying for
                 <Label.Detail>{props.role.job.title}</Label.Detail>
               </Label>
             </Grid.Column>
-            <Grid.Column width={5} className="cancel">
+            <Grid.Column width={5} className='cancel'>
               <a onClick={() => cancel()}>
                 <Icon name='cancel' /> {cancelText}
               </a>
             </Grid.Column>
           </Grid>
-          <Grid columns="equal">
-            <Grid.Column width={11} className="main">
+          <Grid columns='equal'>
+            <Grid.Column width={11} className='main'>
               <ProgressStepsView activeStep={activeStep} hasConfirmStep={props.hasConfirmStep} />
               { activeStep === ProgressSteps.ConfirmStakes && (<ConfirmStakesStage
-                  {...props}
-                  nextTransition={enterApplicationDetailsState}
-                  prevTransition={cancel}
-                  {...setStakeProps}
-                />
+                {...props}
+                nextTransition={enterApplicationDetailsState}
+                prevTransition={cancel}
+                {...setStakeProps}
+              />
               ) }
               { activeStep === ProgressSteps.ApplicationDetails && (<ApplicationDetailsStage
-                  setData={setAppDetails}
-                  data={appDetails}
-                  applicationDetails={props.role.application}
-                  nextTransition={enterSubmitApplicationState}
-                  prevTransition={() => { props.hasConfirmStep ? enterConfirmStakeState() : cancel(); }}
-                />
+                setData={setAppDetails}
+                data={appDetails}
+                applicationDetails={props.role.application}
+                nextTransition={enterSubmitApplicationState}
+                prevTransition={() => { props.hasConfirmStep ? enterConfirmStakeState() : cancel(); }}
+              />
               ) }
               { activeStep === ProgressSteps.SubmitApplication && (<SubmitApplicationStage
-                  {...props}
-                  nextTransition={enterDoneState}
-                  prevTransition={enterApplicationDetailsState}
-                  keyAddress={txKeyAddress}
-                  setKeyAddress={setTxKeyAddress}
-                  transactionDetails={props.transactionDetails}
-                  totalStake={Add(applicationStake, roleStake)}
-                />
-               ) }
+                {...props}
+                nextTransition={enterDoneState}
+                prevTransition={enterApplicationDetailsState}
+                keyAddress={txKeyAddress}
+                setKeyAddress={setTxKeyAddress}
+                transactionDetails={props.transactionDetails}
+                totalStake={Add(applicationStake, roleStake)}
+              />
+              ) }
               { activeStep === ProgressSteps.Done && (<DoneStage {...props} roleKeyName={props.roleKeyName} />) }
             </Grid.Column>
-            <Grid.Column width={5} className="summary">
+            <Grid.Column width={5} className='summary'>
               <Header as='h3'>{props.role.headline}</Header>
-              <Label as='h1' size='large' ribbon='right' className="fluid standout">
+              <Label as='h1' size='large' ribbon='right' className='fluid standout'>
                 Reward
                 <Label.Detail>{props.role.reward}</Label.Detail>
               </Label>
@@ -1150,8 +1181,8 @@ export const FlowModal = Loadable<FlowModalProps>(
           </Grid>
         </Container>
         {txInProgress &&
-          <div className="loading">
-            <div className="spinner"></div>
+          <div className='loading'>
+            <div className='spinner'></div>
           </div>
         }
       </Container>

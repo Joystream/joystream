@@ -3,8 +3,7 @@ import moment from 'moment';
 import { Option } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
-import {
-  Application,
+import { Application,
   AcceptingApplications, ReviewPeriod,
   WaitingToBeingOpeningStageVariant,
   ActiveOpeningStageVariant,
@@ -16,15 +15,12 @@ import {
   ApplicationStageKeys,
   ApplicationDeactivationCause, ApplicationDeactivationCauseKeys,
   UnstakingApplicationStage,
-  InactiveApplicationStage
-} from '@joystream/types/hiring';
+  InactiveApplicationStage } from '@joystream/types/hiring';
 
-import {
-  StakeRequirement,
+import { StakeRequirement,
   ApplicationStakeRequirement,
   RoleStakeRequirement,
-  StakeType
-} from './StakeRequirement';
+  StakeType } from './StakeRequirement';
 import { createMock } from '@joystream/types';
 
 export enum CancelledReason {
@@ -62,6 +58,7 @@ async function classifyActiveOpeningStageAcceptingApplications (
   stage: AcceptingApplications
 ): Promise<OpeningStageClassification> {
   const blockNumber = stage.started_accepting_applicants_at_block.toNumber();
+
   return {
     state: OpeningState.AcceptingApplications,
     starting_block: blockNumber,
@@ -138,6 +135,7 @@ async function classifyActiveOpeningStage (
       stage.stage.asType('AcceptingApplications')
     );
   }
+
   if (stage.stage.isOfType('ReviewPeriod')) {
     return classifyActiveOpeningStageReviewPeriod(
       opening,
@@ -145,6 +143,7 @@ async function classifyActiveOpeningStage (
       stage.stage.asType('ReviewPeriod')
     );
   }
+
   if (stage.stage.isOfType('Deactivated')) {
     return classifyActiveOpeningStageDeactivated(
       queryer,
@@ -161,6 +160,7 @@ async function classifyWaitingToBeginStage (
   stage: WaitingToBeingOpeningStageVariant
 ): Promise<OpeningStageClassification> {
   const blockNumber = opening.created.toNumber();
+
   return {
     state: OpeningState.WaitingToBegin,
     starting_block: blockNumber,
@@ -241,6 +241,7 @@ export function classifyOpeningStakes (opening: Opening): StakeRequirementSetCla
 
 function classifyApplicationCancellationFromCause (cause: ApplicationDeactivationCause): CancelledReason | undefined {
   console.log(cause.type);
+
   switch (cause.type) {
     case ApplicationDeactivationCauseKeys.External:
       return CancelledReason.ApplicantCancelled;

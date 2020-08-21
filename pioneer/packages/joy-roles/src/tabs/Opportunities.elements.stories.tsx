@@ -2,15 +2,11 @@ import React from 'react';
 import { withKnobs } from '@storybook/addon-knobs';
 import { Card, Container } from 'semantic-ui-react';
 
-import {
-  OpeningBodyApplicationsStatus, OpeningStakeAndApplicationStatus,
+import { OpeningBodyApplicationsStatus, OpeningStakeAndApplicationStatus,
   OpeningBodyReviewInProgress,
   OpeningBodyStakeRequirement, StakeRequirementProps,
-  OpeningHeader
-} from './Opportunities';
-import {
-  openingClass
-} from '../openingStateMarkup';
+  OpeningHeader } from './Opportunities';
+import { openingClass } from '../openingStateMarkup';
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from '../StakeRequirement';
 
 import { tomorrow, yesterday } from './Opportunities.stories';
@@ -75,8 +71,8 @@ export function OpeningHeaderByState () {
     <Container>
       {stages.map((stage, key) => (
         <Container className={'inner opening ' + openingClass(stage.state)} key={key}>
-          <Card fluid className="container">
-            <Card.Content className="header">
+          <Card fluid className='container'>
+            <Card.Content className='header'>
               <OpeningHeader stage={stage} meta={meta} />
             </Card.Content>
           </Card>
@@ -173,9 +169,9 @@ export function OpeningApplicationsStatusByState () {
   return (
     <Container>
       {permutations.map((permutation, key) => (
-        <Container className="outer opening" key={key}>
+        <Container className='outer opening' key={key}>
           <h4>{permutation._description}</h4>
-          <Container className="main">
+          <Container className='main'>
             <OpeningBodyApplicationsStatus {...permutation} />
           </Container>
         </Container>
@@ -240,11 +236,11 @@ export function OpeningApplicationsStakeRequirementByStake () {
   return (
     <Container>
       {permutations.map((permutation, key) => (
-        <Container className="outer opening" key={key}>
+        <Container className='outer opening' key={key}>
           <h4>{permutation._description}</h4>
           <Card fluid>
             <Card.Content>
-              <Container className="main">
+              <Container className='main'>
                 <OpeningBodyStakeRequirement {...permutation} />
               </Container>
             </Card.Content>
@@ -271,11 +267,11 @@ export function ReviewInProgress () {
   return (
     <Container>
       {permutations.map((permutation, key) => (
-        <Container className="outer opening" key={key}>
+        <Container className='outer opening' key={key}>
           <h4>{permutation._description}</h4>
           <Card fluid>
             <Card.Content>
-              <Container className="main">
+              <Container className='main'>
                 <OpeningBodyReviewInProgress {...permutation} />
               </Container>
             </Card.Content>

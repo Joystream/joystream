@@ -8,27 +8,19 @@ import { Card, Container, Message } from 'semantic-ui-react';
 import { u128, GenericAccountId } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
-import {
-  ApplicationDetails
-} from '@joystream/types/schemas/role.schema';
-import {
-  ConfirmStakesStage, ConfirmStakesStageProps,
+import { ApplicationDetails } from '@joystream/types/schemas/role.schema';
+import { ConfirmStakesStage, ConfirmStakesStageProps,
   ProgressStepsView, ProgressStepsProps, ProgressSteps,
   ApplicationDetailsStage, ApplicationDetailsStageProps,
   SubmitApplicationStage, SubmitApplicationStageProps,
   DoneStage, DoneStageProps,
   FundSourceSelector,
   StakeRankSelector, StakeRankSelectorProps,
-  ConfirmStakes2Up, ConfirmStakes2UpProps
-} from './apply';
-import {
-  OpeningStakeAndApplicationStatus
-} from '../tabs/Opportunities';
-import {
-  ApplicationStakeRequirement,
+  ConfirmStakes2Up, ConfirmStakes2UpProps } from './apply';
+import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities';
+import { ApplicationStakeRequirement,
   RoleStakeRequirement,
-  StakeType
-} from '../StakeRequirement';
+  StakeType } from '../StakeRequirement';
 
 import 'semantic-ui-css/semantic.min.css';
 import '@polkadot/joy-roles/index.sass';
@@ -89,7 +81,7 @@ export function ProgressIndicator () {
   return (
     <Container>
       {permutations.map((permutation, key) => (
-        <Container className="outer" key={key}>
+        <Container className='outer' key={key}>
           <h4>{permutation._description}</h4>
           <Card fluid>
             <ProgressStepsView {...permutation} />
@@ -126,7 +118,7 @@ export function FundSourceSelectorFragment () {
   };
 
   return (
-    <Container className="apply-flow">
+    <Container className='apply-flow'>
       <Card fluid>
         <Card.Content>
           <FundSourceSelector {...props}
@@ -148,6 +140,7 @@ export function StakeRankSelectorFragment () {
 
   // List of the minimum stake required to beat each rank
   const slots: Balance[] = [];
+
   for (let i = 0; i < 10; i++) {
     slots.push(new u128((i * 100) + 10 + i + 1));
   }
@@ -160,7 +153,7 @@ export function StakeRankSelectorFragment () {
   };
 
   return (
-    <Container className="apply-flow">
+    <Container className='apply-flow'>
       <Card fluid>
         <Message info>
           <StakeRankSelector {...props} />
@@ -180,6 +173,7 @@ export function SelectTwoMinimumStakes () {
 
   // List of the minimum stake required to beat each rank
   const slots: Balance[] = [];
+
   for (let i = 0; i < 20; i++) {
     slots.push(new u128((i * 100) + 10 + i + 1));
   }
@@ -202,7 +196,7 @@ export function SelectTwoMinimumStakes () {
   };
 
   return (
-    <Container className="apply-flow">
+    <Container className='apply-flow'>
       <Card fluid>
         <Card.Content>
           <ConfirmStakes2Up {...props} />
@@ -392,11 +386,13 @@ export function StageAConfirmStakes () {
 
   // List of the minimum stake required to beat each rank
   const slots: Balance[] = [];
+
   for (let i = 0; i < 20; i++) {
     slots.push(new u128((i * 100) + 10 + i + 1));
   }
 
   const renders = [];
+
   permutations.map((permutation, key) => {
     const [applicationStake, setApplicationStake] = useState(new u128(0));
     const [roleStake, setRoleStake] = useState<Balance>(new u128(0));
@@ -411,7 +407,7 @@ export function StageAConfirmStakes () {
 
     renders.push(
       (
-        <Container className="outer" key={key}>
+        <Container className='outer' key={key}>
           <h4>{key}. {permutation._description}</h4>
           <Card fluid>
             <ConfirmStakesStage {...permutation}
@@ -436,7 +432,7 @@ export function StageAConfirmStakes () {
   });
 
   return (
-    <Container className="apply-flow">
+    <Container className='apply-flow'>
       {renders.map((render, key) => (
         <div key={key}>{render}</div>
       ))}
@@ -484,7 +480,7 @@ export function StageBApplicationDetails () {
   };
 
   return (
-    <Container className="apply-flow">
+    <Container className='apply-flow'>
       <Card fluid>
         <Card.Content>
           <ApplicationDetailsStage {...props} />
@@ -526,7 +522,7 @@ export function StageCSubmitApplication () {
   };
 
   return (
-    <Container className="apply-flow">
+    <Container className='apply-flow'>
       <Card fluid>
         <Card.Content>
           <SubmitApplicationStage {...props} />
@@ -543,7 +539,7 @@ export function StageDDone () {
   };
 
   return (
-    <Container className="apply-flow">
+    <Container className='apply-flow'>
       <Card fluid>
         <DoneStage {...props} />
       </Card>

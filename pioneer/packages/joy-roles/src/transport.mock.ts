@@ -271,6 +271,7 @@ export class Transport extends MockTransportBase implements ITransport {
 
   openingApplicationRanks (group: WorkingGroups, openingId: number): Promise<Balance[]> {
     const slots: Balance[] = [];
+
     for (let i = 0; i < 20; i++) {
       slots.push(createMock('u128', (i * 100) + 10 + i + 1));
     }
@@ -291,7 +292,7 @@ export class Transport extends MockTransportBase implements ITransport {
   }
 
   accounts (): Subscribable<keyPairDetails[]> {
-    return new Observable<keyPairDetails[]>(observer => {
+    return new Observable<keyPairDetails[]>((observer) => {
       observer.next(
         [
           {

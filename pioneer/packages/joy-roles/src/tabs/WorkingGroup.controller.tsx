@@ -5,11 +5,9 @@ import { View } from '@polkadot/joy-utils/react/hocs';
 
 import { ITransport } from '../transport';
 
-import {
-  ContentCurators,
+import { ContentCurators,
   WorkingGroupMembership,
-  StorageProviders
-} from './WorkingGroup';
+  StorageProviders } from './WorkingGroup';
 
 import styled from 'styled-components';
 
@@ -23,7 +21,7 @@ export class WorkingGroupsController extends Controller<State, ITransport> {
     super(transport, {});
   }
 
-  refreshState() {
+  refreshState () {
     this.getCurationGroup();
     this.getStorageGroup();
   }

@@ -5,6 +5,7 @@ import { Avg, AvgDelta, Min, Step, Sum } from './balances';
 describe('Balance arithmetic', (): void => {
   it('Can calculate a sum', (): void => {
     const input: Balance[] = [];
+
     for (let i = 0; i < 10; i++) {
       input.push(createMock('u128', i));
     }
@@ -14,6 +15,7 @@ describe('Balance arithmetic', (): void => {
 
   it('Can calculate an average', (): void => {
     const input: Balance[] = [];
+
     for (let i = 0; i < 10; i++) {
       input.push(createMock('u128', i));
     }
@@ -23,6 +25,7 @@ describe('Balance arithmetic', (): void => {
 
   it('Can calculate an average delta', (): void => {
     const input: Balance[] = [];
+
     for (let i = 0; i < 10; i++) {
       input.push(createMock('u128', i));
     }
@@ -32,6 +35,7 @@ describe('Balance arithmetic', (): void => {
 
   it('Can calculate a step value with large numbers', (): void => {
     const input: Balance[] = [];
+
     for (let i = 0; i < 10; i++) {
       input.push(createMock('u128', i * 10));
     }
@@ -41,6 +45,7 @@ describe('Balance arithmetic', (): void => {
 
   it('Can calculate a step value with small numbers', (): void => {
     const input: Balance[] = [];
+
     for (let i = 0; i < 10; i++) {
       input.push(createMock('u128', i));
     }

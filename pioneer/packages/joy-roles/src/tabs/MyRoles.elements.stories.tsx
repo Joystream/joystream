@@ -2,31 +2,22 @@ import React from 'react';
 import { withKnobs } from '@storybook/addon-knobs';
 import { createMock } from '@joystream/types';
 
-import {
-  Container
-} from 'semantic-ui-react';
+import { Container } from 'semantic-ui-react';
 
-
-import {
-  CurrentRoles, CurrentRolesProps,
+import { CurrentRoles, CurrentRolesProps,
   Application, ApplicationProps,
   ApplicationStatus, ApplicationStatusProps,
-  Applications
-} from './MyRoles';
+  Applications } from './MyRoles';
 
-import {
-  CancelledReason
-  , OpeningState
-} from '../classifiers';
+import { CancelledReason
+  , OpeningState } from '../classifiers';
 
 import 'semantic-ui-css/semantic.min.css';
 import '@polkadot/joy-roles/index.sass';
 
-import {
-  opening,
+import { opening,
   tomorrow,
-  yesterday
-} from './Opportunities.stories';
+  yesterday } from './Opportunities.stories';
 
 import { WorkingGroups, workerRoleNameByGroup } from '../working_groups';
 
@@ -72,6 +63,7 @@ export function CurrentRolesFragment () {
 
     ]
   };
+
   return (
     <CurrentRoles {...props} />
   );
@@ -147,9 +139,9 @@ export function ApplicationStatusFragment () {
   ];
 
   return (
-    <Container className="outer">
+    <Container className='outer'>
       {permutations.map((permutation, key) => (
-        <Container key={key} className="current-applications outer">
+        <Container key={key} className='current-applications outer'>
           <h4>{permutation._description}</h4>
           <ApplicationStatus {...permutation} />
         </Container>
@@ -288,9 +280,9 @@ const permutations: (ApplicationProps & TestProps)[] = [
 
 export function ApplicationFragment () {
   return (
-    <Container className="outer my-roles">
+    <Container className='outer my-roles'>
       {permutations.map((permutation, key) => (
-        <Container key={key} className="current-applications outer">
+        <Container key={key} className='current-applications outer'>
           <h4>{permutation._description}</h4>
           <Application {...permutation} />
         </Container>
@@ -301,8 +293,9 @@ export function ApplicationFragment () {
 
 export function ApplicationsFragment () {
   const cancelCallback = () => { /* do nothing */ };
+
   return (
-    <Container className="outer my-roles">
+    <Container className='outer my-roles'>
       <Applications applications={permutations} cancelCallback={cancelCallback} />
     </Container>
   );

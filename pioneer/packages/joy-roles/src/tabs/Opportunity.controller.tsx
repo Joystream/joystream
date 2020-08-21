@@ -7,11 +7,9 @@ import { ITransport } from '../transport';
 
 import { MemberId } from '@joystream/types/members';
 
-import {
-  WorkingGroupOpening,
+import { WorkingGroupOpening,
   OpeningError,
-  OpeningView
-} from './Opportunities';
+  OpeningView } from './Opportunities';
 
 import { WorkingGroups, AvailableGroups } from '../working_groups';
 
@@ -27,7 +25,7 @@ export class OpportunityController extends Controller<State, ITransport> {
     this.getBlocktime();
   }
 
-  async setMemberId(memberId?: MemberId) {
+  async setMemberId (memberId?: MemberId) {
     this.state.memberId = memberId;
     this.dispatch();
   }
@@ -58,6 +56,7 @@ export const OpportunityView = View<OpportunityController, State>({
     useEffect(() => {
       controller.getOpportunity(params.get('group'), params.get('id'));
     }, [params.get('group'), params.get('id')]);
+
     return (
       <OpeningView {...state.opportunity!} block_time_in_seconds={state.blockTime!} member_id={state.memberId} />
     );

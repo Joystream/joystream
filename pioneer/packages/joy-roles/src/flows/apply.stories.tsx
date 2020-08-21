@@ -9,10 +9,8 @@ import { u128, GenericAccountId } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
 import { FlowModal } from './apply';
-import {
-  ApplicationStakeRequirement, RoleStakeRequirement,
-  StakeType
-} from '../StakeRequirement';
+import { ApplicationStakeRequirement, RoleStakeRequirement,
+  StakeType } from '../StakeRequirement';
 
 import 'semantic-ui-css/semantic.min.css';
 import '@polkadot/joy-roles/index.sass';
@@ -50,9 +48,11 @@ function mockPromise<T = any> (): () => Promise<T> {
 export const ApplicationSandbox = () => {
   // List of the minimum stake required to beat each rank
   const slots: Balance[] = [];
+
   for (let i = 0; i < 20; i++) {
     slots.push(new u128((i * 100) + 10 + i + 1));
   }
+
   const props = {
     role: {
       version: 1,

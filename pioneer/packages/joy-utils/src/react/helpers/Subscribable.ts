@@ -1,7 +1,5 @@
-import {
-  Subscribable as RxjsSubscribable,
-  Unsubscribable as RxjsUnsubscribable
-} from 'rxjs';
+import { Subscribable as RxjsSubscribable,
+  Unsubscribable as RxjsUnsubscribable } from 'rxjs';
 
 export type Observer<S> = (v: S) => void
 
