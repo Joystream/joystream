@@ -1,6 +1,6 @@
 // @ts-check
 
-import { getRepository } from 'typeorm';
+import { getRepository, createQueryBuilder, getConnection } from 'typeorm';
 import * as BN from 'bn.js';
 
 import {
@@ -15,6 +15,9 @@ import {
 
 import Debug from 'debug';
 import { doInTransaction } from './db/helper';
+import { PooledExecutor } from './PooledExecutor';
+import { QueryEventEntity } from './entities/QueryEventEntity';
+import { throws } from 'assert';
 
 const debug = Debug('index-builder:indexer');
 
@@ -65,22 +68,30 @@ export default class IndexBuilder {
       );
     }
 
-    if (lastProcessedEvent) {
-      this.lastProcessedEvent = lastProcessedEvent;
-      await this._producer.start(this.lastProcessedEvent.blockNumber, this.lastProcessedEvent.index);
-    } else {
-      // Setup worker
-      await this._producer.start(atBlock);
-    }
+    // if (lastProcessedEvent) {
+    //   this.lastProcessedEvent = lastProcessedEvent;
+    //   await this._producer.start(this.lastProcessedEvent.blockNumber, this.lastProcessedEvent.index);
+    // } else {
+    //   // Setup worker
+    //   await this._producer.start(atBlock);
+    // }
 
-    for await (const eventBlock of this._producer.blocks()) {
-      try {
-        await this._onQueryEventBlock(eventBlock);
-      } catch (e) {
-        throw new Error(e);
-      }
-      debug(`Successfully processed block ${eventBlock.block_number.toString()}`)
-    }
+    const lastBlock = await this.getLastSavedBlock();
+    debug(`Last processed block in the database: ${lastBlock.toString()}`);
+    await this._producer.start(lastBlock.addn(1));
+
+    // for await (const eventBlock of this._producer.blocks()) {
+    //   try {
+    //     await this._onQueryEventBlock(eventBlock);
+    //   } catch (e) {
+    //     throw new Error(e);
+    //   }
+    //   debug(`Successfully processed block ${eventBlock.block_number.toString()}`)
+    // }
+
+    const poolExecutor = new PooledExecutor(100, this._producer.blockHeights(), this._processBlock());
+
+    await poolExecutor.run(() => this._stopped);
 
     debug('Started worker.');
   }
@@ -91,6 +102,47 @@ export default class IndexBuilder {
       this._stopped = true;
       resolve();
     });
+  }
+
+  async getLastSavedBlock(): Promise<BN> {
+    const qr = getConnection().createQueryRunner();
+    // take the first block such that next one has not yet been saved
+    const rawRslts = await qr.query(`
+      SELECT MIN(stats.block_number) as blk FROM 
+        (SELECT q.id, q.block_number, n.id as next 
+          FROM query_event_entity q 
+          LEFT JOIN query_event_entity n 
+          ON q.block_number + 1 = n.block_number) stats 
+      WHERE stats.next is NULL
+    `) as Array<any>; 
+    
+    if ((rawRslts === undefined) || (rawRslts.length === 0)) {
+      return new BN(-1);
+    }     
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const blk = rawRslts[0].blk as number;
+    console.debug(`Got blknum: ${JSON.stringify(blk, null, 2)}`);
+    
+    return (blk) ? new BN(blk) : new BN(-1);
+  }
+
+  _processBlock(): (h: BN) => Promise<void> {
+    return async (h: BN) => {
+      debug(`Processing block #${h.toString()}`);  
+      const queryEventsBlock: QueryEventBlock = await this._producer.fetchBlock(h);
+      
+      debug(`Read ${queryEventsBlock.query_events.length} events`);  
+      
+      const qeEntities: QueryEventEntity[] = queryEventsBlock.query_events.map(
+        (qe) => QueryEventEntity.fromQueryEvent(qe));
+      
+      await doInTransaction(async (queryRunner) => {
+        debug(`Saving query event entities`);
+        await queryRunner.manager.save(qeEntities);
+        debug(`Done block #${h.toString()}`);
+      });
+    }
   }
 
   async _onQueryEventBlock(query_event_block: QueryEventBlock): Promise<void> {
