@@ -6,7 +6,7 @@ on:
 
 jobs:
   run_ansible_tests:
-    if: github.event.label.name == 'run-network-tests'
+    if: github.event.label.name == 'run-network-tests' || github.event.type == 'WorkflowDispatch'
     name: run network tests using ansible
     runs-on: ubuntu-latest
     strategy:
