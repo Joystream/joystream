@@ -20,6 +20,7 @@ const debug = Debug('index-builder:indexer');
 
 export default class IndexBuilder {
   private _producer: QueryBlockProducer;
+  private _stopped = false;
 
   private _processing_pack!: QueryEventProcessingPack;
 
@@ -87,6 +88,7 @@ export default class IndexBuilder {
   async stop(): Promise<void> { 
     return new Promise<void>((resolve) => {
       debug('Index builder has been stopped (NOOP)');
+      this._stopped = true;
       resolve();
     });
   }
