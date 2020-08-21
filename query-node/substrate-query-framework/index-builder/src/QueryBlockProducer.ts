@@ -137,6 +137,28 @@ export default class QueryBlockProducer extends EventEmitter {
     ]).then(x => x as T);
   }
 
+  public async fetchBlock(height: BN = this._block_to_be_produced_next): Promise<QueryEventBlock> {
+    let qeb = undefined
+    while (!qeb) {
+      try {
+        qeb = await this._doBlockProduce(height);
+        this._resetBackOffTime();
+        return qeb;
+      } catch (e) {
+        console.error(e);
+        debug(`An error occured while producting block ${this._block_to_be_produced_next.toString()}`);
+          // waiting until the next retry
+        debug(`Retrying after ${this._backOffTime} ms`);
+        await new Promise((resolve)=>setTimeout(() => {
+            resolve();
+        }, this._backOffTime));
+        this._increaseBackOffTime();
+      }
+    }
+    return qeb;
+  }
+
+
   /**
    * This sub-routing does the actual fetching and block processing.
    * It can throw errors which should be handled by the top-level code 
@@ -168,7 +190,7 @@ export default class QueryBlockProducer extends EventEmitter {
 
     extrinsics_array = signed_block.block.extrinsics.toArray();
     const query_events: QueryEvent[] = records.map(
-      (record): QueryEvent => {
+      (record, index): QueryEvent => {
           // Extract the phase, event
         const { phase } = record;
 
@@ -179,7 +201,7 @@ export default class QueryBlockProducer extends EventEmitter {
             ? extrinsics_array[(phase.asApplyExtrinsic.toBn() as BN).toNumber()]
               : undefined;
 
-        const query_event = new QueryEvent(record, height, extrinsic);
+        const query_event = new QueryEvent(record, height, extrinsic, index);
 
           // Logging
         query_event.log(0, debug);
@@ -228,6 +250,15 @@ export default class QueryBlockProducer extends EventEmitter {
       }
       checkHeight();
     });
+  }
+
+  public async * blockHeights(): AsyncGenerator<BN> {
+    while (this._started) {
+      await this.checkHeightOrWait();
+      debug(`Yield: ${this._block_to_be_produced_next.toString()}`);
+      yield this._block_to_be_produced_next;
+      this._block_to_be_produced_next = this._block_to_be_produced_next.addn(1);
+    }
   }
 
   public async * blocks(): AsyncGenerator<QueryEventBlock> {
