@@ -201,7 +201,7 @@ export default class QueryBlockProducer extends EventEmitter {
             ? extrinsics_array[(phase.asApplyExtrinsic.toBn() as BN).toNumber()]
               : undefined;
 
-        const query_event = new QueryEvent(record, height, extrinsic, index);
+        const query_event = new QueryEvent(record, height, index, extrinsic);
 
           // Logging
         query_event.log(0, debug);

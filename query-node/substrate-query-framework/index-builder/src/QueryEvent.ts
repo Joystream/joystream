@@ -22,10 +22,13 @@ export default class QueryEvent implements SubstrateEvent {
 
   readonly extrinsic?: Extrinsic;
 
-  constructor(event_record: EventRecord, block_number: BN, extrinsic?: Extrinsic) {
+  readonly indexInBlock: number;
+
+  constructor(event_record: EventRecord, block_number: BN, indexInBlock: number, extrinsic?: Extrinsic) {
     this.event_record = event_record;
     this.extrinsic = extrinsic;
     this.block_number = block_number;
+    this.indexInBlock = indexInBlock;
   }
 
   get event_name(): string {
