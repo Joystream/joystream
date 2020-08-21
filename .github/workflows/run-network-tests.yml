@@ -1,8 +1,7 @@
 name: run-network-tests
-
 on:
-  label:
-    types: [created]
+  pull_request:
+    types: [labeled]
 
 jobs:
   run_ansible_tests:
