@@ -10,6 +10,7 @@ import { ContentCurators,
   StorageProviders } from './WorkingGroup';
 
 import styled from 'styled-components';
+import { normalizeError } from '@polkadot/joy-utils/functions/misc';
 
 type State = {
   contentCurators?: WorkingGroupMembership;
@@ -27,17 +28,21 @@ export class WorkingGroupsController extends Controller<State, ITransport> {
   }
 
   getCurationGroup () {
-    this.transport.curationGroup().then((value: WorkingGroupMembership) => {
-      this.setState({ contentCurators: value });
-      this.dispatch();
-    });
+    this.transport.curationGroup()
+      .then((value: WorkingGroupMembership) => {
+        this.setState({ contentCurators: value });
+        this.dispatch();
+      })
+      .catch((e) => this.onError(normalizeError(e)));
   }
 
   getStorageGroup () {
-    this.transport.storageGroup().then((value: WorkingGroupMembership) => {
-      this.setState({ storageProviders: value });
-      this.dispatch();
-    });
+    this.transport.storageGroup()
+      .then((value: WorkingGroupMembership) => {
+        this.setState({ storageProviders: value });
+        this.dispatch();
+      })
+      .catch((e) => this.onError(normalizeError(e)));
   }
 }
 

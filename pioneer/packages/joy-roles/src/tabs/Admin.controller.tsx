@@ -25,7 +25,8 @@ import { Accordion,
   Message,
   Modal,
   Table,
-  TextArea } from 'semantic-ui-react';
+  TextArea,
+  InputOnChangeData } from 'semantic-ui-react';
 
 import { ITransport } from '../transport';
 
@@ -350,10 +351,10 @@ export class AdminController extends Controller<State, ITransport> {
     this.api = api;
     this.queueExtrinsic = queueExtrinsic;
     this.state.currentDescriptor = stockOpenings[0];
-    this.refreshState();
+    void this.refreshState();
   }
 
-  onTxSuccess = () => { this.closeModal(); this.refreshState(); }
+  onTxSuccess = () => { this.closeModal(); void this.refreshState(); }
 
   newOpening (accountId: string, desc: openingDescriptor) {
     const tx = this.api.tx.contentWorkingGroup.addCuratorOpening(
@@ -599,8 +600,8 @@ const NewOpening = (props: NewOpeningProps) => {
     }
   };
 
-  const onChangeExactBlock = (e: any, { value }: any) => {
-    setExactBlock(value);
+  const onChangeExactBlock = (e: any, { value }: InputOnChangeData) => {
+    setExactBlock(typeof value === 'number' ? value : (parseInt(value) || 0));
     setStart(createMock('ActivateOpeningAt', { ExactBlock: value }));
   };
 
@@ -799,7 +800,7 @@ const OpeningView = (props: OpeningViewProps) => {
       <Card.Content>
         <Card.Header>
           <Label attached='top right'>Opening</Label>
-          <Link to={'/working-groups/opportunities/curators/' + props.opening.curatorId}>
+          <Link to={`/working-groups/opportunities/curators/${props.opening.curatorId}`}>
             {props.opening.title}
           </Link>
 
@@ -842,7 +843,7 @@ const OpeningView = (props: OpeningViewProps) => {
                     <Table.Cell>{app.curatorId}</Table.Cell>
                     <Table.Cell>{app.openingId}</Table.Cell>
                     <Table.Cell>
-                      <Link to={'/members/' + app.profile.handle}>
+                      <Link to={`/members/${app.profile.handle.toString()}`}>
                         {app.profile.handle}
                       </Link>
                     </Table.Cell>

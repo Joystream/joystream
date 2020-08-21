@@ -36,5 +36,7 @@ export abstract class Observable<S extends { [key: string ]: any }, T> implement
     this.dispatch();
   }
 
-  public refreshState () { }
+  public refreshState () {
+    this.dispatch();
+  }
 }

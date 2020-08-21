@@ -4,7 +4,7 @@ import { ApiContext } from '@polkadot/react-api';
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
 
-import { Route, Switch } from 'react-router';
+import { Route, Switch, RouteComponentProps } from 'react-router';
 import Tabs from '@polkadot/react-components/Tabs';
 import { withMulti } from '@polkadot/react-api/index';
 import QueueContext from '@polkadot/react-components/Status/Context';
@@ -24,6 +24,8 @@ import './index.sass';
 import translate from './translate';
 
 type Props = AppProps & ApiProps & I18nProps & MyAccountProps
+
+type DefaultRouteProps = RouteComponentProps<Record<string, string | undefined>>;
 
 export const App: React.FC<Props> = (props: Props) => {
   const { t } = props;
@@ -83,24 +85,24 @@ export const App: React.FC<Props> = (props: Props) => {
       <Switch>
         <Route
           path={`${basePath}/opportunities/:group/:id([0-9]+)/apply`}
-          render={(props) => <ApplyView controller={applyCtrl} params={props.match.params}/>} />
+          render={(props: DefaultRouteProps) => <ApplyView controller={applyCtrl} params={props.match.params}/>} />
         <Route
           path={`${basePath}/opportunities/:group/:id([0-9]+)`}
-          render={(props) => <OpportunityView controller={oppCtrl} params={props.match.params}/>} />
+          render={(props: DefaultRouteProps) => <OpportunityView controller={oppCtrl} params={props.match.params}/>} />
         <Route
           path={`${basePath}/opportunities/:group/:lead(lead)?`}
-          render={(props) => <OpportunitiesView controller={oppsCtrl} params={props.match.params}/>} />
+          render={(props: DefaultRouteProps) => <OpportunitiesView controller={oppsCtrl} params={props.match.params}/>} />
         <Route
           path={`${basePath}/opportunities`}
-          render={(props) => <OpportunitiesView controller={oppsCtrl} params={props.match.params}/>} />
+          render={(props: DefaultRouteProps) => <OpportunitiesView controller={oppsCtrl} params={props.match.params}/>} />
         <Route
           path={`${basePath}/my-roles`}
-          render={(props) => <MyRolesView controller={myRolesCtrl} params={props.match.params}/>} />
+          render={(props: DefaultRouteProps) => <MyRolesView controller={myRolesCtrl} params={props.match.params}/>} />
         <Route
           path={`${basePath}/admin`}
-          render={(props) => <AdminView controller={adminCtrl} params={props.match.params}/>} />
+          render={(props: DefaultRouteProps) => <AdminView controller={adminCtrl} params={props.match.params}/>} />
         <Route
-          render={(props) => <WorkingGroupsView controller={wgCtrl} params={props.match.params}/> } />
+          render={(props: DefaultRouteProps) => <WorkingGroupsView controller={wgCtrl} params={props.match.params}/> } />
       </Switch>
     </main>
   );

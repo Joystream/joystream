@@ -12,7 +12,8 @@ import { Button,
   Segment,
   Statistic,
   Table,
-  SemanticICONS } from 'semantic-ui-react';
+  SemanticICONS,
+  TextAreaProps } from 'semantic-ui-react';
 
 import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
@@ -49,7 +50,7 @@ function CTAButton (props: CTA) {
     handleClose();
   };
 
-  const handleChange = (e: any, value: any) => setRationale(value.value);
+  const handleChange = (e: any, { value }: TextAreaProps) => setRationale(value?.toString() || '');
 
   return (
     <Modal trigger={
@@ -169,10 +170,10 @@ type RankAndCapacityProps = {
 }
 
 function RankAndCapacity (props: RankAndCapacityProps) {
-  let capacity = null;
+  let capacity = '';
 
   if (props.capacity > 0) {
-    capacity = '/ ' + props.capacity;
+    capacity = `/${props.capacity}`;
   }
 
   let iconName: SemanticICONS = 'check circle';
@@ -214,7 +215,7 @@ function ApplicationCancelledStatus (props: ApplicationStatusProps) {
   );
 }
 
-type statusRenderer = (p: ApplicationStatusProps) => any
+type statusRenderer = React.ComponentType<ApplicationStatusProps>
 
 function ApplicationStatusAcceptingApplications (props: ApplicationStatusProps): any {
   let positive = true;
@@ -299,7 +300,9 @@ export function ApplicationStatus (props: ApplicationStatusProps) {
     return ApplicationCancelledStatus(props);
   }
 
-  return (applicationStatusRenderers.get(props.openingStatus) as statusRenderer)(props);
+  const StatusRenderer = (applicationStatusRenderers.get(props.openingStatus) as statusRenderer);
+
+  return <StatusRenderer {...props} />;
 }
 
 enum ApplicationState {
@@ -413,7 +416,7 @@ export function Application (props: ApplicationProps) {
   }
 
   return (
-    <Segment className={'application status-' + applicationClass.get(appState)}>
+    <Segment className={`application status-${applicationClass.get(appState) || ''}`}>
       <Label attached='top'>
         {application.job.title}
         <Label.Detail className='right'>
@@ -469,7 +472,7 @@ export function Application (props: ApplicationProps) {
           </Table>
           <h4>Hiring process details</h4>
           <List bulleted>
-            {application.process && application.process.details.map((detail: string, key: any) => (
+            {application.process && application.process.details.map((detail, key) => (
               <List.Item key={key}>
                 <List.Icon name='info circle' />
                 <List.Content>{detail}</List.Content>

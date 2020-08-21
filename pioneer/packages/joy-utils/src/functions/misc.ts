@@ -172,6 +172,8 @@ export function normalizeError (e: any): string {
 
   if (e instanceof Error) {
     message = e.message;
+  } else if (typeof e === 'string') {
+    return e;
   } else {
     message = JSON.stringify(e);
   }

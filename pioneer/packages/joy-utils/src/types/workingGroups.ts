@@ -32,3 +32,6 @@ export type ParsedApplication = {
   humanReadableText: string;
   stage: ApplicationStage;
 }
+
+export type ApplicationQuestionAnswers = { [questionTitle: string]: string | undefined };
+export type ApplicationDetailsData = { [sectionTitle: string]: ApplicationQuestionAnswers | undefined };

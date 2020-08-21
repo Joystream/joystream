@@ -112,7 +112,11 @@ export const ApplicationSandbox = () => {
       ),
       defactoMinimumStake: new u128(0)
     },
-    creator: creator,
+    creator: {
+      membership: {
+        handle: text('Creator handle', 'ben', 'Role')
+      }
+    },
     transactionFee: new u128(number('Transaction fee', 499, moneySliderOptions, 'Application Tx')),
     keypairs: [
       {

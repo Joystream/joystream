@@ -21,25 +21,20 @@ type State = {
 export class OpportunitiesController extends Controller<State, ITransport> {
   constructor (transport: ITransport, initialState: State = {}) {
     super(transport, initialState);
+    this.state.blockTime = this.transport.expectedBlockTime();
   }
 
   refreshState () {
-    this.getOpportunities();
-    this.getBlocktime();
+    void this.getOpportunities();
   }
 
-  async setMemberId (memberId?: MemberId) {
+  setMemberId (memberId?: MemberId) {
     this.state.memberId = memberId;
     this.dispatch();
   }
 
   async getOpportunities () {
     this.state.opportunities = await this.transport.currentOpportunities();
-    this.dispatch();
-  }
-
-  async getBlocktime () {
-    this.state.blockTime = await this.transport.expectedBlockTime();
     this.dispatch();
   }
 }

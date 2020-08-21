@@ -25,7 +25,6 @@
     "test": "echo \"skipping tests\"",
     "vanitygen": "node packages/app-accounts/scripts/vanitygen.js",
     "start": "yarn clean && cd packages/apps && webpack --config webpack.config.js",
-    "generate-schemas": "json2ts -i packages/joy-types/src/schemas/role.schema.json -o packages/joy-types/src/schemas/role.schema.ts",
     "build-storybook": "build-storybook -c .storybook",
     "storybook": "start-storybook -s ./packages/apps/public -p 3001"
   },
@@ -74,7 +73,6 @@
     "@storybook/addon-actions": "^5.2.5",
     "@storybook/addon-console": "^1.2.1",
     "@storybook/react": "^5.2.5",
-    "json-schema-to-typescript": "^7.1.0",
     "storybook-react-router": "^1.0.8",
     "typescript": "^3.9.7",
     "eslint-plugin-header": "^3.0.0",

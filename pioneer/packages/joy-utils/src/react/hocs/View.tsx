@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import { Controller } from '../helpers';
+import { Controller, componentName } from '../helpers';
 
 export type ParamsMap = Map<string, string | undefined>
 
@@ -9,7 +9,7 @@ type ViewRendererProps<C> = {
   controller: C;
 }
 
-type RenderComponentProps<C, S> = {
+export type RenderComponentProps<C, S> = {
   state: S,
   controller: C,
   params: ParamsMap
@@ -30,7 +30,20 @@ function DefaultError () {
 }
 
 export function View<C extends Controller<S, any>, S> (args: ViewArgs<C, S>): ViewRenderer<C> {
-  return (props: ViewRendererProps<C>): React.ReactElement | null => {
+  let RenderComponent: RenderComponent<C, S>;
+  let ErrorComponent: React.ComponentType = DefaultError;
+
+  if (typeof args === 'function') {
+    RenderComponent = args;
+  } else {
+    RenderComponent = args.renderComponent;
+
+    if (typeof args.errorComponent !== 'undefined') {
+      ErrorComponent = args.errorComponent;
+    }
+  }
+
+  const ResultComponent: React.FunctionComponent<ViewRendererProps<C>> = (props) => {
     const { controller } = props;
     const [state, setState] = useState<S>(controller.state);
 
@@ -49,23 +62,14 @@ export function View<C extends Controller<S, any>, S> (args: ViewArgs<C, S>): Vi
 
     const params = props.params ? new Map(Object.entries(props.params)) : new Map<string, string | undefined>();
 
-    let RenderComponent: RenderComponent<C, S>;
-    let Err: React.ComponentType = DefaultError;
-
-    if (typeof args === 'function') {
-      RenderComponent = args;
-    } else {
-      RenderComponent = args.renderComponent;
-
-      if (typeof args.errorComponent !== 'undefined') {
-        Err = args.errorComponent;
-      }
-    }
-
     if (controller.hasError()) {
-      return Err ? <Err /> : null;
+      return ErrorComponent ? <ErrorComponent /> : null;
     } else {
       return <RenderComponent { ...{ state, controller, params } } />;
     }
   };
+
+  ResultComponent.displayName = `View(${componentName(RenderComponent)})`;
+
+  return ResultComponent;
 }

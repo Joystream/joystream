@@ -17,6 +17,7 @@ import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities';
 import { Min, Step, Sum } from '../balances';
 import { WorkingGroups, AvailableGroups } from '../working_groups';
 import { createMock } from '@joystream/types';
+import { ApplicationDetailsData } from '@polkadot/joy-utils/types/workingGroups';
 
 type State = {
   // Input data from state
@@ -30,7 +31,7 @@ type State = {
   // Data captured from form
   applicationStake: Balance;
   roleStake: Balance;
-  appDetails: any;
+  appDetails: ApplicationDetailsData;
   txKeyAddress: AccountId;
   activeStep: ProgressSteps;
   txInProgress: boolean;
@@ -153,12 +154,12 @@ export class ApplyController extends Controller<State, ITransport> {
     this.dispatch();
   }
 
-  setAppDetails (v: any): void {
+  setAppDetails (v: ApplicationDetailsData): void {
     this.state.appDetails = v;
     this.dispatch();
   }
 
-  setTxKeyAddress (v: any): void {
+  setTxKeyAddress (v: AccountId): void {
     this.state.txKeyAddress = v;
     this.dispatch();
   }
@@ -232,7 +233,7 @@ export const ApplyView = View<ApplyController, State>(
   ({ state, controller, params }) => {
     useEffect(() => {
       controller.findOpening(params.get('id'), params.get('group'));
-    }, [params.get('id'), params.get('group')]);
+    }, [params]);
 
     return (
       <FlowModal

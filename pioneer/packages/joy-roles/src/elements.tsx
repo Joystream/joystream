@@ -201,8 +201,6 @@ type CountdownProps = {
 }
 
 export function Countdown (props: CountdownProps) {
-  let interval = -1;
-
   const [days, setDays] = useState<number | undefined>(undefined);
   const [hours, setHours] = useState<number | undefined>(undefined);
   const [minutes, setMinutes] = useState<number | undefined>(undefined);
@@ -219,9 +217,9 @@ export function Countdown (props: CountdownProps) {
     setSeconds(d.seconds());
   };
 
-  interval = window.setInterval(update, 1000);
-
   useEffect(() => {
+    const interval = window.setInterval(update, 1000);
+
     update();
 
     return () => {

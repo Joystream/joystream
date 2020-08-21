@@ -94,10 +94,10 @@ export const opening = createMock('Opening', {
 });
 
 const stateOptions: any = (function () {
-  const options: any = {};
+  const options: Record<string, OpeningState> = {};
 
-  stateMarkup.forEach((value, key) => {
-    options[value.description] = key;
+  Object.entries(stateMarkup).forEach(([key, value]) => {
+    options[value.description] = parseInt(key) as OpeningState;
   });
 
   return options;

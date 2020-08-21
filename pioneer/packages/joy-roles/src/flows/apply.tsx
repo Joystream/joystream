@@ -19,7 +19,9 @@ import { Accordion,
   Segment,
   SemanticICONS,
   Step,
-  Table } from 'semantic-ui-react';
+  Table,
+  InputOnChangeData,
+  TextAreaProps } from 'semantic-ui-react';
 
 import Identicon from '@polkadot/react-identicon';
 import AccountId from '@polkadot/types/generic/AccountId';
@@ -37,6 +39,7 @@ import { IStakeRequirement } from '../StakeRequirement';
 import { Loadable } from '@polkadot/joy-utils/react/hocs';
 import { Add } from '../balances';
 import { createMock } from '@joystream/types';
+import { ApplicationDetailsData, ApplicationQuestionAnswers } from '@polkadot/joy-utils/types/workingGroups';
 
 type accordionProps = {
   title: string;
@@ -56,7 +59,16 @@ function ModalAccordion (props: React.PropsWithChildren<accordionProps>) {
   );
 }
 
-function KeyPair ({ address, className, style, isUppercase, name, balance }: any): any {
+type KeyPairProps = {
+  address: string;
+  className?: string;
+  style?: React.CSSProperties;
+  isUppercase: boolean;
+  name: string;
+  balance: Balance;
+}
+
+function KeyPair ({ address, className, style, isUppercase, name, balance }: KeyPairProps) {
   return (
     <div
       className={['keypair', className].join(' ')}
@@ -193,7 +205,7 @@ export function StakeRankSelector (props: StakeRankSelectorProps) {
   const ticks = [];
 
   for (let i = 0; i < slotCount; i++) {
-    ticks.push(<div key={i} className='tick' style={{ width: (100 / slotCount) + '%' }}>{slotCount - i}</div>);
+    ticks.push(<div key={i} className='tick' style={{ width: `${(100 / slotCount)}%` }}>{slotCount - i}</div>);
   }
 
   let estimatedSlot = slotCount + 1;
@@ -485,10 +497,10 @@ export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
   const ticks = [];
 
   for (let i = 0; i < slotCount; i++) {
-    ticks.push(<div key={i} className='tick' style={{ width: (100 / slotCount) + '%' }}>{i + 1}</div>);
+    ticks.push(<div key={i} className='tick' style={{ width: `${(100 / slotCount)}%` }}>{i + 1}</div>);
   }
 
-  const tickLabel = <div className='ui pointing below label' style={{ left: ((100 / slotCount) * (estimatedSlot - 1)) + '%' }}>
+  const tickLabel = <div className='ui pointing below label' style={{ left: `${((100 / slotCount) * (estimatedSlot - 1))}%` }}>
     Your rank
     <div className='detail'>{estimatedSlot}/{props.applications.maxNumberOfApplications}</div>
   </div>;
@@ -708,12 +720,10 @@ function questionHash (section: QuestionSection, question: QuestionField): strin
   return section.title + '|' + question.title;
 }
 
-interface FinalDataMap {
-  [k: string]: FinalDataMap;
-}
+interface AnswersByHash { [hash: string]: string; }
 
-function applicationDetailsToObject (input: ApplicationDetails, data: FinalDataMap): any {
-  const output: any = {};
+function applicationDetailsDataToAnswersByHash (input: ApplicationDetails, data: ApplicationDetailsData): AnswersByHash {
+  const output: AnswersByHash = {};
 
   if (!input.sections) {
     return {};
@@ -721,47 +731,42 @@ function applicationDetailsToObject (input: ApplicationDetails, data: FinalDataM
 
   input.sections.map((section) => {
     section.questions.map((question) => {
-      let value: any = '';
+      const sectionAnswers = data[section.title];
+      const answer = (sectionAnswers && sectionAnswers[question.title]) || '';
 
-      if (data[section.title] && data[section.title][question.title]) {
-        value = data[section.title][question.title];
-      }
-
-      output[questionHash(section, question)] = value;
+      output[questionHash(section, question)] = answer;
     });
   });
 
   return output;
 }
 
-interface QuestionDataMap {
-  [k: string]: any;
-}
-
-function applicationDetailsToDataObject (input: ApplicationDetails, data: QuestionDataMap): any {
-  const output: any = {};
+function answersByHashToApplicationDetailsData (input: ApplicationDetails, data: AnswersByHash): ApplicationDetailsData {
+  const output: ApplicationDetailsData = {};
 
   if (!input.sections) {
     return {};
   }
 
   input.sections.map((section) => {
-    output[section.title] = {};
+    const sectionAnswers: ApplicationQuestionAnswers = {};
+
     section.questions.map((question) => {
       const hash = questionHash(section, question);
 
-      output[section.title][question.title] = data[hash];
+      sectionAnswers[question.title] = data[hash];
     });
+    output[section.title] = sectionAnswers;
   });
 
   return output;
 }
 
-function questionReducer (state: any, action: any) {
+function answersReducer (state: AnswersByHash, action: { key: string, value: string }) {
   return { ...state, [action.key]: action.value };
 }
 
-function questionFieldValueIsValid (question: QuestionField, value: any): boolean {
+function questionFieldValueIsValid (question: QuestionField, value: string): boolean {
   switch (question.type) {
     case 'text':
     case 'text area':
@@ -773,42 +778,42 @@ function questionFieldValueIsValid (question: QuestionField, value: any): boolea
 
 export type ApplicationDetailsStageProps = {
   applicationDetails: ApplicationDetails;
-  data: object;
-  setData: (o: object) => void;
+  data: ApplicationDetailsData;
+  setData: (o: ApplicationDetailsData) => void;
 }
 
 export function ApplicationDetailsStage (props: ApplicationDetailsStageProps & StageTransitionProps) {
-  const initialForm = applicationDetailsToObject(props.applicationDetails, props.data as FinalDataMap);
+  const initialForm = applicationDetailsDataToAnswersByHash(props.applicationDetails, props.data);
 
-  const [data, setData] = useReducer(questionReducer, initialForm);
+  const [answers, updateAnswers] = useReducer(answersReducer, initialForm);
   const [completed, setCompleted] = useState(false);
   const [valid, setValid] = useState(false);
 
-  const handleChange = (e: any, { name, value }: any) => {
+  const handleChange = (e: any, { name, value }: InputOnChangeData | TextAreaProps) => {
     setCompleted(false);
-    setData({ key: name, value: value });
+    updateAnswers({ key: name as string, value: value?.toString() || '' });
   };
 
-  const questionField = (section: QuestionSection, question: QuestionField, key: any) => {
+  const questionField = (section: QuestionSection, question: QuestionField) => {
     switch (question.type) {
       case 'text':
-        return <Form.Input value={data[questionHash(section, question)]}
+        return <Form.Input value={answers[questionHash(section, question)]}
           name={questionHash(section, question)}
           label={question.title}
           onChange={handleChange}
           required
-          error={completed && !questionFieldValueIsValid(question, data[questionHash(section, question)])}
-          key={key}
+          error={completed && !questionFieldValueIsValid(question, answers[questionHash(section, question)])}
+          key={questionHash(section, question)}
         />;
 
       case 'text area':
-        return <Form.TextArea value={data[questionHash(section, question)]}
+        return <Form.TextArea value={answers[questionHash(section, question)]}
           name={questionHash(section, question)}
           label={question.title}
           onChange={handleChange}
           required
-          error={completed && !questionFieldValueIsValid(question, data[questionHash(section, question)])}
-          key={key}
+          error={completed && !questionFieldValueIsValid(question, answers[questionHash(section, question)])}
+          key={questionHash(section, question)}
         />;
     }
 
@@ -824,7 +829,7 @@ export function ApplicationDetailsStage (props: ApplicationDetailsStageProps & S
 
     props.applicationDetails.sections.map((section) => {
       section.questions.map((question) => {
-        if (!questionFieldValueIsValid(question, data[questionHash(section, question)])) {
+        if (!questionFieldValueIsValid(question, answers[questionHash(section, question)])) {
           valid = false;
         }
       });
@@ -835,13 +840,13 @@ export function ApplicationDetailsStage (props: ApplicationDetailsStageProps & S
 
   useEffect(() => {
     setValid(isFormValid());
-  }, [data]);
+  }, [answers]);
 
   useEffect(() => {
     if (completed === true && valid === true) {
       props.nextTransition();
     }
-  }, [completed]);
+  }, [completed, valid]);
 
   const onSubmit = (): void => {
     setCompleted(true);
@@ -850,11 +855,11 @@ export function ApplicationDetailsStage (props: ApplicationDetailsStageProps & S
       return;
     }
 
-    props.setData(applicationDetailsToDataObject(props.applicationDetails, data));
+    props.setData(answersByHashToApplicationDetailsData(props.applicationDetails, answers));
   };
 
   const onCancel = () => {
-    props.setData(applicationDetailsToDataObject(props.applicationDetails, data));
+    props.setData(answersByHashToApplicationDetailsData(props.applicationDetails, answers));
     props.prevTransition();
   };
 
@@ -864,8 +869,8 @@ export function ApplicationDetailsStage (props: ApplicationDetailsStageProps & S
         {props.applicationDetails && props.applicationDetails.sections && props.applicationDetails.sections.map((section, key) => (
           <Segment padded className='section' key={key}>
             <h4><Label attached='top'>{section.title}</Label></h4>
-            {section.questions.map((question, key) =>
-              questionField(section, question, key)
+            {section.questions.map((question) =>
+              questionField(section, question)
             )}
           </Segment>
         ))}
@@ -1022,8 +1027,8 @@ export type FlowModalProps = Pick<StakeRankSelectorProps, 'slots' | 'step'> & Fu
   setApplicationStake: (b: Balance) => void;
   roleStake: Balance;
   setRoleStake: (b: Balance) => void;
-  appDetails: any;
-  setAppDetails: (v: any) => void;
+  appDetails: ApplicationDetailsData;
+  setAppDetails: (v: ApplicationDetailsData) => void;
   txKeyAddress: AccountId;
   setTxKeyAddress: (v: AccountId) => void;
   activeStep: ProgressSteps;

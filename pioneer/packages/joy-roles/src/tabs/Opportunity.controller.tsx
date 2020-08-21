@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 
-import { Controller, memoize } from '@polkadot/joy-utils/react/helpers';
-import { View } from '@polkadot/joy-utils/react/hocs';
+import { Controller } from '@polkadot/joy-utils/react/helpers';
+import { View, RenderComponentProps } from '@polkadot/joy-utils/react/hocs/View';
 
 import { ITransport } from '../transport';
 
@@ -22,15 +22,14 @@ type State = {
 export class OpportunityController extends Controller<State, ITransport> {
   constructor (transport: ITransport, initialState: State = {}) {
     super(transport, initialState);
-    this.getBlocktime();
+    this.state.blockTime = this.transport.expectedBlockTime();
   }
 
-  async setMemberId (memberId?: MemberId) {
+  setMemberId (memberId?: MemberId) {
     this.state.memberId = memberId;
     this.dispatch();
   }
 
-  @memoize()
   async getOpportunity (group: string | undefined, id: string | undefined) {
     if (!id || !group) {
       return;
@@ -43,22 +42,19 @@ export class OpportunityController extends Controller<State, ITransport> {
     this.state.opportunity = await this.transport.groupOpening(group as WorkingGroups, parseInt(id));
     this.dispatch();
   }
+}
 
-  async getBlocktime () {
-    this.state.blockTime = await this.transport.expectedBlockTime();
-    this.dispatch();
-  }
+function OpportunityRenderer ({ state, controller, params }: RenderComponentProps<OpportunityController, State>) {
+  useEffect(() => {
+    void controller.getOpportunity(params.get('group'), params.get('id'));
+  }, [params]);
+
+  return (
+    <OpeningView {...state.opportunity!} block_time_in_seconds={state.blockTime!} member_id={state.memberId} />
+  );
 }
 
 export const OpportunityView = View<OpportunityController, State>({
   errorComponent: OpeningError,
-  renderComponent: ({ state, controller, params }) => {
-    useEffect(() => {
-      controller.getOpportunity(params.get('group'), params.get('id'));
-    }, [params.get('group'), params.get('id')]);
-
-    return (
-      <OpeningView {...state.opportunity!} block_time_in_seconds={state.blockTime!} member_id={state.memberId} />
-    );
-  }
+  renderComponent: OpportunityRenderer
 });

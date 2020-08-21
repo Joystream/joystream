@@ -62,9 +62,12 @@ export const types: RegistryTypes = {
 }
 
 // Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)
-const mockRegistry = new TypeRegistry();
-mockRegistry.register(types);
+const mockRegistry = new TypeRegistry()
+mockRegistry.register(types)
 
-export function createMock<TypeName extends keyof InterfaceTypes>(type: TypeName, value: any): InterfaceTypes[TypeName] {
-  return createType(mockRegistry, type, value);
+export function createMock<TypeName extends keyof InterfaceTypes>(
+  type: TypeName,
+  value: any
+): InterfaceTypes[TypeName] {
+  return createType(mockRegistry, type, value)
 }

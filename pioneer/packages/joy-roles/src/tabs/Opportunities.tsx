@@ -222,6 +222,8 @@ export function ApplicationCount (props: ApplicationCountProps) {
 type OpeningBodyCTAProps = OpeningStakeAndApplicationStatus & OpeningStage & OpeningBodyProps & MemberIdProps
 
 function OpeningBodyCTAView (props: OpeningBodyCTAProps) {
+  const accountCtx = useMyAccount();
+
   if (props.stage.state !== OpeningState.AcceptingApplications || applicationImpossible(props.applications)) {
     return null;
   }
@@ -254,8 +256,6 @@ function OpeningBodyCTAView (props: OpeningBodyCTAProps) {
       </Button>
     </Link>
   );
-
-  const accountCtx = useMyAccount();
 
   if (!accountCtx.state.address) {
     applyButton = (

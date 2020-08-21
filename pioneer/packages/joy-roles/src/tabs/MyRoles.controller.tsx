@@ -32,8 +32,8 @@ export class MyRolesController extends Controller<State, ITransport> {
     }
 
     // Set actual data
-    this.updateCurationGroupRoles(this.state.myAddress);
-    this.updateApplications(this.state.myAddress);
+    void this.updateCurationGroupRoles(this.state.myAddress);
+    void this.updateApplications(this.state.myAddress);
   }
 
   setMyAddress (myAddress: string | undefined) {

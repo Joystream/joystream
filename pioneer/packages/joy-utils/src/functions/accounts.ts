@@ -7,6 +7,7 @@ import { DEV_PHRASE } from '@polkadot/keyring/defaults';
 import keyring from '@polkadot/ui-keyring';
 import { isHex, u8aToHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate, randomAsU8a } from '@polkadot/util-crypto';
+import { normalizeError } from './misc';
 
 export type SeedType = 'bip' | 'raw' | 'dev';
 
@@ -31,7 +32,7 @@ function deriveValidate (seed: string, derivePath: string, pairType: KeypairType
       return 'Soft derivation paths are not allowed on ed25519';
     }
   } catch (error) {
-    return error.message;
+    return normalizeError(error);
   }
 
   return null;
@@ -124,7 +125,7 @@ export function createAccount (suri: string, pairType: KeypairType, name: string
     downloadAccount(result);
   } catch (error) {
     status.status = 'error';
-    status.message = error.message;
+    status.message = normalizeError(error);
   }
 
   return status;

@@ -574,7 +574,7 @@ export class Transport extends BaseTransport implements ITransport {
 
   async openingApplicationsByAddressAndGroup (group: WorkingGroups, roleKey: string): Promise<OpeningApplication[]> {
     const myGroupApplications = (await this.entriesByIds<GroupApplicationId, GroupApplication>(
-      await this.apiMethodByGroup(group, 'applicationById')
+      this.apiMethodByGroup(group, 'applicationById')
     ))
       .filter(([id, groupApplication]) => groupApplication.role_account_id.eq(roleKey));
 
@@ -737,7 +737,8 @@ export class Transport extends BaseTransport implements ITransport {
             txFailedCb,
             txSuccessCb
           });
-        });
+        })
+        .catch((e) => { reject(e); });
     });
   }
 
