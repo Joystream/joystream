@@ -2,7 +2,7 @@ import { Entity, Column, EntityManager, PrimaryGeneratedColumn, ValueTransformer
 import { SubstrateEvent } from '..';
 import * as BN from 'bn.js';
 
-class NumericTransformer implements ValueTransformer {
+export class NumericTransformer implements ValueTransformer {
   /**
    * Used to marshal data when writing to the database.
    */
