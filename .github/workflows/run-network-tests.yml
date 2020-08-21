@@ -1,0 +1,24 @@
+name: run-network-tests
+on:
+  label:
+    types: [created]
+
+jobs:
+  run_ansible_tests:
+    if: github.event.label.name == 'run-network-tests'
+    name: run network tests using ansible
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: install toolchain
+        run: curl https://getsubstrate.io -sSf | bash -s -- --fast
+      - name: ansible build and tests
+        run: |
+          cd ./devops/ansible
+          ansible-playbook -i hosts build-and-run-tests-single-node-playbook.yml --become -v
