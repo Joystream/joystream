@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: hmarr/debug-action@v1.0.0
   run_ansible_tests:
-    if: github.event.label.name == 'run-network-tests' || github.event.action == 'workflow_dispatch'
+    if: github.event.label.name == 'run-network-tests' || github.event.action == null
     name: run network tests using ansible
     runs-on: ubuntu-latest
     strategy:
