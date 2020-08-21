@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { Controller, View } from '@polkadot/joy-utils/index';
+import { Controller } from '@polkadot/joy-utils/react/helpers';
+import { View } from '@polkadot/joy-utils/react/hocs';
 
 import { ITransport } from '../transport';
 
@@ -20,6 +21,9 @@ type State = {
 export class WorkingGroupsController extends Controller<State, ITransport> {
   constructor (transport: ITransport, initialState: State = {}) {
     super(transport, {});
+  }
+
+  refreshState() {
     this.getCurationGroup();
     this.getStorageGroup();
   }
@@ -49,7 +53,7 @@ const WorkingGroupsOverview = styled.div`
 `;
 
 export const WorkingGroupsView = View<WorkingGroupsController, State>(
-  (state) => (
+  ({ state }) => (
     <WorkingGroupsOverview>
       <ContentCurators {...state.contentCurators}/>
       <StorageProviders {...state.storageProviders}/>

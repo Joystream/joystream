@@ -3,7 +3,7 @@ import { Button, Card, Icon, Message, SemanticICONS } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
 import { GroupLeadView, GroupMember, GroupMemberView, GroupLead } from '../elements';
-import { Loadable } from '@polkadot/joy-utils/index';
+import { Loadable } from '@polkadot/joy-utils/react/hocs';
 
 import { WorkingGroups } from '../working_groups';
 import styled from 'styled-components';

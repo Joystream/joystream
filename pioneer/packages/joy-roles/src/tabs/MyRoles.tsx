@@ -17,10 +17,9 @@ import {
 } from 'semantic-ui-react';
 
 import { formatBalance } from '@polkadot/util';
-import { u128 } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
-import { Loadable } from '@polkadot/joy-utils/index';
+import { Loadable } from '@polkadot/joy-utils/react/hocs';
 import { Opening } from '@joystream/types/hiring';
 
 import {
@@ -456,7 +455,7 @@ export function Application (props: ApplicationProps) {
                   Total stake
                 </Table.Cell>
                 <Table.Cell>
-                  {formatBalance(new u128(props.roleStake.add(props.applicationStake)))}
+                  {formatBalance(props.roleStake.add(props.applicationStake))}
                 </Table.Cell>
               </Table.Row>
             </Table.Body>

@@ -4,15 +4,9 @@ import { KeypairType } from '@polkadot/util-crypto/types';
 
 import FileSaver from 'file-saver';
 import { DEV_PHRASE } from '@polkadot/keyring/defaults';
-import { InputAddress } from '@polkadot/react-components';
 import keyring from '@polkadot/ui-keyring';
 import { isHex, u8aToHex } from '@polkadot/util';
 import { keyExtractSuri, mnemonicGenerate, mnemonicValidate, randomAsU8a } from '@polkadot/util-crypto';
-
-import { ApiPromise } from '@polkadot/api';
-import { MemberId, Membership } from '@joystream/types/members';
-import { AccountId } from '@polkadot/types/interfaces';
-import { Vec } from '@polkadot/types/codec';
 
 export type SeedType = 'bip' | 'raw' | 'dev';
 
@@ -113,7 +107,6 @@ export function downloadAccount ({ json, pair }: CreateResult): void {
   const blob = new Blob([JSON.stringify(json)], { type: 'application/json; charset=utf-8' });
 
   FileSaver.saveAs(blob, `${pair.address}.json`);
-  InputAddress.setLastValue('account', pair.address);
 }
 
 export function createAccount (suri: string, pairType: KeypairType, name: string, password: string, success: string): ActionStatus {
@@ -139,20 +132,4 @@ export function createAccount (suri: string, pairType: KeypairType, name: string
 
 export function isPasswordValid (password: string): boolean {
   return password.length === 0 || keyring.isPassValid(password);
-}
-
-export type MemberFromAccount = { account: string; id: number; profile?: Membership };
-
-// TODO: Use transport instead (now that it's available in joy-utils)
-export async function memberFromAccount (api: ApiPromise, accountId: AccountId | string): Promise<MemberFromAccount> {
-  const [memberId] =
-    ((await api.query.members.memberIdsByRootAccountId(accountId)) as Vec<MemberId>)
-      .concat((await api.query.members.memberIdsByControllerAccountId(accountId)) as Vec<MemberId>);
-  const member = (await api.query.members.membershipById(memberId)) as Membership;
-
-  return {
-    account: accountId.toString(),
-    id: memberId.toNumber(),
-    profile: member.handle.isEmpty ? undefined : member
-  };
 }

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
-import { Controller, memoize, View, Params } from '@polkadot/joy-utils/index';
+import { Controller, memoize } from '@polkadot/joy-utils/react/helpers';
+import { View } from '@polkadot/joy-utils/react/hocs';
 
 import { ITransport } from '../transport';
 
@@ -21,19 +22,23 @@ type State = {
 }
 
 export class OpportunityController extends Controller<State, ITransport> {
-  constructor (transport: ITransport, memberId?: MemberId, initialState: State = {}) {
+  constructor (transport: ITransport, initialState: State = {}) {
     super(transport, initialState);
-    this.state.memberId = memberId;
     this.getBlocktime();
+  }
+
+  async setMemberId(memberId?: MemberId) {
+    this.state.memberId = memberId;
+    this.dispatch();
   }
 
   @memoize()
   async getOpportunity (group: string | undefined, id: string | undefined) {
-    if (!id) {
-      return this.onError('OpportunityController: no ID provided in params');
+    if (!id || !group) {
+      return;
     }
 
-    if (!group || !AvailableGroups.includes(group as any)) {
+    if (!AvailableGroups.includes(group as any)) {
       return this.onError('OppportunityController: invalid group provided in params');
     }
 
@@ -47,14 +52,14 @@ export class OpportunityController extends Controller<State, ITransport> {
   }
 }
 
-const renderOpeningView = (state: State, controller: OpportunityController, params: Params) => {
-  controller.getOpportunity(params.get('group'), params.get('id'));
-  return (
-    <OpeningView {...state.opportunity!} block_time_in_seconds={state.blockTime!} member_id={state.memberId} />
-  );
-};
-
 export const OpportunityView = View<OpportunityController, State>({
   errorComponent: OpeningError,
-  render: renderOpeningView
+  renderComponent: ({ state, controller, params }) => {
+    useEffect(() => {
+      controller.getOpportunity(params.get('group'), params.get('id'));
+    }, [params.get('group'), params.get('id')]);
+    return (
+      <OpeningView {...state.opportunity!} block_time_in_seconds={state.blockTime!} member_id={state.memberId} />
+    );
+  }
 });

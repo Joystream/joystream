@@ -1,15 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import { formatBalance } from '@polkadot/util';
-import { u128 } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
-import AccountId from '@polkadot/types/primitive/Generic/AccountId';
+import AccountId from '@polkadot/types/generic/AccountId';
 
-import { Controller, View } from '@polkadot/joy-utils/index';
+import { Controller } from '@polkadot/joy-utils/react/helpers';
+import { View } from '@polkadot/joy-utils/react/hocs';
 
 import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings';
-
-import { Container } from 'semantic-ui-react';
 
 import { ITransport } from '../transport';
 
@@ -18,6 +16,7 @@ import { keyPairDetails, FlowModal, ProgressSteps } from './apply';
 import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities';
 import { Min, Step, Sum } from '../balances';
 import { WorkingGroups, AvailableGroups } from '../working_groups';
+import { createMock } from '@joystream/types';
 
 type State = {
   // Input data from state
@@ -48,14 +47,14 @@ type State = {
 
 const newEmptyState = (): State => {
   return {
-    applicationStake: new u128(0),
-    roleStake: new u128(0),
+    applicationStake: createMock('u128', 0),
+    roleStake: createMock('u128', 0),
     appDetails: {},
     hasError: false,
     transactionDetails: new Map<string, string>(),
     roleKeyNameBase: '',
     roleKeyName: '',
-    txKeyAddress: new AccountId(),
+    txKeyAddress: createMock('AccountId', undefined),
     activeStep: 0,
     txInProgress: false,
     complete: false
@@ -123,6 +122,7 @@ export class ApplyController extends Controller<State, ITransport> {
           this.state.activeStep = this.state.hasConfirmStep
             ? ProgressSteps.ConfirmStakes
             : ProgressSteps.ApplicationDetails;
+          this.state.complete = false;
 
           this.state.roleKeyNameBase = hrt.job.title + ' role key';
 
@@ -224,38 +224,37 @@ export class ApplyController extends Controller<State, ITransport> {
 }
 
 export const ApplyView = View<ApplyController, State>(
-  (state, controller, params) => {
-    controller.findOpening(params.get('id'), params.get('group'));
+  ({ state, controller, params }) => {
+    useEffect(() => {
+      controller.findOpening(params.get('id'), params.get('group'));
+    }, [params.get('id'), params.get('group')])
     return (
-      <Container className="apply-flow">
-        <div className="dimmer"></div>
-        <FlowModal
-          role={state.role!}
-          applications={state.applications!}
-          keypairs={state.keypairs!}
-          hasConfirmStep={state.hasConfirmStep!}
-          step={state.step!}
-          slots={state.slots!}
-          transactionDetails={state.transactionDetails}
-          roleKeyName={state.roleKeyName}
-          prepareApplicationTransaction={(...args) => controller.prepareApplicationTransaction(...args)}
-          makeApplicationTransaction={() => controller.makeApplicationTransaction()}
-          applicationStake={state.applicationStake}
-          setApplicationStake={(v) => controller.setApplicationStake(v)}
-          roleStake={state.roleStake}
-          setRoleStake={(v) => controller.setRoleStake(v)}
-          appDetails={state.appDetails}
-          setAppDetails={(v) => controller.setAppDetails(v)}
-          txKeyAddress={state.txKeyAddress}
-          setTxKeyAddress={(v) => controller.setTxKeyAddress(v)}
-          activeStep={state.activeStep}
-          setActiveStep={(v) => controller.setActiveStep(v)}
-          txInProgress={state.txInProgress}
-          setTxInProgress={(v) => controller.setTxInProgress(v)}
-          complete={state.complete}
-          setComplete={(v) => controller.setComplete(v)}
-        />
-      </Container>
+      <FlowModal
+        role={state.role!}
+        applications={state.applications!}
+        keypairs={state.keypairs!}
+        hasConfirmStep={state.hasConfirmStep!}
+        step={state.step!}
+        slots={state.slots!}
+        transactionDetails={state.transactionDetails}
+        roleKeyName={state.roleKeyName}
+        prepareApplicationTransaction={controller.prepareApplicationTransaction.bind(controller)}
+        makeApplicationTransaction={controller.makeApplicationTransaction.bind(controller)}
+        applicationStake={state.applicationStake}
+        setApplicationStake={controller.setApplicationStake.bind(controller)}
+        roleStake={state.roleStake}
+        setRoleStake={controller.setRoleStake.bind(controller)}
+        appDetails={state.appDetails}
+        setAppDetails={controller.setAppDetails.bind(controller)}
+        txKeyAddress={state.txKeyAddress}
+        setTxKeyAddress={controller.setTxKeyAddress.bind(controller)}
+        activeStep={state.activeStep}
+        setActiveStep={controller.setActiveStep.bind(controller)}
+        txInProgress={state.txInProgress}
+        setTxInProgress={controller.setTxInProgress.bind(controller)}
+        complete={state.complete}
+        setComplete={controller.setComplete.bind(controller)}
+      />
     );
   }
 );

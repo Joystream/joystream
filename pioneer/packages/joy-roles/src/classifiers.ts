@@ -1,6 +1,6 @@
 import moment from 'moment';
 
-import { Option, u128 } from '@polkadot/types';
+import { Option } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
 import {
@@ -25,6 +25,7 @@ import {
   RoleStakeRequirement,
   StakeType
 } from './StakeRequirement';
+import { createMock } from '@joystream/types';
 
 export enum CancelledReason {
   ApplicantCancelled = 0,
@@ -53,7 +54,7 @@ export interface OpeningStageClassification {
 export interface IBlockQueryer {
   blockHash(height: number): Promise<string>;
   blockTimestamp(height: number): Promise<Date>;
-  expectedBlockTime: () => Promise<number>;
+  expectedBlockTime: () => number;
 }
 
 async function classifyActiveOpeningStageAcceptingApplications (
@@ -76,10 +77,8 @@ async function classifyActiveOpeningStageReviewPeriod (
 ): Promise<OpeningStageClassification> {
   const blockNumber = stage.started_review_period_at_block.toNumber();
   const maxReviewLengthInBlocks = opening.max_review_period_length.toNumber();
-  const [startDate, blockTime] = await Promise.all([
-    queryer.blockTimestamp(blockNumber),
-    queryer.expectedBlockTime()
-  ]);
+  const startDate = await queryer.blockTimestamp(blockNumber);
+  const blockTime = queryer.expectedBlockTime();
   const endDate = moment(startDate).add(maxReviewLengthInBlocks * blockTime, 's');
 
   return {
@@ -216,7 +215,7 @@ function classifyStakeRequirement<T extends StakeRequirement> (
   option: Option<StakingPolicy>
 ): T {
   if (option.isNone) {
-    return new constructor(new u128(0));
+    return new constructor(createMock('Balance', 0));
   }
 
   const policy = option.unwrap();

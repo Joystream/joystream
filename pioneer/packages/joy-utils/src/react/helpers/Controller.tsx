@@ -7,7 +7,7 @@ type errorProps = {
 export class Controller<S, T> extends Observable<S & errorProps, T> {
   onError (desc: any) {
     this.state._hasError = true;
-    console.log(desc);
+    console.error(desc);
     this.dispatch();
   }
 

@@ -3,12 +3,12 @@ import { Link } from 'react-router-dom';
 import { formatBalance } from '@polkadot/util';
 
 import { ApiPromise } from '@polkadot/api';
-import { GenericAccountId, Option, Text, Vec, u32, u128 } from '@polkadot/types';
+import { Option, Text, Vec } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
-import { SingleLinkedMapEntry, Controller, View } from '@polkadot/joy-utils/index';
-import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
-import { SubmittableExtrinsic } from '@polkadot/api/promise/types';
+import { Controller } from '@polkadot/joy-utils/react/helpers';
+import { View } from '@polkadot/joy-utils/react/hocs';
+import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 import { QueueTxExtrinsicAdd } from '@polkadot/react-components/Status/types';
 
 import {
@@ -35,8 +35,6 @@ import {
   Application,
   ApplicationStage,
   ActivateOpeningAt,
-  ApplicationRationingPolicy,
-  CurrentBlock,
   Opening,
   OpeningStage,
   StakingPolicy,
@@ -68,6 +66,7 @@ import {
 } from '../openingStateMarkup';
 
 import { Add, Zero } from '../balances';
+import { createMock } from '@joystream/types';
 
 type ids = {
   curatorId: number;
@@ -110,102 +109,94 @@ type State = {
 }
 
 function newHRT (title: string): Text {
-  return new Text(JSON.stringify({
-    version: 1,
-    headline: 'some headline',
-    job: {
-      title: title,
-      description: 'some job description'
-    },
-    application: {
-      sections: [
-        {
-          title: 'About you',
-          questions: [
-            {
-              title: 'your name',
-              type: 'text'
-            }
-          ]
-        },
-        {
-          title: 'Something else',
-          questions: [
-            {
-              title: 'another thing',
-              type: 'text area'
-            }
-          ]
+  return createMock('Text', JSON.stringify({
+      version: 1,
+      headline: 'some headline',
+      job: {
+        title: title,
+        description: 'some job description'
+      },
+      application: {
+        sections: [
+          {
+            title: 'About you',
+            questions: [
+              {
+                title: 'your name',
+                type: 'text'
+              }
+            ]
+          },
+          {
+            title: 'Something else',
+            questions: [
+              {
+                title: 'another thing',
+                type: 'text area'
+              }
+            ]
+          }
+        ]
+      },
+      reward: '10 JOY per block',
+      creator: {
+        membership: {
+          handle: 'ben'
         }
-      ]
-    },
-    reward: '10 JOY per block',
-    creator: {
-      membership: {
-        handle: 'ben'
+      },
+      process: {
+        details: [
+          'Some custom detail'
+        ]
       }
-    },
-    process: {
-      details: [
-        'Some custom detail'
-      ]
-    }
-  })
+    })
   );
 }
 
 const createRationingPolicyOpt = (maxApplicants: number) =>
-  new Option<ApplicationRationingPolicy>(
-    ApplicationRationingPolicy,
-    new ApplicationRationingPolicy({
-      max_active_applicants: new u32(maxApplicants)
-    })
-  );
+  createMock('Option<ApplicationRationingPolicy>', {
+    max_active_applicants: maxApplicants
+  });
 const createStakingPolicyOpt = (amount: number, amount_mode: StakingAmountLimitMode): Option<StakingPolicy> =>
-  new Option(
-    StakingPolicy,
-    new StakingPolicy({
-      amount: new u128(amount),
-      amount_mode,
-      crowded_out_unstaking_period_length: new Option('BlockNumber', null),
-      review_period_expired_unstaking_period_length: new Option('BlockNumber', null)
-    })
-  );
+  createMock('Option<StakingPolicy>', {
+    amount,
+    amount_mode
+  });
 
-const STAKING_MODE_EXACT = new StakingAmountLimitMode(StakingAmountLimitModeKeys.Exact);
-const STAKING_MODE_AT_LEAST = new StakingAmountLimitMode(StakingAmountLimitModeKeys.AtLeast);
+const STAKING_MODE_EXACT = createMock('StakingAmountLimitMode', StakingAmountLimitModeKeys.Exact);
+const STAKING_MODE_AT_LEAST = createMock('StakingAmountLimitMode', StakingAmountLimitModeKeys.AtLeast);
 
 const stockOpenings: openingDescriptor[] = [
   {
     title: 'Test config A: no application stake, no role stake, no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999)
+      max_review_period_length: createMock('u32', 99999)
     },
     text: newHRT('Test configuration A')
   },
   {
     title: 'Test config B: no application stake, no role stake, 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999)
+      max_review_period_length: createMock('u32', 99999)
     },
     text: newHRT('Test configuration B')
   },
   {
     title: 'Test config C: fixed application stake (100), no role stake, no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT)
     },
     text: newHRT('Test configuration C')
   },
   {
     title: 'Test config D: fixed application stake (100), no role stake, 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT)
     },
@@ -213,18 +204,18 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config E: no application stake, fixed role stake (100), no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       role_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT)
     },
     text: newHRT('Test configuration E')
   },
   {
     title: 'Test config F: no application stake, fixed role stake (100), 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       role_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT)
     },
@@ -232,18 +223,18 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config G: minimum application stake (100), no role stake, no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST)
     },
     text: newHRT('Test configuration G')
   },
   {
     title: 'Test config H: minimum application stake (100), no role stake, 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST)
     },
@@ -251,18 +242,18 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config I: no application stake, minimum role stake (100), no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       role_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST)
     },
     text: newHRT('Test configuration I')
   },
   {
     title: 'Test config J: no application stake, minimum role stake (100), 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       role_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST)
     },
@@ -270,9 +261,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config K: fixed application stake (100), fixed role stake (200), no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_EXACT)
     },
@@ -280,9 +271,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config L: fixed application stake (100), fixed role stake (200), 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_EXACT)
@@ -291,9 +282,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config M: Minimum application stake (100), minimum role stake (200), no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_AT_LEAST)
     },
@@ -301,9 +292,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config N: Minimum application stake (100), minimum role stake (200), 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_AT_LEAST)
@@ -312,9 +303,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config O: Fixed application stake (100), minimum role stake (200), no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_AT_LEAST)
     },
@@ -322,15 +313,10 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config P: Fixed application stake (100), minimum role stake (200), 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
-      application_rationing_policy: new Option<ApplicationRationingPolicy>(
-        ApplicationRationingPolicy,
-        new ApplicationRationingPolicy({
-          max_active_applicants: new u32(10)
-        })
-      ),
+      max_review_period_length: createMock('u32', 99999),
+      application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_AT_LEAST)
     },
@@ -338,9 +324,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config Q: Minimum application stake (100), fixed role stake (200), no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_EXACT)
     },
@@ -348,9 +334,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config R: Minimum application stake (100), fixed role stake (200), 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createMock('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_EXACT)
@@ -376,21 +362,18 @@ export class AdminController extends Controller<State, ITransport> {
     this.api = api;
     this.queueExtrinsic = queueExtrinsic;
     this.state.currentDescriptor = stockOpenings[0];
-    this.updateState();
+    this.refreshState();
   }
 
-  onTxSuccess = () => { this.updateState(); }
+  onTxSuccess = () => { this.closeModal(); this.refreshState(); }
 
   newOpening (accountId: string, desc: openingDescriptor) {
     const tx = this.api.tx.contentWorkingGroup.addCuratorOpening(
       desc.start,
       desc.policy,
       desc.text
-    ) as unknown as SubmittableExtrinsic;
+    );
 
-    // FIXME: Normally we would keep it open in case of errror, but due to bad design
-    // the values in the form are reset at this point anyway, so there is no point
-    this.closeModal();
     this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
@@ -408,11 +391,11 @@ export class AdminController extends Controller<State, ITransport> {
     const tx = this.api.tx.contentWorkingGroup.applyOnCuratorOpening(
       membershipIds[0],
       openingId,
-      new GenericAccountId(creatorAddress),
-      new Option(u128, 400),
-      new Option(u128, 400),
-      new Text('This is my application')
-    ) as unknown as SubmittableExtrinsic;
+      creatorAddress,
+      400,
+      400,
+      'This is my application'
+    );
     this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId: creatorAddress });
   }
 
@@ -426,26 +409,21 @@ export class AdminController extends Controller<State, ITransport> {
       openingId,
       applications,
       null
-    ) as unknown as SubmittableExtrinsic;
+    );
     this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
   protected async profile (id: MemberId): Promise<Membership> {
     const member = (await this.api.query.members.membershipById(id)) as Membership;
-    if (member.handle.isEmpty) {
+    if (member.isEmpty) {
       throw new Error(`Expected member profile not found! (id: ${id.toString()}`);
     }
     return member;
   }
 
   protected async stakeValue (stakeId: StakeId): Promise<Balance> {
-    const stake = new SingleLinkedMapEntry<Stake>(
-      Stake,
-      await this.api.query.stake.stakes(
-        stakeId
-      )
-    );
-    return stake.value.value;
+    const stake = await this.api.query.stake.stakes(stakeId) as Stake;
+    return stake.value;
   }
 
   protected async roleStake (application: Application): Promise<Balance> {
@@ -464,67 +442,49 @@ export class AdminController extends Controller<State, ITransport> {
     return this.stakeValue(application.active_application_staking_id.unwrap());
   }
 
-  async updateState () {
+  async refreshState () {
     this.state.openings = new Map<number, opening>();
 
     const nextOpeningId = await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as CuratorOpeningId;
     for (let i = nextOpeningId.toNumber() - 1; i >= 0; i--) {
-      const curatorOpening = new SingleLinkedMapEntry<CuratorOpening>(
-        CuratorOpening,
-        await this.api.query.contentWorkingGroup.curatorOpeningById(i)
-      );
+      const curatorOpening = await this.api.query.contentWorkingGroup.curatorOpeningById(i) as CuratorOpening;
 
-      const openingId = curatorOpening.value.opening_id;
+      const openingId = curatorOpening.opening_id;
 
-      const baseOpening = new SingleLinkedMapEntry<Opening>(
-        Opening,
-        await this.api.query.hiring.openingById(
-          openingId
-        )
-      );
+      const baseOpening = await this.api.query.hiring.openingById(openingId) as Opening;
 
-      const hrt = baseOpening.value.parse_human_readable_text_with_fallback();
+      const hrt = baseOpening.parse_human_readable_text_with_fallback();
       const title = hrt.job.title;
 
       this.state.openings.set(i, {
         openingId: openingId.toNumber(),
         curatorId: i,
         applications: new Array<application>(),
-        state: baseOpening.value.stage,
+        state: baseOpening.stage,
         title: title,
-        classification: await classifyOpeningStage(this.transport, baseOpening.value)
+        classification: await classifyOpeningStage(this.transport, baseOpening)
       });
     }
 
     const nextAppid = await this.api.query.contentWorkingGroup.nextCuratorApplicationId() as CuratorApplicationId;
     for (let i = 0; i < nextAppid.toNumber(); i++) {
-      const cApplication = new SingleLinkedMapEntry<CuratorApplication>(
-        CuratorApplication,
-        await this.api.query.contentWorkingGroup.curatorApplicationById(i)
-      );
+      const cApplication = await this.api.query.contentWorkingGroup.curatorApplicationById(i) as CuratorApplication;
 
-      const appId = cApplication.value.application_id;
-      const baseApplications = new SingleLinkedMapEntry<Application>(
-        Application,
-        await this.api.query.hiring.applicationById(
-          appId
-        )
-      );
+      const appId = cApplication.application_id;
+      const baseApplications = await this.api.query.hiring.applicationById(appId) as Application;
 
-      const curatorOpening = this.state.openings.get(
-        cApplication.value.curator_opening_id.toNumber()
-      ) as opening;
+      const curatorOpening = this.state.openings.get(cApplication.curator_opening_id.toNumber()) as opening;
 
       curatorOpening.applications.push({
         openingId: appId.toNumber(),
         curatorId: i,
-        stage: baseApplications.value.stage,
-        account: cApplication.value.role_account_id.toString(),
-        memberId: cApplication.value.member_id.toNumber(),
-        profile: (await this.profile(cApplication.value.member_id)),
-        applicationStake: await this.applicationStake(baseApplications.value),
-        roleStake: await this.roleStake(baseApplications.value),
-        application: baseApplications.value
+        stage: baseApplications.stage,
+        account: cApplication.role_account_id.toString(),
+        memberId: cApplication.member_id.toNumber(),
+        profile: (await this.profile(cApplication.member_id)),
+        applicationStake: await this.applicationStake(baseApplications),
+        roleStake: await this.roleStake(baseApplications),
+        application: baseApplications
       });
     }
 
@@ -573,7 +533,7 @@ const AdminContainer = ({ state, controller }: AdminContainerProps) => {
             <Modal
               open={state.modalOpen}
               onClose={() => controller.closeModal()}
-              mountNode={containerRef.current} // Prevent conflicts with tx-modal (after form values reset issue is fixed, see FIXME: above)
+              mountNode={containerRef.current} // Prevent conflicts with tx-modal
             >
               <Modal.Content image>
                 <Modal.Description>
@@ -593,7 +553,7 @@ const AdminContainer = ({ state, controller }: AdminContainerProps) => {
 };
 
 export const AdminView = View<AdminController, State>(
-  (state, controller) => {
+  ({ state, controller }) => {
     return (
       <AdminContainer state={state} controller={controller} />
     );
@@ -627,11 +587,11 @@ const NewOpening = (props: NewOpeningProps) => {
     switch (value) {
       case 'CurrentBlock':
         setShowExactBlock(false);
-        setStart(new ActivateOpeningAt(CurrentBlock));
+        setStart(createMock('ActivateOpeningAt', 'CurrentBlock'));
         break;
 
       case 'ExactBlock':
-        setStart(new ActivateOpeningAt({ ExactBlock: exactBlock }));
+        setStart(createMock('ActivateOpeningAt', { ExactBlock: exactBlock }));
         setShowExactBlock(true);
         break;
     }
@@ -639,7 +599,7 @@ const NewOpening = (props: NewOpeningProps) => {
 
   const onChangeExactBlock = (e: any, { value }: any) => {
     setExactBlock(value);
-    setStart(new ActivateOpeningAt({ ExactBlock: value }));
+    setStart(createMock('ActivateOpeningAt', { ExactBlock: value }));
   };
 
   const [policy, setPolicy] = useState(props.desc.policy);
@@ -709,7 +669,7 @@ const NewOpening = (props: NewOpeningProps) => {
     props.fn({
       start: start,
       policy: policy,
-      text: new Text(text),
+      text: createMock('Text', text),
       title: ''
     });
   };
@@ -738,7 +698,7 @@ const NewOpening = (props: NewOpeningProps) => {
         <Input
           type="number"
           value={policy.max_review_period_length.toNumber()}
-          onChange={(e: any, { value }: any) => onChangePolicyField('max_review_period_length', new u32(value))}
+          onChange={(e: any, { value }: any) => onChangePolicyField('max_review_period_length', createMock('u32', value))}
         />
       </Form.Field>
 

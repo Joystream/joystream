@@ -177,4 +177,10 @@ export default css`
       max-width: 10em;
     }
   }
+
+  /* Fix options inside struct UI bug */
+  .ui--Params-Struct + .ui--Param-Option-toggle {
+    bottom: auto;
+    top: 0;
+  }
 `;

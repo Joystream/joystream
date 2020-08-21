@@ -22,7 +22,7 @@ import {
 import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
 
-import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 
 import { Countdown } from '../elements';
 import { ApplicationStakeRequirement, RoleStakeRequirement } from '../StakeRequirement';
@@ -38,7 +38,7 @@ import {
   openingDescription
 } from '../openingStateMarkup';
 
-import { Loadable } from '@polkadot/joy-utils/index';
+import { Loadable } from '@polkadot/joy-utils/react/hocs';
 import styled from 'styled-components';
 import _ from 'lodash';
 import { WorkingGroups, AvailableGroups, workerRoleNameByGroup } from '../working_groups';
@@ -571,7 +571,7 @@ export const OpeningsView = Loadable<OpeningsViewProps>(
           filteredOpenings.length
             ? filteredOpenings.map((opening, key) => (
               <OpeningView
-                key={key}
+                key={`${opening.meta.group}-${opening.meta.id}`}
                 {...opening}
                 block_time_in_seconds={props.block_time_in_seconds as number}
                 member_id={props.member_id} />

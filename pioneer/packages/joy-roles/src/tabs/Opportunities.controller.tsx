@@ -1,6 +1,7 @@
 import React from 'react';
 
-import { Controller, View } from '@polkadot/joy-utils/index';
+import { Controller } from '@polkadot/joy-utils/react/helpers';
+import { View } from '@polkadot/joy-utils/react/hocs';
 
 import { ITransport } from '../transport';
 
@@ -20,11 +21,18 @@ type State = {
 }
 
 export class OpportunitiesController extends Controller<State, ITransport> {
-  constructor (transport: ITransport, memberId?: MemberId, initialState: State = {}) {
+  constructor (transport: ITransport, initialState: State = {}) {
     super(transport, initialState);
-    this.state.memberId = memberId;
+  }
+
+  refreshState() {
     this.getOpportunities();
     this.getBlocktime();
+  }
+
+  async setMemberId(memberId?: MemberId) {
+    this.state.memberId = memberId;
+    this.dispatch();
   }
 
   async getOpportunities () {
@@ -39,7 +47,7 @@ export class OpportunitiesController extends Controller<State, ITransport> {
 }
 
 export const OpportunitiesView = View<OpportunitiesController, State>(
-  (state, controller, params) => (
+  ({ state, controller, params }) => (
     <OpeningsView
       group={AvailableGroups.includes(params.get('group') as any) ? params.get('group') as WorkingGroups : undefined}
       lead={!!params.get('lead')}

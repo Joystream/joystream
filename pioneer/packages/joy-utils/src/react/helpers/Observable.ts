@@ -4,9 +4,11 @@ export abstract class Observable<S extends { [key: string ]: any }, T> implement
   state: S
   protected transport: T
   protected observers: Observer<S>[] = []
+  protected initialState: S
 
   constructor (transport: T, initialState: S) {
-    this.state = initialState;
+    this.initialState = initialState;
+    this.state = { ...initialState };
     this.transport = transport;
   }
 
@@ -31,4 +33,6 @@ export abstract class Observable<S extends { [key: string ]: any }, T> implement
     }
     this.dispatch();
   }
+
+  public refreshState() { }
 }

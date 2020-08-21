@@ -4,13 +4,11 @@ import { ApiContext } from '@polkadot/react-api';
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
 
-import { Route, Switch, RouteComponentProps } from 'react-router';
+import { Route, Switch } from 'react-router';
 import Tabs from '@polkadot/react-components/Tabs';
 import { withMulti } from '@polkadot/react-api/index';
 import QueueContext from '@polkadot/react-components/Status/Context';
-import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
-
-import { ViewComponent } from '@polkadot/joy-utils/index';
+import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/react/hocs/accounts';
 
 import { Transport } from './transport.substrate';
 
@@ -24,15 +22,6 @@ import { AdminController, AdminView } from './tabs/Admin.controller';
 import './index.sass';
 
 import translate from './translate';
-
-const renderViewComponent = (Component: ViewComponent<any>, props?: RouteComponentProps) => {
-  let params = new Map<string, string>();
-  if (props && props.match.params) {
-    params = new Map<string, string>(Object.entries(props.match.params));
-  }
-
-  return <Component params={params} />;
-};
 
 type Props = AppProps & ApiProps & I18nProps & MyAccountProps
 
@@ -53,20 +42,26 @@ export const App: React.FC<Props> = (props: Props) => {
 
   const { api } = useContext(ApiContext);
   const { queueExtrinsic } = useContext(QueueContext);
-  const transport = new Transport(api, queueExtrinsic);
+  const [transport] = useState(() => new Transport(api, queueExtrinsic));
 
-  const [wgCtrl] = useState(new WorkingGroupsController(transport));
-  const oppCtrl = new OpportunityController(transport, props.myMemberId);
-  const oppsCtrl = new OpportunitiesController(transport, props.myMemberId);
-  const [applyCtrl] = useState(new ApplyController(transport));
-  const myRolesCtrl = new MyRolesController(transport, props.myAddress);
-  const [adminCtrl] = useState(new AdminController(transport, api, queueExtrinsic));
+  const [wgCtrl] = useState(() => new WorkingGroupsController(transport));
+  const [oppCtrl] = useState(() => new OpportunityController(transport));
+  const [oppsCtrl] = useState(() => new OpportunitiesController(transport));
+  const [applyCtrl] = useState(() => new ApplyController(transport));
+  const [myRolesCtrl] = useState(() => new MyRolesController(transport));
+  const [adminCtrl] = useState(() => new AdminController(transport, api, queueExtrinsic));
 
   useEffect(() => {
     return () => {
       transport.unsubscribe();
     };
-  });
+  }, []);
+
+  useEffect(() => {
+    oppCtrl.setMemberId(props.myMemberId);
+    oppsCtrl.setMemberId(props.myMemberId);
+    myRolesCtrl.setMyAddress(props.myAddress);
+  }, [props.myMemberId, props.myAddress]);
 
   const { basePath } = props;
 
@@ -86,13 +81,26 @@ export const App: React.FC<Props> = (props: Props) => {
         />
       </header>
       <Switch>
-        <Route path={`${basePath}/opportunities/:group/:id([0-9]+)/apply`} render={(props) => renderViewComponent(ApplyView(applyCtrl), props)} />
-        <Route path={`${basePath}/opportunities/:group/:id([0-9]+)`} render={(props) => renderViewComponent(OpportunityView(oppCtrl), props)} />
-        <Route path={`${basePath}/opportunities/:group/:lead(lead)?`} render={(props) => renderViewComponent(OpportunitiesView(oppsCtrl), props)} />
-        <Route path={`${basePath}/opportunities`} render={() => renderViewComponent(OpportunitiesView(oppsCtrl))} />
-        <Route path={`${basePath}/my-roles`} render={() => renderViewComponent(MyRolesView(myRolesCtrl))} />
-        <Route path={`${basePath}/admin`} render={() => renderViewComponent(AdminView(adminCtrl))} />
-        <Route render={() => renderViewComponent(WorkingGroupsView(wgCtrl))} />
+        <Route
+          path={`${basePath}/opportunities/:group/:id([0-9]+)/apply`}
+          render={(props) => <ApplyView controller={applyCtrl} params={props.match.params}/>} />
+        <Route
+          path={`${basePath}/opportunities/:group/:id([0-9]+)`}
+          render={(props) => <OpportunityView controller={oppCtrl} params={props.match.params}/>} />
+        <Route
+          path={`${basePath}/opportunities/:group/:lead(lead)?`}
+          render={(props) => <OpportunitiesView controller={oppsCtrl} params={props.match.params}/>} />
+        <Route
+          path={`${basePath}/opportunities`}
+          render={(props) => <OpportunitiesView controller={oppsCtrl} params={props.match.params}/>} />
+        <Route
+          path={`${basePath}/my-roles`}
+          render={(props) => <MyRolesView controller={myRolesCtrl} params={props.match.params}/>} />
+        <Route
+          path={`${basePath}/admin`}
+          render={(props) => <AdminView controller={adminCtrl} params={props.match.params}/>} />
+        <Route
+          render={(props) => <WorkingGroupsView controller={wgCtrl} params={props.match.params}/> } />
       </Switch>
     </main>
   );

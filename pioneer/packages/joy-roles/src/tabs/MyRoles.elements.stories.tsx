@@ -1,13 +1,11 @@
 import React from 'react';
 import { withKnobs } from '@storybook/addon-knobs';
+import { createMock } from '@joystream/types';
 
 import {
   Container
 } from 'semantic-ui-react';
 
-import {
-  u128
-} from '@polkadot/types';
 
 import {
   CurrentRoles, CurrentRolesProps,
@@ -30,7 +28,6 @@ import {
   yesterday
 } from './Opportunities.stories';
 
-import { CuratorId } from '@joystream/types/content-working-group';
 import { WorkingGroups, workerRoleNameByGroup } from '../working_groups';
 
 export default {
@@ -46,10 +43,10 @@ export function CurrentRolesFragment () {
   const props: CurrentRolesProps = {
     currentRoles: [
       {
-        workerId: new CuratorId(1),
+        workerId: createMock('CuratorId', 1),
         name: workerRoleNameByGroup[WorkingGroups.StorageProviders],
-        reward: new u128(321),
-        stake: new u128(100),
+        reward: createMock('u128', 321),
+        stake: createMock('u128', 100),
         group: WorkingGroups.StorageProviders,
         CTAs: [
           {
@@ -59,11 +56,11 @@ export function CurrentRolesFragment () {
         ]
       },
       {
-        workerId: new CuratorId(1),
+        workerId: createMock('CuratorId', 1),
         name: 'Some other role',
         url: 'some URL',
-        reward: new u128(321),
-        stake: new u128(12343200),
+        reward: createMock('u128', 321),
+        stake: createMock('u128', 12343200),
         group: WorkingGroups.ContentCurators,
         CTAs: [
           {
@@ -176,8 +173,8 @@ const permutations: (ApplicationProps & TestProps)[] = [
       starting_time: yesterday()
     },
     opening: opening,
-    applicationStake: new u128(5),
-    roleStake: new u128(15),
+    applicationStake: createMock('u128', 5),
+    roleStake: createMock('u128', 15),
     cancelCallback: () => { /* do nothing */ },
     rank: 15,
     capacity: 20
@@ -196,8 +193,8 @@ const permutations: (ApplicationProps & TestProps)[] = [
       starting_time: yesterday()
     },
     opening: opening,
-    applicationStake: new u128(5),
-    roleStake: new u128(15),
+    applicationStake: createMock('u128', 5),
+    roleStake: createMock('u128', 15),
     cancelCallback: () => { /* do nothing */ },
     rank: 21,
     capacity: 20
@@ -218,8 +215,8 @@ const permutations: (ApplicationProps & TestProps)[] = [
       review_end_block: 12345
     },
     opening: opening,
-    applicationStake: new u128(5),
-    roleStake: new u128(15),
+    applicationStake: createMock('u128', 5),
+    roleStake: createMock('u128', 15),
     cancelCallback: () => { /* do nothing */ },
     rank: 15,
     capacity: 20
@@ -240,8 +237,8 @@ const permutations: (ApplicationProps & TestProps)[] = [
       review_end_block: 12345
     },
     opening: opening,
-    applicationStake: new u128(5),
-    roleStake: new u128(15),
+    applicationStake: createMock('u128', 5),
+    roleStake: createMock('u128', 15),
     cancelCallback: () => { /* do nothing */ },
     rank: 21,
     capacity: 20
@@ -260,8 +257,8 @@ const permutations: (ApplicationProps & TestProps)[] = [
       starting_time: yesterday()
     },
     opening: opening,
-    applicationStake: new u128(5),
-    roleStake: new u128(15),
+    applicationStake: createMock('u128', 5),
+    roleStake: createMock('u128', 15),
     cancelCallback: () => { /* do nothing */ },
     rank: 21,
     capacity: 20
@@ -280,8 +277,8 @@ const permutations: (ApplicationProps & TestProps)[] = [
       starting_time: yesterday()
     },
     opening: opening,
-    applicationStake: new u128(5),
-    roleStake: new u128(15),
+    applicationStake: createMock('u128', 5),
+    roleStake: createMock('u128', 15),
     cancelCallback: () => { /* do nothing */ },
     rank: 21,
     capacity: 20,

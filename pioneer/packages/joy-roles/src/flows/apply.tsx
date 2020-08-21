@@ -3,12 +3,8 @@ import { useHistory, Link } from 'react-router-dom';
 
 import { formatBalance } from '@polkadot/util';
 import { Balance } from '@polkadot/types/interfaces';
-import {
-  GenericAccountId,
-  u128
-} from '@polkadot/types';
 
-import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 
 import {
   Accordion,
@@ -28,7 +24,7 @@ import {
 } from 'semantic-ui-react';
 
 import Identicon from '@polkadot/react-identicon';
-import AccountId from '@polkadot/types/primitive/Generic/AccountId';
+import AccountId from '@polkadot/types/generic/AccountId';
 
 import {
   GenericJoyStreamRoleSchema,
@@ -44,8 +40,9 @@ import {
 } from '../tabs/Opportunities';
 import { IStakeRequirement } from '../StakeRequirement';
 
-import { Loadable } from '@polkadot/joy-utils/index';
+import { Loadable } from '@polkadot/joy-utils/react/hocs';
 import { Add } from '../balances';
+import { createMock } from '@joystream/types';
 
 type accordionProps = {
   title: string;
@@ -92,6 +89,7 @@ export type keyPairDetails = {
 
 export type FundSourceSelectorProps = {
   keypairs: keyPairDetails[];
+  selected?: AccountId;
   totalStake?: Balance;
 }
 
@@ -105,7 +103,7 @@ export function FundSourceSelector (props: FundSourceSelectorProps & FundSourceC
 
   const onChangeDropdown = (e: any, { value }: any) => {
     if (typeof props.addressCallback !== 'undefined') {
-      props.addressCallback(new GenericAccountId(value));
+      props.addressCallback(createMock('AccountId', value));
     }
   };
 
@@ -115,7 +113,7 @@ export function FundSourceSelector (props: FundSourceSelectorProps & FundSourceC
     }
   };
 
-  props.keypairs.map((v) => {
+  props.keypairs.forEach((v) => {
     if (props.totalStake && v.balance.lt(props.totalStake)) {
       return;
     }
@@ -134,13 +132,6 @@ export function FundSourceSelector (props: FundSourceSelectorProps & FundSourceC
     });
   });
 
-  useEffect(() => {
-    if (pairs.length > 0 && typeof props.addressCallback !== 'undefined') {
-      props.addressCallback(new GenericAccountId(pairs[0].accountId));
-    }
-  }, []);
-
-  const accCtx = useMyAccount();
   let passphraseCallback = null;
   if (props.passphraseCallback) {
     passphraseCallback = (
@@ -164,7 +155,7 @@ export function FundSourceSelector (props: FundSourceSelectorProps & FundSourceC
           selection
           options={pairs}
           onChange={onChangeDropdown}
-          defaultValue={accCtx.state.inited ? accCtx.state.address : undefined}
+          value={props.selected && props.selected.toString()}
         />
       </Form.Field>
       {passphraseCallback}
@@ -211,7 +202,7 @@ export function StakeRankSelector (props: StakeRankSelectorProps) {
   props.slots.forEach(slotStake => props.stake.gt(slotStake.sub(props.otherStake)) && --estimatedSlot);
 
   const changeValue = (e: any, { value }: any) => {
-    const newStake = new u128(value);
+    const newStake = createMock('Balance', value);
     props.setStake(newStake);
   };
 
@@ -584,7 +575,7 @@ export function ConfirmStakes2Up (props: ConfirmStakes2UpProps) {
                 <Label color={valid ? 'green' : 'red'}>
                   <Icon name='times circle' />
                   Your current combined stake
-                  <Label.Detail>{formatBalance(new u128(props.selectedApplicationStake.add(props.selectedRoleStake)))}</Label.Detail>
+                  <Label.Detail>{formatBalance(props.selectedApplicationStake.add(props.selectedRoleStake))}</Label.Detail>
                 </Label>
                 { maxNumberOfApplications > 0 && (
                   <Label color='grey'>
@@ -613,10 +604,10 @@ type StakeRankMiniSelectorProps = {
 function StakeRankMiniSelector (props: StakeRankMiniSelectorProps) {
   const changeValue = (e: any, { value }: any) => {
     if (value < 0) {
-      props.setValue(new u128(0));
+      props.setValue(createMock('Balance', 0));
       return;
     }
-    const newStake = new u128(value);
+    const newStake = createMock('Balance', value);
     props.setValue(newStake);
   };
 
@@ -919,6 +910,7 @@ export const SubmitApplicationStage = (props: SubmitApplicationStageProps) => {
         <Label attached='top'>Source of funds</Label>
         <p>Please select the account that will be used as the source of funds.</p>
         <FundSourceSelector {...props}
+          selected={props.keyAddress}
           addressCallback={props.setKeyAddress}
         />
       </Segment>
@@ -1033,10 +1025,12 @@ export const FlowModal = Loadable<FlowModalProps>(
       complete, setComplete
     } = props;
 
-    const accCtx = useMyAccount();
-    if (txKeyAddress.isEmpty) {
-      setTxKeyAddress(new AccountId(accCtx.state.address));
-    }
+    const accContext = useMyAccount();
+    useEffect(() => {
+      if (txKeyAddress.isEmpty) {
+        setTxKeyAddress(createMock('AccountId', accContext.state.address));
+      }
+    }, [txKeyAddress]);
 
     const history = useHistory();
     const cancel = () => {
@@ -1095,35 +1089,6 @@ export const FlowModal = Loadable<FlowModalProps>(
       setSelectedRoleStake: setRoleStake
     };
 
-    const stages: { [k in ProgressSteps]: JSX.Element } = {
-      [ProgressSteps.ConfirmStakes]: (<ConfirmStakesStage
-        {...props}
-        nextTransition={enterApplicationDetailsState}
-        prevTransition={cancel}
-        {...setStakeProps}
-      />),
-
-      [ProgressSteps.ApplicationDetails]: (<ApplicationDetailsStage
-        setData={setAppDetails}
-        data={appDetails}
-        applicationDetails={props.role.application}
-        nextTransition={enterSubmitApplicationState}
-        prevTransition={() => { props.hasConfirmStep ? enterConfirmStakeState() : cancel(); }}
-      />),
-
-      [ProgressSteps.SubmitApplication]: (<SubmitApplicationStage
-        {...props}
-        nextTransition={enterDoneState}
-        prevTransition={enterApplicationDetailsState}
-        keyAddress={txKeyAddress}
-        setKeyAddress={setTxKeyAddress}
-        transactionDetails={props.transactionDetails}
-        totalStake={Add(applicationStake, roleStake)}
-      />),
-
-      [ProgressSteps.Done]: (<DoneStage {...props} roleKeyName={props.roleKeyName} />)
-    };
-
     const cancelText = complete ? 'Close' : 'Cancel application';
 
     return (
@@ -1147,7 +1112,32 @@ export const FlowModal = Loadable<FlowModalProps>(
           <Grid columns="equal">
             <Grid.Column width={11} className="main">
               <ProgressStepsView activeStep={activeStep} hasConfirmStep={props.hasConfirmStep} />
-              {stages[activeStep]}
+              { activeStep === ProgressSteps.ConfirmStakes && (<ConfirmStakesStage
+                  {...props}
+                  nextTransition={enterApplicationDetailsState}
+                  prevTransition={cancel}
+                  {...setStakeProps}
+                />
+              ) }
+              { activeStep === ProgressSteps.ApplicationDetails && (<ApplicationDetailsStage
+                  setData={setAppDetails}
+                  data={appDetails}
+                  applicationDetails={props.role.application}
+                  nextTransition={enterSubmitApplicationState}
+                  prevTransition={() => { props.hasConfirmStep ? enterConfirmStakeState() : cancel(); }}
+                />
+              ) }
+              { activeStep === ProgressSteps.SubmitApplication && (<SubmitApplicationStage
+                  {...props}
+                  nextTransition={enterDoneState}
+                  prevTransition={enterApplicationDetailsState}
+                  keyAddress={txKeyAddress}
+                  setKeyAddress={setTxKeyAddress}
+                  transactionDetails={props.transactionDetails}
+                  totalStake={Add(applicationStake, roleStake)}
+                />
+               ) }
+              { activeStep === ProgressSteps.Done && (<DoneStage {...props} roleKeyName={props.roleKeyName} />) }
             </Grid.Column>
             <Grid.Column width={5} className="summary">
               <Header as='h3'>{props.role.headline}</Header>

@@ -1,7 +1,8 @@
 import React from 'react';
 
 import { Container } from 'semantic-ui-react';
-import { Controller, View } from '@polkadot/joy-utils/index';
+import { Controller } from '@polkadot/joy-utils/react/helpers';
+import { View } from '@polkadot/joy-utils/react/hocs';
 import { ITransport } from '../transport';
 import {
   Applications, OpeningApplication,
@@ -23,13 +24,23 @@ const newEmptyState = (): State => {
 };
 
 export class MyRolesController extends Controller<State, ITransport> {
-  constructor (transport: ITransport, myAddress: string | undefined, initialState: State = newEmptyState()) {
+  constructor (transport: ITransport, initialState: State = newEmptyState()) {
     super(transport, initialState);
+  }
 
+  refreshState() {
+    if (!this.state.myAddress) {
+      return;
+    }
+    // Set actual data
+    this.updateCurationGroupRoles(this.state.myAddress);
+    this.updateApplications(this.state.myAddress);
+  }
+
+  setMyAddress (myAddress: string | undefined) {
     if (typeof myAddress === 'string') {
       this.state.myAddress = myAddress;
-      this.updateCurationGroupRoles(myAddress);
-      this.updateApplications(myAddress);
+      this.refreshState();
     }
   }
 
@@ -54,16 +65,18 @@ export class MyRolesController extends Controller<State, ITransport> {
   }
 
   leaveRole (role: ActiveRole, rationale: string) {
-    this.transport.leaveRole(role.group, this.state.myAddress, role.workerId.toNumber(), rationale);
+    const successCb = this.refreshState.bind(this);
+    this.transport.leaveRole(role.group, this.state.myAddress, role.workerId.toNumber(), rationale, successCb);
   }
 
   cancelApplication (application: OpeningApplication) {
-    this.transport.withdrawApplication(application.meta.group, this.state.myAddress, application.id);
+    const successCb = this.refreshState.bind(this);
+    this.transport.withdrawApplication(application.meta.group, this.state.myAddress, application.id, successCb);
   }
 }
 
 export const MyRolesView = View<MyRolesController, State>(
-  (state, controller) => (
+  ({ state, controller }) => (
     <Container className="my-roles">
       <CurrentRoles currentRoles={state.currentRoles} />
       <Applications applications={state.applications} cancelCallback={(a) => controller.cancelApplication(a)} />
