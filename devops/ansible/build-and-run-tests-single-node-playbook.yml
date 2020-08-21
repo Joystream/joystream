@@ -4,9 +4,6 @@
   become_method: sudo
 
   tasks:
-    - name: debug output
-      debug:
-        msg: the workflow is triggered on new branch
 
     - name: install dependencies
       include_role:

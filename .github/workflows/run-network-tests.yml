@@ -2,6 +2,7 @@ name: run-network-tests
 on:
   pull_request:
     types: [labeled]
+  workflow_dispatch:
 
 jobs:
   run_ansible_tests:
