@@ -1,7 +1,13 @@
-- name: install pip on Debian
+- name: install pip and npm on Debian
   block:
+    - name: create temporary folder
+      file:
+        path: ../../.tmp
+        state: directory
     - name: install pip using apt
       apt: name=python-pip state=present
+    - name: install npm using apt
+      apt: name=npm state=present
   when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
 - name: install pip on Mac
@@ -11,15 +17,15 @@
         path: ../../.tmp
         state: directory
     - name: get pip installer using curl
-      get_url: 
+      get_url:
         url: https://bootstrap.pypa.io/get-pip.py
         dest: ../../.tmp/get-pip.py
     - name: install pip
       shell: python ../../.tmp/get-pip.py
   when: ansible_distribution == 'MacOSX'
-  always: 
+  always:
     - name: remove pip installer script
-      file: 
+      file:
         path: ../../.tmp/get-pip.py
         state: absent
 
