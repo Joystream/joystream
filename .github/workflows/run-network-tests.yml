@@ -5,8 +5,12 @@ on:
   workflow_dispatch:
 
 jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hmarr/debug-action
   run_ansible_tests:
-    if: github.event.label.name == 'run-network-tests' || github.event.type == 'WorkflowDispatch'
+    if: github.event.label.name == 'run-network-tests' || github.event.action == 'workflow_dispatch'
     name: run network tests using ansible
     runs-on: ubuntu-latest
     strategy:
