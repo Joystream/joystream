@@ -261,44 +261,5 @@ export default class QueryBlockProducer extends EventEmitter {
     }
   }
 
-  public async * blocks(): AsyncGenerator<QueryEventBlock> {
-    if (!this._started) {
-      throw new Error("The block producer is stopped")
-    }
-
-    assert(!this._producing_blocks_blocks, 'Cannot already be producing blocks.');
-    this._producing_blocks_blocks = true;
-
-    // Continue as long as we know there are outstanding blocks.
-    while (this._started) {
-      // Wait if we are already at the head of the chain
-      await this.checkHeightOrWait();
-      try {
-        const qeb = await this._doBlockProduce();
-        let eventsToProduce: QueryEvent[] = qeb.query_events;
-        // Remove processed events from the list.
-        if (this._block_to_be_produced_next.eq(this._at_block)) {
-          eventsToProduce = qeb.query_events.filter((event) => event.index.gt(this._last_processed_event_index));
-        }
-
-        yield new QueryEventBlock(this._block_to_be_produced_next, eventsToProduce);
-        // all went fine, so reset the back-off time
-        this._resetBackOffTime();
-        // and proceed to the next block
-        this._block_to_be_produced_next = this._block_to_be_produced_next.addn(1);
-      
-      } catch (e) {
-        console.error(e);
-        debug(`An error occured while producting block ${this._block_to_be_produced_next.toString()}`);
-        // waiting until the next retry
-        debug(`Retrying after ${this._backOffTime} ms`);
-        await new Promise((resolve)=>setTimeout(() => {
-          resolve();
-        }, this._backOffTime));
-        this._increaseBackOffTime();
-      }
-    }
-    this._producing_blocks_blocks = false;
-     
-  }
+  
 }
