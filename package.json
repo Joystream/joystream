@@ -28,7 +28,8 @@
     "pioneer/packages/joy-pages",
     "pioneer/packages/joy-election",
     "pioneer/packages/joy-proposals",
-    "pioneer/packages/joy-roles"
+    "pioneer/packages/joy-roles",
+    "utils/api-examples"
   ],
   "resolutions": {
     "@polkadot/api": "1.26.1",
