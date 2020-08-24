@@ -83,7 +83,7 @@ fn update_class_permissions_lead_auth_failed() {
         // Failure checked
         assert_failure(
             update_class_permissions_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -102,7 +102,7 @@ fn update_class_permissions_of_non_existent_class() {
         // Failure checked
         assert_failure(
             update_class_permissions_result,
-            ERROR_CLASS_NOT_FOUND,
+            Error::<Runtime>::ClassNotFound,
             number_of_events_before_call,
         );
     })
@@ -132,7 +132,7 @@ fn update_class_permissions_curator_group_does_not_exist() {
         // Failure checked
         assert_failure(
             update_class_permissions_result,
-            ERROR_CURATOR_GROUP_DOES_NOT_EXIST,
+            Error::<Runtime>::CuratorGroupDoesNotExist,
             number_of_events_before_call,
         );
     })
@@ -171,7 +171,7 @@ fn update_class_permissions_maintainers_limit_reached() {
         // Failure checked
         assert_failure(
             update_class_permissions_result,
-            ERROR_NUMBER_OF_MAINTAINERS_PER_CLASS_LIMIT_REACHED,
+            Error::<Runtime>::ClassMaintainersLimitReached,
             number_of_events_before_call,
         );
     })

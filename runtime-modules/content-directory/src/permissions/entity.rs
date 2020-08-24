@@ -93,11 +93,11 @@ impl<T: Trait> EntityPermissions<T> {
     }
 
     /// Ensure actor with given `EntityAccessLevel` can remove entity
-    pub fn ensure_group_can_remove_entity(access_level: EntityAccessLevel) -> dispatch::Result {
+    pub fn ensure_group_can_remove_entity(access_level: EntityAccessLevel) -> Result<(), Error<T>> {
         match access_level {
             EntityAccessLevel::EntityController => Ok(()),
             EntityAccessLevel::EntityControllerAndMaintainer => Ok(()),
-            _ => Err(ERROR_ENTITY_REMOVAL_ACCESS_DENIED),
+            _ => Err(Error::<T>::EntityRemovalAccessDenied),
         }
     }
 
@@ -105,10 +105,10 @@ impl<T: Trait> EntityPermissions<T> {
     pub fn ensure_controllers_are_not_equal(
         &self,
         new_entity_controller: &EntityController<T>,
-    ) -> dispatch::Result {
+    ) -> Result<(), Error<T>> {
         ensure!(
             !self.controller_is_equal_to(new_entity_controller),
-            ERROR_PROVIDED_ENTITY_CONTROLLER_IS_EQUAL_TO_CURRENT_ONE
+            Error::<T>::ProvidedEntityControllerIsEqualToTheCurrentOne
         );
         Ok(())
     }
@@ -135,7 +135,7 @@ impl EntityAccessLevel {
         entity_permissions: &EntityPermissions<T>,
         class_permissions: &ClassPermissions<T>,
         actor: &Actor<T>,
-    ) -> Result<Self, &'static str> {
+    ) -> Result<Self, Error<T>> {
         let controller = EntityController::<T>::from_actor(actor);
         match actor {
             Actor::Lead if entity_permissions.controller_is_equal_to(&controller) => {
@@ -161,10 +161,10 @@ impl EntityAccessLevel {
                     (true, true) => Ok(Self::EntityControllerAndMaintainer),
                     (false, true) => Ok(Self::EntityMaintainer),
                     // Curator cannot be controller, but not maintainer simultaneously
-                    _ => Err(ERROR_ENTITY_ACCESS_DENIED),
+                    _ => Err(Error::<T>::EntityAccessDenied),
                 }
             }
-            _ => Err(ERROR_ENTITY_ACCESS_DENIED),
+            _ => Err(Error::<T>::EntityAccessDenied),
         }
     }
 }

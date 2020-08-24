@@ -1,5 +1,5 @@
 use super::*;
-use runtime_primitives::traits::Hash;
+use sp_runtime::traits::Hash;
 
 /// Enum, representing either `StoredValue` or `VecStoredPropertyValue`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -10,6 +10,7 @@ pub enum StoredPropertyValue<T: Trait> {
 }
 
 impl<T: Trait> StoredPropertyValue<T> {
+    /// Returns single property value by reference if `StoredPropertyValue` is Single
     pub fn as_single_value(&self) -> Option<&StoredValue<T>> {
         if let StoredPropertyValue::Single(single_value) = self {
             Some(single_value)
@@ -18,6 +19,7 @@ impl<T: Trait> StoredPropertyValue<T> {
         }
     }
 
+    /// Returns vector property value by reference if `StoredPropertyValue` is Single
     pub fn as_vec_property_value(&self) -> Option<&VecStoredPropertyValue<T>> {
         if let StoredPropertyValue::Vector(vec_property_value) = self {
             Some(vec_property_value)
@@ -26,6 +28,7 @@ impl<T: Trait> StoredPropertyValue<T> {
         }
     }
 
+    /// Returns vector property value by mutable reference if `StoredPropertyValue` is Single
     pub fn as_vec_property_value_mut(&mut self) -> Option<&mut VecStoredPropertyValue<T>> {
         if let StoredPropertyValue::Vector(vec_property_value) = self {
             Some(vec_property_value)
@@ -134,6 +137,7 @@ impl<T: Trait> VecStoredPropertyValue<T> {
         self.nonce
     }
 
+    /// Create new `VecStoredPropertyValue` from `vec value` provided and `nonce`
     pub fn new(vec_value: VecStoredValue<T>, nonce: T::Nonce) -> Self {
         Self { vec_value, nonce }
     }
@@ -249,10 +253,10 @@ impl<T: Trait> VecStoredPropertyValue<T> {
 
     /// Ensure `VecStoredPropertyValue` nonce is equal to the provided one.
     /// Used to to avoid possible data races, when performing vector specific operations
-    pub fn ensure_nonce_equality(&self, new_nonce: T::Nonce) -> dispatch::Result {
+    pub fn ensure_nonce_equality(&self, new_nonce: T::Nonce) -> Result<(), Error<T>> {
         ensure!(
             self.nonce == new_nonce,
-            ERROR_PROP_VALUE_VEC_NONCES_DOES_NOT_MATCH
+            Error::<T>::PropertyValueVecNoncesDoesNotMatch
         );
         Ok(())
     }
@@ -261,10 +265,10 @@ impl<T: Trait> VecStoredPropertyValue<T> {
     pub fn ensure_index_in_property_vector_is_valid(
         &self,
         index_in_property_vec: VecMaxLength,
-    ) -> dispatch::Result {
+    ) -> Result<(), Error<T>> {
         ensure!(
             (index_in_property_vec as usize) <= self.len(),
-            ERROR_ENTITY_PROP_VALUE_VECTOR_INDEX_IS_OUT_OF_RANGE
+            Error::<T>::EntityPropertyValueVectorIndexIsOutOfRange
         );
 
         Ok(())

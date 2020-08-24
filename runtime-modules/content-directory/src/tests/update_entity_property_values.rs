@@ -94,7 +94,7 @@ fn update_entity_property_values_entity_not_found() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_ENTITY_NOT_FOUND,
+            Error::<Runtime>::EntityNotFound,
             number_of_events_before_call,
         );
     })
@@ -132,7 +132,7 @@ fn update_entity_property_values_lead_auth_failed() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -170,7 +170,7 @@ fn update_entity_property_values_member_auth_failed() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_MEMBER_AUTH_FAILED,
+            Error::<Runtime>::MemberAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -218,7 +218,7 @@ fn update_entity_property_values_curator_group_is_not_active() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_CURATOR_GROUP_IS_NOT_ACTIVE,
+            Error::<Runtime>::CuratorGroupIsNotActive,
             number_of_events_before_call,
         );
     })
@@ -259,7 +259,7 @@ fn update_entity_property_values_curator_auth_failed() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_CURATOR_AUTH_FAILED,
+            Error::<Runtime>::CuratorAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -300,7 +300,7 @@ fn update_entity_property_values_curator_not_found_in_curator_group() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP,
+            Error::<Runtime>::CuratorIsNotAMemberOfGivenCuratorGroup,
             number_of_events_before_call,
         );
     })
@@ -339,7 +339,7 @@ fn update_entity_property_values_entity_access_denied() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_ENTITY_ACCESS_DENIED,
+            Error::<Runtime>::EntityAccessDenied,
             number_of_events_before_call,
         );
     })
@@ -378,7 +378,7 @@ fn update_entity_property_values_locked_on_class_level() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL,
+            Error::<Runtime>::AllPropertiesWereLockedOnClassLevel,
             number_of_events_before_call,
         );
     })
@@ -457,7 +457,7 @@ fn update_entity_property_values_is_locked_for_given_actor() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_CLASS_PROPERTY_TYPE_IS_LOCKED_FOR_GIVEN_ACTOR,
+            Error::<Runtime>::ClassPropertyTypeLockedForGivenActor,
             number_of_events_before_call,
         );
     })
@@ -500,7 +500,7 @@ fn update_entity_property_values_unknown_entity_property_id() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_UNKNOWN_ENTITY_PROP_ID,
+            Error::<Runtime>::UnknownEntityPropertyId,
             number_of_events_before_call,
         );
     })
@@ -542,7 +542,7 @@ fn update_entity_property_values_prop_value_do_not_match_type() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_PROP_VALUE_DONT_MATCH_TYPE,
+            Error::<Runtime>::PropertyValueDoNotMatchType,
             number_of_events_before_call,
         );
     })
@@ -587,7 +587,7 @@ fn update_entity_property_values_vec_prop_is_too_long() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_VEC_PROP_IS_TOO_LONG,
+            Error::<Runtime>::VecPropertyTooLong,
             number_of_events_before_call,
         );
     })
@@ -661,7 +661,7 @@ fn update_entity_property_values_text_prop_is_too_long() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_TEXT_PROP_IS_TOO_LONG,
+            Error::<Runtime>::TextPropertyTooLong,
             number_of_events_before_call,
         );
     })
@@ -740,7 +740,7 @@ fn update_entity_property_values_hashed_text_prop_is_too_long() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_HASHED_TEXT_PROP_IS_TOO_LONG,
+            Error::<Runtime>::HashedTextPropertyTooLong,
             number_of_events_before_call,
         );
     })
@@ -785,7 +785,7 @@ fn update_entity_property_values_referenced_entity_not_found() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_ENTITY_NOT_FOUND,
+            Error::<Runtime>::EntityNotFound,
             number_of_events_before_call,
         );
     })
@@ -836,7 +836,7 @@ fn update_entity_property_values_referenced_entity_does_not_match_its_class() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_REFERENCED_ENTITY_DOES_NOT_MATCH_ITS_CLASS,
+            Error::<Runtime>::ReferencedEntityDoesNotMatchItsClass,
             number_of_events_before_call,
         );
     })
@@ -892,7 +892,7 @@ fn update_entity_property_values_entity_can_not_be_referenced() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_ENTITY_CAN_NOT_BE_REFERENCED,
+            Error::<Runtime>::EntityCanNotBeReferenced,
             number_of_events_before_call,
         );
     })
@@ -954,7 +954,7 @@ fn update_entity_property_values_same_controller_constraint_violation() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION,
+            Error::<Runtime>::SameControllerConstraintViolation,
             number_of_events_before_call,
         );
     })
@@ -1018,7 +1018,7 @@ fn update_entity_property_values_property_should_be_unique() {
         // Failure checked
         assert_failure(
             update_entity_property_values_result,
-            ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE,
+            Error::<Runtime>::PropertyValueShouldBeUnique,
             number_of_events_before_call,
         );
     })

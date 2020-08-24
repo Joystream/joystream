@@ -132,7 +132,7 @@ fn update_entity_creation_voucher_lead_auth_failed() {
         // Failure checked
         assert_failure(
             update_entity_creation_voucher_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -159,7 +159,7 @@ fn update_entity_creation_voucher_class_does_not_exist() {
         // Failure checked
         assert_failure(
             update_entity_creation_voucher_result,
-            ERROR_CLASS_NOT_FOUND,
+            Error::<Runtime>::ClassNotFound,
             number_of_events_before_call,
         );
     })
@@ -190,7 +190,7 @@ fn update_entity_creation_voucher_individual_creation_limit_exceed() {
         // Failure checked
         assert_failure(
             update_entity_creation_voucher_result,
-            ERROR_NUMBER_OF_CLASS_ENTITIES_PER_ACTOR_CONSTRAINT_VIOLATED,
+            Error::<Runtime>::NumberOfClassEntitiesPerActorConstraintViolated,
             number_of_events_before_call,
         );
     })

@@ -161,26 +161,26 @@ impl<T: Trait> Class<T> {
     }
 
     /// Ensure `Class` `Schema` under given index exist, return corresponding `Schema`
-    pub fn ensure_schema_exists(&self, schema_index: SchemaId) -> Result<&Schema, &'static str> {
+    pub fn ensure_schema_exists(&self, schema_index: SchemaId) -> Result<&Schema, Error<T>> {
         self.schemas
             .get(schema_index as usize)
-            .ok_or(ERROR_UNKNOWN_CLASS_SCHEMA_ID)
+            .ok_or(Error::<T>::UnknownClassSchemaId)
     }
 
     /// Ensure `schema_id` is a valid index of `Class` schemas vector
-    pub fn ensure_schema_id_exists(&self, schema_id: SchemaId) -> dispatch::Result {
+    pub fn ensure_schema_id_exists(&self, schema_id: SchemaId) -> Result<(), Error<T>> {
         ensure!(
             schema_id < self.schemas.len() as SchemaId,
-            ERROR_UNKNOWN_CLASS_SCHEMA_ID
+            Error::<T>::UnknownClassSchemaId
         );
         Ok(())
     }
 
     /// Ensure `Schema`s limit per `Class` not reached
-    pub fn ensure_schemas_limit_not_reached(&self) -> dispatch::Result {
+    pub fn ensure_schemas_limit_not_reached(&self) -> Result<(), Error<T>> {
         ensure!(
             (self.schemas.len() as MaxNumber) < T::MaxNumberOfSchemasPerClass::get(),
-            ERROR_CLASS_SCHEMAS_LIMIT_REACHED
+            Error::<T>::ClassSchemasLimitReached
         );
         Ok(())
     }
@@ -189,20 +189,20 @@ impl<T: Trait> Class<T> {
     pub fn ensure_properties_limit_not_reached(
         &self,
         new_properties: &[Property<T>],
-    ) -> dispatch::Result {
+    ) -> Result<(), Error<T>> {
         ensure!(
             T::MaxNumberOfPropertiesPerSchema::get()
                 >= (self.properties.len() + new_properties.len()) as MaxNumber,
-            ERROR_SCHEMA_PROPERTIES_LIMIT_REACHED
+            Error::<T>::SchemaPropertiesLimitReached
         );
         Ok(())
     }
 
     /// Ensure `Class` specific entities limit not reached
-    pub fn ensure_maximum_entities_count_limit_not_reached(&self) -> dispatch::Result {
+    pub fn ensure_maximum_entities_count_limit_not_reached(&self) -> Result<(), Error<T>> {
         ensure!(
             self.current_number_of_entities < self.maximum_entities_count,
-            ERROR_MAX_NUMBER_OF_ENTITIES_PER_CLASS_LIMIT_REACHED
+            Error::<T>::NumberOfEntitiesPerClassLimitReached
         );
         Ok(())
     }
@@ -213,7 +213,7 @@ impl<T: Trait> Class<T> {
         &self,
         in_class_schema_property_id: PropertyId,
         entity_access_level: EntityAccessLevel,
-    ) -> Result<Property<T>, &'static str> {
+    ) -> Result<Property<T>, Error<T>> {
         // Ensure property values were not locked on Class level
         self.ensure_property_values_unlocked()?;
 
@@ -223,7 +223,7 @@ impl<T: Trait> Class<T> {
             .get(in_class_schema_property_id as usize)
             // Throw an error if a property was not found on class
             // by an in-class index of a property.
-            .ok_or(ERROR_CLASS_PROP_NOT_FOUND)?;
+            .ok_or(Error::<T>::ClassPropertyNotFound)?;
 
         // Ensure Property is unlocked from Actor with given EntityAccessLevel
         class_property.ensure_unlocked_from(entity_access_level)?;
@@ -232,12 +232,12 @@ impl<T: Trait> Class<T> {
     }
 
     /// Ensure property values were not locked on `Class` level
-    pub fn ensure_property_values_unlocked(&self) -> dispatch::Result {
+    pub fn ensure_property_values_unlocked(&self) -> Result<(), Error<T>> {
         ensure!(
             !self
                 .get_permissions_ref()
                 .all_entity_property_values_locked(),
-            ERROR_ALL_PROP_WERE_LOCKED_ON_CLASS_LEVEL
+            Error::<T>::AllPropertiesWereLockedOnClassLevel
         );
         Ok(())
     }

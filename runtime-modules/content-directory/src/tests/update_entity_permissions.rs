@@ -73,7 +73,7 @@ fn update_entity_permissions_lead_auth_failed() {
         // Failure checked
         assert_failure(
             update_entity_permissions_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -97,7 +97,7 @@ fn update_entity_permissions_of_non_existent_entity() {
         // Failure checked
         assert_failure(
             update_entity_permissions_result,
-            ERROR_ENTITY_NOT_FOUND,
+            Error::<Runtime>::EntityNotFound,
             number_of_events_before_call,
         );
     })

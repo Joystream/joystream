@@ -88,7 +88,7 @@ impl<T: Trait> ClassPermissions<T> {
         &self,
         account_id: &T::AccountId,
         actor: &Actor<T>,
-    ) -> dispatch::Result {
+    ) -> Result<(), Error<T>> {
         let can_create = match &actor {
             Actor::Lead => {
                 // Ensure lead authorization performed succesfully
@@ -113,13 +113,16 @@ impl<T: Trait> ClassPermissions<T> {
             }
             _ => false,
         };
-        ensure!(can_create, ERROR_ACTOR_CAN_NOT_CREATE_ENTITIES);
+        ensure!(can_create, Error::<T>::ActorCanNotCreateEntities);
         Ok(())
     }
 
     /// Ensure entities creation is not blocked on `Class` level
-    pub fn ensure_entity_creation_not_blocked(&self) -> dispatch::Result {
-        ensure!(!self.entity_creation_blocked, ERROR_ENTITY_CREATION_BLOCKED);
+    pub fn ensure_entity_creation_not_blocked(&self) -> Result<(), Error<T>> {
+        ensure!(
+            !self.entity_creation_blocked,
+            Error::<T>::EntitiesCreationBlocked
+        );
         Ok(())
     }
 
@@ -127,10 +130,10 @@ impl<T: Trait> ClassPermissions<T> {
     pub fn ensure_maintainer_exists(
         &self,
         curator_group_id: &T::CuratorGroupId,
-    ) -> dispatch::Result {
+    ) -> Result<(), Error<T>> {
         ensure!(
             self.maintainers.contains(curator_group_id),
-            ERROR_MAINTAINER_DOES_NOT_EXIST
+            Error::<T>::MaintainerDoesNotExist
         );
         Ok(())
     }
@@ -139,10 +142,10 @@ impl<T: Trait> ClassPermissions<T> {
     pub fn ensure_maintainer_does_not_exist(
         &self,
         curator_group_id: &T::CuratorGroupId,
-    ) -> dispatch::Result {
+    ) -> Result<(), Error<T>> {
         ensure!(
             !self.maintainers.contains(curator_group_id),
-            ERROR_MAINTAINER_ALREADY_EXISTS
+            Error::<T>::MaintainerAlreadyExists
         );
         Ok(())
     }

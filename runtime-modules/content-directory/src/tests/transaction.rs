@@ -100,7 +100,7 @@ fn transaction_limit_reached() {
         // Failure checked
         assert_failure(
             transaction_result,
-            ERROR_MAX_NUMBER_OF_OPERATIONS_DURING_ATOMIC_BATCHING_LIMIT_REACHED,
+            Error::<Runtime>::NumberOfOperationsDuringAtomicBatchingLimitReached,
             number_of_events_before_call,
         );
     })

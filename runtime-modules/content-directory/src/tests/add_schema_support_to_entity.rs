@@ -54,7 +54,7 @@ fn add_schema_support_to_non_existent_entity() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_ENTITY_NOT_FOUND,
+            Error::<Runtime>::EntityNotFound,
             number_of_events_before_call,
         );
     })
@@ -100,7 +100,7 @@ fn add_schema_support_lead_auth_failed() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_LEAD_AUTH_FAILED,
+            Error::<Runtime>::LeadAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -146,7 +146,7 @@ fn add_schema_support_member_auth_failed() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_MEMBER_AUTH_FAILED,
+            Error::<Runtime>::MemberAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -199,7 +199,7 @@ fn add_schema_support_curator_group_is_not_active() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_CURATOR_GROUP_IS_NOT_ACTIVE,
+            Error::<Runtime>::CuratorGroupIsNotActive,
             number_of_events_before_call,
         );
     })
@@ -246,7 +246,7 @@ fn add_schema_support_curator_auth_failed() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_CURATOR_AUTH_FAILED,
+            Error::<Runtime>::CuratorAuthFailed,
             number_of_events_before_call,
         );
     })
@@ -293,7 +293,7 @@ fn add_schema_support_curator_not_found_in_curator_group() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_CURATOR_IS_NOT_A_MEMBER_OF_A_GIVEN_CURATOR_GROUP,
+            Error::<Runtime>::CuratorIsNotAMemberOfGivenCuratorGroup,
             number_of_events_before_call,
         );
     })
@@ -340,7 +340,7 @@ fn add_schema_support_access_denied() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_ENTITY_ACCESS_DENIED,
+            Error::<Runtime>::EntityAccessDenied,
             number_of_events_before_call,
         );
     })
@@ -378,7 +378,7 @@ fn add_schema_support_to_entity_schema_does_not_exist() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_UNKNOWN_CLASS_SCHEMA_ID,
+            Error::<Runtime>::UnknownClassSchemaId,
             number_of_events_before_call,
         );
     })
@@ -429,7 +429,7 @@ fn add_schema_support_to_entity_class_property_not_found() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_CLASS_PROP_NOT_FOUND,
+            Error::<Runtime>::ClassPropertyNotFound,
             number_of_events_before_call,
         );
     })
@@ -488,7 +488,7 @@ fn add_schema_support_already_added_to_the_entity() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_SCHEMA_ALREADY_ADDED_TO_THE_ENTITY,
+            Error::<Runtime>::SchemaAlreadyAddedToTheEntity,
             number_of_events_before_call,
         );
     })
@@ -570,7 +570,7 @@ fn add_schema_support_already_contains_given_property_id() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_ENTITY_ALREADY_CONTAINS_GIVEN_PROPERTY_ID,
+            Error::<Runtime>::EntityAlreadyContainsGivenPropertyId,
             number_of_events_before_call,
         );
     })
@@ -629,7 +629,7 @@ fn add_schema_support_is_not_active() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_CLASS_SCHEMA_NOT_ACTIVE,
+            Error::<Runtime>::ClassSchemaNotActive,
             number_of_events_before_call,
         );
     })
@@ -693,7 +693,7 @@ fn add_schema_support_does_not_contain_provided_property_id() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_SCHEMA_DOES_NOT_CONTAIN_PROVIDED_PROPERTY_ID,
+            Error::<Runtime>::SchemaDoesNotContainProvidedPropertyId,
             number_of_events_before_call,
         );
     })
@@ -753,7 +753,7 @@ fn add_schema_support_missing_required_property() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_MISSING_REQUIRED_PROP,
+            Error::<Runtime>::MissingRequiredProperty,
             number_of_events_before_call,
         );
     })
@@ -808,7 +808,7 @@ fn add_schema_support_dont_match_type() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_PROP_VALUE_DONT_MATCH_TYPE,
+            Error::<Runtime>::PropertyValueDoNotMatchType,
             number_of_events_before_call,
         );
     })
@@ -877,7 +877,7 @@ fn add_schema_support_referenced_entity_does_not_match_class() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_REFERENCED_ENTITY_DOES_NOT_MATCH_ITS_CLASS,
+            Error::<Runtime>::ReferencedEntityDoesNotMatchItsClass,
             number_of_events_before_call,
         );
     })
@@ -941,7 +941,7 @@ fn add_schema_support_referenced_entity_does_not_exist() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_ENTITY_NOT_FOUND,
+            Error::<Runtime>::EntityNotFound,
             number_of_events_before_call,
         );
     })
@@ -1011,7 +1011,7 @@ fn add_schema_support_entity_can_not_be_referenced() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_ENTITY_CAN_NOT_BE_REFERENCED,
+            Error::<Runtime>::EntityCanNotBeReferenced,
             number_of_events_before_call,
         );
     })
@@ -1087,7 +1087,7 @@ fn add_schema_support_same_controller_constraint_violation() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_SAME_CONTROLLER_CONSTRAINT_VIOLATION,
+            Error::<Runtime>::SameControllerConstraintViolation,
             number_of_events_before_call,
         );
     })
@@ -1147,7 +1147,7 @@ fn add_schema_support_text_property_is_too_long() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_TEXT_PROP_IS_TOO_LONG,
+            Error::<Runtime>::TextPropertyTooLong,
             number_of_events_before_call,
         );
     })
@@ -1211,7 +1211,7 @@ fn add_schema_support_text_hash_property_is_too_long() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_HASHED_TEXT_PROP_IS_TOO_LONG,
+            Error::<Runtime>::HashedTextPropertyTooLong,
             number_of_events_before_call,
         );
     })
@@ -1286,7 +1286,7 @@ fn add_schema_support_vec_property_is_too_long() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_VEC_PROP_IS_TOO_LONG,
+            Error::<Runtime>::VecPropertyTooLong,
             number_of_events_before_call,
         );
     })
@@ -1359,7 +1359,7 @@ fn add_schema_support_property_should_be_unique() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE,
+            Error::<Runtime>::PropertyValueShouldBeUnique,
             number_of_events_before_call,
         );
     })
@@ -1451,7 +1451,7 @@ fn add_schema_support_properties_should_be_unique() {
         // Failure checked
         assert_failure(
             add_schema_support_to_entity_result,
-            ERROR_PROPERTY_VALUE_SHOULD_BE_UNIQUE,
+            Error::<Runtime>::PropertyValueShouldBeUnique,
             number_of_events_before_call,
         );
     })
