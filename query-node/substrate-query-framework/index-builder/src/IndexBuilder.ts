@@ -76,7 +76,7 @@ export default class IndexBuilder {
     //   await this._producer.start(atBlock);
     // }
 
-    const lastBlock = await this.getLastSavedBlock();
+    const lastBlock = await this.getIndexerHead();
     debug(`Last processed block in the database: ${lastBlock.toString()}`);
     await this._producer.start(lastBlock.addn(1));
 
@@ -104,7 +104,7 @@ export default class IndexBuilder {
     });
   }
 
-  async getLastSavedBlock(): Promise<BN> {
+  async getIndexerHead(): Promise<BN> {
     const qr = getConnection().createQueryRunner();
     // take the first block such that next one has not yet been saved
     const rawRslts = await qr.query(`
