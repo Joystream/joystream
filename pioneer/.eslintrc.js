@@ -13,14 +13,20 @@ module.exports = {
   rules: {
     ...base.rules,
     '@typescript-eslint/no-explicit-any': 'off',
-    'react/prop-types': 'off',
     'new-cap': 'off',
     '@typescript-eslint/interface-name-prefix': 'off',
     '@typescript-eslint/ban-ts-comment': 'error',
     // why only required in VSCode!?!? is eslint plugin not working like eslint commandline?
     // Or are we having to add this because of new versions of eslint-config-* ?
     'no-console': 'off',
-    'header/header': 'off' // Temporary disable polkadot's rule
+    // Override some extended config rules:
+    'camelcase': 'off',
+    'header/header': 'off',
+    'sort-keys': 'off',
+    'react/jsx-sort-props': 'off',
+    'react/jsx-max-props-per-line': 'off',
+    'sort-destructure-keys/sort-destructure-keys': 'off',
+    '@typescript-eslint/unbound-method': 'warn', // Doesn't work well with our version of Formik, see: https://github.com/formium/formik/issues/2589
   },
   // isolate pioneer from monorepo eslint rules
   root: true

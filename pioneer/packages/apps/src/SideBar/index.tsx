@@ -7,7 +7,7 @@ import { Routes } from '@polkadot/apps-routing/types';
 import React, { useCallback, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import createRoutes from '@polkadot/apps-routing';
-import { Button, ChainImg, Icon, Menu, media } from '@polkadot/react-components';
+import { Button, ChainImg, Menu, media } from '@polkadot/react-components';
 
 import { SIDEBAR_MENU_THRESHOLD } from '../constants';
 import NetworkModal from '../modals/Network';
@@ -101,27 +101,6 @@ function SideBar ({ className = '', collapse, handleResize, isCollapsed, isMenuO
                 )
             ))}
             <Menu.Divider hidden />
-            <Menu.Item className='apps--SideBar-Item'>
-              <a
-                className='apps--SideBar-Item-NavLink'
-                href='https://github.com/polkadot-js/apps'
-                rel='noopener noreferrer'
-                target='_blank'
-              >
-                <Icon icon='code-branch' /><span className='text'>{t<string>('nav.github', 'GitHub', { ns: 'apps-routing' })}</span>
-              </a>
-            </Menu.Item>
-            <Menu.Item className='apps--SideBar-Item'>
-              <a
-                className='apps--SideBar-Item-NavLink'
-                href='https://wiki.polkadot.network'
-                rel='noopener noreferrer'
-                target='_blank'
-              >
-                <Icon icon='book' /><span className='text'>{t<string>('nav.wiki', 'Wiki', { ns: 'apps-routing' })}</span>
-              </a>
-            </Menu.Item>
-            <Menu.Divider hidden />
             {!isCollapsed && <NodeInfo />}
           </div>
           <div className={`apps--SideBar-collapse ${isCollapsed ? 'collapsed' : 'expanded'}`}>
@@ -159,7 +138,7 @@ export default React.memo(styled(SideBar)`
 
   .apps--SideBar {
     align-items: center;
-    background: #4f5255;
+    background: #3f3f3f;
     box-sizing: border-box;
     display: flex;
     flex-flow: column;
@@ -221,7 +200,7 @@ export default React.memo(styled(SideBar)`
     }
 
     .apps--SideBar-collapse {
-      background: #4f5255;
+      background: #3f3f3f;
       bottom: 0;
       left: 0;
       padding: 0.75rem 0 .75rem 0.65rem;

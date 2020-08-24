@@ -1,11 +1,14 @@
-import React, { useReducer, createContext, useContext, useEffect } from 'react';
+import React, { useReducer, createContext, useEffect } from 'react';
 import store from 'store';
 
-export const MY_ADDRESS = 'joy.myAddress';
+export const ACCOUNT_CHANGED_EVENT_NAME = 'account-changed';
+export const MY_ADDRESS_STORAGE_KEY = 'joy.myAddress';
 
 function readMyAddress (): string | undefined {
-  const myAddress: string | undefined = store.get(MY_ADDRESS);
+  const myAddress = store.get(MY_ADDRESS_STORAGE_KEY) as string | undefined;
+
   console.log('Read my address from the local storage:', myAddress);
+
   return myAddress;
 }
 
@@ -22,7 +25,8 @@ type MyAccountAction = {
 function reducer (state: MyAccountState, action: MyAccountAction): MyAccountState {
   function forget () {
     console.log('Forget my address');
-    store.remove(MY_ADDRESS);
+    store.remove(MY_ADDRESS_STORAGE_KEY);
+
     return { ...state, address: undefined };
   }
 
@@ -32,29 +36,35 @@ function reducer (state: MyAccountState, action: MyAccountAction): MyAccountStat
     case 'reload': {
       address = readMyAddress();
       console.log('Reload my address:', address);
+
       return { ...state, address, inited: true };
     }
 
     case 'set': {
       address = action.address;
+
       if (address !== state.address) {
         if (address) {
           console.log('Set my new address:', address);
-          store.set(MY_ADDRESS, address);
+          store.set(MY_ADDRESS_STORAGE_KEY, address);
+
           return { ...state, address, inited: true };
         } else {
           return forget();
         }
       }
+
       return state;
     }
 
     case 'forget': {
       address = action.address;
       const isMyAddress = address && address === readMyAddress();
+
       if (!address || isMyAddress) {
         return forget();
       }
+
       return state;
     }
 
@@ -88,8 +98,22 @@ const contextStub: MyAccountContextProps = {
 
 export const MyAccountContext = createContext<MyAccountContextProps>(contextStub);
 
-export function MyAccountProvider (props: React.PropsWithChildren<{}>) {
+export function MyAccountProvider (props: React.PropsWithChildren<unknown>) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  const handleAccountChangeEvent = (e: Event) => {
+    const { detail: address } = e as CustomEvent<string>;
+
+    dispatch({ type: 'set', address });
+  };
+
+  useEffect(() => {
+    window.addEventListener(ACCOUNT_CHANGED_EVENT_NAME, handleAccountChangeEvent);
+
+    return () => {
+      window.removeEventListener(ACCOUNT_CHANGED_EVENT_NAME, handleAccountChangeEvent);
+    };
+  });
 
   useEffect(() => {
     if (!state.inited) {
@@ -109,8 +133,4 @@ export function MyAccountProvider (props: React.PropsWithChildren<{}>) {
       {props.children}
     </MyAccountContext.Provider>
   );
-}
-
-export function useMyAccount () {
-  return useContext(MyAccountContext);
 }

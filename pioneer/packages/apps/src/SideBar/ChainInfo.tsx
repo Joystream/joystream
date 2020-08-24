@@ -24,7 +24,7 @@ function ChainInfo ({ className = '', onClick }: Props): React.ReactElement<Prop
 
   return (
     <div
-      className={`apps--SideBar-logo ${className} ui--highlight--border`}
+      className={`apps--SideBar-logo ${className}`}
       onClick={onClick}
     >
       <div className='apps--SideBar-logo-inner'>
