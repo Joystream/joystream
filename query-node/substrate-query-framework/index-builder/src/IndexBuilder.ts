@@ -1,6 +1,6 @@
 // @ts-check
 
-import { getRepository, createQueryBuilder, getConnection } from 'typeorm';
+import { getRepository, getConnection } from 'typeorm';
 import * as BN from 'bn.js';
 
 import {
@@ -17,13 +17,18 @@ import Debug from 'debug';
 import { doInTransaction } from './db/helper';
 import { PooledExecutor } from './PooledExecutor';
 import { QueryEventEntity } from './entities/QueryEventEntity';
-import { throws } from 'assert';
 
 const debug = Debug('index-builder:indexer');
 
 export default class IndexBuilder {
   private _producer: QueryBlockProducer;
   private _stopped = false;
+
+  private _indexerHead: BN = new BN(-1);
+
+  // set containing the indexer block heights that are ahead 
+  // of the current indexer head
+  private _indexedBlocksQueue = new Set<BN>();
 
   private _processing_pack!: QueryEventProcessingPack;
 
@@ -76,9 +81,9 @@ export default class IndexBuilder {
     //   await this._producer.start(atBlock);
     // }
 
-    const lastBlock = await this.getIndexerHead();
-    debug(`Last processed block in the database: ${lastBlock.toString()}`);
-    await this._producer.start(lastBlock.addn(1));
+    this._indexerHead = await this.getIndexerHead();
+    debug(`Last processed block in the database: ${this._indexerHead.toString()}`);
+    await this._producer.start(this._indexerHead.addn(1));
 
     // for await (const eventBlock of this._producer.blocks()) {
     //   try {
@@ -142,7 +147,24 @@ export default class IndexBuilder {
         await queryRunner.manager.save(qeEntities);
         debug(`Done block #${h.toString()}`);
       });
+
+      this._indexedBlocksQueue.add(h);
+      this._updateIndexerHead();
     }
+  }
+
+  private _updateIndexerHead(): void {
+    let nextHead = this._indexerHead.addn(1);
+    while (this._indexedBlocksQueue.has(nextHead)) {
+      this._indexerHead = nextHead;
+      debug(`Updated indexer head to ${this._indexerHead.toString()}`);
+      this._indexedBlocksQueue.delete(nextHead);
+      nextHead = nextHead.addn(1);
+    }
+  }
+
+  public get indexerHead(): BN {
+    return this._indexerHead;
   }
 
   async _onQueryEventBlock(query_event_block: QueryEventBlock): Promise<void> {
