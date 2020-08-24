@@ -1,9 +1,9 @@
 import React from 'react'
 import styled from '@emotion/styled'
-import Avatar from '../Avatar'
 import { formatNumberShort } from '@/utils/number'
 import ChannelPreviewBase from './ChannelPreviewBase'
 import { typography } from '../../theme'
+import { Avatar } from '..'
 
 type ChannelPreviewProps = {
   name: string
@@ -13,7 +13,7 @@ type ChannelPreviewProps = {
 }
 
 const ChannelPreview: React.FC<ChannelPreviewProps> = ({ name, avatarURL, views, className }) => {
-  const avatarNode = <Avatar img={avatarURL} />
+  const avatarNode = <StyledAvatar img={avatarURL} />
   const nameNode = <NameHeader>{name}</NameHeader>
   const metaNode = <MetaSpan>{formatNumberShort(views)} views</MetaSpan>
 
@@ -28,6 +28,11 @@ const NameHeader = styled.h2`
 const MetaSpan = styled.span`
   font-size: ${typography.sizes.subtitle2};
   line-height: 1.43;
+`
+
+export const StyledAvatar = styled(Avatar)`
+  width: 100%;
+  height: 100%;
 `
 
 export default ChannelPreview

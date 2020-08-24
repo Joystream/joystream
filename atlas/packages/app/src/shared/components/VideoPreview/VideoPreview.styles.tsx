@@ -11,11 +11,13 @@ type ChannelProps = {
 }
 
 export const CoverImage = styled.img<CoverImageProps>`
+  display: block;
   width: 100%;
   height: 100%;
-  background: linear-gradient(${colors.gray[300]}, ${colors.gray[700]});
+  background-color: ${colors.gray['400']};
   background-size: cover;
   object-fit: cover;
+  color: transparent;
 `
 
 export const CoverHoverOverlay = styled.div`

@@ -73,7 +73,7 @@ const rawVideos = [
       'In hac habitasse platea dictumst. Aliquam augue quam, sollicitudin vitae, consectetuer eget, rutrum at, lorem. Integer tincidunt ante vel ipsum. Praesent blandit lacinia erat. Vestibulum sed magna at nunc commodo placerat. Praesent blandit. Nam nulla. Integer pede justo, lacinia eget, tincidunt eget, tempus vel, pede.',
     views: 870023,
     publishedOnJoystreamAt: '2020-01-07T13:17:49Z',
-    duration: 1,
+    duration: 16,
   },
   {
     id: 'c557b154-ee2a-4548-a0c5-4a74774ecf58',
