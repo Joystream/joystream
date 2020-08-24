@@ -9,7 +9,7 @@ const LayoutWithRouting: React.FC = () => (
     <GlobalStyle />
     <Router primary={false}>
       <HomeView default />
-      <VideoView path={routes.video} />
+      <VideoView path={routes.video()} />
     </Router>
   </main>
 )

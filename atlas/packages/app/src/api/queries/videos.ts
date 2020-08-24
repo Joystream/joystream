@@ -10,10 +10,15 @@ const videoFieldsFragment = gql`
     thumbnailURL
     publishedOnJoystreamAt
     media {
+      pixelHeight
+      pixelWidth
       location {
         ... on HTTPVideoMediaLocation {
           host
           port
+        }
+        ... on JoystreamVideoMediaLocation {
+          dataObjectID
         }
       }
     }
@@ -38,6 +43,15 @@ export const GET_NEWEST_VIDEOS = gql`
 export const GET_FEATURED_VIDEOS = gql`
   query GetFeaturedVideos {
     featured_videos {
+      ...VideoFields
+    }
+  }
+  ${videoFieldsFragment}
+`
+
+export const GET_VIDEO = gql`
+  query GetVideo($id: ID!) {
+    video(id: $id) {
       ...VideoFields
     }
   }

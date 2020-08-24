@@ -5,6 +5,8 @@ import theme from '@/shared/theme'
 export const Container = styled.div`
   display: flex;
   flex-direction: column;
+  // TODO: remove once we have the navbar
+  padding-top: 72px;
 `
 
 export const PlayerContainer = styled.div`
@@ -45,7 +47,7 @@ export const DescriptionContainer = styled.div`
   p {
     color: ${theme.colors.gray[300]};
     line-height: 175%;
-    margin-top: ${theme.spacing.m};
+    margin: ${theme.spacing.m} 0 0;
   }
 `
 

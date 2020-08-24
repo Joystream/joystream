@@ -7,14 +7,25 @@
 // GraphQL query operation: GetNewestVideos
 // ====================================================
 
-export interface GetNewestVideos_videos_media_location {
+export interface GetNewestVideos_videos_media_location_HTTPVideoMediaLocation {
   __typename: 'HTTPVideoMediaLocation'
   host: string
   port: number | null
 }
 
+export interface GetNewestVideos_videos_media_location_JoystreamVideoMediaLocation {
+  __typename: 'JoystreamVideoMediaLocation'
+  dataObjectID: string
+}
+
+export type GetNewestVideos_videos_media_location =
+  | GetNewestVideos_videos_media_location_HTTPVideoMediaLocation
+  | GetNewestVideos_videos_media_location_JoystreamVideoMediaLocation
+
 export interface GetNewestVideos_videos_media {
   __typename: 'VideoMedia'
+  pixelHeight: number
+  pixelWidth: number
   location: GetNewestVideos_videos_media_location
 }
 

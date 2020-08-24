@@ -4,39 +4,39 @@
 // This file was automatically generated and should not be edited.
 
 // ====================================================
-// GraphQL fragment: VideoFields
+// GraphQL query operation: GetVideo
 // ====================================================
 
-export interface VideoFields_media_location_HTTPVideoMediaLocation {
+export interface GetVideo_video_media_location_HTTPVideoMediaLocation {
   __typename: 'HTTPVideoMediaLocation'
   host: string
   port: number | null
 }
 
-export interface VideoFields_media_location_JoystreamVideoMediaLocation {
+export interface GetVideo_video_media_location_JoystreamVideoMediaLocation {
   __typename: 'JoystreamVideoMediaLocation'
   dataObjectID: string
 }
 
-export type VideoFields_media_location =
-  | VideoFields_media_location_HTTPVideoMediaLocation
-  | VideoFields_media_location_JoystreamVideoMediaLocation
+export type GetVideo_video_media_location =
+  | GetVideo_video_media_location_HTTPVideoMediaLocation
+  | GetVideo_video_media_location_JoystreamVideoMediaLocation
 
-export interface VideoFields_media {
+export interface GetVideo_video_media {
   __typename: 'VideoMedia'
   pixelHeight: number
   pixelWidth: number
-  location: VideoFields_media_location
+  location: GetVideo_video_media_location
 }
 
-export interface VideoFields_channel {
+export interface GetVideo_video_channel {
   __typename: 'Channel'
   id: string
   avatarPhotoURL: string
   handle: string
 }
 
-export interface VideoFields {
+export interface GetVideo_video {
   __typename: 'Video'
   id: string
   title: string
@@ -45,6 +45,14 @@ export interface VideoFields {
   duration: number
   thumbnailURL: string
   publishedOnJoystreamAt: GQLDate
-  media: VideoFields_media
-  channel: VideoFields_channel
+  media: GetVideo_video_media
+  channel: GetVideo_video_channel
+}
+
+export interface GetVideo {
+  video: GetVideo_video | null
+}
+
+export interface GetVideoVariables {
+  id: string
 }
