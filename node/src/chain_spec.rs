@@ -383,73 +383,76 @@ pub fn testnet_genesis(
     }
 }
 
-#[cfg(test)]
-pub(crate) mod tests {
-    use super::*;
-    use crate::service::{new_full, new_light};
-    use sc_service_test;
+// Tests are commented out until we find a solution to why
+// building dependencies for the tests are taking so long on Travis CI
 
-    fn local_testnet_genesis_instant_single() -> GenesisConfig {
-        testnet_genesis(
-            vec![get_authority_keys_from_seed("Alice")],
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
-            vec![get_authority_keys_from_seed("Alice").0],
-            crate::proposals_config::development(),
-        )
-    }
+// #[cfg(test)]
+// pub(crate) mod tests {
+//     use super::*;
+//     use crate::service::{new_full, new_light};
+//     use sc_service_test;
 
-    /// Local testnet config (single validator - Alice)
-    pub fn integration_test_config_with_single_authority() -> ChainSpec {
-        ChainSpec::from_genesis(
-            "Integration Test",
-            "test",
-            ChainType::Development,
-            local_testnet_genesis_instant_single,
-            vec![],
-            None,
-            None,
-            None,
-            Default::default(),
-        )
-    }
+//     fn local_testnet_genesis_instant_single() -> GenesisConfig {
+//         testnet_genesis(
+//             vec![get_authority_keys_from_seed("Alice")],
+//             get_account_id_from_seed::<sr25519::Public>("Alice"),
+//             vec![get_authority_keys_from_seed("Alice").0],
+//             crate::proposals_config::development(),
+//         )
+//     }
 
-    fn local_testnet_genesis() -> GenesisConfig {
-        testnet_genesis(
-            vec![
-                get_authority_keys_from_seed("Alice"),
-                get_authority_keys_from_seed("Bob"),
-            ],
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
-            vec![
-                get_authority_keys_from_seed("Alice").0,
-                get_authority_keys_from_seed("Bob").0,
-            ],
-            crate::proposals_config::development(),
-        )
-    }
+//     /// Local testnet config (single validator - Alice)
+//     pub fn integration_test_config_with_single_authority() -> ChainSpec {
+//         ChainSpec::from_genesis(
+//             "Integration Test",
+//             "test",
+//             ChainType::Development,
+//             local_testnet_genesis_instant_single,
+//             vec![],
+//             None,
+//             None,
+//             None,
+//             Default::default(),
+//         )
+//     }
 
-    /// Local testnet config (multivalidator Alice + Bob)
-    pub fn integration_test_config_with_two_authorities() -> ChainSpec {
-        ChainSpec::from_genesis(
-            "Integration Test",
-            "test",
-            ChainType::Development,
-            local_testnet_genesis,
-            vec![],
-            None,
-            None,
-            None,
-            Default::default(),
-        )
-    }
+//     fn local_testnet_genesis() -> GenesisConfig {
+//         testnet_genesis(
+//             vec![
+//                 get_authority_keys_from_seed("Alice"),
+//                 get_authority_keys_from_seed("Bob"),
+//             ],
+//             get_account_id_from_seed::<sr25519::Public>("Alice"),
+//             vec![
+//                 get_authority_keys_from_seed("Alice").0,
+//                 get_authority_keys_from_seed("Bob").0,
+//             ],
+//             crate::proposals_config::development(),
+//         )
+//     }
 
-    #[test]
-    #[ignore]
-    fn test_connectivity() {
-        sc_service_test::connectivity(
-            integration_test_config_with_two_authorities(),
-            |config| new_full(config),
-            |config| new_light(config),
-        );
-    }
-}
+//     /// Local testnet config (multivalidator Alice + Bob)
+//     pub fn integration_test_config_with_two_authorities() -> ChainSpec {
+//         ChainSpec::from_genesis(
+//             "Integration Test",
+//             "test",
+//             ChainType::Development,
+//             local_testnet_genesis,
+//             vec![],
+//             None,
+//             None,
+//             None,
+//             Default::default(),
+//         )
+//     }
+
+//     #[test]
+//     #[ignore]
+//     fn test_connectivity() {
+//         sc_service_test::connectivity(
+//             integration_test_config_with_two_authorities(),
+//             |config| new_full(config),
+//             |config| new_light(config),
+//         );
+//     }
+// }
