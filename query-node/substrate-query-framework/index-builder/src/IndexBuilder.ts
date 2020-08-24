@@ -1,6 +1,6 @@
 // @ts-check
 
-import { getRepository, getConnection } from 'typeorm';
+import { getConnection } from 'typeorm';
 import * as BN from 'bn.js';
 
 import {
@@ -9,8 +9,6 @@ import {
   QueryEventBlock,
   ISubstrateQueryService,
   SavedEntityEvent,
-  makeDatabaseManager,
-  QueryEvent,
 } from '.';
 
 import Debug from 'debug';
@@ -46,49 +44,26 @@ export default class IndexBuilder {
   }
 
   async start(atBlock?: BN): Promise<void> {
-    // check state
-
-    // STORE THIS SOMEWHERE
-    //this._producer.on('QueryEventBlock', (query_event_block: QueryEventBlock) => {
-    //  this._onQueryEventBlock(query_event_block);
-    //});
-
     debug('Spawned worker.');
 
-    if (atBlock) {
-      debug(`Got block height hint: ${atBlock.toString()}`);
-    }
-    
-    const lastProcessedEvent = await getRepository(SavedEntityEvent).findOne({ where: { id: 1 } });
-
-    if (lastProcessedEvent) {
-      debug(`Found the most recent processed event at block ${lastProcessedEvent.blockNumber.toString()}`);
-    }
-
-    if (atBlock && lastProcessedEvent) {
-      debug(
-        `WARNING! Existing processed history detected on the database!
-        Last processed block is ${lastProcessedEvent.blockNumber.toString()}. The indexer 
-        will continue from block ${lastProcessedEvent.blockNumber.toString()} and ignore the block height hints.`
-      );
-    }
-
-    // if (lastProcessedEvent) {
-    //   this.lastProcessedEvent = lastProcessedEvent;
-    //   await this._producer.start(this.lastProcessedEvent.blockNumber, this.lastProcessedEvent.index);
-    // } else {
-    //   // Setup worker
-    //   await this._producer.start(atBlock);
-    // }
-
     this._indexerHead = await this._restoreIndexerHead();
-    debug(`Last processed block in the database: ${this._indexerHead.toString()}`);
+    debug(`Last indexed block in the database: ${this._indexerHead.toString()}`);
     let startBlock = this._indexerHead.addn(1);
     
     if (atBlock) {
       debug(`Got block height hint: ${atBlock.toString()}`);
-      startBlock = BN.max(startBlock, atBlock);
-      this._indexerHead = startBlock.addn(-1);
+      if (this._indexerHead.gten(0) && process.env.FORCE_BLOCK_HEIGHT !== 'true') {
+        debug(
+          `WARNING! The database contains indexed blocks.
+          The last indexed block height is ${this._indexerHead.toString()}. The indexer 
+          will continue from block ${this._indexerHead.toString()} ignoring the start 
+          block height hint. Set the environment variable FORCE_BLOCK_HEIGHT to true 
+          if you want to start from ${atBlock.toString()} anyway.`
+        );
+      } else {
+        startBlock = BN.max(startBlock, atBlock);
+        this._indexerHead = startBlock.addn(-1);
+      }
     }
 
     debug(`Starting the block indexer at block ${startBlock.toString()}`);
@@ -97,7 +72,7 @@ export default class IndexBuilder {
 
     const poolExecutor = new PooledExecutor(100, this._producer.blockHeights(), this._processBlock());
     
-    debug('Started worker.');
+    debug('Started a pool of indexers.');
 
     await poolExecutor.run(() => this._stopped);
 
@@ -110,6 +85,7 @@ export default class IndexBuilder {
       resolve();
     });
   }
+
 
   async _restoreIndexerHead(): Promise<BN> {
     const qr = getConnection().createQueryRunner();
@@ -170,32 +146,5 @@ export default class IndexBuilder {
   public get indexerHead(): BN {
     return this._indexerHead;
   }
-
-  async _onQueryEventBlock(query_event_block: QueryEventBlock): Promise<void> {
-    debug(`Yay, block producer at height: #${query_event_block.block_number.toString()}`);
-
-    await asyncForEach(query_event_block.query_events, async (query_event: QueryEvent, i: number) => {
-      
-      debug(`Processing event ${query_event.event_name}, index: ${i}`)
-      query_event.log(0, debug);
   
-      await doInTransaction(async (queryRunner) => {
-        // Call event handler
-        if (this._processing_pack[query_event.event_method]) {
-          debug(`Recognized: ` + query_event.event_name);
-          await this._processing_pack[query_event.event_method](makeDatabaseManager(queryRunner.manager), query_event);
-        } else {
-          debug(`No mapping for  ${query_event.event_name}, skipping`);
-        }
-        // Update last processed event
-        await SavedEntityEvent.update(query_event, queryRunner.manager);
-      })
-    });
-  }
-}
-
-async function asyncForEach<T>(array: Array<T>, callback: (o: T, i: number, a: Array<T>) => Promise<void>): Promise<void> {
-  for (let index = 0; index < array.length; index++) {
-    await callback(array[index], index, array);
-  }
 }
