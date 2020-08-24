@@ -28,7 +28,7 @@ export default class IndexBuilder {
 
   // set containing the indexer block heights that are ahead 
   // of the current indexer head
-  private _indexedBlocksQueue = new Set<BN>();
+  private _recentlyIndexedBlocks = new Set<BN>();
 
   private _processing_pack!: QueryEventProcessingPack;
 
@@ -83,22 +83,24 @@ export default class IndexBuilder {
 
     this._indexerHead = await this._restoreIndexerHead();
     debug(`Last processed block in the database: ${this._indexerHead.toString()}`);
-    await this._producer.start(this._indexerHead.addn(1));
+    let startBlock = this._indexerHead.addn(1);
+    
+    if (atBlock) {
+      debug(`Got block height hint: ${atBlock.toString()}`);
+      startBlock = BN.max(startBlock, atBlock);
+      this._indexerHead = startBlock.addn(-1);
+    }
 
-    // for await (const eventBlock of this._producer.blocks()) {
-    //   try {
-    //     await this._onQueryEventBlock(eventBlock);
-    //   } catch (e) {
-    //     throw new Error(e);
-    //   }
-    //   debug(`Successfully processed block ${eventBlock.block_number.toString()}`)
-    // }
+    debug(`Starting the block indexer at block ${startBlock.toString()}`);
+
+    await this._producer.start(startBlock);
 
     const poolExecutor = new PooledExecutor(100, this._producer.blockHeights(), this._processBlock());
+    
+    debug('Started worker.');
 
     await poolExecutor.run(() => this._stopped);
 
-    debug('Started worker.');
   }
 
   async stop(): Promise<void> { 
@@ -148,17 +150,19 @@ export default class IndexBuilder {
         debug(`Done block #${h.toString()}`);
       });
 
-      this._indexedBlocksQueue.add(h);
+      this._recentlyIndexedBlocks.add(h);
       this._updateIndexerHead();
     }
   }
 
   private _updateIndexerHead(): void {
     let nextHead = this._indexerHead.addn(1);
-    while (this._indexedBlocksQueue.has(nextHead)) {
+    debug(`Next indexer head: ${nextHead.toString()}`);
+    while (this._recentlyIndexedBlocks.has(nextHead)) {
       this._indexerHead = nextHead;
       debug(`Updated indexer head to ${this._indexerHead.toString()}`);
-      this._indexedBlocksQueue.delete(nextHead);
+      // remove from the set as we don't need to keep it anymore
+      this._recentlyIndexedBlocks.delete(nextHead);
       nextHead = nextHead.addn(1);
     }
   }
