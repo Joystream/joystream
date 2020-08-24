@@ -70,7 +70,7 @@ export default class IndexBuilder {
 
     await this._producer.start(startBlock);
 
-    const poolExecutor = new PooledExecutor(100, this._producer.blockHeights(), this._processBlock());
+    const poolExecutor = new PooledExecutor(100, this._producer.blockHeights(), this._indexBlock());
     
     debug('Started a pool of indexers.');
 
@@ -110,7 +110,7 @@ export default class IndexBuilder {
     return (blk) ? new BN(blk) : new BN(-1);
   }
 
-  _processBlock(): (h: BN) => Promise<void> {
+  _indexBlock(): (h: BN) => Promise<void> {
     return async (h: BN) => {
       debug(`Processing block #${h.toString()}`);  
       const queryEventsBlock: QueryEventBlock = await this._producer.fetchBlock(h);
