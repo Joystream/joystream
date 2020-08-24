@@ -40,3 +40,4 @@ script:
   - BUILD_DUMMY_WASM_BINARY=1 cargo test --release
   - TRIGGER_WASM_BUILD=1 cargo build --release
   - ls -l ./target/release/wbuild/joystream-node-runtime/
+  - ./target/release/joystream-node --version
