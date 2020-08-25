@@ -54,7 +54,7 @@ export function MediaView<A extends Record<string, unknown> = Record<string, unk
     const [resolvedProps, setResolvedProps] = useState({} as B);
     const [propsResolved, setPropsResolved] = useState(false);
 
-    const initialDeps = triggers.map(propName => serializeTrigger(initialProps[propName]));
+    const initialDeps = triggers.map((propName) => serializeTrigger(initialProps[propName]));
     const rerenderDeps = [...initialDeps, myAddress];
 
     useEffect(() => {

@@ -7,14 +7,14 @@ import { withCalls, withMulti, withObservable, ApiContext } from '@polkadot/reac
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 import { MemberId, Membership } from '@joystream/types/members';
-import { LeadId, Lead } from '@joystream/types/content-working-group';
+import { LeadId, Lead, CuratorId, Curator } from '@joystream/types/content-working-group';
 
 import { queryMembershipToProp } from '@polkadot/joy-members/utils';
 import useMyAccount from '../hooks/useMyAccount';
 import { componentName } from '../helpers';
 import { queryToProp } from '@polkadot/joy-utils/functions/misc';
 import { entriesByIds } from '@polkadot/joy-utils/transport/base';
-import { CuratorId, Curator } from '@joystream/types/content-working-group';
+
 import { useApi } from '@polkadot/react-hooks';
 import usePromise from '../hooks/usePromise';
 import { Error } from '../components/PromiseComponent';
@@ -119,7 +119,9 @@ function resolveLead<P extends MyAccountProps> (Component: React.ComponentType<P
 
     return <Component {...props} {...newProps} />;
   };
+
   ResultComponent.displayName = `resolveLead(${componentName(Component)})`;
+
   return ResultComponent;
 }
 
@@ -134,7 +136,6 @@ const withContentWorkingGroupDetails = withCalls<MyAccountProps>(
 const withContentWorkingGroup = <P extends MyAccountProps>(Component: React.ComponentType<P>) =>
   withMulti(Component, withContentWorkingGroupDetails, resolveLead, resolveLeadEntry);
 
-
 function withCurationActor<P extends MyAccountProps> (Component: React.ComponentType<P>) {
   const ResultComponent: React.FunctionComponent<P> = (props: P) => {
     const {
@@ -144,10 +145,10 @@ function withCurationActor<P extends MyAccountProps> (Component: React.Component
       allAccounts
     } = props;
     const { isApiReady, api } = useApi();
-    const [ curatorEntries, curatorsError, curatorsLoading ] = usePromise<[CuratorId, Curator][]>(
+    const [curatorEntries, curatorsError, curatorsLoading] = usePromise<[CuratorId, Curator][]>(
       () => isApiReady
         ? entriesByIds<CuratorId, Curator>(api.query.contentWorkingGroup.curatorById)
-        : new Promise(resolve => resolve([])),
+        : new Promise((resolve) => resolve([])),
       [],
       [isApiReady]
     );
@@ -181,18 +182,21 @@ function withCurationActor<P extends MyAccountProps> (Component: React.Component
     // First priority - currently selected account
     let actor = curationActorByAccount(myAccountId);
     let actorKey: AccountId | null = myAccountId;
+
     // Second priority - check other keys and find best role
     // TODO: Prioritize current member?
     // TODO: Perhaps just don't do that at all and force the user to select the correct key to avoid confision?
     if (!actor) {
-      const allActorsWithKeys = Object.keys(allAccounts).map(accKey => ({
+      const allActorsWithKeys = Object.keys(allAccounts).map((accKey) => ({
         actor: curationActorByAccount(allAccounts[accKey].json.address),
         key: api.createType('AccountId', allAccounts[accKey].json.address)
       }));
       let actorWithKey = allActorsWithKeys.find(({ actor }) => actor?.isOfType('Lead'));
+
       if (!actorWithKey) {
         actorWithKey = allActorsWithKeys.find(({ actor }) => actor?.isOfType('Curator'));
       }
+
       actor = actorWithKey?.actor || null;
       actorKey = actorWithKey?.key || null;
     }
@@ -204,7 +208,9 @@ function withCurationActor<P extends MyAccountProps> (Component: React.Component
       return <Component {...props} />;
     }
   };
+
   ResultComponent.displayName = `withCurationActor(${componentName(Component)})`;
+
   return ResultComponent;
 }
 

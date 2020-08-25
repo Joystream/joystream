@@ -46,7 +46,7 @@ function App (props: Props) {
     //   name: `account/${myAddress}/videos`,
     //   text: t('My videos')
     // }
-  ].filter(x => x !== undefined) as TabItem[];
+  ].filter((x) => x !== undefined) as TabItem[];
 
   return (
     <SubstrateTransportProvider>

@@ -166,6 +166,7 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   // Transform outer props into form values
   mapPropsToValues: (props): FormValues => {
     const { entity } = props;
+
     return MusicAlbumToFormValues(entity);
   },
 

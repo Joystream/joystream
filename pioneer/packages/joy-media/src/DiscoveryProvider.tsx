@@ -26,9 +26,11 @@ export type DiscoveryProviderProps = {
 // return string Url with last `/` removed
 function normalizeUrl (url: string | Url): string {
   const st: string = url.toString();
+
   if (st.endsWith('/')) {
     return st.substring(0, st.length - 1);
   }
+
   return st.toString();
 }
 
@@ -79,9 +81,11 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
           break;
         } catch (err) {
           console.log(err);
+
           if (axios.isCancel(err)) {
             throw err;
           }
+
           continue;
         }
       }
@@ -101,6 +105,7 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
   const reportUnreachable = (provider: StorageProviderId) => {
     const key = provider.toString();
     const stat = stats.get(key);
+
     if (stat) {
       stat.unreachableReports = stat.unreachableReports + 1;
     }
@@ -122,6 +127,7 @@ export const DiscoveryProviderProvider = (props: React.PropsWithChildren<{}>) =>
 
       console.log('Discovery Provider: Loading bootstrap node from Substrate...');
       const bootstrapNodes = await api.api.query.discovery.bootstrapEndpoints() as Vec<Url>;
+
       setProvider(newDiscoveryProvider({ bootstrapNodes }));
       setLoaded(true);
       console.log('Discovery Provider: Initialized');
@@ -159,6 +165,7 @@ export const useDiscoveryProvider = () =>
 export function withDiscoveryProvider (Component: React.ComponentType<DiscoveryProviderProps>) {
   const ResultComponent: React.FunctionComponent<{}> = (props: React.PropsWithChildren<{}>) => {
     const discoveryProvider = useDiscoveryProvider();
+
     if (!discoveryProvider) {
       return <JoyInfo title={'Please wait...'}>Loading discovery provider.</JoyInfo>;
     }
@@ -169,6 +176,8 @@ export function withDiscoveryProvider (Component: React.ComponentType<DiscoveryP
       </Component>
     );
   };
+
   ResultComponent.displayName = `withDiscoveryProvider(${componentName(Component)})`;
+
   return ResultComponent;
 }

@@ -77,7 +77,7 @@ export function VideoPreview (props: VideoPreviewProps) {
 }
 
 export function toVideoPreviews (items: VideoType[]): VideoPreviewProps[] {
-  return items.map(x => ({
+  return items.map((x) => ({
     id: x.id,
     title: x.title,
     thumbnail: x.thumbnail

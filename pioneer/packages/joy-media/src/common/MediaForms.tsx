@@ -78,6 +78,7 @@ export function withMediaForm<OuterProps, FormValues>
 
   function MediaText (props: MediaTextProps<OuterProps, FormValues>) {
     const { field: f } = props;
+
     return !f ? null : <LabelledText name={f.id} label={f.name} tooltip={f.description} required={f.required} {...props} />;
   }
 
@@ -138,6 +139,7 @@ export function withMediaForm<OuterProps, FormValues>
 
       const isFieldChanged = (field: FieldName | FieldObject): boolean => {
         const fieldName = typeof field === 'string' ? field : (field as FieldObject).id;
+
         return (
           dirty &&
           touched[fieldName] === true &&
@@ -159,6 +161,7 @@ export function withMediaForm<OuterProps, FormValues>
 
       const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
         setSubmitting(false);
+
         if (txResult === null) {
           // Tx cancelled
 
@@ -187,6 +190,8 @@ export function withMediaForm<OuterProps, FormValues>
 
       return <Component {...allProps} />;
     };
+
   ResultComponent.displayName = `withMediaForm(${componentName(Component)})`;
+
   return ResultComponent;
 }

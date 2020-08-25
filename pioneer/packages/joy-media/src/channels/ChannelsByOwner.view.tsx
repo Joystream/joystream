@@ -13,6 +13,7 @@ export const ChannelsByOwnerView = MediaView<Props>({
   resolveProps: async (props) => {
     const { transport, accountId } = props;
     const channels = await transport.channelsByAccount(accountId);
+
     return { channels };
   }
 });

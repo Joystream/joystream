@@ -157,9 +157,11 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   mapPropsToValues: (props): FormValues => {
     const { entity, fileName } = props;
     const res = MusicTrackToFormValues(entity);
+
     if (!res.title && fileName) {
       res.title = fileName;
     }
+
     return res;
   },
 

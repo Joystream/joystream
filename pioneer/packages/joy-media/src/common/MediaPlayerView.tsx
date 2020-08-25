@@ -78,6 +78,7 @@ function Player (props: PlayerProps) {
 
   if (prefix === 'video') {
     const video = { url, name, pic: cover };
+
     return <DPlayer
       video={video}
       {...PLAYER_COMMON_PARAMS}
@@ -86,6 +87,7 @@ function Player (props: PlayerProps) {
     />;
   } else if (prefix === 'audio') {
     const audio = { url, name, cover };
+
     return <APlayer
       audio={audio}
       {...PLAYER_COMMON_PARAMS}
@@ -101,6 +103,7 @@ function InnerComponent (props: MediaPlayerViewProps) {
   const { video, resolvedAssetUrl: url } = props;
 
   const { dataObjectOpt, channel } = props;
+
   if (!dataObjectOpt || dataObjectOpt.isNone) {
     return null;
   }

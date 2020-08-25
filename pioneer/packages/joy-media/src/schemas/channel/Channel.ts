@@ -12,10 +12,12 @@ function textValidation (constraint?: ValidationConstraint) {
   }
 
   const { min, max } = constraint;
+
   return Yup.string()
     .min(min, `Text is too short. Minimum length is ${min} chars.`)
     .max(max, `Text is too long. Maximum length is ${max} chars.`);
 }
+
 export const buildChannelValidationSchema = (constraints?: ChannelValidationConstraints) =>
   Yup.object().shape({
     handle: textValidation(constraints?.handle).required('This field is required'),

@@ -49,7 +49,7 @@ function createWebpack (ENV, context) {
   }, {});
 
   // Add @joystream/types as alias to automatically process any changes:
-  alias['@joystream/types'] = path.resolve(context, `../../../types/src`);
+  alias['@joystream/types'] = path.resolve(context, '../../../types/src');
 
   return {
     context,

@@ -29,6 +29,7 @@ export class SimpleCache<Id extends IdLike, Obj extends HasId> {
 
   clear (): void {
     const prevCacheSize = this.cache.size;
+
     this.cache = new Map();
     console.info(`Removed all ${prevCacheSize} entries from ${this.cacheName}`);
   }
@@ -37,14 +38,16 @@ export class SimpleCache<Id extends IdLike, Obj extends HasId> {
     const prevCacheSize = this.cache.size;
     const keepIdsSet = keepIds instanceof Set
       ? keepIds
-      : new Set(keepIds.map(id => id.toString()));
+      : new Set(keepIds.map((id) => id.toString()));
 
     const newCache: Map<string, Obj> = new Map();
+
     for (const [id, o] of this.cache.entries()) {
       if (keepIdsSet.has(id)) {
         newCache.set(id, o);
       }
     }
+
     this.cache = newCache;
     console.info(`Removed ${prevCacheSize - newCache.size} entries out of ${prevCacheSize} from ${this.cacheName}`);
   }
@@ -57,8 +60,9 @@ export class SimpleCache<Id extends IdLike, Obj extends HasId> {
     const idsNoFoundInCache: Id[] = [];
     const cachedObjects: Obj[] = [];
 
-    ids.map(id => {
+    ids.map((id) => {
       const fromCache = this.cache.get(id.toString());
+
       if (fromCache) {
         cachedObjects.push(fromCache);
       } else {
@@ -67,10 +71,12 @@ export class SimpleCache<Id extends IdLike, Obj extends HasId> {
     });
 
     let loadedObjects: Obj[] = [];
+
     if (idsNoFoundInCache.length > 0) {
       loadedObjects = await this.loadByIds(idsNoFoundInCache);
-      loadedObjects.map(o => {
+      loadedObjects.map((o) => {
         const id = anyIdToString(o.id);
+
         this.cache.set(id, o);
       });
     }

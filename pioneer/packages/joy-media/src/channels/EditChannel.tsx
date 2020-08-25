@@ -4,7 +4,7 @@ import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
 import { Option } from '@polkadot/types';
-import { TxButton } from '@polkadot/joy-utils/react/components';
+import { TxButton, JoyError, Section } from '@polkadot/joy-utils/react/components';
 import { onImageError } from '../common/images';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import { ChannelType, ChannelClass as Fields, buildChannelValidationSchema, ChannelFormValues, ChannelToFormValues, ChannelGenericProp } from '../schemas/channel/Channel';
@@ -16,8 +16,7 @@ import { ChannelPublicationStatusDropdownOptions, isAccountAChannelOwner } from 
 import { TxCallback } from '@polkadot/react-components/Status/types';
 import { SubmittableResult } from '@polkadot/api';
 import { ChannelValidationConstraints } from '../transport';
-import { JoyError } from '@polkadot/joy-utils/react/components';
-import { Section } from '@polkadot/joy-utils/react/components';
+
 import { useApi } from '@polkadot/react-hooks';
 
 export type OuterProps = {
@@ -200,11 +199,13 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   // Transform outer props into form values
   mapPropsToValues: (props): FormValues => {
     const { entity } = props;
+
     return ChannelToFormValues(entity);
   },
 
   validationSchema: (props: OuterProps): any => {
     const { constraints } = props;
+
     if (!constraints) return null;
 
     return buildChannelValidationSchema(constraints);

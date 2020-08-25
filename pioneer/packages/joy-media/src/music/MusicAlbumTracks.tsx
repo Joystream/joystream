@@ -21,6 +21,7 @@ export function TracksOfMyMusicAlbum (props: TracksOfMyMusicAlbumProps) {
     data: CheckboxProps
   ) => {
     const set = new Set(idxsOfSelectedTracks);
+
     data.checked
       ? set.add(trackIdx)
       : set.delete(trackIdx)

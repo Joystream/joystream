@@ -36,6 +36,7 @@ export class IterableFile implements AsyncIterable<Buffer> {
         e.target.result && resolve(Buffer.from(e.target.result));
         e.target.error && reject(e.target.error);
       };
+
       this.reader.readAsArrayBuffer(blob);
     });
   }

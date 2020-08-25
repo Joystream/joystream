@@ -85,7 +85,7 @@ export function PlayContent (props: Props) {
     {featuredAlbums.length > 0 &&
       <div className='JoyPlayAlbum_RightSidePanel'>
         <h3>Featured albums</h3>
-        {featuredAlbums.map(x => <MusicAlbumPreview key={x.id} {...x} size={170} />)}
+        {featuredAlbums.map((x) => <MusicAlbumPreview key={x.id} {...x} size={170} />)}
       </div>
     }
   </div>;

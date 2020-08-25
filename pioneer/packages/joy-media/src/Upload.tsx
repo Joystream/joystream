@@ -5,7 +5,7 @@ import { History } from 'history';
 import { Progress, Message } from 'semantic-ui-react';
 
 import { mockRegistry } from '@joystream/types';
-import { InputFileAsync } from '@polkadot/joy-utils/react/components';
+import { InputFileAsync, TxButton, JoyInfo, Loading } from '@polkadot/joy-utils/react/components';
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { SubmittableResult } from '@polkadot/api';
@@ -19,14 +19,13 @@ import { ContentId, DataObject } from '@joystream/types/media';
 import { MyAccountProps } from '@polkadot/joy-utils/react/hocs/accounts';
 import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
 import { DiscoveryProviderProps, withDiscoveryProvider } from './DiscoveryProvider';
-import { TxButton } from '@polkadot/joy-utils/react/components';
+
 import IpfsHash from 'ipfs-only-hash';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { EditVideoView } from './upload/EditVideo.view';
-import { JoyInfo } from '@polkadot/joy-utils/react/components';
+
 import { IterableFile } from './IterableFile';
 import { StorageProviderId } from '@joystream/types/working-group';
-import { Loading } from '@polkadot/joy-utils/react/components';
 
 const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -77,6 +76,7 @@ class Upload extends React.PureComponent<Props, State> {
     });
 
     const { cancelSource } = this.state;
+
     cancelSource.cancel('unmounting');
   }
 
@@ -101,6 +101,7 @@ class Upload extends React.PureComponent<Props, State> {
 
   private renderError () {
     const { error } = this.state;
+
     return (
       <Message error className='JoyMainStatus'>
         <Message.Header>Failed to upload your file</Message.Header>
@@ -112,6 +113,7 @@ class Upload extends React.PureComponent<Props, State> {
 
   private resetForm = () => {
     const { cancelSource } = this.state;
+
     this.setState({
       ...defaultState(),
       cancelSource
@@ -120,6 +122,7 @@ class Upload extends React.PureComponent<Props, State> {
 
   private renderUploading () {
     const { file, newContentId, progress, error } = this.state;
+
     if (!file || !file.name) return <JoyInfo title='Loading...' />;
 
     const success = !error && progress >= 100;
@@ -139,7 +142,7 @@ class Upload extends React.PureComponent<Props, State> {
   }
 
   private renderSendingTx () {
-    return <JoyInfo title="Please wait..."><Loading text="Waiting for the transaction confirmation..." /></JoyInfo>
+    return <JoyInfo title='Please wait...'><Loading text='Waiting for the transaction confirmation...' /></JoyInfo>;
   }
 
   private renderDiscovering () {
@@ -152,6 +155,7 @@ class Upload extends React.PureComponent<Props, State> {
     const success = !error && progress >= 100;
 
     let label = '';
+
     if (active) {
       label = 'Your file is uploading. Please keep this page open until it\'s done.';
     } else if (success) {
@@ -175,7 +179,7 @@ class Upload extends React.PureComponent<Props, State> {
 
     return <div className='UploadSelectForm'>
       <InputFileAsync
-        label=""
+        label=''
         withLabel={false}
         className={`UploadInputFile ${file_name ? 'FileSelected' : ''}`}
         placeholder={
@@ -203,7 +207,7 @@ class Upload extends React.PureComponent<Props, State> {
             sendTx();
           }}
           txSuccessCb={ this.onDataObjectCreated }
-          txFailedCb={() => { this.setState({ sendingTx: false }) }}
+          txFailedCb={() => { this.setState({ sendingTx: false }); }}
         />
       </div>}
     </div>;
@@ -258,11 +262,13 @@ class Upload extends React.PureComponent<Props, State> {
 
   private buildTxParams = () => {
     const { file, newContentId, ipfs_cid } = this.state;
+
     if (!file || !ipfs_cid) return [];
 
     // TODO get corresponding data type id based on file content
     const dataObjectTypeId = new BN(1);
     const { myMemberId } = this.props;
+
     return [myMemberId, newContentId, dataObjectTypeId, new BN(file.size), ipfs_cid];
   }
 
@@ -272,6 +278,7 @@ class Upload extends React.PureComponent<Props, State> {
     const { api } = this.props;
     const { newContentId } = this.state;
     let dataObject: Option<DataObject>;
+
     try {
       dataObject = await api.query.dataDirectory.dataObjectByContentId(newContentId) as Option<DataObject>;
     } catch (err) {
@@ -279,6 +286,7 @@ class Upload extends React.PureComponent<Props, State> {
         error: err,
         discovering: false
       });
+
       return;
     }
 
@@ -290,6 +298,7 @@ class Upload extends React.PureComponent<Props, State> {
 
     if (dataObject.isSome) {
       const storageProvider = dataObject.unwrap().liaison;
+
       this.uploadFileTo(storageProvider);
     } else {
       this.setState({
@@ -301,11 +310,13 @@ class Upload extends React.PureComponent<Props, State> {
 
   private uploadFileTo = async (storageProvider: StorageProviderId) => {
     const { file, newContentId, cancelSource } = this.state;
+
     if (!file || !file.size) {
       this.setState({
         error: new Error('No file to upload!'),
         discovering: false
       });
+
       return;
     }
 
@@ -320,6 +331,7 @@ class Upload extends React.PureComponent<Props, State> {
       cancelToken: cancelSource.token,
       onUploadProgress: (progressEvent: any) => {
         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+
         this.setState({
           progress: percentCompleted
         });
@@ -328,6 +340,7 @@ class Upload extends React.PureComponent<Props, State> {
 
     const { discoveryProvider } = this.props;
     let url: string;
+
     try {
       url = await discoveryProvider.resolveAssetEndpoint(storageProvider, contentId, cancelSource.token);
     } catch (err) {
@@ -351,9 +364,11 @@ class Upload extends React.PureComponent<Props, State> {
       await axios.put<{ message: string }>(url, file, config);
     } catch (err) {
       this.setState({ progress: 0, error: err, uploading: false });
+
       if (axios.isCancel(err)) {
         return;
       }
+
       if (!err.response || (err.response.status >= 500 && err.response.status <= 504)) {
         // network connection error
         discoveryProvider.reportUnreachable(storageProvider);

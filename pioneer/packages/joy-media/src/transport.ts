@@ -57,6 +57,7 @@ export const EntityCodecByClassNameMap = {
 
 function insensitiveEq (text1: string, text2: string): boolean {
   const prepare = (txt: string) => txt.replace(/[\s]+/mg, '').toLowerCase();
+
   return prepare(text1) === prepare(text2);
 }
 
@@ -83,9 +84,12 @@ export abstract class MediaTransport {
     if (typeof operation !== 'function') {
       throw new Error('Operation is not a function');
     }
+
     this.openSession();
     const res = await operation();
+
     this.closeSession();
+
     return res;
   }
 
@@ -93,12 +97,12 @@ export abstract class MediaTransport {
 
   async channelById (id: ChannelId): Promise<ChannelEntity | undefined> {
     return (await this.allChannels())
-      .find(x => id && id.eq(x.id));
+      .find((x) => id && id.eq(x.id));
   }
 
   async channelsByAccount (accountId: AccountId): Promise<ChannelEntity[]> {
     return (await this.allChannels())
-      .filter(x => accountId && accountId.eq(x.roleAccount));
+      .filter((x) => accountId && accountId.eq(x.roleAccount));
   }
 
   abstract channelValidationConstraints(): Promise<ChannelValidationConstraints>
@@ -114,12 +118,15 @@ export abstract class MediaTransport {
     if (!this.cachedClassIdByNameMap) {
       const map: ClassIdByNameMap = {};
       const classes = await this.allClasses();
+
       classes.forEach((c) => {
         const className = unifyClassName(c.name);
+
         map[className] = c.id;
       });
       this.cachedClassIdByNameMap = map;
     }
+
     return this.cachedClassIdByNameMap;
   }
 
@@ -128,6 +135,7 @@ export abstract class MediaTransport {
   async topVideo (): Promise<VideoType | undefined> {
     const content = await this.featuredContent();
     const topVideoId = content?.topVideo as unknown as number | undefined;
+
     return !topVideoId ? undefined : await this.videoById(createMock('EntityId', topVideoId));
   }
 
@@ -136,7 +144,8 @@ export abstract class MediaTransport {
     const videoIds = (content?.featuredVideos || []) as unknown as number[];
     const videos = await Promise.all(videoIds.map((id) =>
       this.videoById(createMock('EntityId', id))));
-    return videos.filter(x => x !== undefined) as VideoType[];
+
+    return videos.filter((x) => x !== undefined) as VideoType[];
   }
 
   async featuredAlbums (): Promise<MusicAlbumType[]> {
@@ -144,7 +153,8 @@ export abstract class MediaTransport {
     const albumIds = (content?.featuredAlbums || []) as unknown as EntityId[];
     const albums = await Promise.all(albumIds.map((id) =>
       this.musicAlbumById(createMock('EntityId', id))));
-    return albums.filter(x => x !== undefined) as MusicAlbumType[];
+
+    return albums.filter((x) => x !== undefined) as MusicAlbumType[];
   }
 
   abstract allMediaObjects(): Promise<MediaObjectType[]>
@@ -157,8 +167,8 @@ export abstract class MediaTransport {
 
   async videosByChannelId (channelId: ChannelId, limit?: number, additionalFilter?: (x: VideoType) => boolean): Promise<VideoType[]> {
     let videos = (await this.allVideos())
-      .filter(x => channelId && channelId.eq(x.channelId) && (additionalFilter || (() => true))(x))
-      .sort(x => -1 * x.id);
+      .filter((x) => channelId && channelId.eq(x.channelId) && (additionalFilter || (() => true))(x))
+      .sort((x) => -1 * x.id);
 
     if (limit && limit > 0) {
       videos = videos.slice(0, limit);
@@ -169,30 +179,30 @@ export abstract class MediaTransport {
 
   async videosByAccount (accountId: AccountId): Promise<VideoType[]> {
     const accountChannels = await this.channelsByAccount(accountId);
-    const accountChannelIds = new Set(accountChannels.map(x => x.id));
+    const accountChannelIds = new Set(accountChannels.map((x) => x.id));
 
     return (await this.allVideos())
-      .filter(x => x.channelId && accountChannelIds.has(x.channelId));
+      .filter((x) => x.channelId && accountChannelIds.has(x.channelId));
   }
 
   async mediaObjectById (id: EntityId): Promise<MediaObjectType | undefined> {
     return (await this.allMediaObjects())
-      .find(x => id && id.eq(x.id));
+      .find((x) => id && id.eq(x.id));
   }
 
   async videoById (id: EntityId): Promise<VideoType | undefined> {
     return (await this.allVideos())
-      .find(x => id && id.eq(x.id));
+      .find((x) => id && id.eq(x.id));
   }
 
   async musicTrackById (id: EntityId): Promise<MusicTrackType | undefined> {
     return (await this.allMusicTracks())
-      .find(x => id && id.eq(x.id));
+      .find((x) => id && id.eq(x.id));
   }
 
   async musicAlbumById (id: EntityId): Promise<MusicAlbumType | undefined> {
     return (await this.allMusicAlbums())
-      .find(x => id && id.eq(x.id));
+      .find((x) => id && id.eq(x.id));
   }
 
   async allPublicChannels (): Promise<ChannelEntity[]> {
@@ -208,7 +218,7 @@ export abstract class MediaTransport {
   async allPublicVideoChannels (): Promise<ChannelEntity[]> {
     return (await this.allVideoChannels())
       .filter(isPublicChannel)
-      .sort(x => -1 * x.id);
+      .sort((x) => -1 * x.id);
   }
 
   async latestPublicVideoChannels (limit = 6): Promise<ChannelEntity[]> {
@@ -217,26 +227,27 @@ export abstract class MediaTransport {
 
   async allPublicVideos (): Promise<VideoType[]> {
     const idOfPublicPS = (await this.allPublicationStatuses())
-      .find(x =>
+      .find((x) =>
         insensitiveEq(x.value, 'Public')
       )?.id;
 
     const idsOfCuratedCS = (await this.allCurationStatuses())
-      .filter(x =>
+      .filter((x) =>
         insensitiveEq(x.value, 'Under review') ||
         insensitiveEq(x.value, 'Removed')
-      ).map(x => x.id);
+      ).map((x) => x.id);
 
     const isPublicAndNotCurated = (video: VideoType) => {
       const isPublic = video.publicationStatus.id === idOfPublicPS;
       const isNotCurated = !idsOfCuratedCS.includes(video.curationStatus?.id || -1);
       const isPubChannel = video.channel ? isPublicChannel(video.channel) : true;
+
       return isPublic && isNotCurated && isPubChannel;
     };
 
     return (await this.allVideos())
       .filter(isPublicAndNotCurated)
-      .sort(x => -1 * x.id);
+      .sort((x) => -1 * x.id);
   }
 
   async latestPublicVideos (limit = 12): Promise<VideoType[]> {
@@ -285,6 +296,7 @@ export abstract class MediaTransport {
     const res = new MediaDropdownOptions(
       await this.allInternalEntities()
     );
+
     // console.log('Transport.dropdownOptions', res)
     return res;
   }

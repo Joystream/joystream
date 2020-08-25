@@ -42,6 +42,7 @@ function InputFileAsync ({ accept, className, clearContent, help, isDisabled, is
   const _onDrop = (files: File[]): void => {
     if (!files.length) return;
     const blob = files[0];
+
     onChange && onChange(blob);
     dropRef && setFile({
       ...blob

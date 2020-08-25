@@ -14,6 +14,7 @@ export const ViewChannelView = MediaView<Props>({
     const { transport, id } = props;
     const channel = await transport.channelById(id);
     const videos = await transport.videosByChannelId(id);
+
     return { channel, videos };
   }
 });

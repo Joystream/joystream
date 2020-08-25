@@ -39,22 +39,24 @@ function InnerComponent (props: Props) {
     const allRelationships: Option<DataObjectStorageRelationship>[] = await Promise.all(rids.map((id) => api.query.dataObjectStorageRegistry.relationships(id))) as any;
 
     // Providers that have signalled onchain that they have the asset
-    let readyProviders = allRelationships.filter(r => r.isSome).map(r => r.unwrap())
-      .filter(r => r.ready)
-      .map(r => r.storage_provider);
+    let readyProviders = allRelationships.filter((r) => r.isSome).map((r) => r.unwrap())
+      .filter((r) => r.ready)
+      .map((r) => r.storage_provider);
 
     // runtime doesn't currently guarantee unique set
-    readyProviders = _.uniqBy(readyProviders, provider => provider.toString());
+    readyProviders = _.uniqBy(readyProviders, (provider) => provider.toString());
 
     if (!readyProviders.length) {
       setError(new Error('No Storage Providers found storing this content'));
+
       return;
     }
 
     const activeProviders = (await transport.workingGroups.allWorkers('Storage')).map(([id]) => id);
+
     // filter out providers no longer active - relationships of providers that have left
     // are not pruned onchain.
-    readyProviders = _.intersectionBy(activeProviders, readyProviders, provider => provider.toString());
+    readyProviders = _.intersectionBy(activeProviders, readyProviders, (provider) => provider.toString());
 
     console.log(`Found ${readyProviders.length} providers ready to serve content: ${readyProviders}`);
 
@@ -67,9 +69,11 @@ function InnerComponent (props: Props) {
     // loop over providers until we find one that responds
     while (readyProviders.length) {
       const provider = readyProviders.shift();
+
       if (!provider) continue;
 
       let assetUrl: string | undefined;
+
       try {
         assetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.encode(), cancelSource.token);
       } catch (err) {
@@ -132,6 +136,7 @@ function InnerComponent (props: Props) {
   }
 
   const playerProps = { ...props, contentType, resolvedAssetUrl };
+
   return <MediaPlayerView {...playerProps} />;
 }
 

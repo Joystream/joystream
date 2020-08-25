@@ -31,6 +31,7 @@ export function ViewChannel (props: ViewChannelProps) {
 
   if (isVideoChannel(channel)) {
     const previews = toVideoPreviews(videos);
+
     return <ViewVideoChannel channel={channel} videos={previews} />;
   } else if (isMusicChannel(channel)) {
     return <ViewMusicChannel channel={channel} albums={albums} tracks={tracks} />;

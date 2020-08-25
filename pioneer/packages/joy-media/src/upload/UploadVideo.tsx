@@ -118,6 +118,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       let fieldValue = values[fieldName] as any;
 
       let shouldIncludeValue = true;
+
       if (entity) {
         // If we updating existing entity, then update only changed props:
         shouldIncludeValue = isFieldChanged(fieldName);
@@ -144,9 +145,11 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
         if (typeof fieldValue === 'string') {
           fieldValue = fieldValue.trim();
         }
+
         if (isDateField(fieldName)) {
           fieldValue = humanDateToUnixTs(fieldValue);
         }
+
         res[fieldName] = fieldValue;
       }
     });
@@ -166,6 +169,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
   const newlyCreatedMediaObjectProp = () => {
     const inClassIndexOfMediaObject = entityCodec.inClassIndexOfProp(Fields.object.id);
+
     if (!inClassIndexOfMediaObject) {
       throw new Error('Cannot not find an in-class index of "object" prop on Video entity.');
     }
@@ -183,8 +187,9 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     props: VecClassPropertyValue,
     extra: ParametrizedClassPropertyValue[] = []
   ): ParameterizedClassPropertyValues => {
-    const parametrizedProps = props.map(p => {
+    const parametrizedProps = props.map((p) => {
       const { in_class_index, value } = p;
+
       return api.createType('ParametrizedClassPropertyValue', {
         in_class_index,
         value: api.createType('ParametrizedPropertyValue', { PropertyValue: value })
@@ -192,7 +197,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     });
 
     if (extra && extra.length) {
-      extra.forEach(x => parametrizedProps.push(x));
+      extra.forEach((x) => parametrizedProps.push(x));
     }
 
     return api.createType('Vec<ParametrizedClassPropertyValue>', parametrizedProps);
@@ -296,6 +301,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
   const redirectToPlaybackPage = (newEntityId?: EntityId) => {
     const entityId = newEntityId || id;
+
     if (history && entityId) {
       history.push('/media/videos/' + entityId.toString());
     }
@@ -316,6 +322,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
     // Extract id from from event:
     const newId = videoEntityCreatedEvent[0] as EntityId;
+
     console.log('New video entity id:', newId && newId.toString());
 
     redirectToPlaybackPage(newId);
@@ -431,12 +438,15 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   mapPropsToValues: (props): FormValues => {
     const { entity, channelId, fileName } = props;
     const res = VideoToFormValues(entity);
+
     if (!res.title && fileName) {
       res.title = fileName;
     }
+
     if (channelId) {
       res.channelId = channelId.toNumber();
     }
+
     return res;
   },
 

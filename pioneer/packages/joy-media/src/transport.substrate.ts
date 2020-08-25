@@ -124,9 +124,11 @@ export class SubstrateTransport extends MediaTransport {
 
   async allChannelIds (): Promise<ChannelId[]> {
     let nextId = (await this.nextChannelId()).toNumber();
+
     if (nextId < 1) nextId = 1;
 
     const allIds: ChannelId[] = [];
+
     for (let id = FIRST_CHANNEL_ID; id < nextId; id++) {
       allIds.push(this.api.createType('ChannelId', id));
     }
@@ -151,11 +153,13 @@ export class SubstrateTransport extends MediaTransport {
 
   async allChannels (): Promise<ChannelEntity[]> {
     const ids = await this.allChannelIds();
+
     return await this.channelCache.getOrLoadByIds(ids);
   }
 
   protected async getValidationConstraint (constraintName: string): Promise<ValidationConstraint> {
     const constraint = await this.cwgQuery()[constraintName]<InputValidationLengthConstraint>();
+
     return {
       min: constraint.min.toNumber(),
       max: constraint.max.toNumber()
@@ -176,6 +180,7 @@ export class SubstrateTransport extends MediaTransport {
       this.getValidationConstraint('channelAvatarConstraint'),
       this.getValidationConstraint('channelBannerConstraint')
     ]);
+
     return {
       handle,
       title,
@@ -196,6 +201,7 @@ export class SubstrateTransport extends MediaTransport {
     const nextId = (await this.nextClassId()).toNumber();
 
     const allIds: ClassId[] = [];
+
     for (let id = FIRST_CLASS_ID; id < nextId; id++) {
       allIds.push(this.api.createType('ClassId', id));
     }
@@ -209,25 +215,30 @@ export class SubstrateTransport extends MediaTransport {
 
   async allClasses (): Promise<Class[]> {
     const ids = await this.allClassIds();
+
     return await this.classCache.getOrLoadByIds(ids);
   }
 
   async getEntityCodecResolver (): Promise<EntityCodecResolver> {
     if (!this.entityCodecResolver) {
       const classes = await this.allClasses();
+
       this.entityCodecResolver = new EntityCodecResolver(classes);
     }
+
     return this.entityCodecResolver;
   }
 
   async classNamesToIdSet (classNames: ClassName[]): Promise<Set<string>> {
     const classNameToIdMap = await this.classIdByNameMap();
+
     return new Set(classNames
-      .map(name => {
+      .map((name) => {
         const classId = classNameToIdMap[name];
+
         return classId ? classId.toString() : undefined;
       })
-      .filter(classId => typeof classId !== 'undefined') as string[]
+      .filter((classId) => typeof classId !== 'undefined') as string[]
     );
   }
 
@@ -242,6 +253,7 @@ export class SubstrateTransport extends MediaTransport {
     const nextId = (await this.nextEntityId()).toNumber();
 
     const allIds: EntityId[] = [];
+
     for (let id = FIRST_ENTITY_ID; id < nextId; id++) {
       allIds.push(this.api.createType('EntityId', id));
     }
@@ -259,7 +271,8 @@ export class SubstrateTransport extends MediaTransport {
   private async loadPlainEntitiesByIds (ids: AnyEntityId[]): Promise<PlainEntity[]> {
     const entities = await this.loadEntitiesByIds(ids);
     const cacheClassIds = await this.classNamesToIdSet(ClassNamesThatCanBeCached);
-    entities.forEach(e => {
+
+    entities.forEach((e) => {
       if (cacheClassIds.has(e.class_id.toString())) {
         this.idsOfEntitiesToKeepInCache.add(e.id.toString());
       }
@@ -274,20 +287,23 @@ export class SubstrateTransport extends MediaTransport {
 
   async allPlainEntities (): Promise<PlainEntity[]> {
     const ids = await this.allEntityIds();
+
     return await this.entityCache.getOrLoadByIds(ids);
   }
 
   async findPlainEntitiesByClassName<T extends PlainEntity> (className: ClassName): Promise<T[]> {
     const res: T[] = [];
     const clazz = await this.classByName(className);
+
     if (!clazz) {
       console.warn(`No class found by name '${className}'`);
+
       return res;
     }
 
     const allIds = await this.allEntityIds();
     const filteredEntities = (await this.entityCache.getOrLoadByIds(allIds))
-      .filter(entity => clazz.id.eq(entity.classId)) as T[];
+      .filter((entity) => clazz.id.eq(entity.classId)) as T[];
 
     console.log(`Found ${filteredEntities.length} plain entities by class name '${className}'`);
 
@@ -302,6 +318,7 @@ export class SubstrateTransport extends MediaTransport {
     const loadableClassIds = await this.classNamesToIdSet(ClassNamesThatRequireLoadingInternals);
 
     const converted: PlainEntity[] = [];
+
     for (const entity of entities) {
       const classIdStr = entity.class_id.toString();
       const codec = entityCodecResolver.getCodecByClassId(entity.class_id);
@@ -334,6 +351,7 @@ export class SubstrateTransport extends MediaTransport {
 
   async featuredContent (): Promise<FeaturedContentType | undefined> {
     const arr = await this.findPlainEntitiesByClassName('FeaturedContent');
+
     return arr && arr.length ? arr[0] : undefined;
   }
 

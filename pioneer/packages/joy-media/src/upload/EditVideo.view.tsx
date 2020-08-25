@@ -18,6 +18,7 @@ export const EditVideoView = MediaView<Props>({
     const entityClass = await transport.videoClass();
     const entity = id && await transport.videoById(id);
     const opts = await transport.dropdownOptions();
+
     return { channel, mediaObjectClass, entityClass, entity, opts };
   }
 });

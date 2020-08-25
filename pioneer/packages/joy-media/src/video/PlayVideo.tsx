@@ -30,6 +30,7 @@ type ListOfVideoPreviewProps = {
 
 function VertialListOfVideoPreviews (props: ListOfVideoPreviewProps) {
   const { videos = [] } = props;
+
   return <>{videos.map((video) =>
     <VideoPreview key={`VideoPreview-${video.id}`} {...video} size='small' orientation='horizontal' withChannel />
   )}</>;

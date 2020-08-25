@@ -15,6 +15,7 @@ export const EditChannelView = MediaView<Props>({
     const { transport, id } = props;
     const entity = id && await transport.channelById(id);
     const constraints = await transport.channelValidationConstraints();
+
     return { entity, constraints };
   }
 });

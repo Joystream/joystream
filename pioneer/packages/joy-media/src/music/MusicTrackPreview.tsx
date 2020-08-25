@@ -35,6 +35,7 @@ export function MusicTrackPreview (props: EditableMusicTrackPreviewProps) {
     } catch (err) {
       console.log('Error during checkbox change:', err);
     }
+
     setChecked(d.checked || false);
   };
 
