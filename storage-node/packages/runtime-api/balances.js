@@ -51,7 +51,7 @@ class BalancesApi {
    */
   async freeBalance(accountId) {
     const decoded = this.base.identities.keyring.decodeAddress(accountId, true)
-    return this.base.api.query.balances.freeBalance(decoded)
+    return (await this.base.api.derive.balances.all(decoded)).freeBalance
   }
 
   /*

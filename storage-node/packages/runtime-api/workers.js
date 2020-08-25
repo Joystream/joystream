@@ -121,31 +121,14 @@ class WorkersApi {
    * Returns the set of ids and Worker instances of providers enrolled on the network
    */
   async getAllProviders() {
-    // const workerEntries = await this.base.api.query.storageWorkingGroup.workerById()
-    // can't rely on .isEmpty or isNone property to detect empty map
-    // return workerEntries.isNone ? [] : workerEntries[0]
-    // return workerEntries.isEmpty ? [] : workerEntries[0]
-    // So we iterate over possible ids which may or may not exist, by reading directly
-    // from storage value
-    const nextWorkerId = (await this.base.api.query.storageWorkingGroup.nextWorkerId()).toNumber()
     const ids = []
     const providers = {}
-    for (let id = 0; id < nextWorkerId; id++) {
-      // We get back an Option. Will be None if value doesn't exist
-      // eslint-disable-next-line no-await-in-loop
-      let value = await this.base.api.rpc.state.getStorage(this.base.api.query.storageWorkingGroup.workerById.key(id))
-
-      if (!value.isNone) {
-        // no need to read from storage again!
-        // const worker = (await this.base.api.query.storageWorkingGroup.workerById(id))[0]
-        value = value.unwrap()
-        // construct the Worker type from raw data
-        // const worker = createType('WorkerOf', value)
-        // const worker = new Worker(value)
-        ids.push(id)
-        providers[id] = new Worker(value)
-      }
-    }
+    const entries = (await this.base.api.query.storageWorkingGroup.workerById.entries());
+    entries.forEach(([storageKey, worker]) => {
+      const id = storageKey.args[0].toNumber();
+      ids.push(id);
+      providers[id] = worker;
+    })
 
     return { ids, providers }
   }

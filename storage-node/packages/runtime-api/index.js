@@ -208,7 +208,7 @@ class RuntimeApi {
 
     // object used to communicate back information from the tx updates handler
     const out = {
-      lastResult: undefined,
+      lastResult: { status: {} },
     }
 
     // synchronize access to nonce
@@ -232,11 +232,11 @@ class RuntimeApi {
         // Elaboration: when the tx is rejected and therefore the tx isn't added
         // to the tx pool ready queue status is not updated and
         // .send() throws, so we don't reach this code.
-        // if (out.lastResult.status.isFuture) {
-        //   debugTx(`Warning: Submitted Tx with future nonce: ${serialized}`)
-        // } else {
-        //   debugTx(`Submitted: ${serialized}`)
-        // }
+        if (out.lastResult.status.isFuture) {
+          debugTx(`Warning: Submitted Tx with future nonce: ${serialized}`)
+        } else {
+          debugTx(`Submitted: ${serialized}`)
+        }
 
         // transaction submitted successfully, increment and save nonce.
         this.incrementAndSaveNonce(accountId)
@@ -250,9 +250,9 @@ class RuntimeApi {
     // Here again we assume that the transaction has been accepted into the tx pool
     // and status was updated.
     // We cannot get tx updates for a future tx so return now to avoid blocking caller
-    // if (out.lastResult.status.isFuture) {
-    //   return {}
-    // }
+    if (out.lastResult.status.isFuture) {
+      return {}
+    }
 
     // Return a promise that will resolve when the transaction finalizes.
     // On timeout it will be rejected. Timeout is a workaround for dealing with the
