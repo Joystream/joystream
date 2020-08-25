@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 import { JsonTransformer } from '@anchan828/typeorm-transformers';
-import { AnyJson } from '../type-helpers';
+import { AnyJson } from '../utils/type-helpers';
 import * as BN from 'bn.js';
 import { NumericTransformer } from '../db/entities';
 

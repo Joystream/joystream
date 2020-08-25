@@ -1,8 +1,9 @@
 import { Entity, Column, JoinColumn, OneToOne, PrimaryColumn } from 'typeorm';
-import { AnyJson } from '../type-helpers';
+import { AnyJson } from '../utils/type-helpers';
 import { JsonTransformer } from '@anchan828/typeorm-transformers';
 import { QueryEvent } from '..';
 import * as BN from 'bn.js';
+
 
 import Debug from 'debug';
 import { ChainExtrinsic } from './ChainExtrinsic';
@@ -44,10 +45,8 @@ export class QueryEventEntity {
   })
   section?: string;
 
-  @Column({
-    nullable: true
-  })
-  method?: string;
+  @Column()
+  method!: string;
 
   @Column({
     type: 'jsonb',
