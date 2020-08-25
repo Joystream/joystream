@@ -73,9 +73,9 @@ impl Trait<Instance0> for Runtime {
 
     fn caclulate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
-        stake: <Self as Trait<Instance0>>::CurrencyBalance,
+        stake: &<Self as Trait<Instance0>>::CurrencyBalance,
     ) -> <Self as Trait<Instance0>>::VotePower {
-        let stake: u64 = stake.into();
+        let stake: u64 = u64::from(*stake);
         if *account_id == USER_REGULAR_POWER_VOTES {
             return stake * POWER_VOTE_STRENGTH;
         }
@@ -85,7 +85,7 @@ impl Trait<Instance0> for Runtime {
 
     fn can_stake_for_vote(
         account_id: &<Self as system::Trait>::AccountId,
-        _stake: <Self as Trait<Instance0>>::CurrencyBalance,
+        _stake: &<Self as Trait<Instance0>>::CurrencyBalance,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_LOCKING_ENABLED.with(|value| value.borrow().0) {
@@ -104,7 +104,7 @@ impl Trait<Instance0> for Runtime {
 
     fn lock_currency(
         account_id: &<Self as system::Trait>::AccountId,
-        stake: <Self as Trait<Instance0>>::CurrencyBalance,
+        stake: &<Self as Trait<Instance0>>::CurrencyBalance,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_LOCKING_ENABLED.with(|value| value.borrow().1) {
@@ -117,7 +117,7 @@ impl Trait<Instance0> for Runtime {
 
     fn free_currency(
         account_id: &<Self as system::Trait>::AccountId,
-        stake: <Self as Trait<Instance0>>::CurrencyBalance,
+        stake: &<Self as Trait<Instance0>>::CurrencyBalance,
     ) -> bool {
         if !IS_LOCKING_ENABLED.with(|value| value.borrow().2) {
             return false;
@@ -214,6 +214,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime, Instance0> {
     GenesisConfig::<Runtime, Instance0> {
         stage: ReferendumStage::default(),
         votes: vec![],
+        current_cycle: 0,
     }
 }
 
@@ -278,7 +279,14 @@ where
 
     pub fn calculate_commitment(
         account_id: &<T as system::Trait>::AccountId,
-        salt: &[u8],
+        vote_option_index: &u64,
+    ) -> (T::Hash, Vec<u8>) {
+        let cycle_id = CurrentCycle::<I>::get();
+        Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index)
+    }
+
+    pub fn calculate_commitment_for_cycle(
+        account_id: &<T as system::Trait>::AccountId,
         cycle_id: &u64,
         vote_option_index: &u64,
     ) -> (T::Hash, Vec<u8>) {
@@ -287,7 +295,7 @@ where
         (
             <Module<T, I> as ReferendumManager<T, I>>::calculate_commitment(
                 account_id,
-                salt,
+                &salt,
                 cycle_id,
                 vote_option_index,
             ),
@@ -433,7 +441,7 @@ impl InstanceMocks<Runtime, Instance0> {
             Votes::<Runtime, Instance0>::get(account_id),
             SealedVote {
                 commitment,
-                cycle_id: CurrentCycle::<Runtime, Instance0>::get(),
+                cycle_id: CurrentCycle::<Instance0>::get(),
                 balance,
             },
         );
@@ -441,7 +449,7 @@ impl InstanceMocks<Runtime, Instance0> {
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::event_mod_Instance0(RawEvent::VoteCasted(commitment, balance))
+            TestEvent::event_mod_Instance0(RawEvent::VoteCasted(account_id, commitment, balance))
         );
     }
 
