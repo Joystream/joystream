@@ -155,7 +155,7 @@ class WorkersApi {
     if (currentLead.isSome) {
       const leadWorkerId = currentLead.unwrap()
       const worker = await this.base.api.query.storageWorkingGroup.workerById(leadWorkerId)
-      return worker[0].role_account_id
+      return worker.role_account_id
     }
     return null
   }

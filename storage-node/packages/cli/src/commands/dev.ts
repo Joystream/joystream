@@ -188,7 +188,7 @@ const init = async (api: RuntimeApi): Promise<any> => {
   debug('Making Alice the storage Lead.')
   const leadOpeningId = await api.workers.devAddStorageLeadOpening()
   const leadApplicationId = await api.workers.devApplyOnOpening(leadOpeningId, aliceMemberId, alice, alice)
-  api.workers.devBeginLeadOpeningReview(leadOpeningId)
+  await api.workers.devBeginLeadOpeningReview(leadOpeningId)
   await api.workers.devFillLeadOpening(leadOpeningId, leadApplicationId)
 
   const leadAccount = await api.workers.getLeadRoleAccount()

@@ -21,7 +21,7 @@
 const debug = require('debug')('joystream:runtime:base')
 const debugTx = require('debug')('joystream:runtime:base:tx')
 
-const { registerJoystreamTypes } = require('@joystream/types')
+const { types } = require('@joystream/types')
 const { ApiPromise, WsProvider } = require('@polkadot/api')
 const { IdentitiesApi } = require('@joystream/storage-runtime-api/identities')
 const { BalancesApi } = require('@joystream/storage-runtime-api/balances')
@@ -54,13 +54,10 @@ class RuntimeApi {
 
     options = options || {}
 
-    // Register joystream types
-    registerJoystreamTypes()
-
     const provider = new WsProvider(options.provider_url || 'ws://localhost:9944')
 
     // Create the API instrance
-    this.api = await ApiPromise.create({ provider })
+    this.api = await ApiPromise.create({ provider, types: types })
 
     this.asyncLock = new AsyncLock()
 
@@ -158,7 +155,9 @@ class RuntimeApi {
     const cachedNonce = this.nonces[accountId]
     // In future use this rpc method to take the pending tx pool into account when fetching the nonce
     // const nonce = await this.api.rpc.system.accountNextIndex(accountId)
-    const systemNonce = await this.api.query.system.accountNonce(accountId)
+    const { nonce } = await this.api.query.system.account(accountId)
+
+    const systemNonce = nonce
 
     const bestNonce = cachedNonce && cachedNonce.gte(systemNonce) ? cachedNonce : systemNonce
 
@@ -233,11 +232,11 @@ class RuntimeApi {
         // Elaboration: when the tx is rejected and therefore the tx isn't added
         // to the tx pool ready queue status is not updated and
         // .send() throws, so we don't reach this code.
-        if (out.lastResult.status.isFuture) {
-          debugTx(`Warning: Submitted Tx with future nonce: ${serialized}`)
-        } else {
-          debugTx(`Submitted: ${serialized}`)
-        }
+        // if (out.lastResult.status.isFuture) {
+        //   debugTx(`Warning: Submitted Tx with future nonce: ${serialized}`)
+        // } else {
+        //   debugTx(`Submitted: ${serialized}`)
+        // }
 
         // transaction submitted successfully, increment and save nonce.
         this.incrementAndSaveNonce(accountId)
@@ -251,9 +250,9 @@ class RuntimeApi {
     // Here again we assume that the transaction has been accepted into the tx pool
     // and status was updated.
     // We cannot get tx updates for a future tx so return now to avoid blocking caller
-    if (out.lastResult.status.isFuture) {
-      return {}
-    }
+    // if (out.lastResult.status.isFuture) {
+    //   return {}
+    // }
 
     // Return a promise that will resolve when the transaction finalizes.
     // On timeout it will be rejected. Timeout is a workaround for dealing with the
@@ -337,7 +336,7 @@ class RuntimeApi {
 
         onFinalizedFailed &&
           onFinalizedFailed({ err: status.type, result, tx: status.isUsurped ? status.asUsurped : undefined })
-      } else if (result.isFinalized) {
+      } else if (result.isCompleted) {
         unsubscribe()
 
         debugTx('Finalized', txinfo())
@@ -357,7 +356,7 @@ class RuntimeApi {
             err: 'ExtrinsicFailed',
             mappedEvents,
             result,
-            block: status.asFinalized,
+            block: status.asCompleted,
             dispatchError, // we get module number/id and index into the Error enum
           })
         } else if (success) {
@@ -365,20 +364,20 @@ class RuntimeApi {
           // console, we cannot get it in the events
           if (sudid) {
             const dispatchSuccess = sudid.event.data[0]
-            if (dispatchSuccess.isTrue) {
-              onFinalizedSuccess({ mappedEvents, result, block: status.asFinalized })
+            if (dispatchSuccess.isOk) {
+              onFinalizedSuccess({ mappedEvents, result, block: status.asCompleted })
             } else {
-              onFinalizedFailed({ err: 'SudoFailed', mappedEvents, result, block: status.asFinalized })
+              onFinalizedFailed({ err: 'SudoFailed', mappedEvents, result, block: status.asCompleted })
             }
           } else if (sudoAsDone) {
             const dispatchSuccess = sudoAsDone.event.data[0]
-            if (dispatchSuccess.isTrue) {
-              onFinalizedSuccess({ mappedEvents, result, block: status.asFinalized })
+            if (dispatchSuccess.isOk) {
+              onFinalizedSuccess({ mappedEvents, result, block: status.asCompleted })
             } else {
-              onFinalizedFailed({ err: 'SudoAsFailed', mappedEvents, result, block: status.asFinalized })
+              onFinalizedFailed({ err: 'SudoAsFailed', mappedEvents, result, block: status.asCompleted })
             }
           } else {
-            onFinalizedSuccess({ mappedEvents, result, block: status.asFinalized })
+            onFinalizedSuccess({ mappedEvents, result, block: status.asCompleted })
           }
         }
       }
