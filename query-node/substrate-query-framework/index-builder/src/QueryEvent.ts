@@ -1,8 +1,9 @@
 import { EventRecord, Extrinsic } from '@polkadot/types/interfaces';
 import { Codec } from '@polkadot/types/types';
 import * as BN from 'bn.js';
+import { ChainExtrinsic } from './entities';
 
-interface EventParameters {
+export interface EventParameters {
   [key: string]: Codec;
 }
 
@@ -12,7 +13,7 @@ export interface SubstrateEvent {
   event_params: EventParameters;
   index: BN;
   block_number: BN;
-  extrinsic?: Extrinsic;
+  extrinsic?: Extrinsic | ChainExtrinsic;
 }
 
 export default class QueryEvent implements SubstrateEvent {
