@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MusicAlbumPreviewProps, MusicAlbumPreview } from '../music/MusicAlbumPreview';
 import { MusicTrackReaderPreviewProps, MusicTrackReaderPreview } from '../music/MusicTrackReaderPreview';
-import { Pluralize } from '@polkadot/joy-utils/Pluralize';
+import { Pluralize } from '@polkadot/joy-utils/react/components';
 import { Table } from 'semantic-ui-react';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelPreview } from '../channels/ChannelPreview';

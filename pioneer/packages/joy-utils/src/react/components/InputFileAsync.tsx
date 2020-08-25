@@ -3,16 +3,16 @@
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { WithTranslation } from 'react-i18next';
-import { BareProps } from './types';
+import { BareProps } from '@polkadot/react-components/types';
 
 import React, { useState, createRef } from 'react';
 import Dropzone, { DropzoneRef } from 'react-dropzone';
 import styled from 'styled-components';
 import { formatNumber } from '@polkadot/util';
 
-import { classes } from './util';
-import Labelled from './Labelled';
-import translate from './translate';
+import { classes } from '@polkadot/react-components/util';
+import Labelled from '@polkadot/react-components/Labelled';
+import translate from '@polkadot/react-components/translate';
 
 interface Props extends BareProps, WithTranslation {
   // Reference Example Usage: https://github.com/react-dropzone/react-dropzone/tree/master/examples/Accept

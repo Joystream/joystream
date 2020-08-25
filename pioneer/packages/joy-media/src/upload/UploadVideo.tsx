@@ -4,9 +4,10 @@ import { Form, withFormik } from 'formik';
 import { History } from 'history';
 import moment from 'moment';
 
-import TxButton, { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
+import TxButton, { OnTxButtonClick } from '@polkadot/joy-utils/react/components/TxButton';
 import { ContentId } from '@joystream/types/media';
-import { onImageError } from '@polkadot/joy-utils/images';
+import { onImageError } from '../common/images';
+import { nonEmptyStr, filterSubstrateEventsAndExtractData } from '@polkadot/joy-utils/functions/misc';
 import { VideoValidationSchema, VideoType, VideoClass as Fields, VideoFormValues, VideoToFormValues, VideoCodec, VideoPropId } from '../schemas/video/Video';
 import { MediaFormProps, withMediaForm, datePlaceholder } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
@@ -14,23 +15,20 @@ import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { FormTabs } from '../common/FormTabs';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { ChannelEntity } from '../entities/ChannelEntity';
-import { Credential } from '@joystream/types/common';
 import { Class, VecClassPropertyValue } from '@joystream/types/versioned-store';
 import { TxCallback } from '@polkadot/react-components/Status/types';
 import { SubmittableResult } from '@polkadot/api';
-import { nonEmptyStr, filterSubstrateEventsAndExtractData } from '@polkadot/joy-utils/index';
-import { u16, u32, bool, Option, Vec } from '@polkadot/types';
 import { isInternalProp } from '@joystream/types/versioned-store/EntityCodec';
 import { MediaObjectCodec } from '../schemas/general/MediaObject';
-import { Operation } from '@joystream/types/versioned-store/permissions/batching';
 import { OperationType } from '@joystream/types/versioned-store/permissions/batching/operation-types';
 import { ParametrizedEntity } from '@joystream/types/versioned-store/permissions/batching/parametrized-entity';
 import ParametrizedClassPropertyValue from '@joystream/types/versioned-store/permissions/batching/ParametrizedClassPropertyValue';
 import { ParametrizedPropertyValue } from '@joystream/types/versioned-store/permissions/batching/parametrized-property-value';
 import { ParameterizedClassPropertyValues } from '@joystream/types/versioned-store/permissions/batching/operations';
-import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
+import { useMyMembership } from '@polkadot/joy-utils/react/hooks';
 import { isAccountAChannelOwner } from '../channels/ChannelHelpers';
-import { JoyError } from '@polkadot/joy-utils/JoyStatus';
+import { JoyError } from '@polkadot/joy-utils/react/components';
+import { useApi } from '@polkadot/react-hooks';
 
 /** Example: "2019-01-23" -> 1548201600 */
 function humanDateToUnixTs (humanFriendlyDate: string): number | undefined {
@@ -87,6 +85,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   } = props;
 
   const { myAccountId } = useMyMembership();
+  const { api } = useApi();
 
   const { thumbnail } = values;
 
@@ -103,9 +102,9 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   }
 
   // Next consts are used in tx params:
-  const with_credential = new Option<Credential>(Credential, new Credential(2));
-  const as_entity_maintainer = new bool(false);
-  const schema_id = new u16(0);
+  const with_credential = api.createType('Option<Credential>', 2);
+  const as_entity_maintainer = api.createType('bool', false);
+  const schema_id = api.createType('u16', 0);
 
   const entityCodec = new VideoCodec(entityClass);
   const mediaObjectCodec = new MediaObjectCodec(mediaObjectClass);
@@ -155,15 +154,15 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     return res;
   };
 
-  const indexOfCreateMediaObjectOperation = new u32(0);
+  const indexOfCreateMediaObjectOperation = api.createType('u32', 0);
 
-  const indexOfCreateVideoEntityOperation = new u32(2);
+  const indexOfCreateVideoEntityOperation = api.createType('u32', 2);
 
   const referToIdOfCreatedMediaObjectEntity = () =>
-    ParametrizedEntity.InternalEntityJustAdded(indexOfCreateMediaObjectOperation);
+    ParametrizedEntity.InternalEntityJustAdded(api.registry, indexOfCreateMediaObjectOperation);
 
   const referToIdOfCreatedVideoEntity = () =>
-    ParametrizedEntity.InternalEntityJustAdded(indexOfCreateVideoEntityOperation);
+    ParametrizedEntity.InternalEntityJustAdded(api.registry, indexOfCreateVideoEntityOperation);
 
   const newlyCreatedMediaObjectProp = () => {
     const inClassIndexOfMediaObject = entityCodec.inClassIndexOfProp(Fields.object.id);
@@ -171,9 +170,10 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       throw new Error('Cannot not find an in-class index of "object" prop on Video entity.');
     }
 
-    return new ParametrizedClassPropertyValue({
-      in_class_index: new u16(inClassIndexOfMediaObject),
+    return api.createType('ParametrizedClassPropertyValue', {
+      in_class_index: inClassIndexOfMediaObject,
       value: ParametrizedPropertyValue.InternalEntityJustAdded(
+        api.registry,
         indexOfCreateMediaObjectOperation
       )
     });
@@ -185,9 +185,9 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   ): ParameterizedClassPropertyValues => {
     const parametrizedProps = props.map(p => {
       const { in_class_index, value } = p;
-      return new ParametrizedClassPropertyValue({
+      return api.createType('ParametrizedClassPropertyValue', {
         in_class_index,
-        value: new ParametrizedPropertyValue({ PropertyValue: value })
+        value: api.createType('ParametrizedPropertyValue', { PropertyValue: value })
       });
     });
 
@@ -195,11 +195,11 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
       extra.forEach(x => parametrizedProps.push(x));
     }
 
-    return new ParameterizedClassPropertyValues(parametrizedProps);
+    return api.createType('Vec<ParametrizedClassPropertyValue>', parametrizedProps);
   };
 
   const newEntityOperation = (operation_type: OperationType) => {
-    return new Operation({
+    return api.createType('Operation', {
       with_credential,
       as_entity_maintainer,
       operation_type
@@ -209,6 +209,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const prepareTxParamsForCreateMediaObject = () => {
     return newEntityOperation(
       OperationType.CreateEntity(
+        api.registry,
         mediaObjectClass.id
       )
     );
@@ -224,6 +225,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
     return newEntityOperation(
       OperationType.AddSchemaSupportToEntity(
+        api.registry,
         referToIdOfCreatedMediaObjectEntity(),
         schema_id,
         propValues
@@ -234,6 +236,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const prepareTxParamsForCreateEntity = () => {
     return newEntityOperation(
       OperationType.CreateEntity(
+        api.registry,
         entityClass.id
       )
     );
@@ -249,6 +252,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
     return newEntityOperation(
       OperationType.AddSchemaSupportToEntity(
+        api.registry,
         referToIdOfCreatedVideoEntity(),
         schema_id,
         propValues
@@ -272,7 +276,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     // Use for debug:
     // console.log('Batch entity operations:', ops)
 
-    return [new Vec(Operation, ops)];
+    return [api.createType('Vec<Operation>', ops)];
   };
 
   const buildUpdateEntityTxParams = () => {
@@ -376,7 +380,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const renderTransactionButton = () =>
     <TxButton
       type='submit'
-      size='large'
       isDisabled={!canSubmitTx()}
       label='Publish video'
       tx='versionedStorePermissions.transaction'
@@ -389,7 +392,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const renderUpdateEntityButton = () =>
     <TxButton
       type='submit'
-      size='large'
       isDisabled={!canSubmitTx()}
       label='Update video'
       tx='versionedStorePermissions.updateEntityPropertyValues'

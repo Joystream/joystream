@@ -4,7 +4,21 @@ import { Codec, CodecArg } from '@polkadot/types/types';
 import { QueryableStorageEntry } from '@polkadot/api/types/storage';
 import { APIQueryCache } from './APIQueryCache';
 
-export default abstract class BaseTransport {
+export async function entriesByIds<IDType extends UInt, ValueType extends Codec> (
+  apiMethod: QueryableStorageEntry<'promise'>,
+  firstKey?: CodecArg // First key in case of double maps
+): Promise<[IDType, ValueType][]> {
+  const entries: [IDType, ValueType][] = (await apiMethod.entries<ValueType>(firstKey))
+    .map(([storageKey, value]) => ([
+      // If double-map (first key is provided), we map entries by second key
+      storageKey.args[firstKey !== undefined ? 1 : 0] as IDType,
+      value
+    ]));
+
+  return entries.sort((a, b) => a[0].toNumber() - b[0].toNumber());
+}
+
+export default class BaseTransport {
   protected api: ApiPromise;
   protected cacheApi: APIQueryCache;
 
@@ -67,17 +81,5 @@ export default abstract class BaseTransport {
     return this.api.query[module][method];
   }
 
-  protected async entriesByIds<IDType extends UInt, ValueType extends Codec> (
-    apiMethod: QueryableStorageEntry<'promise'>,
-    firstKey?: CodecArg // First key in case of double maps
-  ): Promise<[IDType, ValueType][]> {
-    const entries: [IDType, ValueType][] = (await apiMethod.entries<ValueType>(firstKey))
-      .map(([storageKey, value]) => ([
-        // If double-map (first key is provided), we map entries by second key
-        storageKey.args[firstKey !== undefined ? 1 : 0] as IDType,
-        value
-      ]));
-
-    return entries.sort((a, b) => a[0].toNumber() - b[0].toNumber());
-  }
+  protected entriesByIds = entriesByIds
 }

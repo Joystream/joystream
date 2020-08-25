@@ -4,17 +4,16 @@ import _ from 'lodash';
 
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
-import { withMulti } from '@polkadot/react-api/with';
+import { withMulti } from '@polkadot/react-api/hoc';
 import { Option } from '@polkadot/types/codec';
-import { StorageProviderId, Worker } from '@joystream/types/working-group';
 
 import translate from '../translate';
 import { DiscoveryProviderProps, withDiscoveryProvider } from '../DiscoveryProvider';
 import { DataObjectStorageRelationshipId, DataObjectStorageRelationship } from '@joystream/types/media';
 import { Message } from 'semantic-ui-react';
 import { MediaPlayerView, RequiredMediaPlayerProps } from './MediaPlayerView';
-import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
-import { MultipleLinkedMapEntry } from '@polkadot/joy-utils/index';
+import { JoyInfo } from '@polkadot/joy-utils/react/components';
+import { useTransport } from '@polkadot/joy-utils/react/hooks';
 
 type Props = ApiProps & I18nProps & DiscoveryProviderProps & RequiredMediaPlayerProps;
 
@@ -24,28 +23,12 @@ function newCancelSource (): CancelTokenSource {
 
 function InnerComponent (props: Props) {
   const { contentId, api, discoveryProvider } = props;
+  const transport = useTransport();
 
   const [error, setError] = useState<Error>();
   const [resolvedAssetUrl, setResolvedAssetUrl] = useState<string>();
   const [contentType, setContentType] = useState<string>();
   const [cancelSource, setCancelSource] = useState<CancelTokenSource>(newCancelSource());
-
-  const getActiveStorageProviderIds = async (): Promise<StorageProviderId[]> => {
-    const nextId = await api.query.storageWorkingGroup.nextWorkerId() as StorageProviderId;
-    // This is chain specfic, but if next id is still 0, it means no workers have been added,
-    // so the workerById is empty
-    if (nextId.eq(0)) {
-      return [];
-    }
-
-    const workers = new MultipleLinkedMapEntry<StorageProviderId, Worker>(
-      StorageProviderId,
-      Worker,
-      await api.query.storageWorkingGroup.workerById()
-    );
-
-    return workers.linked_keys;
-  };
 
   const resolveAsset = async () => {
     setError(undefined);
@@ -68,9 +51,9 @@ function InnerComponent (props: Props) {
       return;
     }
 
+    const activeProviders = (await transport.workingGroups.allWorkers('Storage')).map(([id]) => id);
     // filter out providers no longer active - relationships of providers that have left
     // are not pruned onchain.
-    const activeProviders = await getActiveStorageProviderIds();
     readyProviders = _.intersectionBy(activeProviders, readyProviders, provider => provider.toString());
 
     console.log(`Found ${readyProviders.length} providers ready to serve content: ${readyProviders}`);

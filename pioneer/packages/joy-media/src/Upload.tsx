@@ -4,7 +4,8 @@ import axios, { CancelTokenSource } from 'axios';
 import { History } from 'history';
 import { Progress, Message } from 'semantic-ui-react';
 
-import { InputFileAsync } from '@polkadot/react-components/index';
+import { mockRegistry } from '@joystream/types';
+import { InputFileAsync } from '@polkadot/joy-utils/react/components';
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { SubmittableResult } from '@polkadot/api';
@@ -15,15 +16,17 @@ import { formatNumber } from '@polkadot/util';
 import translate from './translate';
 import { fileNameWoExt } from './utils';
 import { ContentId, DataObject } from '@joystream/types/media';
-import { withOnlyMembers, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
+import { MyAccountProps } from '@polkadot/joy-utils/react/hocs/accounts';
+import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
 import { DiscoveryProviderProps, withDiscoveryProvider } from './DiscoveryProvider';
-import TxButton from '@polkadot/joy-utils/TxButton';
+import { TxButton } from '@polkadot/joy-utils/react/components';
 import IpfsHash from 'ipfs-only-hash';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { EditVideoView } from './upload/EditVideo.view';
-import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
+import { JoyInfo } from '@polkadot/joy-utils/react/components';
 import { IterableFile } from './IterableFile';
 import { StorageProviderId } from '@joystream/types/working-group';
+import { Loading } from '@polkadot/joy-utils/react/components';
 
 const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -46,6 +49,7 @@ type State = {
   newContentId: ContentId;
   discovering: boolean;
   uploading: boolean;
+  sendingTx: boolean;
   progress: number;
   cancelSource: CancelTokenSource;
 };
@@ -55,9 +59,10 @@ const defaultState = (): State => ({
   file: undefined,
   computingHash: false,
   ipfs_cid: undefined,
-  newContentId: ContentId.generate(),
+  newContentId: ContentId.generate(mockRegistry),
   discovering: false,
   uploading: false,
+  sendingTx: false,
   progress: 0,
   cancelSource: axios.CancelToken.source()
 });
@@ -84,12 +89,13 @@ class Upload extends React.PureComponent<Props, State> {
   }
 
   private renderContent () {
-    const { error, uploading, discovering, computingHash } = this.state;
+    const { error, uploading, discovering, computingHash, sendingTx } = this.state;
 
     if (error) return this.renderError();
     else if (discovering) return this.renderDiscovering();
     else if (uploading) return this.renderUploading();
     else if (computingHash) return this.renderComputingHash();
+    else if (sendingTx) return this.renderSendingTx();
     else return this.renderFileInput();
   }
 
@@ -117,19 +123,23 @@ class Upload extends React.PureComponent<Props, State> {
     if (!file || !file.name) return <JoyInfo title='Loading...' />;
 
     const success = !error && progress >= 100;
-    const { history, match: { params: { channelId } } } = this.props;
+    const { history, match: { params: { channelId } }, api } = this.props;
 
     return <div style={{ width: '100%' }}>
       {this.renderProgress()}
       {success &&
         <EditVideoView
-          channelId={new ChannelId(channelId)}
+          channelId={api.createType('ChannelId', channelId)}
           contentId={newContentId}
           fileName={fileNameWoExt(file.name)}
           history={history}
         />
       }
     </div>;
+  }
+
+  private renderSendingTx () {
+    return <JoyInfo title="Please wait..."><Loading text="Waiting for the transaction confirmation..." /></JoyInfo>
   }
 
   private renderDiscovering () {
@@ -184,12 +194,16 @@ class Upload extends React.PureComponent<Props, State> {
       />
       {file_name && <div className='UploadButtonBox'>
         <TxButton
-          size='large'
           label={'Upload'}
           isDisabled={!file_name}
           tx={'dataDirectory.addContent'}
           params={this.buildTxParams()}
-          txSuccessCb={this.onDataObjectCreated}
+          onClick={(sendTx) => {
+            this.setState({ sendingTx: true });
+            sendTx();
+          }}
+          txSuccessCb={ this.onDataObjectCreated }
+          txFailedCb={() => { this.setState({ sendingTx: false }) }}
         />
       </div>}
     </div>;
@@ -253,7 +267,7 @@ class Upload extends React.PureComponent<Props, State> {
   }
 
   private onDataObjectCreated = async (_txResult: SubmittableResult) => {
-    this.setState({ discovering: true });
+    this.setState({ sendingTx: false, discovering: true });
 
     const { api } = this.props;
     const { newContentId } = this.state;

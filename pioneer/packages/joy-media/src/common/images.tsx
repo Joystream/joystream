@@ -1,3 +1,5 @@
+import React from 'react';
+
 export const DEFAULT_THUMBNAIL_URL = 'images/default-thumbnail.png';
 
 // This is a hack to just satisfy TypeScript compiler.

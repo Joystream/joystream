@@ -23,10 +23,12 @@ import { terms, privacyPolicy } from './joy-pages';
 import election from './joy-election';
 import proposals from './joy-proposals';
 import roles from './joy-roles';
+import media from './joy-media';
 
 export default function create (t: <T = string> (key: string, text: string, options: { ns: string }) => T): Routes {
   return appSettings.uiMode === 'light'
     ? [
+      media(t),
       members(t),
       roles(t),
       election(t),
@@ -37,6 +39,7 @@ export default function create (t: <T = string> (key: string, text: string, opti
       settings(t)
     ]
     : [
+      media(t),
       members(t),
       roles(t),
       election(t),

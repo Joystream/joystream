@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { MediaTransport } from './transport';
 import { MemberId } from '@joystream/types/members';
-import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
+import { useMyMembership } from '@polkadot/joy-utils/react/hooks';
 import { useTransportContext } from './TransportContext';
-import { withMembershipRequired } from '@polkadot/joy-utils/MyAccount';
+import { withMembershipRequired } from '@polkadot/joy-utils/react/hocs/guards';
+import { useApi } from '@polkadot/react-hooks';
+import { ApiPromise } from '@polkadot/api';
 
 type InitialPropsWithMembership<A> = A & {
   myAddress?: string;
@@ -12,6 +14,7 @@ type InitialPropsWithMembership<A> = A & {
 
 type ResolverProps<A> = InitialPropsWithMembership<A> & {
   transport: MediaTransport;
+  api: ApiPromise;
 }
 
 type BaseProps<A, B> = {
@@ -39,13 +42,14 @@ function serializeTrigger (val: any): any {
   }
 }
 
-export function MediaView<A = {}, B = {}> (baseProps: BaseProps<A, B>) {
+export function MediaView<A extends Record<string, unknown> = Record<string, unknown>, B extends Record<string, unknown> = Record<string, unknown>> (baseProps: BaseProps<A, B>) {
   function InnerView (initialProps: A & B) {
     const { component: Component, resolveProps, triggers = [], unresolvedView = null } = baseProps;
 
     const transport = useTransportContext();
     const { myAddress, myMemberId } = useMyMembership();
-    const resolverProps = { ...initialProps, transport, myAddress, myMemberId };
+    const { api } = useApi();
+    const resolverProps = { ...initialProps, transport, api, myAddress, myMemberId };
 
     const [resolvedProps, setResolvedProps] = useState({} as B);
     const [propsResolved, setPropsResolved] = useState(false);

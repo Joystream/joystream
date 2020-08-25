@@ -97,7 +97,6 @@ function Content ({ className }: Props): React.ReactElement<Props> {
 }
 
 export default React.memo(styled(Content)`
-  background: rgba(250, 250, 250);
   padding: 0 1.5rem;
   position: relative;
   width: 100%;

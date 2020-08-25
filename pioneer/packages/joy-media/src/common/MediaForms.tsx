@@ -1,11 +1,11 @@
 import React from 'react';
 import { Dropdown, DropdownItemProps, DropdownProps } from 'semantic-ui-react';
 import { FormikProps, Field } from 'formik';
-import * as JoyForms from '@polkadot/joy-utils/forms';
+import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { SubmittableResult } from '@polkadot/api';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 import { MediaDropdownOptions } from './MediaDropdownOptions';
-import { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
+import { OnTxButtonClick } from '@polkadot/joy-utils/react/components/TxButton';
 import isEqual from 'lodash/isEqual';
 import { componentName } from '@polkadot/joy-utils/react/helpers';
 

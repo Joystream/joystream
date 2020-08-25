@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChannelEntity } from '../entities/ChannelEntity';
-import Section from '@polkadot/joy-utils/Section';
+import { Section } from '@polkadot/joy-utils/react/components';
 import { ChannelHeader } from './ChannelHeader';
 import { MusicAlbumPreviewProps, MusicAlbumPreview } from '../music/MusicAlbumPreview';
 import { MusicTrackReaderPreview, MusicTrackReaderPreviewProps } from '../music/MusicTrackReaderPreview';

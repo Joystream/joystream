@@ -131,6 +131,11 @@ export default css`
     color: #3b83c0;
   }
 
+  /* Main apps bg */
+  .apps-Main {
+    background: rgba(250,250,250);
+  }
+
   /* Remove IdentityIcon border (not working well for members list) */
   .ui--IdentityIcon {
     border: none !important;

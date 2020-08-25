@@ -29,6 +29,7 @@
     "pioneer/packages/joy-election",
     "pioneer/packages/joy-proposals",
     "pioneer/packages/joy-roles",
+    "pioneer/packages/joy-media",
     "utils/api-examples"
   ],
   "resolutions": {
@@ -40,7 +41,8 @@
     "@polkadot/util-crypto": "3.0.1",
     "@polkadot/wasm-crypto": "1.2.1",
     "babel-core": "^7.0.0-bridge.0",
-    "typescript": "^3.9.7"
+    "typescript": "^3.9.7",
+    "bn.js": "^5.1.2"
   },
   "devDependencies": {
     "husky": "^4.2.5",

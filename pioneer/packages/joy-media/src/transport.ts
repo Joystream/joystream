@@ -1,4 +1,3 @@
-import { Transport } from '@polkadot/joy-utils/index';
 import { AccountId } from '@polkadot/types/interfaces';
 import { EntityId, Class, ClassName, unifyClassName, ClassIdByNameMap } from '@joystream/types/versioned-store';
 import { MusicTrackType, MusicTrackCodec } from './schemas/music/MusicTrack';
@@ -18,7 +17,8 @@ import { MediaDropdownOptions } from './common/MediaDropdownOptions';
 import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { isVideoChannel, isPublicChannel } from './channels/ChannelHelpers';
-import { ValidationConstraint } from '@polkadot/joy-utils/ValidationConstraint';
+import { ValidationConstraint } from '@polkadot/joy-utils/types/ValidationConstraint';
+import { createMock } from '@joystream/types';
 
 export interface ChannelValidationConstraints {
   handle: ValidationConstraint;
@@ -60,7 +60,7 @@ function insensitiveEq (text1: string, text2: string): boolean {
   return prepare(text1) === prepare(text2);
 }
 
-export abstract class MediaTransport extends Transport {
+export abstract class MediaTransport {
   protected cachedClassIdByNameMap: ClassIdByNameMap | undefined
 
   protected sessionId = 0
@@ -128,14 +128,14 @@ export abstract class MediaTransport extends Transport {
   async topVideo (): Promise<VideoType | undefined> {
     const content = await this.featuredContent();
     const topVideoId = content?.topVideo as unknown as number | undefined;
-    return !topVideoId ? undefined : await this.videoById(new EntityId(topVideoId));
+    return !topVideoId ? undefined : await this.videoById(createMock('EntityId', topVideoId));
   }
 
   async featuredVideos (): Promise<VideoType[]> {
     const content = await this.featuredContent();
     const videoIds = (content?.featuredVideos || []) as unknown as number[];
     const videos = await Promise.all(videoIds.map((id) =>
-      this.videoById(new EntityId(id))));
+      this.videoById(createMock('EntityId', id))));
     return videos.filter(x => x !== undefined) as VideoType[];
   }
 
@@ -143,7 +143,7 @@ export abstract class MediaTransport extends Transport {
     const content = await this.featuredContent();
     const albumIds = (content?.featuredAlbums || []) as unknown as EntityId[];
     const albums = await Promise.all(albumIds.map((id) =>
-      this.musicAlbumById(new EntityId(id))));
+      this.musicAlbumById(createMock('EntityId', id))));
     return albums.filter(x => x !== undefined) as MusicAlbumType[];
   }
 

@@ -41,6 +41,11 @@
     width: 100%;
     max-width: 600px;
   }
+
+  .EditMetaForm {
+    flex-grow: 1;
+    max-width: 600px;
+  }
 }
 
 .PlayBox {
@@ -72,9 +77,6 @@
   .MediaCell {
     width: 25%;
 
-    &.MyContent {
-      /* background-color: #fff8e1; */
-    }
     &:hover {
       background-color: #deeffc;
     }

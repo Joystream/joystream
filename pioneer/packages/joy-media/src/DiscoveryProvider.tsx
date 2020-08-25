@@ -7,7 +7,7 @@ import { Vec } from '@polkadot/types';
 import { Url } from '@joystream/types/discovery';
 import ApiContext from '@polkadot/react-api/ApiContext';
 import { ApiProps } from '@polkadot/react-api/types';
-import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
+import { JoyInfo } from '@polkadot/joy-utils/react/components';
 import { componentName } from '@polkadot/joy-utils/react/helpers';
 
 export type BootstrapNodes = {

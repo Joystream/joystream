@@ -5,7 +5,7 @@ import APlayer from 'react-aplayer';
 
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
-import { withCalls, withMulti } from '@polkadot/react-api/with';
+import { withCalls, withMulti } from '@polkadot/react-api/hoc';
 import { Option } from '@polkadot/types/codec';
 
 import translate from '../translate';
@@ -14,8 +14,8 @@ import { DataObject, ContentId } from '@joystream/types/media';
 import { VideoType } from '../schemas/video/Video';
 import { isAccountAChannelOwner } from '../channels/ChannelHelpers';
 import { ChannelEntity } from '../entities/ChannelEntity';
-import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
-import { JoyError } from '@polkadot/joy-utils/JoyStatus';
+import { useMyMembership } from '@polkadot/joy-utils/react/hooks';
+import { JoyError } from '@polkadot/joy-utils/react/components';
 
 const PLAYER_COMMON_PARAMS = {
   lang: 'en',

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Button, CheckboxProps, Dropdown, Message } from 'semantic-ui-react';
 
-import { Pluralize } from '@polkadot/joy-utils/Pluralize';
-import Section from '@polkadot/joy-utils/Section';
+import { Pluralize } from '@polkadot/joy-utils/react/components';
+import { Section } from '@polkadot/joy-utils/react/components';
 import { EditableMusicTrackPreviewProps, MusicTrackPreview } from './MusicTrackPreview';
 import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumPreviewProps } from './MusicAlbumPreview';

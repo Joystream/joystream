@@ -2,39 +2,10 @@ import React from 'react';
 import { Message } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
-import { AccountId } from '@polkadot/types/interfaces';
-import { Vec, Option } from '@polkadot/types';
 import { withMulti } from '@polkadot/react-api/index';
-import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
-
-import { MemberId, Membership } from '@joystream/types/members';
-import { LeadId } from '@joystream/types/content-working-group';
 import { useMyMembership } from '../hooks';
 import { componentName } from '../helpers';
-import { withMyAccount } from './accounts';
-
-export type MyAddressProps = {
-  myAddress?: string;
-};
-
-export type MyAccountProps = MyAddressProps & {
-  myAccountId?: AccountId;
-  myMemberId?: MemberId;
-  memberIdsByRootAccountId?: Vec<MemberId>;
-  memberIdsByControllerAccountId?: Vec<MemberId>;
-  myMemberIdChecked?: boolean;
-  iAmMember?: boolean;
-  myMembership?: Membership | null;
-
-  // Content Working Group
-  curatorEntries?: any; // entire linked_map: CuratorId => Curator
-  isLeadSet?: Option<LeadId>;
-  contentLeadId?: LeadId;
-  contentLeadEntry?: any; // linked_map value
-
-  curationActor?: any;
-  allAccounts?: SubjectInfo;
-};
+import { withMyAccount, MyAccountProps } from './accounts';
 
 export function MembershipRequired<P extends Record<string, unknown>> (Component: React.ComponentType<P>): React.ComponentType<P> {
   const ResultComponent: React.FunctionComponent<P> = (props: P) => {

@@ -153,4 +153,8 @@ export default class WorkingGroupsTransport extends BaseTransport {
     return (await this.openingApplications(group, wgOpeningId))
       .filter((a) => a.stage.isOfType('Active'));
   }
+
+  async allWorkers (group: WorkingGroupKey) {
+    return this.entriesByIds<WorkerId, Worker>(this.apiQueryByGroup(group).workerById);
+  }
 }

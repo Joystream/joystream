@@ -1,5 +1,8 @@
 import BN from 'bn.js';
-import { IdLike, HasId } from './IdLike';
+
+export type IdLike = { toString: () => string } | number
+export type HasId = { id: IdLike }
+export type MayHaveId = { id?: IdLike }
 
 type LoadObjectsByIdsFn<Id extends IdLike, Obj extends HasId> =
   (ids: Id[]) => Promise<Obj[]>

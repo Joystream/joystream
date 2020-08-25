@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useTransport } from '../';
+import useTransport from '../useTransport';
 import { ProposalId } from '@joystream/types/proposals';
 import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
 import { normalizeError } from '@polkadot/joy-utils/functions/misc';

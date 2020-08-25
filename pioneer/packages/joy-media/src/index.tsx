@@ -3,15 +3,16 @@ import React from 'react';
 import { Route, Switch } from 'react-router';
 
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
-import Tabs, { TabItem } from '@polkadot/react-components/Tabs';
+import Tabs from '@polkadot/react-components/Tabs';
+import { TabItem } from '@polkadot/react-components/Tabs/types';
 import { ApiProps } from '@polkadot/react-api/types';
-import { withMulti } from '@polkadot/react-api/with';
+import { withMulti } from '@polkadot/react-api/hoc';
 
-import './index.css';
-import './common/index.css';
+import './index.scss';
+import './common/index.scss';
 
 import translate from './translate';
-import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 import { UploadWithRouter } from './Upload';
 import { DiscoveryProviderProps, DiscoveryProviderProvider } from './DiscoveryProvider';
 import { SubstrateTransportProvider } from './TransportContext';

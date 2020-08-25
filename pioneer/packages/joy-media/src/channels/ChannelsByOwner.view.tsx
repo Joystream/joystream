@@ -1,10 +1,10 @@
 import React from 'react';
 import { RouteComponentProps } from 'react-router';
 
-import { GenericAccountId } from '@polkadot/types';
 import { MediaView } from '../MediaView';
 import { ChannelsByOwnerProps, ChannelsByOwner } from './ChannelsByOwner';
-import { JoyError } from '@polkadot/joy-utils/JoyStatus';
+import { JoyError } from '@polkadot/joy-utils/react/components';
+import { useApi } from '@polkadot/react-hooks';
 
 type Props = ChannelsByOwnerProps;
 
@@ -19,10 +19,11 @@ export const ChannelsByOwnerView = MediaView<Props>({
 
 export const ChannelsByOwnerWithRouter = (props: Props & RouteComponentProps<any>) => {
   const { match: { params: { account } } } = props;
+  const { api } = useApi();
 
   if (account) {
     try {
-      return <ChannelsByOwnerView {...props} accountId={new GenericAccountId(account)} />;
+      return <ChannelsByOwnerView {...props} accountId={api.createType('AccountId', account)} />;
     } catch (err) {
       console.log('ChannelsByOwnerWithRouter failed:', err);
     }

@@ -1,5 +1,5 @@
 import React from 'react';
-import '../common/index.css';
+import '../common/index.scss';
 
 import { ExploreContent } from '../explore/ExploreContent';
 import { withMockTransport } from './withMockTransport';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Message } from 'semantic-ui-react';
-import { nonEmptyStr } from '.';
+import { nonEmptyStr } from '../../functions/misc';
 
 type BaseProps = {
   title?: React.ReactNode;

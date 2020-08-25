@@ -1,9 +1,7 @@
 import BN from 'bn.js';
 import { ChannelEntity } from '@polkadot/joy-media/entities/ChannelEntity';
-import { u32 } from '@polkadot/types';
 import { AccountIdSamples } from './AccountIdSamples';
-import { MemberId } from '@joystream/types/members';
-import { PrincipalId } from '@joystream/types/content-working-group';
+import { createMock } from '@joystream/types';
 
 let id = 0;
 const nextId = () => ++id;
@@ -22,10 +20,10 @@ export const MockMusicChannel: ChannelEntity =
 
   publicationStatus: 'Unlisted',
   curationStatus: 'Censored',
-  owner: new MemberId(1),
+  owner: createMock('MemberId', 1),
   roleAccount: AccountIdSamples.Alice,
-  principalId: new PrincipalId(1),
-  created: new u32(123456),
+  principalId: createMock('PrincipalId', 1),
+  created: createMock('u32', 123456),
 
   rewardEarned: new BN('4587'),
   contentItemsCount: 57
@@ -45,10 +43,10 @@ export const MockVideoChannel: ChannelEntity =
 
   publicationStatus: 'Public',
   curationStatus: 'Normal',
-  owner: new MemberId(1),
+  owner: createMock('MemberId', 1),
   roleAccount: AccountIdSamples.Alice,
-  principalId: new PrincipalId(1),
-  created: new u32(123456),
+  principalId: createMock('PrincipalId', 1),
+  created: createMock('u32', 123456),
 
   rewardEarned: new BN('1820021'),
   contentItemsCount: 1529

@@ -2,8 +2,8 @@ import React from 'react';
 import { RouteComponentProps } from 'react-router';
 import { MediaView } from '../MediaView';
 import { ViewChannelProps, ViewChannel } from './ViewChannel';
-import { ChannelId } from '@joystream/types/content-working-group';
-import { JoyError } from '@polkadot/joy-utils/JoyStatus';
+import { JoyError } from '@polkadot/joy-utils/react/components';
+import { useApi } from '@polkadot/react-hooks';
 
 type Props = ViewChannelProps;
 
@@ -20,10 +20,11 @@ export const ViewChannelView = MediaView<Props>({
 
 export const ViewChannelWithRouter = (props: Props & RouteComponentProps<any>) => {
   const { match: { params: { id } } } = props;
+  const { api } = useApi();
 
   if (id) {
     try {
-      return <ViewChannelView {...props} id={new ChannelId(id)} />;
+      return <ViewChannelView {...props} id={api.createType('ChannelId', id)} />;
     } catch (err) {
       console.log('ViewChannelWithRouter failed:', err);
     }

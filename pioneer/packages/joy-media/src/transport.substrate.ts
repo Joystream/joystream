@@ -19,13 +19,11 @@ import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId, Channel } from '@joystream/types/content-working-group';
 import { ApiPromise } from '@polkadot/api/index';
 import { ApiProps } from '@polkadot/react-api/types';
-import { Vec } from '@polkadot/types';
-import { LinkageResult } from '@polkadot/types/codec/Linkage';
 import { ChannelCodec } from './schemas/channel/Channel';
 import { FeaturedContentType } from './schemas/general/FeaturedContent';
-import { AnyChannelId, asChannelId, AnyClassId, AnyEntityId } from './common/TypeHelpers';
-import { SimpleCache } from '@polkadot/joy-utils/SimpleCache';
-import { ValidationConstraint } from '@polkadot/joy-utils/ValidationConstraint';
+import { AnyChannelId, AnyClassId, AnyEntityId, asChannelId } from './common/TypeHelpers';
+import { SimpleCache } from '@polkadot/joy-utils/transport/SimpleCache';
+import { ValidationConstraint } from '@polkadot/joy-utils/types/ValidationConstraint';
 
 const FIRST_CHANNEL_ID = 1;
 const FIRST_CLASS_ID = 1;
@@ -130,17 +128,16 @@ export class SubstrateTransport extends MediaTransport {
 
     const allIds: ChannelId[] = [];
     for (let id = FIRST_CHANNEL_ID; id < nextId; id++) {
-      allIds.push(new ChannelId(id));
+      allIds.push(this.api.createType('ChannelId', id));
     }
 
     return allIds;
   }
 
   async loadChannelsByIds (ids: AnyChannelId[]): Promise<ChannelEntity[]> {
-    const channelTuples = await this.cwgQuery().channelById.multi<LinkageResult>(ids);
+    const channels = await this.cwgQuery().channelById.multi<Channel>(ids);
 
-    return channelTuples.map((tuple, i) => {
-      const channel = tuple[0] as Channel;
+    return channels.map((channel, i) => {
       const id = asChannelId(ids[i]);
       const plain = ChannelCodec.fromSubstrate(id, channel);
 
@@ -200,14 +197,14 @@ export class SubstrateTransport extends MediaTransport {
 
     const allIds: ClassId[] = [];
     for (let id = FIRST_CLASS_ID; id < nextId; id++) {
-      allIds.push(new ClassId(id));
+      allIds.push(this.api.createType('ClassId', id));
     }
 
     return allIds;
   }
 
   async loadClassesByIds (ids: AnyClassId[]): Promise<Class[]> {
-    return await this.vsQuery().classById.multi<Vec<Class>>(ids) as unknown as Class[];
+    return await this.vsQuery().classById.multi<Class>(ids);
   }
 
   async allClasses (): Promise<Class[]> {
@@ -246,7 +243,7 @@ export class SubstrateTransport extends MediaTransport {
 
     const allIds: EntityId[] = [];
     for (let id = FIRST_ENTITY_ID; id < nextId; id++) {
-      allIds.push(new EntityId(id));
+      allIds.push(this.api.createType('EntityId', id));
     }
 
     return allIds;
@@ -255,7 +252,7 @@ export class SubstrateTransport extends MediaTransport {
   private async loadEntitiesByIds (ids: AnyEntityId[]): Promise<Entity[]> {
     if (!ids || ids.length === 0) return [];
 
-    return await this.vsQuery().entityById.multi<Vec<Entity>>(ids) as unknown as Entity[];
+    return await this.vsQuery().entityById.multi<Entity>(ids);
   }
 
   // TODO try to cache this func

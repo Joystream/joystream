@@ -31,56 +31,6 @@ declare module '@polkadot/metadata/Decorated/consts/types' {
        **/
       existentialDeposit: AugmentedConst<Balance>;
     };
-    contracts: {
-      /**
-       * The maximum nesting level of a call/instantiate stack. A reasonable default
-       * value is 100.
-       **/
-      maxDepth: AugmentedConst<u32>;
-      /**
-       * The maximum size of a storage value in bytes. A reasonable default is 16 KiB.
-       **/
-      maxValueSize: AugmentedConst<u32>;
-      /**
-       * Price of a byte of storage per one block interval. Should be greater than 0.
-       **/
-      rentByteFee: AugmentedConst<BalanceOf>;
-      /**
-       * The amount of funds a contract should deposit in order to offset
-       * the cost of one byte.
-       * 
-       * Let's suppose the deposit is 1,000 BU (balance units)/byte and the rent is 1 BU/byte/day,
-       * then a contract with 1,000,000 BU that uses 1,000 bytes of storage would pay no rent.
-       * But if the balance reduced to 500,000 BU and the storage stayed the same at 1,000,
-       * then it would pay 500 BU/day.
-       **/
-      rentDepositOffset: AugmentedConst<BalanceOf>;
-      /**
-       * Number of block delay an extrinsic claim surcharge has.
-       * 
-       * When claim surcharge is called by an extrinsic the rent is checked
-       * for current_block - delay
-       **/
-      signedClaimHandicap: AugmentedConst<BlockNumber>;
-      /**
-       * A size offset for an contract. A just created account with untouched storage will have that
-       * much of storage from the perspective of the state rent.
-       * 
-       * This is a simple way to ensure that contracts with empty storage eventually get deleted
-       * by making them pay rent. This creates an incentive to remove them early in order to save
-       * rent.
-       **/
-      storageSizeOffset: AugmentedConst<u32>;
-      /**
-       * Reward that is received by the party whose touch has led
-       * to removal of a contract.
-       **/
-      surchargeReward: AugmentedConst<BalanceOf>;
-      /**
-       * The minimum amount required to generate a tombstone.
-       **/
-      tombstoneDeposit: AugmentedConst<BalanceOf>;
-    };
     dataDirectory: {
       /**
        * Maximum objects allowed per inject_data_objects() transaction

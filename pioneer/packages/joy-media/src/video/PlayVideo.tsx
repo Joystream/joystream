@@ -12,7 +12,8 @@ import { printExplicit, printReleaseDate, printLanguage } from '../entities/Enti
 import { MediaObjectType } from '../schemas/general/MediaObject';
 import { MediaPlayerWithResolver } from '../common/MediaPlayerWithResolver';
 import { ContentId } from '@joystream/types/media';
-import { JoyError } from '@polkadot/joy-utils/JoyStatus';
+import { JoyError } from '@polkadot/joy-utils/react/components';
+import { useApi } from '@polkadot/react-hooks';
 
 export type PlayVideoProps = {
   channel?: ChannelEntity;
@@ -36,6 +37,7 @@ function VertialListOfVideoPreviews (props: ListOfVideoPreviewProps) {
 
 export function PlayVideo (props: PlayVideoProps) {
   const { channel, mediaObject, video, moreChannelVideos = [], featuredVideos = [] } = props;
+  const { api } = useApi();
 
   if (!mediaObject || !video) {
     return <JoyError title={'Video was not found'} />;
@@ -80,7 +82,7 @@ export function PlayVideo (props: PlayVideoProps) {
   // TODO show video only to its owner, if the video is not public.
   // see isPublicVideo() function.
 
-  const contentId = ContentId.decode(mediaObject.value);
+  const contentId = ContentId.decode(api.registry, mediaObject.value);
 
   // console.log('PlayVideo: props', props)
 

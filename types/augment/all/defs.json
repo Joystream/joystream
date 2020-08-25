@@ -353,15 +353,15 @@
     "ClassId": "u64",
     "EntityId": "u64",
     "Class": {
-        "id": "u64",
+        "id": "ClassId",
         "properties": "Vec<Property>",
         "schemas": "Vec<ClassSchema>",
         "name": "Text",
         "description": "Text"
     },
     "Entity": {
-        "id": "u64",
-        "class_id": "u64",
+        "id": "EntityId",
+        "class_id": "ClassId",
         "in_class_schema_indexes": "Vec<u16>"
     },
     "ClassSchema": {
@@ -393,7 +393,7 @@
             "Int32Vec": "u16",
             "Int64Vec": "u16",
             "TextVec": "(u16,u16)",
-            "InternalVec": "(u16,u64)"
+            "InternalVec": "(u16,ClassId)"
         }
     },
     "PropertyValue": {
@@ -416,7 +416,7 @@
             "Int32Vec": "Vec<i32>",
             "Int64Vec": "Vec<i64>",
             "TextVec": "Vec<Text>",
-            "InternalVec": "Vec<u64>"
+            "InternalVec": "Vec<EntityId>"
         }
     },
     "ClassPropertyValue": {
@@ -456,7 +456,7 @@
         }
     },
     "CreateEntity": {
-        "class_id": "u64"
+        "class_id": "ClassId"
     },
     "UpdatePropertyValues": {
         "entity_id": "ParametrizedEntity",
@@ -485,7 +485,7 @@
         }
     },
     "PropertyOfClass": {
-        "class_id": "u64",
+        "class_id": "ClassId",
         "property_index": "u16"
     },
     "ChannelId": "u64",
@@ -508,7 +508,7 @@
         "publication_status": "ChannelPublicationStatus",
         "curation_status": "ChannelCurationStatus",
         "created": "u32",
-        "principal_id": "u64"
+        "principal_id": "PrincipalId"
     },
     "ChannelContentType": {
         "_enum": [
@@ -532,7 +532,7 @@
     "CurationActor": {
         "_enum": {
             "Lead": "Null",
-            "Curator": "u64"
+            "Curator": "CuratorId"
         }
     },
     "Curator": {
@@ -541,17 +541,17 @@
         "role_stake_profile": "Option<CuratorRoleStakeProfile>",
         "stage": "CuratorRoleStage",
         "induction": "CuratorInduction",
-        "principal_id": "u64"
+        "principal_id": "PrincipalId"
     },
     "CuratorApplication": {
         "role_account": "GenericAccountId",
-        "curator_opening_id": "u64",
+        "curator_opening_id": "CuratorOpeningId",
         "member_id": "MemberId",
         "application_id": "HiringApplicationId"
     },
     "CuratorOpening": {
         "opening_id": "u64",
-        "curator_applications": "Vec<u64>",
+        "curator_applications": "Vec<CuratorApplicationId>",
         "policy_commitment": "OpeningPolicyCommitment"
     },
     "Lead": {
@@ -578,18 +578,18 @@
     "Principal": {
         "_enum": {
             "Lead": "Null",
-            "Curator": "u64",
-            "ChannelOwner": "u64"
+            "Curator": "CuratorId",
+            "ChannelOwner": "ChannelId"
         }
     },
     "WorkingGroupUnstaker": {
         "_enum": {
-            "Lead": "u64",
-            "Curator": "u64"
+            "Lead": "LeadId",
+            "Curator": "CuratorId"
         }
     },
-    "CuratorApplicationIdToCuratorIdMap": "BTreeMap<HiringApplicationId,u64>",
-    "CuratorApplicationIdSet": "Vec<u64>",
+    "CuratorApplicationIdToCuratorIdMap": "BTreeMap<HiringApplicationId,CuratorId>",
+    "CuratorApplicationIdSet": "Vec<CuratorApplicationId>",
     "CuratorRoleStakeProfile": {
         "stake_id": "u64",
         "termination_unstaking_period": "Option<u32>",
@@ -623,8 +623,8 @@
         "initiated_at_block_number": "u32"
     },
     "CuratorInduction": {
-        "lead": "u64",
-        "curator_application_id": "u64",
+        "lead": "LeadId",
+        "curator_application_id": "CuratorApplicationId",
         "at_block": "u32"
     },
     "RationaleText": "Bytes",
