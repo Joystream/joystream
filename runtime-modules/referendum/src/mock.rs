@@ -4,12 +4,12 @@
 use crate::{
     Error, Instance, Module, RawEvent, ReferendumManager, ReferendumResult, ReferendumStage,
     ReferendumStageRevealing, ReferendumStageVoting, SealedVote, Stage, Trait, Votes, CurrentCycle,
+    Balance,
 };
 
 use rand::Rng;
 use sp_core::H256;
-//use sp_io;
-use frame_support::traits::OnFinalize;
+use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
 use frame_support::{
     impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StoragePrefixedMap,
     StorageValue,
@@ -19,6 +19,7 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
+use pallet_balances;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use system::RawOrigin;
@@ -48,6 +49,7 @@ parameter_types! {
     pub const VoteStageDuration: u64 = 5;
     pub const RevealStageDuration: u64 = 5;
     pub const MinimumStake: u64 = 10000;
+    pub const LockId: LockIdentifier = *b"referend";
 }
 
 thread_local! {
@@ -59,7 +61,9 @@ impl Trait<Instance0> for Runtime {
 
     type MaxReferendumOptions = MaxReferendumOptions;
 
-    type CurrencyBalance = u64;
+    type Currency = pallet_balances::Module<Runtime>;
+    type LockId = LockId;
+
     type VotePower = u64;
 
     type VoteStageDuration = VoteStageDuration;
@@ -73,7 +77,7 @@ impl Trait<Instance0> for Runtime {
 
     fn caclulate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
-        stake: &<Self as Trait<Instance0>>::CurrencyBalance,
+        stake: &Balance<Self, Instance0>,
     ) -> <Self as Trait<Instance0>>::VotePower {
         let stake: u64 = u64::from(*stake);
         if *account_id == USER_REGULAR_POWER_VOTES {
@@ -85,7 +89,7 @@ impl Trait<Instance0> for Runtime {
 
     fn can_stake_for_vote(
         account_id: &<Self as system::Trait>::AccountId,
-        _stake: &<Self as Trait<Instance0>>::CurrencyBalance,
+        _stake: &Balance<Self, Instance0>,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_LOCKING_ENABLED.with(|value| value.borrow().0) {
@@ -101,43 +105,18 @@ impl Trait<Instance0> for Runtime {
             _ => false,
         }
     }
-
-    fn lock_currency(
-        account_id: &<Self as system::Trait>::AccountId,
-        stake: &<Self as Trait<Instance0>>::CurrencyBalance,
-    ) -> bool {
-        // trigger fail when requested to do so
-        if !IS_LOCKING_ENABLED.with(|value| value.borrow().1) {
-            return false;
-        }
-
-        // simple mock reusing can_lock check
-        <Self as Trait<Instance0>>::can_stake_for_vote(account_id, stake)
-    }
-
-    fn free_currency(
-        account_id: &<Self as system::Trait>::AccountId,
-        stake: &<Self as Trait<Instance0>>::CurrencyBalance,
-    ) -> bool {
-        if !IS_LOCKING_ENABLED.with(|value| value.borrow().2) {
-            return false;
-        }
-
-        // simple mock reusing can_lock check
-        <Self as Trait<Instance0>>::can_stake_for_vote(account_id, stake)
-    }
 }
 
-impl Runtime {
-    pub fn feature_stack_lock(
-        ensure_check_enabled: bool,
-        lock_enabled: bool,
-        free_enabled: bool,
-    ) -> () {
-        IS_LOCKING_ENABLED.with(|value| {
-            *value.borrow_mut() = (ensure_check_enabled, lock_enabled, free_enabled);
-        });
-    }
+parameter_types! {
+    pub const ExistentialDeposit: u64 = 0;
+}
+
+impl pallet_balances::Trait for Runtime {
+    type Balance = u64;
+    type Event = TestEvent;
+    type DustRemoval = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = system::Module<Self>;
 }
 
 /////////////////// Module implementation //////////////////////////////////////
@@ -151,10 +130,15 @@ mod event_mod {
     pub use crate::Event;
 }
 
+mod tmp {
+    pub use pallet_balances::Event;
+}
+
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         event_mod Instance0 <T>,
         system<T>,
+        tmp<T>,
     }
 }
 
@@ -193,7 +177,7 @@ impl system::Trait for Runtime {
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
     type ModuleToIndex = ();
-    type AccountData = ();
+    type AccountData = pallet_balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
 }
@@ -227,15 +211,28 @@ pub fn build_test_externalities(
 
     config.assimilate_storage(&mut t).unwrap();
 
-    // reset the static lock feature state
-    Runtime::feature_stack_lock(true, true, true);
-
     let mut result = Into::<sp_io::TestExternalities>::into(t.clone());
 
     // Make sure we are not in block 1 where no events are emitted - see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
-    result.execute_with(|| InstanceMockUtils::<Runtime, Instance0>::increase_block_number(1));
+    result.execute_with(|| {
+        // topup significant accounts
+        let amount = 40000; // some high enough number to pass all test checks
+        topup_account(USER_ADMIN, amount);
+        topup_account(USER_REGULAR, amount);
+        topup_account(USER_REGULAR_2, amount);
+        topup_account(USER_REGULAR_3, amount);
+        topup_account(USER_REGULAR_POWER_VOTES, amount);
+
+        InstanceMockUtils::<Runtime, Instance0>::increase_block_number(1)
+    });
 
     result
+}
+
+// topup currency to the account
+fn topup_account(account_id: u64, amount: u64) {
+    let account_id = account_id;
+    let _ = pallet_balances::Module::<Runtime>::deposit_creating(&account_id, amount);
 }
 
 pub struct InstanceMockUtils<T: Trait<I>, I: Instance> {
@@ -420,7 +417,7 @@ impl InstanceMocks<Runtime, Instance0> {
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         account_id: <Runtime as system::Trait>::AccountId,
         commitment: <Runtime as system::Trait>::Hash,
-        balance: <Runtime as Trait<Instance0>>::CurrencyBalance,
+        balance: Balance<Runtime, Instance0>,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
         // check method returns expected result
