@@ -8,6 +8,7 @@ import * as BN from 'bn.js';
 
 import Debug from 'debug';
 import { UnsubscribePromise } from '@polkadot/api/types';
+import { waitFor } from './utils/wait-for';
 
 
 const DEBUG_TOPIC = 'index-builder:producer';
@@ -226,30 +227,12 @@ export default class QueryBlockProducer extends EventEmitter {
 
 
   private async checkHeightOrWait(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      let timeout: NodeJS.Timeout | undefined = undefined;   
-      const checkHeight = () => {
-        if (!this._started) {
-          if (timeout) {
-            clearTimeout(timeout);
-          }
-          reject("The block producer is stopped")
-          return;
-        }
-            
-        if (this._block_to_be_produced_next.lte(this._height_of_chain)) {
-          if (timeout) {
-            clearTimeout(timeout);
-          }
-          resolve()
-        } else {
-          debug(`Current chain height: ${this._height_of_chain.toString()}, block to be produced next: ${this._block_to_be_produced_next.toString()}`);
-          timeout = setTimeout(checkHeight, POLL_INTERVAL_MS);
-        }    
-
-      }
-      checkHeight();
-    });
+    return await waitFor(
+      // when to resolve
+      () => this._block_to_be_produced_next.lte(this._height_of_chain),
+      //exit condition
+      () => !this._started )
+    
   }
 
   public async * blockHeights(): AsyncGenerator<BN> {
