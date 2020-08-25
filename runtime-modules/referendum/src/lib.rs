@@ -58,50 +58,10 @@ pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
 
 /// Vote casted in referendum but not revealed yet.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
-pub struct SealedVote<Hash, CurrencyBalance, AccountId> {
+pub struct SealedVote<Hash, CurrencyBalance> {
     commitment: Hash,
-    stake_distribution: StakeDistribution<AccountId, CurrencyBalance>,
-}
-
-/// Part of the vote designated for one referendum option.
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
-pub struct SubVote<CurrencyBalance> {
-    option_index: u64,
+    cycle_id: u64,
     balance: CurrencyBalance,
-}
-
-/// Distribution of user's vote and stake among referendum options.
-pub type VoteDistribution<CurrencyBalance> = Vec<SubVote<CurrencyBalance>>;
-
-// TODO: remove when this issue is solved https://github.com/rust-lang/rust-clippy/issues/3381
-pub type VoteDistributionArg<CurrencyBalance> = [SubVote<CurrencyBalance>];
-
-/// Part of the stake designated for one referendum option.
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
-pub struct SubStake<AccountId, CurrencyBalance> {
-    account_id: AccountId,
-    balance: CurrencyBalance,
-}
-
-/// Distribution of user's stake among his accounts.
-pub type StakeDistribution<AccountId, CurrencyBalance> = Vec<SubStake<AccountId, CurrencyBalance>>;
-
-// TODO: remove when this issue is solved https://github.com/rust-lang/rust-clippy/issues/3381
-pub type StakeDistributionArg<AccountId, CurrencyBalance> =
-    [SubStake<AccountId, CurrencyBalance>];
-
-pub trait StakeDistributionSum<CurrencyBalance> {
-    fn sum_substakes(&self) -> CurrencyBalance;
-}
-
-impl<AccountId, CurrencyBalance: BaseArithmetic + Default + Clone>
-    StakeDistributionSum<CurrencyBalance> for StakeDistribution<AccountId, CurrencyBalance>
-{
-    fn sum_substakes(&self) -> CurrencyBalance {
-        self.iter().fold(CurrencyBalance::default(), |acc, item| {
-            acc + item.balance.clone()
-        })
-    }
 }
 
 /// Possible referendum outcomes.
@@ -132,9 +92,10 @@ pub trait ReferendumManager<T: Trait<I>, I: Instance> {
     fn start_referendum(options_count: u64, winning_target_count: u64) -> Result<(), Error<T, I>>;
 
     fn calculate_commitment(
-        referendum_user_id: &T::ReferendumUserId,
+        account_id: &<T as system::Trait>::AccountId,
         salt: &[u8],
-        vote: &VoteDistributionArg<T::CurrencyBalance>,
+        cycle_id: &u64,
+        vote_option_index: &u64,
     ) -> T::Hash;
 }
 
@@ -165,16 +126,6 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
         + MaybeSerialize
         + PartialEq;
 
-    /// User that can vote in referendum.
-    type ReferendumUserId: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-
     /// Duration of voting stage (in blocks)
     type VoteStageDuration: Get<Self::BlockNumber>;
     /// Duration of revealing stage (in blocks)
@@ -186,43 +137,28 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
     /// Decide if user can control referendum (start referendum) via extrinsic(s).
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool;
 
-    /// Decide if user can vote in referendum.
-    fn is_referendum_member(
-        account_id: &<Self as system::Trait>::AccountId,
-        referendum_user_id: &Self::ReferendumUserId,
-    ) -> bool;
-
     /// Calculate the vote's power for user and his stake.
     fn caclulate_vote_power(
-        referendum_user_id: &Self::ReferendumUserId,
-        stake: <Self as Trait<I>>::CurrencyBalance,
+        account_id: &<Self as system::Trait>::AccountId,
+        stake: &<Self as Trait<I>>::CurrencyBalance,
     ) -> <Self as Trait<I>>::VotePower;
 
     /// Check if user can lock the stake.
     fn can_stake_for_vote(
-        referendum_user_id: &Self::ReferendumUserId,
-        stake_distribution: &StakeDistributionArg<
-            <Self as system::Trait>::AccountId,
-            Self::CurrencyBalance,
-        >,
+        account_id: &<Self as system::Trait>::AccountId,
+        stake: &<Self as Trait<I>>::CurrencyBalance,
     ) -> bool;
 
     // Try to lock the stake lock.
     fn lock_currency(
-        referendum_user_id: &Self::ReferendumUserId,
-        stake_distribution: &StakeDistributionArg<
-            <Self as system::Trait>::AccountId,
-            Self::CurrencyBalance,
-        >,
+        account_id: &<Self as system::Trait>::AccountId,
+        stake: &<Self as Trait<I>>::CurrencyBalance,
     ) -> bool;
 
     // Try to release the stake lock.
     fn free_currency(
-        referendum_user_id: &Self::ReferendumUserId,
-        stake_distribution: &StakeDistributionArg<
-            <Self as system::Trait>::AccountId,
-            Self::CurrencyBalance,
-        >,
+        account_id: &<Self as system::Trait>::AccountId,
+        stake: &<Self as Trait<I>>::CurrencyBalance,
     ) -> bool;
 }
 
@@ -231,11 +167,11 @@ decl_storage! {
         /// Current referendum stage
         pub Stage get(fn stage) config(): ReferendumStage<T::BlockNumber, T::VotePower>;
 
-        /// Options of current referendum
-        //pub ReferendumOptions get(fn referendum_options) config(): Option<Vec<T::ReferendumOption>>;
-
         /// Votes in current referendum
-        pub Votes get(fn votes) config(): map hasher(blake2_128_concat) T::ReferendumUserId => SealedVote<T::Hash, T::CurrencyBalance, T::AccountId>;
+        pub Votes get(fn votes) config(): map hasher(blake2_128_concat) T::AccountId => SealedVote<T::Hash, T::CurrencyBalance>;
+
+        /// Index of the current referendum cycle.
+        pub CurrentCycle get(fn current_cycle) config(): u64;
     }
 
     /* This might be needed in some cases
@@ -252,7 +188,6 @@ decl_event! {
         <T as Trait<I>>::CurrencyBalance,
         ReferendumResult = ReferendumResult<u64, <T as Trait<I>>::VotePower>,
         <T as system::Trait>::Hash,
-        <T as Trait<I>>::ReferendumUserId,
         <T as system::Trait>::AccountId,
     {
         /// Referendum started
@@ -265,10 +200,10 @@ decl_event! {
         ReferendumFinished(ReferendumResult),
 
         /// User casted a vote in referendum
-        VoteCasted(Hash, StakeDistribution<AccountId, CurrencyBalance>),
+        VoteCasted(AccountId, Hash, CurrencyBalance),
 
         /// User revealed his vote
-        VoteRevealed(ReferendumUserId, VoteDistribution<CurrencyBalance>),
+        VoteRevealed(AccountId, u64),
     }
 }
 
@@ -319,15 +254,6 @@ decl_error! {
 
         /// Trying to reveal vote that was not casted
         NoVoteToReveal,
-
-        /// Referendum user id not match its account.
-        ReferendumUserIdNotMatchAccount,
-
-        /// One account was used twice for staking.
-        DuplicateStakingAccount,
-
-        /// Referendum option was refered twice in one vote.
-        DuplicateVoteOption,
     }
 }
 
@@ -372,37 +298,38 @@ decl_module! {
 
         /// Cast a sealed vote in the referendum.
         #[weight = 10_000_000]
-        pub fn vote(origin, referendum_user_id: T::ReferendumUserId, commitment: T::Hash, stake_distribution: StakeDistribution<T::AccountId, T::CurrencyBalance>) -> Result<(), Error<T, I>> {
+        pub fn vote(origin, commitment: T::Hash, balance: T::CurrencyBalance) -> Result<(), Error<T, I>> {
             // ensure action can be started
-            EnsureChecks::<T, I>::can_vote(origin, &referendum_user_id, &stake_distribution)?;
+            let account_id = EnsureChecks::<T, I>::can_vote(origin, &balance)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // start revealing phase - it can return error when stake fails to lock
-            Mutations::<T, I>::vote(&referendum_user_id, &commitment, &stake_distribution)?;
+            Mutations::<T, I>::vote(&account_id, &commitment, &balance)?;
 
             // emit event
-            Self::deposit_event(RawEvent::VoteCasted(commitment, stake_distribution));
+            Self::deposit_event(RawEvent::VoteCasted(account_id, commitment, balance));
 
             Ok(())
         }
 
         /// Reveal a sealed vote in the referendum.
         #[weight = 10_000_000]
-        pub fn reveal_vote(origin, referendum_user_id: T::ReferendumUserId, salt: Vec<u8>, vote_distribution: VoteDistribution<T::CurrencyBalance>) -> Result<(), Error<T, I>> {
-            let (_, sealed_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &referendum_user_id, &salt, &vote_distribution)?;
+        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_index: u64) -> Result<(), Error<T, I>> {
+            let cycle_id = CurrentCycle::<I>::get();
+            let (account_id, sealed_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_index, &cycle_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // reveal the vote - it can return error when stake fails to unlock
-            Mutations::<T, I>::reveal_vote(&referendum_user_id, &vote_distribution, &sealed_vote)?;
+            Mutations::<T, I>::reveal_vote(&account_id, &vote_option_index, &sealed_vote)?;
 
             // emit event
-            Self::deposit_event(RawEvent::VoteRevealed(referendum_user_id, vote_distribution));
+            Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_index));
 
             Ok(())
         }
@@ -474,16 +401,19 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
 
     /// Calculate commitment for a vote.
     fn calculate_commitment(
-        referendum_user_id: &T::ReferendumUserId,
+        account_id: &<T as system::Trait>::AccountId,
         salt: &[u8],
-        vote: &VoteDistributionArg<T::CurrencyBalance>,
+        cycle_id: &u64,
+        vote_option_index: &u64,
     ) -> T::Hash {
-        let mut payload = referendum_user_id.encode();
-        let mut mut_option = vote.encode();
-        let mut salt_tmp = salt.to_vec();
+        let mut payload = account_id.encode();
+        let mut mut_option_index = vote_option_index.encode();
+        let mut mut_salt = salt.encode();//.to_vec();
+        let mut mut_cycle_id = cycle_id.encode();//.to_vec();
 
-        payload.append(&mut salt_tmp);
-        payload.append(&mut mut_option);
+        payload.append(&mut mut_option_index);
+        payload.append(&mut mut_salt);
+        payload.append(&mut mut_cycle_id);
 
         <T::Hashing as sp_runtime::traits::Hash>::hash(&payload)
     }
@@ -598,22 +528,23 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
     /// Can return error when stake fails to lock
     fn vote(
-        referendum_user_id: &T::ReferendumUserId,
+        account_id: &<T as system::Trait>::AccountId,
         commitment: &T::Hash,
-        stake_distribution: &StakeDistributionArg<T::AccountId, T::CurrencyBalance>,
+        balance: &T::CurrencyBalance,
     ) -> Result<(), Error<T, I>> {
         // IMPORTANT - because locking currency can fail it has to be the first mutation!
         // lock stake amount
-        if !T::lock_currency(&referendum_user_id, &stake_distribution) {
+        if !T::lock_currency(&account_id, &balance) {
             return Err(Error::AccountStakeCurrencyFailed);
         }
 
         // store vote
         Votes::<T, I>::insert(
-            referendum_user_id,
+            account_id,
             SealedVote {
                 commitment: *commitment,
-                stake_distribution: stake_distribution.to_vec(),
+                balance: *balance,
+                cycle_id: CurrentCycle::<I>::get(),
             },
         );
 
@@ -621,23 +552,21 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     }
 
     fn reveal_vote(
-        referendum_user_id: &T::ReferendumUserId,
-        vote_distribution: &VoteDistributionArg<T::CurrencyBalance>,
-        sealed_vote: &SealedVote<T::Hash, T::CurrencyBalance, T::AccountId>,
+        account_id: &<T as system::Trait>::AccountId,
+        option_index: &u64,
+        sealed_vote: &SealedVote<T::Hash, T::CurrencyBalance>,
     ) -> Result<(), Error<T, I>> {
         // IMPORTANT - because unlocking currency can fail it has to be the first mutation!
         // unlock stake amount
-        if !T::free_currency(&referendum_user_id, &sealed_vote.stake_distribution) {
+        if !T::free_currency(&account_id, &sealed_vote.balance) {
             return Err(Error::AccountRelaseStakeCurrencyFailed);
         }
 
         let distribute_vote =
             |stage_data: &mut ReferendumStageRevealing<T::BlockNumber, T::VotePower>| {
-                for subvote in vote_distribution {
-                    // calculate vote power
-                    let vote_power = T::caclulate_vote_power(referendum_user_id, subvote.balance);
-                    stage_data.revealed_votes[subvote.option_index as usize] += vote_power;
-                }
+                // calculate vote power
+                let vote_power = T::caclulate_vote_power(account_id, &sealed_vote.balance);
+                stage_data.revealed_votes[*option_index as usize] += vote_power;
             };
 
         // store revealed vote
@@ -649,7 +578,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         });
 
         // remove user commitment to prevent repeated revealing
-        Votes::<T, I>::remove(referendum_user_id);
+        Votes::<T, I>::remove(account_id);
 
         Ok(())
     }
@@ -677,14 +606,8 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     fn ensure_regular_user(
         origin: T::Origin,
-        referendum_user_id: &T::ReferendumUserId,
     ) -> Result<T::AccountId, Error<T, I>> {
         let account_id = ensure_signed(origin)?;
-
-        let is_member = T::is_referendum_member(&account_id, referendum_user_id);
-        if !is_member {
-            return Err(Error::ReferendumUserIdNotMatchAccount);
-        }
 
         Ok(account_id)
     }
@@ -722,11 +645,10 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     fn can_vote(
         origin: T::Origin,
-        referendum_user_id: &T::ReferendumUserId,
-        stake_distribution: &StakeDistributionArg<T::AccountId, T::CurrencyBalance>,
+        balance: &T::CurrencyBalance
     ) -> Result<T::AccountId, Error<T, I>> {
         // ensure superuser requested action
-        let account_id = Self::ensure_regular_user(origin, referendum_user_id)?;
+        let account_id = Self::ensure_regular_user(origin)?;
 
         let stage = Stage::<T, I>::get();
 
@@ -744,26 +666,17 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ensure stake is enough for voting
-        if stake_distribution.to_vec().sum_substakes() < T::MinimumStake::get() {
+        if balance < &T::MinimumStake::get() {
             return Err(Error::InsufficientStake);
         }
 
-        // ensure no account is used twice for staking
-        let tmp = stake_distribution
-            .iter()
-            .map(|item| &item.account_id)
-            .collect::<Vec<&T::AccountId>>();
-        if has_duplicates(tmp) {
-            return Err(Error::DuplicateStakingAccount);
-        }
-
         // ensure account can lock the stake
-        if !T::can_stake_for_vote(&referendum_user_id, &stake_distribution) {
+        if !T::can_stake_for_vote(&account_id, &balance) {
             return Err(Error::InsufficientBalanceToStakeCurrency);
         }
 
         // ensure user haven't vote yet
-        if Votes::<T, I>::contains_key(&referendum_user_id) {
+        if Votes::<T, I>::contains_key(&account_id) {
             return Err(Error::AlreadyVoted);
         }
 
@@ -772,18 +685,18 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     fn can_reveal_vote<R: ReferendumManager<T, I>>(
         origin: T::Origin,
-        referendum_user_id: &T::ReferendumUserId,
         salt: &[u8],
-        vote_distribution: &VoteDistributionArg<T::CurrencyBalance>,
+        vote_option_index: &u64,
+        cycle_id: &u64,
     ) -> Result<
         (
             T::AccountId,
-            SealedVote<T::Hash, T::CurrencyBalance, T::AccountId>,
+            SealedVote<T::Hash, T::CurrencyBalance>,
         ),
         Error<T, I>,
     > {
         // ensure superuser requested action
-        let account_id = Self::ensure_regular_user(origin, referendum_user_id)?;
+        let account_id = Self::ensure_regular_user(origin)?;
 
         let stage = Stage::<T, I>::get();
 
@@ -801,44 +714,22 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ensure account haven't voted yet
-        if !Votes::<T, I>::contains_key(&referendum_user_id) {
+        if !Votes::<T, I>::contains_key(&account_id) {
             return Err(Error::NoVoteToReveal);
         }
 
-        // ensure each option is selected max once
-        let tmp = vote_distribution
-            .iter()
-            .map(|item| &item.option_index)
-            .collect::<Vec<&u64>>();
-        if has_duplicates(tmp) {
-            return Err(Error::DuplicateVoteOption);
+        if vote_option_index >= &stage_data.options_count {
+            return Err(Error::InvalidVote);
         }
 
-        for subvote in vote_distribution {
-            if subvote.option_index >= stage_data.options_count {
-                return Err(Error::InvalidVote);
-            }
-        }
-
-        let sealed_vote = Votes::<T, I>::get(&referendum_user_id);
+        let sealed_vote = Votes::<T, I>::get(&account_id);
 
         // ensure commitment corresponds to salt and vote option
-        let commitment = R::calculate_commitment(&referendum_user_id, salt, vote_distribution);
+        let commitment = R::calculate_commitment(&account_id, salt, cycle_id, vote_option_index);
         if commitment != sealed_vote.commitment {
             return Err(Error::InvalidReveal);
         }
 
         Ok((account_id, sealed_vote))
     }
-}
-
-/////////////////// Utils //////////////////////////////////////////////////////
-fn has_duplicates<T: Clone + Ord>(vector: Vec<T>) -> bool {
-    let vector_len = vector.len();
-    let mut tmp = vector;
-    tmp.sort();
-    tmp.dedup();
-    let no_duplicates_len = tmp.len();
-
-    vector_len != no_duplicates_len
 }

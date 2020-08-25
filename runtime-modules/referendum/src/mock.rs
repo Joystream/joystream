@@ -3,8 +3,7 @@
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
     Error, Instance, Module, RawEvent, ReferendumManager, ReferendumResult, ReferendumStage,
-    ReferendumStageRevealing, ReferendumStageVoting, SealedVote, Stage, StakeDistribution,
-    StakeDistributionArg, Trait, VoteDistribution, Votes,
+    ReferendumStageRevealing, ReferendumStageVoting, SealedVote, Stage, Trait, Votes, CurrentCycle,
 };
 
 use rand::Rng;
@@ -62,7 +61,6 @@ impl Trait<Instance0> for Runtime {
 
     type CurrencyBalance = u64;
     type VotePower = u64;
-    type ReferendumUserId = u64;
 
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
@@ -71,13 +69,6 @@ impl Trait<Instance0> for Runtime {
 
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool {
         *account_id == USER_ADMIN
-    }
-
-    fn is_referendum_member(
-        account_id: &<Self as system::Trait>::AccountId,
-        referendum_user_id: &Self::ReferendumUserId,
-    ) -> bool {
-        account_id == referendum_user_id
     }
 
     fn caclulate_vote_power(
@@ -93,18 +84,15 @@ impl Trait<Instance0> for Runtime {
     }
 
     fn can_stake_for_vote(
-        referendum_user_id: &Self::ReferendumUserId,
-        _stake_distribution: &StakeDistributionArg<
-            <Self as system::Trait>::AccountId,
-            Self::CurrencyBalance,
-        >,
+        account_id: &<Self as system::Trait>::AccountId,
+        _stake: <Self as Trait<Instance0>>::CurrencyBalance,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_LOCKING_ENABLED.with(|value| value.borrow().0) {
             return false;
         }
 
-        match *referendum_user_id {
+        match *account_id {
             USER_ADMIN => true,
             USER_REGULAR => true,
             USER_REGULAR_POWER_VOTES => true,
@@ -115,11 +103,8 @@ impl Trait<Instance0> for Runtime {
     }
 
     fn lock_currency(
-        referendum_user_id: &Self::ReferendumUserId,
-        stake_distribution: &StakeDistributionArg<
-            <Self as system::Trait>::AccountId,
-            Self::CurrencyBalance,
-        >,
+        account_id: &<Self as system::Trait>::AccountId,
+        stake: <Self as Trait<Instance0>>::CurrencyBalance,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_LOCKING_ENABLED.with(|value| value.borrow().1) {
@@ -127,22 +112,19 @@ impl Trait<Instance0> for Runtime {
         }
 
         // simple mock reusing can_lock check
-        <Self as Trait<Instance0>>::can_stake_for_vote(referendum_user_id, stake_distribution)
+        <Self as Trait<Instance0>>::can_stake_for_vote(account_id, stake)
     }
 
     fn free_currency(
-        referendum_user_id: &Self::ReferendumUserId,
-        stake_distribution: &StakeDistributionArg<
-            <Self as system::Trait>::AccountId,
-            Self::CurrencyBalance,
-        >,
+        account_id: &<Self as system::Trait>::AccountId,
+        stake: <Self as Trait<Instance0>>::CurrencyBalance,
     ) -> bool {
         if !IS_LOCKING_ENABLED.with(|value| value.borrow().2) {
             return false;
         }
 
         // simple mock reusing can_lock check
-        <Self as Trait<Instance0>>::can_stake_for_vote(referendum_user_id, stake_distribution)
+        <Self as Trait<Instance0>>::can_stake_for_vote(account_id, stake)
     }
 }
 
@@ -295,16 +277,19 @@ where
     }
 
     pub fn calculate_commitment(
-        referendum_user_id: &T::ReferendumUserId,
-        vote: &VoteDistribution<T::CurrencyBalance>,
+        account_id: &<T as system::Trait>::AccountId,
+        salt: &[u8],
+        cycle_id: &u64,
+        vote_option_index: &u64,
     ) -> (T::Hash, Vec<u8>) {
         let mut rng = rand::thread_rng();
         let salt = rng.gen::<u64>().to_be_bytes().to_vec();
         (
             <Module<T, I> as ReferendumManager<T, I>>::calculate_commitment(
-                referendum_user_id,
-                &salt,
-                vote,
+                account_id,
+                salt,
+                cycle_id,
+                vote_option_index,
             ),
             salt,
         )
@@ -426,21 +411,16 @@ impl InstanceMocks<Runtime, Instance0> {
     pub fn vote(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         account_id: <Runtime as system::Trait>::AccountId,
-        referendum_user_id: <Runtime as Trait<Instance0>>::ReferendumUserId,
         commitment: <Runtime as system::Trait>::Hash,
-        stake_distribution: StakeDistribution<
-            <Runtime as system::Trait>::AccountId,
-            <Runtime as Trait<Instance0>>::CurrencyBalance,
-        >,
+        balance: <Runtime as Trait<Instance0>>::CurrencyBalance,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
             Module::<Runtime, Instance0>::vote(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
-                referendum_user_id,
                 commitment,
-                stake_distribution.clone(),
+                balance,
             ),
             expected_result,
         );
@@ -453,32 +433,31 @@ impl InstanceMocks<Runtime, Instance0> {
             Votes::<Runtime, Instance0>::get(account_id),
             SealedVote {
                 commitment,
-                stake_distribution: stake_distribution.clone()
+                cycle_id: CurrentCycle::<Runtime, Instance0>::get(),
+                balance,
             },
         );
 
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::event_mod_Instance0(RawEvent::VoteCasted(commitment, stake_distribution))
+            TestEvent::event_mod_Instance0(RawEvent::VoteCasted(commitment, balance))
         );
     }
 
     pub fn reveal_vote(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         account_id: <Runtime as system::Trait>::AccountId,
-        referendum_user_id: <Runtime as Trait<Instance0>>::ReferendumUserId,
         salt: Vec<u8>,
-        vote_distribution: VoteDistribution<<Runtime as Trait<Instance0>>::CurrencyBalance>,
+        vote_option_index: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
             Module::<Runtime, Instance0>::reveal_vote(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
-                referendum_user_id,
                 salt,
-                vote_distribution.clone(),
+                vote_option_index,
             ),
             expected_result,
         );
@@ -490,7 +469,7 @@ impl InstanceMocks<Runtime, Instance0> {
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::event_mod_Instance0(RawEvent::VoteRevealed(account_id, vote_distribution))
+            TestEvent::event_mod_Instance0(RawEvent::VoteRevealed(account_id, vote_option_index))
         );
     }
 }
