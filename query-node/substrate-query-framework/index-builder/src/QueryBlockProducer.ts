@@ -19,10 +19,6 @@ const DEFAULT_BACKOFF_TIME_MS = 250;
 // Maximal delyar between retries 
 const MAX_BACKOFF_TIME_MS = 30 * 60 * 1000;
 
-// Time between checks if the head of the chain is beyond the
-// most recently produced block
-const POLL_INTERVAL_MS = 100;
-
 // There-are no timeouts for the WS fetches, so 
 // we have to abort explicitly. This parameter indicates
 // the period of time after which the API calls are failed by timeout.
@@ -204,9 +200,11 @@ export default class QueryBlockProducer extends EventEmitter {
 
         const query_event = new QueryEvent(record, height, index, extrinsic);
 
-          // Logging
-        query_event.log(0, debug);
-
+        // Reduce log verbosity and log only if a flag is set
+        if (process.env.LOG_QUERY_EVENTS) {
+          query_event.log(0, debug);
+        }
+        
         return query_event;
       }
     );
