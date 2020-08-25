@@ -18,6 +18,8 @@ import { QueryEventEntity } from './entities/QueryEventEntity';
 
 const debug = Debug('index-builder:indexer');
 
+const WORKERS_NUMBER = 100;
+
 export default class IndexBuilder {
   private _producer: QueryBlockProducer;
   private _stopped = false;
@@ -26,7 +28,7 @@ export default class IndexBuilder {
 
   // set containing the indexer block heights that are ahead 
   // of the current indexer head
-  private _recentlyIndexedBlocks = new Set<BN>();
+  private _recentlyIndexedBlocks = new Set<number>();
 
   private _processing_pack!: QueryEventProcessingPack;
 
@@ -70,7 +72,7 @@ export default class IndexBuilder {
 
     await this._producer.start(startBlock);
 
-    const poolExecutor = new PooledExecutor(100, this._producer.blockHeights(), this._indexBlock());
+    const poolExecutor = new PooledExecutor(WORKERS_NUMBER, this._producer.blockHeights(), this._indexBlock());
     
     debug('Started a pool of indexers.');
 
@@ -126,20 +128,20 @@ export default class IndexBuilder {
         debug(`Done block #${h.toString()}`);
       });
 
-      this._recentlyIndexedBlocks.add(h);
+      this._recentlyIndexedBlocks.add(h.toNumber());
       this._updateIndexerHead();
     }
   }
 
   private _updateIndexerHead(): void {
-    let nextHead = this._indexerHead.addn(1);
+    let nextHead = this._indexerHead.addn(1).toNumber();
     debug(`Next indexer head: ${nextHead.toString()}`);
     while (this._recentlyIndexedBlocks.has(nextHead)) {
-      this._indexerHead = nextHead;
+      this._indexerHead = new BN(nextHead);
       debug(`Updated indexer head to ${this._indexerHead.toString()}`);
       // remove from the set as we don't need to keep it anymore
       this._recentlyIndexedBlocks.delete(nextHead);
-      nextHead = nextHead.addn(1);
+      nextHead++;
     }
   }
 
