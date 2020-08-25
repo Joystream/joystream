@@ -30,19 +30,14 @@ export default class IndexBuilder {
   // of the current indexer head
   private _recentlyIndexedBlocks = new Set<number>();
 
-  private _processing_pack!: QueryEventProcessingPack;
-
-  private lastProcessedEvent!: SavedEntityEvent;
-
-  private constructor(producer: QueryBlockProducer, processing_pack: QueryEventProcessingPack) {
+  private constructor(producer: QueryBlockProducer) {
     this._producer = producer;
-    this._processing_pack = processing_pack;
   }
 
-  static create(service: ISubstrateQueryService, processing_pack: QueryEventProcessingPack): IndexBuilder {
+  static create(service: ISubstrateQueryService): IndexBuilder {
     const producer = new QueryBlockProducer(service);
 
-    return new IndexBuilder(producer, processing_pack);
+    return new IndexBuilder(producer);
   }
 
   async start(atBlock?: BN): Promise<void> {

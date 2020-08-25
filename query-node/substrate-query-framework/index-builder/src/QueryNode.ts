@@ -4,6 +4,7 @@ import { ApiPromise, WsProvider /*RuntimeVersion*/ } from '@polkadot/api';
 import * as BN from 'bn.js';
 
 import { makeQueryService, IndexBuilder, QueryEventProcessingPack, QueryNodeStartUpOptions } from '.';
+import MappingsProcessor from './processor/MappingsProcessor';
 
 export enum QueryNodeState {
   NOT_STARTED,
@@ -27,14 +28,17 @@ export default class QueryNode {
   // Query index building node.
   private _indexBuilder: IndexBuilder;
 
+  private _mappingsProcessor: MappingsProcessor;
+
   private _atBlock?: BN;
 
-  private constructor(websocketProvider: WsProvider, api: ApiPromise, indexBuilder: IndexBuilder, atBlock?: BN) {
+  private constructor(websocketProvider: WsProvider, api: ApiPromise, indexBuilder: IndexBuilder, mappingsProcessor: MappingsProcessor, atBlock?: BN) {
     this._state = QueryNodeState.NOT_STARTED;
     this._websocketProvider = websocketProvider;
     this._api = api;
     this._indexBuilder = indexBuilder;
     this._atBlock = atBlock;
+    this._mappingsProcessor = mappingsProcessor;
   }
 
   static async create(options: QueryNodeStartUpOptions): Promise<QueryNode> {
@@ -56,9 +60,10 @@ export default class QueryNode {
 
     const service = makeQueryService(api);
 
-    const index_buider = IndexBuilder.create(service, processingPack as QueryEventProcessingPack);
+    const index_buider = IndexBuilder.create(service);
+    const mappings_processor = MappingsProcessor.create(index_buider, processingPack as QueryEventProcessingPack);
 
-    return new QueryNode(provider, api, index_buider, atBlock);
+    return new QueryNode(provider, api, index_buider, mappings_processor, atBlock);
   }
 
   async start(): Promise<void> {
@@ -67,7 +72,11 @@ export default class QueryNode {
     this._state = QueryNodeState.STARTING;
 
     // Start the
-    await this._indexBuilder.start(this._atBlock);
+    await Promise.race([
+      this._indexBuilder.start(this._atBlock),
+      this._mappingsProcessor.start(this._atBlock)
+    ])
+    //await this._indexBuilder.start(this._atBlock);
 
     this._state = QueryNodeState.STARTED;
   }
