@@ -91,8 +91,9 @@ export default class IndexBuilder {
           FROM query_event_entity q 
           LEFT JOIN query_event_entity n 
           ON q.block_number + 1 = n.block_number) stats 
-      WHERE stats.next is NULL
-    `) as Array<any>; 
+      WHERE stats.next is NULL`
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ) as Array<any>; 
     
     if ((rawRslts === undefined) || (rawRslts.length === 0)) {
       return new BN(-1);

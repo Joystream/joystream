@@ -67,7 +67,7 @@ export class QueryEventEntity {
   params!: EventParam[];
 
  
-  @OneToOne(type => ChainExtrinsic, {
+  @OneToOne(() => ChainExtrinsic, {
     cascade: true,
     nullable: true
   })
