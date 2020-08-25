@@ -5,10 +5,8 @@ import * as BN from 'bn.js';
 
 import {
   QueryBlockProducer,
-  QueryEventProcessingPack,
   QueryEventBlock,
   ISubstrateQueryService,
-  SavedEntityEvent,
 } from '.';
 
 import Debug from 'debug';
