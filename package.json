@@ -26,7 +26,8 @@
     "pioneer/packages/joy-utils",
     "pioneer/packages/joy-members",
     "pioneer/packages/joy-pages",
-    "pioneer/packages/joy-election"
+    "pioneer/packages/joy-election",
+    "utils/api-examples"
   ],
   "resolutions": {
     "@polkadot/api": "1.26.1",
