@@ -1,7 +1,7 @@
 #![cfg(test)]
 
-pub use sr_primitives::traits::Zero;
-use srml_support::traits::{Currency, Imbalance};
+use frame_support::traits::{Currency, Imbalance};
+pub use sp_arithmetic::traits::Zero;
 
 use super::*;
 

@@ -2,10 +2,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use codec::Codec;
-use rstd::collections::btree_map::BTreeMap;
-use rstd::prelude::*;
-use runtime_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
-use srml_support::{decl_module, decl_storage, dispatch, ensure, Parameter};
+use frame_support::{decl_module, decl_storage, ensure, Parameter};
+use sp_arithmetic::traits::BaseArithmetic;
+use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::vec::Vec;
+
+//TODO: Convert errors to the Substrate decl_error! macro.
+/// Result with string error message. This exists for backward compatibility purpose.
+pub type DispatchResult = Result<(), &'static str>;
 
 // EntityId, ClassId -> should be configured on versioned_store::Trait
 pub use versioned_store::{ClassId, ClassPropertyValue, EntityId, Property, PropertyValue};
@@ -60,13 +65,10 @@ pub type ClassPermissionsType<T> =
     ClassPermissions<ClassId, <T as Trait>::Credential, u16, <T as system::Trait>::BlockNumber>;
 
 pub trait Trait: system::Trait + versioned_store::Trait {
-    // type Event: ...
-    // Do we need Events?
-
     /// Type that represents an actor or group of actors in the system.
     type Credential: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -86,10 +88,12 @@ pub trait Trait: system::Trait + versioned_store::Trait {
 decl_storage! {
     trait Store for Module<T: Trait> as VersionedStorePermissions {
       /// ClassPermissions of corresponding Classes in the versioned store
-      pub ClassPermissionsByClassId get(class_permissions_by_class_id): linked_map ClassId => ClassPermissionsType<T>;
+      pub ClassPermissionsByClassId get(fn class_permissions_by_class_id): map hasher(blake2_128_concat)
+        ClassId => ClassPermissionsType<T>;
 
       /// Owner of an entity in the versioned store. If it is None then it is owned by the system.
-      pub EntityMaintainerByEntityId get(entity_maintainer_by_entity_id): linked_map EntityId => Option<T::Credential>;
+      pub EntityMaintainerByEntityId get(fn entity_maintainer_by_entity_id): map hasher(blake2_128_concat)
+        EntityId => Option<T::Credential>;
     }
 }
 
@@ -97,11 +101,12 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
 
         /// Sets the admins for a class
+        #[weight = 10_000_000] // TODO: adjust weight
         fn set_class_admins(
             origin,
             class_id: ClassId,
             admins: CredentialSet<T::Credential>
-        ) -> dispatch::Result {
+        ) -> DispatchResult {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
             Self::mutate_class_permissions(
@@ -117,13 +122,13 @@ decl_module! {
         }
 
         // Methods for updating concrete permissions
-
+        #[weight = 10_000_000] // TODO: adjust weight
         fn set_class_entity_permissions(
             origin,
             with_credential: Option<T::Credential>,
             class_id: ClassId,
             entity_permissions: EntityPermissions<T::Credential>
-        ) -> dispatch::Result {
+        ) -> DispatchResult {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
             Self::mutate_class_permissions(
@@ -138,12 +143,13 @@ decl_module! {
             )
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
         fn set_class_entities_can_be_created(
             origin,
             with_credential: Option<T::Credential>,
             class_id: ClassId,
             can_be_created: bool
-        ) -> dispatch::Result {
+        ) -> DispatchResult {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
             Self::mutate_class_permissions(
@@ -158,12 +164,13 @@ decl_module! {
             )
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
         fn set_class_add_schemas_set(
             origin,
             with_credential: Option<T::Credential>,
             class_id: ClassId,
             credential_set: CredentialSet<T::Credential>
-        ) -> dispatch::Result {
+        ) -> DispatchResult {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
             Self::mutate_class_permissions(
@@ -178,12 +185,13 @@ decl_module! {
             )
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
         fn set_class_create_entities_set(
             origin,
             with_credential: Option<T::Credential>,
             class_id: ClassId,
             credential_set: CredentialSet<T::Credential>
-        ) -> dispatch::Result {
+        ) -> DispatchResult {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
             Self::mutate_class_permissions(
@@ -198,12 +206,13 @@ decl_module! {
             )
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
         fn set_class_reference_constraint(
             origin,
             with_credential: Option<T::Credential>,
             class_id: ClassId,
             constraint: ReferenceConstraint<ClassId, u16>
-        ) -> dispatch::Result {
+        ) -> DispatchResult {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
             Self::mutate_class_permissions(
@@ -224,7 +233,7 @@ decl_module! {
         //     origin,
         //     entity_id: EntityId,
         //     new_maintainer: Option<T::Credential>
-        // ) -> dispatch::Result {
+        // ) -> DispatchResult {
         //     ensure_root(origin)?;
 
         //     // ensure entity exists in the versioned store
@@ -238,13 +247,13 @@ decl_module! {
         // }
 
         // Permissioned proxy calls to versioned store
-
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_class(
             origin,
             name: Vec<u8>,
             description: Vec<u8>,
             class_permissions: ClassPermissionsType<T>
-        ) -> dispatch::Result {
+        ) -> DispatchResult {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
             let can_create_class = match raw_origin {
@@ -268,21 +277,23 @@ decl_module! {
             }
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_class_with_default_permissions(
             origin,
             name: Vec<u8>,
             description: Vec<u8>
-        ) -> dispatch::Result {
+        ) -> DispatchResult {
             Self::create_class(origin, name, description, ClassPermissions::default())
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_class_schema(
             origin,
             with_credential: Option<T::Credential>,
             class_id: ClassId,
             existing_properties: Vec<u16>,
             new_properties: Vec<Property>
-        ) -> dispatch::Result {
+        ) -> DispatchResult {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
 
             Self::if_class_permissions_satisfied(
@@ -304,16 +315,18 @@ decl_module! {
 
         /// Creates a new entity of type class_id. The maintainer is set to be either None if the origin is root, or the provided credential
         /// associated with signer.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_entity(
             origin,
             with_credential: Option<T::Credential>,
             class_id: ClassId
-        ) -> dispatch::Result {
+        ) -> DispatchResult {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             let _entity_id = Self::do_create_entity(&raw_origin, with_credential, class_id)?;
             Ok(())
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_schema_support_to_entity(
             origin,
             with_credential: Option<T::Credential>,
@@ -321,23 +334,25 @@ decl_module! {
             entity_id: EntityId,
             schema_id: u16, // Do not type alias u16!! - u16,
             property_values: Vec<ClassPropertyValue>
-        ) -> dispatch::Result {
+        ) -> DispatchResult {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_add_schema_support_to_entity(&raw_origin, with_credential, as_entity_maintainer, entity_id, schema_id, property_values)
         }
 
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_entity_property_values(
             origin,
             with_credential: Option<T::Credential>,
             as_entity_maintainer: bool,
             entity_id: EntityId,
             property_values: Vec<ClassPropertyValue>
-        ) -> dispatch::Result {
+        ) -> DispatchResult {
             let raw_origin = Self::ensure_root_or_signed(origin)?;
             Self::do_update_entity_property_values(&raw_origin, with_credential, as_entity_maintainer, entity_id, property_values)
         }
 
-        pub fn transaction(origin, operations: Vec<Operation<T::Credential>>) -> dispatch::Result {
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn transaction(origin, operations: Vec<Operation<T::Credential>>) -> DispatchResult {
             // This map holds the EntityId of the entity created as a result of executing a CreateEntity Operation
             // keyed by the indexed of the operation, in the operations vector.
             let mut entity_created_in_operation: BTreeMap<usize, EntityId> = BTreeMap::new();
@@ -415,7 +430,7 @@ impl<T: Trait> Module<T> {
         as_entity_maintainer: bool,
         entity_id: EntityId,
         property_values: Vec<ClassPropertyValue>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
         Self::ensure_internal_property_values_permitted(class_id, &property_values)?;
@@ -448,7 +463,7 @@ impl<T: Trait> Module<T> {
         entity_id: EntityId,
         schema_id: u16,
         property_values: Vec<ClassPropertyValue>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         // class id of the entity being updated
         let class_id = Self::get_class_id_by_entity_id(entity_id)?;
 
@@ -491,7 +506,7 @@ impl<T: Trait> Module<T> {
                         if let Some(entity_id) = as_entity_maintainer {
                             // is entity maintained by system
                             ensure!(
-                                <EntityMaintainerByEntityId<T>>::exists(entity_id),
+                                <EntityMaintainerByEntityId<T>>::contains_key(entity_id),
                                 "NotEnityMaintainer"
                             );
                             // ensure entity maintainer matches
@@ -522,7 +537,7 @@ impl<T: Trait> Module<T> {
         class_id: ClassId,
     ) -> Result<ClassPermissionsType<T>, &'static str> {
         ensure!(
-            <ClassPermissionsByClassId<T>>::exists(class_id),
+            <ClassPermissionsByClassId<T>>::contains_key(class_id),
             "ClassPermissionsNotFoundByClassId"
         );
         Ok(Self::class_permissions_by_class_id(class_id))
@@ -539,11 +554,10 @@ impl<T: Trait> Module<T> {
         class_id: ClassId,
         // actual mutation to apply.
         mutate: Mutate,
-    ) -> dispatch::Result
+    ) -> DispatchResult
     where
-        Predicate:
-            FnOnce(&ClassPermissionsType<T>, &AccessLevel<T::Credential>) -> dispatch::Result,
-        Mutate: FnOnce(&mut ClassPermissionsType<T>) -> dispatch::Result,
+        Predicate: FnOnce(&ClassPermissionsType<T>, &AccessLevel<T::Credential>) -> DispatchResult,
+        Mutate: FnOnce(&mut ClassPermissionsType<T>) -> DispatchResult,
     {
         let access_level = Self::derive_access_level(raw_origin, with_credential, None)?;
         let mut class_permissions = Self::ensure_class_permissions(class_id)?;
@@ -558,7 +572,7 @@ impl<T: Trait> Module<T> {
     fn is_system(
         _: &ClassPermissionsType<T>,
         access_level: &AccessLevel<T::Credential>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         if *access_level == AccessLevel::System {
             Ok(())
         } else {
@@ -581,8 +595,7 @@ impl<T: Trait> Module<T> {
         callback: Callback,
     ) -> Result<R, &'static str>
     where
-        Predicate:
-            FnOnce(&ClassPermissionsType<T>, &AccessLevel<T::Credential>) -> dispatch::Result,
+        Predicate: FnOnce(&ClassPermissionsType<T>, &AccessLevel<T::Credential>) -> DispatchResult,
         Callback: FnOnce(
             &ClassPermissionsType<T>,
             &AccessLevel<T::Credential>,
@@ -599,7 +612,7 @@ impl<T: Trait> Module<T> {
     fn get_class_id_by_entity_id(entity_id: EntityId) -> Result<ClassId, &'static str> {
         // use a utility method on versioned_store module
         ensure!(
-            versioned_store::EntityById::exists(entity_id),
+            versioned_store::EntityById::contains_key(entity_id),
             "EntityNotFound"
         );
         let entity = <versioned_store::Module<T>>::entity_by_id(entity_id);
@@ -611,7 +624,7 @@ impl<T: Trait> Module<T> {
     fn ensure_internal_property_values_permitted(
         source_class_id: ClassId,
         property_values: &[ClassPropertyValue],
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         for property_value in property_values.iter() {
             if let PropertyValue::Internal(ref target_entity_id) = property_value.value {
                 // get the class permissions for target class

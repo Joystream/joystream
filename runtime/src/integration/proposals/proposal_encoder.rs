@@ -4,10 +4,10 @@ use proposals_codex::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 use working_group::OpeningType;
 
 use codec::Encode;
-use rstd::collections::btree_set::BTreeSet;
-use rstd::marker::PhantomData;
-use rstd::vec::Vec;
-use srml_support::print;
+use frame_support::print;
+use sp_std::collections::btree_set::BTreeSet;
+use sp_std::marker::PhantomData;
+use sp_std::vec::Vec;
 
 // The macro binds working group outer-level Call with the provided inner-level working group
 // extrinsic call. Outer-call is defined by the provided WorkingGroup param expression.
@@ -46,9 +46,9 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::SetLead(new_lead) => {
                 Call::ContentWorkingGroup(content_working_group::Call::replace_lead(new_lead))
             }
-            ProposalDetails::SetValidatorCount(new_validator_count) => {
-                Call::Staking(staking::Call::set_validator_count(new_validator_count))
-            }
+            ProposalDetails::SetValidatorCount(new_validator_count) => Call::Staking(
+                pallet_staking::Call::set_validator_count(new_validator_count),
+            ),
             ProposalDetails::RuntimeUpgrade(wasm_code) => Call::ProposalsCodex(
                 proposals_codex::Call::execute_runtime_upgrade_proposal(wasm_code),
             ),

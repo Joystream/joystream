@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use rstd::marker::PhantomData;
+use sp_std::marker::PhantomData;
 use std::cell::RefCell;
 use std::panic;
 use std::rc::Rc;

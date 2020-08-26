@@ -1,21 +1,19 @@
 #![cfg(test)]
-// srml_staking_reward_curve::build! - substrate macro produces a warning.
-// TODO: remove after post-Rome substrate upgrade
-#![allow(array_into_iter)]
+
+use frame_support::{impl_outer_dispatch, impl_outer_origin, parameter_types};
+use sp_core::H256;
+use sp_runtime::curve::PiecewiseLinear;
+use sp_runtime::{
+    testing::Header,
+    traits::{BlakeTwo256, IdentityLookup},
+    Perbill,
+};
+use sp_staking::SessionIndex;
+pub use system;
 
 use crate::{ProposalDetailsOf, ProposalEncoder};
-pub use primitives::{Blake2Hasher, H256};
-use proposal_engine::VotersParameters;
-use sr_primitives::curve::PiecewiseLinear;
-pub use sr_primitives::{
-    testing::{Digest, DigestItem, Header, UintAuthorityId},
-    traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize},
-    weights::Weight,
-    BuildStorage, DispatchError, Perbill,
-};
-use sr_staking_primitives::SessionIndex;
-use srml_support::{impl_outer_dispatch, impl_outer_origin, parameter_types};
-pub use system;
+use proposals_engine::VotersParameters;
+use sp_runtime::testing::TestXt;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -37,6 +35,8 @@ impl_outer_dispatch! {
     pub enum Call for Test where origin: Origin {
         codex::ProposalCodex,
         proposals::ProposalsEngine,
+        staking::Staking,
+        system::System,
     }
 }
 
@@ -54,25 +54,14 @@ impl membership::Trait for Test {
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
-    pub const TransferFee: u32 = 0;
-    pub const CreationFee: u32 = 0;
 }
 
 impl balances::Trait for Test {
-    /// The type for recording an account's balance.
     type Balance = u64;
-    /// What to do if an account's free balance gets zeroed.
-    type OnFreeBalanceZero = ();
-    /// What to do if a new account is created.
-    type OnNewAccount = ();
-
-    type Event = ();
-
     type DustRemoval = ();
-    type TransferPayment = ();
+    type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
-    type TransferFee = TransferFee;
-    type CreationFee = CreationFee;
+    type AccountStore = System;
 }
 
 impl stake::Trait for Test {
@@ -91,13 +80,13 @@ parameter_types! {
     pub const MaxActiveProposalLimit: u32 = 100;
 }
 
-impl proposal_engine::Trait for Test {
+impl proposals_engine::Trait for Test {
     type Event = ();
     type ProposerOriginValidator = ();
     type VoterOriginValidator = ();
     type TotalVotersCounter = MockVotersParameters;
     type ProposalId = u32;
-    type StakeHandlerProvider = proposal_engine::DefaultStakeHandlerProvider;
+    type StakeHandlerProvider = proposals_engine::DefaultStakeHandlerProvider;
     type CancellationFee = CancellationFee;
     type RejectionFee = RejectionFee;
     type TitleMaxLength = TitleMaxLength;
@@ -112,7 +101,7 @@ impl Default for crate::Call<Test> {
     }
 }
 
-impl mint::Trait for Test {
+impl minting::Trait for Test {
     type Currency = Balances;
     type MintId = u64;
 }
@@ -137,7 +126,7 @@ parameter_types! {
     pub const PostLengthLimit: u32 = 2000;
 }
 
-impl proposal_discussion::Trait for Test {
+impl proposals_discussion::Trait for Test {
     type Event = ();
     type PostAuthorOriginValidator = ();
     type ThreadId = u64;
@@ -192,7 +181,7 @@ impl hiring::Trait for Test {
     type StakeHandlerProvider = hiring::Module<Self>;
 }
 
-srml_staking_reward_curve::build! {
+pallet_staking_reward_curve::build! {
     const I_NPOS: PiecewiseLinear<'static> = curve!(
         min_inflation: 0_025_000,
         max_inflation: 0_100_000,
@@ -209,8 +198,8 @@ parameter_types! {
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &I_NPOS;
 }
 impl staking::Trait for Test {
-    type Currency = balances::Module<Self>;
-    type Time = timestamp::Module<Self>;
+    type Currency = Balances;
+    type UnixTime = Timestamp;
     type CurrencyToVote = ();
     type RewardRemainder = ();
     type Event = ();
@@ -218,9 +207,28 @@ impl staking::Trait for Test {
     type Reward = ();
     type SessionsPerEra = SessionsPerEra;
     type BondingDuration = BondingDuration;
+    type SlashDeferDuration = ();
+    type SlashCancelOrigin = system::EnsureRoot<Self::AccountId>;
     type SessionInterface = Self;
     type RewardCurve = RewardCurve;
+    type NextNewSession = ();
+    type ElectionLookahead = ();
+    type Call = Call;
+    type MaxIterations = ();
+    type MinSolutionScoreBump = ();
+    type MaxNominatorRewardedPerValidator = ();
+    type UnsignedPriority = ();
 }
+
+impl<LocalCall> system::offchain::SendTransactionTypes<LocalCall> for Test
+where
+    Call: From<LocalCall>,
+{
+    type OverarchingCall = Call;
+    type Extrinsic = Extrinsic;
+}
+
+pub type Extrinsic = TestXt<Call, ()>;
 
 impl staking::SessionInterface<u64> for Test {
     fn disable_validator(_: &u64) -> Result<bool, ()> {
@@ -250,10 +258,11 @@ impl ProposalEncoder<Test> for () {
 }
 
 impl system::Trait for Test {
+    type BaseCallFilter = ();
     type Origin = Origin;
+    type Call = Call;
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
@@ -262,18 +271,26 @@ impl system::Trait for Test {
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
-impl timestamp::Trait for Test {
+impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
 }
 
-pub fn initial_test_ext() -> runtime_io::TestExternalities {
+pub fn initial_test_ext() -> sp_io::TestExternalities {
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
@@ -281,6 +298,9 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
     t.into()
 }
 
+pub type Staking = staking::Module<Test>;
 pub type ProposalCodex = crate::Module<Test>;
-pub type ProposalsEngine = proposal_engine::Module<Test>;
+pub type ProposalsEngine = proposals_engine::Module<Test>;
 pub type Balances = balances::Module<Test>;
+pub type Timestamp = pallet_timestamp::Module<Test>;
+pub type System = system::Module<Test>;

@@ -1,3 +1,8 @@
+use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::storage::{StorageMap, StorageValue};
+use std::collections::BTreeSet;
+use system::{EventRecord, Phase, RawOrigin};
+
 use super::mock::{
     Balances, Membership, System, Test, TestEvent, TestWorkingGroup, TestWorkingGroupInstance,
 };
@@ -6,12 +11,8 @@ use crate::types::{
     Application, Opening, OpeningPolicyCommitment, OpeningType, RewardPolicy, RoleStakeProfile,
     Worker,
 };
-use crate::Error;
 use crate::RawEvent;
 use common::constraints::InputValidationLengthConstraint;
-use srml_support::{StorageLinkedMap, StorageValue};
-use std::collections::BTreeSet;
-use system::{EventRecord, Phase, RawOrigin};
 
 pub struct IncreaseWorkerStakeFixture {
     origin: RawOrigin<u64>,
@@ -38,7 +39,7 @@ impl IncreaseWorkerStakeFixture {
         Self { balance, ..self }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let stake_id = 0;
         let old_stake = <stake::Module<Test>>::stakes(stake_id);
         let old_balance = Balances::free_balance(&self.account_id);
@@ -103,7 +104,7 @@ impl TerminateWorkerRoleFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         <crate::WorkerExitRationaleText<TestWorkingGroupInstance>>::put(self.constraint.clone());
 
         let actual_result = TestWorkingGroup::terminate_role(
@@ -117,7 +118,9 @@ impl TerminateWorkerRoleFixture {
         if actual_result.is_ok() {
             if actual_result.is_ok() {
                 assert!(
-                    !<crate::WorkerById<Test, TestWorkingGroupInstance>>::exists(self.worker_id)
+                    !<crate::WorkerById<Test, TestWorkingGroupInstance>>::contains_key(
+                        self.worker_id
+                    )
                 );
             }
         }
@@ -140,7 +143,7 @@ impl LeaveWorkerRoleFixture {
         Self { origin, ..self }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let rationale_text = b"rationale_text".to_vec();
         let actual_result = TestWorkingGroup::leave_role(
             self.origin.clone().into(),
@@ -150,7 +153,9 @@ impl LeaveWorkerRoleFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
-            assert!(!<crate::WorkerById<Test, TestWorkingGroupInstance>>::exists(self.worker_id));
+            assert!(
+                !<crate::WorkerById<Test, TestWorkingGroupInstance>>::contains_key(self.worker_id)
+            );
         }
     }
 }
@@ -175,7 +180,7 @@ impl UpdateWorkerRewardAmountFixture {
         Self { origin, ..self }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = TestWorkingGroup::update_reward_amount(
             self.origin.clone().into(),
             self.worker_id,
@@ -212,7 +217,7 @@ impl UpdateWorkerRewardAccountFixture {
         Self { origin, ..self }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = TestWorkingGroup::update_reward_account(
             self.origin.clone().into(),
             self.worker_id,
@@ -250,7 +255,7 @@ impl UpdateWorkerRoleAccountFixture {
         Self { origin, ..self }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = TestWorkingGroup::update_role_account(
             self.origin.clone().into(),
             self.worker_id,
@@ -306,7 +311,7 @@ impl FillWorkerOpeningFixture {
         }
     }
 
-    pub fn call(&self) -> Result<u64, Error> {
+    pub fn call(&self) -> Result<u64, DispatchError> {
         let saved_worker_next_id = TestWorkingGroup::next_worker_id();
         TestWorkingGroup::fill_opening(
             self.origin.clone().into(),
@@ -318,7 +323,7 @@ impl FillWorkerOpeningFixture {
         Ok(saved_worker_next_id)
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) -> u64 {
         let saved_worker_next_id = TestWorkingGroup::next_worker_id();
         let actual_result = self.call().map(|_| ());
         assert_eq!(actual_result.clone(), expected_result);
@@ -379,7 +384,7 @@ impl BeginReviewWorkerApplicationsFixture {
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
     }
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result =
             TestWorkingGroup::begin_applicant_review(self.origin.clone().into(), self.opening_id);
         assert_eq!(actual_result, expected_result);
@@ -407,7 +412,7 @@ impl TerminateApplicationFixture {
             worker_application_id: application_id,
         }
     }
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = TestWorkingGroup::terminate_application(
             self.origin.clone().into(),
             self.worker_application_id,
@@ -436,7 +441,7 @@ impl WithdrawApplicationFixture {
             worker_application_id: application_id,
         }
     }
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result = TestWorkingGroup::withdraw_application(
             self.origin.clone().into(),
             self.worker_application_id,
@@ -447,11 +452,11 @@ impl WithdrawApplicationFixture {
 
 pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
     let _ =
-        <Balances as srml_support::traits::Currency<u64>>::deposit_creating(&account_id, balance);
+        <Balances as frame_support::traits::Currency<u64>>::deposit_creating(&account_id, balance);
 }
 
 pub fn get_balance(account_id: u64) -> u64 {
-    <super::mock::Balances as srml_support::traits::Currency<u64>>::total_balance(&account_id)
+    <super::mock::Balances as frame_support::traits::Currency<u64>>::total_balance(&account_id)
 }
 
 pub fn setup_members(count: u8) {
@@ -524,7 +529,7 @@ impl ApplyOnWorkerOpeningFixture {
         }
     }
 
-    pub fn call(&self) -> Result<u64, Error> {
+    pub fn call(&self) -> Result<u64, DispatchError> {
         let saved_application_next_id = TestWorkingGroup::next_application_id();
         TestWorkingGroup::apply_on_opening(
             self.origin.clone().into(),
@@ -538,7 +543,7 @@ impl ApplyOnWorkerOpeningFixture {
 
         Ok(saved_application_next_id)
     }
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) -> u64 {
         let saved_application_next_id = TestWorkingGroup::next_application_id();
 
         let actual_result = self.call().map(|_| ());
@@ -583,7 +588,7 @@ impl AcceptWorkerApplicationsFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result =
             TestWorkingGroup::accept_applications(self.origin.clone().into(), self.opening_id);
         assert_eq!(actual_result, expected_result);
@@ -698,7 +703,7 @@ impl AddWorkerOpeningFixture {
         }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) -> u64 {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) -> u64 {
         let saved_opening_next_id = TestWorkingGroup::next_opening_id();
         let actual_result = self.call().map(|_| ());
 
@@ -726,7 +731,7 @@ impl AddWorkerOpeningFixture {
         saved_opening_next_id
     }
 
-    pub fn call(&self) -> Result<u64, Error> {
+    pub fn call(&self) -> Result<u64, DispatchError> {
         let saved_opening_next_id = TestWorkingGroup::next_opening_id();
         TestWorkingGroup::add_opening(
             self.origin.clone().into(),
@@ -787,7 +792,7 @@ impl EventFixture {
 
     pub fn assert_last_global_event(expected_event: TestEvent) {
         let expected_event = EventRecord {
-            phase: Phase::ApplyExtrinsic(0),
+            phase: Phase::Initialization,
             event: expected_event,
             topics: vec![],
         };
@@ -824,7 +829,7 @@ impl DecreaseWorkerStakeFixture {
         Self { balance, ..self }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let stake_id = 0;
         let old_balance = Balances::free_balance(&self.account_id);
         let old_stake = <stake::Module<Test>>::stakes(stake_id);
@@ -900,7 +905,7 @@ impl SlashWorkerStakeFixture {
         Self { balance, ..self }
     }
 
-    pub fn call_and_assert(&self, expected_result: Result<(), Error>) {
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let stake_id = 0;
         let old_balance = Balances::free_balance(&self.account_id);
         let old_stake = <stake::Module<Test>>::stakes(stake_id);

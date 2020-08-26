@@ -1,7 +1,8 @@
-use rstd::prelude::*;
-use sr_primitives::traits::{One, Zero};
-use srml_support::{debug, decl_event, decl_module, decl_storage, ensure};
-use system::{self, ensure_root};
+use frame_support::{debug, decl_event, decl_module, decl_storage, ensure};
+use sp_arithmetic::traits::{One, Zero};
+use sp_std::vec;
+use sp_std::vec::Vec;
+use system::ensure_root;
 
 pub use super::election::{self, CouncilElected, Seat, Seats};
 pub use common::currency::{BalanceOf, GovernanceCurrency};
@@ -29,28 +30,29 @@ pub trait Trait: system::Trait + recurringrewards::Trait + GovernanceCurrency {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Council {
-        pub ActiveCouncil get(active_council) config(): Seats<T::AccountId, BalanceOf<T>>;
+        pub ActiveCouncil get(fn active_council) config(): Seats<T::AccountId, BalanceOf<T>>;
 
-        pub TermEndsAt get(term_ends_at) config() : T::BlockNumber = T::BlockNumber::from(1);
+        pub TermEndsAt get(fn term_ends_at) config() : T::BlockNumber = T::BlockNumber::from(1);
 
         /// The mint that funds council member rewards and spending proposals budget. It is an Option
         /// because it was introduced in a runtime upgrade. It will be automatically created when
         /// a successful call to set_council_mint_capacity() is made.
-        pub CouncilMint get(council_mint) : Option<<T as minting::Trait>::MintId>;
+        pub CouncilMint get(fn council_mint) : Option<<T as minting::Trait>::MintId>;
 
         /// The reward relationships currently in place. There may not necessarily be a 1-1 correspondance with
         /// the active council, since there are multiple ways of setting/adding/removing council members, some of which
         /// do not involve creating a relationship.
-        pub RewardRelationships get(reward_relationships) : map T::AccountId => T::RewardRelationshipId;
+        pub RewardRelationships get(fn reward_relationships) : map hasher(blake2_128_concat)
+            T::AccountId => T::RewardRelationshipId;
 
         /// Reward amount paid out at each PayoutInterval
-        pub AmountPerPayout get(amount_per_payout): minting::BalanceOf<T>;
+        pub AmountPerPayout get(fn amount_per_payout): minting::BalanceOf<T>;
 
         /// Optional interval in blocks on which a reward payout will be made to each council member
-        pub PayoutInterval get(payout_interval): Option<T::BlockNumber>;
+        pub PayoutInterval get(fn payout_interval): Option<T::BlockNumber>;
 
         /// How many blocks after the reward is created, the first payout will be made
-        pub FirstPayoutAfterRewardCreated get(first_payout_after_reward_created): T::BlockNumber;
+        pub FirstPayoutAfterRewardCreated get(fn first_payout_after_reward_created): T::BlockNumber;
     }
 }
 
@@ -128,7 +130,7 @@ impl<T: Trait> Module<T> {
 
     fn remove_reward_relationships() {
         for seat in Self::active_council().into_iter() {
-            if RewardRelationships::<T>::exists(&seat.member) {
+            if RewardRelationships::<T>::contains_key(&seat.member) {
                 let id = Self::reward_relationships(&seat.member);
                 <recurringrewards::Module<T>>::remove_reward_relationship(id);
             }
@@ -165,6 +167,7 @@ decl_module! {
         /// Existing council rewards are removed and new council members do NOT get any rewards.
         /// Avoid using this call if possible, will be deprecated. The term of the new council is
         /// not extended.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_council(origin, accounts: Vec<T::AccountId>) {
             ensure_root(origin)?;
 
@@ -189,6 +192,7 @@ decl_module! {
         }
 
         /// Adds a zero staked council member. A member added in this way does not get a recurring reward.
+        #[weight = 10_000_000] // TODO: adjust weight
         fn add_council_member(origin, account: T::AccountId) {
             ensure_root(origin)?;
 
@@ -209,12 +213,13 @@ decl_module! {
         }
 
         /// Remove a single council member and their reward.
+        #[weight = 10_000_000] // TODO: adjust weight
         fn remove_council_member(origin, account_to_remove: T::AccountId) {
             ensure_root(origin)?;
 
             ensure!(Self::is_councilor(&account_to_remove), "account is not a councilor");
 
-            if RewardRelationships::<T>::exists(&account_to_remove) {
+            if RewardRelationships::<T>::contains_key(&account_to_remove) {
                 let relationship_id = Self::reward_relationships(&account_to_remove);
                 <recurringrewards::Module<T>>::remove_reward_relationship(relationship_id);
             }
@@ -228,6 +233,7 @@ decl_module! {
         }
 
         /// Set blocknumber when council term will end
+        #[weight = 10_000_000] // TODO: adjust weight
         fn set_term_ends_at(origin, ends_at: T::BlockNumber) {
             ensure_root(origin)?;
             ensure!(ends_at > <system::Module<T>>::block_number(), "must set future block number");
@@ -236,28 +242,32 @@ decl_module! {
 
         /// Sets the capacity of the the council mint, if it doesn't exist, attempts to
         /// create a new one.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_council_mint_capacity(origin, capacity: minting::BalanceOf<T>) {
             ensure_root(origin)?;
 
             if let Some(mint_id) = Self::council_mint() {
-                minting::Module::<T>::set_mint_capacity(mint_id, capacity)?;
+                minting::Module::<T>::set_mint_capacity(mint_id, capacity).map_err(<&str>::from)?;
             } else {
                 Self::create_new_council_mint(capacity)?;
             }
         }
 
         /// Attempts to mint and transfer amount to destination account
+        #[weight = 10_000_000] // TODO: adjust weight
         fn spend_from_council_mint(origin, amount: minting::BalanceOf<T>, destination: T::AccountId) {
             ensure_root(origin)?;
 
             if let Some(mint_id) = Self::council_mint() {
-                minting::Module::<T>::transfer_tokens(mint_id, amount, &destination)?;
+                minting::Module::<T>::transfer_tokens(mint_id, amount, &destination)
+                    .map_err(<&str>::from)?;
             } else {
-                return Err("CouncilHasNoMint")
+                return Err("CouncilHasNoMint".into());
             }
         }
 
         /// Sets the council rewards which is only applied on new council being elected.
+        #[weight = 10_000_000] // TODO: adjust weight
         fn set_council_rewards(
             origin,
             amount_per_payout: minting::BalanceOf<T>,
@@ -282,10 +292,11 @@ decl_module! {
 mod tests {
     use super::*;
     use crate::mock::*;
-    use srml_support::*;
+    use crate::DispatchResult;
+    use frame_support::*;
 
-    fn add_council_member_as_root(account: <Test as system::Trait>::AccountId) -> dispatch::Result {
-        Council::add_council_member(system::RawOrigin::Root.into(), account)
+    fn add_council_member_as_root(account: <Test as system::Trait>::AccountId) -> DispatchResult {
+        Council::add_council_member(system::RawOrigin::Root.into(), account).map_err(|e| e.into())
     }
 
     #[test]
@@ -367,9 +378,9 @@ mod tests {
             assert!(Council::is_councilor(&6));
             assert!(Council::is_councilor(&7));
 
-            assert!(RewardRelationships::<Test>::exists(&5));
-            assert!(RewardRelationships::<Test>::exists(&6));
-            assert!(RewardRelationships::<Test>::exists(&7));
+            assert!(RewardRelationships::<Test>::contains_key(&5));
+            assert!(RewardRelationships::<Test>::contains_key(&6));
+            assert!(RewardRelationships::<Test>::contains_key(&7));
         });
     }
 }

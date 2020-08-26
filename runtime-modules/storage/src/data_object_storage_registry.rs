@@ -23,18 +23,20 @@
 //#![warn(missing_docs)]
 
 use codec::{Codec, Decode, Encode};
-use rstd::prelude::*;
-use sr_primitives::traits::{MaybeSerialize, Member, SimpleArithmetic};
-use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use frame_support::dispatch::DispatchResult;
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use sp_arithmetic::traits::BaseArithmetic;
+use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_std::vec::Vec;
 
 use crate::data_directory::{self, ContentIdExists};
 use crate::{StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};
 
-const DEFAULT_FIRST_RELATIONSHIP_ID: u32 = 1;
+const DEFAULT_FIRST_RELATIONSHIP_ID: u8 = 1;
 
 /// The _Data object storage registry_ main _Trait_.
 pub trait Trait:
-    timestamp::Trait
+    pallet_timestamp::Trait
     + system::Trait
     + data_directory::Trait
     + working_group::Trait<StorageWorkingGroupInstance>
@@ -45,7 +47,7 @@ pub trait Trait:
     /// Type for data object storage relationship id
     type DataObjectStorageRelationshipId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -58,7 +60,7 @@ pub trait Trait:
 
 decl_error! {
     /// _Data object storage registry_ module predefined errors
-    pub enum Error {
+    pub enum Error for Module<T: Trait>{
         /// Content with this ID not found.
         CidNotFound,
 
@@ -70,25 +72,6 @@ decl_error! {
 
         /// Require root origin in extrinsics
         RequireRootOrigin,
-    }
-}
-
-impl From<system::Error> for Error {
-    fn from(error: system::Error) -> Self {
-        match error {
-            system::Error::Other(msg) => Error::Other(msg),
-            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
-            _ => Error::Other(error.into()),
-        }
-    }
-}
-
-impl From<working_group::Error> for Error {
-    fn from(error: working_group::Error) -> Self {
-        match error {
-            working_group::Error::Other(msg) => Error::Other(msg),
-            _ => Error::Other(error.into()),
-        }
     }
 }
 
@@ -109,17 +92,19 @@ decl_storage! {
     trait Store for Module<T: Trait> as DataObjectStorageRegistry {
 
         /// Defines first relationship id.
-        pub FirstRelationshipId get(first_relationship_id) config(first_relationship_id):
+        pub FirstRelationshipId get(fn first_relationship_id) config(first_relationship_id):
             T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
 
         /// Defines next relationship id.
-        pub NextRelationshipId get(next_relationship_id) build(|config: &GenesisConfig<T>| config.first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
+        pub NextRelationshipId get(fn next_relationship_id) build(|config: &GenesisConfig<T>| config.first_relationship_id): T::DataObjectStorageRelationshipId = T::DataObjectStorageRelationshipId::from(DEFAULT_FIRST_RELATIONSHIP_ID);
 
         /// Mapping of Data object types
-        pub Relationships get(relationships): map T::DataObjectStorageRelationshipId => Option<DataObjectStorageRelationship<T>>;
+        pub Relationships get(fn relationships): map hasher(blake2_128_concat)
+            T::DataObjectStorageRelationshipId => Option<DataObjectStorageRelationship<T>>;
 
         /// Keeps a list of storage relationships per content id.
-        pub RelationshipsByContentId get(relationships_by_content_id): map T::ContentId => Vec<T::DataObjectStorageRelationshipId>;
+        pub RelationshipsByContentId get(fn relationships_by_content_id): map hasher(blake2_128_concat)
+            T::ContentId => Vec<T::DataObjectStorageRelationshipId>;
     }
 }
 
@@ -152,16 +137,17 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Predefined errors.
-        type Error = Error;
+        type Error = Error<T>;
 
         /// Add storage provider-to-content relationship. The storage provider should be registered
         /// in the storage working group.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_relationship(origin, storage_provider_id: StorageProviderId<T>, cid: T::ContentId) {
             // Origin should match storage provider.
             <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
             // Content ID must exist
-            ensure!(T::ContentIdExists::has_content(&cid), Error::CidNotFound);
+            ensure!(T::ContentIdExists::has_content(&cid), Error::<T>::CidNotFound);
 
             // Create new ID, data.
             let new_id = Self::next_relationship_id();
@@ -194,6 +180,7 @@ decl_module! {
 
         /// Activates storage provider-to-content relationship. The storage provider should be registered
         /// in the storage working group. A storage provider may flip their own ready state, but nobody else.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn set_relationship_ready(
             origin,
             storage_provider_id: StorageProviderId<T>,
@@ -204,6 +191,7 @@ decl_module! {
 
         /// Deactivates storage provider-to-content relationship. The storage provider should be registered
         /// in the storage working group. A storage provider may flip their own ready state, but nobody else.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn unset_relationship_ready(
             origin,
             storage_provider_id: StorageProviderId<T>,
@@ -220,16 +208,16 @@ impl<T: Trait> Module<T> {
         storage_provider_id: StorageProviderId<T>,
         id: T::DataObjectStorageRelationshipId,
         ready: bool,
-    ) -> Result<(), Error> {
+    ) -> DispatchResult {
         <StorageWorkingGroup<T>>::ensure_worker_signed(origin, &storage_provider_id)?;
 
         // For that, we need to fetch the identified DOSR
         let mut dosr =
-            Self::relationships(id).ok_or(Error::DataObjectStorageRelationshipNotFound)?;
+            Self::relationships(id).ok_or(Error::<T>::DataObjectStorageRelationshipNotFound)?;
 
         ensure!(
             dosr.storage_provider_id == storage_provider_id,
-            Error::OnlyStorageProviderMayClaimReady
+            Error::<T>::OnlyStorageProviderMayClaimReady
         );
 
         // Flip to ready

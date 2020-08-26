@@ -1,6 +1,6 @@
 use codec::{Decode, Encode};
-use runtime_primitives::traits::{SimpleArithmetic, Zero};
-use srml_support::ensure;
+use frame_support::ensure;
+use sp_arithmetic::traits::{BaseArithmetic, Zero};
 
 #[derive(Encode, Decode, Copy, Clone, Debug, Eq, PartialEq)]
 pub enum AdjustCapacityBy<Balance: Zero> {
@@ -30,8 +30,8 @@ pub struct NextAdjustment<Balance: Zero, BlockNumber> {
 // We want Default trait on TokenMint so we can use it as value in StorageMap without needing to wrap it in an Option
 pub struct Mint<Balance, BlockNumber>
 where
-    Balance: Copy + SimpleArithmetic + Zero,
-    BlockNumber: Copy + SimpleArithmetic,
+    Balance: Copy + BaseArithmetic + Zero,
+    BlockNumber: Copy + BaseArithmetic,
 {
     capacity: Balance,
 
@@ -51,8 +51,8 @@ pub enum MintingError {
 
 impl<Balance, BlockNumber> Mint<Balance, BlockNumber>
 where
-    Balance: Copy + SimpleArithmetic + Zero,
-    BlockNumber: Copy + SimpleArithmetic,
+    Balance: Copy + BaseArithmetic + Zero,
+    BlockNumber: Copy + BaseArithmetic,
 {
     pub fn new(
         initial_capacity: Balance,

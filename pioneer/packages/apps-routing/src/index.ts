@@ -13,6 +13,7 @@ import explorer from './explorer';
 import extrinsics from './extrinsics';
 import js from './js';
 import settings from './settings';
+import staking from './staking';
 import storage from './storage';
 import sudo from './sudo';
 import toolbox from './toolbox';
@@ -33,10 +34,14 @@ export default function create (t: <T = string> (key: string, text: string, opti
       roles(t),
       election(t),
       proposals(t),
+      staking(t),
       null,
       transfer(t),
       accounts(t),
-      settings(t)
+      settings(t),
+      // Those are hidden
+      terms(t),
+      privacyPolicy(t)
     ]
     : [
       media(t),
@@ -44,6 +49,7 @@ export default function create (t: <T = string> (key: string, text: string, opti
       roles(t),
       election(t),
       proposals(t),
+      staking(t),
       null,
       transfer(t),
       accounts(t),

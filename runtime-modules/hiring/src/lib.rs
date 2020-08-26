@@ -18,31 +18,26 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-// Test feature dependencies
-#[cfg(all(any(test, feature = "test"), not(target_arch = "wasm32")))]
+// Test dependencies
+#[cfg(all(test, not(target_arch = "wasm32")))]
 use mockall::predicate::*;
-#[cfg(all(any(test, feature = "test"), not(target_arch = "wasm32")))]
+#[cfg(all(test, not(target_arch = "wasm32")))]
 use mockall::*;
 
-use stake::{InitiateUnstakingError, Stake, StakeActionError, StakingError, Trait as StakeTrait};
-
 use codec::Codec;
+use frame_support::storage::IterableStorageMap;
+use frame_support::traits::{Currency, Imbalance};
+use frame_support::{decl_module, decl_storage, ensure, Parameter};
+use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
+use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_std::cell::RefCell;
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::collections::btree_set::BTreeSet;
+use sp_std::iter::Iterator;
+use sp_std::rc::Rc;
+use sp_std::vec::Vec;
 
-use runtime_primitives::traits::Zero;
-use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
-
-use srml_support::traits::Currency;
-use srml_support::{decl_module, decl_storage, ensure, Parameter};
-
-use rstd::collections::btree_map::BTreeMap;
-use rstd::collections::btree_set::BTreeSet;
-use rstd::iter::Iterator;
-use rstd::prelude::*;
-
-use rstd::cell::RefCell;
-use rstd::rc::Rc;
-
-use crate::sr_api_hidden_includes_decl_storage::hidden_include::traits::Imbalance;
+use stake::{InitiateUnstakingError, Stake, StakeActionError, StakingError, Trait as StakeTrait};
 
 mod hiring;
 #[macro_use]
@@ -57,7 +52,7 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
     /// OpeningId type
     type OpeningId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -67,7 +62,7 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
     /// ApplicationId type
     type ApplicationId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -83,21 +78,23 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
 
 decl_storage! {
     trait Store for Module<T: Trait> as Hiring {
-
         /// Openings.
-        pub OpeningById get(opening_by_id): linked_map T::OpeningId => Opening<BalanceOf<T>, T::BlockNumber, T::ApplicationId>;
+        pub OpeningById get(fn opening_by_id): map hasher(blake2_128_concat)
+            T::OpeningId => Opening<BalanceOf<T>, T::BlockNumber, T::ApplicationId>;
 
         /// Identifier for next opening to be added.
-        pub NextOpeningId get(next_opening_id): T::OpeningId;
+        pub NextOpeningId get(fn next_opening_id): T::OpeningId;
 
         /// Applications
-        pub ApplicationById get(application_by_id): linked_map T::ApplicationId => Application<T::OpeningId, T::BlockNumber, T::StakeId>;
+        pub ApplicationById get(fn application_by_id): map hasher(blake2_128_concat)
+            T::ApplicationId => Application<T::OpeningId, T::BlockNumber, T::StakeId>;
 
         /// Identifier for next application to be added.
-        pub NextApplicationId get(next_application_id): T::ApplicationId;
+        pub NextApplicationId get(fn next_application_id): T::ApplicationId;
 
         /// Internal purpose of given stake, i.e. fro what application, and whether for the role or for the application.
-        pub ApplicationIdByStakingId get(stake_purpose_by_staking_id): linked_map T::StakeId => T::ApplicationId;
+        pub ApplicationIdByStakingId get(fn stake_purpose_by_staking_id): map hasher(blake2_128_concat)
+            T::StakeId => T::ApplicationId;
     }
 }
 
@@ -769,14 +766,14 @@ impl<T: Trait> Module<T> {
     /// The stake, with the given id, was unstaked.
     pub fn unstaked(stake_id: T::StakeId) -> UnstakedResult {
         // Ignore unstaked
-        if !<ApplicationIdByStakingId<T>>::exists(stake_id) {
+        if !<ApplicationIdByStakingId<T>>::contains_key(stake_id) {
             return UnstakedResult::StakeIdNonExistent;
         }
 
         // Get application
         let application_id = <ApplicationIdByStakingId<T>>::get(stake_id);
 
-        assert!(<ApplicationById<T>>::exists(application_id));
+        assert!(<ApplicationById<T>>::contains_key(application_id));
 
         let application = <ApplicationById<T>>::get(application_id);
 
@@ -1005,7 +1002,7 @@ impl<T: Trait> Module<T> {
             Opening<BalanceOf<T>, T::BlockNumber, T::ApplicationId>,
         ),
     > {
-        <OpeningById<T>>::enumerate().filter_map(move |(opening_id, opening)| {
+        <OpeningById<T>>::iter().filter_map(move |(opening_id, opening)| {
             if let hiring::OpeningStage::WaitingToBegin { begins_at_block } = opening.stage {
                 if begins_at_block == now {
                     Some((opening_id, opening))
@@ -1028,7 +1025,7 @@ impl<T: Trait> Module<T> {
             (BTreeSet<T::ApplicationId>, T::BlockNumber, T::BlockNumber),
         ),
     > {
-        <OpeningById<T>>::enumerate().filter_map(move |(opening_id, opening)| {
+        <OpeningById<T>>::iter().filter_map(move |(opening_id, opening)| {
             if let hiring::OpeningStage::Active {
                 ref stage,
                 ref applications_added,
@@ -1282,7 +1279,7 @@ impl<T: Trait> Module<T> {
 
         // MUST never already be a key for new stake, false means code is broken.
         // But should we do panic in runtime? Is there safer way?
-        assert!(!<ApplicationIdByStakingId<T>>::exists(new_stake_id));
+        assert!(!<ApplicationIdByStakingId<T>>::contains_key(new_stake_id));
 
         <ApplicationIdByStakingId<T>>::insert(new_stake_id, application_id);
 
@@ -1476,10 +1473,7 @@ impl<T: Trait> Module<T> {
  */
 
 /// Defines stake module interface
-#[cfg_attr(
-    all(any(test, feature = "test"), not(target_arch = "wasm32")),
-    automock
-)]
+#[cfg_attr(all(test, not(target_arch = "wasm32")), automock)]
 pub trait StakeHandler<T: StakeTrait> {
     /// Adds a new Stake which is NotStaked, created at given block, into stakes map.
     fn create_stake(&self) -> T::StakeId;
@@ -1536,7 +1530,7 @@ impl<T: Trait> StakeHandler<T> for HiringStakeHandler {
     }
 
     fn stake_exists(&self, stake_id: T::StakeId) -> bool {
-        <stake::Stakes<T>>::exists(stake_id)
+        <stake::Stakes<T>>::contains_key(stake_id)
     }
 
     fn get_stake(&self, stake_id: T::StakeId) -> Stake<T::BlockNumber, BalanceOf<T>, T::SlashId> {

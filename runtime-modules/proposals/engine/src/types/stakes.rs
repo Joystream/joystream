@@ -2,10 +2,10 @@
 
 use super::{BalanceOf, CurrencyOf, NegativeImbalance};
 use crate::Trait;
-use rstd::convert::From;
-use rstd::marker::PhantomData;
-use rstd::rc::Rc;
-use srml_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
+use frame_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
+use sp_std::convert::From;
+use sp_std::marker::PhantomData;
+use sp_std::rc::Rc;
 
 // Mocking dependencies for testing
 #[cfg(test)]
@@ -123,6 +123,7 @@ impl<T: Trait> StakeHandler<T> for DefaultStakeHandler<T> {
             WithdrawReasons::all(),
             ExistenceRequirement::AllowDeath,
         )
+        .map_err(<&str>::from)
     }
 }
 
