@@ -1,31 +1,17 @@
 import { EventRecord, Extrinsic } from '@polkadot/types/interfaces';
-import { Codec } from '@polkadot/types/types';
-import * as BN from 'bn.js';
-import { ChainExtrinsic } from './entities';
+import { EventParameters } from './interfaces';
 
-export interface EventParameters {
-  [key: string]: Codec;
-}
 
-export interface SubstrateEvent {
-  event_name: string;
-  event_method: string;
-  event_params: EventParameters;
-  index: BN;
-  block_number: BN;
-  extrinsic?: Extrinsic | ChainExtrinsic;
-}
-
-export default class QueryEvent implements SubstrateEvent {
+export default class QueryEvent {
   readonly event_record: EventRecord;
 
-  readonly block_number: BN;
+  readonly block_number: number;
 
   readonly extrinsic?: Extrinsic;
 
   readonly indexInBlock: number;
 
-  constructor(event_record: EventRecord, block_number: BN, indexInBlock: number, extrinsic?: Extrinsic) {
+  constructor(event_record: EventRecord, block_number: number, indexInBlock: number, extrinsic?: Extrinsic) {
     this.event_record = event_record;
     this.extrinsic = extrinsic;
     this.block_number = block_number;
@@ -56,8 +42,8 @@ export default class QueryEvent implements SubstrateEvent {
   }
 
   // Get event index as number
-  get index(): BN {
-    return new BN(this.event_record.event.index);
+  get index(): number {
+    return this.indexInBlock;
   }
 
   log(indent: number, logger: (str: string) => void): void {
