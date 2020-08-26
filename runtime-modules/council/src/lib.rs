@@ -7,8 +7,9 @@
 // used dependencies
 use codec::{Codec, Decode, Encode};
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, traits::Get, Parameter,
+    decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, Parameter,
 };
+use frame_support::traits::{Currency, Get};
 use sp_arithmetic::traits::{BaseArithmetic, One};
 use sp_runtime::traits::{MaybeSerialize, Member};
 
@@ -19,7 +20,7 @@ use system::ensure_signed;
 
 use referendum::Instance as ReferendumInstanceGeneric;
 use referendum::Trait as ReferendumTrait;
-use referendum::{StakeDistribution, VoteDistribution, ReferendumManager};
+use referendum::{ReferendumManager};
 
 // declared modules
 mod mock;
@@ -90,7 +91,7 @@ decl_storage! {
         pub CouncilMembers get(fn council_members) config(): Vec<Candidate>;
 
         /// Current candidates to council
-        pub Candidates get(fn candidates) config(): Vec<(Candidate, T::CurrencyBalance)>;
+        pub Candidates get(fn candidates) config(): Vec<(Candidate, Balance<T>)>;
     }
 }
 
@@ -165,6 +166,11 @@ impl<T: Trait> From<BadOrigin> for Error<T> {
         Error::<T>::BadOrigin
     }
 }
+
+/////////////////// Type aliases ///////////////////////////////////////////////
+
+type Balance<T> =
+    <<T as referendum::Trait<ReferendumInstance>>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
 /////////////////// Module definition and implementation ///////////////////////
 
@@ -253,7 +259,7 @@ decl_module! {
 
         /// Subscribe candidate
         #[weight = 10_000_000]
-        pub fn candidate(origin, stake: T::CurrencyBalance) -> Result<(), Error<T>> {
+        pub fn candidate(origin, stake: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
             let candidate = EnsureChecks::<T>::can_candidate(origin)?;
 
@@ -272,37 +278,39 @@ decl_module! {
 
         /// Unlock stake after voting (unless you are current council member).
         #[weight = 10_000_000]
-        pub fn unlock_stake(origin) -> Result<(), Error<T>> {
+        pub fn release_stake(origin) -> Result<(), Error<T>> {
             // ensure action can be started
             let elected_members = EnsureChecks::<T>::can_unlock_stake(origin)?;
 
+            
+/*
             //
             // == MUTATION SAFE ==
             //
 
             // update state
-            Mutations::<T>::unlock_stake(elected_members);
+            Mutations::<T>::release_stake(elected_members);
 
             // emit event
             Self::deposit_event(RawEvent::RevealingPeriodStarted());
-
+*/
             Ok(())
         }
 
         /////////////////// Referendum Wrap ////////////////////////////////////
         // start voting period
         #[weight = 10_000_000]
-        pub fn vote(origin, referendum_user_id: T::ReferendumUserId, commitment: T::Hash, stake_distribution: StakeDistribution<T::AccountId, T::CurrencyBalance>) -> Result<(), Error<T>> {
+        pub fn vote(origin, commitment: T::Hash, balance: Balance<T>) -> Result<(), Error<T>> {
             // call referendum vote extrinsic
-            <referendum::Module<T, ReferendumInstance>>::vote(origin, referendum_user_id, commitment, stake_distribution)?;
+            <referendum::Module<T, ReferendumInstance>>::vote(origin, commitment, balance)?;
 
             Ok(())
         }
 
         #[weight = 10_000_000]
-        pub fn reveal_vote(origin, referendum_user_id: T::ReferendumUserId, salt: Vec<u8>, vote_distribution: VoteDistribution<T::CurrencyBalance>) -> Result<(), Error<T>> {
+        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_index: u64) -> Result<(), Error<T>> {
             // call referendum reveal vote extrinsic
-            <referendum::Module<T, ReferendumInstance>>::reveal_vote(origin, referendum_user_id, salt, vote_distribution)?;
+            <referendum::Module<T, ReferendumInstance>>::reveal_vote(origin, salt, vote_option_index)?;
 
             Ok(())
         }
@@ -366,16 +374,13 @@ impl<T: Trait> Mutations<T> {
     }
 
     fn finalize_announcing_period(
-        candidates: &Vec<(Candidate, T::CurrencyBalance)>,
+        candidates: &Vec<(Candidate, Balance<T>)>,
     ) -> Result<(), Error<T>> {
-        let options = (0..candidates.len() as u64)
-            .map(|item| item.into())
-            .collect();
         let winning_target_count = T::CouncilSize::get();
 
         // IMPORTANT - because locking currency can fail it has to be the first mutation!
         <referendum::Module<T, ReferendumInstance> as ReferendumManager<T, ReferendumInstance>>::start_referendum(
-            options,
+            candidates.len() as u64,
             winning_target_count,
         )?;
 
@@ -394,7 +399,7 @@ impl<T: Trait> Mutations<T> {
         CouncilMembers::mutate(|value| *value = elected_members.clone());
     }
 
-    fn candidate(candidate: &Candidate, stake: &T::CurrencyBalance) -> () {
+    fn candidate(candidate: &Candidate, stake: &Balance<T>) -> () {
         Candidates::<T>::mutate(|current_candidates| {
             let mut inserted = false;
             for (i, c) in current_candidates.iter().enumerate() {
@@ -474,10 +479,10 @@ impl<T: Trait> EnsureChecks<T> {
 
         Ok(())
     }
-
+/*
     fn can_finalize_announcing_period(
         origin: T::Origin,
-    ) -> Result<Vec<(Candidate, T::CurrencyBalance)>, Error<T>> {
+    ) -> Result<Vec<(Candidate, Balance<T>)>, Error<T>> {
         // ensure superuser requested action
         Self::ensure_super_user(origin)?;
 
@@ -485,7 +490,7 @@ impl<T: Trait> EnsureChecks<T> {
 
         Ok(candidates_info)
     }
-
+*/
     fn can_start_idle_period(origin: T::Origin) -> Result<Vec<Candidate>, Error<T>> {
         // ensure superuser requested action
         Self::ensure_super_user(origin)?;
@@ -511,7 +516,7 @@ impl<T: Trait> EnsureChecks<T> {
         Ok(candidate)
     }
 
-    fn can_unlock_stake(origin: T::Origin) -> Result<T::AccountId, Error<T>> {
+    fn can_release_stake(origin: T::Origin) -> Result<T::AccountId, Error<T>> {
         // ensure regular user requested action
         let account_id = Self::ensure_regular_user(origin)?;
 
