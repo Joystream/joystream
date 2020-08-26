@@ -43,9 +43,8 @@ Run
 $ hydra-cli scaffold
 ```
 and answer the prompts. The scaffolder will generate the following files:
-Typically, your cwd should look like this:
 
-```
+```text
 ├── .env
 ├── docker-compose.yml
 ├── docker
@@ -141,4 +140,4 @@ TYPE_REGISTER_FUNCTION=<register_type> # name of the function that will called f
 
 ## Examples
 
-Check out [sample projects](https://github.com/dzhelezov/joystream/tree/qnode_dzlzv_publish/query-node/examples) for inspiration!
+Check out [sample projects](https://github.com/Joystream/joystream/tree/query_node/query-node/examples) for inspiration!
