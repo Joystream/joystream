@@ -116,7 +116,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
       channelNameNode={channelNameNode}
       showMeta={showMeta}
       metaNode={metaNode}
-      onClick={handleClick}
+      onClick={onClick && handleClick}
       className={className}
     />
   )
