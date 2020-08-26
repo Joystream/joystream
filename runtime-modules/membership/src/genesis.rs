@@ -1,4 +1,5 @@
-#![cfg(test)]
+// commented out to use in other crates
+// #![cfg(test)]
 
 use crate::genesis_member;
 use crate::{GenesisConfig, Trait};
@@ -38,15 +39,15 @@ impl<T: Trait> GenesisConfigBuilder<T> {
             default_paid_membership_fee: self.default_paid_membership_fee,
             members: self
                 .members
-                .into_iter()
-                .map(|(member_id, account_id)| genesis_member::Member {
-                    member_id,
+                .iter()
+                .map(|(ref member_id, ref account_id)| genesis_member::Member {
+                    member_id: *member_id,
                     root_account: account_id.clone(),
                     controller_account: account_id.clone(),
                     handle: "".into(),
                     avatar_uri: "".into(),
                     about: "".into(),
-                    registered_at_time: 0,
+                    registered_at_time: T::Moment::from(0),
                 })
                 .collect(),
         }

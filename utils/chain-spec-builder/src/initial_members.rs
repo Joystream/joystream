@@ -1,6 +1,6 @@
 use serde_json::Result;
 
-use joystream_node::chain_spec::{genesis_member, AccountId};
+use joystream_node::chain_spec::{genesis_member, AccountId, Moment};
 use sp_core::crypto::{AccountId32, Ss58Codec};
 
 use serde::{Deserialize, Serialize};
@@ -13,7 +13,7 @@ pub struct Member {
     pub handle: String,
     pub avatar_uri: String,
     pub about: String,
-    pub registered_at_time: u32,
+    pub registered_at_time: u64,
 }
 
 fn parse_members_json() -> Result<Vec<Member>> {
@@ -25,7 +25,7 @@ fn decode_address(address: String) -> AccountId32 {
     AccountId32::from_ss58check(address.as_ref()).expect("failed to decode account id")
 }
 
-pub fn initial_members() -> Vec<genesis_member::Member<u64, AccountId>> {
+pub fn initial_members() -> Vec<genesis_member::Member<u64, AccountId, Moment>> {
     let members = parse_members_json().expect("failed parsing members data");
 
     members
