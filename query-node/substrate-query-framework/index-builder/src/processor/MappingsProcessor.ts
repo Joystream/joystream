@@ -14,9 +14,13 @@ const debug = Debug('index-builder:processor');
 // most recently produced block. Set it to 199 to have round numbers by default
 const LOOK_AHEAD_BLOCKS = numberEnv('PROCESSOR_LOOK_AHEAD_BLOCKS') || 199;
 
+// minimal number of blocks the indexer must be ahead of the processor
+const MINIMAL_INDEXER_GAP = numberEnv('PROCESSOR_INDEXER_GAP') || 50;
+
 // Interval at which the processor pulls new blocks from the database
-// The interval is reasonably large by default
-const PROCESSOR_BLOCKS_POLL_INTERVAL = numberEnv('PROCESSOR_BLOCKS_POLL_INTERVAL') || 2000; // 2 seconds
+// The interval is reasonably large by default. The trade-off is the latency 
+// between the updates and the load to the database
+const PROCESSOR_BLOCKS_POLL_INTERVAL = numberEnv('PROCESSOR_BLOCKS_POLL_INTERVAL') || 1000; // 1 second
 
 export default class MappingsProcessor {
   private _processing_pack!: QueryEventProcessingPack;
@@ -113,7 +117,7 @@ export default class MappingsProcessor {
       // when to resolve
       () => {
         debug(`Indexer head: ${this._indexer.indexerHead.toString()}, Processor head: ${this._blockToProcessNext.toString()}`);
-        return this._blockToProcessNext <= this._indexer.indexerHead
+        return (this._indexer.indexerHead - this._blockToProcessNext) >= MINIMAL_INDEXER_GAP
       },
       //exit condition
       () => !this._started,
