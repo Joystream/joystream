@@ -1,5 +1,4 @@
 import { QueryEventProcessingPack, SavedEntityEvent, makeDatabaseManager, IndexBuilder, SubstrateEvent } from '..';
-import * as BN from 'bn.js';
 import { Codec } from '@polkadot/types/types';
 import Debug from 'debug';
 import { getRepository, QueryRunner, Between, In } from 'typeorm';

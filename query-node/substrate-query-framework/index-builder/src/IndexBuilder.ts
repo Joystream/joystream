@@ -1,7 +1,6 @@
 // @ts-check
 
 import { getConnection } from 'typeorm';
-import * as BN from 'bn.js';
 
 import {
   QueryBlockProducer,
@@ -22,7 +21,7 @@ export default class IndexBuilder {
   private _producer: QueryBlockProducer;
   private _stopped = false;
 
-  private _indexerHead: BN = new BN(-1);
+  private _indexerHead = -1;
 
   // set containing the indexer block heights that are ahead 
   // of the current indexer head
@@ -38,30 +37,30 @@ export default class IndexBuilder {
     return new IndexBuilder(producer);
   }
 
-  async start(atBlock?: BN): Promise<void> {
+  async start(atBlock?: number): Promise<void> {
     debug('Spawned worker.');
 
     this._indexerHead = await this._restoreIndexerHead();
     debug(`Last indexed block in the database: ${this._indexerHead.toString()}`);
-    let startBlock = this._indexerHead.addn(1);
+    let startBlock = this._indexerHead + 1;
     
     if (atBlock) {
-      debug(`Got block height hint: ${atBlock.toString()}`);
-      if (this._indexerHead.gten(0) && process.env.FORCE_BLOCK_HEIGHT !== 'true') {
+      debug(`Got block height hint: ${atBlock}`);
+      if (this._indexerHead >= 0 && process.env.FORCE_BLOCK_HEIGHT !== 'true') {
         debug(
           `WARNING! The database contains indexed blocks.
-          The last indexed block height is ${this._indexerHead.toString()}. The indexer 
-          will continue from block ${this._indexerHead.toString()} ignoring the start 
+          The last indexed block height is ${this._indexerHead}. The indexer 
+          will continue from block ${this._indexerHead} ignoring the start 
           block height hint. Set the environment variable FORCE_BLOCK_HEIGHT to true 
-          if you want to start from ${atBlock.toString()} anyway.`
+          if you want to start from ${atBlock} anyway.`
         );
       } else {
-        startBlock = BN.max(startBlock, atBlock);
-        this._indexerHead = startBlock.addn(-1);
+        startBlock = Math.max(startBlock, atBlock);
+        this._indexerHead = startBlock - 1;
       }
     }
 
-    debug(`Starting the block indexer at block ${startBlock.toString()}`);
+    debug(`Starting the block indexer at block ${startBlock}`);
 
     await this._producer.start(startBlock);
 
@@ -82,7 +81,7 @@ export default class IndexBuilder {
   }
 
 
-  async _restoreIndexerHead(): Promise<BN> {
+  async _restoreIndexerHead(): Promise<number> {
     const qr = getConnection().createQueryRunner();
     // take the first block such that next one has not yet been saved
     const rawRslts = await qr.query(`
@@ -96,18 +95,18 @@ export default class IndexBuilder {
     ) as Array<any>; 
     
     if ((rawRslts === undefined) || (rawRslts.length === 0)) {
-      return new BN(-1);
+      return -1;
     }     
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     const blk = rawRslts[0].blk as number;
     console.debug(`Got blknum: ${JSON.stringify(blk, null, 2)}`);
     
-    return (blk) ? new BN(blk) : new BN(-1);
+    return (blk) ? blk : -1;
   }
 
-  _indexBlock(): (h: BN) => Promise<void> {
-    return async (h: BN) => {
+  _indexBlock(): (h: number) => Promise<void> {
+    return async (h: number) => {
       debug(`Processing block #${h.toString()}`);  
       const queryEventsBlock: QueryEventBlock = await this._producer.fetchBlock(h);
       
@@ -122,24 +121,24 @@ export default class IndexBuilder {
         debug(`Done block #${h.toString()}`);
       });
 
-      this._recentlyIndexedBlocks.add(h.toNumber());
+      this._recentlyIndexedBlocks.add(h);
       this._updateIndexerHead();
     }
   }
 
   private _updateIndexerHead(): void {
-    let nextHead = this._indexerHead.addn(1).toNumber();
-    debug(`Next indexer head: ${nextHead.toString()}`);
+    let nextHead = this._indexerHead + 1;
+    debug(`Next indexer head: ${nextHead}`);
     while (this._recentlyIndexedBlocks.has(nextHead)) {
-      this._indexerHead = new BN(nextHead);
-      debug(`Updated indexer head to ${this._indexerHead.toString()}`);
+      this._indexerHead = nextHead;
+      debug(`Updated indexer head to ${this._indexerHead}`);
       // remove from the set as we don't need to keep it anymore
       this._recentlyIndexedBlocks.delete(nextHead);
       nextHead++;
     }
   }
 
-  public get indexerHead(): BN {
+  public get indexerHead(): number {
     return this._indexerHead;
   }
   
