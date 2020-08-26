@@ -4,7 +4,7 @@ import { Codec } from '@polkadot/types/types';
 import Debug from 'debug';
 import { getRepository, QueryRunner, Between, In } from 'typeorm';
 import { doInTransaction } from '../db/helper';
-import { QueryEventEntity } from '../entities/QueryEventEntity';
+import { SubstrateEventEntity } from '../entities';
 import { waitFor } from '../utils/wait-for';
 
 const debug = Debug('index-builder:processor');
@@ -16,7 +16,7 @@ const LOOK_AHEAD_BLOCKS = 199;
 
 export default class MappingsProcessor {
   private _processing_pack!: QueryEventProcessingPack;
-  private _blockToProcessNext!: BN;
+  private _blockToProcessNext!: number;
   
   private _indexer!: IndexBuilder;
   private _started = false;
@@ -33,10 +33,10 @@ export default class MappingsProcessor {
 
 
 
-  async start(atBlock?: BN): Promise<void> { 
+  async start(atBlock?: number): Promise<void> { 
     debug('Spawned the processor');
 
-    this._blockToProcessNext = new BN(0); // default
+    this._blockToProcessNext = 0; // default
 
     if (atBlock) {
       debug(`Got block height hint: ${atBlock.toString()}`);
@@ -47,7 +47,7 @@ export default class MappingsProcessor {
 
     if (lastProcessedEvent) {
       debug(`Found the most recent processed event at block ${lastProcessedEvent.blockNumber.toString()}`);
-      this._blockToProcessNext = lastProcessedEvent?.blockNumber.addn(1);
+      this._blockToProcessNext = lastProcessedEvent?.blockNumber + 1;
     }
 
     if (atBlock && lastProcessedEvent) {
@@ -82,15 +82,15 @@ export default class MappingsProcessor {
     this._started = false;
   }
 
-  async * _streamEventsToProcess(): AsyncGenerator<QueryEventEntity[]> {
+  async * _streamEventsToProcess(): AsyncGenerator<SubstrateEventEntity[]> {
     while (this._started) {
       await this.waitForIndexerHead();
       // scan up to the indexer head or a big chunk whatever is closer
-      const upperBound = BN.min(this._blockToProcessNext.addn(LOOK_AHEAD_BLOCKS), this._indexer.indexerHead);
-      yield await getRepository(QueryEventEntity).find({ 
+      const upperBound = Math.min(this._blockToProcessNext + LOOK_AHEAD_BLOCKS, this._indexer.indexerHead);
+      yield await getRepository(SubstrateEventEntity).find({ 
         relations: ["extrinsic"],
         where: {
-          blockNumber: Between(this._blockToProcessNext.toNumber(), upperBound.toNumber()),
+          blockNumber: Between(this._blockToProcessNext, upperBound),
           method: In(Object.keys(this._processing_pack)),
         },
         order: {
@@ -98,7 +98,7 @@ export default class MappingsProcessor {
           index: 'ASC'
         }
       })
-      this._blockToProcessNext = upperBound.addn(1);
+      this._blockToProcessNext = upperBound + 1;
     }
     debug(`The processor has been stopped`);
   }
@@ -109,14 +109,14 @@ export default class MappingsProcessor {
       // when to resolve
       () => {
         debug(`Indexer head: ${this._indexer.indexerHead.toString()}, Processor head: ${this._blockToProcessNext.toString()}`);
-        return this._blockToProcessNext.lte(this._indexer.indexerHead)
+        return this._blockToProcessNext <= this._indexer.indexerHead
       },
       //exit condition
       () => !this._started )
     
   }
 
-  private convert(qee: QueryEventEntity): SubstrateEvent {
+  private convert(qee: SubstrateEventEntity): SubstrateEvent {
     const params: { [key: string]: Codec } = {};
     qee.params.map((p) => {
       params[p.type] = (p.value as unknown) as Codec;
@@ -125,17 +125,17 @@ export default class MappingsProcessor {
       event_name: qee.name,
       event_method: qee.method,
       event_params: params,
-      index: new BN(qee.index),
-      block_number: new BN(qee.blockNumber),
+      index: qee.index,
+      block_number: qee.blockNumber,
       extrinsic: qee.extrinsic
     } as SubstrateEvent;
   }
 
-  async _onQueryEventBlock(query_event_block: QueryEventEntity[]): Promise<void> {
+  async _onQueryEventBlock(query_event_block: SubstrateEventEntity[]): Promise<void> {
     //debug(`Yay, block producer at height: #${query_event_block.block_number.toString()}`);
 
     await doInTransaction(async (queryRunner: QueryRunner) => {
-      await asyncForEach(query_event_block, async (query_event: QueryEventEntity) => {
+      await asyncForEach(query_event_block, async (query_event: SubstrateEventEntity) => {
       
         debug(`Processing event ${query_event.name}, 
           method: ${query_event.method}, 
@@ -147,11 +147,11 @@ export default class MappingsProcessor {
     
         await this._processing_pack[query_event.method](makeDatabaseManager(queryRunner.manager), this.convert(query_event));
         await SavedEntityEvent.update(({
-          block_number: new BN(query_event.blockNumber),
+          block_number: query_event.blockNumber,
           event_name: query_event.name,
           event_method: query_event.method,
           event_params: {},
-          index: new BN(query_event.index)
+          index: query_event.index
         }) as SubstrateEvent, queryRunner.manager);
   
       });
