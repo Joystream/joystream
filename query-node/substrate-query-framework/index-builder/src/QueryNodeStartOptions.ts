@@ -1,4 +1,3 @@
-import * as BN from 'bn.js';
 import { QueryEventProcessingPack } from '.';
 import { BootstrapPack } from './bootstrap';
 
@@ -13,5 +12,5 @@ export interface QueryNodeStartUpOptions {
   typeRegistrator?: () => void;
 
   // Block number that indexer will start from, default is 0
-  atBlock?: BN;
+  atBlock?: number;
 }
