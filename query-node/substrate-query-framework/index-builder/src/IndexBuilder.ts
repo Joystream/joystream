@@ -12,6 +12,7 @@ import Debug from 'debug';
 import { doInTransaction } from './db/helper';
 import { PooledExecutor } from './PooledExecutor';
 import { SubstrateEventEntity } from './entities';
+import { EVENT_TABLE_NAME } from './entities/SubstrateEventEntity';
 
 const debug = Debug('index-builder:indexer');
 
@@ -85,12 +86,12 @@ export default class IndexBuilder {
     const qr = getConnection().createQueryRunner();
     // take the first block such that next one has not yet been saved
     const rawRslts = await qr.query(`
-      SELECT MIN(stats.block_number) as blk FROM 
-        (SELECT q.id, q.block_number, n.id as next 
-          FROM query_event_entity q 
-          LEFT JOIN query_event_entity n 
-          ON q.block_number + 1 = n.block_number) stats 
-      WHERE stats.next is NULL`
+      SELECT MIN(events.block_number) as head FROM 
+        (SELECT event.id, event.block_number, next_block_event.id as next_block_id 
+          FROM ${EVENT_TABLE_NAME} event 
+          LEFT JOIN ${EVENT_TABLE_NAME} next_block_event
+          ON event.block_number + 1 = next_block_event.block_number) events 
+      WHERE events.next_block_id is NULL`
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ) as Array<any>; 
     
@@ -99,10 +100,10 @@ export default class IndexBuilder {
     }     
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const blk = rawRslts[0].blk as number;
-    console.debug(`Got blknum: ${JSON.stringify(blk, null, 2)}`);
+    const head = rawRslts[0].head as number;
+    console.debug(`Got blknum: ${JSON.stringify(head, null, 2)}`);
     
-    return (blk) ? blk : -1;
+    return (head) ? head : -1;
   }
 
   _indexBlock(): (h: number) => Promise<void> {

@@ -6,9 +6,10 @@ import { NumericTransformer } from '../db/entities';
 import { ExtrinsicArg, SubstrateExtrinsic } from '../interfaces';
 import { SubstrateEventEntity } from './SubstrateEventEntity';
 
+export const EXTRINSIC_TABLE_NAME = 'substrate_extrinsic'
 
 @Entity({
-  name: 'substrate_extrinsic'
+  name: EXTRINSIC_TABLE_NAME
 })
 export class SubstrateExtrinsicEntity implements SubstrateExtrinsic {
   @PrimaryGeneratedColumn()

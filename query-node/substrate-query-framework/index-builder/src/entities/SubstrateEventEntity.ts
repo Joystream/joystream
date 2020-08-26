@@ -8,6 +8,8 @@ import { SubstrateExtrinsicEntity } from './SubstrateExtrinsicEntity';
 
 const debug = Debug('index-builder:QueryEventEntity');
 
+export const EVENT_TABLE_NAME = 'substrate_event'
+
 export interface EventParam {
   type: string;
   name: string;
@@ -16,7 +18,7 @@ export interface EventParam {
 
 
 @Entity({
-  name: "substrate_event"
+  name: EVENT_TABLE_NAME
 })
 export class SubstrateEventEntity {
   @PrimaryColumn()
@@ -65,10 +67,10 @@ export class SubstrateEventEntity {
     _entity.blockNumber = q.block_number;
     _entity.index = q.indexInBlock;
     _entity.id = `${q.block_number.toString()}-${q.indexInBlock.toString()}`;
-    _entity.method = q.event_record.event.method;
+    _entity.method = q.event_record.event.method || 'NO_METHOD';
     _entity.name = q.event_name;
     _entity.phase = q.event_record.phase.toJSON();
-    _entity.section = q.event_record.event.section;
+    _entity.section = q.event_record.event.section || 'NO_SECTION';
     
     _entity.params = [];
 
@@ -92,8 +94,8 @@ export class SubstrateEventEntity {
       extr.blockNumber = q.block_number;
       extr.signature = e.signature.toString();
       extr.signer = e.signer.toString();
-      extr.method = e.method.methodName;
-      extr.section = e.method.sectionName;
+      extr.method = e.method.methodName || 'NO_METHOD';
+      extr.section = e.method.sectionName || 'NO_SECTION';
       extr.meta = e.meta.toJSON();
       extr.hash = e.hash.toString();
       extr.isSigned = e.isSigned
