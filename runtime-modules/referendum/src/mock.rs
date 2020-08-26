@@ -2,24 +2,23 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Error, Instance, Module, RawEvent, ReferendumManager, ReferendumResult, ReferendumStage,
-    ReferendumStageRevealing, ReferendumStageVoting, SealedVote, Stage, Trait, Votes, CurrentCycle,
-    Balance,
+    Balance, CurrentCycle, Error, Instance, Module, RawEvent, ReferendumManager, ReferendumResult,
+    ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, SealedVote, Stage, Trait,
+    Votes,
 };
 
-use rand::Rng;
-use sp_core::H256;
 use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
 use frame_support::{
-    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StoragePrefixedMap,
-    StorageValue,
+    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
 };
+use pallet_balances;
+use rand::Rng;
+use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use pallet_balances;
 use std::cell::RefCell;
 use std::marker::PhantomData;
 use system::RawOrigin;
@@ -199,6 +198,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime, Instance0> {
         stage: ReferendumStage::default(),
         votes: vec![],
         current_cycle: 0,
+        previous_cycle_result: ReferendumResult::default(),
     }
 }
 
@@ -402,7 +402,6 @@ impl InstanceMocks<Runtime, Instance0> {
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Inactive,
         );
-        assert_eq!(Votes::<Runtime, Instance0>::iter_values().count(), 0,);
 
         // check event was emitted
         assert_eq!(
@@ -440,6 +439,7 @@ impl InstanceMocks<Runtime, Instance0> {
                 commitment,
                 cycle_id: CurrentCycle::<Instance0>::get(),
                 balance,
+                vote_for: None,
             },
         );
 
@@ -475,6 +475,30 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
             TestEvent::event_mod_Instance0(RawEvent::VoteRevealed(account_id, vote_option_index))
+        );
+    }
+
+    pub fn release_stake(
+        origin: OriginType<<Runtime as system::Trait>::AccountId>,
+        account_id: <Runtime as system::Trait>::AccountId,
+        expected_result: Result<(), Error<Runtime, Instance0>>,
+    ) -> () {
+        // check method returns expected result
+        assert_eq!(
+            Module::<Runtime, Instance0>::release_stake(
+                InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
+            ),
+            expected_result,
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        // check event was emitted
+        assert_eq!(
+            system::Module::<Runtime>::events().last().unwrap().event,
+            TestEvent::event_mod_Instance0(RawEvent::StakeReleased(account_id))
         );
     }
 }

@@ -10,16 +10,15 @@
 
 // used dependencies
 use codec::{Codec, Decode, Encode};
+use frame_support::traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReason};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, traits::Get, Parameter,
     StorageValue,
 };
-use frame_support::traits::{Currency, LockableCurrency, WithdrawReason, LockIdentifier};
 use sp_arithmetic::traits::{BaseArithmetic, One};
 use sp_runtime::traits::{MaybeSerialize, Member};
 use std::marker::PhantomData;
 use system::ensure_signed;
-
 
 // declared modules
 mod mock;
@@ -64,6 +63,7 @@ pub struct SealedVote<Hash, Currency> {
     commitment: Hash,
     cycle_id: u64,
     balance: Currency,
+    vote_for: Option<u64>,
 }
 
 /// Possible referendum outcomes.
@@ -109,7 +109,7 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
     type MaxReferendumOptions: Get<u64>;
 
     /// Currency for referendum staking.
-    type Currency: LockableCurrency<Self::AccountId, Moment=Self::BlockNumber>;
+    type Currency: LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
 
     /// Identifier for currency locks used for staking.
     type LockId: Get<LockIdentifier>;
@@ -158,6 +158,9 @@ decl_storage! {
 
         /// Index of the current referendum cycle.
         pub CurrentCycle get(fn current_cycle) config(): u64;
+
+        /// Last cycle winning option(s)
+        pub PreviousCycleResult get(fn previous_cycle_result) config(): ReferendumResult<u64, <T as Trait<I>>::VotePower>;
     }
 
     /* This might be needed in some cases
@@ -190,6 +193,9 @@ decl_event! {
 
         /// User revealed his vote
         VoteRevealed(AccountId, u64),
+
+        /// User released his stake
+        StakeReleased(AccountId),
     }
 }
 
@@ -234,6 +240,12 @@ decl_error! {
 
         /// Trying to reveal vote that was not casted
         NoVoteToReveal,
+
+        /// Invalid time to release the locked stake
+        InvalidTimeToRelease,
+
+        /// Trying to release not existing stake
+        NoStakeLocked,
     }
 }
 
@@ -251,7 +263,8 @@ impl<T: Trait<I>, I: Instance> From<BadOrigin> for Error<T, I> {
 
 /////////////////// Type aliases ///////////////////////////////////////////////
 
-type Balance<T, I> = <<T as Trait<I>>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+type Balance<T, I> =
+    <<T as Trait<I>>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
 /////////////////// Module definition and implementation ///////////////////////
 
@@ -302,8 +315,7 @@ decl_module! {
         /// Reveal a sealed vote in the referendum.
         #[weight = 10_000_000]
         pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_index: u64) -> Result<(), Error<T, I>> {
-            let cycle_id = CurrentCycle::<I>::get();
-            let (account_id, sealed_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_index, &cycle_id)?;
+            let (account_id, sealed_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_index)?;
 
             //
             // == MUTATION SAFE ==
@@ -314,6 +326,25 @@ decl_module! {
 
             // emit event
             Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_index));
+
+            Ok(())
+        }
+
+
+        /// Release a locked stake.
+        #[weight = 10_000_000]
+        pub fn release_stake(origin) -> Result<(), Error<T, I>> {
+            let account_id = EnsureChecks::<T, I>::can_release_stake(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // reveal the vote - it can return error when stake fails to unlock
+            Mutations::<T, I>::release_stake(&account_id);
+
+            // emit event
+            Self::deposit_event(RawEvent::StakeReleased(account_id));
 
             Ok(())
         }
@@ -392,8 +423,8 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
     ) -> T::Hash {
         let mut payload = account_id.encode();
         let mut mut_option_index = vote_option_index.encode();
-        let mut mut_salt = salt.encode();//.to_vec();
-        let mut mut_cycle_id = cycle_id.encode();//.to_vec();
+        let mut mut_salt = salt.encode(); //.to_vec();
+        let mut mut_cycle_id = cycle_id.encode(); //.to_vec();
 
         payload.append(&mut mut_option_index);
         payload.append(&mut mut_salt);
@@ -499,15 +530,16 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         let referendum_result = calculate_votes::<T, I>(revealing_stage);
 
         // reset referendum state
-        Self::reset_referendum();
+        Self::reset_referendum(&referendum_result);
 
         // return winning option
         referendum_result
     }
 
-    fn reset_referendum() {
+    fn reset_referendum(last_cycle_result: &ReferendumResult<u64, T::VotePower>) {
         Stage::<T, I>::put(ReferendumStage::Inactive);
-        Votes::<T, I>::remove_all();
+        CurrentCycle::<I>::put(CurrentCycle::<I>::get() + 1);
+        PreviousCycleResult::<T, I>::put(last_cycle_result);
     }
 
     /// Can return error when stake fails to lock
@@ -517,7 +549,12 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         balance: &Balance<T, I>,
     ) -> Result<(), Error<T, I>> {
         // lock stake amount
-        T::Currency::set_lock(T::LockId::get(), account_id, *balance, WithdrawReason::Transfer.into());
+        T::Currency::set_lock(
+            T::LockId::get(),
+            account_id,
+            *balance,
+            WithdrawReason::Transfer.into(),
+        );
 
         // store vote
         Votes::<T, I>::insert(
@@ -526,6 +563,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
                 commitment: *commitment,
                 balance: *balance,
                 cycle_id: CurrentCycle::<I>::get(),
+                vote_for: None,
             },
         );
 
@@ -537,9 +575,6 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         option_index: &u64,
         sealed_vote: &SealedVote<T::Hash, Balance<T, I>>,
     ) -> Result<(), Error<T, I>> {
-        // lock stake amount
-        T::Currency::remove_lock(T::LockId::get(), account_id);
-
         let distribute_vote =
             |stage_data: &mut ReferendumStageRevealing<T::BlockNumber, T::VotePower>| {
                 // calculate vote power
@@ -556,9 +591,17 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         });
 
         // remove user commitment to prevent repeated revealing
-        Votes::<T, I>::remove(account_id);
+        Votes::<T, I>::mutate(account_id, |vote| (*vote).vote_for = Some(*option_index));
 
         Ok(())
+    }
+
+    fn release_stake(account_id: &<T as system::Trait>::AccountId) {
+        // lock stake amount
+        T::Currency::remove_lock(T::LockId::get(), account_id);
+
+        // remove vote record
+        Votes::<T, I>::remove(account_id);
     }
 }
 
@@ -582,9 +625,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(account_id)
     }
 
-    fn ensure_regular_user(
-        origin: T::Origin,
-    ) -> Result<T::AccountId, Error<T, I>> {
+    fn ensure_regular_user(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
         let account_id = ensure_signed(origin)?;
 
         Ok(account_id)
@@ -621,10 +662,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(())
     }
 
-    fn can_vote(
-        origin: T::Origin,
-        balance: &Balance<T, I>,
-    ) -> Result<T::AccountId, Error<T, I>> {
+    fn can_vote(origin: T::Origin, balance: &Balance<T, I>) -> Result<T::AccountId, Error<T, I>> {
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;
 
@@ -665,14 +703,9 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         origin: T::Origin,
         salt: &[u8],
         vote_option_index: &u64,
-        cycle_id: &u64,
-    ) -> Result<
-        (
-            T::AccountId,
-            SealedVote<T::Hash, Balance<T, I>>,
-        ),
-        Error<T, I>,
-    > {
+    ) -> Result<(T::AccountId, SealedVote<T::Hash, Balance<T, I>>), Error<T, I>> {
+        let cycle_id = CurrentCycle::<I>::get();
+
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;
 
@@ -702,12 +735,80 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         let sealed_vote = Votes::<T, I>::get(&account_id);
 
+        // ensure vote was casted for the running referendum
+        if cycle_id != sealed_vote.cycle_id {
+            return Err(Error::InvalidVote);
+        }
+
         // ensure commitment corresponds to salt and vote option
-        let commitment = R::calculate_commitment(&account_id, salt, cycle_id, vote_option_index);
+        let commitment = R::calculate_commitment(&account_id, salt, &cycle_id, vote_option_index);
         if commitment != sealed_vote.commitment {
             return Err(Error::InvalidReveal);
         }
 
         Ok((account_id, sealed_vote))
+    }
+
+    fn can_release_stake(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
+        fn voted_for_winner_last_cycle<T: Trait<I>, I: Instance>(
+            last_cycle_result: ReferendumResult<u64, T::VotePower>,
+            option_voted_for: Option<u64>,
+        ) -> bool {
+            let voted_for = match option_voted_for {
+                Some(tmp_vote) => tmp_vote,
+                None => return false,
+            };
+
+            let previous_winners = match last_cycle_result {
+                ReferendumResult::Winners(tmp_winners) => tmp_winners,
+                ReferendumResult::ExtraWinners(tmp_winners) => tmp_winners,
+                ReferendumResult::NotEnoughWinners(tmp_winners) => tmp_winners,
+                ReferendumResult::NoVotesRevealed => vec![],
+            };
+
+            let voted_for_winner = previous_winners.iter().position(|item| item.0 == voted_for);
+
+            voted_for_winner.is_some()
+        }
+
+        let cycle_id = CurrentCycle::<I>::get();
+
+        // ensure superuser requested action
+        let account_id = Self::ensure_regular_user(origin)?;
+
+        // ensure there is some vote with locked stake
+        if !Votes::<T, I>::contains_key(&account_id) {
+            return Err(Error::NoStakeLocked);
+        }
+
+        let sealed_vote = Votes::<T, I>::get(&account_id);
+
+        // enable stake release only during
+        if cycle_id == sealed_vote.cycle_id {
+            match Stage::<T, I>::get() {
+                ReferendumStage::Voting(_) => Ok(()),
+                _ => Err(Error::InvalidTimeToRelease),
+            }?;
+        }
+
+        let previous_winners = PreviousCycleResult::<T, I>::get();
+
+        // enable unlocking stake locked in the last cycle only when option didn't win;
+        // or after the next inactive stage when voted for winning option
+        if cycle_id == sealed_vote.cycle_id + 1
+            && voted_for_winner_last_cycle::<T, I>(previous_winners, sealed_vote.vote_for)
+        {
+            match Stage::<T, I>::get() {
+                ReferendumStage::Inactive => Err(Error::InvalidTimeToRelease),
+                _ => Ok(()),
+            }?;
+        }
+
+        // eliminate possibility of unexpected cycle_id
+        if cycle_id < sealed_vote.cycle_id {
+            return Err(Error::InvalidTimeToRelease);
+        }
+
+        Ok(account_id)
     }
 }

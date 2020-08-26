@@ -115,13 +115,7 @@ fn voting() {
 
         Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
 
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            commitment,
-            stake,
-            Ok(()),
-        );
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
     });
 }
 
@@ -275,13 +269,7 @@ fn reveal() {
             winning_target_count,
             Ok(()),
         );
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            commitment,
-            stake,
-            Ok(()),
-        );
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(options, winning_target_count);
@@ -326,13 +314,7 @@ fn reveal_reveal_stage_not_running() {
             Err(Error::RevealingNotInProgress),
         );
 
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            commitment,
-            stake,
-            Ok(()),
-        );
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(options, winning_target_count);
@@ -398,13 +380,7 @@ fn reveal_invalid_vote() {
             winning_target_count,
             Ok(()),
         );
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            commitment,
-            stake,
-            Ok(()),
-        );
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(options, winning_target_count);
@@ -440,13 +416,7 @@ fn reveal_invalid_commitment_proof() {
             winning_target_count,
             Ok(()),
         );
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            commitment,
-            stake,
-            Ok(()),
-        );
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(options, winning_target_count);
@@ -484,13 +454,7 @@ fn finish_revealing_period() {
             winning_target_count,
             Ok(()),
         );
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            commitment,
-            stake,
-            Ok(()),
-        );
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(options, winning_target_count);
@@ -854,7 +818,70 @@ fn winners_multiple_not_enough() {
     });
 }
 
+/////////////////// Lifetime Releasing stake ///////////////////////////////////
+
+#[test]
+fn referendum_release_stake() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+        let options = 3;
+        let winning_target_count = 1;
+
+        let option_to_vote_for = 0;
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
+
+        Mocks::start_referendum_extrinsic(
+            origin.clone(),
+            options.clone(),
+            winning_target_count,
+            Ok(()),
+        );
+        Mocks::vote(
+            origin.clone(),
+            account_id,
+            commitment,
+            stake.clone(),
+            Ok(()),
+        );
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::check_voting_finished(options, winning_target_count);
+        Mocks::reveal_vote(
+            origin.clone(),
+            account_id,
+            salt,
+            option_to_vote_for.clone(),
+            Ok(()),
+        );
+        MockUtils::increase_block_number(reveal_stage_duration + 1);
+
+        Mocks::check_revealing_finished(Some(ReferendumResult::Winners(vec![(
+            option_to_vote_for,
+            1 * stake,
+        )])));
+
+        Mocks::release_stake(origin.clone(), account_id, Err(Error::InvalidTimeToRelease));
+
+        // since `account_id` voted for the winner, he can unlock stake only after inactive stage ends
+        Mocks::start_referendum_extrinsic(
+            origin.clone(),
+            options.clone(),
+            winning_target_count,
+            Ok(()),
+        );
+
+        Mocks::release_stake(origin.clone(), account_id, Ok(()));
+    });
+}
+
 /////////////////// ReferendumManager //////////////////////////////////////////
+
 #[test]
 fn referendum_manager_referendum_start() {
     let config = default_genesis_config();
