@@ -277,7 +277,15 @@ impl ExtBuilder {
 
         membership::GenesisConfig::<Test> {
             default_paid_membership_fee: 0,
-            members: vec![(1, "alice".into(), "".into(), "".into())],
+            members: vec![membership::genesis_member::Member {
+                member_id: 0,
+                root_account: 1,
+                controller_account: 1,
+                handle: "alice".into(),
+                avatar_uri: "".into(),
+                about: "".into(),
+                registered_at_time: 0,
+            }],
         }
         .assimilate_storage(&mut t)
         .unwrap();

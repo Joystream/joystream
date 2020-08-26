@@ -1,13 +1,13 @@
 #![cfg(test)]
 
-use common::currency::BalanceOf;
-
+use crate::genesis_member;
 use crate::{GenesisConfig, Trait};
+use common::currency::BalanceOf;
 
 /// Builder fo membership module genesis configuration.
 pub struct GenesisConfigBuilder<T: Trait> {
     default_paid_membership_fee: BalanceOf<T>,
-    members: Vec<T::AccountId>,
+    members: Vec<(T::MemberId, T::AccountId)>,
 }
 
 impl<T: Trait> Default for GenesisConfigBuilder<T> {
@@ -27,18 +27,27 @@ impl<T: Trait> GenesisConfigBuilder<T> {
         self.default_paid_membership_fee = default_paid_membership_fee;
         self
     }
-    pub fn members(mut self, members: Vec<T::AccountId>) -> Self {
+    pub fn members(mut self, members: Vec<(T::MemberId, T::AccountId)>) -> Self {
         self.members = members;
         self
     }
 
+    /// Construct GenesisConfig for mocked testing purposes only
     pub fn build(&self) -> GenesisConfig<T> {
         GenesisConfig::<T> {
             default_paid_membership_fee: self.default_paid_membership_fee,
             members: self
                 .members
-                .iter()
-                .map(|account_id| (account_id.clone(), "".into(), "".into(), "".into()))
+                .into_iter()
+                .map(|(member_id, account_id)| genesis_member::Member {
+                    member_id,
+                    root_account: account_id.clone(),
+                    controller_account: account_id.clone(),
+                    handle: "".into(),
+                    avatar_uri: "".into(),
+                    about: "".into(),
+                    registered_at_time: 0,
+                })
                 .collect(),
         }
     }

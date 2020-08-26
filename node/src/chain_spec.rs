@@ -37,7 +37,7 @@ use node_runtime::{
     StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 
-pub use node_runtime::{AccountId, GenesisConfig};
+pub use node_runtime::{genesis_member, AccountId, GenesisConfig};
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -127,6 +127,7 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
                         ],
                         crate::proposals_config::development(),
+                        vec![],
                     )
                 },
                 Vec::new(),
@@ -161,6 +162,7 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
                         ],
                         crate::proposals_config::development(),
+                        vec![],
                     )
                 },
                 Vec::new(),
@@ -202,6 +204,7 @@ pub fn testnet_genesis(
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     cpcp: node_runtime::ProposalsConfigParameters,
+    members: Vec<genesis_member::Member<u64, AccountId>>,
 ) -> GenesisConfig {
     const CENTS: Balance = 1;
     const DOLLARS: Balance = 100 * CENTS;
@@ -276,7 +279,7 @@ pub fn testnet_genesis(
         }),
         membership: Some(MembersConfig {
             default_paid_membership_fee: 100u128,
-            members: vec![],
+            members,
         }),
         forum: Some(crate::forum_config::from_serialized::create(root_key)),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {

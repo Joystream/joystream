@@ -15,7 +15,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod constants;
 mod integration;
-mod primitives;
+pub mod primitives;
 mod runtime_api;
 #[cfg(test)]
 mod tests; // Runtime integration tests
@@ -55,6 +55,7 @@ use storage::{data_directory, data_object_storage_registry, data_object_type_reg
 pub use common;
 pub use forum;
 pub use governance::election_params::ElectionParameters;
+pub use membership::genesis_member;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;

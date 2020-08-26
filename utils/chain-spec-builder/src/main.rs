@@ -36,6 +36,8 @@ use sp_core::{
     traits::BareCryptoStore,
 };
 
+mod initial_members;
+
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
 /// A utility to easily create a testnet chain spec definition with a given set
@@ -111,6 +113,7 @@ fn genesis_constructor(
         sudo_account.clone(),
         endowed_accounts.to_vec(),
         proposals_config::default(),
+        initial_members::initial_members(),
     )
 }
 
