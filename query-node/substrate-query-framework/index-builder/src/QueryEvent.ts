@@ -29,7 +29,7 @@ export default class QueryEvent implements SubstrateEvent {
   }
 
   get event_name(): string {
-    let event = this.event_record.event;
+    const event = this.event_record.event;
 
     return event.section + '.' + event.method;
   }
@@ -40,7 +40,7 @@ export default class QueryEvent implements SubstrateEvent {
 
   get event_params(): EventParameters {
     const { event } = this.event_record;
-    let params: EventParameters = {};
+    const params: EventParameters = {};
 
     // Event data can be Null(polkadot type)
     if (!event.data.length) return params;
@@ -65,7 +65,7 @@ export default class QueryEvent implements SubstrateEvent {
 
     logger(`\t\t\tParameters:`);
     event.data.forEach((data, index) => {
-      logger(`\t\t\t\t${event.typeDef[index]}: ${data.toString()}`);
+      logger(`\t\t\t\t${JSON.stringify(event.typeDef[index], null, 2)}: ${data.toString()}`);
     });
 
     logger(
@@ -77,7 +77,7 @@ export default class QueryEvent implements SubstrateEvent {
 
     if (this.extrinsic) {
       logger(`\t\t\t\tParameters:`);
-      this.extrinsic.args.forEach((arg, index) => {
+      this.extrinsic.args.forEach((arg) => {
         logger(`\t\t\t\t\t${arg.toRawType()}: ${arg.toString()}`);
       });
     }

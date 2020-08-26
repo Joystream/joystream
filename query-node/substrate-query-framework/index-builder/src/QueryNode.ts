@@ -14,8 +14,6 @@ export enum QueryNodeState {
   STOPPED,
 }
 
-const debug = require('debug')('index-builder:query-node');
-
 export default class QueryNode {
   // State of the node,
   private _state: QueryNodeState;
@@ -39,7 +37,7 @@ export default class QueryNode {
     this._atBlock = atBlock;
   }
 
-  static async create(options: QueryNodeStartUpOptions) {
+  static async create(options: QueryNodeStartUpOptions): Promise<QueryNode> {
     // TODO: Do we really need to do it like this?
     // Its pretty ugly, but the registrtion appears to be
     // accessing some sort of global state, and has to be done after
@@ -63,7 +61,7 @@ export default class QueryNode {
     return new QueryNode(provider, api, index_buider, atBlock);
   }
 
-  async start() {
+  async start(): Promise<void> {
     if (this._state != QueryNodeState.NOT_STARTED) throw new Error('Starting requires ');
 
     this._state = QueryNodeState.STARTING;
@@ -74,7 +72,7 @@ export default class QueryNode {
     this._state = QueryNodeState.STARTED;
   }
 
-  async stop() {
+  async stop(): Promise<void> {
     if (this._state != QueryNodeState.STARTED) throw new Error('Can only stop once fully started');
 
     this._state = QueryNodeState.STOPPING;
@@ -84,7 +82,7 @@ export default class QueryNode {
     this._state = QueryNodeState.STOPPED;
   }
 
-  get state() {
+  get state(): QueryNodeState {
     return this._state;
   }
 }

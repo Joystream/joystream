@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { FindOneOptions, DeepPartial, EntityManager } from 'typeorm';
 
 import * as helper from './helper';

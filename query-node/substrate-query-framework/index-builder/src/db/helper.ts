@@ -13,6 +13,7 @@ import { SnakeNamingStrategy } from './SnakeNamingStrategy';
  */
 export function fillRequiredWarthogFields<T>(entity: DeepPartial<T>): DeepPartial<T> {
   // Modifying an existing entity so do not add warthog fields
+  // eslint-disable-next-line no-prototype-builtins
   if (entity.hasOwnProperty('id')) return entity;
 
   const requiredFields = {

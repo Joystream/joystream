@@ -1,10 +1,14 @@
 import ISubstrateQueryService from './ISubstrateQueryService';
 import QueryEvent from './QueryEvent';
 import QueryEventBlock from './QueryEventBlock';
-import { Header, Extrinsic, EventRecord } from '@polkadot/types/interfaces';
+import { Header, Extrinsic } from '@polkadot/types/interfaces';
 import { EventEmitter } from 'events';
 import * as assert from 'assert';
 import * as BN from 'bn.js';
+
+import Debug from 'debug';
+import { UnsubscribePromise } from '@polkadot/api/types';
+
 
 const DEBUG_TOPIC = 'index-builder:producer';
 
@@ -23,7 +27,7 @@ const POLL_INTERVAL_MS = 100;
 // the period of time after which the API calls are failed by timeout.
 const FETCH_TIMEOUT_MS = 5000;
 
-var debug = require('debug')(DEBUG_TOPIC);
+const debug = Debug(DEBUG_TOPIC);
 
 export default class QueryBlockProducer extends EventEmitter {
   private _started: boolean;
@@ -34,7 +38,7 @@ export default class QueryBlockProducer extends EventEmitter {
 
   private readonly _query_service: ISubstrateQueryService;
 
-  private _new_heads_unsubscriber: () => void;
+  private _new_heads_unsubscriber: UnsubscribePromise | undefined;
 
   private _block_to_be_produced_next: BN;
 
@@ -55,7 +59,7 @@ export default class QueryBlockProducer extends EventEmitter {
     // TODO
     // need to set this up, when state is better, it
     // will be refactored
-    this._new_heads_unsubscriber = () => {};
+    this._new_heads_unsubscriber = undefined;
 
     this._block_to_be_produced_next = new BN(0);
     this._height_of_chain = new BN(0);
@@ -64,21 +68,16 @@ export default class QueryBlockProducer extends EventEmitter {
   }
 
   // TODO: We cannot assume first block has events... we need more robust logic.
-  async start(at_block?: BN, at_event?: BN) {
+  async start(at_block?: BN, at_event?: BN): Promise<void> {
     if (this._started) throw Error(`Cannot start when already started.`);
 
     // mark as started
     this._started = true;
 
     // Try to get initial header right away
-    this._height_of_chain = await this._query_service
-      .getFinalizedHead()
-      .then((hash) => {
-        return this._query_service.getHeader(hash);
-      })
-      .then((header) => {
-        return header.number.toBn();
-      });
+    const finalizedHeadHash = await this._query_service.getFinalizedHead();
+    const header = await this._query_service.getHeader(finalizedHeadHash);
+    this._height_of_chain = header.number.toBn() as BN;
 
     if (at_block) {
       this._block_to_be_produced_next = at_block;
@@ -92,33 +91,31 @@ export default class QueryBlockProducer extends EventEmitter {
     }
 
     //
-    this._new_heads_unsubscriber = await this._query_service.subscribeNewHeads((header) => {
+    this._new_heads_unsubscriber = this._query_service.subscribeNewHeads((header) => {
       this._OnNewHeads(header);
     });
 
-    debug(`Starting the block producer, next block: ${this._block_to_be_produced_next}`);
-    // Start producing blocks right away
-    if (!this._producing_blocks_blocks) await this._produce_blocks();
+    debug(`Starting the block producer, next block: ${this._block_to_be_produced_next.toString()}`);
   }
 
-  async stop() {
+  async stop(): Promise<void> {
     if (!this._started) throw new Error(`Cannot stop when not already started.`);
 
     // THIS IS VERY CRUDE, NEED TO MANAGE LOTS OF STUFF HERE!
-
-    (await this._new_heads_unsubscriber)();
-
+    if (this._new_heads_unsubscriber) {
+      (await this._new_heads_unsubscriber)();
+    }
+    
     this._started = false;
   }
 
-  private async _OnNewHeads(header: Header) {
+  private _OnNewHeads(header: Header) {
     assert(this._started, 'Has to be started to process new heads.');
 
-    this._height_of_chain = header.number.toBn();
+    this._height_of_chain = header.number.toBn() as BN;
 
-    debug(`New block found at height #${this._height_of_chain}`);
+    debug(`New block found at height #${this._height_of_chain.toString()}`);
 
-    if (!this._producing_blocks_blocks) await this._produce_blocks();
   }
 
   /*
@@ -126,8 +123,8 @@ export default class QueryBlockProducer extends EventEmitter {
    */
   private async _withTimeout<T>(promiseFn: Promise<T>, rejectMsg?: string): Promise<T> {
     // Create a promise that rejects in <ms> milliseconds
-    let timeoutPromise = new Promise((resolve, reject) => {
-      let id = setTimeout(() => {
+    const timeoutPromise = new Promise((resolve, reject) => {
+      const id = setTimeout(() => {
         clearTimeout(id);
         reject(`${rejectMsg || 'Execution time-out'}`);
       }, FETCH_TIMEOUT_MS)
@@ -137,7 +134,7 @@ export default class QueryBlockProducer extends EventEmitter {
     return Promise.race([
       promiseFn,
       timeoutPromise
-    ]).then(((x: any) =>  x as T));
+    ]).then(x => x as T);
   }
 
   /**
@@ -145,10 +142,10 @@ export default class QueryBlockProducer extends EventEmitter {
    * It can throw errors which should be handled by the top-level code 
    * (in this case _produce_block())
    */
-  private async _doBlockProduce() {
-    debug(`Fetching block #${this._block_to_be_produced_next}`);
+  private async _doBlockProduce(): Promise<QueryEventBlock> {
+    debug(`Fetching block #${this._block_to_be_produced_next.toString()}`);
 
-    let block_hash_of_target = await this._withTimeout(
+    const block_hash_of_target = await this._withTimeout(
          this._query_service.getBlockHash(this._block_to_be_produced_next.toString()),
         `Timeout: failed to fetch the block hash at height ${this._block_to_be_produced_next.toString()}`);
     
@@ -163,7 +160,7 @@ export default class QueryBlockProducer extends EventEmitter {
     debug(`\tRead ${records.length} events.`);
 
     let extrinsics_array: Extrinsic[] = [];
-    let signed_block = await this._withTimeout(
+    const signed_block = await this._withTimeout(
       this._query_service.getBlock(block_hash_of_target),
       `Timeout: failed to fetch the block ${this._block_to_be_produced_next.toString()}`);
 
@@ -171,18 +168,18 @@ export default class QueryBlockProducer extends EventEmitter {
 
     extrinsics_array = signed_block.block.extrinsics.toArray();
     let query_events: QueryEvent[] = records.map(
-      (record, index): QueryEvent => {
+      (record): QueryEvent => {
           // Extract the phase, event
         const { phase } = record;
 
           // Try to recover extrinsic: only possible if its right phase, and extrinsics arra is non-empty, the last constraint
           // is needed to avoid events from build config code in genesis, and possibly other cases.
-        let extrinsic =
+        const extrinsic =
           phase.isApplyExtrinsic && extrinsics_array.length
-            ? extrinsics_array[phase.asApplyExtrinsic.toBn()]
+            ? extrinsics_array[(phase.asApplyExtrinsic.toBn() as BN).toNumber()]
               : undefined;
 
-        let query_event = new QueryEvent(record, this._block_to_be_produced_next, extrinsic);
+        const query_event = new QueryEvent(record, this._block_to_be_produced_next, extrinsic);
 
           // Logging
         query_event.log(0, debug);
@@ -196,11 +193,10 @@ export default class QueryBlockProducer extends EventEmitter {
       query_events = query_events.filter((event) => event.index.gt(this._last_processed_event_index));
     }
 
-    let query_block = new QueryEventBlock(this._block_to_be_produced_next, query_events);
-
-    this.emit('QueryEventBlock', query_block);
-
-    debug(`\tEmitted query event block.`);
+    const query_block = new QueryEventBlock(this._block_to_be_produced_next, query_events);
+    //this.emit('QueryEventBlock', query_block);
+    debug(`Produced query event block.`);
+    return query_block;
   }
 
   private _resetBackOffTime() {
@@ -212,7 +208,34 @@ export default class QueryBlockProducer extends EventEmitter {
   }
 
 
-  private async _produce_blocks() {
+  private async checkHeightOrWait(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      let timeout: NodeJS.Timeout | undefined = undefined;   
+      const checkHeight = () => {
+        if (!this._started) {
+          if (timeout) {
+            clearTimeout(timeout);
+          }
+          reject("The block producer is stopped")
+          return;
+        }
+            
+        if (this._block_to_be_produced_next.lte(this._height_of_chain)) {
+          if (timeout) {
+            clearTimeout(timeout);
+          }
+          resolve()
+        } else {
+          debug(`Current chain height: ${this._height_of_chain.toString()}, block to be produced next: ${this._block_to_be_produced_next.toString()}`);
+          timeout = setTimeout(checkHeight, POLL_INTERVAL_MS);
+        }    
+
+      }
+      checkHeight();
+    });
+}
+
+  public async * blocks(): AsyncGenerator<QueryEventBlock> {
     if (!this._started) {
       throw new Error("The block producer is stopped")
     }
@@ -221,9 +244,11 @@ export default class QueryBlockProducer extends EventEmitter {
     this._producing_blocks_blocks = true;
 
     // Continue as long as we know there are outstanding blocks.
-    while (this._block_to_be_produced_next.lte(this._height_of_chain)) {
+    while (this._started) {
+      // Wait if we are already at the head of the chain
+      await this.checkHeightOrWait();
       try {
-        await this._doBlockProduce();
+        yield await this._doBlockProduce();
         // all went fine, so reset the back-off time
         this._resetBackOffTime();
         // and proceed to the next block
@@ -231,7 +256,7 @@ export default class QueryBlockProducer extends EventEmitter {
       
       } catch (e) {
         console.error(e);
-        debug(`An error occured while producting block ${this._block_to_be_produced_next}`);
+        debug(`An error occured while producting block ${this._block_to_be_produced_next.toString()}`);
         // waiting until the next retry
         debug(`Retrying after ${this._backOffTime} ms`);
         await new Promise((resolve)=>setTimeout(() => {

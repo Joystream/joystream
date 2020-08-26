@@ -7,8 +7,7 @@
       "start": "ts-node index.ts",
         "start:dev": "DEBUG=index-builder:* ts-node index.ts --bootstrap",
         "bootstrap": "ts-node index.ts --no-start --bootstrap",
-        "bootstrap:dev": "DEBUG=index-builder:* ts-node index.ts --no-start --bootstrap",
-        "postinstall": "rm -rf node_modules/index-builder/node_modules"
+        "bootstrap:dev": "DEBUG=index-builder:* ts-node index.ts --no-start --bootstrap"
     },
     "dependencies": {
       "@types/bn.js": "^4.11.6",

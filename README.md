@@ -1,6 +1,6 @@
-# Joystream [![Build Status](https://travis-ci.org/Joystream/joystream.svg?branch=master)](https://travis-ci.org/Joystream/joystream)
+# Joystream
 
-This is the main code reposity for all joystream software. It will  house the substrate chain project, the full node and runtime and all reusable substrate runtime modules that make up the joystream runtime. In addition to all front-end apps and infrastructure servers necessary for operating the network.
+This is the main code reposity for all joystream software. It will house the substrate chain project, the full node and runtime and all reusable substrate runtime modules that make up the joystream runtime. In addition to all front-end apps and infrastructure servers necessary for operating the network.
 
 The repository is currently just a cargo workspace, but eventually will also contain yarn workspaces, and possibly other project type workspaces.
 
@@ -12,22 +12,19 @@ More detailed build history on [Travis CI](https://travis-ci.org/github/Joystrea
 
 ## Overview
 
-The Joystream network builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional
-functionality to support the [various roles](https://www.joystream.org/roles) that can be entered into on the platform.
-
+The Joystream network builds on a pre-release version of [substrate v2.0](https://substrate.dev/) and adds additional functionality to support the [various roles](https://www.joystream.org/roles) that can be entered into on the platform.
 
 ## Validator
-![ Nodes for Joystream](./node/validator-node-banner.svg)
+
+![ Nodes for Joystream](.gitbook/assets/validator-node-banner.svg)
 
 Joystream node is the main server application that connects to the network, synchronizes the blockchain with other nodes and produces blocks if configured as a validator node.
 
 To setup a full node and validator review the [advanced guide from the helpdesk](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
 
-
-###  Pre-built Binaries
+### Pre-built Binaries
 
 The latest pre-built binaries can be downloaded from the [releases](https://github.com/Joystream/joystream/releases) page.
-
 
 ### Building from source
 
@@ -57,8 +54,8 @@ cargo run --release -- --chain ./rome-testnet.json
 
 The `rome-testnet.json` chain file can be obtained from the [releases page](https://github.com/Joystream/joystream/releases/tag/v6.8.0)
 
-
 ### Installing a release build
+
 This will install the executable `joystream-node` to your `~/.cargo/bin` folder, which you would normally have in your `$PATH` environment.
 
 ```bash
@@ -92,12 +89,11 @@ cargo test
 yarn test
 ```
 
-To run the integration tests with a different chain, you can omit step running the local development chain and set the node URL using `NODE_URL` environment variable.
-Proposal grace periods should be set to 0, otherwise proposal network tests will fail.
+To run the integration tests with a different chain, you can omit step running the local development chain and set the node URL using `NODE_URL` environment variable. Proposal grace periods should be set to 0, otherwise proposal network tests will fail.
 
 ### Rome-Constantinople migration network test
 
-Ensure Rome node is up and running, and node URL is set using `NODE_URL` environment variable (default value is `localhost:9944`).
+Ensure Rome node is up and running, and node URL is set using `NODE_URL` environment variable \(default value is `localhost:9944`\).
 
 ```bash
 yarn test-migration
@@ -105,31 +101,24 @@ yarn test-migration
 
 ## Joystream Runtime
 
-![Joystream Runtime](./runtime/runtime-banner.svg)
+![Joystream Runtime](.gitbook/assets/runtime-banner.svg)
 
-
-The runtime is the code that defines the consensus rules of the Joystream protocol.
-It is compiled to WASM and lives on chain.
-Joystream node execute the code's logic to validate transactions and blocks on the blockchain.
+The runtime is the code that defines the consensus rules of the Joystream protocol. It is compiled to WASM and lives on chain. Joystream node execute the code's logic to validate transactions and blocks on the blockchain.
 
 When building joystream-node as described abot with `cargo build --release`, in addition to the joystream-node binary being built the WASM blob artifact is produced in:
 
 `target/release/wbuild/joystream-node-runtime/joystream_node_runtime.compact.wasm`
-
 
 ### Deployment
 
 Deploying the compiled runtime on a live system can be done in one of two ways:
 
 1. Joystream runtime upgrade proposals which will be voted on by the council. When the Joystream platform is live, this will be the only way to upgrade the chain's runtime code.
-
-2. During development and testnet phases, we can send an extrinsic (transaction signed with the sudo key) invoking `system::setCode()`. This can be done either from the UI/extrinsics app, or directly with an admin script.
+2. During development and testnet phases, we can send an extrinsic \(transaction signed with the sudo key\) invoking `system::setCode()`. This can be done either from the UI/extrinsics app, or directly with an admin script.
 
 ### Versioning the runtime
 
-Versioning of the runtime is set in `runtime/src/lib.rs`
-For detailed information about how to set correct version numbers when developing a new runtime, [see this](https://github.com/Joystream/joystream/issues/1)
-
+Versioning of the runtime is set in `runtime/src/lib.rs` For detailed information about how to set correct version numbers when developing a new runtime, [see this](https://github.com/Joystream/joystream/issues/1)
 
 ## Coding style
 
@@ -143,13 +132,13 @@ rustup component add rustfmt
 
 Applying code formatting on all source files recursing subfolders:
 
-```
+```text
 cargo-fmt
 ```
 
 ## Contributing
 
-Please see our [contributing guidlines](./CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
+Please see our [contributing guidlines](https://github.com/dzhelezov/joystream/tree/f07cb27a73ec74292811648cee8a92d8fab3b6c9/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Authors
 
@@ -157,8 +146,9 @@ See also the list of [CONTRIBUTORS](https://github.com/Joystream/joystream/graph
 
 ## License
 
-This project is licensed under the GPLv3 License - see the [LICENSE](./LICENSE) file for details
+This project is licensed under the GPLv3 License - see the [LICENSE](https://github.com/dzhelezov/joystream/tree/f07cb27a73ec74292811648cee8a92d8fab3b6c9/LICENSE/README.md) file for details
 
 ## Acknowledgments
 
 Thanks to the whole [Parity Tech](https://www.parity.io/) team for making substrate and helping on riot chat with tips, suggestions, tutorials and answering all our questions during development.
+
