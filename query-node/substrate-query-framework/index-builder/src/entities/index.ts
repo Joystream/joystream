@@ -1,3 +1,3 @@
-export { QueryEventEntity } from './QueryEventEntity';
-export { ChainExtrinsic } from './ChainExtrinsic';
+export { SubstrateEventEntity } from './SubstrateEventEntity';
+export { SubstrateExtrinsicEntity } from './SubstrateExtrinsicEntity';
 

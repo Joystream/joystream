@@ -1,17 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToOne } from 'typeorm';
 import { JsonTransformer } from '@anchan828/typeorm-transformers';
-import { AnyJson } from '../utils/type-helpers';
+import { AnyJson } from '../interfaces/json-types';
 import * as BN from 'bn.js';
 import { NumericTransformer } from '../db/entities';
+import { ExtrinsicArg, SubstrateExtrinsic } from '../interfaces';
+import { SubstrateEventEntity } from './SubstrateEventEntity';
 
-export interface ExtrinsicParam {
-  type: string;
-  name: string;
-  value: AnyJson;
-}
 
-@Entity()
-export class ChainExtrinsic {
+@Entity({
+  name: 'substrate_extrinsic'
+})
+export class SubstrateExtrinsicEntity implements SubstrateExtrinsic {
   @PrimaryGeneratedColumn()
   id!: number;       
   
@@ -43,9 +42,9 @@ export class ChainExtrinsic {
   
   @Column({ 
     type: 'jsonb', 
-    transformer: new JsonTransformer<ExtrinsicParam[]>([]), 
+    transformer: new JsonTransformer<ExtrinsicArg[]>([]), 
   })     
-  params!: ExtrinsicParam[];
+  args!: ExtrinsicArg[];
   
   @Column()      
   signer!: string;         
@@ -67,5 +66,8 @@ export class ChainExtrinsic {
   
   @Column()      
   isSigned!: boolean;  
+
+  @OneToOne(() => SubstrateEventEntity, (event: SubstrateEventEntity) => event.extrinsic) // specify inverse side as a second parameter
+  event!: SubstrateEventEntity;
   
 }

@@ -1,18 +1,12 @@
 import { Entity, Column, JoinColumn, OneToOne, PrimaryColumn } from 'typeorm';
-import { AnyJson } from '../utils/type-helpers';
+import { AnyJson } from '../interfaces/json-types';
 import { JsonTransformer } from '@anchan828/typeorm-transformers';
 import { QueryEvent } from '..';
 import * as BN from 'bn.js';
-
-
 import Debug from 'debug';
-import { ChainExtrinsic } from './ChainExtrinsic';
-const debug = Debug('index-builder:QueryEventEntity');
+import { SubstrateExtrinsicEntity } from './SubstrateExtrinsicEntity';
 
-export interface ExtrinsicArg {
-  type: string;
-  value: AnyJson;
-}
+const debug = Debug('index-builder:QueryEventEntity');
 
 export interface EventParam {
   type: string;
@@ -20,20 +14,11 @@ export interface EventParam {
   value: AnyJson;
 }
 
-export interface ExtrinsicJson {
-  methodName: string;
-  section: string;
-  meta: AnyJson;
-  signer: string;
-  args: ExtrinsicArg[];
-  signature: string;
-  hash: string;
-  tip: string;
-  argsNo: number;
-}
 
-@Entity()
-export class QueryEventEntity {
+@Entity({
+  name: "substrate_event"
+})
+export class SubstrateEventEntity {
   @PrimaryColumn()
   id!: string;   
 
@@ -67,17 +52,17 @@ export class QueryEventEntity {
   params!: EventParam[];
 
  
-  @OneToOne(() => ChainExtrinsic, {
+  @OneToOne(() => SubstrateExtrinsicEntity, (e: SubstrateExtrinsicEntity) => e.event, {
     cascade: true,
-    nullable: true
+    nullable: true,
   })
   @JoinColumn()
-  extrinsic?: ChainExtrinsic;
+  extrinsic?: SubstrateExtrinsicEntity;
 
-  static fromQueryEvent(q: QueryEvent): QueryEventEntity {
-    const _entity =  new QueryEventEntity();
+  static fromQueryEvent(q: QueryEvent): SubstrateEventEntity {
+    const _entity =  new SubstrateEventEntity();
     
-    _entity.blockNumber = q.block_number.toNumber();
+    _entity.blockNumber = q.block_number;
     _entity.index = q.indexInBlock;
     _entity.id = `${q.block_number.toString()}-${q.indexInBlock.toString()}`;
     _entity.method = q.event_record.event.method;
@@ -101,12 +86,10 @@ export class QueryEventEntity {
 
     if (q.extrinsic) {
       const e = q.extrinsic;
-      const extr = new ChainExtrinsic();
+      const extr = new SubstrateExtrinsicEntity();
       _entity.extrinsic = extr;
       
-      new ChainExtrinsic();
-      
-      extr.blockNumber = q.block_number.toNumber();
+      extr.blockNumber = q.block_number;
       extr.signature = e.signature.toString();
       extr.signer = e.signer.toString();
       extr.method = e.method.methodName;
@@ -119,10 +102,10 @@ export class QueryEventEntity {
       extr.nonce = e.nonce.toNumber();
       extr.era = e.era.toJSON();
       
-      extr.params = []
+      extr.args = []
       
       e.method.args.forEach((data, index) => {
-        extr.params.push({
+        extr.args.push({
           type: data.toRawType(),
           value: data.toJSON(),
           name: e.meta.args[index].name.toString()
