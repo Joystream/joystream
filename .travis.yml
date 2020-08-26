@@ -9,8 +9,7 @@ language: rust
 # one is embedded in the binary)
 # cache: cargo
 
-rust:
-  - stable
+rust: stable
 
 # Skip Rust build in a pull request if no rust project files were modified
 before_install:
@@ -25,8 +24,8 @@ before_install:
     fi
 
 install:
-  - rustup install nightly
-  - rustup target add wasm32-unknown-unknown --toolchain nightly
+  - rustup install nightly-2020-05-23
+  - rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-23
   # travis installs rust using rustup with the "minimal" profile so these tools are not installed by default
   - rustup component add rustfmt
   - rustup component add clippy
@@ -36,8 +35,7 @@ before_script:
 
 script:
   # we set release as build type for all steps to benefit from already compiled packages in prior steps
-  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release -- -D warnings
-  - BUILD_DUMMY_WASM_BINARY=1 cargo test --release
-  - TRIGGER_WASM_BUILD=1 cargo build --release
-  - ls -l ./target/release/wbuild/joystream-node-runtime/
-  - ./target/release/joystream-node --version
+  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --target=${TARGET} -- -D warnings
+  - BUILD_DUMMY_WASM_BINARY=1 cargo test --release --verbose --all --target=${TARGET}
+  - TRIGGER_WASM_BUILD=1 WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release --target=${TARGET} -p joystream-node
+  - ls -l ./target/${TARGET}/release/wbuild/joystream-node-runtime/
