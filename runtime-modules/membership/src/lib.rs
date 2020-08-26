@@ -220,22 +220,23 @@ decl_storage! {
         config(members) : Vec<genesis_member::Member<T::MemberId, T::AccountId, T::Moment>>;
         build(|config: &GenesisConfig<T>| {
             for member in &config.members {
-                let user_info = ValidatedUserInfo {
-                    handle: member.handle.clone().into_bytes(),
-                    avatar_uri: member.avatar_uri.clone().into_bytes(),
-                    about: member.about.clone().into_bytes()
-                };
+                let checked_user_info = <Module<T>>::check_user_registration_info(
+                    Some(member.handle.clone().into_bytes()),
+                    Some(member.avatar_uri.clone().into_bytes()),
+                    Some(member.about.clone().into_bytes())
+                ).expect("Importing Member Failed");
 
                 let member_id = <Module<T>>::insert_member(
                     &member.root_account,
                     &member.controller_account,
-                    &user_info,
+                    &checked_user_info,
                     EntryMethod::Genesis,
                     T::BlockNumber::from(1),
                     member.registered_at_time
-                );
+                ).expect("Importing Member Failed");
+
                 // ensure imported member id matches assigned id
-                assert_eq!(member_id, member.member_id);
+                assert_eq!(member_id, member.member_id, "Import Member Failed: MemberId Incorrect");
             }
         });
     }
@@ -292,7 +293,7 @@ decl_module! {
                 EntryMethod::Paid(paid_terms_id),
                 <system::Module<T>>::block_number(),
                 <pallet_timestamp::Module<T>>::now()
-            );
+            )?;
 
             Self::deposit_event(RawEvent::MemberRegistered(member_id, who));
         }
@@ -440,7 +441,7 @@ decl_module! {
                 EntryMethod::Screening(sender),
                 <system::Module<T>>::block_number(),
                 <pallet_timestamp::Module<T>>::now()
-            );
+            )?;
 
             Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member_account));
         }
@@ -587,7 +588,9 @@ impl<T: Trait> Module<T> {
         entry_method: EntryMethod<T::PaidTermId, T::AccountId>,
         registered_at_block: T::BlockNumber,
         registered_at_time: T::Moment,
-    ) -> T::MemberId {
+    ) -> Result<T::MemberId, &'static str> {
+        Self::ensure_unique_handle(&user_info.handle)?;
+
         let new_member_id = Self::members_created();
 
         let membership: Membership<T> = MembershipObject {
@@ -614,7 +617,7 @@ impl<T: Trait> Module<T> {
         <MemberIdByHandle<T>>::insert(user_info.handle.clone(), new_member_id);
 
         <NextMemberId<T>>::put(new_member_id + One::one());
-        new_member_id
+        Ok(new_member_id)
     }
 
     fn _change_member_about_text(id: T::MemberId, text: &[u8]) -> DispatchResult {

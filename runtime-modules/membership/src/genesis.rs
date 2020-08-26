@@ -40,15 +40,19 @@ impl<T: Trait> GenesisConfigBuilder<T> {
             members: self
                 .members
                 .iter()
-                .map(|(ref member_id, ref account_id)| genesis_member::Member {
-                    member_id: *member_id,
-                    root_account: account_id.clone(),
-                    controller_account: account_id.clone(),
-                    handle: "".into(),
-                    avatar_uri: "".into(),
-                    about: "".into(),
-                    registered_at_time: T::Moment::from(0),
-                })
+                .enumerate()
+                .map(
+                    |(ix, (ref member_id, ref account_id))| genesis_member::Member {
+                        member_id: *member_id,
+                        root_account: account_id.clone(),
+                        controller_account: account_id.clone(),
+                        // hack to get min handle length to 5
+                        handle: (10000 + ix).to_string(),
+                        avatar_uri: "".into(),
+                        about: "".into(),
+                        registered_at_time: T::Moment::from(0),
+                    },
+                )
                 .collect(),
         }
     }
