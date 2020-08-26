@@ -5,13 +5,18 @@ import { getRepository, QueryRunner, Between, In } from 'typeorm';
 import { doInTransaction } from '../db/helper';
 import { SubstrateEventEntity } from '../entities';
 import { waitFor } from '../utils/wait-for';
+import { numberEnv } from '../utils/env-flags';
 
 const debug = Debug('index-builder:processor');
 
 
 // Time between checks if the head of the chain is beyond the
 // most recently produced block. Set it to 199 to have round numbers by default
-const LOOK_AHEAD_BLOCKS = 199;
+const LOOK_AHEAD_BLOCKS = numberEnv('PROCESSOR_LOOK_AHEAD_BLOCKS') || 199;
+
+// Interval at which the processor pulls new blocks from the database
+// The interval is reasonably large by default
+const PROCESSOR_BLOCKS_POLL_INTERVAL = numberEnv('PROCESSOR_BLOCKS_POLL_INTERVAL') || 2000; // 2 seconds
 
 export default class MappingsProcessor {
   private _processing_pack!: QueryEventProcessingPack;
@@ -38,26 +43,26 @@ export default class MappingsProcessor {
     this._blockToProcessNext = 0; // default
 
     if (atBlock) {
-      debug(`Got block height hint: ${atBlock.toString()}`);
+      debug(`Got block height hint: ${atBlock}`);
       this._blockToProcessNext = atBlock;
     }
     
     const lastProcessedEvent = await getRepository(SavedEntityEvent).findOne({ where: { id: 1 } });
 
     if (lastProcessedEvent) {
-      debug(`Found the most recent processed event at block ${lastProcessedEvent.blockNumber.toString()}`);
-      this._blockToProcessNext = lastProcessedEvent?.blockNumber + 1;
+      debug(`Found the most recent processed event at block ${lastProcessedEvent.blockNumber}`);
+      this._blockToProcessNext = Number(lastProcessedEvent?.blockNumber) + 1;
     }
 
     if (atBlock && lastProcessedEvent) {
       debug(
         `WARNING! Existing processed history detected on the database!
-        Last processed block is ${lastProcessedEvent.blockNumber.toString()}. The indexer 
-        will continue from block ${lastProcessedEvent.blockNumber.toString()} and ignore the block height hint.`
+        Last processed block is ${lastProcessedEvent.blockNumber}. The indexer 
+        will continue from block ${lastProcessedEvent.blockNumber} and ignore the block height hint.`
       );
     }
     
-    debug(`Starting the processor from ${this._blockToProcessNext.toString()}`);
+    debug(`Starting the processor from ${this._blockToProcessNext}`);
     
     this._started = true;
 
@@ -111,7 +116,8 @@ export default class MappingsProcessor {
         return this._blockToProcessNext <= this._indexer.indexerHead
       },
       //exit condition
-      () => !this._started )
+      () => !this._started,
+      PROCESSOR_BLOCKS_POLL_INTERVAL )
     
   }
 
