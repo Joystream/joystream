@@ -1,17 +1,15 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use rstd::prelude::*;
-
 use codec::{Codec, Decode, Encode};
-use runtime_primitives::traits::{
-    AccountIdConversion, MaybeSerialize, Member, One, SimpleArithmetic, Zero,
-};
-use runtime_primitives::ModuleId;
-use srml_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReasons};
-use srml_support::{decl_module, decl_storage, ensure, Parameter};
-
-use rstd::collections::btree_map::BTreeMap;
+use frame_support::storage::IterableStorageMap;
+use frame_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReasons};
+use frame_support::{decl_module, decl_storage, ensure, Parameter};
+use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
+use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
+use sp_runtime::ModuleId;
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::prelude::*;
 
 mod errors;
 pub use errors::*;
@@ -38,7 +36,7 @@ pub trait Trait: system::Trait + Sized {
     /// The type used as a stake identifier.
     type StakeId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -48,7 +46,7 @@ pub trait Trait: system::Trait + Sized {
     /// The type used as slash identifier.
     type SlashId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -201,8 +199,8 @@ pub struct StakedState<BlockNumber, Balance, SlashId: Ord> {
 
 impl<BlockNumber, Balance, SlashId> StakedState<BlockNumber, Balance, SlashId>
 where
-    BlockNumber: SimpleArithmetic + Copy,
-    Balance: SimpleArithmetic + Copy,
+    BlockNumber: BaseArithmetic + Copy,
+    Balance: BaseArithmetic + Copy,
     SlashId: Ord + Copy,
 {
     /// Iterates over all ongoing slashes and decrements blocks_remaining_in_active_period_for_slashing of active slashes (advancing the timer).
@@ -268,7 +266,7 @@ where
     /// For all slahes that should be executed, will apply the Slash to the staked amount, and drop it from the ongoing slashes map.
     /// Returns a vector of the executed slashes outcome: (SlashId, Slashed Amount, Remaining Staked Amount)
     fn finalize_slashes(&mut self, minimum_balance: Balance) -> Vec<(SlashId, Balance, Balance)> {
-        let mut finalized_slashes: Vec<(SlashId, Balance, Balance)> = vec![];
+        let mut finalized_slashes: Vec<(SlashId, Balance, Balance)> = Vec::new();
 
         for (slash_id, slash) in self.get_slashes_to_finalize().iter() {
             // apply the slashing and get back actual amount slashed
@@ -305,8 +303,8 @@ pub struct Stake<BlockNumber, Balance, SlashId: Ord> {
 
 impl<BlockNumber, Balance, SlashId> Stake<BlockNumber, Balance, SlashId>
 where
-    BlockNumber: Copy + SimpleArithmetic + Zero,
-    Balance: Copy + SimpleArithmetic,
+    BlockNumber: Copy + BaseArithmetic + Zero,
+    Balance: Copy + BaseArithmetic,
     SlashId: Copy + Ord + Zero + One,
 {
     fn new(created_at: BlockNumber) -> Self {
@@ -638,7 +636,7 @@ where
 
                 (did_update, slashed)
             }
-            _ => (false, vec![]),
+            _ => (false, Vec::new()),
         }
     }
 
@@ -711,11 +709,12 @@ pub struct SlashImmediateOutcome<Balance, NegativeImbalance> {
 decl_storage! {
     trait Store for Module<T: Trait> as StakePool {
         /// Maps identifiers to a stake.
-        pub Stakes get(stakes): linked_map T::StakeId => Stake<T::BlockNumber, BalanceOf<T>, T::SlashId>;
+        pub Stakes get(fn stakes): map hasher(blake2_128_concat)
+            T::StakeId => Stake<T::BlockNumber, BalanceOf<T>, T::SlashId>;
 
         /// Identifier value for next stake, and count of total stakes created (not necessarily the number of current
         /// stakes in the Stakes map as stakes can be removed.)
-        pub StakesCreated get(stakes_created): T::StakeId;
+        pub StakesCreated get(fn stakes_created): T::StakeId;
     }
 }
 
@@ -900,14 +899,11 @@ impl<T: Trait> Module<T> {
         source_account_id: &T::AccountId,
         value: BalanceOf<T>,
     ) -> Result<BalanceOf<T>, StakeActionError<IncreasingStakeFromAccountError>> {
-        // Compiler error when using macro: cannot infer type for `ErrorType`
-        // let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
-        ensure!(
-            <Stakes<T>>::exists(stake_id),
-            StakeActionError::StakeNotFound
-        );
-
-        let mut stake = Self::stakes(stake_id);
+        let mut stake = ensure_stake_exists!(
+            T,
+            stake_id,
+            <StakeActionError<IncreasingStakeFromAccountError>>::StakeNotFound
+        )?;
 
         let total_staked_amount = stake.increase_stake(value)?;
 
@@ -1141,7 +1137,7 @@ impl<T: Trait> Module<T> {
     /// Finalised slashing results in the staked_balance in the given stake being correspondingly reduced, and the imbalance
     /// is provided to the slashed() hook in the StakingEventsHandler.
     fn finalize_slashing_and_unstaking() {
-        for (stake_id, ref mut stake) in <Stakes<T>>::enumerate() {
+        for (stake_id, ref mut stake) in <Stakes<T>>::iter() {
             let (updated, slashed, unstaked) =
                 stake.finalize_slashing_and_unstaking(T::Currency::minimum_balance());
 

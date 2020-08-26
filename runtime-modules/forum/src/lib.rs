@@ -7,14 +7,19 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "std")]
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
-use rstd::borrow::ToOwned;
-use rstd::prelude::*;
+//TODO: Convert errors to the Substrate decl_error! macro.
+/// Result with string error message. This exists for backward compatibility purpose.
+pub type DispatchResult = Result<(), &'static str>;
 
 use codec::{Codec, Decode, Encode};
-use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic};
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure, Parameter};
+use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter};
+use sp_arithmetic::traits::{BaseArithmetic, One};
+use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_std::borrow::ToOwned;
+use sp_std::vec;
+use sp_std::vec::Vec;
 
 mod mock;
 mod tests;
@@ -256,7 +261,7 @@ impl<BlockNumber, Moment, AccountId> Category<BlockNumber, Moment, AccountId> {
 type CategoryTreePath<BlockNumber, Moment, AccountId> =
     Vec<Category<BlockNumber, Moment, AccountId>>;
 
-pub trait Trait: system::Trait + timestamp::Trait + Sized {
+pub trait Trait: system::Trait + pallet_timestamp::Trait + Sized {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     type MembershipRegistry: ForumUserRegistry<Self::AccountId>;
@@ -264,7 +269,7 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
     /// Thread Id type
     type ThreadId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -274,7 +279,7 @@ pub trait Trait: system::Trait + timestamp::Trait + Sized {
     /// Post Id type
     type PostId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -286,59 +291,39 @@ decl_storage! {
     trait Store for Module<T: Trait> as Forum {
 
         /// Map category identifier to corresponding category.
-        pub CategoryById get(category_by_id) config(): map CategoryId => Category<T::BlockNumber, T::Moment, T::AccountId>;
+        pub CategoryById get(fn category_by_id) config(): map hasher(blake2_128_concat)
+            CategoryId => Category<T::BlockNumber, T::Moment, T::AccountId>;
 
         /// Category identifier value to be used for the next Category created.
-        pub NextCategoryId get(next_category_id) config(): CategoryId;
+        pub NextCategoryId get(fn next_category_id) config(): CategoryId;
 
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(thread_by_id) config(): map T::ThreadId => Thread<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId>;
+        pub ThreadById get(fn thread_by_id) config(): map hasher(blake2_128_concat)
+            T::ThreadId => Thread<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId>;
 
         /// Thread identifier value to be used for next Thread in threadById.
-        pub NextThreadId get(next_thread_id) config(): T::ThreadId;
+        pub NextThreadId get(fn next_thread_id) config(): T::ThreadId;
 
         /// Map post identifier to corresponding post.
-        pub PostById get(post_by_id) config(): map T::PostId => Post<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId, T::PostId>;
+        pub PostById get(fn post_by_id) config(): map hasher(blake2_128_concat)
+            T::PostId => Post<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId, T::PostId>;
 
         /// Post identifier value to be used for for next post created.
-        pub NextPostId get(next_post_id) config(): T::PostId;
+        pub NextPostId get(fn next_post_id) config(): T::PostId;
 
         /// Account of forum sudo.
-        pub ForumSudo get(forum_sudo) config(): Option<T::AccountId>;
+        pub ForumSudo get(fn forum_sudo) config(): Option<T::AccountId>;
 
         /// Input constraints
         /// These are all forward looking, that is they are enforced on all
         /// future calls.
-        pub CategoryTitleConstraint get(category_title_constraint) config(): InputValidationLengthConstraint;
-        pub CategoryDescriptionConstraint get(category_description_constraint) config(): InputValidationLengthConstraint;
-        pub ThreadTitleConstraint get(thread_title_constraint) config(): InputValidationLengthConstraint;
-        pub PostTextConstraint get(post_text_constraint) config(): InputValidationLengthConstraint;
-        pub ThreadModerationRationaleConstraint get(thread_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
-        pub PostModerationRationaleConstraint get(post_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
+        pub CategoryTitleConstraint get(fn category_title_constraint) config(): InputValidationLengthConstraint;
+        pub CategoryDescriptionConstraint get(fn category_description_constraint) config(): InputValidationLengthConstraint;
+        pub ThreadTitleConstraint get(fn thread_title_constraint) config(): InputValidationLengthConstraint;
+        pub PostTextConstraint get(fn post_text_constraint) config(): InputValidationLengthConstraint;
+        pub ThreadModerationRationaleConstraint get(fn thread_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
+        pub PostModerationRationaleConstraint get(fn post_moderation_rationale_constraint) config(): InputValidationLengthConstraint;
     }
-    /*
-    JUST GIVING UP ON ALL THIS FOR NOW BECAUSE ITS TAKING TOO LONG
-    Review : https://github.com/paritytech/polkadot/blob/620b8610431e7b5fdd71ce3e94c3ee0177406dcc/runtime/src/parachains.rs#L123-L141
-
-    add_extra_genesis {
-
-        // Explain why we need to put this here.
-        config(initial_forum_sudo) : Option<T::AccountId>;
-
-        build(|
-            storage: &mut generator::StorageOverlay,
-            _: &mut generator::ChildrenStorageOverlay,
-            config: &GenesisConfig<T>
-            | {
-
-
-            if let Some(account_id) = &config.initial_forum_sudo {
-                println!("{}: <ForumSudo<T>>::put(account_id)", account_id);
-                <ForumSudo<T> as generator::StorageValue<_>>::put(&account_id, storage);
-            }
-        })
-    }
-    */
 }
 
 decl_event!(
@@ -383,7 +368,8 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Set forum sudo.
-        fn set_forum_sudo(origin, new_forum_sudo: Option<T::AccountId>) -> dispatch::Result {
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn set_forum_sudo(origin, new_forum_sudo: Option<T::AccountId>) -> DispatchResult {
             ensure_root(origin)?;
 
             /*
@@ -408,7 +394,8 @@ decl_module! {
         }
 
         /// Add a new category.
-        fn create_category(origin, parent: Option<CategoryId>, title: Vec<u8>, description: Vec<u8>) -> dispatch::Result {
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn create_category(origin, parent: Option<CategoryId>, title: Vec<u8>, description: Vec<u8>) -> DispatchResult {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -487,7 +474,8 @@ decl_module! {
         }
 
         /// Update category
-        fn update_category(origin, category_id: CategoryId, new_archival_status: Option<bool>, new_deletion_status: Option<bool>) -> dispatch::Result {
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn update_category(origin, category_id: CategoryId, new_archival_status: Option<bool>, new_deletion_status: Option<bool>) -> DispatchResult {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -550,7 +538,8 @@ decl_module! {
         }
 
         /// Create new thread in category
-        fn create_thread(origin, category_id: CategoryId, title: Vec<u8>, text: Vec<u8>) -> dispatch::Result {
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn create_thread(origin, category_id: CategoryId, title: Vec<u8>, text: Vec<u8>) -> DispatchResult {
 
             /*
              * Update SPEC with new errors,
@@ -593,7 +582,8 @@ decl_module! {
         }
 
         /// Moderate thread
-        fn moderate_thread(origin, thread_id: T::ThreadId, rationale: Vec<u8>) -> dispatch::Result {
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn moderate_thread(origin, thread_id: T::ThreadId, rationale: Vec<u8>) -> DispatchResult {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -644,7 +634,8 @@ decl_module! {
         }
 
         /// Edit post text
-        fn add_post(origin, thread_id: T::ThreadId, text: Vec<u8>) -> dispatch::Result {
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn add_post(origin, thread_id: T::ThreadId, text: Vec<u8>) -> DispatchResult {
 
             /*
              * Update SPEC with new errors,
@@ -681,7 +672,8 @@ decl_module! {
         }
 
         /// Edit post text
-        fn edit_post_text(origin, post_id: T::PostId, new_text: Vec<u8>) -> dispatch::Result {
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn edit_post_text(origin, post_id: T::PostId, new_text: Vec<u8>) -> DispatchResult {
 
             /* Edit spec.
               - forum member guard missing
@@ -728,7 +720,8 @@ decl_module! {
         }
 
         /// Moderate post
-        fn moderate_post(origin, post_id: T::PostId, rationale: Vec<u8>) -> dispatch::Result {
+        #[weight = 10_000_000] // TODO: adjust weight
+        fn moderate_post(origin, post_id: T::PostId, rationale: Vec<u8>) -> DispatchResult {
 
             // Check that its a valid signature
             let who = ensure_signed(origin)?;
@@ -772,7 +765,7 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    fn ensure_category_title_is_valid(title: &[u8]) -> dispatch::Result {
+    fn ensure_category_title_is_valid(title: &[u8]) -> DispatchResult {
         CategoryTitleConstraint::get().ensure_valid(
             title.len(),
             ERROR_CATEGORY_TITLE_TOO_SHORT,
@@ -780,7 +773,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_category_description_is_valid(description: &[u8]) -> dispatch::Result {
+    fn ensure_category_description_is_valid(description: &[u8]) -> DispatchResult {
         CategoryDescriptionConstraint::get().ensure_valid(
             description.len(),
             ERROR_CATEGORY_DESCRIPTION_TOO_SHORT,
@@ -788,7 +781,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_thread_moderation_rationale_is_valid(rationale: &[u8]) -> dispatch::Result {
+    fn ensure_thread_moderation_rationale_is_valid(rationale: &[u8]) -> DispatchResult {
         ThreadModerationRationaleConstraint::get().ensure_valid(
             rationale.len(),
             ERROR_THREAD_MODERATION_RATIONALE_TOO_SHORT,
@@ -796,7 +789,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_thread_title_is_valid(title: &[u8]) -> dispatch::Result {
+    fn ensure_thread_title_is_valid(title: &[u8]) -> DispatchResult {
         ThreadTitleConstraint::get().ensure_valid(
             title.len(),
             ERROR_THREAD_TITLE_TOO_SHORT,
@@ -804,7 +797,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_post_text_is_valid(text: &[u8]) -> dispatch::Result {
+    fn ensure_post_text_is_valid(text: &[u8]) -> DispatchResult {
         PostTextConstraint::get().ensure_valid(
             text.len(),
             ERROR_POST_TEXT_TOO_SHORT,
@@ -812,7 +805,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    fn ensure_post_moderation_rationale_is_valid(rationale: &[u8]) -> dispatch::Result {
+    fn ensure_post_moderation_rationale_is_valid(rationale: &[u8]) -> DispatchResult {
         PostModerationRationaleConstraint::get().ensure_valid(
             rationale.len(),
             ERROR_POST_MODERATION_RATIONALE_TOO_SHORT,
@@ -840,7 +833,7 @@ impl<T: Trait> Module<T> {
         post_id: T::PostId,
     ) -> Result<Post<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId, T::PostId>, &'static str>
     {
-        if <PostById<T>>::exists(post_id) {
+        if <PostById<T>>::contains_key(post_id) {
             Ok(<PostById<T>>::get(post_id))
         } else {
             Err(ERROR_POST_DOES_NOT_EXIST)
@@ -865,7 +858,7 @@ impl<T: Trait> Module<T> {
     fn ensure_thread_exists(
         thread_id: T::ThreadId,
     ) -> Result<Thread<T::BlockNumber, T::Moment, T::AccountId, T::ThreadId>, &'static str> {
-        if <ThreadById<T>>::exists(thread_id) {
+        if <ThreadById<T>>::contains_key(thread_id) {
             Ok(<ThreadById<T>>::get(thread_id))
         } else {
             Err(ERROR_THREAD_DOES_NOT_EXIST)
@@ -879,7 +872,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_is_forum_sudo(account_id: &T::AccountId) -> dispatch::Result {
+    fn ensure_is_forum_sudo(account_id: &T::AccountId) -> DispatchResult {
         let forum_sudo_account = Self::ensure_forum_sudo_set()?;
 
         ensure!(
@@ -901,7 +894,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    fn ensure_catgory_is_mutable(category_id: CategoryId) -> dispatch::Result {
+    fn ensure_catgory_is_mutable(category_id: CategoryId) -> DispatchResult {
         let category_tree_path = Self::build_category_tree_path(category_id);
 
         Self::ensure_can_mutate_in_path_leaf(&category_tree_path)
@@ -913,7 +906,7 @@ impl<T: Trait> Module<T> {
     #[allow(clippy::ptr_arg)]
     fn ensure_can_mutate_in_path_leaf(
         category_tree_path: &CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         // Is parent category directly or indirectly deleted or archived category
         ensure!(
             !category_tree_path.iter().any(
@@ -930,7 +923,7 @@ impl<T: Trait> Module<T> {
     #[allow(clippy::ptr_arg)] // disable it because of possible frontend API break
     fn ensure_can_add_subcategory_path_leaf(
         category_tree_path: &CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         Self::ensure_can_mutate_in_path_leaf(category_tree_path)?;
 
         // Does adding a new category exceed maximum depth
@@ -948,7 +941,7 @@ impl<T: Trait> Module<T> {
         category_id: CategoryId,
     ) -> Result<CategoryTreePath<T::BlockNumber, T::Moment, T::AccountId>, &'static str> {
         ensure!(
-            <CategoryById<T>>::exists(&category_id),
+            <CategoryById<T>>::contains_key(&category_id),
             ERROR_CATEGORY_DOES_NOT_EXIST
         );
 
@@ -990,7 +983,7 @@ impl<T: Trait> Module<T> {
 
         // Make recursive call on parent if we are not at root
         if let Some(child_position_in_parent) = position_in_parent_category_field {
-            assert!(<CategoryById<T>>::exists(
+            assert!(<CategoryById<T>>::contains_key(
                 &child_position_in_parent.parent_id
             ));
 

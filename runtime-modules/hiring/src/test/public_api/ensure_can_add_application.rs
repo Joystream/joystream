@@ -2,7 +2,7 @@ use crate::mock::*;
 use crate::test::*;
 
 use crate::hiring::*;
-use rstd::collections::btree_set::BTreeSet;
+use sp_std::collections::btree_set::BTreeSet;
 
 #[test]
 fn ensure_can_add_application_fails_with_no_opening() {
@@ -239,10 +239,10 @@ fn ensure_can_add_application_succeeds() {
             ensure_can_add_application_result,
             Ok(DestructuredApplicationCanBeAddedEvaluation {
                 opening: Opening {
-                    created: 1,
+                    created: FIRST_BLOCK_HEIGHT,
                     stage: hiring::OpeningStage::Active {
                         stage: hiring::ActiveOpeningStage::AcceptingApplications {
-                            started_accepting_applicants_at_block: 1
+                            started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT
                         },
                         applications_added: BTreeSet::new(),
                         active_application_count: 0,
@@ -266,7 +266,7 @@ fn ensure_can_add_application_succeeds() {
                     human_readable_text: HUMAN_READABLE_TEXT.to_vec()
                 },
                 active_stage: hiring::ActiveOpeningStage::AcceptingApplications {
-                    started_accepting_applicants_at_block: 1
+                    started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT
                 },
                 applications_added: BTreeSet::new(),
                 active_application_count: 0,

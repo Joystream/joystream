@@ -2,8 +2,8 @@
 
 use super::*;
 use crate::mock::*;
-use runtime_primitives::traits::OnFinalize;
-use srml_support::{assert_err, assert_ok};
+use frame_support::traits::OnFinalize;
+use frame_support::{assert_err, assert_ok};
 
 #[test]
 fn stake_pool_works() {
@@ -70,7 +70,7 @@ fn create_stake() {
     build_test_externalities().execute_with(|| {
         let stake_id = StakePool::create_stake();
         assert_eq!(stake_id, 0);
-        assert!(<Stakes<Test>>::exists(&stake_id));
+        assert!(<Stakes<Test>>::contains_key(&stake_id));
 
         assert_eq!(StakePool::stakes_created(), stake_id + 1);
 
@@ -91,7 +91,7 @@ fn remove_stake_in_not_staked_state() {
             },
         );
         assert_ok!(StakePool::remove_stake(&100));
-        assert!(!<Stakes<Test>>::exists(&100));
+        assert!(!<Stakes<Test>>::contains_key(&100));
 
         // when status is Staked, removing should fail
         <Stakes<Test>>::insert(
@@ -106,7 +106,7 @@ fn remove_stake_in_not_staked_state() {
             StakePool::remove_stake(&200),
             StakeActionError::Error(StakingError::AlreadyStaked)
         );
-        assert!(<Stakes<Test>>::exists(&200));
+        assert!(<Stakes<Test>>::contains_key(&200));
     });
 }
 

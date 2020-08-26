@@ -1,11 +1,11 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode};
-use rstd::prelude::*;
-
-use crate::ActiveStake;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use sp_std::vec::Vec;
+
+use crate::ActiveStake;
 
 /// Current status of the proposal
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]

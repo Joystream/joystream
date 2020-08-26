@@ -2,19 +2,20 @@ mod fixtures;
 mod hiring_workflow;
 mod mock;
 
-use crate::types::{OpeningPolicyCommitment, OpeningType, RewardPolicy};
-use crate::{Error, RawEvent, Worker};
-use common::constraints::InputValidationLengthConstraint;
-use mock::{
-    build_test_externalities, Test, TestWorkingGroup, TestWorkingGroupInstance,
-    WORKING_GROUP_CONSTRAINT_DIFF, WORKING_GROUP_CONSTRAINT_MIN, WORKING_GROUP_MINT_CAPACITY,
-};
-use srml_support::{StorageLinkedMap, StorageValue};
+use frame_support::dispatch::DispatchError;
+use frame_support::storage::{StorageMap, StorageValue};
 use std::collections::BTreeMap;
 use system::RawOrigin;
 
 use crate::tests::hiring_workflow::HiringWorkflow;
+use crate::types::{OpeningPolicyCommitment, OpeningType, RewardPolicy};
+use crate::{Error, RawEvent, Worker};
+use common::constraints::InputValidationLengthConstraint;
 use fixtures::*;
+use mock::{
+    build_test_externalities, run_to_block, Test, TestWorkingGroup, TestWorkingGroupInstance,
+    WORKING_GROUP_CONSTRAINT_DIFF, WORKING_GROUP_CONSTRAINT_MIN, WORKING_GROUP_MINT_CAPACITY,
+};
 
 #[test]
 fn hire_lead_succeeds() {
@@ -37,7 +38,9 @@ fn hire_lead_fails_with_existing_lead() {
             .disable_setup_environment()
             .with_opening_type(OpeningType::Leader)
             .add_application(b"leader_handle".to_vec())
-            .expect(Err(Error::CannotHireLeaderWhenLeaderExists));
+            .expect(Err(
+                Error::<Test, TestWorkingGroupInstance>::CannotHireLeaderWhenLeaderExists.into(),
+            ));
 
         hiring_workflow.execute();
     });
@@ -50,7 +53,9 @@ fn hire_lead_fails_multiple_applications() {
             .with_opening_type(OpeningType::Leader)
             .add_application_with_origin(b"leader_handle".to_vec(), RawOrigin::Signed(1), 1)
             .add_application_with_origin(b"leader_handle2".to_vec(), RawOrigin::Signed(2), 2)
-            .expect(Err(Error::CannotHireMultipleLeaders));
+            .expect(Err(
+                Error::<Test, TestWorkingGroupInstance>::CannotHireMultipleLeaders.into(),
+            ));
 
         hiring_workflow.execute();
     });
@@ -67,7 +72,7 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
                 ..OpeningPolicyCommitment::default()
             });
         add_opening_fixture.call_and_assert(Err(
-            Error::FillOpeningFailedApplicantRoleStakeUnstakingPeriodIsZero,
+            Error::<Test, TestWorkingGroupInstance>::FillOpeningFailedApplicantRoleStakeUnstakingPeriodIsZero.into(),
         ));
 
         let add_opening_fixture =
@@ -76,7 +81,7 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
                 ..OpeningPolicyCommitment::default()
             });
         add_opening_fixture.call_and_assert(Err(
-            Error::FillOpeningFailedApplicantApplicationStakeUnstakingPeriodIsZero,
+            Error::<Test, TestWorkingGroupInstance>::FillOpeningFailedApplicantApplicationStakeUnstakingPeriodIsZero.into(),
         ));
 
         let add_opening_fixture =
@@ -85,7 +90,7 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
                 ..OpeningPolicyCommitment::default()
             });
         add_opening_fixture.call_and_assert(Err(
-            Error::FillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriodIsZero,
+            Error::<Test, TestWorkingGroupInstance>::FillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriodIsZero.into(),
         ));
 
         let add_opening_fixture =
@@ -93,7 +98,7 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
                 exit_role_stake_unstaking_period: Some(0),
                 ..OpeningPolicyCommitment::default()
             });
-        add_opening_fixture.call_and_assert(Err(Error::ExitRoleStakeUnstakingPeriodIsZero));
+        add_opening_fixture.call_and_assert(Err(Error::<Test, TestWorkingGroupInstance>::ExitRoleStakeUnstakingPeriodIsZero.into()));
 
         let add_opening_fixture =
             AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
@@ -101,14 +106,14 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
                 ..OpeningPolicyCommitment::default()
             });
         add_opening_fixture
-            .call_and_assert(Err(Error::ExitRoleApplicationStakeUnstakingPeriodIsZero));
+            .call_and_assert(Err(Error::<Test, TestWorkingGroupInstance>::ExitRoleApplicationStakeUnstakingPeriodIsZero.into()));
 
         let add_opening_fixture =
             AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
                 terminate_role_stake_unstaking_period: Some(0),
                 ..OpeningPolicyCommitment::default()
             });
-        add_opening_fixture.call_and_assert(Err(Error::TerminateRoleStakeUnstakingPeriodIsZero));
+        add_opening_fixture.call_and_assert(Err(Error::<Test, TestWorkingGroupInstance>::TerminateRoleStakeUnstakingPeriodIsZero.into()));
 
         let add_opening_fixture =
             AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
@@ -116,7 +121,7 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
                 ..OpeningPolicyCommitment::default()
             });
         add_opening_fixture
-            .call_and_assert(Err(Error::TerminateApplicationStakeUnstakingPeriodIsZero));
+            .call_and_assert(Err(Error::<Test, TestWorkingGroupInstance>::TerminateApplicationStakeUnstakingPeriodIsZero.into()));
 
         let add_opening_fixture =
             AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
@@ -127,7 +132,7 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
                 ..OpeningPolicyCommitment::default()
             });
         add_opening_fixture
-            .call_and_assert(Err(Error::RoleStakingPolicyCrowdedOutUnstakingPeriodIsZero));
+            .call_and_assert(Err(Error::<Test, TestWorkingGroupInstance>::RoleStakingPolicyCrowdedOutUnstakingPeriodIsZero.into()));
 
         let add_opening_fixture =
             AddWorkerOpeningFixture::default().with_policy_commitment(OpeningPolicyCommitment {
@@ -138,7 +143,7 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
                 ..OpeningPolicyCommitment::default()
             });
         add_opening_fixture.call_and_assert(Err(
-            Error::RoleStakingPolicyReviewPeriodUnstakingPeriodIsZero,
+            Error::<Test, TestWorkingGroupInstance>::RoleStakingPolicyReviewPeriodUnstakingPeriodIsZero.into(),
         ));
 
         let add_opening_fixture =
@@ -150,7 +155,7 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
                 ..OpeningPolicyCommitment::default()
             });
         add_opening_fixture.call_and_assert(Err(
-            Error::ApplicationStakingPolicyCrowdedOutUnstakingPeriodIsZero,
+            Error::<Test, TestWorkingGroupInstance>::ApplicationStakingPolicyCrowdedOutUnstakingPeriodIsZero.into(),
         ));
 
         let add_opening_fixture =
@@ -162,7 +167,7 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
                 ..OpeningPolicyCommitment::default()
             });
         add_opening_fixture.call_and_assert(Err(
-            Error::ApplicationStakingPolicyReviewPeriodUnstakingPeriodIsZero,
+            Error::<Test, TestWorkingGroupInstance>::ApplicationStakingPolicyReviewPeriodUnstakingPeriodIsZero.into(),
         ));
 
         let add_opening_fixture =
@@ -173,7 +178,7 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
                 ..OpeningPolicyCommitment::default()
             });
         add_opening_fixture.call_and_assert(Err(
-            Error::ApplicationRationingPolicyMaxActiveApplicantsIsZero,
+            Error::<Test, TestWorkingGroupInstance>::ApplicationRationingPolicyMaxActiveApplicantsIsZero.into(),
         ));
     });
 }
@@ -181,6 +186,13 @@ fn add_opening_fails_with_incorrect_unstaking_periods() {
 #[test]
 fn add_opening_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         HireLeadFixture::default().hire_lead();
 
         let add_opening_fixture = AddWorkerOpeningFixture::default();
@@ -199,7 +211,7 @@ fn add_leader_opening_succeeds_fails_with_incorrect_origin_for_opening_type() {
         let add_opening_fixture =
             AddWorkerOpeningFixture::default().with_opening_type(OpeningType::Leader);
 
-        add_opening_fixture.call_and_assert(Err(Error::RequireRootOrigin));
+        add_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -221,7 +233,9 @@ fn add_opening_fails_with_lead_is_not_set() {
     build_test_externalities().execute_with(|| {
         let add_opening_fixture = AddWorkerOpeningFixture::default();
 
-        add_opening_fixture.call_and_assert(Err(Error::CurrentLeadNotSet));
+        add_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::CurrentLeadNotSet.into(),
+        ));
     });
 }
 
@@ -239,12 +253,12 @@ fn add_opening_fails_with_invalid_human_readable_text() {
 
         let add_opening_fixture = AddWorkerOpeningFixture::default().with_text(Vec::new());
 
-        add_opening_fixture.call_and_assert(Err(Error::Other("OpeningTextTooShort")));
+        add_opening_fixture.call_and_assert(Err(DispatchError::Other("OpeningTextTooShort")));
 
         let add_opening_fixture =
             AddWorkerOpeningFixture::default().with_text(b"Long text".to_vec());
 
-        add_opening_fixture.call_and_assert(Err(Error::Other("OpeningTextTooLong")));
+        add_opening_fixture.call_and_assert(Err(DispatchError::Other("OpeningTextTooLong")));
     });
 }
 
@@ -256,13 +270,22 @@ fn add_opening_fails_with_hiring_error() {
         let add_opening_fixture = AddWorkerOpeningFixture::default()
             .with_activate_at(hiring::ActivateOpeningAt::ExactBlock(0));
 
-        add_opening_fixture.call_and_assert(Err(Error::AddWorkerOpeningActivatesInThePast));
+        add_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::AddWorkerOpeningActivatesInThePast.into(),
+        ));
     });
 }
 
 #[test]
 fn accept_applications_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         HireLeadFixture::default().hire_lead();
 
         let add_opening_fixture = AddWorkerOpeningFixture::default()
@@ -290,7 +313,7 @@ fn accept_applications_fails_for_invalid_opening_type() {
 
         let accept_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_applications_fixture.call_and_assert(Err(Error::RequireRootOrigin));
+        accept_applications_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -305,7 +328,7 @@ fn accept_applications_fails_with_hiring_error() {
         let accept_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
         accept_applications_fixture.call_and_assert(Err(
-            Error::AcceptWorkerApplicationsOpeningIsNotWaitingToBegin,
+            Error::<Test, TestWorkingGroupInstance>::AcceptWorkerApplicationsOpeningIsNotWaitingToBegin.into(),
         ));
     });
 }
@@ -322,7 +345,9 @@ fn accept_applications_fails_with_not_lead() {
 
         let accept_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_applications_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
+        accept_applications_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::IsNotLeadAccount.into(),
+        ));
     });
 }
 
@@ -335,13 +360,22 @@ fn accept_applications_fails_with_no_opening() {
 
         let accept_applications_fixture =
             AcceptWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        accept_applications_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
+        accept_applications_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::OpeningDoesNotExist.into(),
+        ));
     });
 }
 
 #[test]
 fn apply_on_opening_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         HireLeadFixture::default().hire_lead();
 
         let add_opening_fixture = AddWorkerOpeningFixture::default();
@@ -367,7 +401,9 @@ fn apply_on_opening_fails_with_no_opening() {
 
         let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
-        apply_on_opening_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::OpeningDoesNotExist.into(),
+        ));
     });
 }
 
@@ -382,7 +418,9 @@ fn apply_on_opening_fails_with_not_set_members() {
         let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_origin(RawOrigin::Signed(55), 55);
-        apply_on_opening_fixture.call_and_assert(Err(Error::OriginIsNeitherMemberControllerOrRoot));
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::OriginIsNeitherMemberControllerOrRoot.into(),
+        ));
     });
 }
 
@@ -398,8 +436,10 @@ fn apply_on_opening_fails_with_hiring_error() {
         let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_application_stake(100);
-        apply_on_opening_fixture
-            .call_and_assert(Err(Error::AddWorkerOpeningStakeProvidedWhenRedundant));
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::AddWorkerOpeningStakeProvidedWhenRedundant
+                .into(),
+        ));
     });
 }
 
@@ -424,7 +464,9 @@ fn apply_on_opening_fails_with_invalid_application_stake() {
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_origin(RawOrigin::Signed(2), 2)
                 .with_application_stake(stake);
-        apply_on_opening_fixture.call_and_assert(Err(Error::InsufficientBalanceToApply));
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::InsufficientBalanceToApply.into(),
+        ));
     });
 }
 
@@ -444,8 +486,10 @@ fn add_opening_fails_with_invalid_zero_application_stake() {
                 }),
                 ..OpeningPolicyCommitment::default()
             });
-        add_opening_fixture
-            .call_and_assert(Err(Error::AddWorkerOpeningApplicationStakeCannotBeZero));
+        add_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::AddWorkerOpeningApplicationStakeCannotBeZero
+                .into(),
+        ));
     });
 }
 
@@ -470,7 +514,9 @@ fn apply_on_opening_fails_with_invalid_role_stake() {
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_role_stake(Some(stake))
                 .with_origin(RawOrigin::Signed(2), 2);
-        apply_on_opening_fixture.call_and_assert(Err(Error::InsufficientBalanceToApply));
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::InsufficientBalanceToApply.into(),
+        ));
     });
 }
 
@@ -492,12 +538,13 @@ fn apply_on_opening_fails_with_invalid_text() {
         let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id).with_text(Vec::new());
         apply_on_opening_fixture
-            .call_and_assert(Err(Error::Other("WorkerApplicationTextTooShort")));
+            .call_and_assert(Err(DispatchError::Other("WorkerApplicationTextTooShort")));
 
         let apply_on_opening_fixture =
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id)
                 .with_text(b"Long text".to_vec());
-        apply_on_opening_fixture.call_and_assert(Err(Error::Other("WorkerApplicationTextTooLong")));
+        apply_on_opening_fixture
+            .call_and_assert(Err(DispatchError::Other("WorkerApplicationTextTooLong")));
     });
 }
 
@@ -513,13 +560,22 @@ fn apply_on_opening_fails_with_already_active_application() {
             ApplyOnWorkerOpeningFixture::default_for_opening_id(opening_id);
         apply_on_opening_fixture.call_and_assert(Ok(()));
 
-        apply_on_opening_fixture.call_and_assert(Err(Error::MemberHasActiveApplicationOnOpening));
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::MemberHasActiveApplicationOnOpening.into(),
+        ));
     });
 }
 
 #[test]
 fn withdraw_worker_application_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         HireLeadFixture::default().hire_lead();
 
         let add_opening_fixture = AddWorkerOpeningFixture::default();
@@ -544,7 +600,9 @@ fn withdraw_worker_application_fails_invalid_application_id() {
 
         let withdraw_application_fixture =
             WithdrawApplicationFixture::default_for_application_id(invalid_application_id);
-        withdraw_application_fixture.call_and_assert(Err(Error::WorkerApplicationDoesNotExist));
+        withdraw_application_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WorkerApplicationDoesNotExist.into(),
+        ));
     });
 }
 
@@ -563,7 +621,7 @@ fn withdraw_worker_application_fails_invalid_origin() {
         let withdraw_application_fixture =
             WithdrawApplicationFixture::default_for_application_id(application_id)
                 .with_origin(RawOrigin::None);
-        withdraw_application_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+        withdraw_application_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -583,7 +641,9 @@ fn withdraw_worker_application_fails_with_invalid_application_author() {
         let withdraw_application_fixture =
             WithdrawApplicationFixture::default_for_application_id(application_id)
                 .with_signer(invalid_author_account_id);
-        withdraw_application_fixture.call_and_assert(Err(Error::OriginIsNotApplicant));
+        withdraw_application_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::OriginIsNotApplicant.into(),
+        ));
     });
 }
 
@@ -602,14 +662,23 @@ fn withdraw_worker_application_fails_with_hiring_error() {
         let withdraw_application_fixture =
             WithdrawApplicationFixture::default_for_application_id(application_id);
         withdraw_application_fixture.call_and_assert(Ok(()));
-        withdraw_application_fixture
-            .call_and_assert(Err(Error::WithdrawWorkerApplicationApplicationNotActive));
+        withdraw_application_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WithdrawWorkerApplicationApplicationNotActive
+                .into(),
+        ));
     });
 }
 
 #[test]
 fn terminate_worker_application_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         HireLeadFixture::default().hire_lead();
 
         let add_opening_fixture = AddWorkerOpeningFixture::default();
@@ -643,7 +712,9 @@ fn terminate_worker_application_fails_with_invalid_application_author() {
         let terminate_application_fixture =
             TerminateApplicationFixture::default_for_application_id(application_id)
                 .with_signer(invalid_author_account_id);
-        terminate_application_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
+        terminate_application_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::IsNotLeadAccount.into(),
+        ));
     });
 }
 
@@ -662,7 +733,7 @@ fn terminate_worker_application_fails_invalid_origin() {
         let terminate_application_fixture =
             TerminateApplicationFixture::default_for_application_id(application_id)
                 .with_origin(RawOrigin::None);
-        terminate_application_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+        terminate_application_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -675,7 +746,9 @@ fn terminate_worker_application_fails_invalid_application_id() {
 
         let terminate_application_fixture =
             TerminateApplicationFixture::default_for_application_id(invalid_application_id);
-        terminate_application_fixture.call_and_assert(Err(Error::WorkerApplicationDoesNotExist));
+        terminate_application_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WorkerApplicationDoesNotExist.into(),
+        ));
     });
 }
 
@@ -694,14 +767,23 @@ fn terminate_worker_application_fails_with_hiring_error() {
         let terminate_application_fixture =
             TerminateApplicationFixture::default_for_application_id(application_id);
         terminate_application_fixture.call_and_assert(Ok(()));
-        terminate_application_fixture
-            .call_and_assert(Err(Error::WithdrawWorkerApplicationApplicationNotActive));
+        terminate_application_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WithdrawWorkerApplicationApplicationNotActive
+                .into(),
+        ));
     });
 }
 
 #[test]
 fn begin_review_worker_applications_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         HireLeadFixture::default().hire_lead();
 
         let add_opening_fixture = AddWorkerOpeningFixture::default();
@@ -727,7 +809,7 @@ fn begin_review_worker_applications_fails_with_invalid_origin_for_opening_type()
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        begin_review_worker_applications_fixture.call_and_assert(Err(Error::RequireRootOrigin));
+        begin_review_worker_applications_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -743,7 +825,11 @@ fn begin_review_worker_applications_fails_with_not_a_lead() {
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
-        begin_review_worker_applications_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
+        begin_review_worker_applications_fixture.call_and_assert(Err(Error::<
+            Test,
+            TestWorkingGroupInstance,
+        >::IsNotLeadAccount
+            .into()));
     });
 }
 
@@ -756,7 +842,11 @@ fn begin_review_worker_applications_fails_with_invalid_opening() {
 
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(invalid_opening_id);
-        begin_review_worker_applications_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
+        begin_review_worker_applications_fixture.call_and_assert(Err(Error::<
+            Test,
+            TestWorkingGroupInstance,
+        >::OpeningDoesNotExist
+            .into()));
     });
 }
 
@@ -772,7 +862,7 @@ fn begin_review_worker_applications_with_hiring_error() {
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id);
         begin_review_worker_applications_fixture.call_and_assert(Ok(()));
         begin_review_worker_applications_fixture.call_and_assert(Err(
-            Error::BeginWorkerApplicantReviewOpeningOpeningIsNotWaitingToBegin,
+            Error::<Test, TestWorkingGroupInstance>::BeginWorkerApplicantReviewOpeningOpeningIsNotWaitingToBegin.into(),
         ));
     });
 }
@@ -788,13 +878,20 @@ fn begin_review_worker_applications_fails_with_invalid_origin() {
         let begin_review_worker_applications_fixture =
             BeginReviewWorkerApplicationsFixture::default_for_opening_id(opening_id)
                 .with_origin(RawOrigin::None);
-        begin_review_worker_applications_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+        begin_review_worker_applications_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
 fn fill_opening_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         HireLeadFixture::default().hire_lead();
         increase_total_balance_issuance_using_account_id(1, 10000);
 
@@ -880,7 +977,7 @@ fn fill_opening_fails_with_invalid_origin_for_opening_type() {
                     next_payment_at_block: 20,
                     payout_interval: None,
                 });
-        fill_opening_fixture.call_and_assert(Err(Error::RequireRootOrigin));
+        fill_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -895,7 +992,7 @@ fn fill_opening_fails_with_invalid_origin() {
         let fill_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new())
                 .with_origin(RawOrigin::None);
-        fill_opening_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+        fill_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -911,7 +1008,9 @@ fn fill_opening_fails_with_not_a_lead() {
 
         let fill_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new());
-        fill_opening_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
+        fill_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::IsNotLeadAccount.into(),
+        ));
     });
 }
 
@@ -924,7 +1023,9 @@ fn fill_opening_fails_with_invalid_opening() {
 
         let fill_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(invalid_opening_id, Vec::new());
-        fill_opening_fixture.call_and_assert(Err(Error::OpeningDoesNotExist));
+        fill_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::OpeningDoesNotExist.into(),
+        ));
     });
 }
 
@@ -949,7 +1050,9 @@ fn fill_opening_fails_with_invalid_application_list() {
             opening_id,
             vec![application_id, invalid_application_id],
         );
-        fill_opening_fixture.call_and_assert(Err(Error::SuccessfulWorkerApplicationDoesNotExist));
+        fill_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::SuccessfulWorkerApplicationDoesNotExist.into(),
+        ));
     });
 }
 
@@ -963,8 +1066,10 @@ fn fill_opening_fails_with_invalid_application_with_hiring_error() {
 
         let fill_opening_fixture =
             FillWorkerOpeningFixture::default_for_ids(opening_id, Vec::new());
-        fill_opening_fixture
-            .call_and_assert(Err(Error::FullWorkerOpeningOpeningNotInReviewPeriodStage));
+        fill_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::FullWorkerOpeningOpeningNotInReviewPeriodStage
+                .into(),
+        ));
     });
 }
 
@@ -999,6 +1104,13 @@ fn fill_opening_fails_with_invalid_reward_policy() {
 #[test]
 fn update_worker_role_account_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let new_account_id = 10;
         let worker_id = fill_default_worker_position();
 
@@ -1047,13 +1159,22 @@ fn update_worker_role_account_fails_with_invalid_origin() {
             UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, 1)
                 .with_origin(RawOrigin::None);
 
-        update_worker_account_fixture.call_and_assert(Err(Error::MembershipUnsignedOrigin));
+        update_worker_account_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::MembershipUnsignedOrigin.into(),
+        ));
     });
 }
 
 #[test]
 fn update_worker_reward_account_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let worker_id = fill_default_worker_position();
 
         let new_role_account = 22;
@@ -1094,7 +1215,7 @@ fn update_worker_reward_account_fails_with_invalid_origin() {
         let update_worker_account_fixture =
             UpdateWorkerRewardAccountFixture::default_with_ids(1, 1).with_origin(RawOrigin::None);
 
-        update_worker_account_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+        update_worker_account_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -1109,7 +1230,9 @@ fn update_worker_reward_account_fails_with_invalid_origin_signed_account() {
             UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, worker.role_account_id)
                 .with_origin(RawOrigin::Signed(invalid_role_account));
 
-        update_worker_account_fixture.call_and_assert(Err(Error::SignerIsNotWorkerRoleAccount));
+        update_worker_account_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::SignerIsNotWorkerRoleAccount.into(),
+        ));
     });
 }
 
@@ -1125,7 +1248,9 @@ fn update_worker_reward_account_fails_with_invalid_worker_id() {
             new_reward_account,
         );
 
-        update_worker_account_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
+        update_worker_account_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
+        ));
     });
 }
 
@@ -1139,13 +1264,22 @@ fn update_worker_reward_account_fails_with_no_recurring_reward() {
         let update_worker_account_fixture =
             UpdateWorkerRewardAccountFixture::default_with_ids(worker_id, new_reward_account);
 
-        update_worker_account_fixture.call_and_assert(Err(Error::WorkerHasNoReward));
+        update_worker_account_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WorkerHasNoReward.into(),
+        ));
     });
 }
 
 #[test]
 fn update_worker_reward_amount_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let worker_id = fill_default_worker_position();
 
         let update_worker_amount_fixture =
@@ -1187,7 +1321,7 @@ fn update_worker_reward_amount_fails_with_invalid_origin() {
             UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id)
                 .with_origin(RawOrigin::None);
 
-        update_worker_amount_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+        update_worker_amount_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -1200,7 +1334,7 @@ fn update_worker_reward_amount_fails_with_invalid_origin_for_leader() {
             UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id)
                 .with_origin(RawOrigin::None);
 
-        update_worker_amount_fixture.call_and_assert(Err(Error::RequireRootOrigin));
+        update_worker_amount_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -1213,7 +1347,9 @@ fn update_worker_reward_amount_fails_with_invalid_origin_signed_account() {
             UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id)
                 .with_origin(RawOrigin::Signed(2));
 
-        update_worker_amount_fixture.call_and_assert(Err(Error::IsNotLeadAccount));
+        update_worker_amount_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::IsNotLeadAccount.into(),
+        ));
     });
 }
 
@@ -1226,7 +1362,9 @@ fn update_worker_reward_amount_fails_with_invalid_worker_id() {
         let update_worker_amount_fixture =
             UpdateWorkerRewardAmountFixture::default_for_worker_id(invalid_worker_id);
 
-        update_worker_amount_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
+        update_worker_amount_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
+        ));
     });
 }
 
@@ -1238,7 +1376,9 @@ fn update_worker_reward_amount_fails_with_no_recurring_reward() {
         let update_worker_amount_fixture =
             UpdateWorkerRewardAmountFixture::default_for_worker_id(worker_id);
 
-        update_worker_amount_fixture.call_and_assert(Err(Error::WorkerHasNoReward));
+        update_worker_amount_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WorkerHasNoReward.into(),
+        ));
     });
 }
 
@@ -1299,6 +1439,13 @@ fn fill_worker_position(
 #[test]
 fn leave_worker_role_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let worker_id = fill_default_worker_position();
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
@@ -1335,7 +1482,7 @@ fn leave_worker_role_fails_with_invalid_origin() {
         let leave_worker_role_fixture =
             LeaveWorkerRoleFixture::default_for_worker_id(1).with_origin(RawOrigin::None);
 
-        leave_worker_role_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+        leave_worker_role_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -1347,7 +1494,9 @@ fn leave_worker_role_fails_with_invalid_origin_signed_account() {
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
             .with_origin(RawOrigin::Signed(2));
 
-        leave_worker_role_fixture.call_and_assert(Err(Error::SignerIsNotWorkerRoleAccount));
+        leave_worker_role_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::SignerIsNotWorkerRoleAccount.into(),
+        ));
     });
 }
 
@@ -1360,7 +1509,9 @@ fn leave_worker_role_fails_with_invalid_worker_id() {
         let leave_worker_role_fixture =
             LeaveWorkerRoleFixture::default_for_worker_id(invalid_worker_id);
 
-        leave_worker_role_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
+        leave_worker_role_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
+        ));
     });
 }
 
@@ -1376,13 +1527,22 @@ fn leave_worker_role_fails_with_invalid_recurring_reward_relationships() {
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
 
-        leave_worker_role_fixture.call_and_assert(Err(Error::RelationshipMustExist));
+        leave_worker_role_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::RelationshipMustExist.into(),
+        ));
     });
 }
 
 #[test]
 fn leave_worker_role_succeeds_with_stakes() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let worker_id = fill_worker_position_with_stake(100);
 
         let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
@@ -1399,6 +1559,13 @@ fn leave_worker_role_succeeds_with_stakes() {
 #[test]
 fn terminate_worker_role_succeeds_with_stakes() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let total_balance = 10000;
         let stake_balance = 100;
 
@@ -1514,6 +1681,13 @@ fn terminate_worker_role_succeeds_with_slashing() {
 #[test]
 fn terminate_worker_role_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         HireLeadFixture::default().hire_lead();
 
         let worker_id = HiringWorkflow::default()
@@ -1537,6 +1711,13 @@ fn terminate_worker_role_succeeds() {
 #[test]
 fn fire_leader_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let worker_id = HireLeadFixture::default().hire_lead();
 
         let terminate_worker_role_fixture =
@@ -1568,13 +1749,13 @@ fn terminate_worker_role_fails_with_invalid_text() {
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_text(Vec::new());
         terminate_worker_role_fixture
-            .call_and_assert(Err(Error::Other("WorkerExitRationaleTextTooShort")));
+            .call_and_assert(Err(DispatchError::Other("WorkerExitRationaleTextTooShort")));
 
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
                 .with_text(b"MSG_WORKER_EXIT_RATIONALE_TEXT_TOO_LONG".to_vec());
         terminate_worker_role_fixture
-            .call_and_assert(Err(Error::Other("WorkerExitRationaleTextTooLong")));
+            .call_and_assert(Err(DispatchError::Other("WorkerExitRationaleTextTooLong")));
     });
 }
 
@@ -1588,7 +1769,9 @@ fn terminate_worker_role_fails_with_unset_lead() {
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
 
-        terminate_worker_role_fixture.call_and_assert(Err(Error::CurrentLeadNotSet));
+        terminate_worker_role_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::CurrentLeadNotSet.into(),
+        ));
     });
 }
 
@@ -1607,7 +1790,7 @@ fn terminate_worker_role_fails_with_invalid_origin() {
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
                 .with_origin(RawOrigin::None);
 
-        terminate_worker_role_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+        terminate_worker_role_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -1620,13 +1803,20 @@ fn fire_leader_fails_with_invalid_origin() {
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
                 .with_origin(RawOrigin::None);
 
-        terminate_worker_role_fixture.call_and_assert(Err(Error::RequireRootOrigin));
+        terminate_worker_role_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
 fn increase_worker_stake_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let worker_id = fill_worker_position_with_stake(100);
 
         let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id);
@@ -1655,7 +1845,7 @@ fn increase_worker_stake_fails_with_invalid_origin() {
         let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
             .with_origin(RawOrigin::None);
 
-        increase_stake_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+        increase_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -1667,7 +1857,9 @@ fn increase_worker_stake_fails_with_zero_balance() {
         let increase_stake_fixture =
             IncreaseWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
 
-        increase_stake_fixture.call_and_assert(Err(Error::StakeBalanceCannotBeZero));
+        increase_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::StakeBalanceCannotBeZero.into(),
+        ));
     });
 }
 
@@ -1679,7 +1871,9 @@ fn increase_worker_stake_fails_with_invalid_worker_id() {
         let increase_stake_fixture =
             IncreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
-        increase_stake_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
+        increase_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
+        ));
     });
 }
 
@@ -1691,8 +1885,10 @@ fn increase_worker_stake_fails_with_invalid_balance() {
         let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
             .with_balance(invalid_balance);
 
-        increase_stake_fixture
-            .call_and_assert(Err(Error::StakingErrorInsufficientBalanceInSourceAccount));
+        increase_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::StakingErrorInsufficientBalanceInSourceAccount
+                .into(),
+        ));
     });
 }
 
@@ -1703,13 +1899,22 @@ fn increase_worker_stake_fails_with_no_stake_profile() {
 
         let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id);
 
-        increase_stake_fixture.call_and_assert(Err(Error::NoWorkerStakeProfile));
+        increase_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::NoWorkerStakeProfile.into(),
+        ));
     });
 }
 
 #[test]
 fn decrease_worker_stake_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let worker_id = fill_worker_position_with_stake(100);
 
         let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id);
@@ -1741,7 +1946,7 @@ fn decrease_worker_stake_fails_with_invalid_origin() {
         let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
             .with_origin(RawOrigin::None);
 
-        decrease_stake_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+        decrease_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -1752,7 +1957,7 @@ fn decrease_worker_stake_fails_with_invalid_origin_for_leader() {
         let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
             .with_origin(RawOrigin::None);
 
-        decrease_stake_fixture.call_and_assert(Err(Error::RequireRootOrigin));
+        decrease_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -1764,7 +1969,9 @@ fn decrease_worker_stake_fails_with_zero_balance() {
         let decrease_stake_fixture =
             DecreaseWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
 
-        decrease_stake_fixture.call_and_assert(Err(Error::StakeBalanceCannotBeZero));
+        decrease_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::StakeBalanceCannotBeZero.into(),
+        ));
     });
 }
 
@@ -1777,7 +1984,9 @@ fn decrease_worker_stake_fails_with_invalid_worker_id() {
         let decrease_stake_fixture =
             DecreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
-        decrease_stake_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
+        decrease_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
+        ));
     });
 }
 
@@ -1789,7 +1998,9 @@ fn decrease_worker_stake_fails_with_invalid_balance() {
         let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
             .with_balance(invalid_balance);
 
-        decrease_stake_fixture.call_and_assert(Err(Error::StakingErrorInsufficientStake));
+        decrease_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::StakingErrorInsufficientStake.into(),
+        ));
     });
 }
 
@@ -1800,7 +2011,9 @@ fn decrease_worker_stake_fails_with_no_stake_profile() {
 
         let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id);
 
-        decrease_stake_fixture.call_and_assert(Err(Error::NoWorkerStakeProfile));
+        decrease_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::NoWorkerStakeProfile.into(),
+        ));
     });
 }
 
@@ -1812,13 +2025,22 @@ fn decrease_worker_stake_fails_with_not_set_lead() {
         let decrease_stake_fixture =
             DecreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
-        decrease_stake_fixture.call_and_assert(Err(Error::CurrentLeadNotSet));
+        decrease_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::CurrentLeadNotSet.into(),
+        ));
     });
 }
 
 #[test]
 fn slash_worker_stake_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+          Events are not emitted on block 0.
+          So any dispatchable calls made during genesis block formation will have no events emitted.
+          https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let worker_id = fill_worker_position_with_stake(100);
 
         let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(worker_id);
@@ -1832,6 +2054,13 @@ fn slash_worker_stake_succeeds() {
 #[test]
 fn slash_leader_stake_succeeds() {
     build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let leader_worker_id = HiringWorkflow::default()
             .with_role_stake(Some(100))
             .with_opening_type(OpeningType::Leader)
@@ -1857,7 +2086,7 @@ fn slash_worker_stake_fails_with_invalid_origin() {
         let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id)
             .with_origin(RawOrigin::None);
 
-        slash_stake_fixture.call_and_assert(Err(Error::RequireSignedOrigin));
+        slash_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -1869,7 +2098,7 @@ fn slash_leader_stake_fails_with_invalid_origin() {
         let slash_stake_fixture =
             SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_origin(RawOrigin::None);
 
-        slash_stake_fixture.call_and_assert(Err(Error::RequireRootOrigin));
+        slash_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
@@ -1881,7 +2110,9 @@ fn slash_worker_stake_fails_with_zero_balance() {
         let slash_stake_fixture =
             SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
 
-        slash_stake_fixture.call_and_assert(Err(Error::StakeBalanceCannotBeZero));
+        slash_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::StakeBalanceCannotBeZero.into(),
+        ));
     });
 }
 
@@ -1893,7 +2124,9 @@ fn slash_worker_stake_fails_with_invalid_worker_id() {
 
         let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
-        slash_stake_fixture.call_and_assert(Err(Error::WorkerDoesNotExist));
+        slash_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::WorkerDoesNotExist.into(),
+        ));
     });
 }
 
@@ -1904,7 +2137,9 @@ fn slash_worker_stake_fails_with_no_stake_profile() {
 
         let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(worker_id);
 
-        slash_stake_fixture.call_and_assert(Err(Error::NoWorkerStakeProfile));
+        slash_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::NoWorkerStakeProfile.into(),
+        ));
     });
 }
 
@@ -1915,7 +2150,9 @@ fn slash_worker_stake_fails_with_not_set_lead() {
 
         let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
-        slash_stake_fixture.call_and_assert(Err(Error::CurrentLeadNotSet));
+        slash_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingGroupInstance>::CurrentLeadNotSet.into(),
+        ));
     });
 }
 
@@ -1969,7 +2206,10 @@ fn set_working_group_mint_capacity_fails_with_mint_not_found() {
         <crate::Mint<Test, TestWorkingGroupInstance>>::put(5); // random mint id
         let result = TestWorkingGroup::set_mint_capacity(RawOrigin::Root.into(), capacity);
 
-        assert_eq!(result, Err(Error::CannotFindMint));
+        assert_eq!(
+            result,
+            Err(Error::<Test, TestWorkingGroupInstance>::CannotFindMint.into())
+        );
     });
 }
 
@@ -1979,7 +2219,7 @@ fn set_working_group_mint_capacity_fails_with_invalid_origin() {
         let capacity = 15000;
         let result = TestWorkingGroup::set_mint_capacity(RawOrigin::None.into(), capacity);
 
-        assert_eq!(result, Err(Error::RequireRootOrigin));
+        assert_eq!(result, Err(DispatchError::BadOrigin));
     });
 }
 
@@ -1988,7 +2228,7 @@ fn ensure_setting_genesis_working_group_mint_succeeds() {
     build_test_externalities().execute_with(|| {
         let mint_id = TestWorkingGroup::mint();
 
-        assert!(minting::Mints::<Test>::exists(mint_id));
+        assert!(minting::Mints::<Test>::contains_key(mint_id));
 
         let mint = <minting::Module<Test>>::mints(mint_id);
         assert_eq!(mint.capacity(), WORKING_GROUP_MINT_CAPACITY);
@@ -2062,7 +2302,9 @@ fn adding_too_much_workers_fails_with_single_application_out_of_limit() {
         let hiring_workflow = HiringWorkflow::default()
             .disable_setup_environment()
             .add_default_application()
-            .expect(Err(Error::MaxActiveWorkerNumberExceeded));
+            .expect(Err(
+                Error::<Test, TestWorkingGroupInstance>::MaxActiveWorkerNumberExceeded.into(),
+            ));
 
         hiring_workflow.execute()
     });
@@ -2079,7 +2321,9 @@ fn fill_opening_cannot_hire_more_workers_using_several_applicationst_han_allows_
             .disable_setup_environment()
             .add_application_with_origin(b"Some1".to_vec(), RawOrigin::Signed(2), 2)
             .add_application_with_origin(b"Some2".to_vec(), RawOrigin::Signed(3), 3)
-            .expect(Err(Error::MaxActiveWorkerNumberExceeded));
+            .expect(Err(
+                Error::<Test, TestWorkingGroupInstance>::MaxActiveWorkerNumberExceeded.into(),
+            ));
 
         hiring_workflow.execute()
     });

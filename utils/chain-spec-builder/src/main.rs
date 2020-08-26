@@ -27,14 +27,15 @@ use joystream_node::{
     chain_spec::{self, chain_spec_properties, AccountId},
     proposals_config,
 };
-use sr_keystore::Store as Keystore;
-use sr_primitives::{
+use sc_chain_spec::ChainType;
+use sc_keystore::Store as Keystore;
+use sc_telemetry::TelemetryEndpoints;
+use sp_core::{
     crypto::{Public, Ss58Codec},
     sr25519,
     traits::BareCryptoStore,
 };
 
-use substrate_telemetry::TelemetryEndpoints;
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
 /// A utility to easily create a testnet chain spec definition with a given set
@@ -134,26 +135,22 @@ fn generate_chain_spec(
     //     "/dns4/tesnet.joystream.org/tcp/30333/p2p/QmaTTdEF6YVCtynSjsXmGPSGcEesAahoZ8pmcCmmBwSE7S",
     // )];
 
+    let telemetry_endpoints = TelemetryEndpoints::new(vec![(STAGING_TELEMETRY_URL.to_string(), 0)])
+        .map_err(|err| format!("Failed to create telemetry endpoints: {:?}", err))?;
+
     let chain_spec = chain_spec::ChainSpec::from_genesis(
         "Joystream Testnet",
         "joy_testnet",
+        ChainType::Development,
         move || genesis_constructor(&authority_seeds, &endowed_accounts, &sudo_account),
-        // below can be manually modified in chainspec file, they don't affect genesis state
-        // but we set some default values here for convenience.
         vec![],
-        Some(TelemetryEndpoints::new(vec![(
-            STAGING_TELEMETRY_URL.to_string(),
-            0,
-        )])),
-        // protocol_id
+        Some(telemetry_endpoints),
         Some(&*"/joy/testnet/0"),
-        // Properties
         Some(chain_spec_properties()),
-        // Extensions
-        None, // Default::default(),
+        None,
     );
 
-    chain_spec.to_json(false).map_err(|err| err)
+    chain_spec.as_json(false).map_err(|err| err)
 }
 
 fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> Result<(), String> {
@@ -161,7 +158,7 @@ fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> 
         let keystore = Keystore::open(keystore_path.join(format!("auth-{}", n)), None)
             .map_err(|err| err.to_string())?;
 
-        let (_, _, grandpa, babe, im_online) = chain_spec::get_authority_keys_from_seed(seed);
+        let (_, _, grandpa, babe, im_online, _) = chain_spec::get_authority_keys_from_seed(seed);
 
         let insert_key = |key_type, public| {
             keystore
@@ -170,17 +167,11 @@ fn generate_authority_keys_and_store(seeds: &[String], keystore_path: &Path) -> 
                 .map_err(|_| format!("Failed to insert key: {}", grandpa))
         };
 
-        insert_key(sr_primitives::crypto::key_types::BABE, babe.as_slice())?;
+        insert_key(sp_core::crypto::key_types::BABE, babe.as_slice())?;
 
-        insert_key(
-            sr_primitives::crypto::key_types::GRANDPA,
-            grandpa.as_slice(),
-        )?;
+        insert_key(sp_core::crypto::key_types::GRANDPA, grandpa.as_slice())?;
 
-        insert_key(
-            sr_primitives::crypto::key_types::IM_ONLINE,
-            im_online.as_slice(),
-        )?;
+        insert_key(sp_core::crypto::key_types::IM_ONLINE, im_online.as_slice())?;
     }
 
     Ok(())

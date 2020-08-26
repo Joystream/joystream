@@ -1,30 +1,17 @@
 [package]
-name = "chain-spec-builder"
-version = "2.1.0"
-authors = ["Parity Technologies <admin@parity.io>"]
-edition = "2018"
-build = "build.rs"
-license = "GPL-3.0"
-homepage = "https://substrate.dev"
-repository = "https://github.com/paritytech/substrate/"
+authors = ['Joystream contributors']
+build = 'build.rs'
+edition = '2018'
+name = 'chain-spec-builder'
+version = '3.0.0'
 
 [dependencies]
 ansi_term = "0.12.1"
 rand = "0.7.2"
-structopt = "0.3.5"
+structopt = "0.3.8"
+sc-keystore = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
+sc-telemetry = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
+sc-chain-spec = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
+sp-core = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
 joystream-node = { path = "../../node" }
 
-[dependencies.sr-keystore]
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-keystore'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.sr-primitives]
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-primitives'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.substrate-telemetry]
-git = 'https://github.com/paritytech/substrate.git'
-package = 'substrate-telemetry'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'

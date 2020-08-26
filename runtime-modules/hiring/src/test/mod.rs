@@ -8,8 +8,8 @@ use public_api::*;
 use crate::mock::Test;
 use crate::*;
 
-use rstd::cell::RefCell;
-use rstd::rc::Rc;
+use sp_std::cell::RefCell;
+use sp_std::rc::Rc;
 
 use std::panic;
 
@@ -22,6 +22,6 @@ pub(crate) type Balance =
 
 // Debug test object content. Recurring temporary usage - do not delete.
 #[allow(dead_code)]
-pub fn debug_print<T: rstd::fmt::Debug>(obj: T) {
+pub fn debug_print<T: sp_std::fmt::Debug>(obj: T) {
     println!("{:?}", obj);
 }
