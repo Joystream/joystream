@@ -27,16 +27,16 @@ export class SavedEntityEvent {
   id!: number;
 
   // Index of the event. @polkadot/types/interfaces/EventId
-  @Column({ type: 'numeric', transformer: new NumericTransformer() })
-  index!: BN;
+  @Column()
+  index!: number;
 
   // The actually event name without event section. Event.method
   @Column()
   eventName!: string;
 
   // Block number. Event emitted from this block.
-  @Column({ type: 'numeric', transformer: new NumericTransformer() })
-  blockNumber!: BN;
+  @Column()
+  blockNumber!: number;
 
   // When the event is added to the database
   @Column('timestamp without time zone', {
