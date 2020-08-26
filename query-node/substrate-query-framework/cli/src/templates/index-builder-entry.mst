@@ -146,7 +146,7 @@ async function main() {
   await node.start({
     wsProviderURI: providerUri,
     processingPack: getProcessingPack(),
-    atBlock: atBlock && atBlock !== '0' ? new BN(atBlock) : undefined,
+    atBlock: atBlock && atBlock !== "0" ? Number.parseInt(atBlock) : undefined,
     {{#typeRegistrator}}typeRegistrator: {{typeRegistrator}} {{/typeRegistrator}}
   });
 }
