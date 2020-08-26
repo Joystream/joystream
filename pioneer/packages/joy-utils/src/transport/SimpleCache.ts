@@ -16,7 +16,7 @@ function anyIdToString (id: IdLike): string {
 export class SimpleCache<Id extends IdLike, Obj extends HasId> {
   private cacheName: string
   private loadByIds: LoadObjectsByIdsFn<Id, Obj>
-  private cache: Map<string, Obj> = new Map()
+  private cache = new Map<string, Obj>()
 
   constructor (cacheName: string, loadByIds: LoadObjectsByIdsFn<Id, Obj>) {
     this.cacheName = cacheName;
@@ -30,7 +30,7 @@ export class SimpleCache<Id extends IdLike, Obj extends HasId> {
   clear (): void {
     const prevCacheSize = this.cache.size;
 
-    this.cache = new Map();
+    this.cache = new Map<string, Obj>();
     console.info(`Removed all ${prevCacheSize} entries from ${this.cacheName}`);
   }
 
@@ -40,7 +40,7 @@ export class SimpleCache<Id extends IdLike, Obj extends HasId> {
       ? keepIds
       : new Set(keepIds.map((id) => id.toString()));
 
-    const newCache: Map<string, Obj> = new Map();
+    const newCache = new Map<string, Obj>();
 
     for (const [id, o] of this.cache.entries()) {
       if (keepIdsSet.has(id)) {

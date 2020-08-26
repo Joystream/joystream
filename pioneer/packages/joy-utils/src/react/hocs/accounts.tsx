@@ -7,7 +7,7 @@ import { withCalls, withMulti, withObservable, ApiContext } from '@polkadot/reac
 import { SubjectInfo } from '@polkadot/ui-keyring/observable/types';
 
 import { MemberId, Membership } from '@joystream/types/members';
-import { LeadId, Lead, CuratorId, Curator } from '@joystream/types/content-working-group';
+import { LeadId, Lead, CuratorId, Curator, CurationActor } from '@joystream/types/content-working-group';
 
 import { queryMembershipToProp } from '@polkadot/joy-members/utils';
 import useMyAccount from '../hooks/useMyAccount';
@@ -35,9 +35,9 @@ export type MyAccountProps = MyAddressProps & {
   // Content Working Group
   isLeadSet?: Option<LeadId>;
   contentLeadId?: LeadId;
-  contentLead?: Lead; // linked_map value
+  contentLead?: Lead;
 
-  curationActor?: any;
+  curationActor?: [CurationActor, AccountId];
   allAccounts?: SubjectInfo;
 };
 

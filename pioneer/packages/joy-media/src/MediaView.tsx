@@ -6,6 +6,7 @@ import { useTransportContext } from './TransportContext';
 import { withMembershipRequired } from '@polkadot/joy-utils/react/hocs/guards';
 import { useApi } from '@polkadot/react-hooks';
 import { ApiPromise } from '@polkadot/api';
+import { isObjectWithProperties } from '@polkadot/joy-utils/functions/misc';
 
 type InitialPropsWithMembership<A> = A & {
   myAddress?: string;
@@ -32,11 +33,11 @@ type BaseProps<A, B> = {
   membersOnly?: boolean;
 }
 
-function serializeTrigger (val: any): any {
+function serializeTrigger (val: unknown): number | boolean | string | undefined {
   if (['number', 'boolean', 'string'].includes(typeof val)) {
-    return val;
-  } else if (typeof val === 'object' && typeof val.toString === 'function') {
-    return val.toString();
+    return val as number | boolean | string;
+  } else if (isObjectWithProperties(val, 'toString') && typeof val.toString === 'function') {
+    return val.toString() as string;
   } else {
     return undefined;
   }
@@ -74,7 +75,7 @@ export function MediaView<A extends Record<string, unknown> = Record<string, unk
       if (!transport) {
         console.error('Transport is not defined');
       } else {
-        doResolveProps();
+        void doResolveProps();
       }
     }, rerenderDeps);
 

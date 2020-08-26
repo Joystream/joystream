@@ -40,7 +40,7 @@ type MediaTextProps<OuterProps, FormValues> =
 type MediaFieldProps<OuterProps, FormValues> =
   BaseFieldProps<OuterProps, FormValues> &
   JoyForms.LabelledProps<FormValues> & {
-    fieldProps: any;
+    fieldProps: Record<string, unknown>;
   }
 
 type MediaDropdownProps<OuterProps, FormValues> =
@@ -106,8 +106,8 @@ export function withMediaForm<OuterProps, FormValues>
 
   const MediaDropdown = (props: MediaDropdownProps<OuterProps, FormValues>) => {
     const { field: f, options = [] } = props;
-    const id = f.id as string;
-    const value = (props.values as any)[id] || '';
+    const id = f.id;
+    const value = props.values[id] || '';
 
     return <MediaField {...props} fieldProps={{
       component: Dropdown,
@@ -116,10 +116,10 @@ export function withMediaForm<OuterProps, FormValues>
       options,
       value,
       onBlur: (_event: any, _data: DropdownProps) => {
-        props.setFieldTouched(id, true);
+        props.setFieldTouched(id as string, true);
       },
       onChange: (_event: any, data: DropdownProps) => {
-        props.setFieldValue(id, data.value);
+        props.setFieldValue(id as string, data.value);
       }
     }} />;
   };

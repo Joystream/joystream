@@ -23,7 +23,7 @@ export const EditVideoView = MediaView<Props>({
   }
 });
 
-type WithRouterProps = Props & RouteComponentProps<any>
+type WithRouterProps = Props & RouteComponentProps<Record<string, string | undefined>>
 
 export const UploadVideoWithRouter = (props: WithRouterProps) => {
   const { match: { params: { channelId } } } = props;

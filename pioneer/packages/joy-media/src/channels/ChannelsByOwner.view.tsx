@@ -18,7 +18,7 @@ export const ChannelsByOwnerView = MediaView<Props>({
   }
 });
 
-export const ChannelsByOwnerWithRouter = (props: Props & RouteComponentProps<any>) => {
+export const ChannelsByOwnerWithRouter = (props: Props & RouteComponentProps<Record<string, string | undefined>>) => {
   const { match: { params: { account } } } = props;
   const { api } = useApi();
 

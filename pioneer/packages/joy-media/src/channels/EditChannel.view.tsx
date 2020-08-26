@@ -20,7 +20,7 @@ export const EditChannelView = MediaView<Props>({
   }
 });
 
-type WithRouterProps = Props & RouteComponentProps<any>
+type WithRouterProps = Props & RouteComponentProps<Record<string, string | undefined>>
 
 export const EditChannelWithRouter = (props: WithRouterProps) => {
   const { match: { params: { id } } } = props;

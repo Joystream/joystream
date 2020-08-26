@@ -167,13 +167,20 @@ export function bytesToString (bytes: Bytes) {
   return Buffer.from(bytes.toString().substr(2), 'hex').toString();
 }
 
-export function normalizeError (e: any): string {
+// Based on: https://fettblog.eu/typescript-hasownproperty/
+export function isObjectWithProperties<X extends unknown, Y extends PropertyKey[]> (input: X, ...props: Y): input is X & Record<Y[number], unknown> {
+  return typeof input === 'object' && input !== null && props.every((prop) => prop in input);
+}
+
+export function normalizeError (e: unknown): string {
   let message: string;
 
   if (e instanceof Error) {
     message = e.message;
+  } else if (isObjectWithProperties(e, 'toString') && typeof e.toString === 'function') {
+    message = e.toString() as string;
   } else if (typeof e === 'string') {
-    return e;
+    message = e;
   } else {
     message = JSON.stringify(e);
   }

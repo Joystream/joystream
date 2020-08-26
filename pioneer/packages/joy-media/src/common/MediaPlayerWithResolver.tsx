@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import axios, { CancelTokenSource } from 'axios';
+import axios, { CancelTokenSource, AxiosError } from 'axios';
 import _ from 'lodash';
 
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { withMulti } from '@polkadot/react-api/hoc';
-import { Option } from '@polkadot/types/codec';
+import { Option, Vec } from '@polkadot/types/codec';
 
 import translate from '../translate';
 import { DiscoveryProviderProps, withDiscoveryProvider } from '../DiscoveryProvider';
@@ -14,6 +14,7 @@ import { Message } from 'semantic-ui-react';
 import { MediaPlayerView, RequiredMediaPlayerProps } from './MediaPlayerView';
 import { JoyInfo } from '@polkadot/joy-utils/react/components';
 import { useTransport } from '@polkadot/joy-utils/react/hooks';
+import { isObjectWithProperties } from '@polkadot/joy-utils/functions/misc';
 
 type Props = ApiProps & I18nProps & DiscoveryProviderProps & RequiredMediaPlayerProps;
 
@@ -34,9 +35,13 @@ function InnerComponent (props: Props) {
     setError(undefined);
     setCancelSource(newCancelSource());
 
-    const rids: DataObjectStorageRelationshipId[] = await api.query.dataObjectStorageRegistry.relationshipsByContentId(contentId) as any;
+    const rids = await api.query.dataObjectStorageRegistry.relationshipsByContentId<Vec<DataObjectStorageRelationshipId>>(contentId);
 
-    const allRelationships: Option<DataObjectStorageRelationship>[] = await Promise.all(rids.map((id) => api.query.dataObjectStorageRegistry.relationships(id))) as any;
+    const allRelationships = await Promise.all(
+      rids.map((id) =>
+        api.query.dataObjectStorageRegistry.relationships<Option<DataObjectStorageRelationship>>(id)
+      )
+    );
 
     // Providers that have signalled onchain that they have the asset
     let readyProviders = allRelationships.filter((r) => r.isSome).map((r) => r.unwrap())
@@ -58,7 +63,7 @@ function InnerComponent (props: Props) {
     // are not pruned onchain.
     readyProviders = _.intersectionBy(activeProviders, readyProviders, (provider) => provider.toString());
 
-    console.log(`Found ${readyProviders.length} providers ready to serve content: ${readyProviders}`);
+    console.log(`Found ${readyProviders.length} providers ready to serve content: ${readyProviders.join(', ')}`);
 
     // shuffle to spread the load
     readyProviders = _.shuffle(readyProviders);
@@ -87,16 +92,23 @@ function InnerComponent (props: Props) {
       try {
         console.log('Check URL of resolved asset:', assetUrl);
         const response = await axios.head(assetUrl, { cancelToken: cancelSource.token });
+        const headers = response.headers as Record<string, string | undefined>;
 
-        setContentType(response.headers['content-type'] || 'video/video');
+        setContentType(headers['content-type'] || 'video/video');
         setResolvedAssetUrl(assetUrl);
 
         return;
-      } catch (err) {
+      } catch (e) {
+        const err = e as unknown;
+
         if (axios.isCancel(err)) {
           return;
         } else {
-          if (!err.response || (err.response.status >= 500 && err.response.status <= 504)) {
+          const response = isObjectWithProperties(err, 'response')
+            ? (err as AxiosError).response
+            : undefined;
+
+          if (!response || (response.status >= 500 && response.status <= 504)) {
             // network connection error
             discoveryProvider.reportUnreachable(provider);
           }
@@ -111,7 +123,7 @@ function InnerComponent (props: Props) {
   };
 
   useEffect(() => {
-    resolveAsset();
+    void resolveAsset();
 
     return () => {
       cancelSource.cancel();

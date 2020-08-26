@@ -19,7 +19,7 @@ export function asChannelId (id: AnyChannelId): ChannelId {
   } else if (canBeId(id)) {
     return createMock('ChannelId', id);
   } else {
-    throw new Error(`Not supported format for Channel id: ${id}`);
+    throw new Error(`Not supported format for Channel id: ${typeof id === 'object' ? id.constructor.name : id}`);
   }
 }
 
@@ -29,7 +29,7 @@ export function asEntityId (id: AnyEntityId): EntityId {
   } else if (canBeId(id)) {
     return createMock('EntityId', id);
   } else {
-    throw new Error(`Not supported format for Entity id: ${id}`);
+    throw new Error(`Not supported format for Entity id: ${typeof id === 'object' ? id.constructor.name : id}`);
   }
 }
 
@@ -39,6 +39,6 @@ export function asClassId (id: AnyClassId): ClassId {
   } else if (canBeId(id)) {
     return createMock('ClassId', id);
   } else {
-    throw new Error(`Not supported format for Class id: ${id}`);
+    throw new Error(`Not supported format for Class id: ${typeof id === 'object' ? id.constructor.name : id}`);
   }
 }

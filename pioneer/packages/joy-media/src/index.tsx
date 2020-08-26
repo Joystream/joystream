@@ -26,7 +26,7 @@ import { AllVideosView } from './explore/AllVideos';
 import { AllChannelsView } from './explore/AllChannels';
 // import { VideosByOwner } from './video/VideosByOwner';
 
-type Props = AppProps & I18nProps & ApiProps & DiscoveryProviderProps & {};
+type Props = AppProps & I18nProps & ApiProps & DiscoveryProviderProps;
 
 function App (props: Props) {
   const { t, basePath } = props;

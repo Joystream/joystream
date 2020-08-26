@@ -131,7 +131,7 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
   const selectedTracks = tracks.filter((track) => idsOfSelectedTracks.has(track.id));
 
   const renderReorderTracks = () => {
-    return <Section title={`Add tracks to album "${albumName}"`}>
+    return <Section title={`Add tracks to album "${albumName || ''}"`}>
 
       <Message
         info

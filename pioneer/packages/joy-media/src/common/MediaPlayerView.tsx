@@ -41,7 +41,7 @@ export type RequiredMediaPlayerProps = {
 type ContentProps = {
   contentType?: string;
   dataObjectOpt?: Option<DataObject>;
-  resolvedAssetUrl?: string;
+  resolvedAssetUrl: string;
 }
 
 type MediaPlayerViewProps = ApiProps & I18nProps &
@@ -103,6 +103,7 @@ function InnerComponent (props: MediaPlayerViewProps) {
   const { video, resolvedAssetUrl: url } = props;
 
   const { dataObjectOpt, channel } = props;
+  const { myAccountId } = useMyMembership();
 
   if (!dataObjectOpt || dataObjectOpt.isNone) {
     return null;
@@ -110,8 +111,6 @@ function InnerComponent (props: MediaPlayerViewProps) {
 
   // TODO extract and show the next info from dataObject:
   // {"owner":"5GSMNn8Sy8k64mGUWPDafjMZu9bQNX26GujbBQ1LeJpNbrfg","added_at":{"block":2781,"time":1582750854000},"type_id":1,"size":3664485,"liaison":"5HN528fspu4Jg3KXWm7Pu7aUK64RSBz2ZSbwo1XKR9iz3hdY","liaison_judgement":1,"ipfs_content_id":"QmNk4QczoJyPTAKdfoQna6KhAz3FwfjpKyRBXAZHG5djYZ"}
-
-  const { myAccountId } = useMyMembership();
   const iAmOwner = isAccountAChannelOwner(channel, myAccountId);
 
   return (

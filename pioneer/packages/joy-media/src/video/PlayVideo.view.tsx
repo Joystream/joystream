@@ -27,7 +27,7 @@ export const PlayVideoView = MediaView<Props>({
   }
 });
 
-export const PlayVideoWithRouter = (props: Props & RouteComponentProps<any>) => {
+export const PlayVideoWithRouter = (props: Props & RouteComponentProps<Record<string, string | undefined>>) => {
   const { match: { params: { id } } } = props;
   const { api } = useApi();
 

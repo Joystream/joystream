@@ -115,7 +115,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     Object.keys(values).forEach((prop) => {
       const fieldName = prop as VideoPropId;
       const field = Fields[fieldName];
-      let fieldValue = values[fieldName] as any;
+      let fieldValue = values[fieldName];
 
       let shouldIncludeValue = true;
 
@@ -147,10 +147,12 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
         }
 
         if (isDateField(fieldName)) {
-          fieldValue = humanDateToUnixTs(fieldValue);
+          fieldValue = typeof fieldValue === 'string' ? (humanDateToUnixTs(fieldValue) || '') : '';
         }
 
-        res[fieldName] = fieldValue;
+        // FIXME: Temporary solution, since fixing this would require a bigger refactorization
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        res[fieldName] = fieldValue as any;
       }
     });
 

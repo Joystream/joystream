@@ -19,7 +19,7 @@ export const ViewChannelView = MediaView<Props>({
   }
 });
 
-export const ViewChannelWithRouter = (props: Props & RouteComponentProps<any>) => {
+export const ViewChannelWithRouter = (props: Props & RouteComponentProps<Record<string, string | undefined>>) => {
   const { match: { params: { id } } } = props;
   const { api } = useApi();
 
