@@ -13,14 +13,17 @@ import { doInTransaction } from './db/helper';
 import { PooledExecutor } from './PooledExecutor';
 import { SubstrateEventEntity } from './entities';
 import { EVENT_TABLE_NAME } from './entities/SubstrateEventEntity';
+import { numberEnv } from './utils/env-flags';
 
 const debug = Debug('index-builder:indexer');
 
-const WORKERS_NUMBER = 100;
+const WORKERS_NUMBER = numberEnv('INDEXER_WORKERS') || 50;
 
 export default class IndexBuilder {
   private _producer: QueryBlockProducer;
   private _stopped = false;
+
+  private _indexingTimer = new Date().getMilliseconds();
 
   private _indexerHead = -1;
 
@@ -129,9 +132,15 @@ export default class IndexBuilder {
 
   private _updateIndexerHead(): void {
     let nextHead = this._indexerHead + 1;
-    debug(`Next indexer head: ${nextHead}`);
     while (this._recentlyIndexedBlocks.has(nextHead)) {
       this._indexerHead = nextHead;
+
+      if (this._indexerHead % 100 === 0) {
+        const _newTime = new Date().getMilliseconds();
+        debug(`Indexed 100 blocks in ${_newTime - this._indexingTimer} ms`);
+        this._indexingTimer = _newTime;
+      }
+
       debug(`Updated indexer head to ${this._indexerHead}`);
       // remove from the set as we don't need to keep it anymore
       this._recentlyIndexedBlocks.delete(nextHead);
