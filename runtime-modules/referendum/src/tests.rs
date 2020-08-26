@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::{Error, ReferendumResult, SubStake, SubVote, Trait};
+use super::{Error, ReferendumResult, Trait};
 use crate::mock::*;
 
 type Mocks = InstanceMocks<Runtime, Instance0>;
@@ -10,7 +10,7 @@ type MockUtils = InstanceMockUtils<Runtime, Instance0>;
 #[test]
 fn referendum_start() {
     MockUtils::origin_access(USER_ADMIN, |origin| {
-        let options = vec![0];
+        let options = 1;
         let winning_target_count = 1;
 
         Mocks::start_referendum_extrinsic(origin, options, winning_target_count, Ok(()));
@@ -20,7 +20,7 @@ fn referendum_start() {
 #[test]
 fn referendum_start_access_restricted() {
     MockUtils::origin_access(USER_REGULAR, |origin| {
-        let options = vec![0];
+        let options = 1;
         let winning_target_count = 1;
 
         Mocks::start_referendum_extrinsic(
@@ -38,7 +38,7 @@ fn referendum_start_forbidden_after_start() {
 
     build_test_externalities(config).execute_with(|| {
         let origin = OriginType::Signed(USER_ADMIN);
-        let options = vec![0];
+        let options = 1;
         let winning_target_count = 1;
 
         Mocks::start_referendum_extrinsic(
@@ -62,7 +62,7 @@ fn referendum_start_no_options() {
 
     build_test_externalities(config).execute_with(|| {
         let origin = OriginType::Signed(USER_ADMIN);
-        let options = vec![];
+        let options = 0;
         let winning_target_count = 1;
 
         Mocks::start_referendum_extrinsic(
@@ -79,9 +79,8 @@ fn referendum_start_too_many_options() {
     let origin = OriginType::Signed(USER_ADMIN);
     let winning_target_count = 1;
 
-    let too_many_options: Vec<u64> =
-        (0..(<Runtime as Trait<Instance0>>::MaxReferendumOptions::get() + 1)).collect();
-    let ok_options = too_many_options.as_slice()[..too_many_options.len() - 1].to_vec();
+    let ok_options = <Runtime as Trait<Instance0>>::MaxReferendumOptions::get();
+    let too_many_options: u64 = ok_options + 1;
 
     let config = default_genesis_config();
     build_test_externalities(config).execute_with(|| {
@@ -99,24 +98,6 @@ fn referendum_start_too_many_options() {
     });
 }
 
-#[test]
-fn referendum_start_not_unique_options() {
-    let config = default_genesis_config();
-    let winning_target_count = 1;
-
-    build_test_externalities(config).execute_with(|| {
-        let origin = OriginType::Signed(USER_ADMIN);
-        let options = vec![0, 1, 2, 2, 3];
-
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options,
-            winning_target_count,
-            Err(Error::DuplicateReferendumOptions),
-        );
-    });
-}
-
 /////////////////// Lifetime - voting //////////////////////////////////////////
 #[test]
 fn voting() {
@@ -127,27 +108,14 @@ fn voting() {
         let origin = OriginType::Signed(account_id);
         let winning_target_count = 1;
 
-        let options = vec![0];
-        let stake_distribution = vec![SubStake {
-            account_id: account_id,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let vote_distribution = vec![SubVote {
-            option_index: options[0],
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let (commitment, _) = MockUtils::calculate_commitment(&account_id, &vote_distribution);
+        let options = 1;
+        let option_to_vote_for = 0;
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, _) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
         Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
 
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            account_id,
-            commitment,
-            stake_distribution,
-            Ok(()),
-        );
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
     });
 }
 
@@ -159,23 +127,15 @@ fn voting_referendum_not_running() {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
 
-        let options = vec![0];
-        let stake_distribution = vec![SubStake {
-            account_id: account_id,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let vote_distribution = vec![SubVote {
-            option_index: options[0],
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let (commitment, _) = MockUtils::calculate_commitment(&account_id, &vote_distribution);
+        let option_to_vote_for = 0;
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, _) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
         Mocks::vote(
             origin.clone(),
             account_id,
-            account_id,
             commitment,
-            stake_distribution,
+            stake,
             Err(Error::ReferendumNotRunning),
         );
     });
@@ -190,16 +150,10 @@ fn voting_voting_stage_overdue() {
         let origin = OriginType::Signed(account_id);
         let winning_target_count = 1;
 
-        let options = vec![0];
-        let stake_distribution = vec![SubStake {
-            account_id: account_id,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let vote_distribution = vec![SubVote {
-            option_index: options[0],
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let (commitment, _) = MockUtils::calculate_commitment(&account_id, &vote_distribution);
+        let options = 1;
+        let option_to_vote_for = 0;
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, _) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
         Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
 
@@ -209,9 +163,8 @@ fn voting_voting_stage_overdue() {
         Mocks::vote(
             origin.clone(),
             account_id,
-            account_id,
             commitment,
-            stake_distribution,
+            stake,
             Err(Error::ReferendumNotRunning),
         );
     });
@@ -226,69 +179,18 @@ fn voting_stake_too_low() {
         let origin = OriginType::Signed(account_id);
         let winning_target_count = 1;
 
-        let options = vec![0];
-        let stake_distribution = vec![SubStake {
-            account_id: account_id,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get() - 1,
-        }];
-        let vote_distribution = vec![SubVote {
-            option_index: options[0],
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let (commitment, _) = MockUtils::calculate_commitment(&account_id, &vote_distribution);
+        let options = 1;
+        let option_to_vote_for = 0;
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get() - 1;
+        let (commitment, _) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
         Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
         Mocks::vote(
             origin.clone(),
             account_id,
-            account_id,
             commitment,
-            stake_distribution,
+            stake,
             Err(Error::InsufficientStake),
-        );
-    });
-}
-
-#[test]
-fn voting_cant_lock_stake() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        let account_id = USER_ADMIN;
-        let origin = OriginType::Signed(account_id);
-        let winning_target_count = 1;
-
-        let options = vec![0];
-        let stake_distribution = vec![SubStake {
-            account_id: account_id,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let vote_distribution = vec![SubVote {
-            option_index: options[0],
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let (commitment, _) = MockUtils::calculate_commitment(&account_id, &vote_distribution);
-
-        Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
-
-        Runtime::feature_stack_lock(false, true, true);
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            account_id,
-            commitment,
-            stake_distribution.clone(),
-            Err(Error::InsufficientBalanceToStakeCurrency),
-        );
-
-        Runtime::feature_stack_lock(true, false, true);
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            account_id,
-            commitment,
-            stake_distribution.clone(),
-            Err(Error::AccountStakeCurrencyFailed),
         );
     });
 }
@@ -302,33 +204,25 @@ fn voting_user_already_voted() {
         let origin = OriginType::Signed(account_id);
         let winning_target_count = 1;
 
-        let options = vec![0];
-        let stake_distribution = vec![SubStake {
-            account_id: account_id,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let vote_distribution = vec![SubVote {
-            option_index: options[0],
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let (commitment, _) = MockUtils::calculate_commitment(&account_id, &vote_distribution);
+        let options = 1;
+        let option_to_vote_for = 0;
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, _) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
         Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
         Mocks::vote(
             origin.clone(),
             account_id,
-            account_id,
             commitment,
-            stake_distribution.clone(),
+            stake.clone(),
             Ok(()),
         );
 
         Mocks::vote(
             origin.clone(),
             account_id,
-            account_id,
             commitment,
-            stake_distribution.clone(),
+            stake.clone(),
             Err(Error::AlreadyVoted),
         );
     });
@@ -339,7 +233,7 @@ fn voting_user_already_voted() {
 #[test]
 fn finish_voting() {
     MockUtils::origin_access(USER_ADMIN, |origin| {
-        let options = vec![0];
+        let options = 1;
         let winning_target_count = 1;
 
         Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
@@ -348,7 +242,7 @@ fn finish_voting() {
 
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::check_voting_finished(winning_target_count);
+        Mocks::check_voting_finished(options, winning_target_count);
     });
 }
 
@@ -362,18 +256,12 @@ fn reveal() {
         let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
-        let options = vec![0, 1, 2];
+        let options = 3;
         let winning_target_count = 1;
 
-        let stake_distribution = vec![SubStake {
-            account_id: account_id,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let vote_distribution = vec![SubVote {
-            option_index: options[1],
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &vote_distribution);
+        let option_to_vote_for = 1;
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
         Mocks::start_referendum_extrinsic(
             origin.clone(),
@@ -381,23 +269,15 @@ fn reveal() {
             winning_target_count,
             Ok(()),
         );
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            account_id,
-            commitment,
-            stake_distribution,
-            Ok(()),
-        );
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::check_voting_finished(winning_target_count);
+        Mocks::check_voting_finished(options, winning_target_count);
         Mocks::reveal_vote(
             origin.clone(),
             account_id,
-            account_id,
             salt,
-            vote_distribution,
+            option_to_vote_for.clone(),
             Ok(()),
         );
     });
@@ -412,18 +292,12 @@ fn reveal_reveal_stage_not_running() {
         let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
-        let options = vec![0, 1, 2];
+        let options = 3;
         let winning_target_count = 1;
 
-        let stake_distribution = vec![SubStake {
-            account_id: account_id,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let vote_distribution = vec![SubVote {
-            option_index: options[1],
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &vote_distribution);
+        let option_to_vote_for = 1;
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
         Mocks::start_referendum_extrinsic(
             origin.clone(),
@@ -435,32 +309,23 @@ fn reveal_reveal_stage_not_running() {
         Mocks::reveal_vote(
             origin.clone(),
             account_id,
-            account_id,
             salt.clone(),
-            vote_distribution.clone(),
+            option_to_vote_for.clone(),
             Err(Error::RevealingNotInProgress),
         );
 
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            account_id,
-            commitment,
-            stake_distribution,
-            Ok(()),
-        );
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::check_voting_finished(winning_target_count);
+        Mocks::check_voting_finished(options, winning_target_count);
         MockUtils::increase_block_number(reveal_stage_duration + 1);
         Mocks::check_revealing_finished(Some(ReferendumResult::NoVotesRevealed));
 
         Mocks::reveal_vote(
             origin.clone(),
             account_id,
-            account_id,
             salt.clone(),
-            vote_distribution.clone(),
+            option_to_vote_for.clone(),
             Err(Error::RevealingNotInProgress),
         );
     });
@@ -475,7 +340,7 @@ fn reveal_no_vote() {
         let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
-        let options = vec![0, 1, 2];
+        let options = 3;
         let winning_target_count = 1;
 
         Mocks::start_referendum_extrinsic(
@@ -486,7 +351,7 @@ fn reveal_no_vote() {
         );
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::check_voting_finished(winning_target_count);
+        Mocks::check_voting_finished(options, winning_target_count);
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
         Mocks::check_revealing_finished(Some(ReferendumResult::NoVotesRevealed));
@@ -501,23 +366,13 @@ fn reveal_invalid_vote() {
         let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
-        let options = vec![0, 1, 2];
+        let options = 3;
         let winning_target_count = 1;
 
         let invalid_option = 1000;
-        let stake_distribution = vec![SubStake {
-            account_id: account_id,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let vote_distribution = vec![SubVote {
-            option_index: options[1],
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &vote_distribution);
-        let invalid_vote_distribution = vec![SubVote {
-            option_index: invalid_option,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
+        let option_to_vote_for = 1;
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
         Mocks::start_referendum_extrinsic(
             origin.clone(),
@@ -525,23 +380,15 @@ fn reveal_invalid_vote() {
             winning_target_count,
             Ok(()),
         );
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            account_id,
-            commitment,
-            stake_distribution,
-            Ok(()),
-        );
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::check_voting_finished(winning_target_count);
+        Mocks::check_voting_finished(options, winning_target_count);
         Mocks::reveal_vote(
             origin.clone(),
             account_id,
-            account_id,
             salt,
-            invalid_vote_distribution,
+            invalid_option,
             Err(Error::InvalidVote),
         );
     });
@@ -555,24 +402,13 @@ fn reveal_invalid_commitment_proof() {
         let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
-        let options = vec![0, 1, 2];
+        let options = 3;
         let winning_target_count = 1;
 
-        let option_to_vote_for = options[0];
+        let option_to_vote_for = 0;
         let invalid_option = option_to_vote_for + 1;
-        let stake_distribution = vec![SubStake {
-            account_id: account_id,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let vote_distribution = vec![SubVote {
-            option_index: option_to_vote_for,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let invalid_vote_distribution = vec![SubVote {
-            option_index: invalid_option,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &vote_distribution);
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
         Mocks::start_referendum_extrinsic(
             origin.clone(),
@@ -580,23 +416,15 @@ fn reveal_invalid_commitment_proof() {
             winning_target_count,
             Ok(()),
         );
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            account_id,
-            commitment,
-            stake_distribution,
-            Ok(()),
-        );
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::check_voting_finished(winning_target_count);
+        Mocks::check_voting_finished(options, winning_target_count);
         Mocks::reveal_vote(
             origin.clone(),
             account_id,
-            account_id,
             salt,
-            invalid_vote_distribution,
+            invalid_option,
             Err(Error::InvalidReveal),
         );
     });
@@ -613,20 +441,12 @@ fn finish_revealing_period() {
         let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
-        let options = vec![0, 1, 2];
+        let options = 3;
         let winning_target_count = 1;
 
-        let option_to_vote_for = options[0];
+        let option_to_vote_for = 0;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let stake_distribution = vec![SubStake {
-            account_id: account_id,
-            balance: stake,
-        }];
-        let vote_distribution = vec![SubVote {
-            option_index: option_to_vote_for,
-            balance: stake,
-        }];
-        let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &vote_distribution);
+        let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
         Mocks::start_referendum_extrinsic(
             origin.clone(),
@@ -634,23 +454,15 @@ fn finish_revealing_period() {
             winning_target_count,
             Ok(()),
         );
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            account_id,
-            commitment,
-            stake_distribution,
-            Ok(()),
-        );
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::check_voting_finished(winning_target_count);
+        Mocks::check_voting_finished(options, winning_target_count);
         Mocks::reveal_vote(
             origin.clone(),
             account_id,
-            account_id,
             salt,
-            vote_distribution,
+            option_to_vote_for.clone(),
             Ok(()),
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
@@ -669,22 +481,18 @@ fn finish_revealing_period_no_revealing_stage() {
     build_test_externalities(config).execute_with(|| {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
-        let options = vec![0, 1, 2];
+        let options = 3;
         let winning_target_count = 1;
 
-        let option_to_vote_for = options[0];
-        let vote_distribution = vec![SubVote {
-            option_index: option_to_vote_for,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let (_, salt) = MockUtils::calculate_commitment(&account_id, &vote_distribution);
+        let option_to_vote_for = 0;
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (_, salt) = MockUtils::calculate_commitment(&account_id, &stake);
 
         Mocks::reveal_vote(
             origin.clone(),
             account_id,
-            account_id,
             salt.clone(),
-            vote_distribution.clone(),
+            option_to_vote_for.clone(),
             Err(Error::RevealingNotInProgress),
         );
 
@@ -697,9 +505,8 @@ fn finish_revealing_period_no_revealing_stage() {
         Mocks::reveal_vote(
             origin.clone(),
             account_id,
-            account_id,
             salt.clone(),
-            vote_distribution.clone(),
+            option_to_vote_for.clone(),
             Err(Error::RevealingNotInProgress),
         );
     });
@@ -718,33 +525,17 @@ fn finish_revealing_period_vote_power() {
         let origin = OriginType::Signed(account_superuser);
         let origin_voter1 = OriginType::Signed(account_id1);
         let origin_voter2 = OriginType::Signed(account_id2);
-        let options = vec![0, 1, 2];
+        let options = 3;
         let winning_target_count = 1;
 
-        let option_to_vote_for1 = options[0];
-        let option_to_vote_for2 = options[1];
+        let option_to_vote_for1 = 0;
+        let option_to_vote_for2 = 1;
         let stake_bigger = <Runtime as Trait<Instance0>>::MinimumStake::get() * 2;
         let stake_smaller = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let stake_distribution1 = vec![SubStake {
-            account_id: account_id1,
-            balance: stake_bigger,
-        }];
-        let vote_distribution1 = vec![SubVote {
-            option_index: option_to_vote_for1,
-            balance: stake_bigger,
-        }];
-        let stake_distribution2 = vec![SubStake {
-            account_id: account_id2,
-            balance: stake_smaller,
-        }];
-        let vote_distribution2 = vec![SubVote {
-            option_index: option_to_vote_for2,
-            balance: stake_smaller,
-        }];
         let (commitment1, salt1) =
-            MockUtils::calculate_commitment(&account_id1, &vote_distribution1);
+            MockUtils::calculate_commitment(&account_id1, &option_to_vote_for1);
         let (commitment2, salt2) =
-            MockUtils::calculate_commitment(&account_id2, &vote_distribution2);
+            MockUtils::calculate_commitment(&account_id2, &option_to_vote_for2);
 
         Mocks::start_referendum_extrinsic(
             origin.clone(),
@@ -755,36 +546,32 @@ fn finish_revealing_period_vote_power() {
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
-            account_id1,
             commitment1,
-            stake_distribution1,
+            stake_bigger,
             Ok(()),
         ); // vote for first option by regular user
         Mocks::vote(
             origin_voter2.clone(),
             account_id2,
-            account_id2,
             commitment2,
-            stake_distribution2,
+            stake_smaller,
             Ok(()),
         ); // vote for second option by prominent user
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::check_voting_finished(winning_target_count);
+        Mocks::check_voting_finished(options, winning_target_count);
         Mocks::reveal_vote(
             origin_voter1.clone(),
             account_id1,
-            account_id1,
             salt1,
-            vote_distribution1,
+            option_to_vote_for1,
             Ok(()),
         );
         Mocks::reveal_vote(
             origin_voter2.clone(),
             account_id2,
-            account_id2,
             salt2,
-            vote_distribution2,
+            option_to_vote_for2,
             Ok(()),
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
@@ -807,12 +594,12 @@ fn winners_no_vote_revealed() {
         let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
         let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
         let origin = OriginType::Signed(USER_ADMIN);
-        let options = vec![0];
+        let options = 1;
         let winning_target_count = 1;
 
         Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
-        Mocks::check_voting_finished(winning_target_count);
+        Mocks::check_voting_finished(options, winning_target_count);
         MockUtils::increase_block_number(reveal_stage_duration + 1);
         Mocks::check_revealing_finished(Some(ReferendumResult::NoVotesRevealed));
     });
@@ -833,42 +620,18 @@ fn winners_multiple_winners() {
         let origin_voter1 = OriginType::Signed(account_id1);
         let origin_voter2 = OriginType::Signed(account_id2);
         let origin_voter3 = OriginType::Signed(account_id3);
-        let options = vec![0, 1, 2];
+        let options = 3;
         let winning_target_count = 2;
 
-        let option_to_vote_for1 = options[0];
-        let option_to_vote_for2 = options[1];
+        let option_to_vote_for1 = 0;
+        let option_to_vote_for2 = 1;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let stake_distribution1 = vec![SubStake {
-            account_id: account_id1,
-            balance: stake,
-        }];
-        let vote_distribution1 = vec![SubVote {
-            option_index: option_to_vote_for1,
-            balance: stake,
-        }];
-        let stake_distribution2 = vec![SubStake {
-            account_id: account_id2,
-            balance: stake,
-        }];
-        let vote_distribution2 = vec![SubVote {
-            option_index: option_to_vote_for1,
-            balance: stake,
-        }];
-        let stake_distribution3 = vec![SubStake {
-            account_id: account_id3,
-            balance: stake,
-        }];
-        let vote_distribution3 = vec![SubVote {
-            option_index: option_to_vote_for2,
-            balance: stake,
-        }];
         let (commitment1, salt1) =
-            MockUtils::calculate_commitment(&account_id1, &vote_distribution1);
+            MockUtils::calculate_commitment(&account_id1, &option_to_vote_for1);
         let (commitment2, salt2) =
-            MockUtils::calculate_commitment(&account_id2, &vote_distribution2);
+            MockUtils::calculate_commitment(&account_id2, &option_to_vote_for1);
         let (commitment3, salt3) =
-            MockUtils::calculate_commitment(&account_id3, &vote_distribution3);
+            MockUtils::calculate_commitment(&account_id3, &option_to_vote_for2);
 
         Mocks::start_referendum_extrinsic(
             origin.clone(),
@@ -879,52 +642,46 @@ fn winners_multiple_winners() {
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
-            account_id1,
             commitment1,
-            stake_distribution1,
+            stake,
             Ok(()),
         );
         Mocks::vote(
             origin_voter2.clone(),
             account_id2,
-            account_id2,
             commitment2,
-            stake_distribution2,
+            stake,
             Ok(()),
         );
         Mocks::vote(
             origin_voter3.clone(),
             account_id3,
-            account_id3,
             commitment3,
-            stake_distribution3,
+            stake,
             Ok(()),
         );
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::check_voting_finished(winning_target_count);
+        Mocks::check_voting_finished(options, winning_target_count);
         Mocks::reveal_vote(
             origin_voter1.clone(),
             account_id1,
-            account_id1,
             salt1,
-            vote_distribution1,
+            option_to_vote_for1,
             Ok(()),
         );
         Mocks::reveal_vote(
             origin_voter2.clone(),
             account_id2,
-            account_id2,
             salt2,
-            vote_distribution2,
+            option_to_vote_for1,
             Ok(()),
         );
         Mocks::reveal_vote(
             origin_voter3.clone(),
             account_id3,
-            account_id3,
             salt3,
-            vote_distribution3,
+            option_to_vote_for2,
             Ok(()),
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
@@ -952,32 +709,16 @@ fn winners_multiple_winners_extra() {
         let origin = OriginType::Signed(account_superuser);
         let origin_voter1 = OriginType::Signed(account_id1);
         let origin_voter2 = OriginType::Signed(account_id2);
-        let options = vec![0, 1, 2];
+        let options = 3;
         let winning_target_count = 1;
 
-        let option_to_vote_for1 = options[0];
-        let option_to_vote_for2 = options[1];
+        let option_to_vote_for1 = 0;
+        let option_to_vote_for2 = 1;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let stake_distribution1 = vec![SubStake {
-            account_id: account_id1,
-            balance: stake,
-        }];
-        let vote_distribution1 = vec![SubVote {
-            option_index: option_to_vote_for1,
-            balance: stake,
-        }];
-        let stake_distribution2 = vec![SubStake {
-            account_id: account_id2,
-            balance: stake,
-        }];
-        let vote_distribution2 = vec![SubVote {
-            option_index: option_to_vote_for2,
-            balance: stake,
-        }];
         let (commitment1, salt1) =
-            MockUtils::calculate_commitment(&account_id1, &vote_distribution1);
+            MockUtils::calculate_commitment(&account_id1, &option_to_vote_for1);
         let (commitment2, salt2) =
-            MockUtils::calculate_commitment(&account_id2, &vote_distribution2);
+            MockUtils::calculate_commitment(&account_id2, &option_to_vote_for2);
 
         Mocks::start_referendum_extrinsic(
             origin.clone(),
@@ -988,36 +729,32 @@ fn winners_multiple_winners_extra() {
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
-            account_id1,
             commitment1,
-            stake_distribution1,
+            stake,
             Ok(()),
         );
         Mocks::vote(
             origin_voter2.clone(),
             account_id2,
-            account_id2,
             commitment2,
-            stake_distribution2,
+            stake,
             Ok(()),
         );
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::check_voting_finished(winning_target_count);
+        Mocks::check_voting_finished(options, winning_target_count);
         Mocks::reveal_vote(
             origin_voter1.clone(),
             account_id1,
-            account_id1,
             salt1,
-            vote_distribution1,
+            option_to_vote_for1,
             Ok(()),
         );
         Mocks::reveal_vote(
             origin_voter2.clone(),
             account_id2,
-            account_id2,
             salt2,
-            vote_distribution2,
+            option_to_vote_for2,
             Ok(()),
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
@@ -1042,21 +779,13 @@ fn winners_multiple_not_enough() {
         let account_id1 = USER_REGULAR;
         let origin = OriginType::Signed(account_superuser);
         let origin_voter1 = OriginType::Signed(account_id1);
-        let options = vec![0, 1, 2];
+        let options = 3;
         let winning_target_count = 2;
 
-        let option_to_vote_for = options[0];
+        let option_to_vote_for = 0;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let stake_distribution = vec![SubStake {
-            account_id: account_id1,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
-        let vote_distribution = vec![SubVote {
-            option_index: option_to_vote_for,
-            balance: <Runtime as Trait<Instance0>>::MinimumStake::get(),
-        }];
         let (commitment1, salt1) =
-            MockUtils::calculate_commitment(&account_id1, &vote_distribution);
+            MockUtils::calculate_commitment(&account_id1, &option_to_vote_for);
 
         Mocks::start_referendum_extrinsic(
             origin.clone(),
@@ -1067,20 +796,18 @@ fn winners_multiple_not_enough() {
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
-            account_id1,
             commitment1,
-            stake_distribution,
+            stake,
             Ok(()),
         );
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
-        Mocks::check_voting_finished(winning_target_count);
+        Mocks::check_voting_finished(options, winning_target_count);
         Mocks::reveal_vote(
             origin_voter1.clone(),
             account_id1,
-            account_id1,
             salt1,
-            vote_distribution,
+            option_to_vote_for,
             Ok(()),
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
@@ -1091,13 +818,76 @@ fn winners_multiple_not_enough() {
     });
 }
 
+/////////////////// Lifetime Releasing stake ///////////////////////////////////
+
+#[test]
+fn referendum_release_stake() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+        let options = 3;
+        let winning_target_count = 1;
+
+        let option_to_vote_for = 0;
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
+
+        Mocks::start_referendum_extrinsic(
+            origin.clone(),
+            options.clone(),
+            winning_target_count,
+            Ok(()),
+        );
+        Mocks::vote(
+            origin.clone(),
+            account_id,
+            commitment,
+            stake.clone(),
+            Ok(()),
+        );
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::check_voting_finished(options, winning_target_count);
+        Mocks::reveal_vote(
+            origin.clone(),
+            account_id,
+            salt,
+            option_to_vote_for.clone(),
+            Ok(()),
+        );
+        MockUtils::increase_block_number(reveal_stage_duration + 1);
+
+        Mocks::check_revealing_finished(Some(ReferendumResult::Winners(vec![(
+            option_to_vote_for,
+            1 * stake,
+        )])));
+
+        Mocks::release_stake(origin.clone(), account_id, Err(Error::InvalidTimeToRelease));
+
+        // since `account_id` voted for the winner, he can unlock stake only after inactive stage ends
+        Mocks::start_referendum_extrinsic(
+            origin.clone(),
+            options.clone(),
+            winning_target_count,
+            Ok(()),
+        );
+
+        Mocks::release_stake(origin.clone(), account_id, Ok(()));
+    });
+}
+
 /////////////////// ReferendumManager //////////////////////////////////////////
+
 #[test]
 fn referendum_manager_referendum_start() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
-        let options = vec![0];
+        let options = 1;
         let winning_target_count = 1;
 
         Mocks::start_referendum_manager(options, winning_target_count, Ok(()));

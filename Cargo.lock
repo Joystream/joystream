@@ -6869,6 +6869,7 @@ version = "1.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
+ "pallet-balances",
  "parity-scale-codec",
  "rand 0.7.3",
  "serde",
