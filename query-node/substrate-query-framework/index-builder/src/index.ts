@@ -10,7 +10,8 @@ import { DatabaseManager, SavedEntityEvent, makeDatabaseManager, createDBConnect
 import BootstrapPack, { BootstrapFunc } from './bootstrap/BootstrapPack';
 import { QueryNodeStartUpOptions } from './QueryNodeStartOptions';
 
-export { QueryEventEntity, ChainExtrinsic } from './entities';
+export * from './entities';
+export * from './interfaces';
 
 export {
   ISubstrateQueryService,

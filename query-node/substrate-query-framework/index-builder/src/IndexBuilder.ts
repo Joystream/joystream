@@ -12,7 +12,7 @@ import {
 import Debug from 'debug';
 import { doInTransaction } from './db/helper';
 import { PooledExecutor } from './PooledExecutor';
-import { QueryEventEntity } from './entities/QueryEventEntity';
+import { SubstrateEventEntity } from './entities';
 
 const debug = Debug('index-builder:indexer');
 
@@ -113,8 +113,8 @@ export default class IndexBuilder {
       
       debug(`Read ${queryEventsBlock.query_events.length} events`);  
       
-      const qeEntities: QueryEventEntity[] = queryEventsBlock.query_events.map(
-        (qe) => QueryEventEntity.fromQueryEvent(qe));
+      const qeEntities: SubstrateEventEntity[] = queryEventsBlock.query_events.map(
+        (qe) => SubstrateEventEntity.fromQueryEvent(qe));
       
       await doInTransaction(async (queryRunner) => {
         debug(`Saving query event entities`);
