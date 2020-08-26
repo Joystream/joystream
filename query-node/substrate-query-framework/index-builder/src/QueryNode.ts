@@ -1,7 +1,6 @@
 // @ts-check
 
 import { ApiPromise, WsProvider /*RuntimeVersion*/ } from '@polkadot/api';
-import * as BN from 'bn.js';
 
 import { makeQueryService, IndexBuilder, QueryEventProcessingPack, QueryNodeStartUpOptions } from '.';
 import MappingsProcessor from './processor/MappingsProcessor';
@@ -30,9 +29,9 @@ export default class QueryNode {
 
   private _mappingsProcessor: MappingsProcessor;
 
-  private _atBlock?: BN;
+  private _atBlock?: number;
 
-  private constructor(websocketProvider: WsProvider, api: ApiPromise, indexBuilder: IndexBuilder, mappingsProcessor: MappingsProcessor, atBlock?: BN) {
+  private constructor(websocketProvider: WsProvider, api: ApiPromise, indexBuilder: IndexBuilder, mappingsProcessor: MappingsProcessor, atBlock?: number) {
     this._state = QueryNodeState.NOT_STARTED;
     this._websocketProvider = websocketProvider;
     this._api = api;
