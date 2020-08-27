@@ -1,7 +1,4 @@
 // @ts-check
-
-import { getConnection } from 'typeorm';
-
 import {
   QueryBlockProducer,
   QueryEventBlock,

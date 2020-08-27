@@ -1,22 +1,14 @@
 import { QueryEventProcessingPack, SavedEntityEvent, makeDatabaseManager, IndexBuilder, SubstrateEvent } from '..';
 import { Codec } from '@polkadot/types/types';
 import Debug from 'debug';
-import { getRepository, QueryRunner, Between, In, getConnection, MoreThan } from 'typeorm';
+import { getRepository, QueryRunner, Between, In, MoreThan } from 'typeorm';
 import { doInTransaction } from '../db/helper';
 import { SubstrateEventEntity } from '../entities';
-import { waitFor } from '../utils/wait-for';
 import { numberEnv } from '../utils/env-flags';
 import { getIndexerHead } from '../db/dal';
 
 const debug = Debug('index-builder:processor');
 
-
-// Time between checks if the head of the chain is beyond the
-// most recently produced block. Set it to 199 to have round numbers by default
-const LOOK_AHEAD_BLOCKS = numberEnv('PROCESSOR_LOOK_AHEAD_BLOCKS') || 199;
-
-// minimal number of blocks the indexer must be ahead of the processor
-const MINIMAL_INDEXER_GAP = numberEnv('PROCESSOR_INDEXER_GAP') || 50;
 
 const BATCH_SIZE = numberEnv('PROCESSOR_BATCH_SIZE') || 10;
 // Interval at which the processor pulls new blocks from the database
@@ -137,20 +129,6 @@ export default class MappingsProcessor {
       //this._blockToProcessNext = upperBound + 1;
     }
     debug(`The processor has been stopped`);
-  }
-
-  // Wait until the next block is indexed
-  private async waitForIndexerHead(): Promise<void> {
-    return await waitFor(
-      // when to resolve
-      () => {
-        debug(`Indexer head: ${this._indexer.indexerHead.toString()}, Processor head: ${this._blockToProcessNext.toString()}`);
-        return (this._indexer.indexerHead - this._blockToProcessNext) >= MINIMAL_INDEXER_GAP
-      },
-      //exit condition
-      () => !this._started,
-      PROCESSOR_BLOCKS_POLL_INTERVAL )
-    
   }
 
   private convert(qee: SubstrateEventEntity): SubstrateEvent {
