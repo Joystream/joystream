@@ -308,14 +308,14 @@ decl_module! {
         /// Reveal a sealed vote in the referendum.
         #[weight = 10_000_000]
         pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_index: u64) -> Result<(), Error<T, I>> {
-            let (account_id, sealed_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_index)?;
+            let (account_id, cast_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_index)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // reveal the vote - it can return error when stake fails to unlock
-            Mutations::<T, I>::reveal_vote(&account_id, &vote_option_index, &sealed_vote)?;
+            Mutations::<T, I>::reveal_vote(&account_id, &vote_option_index, &cast_vote)?;
 
             // emit event
             Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_index));
@@ -565,12 +565,12 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     fn reveal_vote(
         account_id: &<T as system::Trait>::AccountId,
         option_index: &u64,
-        sealed_vote: &CastVote<T::Hash, Balance<T, I>>,
+        cast_vote: &CastVote<T::Hash, Balance<T, I>>,
     ) -> Result<(), Error<T, I>> {
         let distribute_vote =
             |stage_data: &mut ReferendumStageRevealing<T::BlockNumber, T::VotePower>| {
                 // calculate vote power
-                let vote_power = T::caclulate_vote_power(account_id, &sealed_vote.balance);
+                let vote_power = T::caclulate_vote_power(account_id, &cast_vote.balance);
                 stage_data.intermediate_results[*option_index as usize] += vote_power;
             };
 
@@ -697,24 +697,24 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             _ => return Err(Error::RevealingNotInProgress),
         };
 
-        let sealed_vote = Self::ensure_vote_exists(&account_id)?;
+        let cast_vote = Self::ensure_vote_exists(&account_id)?;
 
         if vote_option_index >= &(stage_data.intermediate_results.len() as u64) {
             return Err(Error::InvalidVote);
         }
 
         // ensure vote was cast for the running referendum
-        if cycle_id != sealed_vote.cycle_id {
+        if cycle_id != cast_vote.cycle_id {
             return Err(Error::InvalidVote);
         }
 
         // ensure commitment corresponds to salt and vote option
         let commitment = R::calculate_commitment(&account_id, salt, &cycle_id, vote_option_index);
-        if commitment != sealed_vote.commitment {
+        if commitment != cast_vote.commitment {
             return Err(Error::InvalidReveal);
         }
 
-        Ok((account_id, sealed_vote))
+        Ok((account_id, cast_vote))
     }
 
     fn can_release_stake(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
@@ -744,10 +744,10 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;
 
-        let sealed_vote = Self::ensure_vote_exists(&account_id)?;
+        let cast_vote = Self::ensure_vote_exists(&account_id)?;
 
         // enable stake release only during
-        if cycle_id == sealed_vote.cycle_id {
+        if cycle_id == cast_vote.cycle_id {
             match Stage::<T, I>::get() {
                 ReferendumStage::Voting(_) => Ok(()),
                 _ => Err(Error::InvalidTimeToRelease),
@@ -758,8 +758,8 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         // enable unlocking stake locked in the last cycle only when option didn't win;
         // or after the next inactive stage when voted for winning option
-        if cycle_id == sealed_vote.cycle_id + 1
-            && voted_for_winner_last_cycle::<T, I>(previous_winners, sealed_vote.vote_for)
+        if cycle_id == cast_vote.cycle_id + 1
+            && voted_for_winner_last_cycle::<T, I>(previous_winners, cast_vote.vote_for)
         {
             match Stage::<T, I>::get() {
                 ReferendumStage::Inactive => Err(Error::InvalidTimeToRelease),
@@ -768,7 +768,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // eliminate possibility of unexpected cycle_id
-        if cycle_id < sealed_vote.cycle_id {
+        if cycle_id < cast_vote.cycle_id {
             return Err(Error::InvalidTimeToRelease);
         }
 
@@ -781,8 +781,8 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             return Err(Error::VoteNotExisting);
         }
 
-        let sealed_vote = Votes::<T, I>::get(account_id);
+        let cast_vote = Votes::<T, I>::get(account_id);
 
-        Ok(sealed_vote)
+        Ok(cast_vote)
     }
 }
