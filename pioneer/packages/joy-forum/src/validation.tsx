@@ -28,14 +28,18 @@ function waitForRequiredConstraints (
   return function (Component: React.ComponentType<any>) {
     const ResultComponent: React.FunctionComponent<ValidationProps> = (props: ValidationProps) => {
       const nonEmptyProps = requiredConstraintNames
-        .filter(name => props[name] !== undefined)
+        .filter((name) => props[name] !== undefined)
         .length;
+
       if (nonEmptyProps !== requiredConstraintNames.length) {
         return <em>Loading validation constraints...</em>;
       }
+
       return <Component {...props} />;
     };
+
     ResultComponent.displayName = `waitForRequiredConstraints(${componentName(Component)})`;
+
     return ResultComponent;
   };
 }

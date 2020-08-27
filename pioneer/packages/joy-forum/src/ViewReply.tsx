@@ -96,37 +96,40 @@ export const ViewReply = React.forwardRef((props: ViewReplyProps, ref: React.Ref
     if (reply.moderated || thread.moderated || category.archived || category.deleted) {
       return null;
     }
+
     const isMyPost = reply.author_id.eq(myAddress);
+
     return <ReplyFooterActionsRow>
       <div>
         {isMyPost &&
-          <Button onClick={onEdit} size="mini">
-            <Icon name="pencil" />
+          <Button onClick={onEdit} size='mini'>
+            <Icon name='pencil' />
             Edit
           </Button>
         }
 
         <IfIAmForumSudo>
           <Button
-            size="mini"
+            size='mini'
             onClick={() => setShowModerateForm(!showModerateForm)}
           >
             Moderate
           </Button>
         </IfIAmForumSudo>
       </div>
-      <Button onClick={onQuote} size="mini">
-        <Icon name="quote left" />
+      <Button onClick={onQuote} size='mini'>
+        <Icon name='quote left' />
         Quote
       </Button>
     </ReplyFooterActionsRow>;
   };
 
   const replyLinkSearch = new URLSearchParams(search);
+
   replyLinkSearch.set(ReplyIdxQueryParam, reply.nr_in_thread.toString());
 
   return (
-    <ReplyContainer className="ui segment" ref={ref} selected={selected}>
+    <ReplyContainer className='ui segment' ref={ref} selected={selected}>
       <ReplyHeader>
         <ReplyHeaderAuthorRow>
           <MemberPreview accountId={reply.author_id} showCouncilBadge showId={false}/>

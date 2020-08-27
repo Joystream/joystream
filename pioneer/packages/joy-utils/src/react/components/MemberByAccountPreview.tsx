@@ -23,7 +23,7 @@ const MemberByAccountPreview: React.FunctionComponent<Props> = ({
   showCouncilBadge = false,
   link = true,
   size,
-  className,
+  className
 }) => {
   const transport = useTransport();
   const [member, error, loading] = usePromise<MemberFromAccount | null>(
@@ -58,17 +58,17 @@ type CouncilBadgeProps = {
   memberId: number;
 }
 
-export function CouncilBadge({ memberId }: CouncilBadgeProps) {
+export function CouncilBadge ({ memberId }: CouncilBadgeProps) {
   const transport = useTransport();
   const [councilMembers] = usePromise(() => transport.council.councilMembers(), []);
 
-  if (councilMembers && councilMembers.find(cm => cm.memberId.toNumber() === memberId)) {
+  if (councilMembers && councilMembers.find((cm) => cm.memberId.toNumber() === memberId)) {
     return (
       <b style={{ color: '#607d8b' }}>
         <i className='university icon'></i>
         Council member
       </b>
-    )
+    );
   } else {
     return null;
   }

@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
-import { TxButton } from '@polkadot/joy-utils/react/components';
+import { TxButton, Section } from '@polkadot/joy-utils/react/components';
 import { SubmittableResult } from '@polkadot/api';
 import { withMulti } from '@polkadot/react-api/hoc';
 
@@ -12,7 +12,7 @@ import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { PostId, ThreadId } from '@joystream/types/common';
 import { Post } from '@joystream/types/forum';
 import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
-import { Section } from '@polkadot/joy-utils/react/components';
+
 import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 import { withForumCalls } from './calls';
 import { ValidationProps, withReplyValidation } from './validation';
@@ -87,6 +87,7 @@ const InnerForm = (props: FormProps) => {
 
   const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
+
     if (txResult == null) {
       // Tx cancelled.
 
@@ -96,6 +97,7 @@ const InnerForm = (props: FormProps) => {
   const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
     setSubmitting(false);
     resetForm();
+
     if (!isNew && onEditSuccess) {
       onEditSuccess();
     }
@@ -173,6 +175,7 @@ const InnerForm = (props: FormProps) => {
 
 const getQuotedPostString = (post: Post) => {
   const lines = post.current_text.split('\n');
+
   return lines.reduce((acc, line) => {
     return `${acc}> ${line}\n`;
   }, '');
@@ -181,8 +184,9 @@ const getQuotedPostString = (post: Post) => {
 const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
-  mapPropsToValues: props => {
+  mapPropsToValues: (props) => {
     const { struct, quotedPost } = props;
+
     return {
       text: struct
         ? struct.current_text
@@ -194,7 +198,7 @@ const EditForm = withFormik<OuterProps, FormValues>({
 
   validationSchema: buildSchema,
 
-  handleSubmit: values => {
+  handleSubmit: (values) => {
     // do submitting things
   }
 })(InnerForm);
@@ -212,6 +216,7 @@ function FormOrLoading (props: OuterProps) {
   }
 
   const isMyStruct = address === struct.author_id.toString();
+
   if (isMyStruct) {
     return <EditForm {...props} threadId={struct.thread_id} />;
   }

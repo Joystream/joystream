@@ -20,6 +20,7 @@ const getReactValue = (state: ForumState, endpoint: string, paramValue: any): an
   const getEntityById = (mapName: EntityMapName, type: keyof InterfaceTypes): any => {
     const id = (paramValue as u64).toNumber();
     const entity = state[mapName].get(id);
+
     return createMock(type, entity);
   };
 
@@ -43,6 +44,7 @@ function withReactCall<P extends ApiProps> (endpoint: string, { paramName, propN
         ...props,
         [_propName]: propValue
       };
+
       return <Inner {..._props} />;
     };
 
@@ -54,10 +56,12 @@ function withForumCall<P extends ApiProps> (endpoint: string, opts: Options = {}
   if (!opts.propName) {
     opts.propName = endpoint;
   }
+
   if (storage === 'react') {
     return withReactCall(endpoint, opts);
   } else {
     endpoint = 'query.forum.' + endpoint;
+
     return withSubstrateCall(endpoint, opts);
   }
 }

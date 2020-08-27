@@ -91,6 +91,7 @@ const InnerForm = (props: FormProps) => {
 
   const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
+
     if (txResult == null) {
       // Tx cancelled.
 
@@ -103,12 +104,15 @@ const InnerForm = (props: FormProps) => {
 
     // Get id of newly created category:
     let _id = id;
+
     if (!_id) {
-      _txResult.events.find(event => {
+      _txResult.events.find((event) => {
         const { event: { data, method } } = event;
+
         if (method === 'CategoryCreated') {
           _id = data.toArray()[0] as CategoryId;
         }
+
         return true;
       });
     }
@@ -190,7 +194,7 @@ const InnerForm = (props: FormProps) => {
 const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
-  mapPropsToValues: props => {
+  mapPropsToValues: (props) => {
     const { parentId, struct } = props;
 
     return {
@@ -202,7 +206,7 @@ const EditForm = withFormik<OuterProps, FormValues>({
 
   validationSchema: buildSchema,
 
-  handleSubmit: values => {
+  handleSubmit: (values) => {
     // do submitting things
   }
 })(InnerForm);
@@ -220,6 +224,7 @@ function FormOrLoading (props: OuterProps) {
   }
 
   const isMyStruct = address === struct.moderator_id.toString();
+
   if (isMyStruct) {
     return <EditForm {...props} />;
   }
@@ -231,6 +236,7 @@ function withIdFromUrl (Component: React.ComponentType<OuterProps>) {
   return function (props: UrlHasIdProps) {
     const { match: { params: { id } } } = props;
     const { api } = useApi();
+
     try {
       return <Component id={api.createType('CategoryId', id)} />;
     } catch (err) {
@@ -242,6 +248,7 @@ function withIdFromUrl (Component: React.ComponentType<OuterProps>) {
 function NewSubcategoryForm (props: UrlHasIdProps & OuterProps) {
   const { match: { params: { id } } } = props;
   const { api } = useApi();
+
   try {
     return <EditForm {...props} parentId={api.createType('CategoryId', id)} />;
   } catch (err) {

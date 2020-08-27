@@ -12,7 +12,7 @@ type ProfilePreviewSize = 'small' | 'medium';
 const AVATAR_SIZES_PX: { [k in ProfilePreviewSize]: number } = {
   small: 20,
   medium: 40
-}
+};
 
 type ProfileItemProps = {
   avatar_uri: string | Text;
@@ -32,20 +32,20 @@ const StyledProfilePreview = styled.div<StyledPartProps>`
   align-items: center;
   & .ui.avatar.image {
     margin: 0 !important;
-    width: ${(props) => `${AVATAR_SIZES_PX[props.size]}px` } !important;
-    height: ${(props) => `${AVATAR_SIZES_PX[props.size]}px` } !important;
+    width: ${(props) => `${AVATAR_SIZES_PX[props.size]}px`} !important;
+    height: ${(props) => `${AVATAR_SIZES_PX[props.size]}px`} !important;
   }
 `;
 
 const Details = styled.div<StyledPartProps>`
-  margin-left: ${(props) => props.size === 'small' ? '0.5rem' : '1rem' };
+  margin-left: ${(props) => props.size === 'small' ? '0.5rem' : '1rem'};
   display: grid;
   grid-row-gap: 0.25rem;
   grid-template-columns: 100%;
 `;
 
 const DetailsHandle = styled.h4<StyledPartProps>`
-  ${ props => props.size === 'small' && css`font-size: 1em` };
+  ${(props) => props.size === 'small' && css`font-size: 1em`};
   margin: 0;
   font-weight: bold;
   color: #333;

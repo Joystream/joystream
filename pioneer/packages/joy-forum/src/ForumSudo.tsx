@@ -3,18 +3,18 @@ import { Button } from 'semantic-ui-react';
 import { Form, Field, withFormik, FormikProps, FieldProps } from 'formik';
 import * as Yup from 'yup';
 
-import { TxButton } from '@polkadot/joy-utils/react/components';
+import { TxButton, Section, JoyError } from '@polkadot/joy-utils/react/components';
 import { SubmittableResult } from '@polkadot/api';
 import { InputAddress } from '@polkadot/react-components/index';
 import { withMulti } from '@polkadot/react-api/hoc';
 
 import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { Option } from '@polkadot/types/codec';
-import { Section } from '@polkadot/joy-utils/react/components';
+
 import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 import { withOnlySudo } from '@polkadot/joy-utils/react/hocs/guards';
 import { AccountId } from '@polkadot/types/interfaces';
-import { JoyError } from '@polkadot/joy-utils/react/components';
+
 import AddressMini from '@polkadot/react-components/AddressMini';
 import { withForumCalls } from './calls';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
@@ -62,6 +62,7 @@ const InnerForm = (props: FormProps) => {
 
   const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
+
     if (txResult == null) {
       // Tx cancelled.
 
@@ -77,6 +78,7 @@ const InnerForm = (props: FormProps) => {
 
   const buildTxParams = () => {
     if (!isValid) return [];
+
     return [api.createType('Option<AccountId>', sudo)];
   };
 
@@ -152,8 +154,9 @@ const InnerForm = (props: FormProps) => {
 const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
-  mapPropsToValues: props => {
+  mapPropsToValues: (props) => {
     const { currentSudo } = props;
+
     return {
       sudo: currentSudo
     };
@@ -161,7 +164,7 @@ const EditForm = withFormik<OuterProps, FormValues>({
 
   validationSchema: buildSchema,
 
-  handleSubmit: values => {
+  handleSubmit: (values) => {
     // do submitting things
   }
 })(InnerForm);
@@ -176,11 +179,13 @@ const withLoadForumSudo = withForumCalls<LoadStructProps>(
 
 function InjectCurrentSudo (props: LoadStructProps) {
   const { structOpt } = props;
+
   if (!structOpt) {
     return <em>Loading forum sudo...</em>;
   }
 
   const sudo = structOpt.isSome ? structOpt.unwrap().toString() : undefined;
+
   return <EditForm currentSudo={sudo} />;
 }
 
@@ -193,6 +198,7 @@ export const EditForumSudo = withMulti(
 function innerWithOnlyForumSudo<P extends LoadStructProps> (Component: React.ComponentType<P>) {
   return function (props: P) {
     const { structOpt } = props;
+
     if (!structOpt) {
       return <em>Loading forum sudo...</em>;
     }
@@ -231,6 +237,7 @@ export const ForumSudoContext = createContext<ForumSudoContextProps>({});
 export function InnerForumSudoProvider (props: React.PropsWithChildren<LoadStructProps>) {
   const { structOpt } = props;
   const forumSudo = structOpt ? structOpt.unwrapOr(undefined) : undefined;
+
   return (
     <ForumSudoContext.Provider value={{ forumSudo }}>
       {props.children}
@@ -251,5 +258,6 @@ export const IfIAmForumSudo = (props: React.PropsWithChildren<any>) => {
   const { forumSudo } = useForumSudo();
   const { state: { address: myAddress } } = useMyAccount();
   const iAmForumSudo: boolean = forumSudo !== undefined && forumSudo.eq(myAddress);
+
   return iAmForumSudo ? props.children : null;
 };

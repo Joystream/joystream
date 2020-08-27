@@ -113,6 +113,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
   switch (action.type) {
     case 'SetForumSudo': {
       const { sudo } = action;
+
       return {
         ...state,
         sudo
@@ -132,19 +133,23 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
 
       if (parent_id) {
         let childrenIds = categoryIdsByParentId.get(parent_id.toNumber());
+
         if (!childrenIds) {
           childrenIds = [];
         }
+
         childrenIds.push(nextCategoryId);
         categoryIdsByParentId.set(parent_id.toNumber(), childrenIds);
       } else {
         if (!rootCategoryIds) {
           rootCategoryIds = [];
         }
+
         rootCategoryIds.push(nextCategoryId);
       }
 
       const newId = nextCategoryId;
+
       categoryById.set(newId, category);
       nextCategoryId = nextCategoryId + 1;
 
@@ -182,13 +187,16 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       } = state;
 
       let threadIds = threadIdsByCategoryId.get(category_id.toNumber());
+
       if (!threadIds) {
         threadIds = [];
         threadIdsByCategoryId.set(category_id.toNumber(), threadIds);
       }
+
       threadIds.push(nextThreadId);
 
       const newId = nextThreadId;
+
       threadById.set(newId, thread);
       nextThreadId = nextThreadId + 1;
 
@@ -228,6 +236,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
         thread.cloneValues(),
         { moderation: createMock('Option<ModerationAction>', moderation) }
       ));
+
       threadById.set(id, threadUpd);
 
       return {
@@ -247,13 +256,16 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       } = state;
 
       let replyIds = replyIdsByThreadId.get(thread_id.toNumber());
+
       if (!replyIds) {
         replyIds = [];
         replyIdsByThreadId.set(thread_id.toNumber(), replyIds);
       }
+
       replyIds.push(nextReplyId);
 
       const newId = nextReplyId;
+
       replyById.set(newId, reply);
       nextReplyId = nextReplyId + 1;
 
@@ -293,6 +305,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
         reply.cloneValues(),
         { moderation: createMock('Option<ModerationAction>', moderation) }
       ));
+
       replyById.set(id, replyUpd);
 
       return {
@@ -324,6 +337,7 @@ export const ForumContext = createContext<ForumContextProps>(contextStub);
 
 export function ForumProvider (props: React.PropsWithChildren<{}>) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
   return (
     <ForumContext.Provider value={{ state, dispatch }}>
       {props.children}

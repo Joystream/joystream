@@ -10,8 +10,8 @@ import { Category, Thread, Post } from '@joystream/types/forum';
 import { Pagination, RepliesPerPage, CategoryCrumbs, TimeAgoDate, usePagination, useQueryParam, ReplyIdxQueryParam, ReplyEditIdQueryParam } from './utils';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
-import { MutedSpan } from '@polkadot/joy-utils/react/components';
-import { JoyWarn } from '@polkadot/joy-utils/react/components';
+import { MutedSpan, JoyWarn } from '@polkadot/joy-utils/react/components';
+
 import { withForumCalls } from './calls';
 import { withApi, withMulti } from '@polkadot/react-api';
 import { ApiProps } from '@polkadot/react-api/types';
@@ -30,6 +30,7 @@ type ThreadTitleProps = {
 
 function ThreadTitle (props: ThreadTitleProps) {
   const { thread, className } = props;
+
   return <span className={className}>
     {/* {thread.pinned && <i
       className='star icon'
@@ -183,26 +184,29 @@ function InnerViewThread (props: ViewThreadProps) {
       const newId = (id: number | BN) => api.createType('PostId', id);
       const apiCalls: Promise<Post>[] = [];
       let id = newId(1);
+
       while (nextPostId.gt(id)) {
         apiCalls.push(api.query.forum.postById(id) as Promise<Post>);
         id = newId(id.add(newId(1)));
       }
 
       const allPosts = await Promise.all<Post>(apiCalls);
-      const postsInThisThread = allPosts.filter(item =>
+      const postsInThisThread = allPosts.filter((item) =>
         !item.isEmpty &&
         item.thread_id.eq(thread.id)
       );
       const sortedPosts = orderBy(
         postsInThisThread,
-        [x => x.nr_in_thread.toNumber()],
+        [(x) => x.nr_in_thread.toNumber()],
         ['asc']
       );
 
       // initialize refs for posts
       postsRefs.current = sortedPosts.reduce((acc, reply) => {
         const refKey = reply.nr_in_thread.toNumber();
+
         acc[refKey] = React.createRef();
+
         return acc;
       }, postsRefs.current);
 
@@ -218,14 +222,17 @@ function InnerViewThread (props: ViewThreadProps) {
     if (!selectedPostIdx) return;
 
     const selectedPostPage = Math.ceil(selectedPostIdx / RepliesPerPage);
+
     if (currentPage !== selectedPostPage) {
       setCurrentPage(selectedPostPage);
     }
 
     if (!loaded) return;
+
     if (selectedPostIdx > posts.length) {
       // eslint-disable-next-line no-console
       console.warn(`Tried to open nonexistent reply with idx: ${selectedPostIdx}`);
+
       return;
     }
 
@@ -248,6 +255,7 @@ function InnerViewThread (props: ViewThreadProps) {
     const minIdx = (currentPage - 1) * RepliesPerPage;
     const maxIdx = minIdx + RepliesPerPage - 1;
     const postsToDisplay = posts.filter((_id, i) => i >= minIdx && i <= maxIdx);
+
     setDisplayedPosts(postsToDisplay);
   }, [loaded, posts, currentPage]);
 
@@ -270,11 +278,12 @@ function InnerViewThread (props: ViewThreadProps) {
     if (!editedPostId) {
       // eslint-disable-next-line no-console
       console.error('editedPostId not set!');
+
       return;
     }
 
     const updatedPost = await api.query.forum.postById(editedPostId) as Post;
-    const updatedPosts = posts.map(post => post.id.eq(editedPostId) ? updatedPost : post);
+    const updatedPosts = posts.map((post) => post.id.eq(editedPostId) ? updatedPost : post);
 
     setPosts(updatedPosts);
     clearEditedPost();
@@ -333,9 +342,10 @@ function InnerViewThread (props: ViewThreadProps) {
     if (thread.moderated || category.archived || category.deleted) {
       return null;
     }
+
     return <span className='JoyInlineActions'>
       <Button onClick={onThreadReplyClick}>
-        <Icon name="reply" />
+        <Icon name='reply' />
         Reply
       </Button>
 
@@ -378,8 +388,8 @@ function InnerViewThread (props: ViewThreadProps) {
       <ThreadInfoAndActions>
         <ThreadInfo>
           Created by
-          <ThreadInfoMemberPreview accountId={thread.author_id} size="small" showId={false}/>
-          <TimeAgoDate date={thread.created_at.momentDate} id="thread" />
+          <ThreadInfoMemberPreview accountId={thread.author_id} size='small' showId={false}/>
+          <TimeAgoDate date={thread.created_at.momentDate} id='thread' />
         </ThreadInfo>
         {renderActions()}
       </ThreadInfoAndActions>
@@ -424,10 +434,12 @@ export function ViewThreadById (props: ViewThreadByIdProps) {
   const { match: { params: { id } } } = props;
 
   let threadId: ThreadId;
+
   try {
     threadId = api.createType('ThreadId', id);
   } catch (err) {
     console.log('Failed to parse thread id form URL');
+
     return <em>Invalid thread ID: {id}</em>;
   }
 

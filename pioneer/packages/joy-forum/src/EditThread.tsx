@@ -6,7 +6,7 @@ import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { History } from 'history';
 
-import { TxButton } from '@polkadot/joy-utils/react/components';
+import { TxButton, Section } from '@polkadot/joy-utils/react/components';
 import { SubmittableResult } from '@polkadot/api';
 import { withMulti } from '@polkadot/react-api/hoc';
 
@@ -14,7 +14,7 @@ import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { ThreadId } from '@joystream/types/common';
 import { Thread, CategoryId } from '@joystream/types/forum';
 import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
-import { Section } from '@polkadot/joy-utils/react/components';
+
 import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
 import { withForumCalls } from './calls';
@@ -96,6 +96,7 @@ const InnerForm = (props: FormProps) => {
 
   const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
+
     if (txResult == null) {
       // Tx cancelled.
 
@@ -108,12 +109,15 @@ const InnerForm = (props: FormProps) => {
 
     // Get id of newly created thread:
     let _id = id;
+
     if (!_id) {
-      _txResult.events.find(event => {
+      _txResult.events.find((event) => {
         const { event: { data, method } } = event;
+
         if (method === 'ThreadCreated') {
           _id = data.toArray()[0] as ThreadId;
         }
+
         return true;
       });
     }
@@ -221,7 +225,7 @@ const InnerForm = (props: FormProps) => {
 const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
-  mapPropsToValues: props => {
+  mapPropsToValues: (props) => {
     return {
       // pinned: struct && struct.pinned || false,
       title: '',
@@ -231,7 +235,7 @@ const EditForm = withFormik<OuterProps, FormValues>({
 
   validationSchema: buildSchema,
 
-  handleSubmit: values => {
+  handleSubmit: (values) => {
     // do submitting things
   }
 })(InnerForm);
@@ -249,6 +253,7 @@ function FormOrLoading (props: OuterProps) {
   }
 
   const isMyStruct = address === struct.author_id.toString();
+
   if (isMyStruct) {
     return <EditForm {...props} />;
   }
@@ -260,6 +265,7 @@ function withCategoryIdFromUrl (Component: React.ComponentType<OuterProps>) {
   return function (props: UrlHasIdProps) {
     const { match: { params: { id } } } = props;
     const { api } = useApi();
+
     try {
       return <Component {...props} categoryId={api.createType('CategoryId', id)} />;
     } catch (err) {
@@ -272,6 +278,7 @@ function withIdFromUrl (Component: React.ComponentType<OuterProps>) {
   return function (props: UrlHasIdProps) {
     const { match: { params: { id } } } = props;
     const { api } = useApi();
+
     try {
       return <Component {...props} id={api.createType('ThreadId', id)} />;
     } catch (err) {

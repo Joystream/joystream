@@ -70,6 +70,7 @@ type OnlySudoProps = {
 function OnlySudo<P extends OnlySudoProps> (Component: React.ComponentType<P>) {
   return function (props: P) {
     const { sudo } = props;
+
     if (!sudo) {
       return <em>Loading sudo key...</em>;
     }

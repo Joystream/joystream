@@ -24,6 +24,7 @@ type Props = AppMainRouteProps & I18nProps;
 class App extends React.PureComponent<Props> {
   render () {
     const { basePath } = this.props;
+
     return (
       <ForumProvider>
         <ForumSudoProvider>

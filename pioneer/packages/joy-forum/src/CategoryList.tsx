@@ -223,13 +223,14 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
       const newId = (id: number | BN) => api.createType('ThreadId', id);
       const apiCalls: Promise<Thread>[] = [];
       let id = newId(1);
+
       while (nextThreadId.gt(id)) {
         apiCalls.push(api.query.forum.threadById(id) as Promise<Thread>);
         id = newId(id.add(newId(1)));
       }
 
       const allThreads = await Promise.all<Thread>(apiCalls);
-      const threadsInThisCategory = allThreads.filter(item =>
+      const threadsInThisCategory = allThreads.filter((item) =>
         !item.isEmpty &&
         item.category_id.eq(category.id)
       );
@@ -237,9 +238,9 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
         threadsInThisCategory,
         // TODO UX: Replace sort by id with sort by blocktime of the last reply.
         [
-          x => x.moderated,
+          (x) => x.moderated,
           // x => x.pinned,
-          x => x.nr_in_category.toNumber()
+          (x) => x.nr_in_category.toNumber()
         ],
         [
           'asc',
@@ -319,6 +320,7 @@ type ViewCategoryByIdProps = UrlHasIdProps & {
 export function ViewCategoryById (props: ViewCategoryByIdProps) {
   const { match: { params: { id } } } = props;
   const { api } = useApi();
+
   try {
     return <ViewCategory id={api.createType('CategoryId', id)} />;
   } catch (err) {
@@ -343,13 +345,14 @@ function InnerCategoryList (props: CategoryListProps) {
       const newId = (id: number | BN) => api.createType('CategoryId', id);
       const apiCalls: Promise<Category>[] = [];
       let id = newId(1);
+
       while (nextCategoryId.gt(id)) {
         apiCalls.push(api.query.forum.categoryById(id) as Promise<Category>);
         id = newId(id.add(newId(1)));
       }
 
       const allCats = await Promise.all<Category>(apiCalls);
-      const filteredCats = allCats.filter(cat =>
+      const filteredCats = allCats.filter((cat) =>
         !cat.isEmpty &&
         !cat.deleted && // TODO show deleted categories if current user is forum sudo
         (parentId ? parentId.eq(cat.parent_id) : cat.isRoot)
