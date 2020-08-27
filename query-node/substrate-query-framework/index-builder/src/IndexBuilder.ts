@@ -13,7 +13,9 @@ import {
   QueryEvent,
 } from '.';
 
-const debug = require('debug')('index-builder:indexer');
+import Debug from 'debug';
+
+const debug = Debug('index-builder:indexer');
 
 export default class IndexBuilder {
   private _producer: QueryBlockProducer;
@@ -33,22 +35,31 @@ export default class IndexBuilder {
     return new IndexBuilder(producer, processing_pack);
   }
 
-  async start(atBlock?: BN) {
+  async start(atBlock?: BN): Promise<void> {
     // check state
 
     // STORE THIS SOMEWHERE
-    this._producer.on('QueryEventBlock', (query_event_block: QueryEventBlock): void => {
-      this._onQueryEventBlock(query_event_block);
-    });
+    //this._producer.on('QueryEventBlock', (query_event_block: QueryEventBlock) => {
+    //  this._onQueryEventBlock(query_event_block);
+    //});
 
     debug('Spawned worker.');
 
+    if (atBlock) {
+      debug(`Got block height hint: ${atBlock.toString()}`);
+    }
+    
     const lastProcessedEvent = await getRepository(SavedEntityEvent).findOne({ where: { id: 1 } });
 
+    if (lastProcessedEvent) {
+      debug(`Found the most recent processed event at block ${lastProcessedEvent.blockNumber.toString()}`);
+    }
+
     if (atBlock && lastProcessedEvent) {
-      throw new Error(
-        `Existing processed history detected on the database!
-        Last processed block is ${lastProcessedEvent.blockNumber.toString()}`
+      debug(
+        `WARNING! Existing processed history detected on the database!
+        Last processed block is ${lastProcessedEvent.blockNumber.toString()}. The indexer 
+        will continue from block ${lastProcessedEvent.blockNumber.toString()} and ignore the block height hints.`
       );
     }
 
@@ -60,51 +71,66 @@ export default class IndexBuilder {
       await this._producer.start(atBlock);
     }
 
+    for await (const eventBlock of this._producer.blocks()) {
+      try {
+        await this._onQueryEventBlock(eventBlock);
+      } catch (e) {
+        throw new Error(e);
+      }
+      debug(`Successfully processed block ${eventBlock.block_number.toString()}`)
+    }
+
     debug('Started worker.');
   }
 
-  async stop() {}
+  async stop(): Promise<void> { 
+    return new Promise<void>((resolve) => {
+      debug('Index builder has been stopped (NOOP)');
+      resolve();
+    });
+  }
 
-  _onQueryEventBlock(query_event_block: QueryEventBlock): void {
-    debug(`Yay, block producer at height: #${query_event_block.block_number}`);
+  async _onQueryEventBlock(query_event_block: QueryEventBlock): Promise<void> {
+    debug(`Yay, block producer at height: #${query_event_block.block_number.toString()}`);
 
-    asyncForEach(query_event_block.query_events, async (query_event: QueryEvent) => {
-      if (!this._processing_pack[query_event.event_name]) {
-        debug(`Unrecognized: ` + query_event.event_name);
+    await asyncForEach(query_event_block.query_events, async (query_event: QueryEvent, i: number) => {
+      
+      debug(`Processing event ${query_event.event_name}, index: ${i}`)
+      query_event.log(0, debug);
 
-        query_event.log(0, debug);
-      } else {
-        debug(`Recognized: ` + query_event.event_name);
+      const queryRunner = getConnection().createQueryRunner();
+      try {
+        // establish real database connection
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
 
-        const queryRunner = getConnection().createQueryRunner();
-        try {
-          // establish real database connection
-          await queryRunner.connect();
-          await queryRunner.startTransaction();
-
-          // Call event handler
+        // Call event handler
+        if (this._processing_pack[query_event.event_name]) {
+          debug(`Recognized: ` + query_event.event_name);
           await this._processing_pack[query_event.event_name](makeDatabaseManager(queryRunner.manager), query_event);
-
-          // Update last processed event
-          await SavedEntityEvent.update(query_event, queryRunner.manager);
-
-          await queryRunner.commitTransaction();
-        } catch (error) {
-          debug(`There are errors. Rolling back the transaction. Reason: ${error.message}`);
-
-          // Since we have errors lets rollback changes we made
-          await queryRunner.rollbackTransaction();
-          throw new Error(error);
-        } finally {
-          // Query runner needs to be released manually.
-          await queryRunner.release();
+        } else {
+          debug(`No mapping for  ${query_event.event_name}, skipping`);
         }
+        // Update last processed event
+        await SavedEntityEvent.update(query_event, queryRunner.manager);
+
+        await queryRunner.commitTransaction();
+      } catch (error) {
+        debug(`There are errors. Rolling back the transaction. Reason: ${JSON.stringify(error, null, 2)}`);
+
+        // Since we have errors lets rollback changes we made
+        await queryRunner.rollbackTransaction();
+        throw new Error(error);
+      } finally {
+        // Query runner needs to be released manually.
+        await queryRunner.release();
       }
+      
     });
   }
 }
 
-async function asyncForEach(array: Array<any>, callback: Function) {
+async function asyncForEach<T>(array: Array<T>, callback: (o: T, i: number, a: Array<T>) => Promise<void>): Promise<void> {
   for (let index = 0; index < array.length; index++) {
     await callback(array[index], index, array);
   }

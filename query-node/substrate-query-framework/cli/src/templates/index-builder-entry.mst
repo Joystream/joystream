@@ -140,7 +140,7 @@ async function main() {
       process.exit(0);
   }
 
-  node.start({
+  await node.start({
     wsProviderURI: providerUri,
     processingPack: getProcessingPack(),
     atBlock: atBlock && atBlock !== '0' ? new BN(atBlock) : undefined,

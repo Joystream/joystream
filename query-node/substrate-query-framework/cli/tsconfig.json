@@ -7,6 +7,7 @@
     "rootDir": ".",
     "strict": true,
     "target": "es2017",
+    "noImplicitAny": false,
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
@@ -15,5 +16,6 @@
         "./src/node_modules/@types"
     ] 
   },
-  "include": ["./src/**/*.ts", "./test/**/*.ts"]
+  "include": ["./src/**/*.ts", "./test/**/*.ts"],
+  "exclude": ["./src/templates/scaffold/mappings/*.ts"]
 }

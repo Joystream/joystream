@@ -1,7 +1,7 @@
 {
-  "name": "@joystream/hydra-cli",
+  "name": "@dzlzv/hydra-cli",
   "description": "CLI tool for building a Hydra query node",
-  "version": "0.0.1-alpha",
+  "version": "0.0.10",
   "author": "metmirr @metmirr dzlzv @dzhelezov",
   "bin": {
     "hydra-cli": "./bin/run"
@@ -81,7 +81,7 @@
     "build": "rm -rf lib && tsc --build tsconfig.json",
     "postpack": "rm -f oclif.manifest.json",
     "lint": "eslint . --cache --ext .ts --config .eslintrc.js",
-    "prepack": "rm -rf lib && tsc -b && oclif-dev manifest && oclif-dev readme",
+    "prepack": "rm -rf lib && tsc -b && cp -R ./src/templates ./lib/src/templates && oclif-dev manifest && oclif-dev readme",
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif-dev readme && git add README.md"
   },

@@ -112,6 +112,7 @@ export {{#isInterface}}abstract{{/isInterface}} class {{className}}
       {{^required}}nullable: true,{{/required}}
       {{#description}}description: `{{{description}}}`,{{/description}}
       {{#unique}}unique: true,{{/unique}}
+      {{#transformer}} transformer: {{{transformer}}}, {{/transformer}}
     })
     {{camelName}}{{^required}}?{{/required}}{{#required}}!{{/required}}: {{tsType}};
   {{/is.scalar}}

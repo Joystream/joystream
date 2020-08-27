@@ -73,7 +73,7 @@ export default class Scaffold extends Command {
   async setupMappings(): Promise<void> {
     await fs.ensureDir('mappings');
     await utils.copyTemplateToCWD('scaffold/mappings/index.ts', path.join('mappings', 'index.ts'));
-    await utils.copyTemplateToCWD('scaffold/mappings/treasury.ts', path.join('mappings', 'treasury.ts'));
+    await utils.copyTemplateToCWD('scaffold/mappings/proposal.ts', path.join('mappings', 'proposal.ts'));
   }
 
   async setupDocker(): Promise<void> {

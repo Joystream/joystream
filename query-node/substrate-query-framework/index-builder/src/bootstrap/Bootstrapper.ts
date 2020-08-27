@@ -3,7 +3,6 @@ import {
   BootstrapPack,
   BootstrapFunc,
   SubstrateEvent,
-  DatabaseManager,
   SavedEntityEvent,
   QueryNodeStartUpOptions,
 } from '..';
@@ -11,7 +10,8 @@ import { WsProvider, ApiPromise } from '@polkadot/api';
 import { getConnection, EntityManager } from 'typeorm';
 import { makeDatabaseManager } from '..';
 
-const debug = require('debug')('index-builder:bootstrapper');
+import Debug from 'debug';
+const debug = Debug('index-builder:bootstrapper');
 
 export default class Bootstrapper {
   private _api: ApiPromise;
@@ -36,7 +36,7 @@ export default class Bootstrapper {
     return new Bootstrapper(api, processingPack as BootstrapPack);
   }
 
-  async bootstrap() {
+  async bootstrap():Promise<void> {
     debug('Bootstraping the database');
     const queryRunner = getConnection().createQueryRunner();
     const api = this._api;
@@ -48,13 +48,13 @@ export default class Bootstrapper {
       // perform all the bootstrap logic in one large
       // atomic transaction
       for (const boot of this._bootstrapPack.pack) {
-        let shouldBootstrap = await this.shouldBootstrap(queryRunner.manager, boot);
+        const shouldBootstrap = await this.shouldBootstrap(queryRunner.manager, boot);
         if (!shouldBootstrap) {
           debug(`${boot.name} already bootstrapped, skipping`);
           continue;
         }
 
-        let bootEvent = this.createBootEvent(boot);
+        const bootEvent = this.createBootEvent(boot);
         await boot(api, makeDatabaseManager(queryRunner.manager));
 
         // Save the bootstrap events so
@@ -66,7 +66,7 @@ export default class Bootstrapper {
     } catch (error) {
       console.error(error);
       await queryRunner.rollbackTransaction();
-      throw new Error(`Bootstrapping failed: ${error}`);
+      throw new Error(`Bootstrapping failed: ${JSON.stringify(error, null, 2)}`);
     } finally {
       await queryRunner.release();
     }

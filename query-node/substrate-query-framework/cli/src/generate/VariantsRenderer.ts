@@ -16,7 +16,7 @@ export class VariantsRenderer extends AbstractRenderer {
   }
 
   withVariants(): GeneratorContext {
-    const variants = []
+    const variants: GeneratorContext[] = []
     for (const v of this.model.variants) {
       const renderer = new ModelRenderer(this.model, v, new EnumContextProvider(), {});
       variants.push(renderer.transform());
@@ -28,7 +28,7 @@ export class VariantsRenderer extends AbstractRenderer {
 
 
   withUnions(): GeneratorContext {
-    const unions = [];
+    const unions: GeneratorContext[] = [];
     for (const u of this.model.unions) {
       unions.push(withUnionType(u))
     }
