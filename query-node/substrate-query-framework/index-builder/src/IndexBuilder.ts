@@ -14,6 +14,7 @@ import { PooledExecutor } from './PooledExecutor';
 import { SubstrateEventEntity } from './entities';
 import { EVENT_TABLE_NAME } from './entities/SubstrateEventEntity';
 import { numberEnv } from './utils/env-flags';
+import { getIndexerHead } from './db/dal';
 
 const debug = Debug('index-builder:indexer');
 
@@ -44,7 +45,7 @@ export default class IndexBuilder {
   async start(atBlock?: number): Promise<void> {
     debug('Spawned worker.');
 
-    this._indexerHead = await this._restoreIndexerHead();
+    this._indexerHead = await getIndexerHead(getConnection().createQueryRunner());
     debug(`Last indexed block in the database: ${this._indexerHead.toString()}`);
     let startBlock = this._indexerHead + 1;
     
@@ -82,31 +83,6 @@ export default class IndexBuilder {
       this._stopped = true;
       resolve();
     });
-  }
-
-
-  async _restoreIndexerHead(): Promise<number> {
-    const qr = getConnection().createQueryRunner();
-    // take the first block such that next one has not yet been saved
-    const rawRslts = await qr.query(`
-      SELECT MIN(events.block_number) as head FROM 
-        (SELECT event.id, event.block_number, next_block_event.id as next_block_id 
-          FROM ${EVENT_TABLE_NAME} event 
-          LEFT JOIN ${EVENT_TABLE_NAME} next_block_event
-          ON event.block_number + 1 = next_block_event.block_number) events 
-      WHERE events.next_block_id is NULL`
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ) as Array<any>; 
-    
-    if ((rawRslts === undefined) || (rawRslts.length === 0)) {
-      return -1;
-    }     
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const head = rawRslts[0].head as number;
-    console.debug(`Got blknum: ${JSON.stringify(head, null, 2)}`);
-    
-    return (head) ? head : -1;
   }
 
   _indexBlock(): (h: number) => Promise<void> {
