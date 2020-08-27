@@ -155,7 +155,7 @@ decl_storage! {
         /// Votes in current referendum
         pub Votes get(fn votes) config(): map hasher(blake2_128_concat) T::AccountId => CastVote<T::Hash, Balance<T, I>>;
 
-        /// Index of the current referendum cycle. It is incremented each time one referendum ends.
+        /// Index of the current referendum cycle. It is incremented everytime referendum ends.
         pub CurrentCycleId get(fn current_cycle_id) config(): u64;
 
         /// Last cycle winning option(s)
@@ -739,7 +739,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         let cast_vote = Self::ensure_vote_exists(&account_id)?;
 
-        // enable stake release only during
+        // enable stake release in current cycle only during voting stage
         if cycle_id == cast_vote.cycle_id {
             match Stage::<T, I>::get() {
                 ReferendumStage::Voting(_) => Ok(()),
