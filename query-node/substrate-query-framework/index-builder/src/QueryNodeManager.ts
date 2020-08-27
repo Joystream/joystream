@@ -1,6 +1,7 @@
 import QueryNode, { QueryNodeState } from './QueryNode';
 import { Bootstrapper } from './bootstrap';
-import { QueryNodeStartUpOptions } from '.';
+import { QueryNodeStartUpOptions, QueryEventProcessingPack } from '.';
+import MappingsProcessor from './processor/MappingsProcessor';
 
 // Respondible for creating, starting up and shutting down the query node.
 // Currently this class is a bit thin, but it will almost certainly grow
@@ -15,6 +16,11 @@ export default class QueryNodeManager {
     process.on('exit', () => this._onProcessExit());
   }
 
+  /**
+   * Starts the indexer
+   * 
+   * @param options options passed to create the indexer service
+   */
   async start(options: QueryNodeStartUpOptions): Promise<void> {
     if (this._query_node) throw Error('Cannot start the same manager multiple times.');
 
@@ -25,6 +31,17 @@ export default class QueryNodeManager {
   async bootstrap(options: QueryNodeStartUpOptions): Promise<void> {
     const bootstrapper = await Bootstrapper.create(options);
     await bootstrapper.bootstrap();
+  }
+
+
+  /**
+   * Starts the mappings processor
+   * 
+   * @param options options passed to create the mappings
+   */
+  async process(options: QueryNodeStartUpOptions): Promise<void> {
+    const processor =  MappingsProcessor.create(options.processingPack as QueryEventProcessingPack);
+    await processor.start(options.atBlock);
   }
 
    _onProcessExit(): void  {
