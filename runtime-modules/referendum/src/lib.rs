@@ -15,7 +15,7 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, traits::Get, Parameter,
     StorageValue,
 };
-use sp_arithmetic::traits::{BaseArithmetic, One};
+use sp_arithmetic::traits::{BaseArithmetic};
 use sp_runtime::traits::{MaybeSerialize, Member};
 use std::marker::PhantomData;
 use system::ensure_signed;
@@ -664,17 +664,10 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         let stage = Stage::<T, I>::get();
 
         // ensure referendum is running
-        let voting_stage = match stage {
-            ReferendumStage::Voting(stage_data) => (stage_data),
+        match stage {
+            ReferendumStage::Voting(_) => (),
             _ => return Err(Error::ReferendumNotRunning),
         };
-
-        let current_block = <system::Module<T>>::block_number();
-
-        // ensure voting stage is not expired (it can happend when superuser haven't call `finish_voting_start_revealing` yet)
-        if current_block >= T::VoteStageDuration::get() + voting_stage.start + One::one() {
-            return Err(Error::ReferendumNotRunning);
-        }
 
         // ensure stake is enough for voting
         if balance < &T::MinimumStake::get() {
@@ -706,13 +699,6 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             ReferendumStage::Revealing(tmp_stage_data) => (tmp_stage_data),
             _ => return Err(Error::RevealingNotInProgress),
         };
-
-        let current_block = <system::Module<T>>::block_number();
-
-        // ensure voting stage is not expired (it can happend when superuser haven't call `finish_voting_start_revealing` yet)
-        if current_block >= T::RevealStageDuration::get() + stage_data.start + One::one() {
-            return Err(Error::RevealingNotInProgress);
-        }
 
         // ensure account haven't voted yet
         if !Votes::<T, I>::contains_key(&account_id) {
