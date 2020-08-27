@@ -43,7 +43,7 @@ impl<BlockNumber, VotePower> Default for ReferendumStage<BlockNumber, VotePower>
 /// Representation for voting stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageVoting<BlockNumber> {
-    start: BlockNumber,
+    started: BlockNumber,
     winning_target_count: u64,
     options_count: u64,
 }
@@ -51,7 +51,7 @@ pub struct ReferendumStageVoting<BlockNumber> {
 /// Representation for revealing stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
-    start: BlockNumber,
+    started: BlockNumber,
     winning_target_count: u64,
     intermediate_results: Vec<VotePower>,
 }
@@ -352,12 +352,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         match Stage::<T, I>::get() {
             ReferendumStage::Inactive => (),
             ReferendumStage::Voting(stage_data) => {
-                if now == stage_data.start + T::VoteStageDuration::get() {
+                if now == stage_data.started + T::VoteStageDuration::get() {
                     Self::end_voting_period(stage_data);
                 }
             }
             ReferendumStage::Revealing(stage_data) => {
-                if now == stage_data.start + T::RevealStageDuration::get() {
+                if now == stage_data.started + T::RevealStageDuration::get() {
                     Self::end_reveal_period(stage_data);
                 }
             }
@@ -439,7 +439,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         Stage::<T, I>::put(ReferendumStage::Voting(ReferendumStageVoting::<
             T::BlockNumber,
         > {
-            start: <system::Module<T>>::block_number(),
+            started: <system::Module<T>>::block_number(),
             winning_target_count: *winning_target_count,
             options_count: *options_count,
         }));
@@ -451,7 +451,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             T::BlockNumber,
             T::VotePower,
         > {
-            start: <system::Module<T>>::block_number(),
+            started: <system::Module<T>>::block_number(),
             winning_target_count: old_stage.winning_target_count,
             intermediate_results: (0..old_stage.options_count).map(|_| 0.into()).collect(),
         }));

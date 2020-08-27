@@ -358,7 +358,7 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Voting(ReferendumStageVoting {
-                start: block_number,
+                started: block_number,
                 winning_target_count,
                 options_count,
             }),
@@ -379,7 +379,7 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Revealing(ReferendumStageRevealing {
-                start: block_number - 1,
+                started: block_number - 1,
                 winning_target_count,
                 intermediate_results: (0..options_count).map(|_| 0).collect(),
             }),
