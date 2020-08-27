@@ -53,8 +53,7 @@ pub struct ReferendumStageVoting<BlockNumber> {
 pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
     start: BlockNumber,
     winning_target_count: u64,
-    options_count: u64,
-    revealed_votes: Vec<VotePower>,
+    intermediate_results: Vec<VotePower>,
 }
 
 /// Vote casted in referendum but not revealed yet.
@@ -460,8 +459,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         > {
             start: <system::Module<T>>::block_number(),
             winning_target_count: old_stage.winning_target_count,
-            options_count: old_stage.options_count,
-            revealed_votes: (0..old_stage.options_count).map(|_| 0.into()).collect(),
+            intermediate_results: (0..old_stage.options_count).map(|_| 0.into()).collect(),
         }));
     }
 
@@ -474,8 +472,8 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         ) -> ReferendumResult<u64, T::VotePower> {
             let mut winning_order: Vec<(u64, T::VotePower)> = vec![];
 
-            for i in 0..revealing_stage.options_count {
-                let vote_sum: T::VotePower = revealing_stage.revealed_votes[i as usize];
+            for i in 0..(revealing_stage.intermediate_results.len() as u64) {
+                let vote_sum: T::VotePower = revealing_stage.intermediate_results[i as usize];
 
                 // skip option with 0 votes
                 if vote_sum == 0.into() {
@@ -579,7 +577,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             |stage_data: &mut ReferendumStageRevealing<T::BlockNumber, T::VotePower>| {
                 // calculate vote power
                 let vote_power = T::caclulate_vote_power(account_id, &sealed_vote.balance);
-                stage_data.revealed_votes[*option_index as usize] += vote_power;
+                stage_data.intermediate_results[*option_index as usize] += vote_power;
             };
 
         // store revealed vote
@@ -729,7 +727,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             return Err(Error::NoVoteToReveal);
         }
 
-        if vote_option_index >= &stage_data.options_count {
+        if vote_option_index >= &(stage_data.intermediate_results.len() as u64) {
             return Err(Error::InvalidVote);
         }
 

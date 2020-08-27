@@ -381,8 +381,7 @@ impl InstanceMocks<Runtime, Instance0> {
             ReferendumStage::Revealing(ReferendumStageRevealing {
                 start: block_number - 1,
                 winning_target_count,
-                options_count,
-                revealed_votes: (0..options_count).map(|_| 0).collect(),
+                intermediate_results: (0..options_count).map(|_| 0).collect(),
             }),
         );
 
