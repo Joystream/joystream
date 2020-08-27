@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import Codegen from './codegen';
 import WarthogWrapper from '../helpers/WarthogWrapper';
+import * as dotenv from 'dotenv';
 
 export default class Preview extends Command {
   static description = 'Preview GraphQL API schema';
@@ -14,6 +15,7 @@ export default class Preview extends Command {
 
   async run(): Promise<void> {
     const { flags } = this.parse(Codegen);
+    dotenv.config();
 
     const generatedFolderPath = path.resolve(process.cwd(), Codegen.generatedFolderName);
     const isGeneratedFolderPathExists = fs.existsSync(generatedFolderPath);

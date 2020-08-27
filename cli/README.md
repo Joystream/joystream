@@ -1,46 +1,41 @@
-joystream-cli
-=============
+# README
+
+## joystream-cli
 
 Command Line Interface for Joystream community and governance activities
 
-[![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
-[![Version](https://img.shields.io/npm/v/joystream-cli.svg)](https://npmjs.org/package/joystream-cli)
-[![Downloads/week](https://img.shields.io/npm/dw/joystream-cli.svg)](https://npmjs.org/package/joystream-cli)
-[![License](https://img.shields.io/npm/l/joystream-cli.svg)](https://github.com/Joystream/cli/blob/master/package.json)
+[![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io) [![Version](https://img.shields.io/npm/v/joystream-cli.svg)](https://npmjs.org/package/joystream-cli) [![Downloads/week](https://img.shields.io/npm/dw/joystream-cli.svg)](https://npmjs.org/package/joystream-cli) [![License](https://img.shields.io/npm/l/joystream-cli.svg)](https://github.com/Joystream/cli/blob/master/package.json)
 
-<!-- toc -->
-* [Development](#development)
-* [Usage](#usage)
-* [Commands](#commands)
-<!-- tocstop -->
+* [Development](./#development)
+* [Usage](./#usage)
+* [Commands](./#commands)
 
-# Development
-<!-- development -->
-To run a command in developemnt environment (without installing the package):
+## Development
+
+To run a command in developemnt environment \(without installing the package\):
 
 1. Navigate into the CLI root directory
-1. Either execute any command like this:
+2. Either execute any command like this:
 
-    ```
+   ```text
         $ ./bin/run COMMAND
-    ```
+   ```
 
-    Or use:
+   Or use:
 
-    ```
+   ```text
         $ npm link
-    ```
+   ```
 
-    And then execute any command like this:
+   And then execute any command like this:
 
-    ```
+   ```text
         $ joystream-cli COMMAND
-    ```
-<!-- development -->
+   ```
 
-# Usage
-<!-- usage -->
-```sh-session
+## Usage
+
+```text
 $ npm install -g joystream-cli
 $ joystream-cli COMMAND
 running command...
@@ -51,38 +46,38 @@ USAGE
   $ joystream-cli COMMAND
 ...
 ```
-<!-- usagestop -->
-# Commands
-<!-- commands -->
-* [`joystream-cli account:choose`](#joystream-cli-accountchoose)
-* [`joystream-cli account:create NAME`](#joystream-cli-accountcreate-name)
-* [`joystream-cli account:current`](#joystream-cli-accountcurrent)
-* [`joystream-cli account:export PATH`](#joystream-cli-accountexport-path)
-* [`joystream-cli account:forget`](#joystream-cli-accountforget)
-* [`joystream-cli account:import BACKUPFILEPATH`](#joystream-cli-accountimport-backupfilepath)
-* [`joystream-cli account:transferTokens RECIPIENT AMOUNT`](#joystream-cli-accounttransfertokens-recipient-amount)
-* [`joystream-cli api:getUri`](#joystream-cli-apigeturi)
-* [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
-* [`joystream-cli api:setUri URI`](#joystream-cli-apiseturi-uri)
-* [`joystream-cli council:info`](#joystream-cli-councilinfo)
-* [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
 
-## `joystream-cli account:choose`
+## Commands
+
+* [`joystream-cli account:choose`](./#joystream-cli-accountchoose)
+* [`joystream-cli account:create NAME`](./#joystream-cli-accountcreate-name)
+* [`joystream-cli account:current`](./#joystream-cli-accountcurrent)
+* [`joystream-cli account:export PATH`](./#joystream-cli-accountexport-path)
+* [`joystream-cli account:forget`](./#joystream-cli-accountforget)
+* [`joystream-cli account:import BACKUPFILEPATH`](./#joystream-cli-accountimport-backupfilepath)
+* [`joystream-cli account:transferTokens RECIPIENT AMOUNT`](./#joystream-cli-accounttransfertokens-recipient-amount)
+* [`joystream-cli api:getUri`](./#joystream-cli-apigeturi)
+* [`joystream-cli api:inspect`](./#joystream-cli-apiinspect)
+* [`joystream-cli api:setUri URI`](./#joystream-cli-apiseturi-uri)
+* [`joystream-cli council:info`](./#joystream-cli-councilinfo)
+* [`joystream-cli help [COMMAND]`](./#joystream-cli-help-command)
+
+### `joystream-cli account:choose`
 
 Choose default account to use in the CLI
 
-```
+```text
 USAGE
   $ joystream-cli account:choose
 ```
 
-_See code: [src/commands/account/choose.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/choose.ts)_
+_See code:_ [_src/commands/account/choose.ts_](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/choose.ts)
 
-## `joystream-cli account:create NAME`
+### `joystream-cli account:create NAME`
 
 Create new account
 
-```
+```text
 USAGE
   $ joystream-cli account:create NAME
 
@@ -90,13 +85,13 @@ ARGUMENTS
   NAME  Account name
 ```
 
-_See code: [src/commands/account/create.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/create.ts)_
+_See code:_ [_src/commands/account/create.ts_](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/create.ts)
 
-## `joystream-cli account:current`
+### `joystream-cli account:current`
 
 Display information about currently choosen default account
 
-```
+```text
 USAGE
   $ joystream-cli account:current
 
@@ -105,13 +100,13 @@ ALIASES
   $ joystream-cli account:default
 ```
 
-_See code: [src/commands/account/current.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/current.ts)_
+_See code:_ [_src/commands/account/current.ts_](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/current.ts)
 
-## `joystream-cli account:export PATH`
+### `joystream-cli account:export PATH`
 
-Export account(s) to given location
+Export account\(s\) to given location
 
-```
+```text
 USAGE
   $ joystream-cli account:export PATH
 
@@ -122,24 +117,24 @@ OPTIONS
   -a, --all  If provided, exports all existing accounts into "exported_accounts" folder inside given path
 ```
 
-_See code: [src/commands/account/export.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/export.ts)_
+_See code:_ [_src/commands/account/export.ts_](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/export.ts)
 
-## `joystream-cli account:forget`
+### `joystream-cli account:forget`
 
-Forget (remove) account from the list of available accounts
+Forget \(remove\) account from the list of available accounts
 
-```
+```text
 USAGE
   $ joystream-cli account:forget
 ```
 
-_See code: [src/commands/account/forget.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/forget.ts)_
+_See code:_ [_src/commands/account/forget.ts_](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/forget.ts)
 
-## `joystream-cli account:import BACKUPFILEPATH`
+### `joystream-cli account:import BACKUPFILEPATH`
 
 Import account using JSON backup file
 
-```
+```text
 USAGE
   $ joystream-cli account:import BACKUPFILEPATH
 
@@ -147,13 +142,13 @@ ARGUMENTS
   BACKUPFILEPATH  Path to account backup JSON file
 ```
 
-_See code: [src/commands/account/import.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/import.ts)_
+_See code:_ [_src/commands/account/import.ts_](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/import.ts)
 
-## `joystream-cli account:transferTokens RECIPIENT AMOUNT`
+### `joystream-cli account:transferTokens RECIPIENT AMOUNT`
 
 Transfer tokens from currently choosen account
 
-```
+```text
 USAGE
   $ joystream-cli account:transferTokens RECIPIENT AMOUNT
 
@@ -162,24 +157,24 @@ ARGUMENTS
   AMOUNT     Amount of tokens to transfer
 ```
 
-_See code: [src/commands/account/transferTokens.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/transferTokens.ts)_
+_See code:_ [_src/commands/account/transferTokens.ts_](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/transferTokens.ts)
 
-## `joystream-cli api:getUri`
+### `joystream-cli api:getUri`
 
 Get current api WS provider uri
 
-```
+```text
 USAGE
   $ joystream-cli api:getUri
 ```
 
-_See code: [src/commands/api/getUri.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/getUri.ts)_
+_See code:_ [_src/commands/api/getUri.ts_](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/getUri.ts)
 
-## `joystream-cli api:inspect`
+### `joystream-cli api:inspect`
 
-Lists available node API modules/methods and/or their description(s), or calls one of the API methods (depending on provided arguments and flags)
+Lists available node API modules/methods and/or their description\(s\), or calls one of the API methods \(depending on provided arguments and flags\)
 
-```
+```text
 USAGE
   $ joystream-cli api:inspect
 
@@ -217,13 +212,13 @@ EXAMPLES
   $ api:inspect -t=query -M=members -m=memberProfile -e -a=1
 ```
 
-_See code: [src/commands/api/inspect.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/inspect.ts)_
+_See code:_ [_src/commands/api/inspect.ts_](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/inspect.ts)
 
-## `joystream-cli api:setUri URI`
+### `joystream-cli api:setUri URI`
 
 Set api WS provider uri
 
-```
+```text
 USAGE
   $ joystream-cli api:setUri URI
 
@@ -231,24 +226,24 @@ ARGUMENTS
   URI  Uri of the node api WS provider
 ```
 
-_See code: [src/commands/api/setUri.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/setUri.ts)_
+_See code:_ [_src/commands/api/setUri.ts_](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/setUri.ts)
 
-## `joystream-cli council:info`
+### `joystream-cli council:info`
 
 Get current council and council elections information
 
-```
+```text
 USAGE
   $ joystream-cli council:info
 ```
 
-_See code: [src/commands/council/info.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/council/info.ts)_
+_See code:_ [_src/commands/council/info.ts_](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/council/info.ts)
 
-## `joystream-cli help [COMMAND]`
+### `joystream-cli help [COMMAND]`
 
 display help for joystream-cli
 
-```
+```text
 USAGE
   $ joystream-cli help [COMMAND]
 
@@ -259,5 +254,5 @@ OPTIONS
   --all  see all commands in CLI
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v2.2.3/src/commands/help.ts)_
-<!-- commandsstop -->
+_See code:_ [_@oclif/plugin-help_](https://github.com/oclif/plugin-help/blob/v2.2.3/src/commands/help.ts) 
+

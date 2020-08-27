@@ -13,7 +13,8 @@
   "scripts": {
     "build": "rm -rf lib && tsc --build tsconfig.json",
     "lint": "eslint . --cache --ext .ts --config .eslintrc.js",
-    "typeorm": "node --require ts-node/register ./node_modules/typeorm/cli.js"
+    "typeorm": "node --require ts-node/register ./node_modules/typeorm/cli.js",
+    "test": "nyc --extension .ts mocha --timeout 50000 --require ts-node/register --forbid-only \"test/**/*.test.ts\""
   },
   "dependencies": {
     "@anchan828/typeorm-transformers": "^0.3.63",
@@ -25,16 +26,27 @@
   },
   "devDependencies": {
     "@polkadot/ts": "^0.3.14",
+    "@types/bn.js": "^4.11.6",
     "@types/debug": "^4.1.5",
     "@types/node": "^10",
+    "@types/pg": "^7.14.4",
     "@typescript-eslint/eslint-plugin": "^3.8.0",
     "@typescript-eslint/parser": "^3.0.2",
+    "bn.js": "^5.1.2",
+    "chai": "^4.2.0",
+    "dotenv": "^8.2.0",
     "eslint": "^7.1.0",
     "husky": "^4.2.5",
     "lint-staged": "^10.2.6",
     "pg": "^8.3.2",
+    "mocha": "^8.1.1",
+    "nyc": "^15.1.0",
+    "pgtools": "^0.3.0",
+    "ts-mockito": "^2.6.1",
     "ts-node": "^8",
-    "typescript": "^3.8"
+    "typescript": "^3.8",
+    "util": "^0.12.3",
+    "warthog": "https://github.com/metmirr/warthog/releases/download/v2.9.7/warthog-v2.9.7.tgz"
   },
   "husky": {
     "hooks": {

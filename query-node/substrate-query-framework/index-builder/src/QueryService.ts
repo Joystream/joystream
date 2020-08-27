@@ -6,6 +6,9 @@ import { getSpecTypes } from '@polkadot/types-known';
 
 import { ISubstrateQueryService } from '.';
 import { UnsubscribePromise } from '@polkadot/api/types';
+import Debug from 'debug';
+
+const debug = Debug('index-builder:producer');
 
 export class QueryService implements ISubstrateQueryService {
   // Enough large number
@@ -71,16 +74,19 @@ export class QueryService implements ISubstrateQueryService {
     return this._api.rpc.chain.subscribeNewHeads(v);
   }
 
-  getBlockHash(blockNumber?: BlockNumber | Uint8Array | number | string): Promise<Hash> {
+  async getBlockHash(blockNumber?: BlockNumber | Uint8Array | number | string): Promise<Hash> {
+    debug(`Fetching block hash: BlockNumber: ${JSON.stringify(blockNumber)}`)
     return this._api.rpc.chain.getBlockHash(blockNumber);
   }
 
   async getBlock(hash: Hash | Uint8Array | string): Promise<SignedBlock> {
+    debug(`Fething block: BlockHash: ${JSON.stringify(hash)}`)
     const api = await this.ensureMeta(hash);
     return api.rpc.chain.getBlock(hash);
   }
 
   async eventsAt(hash: Hash | Uint8Array | string): Promise<EventRecord[] & Codec> {
+    debug(`Fething events. BlockHash:  ${JSON.stringify(hash)}`)
     const api = await this.ensureMeta(hash);
     return api.query.system.events.at(hash);
   }
