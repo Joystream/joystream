@@ -56,7 +56,7 @@ pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
     intermediate_results: Vec<VotePower>,
 }
 
-/// Vote cast in referendum but not revealed yet.
+/// Vote cast in referendum. Vote target is concealed until user reveals commitment's proof.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct CastVote<Hash, Currency> {
     commitment: Hash,
