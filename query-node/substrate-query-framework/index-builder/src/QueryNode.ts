@@ -2,8 +2,7 @@
 
 import { ApiPromise, WsProvider /*RuntimeVersion*/ } from '@polkadot/api';
 
-import { makeQueryService, IndexBuilder, QueryEventProcessingPack, QueryNodeStartUpOptions } from '.';
-import MappingsProcessor from './processor/MappingsProcessor';
+import { makeQueryService, IndexBuilder, QueryNodeStartUpOptions } from '.';
 
 export enum QueryNodeState {
   NOT_STARTED,
@@ -27,17 +26,14 @@ export default class QueryNode {
   // Query index building node.
   private _indexBuilder: IndexBuilder;
 
-  private _mappingsProcessor: MappingsProcessor;
-
   private _atBlock?: number;
 
-  private constructor(websocketProvider: WsProvider, api: ApiPromise, indexBuilder: IndexBuilder, mappingsProcessor: MappingsProcessor, atBlock?: number) {
+  private constructor(websocketProvider: WsProvider, api: ApiPromise, indexBuilder: IndexBuilder, atBlock?: number) {
     this._state = QueryNodeState.NOT_STARTED;
     this._websocketProvider = websocketProvider;
     this._api = api;
     this._indexBuilder = indexBuilder;
     this._atBlock = atBlock;
-    this._mappingsProcessor = mappingsProcessor;
   }
 
   static async create(options: QueryNodeStartUpOptions): Promise<QueryNode> {
@@ -46,7 +42,7 @@ export default class QueryNode {
     // accessing some sort of global state, and has to be done after
     // the provider is created.
 
-    const { wsProviderURI, typeRegistrator, processingPack, atBlock } = options;
+    const { wsProviderURI, typeRegistrator, atBlock } = options;
 
     // Initialise the provider to connect to the local node
     const provider = new WsProvider(wsProviderURI);
@@ -60,9 +56,8 @@ export default class QueryNode {
     const service = makeQueryService(api);
 
     const index_buider = IndexBuilder.create(service);
-    const mappings_processor = MappingsProcessor.create(processingPack as QueryEventProcessingPack);
 
-    return new QueryNode(provider, api, index_buider, mappings_processor, atBlock);
+    return new QueryNode(provider, api, index_buider, atBlock);
   }
 
   async start(): Promise<void> {
@@ -70,13 +65,9 @@ export default class QueryNode {
 
     this._state = QueryNodeState.STARTING;
 
-    // Start the
-    await Promise.race([
-      this._indexBuilder.start(this._atBlock),
-      this._mappingsProcessor.start(this._atBlock)
-    ])
-    //await this._indexBuilder.start(this._atBlock);
-
+    // Start only the indexer
+    await this._indexBuilder.start(this._atBlock);
+    
     this._state = QueryNodeState.STARTED;
   }
 
