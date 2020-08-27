@@ -35,7 +35,7 @@ const MemberByAccountPreview: React.FunctionComponent<Props> = ({
   return (
     // Span required to allow styled(MemberByAccountPreview)
     <span className={className}>
-      <PromiseComponent error={error} loading={loading} message='Fetching member profile...'>
+      <PromiseComponent inline={true} error={error} loading={loading} message='Fetching member profile...'>
         { member && (
           member.profile
             ? (

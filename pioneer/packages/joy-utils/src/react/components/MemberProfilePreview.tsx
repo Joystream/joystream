@@ -45,7 +45,7 @@ const Details = styled.div<StyledPartProps>`
 `;
 
 const DetailsHandle = styled.h4<StyledPartProps>`
-  ${(props) => props.size === 'small' && css`font-size: 1em`};
+  ${(props) => props.size === 'small' && css`font-size: 1em;`};
   margin: 0;
   font-weight: bold;
   color: #333;
@@ -63,7 +63,7 @@ export default function ProfilePreview (
       )}
       <Details size={size}>
         <DetailsHandle size={size}>{handle.toString()}</DetailsHandle>
-        { id !== undefined && <Label size={size}>ID <Label.Detail>{id.toString()}</Label.Detail></Label> }
+        { id !== undefined && <Label size={'small'}>ID <Label.Detail>{id.toString()}</Label.Detail></Label> }
         { children }
       </Details>
     </StyledProfilePreview>
