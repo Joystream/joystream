@@ -19,6 +19,7 @@ import {
   SubstrateEvent,
   createDBConnection,
   SavedEntityEvent,
+  QueryEventProcessingPack,
 } from "index-builder/lib";
 
 // Mappings use!
@@ -27,16 +28,12 @@ export { DatabaseManager as DB, getLogger, SubstrateEvent };
 const logger = getLogger();
 
 function getProcessingPack() {
-  const handlers = require("../../mappings");
-
-  let processingPack: { [key: string]: any } = {};
-
-  Object.keys(handlers)
-    .filter(handler => handler.startsWith("handle"))
-    .map((handler: string) => {
-      let eventName = handler.replace("handle", "");
-      processingPack[eventName] = handlers[handler];
-    });
+  let processingPack: QueryEventProcessingPack = {};
+  try {
+    processingPack = require('../../mappings');
+  } catch (e) {
+    throw new Error(`Cannot load mappings from "../../mappings"`);
+  }
   return processingPack;
 }
 

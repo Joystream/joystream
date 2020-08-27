@@ -97,7 +97,6 @@ export default class IndexBuilder {
       
       debug(`Processing event ${query_event.event_name}, index: ${i}`)
       query_event.log(0, debug);
-  
 
       const queryRunner = getConnection().createQueryRunner();
       try {
@@ -106,9 +105,9 @@ export default class IndexBuilder {
         await queryRunner.startTransaction();
 
         // Call event handler
-        if (this._processing_pack[query_event.event_method]) {
+        if (this._processing_pack[query_event.event_name]) {
           debug(`Recognized: ` + query_event.event_name);
-          await this._processing_pack[query_event.event_method](makeDatabaseManager(queryRunner.manager), query_event);
+          await this._processing_pack[query_event.event_name](makeDatabaseManager(queryRunner.manager), query_event);
         } else {
           debug(`No mapping for  ${query_event.event_name}, skipping`);
         }

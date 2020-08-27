@@ -5,7 +5,7 @@ import { assert } from 'console';
 import * as BN from 'bn.js';
 
 // New proposal
-export async function handleProposed(db: DB, event: SubstrateEvent) {
+export async function treasuryProposed(db: DB, event: SubstrateEvent) {
   const { ProposalIndex } = event.event_params;
   if (event.extrinsic) {
     const proposal = new Proposal();
@@ -21,7 +21,7 @@ export async function handleProposed(db: DB, event: SubstrateEvent) {
 }
 
 // A proposal was rejected
-export async function handleRejected(db: DB, event: SubstrateEvent) {
+export async function treasuryRejected(db: DB, event: SubstrateEvent) {
   const { ProposalIndex } = event.event_params;
   const proposal = await db.get(Proposal, { where: { proposalIndex: ProposalIndex.toString() } });
 
@@ -34,7 +34,7 @@ export async function handleRejected(db: DB, event: SubstrateEvent) {
 }
 
 // A proposal is approved! Some funds have been allocated.
-export async function handleAwarded(db: DB, event: SubstrateEvent) {
+export async function treasuryAwarded(db: DB, event: SubstrateEvent) {
   const { ProposalIndex } = event.event_params;
   const proposal = await db.get(Proposal, { where: { proposalIndex: ProposalIndex.toString() } });
 
