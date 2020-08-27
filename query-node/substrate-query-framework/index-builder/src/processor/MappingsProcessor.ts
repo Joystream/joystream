@@ -1,4 +1,4 @@
-import { QueryEventProcessingPack, SavedEntityEvent, makeDatabaseManager, IndexBuilder, SubstrateEvent } from '..';
+import { QueryEventProcessingPack, SavedEntityEvent, makeDatabaseManager, SubstrateEvent } from '..';
 import { Codec } from '@polkadot/types/types';
 import Debug from 'debug';
 import { getRepository, QueryRunner, Between, In, MoreThan } from 'typeorm';
@@ -21,18 +21,16 @@ export default class MappingsProcessor {
   private _blockToProcessNext!: number;
   private _lastSavedEvent!: SavedEntityEvent;
   
-  private _indexer!: IndexBuilder;
   private _started = false;
   private _indexerHead!: number;
 
-  private constructor(indexer: IndexBuilder, processing_pack: QueryEventProcessingPack) {
-    this._indexer = indexer;
+  private constructor(processing_pack: QueryEventProcessingPack) {
     this._processing_pack = processing_pack;
   }
 
 
-  static create(indexer: IndexBuilder, processing_pack: QueryEventProcessingPack): MappingsProcessor {
-    return new MappingsProcessor(indexer, processing_pack);
+  static create(processing_pack: QueryEventProcessingPack): MappingsProcessor {
+    return new MappingsProcessor(processing_pack);
   }
 
 
@@ -52,7 +50,6 @@ export default class MappingsProcessor {
     if (lastProcessedEvent) {
       debug(`Found the most recent processed event at block ${lastProcessedEvent.blockNumber}`);
       this._lastSavedEvent = lastProcessedEvent;
-      //this._blockToProcessNext = Number(lastProcessedEvent?.blockNumber) + 1;
     } else {
       this._lastSavedEvent = new SavedEntityEvent();
       this._lastSavedEvent.blockNumber = atBlock ? atBlock : -1;

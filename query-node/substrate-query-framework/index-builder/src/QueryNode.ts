@@ -60,7 +60,7 @@ export default class QueryNode {
     const service = makeQueryService(api);
 
     const index_buider = IndexBuilder.create(service);
-    const mappings_processor = MappingsProcessor.create(index_buider, processingPack as QueryEventProcessingPack);
+    const mappings_processor = MappingsProcessor.create(processingPack as QueryEventProcessingPack);
 
     return new QueryNode(provider, api, index_buider, mappings_processor, atBlock);
   }
