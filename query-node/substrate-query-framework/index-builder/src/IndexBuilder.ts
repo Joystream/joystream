@@ -12,7 +12,6 @@ import Debug from 'debug';
 import { doInTransaction } from './db/helper';
 import { PooledExecutor } from './PooledExecutor';
 import { SubstrateEventEntity } from './entities';
-import { EVENT_TABLE_NAME } from './entities/SubstrateEventEntity';
 import { numberEnv } from './utils/env-flags';
 import { getIndexerHead } from './db/dal';
 
@@ -44,8 +43,11 @@ export default class IndexBuilder {
 
   async start(atBlock?: number): Promise<void> {
     debug('Spawned worker.');
-
-    this._indexerHead = await getIndexerHead(getConnection().createQueryRunner());
+    
+    await doInTransaction(async (queryRunner) => {
+      this._indexerHead = await getIndexerHead(queryRunner);
+    })
+    
     debug(`Last indexed block in the database: ${this._indexerHead.toString()}`);
     let startBlock = this._indexerHead + 1;
     
