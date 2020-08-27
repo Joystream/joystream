@@ -1,7 +1,7 @@
 import React from 'react';
 import '../common/index.scss';
 
-import { ExploreContent } from '../explore/ExploreContent';
+import ExploreContent from '../explore/ExploreContent.view';
 import { withMockTransport } from './withMockTransport';
 
 export default {

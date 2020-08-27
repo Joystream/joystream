@@ -6,7 +6,7 @@ function newEntity (value: string): PublicationStatusType {
 }
 
 export const PublicationStatus = {
-  Publiс: newEntity('Publiс'),
+  Publiс: newEntity('Public'),
   Unlisted: newEntity('Unlisted')
 };
 

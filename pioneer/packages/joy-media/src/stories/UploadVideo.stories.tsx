@@ -1,6 +1,6 @@
 import React from 'react';
 import { EditForm } from '../upload/UploadVideo';
-import '../index.css';
+import '../index.scss';
 
 import { ContentId } from '@joystream/types/media';
 import { withMockTransport } from './withMockTransport';
