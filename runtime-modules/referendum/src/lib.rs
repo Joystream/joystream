@@ -228,9 +228,6 @@ decl_error! {
         /// Insufficient stake provided to cast a vote
         InsufficientStake,
 
-        /// Account already voted
-        AlreadyVoted,
-
         /// Salt and referendum option provided don't correspond to the commitment
         InvalidReveal,
 
@@ -687,11 +684,6 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         // ensure account can lock the stake
         if T::Currency::total_balance(&account_id) < *balance {
             return Err(Error::InsufficientBalanceToStakeCurrency);
-        }
-
-        // ensure user haven't vote yet
-        if Votes::<T, I>::contains_key(&account_id) {
-            return Err(Error::AlreadyVoted);
         }
 
         Ok(account_id)

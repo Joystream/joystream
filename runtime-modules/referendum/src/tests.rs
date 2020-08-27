@@ -196,7 +196,7 @@ fn voting_stake_too_low() {
 }
 
 #[test]
-fn voting_user_already_voted() {
+fn voting_user_repeated_vote() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
@@ -207,6 +207,7 @@ fn voting_user_already_voted() {
         let options = 1;
         let option_to_vote_for = 0;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let different_stake = stake * 2;
         let (commitment, _) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
         Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
@@ -222,8 +223,8 @@ fn voting_user_already_voted() {
             origin.clone(),
             account_id,
             commitment,
-            stake.clone(),
-            Err(Error::AlreadyVoted),
+            different_stake.clone(),
+            Ok(()),
         );
     });
 }
