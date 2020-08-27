@@ -56,7 +56,7 @@ pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
     intermediate_results: Vec<VotePower>,
 }
 
-/// Vote casted in referendum but not revealed yet.
+/// Vote cast in referendum but not revealed yet.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct SealedVote<Hash, Currency> {
     commitment: Hash,
@@ -187,8 +187,8 @@ decl_event! {
         /// Referendum ended and winning option was selected
         ReferendumFinished(ReferendumResult),
 
-        /// User casted a vote in referendum
-        VoteCasted(AccountId, Hash, Balance),
+        /// User cast a vote in referendum
+        VoteCast(AccountId, Hash, Balance),
 
         /// User revealed his vote
         VoteRevealed(AccountId, u64),
@@ -234,7 +234,7 @@ decl_error! {
         /// Vote for not existing option was revealed
         InvalidVote,
 
-        /// Trying to reveal vote that was not casted
+        /// Trying to reveal vote that was not cast
         NoVoteToReveal,
 
         /// Invalid time to release the locked stake
@@ -303,7 +303,7 @@ decl_module! {
             Mutations::<T, I>::vote(&account_id, &commitment, &balance)?;
 
             // emit event
-            Self::deposit_event(RawEvent::VoteCasted(account_id, commitment, balance));
+            Self::deposit_event(RawEvent::VoteCast(account_id, commitment, balance));
 
             Ok(())
         }
@@ -725,7 +725,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         let sealed_vote = Votes::<T, I>::get(&account_id);
 
-        // ensure vote was casted for the running referendum
+        // ensure vote was cast for the running referendum
         if cycle_id != sealed_vote.cycle_id {
             return Err(Error::InvalidVote);
         }
