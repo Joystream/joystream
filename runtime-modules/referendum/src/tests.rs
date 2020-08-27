@@ -7,6 +7,8 @@ type Mocks = InstanceMocks<Runtime, Instance0>;
 type MockUtils = InstanceMockUtils<Runtime, Instance0>;
 
 /////////////////// Lifetime - referendum start ////////////////////////////////
+
+/// Test that referendum can be successfully started via extrinsic.
 #[test]
 fn referendum_start() {
     MockUtils::origin_access(USER_ADMIN, |origin| {
@@ -17,6 +19,7 @@ fn referendum_start() {
     });
 }
 
+/// Test that referendum can be started via extrinsic only by superuser.
 #[test]
 fn referendum_start_access_restricted() {
     MockUtils::origin_access(USER_REGULAR, |origin| {
@@ -32,6 +35,7 @@ fn referendum_start_access_restricted() {
     });
 }
 
+/// Test that referendum can't be started again before it ends first.
 #[test]
 fn referendum_start_forbidden_after_start() {
     let config = default_genesis_config();
@@ -56,6 +60,7 @@ fn referendum_start_forbidden_after_start() {
     });
 }
 
+/// Test that referendum can't start with zero options.
 #[test]
 fn referendum_start_no_options() {
     let config = default_genesis_config();
@@ -74,6 +79,7 @@ fn referendum_start_no_options() {
     });
 }
 
+/// Test that referendum can't be started with too many options.
 #[test]
 fn referendum_start_too_many_options() {
     let origin = OriginType::Signed(USER_ADMIN);
@@ -99,6 +105,8 @@ fn referendum_start_too_many_options() {
 }
 
 /////////////////// Lifetime - voting //////////////////////////////////////////
+
+/// Test that a user can successfully vote in the referendum.
 #[test]
 fn voting() {
     let config = default_genesis_config();
@@ -119,30 +127,9 @@ fn voting() {
     });
 }
 
+/// Test that voting is prohibited outside of the voting stage.
 #[test]
 fn voting_referendum_not_running() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        let account_id = USER_ADMIN;
-        let origin = OriginType::Signed(account_id);
-
-        let option_to_vote_for = 0;
-        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let (commitment, _) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
-
-        Mocks::vote(
-            origin.clone(),
-            account_id,
-            commitment,
-            stake,
-            Err(Error::ReferendumNotRunning),
-        );
-    });
-}
-
-#[test]
-fn voting_voting_stage_overdue() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
@@ -155,11 +142,21 @@ fn voting_voting_stage_overdue() {
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
         let (commitment, _) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
+        // try to vote before referendum starts
+        Mocks::vote(
+            origin.clone(),
+            account_id,
+            commitment,
+            stake,
+            Err(Error::ReferendumNotRunning),
+        );
+
         Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
 
         let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
+        // try to vote after voting stage ended
         Mocks::vote(
             origin.clone(),
             account_id,
@@ -170,6 +167,7 @@ fn voting_voting_stage_overdue() {
     });
 }
 
+/// Test that vote will fail when staking too little.
 #[test]
 fn voting_stake_too_low() {
     let config = default_genesis_config();
@@ -195,6 +193,7 @@ fn voting_stake_too_low() {
     });
 }
 
+/// Test that a user can change his vote/stake during the voting stage.
 #[test]
 fn voting_user_repeated_vote() {
     let config = default_genesis_config();
@@ -231,6 +230,7 @@ fn voting_user_repeated_vote() {
 
 /////////////////// Lifetime - voting finish ///////////////////////////////////
 
+/// Test that referendum will indeed finish after expected number of blocks.
 #[test]
 fn finish_voting() {
     MockUtils::origin_access(USER_ADMIN, |origin| {
@@ -249,6 +249,7 @@ fn finish_voting() {
 
 /////////////////// Lifetime - revealing ///////////////////////////////////////
 
+/// That that a user can reveal his vote.
 #[test]
 fn reveal() {
     let config = default_genesis_config();
@@ -284,6 +285,7 @@ fn reveal() {
     });
 }
 
+/// Test that a user can't vote outside of the voting stage.
 #[test]
 fn reveal_reveal_stage_not_running() {
     let config = default_genesis_config();
@@ -332,6 +334,7 @@ fn reveal_reveal_stage_not_running() {
     });
 }
 
+/// Test that the revealing stage will finish after expected number of blocks even when no votes were cast.
 #[test]
 fn reveal_no_vote() {
     let config = default_genesis_config();
@@ -359,6 +362,7 @@ fn reveal_no_vote() {
     });
 }
 
+/// Test that revealing of a vote for a not-existing option is rejected.
 #[test]
 fn reveal_invalid_vote() {
     let config = default_genesis_config();
@@ -395,6 +399,7 @@ fn reveal_invalid_vote() {
     });
 }
 
+/// Test that invalid commitment proof is rejected.
 #[test]
 fn reveal_invalid_commitment_proof() {
     let config = default_genesis_config();
@@ -433,6 +438,7 @@ fn reveal_invalid_commitment_proof() {
 
 /////////////////// Lifetime - revealing finish ////////////////////////////////
 
+/// Test that the revealing stage will finish after expected number of blocks.
 #[test]
 fn finish_revealing_period() {
     let config = default_genesis_config();
@@ -475,44 +481,7 @@ fn finish_revealing_period() {
     });
 }
 
-#[test]
-fn finish_revealing_period_no_revealing_stage() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        let account_id = USER_ADMIN;
-        let origin = OriginType::Signed(account_id);
-        let options = 3;
-        let winning_target_count = 1;
-
-        let option_to_vote_for = 0;
-        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let (_, salt) = MockUtils::calculate_commitment(&account_id, &stake);
-
-        Mocks::reveal_vote(
-            origin.clone(),
-            account_id,
-            salt.clone(),
-            option_to_vote_for.clone(),
-            Err(Error::RevealingNotInProgress),
-        );
-
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
-        Mocks::reveal_vote(
-            origin.clone(),
-            account_id,
-            salt.clone(),
-            option_to_vote_for.clone(),
-            Err(Error::RevealingNotInProgress),
-        );
-    });
-}
-
+/// Test that voting power is properly accounted for the relevant options.
 #[test]
 fn finish_revealing_period_vote_power() {
     let config = default_genesis_config();
@@ -587,6 +556,7 @@ fn finish_revealing_period_vote_power() {
 
 /////////////////// Referendum Winners ////////////////////////////////////////////////////
 
+/// Test that winners are properly selected when no vote is cast.
 #[test]
 fn winners_no_vote_revealed() {
     let config = default_genesis_config();
@@ -606,6 +576,7 @@ fn winners_no_vote_revealed() {
     });
 }
 
+/// Test that winners are properly selected when there are multiple winners.
 #[test]
 fn winners_multiple_winners() {
     let config = default_genesis_config();
@@ -696,8 +667,8 @@ fn winners_multiple_winners() {
     });
 }
 
+/// Test that winners are properly selected when there is a important tie. N-th option and (N+1)-th option has the same amount of votes but only N winners are expected.
 #[test]
-// option 1 and option 2 has the same amount of votes but only 1 winner is expected
 fn winners_multiple_winners_extra() {
     let config = default_genesis_config();
 
@@ -769,6 +740,7 @@ fn winners_multiple_winners_extra() {
     });
 }
 
+// Test that winners are properly selected when there only votes for fewer options than expected winners.
 #[test]
 fn winners_multiple_not_enough() {
     let config = default_genesis_config();
@@ -821,6 +793,7 @@ fn winners_multiple_not_enough() {
 
 /////////////////// Lifetime Releasing stake ///////////////////////////////////
 
+/// Test that referendum stake can be released after the referendum ends.
 #[test]
 fn referendum_release_stake() {
     let config = default_genesis_config();
@@ -883,6 +856,7 @@ fn referendum_release_stake() {
 
 /////////////////// ReferendumManager //////////////////////////////////////////
 
+/// Test that other runtime modules can start the referendum.
 #[test]
 fn referendum_manager_referendum_start() {
     let config = default_genesis_config();
