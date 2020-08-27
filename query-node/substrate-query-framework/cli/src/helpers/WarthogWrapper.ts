@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 import execa = require('execa');
 
 import Command from '@oclif/command';
-import { cli as warthogCli } from '../index';
+import { run } from 'warthog/dist/cli/cli';
 
 import { WarthogModelBuilder } from './../parse/WarthogModelBuilder';
 import { getTemplatePath } from '../utils/utils';
@@ -100,7 +100,8 @@ export default class WarthogWrapper {
     console.log = () => {
       return;
     };
-    await warthogCli.run(`new ${projectName}`);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    await run(['new', `${projectName}`]);
     console.log = consoleFn;
 
     // Override warthog's index.ts file for custom naming strategy
@@ -118,12 +119,12 @@ export default class WarthogWrapper {
     const pkgFile = JSON.parse(fs.readFileSync('package.json', 'utf8')) as Record<string, Record<string, unknown>>;
     pkgFile.resolutions['tslib'] = '1.11.2';
     pkgFile.scripts['db:sync'] = 'SYNC=true WARTHOG_DB_SYNCHRONIZE=true ts-node --type-check src/index.ts';
-    
+
     // Fix ts-node-dev error
-    pkgFile.scripts["start:dev"] = 'ts-node --type-check src/index.ts';
-    
+    pkgFile.scripts['start:dev'] = 'ts-node --type-check src/index.ts';
+
     // Node does not run the compiled code, so we use ts-node in production...
-    pkgFile.scripts["start:prod"] = 'WARTHOG_ENV=production yarn dotenv:generate && ts-node src/index.ts';
+    pkgFile.scripts['start:prod'] = 'WARTHOG_ENV=production yarn dotenv:generate && ts-node src/index.ts';
 
     fs.writeFileSync('package.json', JSON.stringify(pkgFile, null, 2));
 
@@ -135,7 +136,8 @@ export default class WarthogWrapper {
   }
 
   async createDB(): Promise<void> {
-    await warthogCli.run('db:create');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    await run(['db:create']);
   }
 
   /**

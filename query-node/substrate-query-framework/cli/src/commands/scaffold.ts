@@ -1,4 +1,4 @@
-import { Command } from '@oclif/command';
+import { Command, flags } from '@oclif/command';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as utils from './../utils/utils';
@@ -13,8 +13,28 @@ const DEFAULT_WS_API_ENDPOINT = 'wss://kusama-rpc.polkadot.io/';
 export default class Scaffold extends Command {
   static description = `Starter kit: generates a directory layout and a sample schema file`;
 
+  static flags = {
+    projectName: flags.string({ char: 'n', description: 'Project name' }),
+    wsProviderUrl: flags.string({
+      char: 'n',
+      description: 'Substrate WS provider endpoint',
+      default: DEFAULT_WS_API_ENDPOINT,
+    }),
+    blockHeight: flags.string({ char: 'b', description: 'Start block height', default: '0' }),
+    dbHost: flags.string({ char: 'h', description: 'Database host', default: 'localhost' }),
+    dbPort: flags.string({ char: 'p', description: 'Database port', default: '5432' }),
+    dbUser: flags.string({ char: 'u', description: 'Database user', default: 'postgres' }),
+    dbPassword: flags.string({ char: 'x', description: 'Database user password', default: 'postgres' }),
+    appPort: flags.string({ char: 'a', description: 'GraphQL server port', default: '4000' }),
+  };
+
   async run(): Promise<void> {
-    await fs.writeFile(path.join(process.cwd(), '.env'), await this.promptDotEnv());
+    const { flags } = this.parse(Scaffold);
+
+    await fs.writeFile(
+      path.join(process.cwd(), '.env'),
+      flags.projectName ? await this.dotenvFromFlags(flags) : await this.promptDotEnv()
+    );
 
     dotenv.config();
 
@@ -32,6 +52,11 @@ export default class Scaffold extends Command {
     await this.setupDocker();
 
     cli.action.stop();
+  }
+
+  async dotenvFromFlags(flags_: { [key: string]: string | undefined }): Promise<string> {
+    const template = await fs.readFile(getTemplatePath('scaffold/.env'), 'utf-8');
+    return Mustache.render(template, { ...flags_, dbName: flags_.projectName });
   }
 
   async promptDotEnv(): Promise<string> {
