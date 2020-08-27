@@ -58,7 +58,7 @@ pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
 
 /// Vote cast in referendum but not revealed yet.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
-pub struct SealedVote<Hash, Currency> {
+pub struct CastVote<Hash, Currency> {
     commitment: Hash,
     cycle_id: u64,
     balance: Currency,
@@ -153,7 +153,7 @@ decl_storage! {
         pub Stage get(fn stage) config(): ReferendumStage<T::BlockNumber, T::VotePower>;
 
         /// Votes in current referendum
-        pub Votes get(fn votes) config(): map hasher(blake2_128_concat) T::AccountId => SealedVote<T::Hash, Balance<T, I>>;
+        pub Votes get(fn votes) config(): map hasher(blake2_128_concat) T::AccountId => CastVote<T::Hash, Balance<T, I>>;
 
         /// Index of the current referendum cycle. It is incremented each time one referendum ends.
         pub CurrentCycleId get(fn current_cycle_id) config(): u64;
@@ -554,7 +554,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         // store vote
         Votes::<T, I>::insert(
             account_id,
-            SealedVote {
+            CastVote {
                 commitment: *commitment,
                 balance: *balance,
                 cycle_id: CurrentCycleId::<I>::get(),
@@ -568,7 +568,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     fn reveal_vote(
         account_id: &<T as system::Trait>::AccountId,
         option_index: &u64,
-        sealed_vote: &SealedVote<T::Hash, Balance<T, I>>,
+        sealed_vote: &CastVote<T::Hash, Balance<T, I>>,
     ) -> Result<(), Error<T, I>> {
         let distribute_vote =
             |stage_data: &mut ReferendumStageRevealing<T::BlockNumber, T::VotePower>| {
@@ -693,7 +693,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         origin: T::Origin,
         salt: &[u8],
         vote_option_index: &u64,
-    ) -> Result<(T::AccountId, SealedVote<T::Hash, Balance<T, I>>), Error<T, I>> {
+    ) -> Result<(T::AccountId, CastVote<T::Hash, Balance<T, I>>), Error<T, I>> {
         let cycle_id = CurrentCycleId::<I>::get();
 
         // ensure superuser requested action

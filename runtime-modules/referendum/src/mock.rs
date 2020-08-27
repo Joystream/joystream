@@ -3,7 +3,7 @@
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
     Balance, CurrentCycleId, Error, Instance, Module, RawEvent, ReferendumManager, ReferendumResult,
-    ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, SealedVote, Stage, Trait,
+    ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, CastVote, Stage, Trait,
     Votes,
 };
 
@@ -434,7 +434,7 @@ impl InstanceMocks<Runtime, Instance0> {
 
         assert_eq!(
             Votes::<Runtime, Instance0>::get(account_id),
-            SealedVote {
+            CastVote {
                 commitment,
                 cycle_id: CurrentCycleId::<Instance0>::get(),
                 balance,
