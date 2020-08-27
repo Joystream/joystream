@@ -308,14 +308,14 @@ decl_module! {
         /// Reveal a sealed vote in the referendum.
         #[weight = 10_000_000]
         pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_index: u64) -> Result<(), Error<T, I>> {
-            let (account_id, cast_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_index)?;
+            let (stage_data, account_id, _) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_index)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // reveal the vote - it can return error when stake fails to unlock
-            Mutations::<T, I>::reveal_vote(&account_id, &vote_option_index, &cast_vote)?;
+            Mutations::<T, I>::reveal_vote(stage_data, &account_id, &vote_option_index)?;
 
             // emit event
             Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_index));
@@ -563,23 +563,13 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     }
 
     fn reveal_vote(
+        stage_data: ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
         account_id: &<T as system::Trait>::AccountId,
         option_index: &u64,
-        cast_vote: &CastVote<T::Hash, Balance<T, I>>,
     ) -> Result<(), Error<T, I>> {
-        let distribute_vote =
-            |stage_data: &mut ReferendumStageRevealing<T::BlockNumber, T::VotePower>| {
-                // calculate vote power
-                let vote_power = T::caclulate_vote_power(account_id, &cast_vote.balance);
-                stage_data.intermediate_results[*option_index as usize] += vote_power;
-            };
-
         // store revealed vote
         Stage::<T, I>::mutate(|stage| {
-            match stage {
-                ReferendumStage::Revealing(stage_data) => distribute_vote(stage_data),
-                _ => panic!("Invalid state"), // will never happen
-            }
+            *stage = ReferendumStage::Revealing(stage_data);
         });
 
         // remove user commitment to prevent repeated revealing
@@ -683,7 +673,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         origin: T::Origin,
         salt: &[u8],
         vote_option_index: &u64,
-    ) -> Result<(T::AccountId, CastVote<T::Hash, Balance<T, I>>), Error<T, I>> {
+    ) -> Result<(ReferendumStageRevealing<T::BlockNumber, T::VotePower>, T::AccountId, CastVote<T::Hash, Balance<T, I>>), Error<T, I>> {
         let cycle_id = CurrentCycleId::<I>::get();
 
         // ensure superuser requested action
@@ -692,8 +682,8 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         let stage = Stage::<T, I>::get();
 
         // ensure referendum is running
-        let stage_data = match stage {
-            ReferendumStage::Revealing(tmp_stage_data) => (tmp_stage_data),
+        let mut stage_data = match stage {
+            ReferendumStage::Revealing(tmp_stage_data) => tmp_stage_data,
             _ => return Err(Error::RevealingNotInProgress),
         };
 
@@ -702,6 +692,9 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         if vote_option_index >= &(stage_data.intermediate_results.len() as u64) {
             return Err(Error::InvalidVote);
         }
+
+        let vote_power = T::caclulate_vote_power(&account_id, &cast_vote.balance);
+        stage_data.intermediate_results[*vote_option_index as usize] += vote_power;
 
         // ensure vote was cast for the running referendum
         if cycle_id != cast_vote.cycle_id {
@@ -714,7 +707,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             return Err(Error::InvalidReveal);
         }
 
-        Ok((account_id, cast_vote))
+        Ok((stage_data, account_id, cast_vote))
     }
 
     fn can_release_stake(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
