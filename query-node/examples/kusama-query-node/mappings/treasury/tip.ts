@@ -2,6 +2,7 @@ import { DB, SubstrateEvent } from '../../generated/indexer';
 import { Tip } from '../../generated/graphql-server/src/modules/tip/tip.model';
 import { Tipper } from '../../generated/graphql-server/src/modules/tipper/tipper.model';
 import { assert } from 'console';
+import * as BN from 'bn.js';
 
 export async function handleNewTip(db: DB, event: SubstrateEvent) {
   const { Hash } = event.event_params;
@@ -24,7 +25,7 @@ export async function handleNewTip(db: DB, event: SubstrateEvent) {
     if (runtimeFuncName !== 'report_awesome') {
       //Give a tip for something new; no finder's fee will be taken.
       const t = new Tipper();
-      t.tipValue = extrinsic.args[2].toString();
+      t.tipValue = new BN(extrinsic.args[2].toString());
       t.tipper = Buffer.from(extrinsic?.signer.toString());
       t.tip = tip;
       db.save<Tipper>(t);
@@ -53,11 +54,11 @@ export async function handleTipClosing(db: DB, event: SubstrateEvent) {
   if (tip && extrinsic) {
     const t = new Tipper();
     t.tipper = Buffer.from(extrinsic?.signer.toString());
-    t.tipValue = extrinsic.args[1].toString();
+    t.tipValue = new BN(extrinsic.args[1].toString());
     t.tip = tip;
     db.save<Tipper>(t);
 
-    tip.closes = event.block_number.toString();
+    tip.closes = new BN(event.block_number.toString());
     db.save<Tip>(tip);
   }
 }

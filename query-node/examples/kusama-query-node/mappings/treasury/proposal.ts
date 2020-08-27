@@ -2,15 +2,16 @@ import { SubstrateEvent, DB } from '../../generated/indexer';
 import { Proposal } from '../../generated/graphql-server/src/modules/proposal/proposal.model';
 import { ProposalStatus } from '../../generated/graphql-server/src/modules/enums/enums';
 import { assert } from 'console';
+import * as BN from 'bn.js';
 
 // New proposal
 export async function handleProposed(db: DB, event: SubstrateEvent) {
   const { ProposalIndex } = event.event_params;
   if (event.extrinsic) {
     const proposal = new Proposal();
-    proposal.proposalIndex = ProposalIndex.toString();
-    proposal.value = event.extrinsic?.args[0].toString();
-    proposal.bond = event.extrinsic?.args[0].toString();
+    proposal.proposalIndex = new BN(ProposalIndex.toString());
+    proposal.value = new BN(event.extrinsic?.args[0].toString());
+    proposal.bond = new BN(event.extrinsic?.args[0].toString());
     proposal.beneficiary = Buffer.from(event.extrinsic?.args[1].toString());
     proposal.proposer = Buffer.from(event.extrinsic?.signer.toString());
     proposal.status = ProposalStatus.NONE;
