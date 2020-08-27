@@ -16,13 +16,14 @@ const storage: StorageType = 'substrate';
 
 type EntityMapName = 'categoryById' | 'threadById' | 'replyById';
 
-const getReactValue = (state: ForumState, endpoint: string, paramValue: any): any => {
-  const getEntityById = (mapName: EntityMapName, type: keyof InterfaceTypes): any => {
+const getReactValue = (state: ForumState, endpoint: string, paramValue: any) => {
+  function getEntityById<T extends keyof InterfaceTypes>
+  (mapName: EntityMapName, type: T): InterfaceTypes[T] {
     const id = (paramValue as u64).toNumber();
     const entity = state[mapName].get(id);
 
     return createMock(type, entity);
-  };
+  }
 
   switch (endpoint) {
     case 'forumSudo': return createMock('Option<AccountId>', state.sudo);
@@ -37,7 +38,7 @@ function withReactCall<P extends ApiProps> (endpoint: string, { paramName, propN
   return (Inner: React.ComponentType<ApiProps>): React.ComponentType<SubtractProps<P, ApiProps>> => {
     const SetProp = (props: P) => {
       const { state } = useForum();
-      const paramValue = paramName ? (props as any)[paramName] : undefined;
+      const paramValue = paramName ? (props as Record<string, unknown>)[paramName] : undefined;
       const propValue = getReactValue(state, endpoint, paramValue);
       const _propName = propName || endpoint;
       const _props = {

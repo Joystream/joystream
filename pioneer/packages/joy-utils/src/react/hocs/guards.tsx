@@ -68,14 +68,14 @@ type OnlySudoProps = {
 };
 
 function OnlySudo<P extends OnlySudoProps> (Component: React.ComponentType<P>) {
-  return function (props: P) {
+  const ResultComponent: React.FunctionComponent<P> = (props: P) => {
     const { sudo } = props;
+    const { state: { address: myAddress } } = useMyAccount();
 
     if (!sudo) {
       return <em>Loading sudo key...</em>;
     }
 
-    const { state: { address: myAddress } } = useMyAccount();
     const iAmSudo = myAddress === sudo.toString();
 
     if (iAmSudo) {
@@ -88,6 +88,10 @@ function OnlySudo<P extends OnlySudoProps> (Component: React.ComponentType<P>) {
       );
     }
   };
+
+  ResultComponent.displayName = `OnlySudo(${componentName(Component)})`;
+
+  return ResultComponent;
 }
 
 // TODO: We could probably use withAccountRequired, which wouldn't pass any addiotional props, just like withMembershipRequired.

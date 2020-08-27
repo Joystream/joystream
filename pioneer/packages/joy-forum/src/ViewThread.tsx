@@ -143,35 +143,8 @@ function InnerViewThread (props: ViewThreadProps) {
 
   const editedPostId = rawEditedPostId && api.createType('PostId', rawEditedPostId);
 
-  if (!thread) {
-    return <em>Loading thread details...</em>;
-  }
-
-  const renderThreadNotFound = () => (
-    preview ? null : <em>Thread not found</em>
-  );
-
-  if (thread.isEmpty) {
-    return renderThreadNotFound();
-  }
-
   const { id } = thread;
   const totalPostsInThread = thread.num_posts_ever_created.toNumber();
-
-  const changePageAndClearSelectedPost = (page?: number | string) => {
-    setSelectedPostIdx(null);
-    setCurrentPage(page, [ReplyIdxQueryParam]);
-  };
-
-  if (!category) {
-    return <em>{'Thread\'s category was not found.'}</em>;
-  } else if (category.deleted) {
-    return renderThreadNotFound();
-  }
-
-  if (preview) {
-    return <ThreadPreview thread={thread} repliesCount={totalPostsInThread - 1} />;
-  }
 
   const [loaded, setLoaded] = useState(false);
   const [posts, setPosts] = useState(new Array<Post>());
@@ -179,7 +152,7 @@ function InnerViewThread (props: ViewThreadProps) {
   // fetch posts
   useEffect(() => {
     const loadPosts = async () => {
-      if (!nextPostId || totalPostsInThread === 0) return;
+      if (!nextPostId || totalPostsInThread === 0 || thread.isEmpty) return;
 
       const newId = (id: number | BN) => api.createType('PostId', id);
       const apiCalls: Promise<Post>[] = [];
@@ -214,7 +187,7 @@ function InnerViewThread (props: ViewThreadProps) {
       setLoaded(true);
     };
 
-    loadPosts();
+    void loadPosts();
   }, [bnToStr(thread.id), bnToStr(nextPostId)]);
 
   // handle selected post
@@ -258,6 +231,29 @@ function InnerViewThread (props: ViewThreadProps) {
 
     setDisplayedPosts(postsToDisplay);
   }, [loaded, posts, currentPage]);
+
+  const renderThreadNotFound = () => (
+    preview ? null : <em>Thread not found</em>
+  );
+
+  if (thread.isEmpty) {
+    return renderThreadNotFound();
+  }
+
+  if (!category) {
+    return <em>{'Thread\'s category was not found.'}</em>;
+  } else if (category.deleted) {
+    return renderThreadNotFound();
+  }
+
+  if (preview) {
+    return <ThreadPreview thread={thread} repliesCount={totalPostsInThread - 1} />;
+  }
+
+  const changePageAndClearSelectedPost = (page?: number | string) => {
+    setSelectedPostIdx(null);
+    setCurrentPage(page, [ReplyIdxQueryParam]);
+  };
 
   const scrollToReplyForm = () => {
     if (!replyFormRef.current) return;
@@ -432,20 +428,17 @@ type ViewThreadByIdProps = RouteComponentProps<{ id: string }>;
 export function ViewThreadById (props: ViewThreadByIdProps) {
   const { api } = useApi();
   const { match: { params: { id } } } = props;
+  const [loaded, setLoaded] = useState(false);
+  const [thread, setThread] = useState(api.createType('Thread', {}));
+  const [category, setCategory] = useState(api.createType('Category', {}));
 
-  let threadId: ThreadId;
+  let threadId: ThreadId | undefined;
 
   try {
     threadId = api.createType('ThreadId', id);
   } catch (err) {
     console.log('Failed to parse thread id form URL');
-
-    return <em>Invalid thread ID: {id}</em>;
   }
-
-  const [loaded, setLoaded] = useState(false);
-  const [thread, setThread] = useState(api.createType('Thread', {}));
-  const [category, setCategory] = useState(api.createType('Category', {}));
 
   useEffect(() => {
     const loadThreadAndCategory = async () => {
@@ -459,8 +452,12 @@ export function ViewThreadById (props: ViewThreadByIdProps) {
       setLoaded(true);
     };
 
-    loadThreadAndCategory();
+    void loadThreadAndCategory();
   }, [id]);
+
+  if (threadId === undefined) {
+    return <em>Invalid thread ID: {id}</em>;
+  }
 
   // console.log({ threadId: id, page });
 

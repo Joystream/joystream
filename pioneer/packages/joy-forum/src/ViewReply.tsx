@@ -135,7 +135,7 @@ export const ViewReply = React.forwardRef((props: ViewReplyProps, ref: React.Ref
           <MemberPreview accountId={reply.author_id} showCouncilBadge showId={false}/>
         </ReplyHeaderAuthorRow>
         <ReplyHeaderDetailsRow>
-          <TimeAgoDate date={reply.created_at.momentDate} id={reply.id} />
+          <TimeAgoDate date={reply.created_at.momentDate} id={reply.id.toString()} />
           <Link to={{ pathname, search: replyLinkSearch.toString() }}>
             #{reply.nr_in_thread.toNumber()}
           </Link>

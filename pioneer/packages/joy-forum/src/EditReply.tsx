@@ -164,7 +164,7 @@ const InnerForm = (props: FormProps) => {
 
   const sectionTitle = isNew
     ? 'New reply'
-    : `Edit my reply #${struct?.nr_in_thread}`;
+    : `Edit my reply #${struct?.nr_in_thread.toString() || ''}`;
 
   return (
     <Section className='EditEntityBox' title={sectionTitle}>

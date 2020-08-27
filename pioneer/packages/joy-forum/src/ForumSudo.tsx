@@ -19,6 +19,7 @@ import AddressMini from '@polkadot/react-components/AddressMini';
 import { withForumCalls } from './calls';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 import { useApi } from '@polkadot/react-hooks';
+import { InputAddressProps } from '@polkadot/react-components/InputAddress/types';
 
 const buildSchema = () => Yup.object().shape({});
 
@@ -82,10 +83,12 @@ const InnerForm = (props: FormProps) => {
     return [api.createType('Option<AccountId>', sudo)];
   };
 
-  type SudoInputAddressProps = FieldProps<FormValues>; /* & InputAddressProps */
+  type SudoInputAddressProps = FieldProps<FormValues>;
 
   const SudoInputAddress = ({ field, form, ...props }: SudoInputAddressProps) => {
-    const { name, value } = field;
+    const { name } = field;
+    // Assert to avoid linter error
+    const value = field.value as InputAddressProps['value'];
 
     const onChange = (address: string | null) => {
       address !== value && form.setFieldValue(name, address);
@@ -220,7 +223,7 @@ function innerWithOnlyForumSudo<P extends LoadStructProps> (Component: React.Com
   };
 }
 
-export function withOnlyForumSudo<P extends {}> (Component: React.ComponentType<P>) {
+export function withOnlyForumSudo<P extends Record<string, unknown>> (Component: React.ComponentType<P>) {
   return withMulti(
     Component,
     withLoadForumSudo,
@@ -254,10 +257,10 @@ export function useForumSudo () {
   return useContext(ForumSudoContext);
 }
 
-export const IfIAmForumSudo = (props: React.PropsWithChildren<any>) => {
+export const IfIAmForumSudo = (props: React.PropsWithChildren<Record<any, unknown>>) => {
   const { forumSudo } = useForumSudo();
   const { state: { address: myAddress } } = useMyAccount();
   const iAmForumSudo: boolean = forumSudo !== undefined && forumSudo.eq(myAddress);
 
-  return iAmForumSudo ? props.children : null;
+  return iAmForumSudo ? <>{props.children}</> : null;
 };

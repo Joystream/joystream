@@ -98,7 +98,7 @@ const InnerRecentActivity: React.FC<RecentActivityProps> = ({ nextPostId, api })
       setLoaded(true);
     };
 
-    loadPosts();
+    void loadPosts();
   }, [bnToStr(nextPostId)]);
 
   useEffect(() => {
@@ -121,7 +121,7 @@ const InnerRecentActivity: React.FC<RecentActivityProps> = ({ nextPostId, api })
       setThreadsLookup(newLookup);
     };
 
-    loadThreads();
+    void loadThreads();
   }, [recentPosts]);
 
   const renderSectionContent = () => {

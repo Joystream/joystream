@@ -127,7 +127,7 @@ export const CategoryCrumbs = ({ categoryId, threadId, root }: CategoryCrumbsPro
 
 type TimeAgoDateProps = {
   date: moment.Moment;
-  id: any;
+  id: string | number;
 };
 
 export const TimeAgoDate: React.FC<TimeAgoDateProps> = ({ date, id }) => (

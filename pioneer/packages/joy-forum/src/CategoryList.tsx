@@ -206,13 +206,8 @@ type CategoryThreadsProps = ApiProps & InnerCategoryThreadsProps & {
 
 function InnerCategoryThreads (props: CategoryThreadsProps) {
   const { api, category, nextThreadId } = props;
-  const [currentPage, setCurrentPage] = usePagination();
-
-  if (!category.hasUnmoderatedThreads) {
-    return <em>No threads in this category</em>;
-  }
-
   const threadCount = category.num_threads_created.toNumber();
+  const [currentPage, setCurrentPage] = usePagination();
   const [loaded, setLoaded] = useState(false);
   const [threads, setThreads] = useState(new Array<Thread>());
 
@@ -253,9 +248,12 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
       setLoaded(true);
     };
 
-    loadThreads();
+    void loadThreads();
   }, [bnToStr(category.id), bnToStr(nextThreadId)]);
 
+  if (!category.hasUnmoderatedThreads) {
+    return <em>No threads in this category</em>;
+  }
   // console.log({ nextThreadId: bnToStr(nextThreadId), loaded, threads });
 
   if (!loaded) {
@@ -362,7 +360,7 @@ function InnerCategoryList (props: CategoryListProps) {
       setLoaded(true);
     };
 
-    loadCategories();
+    void loadCategories();
   }, [bnToStr(parentId), bnToStr(nextCategoryId)]);
 
   // console.log({ nextCategoryId: bnToStr(nextCategoryId), loaded, categories });

@@ -30,17 +30,17 @@ const initialState: ForumState = {
   sudo: undefined,
 
   nextCategoryId: 1,
-  categoryById: new Map(),
+  categoryById: new Map<CategoryId, Category>(),
   rootCategoryIds: [],
-  categoryIdsByParentId: new Map(),
+  categoryIdsByParentId: new Map<CategoryId, CategoryId[]>(),
 
   nextThreadId: 1,
-  threadById: new Map(),
-  threadIdsByCategoryId: new Map(),
+  threadById: new Map<ThreadId, Thread>(),
+  threadIdsByCategoryId: new Map<CategoryId, ThreadId[]>(),
 
   nextReplyId: 1,
-  replyById: new Map(),
-  replyIdsByThreadId: new Map()
+  replyById: new Map<ReplyId, Reply>(),
+  replyIdsByThreadId: new Map<ThreadId, ReplyId[]>()
 };
 
 type SetForumSudo = {
@@ -335,7 +335,7 @@ const contextStub: ForumContextProps = {
 
 export const ForumContext = createContext<ForumContextProps>(contextStub);
 
-export function ForumProvider (props: React.PropsWithChildren<{}>) {
+export function ForumProvider (props: React.PropsWithChildren<Record<any, unknown>>) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   return (
