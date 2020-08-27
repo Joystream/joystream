@@ -1,15 +1,13 @@
 // This module is not used but included as sample code
 // and highlights some pitfalls.
 
+use super::new_validation;
 use node_runtime::{
-    forum::{
-        Category, CategoryId, Post, PostId, Thread, ThreadId,
-    },
-    AccountId, BlockNumber, ForumConfig, Moment,
+    forum::{Category, CategoryId, Post, Thread},
+    AccountId, BlockNumber, ForumConfig, Moment, PostId, ThreadId,
 };
 use serde::Deserialize;
 use serde_json::Result;
-use super::new_validation;
 
 use codec::Decode;
 
@@ -23,7 +21,7 @@ struct ForumData {
     threads: Vec<(ThreadId, String)>,
 }
 
-fn decode_post(encoded: String) -> Post<BlockNumber, Moment, AccountId> {
+fn decode_post(encoded: String) -> Post<BlockNumber, Moment, AccountId, ThreadId, PostId> {
     // hex string must not include '0x' prefix!
     let encoded = hex::decode(encoded.as_bytes()).expect("failed to parse hex string");
     Decode::decode(&mut encoded.as_slice()).unwrap()
@@ -35,14 +33,14 @@ fn decode_category(encoded: String) -> Category<BlockNumber, Moment, AccountId> 
     Decode::decode(&mut encoded.as_slice()).unwrap()
 }
 
-fn decode_thread(encoded: String) -> Thread<BlockNumber, Moment, AccountId> {
+fn decode_thread(encoded: String) -> Thread<BlockNumber, Moment, AccountId, ThreadId> {
     // hex string must not include '0x' prefix!
     let encoded = hex::decode(encoded.as_bytes()).expect("failed to parse hex string");
     Decode::decode(&mut encoded.as_slice()).unwrap()
 }
 
 fn parse_forum_json() -> Result<ForumData> {
-    let data = include_str!("../../res/forum_data_acropolis_encoded.json");
+    let data = include_str!("../../res/forum_nicaea_encoded.json");
     serde_json::from_str(data)
 }
 
@@ -57,10 +55,6 @@ pub fn create(forum_sudo: AccountId) -> ForumConfig {
     let next_post_id: PostId = forum_data.posts.last().map_or(1, |post| post.0 + 1);
 
     ForumConfig {
-        // Decoding will fail because of differnt type used for
-        // BlockNumber between Acropolis (u64) and Rome (u32)
-        // As long as types between chains are identical this approach works nicely
-        // since we don't need to use an intermediate format or do any transformation on source data.
         category_by_id: forum_data
             .categories
             .into_iter()

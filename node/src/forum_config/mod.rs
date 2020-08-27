@@ -1,7 +1,5 @@
-pub mod from_serialized;
-
-// Not exported - only here as sample code
-// mod from_encoded;
+// pub mod from_serialized;
+pub mod from_encoded;
 
 use node_runtime::common::constraints::InputValidationLengthConstraint;
 

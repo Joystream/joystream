@@ -1976,6 +1976,7 @@ dependencies = [
  "frame-benchmarking-cli",
  "frame-system",
  "futures 0.3.4",
+ "hex",
  "joystream-node-runtime",
  "jsonrpc-core",
  "node-inspect",
