@@ -1,11 +1,12 @@
 import { QueryEventProcessingPack, SavedEntityEvent, makeDatabaseManager, IndexBuilder, SubstrateEvent } from '..';
 import { Codec } from '@polkadot/types/types';
 import Debug from 'debug';
-import { getRepository, QueryRunner, Between, In } from 'typeorm';
+import { getRepository, QueryRunner, Between, In, getConnection, MoreThan } from 'typeorm';
 import { doInTransaction } from '../db/helper';
 import { SubstrateEventEntity } from '../entities';
 import { waitFor } from '../utils/wait-for';
 import { numberEnv } from '../utils/env-flags';
+import { getIndexerHead } from '../db/dal';
 
 const debug = Debug('index-builder:processor');
 
@@ -17,17 +18,20 @@ const LOOK_AHEAD_BLOCKS = numberEnv('PROCESSOR_LOOK_AHEAD_BLOCKS') || 199;
 // minimal number of blocks the indexer must be ahead of the processor
 const MINIMAL_INDEXER_GAP = numberEnv('PROCESSOR_INDEXER_GAP') || 50;
 
+const BATCH_SIZE = numberEnv('PROCESSOR_BATCH_SIZE') || 10;
 // Interval at which the processor pulls new blocks from the database
 // The interval is reasonably large by default. The trade-off is the latency 
 // between the updates and the load to the database
-const PROCESSOR_BLOCKS_POLL_INTERVAL = numberEnv('PROCESSOR_BLOCKS_POLL_INTERVAL') || 1000; // 1 second
+const PROCESSOR_BLOCKS_POLL_INTERVAL = numberEnv('PROCESSOR_BLOCKS_POLL_INTERVAL') || 2000; // 1 second
 
 export default class MappingsProcessor {
   private _processing_pack!: QueryEventProcessingPack;
   private _blockToProcessNext!: number;
+  private _lastSavedEvent!: SavedEntityEvent;
   
   private _indexer!: IndexBuilder;
   private _started = false;
+  private _indexerHead!: number;
 
   private constructor(indexer: IndexBuilder, processing_pack: QueryEventProcessingPack) {
     this._indexer = indexer;
@@ -55,7 +59,12 @@ export default class MappingsProcessor {
 
     if (lastProcessedEvent) {
       debug(`Found the most recent processed event at block ${lastProcessedEvent.blockNumber}`);
-      this._blockToProcessNext = Number(lastProcessedEvent?.blockNumber) + 1;
+      this._lastSavedEvent = lastProcessedEvent;
+      //this._blockToProcessNext = Number(lastProcessedEvent?.blockNumber) + 1;
+    } else {
+      this._lastSavedEvent = new SavedEntityEvent();
+      this._lastSavedEvent.blockNumber = atBlock ? atBlock : -1;
+      this._lastSavedEvent.index = -1;
     }
 
     if (atBlock && lastProcessedEvent) {
@@ -67,7 +76,12 @@ export default class MappingsProcessor {
     }
     
     debug(`Starting the processor from ${this._blockToProcessNext}`);
-    
+
+    await doInTransaction(async (queryRunner) => {
+      this._indexerHead = await getIndexerHead(queryRunner);
+    })
+    debug(`Current indexer head: ${this._indexerHead}`);
+
     this._started = true;
 
     for await (const events of this._streamEventsToProcess()) {
@@ -75,8 +89,15 @@ export default class MappingsProcessor {
         debug(`Processing new batch of events of size: ${events.length}`);
         if (events.length > 0) {
           await this._onQueryEventBlock(events);
+        } else {
+          // If there is nothing to process, wait and update the indexer head
+          await new Promise(resolve => setTimeout(resolve, PROCESSOR_BLOCKS_POLL_INTERVAL));
+          await doInTransaction(async (queryRunner) => {
+            this._indexerHead = await getIndexerHead(queryRunner);
+          })
+          debug(`Updated indexer head to ${this._indexerHead}`);
         }
-        debug(`Next batch starts from height ${this._blockToProcessNext.toString()}`);
+        //debug(`Next batch starts from height ${this._blockToProcessNext.toString()}`);
       } catch (e) {
         console.error(`Stopping the proccessor due to errors: ${JSON.stringify(e, null, 2)}`);
         this.stop();
@@ -92,21 +113,28 @@ export default class MappingsProcessor {
 
   async * _streamEventsToProcess(): AsyncGenerator<SubstrateEventEntity[]> {
     while (this._started) {
-      await this.waitForIndexerHead();
       // scan up to the indexer head or a big chunk whatever is closer
-      const upperBound = Math.min(this._blockToProcessNext + LOOK_AHEAD_BLOCKS, this._indexer.indexerHead);
       yield await getRepository(SubstrateEventEntity).find({ 
         relations: ["extrinsic"],
-        where: {
-          blockNumber: Between(this._blockToProcessNext, upperBound),
-          method: In(Object.keys(this._processing_pack)),
-        },
+        where: [
+          {
+            // next block and further
+            blockNumber: Between(this._lastSavedEvent.blockNumber + 1, this._indexerHead),
+            method: In(Object.keys(this._processing_pack)),
+          },
+          {
+            // same block
+            blockNumber: this._lastSavedEvent.blockNumber,
+            index: MoreThan(this._lastSavedEvent.index), 
+            method: In(Object.keys(this._processing_pack)),
+          }],
         order: {
           blockNumber: 'ASC',
           index: 'ASC'
-        }
+        },
+        take: BATCH_SIZE
       })
-      this._blockToProcessNext = upperBound + 1;
+      //this._blockToProcessNext = upperBound + 1;
     }
     debug(`The processor has been stopped`);
   }
@@ -155,14 +183,15 @@ export default class MappingsProcessor {
         //query_event.log(0, debug);
     
         await this._processing_pack[query_event.method](makeDatabaseManager(queryRunner.manager), this.convert(query_event));
-        await SavedEntityEvent.update(({
+        this._lastSavedEvent = await SavedEntityEvent.update(({
           block_number: query_event.blockNumber,
           event_name: query_event.name,
           event_method: query_event.method,
           event_params: {},
           index: query_event.index
         }) as SubstrateEvent, queryRunner.manager);
-  
+        
+        debug(`Last saved event: ${JSON.stringify(this._lastSavedEvent, null, 2)}`);
       });
       
     });
