@@ -53,7 +53,7 @@ export class SavedEntityEvent {
    * with the event parameter
    * @param event
    */
-  static async update(event: SubstrateEvent, manager: EntityManager): Promise<void> {
+  static async update(event: SubstrateEvent, manager: EntityManager): Promise<SavedEntityEvent> {
     let lastProcessedEvent = await manager.findOne(SavedEntityEvent, { where: { id: 1 } });
 
     if (!lastProcessedEvent) {
@@ -65,7 +65,7 @@ export class SavedEntityEvent {
     lastProcessedEvent.blockNumber = event.block_number;
     lastProcessedEvent.updatedAt = new Date();
 
-    await manager.save(lastProcessedEvent);
+    return await manager.save(lastProcessedEvent);
   }
 
   static async createTable(): Promise<void> {
