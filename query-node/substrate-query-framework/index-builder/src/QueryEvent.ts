@@ -31,7 +31,7 @@ export default class QueryEvent implements SubstrateEvent {
   get event_name(): string {
     const event = this.event_record.event;
 
-    return event.section + event.method;
+    return event.section + '_' + event.method;
   }
 
   get event_method(): string {
