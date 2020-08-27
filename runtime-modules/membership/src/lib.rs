@@ -6,7 +6,6 @@
 #![allow(clippy::redundant_closure_call)]
 
 pub mod genesis;
-pub mod genesis_member;
 pub(crate) mod mock;
 mod tests;
 
@@ -217,7 +216,7 @@ decl_storage! {
     }
     add_extra_genesis {
         config(default_paid_membership_fee): BalanceOf<T>;
-        config(members) : Vec<genesis_member::Member<T::MemberId, T::AccountId, T::Moment>>;
+        config(members) : Vec<genesis::Member<T::MemberId, T::AccountId, T::Moment>>;
         build(|config: &GenesisConfig<T>| {
             for member in &config.members {
                 let checked_user_info = <Module<T>>::check_user_registration_info(

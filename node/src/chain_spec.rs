@@ -37,8 +37,8 @@ use node_runtime::{
     StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 
-pub use node_runtime::Moment;
-pub use node_runtime::{genesis_member, AccountId, GenesisConfig};
+// Exported to be used by chain-spec-builder
+pub use node_runtime::{membership, AccountId, GenesisConfig, Moment};
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -205,7 +205,7 @@ pub fn testnet_genesis(
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     cpcp: node_runtime::ProposalsConfigParameters,
-    members: Vec<genesis_member::Member<u64, AccountId, Moment>>,
+    members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
 ) -> GenesisConfig {
     const CENTS: Balance = 1;
     const DOLLARS: Balance = 100 * CENTS;

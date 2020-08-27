@@ -277,7 +277,7 @@ impl ExtBuilder {
 
         membership::GenesisConfig::<Test> {
             default_paid_membership_fee: 0,
-            members: vec![membership::genesis_member::Member {
+            members: vec![membership::genesis::Member {
                 member_id: 0,
                 root_account: 1,
                 controller_account: 1,

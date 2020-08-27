@@ -55,7 +55,7 @@ use storage::{data_directory, data_object_storage_registry, data_object_type_reg
 pub use common;
 pub use forum;
 pub use governance::election_params::ElectionParameters;
-pub use membership::genesis_member;
+pub use membership;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
