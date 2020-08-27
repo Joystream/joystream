@@ -20,6 +20,9 @@ import settings from '@polkadot/ui-settings';
 import Apps from './Apps';
 import WindowDimensions from './WindowDimensions';
 
+/* Joystream-specific */
+import { MyMembershipProvider, MyAccountProvider } from '@polkadot/joy-utils/react/context';
+
 const rootId = 'root';
 const rootElement = document.getElementById(rootId);
 const theme = { theme: settings.uiTheme };
@@ -38,19 +41,23 @@ store.each((_, key): void => {
 ReactDOM.render(
   <Suspense fallback='...'>
     <ThemeProvider theme={theme}>
-      <Queue>
-        <Api url={settings.apiUrl}>
-          <BlockAuthors>
-            <Events>
-              <HashRouter>
-                <WindowDimensions>
-                  <Apps />
-                </WindowDimensions>
-              </HashRouter>
-            </Events>
-          </BlockAuthors>
-        </Api>
-      </Queue>
+      <MyAccountProvider>
+        <Queue>
+          <Api url={settings.apiUrl}>
+            <MyMembershipProvider>
+              <BlockAuthors>
+                <Events>
+                  <HashRouter>
+                    <WindowDimensions>
+                      <Apps />
+                    </WindowDimensions>
+                  </HashRouter>
+                </Events>
+              </BlockAuthors>
+            </MyMembershipProvider>
+          </Api>
+        </Queue>
+      </MyAccountProvider>
     </ThemeProvider>
   </Suspense>,
   rootElement

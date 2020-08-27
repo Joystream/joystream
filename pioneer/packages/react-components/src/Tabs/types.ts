@@ -11,4 +11,5 @@ export interface TabItem {
   isRoot?: boolean;
   name: string;
   text: React.ReactNode;
+  forceMatchParams?: boolean;
 }

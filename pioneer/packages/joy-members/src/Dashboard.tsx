@@ -3,12 +3,12 @@ import BN from 'bn.js';
 
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
-import { withCalls } from '@polkadot/react-api/with';
-import { Bubble } from '@polkadot/react-components/index';
+import { withCalls } from '@polkadot/react-api/hoc';
+import { Label } from 'semantic-ui-react';
 import { formatNumber } from '@polkadot/util';
 import { bool as Bool } from '@polkadot/types';
 
-import Section from '@polkadot/joy-utils/Section';
+import { Section } from '@polkadot/joy-utils/react/components';
 import translate from './translate';
 import { queryMembershipToProp } from './utils';
 
@@ -27,39 +27,57 @@ class Dashboard extends React.PureComponent<Props> {
   renderGeneral () {
     const p = this.props;
     const { newMembershipsAllowed: isAllowed } = p;
-    let isAllowedColor = '';
+    let isAllowedColor: 'grey' | 'green' | 'red' = 'grey';
+
     if (isAllowed) {
       isAllowedColor = isAllowed.eq(true) ? 'green' : 'red';
     }
-    return <Section title='General'>
-      <Bubble label='New memberships allowed?' className={isAllowedColor}>
-        {isAllowed && (isAllowed.eq(true) ? 'Yes' : 'No')}
-      </Bubble>
-      <Bubble label='Next member ID'>
-        {formatNumber(p.nextMemberId)}
-      </Bubble>
-      <Bubble label='First member ID'>
-        {formatNumber(FIRST_MEMBER_ID)}
-      </Bubble>
-    </Section>;
+
+    return (
+      <Section title='General'>
+        <Label.Group size='large'>
+          <Label color={isAllowedColor}>
+            New memberships allowed?
+            <Label.Detail>{isAllowed && (isAllowed.eq(true) ? 'Yes' : 'No')}</Label.Detail>
+          </Label>
+          <Label color='grey'>
+            Next member ID
+            <Label.Detail>{formatNumber(p.nextMemberId)}</Label.Detail>
+          </Label>
+          <Label color='grey'>
+            First member ID
+            <Label.Detail>{formatNumber(FIRST_MEMBER_ID)}</Label.Detail>
+          </Label>
+        </Label.Group>
+      </Section>
+    );
   }
 
   renderValidation () {
     const p = this.props;
-    return <Section title='Validation'>
-      <Bubble label='Min. length of handle'>
-        {formatNumber(p.minHandleLength)} chars
-      </Bubble>
-      <Bubble label='Max. length of handle'>
-        {formatNumber(p.maxHandleLength)} chars
-      </Bubble>
-      <Bubble label='Max. length of avatar URI'>
-        {formatNumber(p.maxAvatarUriLength)} chars
-      </Bubble>
-      <Bubble label='Max. length of about'>
-        {formatNumber(p.maxAboutTextLength)} chars
-      </Bubble>
-    </Section>;
+
+    return (
+      <Section title='Validation'>
+        <Label.Group color='grey' size='large'>
+          <Label>
+            Min. length of handle
+            <Label.Detail>{formatNumber(p.minHandleLength)} chars</Label.Detail>
+          </Label>
+          <Label>
+            Max. length of handle
+            <Label.Detail>{formatNumber(p.maxHandleLength)} chars</Label.Detail>
+          </Label>
+          <Label>
+            Max. length of avatar URI
+            <Label.Detail>{formatNumber(p.maxAvatarUriLength)} chars</Label.Detail>
+          </Label>
+          <Label>
+            Max. length of about
+            <Label.Detail>{formatNumber(p.maxAboutTextLength)} chars</Label.Detail>
+          </Label>
+        </Label.Group>
+      </Section>
+    );
   }
 
   render () {

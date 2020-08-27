@@ -22,7 +22,11 @@
     "pioneer",
     "pioneer/packages/apps*",
     "pioneer/packages/page*",
-    "pioneer/packages/react*"
+    "pioneer/packages/react*",
+    "pioneer/packages/joy-utils",
+    "pioneer/packages/joy-members",
+    "pioneer/packages/joy-pages",
+    "utils/api-examples"
   ],
   "resolutions": {
     "@polkadot/api": "1.26.1",
