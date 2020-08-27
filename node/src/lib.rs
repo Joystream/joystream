@@ -1,6 +1,7 @@
 pub mod chain_spec;
 pub mod cli;
 pub mod forum_config;
+pub mod initial_members;
 pub mod proposals_config;
 #[macro_use]
 pub mod service;

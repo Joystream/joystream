@@ -570,8 +570,6 @@ dependencies = [
  "sc-chain-spec",
  "sc-keystore",
  "sc-telemetry",
- "serde",
- "serde_json",
  "sp-core",
  "structopt",
 ]

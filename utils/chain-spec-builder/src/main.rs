@@ -25,7 +25,7 @@ use structopt::StructOpt;
 
 use joystream_node::{
     chain_spec::{self, chain_spec_properties, AccountId},
-    proposals_config,
+    initial_members, proposals_config,
 };
 use sc_chain_spec::ChainType;
 use sc_keystore::Store as Keystore;
@@ -35,8 +35,6 @@ use sp_core::{
     sr25519,
     traits::BareCryptoStore,
 };
-
-mod initial_members;
 
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
