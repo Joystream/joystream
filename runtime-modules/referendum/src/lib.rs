@@ -156,8 +156,8 @@ decl_storage! {
         /// Votes in current referendum
         pub Votes get(fn votes) config(): map hasher(blake2_128_concat) T::AccountId => SealedVote<T::Hash, Balance<T, I>>;
 
-        /// Index of the current referendum cycle.
-        pub CurrentCycle get(fn current_cycle) config(): u64;
+        /// Index of the current referendum cycle. It is incremented each time one referendum ends.
+        pub CurrentCycleId get(fn current_cycle_id) config(): u64;
 
         /// Last cycle winning option(s)
         pub PreviousCycleResult get(fn previous_cycle_result) config(): ReferendumResult<u64, <T as Trait<I>>::VotePower>;
@@ -538,7 +538,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
     fn reset_referendum(last_cycle_result: &ReferendumResult<u64, T::VotePower>) {
         Stage::<T, I>::put(ReferendumStage::Inactive);
-        CurrentCycle::<I>::put(CurrentCycle::<I>::get() + 1);
+        CurrentCycleId::<I>::put(CurrentCycleId::<I>::get() + 1);
         PreviousCycleResult::<T, I>::put(last_cycle_result);
     }
 
@@ -562,7 +562,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             SealedVote {
                 commitment: *commitment,
                 balance: *balance,
-                cycle_id: CurrentCycle::<I>::get(),
+                cycle_id: CurrentCycleId::<I>::get(),
                 vote_for: None,
             },
         );
@@ -704,7 +704,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         salt: &[u8],
         vote_option_index: &u64,
     ) -> Result<(T::AccountId, SealedVote<T::Hash, Balance<T, I>>), Error<T, I>> {
-        let cycle_id = CurrentCycle::<I>::get();
+        let cycle_id = CurrentCycleId::<I>::get();
 
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;
@@ -771,7 +771,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             voted_for_winner.is_some()
         }
 
-        let cycle_id = CurrentCycle::<I>::get();
+        let cycle_id = CurrentCycleId::<I>::get();
 
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;

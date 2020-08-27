@@ -2,7 +2,7 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Balance, CurrentCycle, Error, Instance, Module, RawEvent, ReferendumManager, ReferendumResult,
+    Balance, CurrentCycleId, Error, Instance, Module, RawEvent, ReferendumManager, ReferendumResult,
     ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, SealedVote, Stage, Trait,
     Votes,
 };
@@ -197,7 +197,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime, Instance0> {
     GenesisConfig::<Runtime, Instance0> {
         stage: ReferendumStage::default(),
         votes: vec![],
-        current_cycle: 0,
+        current_cycle_id: 0,
         previous_cycle_result: ReferendumResult::default(),
     }
 }
@@ -278,7 +278,7 @@ where
         account_id: &<T as system::Trait>::AccountId,
         vote_option_index: &u64,
     ) -> (T::Hash, Vec<u8>) {
-        let cycle_id = CurrentCycle::<I>::get();
+        let cycle_id = CurrentCycleId::<I>::get();
         Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index)
     }
 
@@ -437,7 +437,7 @@ impl InstanceMocks<Runtime, Instance0> {
             Votes::<Runtime, Instance0>::get(account_id),
             SealedVote {
                 commitment,
-                cycle_id: CurrentCycle::<Instance0>::get(),
+                cycle_id: CurrentCycleId::<Instance0>::get(),
                 balance,
                 vote_for: None,
             },
