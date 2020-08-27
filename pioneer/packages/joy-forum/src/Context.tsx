@@ -2,9 +2,8 @@
 // NOTE: The purpose of this context is to immitate a Substrate storage for the forum until it's implemented as a substrate runtime module.
 
 import React, { useReducer, createContext, useContext } from 'react';
-import { Category, Thread, Reply, ModerationAction } from '@joystream/types/forum';
-import { BlockAndTime } from '@joystream/types/common';
-import { Option, Text, GenericAccountId } from '@polkadot/types';
+import { Category, Thread, Reply } from '@joystream/types/forum';
+import { createMock } from '@joystream/types';
 
 type CategoryId = number;
 type ThreadId = number;
@@ -220,14 +219,14 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       const { threadById } = state;
 
       const thread = threadById.get(id) as Thread;
-      const moderation = new ModerationAction({
-        moderated_at: BlockAndTime.newEmpty(),
-        moderator_id: new GenericAccountId(moderator),
-        rationale: new Text(rationale)
+      const moderation = createMock('ModerationAction', {
+        moderated_at: createMock('BlockAndTime', {}),
+        moderator_id: createMock('AccountId', moderator),
+        rationale: createMock('Text', rationale)
       });
-      const threadUpd = new Thread(Object.assign(
+      const threadUpd = createMock('Thread', Object.assign(
         thread.cloneValues(),
-        { moderation: new Option(ModerationAction, moderation) }
+        { moderation: createMock('Option<ModerationAction>', moderation) }
       ));
       threadById.set(id, threadUpd);
 
@@ -285,14 +284,14 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       const { replyById } = state;
 
       const reply = replyById.get(id) as Reply;
-      const moderation = new ModerationAction({
-        moderated_at: BlockAndTime.newEmpty(),
-        moderator_id: new GenericAccountId(moderator),
-        rationale: new Text(rationale)
+      const moderation = createMock('ModerationAction', {
+        moderated_at: createMock('BlockAndTime', {}),
+        moderator_id: createMock('AccountId', moderator),
+        rationale: createMock('Text', rationale)
       });
-      const replyUpd = new Reply(Object.assign(
+      const replyUpd = createMock('Reply', Object.assign(
         reply.cloneValues(),
-        { moderation: new Option(ModerationAction, moderation) }
+        { moderation: createMock('Option<ModerationAction>', moderation) }
       ));
       replyById.set(id, replyUpd);
 

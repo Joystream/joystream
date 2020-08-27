@@ -6,21 +6,21 @@ import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { History } from 'history';
 
-import TxButton from '@polkadot/joy-utils/TxButton';
+import { TxButton } from '@polkadot/joy-utils/react/components';
 import { SubmittableResult } from '@polkadot/api';
-import { withMulti } from '@polkadot/react-api/with';
+import { withMulti } from '@polkadot/react-api/hoc';
 
-import * as JoyForms from '@polkadot/joy-utils/forms';
-import { Text } from '@polkadot/types';
+import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { ThreadId } from '@joystream/types/common';
 import { Thread, CategoryId } from '@joystream/types/forum';
-import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
-import Section from '@polkadot/joy-utils/Section';
-import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
+import { Section } from '@polkadot/joy-utils/react/components';
+import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
 import { withForumCalls } from './calls';
 import { ValidationProps, withThreadValidation } from './validation';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
+import { useApi } from '@polkadot/react-hooks';
 
 const buildSchema = (props: ValidationProps) => {
   const {
@@ -141,8 +141,8 @@ const InnerForm = (props: FormProps) => {
     if (isNew) {
       return [
         resolvedCategoryId,
-        new Text(title),
-        new Text(text)
+        title,
+        text
       ];
     } else {
       // NOTE: currently forum SRML doesn't support thread update.
@@ -182,7 +182,6 @@ const InnerForm = (props: FormProps) => {
       <LabelledField {...props}>
         <TxButton
           type='submit'
-          size='large'
           label={isNew
             ? 'Create a thread'
             : 'Update a thread'
@@ -260,8 +259,9 @@ function FormOrLoading (props: OuterProps) {
 function withCategoryIdFromUrl (Component: React.ComponentType<OuterProps>) {
   return function (props: UrlHasIdProps) {
     const { match: { params: { id } } } = props;
+    const { api } = useApi();
     try {
-      return <Component {...props} categoryId={new CategoryId(id)} />;
+      return <Component {...props} categoryId={api.createType('CategoryId', id)} />;
     } catch (err) {
       return <em>Invalid category ID: {id}</em>;
     }
@@ -271,8 +271,9 @@ function withCategoryIdFromUrl (Component: React.ComponentType<OuterProps>) {
 function withIdFromUrl (Component: React.ComponentType<OuterProps>) {
   return function (props: UrlHasIdProps) {
     const { match: { params: { id } } } = props;
+    const { api } = useApi();
     try {
-      return <Component {...props} id={new ThreadId(id)} />;
+      return <Component {...props} id={api.createType('ThreadId', id)} />;
     } catch (err) {
       return <em>Invalid thread ID: {id}</em>;
     }

@@ -1,4 +1,8 @@
-.forum--App {
+import { css } from 'styled-components';
+
+export default css`
+  padding-top: 1.5rem;
+
   .ui.segment {
     background-color: #fff;
   }
@@ -11,13 +15,13 @@
       margin-right: 1rem;
     }
   }
-}
 
-.EditEntityBox {
-  width: 100%;
-  max-width: 600px;
-
-  .EditEntityForm {
+  .EditEntityBox {
     width: 100%;
+    max-width: 600px;
+
+    .EditEntityForm {
+      width: 100%;
+    }
   }
-}
+`;

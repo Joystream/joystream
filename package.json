@@ -30,6 +30,7 @@
     "pioneer/packages/joy-proposals",
     "pioneer/packages/joy-roles",
     "pioneer/packages/joy-media",
+    "pioneer/packages/joy-forum",
     "utils/api-examples"
   ],
   "resolutions": {

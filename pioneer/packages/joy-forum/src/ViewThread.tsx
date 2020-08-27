@@ -1,26 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, RouteComponentProps } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import styled from 'styled-components';
 import { Table, Button, Label, Icon } from 'semantic-ui-react';
 import BN from 'bn.js';
 
-import { ThreadId, PostId } from '@joystream/types/common';
+import { ThreadId } from '@joystream/types/common';
 import { Category, Thread, Post } from '@joystream/types/forum';
 import { Pagination, RepliesPerPage, CategoryCrumbs, TimeAgoDate, usePagination, useQueryParam, ReplyIdxQueryParam, ReplyEditIdQueryParam } from './utils';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
-import { MutedSpan } from '@polkadot/joy-utils/MutedText';
-import { JoyWarn } from '@polkadot/joy-utils/JoyStatus';
+import { MutedSpan } from '@polkadot/joy-utils/react/components';
+import { JoyWarn } from '@polkadot/joy-utils/react/components';
 import { withForumCalls } from './calls';
 import { withApi, withMulti } from '@polkadot/react-api';
 import { ApiProps } from '@polkadot/react-api/types';
 import { orderBy } from 'lodash';
-import { bnToStr } from '@polkadot/joy-utils/index';
+import { bnToStr } from '@polkadot/joy-utils/functions/misc';
 import { IfIAmForumSudo } from './ForumSudo';
-import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
+import MemberPreview from '@polkadot/joy-utils/react/components/MemberByAccountPreview';
 import { formatDate } from '@polkadot/joy-utils/functions/date';
 import { NewReply, EditReply } from './EditReply';
+import { useApi } from '@polkadot/react-hooks';
 
 type ThreadTitleProps = {
   thread: Thread;
@@ -68,14 +69,7 @@ const ThreadInfo = styled.span`
 `;
 
 const ThreadInfoMemberPreview = styled(MemberPreview)`
-  && {
-    margin: 0 .2rem;
-
-    .PrefixLabel {
-      color: inherit;
-      margin-right: .2rem;
-    }
-  }
+  margin: 0 .5rem;
 `;
 
 const ReplyEditContainer = styled.div`
@@ -110,7 +104,7 @@ const ThreadPreview: React.FC<ThreadPreviewProps> = ({ thread, repliesCount }) =
         {repliesCount}
       </Table.Cell>
       <Table.Cell>
-        <MemberPreview accountId={thread.author_id} />
+        <MemberPreview accountId={thread.author_id} showCouncilBadge showId={false}/>
       </Table.Cell>
       <Table.Cell>
         {formatDate(thread.created_at.momentDate)}
@@ -144,9 +138,9 @@ function InnerViewThread (props: ViewThreadProps) {
   const parsedSelectedPostIdx = rawSelectedPostIdx ? parseInt(rawSelectedPostIdx) : null;
   const selectedPostIdx = (parsedSelectedPostIdx && !Number.isNaN(parsedSelectedPostIdx)) ? parsedSelectedPostIdx : null;
 
-  const { category, thread, preview = false } = props;
+  const { category, thread, preview = false, api, nextPostId } = props;
 
-  const editedPostId = rawEditedPostId && new PostId(rawEditedPostId);
+  const editedPostId = rawEditedPostId && api.createType('PostId', rawEditedPostId);
 
   if (!thread) {
     return <em>Loading thread details...</em>;
@@ -178,7 +172,6 @@ function InnerViewThread (props: ViewThreadProps) {
     return <ThreadPreview thread={thread} repliesCount={totalPostsInThread - 1} />;
   }
 
-  const { api, nextPostId } = props;
   const [loaded, setLoaded] = useState(false);
   const [posts, setPosts] = useState(new Array<Post>());
 
@@ -187,7 +180,7 @@ function InnerViewThread (props: ViewThreadProps) {
     const loadPosts = async () => {
       if (!nextPostId || totalPostsInThread === 0) return;
 
-      const newId = (id: number | BN) => new PostId(id);
+      const newId = (id: number | BN) => api.createType('PostId', id);
       const apiCalls: Promise<Post>[] = [];
       let id = newId(1);
       while (nextPostId.gt(id)) {
@@ -384,8 +377,8 @@ function InnerViewThread (props: ViewThreadProps) {
       </h1>
       <ThreadInfoAndActions>
         <ThreadInfo>
-          Created
-          <ThreadInfoMemberPreview accountId={thread.author_id} inline prefixLabel="by" />
+          Created by
+          <ThreadInfoMemberPreview accountId={thread.author_id} size="small" showId={false}/>
           <TimeAgoDate date={thread.created_at.momentDate} id="thread" />
         </ThreadInfo>
         {renderActions()}
@@ -424,28 +417,23 @@ export const ViewThread = withMulti(
   )
 );
 
-type ViewThreadByIdProps = ApiProps & {
-  match: {
-    params: {
-      id: string;
-    };
-  };
-};
+type ViewThreadByIdProps = RouteComponentProps<{ id: string }>;
 
-function InnerViewThreadById (props: ViewThreadByIdProps) {
-  const { api, match: { params: { id } } } = props;
+export function ViewThreadById (props: ViewThreadByIdProps) {
+  const { api } = useApi();
+  const { match: { params: { id } } } = props;
 
   let threadId: ThreadId;
   try {
-    threadId = new ThreadId(id);
+    threadId = api.createType('ThreadId', id);
   } catch (err) {
     console.log('Failed to parse thread id form URL');
     return <em>Invalid thread ID: {id}</em>;
   }
 
   const [loaded, setLoaded] = useState(false);
-  const [thread, setThread] = useState(Thread.newEmpty());
-  const [category, setCategory] = useState(Category.newEmpty());
+  const [thread, setThread] = useState(api.createType('Thread', {}));
+  const [category, setCategory] = useState(api.createType('Category', {}));
 
   useEffect(() => {
     const loadThreadAndCategory = async () => {
@@ -478,5 +466,3 @@ function InnerViewThreadById (props: ViewThreadByIdProps) {
 
   return <ViewThread id={threadId} category={category} thread={thread} />;
 }
-
-export const ViewThreadById = withApi(InnerViewThreadById);

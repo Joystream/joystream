@@ -4,7 +4,6 @@
     "build/**/*",
     "**/build/**/*",
     "packages/old-apps/**",
-    "packages/joy-forum/**/*",
     "packages/joy-help/**/*",
     "packages/joy-settings/**/*",
     "packages/joy-utils-old/**/*"
@@ -33,6 +32,8 @@
       "@polkadot/joy-utils/*": [ "packages/joy-utils/src/*" ],
       "@polkadot/joy-media/": [ "packages/joy-media/src/" ],
       "@polkadot/joy-media/*": [ "packages/joy-media/src/*" ],
+      "@polkadot/joy-forum/": [ "packages/joy-forum/src/" ],
+      "@polkadot/joy-forum/*": [ "packages/joy-forum/src/*" ],
       "@polkadot/apps/*": ["packages/apps/src/*"],
       "@polkadot/apps": ["packages/apps/src"],
       "@polkadot/apps-config/*": [ "packages/apps-config/src/*" ],

@@ -6,10 +6,10 @@ import { Button, Icon } from 'semantic-ui-react';
 
 import { Post, Category, Thread } from '@joystream/types/forum';
 import { Moderate } from './Moderate';
-import { JoyWarn } from '@polkadot/joy-utils/JoyStatus';
-import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { JoyWarn } from '@polkadot/joy-utils/react/components';
+import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 import { IfIAmForumSudo } from './ForumSudo';
-import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
+import MemberPreview from '@polkadot/joy-utils/react/components/MemberByAccountPreview';
 import { TimeAgoDate, ReplyIdxQueryParam } from './utils';
 
 const HORIZONTAL_PADDING = '1em';
@@ -129,7 +129,7 @@ export const ViewReply = React.forwardRef((props: ViewReplyProps, ref: React.Ref
     <ReplyContainer className="ui segment" ref={ref} selected={selected}>
       <ReplyHeader>
         <ReplyHeaderAuthorRow>
-          <MemberPreview accountId={reply.author_id} />
+          <MemberPreview accountId={reply.author_id} showCouncilBadge showId={false}/>
         </ReplyHeaderAuthorRow>
         <ReplyHeaderDetailsRow>
           <TimeAgoDate date={reply.created_at.momentDate} id={reply.id} />

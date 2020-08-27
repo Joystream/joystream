@@ -3,15 +3,14 @@ import { Button } from 'semantic-ui-react';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
-import TxButton from '@polkadot/joy-utils/TxButton';
+import { TxButton } from '@polkadot/joy-utils/react/components';
 import { SubmittableResult } from '@polkadot/api';
-import { withMulti } from '@polkadot/react-api/with';
+import { withMulti } from '@polkadot/react-api/hoc';
 
-import * as JoyForms from '@polkadot/joy-utils/forms';
-import { Text } from '@polkadot/types';
+import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { ThreadId } from '@joystream/types/common';
 import { ReplyId } from '@joystream/types/forum';
-import Section from '@polkadot/joy-utils/Section';
+import { Section } from '@polkadot/joy-utils/react/components';
 import { withOnlyForumSudo } from './ForumSudo';
 import { ValidationProps, withPostModerationValidation } from './validation';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
@@ -90,11 +89,10 @@ const InnerForm = (props: FormProps) => {
   const buildTxParams = () => {
     if (!isValid) return [];
 
-    const rationaleParam = new Text(rationale);
     if (isThread) {
-      return [id, rationaleParam];
+      return [id, rationale];
     } else {
-      return [id, rationaleParam];
+      return [id, rationale];
     }
   };
 
@@ -108,7 +106,6 @@ const InnerForm = (props: FormProps) => {
       <LabelledField {...props}>
         <TxButton
           type='submit'
-          size='large'
           label={'Moderate'}
           isDisabled={!dirty || isSubmitting}
           params={buildTxParams()}

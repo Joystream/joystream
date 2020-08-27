@@ -25,6 +25,7 @@ import election from './joy-election';
 import proposals from './joy-proposals';
 import roles from './joy-roles';
 import media from './joy-media';
+import forum from './joy-forum';
 
 export default function create (t: <T = string> (key: string, text: string, options: { ns: string }) => T): Routes {
   return appSettings.uiMode === 'light'
@@ -34,6 +35,7 @@ export default function create (t: <T = string> (key: string, text: string, opti
       roles(t),
       election(t),
       proposals(t),
+      forum(t),
       staking(t),
       null,
       transfer(t),
@@ -49,6 +51,7 @@ export default function create (t: <T = string> (key: string, text: string, opti
       roles(t),
       election(t),
       proposals(t),
+      forum(t),
       staking(t),
       null,
       transfer(t),

@@ -1,5 +1,5 @@
 import React from 'react';
-import { withMulti } from '@polkadot/react-api/with';
+import { withMulti } from '@polkadot/react-api/hoc';
 import { InputValidationLengthConstraint } from '@joystream/types/common';
 import { withForumCalls } from './calls';
 import { componentName } from '@polkadot/joy-utils/react/helpers';

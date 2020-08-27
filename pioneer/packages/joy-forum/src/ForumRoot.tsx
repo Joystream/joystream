@@ -4,13 +4,13 @@ import styled from 'styled-components';
 import { orderBy } from 'lodash';
 import BN from 'bn.js';
 
-import Section from '@polkadot/joy-utils/Section';
+import { Section } from '@polkadot/joy-utils/react/components';
 import { withMulti, withApi } from '@polkadot/react-api';
 import { PostId } from '@joystream/types/common';
 import { Post, Thread } from '@joystream/types/forum';
-import { bnToStr } from '@polkadot/joy-utils/';
+import { bnToStr } from '@polkadot/joy-utils/functions/misc';
 import { ApiProps } from '@polkadot/react-api/types';
-import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
+import MemberPreview from '@polkadot/joy-utils/react/components/MemberByAccountPreview';
 
 import { CategoryCrumbs, RecentActivityPostsCount, ReplyIdxQueryParam, TimeAgoDate } from './utils';
 import { withForumCalls } from './calls';
@@ -62,7 +62,7 @@ const InnerRecentActivity: React.FC<RecentActivityProps> = ({ nextPostId, api })
     const loadPosts = async () => {
       if (!nextPostId) return;
 
-      const newId = (id: number | BN) => new PostId(id);
+      const newId = (id: number | BN) => api.createType('PostId', id);
       const apiCalls: Promise<Post>[] = [];
       let id = newId(1);
       while (nextPostId.gt(id)) {
@@ -138,7 +138,7 @@ const InnerRecentActivity: React.FC<RecentActivityProps> = ({ nextPostId, api })
 
       return (
         <RecentActivityEntry key={p.id.toNumber()}>
-          <StyledMemberPreview accountId={p.author_id} inline />
+          <StyledMemberPreview accountId={p.author_id} size="small" showId={false}/>
           posted in
           {thread && (
             <StyledPostLink to={{ pathname: postLinkPathname, search: postLinkSearch.toString() }}>{thread.title}</StyledPostLink>

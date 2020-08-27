@@ -1,5 +1,5 @@
 export { default as Section } from './Section';
-export { default as TxButton } from './TxButton';
+export { default as TxButton, SemanticTxButton } from './TxButton';
 export { MutedSpan, MutedDiv } from './MutedText';
 export { FlexCenter } from './FlexCenter';
 export { default as PromiseComponent, Error, Loading } from './PromiseComponent';

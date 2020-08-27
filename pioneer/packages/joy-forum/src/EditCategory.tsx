@@ -4,21 +4,20 @@ import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 import { History } from 'history';
 
-import TxButton from '@polkadot/joy-utils/TxButton';
+import { TxButton, Section } from '@polkadot/joy-utils/react/components';
 import { SubmittableResult } from '@polkadot/api';
-import { withMulti } from '@polkadot/react-api/with';
+import { withMulti } from '@polkadot/react-api/hoc';
 
-import * as JoyForms from '@polkadot/joy-utils/forms';
-import { Text } from '@polkadot/types';
-import { Option } from '@polkadot/types/codec';
+import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { CategoryId, Category } from '@joystream/types/forum';
-import Section from '@polkadot/joy-utils/Section';
-import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 import { UrlHasIdProps, CategoryCrumbs } from './utils';
 import { withOnlyForumSudo } from './ForumSudo';
 import { withForumCalls } from './calls';
 import { ValidationProps, withCategoryValidation } from './validation';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
+import { createMock } from '@joystream/types';
+import { useApi } from '@polkadot/react-hooks';
 
 const buildSchema = (props: ValidationProps) => {
   const {
@@ -128,9 +127,9 @@ const InnerForm = (props: FormProps) => {
 
     if (isNew) {
       return [
-        new Option(CategoryId, parentId),
-        new Text(title),
-        new Text(description)
+        createMock('Option<CategoryId>', parentId),
+        title,
+        description
       ];
     } else {
       // NOTE: currently update_category doesn't support title and description updates.
@@ -152,7 +151,6 @@ const InnerForm = (props: FormProps) => {
       <LabelledField {...props}>
         <TxButton
           type='submit'
-          size='large'
           label={isNew
             ? `Create a ${categoryWord}`
             : 'Update a category'
@@ -232,8 +230,9 @@ function FormOrLoading (props: OuterProps) {
 function withIdFromUrl (Component: React.ComponentType<OuterProps>) {
   return function (props: UrlHasIdProps) {
     const { match: { params: { id } } } = props;
+    const { api } = useApi();
     try {
-      return <Component id={new CategoryId(id)} />;
+      return <Component id={api.createType('CategoryId', id)} />;
     } catch (err) {
       return <em>Invalid category ID: {id}</em>;
     }
@@ -242,8 +241,9 @@ function withIdFromUrl (Component: React.ComponentType<OuterProps>) {
 
 function NewSubcategoryForm (props: UrlHasIdProps & OuterProps) {
   const { match: { params: { id } } } = props;
+  const { api } = useApi();
   try {
-    return <EditForm {...props} parentId={new CategoryId(id)} />;
+    return <EditForm {...props} parentId={api.createType('CategoryId', id)} />;
   } catch (err) {
     return <em>Invalid parent category id: {id}</em>;
   }

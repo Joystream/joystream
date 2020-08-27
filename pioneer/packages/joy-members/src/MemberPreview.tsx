@@ -91,9 +91,8 @@ const withMemberIdByAccountId = withCalls<WithMemberIdByAccountIdProps>(
 function setMemberIdByAccountId (Component: React.ComponentType<MemberPreviewProps>) {
   return function (props: WithMemberIdByAccountIdProps & MemberPreviewProps) {
     const { memberIdsByRootAccountId, memberIdsByControllerAccountId } = props;
-
     if (memberIdsByRootAccountId && memberIdsByControllerAccountId) {
-      memberIdsByRootAccountId.concat(memberIdsByControllerAccountId);
+      memberIdsByRootAccountId.toArray().concat(memberIdsByControllerAccountId.toArray());
 
       if (memberIdsByRootAccountId.length) {
         return <Component {...props} memberId={memberIdsByRootAccountId[0]} />;

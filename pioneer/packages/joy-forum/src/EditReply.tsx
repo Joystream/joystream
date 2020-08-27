@@ -4,17 +4,16 @@ import styled from 'styled-components';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
-import TxButton from '@polkadot/joy-utils/TxButton';
+import { TxButton } from '@polkadot/joy-utils/react/components';
 import { SubmittableResult } from '@polkadot/api';
-import { withMulti } from '@polkadot/react-api/with';
+import { withMulti } from '@polkadot/react-api/hoc';
 
-import * as JoyForms from '@polkadot/joy-utils/forms';
-import { Text } from '@polkadot/types';
+import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { PostId, ThreadId } from '@joystream/types/common';
 import { Post } from '@joystream/types/forum';
-import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
-import Section from '@polkadot/joy-utils/Section';
-import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
+import { Section } from '@polkadot/joy-utils/react/components';
+import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 import { withForumCalls } from './calls';
 import { ValidationProps, withReplyValidation } from './validation';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
@@ -105,11 +104,10 @@ const InnerForm = (props: FormProps) => {
   const buildTxParams = () => {
     if (!isValid) return [];
 
-    const textParam = new Text(text);
     if (!id) {
-      return [threadId, textParam];
+      return [threadId, text];
     } else {
-      return [id, textParam];
+      return [id, text];
     }
   };
 
@@ -125,7 +123,6 @@ const InnerForm = (props: FormProps) => {
           <div>
             <TxButton
               type='submit'
-              size='large'
               label={isNew
                 ? 'Post a reply'
                 : 'Update a reply'

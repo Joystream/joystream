@@ -219,12 +219,12 @@ export class Thread extends JoyStructCustom({
     return this.getField('nr_in_category')
   }
 
-  get moderation(): ModerationAction | undefined {
-    return this.getField('moderation').unwrapOr(undefined)
+  get moderation(): ModerationAction | null {
+    return this.getField('moderation').unwrapOr(null)
   }
 
   get moderated(): boolean {
-    return this.moderation !== undefined
+    return this.moderation !== null
   }
 
   get num_unmoderated_posts(): u32 {
@@ -288,12 +288,12 @@ export class Post extends JoyStructCustom({
     return this.getString('current_text')
   }
 
-  get moderation(): ModerationAction | undefined {
-    return this.getField('moderation').unwrapOr(undefined)
+  get moderation(): ModerationAction | null {
+    return this.getField('moderation').unwrapOr(null)
   }
 
   get moderated(): boolean {
-    return this.moderation !== undefined
+    return this.moderation !== null
   }
 
   get text_change_history(): VecPostTextChange {
@@ -337,12 +337,12 @@ export class Reply extends JoyStructCustom({
     return this.getString('text')
   }
 
-  get moderation(): ModerationAction | undefined {
-    return this.getField('moderation').unwrapOr(undefined)
+  get moderation(): ModerationAction | null {
+    return this.getField('moderation').unwrapOr(null)
   }
 
   get moderated(): boolean {
-    return this.moderation !== undefined
+    return this.moderation !== null
   }
 }
 

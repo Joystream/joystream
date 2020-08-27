@@ -3,25 +3,23 @@ import React from 'react';
 import { Route, Switch } from 'react-router';
 import styled from 'styled-components';
 
-import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import { RouteProps as AppMainRouteProps } from '@polkadot/apps-routing/types';
+import { I18nProps } from '@polkadot/react-components/types';
 
-import './index.css';
-
+import style from './style';
 import translate from './translate';
 import { ForumProvider } from './Context';
 import { ForumSudoProvider } from './ForumSudo';
-import { NewSubcategory, EditCategory } from './EditCategory';
+import { NewSubcategory, NewCategory, EditCategory } from './EditCategory';
 import { NewThread, EditThread } from './EditThread';
 import { CategoryList, ViewCategoryById } from './CategoryList';
 import { ViewThreadById } from './ViewThread';
 import { LegacyPagingRedirect } from './LegacyPagingRedirect';
 import ForumRoot from './ForumRoot';
 
-const ForumContentWrapper = styled.main`
-  padding-top: 1.5rem;
-`;
+const ForumMain = styled.main`${style}`;
 
-type Props = AppProps & I18nProps & {};
+type Props = AppMainRouteProps & I18nProps;
 
 class App extends React.PureComponent<Props> {
   render () {
@@ -29,15 +27,15 @@ class App extends React.PureComponent<Props> {
     return (
       <ForumProvider>
         <ForumSudoProvider>
-          <ForumContentWrapper className='forum--App'>
+          <ForumMain className='forum--App'>
             <Switch>
+              <Route path={`${basePath}/categories/new`} component={NewCategory} />
               {/* routes for handling legacy format of forum paging within the routing path */}
               {/* translate page param to search query */}
               <Route path={`${basePath}/categories/:id/page/:page`} component={LegacyPagingRedirect} />
               <Route path={`${basePath}/threads/:id/page/:page`} component={LegacyPagingRedirect} />
 
               {/* <Route path={`${basePath}/sudo`} component={EditForumSudo} /> */}
-              {/* <Route path={`${basePath}/categories/new`} component={NewCategory} /> */}
 
               <Route path={`${basePath}/categories/:id/newSubcategory`} component={NewSubcategory} />
               <Route path={`${basePath}/categories/:id/newThread`} component={NewThread} />
@@ -50,7 +48,7 @@ class App extends React.PureComponent<Props> {
 
               <Route component={ForumRoot} />
             </Switch>
-          </ForumContentWrapper>
+          </ForumMain>
         </ForumSudoProvider>
       </ForumProvider>
     );

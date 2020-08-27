@@ -3,21 +3,22 @@ import { Button } from 'semantic-ui-react';
 import { Form, Field, withFormik, FormikProps, FieldProps } from 'formik';
 import * as Yup from 'yup';
 
-import TxButton from '@polkadot/joy-utils/TxButton';
+import { TxButton } from '@polkadot/joy-utils/react/components';
 import { SubmittableResult } from '@polkadot/api';
 import { InputAddress } from '@polkadot/react-components/index';
-import { withMulti } from '@polkadot/react-api/with';
+import { withMulti } from '@polkadot/react-api/hoc';
 
-import * as JoyForms from '@polkadot/joy-utils/forms';
+import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { Option } from '@polkadot/types/codec';
-import Section from '@polkadot/joy-utils/Section';
-import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
-import { withOnlySudo } from '@polkadot/joy-utils/Sudo';
+import { Section } from '@polkadot/joy-utils/react/components';
+import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
+import { withOnlySudo } from '@polkadot/joy-utils/react/hocs/guards';
 import { AccountId } from '@polkadot/types/interfaces';
-import { JoyError } from '@polkadot/joy-utils/JoyStatus';
-import AddressMini from '@polkadot/react-components/AddressMiniJoy';
+import { JoyError } from '@polkadot/joy-utils/react/components';
+import AddressMini from '@polkadot/react-components/AddressMini';
 import { withForumCalls } from './calls';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
+import { useApi } from '@polkadot/react-hooks';
 
 const buildSchema = () => Yup.object().shape({});
 
@@ -42,6 +43,7 @@ const InnerForm = (props: FormProps) => {
     isSubmitting,
     setSubmitting
   } = props;
+  const { api } = useApi();
 
   const {
     sudo
@@ -75,7 +77,7 @@ const InnerForm = (props: FormProps) => {
 
   const buildTxParams = () => {
     if (!isValid) return [];
-    return [new Option('AccountId', sudo)];
+    return [api.createType('Option<AccountId>', sudo)];
   };
 
   type SudoInputAddressProps = FieldProps<FormValues>; /* & InputAddressProps */
@@ -108,7 +110,6 @@ const InnerForm = (props: FormProps) => {
       <LabelledField {...props}>
         <TxButton
           type='submit'
-          size='large'
           label={isNotSet
             ? 'Set forum sudo'
             : 'Update forum sudo'
