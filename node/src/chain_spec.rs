@@ -282,7 +282,7 @@ pub fn testnet_genesis(
             default_paid_membership_fee: 100u128,
             members,
         }),
-        forum: Some(crate::forum_config::from_encoded::create(root_key)),
+        forum: Some(crate::forum_config::create(root_key)),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),
