@@ -235,13 +235,10 @@ decl_error! {
         InvalidVote,
 
         /// Trying to reveal vote that was not cast
-        NoVoteToReveal,
+        VoteNotExisting,
 
         /// Invalid time to release the locked stake
         InvalidTimeToRelease,
-
-        /// Trying to release not existing stake
-        NoStakeLocked,
     }
 }
 
@@ -700,16 +697,11 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             _ => return Err(Error::RevealingNotInProgress),
         };
 
-        // ensure account haven't voted yet
-        if !Votes::<T, I>::contains_key(&account_id) {
-            return Err(Error::NoVoteToReveal);
-        }
+        let sealed_vote = Self::ensure_vote_exists(&account_id)?;
 
         if vote_option_index >= &(stage_data.intermediate_results.len() as u64) {
             return Err(Error::InvalidVote);
         }
-
-        let sealed_vote = Votes::<T, I>::get(&account_id);
 
         // ensure vote was cast for the running referendum
         if cycle_id != sealed_vote.cycle_id {
@@ -752,12 +744,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;
 
-        // ensure there is some vote with locked stake
-        if !Votes::<T, I>::contains_key(&account_id) {
-            return Err(Error::NoStakeLocked);
-        }
-
-        let sealed_vote = Votes::<T, I>::get(&account_id);
+        let sealed_vote = Self::ensure_vote_exists(&account_id)?;
 
         // enable stake release only during
         if cycle_id == sealed_vote.cycle_id {
@@ -786,5 +773,16 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         Ok(account_id)
+    }
+
+    fn ensure_vote_exists(account_id: &T::AccountId) -> Result<CastVote<T::Hash, Balance<T, I>>, Error<T, I>> {
+        // ensure there is some vote with locked stake
+        if !Votes::<T, I>::contains_key(account_id) {
+            return Err(Error::VoteNotExisting);
+        }
+
+        let sealed_vote = Votes::<T, I>::get(account_id);
+
+        Ok(sealed_vote)
     }
 }
