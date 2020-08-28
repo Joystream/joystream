@@ -10,7 +10,7 @@ pub struct Entity<T: Trait> {
     /// The class id of this entity.
     class_id: T::ClassId,
 
-    /// What schemas under which this entity of a class is available, think
+    /// What schemas under which entity of the respective class is available, think
     /// v.2.0 Person schema for John, v3.0 Person schema for John
     /// Unlikely to be more than roughly 20ish, assuming schemas for a given class eventually stableize,
     /// or that very old schema are eventually removed.

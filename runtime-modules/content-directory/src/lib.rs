@@ -1,3 +1,116 @@
+//! # Content Directory Module
+//!
+//! The content directory is an on-chain index of all content and metadata,
+//! and related concepts - such as channels and playlists.
+//!
+//! - [`substrate_content_directory_module::Trait`](./trait.Trait.html)
+//! - [`Call`](./enum.Call.html)
+//! - [`Module`](./struct.Module.html)
+//!
+//! ## Overview
+//!
+//! The content directory provides functions for:
+//!
+//! - Creating/removal and managing curator groups
+//! - Creating classes and managing their permissions
+//! - Adding schemas to the class
+//! - Creating and removal of entities and managing their permissions
+//! - Adding schemas support to the respective class entities
+//! - Transfering entities ownership
+//! - Updating entity property values
+//!
+//! ## Terminology
+//!
+//! ### Class
+//!
+//! - **Class Properties:** All properties that have been used on this class across different class schemas.
+//! Unlikely to be more than roughly 20 properties per class, often less.
+//! For Person, think "height", "weight", etc.
+//!
+//! - **Schemas:**  All schemas, that are available for this class, think v0.0 Person, v.1.0 Person, etc.
+//!
+//! ### Entity
+//!
+//! - **Supported Schemas:**  What schemas under which entity of the respective class is available, think
+//! v.2.0 Person schema for John, v3.0 Person schema for John
+//! Unlikely to be more than roughly 20ish, assuming schemas for a given class eventually stableize,
+//! or that very old schema are eventually removed.
+//!
+//! - **Property Values:**  Values for properties, declared on class level,
+//! that are used in respective Class Entity after adding Schema support.
+//!
+//! ## Interface
+//!
+//! ### Dispatchable Functions
+//!
+//! #### Curator groups
+//!
+//! - `add_curator_group` - Add new curator group to the runtime storage
+//! - `remove_curator_group` - Remove curator group under given `curator_group_id` from runtime storage.
+//! The origin of this call must be a blog owner.
+//! - `set_curator_group_status` - Set activity status for curator group under given `curator_group_id`
+//! - `add_curator_to_group` - Add curator to curator group under given `curator_group_id`
+//! - `remove_curator_from_group` - Remove curator from a given curator group.
+//!
+//! #### Classes
+//!
+//! - `create_class` - Create new class with provided parameters
+//! - `add_maintainer_to_class` - Add curator group under given curator_group_id as class maintainer
+//! - `remove_maintainer_from_class` - Remove curator group under given curator_group_id from class maintainers set
+//! - `update_class_permissions` - Update class permissions under specific class_id
+//! - `add_class_schema` - Create new class schema from existing property ids and new properties
+//! - `update_class_schema_status` - Update schema status  under specific schema_id in class
+//!
+//! #### Entities
+//!
+//! - `create_entity` - Create new entity of respective class
+//! - `remove_entity` - Remove entity under provided entity_id
+//! - `update_entity_permissions` - Update entity permissions
+//! - `add_schema_support_to_entity` - add schema support to entity under given schema_id and provided property values
+//! - `update_entity_property_values` - Update entity property values with provided ones
+//! - `clear_entity_property_vector` - Clear property value vector under given entity_id & in class schema property id
+//! - `remove_at_entity_property_vector` - Remove value at given index_in_property_vector
+//! from property values vector under in_class schema property id
+//! - `insert_at_entity_property_vector` - Insert single input property values at given index in property vector
+//! into  property values vector under in class schema property id
+//!
+//! #### Others
+//!
+//! - `update_entity_creation_voucher` - Update/create new entity creation voucher for given entity controller with individual limit
+//! - `transaction` - This extrinsic allows a batch operation, which is atomic, over the following operations:
+//! **Entity creation**
+//! **Adding schema support to the entity**
+//! **Update property values of the entity**
+//!
+//! ## Usage
+//!
+//! The following example shows how to use the content directory module in your custom module.
+//!
+//! ### Prerequisites
+//!
+//! Import the content directory module into your custom module and derive the module configuration
+//! trait from the content directory trait.
+//!
+//! ### Add curator group
+//!
+//! ```
+//! use frame_support::{decl_module, assert_ok};
+//! use system::{self as system, ensure_signed};
+//!
+//! pub trait Trait: pallet_content_directory::Trait {}
+//!
+//! decl_module! {
+//!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//!         #[weight = 10_000_000]
+//!         pub fn add_curator_group(origin) -> Result<(), &'static str> {
+//!             <pallet_content_directory::Module<T>>::add_curator_group(origin)?;
+//!             Ok(())
+//!         }
+//!     }
+//! }
+//! # fn main() {}
+//! ```
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 #![recursion_limit = "256"]
@@ -28,6 +141,7 @@ use core::ops::AddAssign;
 
 use codec::{Codec, Decode, Encode};
 use frame_support::storage::IterableStorageMap;
+
 use frame_support::{
     decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
 };
@@ -334,88 +448,6 @@ decl_module! {
             Ok(())
         }
 
-        /// Add curator group under given `curator_group_id` as `Class` maintainer
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn add_maintainer_to_class(
-            origin,
-            class_id: T::ClassId,
-            curator_group_id: T::CuratorGroupId,
-        ) -> DispatchResult {
-
-            // Ensure given origin is lead
-            ensure_is_lead::<T>(origin)?;
-
-            // Ensure Class under provided class_id exist, retrieve corresponding one
-            let class = Self::ensure_known_class_id(class_id)?;
-
-            // Ensure CuratorGroup under provided curator_group_id exist, retrieve corresponding one
-            Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
-
-            // Ensure the max number of maintainers per Class limit not reached
-            let class_permissions = class.get_permissions_ref();
-
-            // Ensure max number of maintainers per Class constraint satisfied
-            Self::ensure_maintainers_limit_not_reached(class_permissions.get_maintainers())?;
-
-            // Ensure maintainer under provided curator_group_id is not added to the Class maintainers set yet
-            class_permissions.ensure_maintainer_does_not_exist(&curator_group_id)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Insert `curator_group_id` into `maintainers` set, associated with given `Class`
-            <ClassById<T>>::mutate(class_id, |class|
-                class.get_permissions_mut().get_maintainers_mut().insert(curator_group_id)
-            );
-
-            // Increment the number of classes, curator group under given `curator_group_id` maintains
-            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-                curator_group.increment_number_of_classes_maintained_count();
-            });
-
-            // Trigger event
-            Self::deposit_event(RawEvent::MaintainerAdded(class_id, curator_group_id));
-            Ok(())
-        }
-
-        /// Remove curator group under given `curator_group_id` from `Class` maintainers set
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn remove_maintainer_from_class(
-            origin,
-            class_id: T::ClassId,
-            curator_group_id: T::CuratorGroupId,
-        ) -> DispatchResult {
-
-            // Ensure given origin is lead
-            ensure_is_lead::<T>(origin)?;
-
-            // Ensure Class under given id exists, return corresponding one
-            let class = Self::ensure_known_class_id(class_id)?;
-
-            // Ensure maintainer under provided curator_group_id was previously added
-            // to the maintainers set, associated with corresponding Class
-            class.get_permissions_ref().ensure_maintainer_exists(&curator_group_id)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // Remove `curator_group_id` from `maintainers` set, associated with given `Class`
-            <ClassById<T>>::mutate(class_id, |class|
-                class.get_permissions_mut().get_maintainers_mut().remove(&curator_group_id)
-            );
-
-            // Decrement the number of classes, curator group under given `curator_group_id` maintains
-            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-                curator_group.decrement_number_of_classes_maintained_count();
-            });
-
-            // Trigger event
-            Self::deposit_event(RawEvent::MaintainerRemoved(class_id, curator_group_id));
-            Ok(())
-        }
-
         /// Updates or creates new `EntityCreationVoucher` for given `EntityController` with individual limit
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_entity_creation_voucher(
@@ -516,6 +548,88 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::ClassCreated(class_id));
+            Ok(())
+        }
+
+        /// Add curator group under given `curator_group_id` as `Class` maintainer
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn add_maintainer_to_class(
+            origin,
+            class_id: T::ClassId,
+            curator_group_id: T::CuratorGroupId,
+        ) -> DispatchResult {
+
+            // Ensure given origin is lead
+            ensure_is_lead::<T>(origin)?;
+
+            // Ensure Class under provided class_id exist, retrieve corresponding one
+            let class = Self::ensure_known_class_id(class_id)?;
+
+            // Ensure CuratorGroup under provided curator_group_id exist, retrieve corresponding one
+            Self::ensure_curator_group_under_given_id_exists(&curator_group_id)?;
+
+            // Ensure the max number of maintainers per Class limit not reached
+            let class_permissions = class.get_permissions_ref();
+
+            // Ensure max number of maintainers per Class constraint satisfied
+            Self::ensure_maintainers_limit_not_reached(class_permissions.get_maintainers())?;
+
+            // Ensure maintainer under provided curator_group_id is not added to the Class maintainers set yet
+            class_permissions.ensure_maintainer_does_not_exist(&curator_group_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Insert `curator_group_id` into `maintainers` set, associated with given `Class`
+            <ClassById<T>>::mutate(class_id, |class|
+                class.get_permissions_mut().get_maintainers_mut().insert(curator_group_id)
+            );
+
+            // Increment the number of classes, curator group under given `curator_group_id` maintains
+            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
+                curator_group.increment_number_of_classes_maintained_count();
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::MaintainerAdded(class_id, curator_group_id));
+            Ok(())
+        }
+
+        /// Remove curator group under given `curator_group_id` from `Class` maintainers set
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn remove_maintainer_from_class(
+            origin,
+            class_id: T::ClassId,
+            curator_group_id: T::CuratorGroupId,
+        ) -> DispatchResult {
+
+            // Ensure given origin is lead
+            ensure_is_lead::<T>(origin)?;
+
+            // Ensure Class under given id exists, return corresponding one
+            let class = Self::ensure_known_class_id(class_id)?;
+
+            // Ensure maintainer under provided curator_group_id was previously added
+            // to the maintainers set, associated with corresponding Class
+            class.get_permissions_ref().ensure_maintainer_exists(&curator_group_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Remove `curator_group_id` from `maintainers` set, associated with given `Class`
+            <ClassById<T>>::mutate(class_id, |class|
+                class.get_permissions_mut().get_maintainers_mut().remove(&curator_group_id)
+            );
+
+            // Decrement the number of classes, curator group under given `curator_group_id` maintains
+            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
+                curator_group.decrement_number_of_classes_maintained_count();
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::MaintainerRemoved(class_id, curator_group_id));
             Ok(())
         }
 
@@ -842,7 +956,7 @@ decl_module! {
         // The next set of extrinsics can be invoked by anyone who can properly sign for provided value of `Actor<T>`.
         // ======
 
-        /// Create an entity.
+        /// Create entity.
         /// If someone is making an entity of this class for first time,
         /// then a voucher is also added with the class limit as the default limit value.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -1266,7 +1380,7 @@ decl_module! {
         }
 
         /// Remove value at given `index_in_property_vector`
-        /// from `PropertyValueVec` under in_`class_schema_property_id`
+        /// from `PropertyValueVec` under `in_class_schema_property_id`
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_at_entity_property_vector(
             origin,
@@ -1478,6 +1592,7 @@ decl_module! {
             Ok(())
         }
 
+        /// Batch transaction
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn transaction(origin, actor: Actor<T>, operations: Vec<OperationType<T>>) -> DispatchResult {
 
