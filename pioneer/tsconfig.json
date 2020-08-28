@@ -2,11 +2,7 @@
   "extends": "@polkadot/dev/config/tsconfig",
   "exclude": [
     "build/**/*",
-    "**/build/**/*",
-    "packages/old-apps/**",
-    "packages/joy-help/**/*",
-    "packages/joy-settings/**/*",
-    "packages/joy-utils-old/**/*"
+    "**/build/**/*"
   ],
   "compilerOptions": {
     "jsx": "react",
