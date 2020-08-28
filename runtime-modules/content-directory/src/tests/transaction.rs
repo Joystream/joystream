@@ -7,8 +7,7 @@ fn transaction_success() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create single reference property
-        let property_type_reference =
-            SingleValuePropertyType(Type::Reference(FIRST_CLASS_ID, true));
+        let property_type_reference = Type::Reference(FIRST_CLASS_ID, true);
         let property = Property::<Runtime>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize,
             PropertyType::Single(property_type_reference),

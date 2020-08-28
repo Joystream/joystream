@@ -973,12 +973,12 @@ impl<T: Trait> PropertyType<T> {
     }
 
     pub fn single_text(text_max_len: TextMaxLength) -> PropertyType<Runtime> {
-        let text_type = SingleValuePropertyType(Type::<Runtime>::Text(text_max_len));
+        let text_type = Type::<Runtime>::Text(text_max_len);
         PropertyType::<Runtime>::Single(text_type)
     }
 
     pub fn single_text_hash(text_hash_max_len: HashedTextMaxLength) -> PropertyType<Runtime> {
-        let text_type = SingleValuePropertyType(Type::<Runtime>::Hash(text_hash_max_len));
+        let text_type = Type::<Runtime>::Hash(text_hash_max_len);
         PropertyType::<Runtime>::Single(text_type)
     }
 
