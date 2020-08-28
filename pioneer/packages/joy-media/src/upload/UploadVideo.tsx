@@ -417,7 +417,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
     <Form className='ui form JoyForm EditMetaForm'>
       {tabs}
-      <LabelledField style={{ marginTop: '1rem' }} {...props}>
+      <LabelledField style={{ marginTop: '1rem' }} {...props} flex>
         {!entity
           ? renderTransactionButton()
           : renderUpdateEntityButton()

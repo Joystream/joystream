@@ -179,7 +179,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
         {formFields()}
 
-        <LabelledField style={{ marginTop: '1rem' }} {...props}>
+        <LabelledField style={{ marginTop: '1rem' }} {...props} flex>
           {renderMainButton()}
           <Button
             type='button'

@@ -183,7 +183,7 @@ const InnerForm = (props: FormProps) => {
         <Field component='textarea' id='text' name='text' disabled={isSubmitting} rows={5} placeholder='Type here. You can use Markdown.' />
       </LabelledField>
 
-      <LabelledField {...props}>
+      <LabelledField {...props} flex>
         <TxButton
           type='submit'
           label={isNew

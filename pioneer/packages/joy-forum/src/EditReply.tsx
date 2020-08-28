@@ -122,7 +122,7 @@ const InnerForm = (props: FormProps) => {
 
       <LabelledField {...props}>
         <FormActionsContainer>
-          <div>
+          <div style={{ display: 'flex' }}>
             <TxButton
               type='submit'
               label={isNew

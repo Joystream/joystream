@@ -104,7 +104,7 @@ const InnerForm = (props: FormProps) => {
         <Field component='textarea' id='rationale' name='rationale' disabled={isSubmitting} rows={5} placeholder='Type a retionale here. You can use Markdown.' />
       </LabelledField>
 
-      <LabelledField {...props}>
+      <LabelledField {...props} flex>
         <TxButton
           type='submit'
           label={'Moderate'}

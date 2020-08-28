@@ -76,9 +76,6 @@ const StyledGenericProposalForm = styled.div`
 
   .form-buttons {
     display: flex;
-    button {
-      margin-right: 0.5em;
-    }
   }
 
   .ui.dropdown .ui.avatar.image {
@@ -235,15 +232,14 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
               onClick={onTxButtonClick} // This replaces standard submit
             />
           ) : (
-            <Button type='submit' color='blue' loading={isSubmitting}>
+            <Button type='submit' size='large' color='blue' loading={isSubmitting}>
               <Icon name='paper plane' />
               Submit
             </Button>
           )}
 
-          <Button type='button' color='grey' onClick={handleReset}>
-            <Icon name='times' />
-            Clear
+          <Button type='button' size='large' onClick={handleReset}>
+            Reset form
           </Button>
         </div>
       </Form>

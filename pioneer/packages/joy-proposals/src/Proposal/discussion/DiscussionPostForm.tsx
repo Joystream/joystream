@@ -86,7 +86,7 @@ const DiscussionPostFormInner = (props: InnerProps) => {
           rows={5}
           placeholder='Content of the post...' />
       </LabelledField>
-      <LabelledField invisibleLabel {...props}>
+      <LabelledField invisibleLabel {...props} flex>
         <TxButton
           type='submit'
           label={isEditForm ? 'Update' : 'Add Post'}

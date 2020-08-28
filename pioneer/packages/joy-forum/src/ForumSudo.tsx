@@ -112,7 +112,7 @@ const InnerForm = (props: FormProps) => {
         <Field component={SudoInputAddress} id='sudo' name='sudo' disabled={isSubmitting} />
       </LabelledField>
 
-      <LabelledField {...props}>
+      <LabelledField {...props} flex>
         <TxButton
           type='submit'
           label={isNotSet
