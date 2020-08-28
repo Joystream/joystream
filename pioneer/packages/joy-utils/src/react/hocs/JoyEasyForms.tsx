@@ -1,12 +1,12 @@
 import React from 'react';
 import { Dropdown, DropdownItemProps, DropdownProps } from 'semantic-ui-react';
 import { FormikProps, Field } from 'formik';
-import * as JoyForms from '@polkadot/joy-utils/forms';
+import * as JoyForms from '../components/forms';
 import { SubmittableResult } from '@polkadot/api';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
-import { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
+import { OnTxButtonClick } from '../components/TxButton';
 import isEqual from 'lodash/isEqual';
-import { componentName } from '@polkadot/joy-utils/react/helpers';
+import { componentName } from '../helpers';
 
 export type FormCallbacks = {
   onSubmit: OnTxButtonClick;
@@ -37,7 +37,7 @@ type EasyTextProps<OuterProps, FormValues> =
 type EasyFieldProps<OuterProps, FormValues> =
   BaseFieldProps<OuterProps, FormValues> &
   JoyForms.LabelledProps<FormValues> & {
-    fieldProps: any;
+    fieldProps: Record<string, unknown>;
   }
 
 type EasyDropdownProps<OuterProps, FormValues> =
@@ -74,6 +74,7 @@ export function withEasyForm<OuterProps, FormValues>
 
   function EasyText (props: EasyTextProps<OuterProps, FormValues>) {
     const { field: f } = props;
+
     return !f ? null : <LabelledText name={f.id} label={f.name} tooltip={f.description} required={f.required} {...props} />;
   }
 
@@ -102,7 +103,7 @@ export function withEasyForm<OuterProps, FormValues>
   const EasyDropdown = (props: EasyDropdownProps<OuterProps, FormValues>) => {
     const { field: f, options = [] } = props;
     const id = f.id as string;
-    const value = (props.values as any)[id] || '';
+    const value = (props.values as Record<string, unknown>)[id] || '';
 
     return <EasyField {...props} fieldProps={{
       component: Dropdown,
@@ -133,6 +134,7 @@ export function withEasyForm<OuterProps, FormValues>
 
       const isFieldChanged = (field: FieldName | FieldObject): boolean => {
         const fieldName = typeof field === 'string' ? field : (field as FieldObject).id;
+
         return (
           dirty &&
           touched[fieldName] === true &&
@@ -154,6 +156,7 @@ export function withEasyForm<OuterProps, FormValues>
 
       const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
         setSubmitting(false);
+
         if (txResult === null) {
           // Tx cancelled
 
@@ -181,6 +184,8 @@ export function withEasyForm<OuterProps, FormValues>
 
       return <Component {...allProps} />;
     };
+
   ResultComponent.displayName = `withEasyForm(${componentName(Component)})`;
+
   return ResultComponent;
 }
