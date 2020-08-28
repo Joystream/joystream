@@ -6,7 +6,7 @@ import { StakeId } from '../stake'
 
 import { GenericJoyStreamRoleSchema } from './schemas/role.schema.typings'
 
-import ajv from 'ajv'
+import Ajv from 'ajv'
 
 import * as role_schema_json from './schemas/role.schema.json'
 import { RegistryTypes } from '@polkadot/types/types'
@@ -220,7 +220,7 @@ export class StakingPolicy
     review_period_expired_unstaking_period_length: Option.with(u32),
   })
   implements IStakingPolicy {}
-export const schemaValidator: ajv.ValidateFunction = new ajv({ allErrors: true }).compile(role_schema_json)
+export const schemaValidator: Ajv.ValidateFunction = new Ajv({ allErrors: true }).compile(role_schema_json)
 
 const OpeningHRTFallback: GenericJoyStreamRoleSchema = {
   version: 1,
@@ -355,6 +355,7 @@ export const hiringTypes: RegistryTypes = {
   InactiveApplicationStage,
   UnstakingApplicationStage,
   ApplicationDeactivationCause,
+  StakingAmountLimitMode,
 }
 
 export default hiringTypes

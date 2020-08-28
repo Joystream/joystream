@@ -153,7 +153,7 @@ export class ProposalId extends u32 {}
 
 export class SpendingParams extends Tuple.with(['Balance', 'AccountId']) {}
 
-class SetLeadParams extends Tuple.with([MemberId, AccountId]) {}
+export class SetLeadParams extends Tuple.with([MemberId, AccountId]) {}
 
 export class SetLead extends Option.with(SetLeadParams) {}
 
@@ -287,9 +287,11 @@ export const proposalsTypes = {
   TerminateRoleParameters,
   // Expose in registry for api.createType purposes:
   ActiveStake,
-  FinalizationData,
+  Finalized,
   ProposalDecisionStatus,
   ExecutionFailed,
+  Approved,
+  SetLeadParams,
 }
 
 export default proposalsTypes
