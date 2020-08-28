@@ -4,7 +4,7 @@ use crate::{GenesisConfig, Trait};
 use common::currency::BalanceOf;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Member<MemberId, AccountId, Moment> {
     pub member_id: MemberId,
     pub root_account: AccountId,

@@ -128,7 +128,7 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
                         ],
                         crate::proposals_config::development(),
-                        vec![],
+                        crate::initial_members::none(),
                     )
                 },
                 Vec::new(),
@@ -163,7 +163,7 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
                         ],
                         crate::proposals_config::development(),
-                        vec![],
+                        crate::initial_members::none(),
                     )
                 },
                 Vec::new(),

@@ -24,7 +24,7 @@ use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
 use structopt::StructOpt;
 
 use joystream_node::{
-    chain_spec::{self, chain_spec_properties, AccountId},
+    chain_spec::{self, chain_spec_properties, membership, AccountId, Moment},
     initial_members, proposals_config,
 };
 use sc_chain_spec::ChainType;
@@ -58,6 +58,9 @@ enum ChainSpecBuilder {
         /// The path where the chain spec should be saved.
         #[structopt(long, short, default_value = "./chain_spec.json")]
         chain_spec_path: PathBuf,
+        /// The path to an initial members data
+        #[structopt(long, short)]
+        initial_members_path: Option<PathBuf>,
     },
     /// Create a new chain spec with the given number of authorities and endowed
     /// accounts. Random keys will be generated as required.
@@ -78,6 +81,9 @@ enum ChainSpecBuilder {
         /// `auth-0`, `auth-1`, etc.
         #[structopt(long, short)]
         keystore_path: Option<PathBuf>,
+        /// The path to an initial members data
+        #[structopt(long, short)]
+        initial_members_path: Option<PathBuf>,
     },
 }
 
@@ -93,12 +99,27 @@ impl ChainSpecBuilder {
             } => chain_spec_path.as_path(),
         }
     }
+
+    /// Returns the path where the chain spec should be saved.
+    fn initial_members_path(&self) -> &Option<PathBuf> {
+        match self {
+            ChainSpecBuilder::New {
+                initial_members_path,
+                ..
+            } => initial_members_path,
+            ChainSpecBuilder::Generate {
+                initial_members_path,
+                ..
+            } => initial_members_path,
+        }
+    }
 }
 
 fn genesis_constructor(
     authority_seeds: &[String],
     endowed_accounts: &[AccountId],
     sudo_account: &AccountId,
+    genesis_members: &Vec<membership::genesis::Member<u64, AccountId, Moment>>,
 ) -> chain_spec::GenesisConfig {
     let authorities = authority_seeds
         .iter()
@@ -111,7 +132,7 @@ fn genesis_constructor(
         sudo_account.clone(),
         endowed_accounts.to_vec(),
         proposals_config::default(),
-        initial_members::initial_members(),
+        genesis_members.clone(),
     )
 }
 
@@ -119,6 +140,7 @@ fn generate_chain_spec(
     authority_seeds: Vec<String>,
     endowed_accounts: Vec<String>,
     sudo_account: String,
+    genesis_members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
 ) -> Result<String, String> {
     let parse_account = |address: &String| {
         AccountId::from_string(address)
@@ -143,7 +165,14 @@ fn generate_chain_spec(
         "Joystream Testnet",
         "joy_testnet",
         ChainType::Development,
-        move || genesis_constructor(&authority_seeds, &endowed_accounts, &sudo_account),
+        move || {
+            genesis_constructor(
+                &authority_seeds,
+                &endowed_accounts,
+                &sudo_account,
+                &genesis_members,
+            )
+        },
         vec![],
         Some(telemetry_endpoints),
         Some(&*"/joy/testnet/0"),
@@ -213,6 +242,13 @@ fn main() -> Result<(), String> {
 
     let builder = ChainSpecBuilder::from_args();
     let chain_spec_path = builder.chain_spec_path().to_path_buf();
+    let initial_members_path = builder.initial_members_path();
+
+    let members = if let Some(path) = initial_members_path {
+        initial_members::from_json(path.as_path())
+    } else {
+        initial_members::none()
+    };
 
     let (authority_seeds, endowed_accounts, sudo_account) = match builder {
         ChainSpecBuilder::Generate {
@@ -254,7 +290,7 @@ fn main() -> Result<(), String> {
         } => (authority_seeds, endowed_accounts, sudo_account),
     };
 
-    let json = generate_chain_spec(authority_seeds, endowed_accounts, sudo_account)?;
+    let json = generate_chain_spec(authority_seeds, endowed_accounts, sudo_account, members)?;
 
     fs::write(chain_spec_path, json).map_err(|err| err.to_string())
 }
