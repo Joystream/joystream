@@ -3824,6 +3824,7 @@ dependencies = [
  "pallet-timestamp",
  "pallet-versioned-store",
  "parity-scale-codec",
+ "serde",
  "sp-arithmetic",
  "sp-core",
  "sp-io",

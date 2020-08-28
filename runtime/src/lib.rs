@@ -49,7 +49,7 @@ use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, Membershi
 
 use content_working_group as content_wg;
 use governance::{council, election};
-use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
+use storage::data_object_storage_registry;
 
 // Node dependencies
 pub use common;
@@ -60,7 +60,9 @@ pub use membership;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_codex::ProposalsConfigParameters;
+pub use storage::{data_directory, data_object_type_registry};
 pub use versioned_store;
+pub use versioned_store_permissions;
 pub use working_group;
 
 /// This runtime version.

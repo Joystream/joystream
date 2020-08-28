@@ -40,6 +40,7 @@ use node_runtime::{
 // Exported to be used by chain-spec-builder
 pub use node_runtime::{membership, AccountId, ForumConfig, GenesisConfig, Moment};
 
+pub mod content_config;
 pub mod forum_config;
 pub mod initial_members;
 pub mod proposals_config;
@@ -134,6 +135,7 @@ impl Alternative {
                         proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
+                        content_config::empty_versioned_store_config(),
                     )
                 },
                 Vec::new(),
@@ -170,6 +172,7 @@ impl Alternative {
                         proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
+                        content_config::empty_versioned_store_config(),
                     )
                 },
                 Vec::new(),
@@ -213,6 +216,7 @@ pub fn testnet_genesis(
     cpcp: node_runtime::ProposalsConfigParameters,
     members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
     forum_config: ForumConfig,
+    versioned_store_config: VersionedStoreConfig,
 ) -> GenesisConfig {
     const CENTS: Balance = 1;
     const DOLLARS: Balance = 100 * CENTS;
@@ -245,9 +249,7 @@ pub fn testnet_genesis(
             slash_reward_fraction: Perbill::from_percent(10),
             ..Default::default()
         }),
-        pallet_sudo: Some(SudoConfig {
-            key: root_key.clone(),
-        }),
+        pallet_sudo: Some(SudoConfig { key: root_key }),
         pallet_babe: Some(BabeConfig {
             authorities: vec![],
         }),
@@ -303,16 +305,7 @@ pub fn testnet_genesis(
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
         }),
-        versioned_store: Some(VersionedStoreConfig {
-            class_by_id: vec![],
-            entity_by_id: vec![],
-            next_class_id: 1,
-            next_entity_id: 1,
-            property_name_constraint: new_vs_validation(1, 99),
-            property_description_constraint: new_vs_validation(1, 999),
-            class_name_constraint: new_vs_validation(1, 99),
-            class_description_constraint: new_vs_validation(1, 999),
-        }),
+        versioned_store: Some(versioned_store_config),
         content_wg: Some(ContentWorkingGroupConfig {
             mint_capacity: 100_000,
             curator_opening_by_id: vec![],
