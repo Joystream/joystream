@@ -62,25 +62,6 @@ fn referendum_start_forbidden_after_start() {
     });
 }
 
-/// Test that referendum can't start with zero options.
-#[test]
-fn referendum_start_no_options() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        let origin = OriginType::Signed(USER_ADMIN);
-        let options = 0;
-        let winning_target_count = 1;
-
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options,
-            winning_target_count,
-            Err(Error::NoReferendumOptions),
-        );
-    });
-}
-
 /// Test that referendum can't be started with too many options.
 #[test]
 fn referendum_start_too_many_options() {

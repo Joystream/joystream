@@ -319,62 +319,70 @@ impl InstanceMocks<Runtime, Instance0> {
         winning_target_count: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
+        let extra_winning_target_count = winning_target_count - 1;
+        let extra_options_count = options_count - extra_winning_target_count - 1;
+
         // check method returns expected result
         assert_eq!(
             Module::<Runtime, Instance0>::start_referendum(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
-                options_count,
-                winning_target_count,
+                extra_options_count,
+                extra_winning_target_count,
             ),
             expected_result,
         );
 
-        Self::start_referendum_inner(options_count, winning_target_count, expected_result)
+        Self::start_referendum_inner(extra_options_count, extra_winning_target_count, expected_result)
     }
 
     pub fn start_referendum_manager(
-        options: u64,
+        options_count: u64,
         winning_target_count: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
+        let extra_winning_target_count = winning_target_count - 1;
+        let extra_options_count = options_count - extra_winning_target_count - 1;
+
         // check method returns expected result
         assert_eq!(
             <Module::<Runtime, Instance0> as ReferendumManager<Runtime, Instance0>>::start_referendum(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(OriginType::Root),
-                options.clone(),
-                winning_target_count
+                extra_options_count,
+                extra_winning_target_count,
             ),
             expected_result,
         );
 
-        Self::start_referendum_inner(options, winning_target_count, expected_result)
+        Self::start_referendum_inner(extra_options_count, extra_winning_target_count, expected_result)
     }
 
     fn start_referendum_inner(
-        options_count: u64,
-        winning_target_count: u64,
+        extra_options_count: u64,
+        extra_winning_target_count: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) {
         if expected_result.is_err() {
             return;
         }
 
+        let total_winners = extra_winning_target_count + 1;
+        let total_options = total_winners + extra_options_count;
         let block_number = system::Module::<Runtime>::block_number();
 
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Voting(ReferendumStageVoting {
                 started: block_number,
-                winning_target_count,
-                options_count,
+                extra_options_count,
+                extra_winning_target_count,
             }),
         );
 
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
             TestEvent::from(RawEvent::ReferendumStarted(
-                options_count,
-                winning_target_count,
+                total_options,
+                total_winners,
             ))
         );
     }
