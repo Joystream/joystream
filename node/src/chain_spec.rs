@@ -38,7 +38,7 @@ use node_runtime::{
 };
 
 // Exported to be used by chain-spec-builder
-pub use node_runtime::{membership, AccountId, GenesisConfig, Moment};
+pub use node_runtime::{membership, AccountId, ForumConfig, GenesisConfig, Moment};
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -129,6 +129,9 @@ impl Alternative {
                         ],
                         crate::proposals_config::development(),
                         crate::initial_members::none(),
+                        crate::forum_config::empty(get_account_id_from_seed::<sr25519::Public>(
+                            "Alice",
+                        )),
                     )
                 },
                 Vec::new(),
@@ -164,6 +167,9 @@ impl Alternative {
                         ],
                         crate::proposals_config::development(),
                         crate::initial_members::none(),
+                        crate::forum_config::empty(get_account_id_from_seed::<sr25519::Public>(
+                            "Alice",
+                        )),
                     )
                 },
                 Vec::new(),
@@ -206,6 +212,7 @@ pub fn testnet_genesis(
     endowed_accounts: Vec<AccountId>,
     cpcp: node_runtime::ProposalsConfigParameters,
     members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
+    forum_config: ForumConfig,
 ) -> GenesisConfig {
     const CENTS: Balance = 1;
     const DOLLARS: Balance = 100 * CENTS;
@@ -282,7 +289,7 @@ pub fn testnet_genesis(
             default_paid_membership_fee: 100u128,
             members,
         }),
-        forum: Some(crate::forum_config::create(root_key)),
+        forum: Some(forum_config),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),

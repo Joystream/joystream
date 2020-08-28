@@ -5,6 +5,7 @@ use node_runtime::{
     AccountId, BlockNumber, ForumConfig, Moment, PostId, ThreadId,
 };
 use serde::Deserialize;
+use std::{fs, path::Path};
 
 fn new_validation(min: u16, max_min_diff: u16) -> InputValidationLengthConstraint {
     InputValidationLengthConstraint { min, max_min_diff }
@@ -39,13 +40,26 @@ fn decode_thread(encoded: String) -> Thread<BlockNumber, Moment, AccountId, Thre
     Decode::decode(&mut encoded.as_slice()).unwrap()
 }
 
-fn parse_forum_json() -> serde_json::Result<ForumData> {
-    let data = include_str!("../res/forum_nicaea_encoded.json");
-    serde_json::from_str(data)
+fn parse_forum_json(data_file: &Path) -> ForumData {
+    let data = fs::read_to_string(data_file).expect("Failed reading file");
+    serde_json::from_str(&data).expect("failed parsing members data")
 }
 
-pub fn create(forum_sudo: AccountId) -> ForumConfig {
-    let forum_data = parse_forum_json().expect("failed loading forum data");
+pub fn from_json(forum_sudo: AccountId, data_file: &Path) -> ForumConfig {
+    let forum_data = parse_forum_json(data_file);
+    create(forum_sudo, forum_data)
+}
+
+pub fn empty(forum_sudo: AccountId) -> ForumConfig {
+    let forum_data = ForumData {
+        categories: vec![],
+        threads: vec![],
+        posts: vec![],
+    };
+    create(forum_sudo, forum_data)
+}
+
+fn create(forum_sudo: AccountId, forum_data: ForumData) -> ForumConfig {
     let first_id = 1;
 
     let next_category_id: CategoryId = forum_data.categories.last().map_or(first_id, |category| {
