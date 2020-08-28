@@ -40,6 +40,10 @@ use node_runtime::{
 // Exported to be used by chain-spec-builder
 pub use node_runtime::{membership, AccountId, ForumConfig, GenesisConfig, Moment};
 
+pub mod forum_config;
+pub mod initial_members;
+pub mod proposals_config;
+
 type AccountPublic = <Signature as Verify>::Signer;
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
@@ -127,11 +131,9 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
                         ],
-                        crate::proposals_config::development(),
-                        crate::initial_members::none(),
-                        crate::forum_config::empty(get_account_id_from_seed::<sr25519::Public>(
-                            "Alice",
-                        )),
+                        proposals_config::development(),
+                        initial_members::none(),
+                        forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                     )
                 },
                 Vec::new(),
@@ -165,11 +167,9 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
                         ],
-                        crate::proposals_config::development(),
-                        crate::initial_members::none(),
-                        crate::forum_config::empty(get_account_id_from_seed::<sr25519::Public>(
-                            "Alice",
-                        )),
+                        proposals_config::development(),
+                        initial_members::none(),
+                        forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                     )
                 },
                 Vec::new(),

@@ -1,4 +1,4 @@
-use super::chain_spec::{membership, AccountId, Moment};
+use node_runtime::{membership, AccountId, Moment};
 use std::{fs, path::Path};
 
 pub fn from_json(data_file: &Path) -> Vec<membership::genesis::Member<u64, AccountId, Moment>> {

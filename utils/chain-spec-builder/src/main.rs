@@ -23,10 +23,10 @@ use ansi_term::Style;
 use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
 use structopt::StructOpt;
 
-use joystream_node::{
-    chain_spec::{self, chain_spec_properties, AccountId},
-    forum_config, initial_members, proposals_config,
+use joystream_node::chain_spec::{
+    self, chain_spec_properties, forum_config, initial_members, proposals_config, AccountId,
 };
+
 use sc_chain_spec::ChainType;
 use sc_keystore::Store as Keystore;
 use sc_telemetry::TelemetryEndpoints;
