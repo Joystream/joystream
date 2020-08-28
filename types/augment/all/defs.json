@@ -734,7 +734,7 @@
     "ProposalDetails": {
         "_enum": {
             "Text": "Text",
-            "RuntimeUpgrade": "Vec<u8>",
+            "RuntimeUpgrade": "Bytes",
             "SetElectionParameters": "ElectionParameters",
             "Spending": "(Balance,AccountId)",
             "SetLead": "Option<SetLeadParams>",
@@ -755,7 +755,7 @@
     "ProposalDetailsOf": {
         "_enum": {
             "Text": "Text",
-            "RuntimeUpgrade": "Vec<u8>",
+            "RuntimeUpgrade": "Bytes",
             "SetElectionParameters": "ElectionParameters",
             "Spending": "(Balance,AccountId)",
             "SetLead": "Option<SetLeadParams>",
