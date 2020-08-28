@@ -345,6 +345,48 @@ fn reveal_no_vote() {
     });
 }
 
+/// Test that salt used to calculate commitment isn't too long.
+#[test]
+fn reveal_salt_too_long() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let max_salt_length = <Runtime as Trait<Instance0>>::MaxSaltLength::get();
+        let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
+        let account_id = USER_ADMIN;
+        let origin = OriginType::Signed(account_id);
+        let options = 3;
+        let winning_target_count = 1;
+
+        let mut salt = vec![];
+        for _ in 0..(max_salt_length / 8 + 1) {
+            salt.append(&mut MockUtils::generate_salt());
+        }
+
+        let option_to_vote_for = 1;
+        let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
+        let (commitment, _) = MockUtils::calculate_commitment_custom_salt(&account_id, &option_to_vote_for, &salt);
+
+        Mocks::start_referendum_extrinsic(
+            origin.clone(),
+            options.clone(),
+            winning_target_count,
+            Ok(()),
+        );
+        Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
+        MockUtils::increase_block_number(voting_stage_duration + 1);
+
+        Mocks::check_voting_finished(options, winning_target_count);
+        Mocks::reveal_vote(
+            origin.clone(),
+            account_id,
+            salt,
+            option_to_vote_for,
+            Err(Error::SaltTooLong),
+        );
+    });
+}
+
 /// Test that revealing of a vote for a not-existing option is rejected.
 #[test]
 fn reveal_invalid_vote() {

@@ -122,6 +122,9 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
     /// Maximum number of options in one referendum.
     type MaxReferendumOptions: Get<u64>;
 
+    /// Maximum length of vote commitment salt.
+    type MaxSaltLength: Get<u64>;
+
     /// Currency for referendum staking.
     type Currency: LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
 
@@ -248,6 +251,9 @@ decl_error! {
 
         /// Invalid time to release the locked stake
         InvalidTimeToRelease,
+
+        /// Salt is too long
+        SaltTooLong,
     }
 }
 
@@ -708,6 +714,11 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         // ensure vote was cast for the running referendum
         if cycle_id != cast_vote.cycle_id {
             return Err(Error::InvalidVote);
+        }
+
+        // ensure salt is not too long
+        if salt.len() as u64 > T::MaxSaltLength::get() {
+            return Err(Error::SaltTooLong);
         }
 
         // ensure commitment corresponds to salt and vote option

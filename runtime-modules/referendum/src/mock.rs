@@ -45,6 +45,7 @@ pub struct Instance0;
 
 parameter_types! {
     pub const MaxReferendumOptions: u64 = 10;
+    pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const VoteStageDuration: u64 = 5;
     pub const RevealStageDuration: u64 = 5;
     pub const MinimumStake: u64 = 10000;
@@ -59,6 +60,7 @@ impl Trait<Instance0> for Runtime {
     type Event = TestEvent;
 
     type MaxReferendumOptions = MaxReferendumOptions;
+    type MaxSaltLength = MaxSaltLength;
 
     type Currency = pallet_balances::Module<Runtime>;
     type LockId = LockId;
@@ -284,16 +286,36 @@ where
         vote_option_index: &u64,
     ) -> (T::Hash, Vec<u8>) {
         let cycle_id = CurrentCycleId::<I>::get();
-        Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index)
+        Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index, None)
+    }
+
+    pub fn calculate_commitment_custom_salt(
+        account_id: &<T as system::Trait>::AccountId,
+        vote_option_index: &u64,
+        custom_salt: &[u8],
+    ) -> (T::Hash, Vec<u8>) {
+        let cycle_id = CurrentCycleId::<I>::get();
+        Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index, Some(custom_salt))
+    }
+
+    pub fn generate_salt() -> Vec<u8> {
+        let mut rng = rand::thread_rng();
+
+        rng.gen::<u64>().to_be_bytes().to_vec()
     }
 
     pub fn calculate_commitment_for_cycle(
         account_id: &<T as system::Trait>::AccountId,
         cycle_id: &u64,
         vote_option_index: &u64,
+        custom_salt: Option<&[u8]>,
     ) -> (T::Hash, Vec<u8>) {
-        let mut rng = rand::thread_rng();
-        let salt = rng.gen::<u64>().to_be_bytes().to_vec();
+
+        let salt = match custom_salt {
+            Some(tmp_salt) => tmp_salt.to_vec(),
+            None => Self::generate_salt(),
+        };
+
         (
             <Module<T, I> as ReferendumManager<T, I>>::calculate_commitment(
                 account_id,
@@ -301,7 +323,7 @@ where
                 cycle_id,
                 vote_option_index,
             ),
-            salt,
+            salt.to_vec(),
         )
     }
 }
