@@ -15,7 +15,7 @@ use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, traits::Get, Parameter,
     StorageValue,
 };
-use sp_arithmetic::traits::{BaseArithmetic};
+use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use std::marker::PhantomData;
 use system::ensure_signed;
@@ -29,15 +29,23 @@ mod tests;
 /// Possible referendum states.
 #[derive(Encode, Decode, PartialEq, Eq, Debug)]
 pub enum ReferendumStage<BlockNumber, VotePower> {
-    Inactive,
+    Inactive(ReferendumStageInactive<VotePower>),
     Voting(ReferendumStageVoting<BlockNumber>),
     Revealing(ReferendumStageRevealing<BlockNumber, VotePower>),
 }
 
 impl<BlockNumber, VotePower> Default for ReferendumStage<BlockNumber, VotePower> {
     fn default() -> ReferendumStage<BlockNumber, VotePower> {
-        ReferendumStage::Inactive
+        ReferendumStage::Inactive(ReferendumStageInactive {
+            previous_cycle_result: ReferendumResult::NoVotesRevealed,
+        })
     }
+}
+
+/// Representation for inactive stage state.
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
+pub struct ReferendumStageInactive<VotePower> {
+    previous_cycle_result: ReferendumResult<u64, VotePower>,
 }
 
 /// Representation for voting stage state.
@@ -158,8 +166,10 @@ decl_storage! {
         /// Index of the current referendum cycle. It is incremented everytime referendum ends.
         pub CurrentCycleId get(fn current_cycle_id) config(): u64;
 
+        /*
         /// Last cycle winning option(s)
         pub PreviousCycleResult get(fn previous_cycle_result) config(): ReferendumResult<u64, <T as Trait<I>>::VotePower>;
+        */
     }
 
     /* This might be needed in some cases
@@ -350,7 +360,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     /// Checkout expire of referendum stage.
     fn try_progress_stage(now: T::BlockNumber) {
         match Stage::<T, I>::get() {
-            ReferendumStage::Inactive => (),
+            ReferendumStage::Inactive(_) => (),
             ReferendumStage::Voting(stage_data) => {
                 if now == stage_data.started + T::VoteStageDuration::get() {
                     Self::end_voting_period(stage_data);
@@ -528,10 +538,11 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         referendum_result
     }
 
-    fn reset_referendum(last_cycle_result: &ReferendumResult<u64, T::VotePower>) {
-        Stage::<T, I>::put(ReferendumStage::Inactive);
+    fn reset_referendum(previous_cycle_result: &ReferendumResult<u64, T::VotePower>) {
+        Stage::<T, I>::put(ReferendumStage::Inactive(ReferendumStageInactive {
+            previous_cycle_result: previous_cycle_result.clone(),
+        }));
         CurrentCycleId::<I>::put(CurrentCycleId::<I>::get() + 1);
-        PreviousCycleResult::<T, I>::put(last_cycle_result);
     }
 
     /// Can return error when stake fails to lock
@@ -627,9 +638,10 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     fn can_start_referendum(options_count: u64) -> Result<(), Error<T, I>> {
         // ensure referendum is not already running
-        if Stage::<T, I>::get() != ReferendumStage::Inactive {
-            return Err(Error::ReferendumAlreadyRunning);
-        }
+        match Stage::<T, I>::get() {
+            ReferendumStage::Inactive(_) => Ok(()),
+            _ => Err(Error::ReferendumAlreadyRunning),
+        }?;
 
         // ensure some options were given
         if options_count == 0 {
@@ -673,7 +685,14 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         origin: T::Origin,
         salt: &[u8],
         vote_option_index: &u64,
-    ) -> Result<(ReferendumStageRevealing<T::BlockNumber, T::VotePower>, T::AccountId, CastVote<T::Hash, Balance<T, I>>), Error<T, I>> {
+    ) -> Result<
+        (
+            ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
+            T::AccountId,
+            CastVote<T::Hash, Balance<T, I>>,
+        ),
+        Error<T, I>,
+    > {
         let cycle_id = CurrentCycleId::<I>::get();
 
         // ensure superuser requested action
@@ -712,7 +731,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     fn can_release_stake(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
         fn voted_for_winner_last_cycle<T: Trait<I>, I: Instance>(
-            last_cycle_result: ReferendumResult<u64, T::VotePower>,
+            previous_cycle_result: ReferendumResult<u64, T::VotePower>,
             option_voted_for: Option<u64>,
         ) -> bool {
             let voted_for = match option_voted_for {
@@ -720,7 +739,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
                 None => return false,
             };
 
-            let previous_winners = match last_cycle_result {
+            let previous_winners = match previous_cycle_result {
                 ReferendumResult::Winners(tmp_winners) => tmp_winners,
                 ReferendumResult::ExtraWinners(tmp_winners) => tmp_winners,
                 ReferendumResult::NotEnoughWinners(tmp_winners) => tmp_winners,
@@ -747,15 +766,26 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             }?;
         }
 
-        let previous_winners = PreviousCycleResult::<T, I>::get();
-
         // enable unlocking stake locked in the last cycle only when option didn't win;
         // or after the next inactive stage when voted for winning option
-        if cycle_id == cast_vote.cycle_id + 1
-            && voted_for_winner_last_cycle::<T, I>(previous_winners, cast_vote.vote_for)
-        {
+        if cycle_id == cast_vote.cycle_id + 1 {
+            fn check_inactive_stage<T: Trait<I>, I: Instance>(
+                stage_data: ReferendumStageInactive<T::VotePower>,
+                vote_for: Option<u64>,
+            ) -> Result<(), Error<T, I>> {
+                let voted_winner =
+                    voted_for_winner_last_cycle::<T, I>(stage_data.previous_cycle_result, vote_for);
+                if voted_winner {
+                    return Err(Error::InvalidTimeToRelease);
+                }
+
+                Ok(())
+            }
+
             match Stage::<T, I>::get() {
-                ReferendumStage::Inactive => Err(Error::InvalidTimeToRelease),
+                ReferendumStage::Inactive(stage_data) => {
+                    check_inactive_stage::<T, I>(stage_data, cast_vote.vote_for)
+                }
                 _ => Ok(()),
             }?;
         }
@@ -768,7 +798,9 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(account_id)
     }
 
-    fn ensure_vote_exists(account_id: &T::AccountId) -> Result<CastVote<T::Hash, Balance<T, I>>, Error<T, I>> {
+    fn ensure_vote_exists(
+        account_id: &T::AccountId,
+    ) -> Result<CastVote<T::Hash, Balance<T, I>>, Error<T, I>> {
         // ensure there is some vote with locked stake
         if !Votes::<T, I>::contains_key(account_id) {
             return Err(Error::VoteNotExisting);

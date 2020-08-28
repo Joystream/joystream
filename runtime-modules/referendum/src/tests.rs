@@ -322,7 +322,7 @@ fn reveal_reveal_stage_not_running() {
 
         Mocks::check_voting_finished(options, winning_target_count);
         MockUtils::increase_block_number(reveal_stage_duration + 1);
-        Mocks::check_revealing_finished(Some(ReferendumResult::NoVotesRevealed));
+        Mocks::check_revealing_finished(ReferendumResult::NoVotesRevealed);
 
         Mocks::reveal_vote(
             origin.clone(),
@@ -358,7 +358,7 @@ fn reveal_no_vote() {
         Mocks::check_voting_finished(options, winning_target_count);
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        Mocks::check_revealing_finished(Some(ReferendumResult::NoVotesRevealed));
+        Mocks::check_revealing_finished(ReferendumResult::NoVotesRevealed);
     });
 }
 
@@ -474,10 +474,10 @@ fn finish_revealing_period() {
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        Mocks::check_revealing_finished(Some(ReferendumResult::Winners(vec![(
+        Mocks::check_revealing_finished(ReferendumResult::Winners(vec![(
             option_to_vote_for,
             1 * stake,
-        )])));
+        )]));
     });
 }
 
@@ -547,10 +547,10 @@ fn finish_revealing_period_vote_power() {
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
         // option 2 should win because prominent user has more powerfull vote with the same stake
-        Mocks::check_revealing_finished(Some(ReferendumResult::Winners(vec![(
+        Mocks::check_revealing_finished(ReferendumResult::Winners(vec![(
             option_to_vote_for2,
             1 * stake_smaller * POWER_VOTE_STRENGTH,
-        )])));
+        )]));
     });
 }
 
@@ -572,7 +572,7 @@ fn winners_no_vote_revealed() {
         MockUtils::increase_block_number(voting_stage_duration + 1);
         Mocks::check_voting_finished(options, winning_target_count);
         MockUtils::increase_block_number(reveal_stage_duration + 1);
-        Mocks::check_revealing_finished(Some(ReferendumResult::NoVotesRevealed));
+        Mocks::check_revealing_finished(ReferendumResult::NoVotesRevealed);
     });
 }
 
@@ -663,7 +663,7 @@ fn winners_multiple_winners() {
             (option_to_vote_for2, 1 * stake),
         ];
 
-        Mocks::check_revealing_finished(Some(ReferendumResult::Winners(expected_winners)));
+        Mocks::check_revealing_finished(ReferendumResult::Winners(expected_winners));
     });
 }
 
@@ -736,7 +736,7 @@ fn winners_multiple_winners_extra() {
             (option_to_vote_for2, 1 * stake),
         ];
 
-        Mocks::check_revealing_finished(Some(ReferendumResult::ExtraWinners(expected_winners)));
+        Mocks::check_revealing_finished(ReferendumResult::ExtraWinners(expected_winners));
     });
 }
 
@@ -787,7 +787,7 @@ fn winners_multiple_not_enough() {
 
         let expected_winners = vec![(option_to_vote_for, 1 * stake)];
 
-        Mocks::check_revealing_finished(Some(ReferendumResult::NotEnoughWinners(expected_winners)));
+        Mocks::check_revealing_finished(ReferendumResult::NotEnoughWinners(expected_winners));
     });
 }
 
@@ -835,10 +835,10 @@ fn referendum_release_stake() {
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        Mocks::check_revealing_finished(Some(ReferendumResult::Winners(vec![(
+        Mocks::check_revealing_finished(ReferendumResult::Winners(vec![(
             option_to_vote_for,
             1 * stake,
-        )])));
+        )]));
 
         Mocks::release_stake(origin.clone(), account_id, Err(Error::InvalidTimeToRelease));
 

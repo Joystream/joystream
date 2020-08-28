@@ -2,9 +2,9 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Balance, CurrentCycleId, Error, Instance, Module, RawEvent, ReferendumManager, ReferendumResult,
-    ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, CastVote, Stage, Trait,
-    Votes,
+    Balance, CastVote, CurrentCycleId, Error, Instance, Module, RawEvent, ReferendumManager,
+    ReferendumResult, ReferendumStage, ReferendumStageInactive, ReferendumStageRevealing,
+    ReferendumStageVoting, Stage, Trait, Votes,
 };
 
 use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
@@ -198,7 +198,6 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime, Instance0> {
         stage: ReferendumStage::default(),
         votes: vec![],
         current_cycle_id: 0,
-        previous_cycle_result: ReferendumResult::default(),
     }
 }
 
@@ -393,20 +392,20 @@ impl InstanceMocks<Runtime, Instance0> {
     }
 
     pub fn check_revealing_finished(
-        expected_referendum_result: Option<
-            ReferendumResult<u64, <Runtime as Trait<Instance0>>::VotePower>,
-        >,
+        expected_referendum_result: ReferendumResult<u64, <Runtime as Trait<Instance0>>::VotePower>,
     ) {
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
-            ReferendumStage::Inactive,
+            ReferendumStage::Inactive(ReferendumStageInactive {
+                previous_cycle_result: expected_referendum_result.clone(),
+            })
         );
 
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
             TestEvent::event_mod_Instance0(RawEvent::ReferendumFinished(
-                expected_referendum_result.unwrap()
+                expected_referendum_result.clone()
             ))
         );
     }
