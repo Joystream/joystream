@@ -22,15 +22,17 @@ fn referendum_start() {
 /// Test that referendum can be started via extrinsic only by superuser.
 #[test]
 fn referendum_start_access_restricted() {
-    MockUtils::origin_access(USER_REGULAR, |origin| {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
         let options = 1;
         let winning_target_count = 1;
 
         Mocks::start_referendum_extrinsic(
-            origin,
+            OriginType::None,
             options,
             winning_target_count,
-            Err(Error::OriginNotSuperUser),
+            Err(Error::BadOrigin),
         );
     });
 }

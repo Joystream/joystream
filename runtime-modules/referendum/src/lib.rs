@@ -10,10 +10,11 @@
 
 // used dependencies
 use codec::{Codec, Decode, Encode};
-use frame_support::traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReason};
+use frame_support::traits::{
+    Currency, EnsureOrigin, Get, LockIdentifier, LockableCurrency, WithdrawReason,
+};
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, traits::Get, Parameter,
-    StorageValue,
+    decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, Parameter, StorageValue,
 };
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
@@ -98,8 +99,14 @@ impl<T, U> Default for ReferendumResult<T, U> {
 // TODO: get rid of dependency on Error<T, I> - create some nongeneric error
 /// Trait enabling referendum start and vote commitment calculation.
 pub trait ReferendumManager<T: Trait<I>, I: Instance> {
-    fn start_referendum(options_count: u64, winning_target_count: u64) -> Result<(), Error<T, I>>;
+    /// Start a new referendum.
+    fn start_referendum(
+        origin: T::Origin,
+        options_count: u64,
+        winning_target_count: u64,
+    ) -> Result<(), Error<T, I>>;
 
+    /// Calculate commitment for a vote.
     fn calculate_commitment(
         account_id: &<T as system::Trait>::AccountId,
         salt: &[u8],
@@ -120,6 +127,9 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
 
     /// Identifier for currency locks used for staking.
     type LockId: Get<LockIdentifier>;
+
+    /// Origin from which the referendum can be started.
+    type ManagerOrigin: EnsureOrigin<Self::Origin>;
 
     /// Power of vote(s) used to determine the referendum winner(s).
     type VotePower: Parameter
@@ -209,9 +219,6 @@ decl_error! {
         /// Origin is invalid
         BadOrigin,
 
-        /// Origin doesn't correspond to any superuser
-        OriginNotSuperUser,
-
         /// Referendum cannot run twice at the same time
         ReferendumAlreadyRunning,
 
@@ -279,14 +286,6 @@ decl_module! {
         // No origin so this is a priviledged call
         fn on_finalize(now: T::BlockNumber) {
             Self::try_progress_stage(now);
-        }
-
-        /// Start a new referendum.
-        #[weight = 10_000_000]
-        pub fn start_referendum(origin, options_count: u64, winning_target_count: u64) -> Result<(), Error<T, I>> {
-            EnsureChecks::<T, I>::can_start_referendum_extrinsic(origin, options_count)?;
-
-            <Self as ReferendumManager<T, I>>::start_referendum(options_count, winning_target_count)
         }
 
         /////////////////// User actions ///////////////////////////////////////
@@ -392,9 +391,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
 impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
     /// Start new referendum run.
-    fn start_referendum(options_count: u64, winning_target_count: u64) -> Result<(), Error<T, I>> {
+    fn start_referendum(
+        origin: T::Origin,
+        options_count: u64,
+        winning_target_count: u64,
+    ) -> Result<(), Error<T, I>> {
         // ensure action can be started
-        EnsureChecks::<T, I>::can_start_referendum(options_count)?;
+        EnsureChecks::<T, I>::can_start_referendum(origin, options_count)?;
 
         //
         // == MUTATION SAFE ==
@@ -619,17 +622,6 @@ struct EnsureChecks<T: Trait<I>, I: Instance> {
 impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
     /////////////////// Common checks //////////////////////////////////////////
 
-    fn ensure_super_user(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
-        let account_id = ensure_signed(origin)?;
-
-        // ensure superuser requested action
-        if !T::is_super_user(&account_id) {
-            return Err(Error::OriginNotSuperUser);
-        }
-
-        Ok(account_id)
-    }
-
     fn ensure_regular_user(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
         let account_id = ensure_signed(origin)?;
 
@@ -638,17 +630,9 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     /////////////////// Action checks //////////////////////////////////////////
 
-    fn can_start_referendum_extrinsic(
-        origin: T::Origin,
-        _options_count: u64,
-    ) -> Result<(), Error<T, I>> {
-        // ensure superuser requested action
-        Self::ensure_super_user(origin)?;
+    fn can_start_referendum(origin: T::Origin, options_count: u64) -> Result<(), Error<T, I>> {
+        T::ManagerOrigin::ensure_origin(origin)?;
 
-        Ok(())
-    }
-
-    fn can_start_referendum(options_count: u64) -> Result<(), Error<T, I>> {
         // ensure referendum is not already running
         match Stage::<T, I>::get() {
             ReferendumStage::Inactive(_) => Ok(()),

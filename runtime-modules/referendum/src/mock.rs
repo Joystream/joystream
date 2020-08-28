@@ -21,7 +21,7 @@ use sp_runtime::{
 };
 use std::cell::RefCell;
 use std::marker::PhantomData;
-use system::RawOrigin;
+use system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 
 use crate::GenesisConfig;
 
@@ -62,6 +62,9 @@ impl Trait<Instance0> for Runtime {
 
     type Currency = pallet_balances::Module<Runtime>;
     type LockId = LockId;
+
+    type ManagerOrigin =
+        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
@@ -189,6 +192,7 @@ pub enum OriginType<AccountId> {
     Signed(AccountId),
     //Inherent, <== did not find how to make such an origin yet
     Root,
+    None,
 }
 
 /////////////////// Utility mocks //////////////////////////////////////////////s
@@ -245,7 +249,9 @@ where
     pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::Origin {
         match origin {
             OriginType::Signed(account_id) => T::Origin::from(RawOrigin::Signed(account_id)),
-            _ => panic!("not implemented"),
+            OriginType::Root => RawOrigin::Root.into(),
+            OriginType::None => RawOrigin::None.into(),
+            //_ => panic!("not implemented"),
         }
     }
 
@@ -334,6 +340,7 @@ impl InstanceMocks<Runtime, Instance0> {
         // check method returns expected result
         assert_eq!(
             <Module::<Runtime, Instance0> as ReferendumManager<Runtime, Instance0>>::start_referendum(
+                InstanceMockUtils::<Runtime, Instance0>::mock_origin(OriginType::Root),
                 options.clone(),
                 winning_target_count
             ),
