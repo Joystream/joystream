@@ -165,11 +165,6 @@ decl_storage! {
 
         /// Index of the current referendum cycle. It is incremented everytime referendum ends.
         pub CurrentCycleId get(fn current_cycle_id) config(): u64;
-
-        /*
-        /// Last cycle winning option(s)
-        pub PreviousCycleResult get(fn previous_cycle_result) config(): ReferendumResult<u64, <T as Trait<I>>::VotePower>;
-        */
     }
 
     /* This might be needed in some cases
