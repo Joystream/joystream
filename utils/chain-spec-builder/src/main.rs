@@ -192,6 +192,12 @@ fn genesis_constructor(
         content_config::empty_versioned_store_permissions_config()
     };
 
+    let data_directory_config = if let Some(path) = initial_content_path {
+        content_config::data_directory_config_from_json(path.as_path())
+    } else {
+        content_config::empty_data_directory_config()
+    };
+
     chain_spec::testnet_genesis(
         authorities,
         sudo_account.clone(),
@@ -201,6 +207,7 @@ fn genesis_constructor(
         forum_cfg,
         versioned_store_cfg,
         versioned_store_permissions_cfg,
+        data_directory_config,
     )
 }
 

@@ -150,10 +150,10 @@ pub type DataObjectsMap<T> = BTreeMap<<T as Trait>::ContentId, DataObject<T>>;
 decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
         /// List of ids known to the system.
-        pub KnownContentIds get(fn known_content_ids): Vec<T::ContentId> = Vec::new();
+        pub KnownContentIds get(fn known_content_ids) config(): Vec<T::ContentId> = Vec::new();
 
         /// Maps data objects by their content id.
-        pub DataObjectByContentId get(fn data_object_by_content_id):
+        pub DataObjectByContentId get(fn data_object_by_content_id) config():
             map hasher(blake2_128_concat) T::ContentId => Option<DataObject<T>>;
     }
 }

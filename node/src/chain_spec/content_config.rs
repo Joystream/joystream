@@ -3,7 +3,7 @@ use node_runtime::{
     primitives::{BlockNumber, Credential},
     versioned_store::{Class, ClassId, Entity, EntityId, InputValidationLengthConstraint},
     versioned_store_permissions::ClassPermissions,
-    ContentId, Runtime, VersionedStoreConfig, VersionedStorePermissionsConfig,
+    ContentId, DataDirectoryConfig, Runtime, VersionedStoreConfig, VersionedStorePermissionsConfig,
 };
 
 use codec::Decode;
@@ -233,6 +233,30 @@ pub fn versioned_store_permissions_config_from_json(
                     .maintainer
                     .map(|maintainer| (entity_and_maintainer.entity.id, maintainer))
             })
+            .collect(),
+    }
+}
+
+pub fn empty_data_directory_config() -> DataDirectoryConfig {
+    DataDirectoryConfig {
+        data_object_by_content_id: vec![],
+        known_content_ids: vec![],
+    }
+}
+
+pub fn data_directory_config_from_json(data_file: &Path) -> DataDirectoryConfig {
+    let content = parse_content_data(data_file).decode();
+
+    DataDirectoryConfig {
+        data_object_by_content_id: content
+            .data_objects
+            .iter()
+            .map(|object| (object.content_id, object.data_object.clone()))
+            .collect(),
+        known_content_ids: content
+            .data_objects
+            .into_iter()
+            .map(|object| object.content_id)
             .collect(),
     }
 }

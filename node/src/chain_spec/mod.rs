@@ -30,7 +30,7 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
+    ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig, DataDirectoryConfig,
     DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
     GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, ProposalsCodexConfig, SessionConfig,
     SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig,
@@ -137,6 +137,7 @@ impl Alternative {
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         content_config::empty_versioned_store_config(),
                         content_config::empty_versioned_store_permissions_config(),
+                        content_config::empty_data_directory_config(),
                     )
                 },
                 Vec::new(),
@@ -175,6 +176,7 @@ impl Alternative {
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         content_config::empty_versioned_store_config(),
                         content_config::empty_versioned_store_permissions_config(),
+                        content_config::empty_data_directory_config(),
                     )
                 },
                 Vec::new(),
@@ -216,6 +218,7 @@ pub fn testnet_genesis(
     forum_config: ForumConfig,
     versioned_store_config: VersionedStoreConfig,
     versioned_store_permissions_config: VersionedStorePermissionsConfig,
+    data_directory_config: DataDirectoryConfig,
 ) -> GenesisConfig {
     const CENTS: Balance = 1;
     const DOLLARS: Balance = 100 * CENTS;
@@ -291,6 +294,7 @@ pub fn testnet_genesis(
             members,
         }),
         forum: Some(forum_config),
+        data_directory: Some(data_directory_config),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),

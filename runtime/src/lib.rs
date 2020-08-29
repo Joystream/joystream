@@ -608,7 +608,7 @@ construct_runtime!(
         ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
+        DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},
         DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
         Discovery: service_discovery::{Module, Call, Storage, Event<T>},
         // --- Proposals
