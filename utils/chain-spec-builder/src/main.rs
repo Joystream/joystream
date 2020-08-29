@@ -354,7 +354,7 @@ fn main() -> Result<(), String> {
 
             let sudo_account_id =
                 chain_spec::get_account_id_from_seed::<sr25519::Public>(&sudo_seed);
-            let sudo_account = sudo_account_id.clone().to_ss58check();
+            let sudo_account = sudo_account_id.to_ss58check();
 
             (authority_seeds, endowed_accounts, sudo_account)
         }
