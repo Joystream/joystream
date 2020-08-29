@@ -186,6 +186,12 @@ fn genesis_constructor(
         content_config::empty_versioned_store_config()
     };
 
+    let versioned_store_permissions_cfg = if let Some(path) = initial_content_path {
+        content_config::versioned_store_permissions_config_from_json(path.as_path())
+    } else {
+        content_config::empty_versioned_store_permissions_config()
+    };
+
     chain_spec::testnet_genesis(
         authorities,
         sudo_account.clone(),
@@ -193,7 +199,8 @@ fn genesis_constructor(
         proposals_config::default(),
         members,
         forum_cfg,
-        content_config::empty_versioned_store_config(),
+        versioned_store_cfg,
+        versioned_store_permissions_cfg,
     )
 }
 

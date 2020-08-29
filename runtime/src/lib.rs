@@ -600,7 +600,7 @@ construct_runtime!(
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
-        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage},
+        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage, Config<T>},
         Stake: stake::{Module, Call, Storage},
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurring_rewards::{Module, Call, Storage},

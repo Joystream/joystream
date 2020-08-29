@@ -29,16 +29,16 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_runtime::Perbill;
 
 use node_runtime::{
-    versioned_store::InputValidationLengthConstraint as VsInputValidation,
-    AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
-    CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, MembersConfig,
-    ProposalsCodexConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
-    StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
+    membership, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
+    ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
+    DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
+    GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, ProposalsCodexConfig, SessionConfig,
+    SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig,
+    SystemConfig, VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
 };
 
 // Exported to be used by chain-spec-builder
-pub use node_runtime::{membership, AccountId, ForumConfig, GenesisConfig, Moment};
+pub use node_runtime::{AccountId, GenesisConfig};
 
 pub mod content_config;
 pub mod forum_config;
@@ -136,6 +136,7 @@ impl Alternative {
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         content_config::empty_versioned_store_config(),
+                        content_config::empty_versioned_store_permissions_config(),
                     )
                 },
                 Vec::new(),
@@ -173,6 +174,7 @@ impl Alternative {
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         content_config::empty_versioned_store_config(),
+                        content_config::empty_versioned_store_permissions_config(),
                     )
                 },
                 Vec::new(),
@@ -183,10 +185,6 @@ impl Alternative {
             ),
         })
     }
-}
-
-fn new_vs_validation(min: u16, max_min_diff: u16) -> VsInputValidation {
-    VsInputValidation { min, max_min_diff }
 }
 
 pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
@@ -217,6 +215,7 @@ pub fn testnet_genesis(
     members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
     forum_config: ForumConfig,
     versioned_store_config: VersionedStoreConfig,
+    versioned_store_permissions_config: VersionedStorePermissionsConfig,
 ) -> GenesisConfig {
     const CENTS: Balance = 1;
     const DOLLARS: Balance = 100 * CENTS;
@@ -306,6 +305,7 @@ pub fn testnet_genesis(
             worker_exit_rationale_text_constraint: default_text_constraint,
         }),
         versioned_store: Some(versioned_store_config),
+        versioned_store_permissions: Some(versioned_store_permissions_config),
         content_wg: Some(ContentWorkingGroupConfig {
             mint_capacity: 100_000,
             curator_opening_by_id: vec![],
