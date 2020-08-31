@@ -21,7 +21,7 @@ export default class QueryEvent {
   get event_name(): string {
     const event = this.event_record.event;
 
-    return event.section + '.' + event.method;
+    return event.section + '_' + event.method;
   }
 
   get event_method(): string {

@@ -17,7 +17,7 @@ const debug = Debug('index-builder:indexer');
 const WORKERS_NUMBER = numberEnv('INDEXER_WORKERS') || 50;
 
 export default class IndexBuilder {
-  private _producer: QueryBlockProducer;
+  private _producer!: QueryBlockProducer;
   private _stopped = false;
 
   private _indexingTimer = new Date().getMilliseconds();
