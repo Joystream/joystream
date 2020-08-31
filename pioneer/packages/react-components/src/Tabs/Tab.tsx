@@ -16,16 +16,19 @@ interface Props extends TabItem {
   index: number;
   isSequence?: boolean;
   num: number;
+  forceMatchParams?: boolean;
 }
 
-function Tab ({ basePath, className = '', hasParams, index, isExact, isRoot, isSequence, name, num, text }: Props): React.ReactElement<Props> {
+function Tab ({ basePath, className = '', hasParams, index, isExact, isRoot, isSequence, name, num, text, forceMatchParams }: Props): React.ReactElement<Props> {
   const to = isRoot
     ? basePath
     : `${basePath}/${name}`;
 
   // only do exact matching when not the fallback (first position tab),
   // params are problematic for dynamic hidden such as app-accounts
-  const tabIsExact = isExact || !hasParams || (!isSequence && index === 0);
+  const tabIsExact = forceMatchParams
+    ? false
+    : (isExact || !hasParams || (!isSequence && index === 0));
 
   return (
     <NavLink

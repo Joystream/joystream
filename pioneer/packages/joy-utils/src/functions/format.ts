@@ -16,7 +16,7 @@ export const formatReward = (
     : next_payment_at_block;
 
   return (
-    `${formatBalance(amount)}${interval.isSome ? ` / ${interval.unwrap()} block(s)` : ''}` +
-    ((showNextPaymentBlock && nextPaymentBlock) ? ` (Next payment: #${nextPaymentBlock})` : '')
+    `${formatBalance(amount)}${interval.isSome ? ` / ${interval.unwrap().toString()} block(s)` : ''}` +
+    ((showNextPaymentBlock && nextPaymentBlock) ? ` (Next payment: #${nextPaymentBlock.toString()})` : '')
   );
 };

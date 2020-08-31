@@ -1,7 +1,6 @@
 import React from 'react';
 import { Field, FormikErrors, FormikTouched } from 'formik';
-
-import { nonEmptyStr } from '@polkadot/joy-utils/index';
+import { nonEmptyStr } from '../../functions/misc';
 import { Popup, Icon } from 'semantic-ui-react';
 
 export type LabelledProps<FormValues> = {
@@ -38,9 +37,9 @@ export function LabelledField<FormValues> () {
       const renderLabel = () =>
         nonEmptyStr(label)
           ? <>
-              {required && <b style={{ color: 'red' }} title='This field is required'>* </b>}
-              {label}
-            </>
+            {required && <b style={{ color: 'red' }} title='This field is required'>* </b>}
+            {label}
+          </>
           : null;
 
       return (label || invisibleLabel)
@@ -57,6 +56,7 @@ export function LabelledField<FormValues> () {
           {fieldWithError}
         </div>;
     };
+
   return LabelledFieldInner;
 }
 

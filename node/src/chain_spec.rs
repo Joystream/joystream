@@ -19,7 +19,6 @@
 // Example:  voting_period: 1 * DAY
 #![allow(clippy::identity_op)]
 
-use node_runtime::{AccountId, GenesisConfig};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use serde_json as json;
 use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
@@ -32,11 +31,13 @@ use sp_runtime::Perbill;
 use node_runtime::{
     versioned_store::InputValidationLengthConstraint as VsInputValidation,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
-    ContractsConfig, CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
+    CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, MembersConfig,
     ProposalsCodexConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
     StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
+
+pub use node_runtime::{AccountId, GenesisConfig};
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -125,6 +126,7 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
                         ],
+                        crate::proposals_config::development(),
                     )
                 },
                 Vec::new(),
@@ -158,6 +160,7 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
                         ],
+                        crate::proposals_config::development(),
                     )
                 },
                 Vec::new(),
@@ -198,16 +201,13 @@ pub fn testnet_genesis(
     )>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
+    cpcp: node_runtime::ProposalsConfigParameters,
 ) -> GenesisConfig {
     const CENTS: Balance = 1;
     const DOLLARS: Balance = 100 * CENTS;
     const STASH: Balance = 20 * DOLLARS;
     const ENDOWMENT: Balance = 100_000 * DOLLARS;
 
-    let enable_println = false;
-
-    // default codex proposals config parameters
-    let cpcp = node_runtime::ProposalsConfigParameters::default();
     let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
     GenesisConfig {
@@ -234,7 +234,9 @@ pub fn testnet_genesis(
             slash_reward_fraction: Perbill::from_percent(10),
             ..Default::default()
         }),
-        pallet_sudo: Some(SudoConfig { key: root_key }),
+        pallet_sudo: Some(SudoConfig {
+            key: root_key.clone(),
+        }),
         pallet_babe: Some(BabeConfig {
             authorities: vec![],
         }),
@@ -254,12 +256,6 @@ pub fn testnet_genesis(
                     )
                 })
                 .collect::<Vec<_>>(),
-        }),
-        pallet_contracts: Some(ContractsConfig {
-            current_schedule: pallet_contracts::Schedule {
-                enable_println, // this should only be enabled on development chains
-                ..Default::default()
-            },
         }),
         council: Some(CouncilConfig {
             active_council: vec![],
@@ -282,9 +278,7 @@ pub fn testnet_genesis(
             default_paid_membership_fee: 100u128,
             members: vec![],
         }),
-        forum: Some(crate::forum_config::from_serialized::create(
-            endowed_accounts[0].clone(),
-        )),
+        forum: Some(crate::forum_config::from_serialized::create(root_key)),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),
@@ -350,7 +344,7 @@ pub fn testnet_genesis(
             set_content_working_group_mint_capacity_proposal_grace_period: cpcp
                 .set_content_working_group_mint_capacity_proposal_grace_period,
             set_lead_proposal_voting_period: cpcp.set_lead_proposal_voting_period,
-            set_lead_proposal_grace_period: cpcp.set_lead_proposal_voting_period,
+            set_lead_proposal_grace_period: cpcp.set_lead_proposal_grace_period,
             spending_proposal_voting_period: cpcp.spending_proposal_voting_period,
             spending_proposal_grace_period: cpcp.spending_proposal_grace_period,
             add_working_group_opening_proposal_voting_period: cpcp
@@ -389,71 +383,76 @@ pub fn testnet_genesis(
     }
 }
 
-#[cfg(test)]
-pub(crate) mod tests {
-    use super::*;
-    use crate::service::{new_full, new_light};
-    use sc_service_test;
+// Tests are commented out until we find a solution to why
+// building dependencies for the tests are taking so long on Travis CI
 
-    fn local_testnet_genesis_instant_single() -> GenesisConfig {
-        testnet_genesis(
-            vec![get_authority_keys_from_seed("Alice")],
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
-            vec![get_authority_keys_from_seed("Alice").0],
-        )
-    }
+// #[cfg(test)]
+// pub(crate) mod tests {
+//     use super::*;
+//     use crate::service::{new_full, new_light};
+//     use sc_service_test;
 
-    /// Local testnet config (single validator - Alice)
-    pub fn integration_test_config_with_single_authority() -> ChainSpec {
-        ChainSpec::from_genesis(
-            "Integration Test",
-            "test",
-            ChainType::Development,
-            local_testnet_genesis_instant_single,
-            vec![],
-            None,
-            None,
-            None,
-            Default::default(),
-        )
-    }
+//     fn local_testnet_genesis_instant_single() -> GenesisConfig {
+//         testnet_genesis(
+//             vec![get_authority_keys_from_seed("Alice")],
+//             get_account_id_from_seed::<sr25519::Public>("Alice"),
+//             vec![get_authority_keys_from_seed("Alice").0],
+//             crate::proposals_config::development(),
+//         )
+//     }
 
-    fn local_testnet_genesis() -> GenesisConfig {
-        testnet_genesis(
-            vec![
-                get_authority_keys_from_seed("Alice"),
-                get_authority_keys_from_seed("Bob"),
-            ],
-            get_account_id_from_seed::<sr25519::Public>("Alice"),
-            vec![
-                get_authority_keys_from_seed("Alice").0,
-                get_authority_keys_from_seed("Bob").0,
-            ],
-        )
-    }
+//     /// Local testnet config (single validator - Alice)
+//     pub fn integration_test_config_with_single_authority() -> ChainSpec {
+//         ChainSpec::from_genesis(
+//             "Integration Test",
+//             "test",
+//             ChainType::Development,
+//             local_testnet_genesis_instant_single,
+//             vec![],
+//             None,
+//             None,
+//             None,
+//             Default::default(),
+//         )
+//     }
 
-    /// Local testnet config (multivalidator Alice + Bob)
-    pub fn integration_test_config_with_two_authorities() -> ChainSpec {
-        ChainSpec::from_genesis(
-            "Integration Test",
-            "test",
-            ChainType::Development,
-            local_testnet_genesis,
-            vec![],
-            None,
-            None,
-            None,
-            Default::default(),
-        )
-    }
+//     fn local_testnet_genesis() -> GenesisConfig {
+//         testnet_genesis(
+//             vec![
+//                 get_authority_keys_from_seed("Alice"),
+//                 get_authority_keys_from_seed("Bob"),
+//             ],
+//             get_account_id_from_seed::<sr25519::Public>("Alice"),
+//             vec![
+//                 get_authority_keys_from_seed("Alice").0,
+//                 get_authority_keys_from_seed("Bob").0,
+//             ],
+//             crate::proposals_config::development(),
+//         )
+//     }
 
-    #[test]
-    #[ignore]
-    fn test_connectivity() {
-        sc_service_test::connectivity(
-            integration_test_config_with_two_authorities(),
-            |config| new_full(config),
-            |config| new_light(config),
-        );
-    }
-}
+//     /// Local testnet config (multivalidator Alice + Bob)
+//     pub fn integration_test_config_with_two_authorities() -> ChainSpec {
+//         ChainSpec::from_genesis(
+//             "Integration Test",
+//             "test",
+//             ChainType::Development,
+//             local_testnet_genesis,
+//             vec![],
+//             None,
+//             None,
+//             None,
+//             Default::default(),
+//         )
+//     }
+
+//     #[test]
+//     #[ignore]
+//     fn test_connectivity() {
+//         sc_service_test::connectivity(
+//             integration_test_config_with_two_authorities(),
+//             |config| new_full(config),
+//             |config| new_light(config),
+//         );
+//     }
+// }

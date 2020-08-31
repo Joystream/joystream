@@ -46,6 +46,7 @@ type Props = BareProps & {
 export default class Section extends React.PureComponent<Props> {
   render () {
     let { className, children, pagination } = this.props;
+
     className = (className || '') + ' JoySection';
 
     return (
@@ -62,10 +63,12 @@ export default class Section extends React.PureComponent<Props> {
 
   private renderTitle = () => {
     const { title, level = 2, pagination } = this.props;
+
     if (!title) return null;
 
     const className = 'JoySection-title';
     const style = pagination ? { margin: '0' } : {};
+
     return React.createElement(
       `h${level}`,
       { className, style },

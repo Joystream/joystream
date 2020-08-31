@@ -38,5 +38,3 @@ std = [
     'stake/std',
     'common/std',
 ]
-
-
