@@ -170,10 +170,13 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
 
 decl_storage! {
     trait Store for Module<T: Trait<I>, I: Instance> as Referendum {
-        /// Current referendum stage
+        /// Current referendum stage.
         pub Stage get(fn stage) config(): ReferendumStage<T::BlockNumber, T::VotePower>;
 
-        /// Votes in current referendum
+        /// Votes cast in the referendum. A new record is added to this map when a user casts a sealed vote.
+        /// It is modified when a user reveals the vote's commitment proof.
+        /// A record is finally removed when the user unstakes, which can happen during a voting stage or after the current cycle ends.
+        /// A stake for a vote can be reused in future referendum cycles.
         pub Votes get(fn votes) config(): map hasher(blake2_128_concat) T::AccountId => CastVote<T::Hash, Balance<T, I>>;
 
         /// Index of the current referendum cycle. It is incremented everytime referendum ends.
