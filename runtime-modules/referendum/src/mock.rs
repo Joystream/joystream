@@ -53,7 +53,7 @@ parameter_types! {
 }
 
 thread_local! {
-    pub static IS_LOCKING_ENABLED: RefCell<(bool, bool, bool)> = RefCell::new((true, true, true)); // global switch for stake locking features; use it to simulate lock fails
+    pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
 }
 
 impl Trait<Instance0> for Runtime {
@@ -91,23 +91,20 @@ impl Trait<Instance0> for Runtime {
         stake
     }
 
-    fn can_stake_for_vote(
-        account_id: &<Self as system::Trait>::AccountId,
-        _stake: &Balance<Self, Instance0>,
-    ) -> bool {
+    fn can_unstake(_vote: &CastVote<Self::Hash, Balance<Self, Instance0>>) -> bool {
         // trigger fail when requested to do so
-        if !IS_LOCKING_ENABLED.with(|value| value.borrow().0) {
+        if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
             return false;
         }
 
-        match *account_id {
-            USER_ADMIN => true,
-            USER_REGULAR => true,
-            USER_REGULAR_POWER_VOTES => true,
-            USER_REGULAR_2 => true,
-            USER_REGULAR_3 => true,
-            _ => false,
-        }
+        true
+    }
+
+    fn process_results(
+        _result: &ReferendumResult<u64, Self::VotePower>,
+        _all_options_results: &[Self::VotePower],
+    ) {
+        // not used right now
     }
 }
 

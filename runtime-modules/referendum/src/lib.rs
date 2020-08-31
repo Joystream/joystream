@@ -164,11 +164,15 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
         stake: &Balance<Self, I>,
     ) -> <Self as Trait<I>>::VotePower;
 
-    /// Check if user can lock the stake.
-    fn can_stake_for_vote(
-        account_id: &<Self as system::Trait>::AccountId,
-        stake: &Balance<Self, I>,
-    ) -> bool;
+    /// Checks if user can unlock his stake from the given vote.
+    /// Gives runtime an ability to penalize user for not revealing stake, etc.
+    fn can_unstake(vote: &CastVote<Self::Hash, Balance<Self, I>>) -> bool;
+
+    /// Gives runtime an ability to react on referendum result.
+    fn process_results(
+        winners: &ReferendumResult<u64, Self::VotePower>, // winning options for this referendum cycle
+        all_options_results: &[Self::VotePower],          // list of votes each option recieved
+    );
 }
 
 decl_storage! {
@@ -260,6 +264,9 @@ decl_error! {
 
         /// Salt is too long
         SaltTooLong,
+
+        /// Unstaking has been forbidden for the user (at least for now)
+        UnstakingForbidden,
     }
 }
 
@@ -389,7 +396,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     /// Conclude the referendum.
     fn end_reveal_period(stage_data: ReferendumStageRevealing<T::BlockNumber, T::VotePower>) {
         // conclude referendum
-        let referendum_result = Mutations::<T, I>::conclude_referendum(stage_data);
+        let (referendum_result, all_options_results) =
+            Mutations::<T, I>::conclude_referendum(stage_data);
+
+        // let runtime know about referendum results
+        T::process_results(&referendum_result, &all_options_results);
 
         // emit event
         Self::deposit_event(RawEvent::ReferendumFinished(referendum_result));
@@ -482,10 +493,10 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     /// Conclude referendum, count votes, and select the winners.
     fn conclude_referendum(
         revealing_stage: ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
-    ) -> ReferendumResult<u64, T::VotePower> {
+    ) -> (ReferendumResult<u64, T::VotePower>, Vec<T::VotePower>) {
         // select winning option
         fn calculate_votes<T: Trait<I>, I: Instance>(
-            revealing_stage: ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
+            revealing_stage: &ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
         ) -> ReferendumResult<u64, T::VotePower> {
             let mut winning_order: Vec<(u64, T::VotePower)> = vec![];
 
@@ -542,13 +553,13 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         }
 
         // calculate votes and select winner(s)
-        let referendum_result = calculate_votes::<T, I>(revealing_stage);
+        let referendum_result = calculate_votes::<T, I>(&revealing_stage);
 
         // reset referendum state
         Self::reset_referendum(&referendum_result);
 
         // return winning option
-        referendum_result
+        (referendum_result, revealing_stage.intermediate_results)
     }
 
     /// Change the referendum stage from revealing to the inactive stage.
@@ -768,6 +779,10 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         let account_id = Self::ensure_regular_user(origin)?;
 
         let cast_vote = Self::ensure_vote_exists(&account_id)?;
+
+        if !T::can_unstake(&cast_vote) {
+            return Err(Error::UnstakingForbidden);
+        }
 
         // enable stake release in current cycle only during voting stage
         if cycle_id == cast_vote.cycle_id {
