@@ -90,6 +90,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
   isApiUriValid(uri: string) {
     try {
+      // eslint-disable-next-line no-new
       new WsProvider(uri)
     } catch (e) {
       return false
@@ -318,12 +319,13 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     defaultValue?: Bytes,
     schemaValidator?: ajv.ValidateFunction
   ) {
-    const rawType = new jsonStruct(this.getTypesRegistry()).toRawType()
+    const JsonStructObject = jsonStruct
+    const rawType = new JsonStructObject(this.getTypesRegistry()).toRawType()
     const typeDef = getTypeDef(rawType)
 
     const defaultStruct =
       defaultValue &&
-      new jsonStruct(
+      new JsonStructObject(
         this.getTypesRegistry(),
         JSON.parse(Buffer.from(defaultValue.toHex().replace('0x', ''), 'hex').toString())
       )

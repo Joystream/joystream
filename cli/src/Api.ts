@@ -358,7 +358,7 @@ export default class Api {
 
     return Promise.all(
       wgApplicationEntries
-        .filter(([id, wgApplication]) => wgApplication.opening_id.eqn(wgOpeningId))
+        .filter(([, /* id */ wgApplication]) => wgApplication.opening_id.eqn(wgOpeningId))
         .map(([id, wgApplication]) => this.parseApplication(id.toNumber(), wgApplication))
     )
   }
