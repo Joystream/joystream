@@ -5,7 +5,6 @@
 // No default instance is provided.
 
 /////////////////// Configuration //////////////////////////////////////////////
-#![allow(clippy::type_complexity)]
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // used dependencies
@@ -97,6 +96,27 @@ impl<T, U> Default for ReferendumResult<T, U> {
     }
 }
 
+/////////////////// Type aliases ///////////////////////////////////////////////
+
+// `Ez` prefix in some of the following type aliases means *easy* and is meant to create unique short names
+// aliasing existing structs and enums
+
+// types simplifying access to common structs and enums
+type Balance<T, I> =
+    <<T as Trait<I>>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+type EzCastVote<T, I> = CastVote<<T as system::Trait>::Hash, Balance<T, I>>;
+type EzReferendumStageVoting<T> = ReferendumStageVoting<<T as system::Trait>::BlockNumber>;
+type EzReferendumStageRevealing<T, I> =
+    ReferendumStageRevealing<<T as system::Trait>::BlockNumber, <T as Trait<I>>::VotePower>;
+type EzReferendumResult<T, I> = ReferendumResult<u64, <T as Trait<I>>::VotePower>;
+
+// types aliases for check functions return values
+type CanRevealResult<T, I> = (
+    EzReferendumStageRevealing<T, I>,
+    <T as system::Trait>::AccountId,
+    EzCastVote<T, I>,
+);
+
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
 // TODO: get rid of dependency on Error<T, I> - create some nongeneric error
@@ -184,7 +204,7 @@ decl_storage! {
         /// It is modified when a user reveals the vote's commitment proof.
         /// A record is finally removed when the user unstakes, which can happen during a voting stage or after the current cycle ends.
         /// A stake for a vote can be reused in future referendum cycles.
-        pub Votes get(fn votes) config(): map hasher(blake2_128_concat) T::AccountId => CastVote<T::Hash, Balance<T, I>>;
+        pub Votes get(fn votes) config(): map hasher(blake2_128_concat) T::AccountId => EzCastVote<T, I>;
 
         /// Index of the current referendum cycle. It is incremented everytime referendum ends.
         pub CurrentCycleId get(fn current_cycle_id) config(): u64;
@@ -281,11 +301,6 @@ impl<T: Trait<I>, I: Instance> From<BadOrigin> for Error<T, I> {
         Error::<T, I>::BadOrigin
     }
 }
-
-/////////////////// Type aliases ///////////////////////////////////////////////
-
-type Balance<T, I> =
-    <<T as Trait<I>>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
 /////////////////// Module definition and implementation ///////////////////////
 
@@ -385,7 +400,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     /// Finish voting and start ravealing.
-    fn end_voting_period(stage_data: ReferendumStageVoting<T::BlockNumber>) {
+    fn end_voting_period(stage_data: EzReferendumStageVoting<T>) {
         // start revealing phase
         Mutations::<T, I>::start_revealing_period(stage_data);
 
@@ -394,7 +409,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     /// Conclude the referendum.
-    fn end_reveal_period(stage_data: ReferendumStageRevealing<T::BlockNumber, T::VotePower>) {
+    fn end_reveal_period(stage_data: EzReferendumStageRevealing<T, I>) {
         // conclude referendum
         let (referendum_result, all_options_results) =
             Mutations::<T, I>::conclude_referendum(stage_data);
@@ -475,14 +490,14 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     }
 
     /// Change the referendum stage from inactive to the voting stage.
-    fn start_revealing_period(old_stage: ReferendumStageVoting<T::BlockNumber>) {
+    fn start_revealing_period(old_stage: EzReferendumStageVoting<T>) {
         let total_options =
             old_stage.extra_options_count + old_stage.extra_winning_target_count + 1;
 
         // change referendum state
-        Stage::<T, I>::put(ReferendumStage::Revealing(ReferendumStageRevealing::<
-            T::BlockNumber,
-            T::VotePower,
+        Stage::<T, I>::put(ReferendumStage::Revealing(EzReferendumStageRevealing::<
+            T,
+            I,
         > {
             started: <system::Module<T>>::block_number(),
             winning_target_count: old_stage.extra_winning_target_count + 1,
@@ -492,12 +507,12 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
     /// Conclude referendum, count votes, and select the winners.
     fn conclude_referendum(
-        revealing_stage: ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
-    ) -> (ReferendumResult<u64, T::VotePower>, Vec<T::VotePower>) {
+        revealing_stage: EzReferendumStageRevealing<T, I>,
+    ) -> (EzReferendumResult<T, I>, Vec<T::VotePower>) {
         // select winning option
         fn calculate_votes<T: Trait<I>, I: Instance>(
-            revealing_stage: &ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
-        ) -> ReferendumResult<u64, T::VotePower> {
+            revealing_stage: &EzReferendumStageRevealing<T, I>,
+        ) -> EzReferendumResult<T, I> {
             let mut winning_order: Vec<(u64, T::VotePower)> = vec![];
 
             for i in 0..(revealing_stage.intermediate_results.len() as u64) {
@@ -563,7 +578,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     }
 
     /// Change the referendum stage from revealing to the inactive stage.
-    fn reset_referendum(previous_cycle_result: &ReferendumResult<u64, T::VotePower>) {
+    fn reset_referendum(previous_cycle_result: &EzReferendumResult<T, I>) {
         Stage::<T, I>::put(ReferendumStage::Inactive(ReferendumStageInactive {
             previous_cycle_result: previous_cycle_result.clone(),
         }));
@@ -600,10 +615,10 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
     /// Reveal user's vote target and check the commitment proof.
     fn reveal_vote(
-        stage_data: ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
+        stage_data: EzReferendumStageRevealing<T, I>,
         account_id: &<T as system::Trait>::AccountId,
         option_index: &u64,
-        cast_vote: CastVote<T::Hash, Balance<T, I>>,
+        cast_vote: EzCastVote<T, I>,
     ) -> Result<(), Error<T, I>> {
         let vote_power = T::caclulate_vote_power(&account_id, &cast_vote.stake);
 
@@ -705,14 +720,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         origin: T::Origin,
         salt: &[u8],
         vote_option_index: &u64,
-    ) -> Result<
-        (
-            ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
-            T::AccountId,
-            CastVote<T::Hash, Balance<T, I>>,
-        ),
-        Error<T, I>,
-    > {
+    ) -> Result<CanRevealResult<T, I>, Error<T, I>> {
         let cycle_id = CurrentCycleId::<I>::get();
 
         // ensure superuser requested action
@@ -753,7 +761,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     fn can_release_stake(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
         fn voted_for_winner_last_cycle<T: Trait<I>, I: Instance>(
-            previous_cycle_result: ReferendumResult<u64, T::VotePower>,
+            previous_cycle_result: EzReferendumResult<T, I>,
             option_voted_for: Option<u64>,
         ) -> bool {
             let voted_for = match option_voted_for {
@@ -824,9 +832,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(account_id)
     }
 
-    fn ensure_vote_exists(
-        account_id: &T::AccountId,
-    ) -> Result<CastVote<T::Hash, Balance<T, I>>, Error<T, I>> {
+    fn ensure_vote_exists(account_id: &T::AccountId) -> Result<EzCastVote<T, I>, Error<T, I>> {
         // ensure there is some vote with locked stake
         if !Votes::<T, I>::contains_key(account_id) {
             return Err(Error::VoteNotExisting);
