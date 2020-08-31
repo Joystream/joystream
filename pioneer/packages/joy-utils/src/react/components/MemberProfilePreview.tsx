@@ -63,7 +63,7 @@ export default function ProfilePreview (
       )}
       <Details size={size}>
         <DetailsHandle size={size}>{handle.toString()}</DetailsHandle>
-        { id !== undefined && <Label size={'small'}>ID <Label.Detail>{id.toString()}</Label.Detail></Label> }
+        { id !== undefined && <div><Label size={'small'}>ID <Label.Detail>{id.toString()}</Label.Detail></Label></div> }
         { children }
       </Details>
     </StyledProfilePreview>
