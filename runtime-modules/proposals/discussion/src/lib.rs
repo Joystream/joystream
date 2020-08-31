@@ -19,26 +19,24 @@
 //! ## Usage
 //!
 //! ```
-//! use srml_support::{decl_module, dispatch::Result};
+//! use frame_support::decl_module;
 //! use system::ensure_root;
-//! use substrate_proposals_discussion_module::{self as discussions};
+//! use pallet_proposals_discussion::{self as discussions};
 //!
-//! pub trait Trait: discussions::Trait + membership::members::Trait {}
+//! pub trait Trait: discussions::Trait + membership::Trait {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-//!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) -> Result {
+//!         #[weight = 10_000_000]
+//!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) {
 //!             ensure_root(origin)?;
 //!             <discussions::Module<T>>::ensure_can_create_thread(author_id, &title)?;
 //!             <discussions::Module<T>>::create_thread(author_id, title)?;
-//!             Ok(())
 //!         }
 //!     }
 //! }
 //! # fn main() {}
 //! ```
-
-//!
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -50,18 +48,16 @@
 mod tests;
 mod types;
 
-use rstd::clone::Clone;
-use rstd::prelude::*;
-use rstd::vec::Vec;
-use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::traits::Get;
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use sp_std::clone::Clone;
+use sp_std::vec::Vec;
 
-use srml_support::traits::Get;
-use types::{Post, Thread, ThreadCounter};
+use common::origin::ActorOriginValidator;
+use types::{DiscussionPost, DiscussionThread, ThreadCounter};
 
-use common::origin_validator::ActorOriginValidator;
-use srml_support::dispatch::DispatchResult;
-
-type MemberId<T> = <T as membership::members::Trait>::MemberId;
+type MemberId<T> = <T as membership::Trait>::MemberId;
 
 decl_event!(
     /// Proposals engine events
@@ -83,8 +79,8 @@ decl_event!(
 );
 
 /// 'Proposal discussion' substrate module Trait
-pub trait Trait: system::Trait + membership::members::Trait {
-    /// Engine event type.
+pub trait Trait: system::Trait + membership::Trait {
+    /// Discussion event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     /// Validates post author id and origin combination
@@ -95,10 +91,10 @@ pub trait Trait: system::Trait + membership::members::Trait {
     >;
 
     /// Discussion thread Id type
-    type ThreadId: From<u32> + Into<u32> + Parameter + Default + Copy;
+    type ThreadId: From<u64> + Into<u64> + Parameter + Default + Copy;
 
     /// Post Id type
-    type PostId: From<u32> + Parameter + Default + Copy;
+    type PostId: From<u64> + Parameter + Default + Copy;
 
     /// Defines post edition number limit.
     type MaxPostEditionNumber: Get<u32>;
@@ -115,7 +111,7 @@ pub trait Trait: system::Trait + membership::members::Trait {
 
 decl_error! {
     /// Discussion module predefined errors
-    pub enum Error {
+    pub enum Error for Module<T: Trait> {
         /// Author should match the post creator
         NotAuthor,
 
@@ -148,32 +144,23 @@ decl_error! {
     }
 }
 
-impl From<system::Error> for Error {
-    fn from(error: system::Error) -> Self {
-        match error {
-            system::Error::Other(msg) => Error::Other(msg),
-            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
-            _ => Error::Other(error.into()),
-        }
-    }
-}
-
 // Storage for the proposals discussion module
 decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalDiscussion {
         /// Map thread identifier to corresponding thread.
-        pub ThreadById get(thread_by_id): map T::ThreadId =>
-            Thread<MemberId<T>, T::BlockNumber>;
+        pub ThreadById get(fn thread_by_id): map hasher(blake2_128_concat)
+            T::ThreadId => DiscussionThread<MemberId<T>, T::BlockNumber>;
 
         /// Count of all threads that have been created.
-        pub ThreadCount get(fn thread_count): u32;
+        pub ThreadCount get(fn thread_count): u64;
 
         /// Map thread id and post id to corresponding post.
-        pub PostThreadIdByPostId: double_map T::ThreadId, twox_128(T::PostId) =>
-             Post<MemberId<T>, T::BlockNumber, T::ThreadId>;
+        pub PostThreadIdByPostId:
+            double_map hasher(blake2_128_concat) T::ThreadId, hasher(blake2_128_concat) T::PostId =>
+                DiscussionPost<MemberId<T>, T::BlockNumber, T::ThreadId>;
 
         /// Count of all posts that have been created.
-        pub PostCount get(fn post_count): u32;
+        pub PostCount get(fn post_count): u64;
 
         /// Last author thread counter (part of the antispam mechanism)
         pub LastThreadAuthorCounter get(fn last_thread_author_counter):
@@ -185,7 +172,7 @@ decl_module! {
     /// 'Proposal discussion' substrate module
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         /// Predefined errors
-        type Error = Error;
+        type Error = Error<T>;
 
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
@@ -203,6 +190,7 @@ decl_module! {
         const MaxThreadInARowNumber: u32 = T::MaxThreadInARowNumber::get();
 
         /// Adds a post with author origin check.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_post(
             origin,
             post_author_id: MemberId<T>,
@@ -213,12 +201,12 @@ decl_module! {
                 origin,
                 post_author_id,
             )?;
-            ensure!(<ThreadById<T>>::exists(thread_id), Error::ThreadDoesntExist);
+            ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
 
-            ensure!(!text.is_empty(),Error::EmptyPostProvided);
+            ensure!(!text.is_empty(),Error::<T>::EmptyPostProvided);
             ensure!(
                 text.len() as u32 <= T::PostLengthLimit::get(),
-                Error::PostIsTooLong
+                Error::<T>::PostIsTooLong
             );
 
             // mutation
@@ -226,7 +214,7 @@ decl_module! {
             let next_post_count_value = Self::post_count() + 1;
             let new_post_id = next_post_count_value;
 
-            let new_post = Post {
+            let new_post = DiscussionPost {
                 text,
                 created_at: Self::current_block(),
                 updated_at: Self::current_block(),
@@ -242,6 +230,7 @@ decl_module! {
        }
 
         /// Updates a post with author origin check. Update attempts number is limited.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_post(
             origin,
             post_author_id: MemberId<T>,
@@ -254,22 +243,22 @@ decl_module! {
                 post_author_id,
             )?;
 
-            ensure!(<ThreadById<T>>::exists(thread_id), Error::ThreadDoesntExist);
-            ensure!(<PostThreadIdByPostId<T>>::exists(thread_id, post_id), Error::PostDoesntExist);
+            ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
+            ensure!(<PostThreadIdByPostId<T>>::contains_key(thread_id, post_id), Error::<T>::PostDoesntExist);
 
-            ensure!(!text.is_empty(), Error::EmptyPostProvided);
+            ensure!(!text.is_empty(), Error::<T>::EmptyPostProvided);
             ensure!(
                 text.len() as u32 <= T::PostLengthLimit::get(),
-                Error::PostIsTooLong
+                Error::<T>::PostIsTooLong
             );
 
             let post = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id);
 
-            ensure!(post.author_id == post_author_id, Error::NotAuthor);
+            ensure!(post.author_id == post_author_id, Error::<T>::NotAuthor);
             ensure!(post.edition_number < T::MaxPostEditionNumber::get(),
-                Error::PostEditionNumberExceeded);
+                Error::<T>::PostEditionNumberExceeded);
 
-            let new_post = Post {
+            let new_post = DiscussionPost {
                 text,
                 updated_at: Self::current_block(),
                 edition_number: post.edition_number + 1,
@@ -290,13 +279,13 @@ impl<T: Trait> Module<T> {
     pub fn create_thread(
         thread_author_id: MemberId<T>,
         title: Vec<u8>,
-    ) -> Result<T::ThreadId, Error> {
+    ) -> Result<T::ThreadId, DispatchError> {
         Self::ensure_can_create_thread(thread_author_id, &title)?;
 
         let next_thread_count_value = Self::thread_count() + 1;
         let new_thread_id = next_thread_count_value;
 
-        let new_thread = Thread {
+        let new_thread = DiscussionThread {
             title,
             created_at: Self::current_block(),
             author_id: thread_author_id,
@@ -320,14 +309,11 @@ impl<T: Trait> Module<T> {
     /// Checks:
     /// - title is valid
     /// - max thread in a row by the same author
-    pub fn ensure_can_create_thread(
-        thread_author_id: MemberId<T>,
-        title: &[u8],
-    ) -> DispatchResult<Error> {
-        ensure!(!title.is_empty(), Error::EmptyTitleProvided);
+    pub fn ensure_can_create_thread(thread_author_id: MemberId<T>, title: &[u8]) -> DispatchResult {
+        ensure!(!title.is_empty(), Error::<T>::EmptyTitleProvided);
         ensure!(
             title.len() as u32 <= T::ThreadTitleLengthLimit::get(),
-            Error::TitleIsTooLong
+            Error::<T>::TitleIsTooLong
         );
 
         // get new 'threads in a row' counter for the author
@@ -335,7 +321,7 @@ impl<T: Trait> Module<T> {
 
         ensure!(
             current_thread_counter.counter as u32 <= T::MaxThreadInARowNumber::get(),
-            Error::MaxThreadInARowLimitExceeded
+            Error::<T>::MaxThreadInARowLimitExceeded
         );
 
         Ok(())

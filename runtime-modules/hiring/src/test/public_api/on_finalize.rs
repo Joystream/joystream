@@ -1,7 +1,7 @@
 use crate::mock::*;
 use crate::test::*;
 
-use runtime_primitives::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{OnFinalize, OnInitialize};
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests

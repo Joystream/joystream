@@ -1,0 +1,28 @@
+
+.JoyElection--NotRunning {
+  /* nothing yet */
+}
+.JoyElection--Running {
+  font-style: italic;
+  color: green;
+}
+.SealedVoteTable {
+  -webkit-box-shadow: 0 1px 2px 0 rgba(34,36,38,.15) !important;
+  box-shadow: 0 1px 2px 0 rgba(34,36,38,.15) !important;
+  tr td:first-child {
+    color: #999 !important;
+    font-weight: normal !important;
+  }
+}
+
+.SidebarSubtitle {
+  &.Announcing {
+    color: #4caf50; /* green */
+  }
+  &.Voting {
+    color: #2196f3; /* blue */
+  }
+  &.Revealing {
+    color: #ff5722; /* red */
+  }
+}

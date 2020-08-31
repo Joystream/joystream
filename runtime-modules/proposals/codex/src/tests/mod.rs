@@ -1,17 +1,19 @@
 mod mock;
 
-use governance::election_params::ElectionParameters;
-use srml_support::traits::Currency;
-use srml_support::StorageMap;
+use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::storage::StorageMap;
+use frame_support::traits::Currency;
 use system::RawOrigin;
 
-use crate::*;
-use crate::{BalanceOf, Error, ProposalDetails};
-use proposal_engine::ProposalParameters;
-use roles::actors::RoleParameters;
-use srml_support::dispatch::DispatchResult;
+use common::working_group::WorkingGroup;
+use governance::election_params::ElectionParameters;
+use hiring::ActivateOpeningAt;
+use proposals_engine::ProposalParameters;
+use working_group::OpeningPolicyCommitment;
 
 use crate::proposal_types::ProposalsConfigParameters;
+use crate::*;
+use crate::{BalanceOf, Error, ProposalDetails};
 pub use mock::*;
 
 pub(crate) fn increase_total_balance_issuance(balance: u64) {
@@ -28,46 +30,49 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, 
 
 struct ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
 where
-    InsufficientRightsCall: Fn() -> DispatchResult<crate::Error>,
-    EmptyStakeCall: Fn() -> DispatchResult<crate::Error>,
-    InvalidStakeCall: Fn() -> DispatchResult<crate::Error>,
-    SuccessfulCall: Fn() -> DispatchResult<crate::Error>,
+    InsufficientRightsCall: Fn() -> DispatchResult,
+    EmptyStakeCall: Fn() -> DispatchResult,
+    InvalidStakeCall: Fn() -> DispatchResult,
+    SuccessfulCall: Fn() -> DispatchResult,
 {
     insufficient_rights_call: InsufficientRightsCall,
     empty_stake_call: EmptyStakeCall,
     invalid_stake_call: InvalidStakeCall,
     successful_call: SuccessfulCall,
     proposal_parameters: ProposalParameters<u64, u64>,
-    proposal_details: ProposalDetails<u64, u64, u64, u64, u64>,
+    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64, u64, u64, u64>,
 }
 
 impl<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
     ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
 where
-    InsufficientRightsCall: Fn() -> DispatchResult<crate::Error>,
-    EmptyStakeCall: Fn() -> DispatchResult<crate::Error>,
-    InvalidStakeCall: Fn() -> DispatchResult<crate::Error>,
-    SuccessfulCall: Fn() -> DispatchResult<crate::Error>,
+    InsufficientRightsCall: Fn() -> DispatchResult,
+    EmptyStakeCall: Fn() -> DispatchResult,
+    InvalidStakeCall: Fn() -> DispatchResult,
+    SuccessfulCall: Fn() -> DispatchResult,
 {
     fn check_for_invalid_stakes(&self) {
-        assert_eq!((self.empty_stake_call)(), Err(Error::Other("EmptyStake")));
+        assert_eq!(
+            (self.empty_stake_call)(),
+            Err(proposals_engine::Error::<Test>::EmptyStake.into())
+        );
 
         assert_eq!(
             (self.invalid_stake_call)(),
-            Err(Error::Other("StakeDiffersFromRequired"))
+            Err(proposals_engine::Error::<Test>::StakeDiffersFromRequired.into())
         );
     }
 
     fn check_call_for_insufficient_rights(&self) {
         assert_eq!(
             (self.insufficient_rights_call)(),
-            Err(Error::Other("RequireSignedOrigin"))
+            Err(DispatchError::Other("Bad origin"))
         );
     }
 
     fn check_for_successful_call(&self) {
         let account_id = 1;
-        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 50000);
+        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 150000);
 
         assert_eq!((self.successful_call)(), Ok(()));
 
@@ -160,7 +165,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
                 None,
                 long_text,
             ),
-            Err(Error::TextProposalSizeExceeded)
+            Err(Error::<Test>::TextProposalSizeExceeded.into())
         );
 
         assert_eq!(
@@ -172,7 +177,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
                 None,
                 Vec::new(),
             ),
-            Err(Error::TextProposalIsEmpty)
+            Err(Error::<Test>::TextProposalIsEmpty.into())
         );
     });
 }
@@ -245,7 +250,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
                 None,
                 long_wasm,
             ),
-            Err(Error::RuntimeProposalSizeExceeded)
+            Err(Error::<Test>::RuntimeProposalSizeExceeded.into())
         );
 
         assert_eq!(
@@ -257,7 +262,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
                 None,
                 Vec::new(),
             ),
-            Err(Error::RuntimeProposalIsEmpty)
+            Err(Error::<Test>::RuntimeProposalIsEmpty.into())
         );
     });
 }
@@ -320,7 +325,7 @@ fn create_set_election_parameters_proposal_common_checks_succeed() {
 
 fn assert_failed_election_parameters_call(
     election_parameters: ElectionParameters<u64, u64>,
-    error: Error,
+    error: DispatchError,
 ) {
     assert_eq!(
         ProposalCodex::create_set_election_parameters_proposal(
@@ -357,117 +362,117 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
         election_parameters.council_size = 2;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterCouncilSize,
+            Error::<Test>::InvalidCouncilElectionParameterCouncilSize.into(),
         );
 
         election_parameters.council_size = 21;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterCouncilSize,
+            Error::<Test>::InvalidCouncilElectionParameterCouncilSize.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.candidacy_limit = 22;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterCandidacyLimit,
+            Error::<Test>::InvalidCouncilElectionParameterCandidacyLimit.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.candidacy_limit = 122;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterCandidacyLimit,
+            Error::<Test>::InvalidCouncilElectionParameterCandidacyLimit.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.min_voting_stake = 0;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterMinVotingStake,
+            Error::<Test>::InvalidCouncilElectionParameterMinVotingStake.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.min_voting_stake = 200000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterMinVotingStake,
+            Error::<Test>::InvalidCouncilElectionParameterMinVotingStake.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.new_term_duration = 10000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterNewTermDuration,
+            Error::<Test>::InvalidCouncilElectionParameterNewTermDuration.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.new_term_duration = 500000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterNewTermDuration,
+            Error::<Test>::InvalidCouncilElectionParameterNewTermDuration.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.min_council_stake = 0;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterMinCouncilStake,
+            Error::<Test>::InvalidCouncilElectionParameterMinCouncilStake.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.min_council_stake = 200000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterMinCouncilStake,
+            Error::<Test>::InvalidCouncilElectionParameterMinCouncilStake.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.voting_period = 10000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterVotingPeriod,
+            Error::<Test>::InvalidCouncilElectionParameterVotingPeriod.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.voting_period = 50000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterVotingPeriod,
+            Error::<Test>::InvalidCouncilElectionParameterVotingPeriod.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.revealing_period = 10000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterRevealingPeriod,
+            Error::<Test>::InvalidCouncilElectionParameterRevealingPeriod.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.revealing_period = 50000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterRevealingPeriod,
+            Error::<Test>::InvalidCouncilElectionParameterRevealingPeriod.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.announcing_period = 10000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterAnnouncingPeriod,
+            Error::<Test>::InvalidCouncilElectionParameterAnnouncingPeriod.into(),
         );
 
         election_parameters = get_valid_election_parameters();
         election_parameters.announcing_period = 50000;
         assert_failed_election_parameters_call(
             election_parameters,
-            Error::InvalidCouncilElectionParameterAnnouncingPeriod,
+            Error::<Test>::InvalidCouncilElectionParameterAnnouncingPeriod.into(),
         );
     });
 }
 
 #[test]
-fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
+fn create_content_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
 
@@ -480,7 +485,7 @@ fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
                 Some(<BalanceOf<Test>>::from(50000u32)),
                 (crate::CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
             ),
-            Err(Error::InvalidStorageWorkingGroupMintCapacity)
+            Err(Error::<Test>::InvalidContentWorkingGroupMintCapacity.into())
         );
     });
 }
@@ -610,7 +615,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
                 0,
                 2,
             ),
-            Err(Error::InvalidSpendingProposalBalance)
+            Err(Error::<Test>::InvalidSpendingProposalBalance.into())
         );
 
         assert_eq!(
@@ -623,7 +628,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
                 2000001,
                 2,
             ),
-            Err(Error::InvalidSpendingProposalBalance)
+            Err(Error::<Test>::InvalidSpendingProposalBalance.into())
         );
     });
 }
@@ -649,7 +654,7 @@ fn create_set_lead_proposal_fails_with_proposed_councilor() {
                 Some(<BalanceOf<Test>>::from(1250u32)),
                 Some((20, lead_account_id)),
             ),
-            Err(Error::InvalidSetLeadParameterCannotBeCouncilor)
+            Err(Error::<Test>::InvalidSetLeadParameterCannotBeCouncilor.into())
         );
     });
 }
@@ -702,59 +707,6 @@ fn create_set_lead_proposal_common_checks_succeed() {
             },
             proposal_parameters: crate::proposal_types::parameters::set_lead_proposal::<Test>(),
             proposal_details: ProposalDetails::SetLead(Some((20, 10))),
-        };
-        proposal_fixture.check_all();
-    });
-}
-
-#[test]
-fn create_evict_storage_provider_proposal_common_checks_succeed() {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
-
-        let proposal_fixture = ProposalTestFixture {
-            insufficient_rights_call: || {
-                ProposalCodex::create_evict_storage_provider_proposal(
-                    RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    1,
-                )
-            },
-            empty_stake_call: || {
-                ProposalCodex::create_evict_storage_provider_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    1,
-                )
-            },
-            invalid_stake_call: || {
-                ProposalCodex::create_evict_storage_provider_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
-                    1,
-                )
-            },
-            successful_call: || {
-                ProposalCodex::create_evict_storage_provider_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(25000u32)),
-                    1,
-                )
-            },
-            proposal_parameters: crate::proposal_types::parameters::evict_storage_provider_proposal::<Test>(),
-            proposal_details: ProposalDetails::EvictStorageProvider(1),
         };
         proposal_fixture.check_all();
     });
@@ -827,7 +779,7 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 Some(<BalanceOf<Test>>::from(500u32)),
                 3,
             ),
-            Err(Error::InvalidValidatorCount)
+            Err(Error::<Test>::InvalidValidatorCount.into())
         );
 
         assert_eq!(
@@ -839,224 +791,7 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 Some(<BalanceOf<Test>>::from(1001u32)),
                 3,
             ),
-            Err(Error::InvalidValidatorCount)
-        );
-    });
-}
-
-#[test]
-fn create_set_storage_role_parameters_proposal_common_checks_succeed() {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-        let role_parameters = RoleParameters {
-            min_actors: 1,
-            ..RoleParameters::default()
-        };
-        let proposal_fixture = ProposalTestFixture {
-            insufficient_rights_call: || {
-                ProposalCodex::create_set_storage_role_parameters_proposal(
-                    RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    role_parameters.clone(),
-                )
-            },
-            empty_stake_call: || {
-                ProposalCodex::create_set_storage_role_parameters_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    role_parameters.clone(),
-                )
-            },
-            invalid_stake_call: || {
-                ProposalCodex::create_set_storage_role_parameters_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
-                    role_parameters.clone(),
-                )
-            },
-            successful_call: || {
-                ProposalCodex::create_set_storage_role_parameters_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(100_000_u32)),
-                    role_parameters.clone(),
-                )
-            },
-            proposal_parameters:
-                crate::proposal_types::parameters::set_storage_role_parameters_proposal::<Test>(),
-            proposal_details: ProposalDetails::SetStorageRoleParameters(role_parameters),
-        };
-        proposal_fixture.check_all();
-    });
-}
-
-fn assert_failed_set_storage_parameters_call(
-    role_parameters: RoleParameters<u64, u64>,
-    error: Error,
-) {
-    assert_eq!(
-        ProposalCodex::create_set_storage_role_parameters_proposal(
-            RawOrigin::Signed(1).into(),
-            1,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(<BalanceOf<Test>>::from(100_000_u32)),
-            role_parameters,
-        ),
-        Err(error)
-    );
-}
-
-#[test]
-fn create_set_storage_role_parameters_proposal_fails_with_invalid_parameters() {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-
-        let working_role_parameters = RoleParameters {
-            min_actors: 1,
-            ..RoleParameters::default()
-        };
-        let mut role_parameters = working_role_parameters.clone();
-        role_parameters.min_actors = 2;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterMinActors,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.max_actors = 1;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterMaxActors,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.max_actors = 100;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterMaxActors,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.reward_period = 599;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterRewardPeriod,
-        );
-
-        role_parameters.reward_period = 28801;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterRewardPeriod,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.bonding_period = 599;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterBondingPeriod,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.bonding_period = 28801;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterBondingPeriod,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.unbonding_period = 599;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterUnbondingPeriod,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.unbonding_period = 28801;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterUnbondingPeriod,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.min_service_period = 599;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterMinServicePeriod,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.min_service_period = 28801;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterMinServicePeriod,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.startup_grace_period = 599;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterStartupGracePeriod,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.startup_grace_period = 28801;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterStartupGracePeriod,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.min_stake = 0;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterMinStake,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.min_stake = 10000001;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterMinStake,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.entry_request_fee = 0;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterEntryRequestFee,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.entry_request_fee = 100001;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterEntryRequestFee,
-        );
-
-        role_parameters = working_role_parameters.clone();
-        role_parameters.reward = 0;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterReward,
-        );
-
-        role_parameters = working_role_parameters;
-        role_parameters.reward = 1001;
-        assert_failed_set_storage_parameters_call(
-            role_parameters,
-            Error::InvalidStorageRoleParameterReward,
+            Err(Error::<Test>::InvalidValidatorCount.into())
         );
     });
 }
@@ -1127,21 +862,597 @@ fn set_default_proposal_parameters_succeeded() {
             <SpendingProposalGracePeriod<Test>>::get(),
             p.spending_proposal_grace_period as u64
         );
+    });
+}
+
+#[test]
+fn create_add_working_group_leader_opening_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        let add_opening_parameters = AddOpeningParameters {
+            activate_at: ActivateOpeningAt::CurrentBlock,
+            commitment: OpeningPolicyCommitment::default(),
+            human_readable_text: b"some text".to_vec(),
+            working_group: WorkingGroup::Storage,
+        };
+
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_add_working_group_leader_opening_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    add_opening_parameters.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_add_working_group_leader_opening_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    add_opening_parameters.clone(),
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_add_working_group_leader_opening_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    add_opening_parameters.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_add_working_group_leader_opening_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(100_000_u32)),
+                    add_opening_parameters.clone(),
+                )
+            },
+            proposal_parameters: crate::proposal_types::parameters::add_working_group_leader_opening_proposal::<
+                Test,
+            >(),
+            proposal_details: ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_parameters.clone()),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_begin_review_working_group_leader_applications_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        let opening_id = 1; // random opening id.
+
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    opening_id,
+                    WorkingGroup::Storage
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    opening_id,
+                    WorkingGroup::Storage
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    opening_id,
+                    WorkingGroup::Storage
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(25000u32)),
+                    opening_id,
+                    WorkingGroup::Storage
+                )
+            },
+            proposal_parameters: crate::proposal_types::parameters::begin_review_working_group_leader_applications_proposal::<
+                Test,
+            >(),
+            proposal_details: ProposalDetails::BeginReviewWorkingGroupLeaderApplications(opening_id,
+                WorkingGroup::Storage),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_fill_working_group_leader_opening_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        let opening_id = 1; // random opening id.
+
+        let fill_opening_parameters = FillOpeningParameters {
+            opening_id,
+            successful_application_id: 1,
+            reward_policy: None,
+            working_group: WorkingGroup::Storage,
+        };
+
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_fill_working_group_leader_opening_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    fill_opening_parameters.clone()
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_fill_working_group_leader_opening_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    fill_opening_parameters.clone()
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_fill_working_group_leader_opening_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    fill_opening_parameters.clone()
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_fill_working_group_leader_opening_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    fill_opening_parameters.clone()
+                )
+            },
+            proposal_parameters: crate::proposal_types::parameters::fill_working_group_leader_opening_proposal::<
+                Test,
+            >(),
+            proposal_details: ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_parameters.clone()),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
         assert_eq!(
-            <EvictStorageProviderProposalVotingPeriod<Test>>::get(),
-            p.evict_storage_provider_proposal_voting_period as u64
+            ProposalCodex::create_set_working_group_mint_capacity_proposal(
+                RawOrigin::Signed(1).into(),
+                1,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(<BalanceOf<Test>>::from(50000u32)),
+                (crate::WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
+                WorkingGroup::Storage,
+            ),
+            Err(Error::<Test>::InvalidWorkingGroupMintCapacity.into())
         );
+    });
+}
+
+#[test]
+fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_set_working_group_mint_capacity_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    WorkingGroup::Storage,
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_set_working_group_mint_capacity_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    WorkingGroup::Storage,
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_set_working_group_mint_capacity_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    0,
+                    WorkingGroup::Storage,
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_set_working_group_mint_capacity_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            proposal_parameters:
+                crate::proposal_types::parameters::set_working_group_mint_capacity_proposal::<Test>(
+                ),
+            proposal_details: ProposalDetails::SetWorkingGroupMintCapacity(
+                10,
+                WorkingGroup::Storage,
+            ),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    10,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            proposal_parameters:
+                crate::proposal_types::parameters::decrease_working_group_leader_stake_proposal::<
+                    Test,
+                >(),
+            proposal_details: ProposalDetails::DecreaseWorkingGroupLeaderStake(
+                10,
+                10,
+                WorkingGroup::Storage,
+            ),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_slash_working_group_leader_stake_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_slash_working_group_leader_stake_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_slash_working_group_leader_stake_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_slash_working_group_leader_stake_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_slash_working_group_leader_stake_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    10,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            proposal_parameters:
+                crate::proposal_types::parameters::slash_working_group_leader_stake_proposal::<
+                    Test,
+                >(),
+            proposal_details: ProposalDetails::SlashWorkingGroupLeaderStake(
+                10,
+                10,
+                WorkingGroup::Storage,
+            ),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn slash_stake_with_zero_staking_balance_fails() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let lead_account_id = 20;
+        <governance::council::Module<Test>>::set_council(
+            RawOrigin::Root.into(),
+            vec![lead_account_id],
+        )
+        .unwrap();
+
         assert_eq!(
-            <EvictStorageProviderProposalGracePeriod<Test>>::get(),
-            p.evict_storage_provider_proposal_grace_period as u64
+            ProposalCodex::create_slash_working_group_leader_stake_proposal(
+                RawOrigin::Signed(1).into(),
+                1,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(<BalanceOf<Test>>::from(50000u32)),
+                10,
+                0,
+                WorkingGroup::Storage,
+            ),
+            Err(Error::<Test>::SlashingStakeIsZero.into())
         );
+    });
+}
+
+#[test]
+fn decrease_stake_with_zero_staking_balance_fails() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance_using_account_id(1, 500000);
+
+        let lead_account_id = 20;
+        <governance::council::Module<Test>>::set_council(
+            RawOrigin::Root.into(),
+            vec![lead_account_id],
+        )
+        .unwrap();
+
         assert_eq!(
-            <SetStorageRoleParametersProposalVotingPeriod<Test>>::get(),
-            p.set_storage_role_parameters_proposal_voting_period as u64
+            ProposalCodex::create_decrease_working_group_leader_stake_proposal(
+                RawOrigin::Signed(1).into(),
+                1,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(<BalanceOf<Test>>::from(50000u32)),
+                10,
+                0,
+                WorkingGroup::Storage,
+            ),
+            Err(Error::<Test>::DecreasingStakeIsZero.into())
         );
-        assert_eq!(
-            <SetStorageRoleParametersProposalGracePeriod<Test>>::get(),
-            p.set_storage_role_parameters_proposal_grace_period as u64
-        );
+    });
+}
+
+#[test]
+fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_set_working_group_leader_reward_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_set_working_group_leader_reward_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_set_working_group_leader_reward_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    0,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_set_working_group_leader_reward_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    10,
+                    10,
+                    WorkingGroup::Storage,
+                )
+            },
+            proposal_parameters:
+                crate::proposal_types::parameters::set_working_group_leader_reward_proposal::<Test>(
+                ),
+            proposal_details: ProposalDetails::SetWorkingGroupLeaderReward(
+                10,
+                10,
+                WorkingGroup::Storage,
+            ),
+        };
+        proposal_fixture.check_all();
+    });
+}
+
+#[test]
+fn create_terminate_working_group_leader_role_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
+        let terminate_role_parameters = TerminateRoleParameters {
+            worker_id: 10,
+            rationale: Vec::new(),
+            slash: false,
+            working_group: WorkingGroup::Storage,
+        };
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_terminate_working_group_leader_role_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    terminate_role_parameters.clone(),
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_terminate_working_group_leader_role_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    terminate_role_parameters.clone(),
+                )
+            },
+            invalid_stake_call: || {
+                ProposalCodex::create_terminate_working_group_leader_role_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    terminate_role_parameters.clone(),
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_terminate_working_group_leader_role_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(<BalanceOf<Test>>::from(100_000_u32)),
+                    terminate_role_parameters.clone(),
+                )
+            },
+            proposal_parameters:
+                crate::proposal_types::parameters::terminate_working_group_leader_role_proposal::<
+                    Test,
+                >(),
+            proposal_details: ProposalDetails::TerminateWorkingGroupLeaderRole(
+                terminate_role_parameters.clone(),
+            ),
+        };
+        proposal_fixture.check_all();
     });
 }

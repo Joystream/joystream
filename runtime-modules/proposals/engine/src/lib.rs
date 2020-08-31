@@ -57,23 +57,25 @@
 //! ## Usage
 //!
 //! ```
-//! use srml_support::{decl_module, dispatch::Result, print};
+//! use frame_support::{decl_module, print};
 //! use system::ensure_signed;
 //! use codec::Encode;
-//! use substrate_proposals_engine_module::{self as engine, ProposalParameters};
+//! use pallet_proposals_engine::{self as engine, ProposalParameters};
 //!
-//! pub trait Trait: engine::Trait + membership::members::Trait {}
+//! pub trait Trait: engine::Trait + membership::Trait {}
 //!
 //! decl_module! {
 //!     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+//!         #[weight = 10_000_000]
 //!         fn executable_proposal(origin) {
 //!             print("executed!");
 //!         }
 //!
+//!         #[weight = 10_000_000]
 //!         pub fn create_spending_proposal(
 //!             origin,
 //!             proposer_id: T::MemberId,
-//!         ) -> Result {
+//!         ) {
 //!             let account_id = ensure_signed(origin)?;
 //!             let parameters = ProposalParameters::default();
 //!             let title = b"Spending proposal".to_vec();
@@ -96,7 +98,6 @@
 //!                 None,
 //!                 encoded_proposal_code
 //!             )?;
-//!             Ok(())
 //!         }
 //!     }
 //! }
@@ -109,6 +110,7 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
+use crate::types::ApprovedProposalData;
 use types::FinalizedProposalData;
 use types::ProposalStakeManager;
 pub use types::{
@@ -126,23 +128,23 @@ pub(crate) mod types;
 mod tests;
 
 use codec::Decode;
-use rstd::prelude::*;
-use sr_primitives::traits::{DispatchResult, Zero};
-use srml_support::traits::{Currency, Get};
-use srml_support::{
+use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
+use frame_support::storage::IterableStorageMap;
+use frame_support::traits::{Currency, Get};
+use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, print, Parameter, StorageDoubleMap,
 };
+use sp_arithmetic::traits::Zero;
+use sp_std::vec::Vec;
 use system::{ensure_root, RawOrigin};
 
-use crate::types::ApprovedProposalData;
-use common::origin_validator::ActorOriginValidator;
-use srml_support::dispatch::Dispatchable;
+use common::origin::ActorOriginValidator;
 
-type MemberId<T> = <T as membership::members::Trait>::MemberId;
+type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Proposals engine trait.
 pub trait Trait:
-    system::Trait + timestamp::Trait + stake::Trait + membership::members::Trait
+    system::Trait + pallet_timestamp::Trait + stake::Trait + membership::Trait
 {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -182,7 +184,7 @@ pub trait Trait:
     type MaxActiveProposalLimit: Get<u32>;
 
     /// Proposals executable code. Can be instantiated by external module Call enum members.
-    type DispatchableCallCode: Parameter + Dispatchable<Origin = Self::Origin> + Default;
+    type DispatchableCallCode: Parameter + UnfilteredDispatchable<Origin = Self::Origin> + Default;
 }
 
 decl_event!(
@@ -218,7 +220,7 @@ decl_event!(
 
 decl_error! {
     /// Engine module predefined errors
-    pub enum Error {
+    pub enum Error for Module<T: Trait>{
         /// Proposal cannot have an empty title"
         EmptyTitleProvided,
 
@@ -266,43 +268,38 @@ decl_error! {
     }
 }
 
-impl From<system::Error> for Error {
-    fn from(error: system::Error) -> Self {
-        match error {
-            system::Error::Other(msg) => Error::Other(msg),
-            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
-            _ => Error::Other(error.into()),
-        }
-    }
-}
-
 // Storage for the proposals engine module
 decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalEngine{
         /// Map proposal by its id.
-        pub Proposals get(fn proposals): map T::ProposalId => ProposalOf<T>;
+        pub Proposals get(fn proposals): map hasher(blake2_128_concat)
+            T::ProposalId => ProposalOf<T>;
 
         /// Count of all proposals that have been created.
         pub ProposalCount get(fn proposal_count): u32;
 
         /// Map proposal executable code by proposal id.
-        pub DispatchableCallCode get(fn proposal_codes): map T::ProposalId =>  Vec<u8>;
+        pub DispatchableCallCode get(fn proposal_codes): map hasher(blake2_128_concat)
+            T::ProposalId =>  Vec<u8>;
 
         /// Count of active proposals.
         pub ActiveProposalCount get(fn active_proposal_count): u32;
 
         /// Ids of proposals that are open for voting (have not been finalized yet).
-        pub ActiveProposalIds get(fn active_proposal_ids): linked_map T::ProposalId=> ();
+        pub ActiveProposalIds get(fn active_proposal_ids): map hasher(blake2_128_concat)
+            T::ProposalId=> ();
 
         /// Ids of proposals that were approved and theirs grace period was not expired.
-        pub PendingExecutionProposalIds get(fn pending_proposal_ids): linked_map T::ProposalId=> ();
+        pub PendingExecutionProposalIds get(fn pending_proposal_ids): map hasher(blake2_128_concat)
+            T::ProposalId=> ();
 
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
         pub VoteExistsByProposalByVoter get(fn vote_by_proposal_by_voter):
-            double_map T::ProposalId, twox_256(MemberId<T>) => VoteKind;
+            double_map hasher(blake2_128_concat)  T::ProposalId, hasher(blake2_128_concat) MemberId<T> => VoteKind;
 
         /// Map proposal id by stake id. Required by StakingEventsHandler callback call
-        pub StakesProposals get(fn stakes_proposals): map T::StakeId =>  T::ProposalId;
+        pub StakesProposals get(fn stakes_proposals): map hasher(blake2_128_concat)
+            T::StakeId =>  T::ProposalId;
     }
 }
 
@@ -310,7 +307,7 @@ decl_module! {
     /// 'Proposal engine' substrate module
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         /// Predefined errors
-        type Error = Error;
+        type Error = Error<T>;
 
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
@@ -331,45 +328,47 @@ decl_module! {
         const MaxActiveProposalLimit: u32 = T::MaxActiveProposalLimit::get();
 
         /// Vote extrinsic. Conditions:  origin must allow votes.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn vote(origin, voter_id: MemberId<T>, proposal_id: T::ProposalId, vote: VoteKind)  {
             T::VoterOriginValidator::ensure_actor_origin(
                 origin,
                 voter_id,
             )?;
 
-            ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
+            ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let mut proposal = Self::proposals(proposal_id);
 
-            ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::ProposalFinalized);
+            ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::<T>::ProposalFinalized);
 
-            let did_not_vote_before = !<VoteExistsByProposalByVoter<T>>::exists(
+            let did_not_vote_before = !<VoteExistsByProposalByVoter<T>>::contains_key(
                 proposal_id,
                 voter_id,
             );
 
-            ensure!(did_not_vote_before, Error::AlreadyVoted);
+            ensure!(did_not_vote_before, Error::<T>::AlreadyVoted);
 
             proposal.voting_results.add_vote(vote.clone());
 
             // mutation
 
             <Proposals<T>>::insert(proposal_id, proposal);
-            <VoteExistsByProposalByVoter<T>>::insert( proposal_id, voter_id, vote.clone());
+            <VoteExistsByProposalByVoter<T>>::insert(proposal_id, voter_id, vote.clone());
             Self::deposit_event(RawEvent::Voted(voter_id, proposal_id, vote));
         }
 
         /// Cancel a proposal by its original proposer.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
             T::ProposerOriginValidator::ensure_actor_origin(
                 origin,
                 proposer_id,
             )?;
 
-            ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
+            ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
-            ensure!(proposer_id == proposal.proposer_id, Error::NotAuthor);
-            ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::ProposalFinalized);
+            ensure!(proposer_id == proposal.proposer_id, Error::<T>::NotAuthor);
+            ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::<T>::ProposalFinalized);
 
             // mutation
 
@@ -377,18 +376,19 @@ decl_module! {
         }
 
         /// Veto a proposal. Must be root.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn veto_proposal(origin, proposal_id: T::ProposalId) {
             ensure_root(origin)?;
 
-            ensure!(<Proposals<T>>::exists(proposal_id), Error::ProposalNotFound);
+            ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
             // mutation
 
-            if <PendingExecutionProposalIds<T>>::exists(proposal_id) {
+            if <PendingExecutionProposalIds<T>>::contains_key(proposal_id) {
                 Self::veto_pending_execution_proposal(proposal_id, proposal);
             } else {
-                ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::ProposalFinalized);
+                ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::<T>::ProposalFinalized);
                 Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Vetoed);
             }
         }
@@ -428,7 +428,7 @@ impl<T: Trait> Module<T> {
         description: Vec<u8>,
         stake_balance: Option<types::BalanceOf<T>>,
         encoded_dispatchable_call_code: Vec<u8>,
-    ) -> Result<T::ProposalId, Error> {
+    ) -> Result<T::ProposalId, DispatchError> {
         Self::ensure_create_proposal_parameters_are_valid(
             &parameters,
             &title,
@@ -492,32 +492,35 @@ impl<T: Trait> Module<T> {
         title: &[u8],
         description: &[u8],
         stake_balance: Option<types::BalanceOf<T>>,
-    ) -> DispatchResult<Error> {
-        ensure!(!title.is_empty(), Error::EmptyTitleProvided);
+    ) -> DispatchResult {
+        ensure!(!title.is_empty(), Error::<T>::EmptyTitleProvided);
         ensure!(
             title.len() as u32 <= T::TitleMaxLength::get(),
-            Error::TitleIsTooLong
+            Error::<T>::TitleIsTooLong
         );
 
-        ensure!(!description.is_empty(), Error::EmptyDescriptionProvided);
+        ensure!(
+            !description.is_empty(),
+            Error::<T>::EmptyDescriptionProvided
+        );
         ensure!(
             description.len() as u32 <= T::DescriptionMaxLength::get(),
-            Error::DescriptionIsTooLong
+            Error::<T>::DescriptionIsTooLong
         );
 
         ensure!(
             (Self::active_proposal_count()) < T::MaxActiveProposalLimit::get(),
-            Error::MaxActiveProposalNumberExceeded
+            Error::<T>::MaxActiveProposalNumberExceeded
         );
 
         ensure!(
             parameters.approval_threshold_percentage > 0,
-            Error::InvalidParameterApprovalThreshold
+            Error::<T>::InvalidParameterApprovalThreshold
         );
 
         ensure!(
             parameters.slashing_threshold_percentage > 0,
-            Error::InvalidParameterSlashingThreshold
+            Error::<T>::InvalidParameterSlashingThreshold
         );
 
         // check stake parameters
@@ -525,15 +528,15 @@ impl<T: Trait> Module<T> {
             if let Some(staked_balance) = stake_balance {
                 ensure!(
                     required_stake == staked_balance,
-                    Error::StakeDiffersFromRequired
+                    Error::<T>::StakeDiffersFromRequired
                 );
             } else {
-                return Err(Error::EmptyStake);
+                return Err(Error::<T>::EmptyStake.into());
             }
         }
 
         if stake_balance.is_some() && parameters.required_stake.is_none() {
-            return Err(Error::StakeShouldBeEmpty);
+            return Err(Error::<T>::StakeShouldBeEmpty.into());
         }
 
         Ok(())
@@ -543,10 +546,10 @@ impl<T: Trait> Module<T> {
     /// There can be a lot of invariant breaks in the scope of this proposal.
     /// Such situations are handled by adding error messages to the log.
     pub fn refund_proposal_stake(stake_id: T::StakeId, imbalance: NegativeImbalance<T>) {
-        if <StakesProposals<T>>::exists(stake_id) {
+        if <StakesProposals<T>>::contains_key(stake_id) {
             let proposal_id = Self::stakes_proposals(stake_id);
 
-            if <Proposals<T>>::exists(proposal_id) {
+            if <Proposals<T>>::contains_key(proposal_id) {
                 let proposal = Self::proposals(proposal_id);
 
                 if let ProposalStatus::Active(active_stake_result) = proposal.status {
@@ -574,7 +577,7 @@ impl<T: Trait> Module<T> {
     /// Resets voting results for active proposals.
     /// Possible application includes new council elections.
     pub fn reset_active_proposals() {
-        <ActiveProposalIds<T>>::enumerate().for_each(|(proposal_id, _)| {
+        <ActiveProposalIds<T>>::iter().for_each(|(proposal_id, _)| {
             <Proposals<T>>::mutate(proposal_id, |proposal| {
                 proposal.reset_proposal();
                 <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
@@ -594,7 +597,7 @@ impl<T: Trait> Module<T> {
     fn get_finalized_proposals() -> Vec<FinalizedProposal<T>> {
         // Enumerate active proposals id and gather finalization data.
         // Skip proposals with unfinished voting.
-        <ActiveProposalIds<T>>::enumerate()
+        <ActiveProposalIds<T>>::iter()
             .filter_map(|(proposal_id, _)| {
                 // load current proposal
                 let proposal = Self::proposals(proposal_id);
@@ -646,10 +649,12 @@ impl<T: Trait> Module<T> {
 
         let approved_proposal_status = match proposal_code_result {
             Ok(proposal_code) => {
-                if let Err(error) = proposal_code.dispatch(T::Origin::from(RawOrigin::Root)) {
-                    ApprovedProposalStatus::failed_execution(
-                        error.into().message.unwrap_or("Dispatch error"),
-                    )
+                if let Err(dispatch_error) =
+                    proposal_code.dispatch_bypass_filter(T::Origin::from(RawOrigin::Root))
+                {
+                    ApprovedProposalStatus::failed_execution(Self::parse_dispatch_error(
+                        dispatch_error.error,
+                    ))
                 } else {
                     ApprovedProposalStatus::Executed
                 }
@@ -758,7 +763,7 @@ impl<T: Trait> Module<T> {
 
     // Enumerates approved proposals and checks their grace period expiration
     fn get_approved_proposal_with_expired_grace_period() -> Vec<ApprovedProposal<T>> {
-        <PendingExecutionProposalIds<T>>::enumerate()
+        <PendingExecutionProposalIds<T>>::iter()
             .filter_map(|(proposal_id, _)| {
                 let proposal = Self::proposals(proposal_id);
 
@@ -794,6 +799,20 @@ impl<T: Trait> Module<T> {
             let next_active_proposal_count_value = current_active_proposal_counter - 1;
             ActiveProposalCount::put(next_active_proposal_count_value);
         };
+    }
+
+    // Parse dispatchable execution result.
+    fn parse_dispatch_error(error: DispatchError) -> &'static str {
+        match error {
+            DispatchError::BadOrigin => error.into(),
+            DispatchError::Other(msg) => msg,
+            DispatchError::CannotLookup => error.into(),
+            DispatchError::Module {
+                index: _,
+                error: _,
+                message: msg,
+            } => msg.unwrap_or("Dispatch error."),
+        }
     }
 }
 

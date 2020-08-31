@@ -15,30 +15,37 @@
 // along with Joystream node.  If not, see <http://www.gnu.org/licenses/>.
 
 // Clippy linter warning.
-#![allow(clippy::identity_op)] // disable it because we use such syntax for a code readability
-                               // Example:  voting_period: 1 * DAY
+// Disable it because we use such syntax for a code readability.
+// Example:  voting_period: 1 * DAY
+#![allow(clippy::identity_op)]
+
+use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
+use serde_json as json;
+use sp_authority_discovery::AuthorityId as AuthorityDiscoveryId;
+use sp_consensus_babe::AuthorityId as BabeId;
+use sp_core::{sr25519, Pair, Public};
+use sp_finality_grandpa::AuthorityId as GrandpaId;
+use sp_runtime::traits::{IdentifyAccount, Verify};
+use sp_runtime::Perbill;
 
 use node_runtime::{
-    versioned_store::InputValidationLengthConstraint as VsInputValidation, ActorsConfig,
+    versioned_store::InputValidationLengthConstraint as VsInputValidation,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, IndicesConfig,
-    MembersConfig, Perbill, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
-    StakerStatus, StakingConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
+    DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, MembersConfig,
+    ProposalsCodexConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
+    StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
-pub use node_runtime::{AccountId, GenesisConfig};
-use primitives::{sr25519, Pair, Public};
-use runtime_primitives::traits::{IdentifyAccount, Verify};
 
-use babe_primitives::AuthorityId as BabeId;
-use grandpa_primitives::AuthorityId as GrandpaId;
-use im_online::sr25519::AuthorityId as ImOnlineId;
-use serde_json as json;
+pub use node_runtime::{AccountId, GenesisConfig};
 
 type AccountPublic = <Signature as Verify>::Signer;
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
-pub type ChainSpec = substrate_service::ChainSpec<GenesisConfig>;
+pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
+
+use node_runtime::common::constraints::InputValidationLengthConstraint;
+use sc_chain_spec::ChainType;
 
 /// The chain specification option. This is expected to come in from the CLI and
 /// is little more than one of a number of alternatives which can easily be converted
@@ -69,21 +76,35 @@ where
 /// Helper function to generate stash, controller and session key from seed
 pub fn get_authority_keys_from_seed(
     seed: &str,
-) -> (AccountId, AccountId, GrandpaId, BabeId, ImOnlineId) {
+) -> (
+    AccountId,
+    AccountId,
+    GrandpaId,
+    BabeId,
+    ImOnlineId,
+    AuthorityDiscoveryId,
+) {
     (
         get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
         get_account_id_from_seed::<sr25519::Public>(seed),
         get_from_seed::<GrandpaId>(seed),
         get_from_seed::<BabeId>(seed),
         get_from_seed::<ImOnlineId>(seed),
+        get_from_seed::<AuthorityDiscoveryId>(seed),
     )
 }
 
-fn session_keys(grandpa: GrandpaId, babe: BabeId, im_online: ImOnlineId) -> SessionKeys {
+fn session_keys(
+    grandpa: GrandpaId,
+    babe: BabeId,
+    im_online: ImOnlineId,
+    authority_discovery: AuthorityDiscoveryId,
+) -> SessionKeys {
     SessionKeys {
         grandpa,
         babe,
         im_online,
+        authority_discovery,
     }
 }
 
@@ -94,6 +115,7 @@ impl Alternative {
             Alternative::Development => ChainSpec::from_genesis(
                 "Development",
                 "dev",
+                ChainType::Development,
                 || {
                     testnet_genesis(
                         vec![get_authority_keys_from_seed("Alice")],
@@ -106,7 +128,7 @@ impl Alternative {
                         ],
                     )
                 },
-                vec![],
+                Vec::new(),
                 None,
                 None,
                 Some(chain_spec_properties()),
@@ -115,6 +137,7 @@ impl Alternative {
             Alternative::LocalTestnet => ChainSpec::from_genesis(
                 "Local Testnet",
                 "local_testnet",
+                ChainType::Local,
                 || {
                     testnet_genesis(
                         vec![
@@ -138,21 +161,13 @@ impl Alternative {
                         ],
                     )
                 },
-                vec![],
+                Vec::new(),
                 None,
                 None,
                 Some(chain_spec_properties()),
                 None,
             ),
         })
-    }
-
-    pub(crate) fn from(s: &str) -> Option<Self> {
-        match s {
-            "dev" => Some(Alternative::Development),
-            "local" => Some(Alternative::LocalTestnet),
-            _ => None,
-        }
     }
 }
 
@@ -174,7 +189,14 @@ pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
 }
 
 pub fn testnet_genesis(
-    initial_authorities: Vec<(AccountId, AccountId, GrandpaId, BabeId, ImOnlineId)>,
+    initial_authorities: Vec<(
+        AccountId,
+        AccountId,
+        GrandpaId,
+        BabeId,
+        ImOnlineId,
+        AuthorityDiscoveryId,
+    )>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
 ) -> GenesisConfig {
@@ -185,35 +207,22 @@ pub fn testnet_genesis(
 
     // default codex proposals config parameters
     let cpcp = node_runtime::ProposalsConfigParameters::default();
+    let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
     GenesisConfig {
         system: Some(SystemConfig {
             code: WASM_BINARY.to_vec(),
             changes_trie_config: Default::default(),
         }),
-        balances: Some(BalancesConfig {
+        pallet_balances: Some(BalancesConfig {
             balances: endowed_accounts
                 .iter()
                 .cloned()
                 .map(|k| (k, ENDOWMENT))
                 .chain(initial_authorities.iter().map(|x| (x.0.clone(), STASH)))
                 .collect(),
-            vesting: vec![],
         }),
-        indices: Some(IndicesConfig { ids: vec![] }),
-        session: Some(SessionConfig {
-            keys: initial_authorities
-                .iter()
-                .map(|x| {
-                    (
-                        x.0.clone(),
-                        session_keys(x.2.clone(), x.3.clone(), x.4.clone()),
-                    )
-                })
-                .collect::<Vec<_>>(),
-        }),
-        staking: Some(StakingConfig {
-            current_era: 0,
+        pallet_staking: Some(StakingConfig {
             validator_count: 20,
             minimum_validator_count: 1,
             stakers: initial_authorities
@@ -224,14 +233,28 @@ pub fn testnet_genesis(
             slash_reward_fraction: Perbill::from_percent(10),
             ..Default::default()
         }),
-        sudo: Some(SudoConfig { key: root_key }),
-        babe: Some(BabeConfig {
+        pallet_sudo: Some(SudoConfig {
+            key: root_key.clone(),
+        }),
+        pallet_babe: Some(BabeConfig {
             authorities: vec![],
         }),
-        im_online: Some(ImOnlineConfig { keys: vec![] }),
-        authority_discovery: Some(AuthorityDiscoveryConfig { keys: vec![] }),
-        grandpa: Some(GrandpaConfig {
+        pallet_im_online: Some(ImOnlineConfig { keys: vec![] }),
+        pallet_authority_discovery: Some(AuthorityDiscoveryConfig { keys: vec![] }),
+        pallet_grandpa: Some(GrandpaConfig {
             authorities: vec![],
+        }),
+        pallet_session: Some(SessionConfig {
+            keys: initial_authorities
+                .iter()
+                .map(|x| {
+                    (
+                        x.0.clone(),
+                        x.0.clone(),
+                        session_keys(x.2.clone(), x.3.clone(), x.4.clone(), x.5.clone()),
+                    )
+                })
+                .collect::<Vec<_>>(),
         }),
         council: Some(CouncilConfig {
             active_council: vec![],
@@ -250,22 +273,23 @@ pub fn testnet_genesis(
                 min_voting_stake: 1 * DOLLARS,
             },
         }),
-        members: Some(MembersConfig {
+        membership: Some(MembersConfig {
             default_paid_membership_fee: 100u128,
-            members: crate::members_config::initial_members(),
+            members: vec![],
         }),
-        forum: Some(crate::forum_config::from_serialized::create(
-            endowed_accounts[0].clone(),
-        )),
+        forum: Some(crate::forum_config::from_serialized::create(root_key)),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
         }),
-        actors: Some(ActorsConfig {
-            enable_storage_role: true,
-            request_life_time: 300,
+        working_group_Instance2: Some(StorageWorkingGroupConfig {
+            phantom: Default::default(),
+            storage_working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
         }),
         versioned_store: Some(VersionedStoreConfig {
             class_by_id: vec![],
@@ -292,14 +316,14 @@ pub fn testnet_genesis(
             next_principal_id: 0,
             channel_creation_enabled: true, // there is no extrinsic to change it so enabling at genesis
             unstaker_by_stake_id: vec![],
-            channel_handle_constraint: crate::forum_config::new_validation(5, 20),
-            channel_description_constraint: crate::forum_config::new_validation(1, 1024),
-            opening_human_readable_text: crate::forum_config::new_validation(1, 2048),
-            curator_application_human_readable_text: crate::forum_config::new_validation(1, 2048),
-            curator_exit_rationale_text: crate::forum_config::new_validation(1, 2048),
-            channel_avatar_constraint: crate::forum_config::new_validation(5, 1024),
-            channel_banner_constraint: crate::forum_config::new_validation(5, 1024),
-            channel_title_constraint: crate::forum_config::new_validation(5, 1024),
+            channel_handle_constraint: InputValidationLengthConstraint::new(5, 20),
+            channel_description_constraint: InputValidationLengthConstraint::new(1, 1024),
+            opening_human_readable_text: InputValidationLengthConstraint::new(1, 2048),
+            curator_application_human_readable_text: InputValidationLengthConstraint::new(1, 2048),
+            curator_exit_rationale_text: InputValidationLengthConstraint::new(1, 2048),
+            channel_avatar_constraint: InputValidationLengthConstraint::new(5, 1024),
+            channel_banner_constraint: InputValidationLengthConstraint::new(5, 1024),
+            channel_title_constraint: InputValidationLengthConstraint::new(5, 1024),
         }),
         proposals_codex: Some(ProposalsCodexConfig {
             set_validator_count_proposal_voting_period: cpcp
@@ -322,14 +346,107 @@ pub fn testnet_genesis(
             set_lead_proposal_grace_period: cpcp.set_lead_proposal_voting_period,
             spending_proposal_voting_period: cpcp.spending_proposal_voting_period,
             spending_proposal_grace_period: cpcp.spending_proposal_grace_period,
-            evict_storage_provider_proposal_voting_period: cpcp
-                .evict_storage_provider_proposal_voting_period,
-            evict_storage_provider_proposal_grace_period: cpcp
-                .evict_storage_provider_proposal_grace_period,
-            set_storage_role_parameters_proposal_voting_period: cpcp
-                .set_storage_role_parameters_proposal_voting_period,
-            set_storage_role_parameters_proposal_grace_period: cpcp
-                .set_storage_role_parameters_proposal_grace_period,
+            add_working_group_opening_proposal_voting_period: cpcp
+                .add_working_group_opening_proposal_voting_period,
+            add_working_group_opening_proposal_grace_period: cpcp
+                .add_working_group_opening_proposal_grace_period,
+            begin_review_working_group_leader_applications_proposal_voting_period: cpcp
+                .begin_review_working_group_leader_applications_proposal_voting_period,
+            begin_review_working_group_leader_applications_proposal_grace_period: cpcp
+                .begin_review_working_group_leader_applications_proposal_grace_period,
+            fill_working_group_leader_opening_proposal_voting_period: cpcp
+                .fill_working_group_leader_opening_proposal_voting_period,
+            fill_working_group_leader_opening_proposal_grace_period: cpcp
+                .fill_working_group_leader_opening_proposal_grace_period,
+            set_working_group_mint_capacity_proposal_voting_period: cpcp
+                .set_content_working_group_mint_capacity_proposal_voting_period,
+            set_working_group_mint_capacity_proposal_grace_period: cpcp
+                .set_content_working_group_mint_capacity_proposal_grace_period,
+            decrease_working_group_leader_stake_proposal_voting_period: cpcp
+                .decrease_working_group_leader_stake_proposal_voting_period,
+            decrease_working_group_leader_stake_proposal_grace_period: cpcp
+                .decrease_working_group_leader_stake_proposal_grace_period,
+            slash_working_group_leader_stake_proposal_voting_period: cpcp
+                .slash_working_group_leader_stake_proposal_voting_period,
+            slash_working_group_leader_stake_proposal_grace_period: cpcp
+                .slash_working_group_leader_stake_proposal_grace_period,
+            set_working_group_leader_reward_proposal_voting_period: cpcp
+                .set_working_group_leader_reward_proposal_voting_period,
+            set_working_group_leader_reward_proposal_grace_period: cpcp
+                .set_working_group_leader_reward_proposal_grace_period,
+            terminate_working_group_leader_role_proposal_voting_period: cpcp
+                .terminate_working_group_leader_role_proposal_voting_period,
+            terminate_working_group_leader_role_proposal_grace_period: cpcp
+                .terminate_working_group_leader_role_proposal_grace_period,
         }),
+    }
+}
+
+#[cfg(test)]
+pub(crate) mod tests {
+    use super::*;
+    use crate::service::{new_full, new_light};
+    use sc_service_test;
+
+    fn local_testnet_genesis_instant_single() -> GenesisConfig {
+        testnet_genesis(
+            vec![get_authority_keys_from_seed("Alice")],
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            vec![get_authority_keys_from_seed("Alice").0],
+        )
+    }
+
+    /// Local testnet config (single validator - Alice)
+    pub fn integration_test_config_with_single_authority() -> ChainSpec {
+        ChainSpec::from_genesis(
+            "Integration Test",
+            "test",
+            ChainType::Development,
+            local_testnet_genesis_instant_single,
+            vec![],
+            None,
+            None,
+            None,
+            Default::default(),
+        )
+    }
+
+    fn local_testnet_genesis() -> GenesisConfig {
+        testnet_genesis(
+            vec![
+                get_authority_keys_from_seed("Alice"),
+                get_authority_keys_from_seed("Bob"),
+            ],
+            get_account_id_from_seed::<sr25519::Public>("Alice"),
+            vec![
+                get_authority_keys_from_seed("Alice").0,
+                get_authority_keys_from_seed("Bob").0,
+            ],
+        )
+    }
+
+    /// Local testnet config (multivalidator Alice + Bob)
+    pub fn integration_test_config_with_two_authorities() -> ChainSpec {
+        ChainSpec::from_genesis(
+            "Integration Test",
+            "test",
+            ChainType::Development,
+            local_testnet_genesis,
+            vec![],
+            None,
+            None,
+            None,
+            Default::default(),
+        )
+    }
+
+    #[test]
+    #[ignore]
+    fn test_connectivity() {
+        sc_service_test::connectivity(
+            integration_test_config_with_two_authorities(),
+            |config| new_full(config),
+            |config| new_light(config),
+        );
     }
 }

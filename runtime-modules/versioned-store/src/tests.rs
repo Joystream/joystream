@@ -3,7 +3,7 @@
 use super::*;
 use crate::mock::*;
 
-use srml_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_ok};
 
 // Create class
 // --------------------------------------

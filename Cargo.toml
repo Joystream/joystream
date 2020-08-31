@@ -12,7 +12,6 @@ members = [
 	"runtime-modules/membership",
 	"runtime-modules/memo",
 	"runtime-modules/recurring-reward",
-	"runtime-modules/roles",
 	"runtime-modules/service-discovery",
 	"runtime-modules/stake",
 	"runtime-modules/storage",
@@ -20,6 +19,7 @@ members = [
 	"runtime-modules/versioned-store",
 	"runtime-modules/versioned-store-permissions",
 	"runtime-modules/content-directory",
+	"runtime-modules/working-group",
 	"node",
 	"utils/chain-spec-builder/"
 ]

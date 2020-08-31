@@ -1,9 +1,13 @@
-use crate::mock::*;
-use crate::test::*;
+use crate::mock::{build_test_externalities, Hiring, Test, FIRST_BLOCK_HEIGHT};
+use crate::test::{BlockNumber, OpeningId};
 use crate::StakingAmountLimitMode::Exact;
-use rstd::collections::btree_set::BTreeSet;
+use crate::*;
+use crate::{
+    ActivateOpeningAt, ActiveOpeningStage, AddOpeningError, ApplicationRationingPolicy, Opening,
+    OpeningStage, StakePurpose, StakingPolicy,
+};
+use sp_std::collections::btree_set::BTreeSet;
 
-static FIRST_BLOCK_HEIGHT: <Test as system::Trait>::BlockNumber = 1;
 pub static HUMAN_READABLE_TEXT: &[u8] = b"HUMAN_READABLE_TEXT!!!!";
 
 pub struct AddOpeningFixture<Balance> {
@@ -39,12 +43,12 @@ impl AddOpeningFixture<OpeningId> {
             // Check next opening id has been updated
             assert_eq!(Hiring::next_opening_id(), expected_opening_id + 1);
             // Check opening exists
-            assert!(<OpeningById<Test>>::exists(expected_opening_id));
+            assert!(<OpeningById<Test>>::contains_key(expected_opening_id));
         } else {
             // Check next opening id has not been updated
             assert_eq!(Hiring::next_opening_id(), expected_opening_id);
             // Check opening does not exist
-            assert!(!<OpeningById<Test>>::exists(expected_opening_id));
+            assert!(!<OpeningById<Test>>::contains_key(expected_opening_id));
         };
 
         //Check opening content
@@ -70,7 +74,7 @@ impl AddOpeningFixture<OpeningId> {
         };
 
         let expected_opening = Opening {
-            created: FIRST_BLOCK_HEIGHT,
+            created: mock::FIRST_BLOCK_HEIGHT,
             stage: expected_opening_stage,
             max_review_period_length: self.max_review_period_length,
             application_rationing_policy: self.application_rationing_policy.clone(),
@@ -143,6 +147,18 @@ fn add_opening_succeeds_or_fails_due_to_application_staking_policy() {
 
         opening_data.call_and_assert(Ok(0));
 
+        //Zero stake amount
+        opening_data.application_staking_policy = Some(StakingPolicy {
+            amount: 0,
+            amount_mode: Exact,
+            crowded_out_unstaking_period_length: None,
+            review_period_expired_unstaking_period_length: None,
+        });
+
+        opening_data.call_and_assert(Err(AddOpeningError::StakeAmountCannotBeZero(
+            StakePurpose::Application,
+        )));
+
         //Invalid stake amount
         opening_data.application_staking_policy = Some(StakingPolicy {
             amount: 1,
@@ -152,7 +168,7 @@ fn add_opening_succeeds_or_fails_due_to_application_staking_policy() {
         });
 
         opening_data.call_and_assert(Err(
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Application),
+            AddOpeningError::StakeAmountLessThanMinimumStakeBalance(StakePurpose::Application),
         ));
     });
 }
@@ -171,6 +187,18 @@ fn add_opening_succeeds_or_fails_due_to_role_staking_policy() {
 
         opening_data.call_and_assert(Ok(0));
 
+        //Zero stake amount
+        opening_data.role_staking_policy = Some(StakingPolicy {
+            amount: 0,
+            amount_mode: Exact,
+            crowded_out_unstaking_period_length: None,
+            review_period_expired_unstaking_period_length: None,
+        });
+
+        opening_data.call_and_assert(Err(AddOpeningError::StakeAmountCannotBeZero(
+            StakePurpose::Role,
+        )));
+
         //Invalid stake amount
         opening_data.role_staking_policy = Some(StakingPolicy {
             amount: 1,
@@ -180,7 +208,7 @@ fn add_opening_succeeds_or_fails_due_to_role_staking_policy() {
         });
 
         opening_data.call_and_assert(Err(
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Role),
+            AddOpeningError::StakeAmountLessThanMinimumStakeBalance(StakePurpose::Role),
         ));
     });
 }

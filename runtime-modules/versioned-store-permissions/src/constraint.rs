@@ -1,5 +1,5 @@
 use codec::{Decode, Encode};
-use rstd::collections::btree_set::BTreeSet;
+use sp_std::collections::btree_set::BTreeSet;
 
 /// Reference to a specific property of a specific class.
 #[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Debug)]

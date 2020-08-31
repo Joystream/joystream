@@ -1,0 +1,22 @@
+{
+  "name": "@joystream/prettier-config",
+  "version": "1.0.0",
+  "description": "joystream prettier shared config",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joystream/joystream.git"
+  },
+  "author": "Joystream contributors",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/joystream/joystream/issues"
+  },
+  "homepage": "https://github.com/joystream/joystream#readme",
+  "peerDependencies": {
+    "prettier": ">= 2"
+  }
+}
