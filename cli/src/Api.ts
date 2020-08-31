@@ -92,19 +92,21 @@ export default class Api {
     return new Api(originalApi)
   }
 
-  private async queryMultiOnce(queries: Parameters<typeof ApiPromise.prototype.queryMulti>[0]): Promise<Codec[]> {
-    let results: Codec[] = []
-
-    const unsub = await this._api.queryMulti(queries, (res) => {
-      results = res
+  private queryMultiOnce(queries: Parameters<typeof ApiPromise.prototype.queryMulti>[0]): Promise<Codec[]> {
+    return new Promise((resolve, reject) => {
+      let unsub: () => void
+      this._api
+        .queryMulti(queries, (res) => {
+          // unsub should already be set at this point
+          if (!unsub) {
+            reject(new CLIError('API queryMulti issue - unsub method not set!', { exit: ExitCodes.ApiError }))
+          }
+          unsub()
+          resolve(res)
+        })
+        .then((unsubscribe) => (unsub = unsubscribe))
+        .catch((e) => reject(e))
     })
-    unsub()
-
-    if (!results.length || results.length !== queries.length) {
-      throw new CLIError('API querying issue', { exit: ExitCodes.ApiError })
-    }
-
-    return results
   }
 
   async getAccountsBalancesInfo(accountAddresses: string[]): Promise<DeriveBalancesAll[]> {
