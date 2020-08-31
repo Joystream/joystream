@@ -21,7 +21,7 @@ export default class QueryNodeManager {
    * 
    * @param options options passed to create the indexer service
    */
-  async start(options: QueryNodeStartUpOptions): Promise<void> {
+  async index(options: QueryNodeStartUpOptions): Promise<void> {
     if (this._query_node) throw Error('Cannot start the same manager multiple times.');
 
     this._query_node = await QueryNode.create(options);
