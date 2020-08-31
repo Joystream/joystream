@@ -122,20 +122,19 @@ struct ChannelAndId {
 
 #[derive(Deserialize)]
 struct EncodedChannelAndId {
-    /// hex encoded ChannelId
-    id: String,
+    /// ChannelId number
+    id: u64,
     /// hex encoded Channel
     channel: String,
 }
 
 impl EncodedChannelAndId {
     fn decode(&self) -> ChannelAndId {
-        let encoded_id =
-            hex::decode(&self.id[2..].as_bytes()).expect("failed to parse channel id hex string");
+        let id = self.id;
         let encoded_channel =
             hex::decode(&self.channel[2..].as_bytes()).expect("failed to parse channel hex string");
         ChannelAndId {
-            id: Decode::decode(&mut encoded_id.as_slice()).unwrap(),
+            id: id as ChannelId<Runtime>,
             channel: Decode::decode(&mut encoded_channel.as_slice()).unwrap(),
         }
     }
