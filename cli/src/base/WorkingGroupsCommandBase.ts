@@ -114,9 +114,9 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
   }
 
   async promptForNewOpeningDraftName() {
-    let draftName = '',
-      fileExists = false,
-      overrideConfirmed = false
+    let draftName = ''
+    let fileExists = false
+    let overrideConfirmed = false
 
     do {
       draftName = await this.simplePrompt({

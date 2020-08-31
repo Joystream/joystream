@@ -10,6 +10,7 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
   static description =
     'Decreases given worker stake by an amount that will be returned to the worker role account. ' +
     'Requires lead access.'
+
   static args = [
     {
       name: 'workerId',
@@ -17,6 +18,7 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
       description: 'Worker ID',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }

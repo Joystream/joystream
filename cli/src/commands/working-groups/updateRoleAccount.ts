@@ -12,6 +12,7 @@ export default class WorkingGroupsUpdateRoleAccount extends WorkingGroupsCommand
       description: 'New role account address (if omitted, one of the existing CLI accounts can be selected)',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }

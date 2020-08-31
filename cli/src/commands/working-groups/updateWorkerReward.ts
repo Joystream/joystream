@@ -16,6 +16,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
       description: 'Worker ID',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }

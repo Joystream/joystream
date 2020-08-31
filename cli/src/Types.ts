@@ -198,9 +198,11 @@ export class HRTJobSpecificsStruct
   get title(): string {
     return this.getField('title').toString()
   }
+
   get description(): string {
     return this.getField('description').toString()
   }
+
   toJSONObj(): JobSpecifics {
     const { title, description } = this
     return { title, description }
@@ -214,6 +216,7 @@ export class HRTEntryInMembershipModukeStruct
   get handle(): string {
     return this.getField('handle').toString()
   }
+
   toJSONObj(): EntryInMembershipModuke {
     const { handle } = this
     return { handle }
@@ -227,6 +230,7 @@ export class HRTCreatorDetailsStruct
   get membership(): EntryInMembershipModuke {
     return this.getField('membership').toJSONObj()
   }
+
   toJSONObj(): CreatorDetails {
     const { membership } = this
     return { membership }
@@ -242,6 +246,7 @@ export class HRTHiringProcessStruct
       .toArray()
       .map((v) => v.toString())
   }
+
   toJSONObj(): HiringProcess {
     const { details } = this
     return { details }
@@ -256,9 +261,11 @@ export class HRTQuestionFieldStruct
   get title(): string {
     return this.getField('title').toString()
   }
+
   get type(): string {
     return this.getField('type').toString()
   }
+
   toJSONObj(): QuestionField {
     const { title, type } = this
     return { title, type }
@@ -278,9 +285,11 @@ export class HRTQuestionSectionStruct
   get title(): string {
     return this.getField('title').toString()
   }
+
   get questions(): QuestionsFields {
     return this.getField('questions').toJSONObj()
   }
+
   toJSONObj(): QuestionSection {
     const { title, questions } = this
     return { title, questions }
@@ -300,6 +309,7 @@ export class HRTApplicationDetailsStruct
   get sections(): QuestionSections {
     return this.getField('sections').toJSONObj()
   }
+
   toJSONObj(): ApplicationDetails {
     const { sections } = this
     return { sections }
@@ -319,24 +329,31 @@ export class HRTStruct
   get version(): number {
     return this.getField('version').toNumber()
   }
+
   get headline(): string {
     return this.getField('headline').toString()
   }
+
   get job(): JobSpecifics {
     return this.getField('job').toJSONObj()
   }
+
   get application(): ApplicationDetails {
     return this.getField('application').toJSONObj()
   }
+
   get reward(): string {
     return this.getField('reward').toString()
   }
+
   get creator(): CreatorDetails {
     return this.getField('creator').toJSONObj()
   }
+
   get process(): HiringProcess {
     return this.getField('process').toJSONObj()
   }
+
   toJSONObj(): GenericJoyStreamRoleSchema {
     const { version, headline, job, application, reward, creator, process } = this
     return { version, headline, job, application, reward, creator, process }

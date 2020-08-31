@@ -13,6 +13,7 @@ export default class WorkingGroupsUpdateRewardAccount extends WorkingGroupsComma
       description: 'New reward account address (if omitted, one of the existing CLI accounts can be selected)',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }

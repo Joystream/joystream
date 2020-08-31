@@ -13,6 +13,7 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
       description: 'Worker ID',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }

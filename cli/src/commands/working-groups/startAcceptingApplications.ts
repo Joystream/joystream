@@ -12,6 +12,7 @@ export default class WorkingGroupsStartAcceptingApplications extends WorkingGrou
       description: 'Working Group Opening ID',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }

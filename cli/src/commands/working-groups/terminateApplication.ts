@@ -12,6 +12,7 @@ export default class WorkingGroupsTerminateApplication extends WorkingGroupsComm
       description: 'Working Group Application ID',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }

@@ -12,6 +12,7 @@ export default class WorkingGroupsStartReviewPeriod extends WorkingGroupsCommand
       description: 'Working Group Opening ID',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }

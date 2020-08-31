@@ -15,6 +15,7 @@ export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
       description: 'Worker ID',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }

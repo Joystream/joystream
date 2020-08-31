@@ -129,7 +129,7 @@ export default class ApiInspect extends ApiCommandBase {
     api: ApiPromise,
     flags: ApiInspectFlags
   ): { apiType: ApiType | undefined; apiModule: string | undefined; apiMethod: string | undefined } {
-    let apiType: ApiType | undefined = undefined
+    let apiType: ApiType | undefined
     const { module: apiModule, method: apiMethod } = flags
 
     if (flags.type !== undefined) {

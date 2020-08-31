@@ -3,8 +3,8 @@ import { CLIError } from '@oclif/errors'
 import StateAwareCommandBase from './StateAwareCommandBase'
 import Api from '../Api'
 import { getTypeDef, Option, Tuple, Bytes } from '@polkadot/types'
-import { Registry } from '@polkadot/types/types'
-import { Codec, CodecArg, TypeDef, TypeDefInfo, Constructor } from '@polkadot/types/types'
+import { Registry, Codec, CodecArg, TypeDef, TypeDefInfo, Constructor } from '@polkadot/types/types'
+
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -332,8 +332,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       typeDef.name = argName
     }
 
-    let isValid = true,
-      jsonText: string
+    let isValid = true
+    let jsonText: string
     do {
       const structVal = await this.promptForStruct(typeDef, createParamOptions(typeDef.name, defaultStruct))
       jsonText = JSON.stringify(structVal.toJSON())
