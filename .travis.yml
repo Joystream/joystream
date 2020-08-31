@@ -7,15 +7,9 @@ language: rust
 # sometimes break the build. When cache is enabled do not use the produced WASM build.
 # This also means the binary should not be used to produce the final chainspec file (because the same
 # one is embedded in the binary)
-cache: cargo
+# cache: cargo
 
-rust:
-  - stable
-
-matrix:
-  include:
-    - os: linux
-      env: TARGET=x86_64-unknown-linux-gnu
+rust: stable
 
 # Skip Rust build in a pull request if no rust project files were modified
 before_install:
@@ -41,7 +35,8 @@ before_script:
 
 script:
   # we set release as build type for all steps to benefit from already compiled packages in prior steps
-  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --target=${TARGET} -- -D warnings
-  - BUILD_DUMMY_WASM_BINARY=1 cargo test --release --verbose --all --target=${TARGET}
-  - TRIGGER_WASM_BUILD=1 WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release --target=${TARGET} -p joystream-node
-  - ls -l ./target/${TARGET}/release/wbuild/joystream-node-runtime/
+  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release -- -D warnings
+  - BUILD_DUMMY_WASM_BINARY=1 cargo test --release --verbose --all
+  - TRIGGER_WASM_BUILD=1 WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release -p joystream-node
+  - ls -l ./target/release/wbuild/joystream-node-runtime/
+  - ./target/release/joystream-node --version

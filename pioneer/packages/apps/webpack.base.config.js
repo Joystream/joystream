@@ -98,7 +98,7 @@ function createWebpack (ENV, context) {
           ]
         },
         {
-          exclude: [/semantic-ui-css/],
+          // Original config had "exclude: [/semantic-ui-css/]"
           test: [/\.bmp$/, /\.gif$/, /\.jpe?g$/, /\.png$/],
           use: [
             {
@@ -112,7 +112,8 @@ function createWebpack (ENV, context) {
           ]
         },
         {
-          exclude: [/semantic-ui-css/],
+          // Original config had "exclude: [/semantic-ui-css/]", because Semantic UI Icons
+          // are not used in polkadot-js/apps repository, but they are used in ours
           test: [/\.eot$/, /\.ttf$/, /\.svg$/, /\.woff$/, /\.woff2$/],
           use: [
             {
@@ -121,15 +122,6 @@ function createWebpack (ENV, context) {
                 esModule: false,
                 name: 'static/[name].[hash:8].[ext]'
               }
-            }
-          ]
-        },
-        {
-          include: [/semantic-ui-css/],
-          test: [/\.bmp$/, /\.gif$/, /\.jpe?g$/, /\.png$/, /\.eot$/, /\.ttf$/, /\.svg$/, /\.woff$/, /\.woff2$/],
-          use: [
-            {
-              loader: require.resolve('null-loader')
             }
           ]
         }

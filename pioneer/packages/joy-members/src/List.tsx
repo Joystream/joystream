@@ -4,13 +4,14 @@ import React from 'react';
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 
-import Section from '@polkadot/joy-utils/Section';
+import { Section } from '@polkadot/joy-utils/react/components';
 import translate from './translate';
 import Details from './Details';
 import { MemberId } from '@joystream/types/members';
 import { RouteComponentProps, Redirect } from 'react-router-dom';
 import { Pagination, Icon, PaginationProps } from 'semantic-ui-react';
 import styled from 'styled-components';
+import { withApi } from '@polkadot/react-api';
 
 const StyledPagination = styled(Pagination)`
   border-bottom: 1px solid #ddd !important;
@@ -22,7 +23,7 @@ type Props = ApiProps & I18nProps & RouteComponentProps & {
   match: { params: { page?: string } };
 };
 
-type State = {};
+type State = Record<any, never>;
 
 const MEMBERS_PER_PAGE = 20;
 
@@ -31,7 +32,8 @@ class Component extends React.PureComponent<Props, State> {
 
   onPageChange = (e: React.MouseEvent, data: PaginationProps) => {
     const { history } = this.props;
-    history.push(`/members/list/${data.activePage}`);
+
+    history.push(`/members/list/${data.activePage || 1}`);
   }
 
   renderPagination (currentPage: number, pagesCount: number) {
@@ -55,7 +57,8 @@ class Component extends React.PureComponent<Props, State> {
     const {
       firstMemberId,
       membersCreated,
-      match: { params: { page } }
+      match: { params: { page } },
+      api
     } = this.props;
 
     const membersCount = membersCreated.toNumber();
@@ -67,11 +70,13 @@ class Component extends React.PureComponent<Props, State> {
     }
 
     const ids: MemberId[] = [];
+
     if (membersCount > 0) {
       const firstId = firstMemberId.toNumber() + (currentPage - 1) * MEMBERS_PER_PAGE;
       const lastId = Math.min(firstId + MEMBERS_PER_PAGE, membersCount) - 1;
+
       for (let i = firstId; i <= lastId; i++) {
-        ids.push(new MemberId(i));
+        ids.push(api.createType('MemberId', i));
       }
     }
 
@@ -95,4 +100,4 @@ class Component extends React.PureComponent<Props, State> {
   }
 }
 
-export default translate(Component);
+export default translate(withApi(Component));
