@@ -30,8 +30,11 @@ mod tests;
 /// Possible referendum states.
 #[derive(Encode, Decode, PartialEq, Eq, Debug)]
 pub enum ReferendumStage<BlockNumber, VotePower> {
+    /// The referendum is dormant and waiting to be started by external source.
     Inactive(ReferendumStageInactive<VotePower>),
+    /// In the voting stage, users can cast their sealed votes.
     Voting(ReferendumStageVoting<BlockNumber>),
+    /// In the revealing stage, users can reveal votes they cast in the voting stage.
     Revealing(ReferendumStageRevealing<BlockNumber, VotePower>),
 }
 
@@ -46,32 +49,32 @@ impl<BlockNumber, VotePower> Default for ReferendumStage<BlockNumber, VotePower>
 /// Representation for inactive stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageInactive<VotePower> {
-    previous_cycle_result: ReferendumResult<u64, VotePower>,
+    previous_cycle_result: ReferendumResult<u64, VotePower>, // result of the previous referendum cycle
 }
 
 /// Representation for voting stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageVoting<BlockNumber> {
-    started: BlockNumber,
-    extra_options_count: u64, // number of options that exceeding the number of winners
+    started: BlockNumber,            // block in which referendum started
+    extra_options_count: u64,        // number of options that exceeding the number of winners
     extra_winning_target_count: u64, // positive number when there are more than 1 winner
 }
 
 /// Representation for revealing stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
-    started: BlockNumber,
-    winning_target_count: u64, // positive number when there are more than 1 winner
-    intermediate_results: Vec<VotePower>,
+    started: BlockNumber,                 // block in which referendum started
+    winning_target_count: u64,            // positive number when there are more than 1 winner
+    intermediate_results: Vec<VotePower>, // votes that options have recieved at a given time
 }
 
 /// Vote cast in referendum. Vote target is concealed until user reveals commitment's proof.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct CastVote<Hash, Currency> {
-    commitment: Hash,
-    cycle_id: u64,
-    balance: Currency,
-    vote_for: Option<u64>,
+    commitment: Hash, // a commitment that a user submits in the voting stage before revealing what this vote is actually for
+    cycle_id: u64,    // current referendum cycle number
+    balance: Currency, // stake locked for vote
+    vote_for: Option<u64>, // target option this vote favors; is `None` before the vote is revealed
 }
 
 /// Possible referendum outcomes.
