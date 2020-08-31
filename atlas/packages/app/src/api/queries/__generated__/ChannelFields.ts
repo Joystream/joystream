@@ -8,9 +8,9 @@
 // ====================================================
 
 export interface ChannelFields {
-  __typename: 'Channel'
-  id: string
-  handle: string
-  avatarPhotoURL: string
-  totalViews: number
+  __typename: "Channel";
+  id: string;
+  handle: string;
+  avatarPhotoURL: string;
+  totalViews: number;
 }

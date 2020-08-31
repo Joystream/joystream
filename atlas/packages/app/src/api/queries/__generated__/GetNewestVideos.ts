@@ -52,3 +52,8 @@ export interface GetNewestVideos_videos {
 export interface GetNewestVideos {
   videos: GetNewestVideos_videos[]
 }
+
+export interface GetNewestVideosVariables {
+  offset?: number | null
+  limit?: number | null
+}

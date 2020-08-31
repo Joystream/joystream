@@ -3,7 +3,7 @@ import { css, SerializedStyles } from '@emotion/core'
 import styled from '@emotion/styled'
 import { navigate } from '@reach/router'
 
-import { Gallery, VideoPreview, VideoPreviewBase } from '@/shared/components'
+import { Gallery, MAX_VIDEO_PREVIEW_WIDTH, VideoPreview, VideoPreviewBase } from '@/shared/components'
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 import { CAROUSEL_CONTROL_SIZE } from '@/shared/components/Carousel'
 import routes from '@/config/routes'
@@ -78,11 +78,15 @@ const StyledVideoPreviewBase = styled(VideoPreviewBase)`
   & + & {
     margin-left: 1.25rem;
   }
+
+  width: ${MAX_VIDEO_PREVIEW_WIDTH};
 `
 const StyledVideoPreview = styled(VideoPreview)`
   & + & {
     margin-left: 1.25rem;
   }
+
+  width: ${MAX_VIDEO_PREVIEW_WIDTH};
 `
 
 export default VideoGallery
