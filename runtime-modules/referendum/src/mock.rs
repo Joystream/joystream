@@ -460,7 +460,7 @@ impl InstanceMocks<Runtime, Instance0> {
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         account_id: <Runtime as system::Trait>::AccountId,
         commitment: <Runtime as system::Trait>::Hash,
-        balance: Balance<Runtime, Instance0>,
+        stake: Balance<Runtime, Instance0>,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
         // check method returns expected result
@@ -468,7 +468,7 @@ impl InstanceMocks<Runtime, Instance0> {
             Module::<Runtime, Instance0>::vote(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
                 commitment,
-                balance,
+                stake,
             ),
             expected_result,
         );
@@ -482,7 +482,7 @@ impl InstanceMocks<Runtime, Instance0> {
             CastVote {
                 commitment,
                 cycle_id: CurrentCycleId::<Instance0>::get(),
-                balance,
+                stake,
                 vote_for: None,
             },
         );
@@ -490,7 +490,7 @@ impl InstanceMocks<Runtime, Instance0> {
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::event_mod_Instance0(RawEvent::VoteCast(account_id, commitment, balance))
+            TestEvent::event_mod_Instance0(RawEvent::VoteCast(account_id, commitment, stake))
         );
     }
 
