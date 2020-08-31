@@ -451,6 +451,7 @@ struct Mutations<T: Trait<I>, I: Instance> {
 }
 
 impl<T: Trait<I>, I: Instance> Mutations<T, I> {
+    /// Change the referendum stage from inactive to voting stage.
     fn start_voting_period(extra_options_count: &u64, extra_winning_target_count: &u64) {
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Voting(ReferendumStageVoting::<
@@ -462,6 +463,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         }));
     }
 
+    /// Change the referendum stage from inactive to the voting stage.
     fn start_revealing_period(old_stage: ReferendumStageVoting<T::BlockNumber>) {
         let total_options =
             old_stage.extra_options_count + old_stage.extra_winning_target_count + 1;
@@ -477,6 +479,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         }));
     }
 
+    /// Conclude referendum, count votes, and select the winners.
     fn conclude_referendum(
         revealing_stage: ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
     ) -> ReferendumResult<u64, T::VotePower> {
@@ -548,6 +551,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         referendum_result
     }
 
+    /// Change the referendum stage from revealing to the inactive stage.
     fn reset_referendum(previous_cycle_result: &ReferendumResult<u64, T::VotePower>) {
         Stage::<T, I>::put(ReferendumStage::Inactive(ReferendumStageInactive {
             previous_cycle_result: previous_cycle_result.clone(),
@@ -555,7 +559,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         CurrentCycleId::<I>::put(CurrentCycleId::<I>::get() + 1);
     }
 
-    /// Can return error when stake fails to lock
+    /// Cast a user's sealed vote for the current referendum cycle.
     fn vote(
         account_id: &<T as system::Trait>::AccountId,
         commitment: &T::Hash,
@@ -583,6 +587,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         Ok(())
     }
 
+    /// Reveal user's vote target and check the commitment proof.
     fn reveal_vote(
         stage_data: ReferendumStageRevealing<T::BlockNumber, T::VotePower>,
         account_id: &<T as system::Trait>::AccountId,
@@ -616,6 +621,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         Ok(())
     }
 
+    /// Release stake associated to the user's last vote.
     fn release_stake(account_id: &<T as system::Trait>::AccountId) {
         // lock stake amount
         T::Currency::remove_lock(T::LockId::get(), account_id);
