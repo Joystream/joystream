@@ -413,10 +413,7 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
         Mutations::<T, I>::start_voting_period(&extra_options_count, &extra_winning_target_count);
 
         // emit event
-        Self::deposit_event(RawEvent::ReferendumStarted(
-            total_options,
-            total_winners,
-        ));
+        Self::deposit_event(RawEvent::ReferendumStarted(total_options, total_winners));
 
         Ok(())
     }
@@ -460,7 +457,8 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     }
 
     fn start_revealing_period(old_stage: ReferendumStageVoting<T::BlockNumber>) {
-        let total_options = old_stage.extra_options_count + old_stage.extra_winning_target_count + 1;
+        let total_options =
+            old_stage.extra_options_count + old_stage.extra_winning_target_count + 1;
 
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Revealing(ReferendumStageRevealing::<

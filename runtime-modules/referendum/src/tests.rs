@@ -365,7 +365,8 @@ fn reveal_salt_too_long() {
 
         let option_to_vote_for = 1;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
-        let (commitment, _) = MockUtils::calculate_commitment_custom_salt(&account_id, &option_to_vote_for, &salt);
+        let (commitment, _) =
+            MockUtils::calculate_commitment_custom_salt(&account_id, &option_to_vote_for, &salt);
 
         Mocks::start_referendum_extrinsic(
             origin.clone(),

@@ -295,7 +295,12 @@ where
         custom_salt: &[u8],
     ) -> (T::Hash, Vec<u8>) {
         let cycle_id = CurrentCycleId::<I>::get();
-        Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index, Some(custom_salt))
+        Self::calculate_commitment_for_cycle(
+            account_id,
+            &cycle_id,
+            vote_option_index,
+            Some(custom_salt),
+        )
     }
 
     pub fn generate_salt() -> Vec<u8> {
@@ -310,7 +315,6 @@ where
         vote_option_index: &u64,
         custom_salt: Option<&[u8]>,
     ) -> (T::Hash, Vec<u8>) {
-
         let salt = match custom_salt {
             Some(tmp_salt) => tmp_salt.to_vec(),
             None => Self::generate_salt(),
@@ -354,7 +358,11 @@ impl InstanceMocks<Runtime, Instance0> {
             expected_result,
         );
 
-        Self::start_referendum_inner(extra_options_count, extra_winning_target_count, expected_result)
+        Self::start_referendum_inner(
+            extra_options_count,
+            extra_winning_target_count,
+            expected_result,
+        )
     }
 
     pub fn start_referendum_manager(
@@ -375,7 +383,11 @@ impl InstanceMocks<Runtime, Instance0> {
             expected_result,
         );
 
-        Self::start_referendum_inner(extra_options_count, extra_winning_target_count, expected_result)
+        Self::start_referendum_inner(
+            extra_options_count,
+            extra_winning_target_count,
+            expected_result,
+        )
     }
 
     fn start_referendum_inner(
@@ -402,10 +414,7 @@ impl InstanceMocks<Runtime, Instance0> {
 
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::from(RawEvent::ReferendumStarted(
-                total_options,
-                total_winners,
-            ))
+            TestEvent::from(RawEvent::ReferendumStarted(total_options, total_winners,))
         );
     }
 
