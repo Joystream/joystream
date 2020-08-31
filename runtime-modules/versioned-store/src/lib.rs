@@ -15,6 +15,7 @@
 use serde::{Deserialize, Serialize};
 
 use codec::{Decode, Encode};
+use common::constraints::InputValidationLengthConstraint;
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
@@ -66,43 +67,6 @@ const ERROR_TEXT_PROP_IS_TOO_LONG: &str = "Text propery is too long";
 const ERROR_VEC_PROP_IS_TOO_LONG: &str = "Vector propery is too long";
 const ERROR_INTERNAL_RPOP_DOES_NOT_MATCH_ITS_CLASS: &str =
     "Internal property does not match its class";
-
-/// Length constraint for input validation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct InputValidationLengthConstraint {
-    /// Minimum length
-    pub min: u16,
-
-    /// Difference between minimum length and max length.
-    /// While having max would have been more direct, this
-    /// way makes max < min unrepresentable semantically,
-    /// which is safer.
-    pub max_min_diff: u16,
-}
-
-impl InputValidationLengthConstraint {
-    /// Helper for computing max
-    pub fn max(&self) -> u16 {
-        self.min + self.max_min_diff
-    }
-
-    pub fn ensure_valid(
-        &self,
-        len: usize,
-        too_short_msg: &'static str,
-        too_long_msg: &'static str,
-    ) -> Result<(), &'static str> {
-        let length = len as u16;
-        if length < self.min {
-            Err(too_short_msg)
-        } else if length > self.max() {
-            Err(too_long_msg)
-        } else {
-            Ok(())
-        }
-    }
-}
 
 pub type ClassId = u64;
 pub type EntityId = u64;

@@ -208,6 +208,7 @@ fn genesis_constructor(
         versioned_store_cfg,
         versioned_store_permissions_cfg,
         data_directory_config,
+        content_config::empty_content_working_group_config(),
     )
 }
 

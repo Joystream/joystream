@@ -3806,6 +3806,7 @@ version = "3.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
+ "pallet-common",
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",
@@ -3821,6 +3822,7 @@ version = "3.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
+ "pallet-common",
  "pallet-timestamp",
  "pallet-versioned-store",
  "parity-scale-codec",

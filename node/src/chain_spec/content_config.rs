@@ -1,12 +1,13 @@
+use codec::Decode;
+use node_runtime::common::constraints::InputValidationLengthConstraint;
 use node_runtime::{
     data_directory::DataObject,
     primitives::{BlockNumber, Credential},
-    versioned_store::{Class, ClassId, Entity, EntityId, InputValidationLengthConstraint},
+    versioned_store::{Class, ClassId, Entity, EntityId},
     versioned_store_permissions::ClassPermissions,
-    ContentId, DataDirectoryConfig, Runtime, VersionedStoreConfig, VersionedStorePermissionsConfig,
+    ContentId, ContentWorkingGroupConfig, DataDirectoryConfig, Runtime, VersionedStoreConfig,
+    VersionedStorePermissionsConfig,
 };
-
-use codec::Decode;
 use serde::Deserialize;
 use std::{fs, path::Path};
 
@@ -190,20 +191,16 @@ pub fn versioned_store_config_from_json(data_file: &Path) -> VersionedStoreConfi
     }
 }
 
-fn new_validation(min: u16, max_min_diff: u16) -> InputValidationLengthConstraint {
-    InputValidationLengthConstraint { min, max_min_diff }
-}
-
 pub fn empty_versioned_store_config() -> VersionedStoreConfig {
     VersionedStoreConfig {
         class_by_id: vec![],
         entity_by_id: vec![],
         next_class_id: 1,
         next_entity_id: 1,
-        property_name_constraint: new_validation(1, 99),
-        property_description_constraint: new_validation(1, 999),
-        class_name_constraint: new_validation(1, 99),
-        class_description_constraint: new_validation(1, 999),
+        property_name_constraint: InputValidationLengthConstraint::new(1, 99),
+        property_description_constraint: InputValidationLengthConstraint::new(1, 999),
+        class_name_constraint: InputValidationLengthConstraint::new(1, 99),
+        class_description_constraint: InputValidationLengthConstraint::new(1, 999),
     }
 }
 
@@ -258,5 +255,32 @@ pub fn data_directory_config_from_json(data_file: &Path) -> DataDirectoryConfig 
             .into_iter()
             .map(|object| object.content_id)
             .collect(),
+    }
+}
+
+pub fn empty_content_working_group_config() -> ContentWorkingGroupConfig {
+    ContentWorkingGroupConfig {
+        mint_capacity: 100_000,
+        curator_opening_by_id: vec![],
+        next_curator_opening_id: 0,
+        curator_application_by_id: vec![],
+        next_curator_application_id: 0,
+        channel_by_id: vec![],
+        next_channel_id: 1,
+        channel_id_by_handle: vec![],
+        curator_by_id: vec![],
+        next_curator_id: 0,
+        principal_by_id: vec![],
+        next_principal_id: 0,
+        channel_creation_enabled: true, // there is no extrinsic to change it so enabling at genesis
+        unstaker_by_stake_id: vec![],
+        channel_handle_constraint: InputValidationLengthConstraint::new(5, 20),
+        channel_description_constraint: InputValidationLengthConstraint::new(1, 1024),
+        opening_human_readable_text: InputValidationLengthConstraint::new(1, 2048),
+        curator_application_human_readable_text: InputValidationLengthConstraint::new(1, 2048),
+        curator_exit_rationale_text: InputValidationLengthConstraint::new(1, 2048),
+        channel_avatar_constraint: InputValidationLengthConstraint::new(5, 1024),
+        channel_banner_constraint: InputValidationLengthConstraint::new(5, 1024),
+        channel_title_constraint: InputValidationLengthConstraint::new(5, 1024),
     }
 }

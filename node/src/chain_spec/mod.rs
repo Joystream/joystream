@@ -50,7 +50,6 @@ type AccountPublic = <Signature as Verify>::Signer;
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
 
-use node_runtime::common::constraints::InputValidationLengthConstraint;
 use sc_chain_spec::ChainType;
 
 /// The chain specification option. This is expected to come in from the CLI and
@@ -138,6 +137,7 @@ impl Alternative {
                         content_config::empty_versioned_store_config(),
                         content_config::empty_versioned_store_permissions_config(),
                         content_config::empty_data_directory_config(),
+                        content_config::empty_content_working_group_config(),
                     )
                 },
                 Vec::new(),
@@ -177,6 +177,7 @@ impl Alternative {
                         content_config::empty_versioned_store_config(),
                         content_config::empty_versioned_store_permissions_config(),
                         content_config::empty_data_directory_config(),
+                        content_config::empty_content_working_group_config(),
                     )
                 },
                 Vec::new(),
@@ -220,6 +221,7 @@ pub fn testnet_genesis(
     versioned_store_config: VersionedStoreConfig,
     versioned_store_permissions_config: VersionedStorePermissionsConfig,
     data_directory_config: DataDirectoryConfig,
+    content_working_group_config: ContentWorkingGroupConfig,
 ) -> GenesisConfig {
     const CENTS: Balance = 1;
     const DOLLARS: Balance = 100 * CENTS;
@@ -311,30 +313,7 @@ pub fn testnet_genesis(
         }),
         versioned_store: Some(versioned_store_config),
         versioned_store_permissions: Some(versioned_store_permissions_config),
-        content_wg: Some(ContentWorkingGroupConfig {
-            mint_capacity: 100_000,
-            curator_opening_by_id: vec![],
-            next_curator_opening_id: 0,
-            curator_application_by_id: vec![],
-            next_curator_application_id: 0,
-            channel_by_id: vec![],
-            next_channel_id: 1,
-            channel_id_by_handle: vec![],
-            curator_by_id: vec![],
-            next_curator_id: 0,
-            principal_by_id: vec![],
-            next_principal_id: 0,
-            channel_creation_enabled: true, // there is no extrinsic to change it so enabling at genesis
-            unstaker_by_stake_id: vec![],
-            channel_handle_constraint: InputValidationLengthConstraint::new(5, 20),
-            channel_description_constraint: InputValidationLengthConstraint::new(1, 1024),
-            opening_human_readable_text: InputValidationLengthConstraint::new(1, 2048),
-            curator_application_human_readable_text: InputValidationLengthConstraint::new(1, 2048),
-            curator_exit_rationale_text: InputValidationLengthConstraint::new(1, 2048),
-            channel_avatar_constraint: InputValidationLengthConstraint::new(5, 1024),
-            channel_banner_constraint: InputValidationLengthConstraint::new(5, 1024),
-            channel_title_constraint: InputValidationLengthConstraint::new(5, 1024),
-        }),
+        content_wg: Some(content_working_group_config),
         proposals_codex: Some(ProposalsCodexConfig {
             set_validator_count_proposal_voting_period: cpcp
                 .set_validator_count_proposal_voting_period,
