@@ -122,7 +122,7 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
     /// Maximum number of options in one referendum.
     type MaxReferendumOptions: Get<u64>;
 
-    /// Maximum length of vote commitment salt.
+    /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing e.g. std::u64::MAX.
     type MaxSaltLength: Get<u64>;
 
     /// Currency for referendum staking.
