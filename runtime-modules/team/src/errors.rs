@@ -8,5 +8,11 @@ decl_error! {
     pub enum Error for Module<T: Trait<I>, I: Instance>{
         /// Provided stake balance cannot be zero.
         StakeBalanceCannotBeZero,
+
+        /// Opening description too short.
+        OpeningDescriptionTooShort,
+
+        /// Opening description too long.
+        OpeningDescriptionTooLong,
     }
 }

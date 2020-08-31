@@ -8,6 +8,8 @@ use sp_runtime::{
 };
 use system;
 
+use common::constraints::InputValidationLengthConstraint;
+
 use crate::{Module, Trait};
 
 impl_outer_origin! {
@@ -103,9 +105,16 @@ pub type TestWorkingTeamInstance = crate::Instance1;
 pub type TestWorkingTeam = Module<Test, TestWorkingTeamInstance>;
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let mut t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
+
+    crate::GenesisConfig {
+        //        phantom: Default::default(),
+        opening_description_constraint: InputValidationLengthConstraint::new(1, 10),
+    }
+    .assimilate_storage::<Test, TestWorkingTeamInstance>(&mut t)
+    .unwrap();
 
     t.into()
 }
