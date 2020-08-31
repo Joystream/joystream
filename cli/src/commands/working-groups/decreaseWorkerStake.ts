@@ -1,6 +1,5 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { apiModuleByGroup } from '../../Api'
-import { WorkerId } from '@joystream/types/working-group'
 import { Balance } from '@polkadot/types/interfaces'
 import { formatBalance } from '@polkadot/util'
 import { minMaxInt } from '../../validators/common'
@@ -41,10 +40,7 @@ export default class WorkingGroupsDecreaseWorkerStake extends WorkingGroupsComma
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'decreaseStake', [
-      new WorkerId(workerId),
-      balance,
-    ])
+    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'decreaseStake', [workerId, balance])
 
     this.log(
       chalk.green(

@@ -1,7 +1,6 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { OpeningStatus } from '../../Types'
 import { apiModuleByGroup } from '../../Api'
-import { OpeningId } from '@joystream/types/hiring'
 import chalk from 'chalk'
 
 export default class WorkingGroupsStartAcceptingApplications extends WorkingGroupsCommandBase {
@@ -29,9 +28,7 @@ export default class WorkingGroupsStartAcceptingApplications extends WorkingGrou
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'acceptApplications', [
-      new OpeningId(openingId),
-    ])
+    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'acceptApplications', [openingId])
 
     this.log(
       chalk.green(`Opening ${chalk.white(openingId)} status changed to: ${chalk.white('Accepting Applications')}`)

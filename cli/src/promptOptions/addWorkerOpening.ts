@@ -1,19 +1,15 @@
 import { ApiParamsOptions, ApiParamOptions, HRTStruct } from '../Types'
-import {
-  OpeningType,
-  SlashingTerms,
-  UnslashableTerms,
-  OpeningType_Worker as OpeningTypeWorker,
-  WorkingGroupOpeningPolicyCommitment,
-} from '@joystream/types/working-group'
+import { OpeningType, WorkingGroupOpeningPolicyCommitment } from '@joystream/types/working-group'
+import { SlashingTerms } from '@joystream/types/common'
 import { Bytes } from '@polkadot/types'
 import { schemaValidator } from '@joystream/types/hiring'
+import { createMock } from '@joystream/types'
 
 class OpeningPolicyCommitmentOptions implements ApiParamsOptions {
   [paramName: string]: ApiParamOptions
   public role_slashing_terms: ApiParamOptions<SlashingTerms> = {
     value: {
-      default: SlashingTerms.create('Unslashable', new UnslashableTerms()),
+      default: createMock('SlashingTerms', { Unslashable: null }),
       locked: true,
     },
   }
@@ -37,7 +33,7 @@ class AddWrokerOpeningOptions implements ApiParamsOptions {
   // Lock value for opening_type
   public opening_type: ApiParamOptions<OpeningType> = {
     value: {
-      default: OpeningType.create('Worker', new OpeningTypeWorker()),
+      default: createMock('OpeningType', { Worker: null }),
       locked: true,
     },
   }

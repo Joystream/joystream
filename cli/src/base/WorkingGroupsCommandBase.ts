@@ -110,7 +110,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
       })),
     })
 
-    return acceptedApplications
+    return acceptedApplications.sort() // Sort just in case, since runtime expects them to be sorted
   }
 
   async promptForNewOpeningDraftName() {

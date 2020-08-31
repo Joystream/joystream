@@ -1,7 +1,6 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { apiModuleByGroup } from '../../Api'
 import { validateAddress } from '../../helpers/validation'
-import { GenericAccountId } from '@polkadot/types'
 import chalk from 'chalk'
 import ExitCodes from '../../ExitCodes'
 
@@ -40,7 +39,7 @@ export default class WorkingGroupsUpdateRewardAccount extends WorkingGroupsComma
 
     await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'updateRewardAccount', [
       worker.workerId,
-      new GenericAccountId(newRewardAccount),
+      newRewardAccount,
     ])
 
     this.log(chalk.green(`Succesfully updated the reward account to: ${chalk.white(newRewardAccount)})`))
