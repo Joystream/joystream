@@ -180,22 +180,27 @@ fn genesis_constructor(
         forum_config::empty(sudo_account.clone())
     };
 
-    let versioned_store_cfg = if let Some(path) = initial_content_path {
-        content_config::versioned_store_config_from_json(path.as_path())
-    } else {
-        content_config::empty_versioned_store_config()
-    };
+    let (
+        versioned_store_cfg,
+        versioned_store_permissions_cfg,
+        data_directory_config,
+        content_working_group_config,
+    ) = if let Some(path) = initial_content_path {
+        let path = path.as_path();
 
-    let versioned_store_permissions_cfg = if let Some(path) = initial_content_path {
-        content_config::versioned_store_permissions_config_from_json(path.as_path())
+        (
+            content_config::versioned_store_config_from_json(path),
+            content_config::versioned_store_permissions_config_from_json(path),
+            content_config::data_directory_config_from_json(path),
+            content_config::content_working_group_config_from_json(path),
+        )
     } else {
-        content_config::empty_versioned_store_permissions_config()
-    };
-
-    let data_directory_config = if let Some(path) = initial_content_path {
-        content_config::data_directory_config_from_json(path.as_path())
-    } else {
-        content_config::empty_data_directory_config()
+        (
+            content_config::empty_versioned_store_config(),
+            content_config::empty_versioned_store_permissions_config(),
+            content_config::empty_data_directory_config(),
+            content_config::empty_content_working_group_config(),
+        )
     };
 
     chain_spec::testnet_genesis(
@@ -208,7 +213,7 @@ fn genesis_constructor(
         versioned_store_cfg,
         versioned_store_permissions_cfg,
         data_directory_config,
-        content_config::empty_content_working_group_config(),
+        content_working_group_config,
     )
 }
 

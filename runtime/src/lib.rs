@@ -47,12 +47,12 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
-use content_working_group as content_wg;
 use governance::{council, election};
 use storage::data_object_storage_registry;
 
 // Node dependencies
 pub use common;
+pub use content_working_group as content_wg;
 pub use forum;
 pub use governance::election_params::ElectionParameters;
 pub use membership;

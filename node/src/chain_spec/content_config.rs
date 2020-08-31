@@ -1,8 +1,9 @@
 use codec::Decode;
 use node_runtime::common::constraints::InputValidationLengthConstraint;
 use node_runtime::{
+    content_wg::{Channel, ChannelId, Principal, PrincipalId},
     data_directory::DataObject,
-    primitives::{BlockNumber, Credential},
+    primitives::{AccountId, BlockNumber, Credential},
     versioned_store::{Class, ClassId, Entity, EntityId},
     versioned_store_permissions::ClassPermissions,
     ContentId, ContentWorkingGroupConfig, DataDirectoryConfig, Runtime, VersionedStoreConfig,
@@ -41,6 +42,8 @@ struct ContentData {
     entities: Vec<EntityAndMaintainer>,
     /// DataObject(s) and ContentId
     data_objects: Vec<DataObjectAndContentId>,
+    /// Media Channels
+    channels: Vec<ChannelAndId>,
 }
 
 #[derive(Deserialize)]
@@ -111,6 +114,33 @@ impl EncodedDataObjectAndContentId {
     }
 }
 
+#[derive(Decode)]
+struct ChannelAndId {
+    id: ChannelId<Runtime>,
+    channel: Channel<u64, AccountId, BlockNumber, PrincipalId<Runtime>>,
+}
+
+#[derive(Deserialize)]
+struct EncodedChannelAndId {
+    /// hex encoded ChannelId
+    id: String,
+    /// hex encoded Channel
+    channel: String,
+}
+
+impl EncodedChannelAndId {
+    fn decode(&self) -> ChannelAndId {
+        let encoded_id =
+            hex::decode(&self.id[2..].as_bytes()).expect("failed to parse channel id hex string");
+        let encoded_channel =
+            hex::decode(&self.channel[2..].as_bytes()).expect("failed to parse channel hex string");
+        ChannelAndId {
+            id: Decode::decode(&mut encoded_id.as_slice()).unwrap(),
+            channel: Decode::decode(&mut encoded_channel.as_slice()).unwrap(),
+        }
+    }
+}
+
 #[derive(Deserialize)]
 struct EncodedContentData {
     /// classes and their associted permissions
@@ -119,6 +149,8 @@ struct EncodedContentData {
     entities: Vec<EncodedEntityAndMaintainer>,
     /// DataObject(s) and ContentId
     data_objects: Vec<EncodedDataObjectAndContentId>,
+    /// Media Channels
+    channels: Vec<EncodedChannelAndId>,
 }
 
 fn parse_content_data(data_file: &Path) -> EncodedContentData {
@@ -143,6 +175,11 @@ impl EncodedContentData {
                 .data_objects
                 .iter()
                 .map(|data_objects| data_objects.decode())
+                .collect(),
+            channels: self
+                .channels
+                .iter()
+                .map(|channel_and_id| channel_and_id.decode())
                 .collect(),
         }
     }
@@ -282,5 +319,58 @@ pub fn empty_content_working_group_config() -> ContentWorkingGroupConfig {
         channel_avatar_constraint: InputValidationLengthConstraint::new(5, 1024),
         channel_banner_constraint: InputValidationLengthConstraint::new(5, 1024),
         channel_title_constraint: InputValidationLengthConstraint::new(5, 1024),
+    }
+}
+
+pub fn content_working_group_config_from_json(data_file: &Path) -> ContentWorkingGroupConfig {
+    let content = parse_content_data(data_file).decode();
+    let first_channel_id = 1;
+    let first_principal_id = 0;
+
+    let next_channel_id: ChannelId<Runtime> = content
+        .channels
+        .last()
+        .map_or(first_channel_id, |channel_and_id| channel_and_id.id + 1);
+    assert_eq!(
+        next_channel_id,
+        (content.channels.len() + 1) as ChannelId<Runtime>
+    );
+
+    let base_config = empty_content_working_group_config();
+
+    ContentWorkingGroupConfig {
+        channel_by_id: content
+            .channels
+            .iter()
+            .enumerate()
+            .map(|(ix, channel_and_id)| {
+                (
+                    channel_and_id.id,
+                    Channel {
+                        principal_id: first_principal_id + ix as PrincipalId<Runtime>,
+                        ..channel_and_id.channel.clone()
+                    },
+                )
+            })
+            .collect(),
+        next_channel_id,
+        channel_id_by_handle: content
+            .channels
+            .iter()
+            .map(|channel_and_id| (channel_and_id.channel.handle.clone(), channel_and_id.id))
+            .collect(),
+        principal_by_id: content
+            .channels
+            .iter()
+            .enumerate()
+            .map(|(ix, channel_and_id)| {
+                (
+                    first_principal_id + ix as PrincipalId<Runtime>,
+                    Principal::ChannelOwner(channel_and_id.id),
+                )
+            })
+            .collect(),
+        next_principal_id: first_principal_id + content.channels.len() as PrincipalId<Runtime>,
+        ..base_config
     }
 }
