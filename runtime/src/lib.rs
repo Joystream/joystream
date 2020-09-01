@@ -375,6 +375,8 @@ impl versioned_store_permissions::Trait for Runtime {
         integration::versioned_store_permissions::ContentLeadOrSudoKeyCanCreateClasses;
 }
 
+impl core::fmt::Debug for Runtime {}
+
 impl content_directory::ActorAuthenticator for Runtime {
     type CuratorId = u64;
     type MemberId = u64;
