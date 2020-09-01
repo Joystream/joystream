@@ -4,12 +4,11 @@
 import { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import { Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u32, u64 } from '@polkadot/types/primitive';
-import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelId, Class, ClassId, ClassPermissionsType, ContentId, Credential, Curator, CuratorApplication, CuratorApplicationId, CuratorId, CuratorOpening, CuratorOpeningId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, Entity, EntityId, HiringApplicationId, InputValidationLengthConstraint, Lead, LeadId, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, Principal, PrincipalId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, VoteKind, WorkerId, WorkerOf, WorkingGroupUnstaker } from './all';
+import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelId, Class, ClassId, ClassPermissionsType, ContentId, Credential, Curator, CuratorApplication, CuratorApplicationId, CuratorId, CuratorOpening, CuratorOpeningId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, Entity, EntityId, HiringApplicationId, InputValidationLengthConstraint, Lead, LeadId, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, Principal, PrincipalId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, VoteKind, WorkerId, WorkerOf, WorkingGroupUnstaker } from './all';
 import { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
 import { AuthorityId } from '@polkadot/types/interfaces/consensus';
-import { CodeHash, ContractInfo, PrefabWasmModule, Schedule } from '@polkadot/types/interfaces/contracts';
 import { SetId, StoredPendingChange, StoredState } from '@polkadot/types/interfaces/grandpa';
 import { AuthIndex } from '@polkadot/types/interfaces/imOnline';
 import { DeferredOffenceOf, Kind, OffenceDetails, OpaqueTimeSlot, ReportIdOf } from '@polkadot/types/interfaces/offences';
@@ -208,30 +207,6 @@ declare module '@polkadot/api/types/storage' {
        **/
       unstakerByStakeId: AugmentedQuery<ApiType, (arg: StakeId | AnyNumber | Uint8Array) => Observable<WorkingGroupUnstaker>>;
     };
-    contracts: {
-      /**
-       * The subtrie counter.
-       **/
-      accountCounter: AugmentedQuery<ApiType, () => Observable<u64>>;
-      /**
-       * A mapping between an original code hash and instrumented wasm code, ready for execution.
-       **/
-      codeStorage: AugmentedQuery<ApiType, (arg: CodeHash | string | Uint8Array) => Observable<Option<PrefabWasmModule>>>;
-      /**
-       * The code associated with a given account.
-       * 
-       * TWOX-NOTE: SAFE since `AccountId` is a secure hash.
-       **/
-      contractInfoOf: AugmentedQuery<ApiType, (arg: AccountId | string | Uint8Array) => Observable<Option<ContractInfo>>>;
-      /**
-       * Current cost schedule for contracts.
-       **/
-      currentSchedule: AugmentedQuery<ApiType, () => Observable<Schedule>>;
-      /**
-       * A mapping from an original code hash to the original code, untouched by instrumentation.
-       **/
-      pristineCode: AugmentedQuery<ApiType, (arg: CodeHash | string | Uint8Array) => Observable<Option<Bytes>>>;
-    };
     council: {
       activeCouncil: AugmentedQuery<ApiType, () => Observable<Seats>>;
       /**
@@ -323,15 +298,15 @@ declare module '@polkadot/api/types/storage' {
     };
     discovery: {
       /**
-       * Mapping of service providers' storage provider id to their AccountInfo
+       * Mapping of service providers' storage provider id to their ServiceProviderRecord
        **/
-      accountInfoByStorageProviderId: AugmentedQuery<ApiType, (arg: StorageProviderId | AnyNumber | Uint8Array) => Observable<AccountInfo>>;
+      accountInfoByStorageProviderId: AugmentedQuery<ApiType, (arg: StorageProviderId | AnyNumber | Uint8Array) => Observable<ServiceProviderRecord>>;
       /**
        * Bootstrap endpoints maintained by root
        **/
       bootstrapEndpoints: AugmentedQuery<ApiType, () => Observable<Vec<Url>>>;
       /**
-       * Lifetime of an AccountInfo record in AccountInfoByAccountId map
+       * Lifetime of an ServiceProviderRecord record in AccountInfoByAccountId map
        **/
       defaultLifetime: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
     };
