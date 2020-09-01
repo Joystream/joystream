@@ -1,2 +1,4 @@
 import VideoPreview from './VideoPreview'
-export default VideoPreview
+import VideoPreviewBase from './VideoPreviewBase'
+
+export { VideoPreview, VideoPreviewBase }

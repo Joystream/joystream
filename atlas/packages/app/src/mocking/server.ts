@@ -26,7 +26,7 @@ createServer({
       },
     })
 
-    this.post('/graphql', graphQLHandler)
+    this.post('/graphql', graphQLHandler, { timing: 1500 }) // include load delay
   },
 
   seeds(server) {

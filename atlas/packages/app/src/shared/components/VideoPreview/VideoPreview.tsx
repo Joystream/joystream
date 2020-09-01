@@ -1,22 +1,19 @@
 import React from 'react'
 import {
   ChannelName,
-  Container,
-  CoverContainer,
   CoverDurationOverlay,
   CoverHoverOverlay,
   CoverImage,
   CoverPlayIcon,
-  InfoContainer,
   MetaText,
   ProgressBar,
   ProgressOverlay,
   StyledAvatar,
-  TextContainer,
   TitleHeader,
 } from './VideoPreview.styles'
 import { formatDateAgo, formatDurationShort } from '@/utils/time'
 import { formatNumberShort } from '@/utils/number'
+import VideoPreviewBase from './VideoPreviewBase'
 
 type VideoPreviewProps = {
   title: string
@@ -53,7 +50,6 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
   onChannelClick,
   className,
 }) => {
-  const clickable = !!onClick
   const channelClickable = !!onChannelClick
 
   const handleChannelClick = (e: React.MouseEvent<HTMLElement>) => {
@@ -72,45 +68,57 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
     onClick(e)
   }
 
+  const coverNode = (
+    <>
+      <CoverImage src={posterURL} ref={imgRef} alt={`${title} by ${channelName} thumbnail`} />
+      {duration && <CoverDurationOverlay>{formatDurationShort(duration)}</CoverDurationOverlay>}
+      {!!progress && (
+        <ProgressOverlay>
+          <ProgressBar style={{ width: `${progress}%` }} />
+        </ProgressOverlay>
+      )}
+      <CoverHoverOverlay>
+        <CoverPlayIcon />
+      </CoverHoverOverlay>
+    </>
+  )
+
+  const titleNode = <TitleHeader>{title}</TitleHeader>
+
+  const channelAvatarNode = (
+    <StyledAvatar
+      size="small"
+      name={channelName}
+      img={channelAvatarURL}
+      channelClickable={channelClickable}
+      onClick={handleChannelClick}
+    />
+  )
+
+  const channelNameNode = (
+    <ChannelName channelClickable={channelClickable} onClick={handleChannelClick}>
+      {channelName}
+    </ChannelName>
+  )
+
+  const metaNode = (
+    <MetaText>
+      {formatDateAgo(createdAt)}・{formatNumberShort(views)} views
+    </MetaText>
+  )
+
   return (
-    <Container onClick={handleClick} clickable={clickable} className={className}>
-      <CoverContainer>
-        <CoverImage src={posterURL} ref={imgRef} alt={`${title} by ${channelName} thumbnail`} />
-        {duration && <CoverDurationOverlay>{formatDurationShort(duration)}</CoverDurationOverlay>}
-        {!!progress && (
-          <ProgressOverlay>
-            <ProgressBar style={{ width: `${progress}%` }} />
-          </ProgressOverlay>
-        )}
-        <CoverHoverOverlay>
-          <CoverPlayIcon />
-        </CoverHoverOverlay>
-      </CoverContainer>
-      <InfoContainer>
-        {showChannel && (
-          <StyledAvatar
-            size="small"
-            name={channelName}
-            img={channelAvatarURL}
-            channelClickable={channelClickable}
-            onClick={handleChannelClick}
-          />
-        )}
-        <TextContainer>
-          <TitleHeader>{title}</TitleHeader>
-          {showChannel && (
-            <ChannelName channelClickable={channelClickable} onClick={handleChannelClick}>
-              {channelName}
-            </ChannelName>
-          )}
-          {showMeta && (
-            <MetaText>
-              {formatDateAgo(createdAt)}・{formatNumberShort(views)} views
-            </MetaText>
-          )}
-        </TextContainer>
-      </InfoContainer>
-    </Container>
+    <VideoPreviewBase
+      coverNode={coverNode}
+      titleNode={titleNode}
+      showChannel={showChannel}
+      channelAvatarNode={channelAvatarNode}
+      channelNameNode={channelNameNode}
+      showMeta={showMeta}
+      metaNode={metaNode}
+      onClick={onClick && handleClick}
+      className={className}
+    />
   )
 }
 

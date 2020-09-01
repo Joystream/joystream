@@ -10,7 +10,7 @@ const container: StyleFn = (_, { size = 'default' }) => {
   return {
     borderRadius: 999,
     minWidth: width,
-    backgroundColor: colors.gray[500],
+    backgroundColor: colors.gray[400],
     color: colors.white,
     display: 'flex',
     justifyContent: 'center',

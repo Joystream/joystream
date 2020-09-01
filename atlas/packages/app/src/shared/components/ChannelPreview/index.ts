@@ -1,2 +1,4 @@
 import ChannelPreview from './ChannelPreview'
-export default ChannelPreview
+import ChannelPreviewBase from './ChannelPreviewBase'
+
+export { ChannelPreview, ChannelPreviewBase }
