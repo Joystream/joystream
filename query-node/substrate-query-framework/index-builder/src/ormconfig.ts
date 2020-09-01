@@ -17,7 +17,7 @@ const config: () => ConnectionOptions = () => {
     cli: {
         migrationsDir: "migrations"
     },
-    logging: true,
+    logging: (process.env.TYPEORM_LOGGING === 'true'),
     namingStrategy: new SnakeNamingStrategy()
   } as ConnectionOptions;
 }
