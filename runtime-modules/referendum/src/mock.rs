@@ -2,9 +2,9 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Balance, CurrentCycle, Error, Instance, Module, RawEvent, ReferendumManager, ReferendumResult,
-    ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, SealedVote, Stage, Trait,
-    Votes,
+    Balance, CastVote, CurrentCycleId, Error, Instance, Module, RawEvent, ReferendumManager,
+    ReferendumResult, ReferendumStage, ReferendumStageInactive, ReferendumStageRevealing,
+    ReferendumStageVoting, Stage, Trait, Votes,
 };
 
 use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
@@ -21,7 +21,7 @@ use sp_runtime::{
 };
 use std::cell::RefCell;
 use std::marker::PhantomData;
-use system::RawOrigin;
+use system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 
 use crate::GenesisConfig;
 
@@ -45,6 +45,7 @@ pub struct Instance0;
 
 parameter_types! {
     pub const MaxReferendumOptions: u64 = 10;
+    pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const VoteStageDuration: u64 = 5;
     pub const RevealStageDuration: u64 = 5;
     pub const MinimumStake: u64 = 10000;
@@ -52,16 +53,20 @@ parameter_types! {
 }
 
 thread_local! {
-    pub static IS_LOCKING_ENABLED: RefCell<(bool, bool, bool)> = RefCell::new((true, true, true)); // global switch for stake locking features; use it to simulate lock fails
+    pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
 }
 
 impl Trait<Instance0> for Runtime {
     type Event = TestEvent;
 
     type MaxReferendumOptions = MaxReferendumOptions;
+    type MaxSaltLength = MaxSaltLength;
 
     type Currency = pallet_balances::Module<Runtime>;
     type LockId = LockId;
+
+    type ManagerOrigin =
+        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
 
     type VotePower = u64;
 
@@ -86,23 +91,20 @@ impl Trait<Instance0> for Runtime {
         stake
     }
 
-    fn can_stake_for_vote(
-        account_id: &<Self as system::Trait>::AccountId,
-        _stake: &Balance<Self, Instance0>,
-    ) -> bool {
+    fn can_unstake(_vote: &CastVote<Self::Hash, Balance<Self, Instance0>>) -> bool {
         // trigger fail when requested to do so
-        if !IS_LOCKING_ENABLED.with(|value| value.borrow().0) {
+        if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
             return false;
         }
 
-        match *account_id {
-            USER_ADMIN => true,
-            USER_REGULAR => true,
-            USER_REGULAR_POWER_VOTES => true,
-            USER_REGULAR_2 => true,
-            USER_REGULAR_3 => true,
-            _ => false,
-        }
+        true
+    }
+
+    fn process_results(
+        _result: &ReferendumResult<u64, Self::VotePower>,
+        _all_options_results: &[Self::VotePower],
+    ) {
+        // not used right now
     }
 }
 
@@ -189,6 +191,7 @@ pub enum OriginType<AccountId> {
     Signed(AccountId),
     //Inherent, <== did not find how to make such an origin yet
     Root,
+    None,
 }
 
 /////////////////// Utility mocks //////////////////////////////////////////////s
@@ -197,8 +200,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime, Instance0> {
     GenesisConfig::<Runtime, Instance0> {
         stage: ReferendumStage::default(),
         votes: vec![],
-        current_cycle: 0,
-        previous_cycle_result: ReferendumResult::default(),
+        current_cycle_id: 0,
     }
 }
 
@@ -246,7 +248,9 @@ where
     pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::Origin {
         match origin {
             OriginType::Signed(account_id) => T::Origin::from(RawOrigin::Signed(account_id)),
-            _ => panic!("not implemented"),
+            OriginType::Root => RawOrigin::Root.into(),
+            OriginType::None => RawOrigin::None.into(),
+            //_ => panic!("not implemented"),
         }
     }
 
@@ -278,17 +282,41 @@ where
         account_id: &<T as system::Trait>::AccountId,
         vote_option_index: &u64,
     ) -> (T::Hash, Vec<u8>) {
-        let cycle_id = CurrentCycle::<I>::get();
-        Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index)
+        let cycle_id = CurrentCycleId::<I>::get();
+        Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index, None)
+    }
+
+    pub fn calculate_commitment_custom_salt(
+        account_id: &<T as system::Trait>::AccountId,
+        vote_option_index: &u64,
+        custom_salt: &[u8],
+    ) -> (T::Hash, Vec<u8>) {
+        let cycle_id = CurrentCycleId::<I>::get();
+        Self::calculate_commitment_for_cycle(
+            account_id,
+            &cycle_id,
+            vote_option_index,
+            Some(custom_salt),
+        )
+    }
+
+    pub fn generate_salt() -> Vec<u8> {
+        let mut rng = rand::thread_rng();
+
+        rng.gen::<u64>().to_be_bytes().to_vec()
     }
 
     pub fn calculate_commitment_for_cycle(
         account_id: &<T as system::Trait>::AccountId,
         cycle_id: &u64,
         vote_option_index: &u64,
+        custom_salt: Option<&[u8]>,
     ) -> (T::Hash, Vec<u8>) {
-        let mut rng = rand::thread_rng();
-        let salt = rng.gen::<u64>().to_be_bytes().to_vec();
+        let salt = match custom_salt {
+            Some(tmp_salt) => tmp_salt.to_vec(),
+            None => Self::generate_salt(),
+        };
+
         (
             <Module<T, I> as ReferendumManager<T, I>>::calculate_commitment(
                 account_id,
@@ -296,7 +324,7 @@ where
                 cycle_id,
                 vote_option_index,
             ),
-            salt,
+            salt.to_vec(),
         )
     }
 }
@@ -314,62 +342,76 @@ impl InstanceMocks<Runtime, Instance0> {
         winning_target_count: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
+        let extra_winning_target_count = winning_target_count - 1;
+        let extra_options_count = options_count - extra_winning_target_count - 1;
+
         // check method returns expected result
         assert_eq!(
             Module::<Runtime, Instance0>::start_referendum(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
-                options_count,
-                winning_target_count,
+                extra_options_count,
+                extra_winning_target_count,
             ),
             expected_result,
         );
 
-        Self::start_referendum_inner(options_count, winning_target_count, expected_result)
+        Self::start_referendum_inner(
+            extra_options_count,
+            extra_winning_target_count,
+            expected_result,
+        )
     }
 
     pub fn start_referendum_manager(
-        options: u64,
+        options_count: u64,
         winning_target_count: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
+        let extra_winning_target_count = winning_target_count - 1;
+        let extra_options_count = options_count - extra_winning_target_count - 1;
+
         // check method returns expected result
         assert_eq!(
             <Module::<Runtime, Instance0> as ReferendumManager<Runtime, Instance0>>::start_referendum(
-                options.clone(),
-                winning_target_count
+                InstanceMockUtils::<Runtime, Instance0>::mock_origin(OriginType::Root),
+                extra_options_count,
+                extra_winning_target_count,
             ),
             expected_result,
         );
 
-        Self::start_referendum_inner(options, winning_target_count, expected_result)
+        Self::start_referendum_inner(
+            extra_options_count,
+            extra_winning_target_count,
+            expected_result,
+        )
     }
 
     fn start_referendum_inner(
-        options_count: u64,
-        winning_target_count: u64,
+        extra_options_count: u64,
+        extra_winning_target_count: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) {
         if expected_result.is_err() {
             return;
         }
 
+        let total_winners = extra_winning_target_count + 1;
+        let total_options = total_winners + extra_options_count;
         let block_number = system::Module::<Runtime>::block_number();
 
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Voting(ReferendumStageVoting {
-                start: block_number,
-                winning_target_count,
-                options_count,
+                started: block_number,
+                extra_options_count,
+                extra_winning_target_count,
             }),
         );
 
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::from(RawEvent::ReferendumStarted(
-                options_count,
-                winning_target_count,
-            ))
+            TestEvent::from(RawEvent::ReferendumStarted(total_options, total_winners,))
         );
     }
 
@@ -379,10 +421,9 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Revealing(ReferendumStageRevealing {
-                start: block_number - 1,
+                started: block_number - 1,
                 winning_target_count,
-                options_count,
-                revealed_votes: (0..options_count).map(|_| 0).collect(),
+                intermediate_results: (0..options_count).map(|_| 0).collect(),
             }),
         );
 
@@ -394,20 +435,20 @@ impl InstanceMocks<Runtime, Instance0> {
     }
 
     pub fn check_revealing_finished(
-        expected_referendum_result: Option<
-            ReferendumResult<u64, <Runtime as Trait<Instance0>>::VotePower>,
-        >,
+        expected_referendum_result: ReferendumResult<u64, <Runtime as Trait<Instance0>>::VotePower>,
     ) {
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
-            ReferendumStage::Inactive,
+            ReferendumStage::Inactive(ReferendumStageInactive {
+                previous_cycle_result: expected_referendum_result.clone(),
+            })
         );
 
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
             TestEvent::event_mod_Instance0(RawEvent::ReferendumFinished(
-                expected_referendum_result.unwrap()
+                expected_referendum_result.clone()
             ))
         );
     }
@@ -416,7 +457,7 @@ impl InstanceMocks<Runtime, Instance0> {
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         account_id: <Runtime as system::Trait>::AccountId,
         commitment: <Runtime as system::Trait>::Hash,
-        balance: Balance<Runtime, Instance0>,
+        stake: Balance<Runtime, Instance0>,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
         // check method returns expected result
@@ -424,7 +465,7 @@ impl InstanceMocks<Runtime, Instance0> {
             Module::<Runtime, Instance0>::vote(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
                 commitment,
-                balance,
+                stake,
             ),
             expected_result,
         );
@@ -435,10 +476,10 @@ impl InstanceMocks<Runtime, Instance0> {
 
         assert_eq!(
             Votes::<Runtime, Instance0>::get(account_id),
-            SealedVote {
+            CastVote {
                 commitment,
-                cycle_id: CurrentCycle::<Instance0>::get(),
-                balance,
+                cycle_id: CurrentCycleId::<Instance0>::get(),
+                stake,
                 vote_for: None,
             },
         );
@@ -446,7 +487,7 @@ impl InstanceMocks<Runtime, Instance0> {
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::event_mod_Instance0(RawEvent::VoteCasted(account_id, commitment, balance))
+            TestEvent::event_mod_Instance0(RawEvent::VoteCast(account_id, commitment, stake))
         );
     }
 
