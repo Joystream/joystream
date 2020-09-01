@@ -121,6 +121,7 @@ function setUp(opts: any) {
   }
 
   // dotenv config
+  dotenv.config(); 
   dotenv.config({ path: opts.env });
 
   if (opts.height) {
