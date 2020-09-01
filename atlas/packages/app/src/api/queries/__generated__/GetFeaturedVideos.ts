@@ -7,14 +7,25 @@
 // GraphQL query operation: GetFeaturedVideos
 // ====================================================
 
-export interface GetFeaturedVideos_featured_videos_media_location {
+export interface GetFeaturedVideos_featured_videos_media_location_HTTPVideoMediaLocation {
   __typename: 'HTTPVideoMediaLocation'
   host: string
   port: number | null
 }
 
+export interface GetFeaturedVideos_featured_videos_media_location_JoystreamVideoMediaLocation {
+  __typename: 'JoystreamVideoMediaLocation'
+  dataObjectID: string
+}
+
+export type GetFeaturedVideos_featured_videos_media_location =
+  | GetFeaturedVideos_featured_videos_media_location_HTTPVideoMediaLocation
+  | GetFeaturedVideos_featured_videos_media_location_JoystreamVideoMediaLocation
+
 export interface GetFeaturedVideos_featured_videos_media {
   __typename: 'VideoMedia'
+  pixelHeight: number
+  pixelWidth: number
   location: GetFeaturedVideos_featured_videos_media_location
 }
 

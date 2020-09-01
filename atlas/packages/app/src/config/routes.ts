@@ -1,3 +1,3 @@
 export default {
-  video: 'video/:id',
+  video: (id = ':id') => `video/${id}`,
 }

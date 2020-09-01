@@ -1,5 +1,5 @@
 import React from 'react'
-import { RouteComponentProps } from '@reach/router'
+import { RouteComponentProps, useParams } from '@reach/router'
 import {
   ActionsContainer,
   Container,
@@ -19,26 +19,31 @@ import { Button, VideoPlayer } from '@/shared/components'
 import { formatDateAgo } from '@/utils/time'
 import { formatNumber } from '@/utils/number'
 import { useQuery } from '@apollo/client'
-import { GET_NEWEST_VIDEOS } from '@/api/queries'
-import { GetNewestVideos } from '@/api/queries/__generated__/GetNewestVideos'
+import { GET_VIDEO } from '@/api/queries'
+import { GetVideo, GetVideoVariables } from '@/api/queries/__generated__/GetVideo'
 
 const VideoView: React.FC<RouteComponentProps> = () => {
-  const { loading, data } = useQuery<GetNewestVideos>(GET_NEWEST_VIDEOS)
+  const { id } = useParams()
+  const { loading, data } = useQuery<GetVideo, GetVideoVariables>(GET_VIDEO, { variables: { id } })
 
   if (loading || !data) {
     return <p>Loading</p>
   }
 
-  const { title, views, publishedOnJoystreamAt, channel, description } = data.videos[0]
+  if (!data.video) {
+    return <p>Video not found</p>
+  }
+
+  const { title, views, publishedOnJoystreamAt, channel, description } = data.video
 
   const descriptionLines = description.split('\n')
 
-  const moreVideos = Array.from({ length: 10 }, () => data.videos[0])
+  const moreVideos = Array.from({ length: 10 }, () => data.video as NonNullable<typeof data.video>)
 
   return (
     <Container>
       <PlayerContainer>
-        <VideoPlayer src="https://js-video-example.s3.eu-central-1.amazonaws.com/waves.mp4" height={700} autoplay />
+        <VideoPlayer src={data.video.media.location} height={700} autoplay />
       </PlayerContainer>
       <InfoContainer>
         <TitleActionsContainer>

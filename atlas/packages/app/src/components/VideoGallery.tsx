@@ -6,6 +6,7 @@ import { navigate } from '@reach/router'
 import { Gallery, VideoPreview, VideoPreviewBase } from '@/shared/components'
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 import { CAROUSEL_CONTROL_SIZE } from '@/shared/components/Carousel'
+import routes from '@/config/routes'
 
 type VideoGalleryProps = {
   title: string
@@ -39,8 +40,8 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, action, videos, load
     }
   }, [])
 
-  const handleVideoClick = () => {
-    navigate('/video/fake')
+  const handleVideoClick = (id: string) => {
+    navigate(routes.video(id))
   }
 
   return (
@@ -64,7 +65,7 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, action, videos, load
               createdAt={video.publishedOnJoystreamAt}
               duration={video.duration}
               posterURL={video.thumbnailURL}
-              onClick={handleVideoClick}
+              onClick={() => handleVideoClick(video.id)}
               imgRef={idx === 0 ? imgRef : null}
               key={video.id}
             />
