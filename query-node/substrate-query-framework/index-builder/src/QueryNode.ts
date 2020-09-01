@@ -2,7 +2,8 @@
 
 import { ApiPromise, WsProvider /*RuntimeVersion*/ } from '@polkadot/api';
 
-import { makeQueryService, IndexBuilder, QueryNodeStartUpOptions } from '.';
+import { makeQueryService, IndexBuilder } from '.';
+import { IndexerOptions } from './QueryNodeStartOptions';
 
 export enum QueryNodeState {
   NOT_STARTED,
@@ -36,7 +37,7 @@ export default class QueryNode {
     this._atBlock = atBlock;
   }
 
-  static async create(options: QueryNodeStartUpOptions): Promise<QueryNode> {
+  static async create(options: IndexerOptions): Promise<QueryNode> {
     // TODO: Do we really need to do it like this?
     // Its pretty ugly, but the registrtion appears to be
     // accessing some sort of global state, and has to be done after
