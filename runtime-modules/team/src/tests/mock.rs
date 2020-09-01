@@ -21,10 +21,15 @@ mod working_team {
     pub use crate::Event;
 }
 
+mod membership_mod {
+    pub use membership::Event;
+}
+
 impl_outer_event! {
     pub enum TestEvent for Test {
         balances<T>,
         working_team TestWorkingTeamInstance <T>,
+        membership_mod<T>,
         system<T>,
     }
 }
@@ -88,6 +93,14 @@ impl balances::Trait for Test {
     type AccountStore = System;
 }
 
+impl membership::Trait for Test {
+    type Event = TestEvent;
+    type MemberId = u64;
+    type PaidTermId = u64;
+    type SubscriptionId = u64;
+    type ActorId = u64;
+}
+
 pub type Balances = balances::Module<Test>;
 pub type System = system::Module<Test>;
 
@@ -96,9 +109,10 @@ parameter_types! {
 }
 
 impl Trait<TestWorkingTeamInstance> for Test {
+    type OpeningId = u64;
+    type ApplicationId = u64;
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type OpeningId = u64;
 }
 
 pub type TestWorkingTeamInstance = crate::Instance1;

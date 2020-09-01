@@ -4,10 +4,13 @@ use system::{EventRecord, Phase, RawOrigin};
 
 use super::mock::{System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance};
 use crate::{JobOpening, JobOpeningType, RawEvent};
+use sp_std::collections::btree_set::BTreeSet;
 
 pub struct EventFixture;
 impl EventFixture {
-    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u64, TestWorkingTeamInstance>) {
+    pub fn assert_last_crate_event(
+        expected_raw_event: RawEvent<u64, u64, TestWorkingTeamInstance>,
+    ) {
         let converted_event = TestEvent::working_team_TestWorkingTeamInstance(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
@@ -73,9 +76,8 @@ impl AddJobOpeningFixture {
             let actual_opening = TestWorkingTeam::opening_by_id(opening_id);
 
             let expected_hash = <Test as system::Trait>::Hashing::hash(&self.human_readable_text);
-            let expected_opening = JobOpening::<u64> {
-                //                hiring_opening_id: opening_id,
-                //                applications: BTreeSet::new(),
+            let expected_opening = JobOpening {
+                applications: BTreeSet::new(),
                 //                policy_commitment: self.commitment.clone(),
                 created: self.starting_block,
                 description_hash: expected_hash.as_ref().to_vec(),

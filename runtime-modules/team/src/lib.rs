@@ -24,9 +24,10 @@ use codec::Codec;
 //use frame_support::storage::IterableStorageMap;
 //use frame_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReasons};
 use frame_support::traits::Get;
-use frame_support::{decl_event, decl_module, decl_storage, Parameter, StorageValue, ensure}; // print,
+use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue}; // print,
 use sp_arithmetic::traits::{BaseArithmetic, One};
 use sp_runtime::traits::{Hash, MaybeSerialize, Member};
+use sp_std::collections::btree_set::BTreeSet;
 // use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 // use sp_std::vec;
 // use sp_std::vec::Vec;
@@ -101,7 +102,7 @@ decl_storage! {
 
         /// Maps identifier to job opening.
         pub OpeningById get(fn opening_by_id): map hasher(blake2_128_concat)
-            T::OpeningId => JobOpening<T::BlockNumber>;
+            T::OpeningId => JobOpening<T::BlockNumber, T::ApplicationId>;
 
         /// Count of active workers.
         pub ActiveWorkerCount get(fn active_worker_count): u32;
@@ -166,8 +167,8 @@ decl_module! {
            let hashed_description = T::Hashing::hash(&description);
 
             // Create and add worker opening.
-            let new_opening = JobOpening::<T::BlockNumber> {
-//                applications: BTreeSet::new(),
+            let new_opening = JobOpening{
+                applications: BTreeSet::new(),
 //                policy_commitment,
                 opening_type,
                 created: Self::current_block(),
@@ -197,7 +198,7 @@ decl_module! {
             human_readable_text: Vec<u8>
         ) {
             // Ensure origin which will server as the source account for staked funds is signed
-            let source_account = ensure_signed(origin)?;
+            let _source_account = ensure_signed(origin)?;
 
             // // Ensure the source_account is either the controller or root account of member with given id
             // ensure!(
@@ -207,7 +208,7 @@ decl_module! {
             // );
 
             // Ensure job opening exists.
-            let opening = Self::ensure_opening_exists(&opening_id)?;
+            Self::ensure_opening_exists(&opening_id)?;
 
             // // Ensure that there is sufficient balance to cover stake proposed
             // Self::ensure_can_make_stake_imbalance(
@@ -256,27 +257,26 @@ decl_module! {
             // Save member id to refund the stakes. This piece of date should outlive the 'worker'.
 //            <MemberIdByHiringApplicationId<T, I>>::insert(hiring_application_id, member_id);
 
+            // Make regular/lead application.
+            let application = JobApplication::new(&role_account_id, &opening_id, &member_id);
+
             // Get id of new worker/lead application
             let new_application_id = NextApplicationId::<T, I>::get();
 
-            // Make worker/lead application
-            let application = JobApplication::new(&role_account_id, &opening_id, &member_id);
-
-            // Store application
+            // Store an application.
             ApplicationById::<T, I>::insert(new_application_id, application);
 
-            // Update next application identifier value
+            // Update the next application identifier value.
             NextApplicationId::<T, I>::mutate(|id| *id += <T::ApplicationId as One>::one());
 
-            // Add application to set of application in worker opening
-            // OpeningById::<T, I>::mutate(opening_id, |opening| {
-            //     opening.applications.insert(new_application_id);
-            // });
+            // Add application to set of application in the job opening.
+            OpeningById::<T, I>::mutate(opening_id, |opening| {
+                opening.applications.insert(new_application_id);
+            });
 
-            // Trigger event
+            // Trigger the event.
             Self::deposit_event(RawEvent::AppliedOnOpening(opening_id, new_application_id));
         }
-
     }
 }
 
@@ -294,8 +294,9 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         <system::Module<T>>::block_number()
     }
 
-
-    fn ensure_opening_exists(opening_id: &T::OpeningId) -> Result<JobOpening<T::BlockNumber>, Error<T, I>> {
+    fn ensure_opening_exists(
+        opening_id: &T::OpeningId,
+    ) -> Result<JobOpening<T::BlockNumber, T::ApplicationId>, Error<T, I>> {
         ensure!(
             OpeningById::<T, I>::contains_key(opening_id),
             Error::<T, I>::OpeningDoesNotExist
