@@ -8,7 +8,7 @@
     "indexer:start": "(cd ./generated/indexer && yarn && DEBUG=index-builder:* yarn start)",
     "server:start:dev": "(cd ./generated/graphql-server && yarn start:dev)",
     "server:start:prod": "(cd ./generated/graphql-server && yarn start:prod)",
-    "db:start": "docker-compose up -d db",
+    "db:up": "docker-compose up -d db",
     "db:drop": "(cd ./generated/graphql-server && yarn db:drop)",
     "db:bootstrap": "(cd ./generated/graphql-server && yarn db:create && yarn db:sync && yarn db:migrate)",
     "codegen:all": "hydra-cli codegen",
