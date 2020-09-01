@@ -1,10 +1,28 @@
-import { DateTime, Duration } from 'luxon'
+import { formatDistanceToNowStrict } from 'date-fns'
 
-export const formatDateShort = (date: DateTime): string => {
-  return date.setLocale('en-gb').toLocaleString(DateTime.DATE_MED)
+export const formatDateAgo = (date: Date): string => {
+  return `${formatDistanceToNowStrict(date)} ago`
 }
 
-export const formatDurationShort = (duration: Duration): string => {
-  const format = duration.as('hours') >= 1 ? 'h:mm:ss' : 'mm:ss'
-  return duration.toFormat(format)
+export const formatDurationShort = (duration: number): string => {
+  const MINUTES_IN_HOUR = 60
+  const SECONDS_IN_HOUR = MINUTES_IN_HOUR * 60
+
+  const normalize = (n: number) => n.toString().padStart(2, '0')
+
+  let remaining = duration
+
+  const hours = Math.floor(remaining / SECONDS_IN_HOUR)
+  remaining = remaining % SECONDS_IN_HOUR
+
+  const minutes = Math.floor(remaining / MINUTES_IN_HOUR)
+  remaining = remaining % MINUTES_IN_HOUR
+
+  const seconds = remaining
+
+  if (hours) {
+    return `${hours}:${normalize(minutes)}:${normalize(seconds)}`
+  }
+
+  return `${minutes}:${normalize(seconds)}`
 }

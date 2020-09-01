@@ -1,0 +1,199 @@
+scalar Date
+
+enum Language {
+  Chinese
+  English
+  Arabic
+  Portugese
+  French
+}
+
+type Channel {
+  id: ID!
+
+  # Id of underlying entity.
+  entityID: String!
+
+  handle: String!
+
+  description: String!
+
+  coverPhotoURL: String!
+
+  avatarPhotoURL: String!
+
+  isPublic: Boolean!
+
+  totalViews: Int!
+
+  isCurated: Boolean!
+
+  language: Language
+
+  videos: [Video!]
+}
+
+type Category {
+  id: ID!
+
+  # Id of underlying entity.
+  entityID: String!
+
+  name: String!
+
+  videos: [Video!]
+}
+
+type JoystreamVideoMediaLocation {
+  dataObjectID: String!
+}
+
+type HTTPVideoMediaLocation {
+  host: String!
+  port: Int
+}
+
+# In the future we can add IPFS, Dat, etc.
+union MediaLocation = JoystreamVideoMediaLocation | HTTPVideoMediaLocation
+
+# Mixed both encoding and containers, only having popular combos, may need to be changed later.
+enum VideoMediaEncoding {
+  H264_mpeg4
+  VP8_WEBM
+  Theroa_Vorbis
+}
+
+# Apparently there are lots of different Creative Commons licenses,
+# read about all here https://creativecommons.org/licenses/,
+# I haven't had the time.
+enum CreativeCommonsVersion {
+  CC_BY
+  CC_BY_SA
+  CC_BY_ND
+  CC_BY_NC
+  CC_BY_NC_SA
+  CC_BY_NC_ND
+}
+
+type CreativeCommonsLicense {
+  version: CreativeCommonsVersion
+}
+
+type UserDefinedLicense {
+  text: String!
+}
+
+union License = UserDefinedLicense | CreativeCommonsLicense
+
+type VideoMedia {
+  id: ID!
+
+  # Id of underlying entity.
+  entityID: String!
+
+  encoding: VideoMediaEncoding!
+
+  # Resolution width
+  pixelWidth: Int!
+
+  # Resolution height
+  pixelHeight: Int!
+
+  # Size in bytes
+  size: Float
+
+  # where to find
+  location: MediaLocation!
+}
+
+type Video {
+  id: ID!
+
+  # Id of underlying entity.
+  entityID: String!
+
+  channel: Channel!
+
+  category: Category!
+
+  title: String!
+
+  description: String!
+
+  views: Int!
+
+  # In seconds
+  duration: Int!
+
+  # In intro
+  skippableIntroDuration: Int
+
+  thumbnailURL: String!
+  Language: Language
+
+  media: VideoMedia!
+
+  hasMarketing: Boolean
+
+  # Timestamp of block
+  publishedOnJoystreamAt: Date!
+  publishedOnJoystreamAtBlockHeight: Float!
+
+  # Possible time when video was published before Joystream
+  publishedBeforeJoystream: String
+
+  isPublic: Boolean!
+
+  isCurated: Boolean!
+
+  isExplicit: Boolean!
+
+  license: License!
+}
+
+union FreeTextSearchResultItemType = Video | Channel
+
+type FreeTextSearchResult {
+  item: FreeTextSearchResultItemType!
+
+  rank: Int!
+}
+
+type Query {
+  # Lookup a channel by its ID
+  channel(id: ID!): Channel
+
+  # List all channel by given constraints
+  channels(
+    order_by_creation_date: Boolean
+    ignore_curated: Boolean
+    ignore_non_public: Boolean
+    offset: Int
+    limit: Int
+  ): [Channel!]!
+
+  # Lookup a channel by its ID
+  category(id: ID!): Category
+
+  # List all categories
+  categories: [Category!]!
+
+  # Lookup video by its ID
+  video(id: ID!): Video
+
+  # List all videos by given constraints
+  videos(
+    order_by_publication_date: Boolean
+    ignore_curated: Boolean
+    ignore_non_public: Boolean
+    in_category_with_ID: ID
+    offset: Int
+    limit: Int
+  ): [Video!]!
+
+  # List all top trending videos
+  featured_videos: [Video!]!
+
+  # Free text search across videos and channels
+  search(query_string: String!): [FreeTextSearchResult!]!
+}

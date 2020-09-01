@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const path = require('path')
-const { override, addBabelPreset, addWebpackAlias, disableEsLint } = require('customize-cra')
+const { override, addBabelPreset, addWebpackAlias, disableEsLint, addWebpackModuleRule } = require('customize-cra')
 const eslintConfig = require('../../.eslintrc.js')
 
 const modifiedEslintConfig = {
@@ -49,6 +49,11 @@ module.exports = {
     addBabelPreset('@emotion/babel-preset-css-prop'),
     addWebpackAlias({
       '@': path.resolve(__dirname, 'src/'),
+    }),
+    addWebpackModuleRule({
+      test: /\.(graphql|gql)$/,
+      exclude: /node_modules/,
+      loader: 'graphql-tag/loader',
     }),
     customEslintConfig(modifiedEslintConfig)
   ),
