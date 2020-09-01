@@ -1,15 +1,9 @@
 import "reflect-metadata";
 import * as dotenv from "dotenv";
-import * as chalk from 'chalk';
-import * as figlet from 'figlet';
-import * as commander from 'commander';
-import * as BN from 'bn.js';
-import { configure, getLogger } from 'log4js';
-
-import { createConnection } from "typeorm";
-{{#typeRegistrator}}
-import { {{typeRegistrator}} } from '{{{packageName}}}';
-{{/typeRegistrator}}
+import * as chalk from "chalk";
+import * as figlet from "figlet";
+import * as commander from "commander";
+import { configure, getLogger } from "log4js";
 
 import {
   QueryNodeManager,
@@ -18,9 +12,8 @@ import {
   DatabaseManager,
   SubstrateEvent,
   createDBConnection,
-  SavedEntityEvent,
-  QueryEventProcessingPack,
-} from "index-builder/lib";
+  SavedEntityEvent
+} from 'index-builder/lib';
 
 // Mappings use!
 export { DatabaseManager as DB, getLogger, SubstrateEvent };
@@ -28,83 +21,127 @@ export { DatabaseManager as DB, getLogger, SubstrateEvent };
 const logger = getLogger();
 
 function getProcessingPack() {
-  let processingPack: QueryEventProcessingPack = {};
-  try {
-    processingPack = require('../../mappings');
-  } catch (e) {
-    throw new Error(`Cannot load mappings from "../../mappings"`);
-  }
+  const handlers = require("../../mappings");
+
+  let processingPack: { [key: string]: any } = {};
+
+  Object.keys(handlers)
+    .filter((handler) => handler.startsWith("handle"))
+    .map((handler: string) => {
+      let eventName = handler.replace("handle", "");
+      processingPack[eventName] = handlers[handler];
+    });
   return processingPack;
 }
 
 function getBootstrapPack() {
   const bootstrapPack: BootstrapPack = { pack: [] };
   if (!process.env.BOOTSTRAP_PACK_LOCATION) {
-      // TODO: very basic, we should read form the config file
-      throw new Error(`No boostrap location found. 
-Please set BOOTSTRAP_FILE_LOCATION environment variable`)
+    // TODO: very basic, we should read form the config file
+    throw new Error(`No boostrap location found. 
+Please set BOOTSTRAP_FILE_LOCATION environment variable`);
   }
   let handlers: { [key: string]: BootstrapFunc } = {};
   try {
     handlers = require(process.env.BOOTSTRAP_PACK_LOCATION);
   } catch (e) {
-    throw new Error(`Cannot load bootstrap mappings from ${process.env.BOOTSTRAP_FILE_LOCATION}: ${e}`);
+    throw new Error(
+      `Cannot load bootstrap mappings from ${process.env.BOOTSTRAP_FILE_LOCATION}: ${e}`
+    );
   }
-  
 
   Object.keys(handlers)
-    .filter(handler => handler.startsWith("boot"))
+    .filter((handler) => handler.startsWith("boot"))
     .map((handler: string) => bootstrapPack.pack.push(handlers[handler]));
 
   return bootstrapPack;
 }
 
-function banner(): commander.Command {
+const withErrors = (command: (...args: any[]) => Promise<void>) => {
+  return async (...args: any[])=> {
+    try {
+      await command(...args)
+    } catch(e) {
+      console.log(chalk.red(e.stack));
+      process.exit(1);
+    }
+  }
+}
+
+const withEnvs = (command: () => Promise<void>) => {
+  return async (opts: any) => {
+    setUp(opts);
+    await command();
+  }
+}
+
+
+function main(): commander.Command {
   console.log(chalk.green(figlet.textSync("{{projectName}}-Indexer")));
   const program = new commander.Command();
   const version = require("./package.json").version;
 
   program
     .version(version)
-    .description("{{projectName}} Indexer")
-    .option("-b, --bootstrap", "Load initial data using the boot* mappings")
-    .option("-l, --logging <file>", "Path to log4js config")
-    .option("-h, --height <height>", "Block height to start from")
-    .option("-e, --env <file>", ".env file location", "../../.env")
-    .option("-n, --no-start", "Do not run the indexer");
+    .description("{{projectName}} Indexer");
 
+  program
+    .command('bootstrap')
+    .description('Bootstrap the model with boot* handlers')
+    .action(withErrors(withEnvs(runBootstrap)));  
+
+  program
+    .command('index')
+    .option('-h, --height', 'starting block height')
+    .option('-e, --env <file>', '.env file location', '../../.env')
+    .description('Index all events and extrinsics in the substrate chain')
+    .action(withErrors(withEnvs(runIndexer)));
+
+  program
+    .command('process')
+    .option('-h, --height', 'starting block height')
+    .option('-e, --env <file>', '.env file location', '../../.env')
+    .description('Process the event and extrinsic mappings using the index')
+    .action(withErrors(withEnvs(runProcessor)));
+
+  program
+    .command('migrate')
+    .description('Create the indexer schema')
+    .option('-e, --env <file>', '.env file location', '../../.env')
+    .action(withErrors(withEnvs(runMigrations)));
+    
   program.parse(process.argv);
 
   return program;
 }
 
 function setUp(opts: any) {
-    if (opts.bootstrap) {
-        process.env.QUERY_NODE_BOOTSTRAP_DB = 'true'
-    }
+  if (opts.bootstrap) {
+    process.env.QUERY_NODE_BOOTSTRAP_DB = "true";
+  }
 
-    // dotenv config
-    dotenv.config({ path: opts.env });
+  // dotenv config
+  dotenv.config({ path: opts.env });
 
-    if (opts.height) {
-      process.env.BLOCK_HEIGHT = opts.height;
-    } else if (!process.env.BLOCK_HEIGHT) {
-      process.env.BLOCK_HEIGHT = '0';
-    }
+  if (opts.height) {
+    process.env.BLOCK_HEIGHT = opts.height;
+  } else if (!process.env.BLOCK_HEIGHT) {
+    process.env.BLOCK_HEIGHT = '0';
+  }
 
-    //log4js config
-    if (opts.logging) {
-        configure(opts.logging)
-    } else {
-        // log4js default: DEBUG to console output;
-        getLogger().level = 'debug';
-    }
-    
+  //log4js config
+  if (opts.logging) {
+    configure(opts.logging);
+  } else {
+    // log4js default: DEBUG to console output;
+    getLogger().level = 'debug';
+  }
 }
 
-async function doBootstrap(node: QueryNodeManager) {
+async function runBootstrap() {
+  const node = new QueryNodeManager();
   await node.bootstrap({
-    wsProviderURI: process.env.WS_PROVIDER_ENDPOINT_URI as string,
+    wsProviderURI: process.env.WS_PROVIDER_ENDPOINT_URI || '',
     processingPack: getBootstrapPack(),
     {{#typeRegistrator}}typeRegistrator: {{typeRegistrator}} {{/typeRegistrator}}
   });
@@ -112,44 +149,33 @@ async function doBootstrap(node: QueryNodeManager) {
   logger.info("Bootstrap done");
 }
 
-async function main() {
-  const command = banner();  
-  setUp(command);
-  
-  const providerUri = process.env.WS_PROVIDER_ENDPOINT_URI;
+async function runProcessor() {
+  const node = new QueryNodeManager();
   const atBlock = process.env.BLOCK_HEIGHT;
-
-  if (!providerUri) {
-    throw new Error(
-      "WS_PROVIDER_ENDPOINT_URI environment variable is not set! Make sure you set it in your .env file or system wide."
-    );
-  }
-
-  await createDBConnection();
-  await SavedEntityEvent.createTable();
-
-  const node = new QueryNodeManager(process);
-
-  const bootstrap = process.env.QUERY_NODE_BOOTSTRAP_DB;
-  if (bootstrap) {
-    await doBootstrap(node) 
-  }
-
-  if (!command.start) {
-      logger.info("The --no-start flag was set to true, the indexer will not start");
-      process.exit(0);
-  }
-
-  await node.start({
-    wsProviderURI: providerUri,
+  await node.process({
+    atBlock: atBlock && atBlock !== '0' ? Number.parseInt(atBlock) : undefined,
     processingPack: getProcessingPack(),
-    atBlock: atBlock && atBlock !== "0" ? Number.parseInt(atBlock) : undefined,
+  });
+}
+
+async function runIndexer() {
+  const node = new QueryNodeManager();
+  const atBlock = process.env.BLOCK_HEIGHT;
+  await node.index({
+    wsProviderURI: process.env.WS_PROVIDER_ENDPOINT_URI || '',
+    atBlock: atBlock && atBlock !== '0' ? Number.parseInt(atBlock) : undefined,
     {{#typeRegistrator}}typeRegistrator: {{typeRegistrator}} {{/typeRegistrator}}
   });
 }
 
-main().catch((e) => {
-    console.error(e);
-    process.exit(1)
-});
+async function runMigrations() {
+  logger.info(`Running migrations`);
+  await createDBConnection();
+  await SavedEntityEvent.createTable();
+  // TODO: here should be TypeORM migrations...
+}
+
+
+main();
+
 
