@@ -13,7 +13,7 @@ import {
   SubstrateEvent,
   createDBConnection,
   SavedEntityEvent
-} from 'index-builder/lib';
+} from '@dzlzv/hydra-indexer-lib/lib';
 
 // Mappings use!
 export { DatabaseManager as DB, getLogger, SubstrateEvent };
