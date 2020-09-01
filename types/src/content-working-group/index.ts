@@ -175,7 +175,7 @@ export class Curator
   }
 
   get is_active(): boolean {
-    return this.stage.type == CuratorRoleStageKeys.Active
+    return this.stage.isOfType('Active')
   }
 }
 
@@ -197,6 +197,7 @@ export class CuratorApplication
   get role_account_id(): AccountId {
     return this.role_account
   }
+
   // Helper for working-group compatibility
   get opening_id(): CuratorOpeningId {
     return this.curator_opening_id
@@ -325,6 +326,7 @@ export const contentWorkingGroupTypes = {
   CuratorRoleStage,
   CuratorExitSummary,
   CuratorExitInitiationOrigin,
+  LeadRoleState,
   ExitedLeadRole,
   CuratorInduction,
 }

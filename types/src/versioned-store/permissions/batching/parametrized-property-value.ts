@@ -1,10 +1,9 @@
 import { u32, Vec } from '@polkadot/types'
-import { PropertyValue as VersionedStorePropertyValue, PropertyValueEnumValue } from '../../PropertyValue'
+import { PropertyValue, PropertyValueEnumValue } from '../../PropertyValue'
 import { ParametrizedEntity } from './parametrized-entity'
 import { Registry } from '@polkadot/types/types'
 import { JoyEnum } from '../../../common'
 
-export class PropertyValue extends VersionedStorePropertyValue {}
 export class InternalEntityJustAdded extends u32 {}
 export class InternalEntityVec extends Vec.with(ParametrizedEntity) {}
 
@@ -16,7 +15,7 @@ export const ParametrizedPropertyValueDef = {
 export class ParametrizedPropertyValue extends JoyEnum(ParametrizedPropertyValueDef) {
   // TODO: Are those worth preserving?
   static PropertyValue(registry: Registry, value: PropertyValueEnumValue): ParametrizedPropertyValue {
-    return new ParametrizedPropertyValue(registry, { PropertyValue: new VersionedStorePropertyValue(registry, value) })
+    return new ParametrizedPropertyValue(registry, { PropertyValue: new PropertyValue(registry, value) })
   }
 
   static InternalEntityJustAdded(registry: Registry, index: number | u32): ParametrizedPropertyValue {

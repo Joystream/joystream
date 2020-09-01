@@ -144,7 +144,7 @@ export class Category extends JoyStructCustom({
   }
 
   get num_threads_created(): u32 {
-    return new u32(this.registry, this.num_direct_unmoderated_threads.add(this.num_direct_moderated_threads))
+    return this.registry.createType('u32', this.num_direct_unmoderated_threads.add(this.num_direct_moderated_threads))
   }
 
   get hasSubcategories(): boolean {
@@ -236,7 +236,7 @@ export class Thread extends JoyStructCustom({
   }
 
   get num_posts_ever_created(): u32 {
-    return new u32(this.registry, this.num_unmoderated_posts.add(this.num_moderated_posts))
+    return this.registry.createType('u32', this.num_unmoderated_posts.add(this.num_moderated_posts))
   }
 
   get created_at(): BlockAndTime {

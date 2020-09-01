@@ -61,7 +61,7 @@ export type InputValidationLengthConstraintType = {
 export class InputValidationLengthConstraint extends JoyStructDecorated({ min: u16, max_min_diff: u16 })
   implements InputValidationLengthConstraintType {
   get max(): u16 {
-    return new u16(this.registry, this.min.add(this.max_min_diff))
+    return this.registry.createType('u16', this.min.add(this.max_min_diff))
   }
 }
 
