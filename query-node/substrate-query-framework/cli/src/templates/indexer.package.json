@@ -4,10 +4,11 @@
     "main": "index.js",
     "license": "MIT",
     "scripts": {
-      "start": "ts-node index.ts",
-        "start:dev": "DEBUG=index-builder:* ts-node index.ts --bootstrap",
-        "bootstrap": "ts-node index.ts --no-start --bootstrap",
-        "bootstrap:dev": "DEBUG=index-builder:* ts-node index.ts --no-start --bootstrap"
+      "start:processor": "DEBUG=index-builder:* ts-node index.ts process",
+      "start:indexer": "DEBUG=index-builder:* ts-node index.ts index",
+      "db:migrate": "DEBUG=index-builder:* TYPEORM_LOGGING=true ts-node index.ts migrate",
+      "bootstrap": "ts-node index.ts bootstrap",
+      "bootstrap:dev": "DEBUG=index-builder:* ts-node index.ts bootstrap"
     },
     "dependencies": {
       "@types/bn.js": "^4.11.6",

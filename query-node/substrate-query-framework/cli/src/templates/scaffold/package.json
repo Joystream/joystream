@@ -5,7 +5,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "clean": "yarn db:drop && rm -rf ./generated",
-    "indexer:start": "(cd ./generated/indexer && yarn && DEBUG=index-builder:* yarn start)",
+    "processor:start": "(cd ./generated/indexer && yarn && DEBUG=index-builder:* yarn start:processor)",
+    "indexer:start": "(cd ./generated/indexer && yarn && DEBUG=index-builder:* yarn start:indexer)",
     "server:start:dev": "(cd ./generated/graphql-server && yarn start:dev)",
     "server:start:prod": "(cd ./generated/graphql-server && yarn start:prod)",
     "db:up": "docker-compose up -d db",
