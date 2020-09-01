@@ -45,3 +45,30 @@ impl Default for JobOpeningType {
         Self::Regular
     }
 }
+
+/// An application for the regular worker/lead role opening.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
+pub struct JobApplication<AccountId, OpeningId, MemberId> {
+    /// Account used to authenticate in this role.
+    pub role_account_id: AccountId,
+
+    /// Opening on which this application applies.
+    pub opening_id: OpeningId,
+
+    /// Member applying.
+    pub member_id: MemberId,
+}
+
+impl<AccountId: Clone, OpeningId: Clone, MemberId: Clone>
+    JobApplication<AccountId, OpeningId, MemberId>
+{
+    /// Creates a new job application using parameters.
+    pub fn new(role_account_id: &AccountId, opening_id: &OpeningId, member_id: &MemberId) -> Self {
+        JobApplication {
+            role_account_id: role_account_id.clone(),
+            opening_id: opening_id.clone(),
+            member_id: member_id.clone(),
+        }
+    }
+}

@@ -13,6 +13,8 @@ system = { package = 'frame-system', default-features = false, git = 'https://gi
 sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 common = { package = 'pallet-common', default-features = false, path = '../common'}
+membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
+
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
@@ -31,4 +33,5 @@ std = [
 	'sp-arithmetic/std',
 	'sp-std/std',
 	'common/std',
+	'membership/std',
 ]

@@ -14,5 +14,8 @@ decl_error! {
 
         /// Opening description too long.
         OpeningDescriptionTooLong,
+
+		/// Opening does not exist.
+        OpeningDoesNotExist,
     }
 }

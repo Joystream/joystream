@@ -5,7 +5,7 @@ use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::StorageValue;
 use system::ensure_root;
 
-// Opening check: verifies opening description length.
+// Check opening: verifies opening description length.
 pub(crate) fn ensure_opening_description_is_valid<T: Trait<I>, I: Instance>(
     text: &[u8],
 ) -> DispatchResult {
@@ -18,6 +18,7 @@ pub(crate) fn ensure_opening_description_is_valid<T: Trait<I>, I: Instance>(
         .map_err(|e| DispatchError::Other(e))
 }
 
+// Check opening: verifies origin and opening type compatibility.
 pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
     origin: T::Origin,
     opening_type: JobOpeningType,
