@@ -123,11 +123,11 @@ class WorkersApi {
   async getAllProviders() {
     const ids = []
     const providers = {}
-    const entries = (await this.base.api.query.storageWorkingGroup.workerById.entries());
+    const entries = await this.base.api.query.storageWorkingGroup.workerById.entries()
     entries.forEach(([storageKey, worker]) => {
-      const id = storageKey.args[0].toNumber();
-      ids.push(id);
-      providers[id] = worker;
+      const id = storageKey.args[0].toNumber()
+      ids.push(id)
+      providers[id] = worker
     })
 
     return { ids, providers }
