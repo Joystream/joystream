@@ -1,9 +1,8 @@
 import * as shortid from 'shortid';
-import { DeepPartial, createConnection, QueryRunner, Connection, getConnection, getConnectionOptions, ConnectionOptions } from 'typeorm';
+import { DeepPartial, createConnection, QueryRunner, Connection, getConnection } from 'typeorm';
 
 import config from '../ormconfig';
 
-import { SnakeNamingStrategy } from './SnakeNamingStrategy';
 import Debug from 'debug';
 
 const debug = Debug('index-builder:helper');
