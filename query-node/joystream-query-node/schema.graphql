@@ -10,13 +10,160 @@ type Member @entity {
 
   "Short text chosen by member to share information about themselves"
   about: String
-  
+
   "Blocknumber when member was registered"
   registeredAtBlock: BigInt!
-  
+
   "Member's controller account id"
   controllerAccount: Bytes!
 
   "Member's root account id"
   rootAccount: Bytes!
+}
+
+type Council @entity {
+
+  councilId: BigInt!
+
+  members: [CouncilMember!]!
+
+  startedAtBlock: BigInt!
+
+  # When not set, then it has not ended yet, its in session.
+  endedAtBlock: BigInt
+}
+
+type CouncilMember @entity {
+
+  councilMemberId: BigInt!
+
+  member: Member!
+
+  stakeBalance: BigInt!
+
+  council: Council!
+}
+
+enum VoteKind {
+    APPROVE
+    REJECT
+    SLASH
+    ABSTAIN
+}
+
+type VoteOnProposal @entity {
+
+  voteId: BigInt!
+
+  councilMember: CouncilMember!
+
+  proposal: Proposal!
+
+  voteKind: VoteKind!
+}
+
+"Proposal types"
+enum ProposalType {
+  Text
+  RuntimeUpgrade
+  Spending
+  SetLead
+  SetContentWorkingGroupMintCapacity
+  SetValidatorCount
+  AddWorkingGroupLeaderOpening
+  BeginReviewWorkingGroupLeaderApplications
+  FillWorkingGroupLeaderOpening
+  SetWorkingGroupMintCapacity
+  DecreaseWorkingGroupLeaderStake
+  SlashWorkingGroupLeaderStake
+  SetWorkingGroupLeaderReward
+  TerminateWorkingGroupLeaderRole
+}
+
+enum ProposalState {
+  ACTIVE
+  CANCELLED
+  VETOED
+  REJECTED
+  SLASHED
+  EXPIRED
+  GRACING
+  EXECUTED
+}
+
+type Proposal @entity {
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread!
+
+  # *********** GET BACK LATER HERE ****************
+  # This really can only be set when `status` is in one of the finalized states
+  # but lack of proper algebraic types in graphql does not allow us to make representation fully
+  # safe.
+  finalized_at_block: BigInt
+  
+  status: ProposalState
+
+  "Amount which was staked"
+  stakeBalance: BigInt!
+
+  abstentionVotes: BigInt!
+
+  approvalVotes: BigInt!
+
+  rejectionVotes: BigInt!
+
+  slashVotes: BigInt!
+
+}
+
+"Will be handled by ThreadCreated, ..."
+type ProposalDiscussionThread @entity {
+
+  threadId: BigInt!
+
+  title: String
+
+  createdAtBlock: BigInt
+
+  proposal: Proposal!
+
+  posts: [ProposalDiscussionThreadPost!]
+}
+
+"Will be handled by proposals/discussion::PostCreated"
+type ProposalDiscussionThreadPost @entity {
+  postId: BigInt!
+
+  thread: ProposalDiscussionThread!
+
+  # If not set, then it was the proposer who made post.
+  # This is a safe representation, until we start other actors,
+  # unfortunately the graphql typesystem is likely to weak to keep us safe at that time.
+  councilMemberWhenAuthor: CouncilMember
+
+  text: String!
+
+  createdAtBlock: BigInt!
+
+  # Counting creation as an update
+  lastUpdatedAtBlock: BigInt
+
+  editionNumber: BigInt
 }
