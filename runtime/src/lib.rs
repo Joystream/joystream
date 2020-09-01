@@ -63,7 +63,9 @@ pub use versioned_store;
 pub use working_group;
 
 pub use content_directory;
-pub use content_directory::{InputValidationLengthConstraint, MaxNumber, VecMaxLength, TextMaxLength, HashedTextMaxLength};
+pub use content_directory::{
+    HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
+};
 
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
@@ -419,7 +421,6 @@ parameter_types! {
 
     pub const IndividualEntitiesCreationLimit: EntityId = 50;
 }
-
 
 impl content_directory::Trait for Runtime {
     type Event = Event;
