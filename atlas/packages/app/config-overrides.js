@@ -62,15 +62,6 @@ module.exports = {
     return paths
   },
   jest: function (config) {
-    config.coverageThreshold = {
-      global: {
-        statements: 48,
-        branches: 42,
-        functions: 39,
-        lines: 48,
-      },
-    }
-
     config.coverageDirectory = path.resolve(__dirname, '..', '..', '.coverage')
     // Don't collect coverage from stories folder
     config.collectCoverageFrom.push('!<rootDir>/src/**/stories/**/*.{js,jsx,ts,tsx}')
