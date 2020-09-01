@@ -2,8 +2,8 @@ use crate::mock::*;
 use crate::test::*;
 
 use crate::test::public_api::*;
-use rstd::collections::btree_set::BTreeSet;
-use rstd::result::Result;
+use sp_std::collections::btree_set::BTreeSet;
+use sp_std::result::Result;
 
 /*
 Not covered:
@@ -89,9 +89,9 @@ impl FillOpeningFixture {
                 // compose expected stage
                 let expected_active_stage = ActiveOpeningStage::Deactivated {
                     cause: OpeningDeactivationCause::Filled,
-                    deactivated_at_block: 1,
-                    started_accepting_applicants_at_block: 1,
-                    started_review_period_at_block: Some(1),
+                    deactivated_at_block: FIRST_BLOCK_HEIGHT,
+                    started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT,
+                    started_review_period_at_block: Some(FIRST_BLOCK_HEIGHT),
                 };
 
                 // calculate application counters

@@ -3,9 +3,9 @@
 pub(crate) mod parameters;
 
 use codec::{Decode, Encode};
-use rstd::vec::Vec;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use sp_std::vec::Vec;
 
 use crate::ElectionParameters;
 use common::working_group::WorkingGroup;

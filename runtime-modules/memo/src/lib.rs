@@ -1,13 +1,13 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use common::currency::GovernanceCurrency;
-use rstd::prelude::*;
-use sr_primitives::traits::Zero;
-use srml_support::traits::Currency;
-use srml_support::{decl_event, decl_module, decl_storage, ensure};
+use frame_support::traits::Currency;
+use frame_support::{decl_event, decl_module, decl_storage, ensure};
+use sp_arithmetic::traits::Zero;
+use sp_std::vec::Vec;
+use system::ensure_signed;
 
-use system::{self, ensure_signed};
+use common::currency::GovernanceCurrency;
 
 pub trait Trait: system::Trait + GovernanceCurrency {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -17,8 +17,8 @@ pub type MemoText = Vec<u8>;
 
 decl_storage! {
     trait Store for Module<T: Trait> as Memo {
-        Memo get(memo) : map T::AccountId => MemoText;
-        MaxMemoLength get(max_memo_length) : u32 = 4096;
+        Memo get(fn memo) : map hasher(blake2_128_concat) T::AccountId => MemoText;
+        MaxMemoLength get(fn max_memo_length) : u32 = 4096;
     }
 }
 
@@ -32,6 +32,7 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
+        #[weight = 10_000_000] // TODO: adjust weight
         fn update_memo(origin, memo: MemoText) {
             let sender = ensure_signed(origin)?;
 

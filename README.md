@@ -123,6 +123,12 @@ During a rebase/merge you may want to skip all hooks, you can use `HUSKY_SKIP_HO
 HUSKY_SKIP_HOOKS=1 git rebase ...
 ```
 
+## RLS Extension in VScode or Atom Editors
+
+If you use RLS extension in your IDE, start your editor with the `BUILD_DUMMY_WASM_BINARY=1` environment set to workaround a build issue that occurs in the IDE only.
+
+`BUILD_DUMMY_WASM_BINARY=1 code ./joystream`
+
 ## Authors
 
 See the list of [contributors](https://github.com/Joystream/joystream/graphs/contributors) who participated in this project.

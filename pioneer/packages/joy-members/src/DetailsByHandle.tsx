@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { I18nProps } from '@polkadot/react-components/types';
-import { withCalls } from '@polkadot/react-api/with';
+import { withCalls } from '@polkadot/react-api/hoc';
 import { stringToU8a, u8aToHex } from '@polkadot/util';
 
 import translate from './translate';
@@ -16,6 +16,7 @@ type DetailsByHandleProps = {
 
 function DetailsByHandleInner (p: DetailsByHandleProps) {
   const { memberIdByHandle: memberId } = p;
+
   return memberId !== undefined // here we can't make distinction value existing and loading
     ? <div className='ui massive relaxed middle aligned list FullProfile'>
       <Details memberId={memberId} />
@@ -39,6 +40,7 @@ class Component extends React.PureComponent<Props> {
   render () {
     const { match: { params: { handle } } } = this.props;
     const handleHex = u8aToHex(stringToU8a(handle));
+
     return (
       <DetailsByHandle handle={handleHex} />
     );

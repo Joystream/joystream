@@ -1,22 +1,21 @@
 #![cfg(test)]
 
-pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
-pub use common::currency::GovernanceCurrency;
-use membership;
-pub use system;
-
-pub use primitives::{Blake2Hasher, H256};
-pub use sr_primitives::{
-    testing::{Digest, DigestItem, Header, UintAuthorityId},
-    traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize},
-    weights::Weight,
-    BuildStorage, Perbill,
+use frame_support::storage::StorageMap;
+use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use sp_core::H256;
+use sp_runtime::{
+    testing::Header,
+    traits::{BlakeTwo256, IdentityLookup},
+    Perbill,
 };
 
 use crate::data_directory::ContentIdExists;
 use crate::data_object_type_registry::IsActiveDataObjectType;
 pub use crate::StorageWorkingGroupInstance;
-use srml_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageLinkedMap};
+pub use crate::{data_directory, data_object_storage_registry, data_object_type_registry};
+use common::currency::GovernanceCurrency;
+use membership;
 
 mod working_group_mod {
     pub use super::StorageWorkingGroupInstance;
@@ -39,6 +38,7 @@ impl_outer_event! {
         balances<T>,
         members<T>,
         working_group_mod StorageWorkingGroupInstance <T>,
+        system<T>,
     }
 }
 
@@ -97,10 +97,11 @@ parameter_types! {
 }
 
 impl system::Trait for Test {
+    type BaseCallFilter = ();
     type Origin = Origin;
+    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
@@ -109,12 +110,20 @@ impl system::Trait for Test {
     type Event = MetaEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
-impl timestamp::Trait for Test {
+impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -122,28 +131,15 @@ impl timestamp::Trait for Test {
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
-    pub const TransferFee: u32 = 0;
-    pub const CreationFee: u32 = 0;
-    pub const TransactionBaseFee: u32 = 1;
-    pub const TransactionByteFee: u32 = 0;
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl balances::Trait for Test {
-    /// The type for recording an account's balance.
     type Balance = u64;
-    /// What to do if an account's free balance gets zeroed.
-    type OnFreeBalanceZero = ();
-    /// What to do if a new account is created.
-    type OnNewAccount = ();
-    /// The ubiquitous event type.
-    type Event = MetaEvent;
-
     type DustRemoval = ();
-    type TransferPayment = ();
+    type Event = MetaEvent;
     type ExistentialDeposit = ExistentialDeposit;
-    type TransferFee = TransferFee;
-    type CreationFee = CreationFee;
+    type AccountStore = System;
 }
 
 impl GovernanceCurrency for Test {
@@ -262,7 +258,7 @@ impl ExtBuilder {
         self.first_metadata_id = first_metadata_id;
         self
     }
-    pub fn build(self) -> runtime_io::TestExternalities {
+    pub fn build(self) -> sp_io::TestExternalities {
         let mut t = system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
@@ -290,10 +286,11 @@ impl ExtBuilder {
     }
 }
 
+pub type TestDataObjectType = data_object_type_registry::DataObjectType;
+
 pub type Balances = balances::Module<Test>;
 pub type System = system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
-pub type TestDataObjectType = data_object_type_registry::DataObjectType;
 pub type TestDataDirectory = data_directory::Module<Test>;
 pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Test>;
 
@@ -324,4 +321,20 @@ pub(crate) fn hire_storage_provider() -> (u64, u32) {
     );
 
     (role_account_id, storage_provider_id)
+}
+
+// Recommendation from Parity on testing on_finalize
+// https://substrate.dev/docs/en/next/development/module/tests
+pub fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        <TestDataObjectTypeRegistry as OnFinalize<u64>>::on_finalize(System::block_number());
+        <TestDataDirectory as OnFinalize<u64>>::on_finalize(System::block_number());
+        <TestDataObjectStorageRegistry as OnFinalize<u64>>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <TestDataObjectTypeRegistry as OnInitialize<u64>>::on_initialize(System::block_number());
+        <TestDataDirectory as OnInitialize<u64>>::on_initialize(System::block_number());
+        <TestDataObjectStorageRegistry as OnInitialize<u64>>::on_initialize(System::block_number());
+    }
 }

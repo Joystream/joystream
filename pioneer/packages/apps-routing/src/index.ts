@@ -9,69 +9,49 @@ import appSettings from '@polkadot/ui-settings';
 // When adding here, also ensure to add to Dummy.tsx
 
 import accounts from './accounts';
-import claims from './claims';
-import contracts from './contracts';
-import council from './council';
-// import dashboard from './dashboard';
-import democracy from './democracy';
 import explorer from './explorer';
 import extrinsics from './extrinsics';
-import genericAsset from './generic-asset';
 import js from './js';
-import parachains from './parachains';
-import poll from './poll';
 import settings from './settings';
-import society from './society';
 import staking from './staking';
 import storage from './storage';
 import sudo from './sudo';
-import techcomm from './techcomm';
 import toolbox from './toolbox';
 import transfer from './transfer';
-import treasury from './treasury';
+// Joy packages
+import members from './joy-members';
+import { terms, privacyPolicy } from './joy-pages';
 
 export default function create (t: <T = string> (key: string, text: string, options: { ns: string }) => T): Routes {
   return appSettings.uiMode === 'light'
     ? [
-      // dashboard,
-      explorer(t),
-      accounts(t),
-      claims(t),
-      poll(t),
-      transfer(t),
-      genericAsset(t),
-      null,
+      members(t),
       staking(t),
-      democracy(t),
-      council(t),
-      // TODO Not sure about the inclusion of treasury, parachains & society here
       null,
-      settings(t)
+      transfer(t),
+      accounts(t),
+      settings(t),
+      // Those are hidden
+      terms(t),
+      privacyPolicy(t)
     ]
     : [
-      // dashboard(t),
-      explorer(t),
-      accounts(t),
-      claims(t),
-      poll(t),
-      transfer(t),
-      genericAsset(t),
-      null,
+      members(t),
       staking(t),
-      democracy(t),
-      council(t),
-      treasury(t),
-      techcomm(t),
-      parachains(t),
-      society(t),
       null,
-      contracts(t),
+      transfer(t),
+      accounts(t),
+      settings(t),
+      null,
+      explorer(t),
       storage(t),
       extrinsics(t),
+      js(t),
+      toolbox(t),
       sudo(t),
       null,
-      settings(t),
-      toolbox(t),
-      js(t)
+      // Those are hidden
+      terms(t),
+      privacyPolicy(t)
     ];
 }

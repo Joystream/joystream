@@ -1,5 +1,5 @@
-use rstd::marker::PhantomData;
-use srml_support::{StorageLinkedMap, StorageMap};
+use frame_support::StorageMap;
+use sp_std::marker::PhantomData;
 
 use crate::StorageWorkingGroupInstance;
 use stake::{BalanceOf, NegativeImbalance};
@@ -18,13 +18,13 @@ impl<T: stake::Trait + working_group::Trait<StorageWorkingGroupInstance>>
         remaining_imbalance: NegativeImbalance<T>,
     ) -> NegativeImbalance<T> {
         // Stake not related to a staked role managed by the hiring module.
-        if !hiring::ApplicationIdByStakingId::<T>::exists(*stake_id) {
+        if !hiring::ApplicationIdByStakingId::<T>::contains_key(*stake_id) {
             return remaining_imbalance;
         }
 
         let hiring_application_id = hiring::ApplicationIdByStakingId::<T>::get(*stake_id);
 
-        if working_group::MemberIdByHiringApplicationId::<T, StorageWorkingGroupInstance>::exists(
+        if working_group::MemberIdByHiringApplicationId::<T, StorageWorkingGroupInstance>::contains_key(
             hiring_application_id,
         ) {
             return <working_group::Module<T, StorageWorkingGroupInstance>>::refund_working_group_stake(

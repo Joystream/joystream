@@ -1,8 +1,9 @@
 #![cfg(test)]
 
+use frame_support::{StorageMap, StorageValue};
+use system::{EventRecord, Phase, RawOrigin};
+
 use super::mock::*;
-use srml_support::{StorageLinkedMap, StorageValue};
-use system::{self, EventRecord, Phase, RawOrigin};
 
 const DEFAULT_LEADER_ACCOUNT_ID: u64 = 1;
 const DEFAULT_LEADER_MEMBER_ID: u64 = 1;
@@ -73,6 +74,13 @@ fn succeed_register() {
 #[test]
 fn activate_data_object_type_fails_with_invalid_lead() {
     with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         SetLeadFixture::set_default_lead();
 
         // First register a type
@@ -93,13 +101,26 @@ fn activate_data_object_type_fails_with_invalid_lead() {
             RawOrigin::Signed(invalid_leader_account_id).into(),
             dot_id,
         );
-        assert_eq!(res, Err(working_group::Error::IsNotLeadAccount.into()));
+        assert_eq!(
+            res,
+            Err(
+                working_group::Error::<Test, crate::StorageWorkingGroupInstance>::IsNotLeadAccount
+                    .into()
+            )
+        );
     });
 }
 
 #[test]
 fn deactivate_data_object_type_fails_with_invalid_lead() {
     with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         SetLeadFixture::set_default_lead();
 
         // First register a type
@@ -120,13 +141,26 @@ fn deactivate_data_object_type_fails_with_invalid_lead() {
             RawOrigin::Signed(invalid_leader_account_id).into(),
             dot_id,
         );
-        assert_eq!(res, Err(working_group::Error::IsNotLeadAccount.into()));
+        assert_eq!(
+            res,
+            Err(
+                working_group::Error::<Test, crate::StorageWorkingGroupInstance>::IsNotLeadAccount
+                    .into()
+            )
+        );
     });
 }
 
 #[test]
 fn update_data_object_type_fails_with_invalid_lead() {
     with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         SetLeadFixture::set_default_lead();
 
         // First register a type
@@ -152,13 +186,26 @@ fn update_data_object_type_fails_with_invalid_lead() {
             dot_id,
             updated1,
         );
-        assert_eq!(res, Err(working_group::Error::IsNotLeadAccount.into()));
+        assert_eq!(
+            res,
+            Err(
+                working_group::Error::<Test, crate::StorageWorkingGroupInstance>::IsNotLeadAccount
+                    .into()
+            )
+        );
     });
 }
 
 #[test]
 fn update_existing() {
     with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         SetLeadFixture::set_default_lead();
 
         // First register a type
@@ -201,7 +248,7 @@ fn update_existing() {
         assert_eq!(
             *System::events().last().unwrap(),
             EventRecord {
-                phase: Phase::ApplyExtrinsic(0),
+                phase: Phase::Initialization,
                 event: MetaEvent::data_object_type_registry(
                     data_object_type_registry::RawEvent::DataObjectTypeUpdated(dot_id)
                 ),
@@ -230,6 +277,15 @@ fn register_data_object_type_failed_with_no_lead() {
 #[test]
 fn activate_existing() {
     with_default_mock_builder(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let expected_data_object_type_id = TEST_FIRST_DATA_OBJECT_TYPE_ID + 1; // on_initialize() increments the default value.
+
         SetLeadFixture::set_default_lead();
 
         // First register a type
@@ -245,10 +301,10 @@ fn activate_existing() {
         assert_eq!(
             *System::events().last().unwrap(),
             EventRecord {
-                phase: Phase::ApplyExtrinsic(0),
+                phase: Phase::Initialization,
                 event: MetaEvent::data_object_type_registry(
                     data_object_type_registry::RawEvent::DataObjectTypeRegistered(
-                        TEST_FIRST_DATA_OBJECT_TYPE_ID
+                        expected_data_object_type_id
                     )
                 ),
                 topics: vec![],
@@ -256,23 +312,23 @@ fn activate_existing() {
         );
 
         // Retrieve, and ensure it's not active.
-        let data = TestDataObjectTypeRegistry::data_object_types(TEST_FIRST_DATA_OBJECT_TYPE_ID);
+        let data = TestDataObjectTypeRegistry::data_object_types(expected_data_object_type_id);
         assert!(data.is_some());
         assert!(!data.unwrap().active);
 
         // Now activate the data object type
         let res = TestDataObjectTypeRegistry::activate_data_object_type(
             RawOrigin::Signed(DEFAULT_LEADER_ACCOUNT_ID).into(),
-            TEST_FIRST_DATA_OBJECT_TYPE_ID,
+            expected_data_object_type_id,
         );
         assert!(res.is_ok());
         assert_eq!(
             *System::events().last().unwrap(),
             EventRecord {
-                phase: Phase::ApplyExtrinsic(0),
+                phase: Phase::Initialization,
                 event: MetaEvent::data_object_type_registry(
                     data_object_type_registry::RawEvent::DataObjectTypeUpdated(
-                        TEST_FIRST_DATA_OBJECT_TYPE_ID
+                        expected_data_object_type_id
                     )
                 ),
                 topics: vec![],
@@ -280,17 +336,17 @@ fn activate_existing() {
         );
 
         // Ensure that the item is actually activated.
-        let data = TestDataObjectTypeRegistry::data_object_types(TEST_FIRST_DATA_OBJECT_TYPE_ID);
+        let data = TestDataObjectTypeRegistry::data_object_types(expected_data_object_type_id);
         assert!(data.is_some());
         assert!(data.unwrap().active);
 
         // Deactivate again.
         let res = TestDataObjectTypeRegistry::deactivate_data_object_type(
             RawOrigin::Signed(DEFAULT_LEADER_ACCOUNT_ID).into(),
-            TEST_FIRST_DATA_OBJECT_TYPE_ID,
+            expected_data_object_type_id,
         );
         assert!(res.is_ok());
-        let data = TestDataObjectTypeRegistry::data_object_types(TEST_FIRST_DATA_OBJECT_TYPE_ID);
+        let data = TestDataObjectTypeRegistry::data_object_types(expected_data_object_type_id);
         assert!(data.is_some());
         assert!(!data.unwrap().active);
     });

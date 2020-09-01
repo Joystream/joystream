@@ -21,6 +21,9 @@ import SideBar from './SideBar';
 import WarmUp from './WarmUp';
 import { WindowDimensionsCtx } from './WindowDimensions';
 
+/* Joystream-specific */
+import TopBar from './JoyTopBar/TopBar';
+
 interface SidebarState {
   isCollapsed: boolean;
   isMenu: boolean;
@@ -96,7 +99,10 @@ function Apps ({ className = '' }: Props): React.ReactElement<Props> {
             toggleMenu={_toggleMenu}
           />
           <Signer>
-            <Content />
+            <div className='apps--Main'>
+              <TopBar />
+              <Content />
+            </div>
           </Signer>
           <ConnectingOverlay />
           <div id={PORTAL_ID} />
@@ -221,5 +227,12 @@ export default React.memo(styled(Apps)`
     &.open {
       opacity: 1;
     }
+  }
+
+  .apps--Main {
+    flex-grow: 1;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 `);

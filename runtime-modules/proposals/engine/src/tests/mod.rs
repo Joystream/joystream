@@ -4,13 +4,12 @@ use crate::*;
 use mock::*;
 
 use codec::Encode;
-use rstd::rc::Rc;
-use sr_primitives::traits::{DispatchResult, OnFinalize, OnInitialize};
-use srml_support::{StorageDoubleMap, StorageMap, StorageValue};
+use frame_support::dispatch::DispatchResult;
+use frame_support::traits::{Currency, OnFinalize, OnInitialize};
+use frame_support::{StorageDoubleMap, StorageMap, StorageValue};
+use sp_std::rc::Rc;
 use system::RawOrigin;
 use system::{EventRecord, Phase};
-
-use srml_support::traits::Currency;
 
 pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
     let initial_balance = Balances::total_issuance();
@@ -132,7 +131,7 @@ impl DummyProposalFixture {
         }
     }
 
-    fn create_proposal_and_assert(self, result: Result<u32, Error>) -> Option<u32> {
+    fn create_proposal_and_assert(self, result: Result<u32, DispatchError>) -> Option<u32> {
         let proposal_id_result = ProposalsEngine::create_proposal(
             self.account_id,
             self.proposer_id,
@@ -174,7 +173,7 @@ impl CancelProposalFixture {
         }
     }
 
-    fn cancel_and_assert(self, expected_result: DispatchResult<Error>) {
+    fn cancel_and_assert(self, expected_result: DispatchResult) {
         assert_eq!(
             ProposalsEngine::cancel_proposal(
                 self.origin.into(),
@@ -202,7 +201,7 @@ impl VetoProposalFixture {
         VetoProposalFixture { origin, ..self }
     }
 
-    fn veto_and_assert(self, expected_result: DispatchResult<Error>) {
+    fn veto_and_assert(self, expected_result: DispatchResult) {
         assert_eq!(
             ProposalsEngine::veto_proposal(self.origin.into(), self.proposal_id,),
             expected_result
@@ -230,11 +229,11 @@ impl VoteGenerator {
         self.vote_and_assert(vote_kind, Ok(()));
     }
 
-    fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: DispatchResult<Error>) {
+    fn vote_and_assert(&mut self, vote_kind: VoteKind, expected_result: DispatchResult) {
         assert_eq!(self.vote(vote_kind.clone()), expected_result);
     }
 
-    fn vote(&mut self, vote_kind: VoteKind) -> DispatchResult<Error> {
+    fn vote(&mut self, vote_kind: VoteKind) -> DispatchResult {
         if self.auto_increment_voter_id {
             self.current_account_id += 1;
             self.current_voter_id += 1;
@@ -255,7 +254,7 @@ impl EventFixture {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
-                phase: Phase::ApplyExtrinsic(0),
+                phase: Phase::Initialization,
                 event: TestEvent::engine(ev.clone()),
                 topics: vec![],
             })
@@ -307,7 +306,7 @@ fn vote_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         assert_eq!(
             ProposalsEngine::vote(system::RawOrigin::None.into(), 1, 1, VoteKind::Approve),
-            Err(Error::Other("RequireSignedOrigin"))
+            Err(DispatchError::Other("Bad origin"))
         );
     });
 }
@@ -338,8 +337,8 @@ fn proposal_execution_succeeds() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 1,
-                status: ProposalStatus::approved(ApprovedProposalStatus::Executed, 1),
+                created_at: 0,
+                status: ProposalStatus::approved(ApprovedProposalStatus::Executed, 0),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults {
@@ -387,10 +386,10 @@ fn proposal_execution_failed() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 1,
+                created_at: 0,
                 status: ProposalStatus::approved(
                     ApprovedProposalStatus::failed_execution("ExecutionFailed"),
-                    1
+                    0
                 ),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
@@ -457,7 +456,7 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
 
-        assert!(<ActiveProposalIds<Test>>::exists(proposal_id));
+        assert!(<ActiveProposalIds<Test>>::contains_key(proposal_id));
 
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 1);
@@ -478,9 +477,9 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
 
         assert_eq!(
             proposal.status,
-            ProposalStatus::finalized_successfully(ProposalDecisionStatus::Rejected, 1),
+            ProposalStatus::finalized_successfully(ProposalDecisionStatus::Rejected, 0),
         );
-        assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
+        assert!(!<ActiveProposalIds<Test>>::contains_key(proposal_id));
 
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 0);
@@ -492,21 +491,22 @@ fn create_proposal_fails_with_invalid_body_or_title() {
     initial_test_ext().execute_with(|| {
         let mut dummy_proposal =
             DummyProposalFixture::default().with_title_and_body(Vec::new(), b"body".to_vec());
-        dummy_proposal.create_proposal_and_assert(Err(Error::EmptyTitleProvided.into()));
+        dummy_proposal.create_proposal_and_assert(Err(Error::<Test>::EmptyTitleProvided.into()));
 
         dummy_proposal =
             DummyProposalFixture::default().with_title_and_body(b"title".to_vec(), Vec::new());
-        dummy_proposal.create_proposal_and_assert(Err(Error::EmptyDescriptionProvided.into()));
+        dummy_proposal
+            .create_proposal_and_assert(Err(Error::<Test>::EmptyDescriptionProvided.into()));
 
         let too_long_title = vec![0; 200];
         dummy_proposal =
             DummyProposalFixture::default().with_title_and_body(too_long_title, b"body".to_vec());
-        dummy_proposal.create_proposal_and_assert(Err(Error::TitleIsTooLong.into()));
+        dummy_proposal.create_proposal_and_assert(Err(Error::<Test>::TitleIsTooLong.into()));
 
         let too_long_body = vec![0; 11000];
         dummy_proposal =
             DummyProposalFixture::default().with_title_and_body(b"title".to_vec(), too_long_body);
-        dummy_proposal.create_proposal_and_assert(Err(Error::DescriptionIsTooLong.into()));
+        dummy_proposal.create_proposal_and_assert(Err(Error::<Test>::DescriptionIsTooLong.into()));
     });
 }
 
@@ -519,7 +519,10 @@ fn vote_fails_with_expired_voting_period() {
         run_to_block_and_finalize(6);
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
-        vote_generator.vote_and_assert(VoteKind::Approve, Err(Error::ProposalFinalized));
+        vote_generator.vote_and_assert(
+            VoteKind::Approve,
+            Err(Error::<Test>::ProposalFinalized.into()),
+        );
     });
 }
 
@@ -538,7 +541,10 @@ fn vote_fails_with_not_active_proposal() {
         run_to_block_and_finalize(2);
 
         let mut vote_generator_to_fail = VoteGenerator::new(proposal_id);
-        vote_generator_to_fail.vote_and_assert(VoteKind::Approve, Err(Error::ProposalFinalized));
+        vote_generator_to_fail.vote_and_assert(
+            VoteKind::Approve,
+            Err(Error::<Test>::ProposalFinalized.into()),
+        );
     });
 }
 
@@ -546,7 +552,10 @@ fn vote_fails_with_not_active_proposal() {
 fn vote_fails_with_absent_proposal() {
     initial_test_ext().execute_with(|| {
         let mut vote_generator = VoteGenerator::new(2);
-        vote_generator.vote_and_assert(VoteKind::Approve, Err(Error::ProposalNotFound));
+        vote_generator.vote_and_assert(
+            VoteKind::Approve,
+            Err(Error::<Test>::ProposalNotFound.into()),
+        );
     });
 }
 
@@ -560,7 +569,7 @@ fn vote_fails_on_double_voting() {
         vote_generator.auto_increment_voter_id = false;
 
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
-        vote_generator.vote_and_assert(VoteKind::Approve, Err(Error::AlreadyVoted));
+        vote_generator.vote_and_assert(VoteKind::Approve, Err(Error::<Test>::AlreadyVoted.into()));
     });
 }
 
@@ -588,8 +597,8 @@ fn cancel_proposal_succeeds() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 1,
-                status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Canceled, 1),
+                created_at: 0,
+                status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Canceled, 0),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
@@ -607,7 +616,7 @@ fn cancel_proposal_fails_with_not_active_proposal() {
         run_to_block_and_finalize(6);
 
         let cancel_proposal = CancelProposalFixture::new(proposal_id);
-        cancel_proposal.cancel_and_assert(Err(Error::ProposalFinalized));
+        cancel_proposal.cancel_and_assert(Err(Error::<Test>::ProposalFinalized.into()));
     });
 }
 
@@ -615,7 +624,7 @@ fn cancel_proposal_fails_with_not_active_proposal() {
 fn cancel_proposal_fails_with_not_existing_proposal() {
     initial_test_ext().execute_with(|| {
         let cancel_proposal = CancelProposalFixture::new(2);
-        cancel_proposal.cancel_and_assert(Err(Error::ProposalNotFound));
+        cancel_proposal.cancel_and_assert(Err(Error::<Test>::ProposalNotFound.into()));
     });
 }
 
@@ -628,7 +637,7 @@ fn cancel_proposal_fails_with_insufficient_rights() {
         let cancel_proposal = CancelProposalFixture::new(proposal_id)
             .with_origin(RawOrigin::Signed(2))
             .with_proposer(2);
-        cancel_proposal.cancel_and_assert(Err(Error::NotAuthor));
+        cancel_proposal.cancel_and_assert(Err(Error::<Test>::NotAuthor.into()));
     });
 }
 
@@ -656,8 +665,8 @@ fn veto_proposal_succeeds() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 1,
-                status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Vetoed, 1),
+                created_at: 0,
+                status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Vetoed, 0),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
@@ -678,7 +687,7 @@ fn veto_proposal_fails_with_not_active_proposal() {
         run_to_block_and_finalize(6);
 
         let veto_proposal = VetoProposalFixture::new(proposal_id);
-        veto_proposal.veto_and_assert(Err(Error::ProposalFinalized));
+        veto_proposal.veto_and_assert(Err(Error::<Test>::ProposalFinalized.into()));
     });
 }
 
@@ -686,7 +695,7 @@ fn veto_proposal_fails_with_not_active_proposal() {
 fn veto_proposal_fails_with_not_existing_proposal() {
     initial_test_ext().execute_with(|| {
         let veto_proposal = VetoProposalFixture::new(2);
-        veto_proposal.veto_and_assert(Err(Error::ProposalNotFound));
+        veto_proposal.veto_and_assert(Err(Error::<Test>::ProposalNotFound.into()));
     });
 }
 
@@ -697,13 +706,16 @@ fn veto_proposal_fails_with_insufficient_rights() {
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let veto_proposal = VetoProposalFixture::new(proposal_id).with_origin(RawOrigin::Signed(2));
-        veto_proposal.veto_and_assert(Err(Error::RequireRootOrigin));
+        veto_proposal.veto_and_assert(Err(DispatchError::BadOrigin));
     });
 }
 
 #[test]
 fn create_proposal_event_emitted() {
     initial_test_ext().execute_with(|| {
+        // Events start only from 1 first block. No events on block zero.
+        run_to_block_and_finalize(1);
+
         let dummy_proposal = DummyProposalFixture::default();
         dummy_proposal.create_proposal_and_assert(Ok(1));
 
@@ -714,6 +726,9 @@ fn create_proposal_event_emitted() {
 #[test]
 fn veto_proposal_event_emitted() {
     initial_test_ext().execute_with(|| {
+        // Events start only from 1 first block. No events on block zero.
+        run_to_block_and_finalize(1);
+
         let dummy_proposal = DummyProposalFixture::default();
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
@@ -733,6 +748,9 @@ fn veto_proposal_event_emitted() {
 #[test]
 fn cancel_proposal_event_emitted() {
     initial_test_ext().execute_with(|| {
+        // Events start only from 1 first block. No events on block zero.
+        run_to_block_and_finalize(1);
+
         let dummy_proposal = DummyProposalFixture::default();
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
@@ -757,6 +775,9 @@ fn cancel_proposal_event_emitted() {
 #[test]
 fn vote_proposal_event_emitted() {
     initial_test_ext().execute_with(|| {
+        // Events start only from 1 first block. No events on block zero.
+        run_to_block_and_finalize(1);
+
         let dummy_proposal = DummyProposalFixture::default();
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
@@ -787,8 +808,8 @@ fn create_proposal_and_expire_it() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 1,
-                status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Expired, 4),
+                created_at: 0,
+                status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Expired, 3),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
@@ -800,7 +821,7 @@ fn create_proposal_and_expire_it() {
 #[test]
 fn proposal_execution_postponed_because_of_grace_period() {
     initial_test_ext().execute_with(|| {
-        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(2);
+        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(3);
         let dummy_proposal =
             DummyProposalFixture::default().with_parameters(parameters_fixture.params());
 
@@ -815,10 +836,10 @@ fn proposal_execution_postponed_because_of_grace_period() {
         run_to_block_and_finalize(1);
         run_to_block_and_finalize(2);
 
-        // check internal cache for proposal_id presense
-        assert!(<PendingExecutionProposalIds<Test>>::enumerate()
-            .find(|(x, _)| *x == proposal_id)
-            .is_some());
+        // check internal cache for proposal_id presence
+        assert!(<PendingExecutionProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
 
         let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
@@ -827,8 +848,8 @@ fn proposal_execution_postponed_because_of_grace_period() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 1,
-                status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 1),
+                created_at: 0,
+                status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults {
@@ -845,7 +866,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
 #[test]
 fn proposal_execution_vetoed_successfully_during_the_grace_period() {
     initial_test_ext().execute_with(|| {
-        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(2);
+        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(3);
         let dummy_proposal =
             DummyProposalFixture::default().with_parameters(parameters_fixture.params());
 
@@ -860,10 +881,10 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
         run_to_block_and_finalize(1);
         run_to_block_and_finalize(2);
 
-        // check internal cache for proposal_id presense
-        assert!(<PendingExecutionProposalIds<Test>>::enumerate()
-            .find(|(x, _)| *x == proposal_id)
-            .is_some());
+        // check internal cache for proposal_id presence
+        assert!(<PendingExecutionProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
 
         let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
@@ -872,8 +893,8 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 1,
-                status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 1),
+                created_at: 0,
+                status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults {
@@ -895,7 +916,7 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 1,
+                created_at: 0,
                 status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Vetoed, 2),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
@@ -908,17 +929,17 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
             }
         );
 
-        // check internal cache for proposal_id presense
-        assert!(<PendingExecutionProposalIds<Test>>::enumerate()
-            .find(|(x, _)| *x == proposal_id)
-            .is_none());
+        // check internal cache for proposal_id absence
+        assert!(!<PendingExecutionProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
     });
 }
 
 #[test]
 fn proposal_execution_succeeds_after_the_grace_period() {
     initial_test_ext().execute_with(|| {
-        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(1);
+        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(2);
         let dummy_proposal =
             DummyProposalFixture::default().with_parameters(parameters_fixture.params());
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
@@ -932,17 +953,17 @@ fn proposal_execution_succeeds_after_the_grace_period() {
         run_to_block_and_finalize(1);
 
         // check internal cache for proposal_id presence
-        assert!(<PendingExecutionProposalIds<Test>>::enumerate()
-            .find(|(x, _)| *x == proposal_id)
-            .is_some());
+        assert!(<PendingExecutionProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
 
         let mut proposal = <crate::Proposals<Test>>::get(proposal_id);
 
         let mut expected_proposal = Proposal {
             parameters: parameters_fixture.params(),
             proposer_id: 1,
-            created_at: 1,
-            status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 1),
+            created_at: 0,
+            status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
             title: b"title".to_vec(),
             description: b"description".to_vec(),
             voting_results: VotingResults {
@@ -959,14 +980,14 @@ fn proposal_execution_succeeds_after_the_grace_period() {
 
         proposal = <crate::Proposals<Test>>::get(proposal_id);
 
-        expected_proposal.status = ProposalStatus::approved(ApprovedProposalStatus::Executed, 1);
+        expected_proposal.status = ProposalStatus::approved(ApprovedProposalStatus::Executed, 0);
 
         assert_eq!(proposal, expected_proposal);
 
-        // check internal cache for proposal_id absense
-        assert!(<PendingExecutionProposalIds<Test>>::enumerate()
-            .find(|(x, _)| *x == proposal_id)
-            .is_none());
+        // check internal cache for proposal_id absence
+        assert!(!<PendingExecutionProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
     });
 }
 
@@ -982,7 +1003,7 @@ fn create_proposal_fails_on_exceeding_max_active_proposals_count() {
 
         let dummy_proposal = DummyProposalFixture::default();
         dummy_proposal
-            .create_proposal_and_assert(Err(Error::MaxActiveProposalNumberExceeded.into()));
+            .create_proposal_and_assert(Err(Error::<Test>::MaxActiveProposalNumberExceeded.into()));
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 100);
     });
@@ -1004,7 +1025,7 @@ fn voting_internal_cache_exists_after_proposal_finalization() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
 
         // cache exists
-        assert!(<crate::VoteExistsByProposalByVoter<Test>>::exists(
+        assert!(<crate::VoteExistsByProposalByVoter<Test>>::contains_key(
             proposal_id,
             1
         ));
@@ -1012,7 +1033,7 @@ fn voting_internal_cache_exists_after_proposal_finalization() {
         run_to_block_and_finalize(2);
 
         // cache still exists and is not cleared
-        assert!(<crate::VoteExistsByProposalByVoter<Test>>::exists(
+        assert!(<crate::VoteExistsByProposalByVoter<Test>>::contains_key(
             proposal_id,
             1
         ));
@@ -1044,7 +1065,7 @@ fn create_dummy_proposal_succeeds_with_stake() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 1,
+                created_at: 0,
                 status: ProposalStatus::Active(Some(ActiveStake {
                     stake_id: 0, // valid stake_id
                     source_account_id: 1
@@ -1070,8 +1091,7 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
             .with_account_id(account_id)
             .with_stake(required_stake);
 
-        dummy_proposal
-            .create_proposal_and_assert(Err(Error::Other("too few free funds in account")));
+        dummy_proposal.create_proposal_and_assert(Err(DispatchError::Other("InsufficientBalance")));
     });
 }
 
@@ -1084,20 +1104,21 @@ fn create_proposal_fais_with_invalid_stake_parameters() {
             .with_parameters(parameters_fixture.params())
             .with_stake(200);
 
-        dummy_proposal.create_proposal_and_assert(Err(Error::StakeShouldBeEmpty.into()));
+        dummy_proposal.create_proposal_and_assert(Err(Error::<Test>::StakeShouldBeEmpty.into()));
 
         let parameters_fixture_stake_200 = parameters_fixture.with_required_stake(200);
         dummy_proposal =
             DummyProposalFixture::default().with_parameters(parameters_fixture_stake_200.params());
 
-        dummy_proposal.create_proposal_and_assert(Err(Error::EmptyStake.into()));
+        dummy_proposal.create_proposal_and_assert(Err(Error::<Test>::EmptyStake.into()));
 
         let parameters_fixture_stake_300 = parameters_fixture.with_required_stake(300);
         dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture_stake_300.params())
             .with_stake(200);
 
-        dummy_proposal.create_proposal_and_assert(Err(Error::StakeDiffersFromRequired.into()));
+        dummy_proposal
+            .create_proposal_and_assert(Err(Error::<Test>::StakeDiffersFromRequired.into()));
     });
 }
 
@@ -1141,7 +1162,7 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
         let mut expected_proposal = Proposal {
             parameters,
             proposer_id: 1,
-            created_at: 1,
+            created_at: 0,
             status: ProposalStatus::Active(Some(ActiveStake {
                 stake_id: 0,
                 source_account_id: 1,
@@ -1159,7 +1180,7 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
 
         expected_proposal.status = ProposalStatus::Finalized(FinalizationData {
             proposal_status: ProposalDecisionStatus::Expired,
-            finalized_at: 4,
+            finalized_at: 3,
             encoded_unstaking_error_due_to_broken_runtime: None,
             stake_data_after_unstaking_error: None,
         });
@@ -1214,7 +1235,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         let mut expected_proposal = Proposal {
             parameters,
             proposer_id: 1,
-            created_at: 1,
+            created_at: 0,
             status: ProposalStatus::Active(Some(ActiveStake {
                 stake_id: 0,
                 source_account_id: 1,
@@ -1234,7 +1255,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 
         expected_proposal.status = ProposalStatus::Finalized(FinalizationData {
             proposal_status: ProposalDecisionStatus::Canceled,
-            finalized_at: 1,
+            finalized_at: 0,
             encoded_unstaking_error_due_to_broken_runtime: None,
             stake_data_after_unstaking_error: None,
         });
@@ -1302,7 +1323,7 @@ fn proposal_slashing_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Slash);
         vote_generator.vote_and_assert_ok(VoteKind::Slash);
 
-        assert!(<ActiveProposalIds<Test>>::exists(proposal_id));
+        assert!(<ActiveProposalIds<Test>>::contains_key(proposal_id));
 
         run_to_block_and_finalize(2);
 
@@ -1323,11 +1344,11 @@ fn proposal_slashing_succeeds() {
             ProposalStatus::Finalized(FinalizationData {
                 proposal_status: ProposalDecisionStatus::Slashed,
                 encoded_unstaking_error_due_to_broken_runtime: None,
-                finalized_at: 1,
+                finalized_at: 0,
                 stake_data_after_unstaking_error: None,
             }),
         );
-        assert!(!<ActiveProposalIds<Test>>::exists(proposal_id));
+        assert!(!<ActiveProposalIds<Test>>::contains_key(proposal_id));
     });
 }
 
@@ -1377,7 +1398,7 @@ fn finalize_proposal_using_stake_mocks_failed() {
                 Proposal {
                     parameters: parameters_fixture.params(),
                     proposer_id: 1,
-                    created_at: 1,
+                    created_at: 0,
                     status: ProposalStatus::finalized(
                         ProposalDecisionStatus::Expired,
                         Some("Cannot remove stake"),
@@ -1385,7 +1406,7 @@ fn finalize_proposal_using_stake_mocks_failed() {
                             stake_id: 1,
                             source_account_id: 1
                         }),
-                        4,
+                        3,
                     ),
                     title: b"title".to_vec(),
                     description: b"description".to_vec(),
@@ -1411,15 +1432,17 @@ fn create_proposal_fails_with_invalid_threshold_parameters() {
 
         let mut dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
 
-        dummy_proposal
-            .create_proposal_and_assert(Err(Error::InvalidParameterApprovalThreshold.into()));
+        dummy_proposal.create_proposal_and_assert(Err(
+            Error::<Test>::InvalidParameterApprovalThreshold.into(),
+        ));
 
         parameters.approval_threshold_percentage = 60;
         parameters.slashing_threshold_percentage = 0;
         dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
 
-        dummy_proposal
-            .create_proposal_and_assert(Err(Error::InvalidParameterSlashingThreshold.into()));
+        dummy_proposal.create_proposal_and_assert(Err(
+            Error::<Test>::InvalidParameterSlashingThreshold.into(),
+        ));
     });
 }
 
@@ -1434,7 +1457,7 @@ fn proposal_reset_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
         vote_generator.vote_and_assert_ok(VoteKind::Slash);
 
-        assert!(<ActiveProposalIds<Test>>::exists(proposal_id));
+        assert!(<ActiveProposalIds<Test>>::contains_key(proposal_id));
         assert_eq!(
             <VoteExistsByProposalByVoter<Test>>::get(&proposal_id, &2),
             VoteKind::Abstain

@@ -3,13 +3,13 @@
 use crate::*;
 use crate::{Module, Trait};
 
-use primitives::H256;
-use runtime_primitives::{
+use frame_support::{impl_outer_origin, parameter_types};
+use sp_core::H256;
+use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_origin, parameter_types};
 use versioned_store::InputValidationLengthConstraint;
 
 impl_outer_origin! {
@@ -28,10 +28,11 @@ parameter_types! {
 }
 
 impl system::Trait for Runtime {
+    type BaseCallFilter = ();
     type Origin = Origin;
+    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
@@ -40,12 +41,20 @@ impl system::Trait for Runtime {
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = ();
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
-impl timestamp::Trait for Runtime {
+impl pallet_timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -141,9 +150,7 @@ fn default_versioned_store_genesis_config() -> versioned_store::GenesisConfig {
     }
 }
 
-fn build_test_externalities(
-    config: versioned_store::GenesisConfig,
-) -> runtime_io::TestExternalities {
+fn build_test_externalities(config: versioned_store::GenesisConfig) -> sp_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();

@@ -22,12 +22,13 @@
 //#![warn(missing_docs)]
 
 use codec::{Decode, Encode};
-use rstd::collections::btree_map::BTreeMap;
-use rstd::prelude::*;
-use sr_primitives::traits::{MaybeSerialize, Member};
-use srml_support::traits::Get;
-use srml_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
-use system::{self, ensure_root};
+use frame_support::dispatch::DispatchResult;
+use frame_support::traits::Get;
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
+use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_std::collections::btree_map::BTreeMap;
+use sp_std::vec::Vec;
+use system::ensure_root;
 
 use common::origin::ActorOriginValidator;
 pub(crate) use common::BlockAndTime;
@@ -38,7 +39,7 @@ use crate::{MemberId, StorageProviderId, StorageWorkingGroup, StorageWorkingGrou
 
 /// The _Data directory_ main _Trait_.
 pub trait Trait:
-    timestamp::Trait
+    pallet_timestamp::Trait
     + system::Trait
     + data_object_type_registry::Trait
     + membership::Trait
@@ -64,7 +65,7 @@ pub trait Trait:
 
 decl_error! {
     /// _Data object storage registry_ module predefined errors.
-    pub enum Error {
+    pub enum Error for Module<T: Trait>{
         /// Content with this ID not found.
         CidNotFound,
 
@@ -82,25 +83,6 @@ decl_error! {
 
         /// DataObject Injection Failed. Too Many DataObjects.
         DataObjectsInjectionExceededLimit
-    }
-}
-
-impl From<system::Error> for Error {
-    fn from(error: system::Error) -> Self {
-        match error {
-            system::Error::Other(msg) => Error::Other(msg),
-            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
-            _ => Error::Other(error.into()),
-        }
-    }
-}
-
-impl From<working_group::Error> for Error {
-    fn from(error: working_group::Error) -> Self {
-        match error {
-            working_group::Error::Other(msg) => Error::Other(msg),
-            _ => Error::Other(error.into()),
-        }
     }
 }
 
@@ -127,7 +109,7 @@ impl Default for LiaisonJudgement {
 pub type DataObject<T> = DataObjectInternal<
     MemberId<T>,
     <T as system::Trait>::BlockNumber,
-    <T as timestamp::Trait>::Moment,
+    <T as pallet_timestamp::Trait>::Moment,
     <T as data_object_type_registry::Trait>::DataObjectTypeId,
     StorageProviderId<T>,
 >;
@@ -163,11 +145,11 @@ pub type DataObjectsMap<T> = BTreeMap<<T as Trait>::ContentId, DataObject<T>>;
 decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
         /// List of ids known to the system.
-        pub KnownContentIds get(known_content_ids): Vec<T::ContentId> = Vec::new();
+        pub KnownContentIds get(fn known_content_ids): Vec<T::ContentId> = Vec::new();
 
         /// Maps data objects by their content id.
-        pub DataObjectByContentId get(data_object_by_content_id):
-            map T::ContentId => Option<DataObject<T>>;
+        pub DataObjectByContentId get(fn data_object_by_content_id):
+            map hasher(blake2_128_concat) T::ContentId => Option<DataObject<T>>;
     }
 }
 
@@ -205,13 +187,14 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Predefined errors.
-        type Error = Error;
+        type Error = Error<T>;
 
         /// Maximum objects allowed per inject_data_objects() transaction
         const MaxObjectsPerInjection: u32 = T::MaxObjectsPerInjection::get();
 
         /// Adds the content to the system. Member id should match its origin. The created DataObject
         /// awaits liaison to accept or reject it.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_content(
             origin,
             member_id: MemberId<T>,
@@ -226,10 +209,10 @@ decl_module! {
             )?;
 
             ensure!(T::IsActiveDataObjectType::is_active_data_object_type(&type_id),
-                Error::DataObjectTypeMustBeActive);
+                Error::<T>::DataObjectTypeMustBeActive);
 
-            ensure!(!<DataObjectByContentId<T>>::exists(content_id),
-                Error::DataObjectAlreadyAdded);
+            ensure!(!<DataObjectByContentId<T>>::contains_key(content_id),
+                Error::<T>::DataObjectAlreadyAdded);
 
             let liaison = T::StorageProviderHelper::get_random_storage_provider()?;
 
@@ -254,6 +237,7 @@ decl_module! {
 
         /// Storage provider accepts a content. Requires signed storage provider account and its id.
         /// The LiaisonJudgement can be updated, but only by the liaison.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub(crate) fn accept_content(
             origin,
             storage_provider_id: StorageProviderId<T>,
@@ -272,6 +256,7 @@ decl_module! {
 
         /// Storage provider rejects a content. Requires signed storage provider account and its id.
         /// The LiaisonJudgement can be updated, but only by the liaison.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub(crate) fn reject_content(
             origin,
             storage_provider_id: StorageProviderId<T>,
@@ -288,6 +273,7 @@ decl_module! {
         // Sudo methods
 
         /// Removes the content id from the list of known content ids. Requires root privileges.
+        #[weight = 10_000_000] // TODO: adjust weight
         fn remove_known_content_id(origin, content_id: T::ContentId) {
             ensure_root(origin)?;
 
@@ -305,11 +291,12 @@ decl_module! {
         /// The number of objects that can be added per call is limited to prevent the dispatch
         /// from causing the block production to fail if it takes too much time to process.
         /// Existing data objects will be overwritten.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub(crate) fn inject_data_objects(origin, objects: DataObjectsMap<T>) {
             ensure_root(origin)?;
 
             // Must provide something to inject
-            ensure!(objects.len() <= T::MaxObjectsPerInjection::get() as usize, Error::DataObjectsInjectionExceededLimit);
+            ensure!(objects.len() <= T::MaxObjectsPerInjection::get() as usize, Error::<T>::DataObjectsInjectionExceededLimit);
 
             for (id, object) in objects.into_iter() {
                 // append to known content ids
@@ -332,11 +319,15 @@ impl<T: Trait> Module<T> {
         storage_provider_id: &StorageProviderId<T>,
         content_id: T::ContentId,
         judgement: LiaisonJudgement,
-    ) -> Result<(), Error> {
-        let mut data = Self::data_object_by_content_id(&content_id).ok_or(Error::CidNotFound)?;
+    ) -> DispatchResult {
+        let mut data =
+            Self::data_object_by_content_id(&content_id).ok_or(Error::<T>::CidNotFound)?;
 
         // Make sure the liaison matches
-        ensure!(data.liaison == *storage_provider_id, Error::LiaisonRequired);
+        ensure!(
+            data.liaison == *storage_provider_id,
+            Error::<T>::LiaisonRequired
+        );
 
         data.liaison_judgement = judgement;
         <DataObjectByContentId<T>>::insert(content_id, data);
@@ -368,7 +359,7 @@ impl<T: Trait> ContentIdExists<T> for Module<T> {
     fn get_data_object(content_id: &T::ContentId) -> Result<DataObject<T>, &'static str> {
         match Self::data_object_by_content_id(*content_id) {
             Some(data) => Ok(data),
-            None => Err(Error::LiaisonRequired.into()),
+            None => Err(Error::<T>::LiaisonRequired.into()),
         }
     }
 }

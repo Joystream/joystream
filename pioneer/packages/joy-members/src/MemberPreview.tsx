@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
-import { withCalls, withMulti } from '@polkadot/react-api/with';
+import { withCalls, withMulti } from '@polkadot/react-api/hoc';
 import { Vec } from '@polkadot/types';
 import { AccountId } from '@polkadot/types/interfaces';
 import IdentityIcon from '@polkadot/react-components/IdentityIcon';
@@ -12,9 +12,8 @@ import translate from './translate';
 import { MemberId, Membership } from '@joystream/types/members';
 import { queryMembershipToProp } from './utils';
 import { Seat } from '@joystream/types/council';
-import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/index';
-import { FlexCenter } from '@polkadot/joy-utils/FlexCenter';
-import { MutedSpan } from '@polkadot/joy-utils/MutedText';
+import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { FlexCenter, MutedSpan } from '@polkadot/joy-utils/react/components';
 
 const AvatarSizePx = 36;
 const InlineAvatarSizePx = 24;
@@ -33,6 +32,7 @@ type MemberPreviewProps = ApiProps & I18nProps & {
 class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
   render () {
     const { membership } = this.props;
+
     return membership && !membership.handle.isEmpty
       ? this.renderProfile(membership)
       : null;
@@ -43,19 +43,19 @@ class InnerMemberPreview extends React.PureComponent<MemberPreviewProps> {
     const { handle, avatar_uri } = membership;
 
     const hasAvatar = avatar_uri && nonEmptyStr(avatar_uri.toString());
-    const isCouncilor: boolean = accountId !== undefined && activeCouncil.find(x => accountId.eq(x.member)) !== undefined;
+    const isCouncilor: boolean = accountId !== undefined && activeCouncil.find((x) => accountId.eq(x.member)) !== undefined;
 
     const avatarSize = inline ? InlineAvatarSizePx : AvatarSizePx;
 
-    return <div className={`JoyMemberPreview ${className}`} style={style}>
+    return <div className={`JoyMemberPreview ${className || ''}`} style={style}>
       <FlexCenter>
         {prefixLabel &&
           <MutedSpan className='PrefixLabel'>{prefixLabel}</MutedSpan>
         }
         {hasAvatar ? (
-          <img className="Avatar" src={avatar_uri.toString()} width={avatarSize} height={avatarSize} />
+          <img className='Avatar' src={avatar_uri.toString()} width={avatarSize} height={avatarSize} />
         ) : (
-          <IdentityIcon className="Avatar" value={accountId} size={avatarSize} />
+          <IdentityIcon className='Avatar' value={accountId} size={avatarSize} />
         )
         }
         <div className='Content'>

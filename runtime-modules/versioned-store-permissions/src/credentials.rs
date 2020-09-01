@@ -1,6 +1,6 @@
 use codec::{Decode, Encode};
-use rstd::collections::btree_set::BTreeSet;
-use rstd::prelude::*;
+use sp_std::collections::btree_set::BTreeSet;
+use sp_std::vec::Vec;
 
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub struct CredentialSet<Credential>(BTreeSet<Credential>);
