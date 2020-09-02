@@ -21,6 +21,7 @@ type Member @entity {
   rootAccount: Bytes!
 }
 
+"will be handled by governance/election.rs::CouncilElected"
 type Council @entity {
 
   councilId: BigInt!
@@ -29,9 +30,10 @@ type Council @entity {
 
   startedAtBlock: BigInt!
 
-  # When not set, then it has not ended yet, its in session.
+  "When not set, then it has not ended yet, its in session"
   endedAtBlock: BigInt
 }
+
 
 type CouncilMember @entity {
 
@@ -116,7 +118,7 @@ type Proposal @entity {
   # This really can only be set when `status` is in one of the finalized states
   # but lack of proper algebraic types in graphql does not allow us to make representation fully
   # safe.
-  finalized_at_block: BigInt
+  finalizedAtBlock: BigInt
   
   status: ProposalState
 
@@ -162,8 +164,133 @@ type ProposalDiscussionThreadPost @entity {
 
   createdAtBlock: BigInt!
 
-  # Counting creation as an update
+  "Counting creation as an update"
   lastUpdatedAtBlock: BigInt
 
   editionNumber: BigInt
 }
+
+"The text of the `text` proposal"
+type TextProposal @entity {
+  proposal: Proposal!
+  text: String!
+}
+
+"The wasm code for the `runtime upgrade` proposal"
+type RuntimeUpgradeProposal @entity {
+  proposal: Proposal!
+  wasm: Bytes!
+}
+
+"Election parameters for the `set election parameters` proposal"
+type SetElectionParametersProposal @entity {
+  announcingPeriod: BigInt!
+  votingPeriod: BigInt!
+  revealingPeriod: BigInt!
+  councilSize: Int!
+  candidacyLimit: Int!
+  newTermDuration: BigInt!
+  minCouncilStake: BigInt!
+  minVotingStake: BigInt!
+}
+
+type SpendingProposal @entity {
+  proposal: Proposal!
+
+  "Balance"
+  mintedBalance: BigInt!
+
+  "Destination account for the `spending` proposal"
+  accountId: String!
+}
+
+"New leader memberId and account_id for the `set lead` proposal (Option<(MemberId, AccountId)>)"
+type SetLeadProposal @entity {
+  proposal: Proposal!
+  member: Member
+}
+
+"Balance for the `set content working group mint capacity` proposal"
+type SetContentWorkingGroupMintCapacityProposal {
+  proposal: Proposal!
+
+  mintedBalance: BigInt!
+}
+
+"Validator count for the `set validator count` proposal"
+type SetValidatorCountProposal @entity {
+  proposal: Proposal!
+  validatorCount: Int!
+}
+
+
+enum WorkingGroup {
+  STORAGE
+}
+
+"Begin review applications for the working group leader position"
+type BeginReviewWorkingGroupLeaderApplicationsProposal @entity {
+  proposal: Proposal!
+  
+  openingId: BigInt!
+
+  workingGroup: WorkingGroup
+}
+
+"Set working group mint capacity"
+type SetWorkingGroupMintCapacityProposal @entity {
+  proposal: Proposal!
+
+  mintedBalance: BigInt!
+
+  workingGroup: WorkingGroup
+}
+
+type DecreaseWorkingGroupLeaderStakeProposal @entity {
+  proposal: Proposal!
+
+  workerId: BigInt!
+
+  stakeBalance: BigInt!
+
+  workingGroup: WorkingGroup
+}
+
+" Slash the working group leader stake."
+type SlashWorkingGroupLeaderStakeProposal @entity {
+  proposal: Proposal!
+
+  workerId: BigInt!
+
+  stakeBalance: BigInt!
+
+  workingGroup: WorkingGroup
+}
+
+"Set working group leader reward balance."
+type SetWorkingGroupLeaderRewardProposal @entity {
+  proposal: Proposal!
+
+  workerId: BigInt!
+
+  mintedBalance: BigInt!
+
+  workingGroup: WorkingGroup
+}
+
+"Fire the working group leader with possible slashing"
+# TerminateWorkingGroupLeaderRole(TerminateRoleParameters<WorkerId>),
+
+"Fill opening for the working group leader position"
+# FillWorkingGroupLeaderOpening(
+#     FillOpeningParameters<BlockNumber, MintedBalance, OpeningId, ApplicationId>,
+# )
+
+"Add opening for the working group leader position"
+# AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, CurrencyBalance>)
+
+
+
+
+
+
