@@ -201,7 +201,8 @@ pub fn versioned_store_config_from_json(data_file: &Path) -> VersionedStoreConfi
         .map_or(first_id, |entity_and_maintainer| {
             entity_and_maintainer.entity.id + 1
         });
-    assert_eq!(next_entity_id, (content.entities.len() + 1) as EntityId);
+    // We are allowing gaps in entities map keyspace so no need for this assertion!
+    // assert_eq!(next_entity_id, (content.entities.len() + 1) as EntityId);
 
     VersionedStoreConfig {
         class_by_id: content
