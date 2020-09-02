@@ -11,11 +11,14 @@
 
     - name: run docker container
       docker_container:
-        name: "joystream-node-testing"
-        image: "joystream/node-testing"
+        name: "joystream-node"
+        image: "joystream/node"
         ports:
           - "9944:9944"
-        entrypoint: ./node --chain=chainspec.json --alice --validator --unsafe-ws-external --rpc-cors=all
+        mounts:
+          target: /testnet-state
+          source: ../../testnets/nicaea-export-state
+        entrypoint: ./node --dev --alice --validator --unsafe-ws-external --rpc-cors=all
         state: started
 
     - name: execute network tests

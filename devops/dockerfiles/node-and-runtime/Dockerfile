@@ -4,6 +4,7 @@ WORKDIR /joystream
 COPY . /joystream
 
 # Build joystream-node and its dependencies - runtime
+RUN rustup override set 1.45.2
 RUN cargo build --release -p joystream-node
 
 FROM debian:stretch
