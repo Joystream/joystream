@@ -102,16 +102,16 @@ impl<T, U> Default for ReferendumResult<T, U> {
 // aliasing existing structs and enums
 
 // types simplifying access to common structs and enums
-type Balance<T, I> =
+pub type Balance<T, I> =
     <<T as Trait<I>>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-type EzCastVote<T, I> = CastVote<<T as system::Trait>::Hash, Balance<T, I>>;
-type EzReferendumStageVoting<T> = ReferendumStageVoting<<T as system::Trait>::BlockNumber>;
-type EzReferendumStageRevealing<T, I> =
+pub type EzCastVote<T, I> = CastVote<<T as system::Trait>::Hash, Balance<T, I>>;
+pub type EzReferendumStageVoting<T> = ReferendumStageVoting<<T as system::Trait>::BlockNumber>;
+pub type EzReferendumStageRevealing<T, I> =
     ReferendumStageRevealing<<T as system::Trait>::BlockNumber, <T as Trait<I>>::VotePower>;
-type EzReferendumResult<T, I> = ReferendumResult<u64, <T as Trait<I>>::VotePower>;
+pub type EzReferendumResult<T, I> = ReferendumResult<u64, <T as Trait<I>>::VotePower>;
 
 // types aliases for check functions return values
-type CanRevealResult<T, I> = (
+pub type CanRevealResult<T, I> = (
     EzReferendumStageRevealing<T, I>,
     <T as system::Trait>::AccountId,
     EzCastVote<T, I>,

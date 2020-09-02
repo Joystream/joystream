@@ -6,21 +6,21 @@
 
 // used dependencies
 use codec::{Codec, Decode, Encode};
+use frame_support::traits::{Currency, Get};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, Parameter,
 };
-use frame_support::traits::{Currency, Get};
 use sp_arithmetic::traits::{BaseArithmetic, One};
 use sp_runtime::traits::{MaybeSerialize, Member};
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
-use system::ensure_signed;
+use system::{ensure_signed, RawOrigin};
 
 use referendum::Instance as ReferendumInstanceGeneric;
+use referendum::ReferendumManager;
 use referendum::Trait as ReferendumTrait;
-use referendum::{ReferendumManager};
 
 // declared modules
 mod mock;
@@ -48,14 +48,20 @@ pub struct Candidate {
     tmp: u64,
 }
 
+/////////////////// Type aliases ///////////////////////////////////////////////
+
+// Alias for referendum's storage.
+//pub(crate) type Referendum<T> = referendum::Module<T, ReferendumInstance>;
+
+type Balance<T> = <<T as referendum::Trait<ReferendumInstance>>::Currency as Currency<
+    <T as system::Trait>::AccountId,
+>>::Balance;
+
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
 // TODO: look for ways to check that selected instance is only used in this module to prevent unexpected behaviour
 // The storage alias for referendum instance.
 pub(crate) type ReferendumInstance = referendum::Instance0;
-
-// Alias for referendum's storage.
-//pub(crate) type Referendum<T> = referendum::Module<T, ReferendumInstance>;
 
 pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
     /// The overarching event type.
@@ -167,11 +173,6 @@ impl<T: Trait> From<BadOrigin> for Error<T> {
     }
 }
 
-/////////////////// Type aliases ///////////////////////////////////////////////
-
-type Balance<T> =
-    <<T as referendum::Trait<ReferendumInstance>>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-
 /////////////////// Module definition and implementation ///////////////////////
 
 decl_module! {
@@ -188,7 +189,7 @@ decl_module! {
         fn on_finalize(now: T::BlockNumber) {
             Self::try_progress_stage(now);
         }
-
+/*
         /// Start new council election.
         #[weight = 10_000_000]
         pub fn start_announcing_period(origin) -> Result<(), Error<T>> {
@@ -207,36 +208,6 @@ decl_module! {
 
             Ok(())
         }
-/*
-        /// Finalize the announcing period and start voting if there are enough candidates.
-        #[weight = 10_000_000]
-        pub fn finalize_announcing_period(origin) -> Result<(), Error<T>> {
-            // ensure action can be started
-            let candidates = EnsureChecks::<T>::can_finalize_announcing_period(origin.clone())?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // prolong announcing period when not enough candidates registered
-            if (candidates.len() as u64) < T::MinNumberOfCandidates::get() {
-                Mutations::<T>::prolong_announcing_period();
-
-                // emit event
-                Self::deposit_event(RawEvent::NotEnoughCandidates());
-
-                return Ok(());
-            }
-
-            // update state
-            Mutations::<T>::finalize_announcing_period(origin, &candidates)?;
-
-            // emit event
-            Self::deposit_event(RawEvent::VotingPeriodStarted(candidates.iter().map(|item| item.0.clone()).collect()));
-
-            Ok(())
-        }
-*/
 
         /// Start revealing period.
         #[weight = 10_000_000]
@@ -256,7 +227,7 @@ decl_module! {
 
             Ok(())
         }
-
+*/
         /// Subscribe candidate
         #[weight = 10_000_000]
         pub fn candidate(origin, stake: Balance<T>) -> Result<(), Error<T>> {
@@ -276,14 +247,13 @@ decl_module! {
             Ok(())
         }
 
+/*
         /// Unlock stake after voting (unless you are current council member).
         #[weight = 10_000_000]
         pub fn release_stake(origin) -> Result<(), Error<T>> {
             // ensure action can be started
             let elected_members = EnsureChecks::<T>::can_unlock_stake(origin)?;
 
-            
-/*
             //
             // == MUTATION SAFE ==
             //
@@ -293,9 +263,10 @@ decl_module! {
 
             // emit event
             Self::deposit_event(RawEvent::RevealingPeriodStarted());
-*/
+
             Ok(())
         }
+*/
 
         /////////////////// Referendum Wrap ////////////////////////////////////
         // start voting period
@@ -314,6 +285,16 @@ decl_module! {
 
             Ok(())
         }
+
+/*
+        #[weight = 10_000_000]
+        pub fn release_stake(origin) -> Result<(), Error<T>> {
+            // call referendum reveal vote extrinsic
+            <referendum::Module<T, ReferendumInstance>>::release_stake(origin)?;
+
+            Ok(())
+        }
+*/
     }
 }
 
@@ -352,7 +333,9 @@ impl<T: Trait> Module<T> {
         Mutations::<T>::finalize_announcing_period(&candidates).unwrap(); // starting referendum should always start - unwrap
 
         // emit event
-        Self::deposit_event(RawEvent::VotingPeriodStarted(candidates.iter().map(|item| item.0.clone()).collect()));
+        Self::deposit_event(RawEvent::VotingPeriodStarted(
+            candidates.iter().map(|item| item.0.clone()).collect(),
+        ));
     }
 }
 
@@ -376,12 +359,15 @@ impl<T: Trait> Mutations<T> {
     fn finalize_announcing_period(
         candidates: &Vec<(Candidate, Balance<T>)>,
     ) -> Result<(), Error<T>> {
-        let winning_target_count = T::CouncilSize::get();
+        let extra_winning_target_count = T::CouncilSize::get() - 1;
+        let extra_options_count = candidates.len() as u64 - extra_winning_target_count - 1;
+        let origin = RawOrigin::Root;
 
         // IMPORTANT - because locking currency can fail it has to be the first mutation!
         <referendum::Module<T, ReferendumInstance> as ReferendumManager<T, ReferendumInstance>>::start_referendum(
-            candidates.len() as u64,
-            winning_target_count,
+            origin.into(),
+            extra_options_count,
+            extra_winning_target_count,
         )?;
 
         let block_number = <system::Module<T>>::block_number();
@@ -479,33 +465,35 @@ impl<T: Trait> EnsureChecks<T> {
 
         Ok(())
     }
-/*
-    fn can_finalize_announcing_period(
-        origin: T::Origin,
-    ) -> Result<Vec<(Candidate, Balance<T>)>, Error<T>> {
-        // ensure superuser requested action
-        Self::ensure_super_user(origin)?;
+    /*
+        fn can_finalize_announcing_period(
+            origin: T::Origin,
+        ) -> Result<Vec<(Candidate, Balance<T>)>, Error<T>> {
+            // ensure superuser requested action
+            Self::ensure_super_user(origin)?;
 
-        let candidates_info = Candidates::<T>::get();
+            let candidates_info = Candidates::<T>::get();
 
-        Ok(candidates_info)
-    }
-*/
-    fn can_start_idle_period(origin: T::Origin) -> Result<Vec<Candidate>, Error<T>> {
-        // ensure superuser requested action
-        Self::ensure_super_user(origin)?;
-
-        // check that referendum have ended
-        let referendum_stage = referendum::Stage::<T, ReferendumInstance>::get();
-        if referendum_stage != referendum::ReferendumStage::Inactive {
-            return Err(Error::ElectionNotFinished);
+            Ok(candidates_info)
         }
+    */
+    /*
+        fn can_start_idle_period(origin: T::Origin) -> Result<Vec<Candidate>, Error<T>> {
+            // ensure superuser requested action
+            Self::ensure_super_user(origin)?;
 
-        let elected_members = vec![]; // TODO: retrieve real list of elected council members
+            // check that referendum have ended
+            let referendum_stage = referendum::Stage::<T, ReferendumInstance>::get();
+            match referendum_stage {
+                referendum::ReferendumStage::Inactive(_) => Err(Error::ElectionNotFinished)
+                _ => (),
+            };
 
-        Ok(elected_members)
-    }
+            let elected_members = vec![]; // TODO: retrieve real list of elected council members
 
+            Ok(elected_members)
+        }
+    */
     fn can_candidate(origin: T::Origin) -> Result<Candidate, Error<T>> {
         // ensure superuser requested action
         Self::ensure_regular_user(origin)?;

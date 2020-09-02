@@ -14,10 +14,10 @@ fn election_() {
     MockUtils::origin_access(USER_ADMIN, |origin| {
         let options = vec![0];
 
-        Mocks::start_announcing_period(origin, Ok(()));
+        //Mocks::start_announcing_period(origin, Ok(()));
     });
 }
-
+/*
 #[test]
 // temporary test testing connection between council and referendum
 fn tmp() {
@@ -83,3 +83,4 @@ fn tmp() {
         Mocks::finish_revealing_period(origin.clone(), Ok(()));
     });
 }
+*/
