@@ -8,6 +8,7 @@ import { numberEnv } from '../utils/env-flags';
 import { getIndexerHead, getLastProcessedEvent } from '../db/dal';
 import { ProcessedEventsLogEntity } from '../entities/ProcessedEventsLogEntity';
 import { ProcessorOptions } from '../QueryNodeStartOptions';
+import { EventHandlerFunc } from '../QueryEventProcessingPack';
 
 const debug = Debug('index-builder:processor');
 
@@ -33,6 +34,7 @@ export default class MappingsProcessor {
   private _name = DEFAULT_PROCESSOR_NAME;
   private _indexerHead!: number;
   private _events: string[] = [];
+  private _event2mapping: { [e: string]: EventHandlerFunc } = {};
 
   private constructor(options: ProcessorOptions) {
     this._options = options;
@@ -40,6 +42,9 @@ export default class MappingsProcessor {
     this._name = options.name || DEFAULT_PROCESSOR_NAME;
     this._processingPack = options.processingPack;
     this._events = Object.keys(this._processingPack).map((mapping:string) => this._translator(mapping));
+    Object.keys(this._processingPack).map((m) => {
+      this._event2mapping[this._translator(m)] = this._processingPack[m];
+    })
   }
 
 
@@ -128,7 +133,7 @@ export default class MappingsProcessor {
         debug(`JSON: ${JSON.stringify(event, null, 2)}`);  
         //query_event.log(0, debug);
     
-        await this._processingPack[event.name](makeDatabaseManager(queryRunner.manager), this.convert(event));
+        await this._event2mapping[event.name](makeDatabaseManager(queryRunner.manager), this.convert(event));
         
         const processed = new ProcessedEventsLogEntity();
         processed.processor = this._name;
