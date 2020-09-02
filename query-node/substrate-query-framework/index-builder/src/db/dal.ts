@@ -29,10 +29,10 @@ export async function getIndexerHead(): Promise<number> {
 }
 
 
-export async function getLastProcessedEvent(): Promise<ProcessedEventsLogEntity | undefined> {
+export async function getLastProcessedEvent(processor: string): Promise<ProcessedEventsLogEntity | undefined> {
   return await getRepository(ProcessedEventsLogEntity).findOne({
     where: {
-      processor: 'hydra'
+      processor: processor
     },
     order: {
       eventId: 'DESC'
