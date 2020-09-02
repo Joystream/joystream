@@ -66,7 +66,7 @@ export class SubstrateEventEntity {
     
     _entity.blockNumber = q.block_number;
     _entity.index = q.indexInBlock;
-    _entity.id = SubstrateEventEntity.formatId(_entity);
+    _entity.id = SubstrateEventEntity.formatId(_entity.blockNumber, _entity.index);
     _entity.method = q.event_record.event.method || 'NO_METHOD';
     _entity.name = q.event_name;
     _entity.phase = q.event_record.phase.toJSON();
@@ -122,8 +122,8 @@ export class SubstrateEventEntity {
   // return id in the format 000000..00<blockNum>-000<index> 
   // the reason for such formatting is to be able to efficiently sort events 
   // by ID
-  public static formatId(e: SubstrateEventEntity): string {
-    return `${String(e.blockNumber).padStart(16, '0')}-${String(e.index).padStart(5, '0')}`;
+  public static formatId(blockNumber: number, index: number): string {
+    return `${String(blockNumber).padStart(16, '0')}-${String(index).padStart(5, '0')}`;
   }
 }
 
