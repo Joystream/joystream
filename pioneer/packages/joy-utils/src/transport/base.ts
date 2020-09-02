@@ -18,6 +18,14 @@ export async function entriesByIds<IDType extends UInt, ValueType extends Codec>
   return entries.sort((a, b) => a[0].toNumber() - b[0].toNumber());
 }
 
+export async function ids<IDType extends UInt> (
+  apiMethod: QueryableStorageEntry<'promise'>
+): Promise<IDType[]> {
+  const storageKeys = await apiMethod.keys();
+
+  return storageKeys.map((key) => key.args[0] as IDType).sort((a, b) => a.toNumber() - b.toNumber());
+}
+
 export default class BaseTransport {
   protected api: ApiPromise;
   protected cacheApi: APIQueryCache;
@@ -82,4 +90,5 @@ export default class BaseTransport {
   }
 
   protected entriesByIds = entriesByIds
+  protected ids = ids
 }

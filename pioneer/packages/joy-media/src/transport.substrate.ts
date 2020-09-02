@@ -24,10 +24,7 @@ import { FeaturedContentType } from './schemas/general/FeaturedContent';
 import { AnyChannelId, AnyClassId, AnyEntityId, asChannelId } from './common/TypeHelpers';
 import { SimpleCache } from '@polkadot/joy-utils/transport/SimpleCache';
 import { ValidationConstraint } from '@polkadot/joy-utils/types/ValidationConstraint';
-
-const FIRST_CHANNEL_ID = 1;
-const FIRST_CLASS_ID = 1;
-const FIRST_ENTITY_ID = 1;
+import { ids } from '@polkadot/joy-utils/transport/base';
 
 /**
  * There are entities that refer to other entities.
@@ -118,22 +115,8 @@ export class SubstrateTransport extends MediaTransport {
   // Channels (Content Working Group module)
   // -----------------------------------------------------------------
 
-  async nextChannelId (): Promise<ChannelId> {
-    return await this.cwgQuery().nextChannelId<ChannelId>();
-  }
-
   async allChannelIds (): Promise<ChannelId[]> {
-    let nextId = (await this.nextChannelId()).toNumber();
-
-    if (nextId < 1) nextId = 1;
-
-    const allIds: ChannelId[] = [];
-
-    for (let id = FIRST_CHANNEL_ID; id < nextId; id++) {
-      allIds.push(this.api.createType('ChannelId', id));
-    }
-
-    return allIds;
+    return ids<ChannelId>(this.cwgQuery().channelById);
   }
 
   async loadChannelsByIds (ids: AnyChannelId[]): Promise<ChannelEntity[]> {
@@ -192,21 +175,8 @@ export class SubstrateTransport extends MediaTransport {
 
   // Classes (Versioned Store module)
   // -----------------------------------------------------------------
-
-  async nextClassId (): Promise<ClassId> {
-    return await this.vsQuery().nextClassId<ClassId>();
-  }
-
   async allClassIds (): Promise<ClassId[]> {
-    const nextId = (await this.nextClassId()).toNumber();
-
-    const allIds: ClassId[] = [];
-
-    for (let id = FIRST_CLASS_ID; id < nextId; id++) {
-      allIds.push(this.api.createType('ClassId', id));
-    }
-
-    return allIds;
+    return ids<ClassId>(this.vsQuery().classById);
   }
 
   async loadClassesByIds (ids: AnyClassId[]): Promise<Class[]> {
@@ -244,21 +214,8 @@ export class SubstrateTransport extends MediaTransport {
 
   // Entities (Versioned Store module)
   // -----------------------------------------------------------------
-
-  async nextEntityId (): Promise<EntityId> {
-    return await this.vsQuery().nextEntityId<EntityId>();
-  }
-
   async allEntityIds (): Promise<EntityId[]> {
-    const nextId = (await this.nextEntityId()).toNumber();
-
-    const allIds: EntityId[] = [];
-
-    for (let id = FIRST_ENTITY_ID; id < nextId; id++) {
-      allIds.push(this.api.createType('EntityId', id));
-    }
-
-    return allIds;
+    return ids<EntityId>(this.vsQuery().entityById);
   }
 
   private async loadEntitiesByIds (ids: AnyEntityId[]): Promise<Entity[]> {
