@@ -125,8 +125,12 @@ decl_storage! {
     add_extra_genesis {
 //        config(phantom): sp_std::marker::PhantomData<I>;
         config(opening_description_constraint): InputValidationLengthConstraint;
+        config(application_description_constraint): InputValidationLengthConstraint;
         build(|config: &GenesisConfig| {
-            Module::<T, I>::initialize_working_group(config.opening_description_constraint);
+            Module::<T, I>::initialize_working_group(
+                config.opening_description_constraint,
+                config.application_description_constraint,
+            );
         });
     }
 }
@@ -186,7 +190,7 @@ decl_module! {
             Self::deposit_event(RawEvent::OpeningAdded(new_opening_id));
         }
 
-                /// Apply on a worker opening.
+        /// Apply on a worker opening.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn apply_on_opening(
             origin,
@@ -195,20 +199,20 @@ decl_module! {
             role_account_id: T::AccountId,
 //            opt_role_stake_balance: Option<BalanceOf<T>>,
 //            opt_application_stake_balance: Option<BalanceOf<T>>,
-            human_readable_text: Vec<u8>
+            description: Vec<u8>
         ) {
             // Ensure origin which will server as the source account for staked funds is signed
-            let _source_account = ensure_signed(origin)?;
+            let source_account = ensure_signed(origin)?;
 
-            // // Ensure the source_account is either the controller or root account of member with given id
-            // ensure!(
-            //     membership::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
-            //     membership::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
-            //     Error::<T, I>::OriginIsNeitherMemberControllerOrRoot
-            // );
+            // Ensure the source_account is either the controller or root account of member with given id
+            ensure!(
+                membership::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
+                membership::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
+                Error::<T, I>::OriginIsNeitherMemberControllerOrRoot
+            );
 
             // Ensure job opening exists.
-            Self::ensure_opening_exists(&opening_id)?;
+            let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
 
             // // Ensure that there is sufficient balance to cover stake proposed
             // Self::ensure_can_make_stake_imbalance(
@@ -218,7 +222,7 @@ decl_module! {
             // .map_err(|_| Error::<T, I>::InsufficientBalanceToApply)?;
 
             // Ensure application text is valid
-            //Self::ensure_application_text_is_valid(&human_readable_text)?;
+            checks::ensure_application_description_is_valid::<T, I>(&description)?;
 
             // // Ensure application can actually be added
             // ensure_on_wrapped_error!(
@@ -228,11 +232,11 @@ decl_module! {
             //         opt_application_stake_balance)
             // )?;
 
-            // // Ensure member does not have an active application to this opening
-            // Self::ensure_member_has_no_active_application_on_opening(
-            //     opening.applications,
-            //     member_id
-            // )?;
+            // Ensure member does not have an active application to this opening
+            checks::ensure_member_has_no_active_application_on_opening::<T, I>(
+                opening.applications,
+                member_id
+            )?;
 
             //
             // == MUTATION SAFE ==
@@ -242,23 +246,18 @@ decl_module! {
             // let opt_role_stake_imbalance = Self::make_stake_opt_imbalance(&opt_role_stake_balance, &source_account);
             // let opt_application_stake_imbalance = Self::make_stake_opt_imbalance(&opt_application_stake_balance, &source_account);
 
-            // // Call hiring module to add application
-            // let add_application = ensure_on_wrapped_error!(
-            //         hiring::Module::<T>::add_application(
-            //         opening.hiring_opening_id,
-            //         opt_role_stake_imbalance,
-            //         opt_application_stake_imbalance,
-            //         human_readable_text
-            //     )
-            // )?;
-
-//            let hiring_application_id = add_application.application_id_added;
-
             // Save member id to refund the stakes. This piece of date should outlive the 'worker'.
 //            <MemberIdByHiringApplicationId<T, I>>::insert(hiring_application_id, member_id);
 
+            let hashed_description = T::Hashing::hash(&description);
+
             // Make regular/lead application.
-            let application = JobApplication::new(&role_account_id, &opening_id, &member_id);
+            let application = JobApplication::new(
+                &role_account_id,
+                &opening_id,
+                &member_id,
+                hashed_description.as_ref().to_vec()
+            );
 
             // Get id of new worker/lead application
             let new_application_id = NextApplicationId::<T, I>::get();
@@ -284,26 +283,15 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     // Initialize working group constraints and mint.
     pub(crate) fn initialize_working_group(
         opening_description_constraint: InputValidationLengthConstraint,
+        application_description_constraint: InputValidationLengthConstraint,
     ) {
         // Create constraints
         <OpeningDescriptionTextLimit<I>>::put(opening_description_constraint);
+        <ApplicationDescriptionTextLimit<I>>::put(application_description_constraint);
     }
 
     // Wrapper-function over system::block_number()
     fn current_block() -> T::BlockNumber {
         <system::Module<T>>::block_number()
-    }
-
-    fn ensure_opening_exists(
-        opening_id: &T::OpeningId,
-    ) -> Result<JobOpening<T::BlockNumber, T::ApplicationId>, Error<T, I>> {
-        ensure!(
-            OpeningById::<T, I>::contains_key(opening_id),
-            Error::<T, I>::OpeningDoesNotExist
-        );
-
-        let opening = OpeningById::<T, I>::get(opening_id);
-
-        Ok(opening)
     }
 }

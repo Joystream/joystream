@@ -17,5 +17,17 @@ decl_error! {
 
         /// Opening does not exist.
         OpeningDoesNotExist,
+
+        /// Origin must be controller or root account of member.
+        OriginIsNeitherMemberControllerOrRoot,
+
+        /// Job application description is too long.
+        JobApplicationDescriptionTooLong,
+
+        /// Job application description is too short.
+        JobApplicationDescriptionTooShort,
+
+        /// Member already has an active application on the opening.
+        MemberHasActiveApplicationOnOpening,
     }
 }

@@ -101,6 +101,7 @@ impl membership::Trait for Test {
     type ActorId = u64;
 }
 
+pub type Membership = membership::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type System = system::Module<Test>;
 
@@ -126,6 +127,7 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
     crate::GenesisConfig {
         //        phantom: Default::default(),
         opening_description_constraint: InputValidationLengthConstraint::new(1, 10),
+        application_description_constraint: InputValidationLengthConstraint::new(1, 10),
     }
     .assimilate_storage::<Test, TestWorkingTeamInstance>(&mut t)
     .unwrap();

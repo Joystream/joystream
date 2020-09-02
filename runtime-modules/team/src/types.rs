@@ -58,17 +58,26 @@ pub struct JobApplication<AccountId, OpeningId, MemberId> {
 
     /// Member applying.
     pub member_id: MemberId,
+
+    /// Hash of the application description.
+    pub description_hash: Vec<u8>,
 }
 
 impl<AccountId: Clone, OpeningId: Clone, MemberId: Clone>
     JobApplication<AccountId, OpeningId, MemberId>
 {
     /// Creates a new job application using parameters.
-    pub fn new(role_account_id: &AccountId, opening_id: &OpeningId, member_id: &MemberId) -> Self {
+    pub fn new(
+        role_account_id: &AccountId,
+        opening_id: &OpeningId,
+        member_id: &MemberId,
+        description_hash: Vec<u8>,
+    ) -> Self {
         JobApplication {
             role_account_id: role_account_id.clone(),
             opening_id: opening_id.clone(),
             member_id: member_id.clone(),
+            description_hash,
         }
     }
 }
