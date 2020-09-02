@@ -1,0 +1,38 @@
+- name: run network
+  block:
+    - name: yarn install for joystream types
+      shell: yarn workspace @joystream/types install
+
+    - name: yarn build for joystream types
+      shell: yarn workspace @joystream/types build
+
+    - name: yarn install for network tests
+      shell: yarn workspace joystream-testing install
+
+    - name: run docker container
+      docker_container:
+        name: "joystream-node"
+        image: "joystream/node"
+        ports:
+          - "9944:9944"
+        mounts:
+          - target: /testnet-state
+            source: "{{ playbook_dir }}/../../testnets/nicaea-exported-state"
+            type: bind
+            read_only: yes
+        entrypoint: ./node --chain ../testnet-state/chain_spec.json --alice --validator --unsafe-ws-external --rpc-cors=all
+        state: started
+
+    - name: execute network tests
+      shell: yarn test >> ../../.tmp/tests.log
+      args:
+        chdir: ../../tests/network-tests/
+
+  always:
+    - name: display tests log
+      shell: cat ../../.tmp/tests.log
+
+    - name: stop docker container
+      docker_container:
+        name: "joystream-node-testing"
+        state: absent

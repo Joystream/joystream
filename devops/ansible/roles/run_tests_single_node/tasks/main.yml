@@ -15,9 +15,6 @@
         image: "joystream/node"
         ports:
           - "9944:9944"
-        mounts:
-          target: /testnet-state
-          source: ../../testnets/nicaea-export-state
         entrypoint: ./node --dev --alice --validator --unsafe-ws-external --rpc-cors=all
         state: started
 
