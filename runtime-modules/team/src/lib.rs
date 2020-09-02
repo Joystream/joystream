@@ -7,6 +7,8 @@
 //! ## Supported extrinsics
 //!
 //! - [add_opening](./struct.Module.html#method.add_opening) - Add an opening for a regular worker/lead role.
+//! - [apply_on_opening](./struct.Module.html#method.apply_on_opening) - Apply on a regular/lead opening.
+
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -123,7 +125,6 @@ decl_storage! {
             InputValidationLengthConstraint;
     }
     add_extra_genesis {
-//        config(phantom): sp_std::marker::PhantomData<I>;
         config(opening_description_constraint): InputValidationLengthConstraint;
         config(application_description_constraint): InputValidationLengthConstraint;
         build(|config: &GenesisConfig| {
