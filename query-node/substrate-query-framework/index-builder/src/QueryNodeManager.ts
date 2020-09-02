@@ -48,6 +48,16 @@ export default class QueryNodeManager {
     await processor.start();
   }
 
+  /**
+   * Run migrations in the "migrations" folder;
+   */
+  async migrate(): Promise<void> {
+    const connection = await createDBConnection();
+    await connection.runMigrations();
+    await connection.close();
+  }
+
+
    _onProcessExit(): void  {
     // Stop if query node has been constructed and started.
     if (this._query_node && this._query_node.state == QueryNodeState.STARTED) {
