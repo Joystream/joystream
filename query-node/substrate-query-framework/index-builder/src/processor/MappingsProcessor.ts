@@ -7,6 +7,7 @@ import { SubstrateEventEntity } from '../entities';
 import { numberEnv } from '../utils/env-flags';
 import { getIndexerHead, getLastProcessedEvent } from '../db/dal';
 import { ProcessedEventsLogEntity } from '../entities/ProcessedEventsLogEntity';
+import { ProcessorOptions } from '../QueryNodeStartOptions';
 
 const debug = Debug('index-builder:processor');
 
@@ -18,28 +19,40 @@ const BATCH_SIZE = numberEnv('PROCESSOR_BATCH_SIZE') || 10;
 // between the updates and the load to the database
 const PROCESSOR_BLOCKS_POLL_INTERVAL = numberEnv('PROCESSOR_BLOCKS_POLL_INTERVAL') || 2000; // 1 second
 
+// mapping name is the same as the event name: <section>_<method>
+const DEFAULT_MAPPINGS_TRANSLATOR = (m: string) => m;
+
 export default class MappingsProcessor {
-  private _processing_pack!: QueryEventProcessingPack;
   
   private _lastEventIndex = SubstrateEventEntity.formatId(0, -1);
-  
   private _started = false;
+  
+  private _options!: ProcessorOptions;
+  private _processingPack: QueryEventProcessingPack;
+  private _translator = DEFAULT_MAPPINGS_TRANSLATOR;
+  private _name = DEFAULT_PROCESSOR_NAME;
   private _indexerHead!: number;
+  private _events: string[] = [];
 
-  private constructor(processing_pack: QueryEventProcessingPack) {
-    this._processing_pack = processing_pack;
+  private constructor(options: ProcessorOptions) {
+    this._options = options;
+    this._translator = options.mappingToEventTranslator || DEFAULT_MAPPINGS_TRANSLATOR;
+    this._name = options.name || DEFAULT_PROCESSOR_NAME;
+    this._processingPack = options.processingPack;
+    this._events = Object.keys(this._processingPack).map((mapping:string) => this._translator(mapping));
   }
 
 
-  static create(processing_pack: QueryEventProcessingPack): MappingsProcessor {
-    return new MappingsProcessor(processing_pack);
+  static create(options: ProcessorOptions): MappingsProcessor {
+    return new MappingsProcessor(options);
   }
 
 
-  async start(atBlock?: number): Promise<void> { 
+  async start(): Promise<void> { 
     debug('Spawned the processor');
+    debug(`The following events will be processed: ${JSON.stringify(this._events, null, 2)}`);
 
-    await this.init(atBlock)
+    await this.init(this._options.atBlock)
 
     this._started = true;
 
@@ -76,7 +89,7 @@ export default class MappingsProcessor {
         where: [
           {
             id: MoreThan(this._lastEventIndex),
-            method: In(Object.keys(this._processing_pack)),
+            name: In(this._events),
           }],
         order: {
           id: 'ASC'
@@ -107,25 +120,23 @@ export default class MappingsProcessor {
     //debug(`Yay, block producer at height: #${query_event_block.block_number.toString()}`);
 
     await doInTransaction(async (queryRunner: QueryRunner) => {
-      await asyncForEach(query_event_block, async (query_event: SubstrateEventEntity) => {
+      await asyncForEach(query_event_block, async (event: SubstrateEventEntity) => {
       
-        debug(`Processing event ${query_event.name}, 
-          method: ${query_event.method}, 
-          block: ${query_event.blockNumber.toString()},
-          index: ${query_event.index}`)
+        debug(`Processing event ${event.name}, 
+          id: ${event.id}`)
 
-        debug(`JSON: ${JSON.stringify(query_event, null, 2)}`);  
+        debug(`JSON: ${JSON.stringify(event, null, 2)}`);  
         //query_event.log(0, debug);
     
-        await this._processing_pack[query_event.method](makeDatabaseManager(queryRunner.manager), this.convert(query_event));
+        await this._processingPack[event.name](makeDatabaseManager(queryRunner.manager), this.convert(event));
         
         const processed = new ProcessedEventsLogEntity();
-        processed.processor = DEFAULT_PROCESSOR_NAME;
-        processed.eventId = query_event.id;
+        processed.processor = this._name;
+        processed.eventId = event.id;
         processed.updatedAt = new Date();
 
         const lastSavedEvent = await getRepository('ProcessedEventsLogEntity').save(processed);
-        this._lastEventIndex = query_event.id;
+        this._lastEventIndex = event.id;
 
         debug(`Last saved event: ${JSON.stringify(lastSavedEvent, null, 2)}`);
       });
