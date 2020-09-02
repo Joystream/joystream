@@ -11,6 +11,8 @@ import { GenericProposalForm,
 import Validation from '../validationSchema';
 import { TextareaFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
+import { u32 } from '@polkadot/types/primitive';
+import { withCalls } from '@polkadot/react-api';
 
 export type FormValues = GenericFormValues & {
   description: string;
@@ -23,7 +25,9 @@ const defaultValues: FormValues = {
 
 type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export comonent into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
-type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
+type FormContainerProps = ProposalFormContainerProps<ExportComponentProps> & {
+  textMaxLength: u32;
+};
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const SignalForm: React.FunctionComponent<FormInnerProps> = (props) => {
@@ -55,12 +59,16 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...defaultValues,
     ...(props.initialData || {})
   }),
-  validationSchema: Yup.object().shape({
+  validationSchema: (props: FormContainerProps) => Yup.object().shape({
     ...Validation.All(),
-    ...Validation.Text()
+    ...Validation.Text(props.textMaxLength.toNumber())
   }),
   handleSubmit: () => null,
   displayName: 'SignalForm'
 })(SignalForm);
 
-export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);
+export default withCalls<ExportComponentProps>(
+  ['consts.proposalsCodex.textProposalMaxLength', { propName: 'textMaxLength' }]
+)(
+  withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer)
+);

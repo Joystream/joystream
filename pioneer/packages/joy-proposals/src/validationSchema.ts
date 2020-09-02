@@ -30,12 +30,8 @@ const CURRENCY_UNIT = undefined;
 const TITLE_MAX_LENGTH = 40;
 const RATIONALE_MAX_LENGTH = 3000;
 
-// Text
-const DESCRIPTION_MAX_LENGTH = 5000;
-
 // Runtime Upgrade
 const FILE_SIZE_BYTES_MIN = 1;
-const FILE_SIZE_BYTES_MAX = 2000000;
 
 // Set Election Parameters
 const ANNOUNCING_PERIOD_MAX = 43200;
@@ -152,6 +148,8 @@ type FormValuesByType<T extends ValidationTypeKeys> =
   never;
 
 type ValidationSchemaFuncParamsByType<T extends ValidationTypeKeys> =
+  T extends 'Text' ? [number] :
+  T extends 'RuntimeUpgrade' ? [number] :
   T extends 'AddWorkingGroupLeaderOpening' ? [number, InputValidationLengthConstraint | undefined] :
   T extends 'FillWorkingGroupLeaderOpening' ? [number] :
   T extends 'TerminateWorkingGroupLeaderRole' ? [InputValidationLengthConstraint | undefined] :
@@ -205,16 +203,16 @@ const Validation: ValidationType = {
       .required('Rationale is required!')
       .max(RATIONALE_MAX_LENGTH, `Rationale should be under ${RATIONALE_MAX_LENGTH} characters.`)
   }),
-  Text: () => ({
+  Text: (maxLength: number) => ({
     description: Yup.string()
       .required('Description is required!')
-      .max(DESCRIPTION_MAX_LENGTH, `Description should be under ${DESCRIPTION_MAX_LENGTH}`)
+      .max(maxLength, `Description should be under ${maxLength}`)
   }),
-  RuntimeUpgrade: () => ({
+  RuntimeUpgrade: (maxFileSize: number) => ({
     WASM: Yup.mixed()
       .test('fileArrayBuffer', 'Unexpected data format, file cannot be processed.', (value) => value instanceof ArrayBuffer)
       .test('fileSizeMin', `Minimum file size is ${FILE_SIZE_BYTES_MIN} bytes.`, (value: ArrayBuffer) => value.byteLength >= FILE_SIZE_BYTES_MIN)
-      .test('fileSizeMax', `Maximum file size is ${FILE_SIZE_BYTES_MAX} bytes.`, (value: ArrayBuffer) => value.byteLength <= FILE_SIZE_BYTES_MAX)
+      .test('fileSizeMax', `Maximum file size is ${maxFileSize} bytes.`, (value: ArrayBuffer) => value.byteLength <= maxFileSize)
   }),
   SetElectionParameters: () => ({
     announcingPeriod: Yup.number()

@@ -11,6 +11,8 @@ import { GenericProposalForm,
 import Validation from '../validationSchema';
 import { withFormContainer } from './FormContainer';
 import FileDropdown from './FileDropdown';
+import { u32 } from '@polkadot/types/primitive';
+import { withCalls } from '@polkadot/react-api';
 
 export type FormValues = GenericFormValues & {
   // wasm blob as ArrayBuffer, or an Error string
@@ -24,7 +26,9 @@ const defaultValues: FormValues = {
 
 type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export comonent into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
-type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
+type FormContainerProps = ProposalFormContainerProps<ExportComponentProps> & {
+  maxFileSize: u32;
+};
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
 const RuntimeUpgradeForm: React.FunctionComponent<FormInnerProps> = (props) => {
@@ -57,12 +61,16 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...defaultValues,
     ...(props.initialData || {})
   }),
-  validationSchema: Yup.object().shape({
+  validationSchema: (props: FormContainerProps) => Yup.object().shape({
     ...Validation.All(),
-    ...Validation.RuntimeUpgrade()
+    ...Validation.RuntimeUpgrade(props.maxFileSize.toNumber())
   }),
   handleSubmit: () => null,
   displayName: 'RuntimeUpgradeForm'
 })(RuntimeUpgradeForm);
 
-export default withProposalFormData(FormContainer);
+export default withCalls<ExportComponentProps>(
+  ['consts.proposalsCodex.runtimeUpgradeWasmProposalMaxLength', { propName: 'maxFileSize' }]
+)(
+  withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer)
+);
