@@ -10,7 +10,10 @@ export interface IndexerOptions  {
 }
 
 export interface ProcessorOptions {
-  processingPack: QueryEventProcessingPack
+  processingPack: QueryEventProcessingPack;
+  // translates event handler to the even name, e.g. handleTreasuryDeposit -> treasury.Deposit
+  mappingToEventTranslator?: (mapping: string) => string;
+  name?: string;
   atBlock?: number;
 }
 
