@@ -20,7 +20,7 @@
             source: "{{ playbook_dir }}/../../testnets/nicaea-exported-state"
             type: bind
             read_only: yes
-        entrypoint: ./node --chain ../testnet-state/chain_spec.json --alice --validator --unsafe-ws-external --rpc-cors=all
+        entrypoint: ./node --chain ../testnet-state/raw_chain_spec.json --alice --validator --unsafe-ws-external --rpc-cors=all
         state: started
 
     - name: execute network tests
