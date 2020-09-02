@@ -2,7 +2,8 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Candidate, CouncilElectionStage, Error, Event, GenesisConfig, Module, RawEvent, Trait,
+    Candidate, CouncilStage, CouncilStageInfo, Error, Event, EzCandidate, GenesisConfig, Module,
+    RawEvent, Trait,
 };
 
 use codec::Encode;
@@ -49,8 +50,6 @@ parameter_types! {
 
 impl Trait for Runtime {
     type Event = TestEvent;
-
-    type Tmp = u64;
 
     type MinNumberOfCandidates = MinNumberOfCandidates;
     type CouncilSize = CouncilSize;
@@ -221,9 +220,8 @@ pub enum OriginType<AccountId> {
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
-        stage: (CouncilElectionStage::default(), 0),
+        stage: CouncilStageInfo::default(),
         council_members: vec![],
-        candidates: vec![],
     }
 }
 
@@ -275,10 +273,13 @@ where
         system::Module::<T>::set_block_number(block_number + increase);
     }
 
-    pub fn generate_candidate(index: u64) -> (OriginType<T::AccountId>, Candidate) {
+    pub fn generate_candidate(
+        index: u64,
+        stake: Balance<T, ReferendumInstance>,
+    ) -> (OriginType<T::AccountId>, EzCandidate<T>) {
         let account_id = CANDIDATE_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
-        let candidate = Candidate { tmp: 0 };
+        let candidate = EzCandidate::<T> { stake };
 
         (origin, candidate)
     }
