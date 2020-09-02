@@ -28,7 +28,11 @@ export async function getIndexerHead(): Promise<number> {
   
 }
 
-
+/**
+ * Get last event processed by the given mappings processor
+ * 
+ * @param processor Name of the processor
+ */
 export async function getLastProcessedEvent(processor: string): Promise<ProcessedEventsLogEntity | undefined> {
   return await getRepository(ProcessedEventsLogEntity).findOne({
     where: {
