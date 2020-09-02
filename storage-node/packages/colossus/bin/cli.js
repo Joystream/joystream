@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* es-lint disable*/
+/* es-lint disable  */
 
 'use strict'
 
