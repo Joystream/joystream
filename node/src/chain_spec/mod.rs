@@ -29,22 +29,27 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_runtime::Perbill;
 
 use node_runtime::{
-    versioned_store::InputValidationLengthConstraint as VsInputValidation,
-    AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
-    CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, MembersConfig,
-    ProposalsCodexConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
-    StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
+    membership, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
+    ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig, DataDirectoryConfig,
+    DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
+    GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, ProposalsCodexConfig, SessionConfig,
+    SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig,
+    SystemConfig, VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
 };
 
+// Exported to be used by chain-spec-builder
 pub use node_runtime::{AccountId, GenesisConfig};
+
+pub mod content_config;
+pub mod forum_config;
+pub mod initial_members;
+pub mod proposals_config;
 
 type AccountPublic = <Signature as Verify>::Signer;
 
 /// Specialized `ChainSpec`. This is a specialization of the general Substrate ChainSpec type.
 pub type ChainSpec = sc_service::GenericChainSpec<GenesisConfig>;
 
-use node_runtime::common::constraints::InputValidationLengthConstraint;
 use sc_chain_spec::ChainType;
 
 /// The chain specification option. This is expected to come in from the CLI and
@@ -126,7 +131,13 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
                         ],
-                        crate::proposals_config::development(),
+                        proposals_config::development(),
+                        initial_members::none(),
+                        forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
+                        content_config::empty_versioned_store_config(),
+                        content_config::empty_versioned_store_permissions_config(),
+                        content_config::empty_data_directory_config(),
+                        content_config::empty_content_working_group_config(),
                     )
                 },
                 Vec::new(),
@@ -160,7 +171,13 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
                         ],
-                        crate::proposals_config::development(),
+                        proposals_config::development(),
+                        initial_members::none(),
+                        forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
+                        content_config::empty_versioned_store_config(),
+                        content_config::empty_versioned_store_permissions_config(),
+                        content_config::empty_data_directory_config(),
+                        content_config::empty_content_working_group_config(),
                     )
                 },
                 Vec::new(),
@@ -171,10 +188,6 @@ impl Alternative {
             ),
         })
     }
-}
-
-fn new_vs_validation(min: u16, max_min_diff: u16) -> VsInputValidation {
-    VsInputValidation { min, max_min_diff }
 }
 
 pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
@@ -190,6 +203,7 @@ pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
     properties
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn testnet_genesis(
     initial_authorities: Vec<(
         AccountId,
@@ -202,6 +216,12 @@ pub fn testnet_genesis(
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
     cpcp: node_runtime::ProposalsConfigParameters,
+    members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
+    forum_config: ForumConfig,
+    versioned_store_config: VersionedStoreConfig,
+    versioned_store_permissions_config: VersionedStorePermissionsConfig,
+    data_directory_config: DataDirectoryConfig,
+    content_working_group_config: ContentWorkingGroupConfig,
 ) -> GenesisConfig {
     const CENTS: Balance = 1;
     const DOLLARS: Balance = 100 * CENTS;
@@ -234,9 +254,7 @@ pub fn testnet_genesis(
             slash_reward_fraction: Perbill::from_percent(10),
             ..Default::default()
         }),
-        pallet_sudo: Some(SudoConfig {
-            key: root_key.clone(),
-        }),
+        pallet_sudo: Some(SudoConfig { key: root_key }),
         pallet_babe: Some(BabeConfig {
             authorities: vec![],
         }),
@@ -276,9 +294,10 @@ pub fn testnet_genesis(
         }),
         membership: Some(MembersConfig {
             default_paid_membership_fee: 100u128,
-            members: vec![],
+            members,
         }),
-        forum: Some(crate::forum_config::from_serialized::create(root_key)),
+        forum: Some(forum_config),
+        data_directory: Some(data_directory_config),
         data_object_type_registry: Some(DataObjectTypeRegistryConfig {
             first_data_object_type_id: 1,
         }),
@@ -292,40 +311,9 @@ pub fn testnet_genesis(
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
         }),
-        versioned_store: Some(VersionedStoreConfig {
-            class_by_id: vec![],
-            entity_by_id: vec![],
-            next_class_id: 1,
-            next_entity_id: 1,
-            property_name_constraint: new_vs_validation(1, 99),
-            property_description_constraint: new_vs_validation(1, 999),
-            class_name_constraint: new_vs_validation(1, 99),
-            class_description_constraint: new_vs_validation(1, 999),
-        }),
-        content_wg: Some(ContentWorkingGroupConfig {
-            mint_capacity: 100_000,
-            curator_opening_by_id: vec![],
-            next_curator_opening_id: 0,
-            curator_application_by_id: vec![],
-            next_curator_application_id: 0,
-            channel_by_id: vec![],
-            next_channel_id: 1,
-            channel_id_by_handle: vec![],
-            curator_by_id: vec![],
-            next_curator_id: 0,
-            principal_by_id: vec![],
-            next_principal_id: 0,
-            channel_creation_enabled: true, // there is no extrinsic to change it so enabling at genesis
-            unstaker_by_stake_id: vec![],
-            channel_handle_constraint: InputValidationLengthConstraint::new(5, 20),
-            channel_description_constraint: InputValidationLengthConstraint::new(1, 1024),
-            opening_human_readable_text: InputValidationLengthConstraint::new(1, 2048),
-            curator_application_human_readable_text: InputValidationLengthConstraint::new(1, 2048),
-            curator_exit_rationale_text: InputValidationLengthConstraint::new(1, 2048),
-            channel_avatar_constraint: InputValidationLengthConstraint::new(5, 1024),
-            channel_banner_constraint: InputValidationLengthConstraint::new(5, 1024),
-            channel_title_constraint: InputValidationLengthConstraint::new(5, 1024),
-        }),
+        versioned_store: Some(versioned_store_config),
+        versioned_store_permissions: Some(versioned_store_permissions_config),
+        content_wg: Some(content_working_group_config),
         proposals_codex: Some(ProposalsCodexConfig {
             set_validator_count_proposal_voting_period: cpcp
                 .set_validator_count_proposal_voting_period,

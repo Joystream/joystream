@@ -30,6 +30,9 @@ use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
 use system::ensure_root;
 
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
 use common::origin::ActorOriginValidator;
 pub(crate) use common::BlockAndTime;
 
@@ -87,6 +90,7 @@ decl_error! {
 }
 
 /// The decision of the storage provider when it acts as liaison.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub enum LiaisonJudgement {
     /// Content awaits for a judgment.
@@ -115,6 +119,7 @@ pub type DataObject<T> = DataObjectInternal<
 >;
 
 /// Manages content ids, type and storage provider decision about it.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Clone, Encode, Decode, PartialEq, Debug)]
 pub struct DataObjectInternal<MemberId, BlockNumber, Moment, DataObjectTypeId, StorageProviderId> {
     /// Content owner.
@@ -145,10 +150,10 @@ pub type DataObjectsMap<T> = BTreeMap<<T as Trait>::ContentId, DataObject<T>>;
 decl_storage! {
     trait Store for Module<T: Trait> as DataDirectory {
         /// List of ids known to the system.
-        pub KnownContentIds get(fn known_content_ids): Vec<T::ContentId> = Vec::new();
+        pub KnownContentIds get(fn known_content_ids) config(): Vec<T::ContentId> = Vec::new();
 
         /// Maps data objects by their content id.
-        pub DataObjectByContentId get(fn data_object_by_content_id):
+        pub DataObjectByContentId get(fn data_object_by_content_id) config():
             map hasher(blake2_128_concat) T::ContentId => Option<DataObject<T>>;
     }
 }

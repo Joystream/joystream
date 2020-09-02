@@ -216,16 +216,26 @@ decl_storage! {
     }
     add_extra_genesis {
         config(default_paid_membership_fee): BalanceOf<T>;
-        config(members) : Vec<(T::AccountId, String, String, String)>;
+        config(members) : Vec<genesis::Member<T::MemberId, T::AccountId, T::Moment>>;
         build(|config: &GenesisConfig<T>| {
-            for (who, handle, avatar_uri, about) in &config.members {
-                let user_info = ValidatedUserInfo {
-                    handle: handle.clone().into_bytes(),
-                    avatar_uri: avatar_uri.clone().into_bytes(),
-                    about: about.clone().into_bytes()
-                };
+            for member in &config.members {
+                let checked_user_info = <Module<T>>::check_user_registration_info(
+                    Some(member.handle.clone().into_bytes()),
+                    Some(member.avatar_uri.clone().into_bytes()),
+                    Some(member.about.clone().into_bytes())
+                ).expect("Importing Member Failed");
 
-                <Module<T>>::insert_member(&who, &user_info, EntryMethod::Genesis);
+                let member_id = <Module<T>>::insert_member(
+                    &member.root_account,
+                    &member.controller_account,
+                    &checked_user_info,
+                    EntryMethod::Genesis,
+                    T::BlockNumber::from(1),
+                    member.registered_at_time
+                ).expect("Importing Member Failed");
+
+                // ensure imported member id matches assigned id
+                assert_eq!(member_id, member.member_id, "Import Member Failed: MemberId Incorrect");
             }
         });
     }
@@ -275,7 +285,14 @@ decl_module! {
             Self::ensure_unique_handle(&user_info.handle)?;
 
             let _ = T::Currency::slash(&who, terms.fee);
-            let member_id = Self::insert_member(&who, &user_info, EntryMethod::Paid(paid_terms_id));
+            let member_id = Self::insert_member(
+                &who,
+                &who,
+                &user_info,
+                EntryMethod::Paid(paid_terms_id),
+                <system::Module<T>>::block_number(),
+                <pallet_timestamp::Module<T>>::now()
+            )?;
 
             Self::deposit_event(RawEvent::MemberRegistered(member_id, who));
         }
@@ -416,7 +433,14 @@ decl_module! {
             // ensure handle is not already registered
             Self::ensure_unique_handle(&user_info.handle)?;
 
-            let member_id = Self::insert_member(&new_member_account, &user_info, EntryMethod::Screening(sender));
+            let member_id = Self::insert_member(
+                &new_member_account,
+                &new_member_account,
+                &user_info,
+                EntryMethod::Screening(sender),
+                <system::Module<T>>::block_number(),
+                <pallet_timestamp::Module<T>>::now()
+            )?;
 
             Self::deposit_event(RawEvent::MemberRegistered(member_id, new_member_account));
         }
@@ -557,37 +581,42 @@ impl<T: Trait> Module<T> {
     }
 
     fn insert_member(
-        who: &T::AccountId,
+        root_account: &T::AccountId,
+        controller_account: &T::AccountId,
         user_info: &ValidatedUserInfo,
         entry_method: EntryMethod<T::PaidTermId, T::AccountId>,
-    ) -> T::MemberId {
+        registered_at_block: T::BlockNumber,
+        registered_at_time: T::Moment,
+    ) -> Result<T::MemberId, &'static str> {
+        Self::ensure_unique_handle(&user_info.handle)?;
+
         let new_member_id = Self::members_created();
 
         let membership: Membership<T> = MembershipObject {
             handle: user_info.handle.clone(),
             avatar_uri: user_info.avatar_uri.clone(),
             about: user_info.about.clone(),
-            registered_at_block: <system::Module<T>>::block_number(),
-            registered_at_time: <pallet_timestamp::Module<T>>::now(),
+            registered_at_block,
+            registered_at_time,
             entry: entry_method,
             suspended: false,
             subscription: None,
-            root_account: who.clone(),
-            controller_account: who.clone(),
+            root_account: root_account.clone(),
+            controller_account: controller_account.clone(),
         };
 
-        <MemberIdsByRootAccountId<T>>::mutate(who, |ids| {
+        <MemberIdsByRootAccountId<T>>::mutate(root_account, |ids| {
             ids.push(new_member_id);
         });
-        <MemberIdsByControllerAccountId<T>>::mutate(who, |ids| {
+        <MemberIdsByControllerAccountId<T>>::mutate(controller_account, |ids| {
             ids.push(new_member_id);
         });
 
         <MembershipById<T>>::insert(new_member_id, membership);
         <MemberIdByHandle<T>>::insert(user_info.handle.clone(), new_member_id);
-        <NextMemberId<T>>::put(new_member_id + One::one());
 
-        new_member_id
+        <NextMemberId<T>>::put(new_member_id + One::one());
+        Ok(new_member_id)
     }
 
     fn _change_member_about_text(id: T::MemberId, text: &[u8]) -> DispatchResult {
