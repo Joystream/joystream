@@ -51,6 +51,7 @@ pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git
 pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 pallet-im-online = { package = 'pallet-im-online', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 pallet-collective = { package = 'pallet-collective', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+content-directory = { package = 'pallet-content-directory', default-features = false, path = '../runtime-modules/content-directory' }
 
 # Benchmarking
 frame-benchmarking = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', default-features = false, optional = true }
@@ -152,6 +153,7 @@ std = [
     'proposals-engine/std',
     'proposals-discussion/std',
     'proposals-codex/std',
+    'content-directory/std',
 ]
 runtime-benchmarks = [
     "system/runtime-benchmarks",
