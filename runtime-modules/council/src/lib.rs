@@ -38,7 +38,7 @@ pub struct CouncilStageInfo<Currency, BlockNumber> {
 pub enum CouncilStage<Balance> {
     Void, // init state - behaves the same way as IdlePeriod but can be immediately changed to `Election`
     Announcing(CouncilStageAnnouncing<Balance>), // candidacy announcment period
-    Election,
+    Election(CouncilStageElection<Balance>),
     Idle,
 }
 
@@ -53,6 +53,11 @@ pub struct CouncilStageAnnouncing<Balance> {
     candidates: Vec<Candidate<Balance>>,
 }
 
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
+pub struct CouncilStageElection<Balance> {
+    candidates: Vec<Candidate<Balance>>,
+}
+
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
 pub struct Candidate<Balance> {
@@ -62,15 +67,15 @@ pub struct Candidate<Balance> {
 /////////////////// Type aliases ///////////////////////////////////////////////
 
 // Alias for referendum's storage.
-//pub(crate) type Referendum<T> = referendum::Module<T, ReferendumInstance>;
+pub(crate) type Referendum<T> = referendum::Module<T, ReferendumInstance>;
 
-type Balance<T> = <<T as referendum::Trait<ReferendumInstance>>::Currency as Currency<
+pub type Balance<T> = <<T as referendum::Trait<ReferendumInstance>>::Currency as Currency<
     <T as system::Trait>::AccountId,
 >>::Balance;
 
-type EzCandidate<T> = Candidate<Balance<T>>;
-//type EzCouncilStageAnnouncing<T> = CouncilStageAnnouncing<<T as referendum::Trait<ReferendumInstance>>::Currency>;
-type EzCouncilStageAnnouncing<T> = CouncilStageAnnouncing<Balance<T>>;
+pub type EzCandidate<T> = Candidate<Balance<T>>;
+pub type EzCouncilStageAnnouncing<T> = CouncilStageAnnouncing<Balance<T>>;
+pub type EzCouncilStageElection<T> = CouncilStageElection<Balance<T>>;
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
@@ -86,6 +91,7 @@ pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
     type MinNumberOfCandidates: Get<u64>;
     /// Council member count
     type CouncilSize: Get<u64>;
+
     /// Duration of annoncing period
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
     /// Duration of idle period
@@ -98,15 +104,10 @@ decl_storage! {
     trait Store for Module<T: Trait> as Referendum {
         /// Current council voting stage
         pub Stage get(fn stage) config(): CouncilStageInfo<Balance::<T>, T::BlockNumber>;
-        //pub Stage get(fn stage) config(): CouncilStageInfo<T::Currency, T::BlockNumber>;
-        //pub Stage get(fn stage) config(): (CouncilStage<Balance::<T>>, T::BlockNumber);
 
         /// Current council members
         pub CouncilMembers get(fn council_members) config(): Vec<EzCandidate<T>>;
-/*
-        /// Current candidates to council
-        pub Candidates get(fn candidates) config(): Vec<(Candidate, Balance<T>)>;
-*/
+
     }
 }
 
@@ -124,17 +125,11 @@ decl_event! {
         /// Candidates are announced and voting starts
         VotingPeriodStarted(Vec<Candidate<Balance>>),
 
-        /// Revealing periods has started
-        RevealingPeriodStarted(),
-
-        /// Revealing period has finished and new council was elected
-        RevealingPeriodFinished(/* TODO */),
-
-        /// Idle period started
-        IdlePeriodStarted(),
-
         /// New candidate announced
         NewCandidate(Candidate<Balance>),
+
+        /// New council was elected and appointed
+        NewCouncilElected(Vec<Candidate<Balance>>),
     }
 }
 
@@ -144,23 +139,11 @@ decl_error! {
         /// Origin is invalid
         BadOrigin,
 
-        /// Origin doesn't correspond to any superuser
-        OriginNotSuperUser,
-
         /// User tried to candidate outside of the announcement period
         CantCandidateNow,
 
-        /// Council election cannot run twice at the same time
-        ElectionAlreadyRunning,
-
-        /// Idle period is still running
-        IdlePeriodNotFinished,
-
-        /// User can't unlock stake because idle period is not running right now
-        IdlePeriodNotRunning,
-
-        /// Election is still running
-        ElectionNotFinished,
+        /// User tried to candidate outside of the announcement period
+        CantReleaseStakeNow,
     }
 }
 
@@ -201,45 +184,7 @@ decl_module! {
         fn on_finalize(now: T::BlockNumber) {
             Self::try_progress_stage(now);
         }
-/*
-        /// Start new council election.
-        #[weight = 10_000_000]
-        pub fn start_announcing_period(origin) -> Result<(), Error<T>> {
-            // ensure action can be started
-            EnsureChecks::<T>::can_start_announcing_period(origin)?;
 
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // update state
-            Mutations::<T>::start_announcing_period();
-
-            // emit event
-            Self::deposit_event(RawEvent::AnnouncingPeriodStarted(1.into())); // TODO
-
-            Ok(())
-        }
-
-        /// Start revealing period.
-        #[weight = 10_000_000]
-        pub fn start_idle_period(origin) -> Result<(), Error<T>> {
-            // ensure action can be started
-            let elected_members = EnsureChecks::<T>::can_start_idle_period(origin)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // update state
-            Mutations::<T>::start_idle_period(&elected_members);
-
-            // emit event
-            Self::deposit_event(RawEvent::IdlePeriodStarted());
-
-            Ok(())
-        }
-*/
         /// Subscribe candidate
         #[weight = 10_000_000]
         pub fn candidate(origin, stake: Balance<T>) -> Result<(), Error<T>> {
@@ -259,33 +204,12 @@ decl_module! {
             Ok(())
         }
 
-/*
-        /// Unlock stake after voting (unless you are current council member).
-        #[weight = 10_000_000]
-        pub fn release_stake(origin) -> Result<(), Error<T>> {
-            // ensure action can be started
-            let elected_members = EnsureChecks::<T>::can_unlock_stake(origin)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // update state
-            Mutations::<T>::release_stake(elected_members);
-
-            // emit event
-            Self::deposit_event(RawEvent::RevealingPeriodStarted());
-
-            Ok(())
-        }
-*/
-
         /////////////////// Referendum Wrap ////////////////////////////////////
         // start voting period
         #[weight = 10_000_000]
         pub fn vote(origin, commitment: T::Hash, balance: Balance<T>) -> Result<(), Error<T>> {
             // call referendum vote extrinsic
-            <referendum::Module<T, ReferendumInstance>>::vote(origin, commitment, balance)?;
+            <Referendum<T>>::vote(origin, commitment, balance)?;
 
             Ok(())
         }
@@ -293,20 +217,20 @@ decl_module! {
         #[weight = 10_000_000]
         pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_index: u64) -> Result<(), Error<T>> {
             // call referendum reveal vote extrinsic
-            <referendum::Module<T, ReferendumInstance>>::reveal_vote(origin, salt, vote_option_index)?;
+            <Referendum<T>>::reveal_vote(origin, salt, vote_option_index)?;
 
             Ok(())
         }
 
-/*
         #[weight = 10_000_000]
         pub fn release_stake(origin) -> Result<(), Error<T>> {
+            EnsureChecks::<T>::can_release_stake(origin.clone())?;
+
             // call referendum reveal vote extrinsic
-            <referendum::Module<T, ReferendumInstance>>::release_stake(origin)?;
+            <Referendum<T>>::release_stake(origin)?;
 
             Ok(())
         }
-*/
     }
 }
 
@@ -320,8 +244,12 @@ impl<T: Trait> Module<T> {
                 if now == Stage::<T>::get().changed_at + T::AnnouncingPeriodDuration::get() {
                     Self::end_announcement_period(stage_data);
                 }
-            }
-            // TODO
+            },
+            CouncilStage::Idle => {
+                if now == Stage::<T>::get().changed_at + T::IdlePeriodDuration::get() {
+                    Self::end_idle_period();
+                }
+            },
             _ => (),
         }
     }
@@ -340,10 +268,29 @@ impl<T: Trait> Module<T> {
 
         // TODO: try to find way how to get rid of unwrap here or staticly ensure it will not fail here
         // update state
-        Mutations::<T>::finalize_announcing_period(&stage_data.candidates).unwrap(); // starting referendum should always start if implementation is valid - unwrap
+        Mutations::<T>::finalize_announcing_period(&stage_data).unwrap(); // starting referendum should always start if implementation is valid - unwrap
 
         // emit event
         Self::deposit_event(RawEvent::VotingPeriodStarted(stage_data.candidates));
+    }
+
+    // TODO: invoke this somehow
+    fn end_election_period(stage_data: EzCouncilStageElection<T>) {
+        let elected_members = vec![]; // TODO
+
+        // update state
+        Mutations::<T>::finalize_election_period(&elected_members);
+
+        // emit event
+        Self::deposit_event(RawEvent::NewCouncilElected(elected_members));
+    }
+
+    fn end_idle_period() {
+        // update state
+        Mutations::<T>::start_announcing_period();
+
+        // emit event
+        Self::deposit_event(RawEvent::AnnouncingPeriodStarted());
     }
 }
 
@@ -354,11 +301,14 @@ struct Mutations<T: Trait> {
 }
 
 impl<T: Trait> Mutations<T> {
-    /*
-    fn start_announcing_period() -> () {
-        Self::prolong_announcing_period();
+
+    fn start_announcing_period() {
+        let stage_data = EzCouncilStageAnnouncing::<T> {
+            candidates: vec![],
+        };
+
+        Self::prolong_announcing_period(stage_data);
     }
-    */
 
     fn prolong_announcing_period(stage_data: EzCouncilStageAnnouncing<T>) {
         let block_number = <system::Module<T>>::block_number();
@@ -369,16 +319,15 @@ impl<T: Trait> Mutations<T> {
                 changed_at: block_number,
             }
         });
-        //Stage::<T>::mutate(|value| *value = (CouncilStage::Announcing, block_number));
     }
 
-    fn finalize_announcing_period(candidates: &Vec<EzCandidate<T>>) -> Result<(), Error<T>> {
+    fn finalize_announcing_period(stage_data: &EzCouncilStageAnnouncing<T>) -> Result<(), Error<T>> {
         let extra_winning_target_count = T::CouncilSize::get() - 1;
-        let extra_options_count = candidates.len() as u64 - extra_winning_target_count - 1;
+        let extra_options_count = stage_data.candidates.len() as u64 - extra_winning_target_count - 1;
         let origin = RawOrigin::Root;
 
         // IMPORTANT - because starting referendum can fail it has to be the first mutation!
-        <referendum::Module<T, ReferendumInstance> as ReferendumManager<T, ReferendumInstance>>::start_referendum(
+        <Referendum<T> as ReferendumManager<T, ReferendumInstance>>::start_referendum(
             origin.into(),
             extra_options_count,
             extra_winning_target_count,
@@ -388,7 +337,9 @@ impl<T: Trait> Mutations<T> {
 
         Stage::<T>::mutate(|value| {
             *value = CouncilStageInfo {
-                stage: CouncilStage::Election,
+                stage: CouncilStage::Election(EzCouncilStageElection::<T> {
+                    candidates: stage_data.candidates.clone(),
+                }),
                 changed_at: block_number,
             }
         });
@@ -396,7 +347,7 @@ impl<T: Trait> Mutations<T> {
         Ok(())
     }
 
-    fn start_idle_period(elected_members: &Vec<EzCandidate<T>>) -> () {
+    fn finalize_election_period(elected_members: &Vec<EzCandidate<T>>) -> () {
         let block_number = <system::Module<T>>::block_number();
 
         Stage::<T>::mutate(|value| {
@@ -464,46 +415,6 @@ impl<T: Trait> Mutations<T> {
                     [current_candidates, &tmp[..]].concat()
                 }
             }
-
-            /*
-            if inserted.is_none(){
-                inserted = current_candidates.len(); // append at the end
-            }
-            */
-
-            /*
-            match inserted {
-                Some => ,
-                None => {
-                    if council_size
-                },
-            }
-
-            if !inserted {
-                current_candidates.push((candidate.clone(), stake.clone()));
-            }
-            */
-
-            /*
-
-            let mut inserted = false;
-            for (i, c) in current_candidates.iter().enumerate() {
-                if stake > &c.1 {
-                    current_candidates.insert(i, (candidate.clone(), stake.clone()));
-                    inserted = true;
-                    break;
-                }
-            }
-
-            if !inserted {
-                current_candidates.push((candidate.clone(), stake.clone()));
-            }
-
-            let council_size = T::CouncilSize::get();
-            if current_candidates.len() as u64 > council_size {
-                *current_candidates = current_candidates[..council_size as usize].to_vec();
-            }
-            */
         }
 
         let new_stage_data = CouncilStageAnnouncing {
@@ -529,28 +440,6 @@ impl<T: Trait> Mutations<T> {
                 changed_at: block_number,
             }
         });
-
-        /*
-        Candidates::<T>::mutate(|current_candidates| {
-            let mut inserted = false;
-            for (i, c) in current_candidates.iter().enumerate() {
-                if stake > &c.1 {
-                    current_candidates.insert(i, (candidate.clone(), stake.clone()));
-                    inserted = true;
-                    break;
-                }
-            }
-
-            if !inserted {
-                current_candidates.push((candidate.clone(), stake.clone()));
-            }
-
-            let council_size = T::CouncilSize::get();
-            if current_candidates.len() as u64 > council_size {
-                *current_candidates = current_candidates[..council_size as usize].to_vec();
-            }
-        });
-        */
     }
 
     fn unlock_stake(account_id: T::AccountId) -> () {
@@ -567,17 +456,6 @@ struct EnsureChecks<T: Trait> {
 impl<T: Trait> EnsureChecks<T> {
     /////////////////// Common checks //////////////////////////////////////////
 
-    fn ensure_super_user(origin: T::Origin) -> Result<T::AccountId, Error<T>> {
-        let account_id = ensure_signed(origin)?;
-
-        // ensure superuser requested action
-        if !<T as Trait>::is_super_user(&account_id) {
-            return Err(Error::OriginNotSuperUser);
-        }
-
-        Ok(account_id)
-    }
-
     fn ensure_regular_user(origin: T::Origin) -> Result<T::AccountId, Error<T>> {
         let account_id = ensure_signed(origin)?;
 
@@ -585,62 +463,7 @@ impl<T: Trait> EnsureChecks<T> {
     }
 
     /////////////////// Action checks //////////////////////////////////////////
-    /*
-        fn can_start_announcing_period(origin: T::Origin) -> Result<(), Error<T>> {
-            // ensure superuser requested action
-            Self::ensure_super_user(origin)?;
 
-            let (stage, changed_at) = Stage::<T>::get();
-
-            // ensure council election is not already running
-            if stage != CouncilStage::Void && stage != CouncilStage::Idle {
-                return Err(Error::ElectionAlreadyRunning);
-            }
-
-            // skip idle period duration check when starting announcing period from `Void` (initial) state
-            if stage == CouncilStage::Void {
-                return Ok(());
-            }
-
-            let current_block = <system::Module<T>>::block_number();
-
-            // ensure voting stage is complete
-            if current_block < T::IdlePeriodDuration::get() + changed_at + One::one() {
-                return Err(Error::IdlePeriodNotFinished);
-            }
-
-            Ok(())
-        }
-    */
-    /*
-        fn can_finalize_announcing_period(
-            origin: T::Origin,
-        ) -> Result<Vec<(Candidate, Balance<T>)>, Error<T>> {
-            // ensure superuser requested action
-            Self::ensure_super_user(origin)?;
-
-            let candidates_info = Candidates::<T>::get();
-
-            Ok(candidates_info)
-        }
-    */
-    /*
-        fn can_start_idle_period(origin: T::Origin) -> Result<Vec<Candidate>, Error<T>> {
-            // ensure superuser requested action
-            Self::ensure_super_user(origin)?;
-
-            // check that referendum have ended
-            let referendum_stage = referendum::Stage::<T, ReferendumInstance>::get();
-            match referendum_stage {
-                referendum::ReferendumStage::Inactive(_) => Err(Error::ElectionNotFinished)
-                _ => (),
-            };
-
-            let elected_members = vec![]; // TODO: retrieve real list of elected council members
-
-            Ok(elected_members)
-        }
-    */
     fn can_candidate(
         origin: T::Origin,
         stake: &Balance<T>,
@@ -653,30 +476,22 @@ impl<T: Trait> EnsureChecks<T> {
             _ => return Err(Error::CantCandidateNow),
         };
 
-        // TODO: create proper candidate
-        let candidate = Candidate { stake: *stake };
+        let candidate = Candidate {
+            stake: *stake
+        };
 
         Ok((stage_data, candidate))
     }
-    /*
-        fn can_release_stake(origin: T::Origin) -> Result<T::AccountId, Error<T>> {
-            // ensure regular user requested action
-            let account_id = Self::ensure_regular_user(origin)?;
 
-            let (stage, changed_at) = Stage::<T>::get();
+    fn can_release_stake(origin: T::Origin) -> Result<T::AccountId, Error<T>> {
+        // ensure regular user requested action
+        let account_id = Self::ensure_regular_user(origin)?;
 
-            let stage_data = match Stage::<T>::get().stage {
-                CouncilStage::Announcing(stage_data) => stage_data,
-                _ => return Err(Error::CantCandidateNow),
-            };
+        match Stage::<T>::get().stage {
+            CouncilStage::Idle => (),
+            _ => return Err(Error::CantReleaseStakeNow),
+        };
 
-            if stage != CouncilStage::Idle {
-                return Err(Error::IdlePeriodNotRunning);
-            }
-
-            // TODO: check user has locked stake
-
-            Ok(account_id)
-        }
-    */
+        Ok(account_id)
+    }
 }
