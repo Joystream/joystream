@@ -98,7 +98,7 @@ decl_event!(
 );
 
 decl_storage! {
-    trait Store for Module<T: Trait<I>, I: Instance> as Team {
+    trait Store for Module<T: Trait<I>, I: Instance> as WorkingTeam {
         /// Next identifier value for new job opening.
         pub NextOpeningId get(fn next_opening_id): T::OpeningId;
 

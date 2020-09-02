@@ -1,5 +1,5 @@
 [package]
-name = "pallet-team"
+name = "pallet-working-team"
 version = "1.0.0"
 authors = ['Joystream contributors']
 edition = '2018'
