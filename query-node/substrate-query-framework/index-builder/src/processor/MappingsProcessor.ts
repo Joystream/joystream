@@ -1,14 +1,16 @@
-import { QueryEventProcessingPack, SavedEntityEvent, makeDatabaseManager, SubstrateEvent } from '..';
+import { QueryEventProcessingPack, makeDatabaseManager, SubstrateEvent } from '..';
 import { Codec } from '@polkadot/types/types';
 import Debug from 'debug';
-import { getRepository, QueryRunner, Between, In, MoreThan } from 'typeorm';
+import { getRepository, QueryRunner, In, MoreThan } from 'typeorm';
 import { doInTransaction } from '../db/helper';
 import { SubstrateEventEntity } from '../entities';
 import { numberEnv } from '../utils/env-flags';
-import { getIndexerHead } from '../db/dal';
+import { getIndexerHead, getLastProcessedEvent } from '../db/dal';
+import { ProcessedEventsLogEntity } from '../entities/ProcessedEventsLogEntity';
 
 const debug = Debug('index-builder:processor');
 
+const DEFAULT_PROCESSOR_NAME = 'hydra';
 
 const BATCH_SIZE = numberEnv('PROCESSOR_BATCH_SIZE') || 10;
 // Interval at which the processor pulls new blocks from the database
@@ -18,8 +20,8 @@ const PROCESSOR_BLOCKS_POLL_INTERVAL = numberEnv('PROCESSOR_BLOCKS_POLL_INTERVAL
 
 export default class MappingsProcessor {
   private _processing_pack!: QueryEventProcessingPack;
-  private _blockToProcessNext!: number;
-  private _lastSavedEvent!: SavedEntityEvent;
+  
+  private _lastEventIndex = SubstrateEventEntity.formatId(0, -1);
   
   private _started = false;
   private _indexerHead!: number;
@@ -34,40 +36,10 @@ export default class MappingsProcessor {
   }
 
 
-
   async start(atBlock?: number): Promise<void> { 
     debug('Spawned the processor');
 
-    this._blockToProcessNext = 0; // default
-
-    if (atBlock) {
-      debug(`Got block height hint: ${atBlock}`);
-      this._blockToProcessNext = atBlock;
-    }
-    
-    const lastProcessedEvent = await getRepository(SavedEntityEvent).findOne({ where: { id: 1 } });
-
-    if (lastProcessedEvent) {
-      debug(`Found the most recent processed event at block ${lastProcessedEvent.blockNumber}`);
-      this._lastSavedEvent = lastProcessedEvent;
-    } else {
-      this._lastSavedEvent = new SavedEntityEvent();
-      this._lastSavedEvent.blockNumber = atBlock ? atBlock : -1;
-      this._lastSavedEvent.index = -1;
-    }
-
-    if (atBlock && lastProcessedEvent) {
-      debug(
-        `WARNING! Existing processed history detected on the database!
-        Last processed block is ${lastProcessedEvent.blockNumber}. The indexer 
-        will continue from block ${lastProcessedEvent.blockNumber} and ignore the block height hint.`
-      );
-    }
-    
-    debug(`Starting the processor from ${this._blockToProcessNext}`);
-
-    this._indexerHead = await getIndexerHead();
-    debug(`Current indexer head: ${this._indexerHead}`);
+    await this.init(atBlock)
 
     this._started = true;
 
@@ -103,19 +75,11 @@ export default class MappingsProcessor {
         relations: ["extrinsic"],
         where: [
           {
-            // next block and further
-            blockNumber: Between(this._lastSavedEvent.blockNumber + 1, this._indexerHead),
-            method: In(Object.keys(this._processing_pack)),
-          },
-          {
-            // same block
-            blockNumber: this._lastSavedEvent.blockNumber,
-            index: MoreThan(this._lastSavedEvent.index), 
+            id: MoreThan(this._lastEventIndex),
             method: In(Object.keys(this._processing_pack)),
           }],
         order: {
-          blockNumber: 'ASC',
-          index: 'ASC'
+          id: 'ASC'
         },
         take: BATCH_SIZE
       })
@@ -154,19 +118,46 @@ export default class MappingsProcessor {
         //query_event.log(0, debug);
     
         await this._processing_pack[query_event.method](makeDatabaseManager(queryRunner.manager), this.convert(query_event));
-        this._lastSavedEvent = await SavedEntityEvent.update(({
-          block_number: query_event.blockNumber,
-          event_name: query_event.name,
-          event_method: query_event.method,
-          event_params: {},
-          index: query_event.index
-        }) as SubstrateEvent, queryRunner.manager);
         
-        debug(`Last saved event: ${JSON.stringify(this._lastSavedEvent, null, 2)}`);
+        const processed = new ProcessedEventsLogEntity();
+        processed.processor = DEFAULT_PROCESSOR_NAME;
+        processed.eventId = query_event.id;
+        processed.updatedAt = new Date();
+
+        const lastSavedEvent = await getRepository('ProcessedEventsLogEntity').save(processed);
+        this._lastEventIndex = query_event.id;
+
+        debug(`Last saved event: ${JSON.stringify(lastSavedEvent, null, 2)}`);
       });
       
     });
+  }
 
+
+  private async init(atBlock?: number): Promise<void> {
+    if (atBlock) {
+      debug(`Got block height hint: ${atBlock}`);
+    }
+    
+    const lastProcessedEvent = await getLastProcessedEvent(DEFAULT_PROCESSOR_NAME);
+
+    if (lastProcessedEvent) {
+      debug(`Found the most recent processed event ${lastProcessedEvent.eventId}`);
+      this._lastEventIndex = lastProcessedEvent.eventId;
+    } 
+
+    if (atBlock && lastProcessedEvent) {
+      debug(
+        `WARNING! Existing processed history detected on the database!
+        Last processed event id ${this._lastEventIndex}. The indexer 
+        will continue from block ${this._lastEventIndex.split('-')[0]} and ignore the block height hint.`
+      );
+    }
+    
+    //debug(`Starting the processor from ${this._blockToProcessNext}`);
+
+    this._indexerHead = await getIndexerHead();
+    debug(`Current indexer head: ${this._indexerHead}`);
   }
 }
 
