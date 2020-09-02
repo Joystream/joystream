@@ -26,7 +26,7 @@ type Council @entity {
 
   councilId: BigInt!
 
-  members: [CouncilMember!]!
+  members: [CouncilMember!]! @derivedFrom(field: 'council')
 
   startedAtBlock: BigInt!
 
@@ -112,7 +112,7 @@ type Proposal @entity {
   "When it was created"
   createdAtBlock: BigInt!
 
-  discussionThread: ProposalDiscussionThread!
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
 
   # *********** GET BACK LATER HERE ****************
   # This really can only be set when `status` is in one of the finalized states
@@ -146,7 +146,7 @@ type ProposalDiscussionThread @entity {
 
   proposal: Proposal!
 
-  posts: [ProposalDiscussionThreadPost!]
+  posts: [ProposalDiscussionThreadPost!] @derivedFrom(field: 'thread')
 }
 
 "Will be handled by proposals/discussion::PostCreated"
