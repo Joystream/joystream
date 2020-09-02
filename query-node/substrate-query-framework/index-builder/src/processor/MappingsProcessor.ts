@@ -66,9 +66,7 @@ export default class MappingsProcessor {
     
     debug(`Starting the processor from ${this._blockToProcessNext}`);
 
-    await doInTransaction(async (queryRunner) => {
-      this._indexerHead = await getIndexerHead(queryRunner);
-    })
+    this._indexerHead = await getIndexerHead();
     debug(`Current indexer head: ${this._indexerHead}`);
 
     this._started = true;
@@ -81,9 +79,7 @@ export default class MappingsProcessor {
         } else {
           // If there is nothing to process, wait and update the indexer head
           await new Promise(resolve => setTimeout(resolve, PROCESSOR_BLOCKS_POLL_INTERVAL));
-          await doInTransaction(async (queryRunner) => {
-            this._indexerHead = await getIndexerHead(queryRunner);
-          })
+          this._indexerHead = await getIndexerHead();
           debug(`Updated indexer head to ${this._indexerHead}`);
         }
         //debug(`Next batch starts from height ${this._blockToProcessNext.toString()}`);
