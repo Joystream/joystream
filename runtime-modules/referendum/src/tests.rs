@@ -866,7 +866,9 @@ fn referendum_release_stake() {
             1 * stake,
         )]));
 
-        Mocks::release_stake(origin.clone(), account_id, Err(Error::InvalidTimeToRelease));
+        Runtime::feature_stack_lock(false);
+        Mocks::release_stake(origin.clone(), account_id, Err(Error::UnstakingForbidden));
+        Runtime::feature_stack_lock(true);
 
         // since `account_id` voted for the winner, he can unlock stake only after inactive stage ends
         Mocks::start_referendum_extrinsic(

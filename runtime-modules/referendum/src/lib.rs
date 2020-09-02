@@ -760,27 +760,6 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
     }
 
     fn can_release_stake(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
-        fn voted_for_winner_last_cycle<T: Trait<I>, I: Instance>(
-            previous_cycle_result: EzReferendumResult<T, I>,
-            option_voted_for: Option<u64>,
-        ) -> bool {
-            let voted_for = match option_voted_for {
-                Some(tmp_vote) => tmp_vote,
-                None => return false,
-            };
-
-            let previous_winners = match previous_cycle_result {
-                ReferendumResult::Winners(tmp_winners) => tmp_winners,
-                ReferendumResult::ExtraWinners(tmp_winners) => tmp_winners,
-                ReferendumResult::NotEnoughWinners(tmp_winners) => tmp_winners,
-                ReferendumResult::NoVotesRevealed => vec![],
-            };
-
-            let voted_for_winner = previous_winners.iter().position(|item| item.0 == voted_for);
-
-            voted_for_winner.is_some()
-        }
-
         let cycle_id = CurrentCycleId::<I>::get();
 
         // ensure superuser requested action
@@ -797,30 +776,6 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             match Stage::<T, I>::get() {
                 ReferendumStage::Voting(_) => Ok(()),
                 _ => Err(Error::InvalidTimeToRelease),
-            }?;
-        }
-
-        // enable unlocking stake locked in the last cycle only when option didn't win;
-        // or after the next inactive stage when voted for winning option
-        if cycle_id == cast_vote.cycle_id + 1 {
-            fn check_inactive_stage<T: Trait<I>, I: Instance>(
-                stage_data: ReferendumStageInactive<T::VotePower>,
-                vote_for: Option<u64>,
-            ) -> Result<(), Error<T, I>> {
-                let voted_winner =
-                    voted_for_winner_last_cycle::<T, I>(stage_data.previous_cycle_result, vote_for);
-                if voted_winner {
-                    return Err(Error::InvalidTimeToRelease);
-                }
-
-                Ok(())
-            }
-
-            match Stage::<T, I>::get() {
-                ReferendumStage::Inactive(stage_data) => {
-                    check_inactive_stage::<T, I>(stage_data, cast_vote.vote_for)
-                }
-                _ => Ok(()),
             }?;
         }
 

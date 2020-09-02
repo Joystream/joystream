@@ -120,6 +120,14 @@ impl pallet_balances::Trait for Runtime {
     type AccountStore = system::Module<Self>;
 }
 
+impl Runtime {
+    pub fn feature_stack_lock(unstake_enabled: bool) -> () {
+        IS_UNSTAKE_ENABLED.with(|value| {
+            *value.borrow_mut() = (unstake_enabled,);
+        });
+    }
+}
+
 /////////////////// Module implementation //////////////////////////////////////
 
 impl_outer_origin! {
