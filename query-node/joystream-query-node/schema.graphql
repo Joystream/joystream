@@ -93,7 +93,7 @@ enum ProposalState {
   EXECUTED
 }
 
-type Proposal @entity {
+interface Proposal @entity {
 
   "Id of a newly created proposal"
   proposalId: BigInt!
@@ -132,7 +132,6 @@ type Proposal @entity {
   rejectionVotes: BigInt!
 
   slashVotes: BigInt!
-
 }
 
 "Will be handled by ThreadCreated, ..."
@@ -171,19 +170,17 @@ type ProposalDiscussionThreadPost @entity {
 }
 
 "The text of the `text` proposal"
-type TextProposal @entity {
-  proposal: Proposal!
+type TextProposal implements Proposal @entity {
   text: String!
 }
 
 "The wasm code for the `runtime upgrade` proposal"
-type RuntimeUpgradeProposal @entity {
-  proposal: Proposal!
+type RuntimeUpgradeProposal implements Proposal @entity {
   wasm: Bytes!
 }
 
 "Election parameters for the `set election parameters` proposal"
-type SetElectionParametersProposal @entity {
+type SetElectionParametersProposal implements Proposal @entity {
   announcingPeriod: BigInt!
   votingPeriod: BigInt!
   revealingPeriod: BigInt!
@@ -194,9 +191,7 @@ type SetElectionParametersProposal @entity {
   minVotingStake: BigInt!
 }
 
-type SpendingProposal @entity {
-  proposal: Proposal!
-
+type SpendingProposal implements Proposal @entity {
   "Balance"
   mintedBalance: BigInt!
 
@@ -205,21 +200,17 @@ type SpendingProposal @entity {
 }
 
 "New leader memberId and account_id for the `set lead` proposal (Option<(MemberId, AccountId)>)"
-type SetLeadProposal @entity {
-  proposal: Proposal!
+type SetLeadProposal implements Proposal @entity {
   member: Member
 }
 
 "Balance for the `set content working group mint capacity` proposal"
-type SetContentWorkingGroupMintCapacityProposal {
-  proposal: Proposal!
-
+type SetContentWorkingGroupMintCapacityProposal implements Proposal @entity {
   mintedBalance: BigInt!
 }
 
 "Validator count for the `set validator count` proposal"
-type SetValidatorCountProposal @entity {
-  proposal: Proposal!
+type SetValidatorCountProposal implements Proposal @entity {
   validatorCount: Int!
 }
 
@@ -229,52 +220,32 @@ enum WorkingGroup {
 }
 
 "Begin review applications for the working group leader position"
-type BeginReviewWorkingGroupLeaderApplicationsProposal @entity {
-  proposal: Proposal!
-  
+type BeginReviewWorkingGroupLeaderApplicationsProposal implements Proposal @entity {
   openingId: BigInt!
-
   workingGroup: WorkingGroup
 }
 
 "Set working group mint capacity"
-type SetWorkingGroupMintCapacityProposal @entity {
-  proposal: Proposal!
-
+type SetWorkingGroupMintCapacityProposal implements Proposal @entity {
   mintedBalance: BigInt!
-
   workingGroup: WorkingGroup
 }
 
-type DecreaseWorkingGroupLeaderStakeProposal @entity {
-  proposal: Proposal!
-
+type DecreaseWorkingGroupLeaderStakeProposal implements Proposal @entity {
   workerId: BigInt!
-
-  stakeBalance: BigInt!
-
   workingGroup: WorkingGroup
 }
 
 " Slash the working group leader stake."
-type SlashWorkingGroupLeaderStakeProposal @entity {
-  proposal: Proposal!
-
+type SlashWorkingGroupLeaderStakeProposal implements Proposal @entity {
   workerId: BigInt!
-
-  stakeBalance: BigInt!
-
   workingGroup: WorkingGroup
 }
 
 "Set working group leader reward balance."
-type SetWorkingGroupLeaderRewardProposal @entity {
-  proposal: Proposal!
-
+type SetWorkingGroupLeaderRewardProposal implements Proposal @entity {
   workerId: BigInt!
-
   mintedBalance: BigInt!
-
   workingGroup: WorkingGroup
 }
 
