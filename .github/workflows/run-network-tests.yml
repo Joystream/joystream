@@ -22,4 +22,4 @@ jobs:
       - name: ansible build and tests
         run: |
           cd ./devops/ansible
-          ansible-playbook -i hosts build-and-run-tests-single-node-playbook.yml --become -v
+          ansible-playbook -i hosts build-and-run-tests-exported-chainspec-playbook.yml --become -v
