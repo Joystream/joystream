@@ -1,6 +1,7 @@
-import { QueryRunner } from 'typeorm';
+import { QueryRunner, getRepository } from 'typeorm';
 import { EVENT_TABLE_NAME } from '../entities/SubstrateEventEntity';
 import { doInTransaction } from './helper';
+import { ProcessedEventsLogEntity } from '../entities/ProcessedEventsLogEntity';
 
 export async function getIndexerHead(): Promise<number> {
   return await doInTransaction(async (qr: QueryRunner) => {
@@ -26,3 +27,16 @@ export async function getIndexerHead(): Promise<number> {
   }) 
   
 }
+
+
+export async function getLastProcessedEvent(): Promise<ProcessedEventsLogEntity | undefined> {
+  return await getRepository(ProcessedEventsLogEntity).findOne({
+    where: {
+      processor: 'hydra'
+    },
+    order: {
+      eventId: 'DESC'
+    }
+  });
+}
+
