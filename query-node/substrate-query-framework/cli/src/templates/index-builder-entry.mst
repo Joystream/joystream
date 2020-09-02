@@ -171,8 +171,7 @@ async function runIndexer() {
 
 async function runMigrations() {
   logger.info(`Running migrations`);
-  await createDBConnection();
-  await SavedEntityEvent.createTable();
+  await new QueryNodeManager().migrate();
   // TODO: here should be TypeORM migrations...
 }
 
