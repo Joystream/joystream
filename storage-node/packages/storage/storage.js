@@ -169,7 +169,7 @@ class StorageWriteStream extends Transform {
   cleanup() {
     debug('Cleaning up temporary file: ', this.temp.path)
     fs.unlink(this.temp.path, () => {
-      /* Ignore errors.*/
+      /* Ignore errors. */
     })
     delete this.temp
   }
