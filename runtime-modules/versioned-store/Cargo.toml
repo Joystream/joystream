@@ -26,4 +26,5 @@ std = [
 	'sp-std/std',
 	'frame-support/std',
 	'system/std',
+	'common/std'
 ]
