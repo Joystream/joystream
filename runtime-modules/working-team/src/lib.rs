@@ -186,7 +186,6 @@ decl_module! {
                 opening_type,
                 created: Self::current_block(),
                 description_hash: hashed_description.as_ref().to_vec(),
-                is_active: true,
             };
 
              let new_opening_id = NextOpeningId::<T, I>::get();
@@ -300,13 +299,13 @@ decl_module! {
 
             checks::ensure_origin_for_opening_type::<T, I>(origin, opening.opening_type)?;
 
-            // let potential_worker_number =
-            //     Self::active_worker_count() + (successful_application_ids.len() as u32);
-            //
-            // ensure!(
-            //     potential_worker_number <= T::MaxWorkerNumberLimit::get(),
-            //     Error::<T, I>::MaxActiveWorkerNumberExceeded
-            // );
+            let potential_worker_number =
+                Self::active_worker_count() + (successful_application_ids.len() as u32);
+
+            ensure!(
+                potential_worker_number <= T::MaxWorkerNumberLimit::get(),
+                Error::<T, I>::MaxActiveWorkerNumberExceeded
+            );
 
             // Cannot hire a lead when another leader exists.
             // if matches!(opening.opening_type, OpeningType::Leader) {
@@ -329,29 +328,7 @@ decl_module! {
             //     None
             // };
 
-            // Make iterator over successful worker application
-            let successful_iter = successful_application_ids
-                                    .iter()
-                                    // recover worker application from id
-                                    .map(|application_id| { checks::ensure_application_exists::<T, I>(application_id)})
-                                    // remove Err cases, i.e. non-existing applications
-                                    .filter_map(|result| result.ok());
-
-            // // Count number of successful workers provided.
-            // let num_provided_successful_application_ids = successful_application_ids.len();
-            //
-            // // Ensure all worker applications exist.
-            // let number_of_successful_applications = successful_iter.clone().count();
-            //
-            // ensure!(
-            //     number_of_successful_applications == num_provided_successful_application_ids,
-            //     Error::<T, I>::SuccessfulWorkerApplicationDoesNotExist
-            // );
-            //
-            // // Attempt to fill the opening.
-            // let successful_application_ids = successful_iter
-            //                                 .clone()
-            //                                 .collect::<BTreeSet<_>>();
+            let checked_applications_info = checks::ensure_succesful_applications_exist::<T, I>(&successful_application_ids)?;
 
             // Check for a single application for a leader.
             if matches!(opening.opening_type, JobOpeningType::Leader) {
@@ -377,8 +354,11 @@ decl_module! {
             let application_id_to_worker_id = Self::fulfill_successful_applications(
                 &opening,
                 //create_reward_settings,
-                successful_iter.collect()
+                checked_applications_info
             );
+
+            // Remove the opening.
+            <OpeningById::<T, I>>::remove(opening_id);
 
             // Trigger event
             Self::deposit_event(RawEvent::OpeningFilled(opening_id, application_id_to_worker_id));
@@ -402,6 +382,18 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         <system::Module<T>>::block_number()
     }
 
+    // Increases active worker counter (saturating).
+    fn increase_active_worker_counter() {
+        let next_active_worker_count_value = Self::active_worker_count().saturating_add(1);
+        <ActiveWorkerCount<I>>::put(next_active_worker_count_value);
+    }
+
+    // Decreases active worker counter (saturating).
+    fn decrease_active_worker_counter() {
+        let next_active_worker_count_value = Self::active_worker_count().saturating_sub(1);
+        <ActiveWorkerCount<I>>::put(next_active_worker_count_value);
+    }
+
     // Processes successful application during the fill_opening().
     fn fulfill_successful_applications(
         _opening: &JobOpening<T::BlockNumber, T::ApplicationId>,
@@ -412,7 +404,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         successful_applications_info
             .iter()
-            .for_each(|(id, successful_application)| {
+            .for_each(|(application_id, application)| {
                 // // Create a reward relationship.
                 // let reward_relationship = if let Some((mint_id, checked_policy)) =
                 // reward_settings.clone()
@@ -464,19 +456,20 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 let new_worker_id = <NextWorkerId<T, I>>::get();
 
                 // Construct worker
-                let worker = TeamWorker::<T>::new(
-                    &successful_application.member_id,
-                    &successful_application.role_account_id,
-                );
+                let worker =
+                    TeamWorker::<T>::new(&application.member_id, &application.role_account_id);
 
                 // Store a worker
                 <WorkerById<T, I>>::insert(new_worker_id, worker);
-                // Self::increase_active_worker_counter();
+                Self::increase_active_worker_counter();
 
                 // Update next worker id
                 <NextWorkerId<T, I>>::mutate(|id| *id += <TeamWorkerId<T> as One>::one());
 
-                application_id_to_worker_id.insert(*id, new_worker_id);
+                // Remove an application.
+                <ApplicationById<T, I>>::remove(application_id);
+
+                application_id_to_worker_id.insert(*application_id, new_worker_id);
 
                 // // Sets a leader on successful opening when opening is for leader.
                 // if matches!(opening.opening_type, OpeningType::Leader) {

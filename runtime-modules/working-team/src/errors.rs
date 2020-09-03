@@ -35,5 +35,11 @@ decl_error! {
 
         /// Worker application does not exist.
         WorkerApplicationDoesNotExist,
+
+        /// Working team size limit exceeded.
+        MaxActiveWorkerNumberExceeded,
+
+        /// Successful worker application does not exist.
+        SuccessfulWorkerApplicationDoesNotExist,
     }
 }

@@ -39,9 +39,6 @@ pub struct JobOpening<BlockNumber, ApplicationId: Ord> {
 
     /// Hash of the opening description.
     pub description_hash: Vec<u8>,
-
-    /// Opening status.
-    pub is_active: bool,
 }
 
 /// Defines type of the opening: regular working group fellow or group leader.

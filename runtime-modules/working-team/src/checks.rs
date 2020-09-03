@@ -97,3 +97,31 @@ pub(crate) fn ensure_application_exists<T: Trait<I>, I: Instance>(
 
     Ok((*application_id, application))
 }
+
+// Check application: returns applicationId and application tuple if exists.
+pub(crate) fn ensure_succesful_applications_exist<T: Trait<I>, I: Instance>(
+    successful_application_ids: &BTreeSet<T::ApplicationId>,
+) -> Result<Vec<ApplicationInfo<T, I>>, Error<T, I>> {
+    // Make iterator over successful worker application
+    let application_info_iterator = successful_application_ids
+        .iter()
+        // recover worker application from id
+        .map(|application_id| ensure_application_exists::<T, I>(application_id))
+        // remove Err cases, i.e. non-existing applications
+        .filter_map(|result| result.ok());
+
+    // Count number of successful workers provided.
+    let num_provided_successful_application_ids = successful_application_ids.len();
+
+    // Ensure all worker applications exist.
+    let number_of_successful_applications = application_info_iterator.clone().count();
+
+    ensure!(
+        number_of_successful_applications == num_provided_successful_application_ids,
+        crate::Error::<T, I>::SuccessfulWorkerApplicationDoesNotExist
+    );
+
+    let result_applications_info = application_info_iterator.collect::<Vec<_>>();
+
+    Ok(result_applications_info)
+}

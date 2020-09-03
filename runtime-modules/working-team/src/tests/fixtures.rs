@@ -1,10 +1,11 @@
 use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::StorageMap;
 use sp_runtime::traits::Hash;
+use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use system::{EventRecord, Phase, RawOrigin};
 
 use super::mock::{Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance};
 use crate::{JobApplication, JobOpening, JobOpeningType, RawEvent, TeamWorker};
-use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 
 pub struct EventFixture;
 impl EventFixture {
@@ -81,7 +82,6 @@ impl AddJobOpeningFixture {
                 //                policy_commitment: self.commitment.clone(),
                 created: self.starting_block,
                 description_hash: expected_hash.as_ref().to_vec(),
-                is_active: true,
                 opening_type: self.opening_type,
             };
 
@@ -282,6 +282,7 @@ impl FillOpeningFixture {
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) -> u64 {
+        let saved_worker_count = TestWorkingTeam::active_worker_count();
         let saved_worker_next_id = TestWorkingTeam::next_worker_id();
         let actual_result = self.call().map(|_| ());
         assert_eq!(actual_result.clone(), expected_result);
@@ -290,7 +291,18 @@ impl FillOpeningFixture {
             assert_eq!(TestWorkingTeam::next_worker_id(), saved_worker_next_id + 1);
             let worker_id = saved_worker_next_id;
 
-            let _opening = TestWorkingTeam::opening_by_id(self.opening_id);
+            assert!(
+                !<crate::OpeningById<Test, TestWorkingTeamInstance>>::contains_key(self.opening_id)
+            );
+
+            for application_id in self.successful_application_ids.iter() {
+                assert!(
+                    !<crate::ApplicationById<Test, TestWorkingTeamInstance>>::contains_key(
+                        application_id
+                    )
+                );
+            }
+            //let _opening = TestWorkingTeam::opening_by_id(self.opening_id);
 
             // let role_stake_profile = if opening
             //     .policy_commitment
@@ -319,6 +331,14 @@ impl FillOpeningFixture {
             let actual_worker = TestWorkingTeam::worker_by_id(worker_id);
 
             assert_eq!(actual_worker, expected_worker);
+
+            let expected_worker_count =
+                saved_worker_count + (self.successful_application_ids.len() as u32);
+
+            assert_eq!(
+                TestWorkingTeam::active_worker_count(),
+                expected_worker_count
+            );
         }
 
         saved_worker_next_id
