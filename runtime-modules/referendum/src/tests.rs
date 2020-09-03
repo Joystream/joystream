@@ -13,9 +13,8 @@ type MockUtils = InstanceMockUtils<Runtime, Instance0>;
 fn referendum_start() {
     MockUtils::origin_access(USER_ADMIN, |origin| {
         let options = 1;
-        let winning_target_count = 1;
 
-        Mocks::start_referendum_extrinsic(origin, options, winning_target_count, Ok(()));
+        Mocks::start_referendum_extrinsic(origin, options, Ok(()));
     });
 }
 
@@ -26,14 +25,8 @@ fn referendum_start_access_restricted() {
 
     build_test_externalities(config).execute_with(|| {
         let options = 1;
-        let winning_target_count = 1;
 
-        Mocks::start_referendum_extrinsic(
-            OriginType::None,
-            options,
-            winning_target_count,
-            Err(Error::BadOrigin),
-        );
+        Mocks::start_referendum_extrinsic(OriginType::None, options, Err(Error::BadOrigin));
     });
 }
 
@@ -45,18 +38,11 @@ fn referendum_start_forbidden_after_start() {
     build_test_externalities(config).execute_with(|| {
         let origin = OriginType::Signed(USER_ADMIN);
         let options = 1;
-        let winning_target_count = 1;
 
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
         Mocks::start_referendum_extrinsic(
             origin.clone(),
             options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
             Err(Error::ReferendumAlreadyRunning),
         );
     });
@@ -66,14 +52,13 @@ fn referendum_start_forbidden_after_start() {
 #[test]
 fn referendum_start_too_many_options() {
     let origin = OriginType::Signed(USER_ADMIN);
-    let winning_target_count = 1;
 
     let ok_options = <Runtime as Trait<Instance0>>::MaxReferendumOptions::get();
     let too_many_options: u64 = ok_options + 1;
 
     let config = default_genesis_config();
     build_test_externalities(config).execute_with(|| {
-        Mocks::start_referendum_extrinsic(origin.clone(), ok_options, winning_target_count, Ok(()));
+        Mocks::start_referendum_extrinsic(origin.clone(), ok_options, Ok(()));
     });
 
     let config = default_genesis_config();
@@ -81,7 +66,6 @@ fn referendum_start_too_many_options() {
         Mocks::start_referendum_extrinsic(
             origin.clone(),
             too_many_options,
-            winning_target_count,
             Err(Error::TooManyReferendumOptions),
         );
     });
@@ -97,14 +81,13 @@ fn voting() {
     build_test_externalities(config).execute_with(|| {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
-        let winning_target_count = 1;
 
         let options = 1;
         let option_to_vote_for = 0;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
         let (commitment, _) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
-        Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
+        Mocks::start_referendum_extrinsic(origin.clone(), options, Ok(()));
 
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
     });
@@ -118,7 +101,6 @@ fn voting_referendum_not_running() {
     build_test_externalities(config).execute_with(|| {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
-        let winning_target_count = 1;
 
         let options = 1;
         let option_to_vote_for = 0;
@@ -134,7 +116,7 @@ fn voting_referendum_not_running() {
             Err(Error::ReferendumNotRunning),
         );
 
-        Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
+        Mocks::start_referendum_extrinsic(origin.clone(), options, Ok(()));
 
         let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
         MockUtils::increase_block_number(voting_stage_duration + 1);
@@ -158,14 +140,13 @@ fn voting_stake_too_low() {
     build_test_externalities(config).execute_with(|| {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
-        let winning_target_count = 1;
 
         let options = 1;
         let option_to_vote_for = 0;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get() - 1;
         let (commitment, _) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
-        Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
+        Mocks::start_referendum_extrinsic(origin.clone(), options, Ok(()));
         Mocks::vote(
             origin.clone(),
             account_id,
@@ -184,7 +165,6 @@ fn voting_user_repeated_vote() {
     build_test_externalities(config).execute_with(|| {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
-        let winning_target_count = 1;
 
         let options = 1;
         let option_to_vote_for = 0;
@@ -192,7 +172,7 @@ fn voting_user_repeated_vote() {
         let different_stake = stake * 2;
         let (commitment, _) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
-        Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
+        Mocks::start_referendum_extrinsic(origin.clone(), options, Ok(()));
         Mocks::vote(
             origin.clone(),
             account_id,
@@ -218,9 +198,8 @@ fn voting_user_repeated_vote() {
 fn finish_voting() {
     MockUtils::origin_access(USER_ADMIN, |origin| {
         let options = 1;
-        let winning_target_count = 1;
 
-        Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
+        Mocks::start_referendum_extrinsic(origin.clone(), options, Ok(()));
 
         let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
 
@@ -242,18 +221,12 @@ fn reveal() {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
         let options = 3;
-        let winning_target_count = 1;
 
         let option_to_vote_for = 1;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
         let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
@@ -279,18 +252,12 @@ fn reveal_reveal_stage_not_running() {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
         let options = 3;
-        let winning_target_count = 1;
 
         let option_to_vote_for = 1;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
         let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
 
         Mocks::reveal_vote(
             origin.clone(),
@@ -305,7 +272,7 @@ fn reveal_reveal_stage_not_running() {
 
         Mocks::check_voting_finished(options);
         MockUtils::increase_block_number(reveal_stage_duration + 1);
-        Mocks::check_revealing_finished(ReferendumResult::NoVotesRevealed);
+        Mocks::check_revealing_finished(vec![0, 0, 0]);
 
         Mocks::reveal_vote(
             origin.clone(),
@@ -328,20 +295,14 @@ fn reveal_no_vote() {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
         let options = 3;
-        let winning_target_count = 1;
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
         Mocks::check_voting_finished(options);
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        Mocks::check_revealing_finished(ReferendumResult::NoVotesRevealed);
+        Mocks::check_revealing_finished(vec![0, 0, 0]);
     });
 }
 
@@ -356,7 +317,6 @@ fn reveal_salt_too_long() {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
         let options = 3;
-        let winning_target_count = 1;
 
         let mut salt = vec![];
         for _ in 0..(max_salt_length / 8 + 1) {
@@ -368,12 +328,7 @@ fn reveal_salt_too_long() {
         let (commitment, _) =
             MockUtils::calculate_commitment_custom_salt(&account_id, &option_to_vote_for, &salt);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
@@ -398,19 +353,13 @@ fn reveal_invalid_vote() {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
         let options = 3;
-        let winning_target_count = 1;
 
         let invalid_option = 1000;
         let option_to_vote_for = 1;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
         let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
@@ -435,19 +384,13 @@ fn reveal_invalid_commitment_proof() {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
         let options = 3;
-        let winning_target_count = 1;
 
         let option_to_vote_for = 0;
         let invalid_option = option_to_vote_for + 1;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
         let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
@@ -475,18 +418,12 @@ fn finish_revealing_period() {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
         let options = 3;
-        let winning_target_count = 1;
 
         let option_to_vote_for = 0;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
         let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
 
@@ -500,10 +437,7 @@ fn finish_revealing_period() {
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        Mocks::check_revealing_finished(ReferendumResult::Winners(vec![(
-            option_to_vote_for,
-            1 * stake,
-        )]));
+        Mocks::check_revealing_finished(vec![1 * stake, 0, 0]);
     });
 }
 
@@ -522,7 +456,6 @@ fn finish_revealing_period_vote_power() {
         let origin_voter1 = OriginType::Signed(account_id1);
         let origin_voter2 = OriginType::Signed(account_id2);
         let options = 3;
-        let winning_target_count = 1;
 
         let option_to_vote_for1 = 0;
         let option_to_vote_for2 = 1;
@@ -533,12 +466,7 @@ fn finish_revealing_period_vote_power() {
         let (commitment2, salt2) =
             MockUtils::calculate_commitment(&account_id2, &option_to_vote_for2);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
@@ -573,10 +501,7 @@ fn finish_revealing_period_vote_power() {
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
         // option 2 should win because prominent user has more powerfull vote with the same stake
-        Mocks::check_revealing_finished(ReferendumResult::Winners(vec![(
-            option_to_vote_for2,
-            1 * stake_smaller * POWER_VOTE_STRENGTH,
-        )]));
+        Mocks::check_revealing_finished(vec![stake_bigger, stake_smaller * POWER_VOTE_STRENGTH, 0]);
     });
 }
 
@@ -592,13 +517,12 @@ fn winners_no_vote_revealed() {
         let reveal_stage_duration = <Runtime as Trait<Instance0>>::RevealStageDuration::get();
         let origin = OriginType::Signed(USER_ADMIN);
         let options = 1;
-        let winning_target_count = 1;
 
-        Mocks::start_referendum_extrinsic(origin.clone(), options, winning_target_count, Ok(()));
+        Mocks::start_referendum_extrinsic(origin.clone(), options, Ok(()));
         MockUtils::increase_block_number(voting_stage_duration + 1);
         Mocks::check_voting_finished(options);
         MockUtils::increase_block_number(reveal_stage_duration + 1);
-        Mocks::check_revealing_finished(ReferendumResult::NoVotesRevealed);
+        Mocks::check_revealing_finished(vec![0]);
     });
 }
 
@@ -619,7 +543,6 @@ fn winners_multiple_winners() {
         let origin_voter2 = OriginType::Signed(account_id2);
         let origin_voter3 = OriginType::Signed(account_id3);
         let options = 3;
-        let winning_target_count = 2;
 
         let option_to_vote_for1 = 0;
         let option_to_vote_for2 = 1;
@@ -631,12 +554,7 @@ fn winners_multiple_winners() {
         let (commitment3, salt3) =
             MockUtils::calculate_commitment(&account_id3, &option_to_vote_for2);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
@@ -684,12 +602,7 @@ fn winners_multiple_winners() {
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        let expected_winners = vec![
-            (option_to_vote_for1, 2 * stake),
-            (option_to_vote_for2, 1 * stake),
-        ];
-
-        Mocks::check_revealing_finished(ReferendumResult::Winners(expected_winners));
+        Mocks::check_revealing_finished(vec![2 * stake, stake, 0]);
     });
 }
 
@@ -708,7 +621,6 @@ fn winners_multiple_winners_extra() {
         let origin_voter1 = OriginType::Signed(account_id1);
         let origin_voter2 = OriginType::Signed(account_id2);
         let options = 3;
-        let winning_target_count = 1;
 
         let option_to_vote_for1 = 0;
         let option_to_vote_for2 = 1;
@@ -718,12 +630,7 @@ fn winners_multiple_winners_extra() {
         let (commitment2, salt2) =
             MockUtils::calculate_commitment(&account_id2, &option_to_vote_for2);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
@@ -757,12 +664,7 @@ fn winners_multiple_winners_extra() {
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        let expected_winners = vec![
-            (option_to_vote_for1, 1 * stake),
-            (option_to_vote_for2, 1 * stake),
-        ];
-
-        Mocks::check_revealing_finished(ReferendumResult::ExtraWinners(expected_winners));
+        Mocks::check_revealing_finished(vec![stake, stake, 0]);
     });
 }
 
@@ -779,19 +681,13 @@ fn winners_multiple_not_enough() {
         let origin = OriginType::Signed(account_superuser);
         let origin_voter1 = OriginType::Signed(account_id1);
         let options = 3;
-        let winning_target_count = 2;
 
         let option_to_vote_for = 0;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
         let (commitment1, salt1) =
             MockUtils::calculate_commitment(&account_id1, &option_to_vote_for);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
         Mocks::vote(
             origin_voter1.clone(),
             account_id1,
@@ -811,9 +707,7 @@ fn winners_multiple_not_enough() {
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        let expected_winners = vec![(option_to_vote_for, 1 * stake)];
-
-        Mocks::check_revealing_finished(ReferendumResult::NotEnoughWinners(expected_winners));
+        Mocks::check_revealing_finished(vec![stake, 0, 0]);
     });
 }
 
@@ -830,18 +724,12 @@ fn referendum_release_stake() {
         let account_id = USER_ADMIN;
         let origin = OriginType::Signed(account_id);
         let options = 3;
-        let winning_target_count = 1;
 
         let option_to_vote_for = 0;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
         let (commitment, salt) = MockUtils::calculate_commitment(&account_id, &option_to_vote_for);
 
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
         Mocks::vote(
             origin.clone(),
             account_id,
@@ -861,22 +749,14 @@ fn referendum_release_stake() {
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        Mocks::check_revealing_finished(ReferendumResult::Winners(vec![(
-            option_to_vote_for,
-            1 * stake,
-        )]));
+        Mocks::check_revealing_finished(vec![stake, 0, 0]);
 
         Runtime::feature_stack_lock(false);
         Mocks::release_stake(origin.clone(), account_id, Err(Error::UnstakingForbidden));
         Runtime::feature_stack_lock(true);
 
         // since `account_id` voted for the winner, he can unlock stake only after inactive stage ends
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            winning_target_count,
-            Ok(()),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Ok(()));
 
         Mocks::release_stake(origin.clone(), account_id, Ok(()));
     });
@@ -891,8 +771,7 @@ fn referendum_manager_referendum_start() {
 
     build_test_externalities(config).execute_with(|| {
         let options = 1;
-        let winning_target_count = 1;
 
-        Mocks::start_referendum_manager(options, winning_target_count, Ok(()));
+        Mocks::start_referendum_manager(options, Ok(()));
     });
 }

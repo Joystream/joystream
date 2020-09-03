@@ -3,8 +3,7 @@
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
     Balance, CastVote, CurrentCycleId, Error, Instance, Module, RawEvent, ReferendumManager,
-    ReferendumStage, ReferendumStageRevealing,
-    ReferendumStageVoting, Stage, Trait, Votes,
+    ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage, Trait, Votes,
 };
 
 use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
@@ -100,9 +99,7 @@ impl Trait<Instance0> for Runtime {
         true
     }
 
-    fn process_results(
-        _all_options_results: &[Self::VotePower],
-    ) {
+    fn process_results(_all_options_results: &[Self::VotePower]) {
         // not used right now
     }
 }
@@ -359,19 +356,14 @@ impl InstanceMocks<Runtime, Instance0> {
             expected_result,
         );
 
-        Self::start_referendum_inner(
-            extra_options_count,
-            expected_result,
-        )
+        Self::start_referendum_inner(extra_options_count, expected_result)
     }
 
     pub fn start_referendum_manager(
         options_count: u64,
-        winning_target_count: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
-        let extra_winning_target_count = winning_target_count - 1;
-        let extra_options_count = options_count - extra_winning_target_count - 1;
+        let extra_options_count = options_count - 1;
 
         // check method returns expected result
         assert_eq!(
@@ -382,10 +374,7 @@ impl InstanceMocks<Runtime, Instance0> {
             expected_result,
         );
 
-        Self::start_referendum_inner(
-            extra_options_count,
-            expected_result,
-        )
+        Self::start_referendum_inner(extra_options_count, expected_result)
     }
 
     fn start_referendum_inner(

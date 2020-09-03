@@ -46,8 +46,8 @@ impl<BlockNumber, VotePower> Default for ReferendumStage<BlockNumber, VotePower>
 /// Representation for voting stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageVoting<BlockNumber> {
-    started: BlockNumber,            // block in which referendum started
-    extra_options_count: u64,        // number of options that exceeding the number of winners
+    started: BlockNumber,     // block in which referendum started
+    extra_options_count: u64, // number of options that exceeding the number of winners
 }
 
 /// Representation for revealing stage state.
@@ -92,10 +92,7 @@ type CanRevealResult<T, I> = (
 /// Trait enabling referendum start and vote commitment calculation.
 pub trait ReferendumManager<T: Trait<I>, I: Instance> {
     /// Start a new referendum.
-    fn start_referendum(
-        origin: T::Origin,
-        extra_options_count: u64,
-    ) -> Result<(), Error<T, I>>;
+    fn start_referendum(origin: T::Origin, extra_options_count: u64) -> Result<(), Error<T, I>>;
 
     /// Calculate commitment for a vote.
     fn calculate_commitment(
@@ -158,7 +155,7 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
 
     /// Gives runtime an ability to react on referendum result.
     fn process_results(
-        all_options_results: &[Self::VotePower],          // list of votes each option recieved
+        all_options_results: &[Self::VotePower], // list of votes each option recieved
     );
 }
 
@@ -378,8 +375,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     /// Conclude the referendum.
     fn end_reveal_period(stage_data: EzReferendumStageRevealing<T, I>) {
         // conclude referendum
-        let all_options_results =
-            Mutations::<T, I>::conclude_referendum(stage_data);
+        let all_options_results = Mutations::<T, I>::conclude_referendum(stage_data);
 
         // let runtime know about referendum results
         T::process_results(&all_options_results);
@@ -393,10 +389,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
 impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
     /// Start new referendum run.
-    fn start_referendum(
-        origin: T::Origin,
-        extra_options_count: u64,
-    ) -> Result<(), Error<T, I>> {
+    fn start_referendum(origin: T::Origin, extra_options_count: u64) -> Result<(), Error<T, I>> {
         let total_options = extra_options_count + 1;
 
         // ensure action can be started
@@ -468,9 +461,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     }
 
     /// Conclude referendum, count votes, and select the winners.
-    fn conclude_referendum(
-        revealing_stage: EzReferendumStageRevealing<T, I>,
-    ) -> Vec<T::VotePower> {
+    fn conclude_referendum(revealing_stage: EzReferendumStageRevealing<T, I>) -> Vec<T::VotePower> {
         // reset referendum state
         Self::reset_referendum();
 
