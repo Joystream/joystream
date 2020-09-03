@@ -282,13 +282,13 @@ pub fn testnet_genesis(
         election: Some(CouncilElectionConfig {
             auto_start: true,
             election_parameters: ElectionParameters {
-                announcing_period: 3 * DAYS,
+                announcing_period: 2 * DAYS,
                 voting_period: 1 * DAYS,
                 revealing_period: 1 * DAYS,
-                council_size: 12,
+                council_size: 6,
                 candidacy_limit: 25,
                 min_council_stake: 10 * DOLLARS,
-                new_term_duration: 14 * DAYS,
+                new_term_duration: 10 * DAYS,
                 min_voting_stake: 1 * DOLLARS,
             },
         }),
