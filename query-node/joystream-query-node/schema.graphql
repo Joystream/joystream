@@ -180,11 +180,59 @@ type ProposalDiscussionThreadPost @entity {
 "The text of the `text` proposal"
 type TextProposal implements Proposal @entity {
   text: String!
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 }
 
 "The wasm code for the `runtime upgrade` proposal"
 type RuntimeUpgradeProposal implements Proposal @entity {
   wasm: Bytes!
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 }
 
 "Election parameters for the `set election parameters` proposal"
@@ -197,6 +245,30 @@ type SetElectionParametersProposal implements Proposal @entity {
   newTermDuration: BigInt!
   minCouncilStake: BigInt!
   minVotingStake: BigInt!
+  
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 }
 
 type SpendingProposal implements Proposal @entity {
@@ -205,21 +277,117 @@ type SpendingProposal implements Proposal @entity {
 
   "Destination account for the `spending` proposal"
   accountId: String!
+  
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 }
 
 "New leader memberId and account_id for the `set lead` proposal (Option<(MemberId, AccountId)>)"
 type SetLeadProposal implements Proposal @entity {
   member: Member
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 }
 
 "Balance for the `set content working group mint capacity` proposal"
 type SetContentWorkingGroupMintCapacityProposal implements Proposal @entity {
   mintedBalance: BigInt!
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 }
 
 "Validator count for the `set validator count` proposal"
 type SetValidatorCountProposal implements Proposal @entity {
   validatorCount: Int!
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 }
 
 
@@ -231,23 +399,119 @@ enum WorkingGroup {
 type BeginReviewWorkingGroupLeaderApplicationsProposal implements Proposal @entity {
   openingId: BigInt!
   workingGroup: WorkingGroup
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 }
 
 "Set working group mint capacity"
 type SetWorkingGroupMintCapacityProposal implements Proposal @entity {
   mintedBalance: BigInt!
   workingGroup: WorkingGroup
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 }
 
 type DecreaseWorkingGroupLeaderStakeProposal implements Proposal @entity {
   workerId: BigInt!
   workingGroup: WorkingGroup
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 }
 
 " Slash the working group leader stake."
 type SlashWorkingGroupLeaderStakeProposal implements Proposal @entity {
   workerId: BigInt!
   workingGroup: WorkingGroup
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 }
 
 "Set working group leader reward balance."
@@ -255,6 +519,30 @@ type SetWorkingGroupLeaderRewardProposal implements Proposal @entity {
   workerId: BigInt!
   mintedBalance: BigInt!
   workingGroup: WorkingGroup
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 }
 
 "Fire the working group leader with possible slashing"
@@ -268,6 +556,30 @@ type TerminateWorkingGroupLeaderRoleProposal implements Proposal @entity {
   slash: Bool!
 
   workingGroup: WorkingGroup!
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 
 }
 
@@ -293,6 +605,30 @@ type FillWorkingGroupLeaderOpeningProposal implements Proposal @entity {
   "Optional payout interval"
   payoutInterval: BigInt
 
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
+
 }
 
 enum StakingAmountLimitMode {
@@ -308,6 +644,31 @@ AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, CurrencyBalance>)
 struct proposal_types/mod/AddOpeningParameters
 """
 type AddWorkingGroupLeaderOpeningProposal implements Proposal @entity {
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
+
   "Activate opening at block"
   activateAt: BigInt!
 
@@ -323,8 +684,8 @@ type AddWorkingGroupLeaderOpeningProposal implements Proposal @entity {
   "Maximum length of review period of applications."
   maxReviewPeriodLength: BigInt
   
-  "Staking policy for role itself."
-  roleStakingPolicy: Option<hiring::StakingPolicy<Balance, BlockNumber>>
+  # "Staking policy for role itself."
+  # roleStakingPolicy: Option<hiring::StakingPolicy<Balance, BlockNumber>>
 
   "Slashing terms during role, NOT application itself!"
   roleSlashingTerms: SlashingTerms
