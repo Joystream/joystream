@@ -5484,7 +5484,7 @@ babel-plugin-dynamic-import-node@^2.3.3:
   dependencies:
     object.assign "^4.1.0"
 
-babel-plugin-emotion@^10.0.20, babel-plugin-emotion@^10.0.27:
+babel-plugin-emotion@^10.0.20, babel-plugin-emotion@^10.0.27, babel-plugin-emotion@^10.0.33:
   version "10.0.33"
   resolved "https://registry.yarnpkg.com/babel-plugin-emotion/-/babel-plugin-emotion-10.0.33.tgz#ce1155dcd1783bbb9286051efee53f4e2be63e03"
   integrity sha512-bxZbTTGz0AJQDHm8k6Rf3RQJ8tX2scsfsRyKVgAbiUPUNIRtlK+7JxP+TAd1kRLABFxe0CFm2VdK4ePkoA9FxQ==
@@ -7631,10 +7631,15 @@ cssstyle@^2.0.0, cssstyle@^2.2.0:
   dependencies:
     cssom "~0.3.6"
 
-csstype@^2.2.0, csstype@^2.5.7, csstype@^2.6.10, csstype@^2.6.7:
+csstype@^2.2.0, csstype@^2.5.7, csstype@^2.6.7:
   version "2.6.11"
   resolved "https://registry.yarnpkg.com/csstype/-/csstype-2.6.11.tgz#452f4d024149ecf260a852b025e36562a253ffc5"
   integrity sha512-l8YyEC9NBkSm783PFTvh0FmJy7s5pFKrDp49ZL7zBGX3fWkO+N4EEyan1qqp8cwPLDcD0OSdyY6hAMoxp34JFw==
+
+csstype@^3.0.0-beta.4:
+  version "3.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.0.0-beta.4.tgz#f03dab508a9b47c8d582e653b7d43bb8c42002d4"
+  integrity sha512-g6BwpYNogM3LqFlfC4263ZM9Ag8LqGabfMEHD6Jn0kk/RDIbOaEp1iAwLwsQ2VOVrIcli3OHALWIfRbc3T3i/Q==
 
 currently-unhandled@^0.4.1:
   version "0.4.1"

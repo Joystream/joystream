@@ -1,5 +1,5 @@
 import React from 'react'
-import { Gallery, TagButton } from '@/shared/components'
+import { Gallery, ToggleButton } from '@/shared/components'
 
 const tags = [
   'finance',
@@ -28,7 +28,7 @@ type TagsProps = {
 const TagsGallery: React.FC<Partial<TagsProps>> = ({ title, action }) => (
   <Gallery title={title} action={action}>
     {tags.map((tag) => (
-      <TagButton key={tag}>{tag}</TagButton>
+      <ToggleButton key={tag}>{tag}</ToggleButton>
     ))}
   </Gallery>
 )

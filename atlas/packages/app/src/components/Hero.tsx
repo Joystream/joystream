@@ -39,7 +39,7 @@ const Hero: React.FC<Partial<HeroProps>> = ({ backgroundImg }) => {
           Play
         </Button>
         <Button
-          type="secondary"
+          variant="secondary"
           containerCss={css`
             width: 96px;
           `}

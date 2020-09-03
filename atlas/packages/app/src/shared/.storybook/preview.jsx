@@ -8,6 +8,10 @@ import { GlobalStyle } from '../components'
 
 const wrapperStyle = css`
   padding: 10px;
+
+  & > * + * {
+    margin-left: 15px;
+  }
 `
 
 const stylesWrapperDecorator = (styleFn) => (

@@ -10,14 +10,23 @@ type ChannelPreviewProps = {
   views: number
   avatarURL?: string
   className?: string
+  animated?: boolean
 }
 
-const ChannelPreview: React.FC<ChannelPreviewProps> = ({ name, avatarURL, views, className }) => {
+const ChannelPreview: React.FC<ChannelPreviewProps> = ({ name, avatarURL, views, className, animated = false }) => {
   const avatarNode = <StyledAvatar img={avatarURL} />
   const nameNode = <NameHeader>{name}</NameHeader>
   const metaNode = <MetaSpan>{formatNumberShort(views)} views</MetaSpan>
 
-  return <ChannelPreviewBase className={className} avatarNode={avatarNode} nameNode={nameNode} metaNode={metaNode} />
+  return (
+    <ChannelPreviewBase
+      className={className}
+      avatarNode={avatarNode}
+      nameNode={nameNode}
+      metaNode={metaNode}
+      animated={animated}
+    />
+  )
 }
 
 const NameHeader = styled.h2`

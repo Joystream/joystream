@@ -49,7 +49,7 @@ const VideoView: React.FC<RouteComponentProps> = () => {
         <TitleActionsContainer>
           <Title>{title}</Title>
           <ActionsContainer>
-            <Button type="secondary">Share</Button>
+            <Button variant="secondary">Share</Button>
           </ActionsContainer>
         </TitleActionsContainer>
         <Meta>

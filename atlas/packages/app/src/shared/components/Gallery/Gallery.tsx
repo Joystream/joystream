@@ -18,7 +18,7 @@ const Gallery: React.FC<GalleryProps> = ({ title, action = '', containerCss, onC
       <div css={styles.headingContainer}>
         {title && <h4>{title}</h4>}
         {action && (
-          <Button type="tertiary" onClick={onClick}>
+          <Button variant="tertiary" onClick={onClick}>
             {action}
           </Button>
         )}
