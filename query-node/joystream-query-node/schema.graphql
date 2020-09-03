@@ -47,10 +47,10 @@ type CouncilMember @entity {
 }
 
 enum VoteKind {
-    APPROVE
-    REJECT
-    SLASH
-    ABSTAIN
+  APPROVE
+  REJECT
+  SLASH
+  ABSTAIN
 }
 
 type VoteOnProposal @entity {
@@ -93,6 +93,27 @@ enum ProposalState {
   EXECUTED
 }
 
+type Active @variant {
+  votes: Int!
+}
+
+type Finalized @variant {
+  finalizedAtBlock: BigInt
+
+  "Amount which was staked"
+  stakeBalance: BigInt!
+
+  abstentionVotes: BigInt!
+
+  approvalVotes: BigInt!
+
+  rejectionVotes: BigInt!
+
+  slashVotes: BigInt!
+}
+
+union ProposalStatus = Active | Finalized
+
 interface Proposal @entity {
 
   "Id of a newly created proposal"
@@ -114,24 +135,11 @@ interface Proposal @entity {
 
   discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
 
-  # *********** GET BACK LATER HERE ****************
-  # This really can only be set when `status` is in one of the finalized states
-  # but lack of proper algebraic types in graphql does not allow us to make representation fully
-  # safe.
-  finalizedAtBlock: BigInt
-  
-  status: ProposalState
+  "Current status of the proposal"
+  status: ProposalStatus!
 
-  "Amount which was staked"
-  stakeBalance: BigInt!
+  state: ProposalState!
 
-  abstentionVotes: BigInt!
-
-  approvalVotes: BigInt!
-
-  rejectionVotes: BigInt!
-
-  slashVotes: BigInt!
 }
 
 "Will be handled by ThreadCreated, ..."
