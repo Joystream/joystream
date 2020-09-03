@@ -76,8 +76,8 @@ decl_event!(
     where
        <T as Trait<I>>::OpeningId,
        <T as Trait<I>>::ApplicationId,
-       ApplicationIdToWorkerIdMap = BTreeMap<<T as Trait<I>>::ApplicationId, TeamWorkerId<T>>
-
+       ApplicationIdToWorkerIdMap = BTreeMap<<T as Trait<I>>::ApplicationId, TeamWorkerId<T>>,
+       TeamWorkerId = TeamWorkerId<T>
     {
         /// Emits on adding new job opening.
         /// Params:
@@ -95,6 +95,11 @@ decl_event!(
         /// - Worker opening id
         /// - Worker application id to the worker id dictionary
         OpeningFilled(OpeningId, ApplicationIdToWorkerIdMap),
+
+        /// Emits on setting the team leader.
+        /// Params:
+        /// - Team worker id.
+        LeaderSet(TeamWorkerId),
     }
 );
 
@@ -131,6 +136,9 @@ decl_storage! {
         /// Maps identifier to corresponding worker.
         pub WorkerById get(fn worker_by_id) : map hasher(blake2_128_concat)
             TeamWorkerId<T> => TeamWorker<T>;
+
+        /// Current team lead.
+        pub CurrentLead get(fn current_lead) : Option<TeamWorkerId<T>>;
     }
     add_extra_genesis {
         config(opening_description_constraint): InputValidationLengthConstraint;
@@ -299,18 +307,18 @@ decl_module! {
 
             checks::ensure_origin_for_opening_type::<T, I>(origin, opening.opening_type)?;
 
+            // Ensure we're not exceeding the maximum worker number.
             let potential_worker_number =
                 Self::active_worker_count() + (successful_application_ids.len() as u32);
-
             ensure!(
                 potential_worker_number <= T::MaxWorkerNumberLimit::get(),
                 Error::<T, I>::MaxActiveWorkerNumberExceeded
             );
 
             // Cannot hire a lead when another leader exists.
-            // if matches!(opening.opening_type, OpeningType::Leader) {
-            //     ensure!(!<CurrentLead<T,I>>::exists(), Error::<T, I>::CannotHireLeaderWhenLeaderExists);
-            // }
+            if matches!(opening.opening_type, JobOpeningType::Leader) {
+                ensure!(!<CurrentLead<T,I>>::exists(), Error::<T, I>::CannotHireLeaderWhenLeaderExists);
+            }
 
             // Ensure a mint exists if lead is providing a reward for positions being filled
             // let create_reward_settings = if let Some(policy) = reward_policy {
@@ -396,7 +404,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Processes successful application during the fill_opening().
     fn fulfill_successful_applications(
-        _opening: &JobOpening<T::BlockNumber, T::ApplicationId>,
+        opening: &JobOpening<T::BlockNumber, T::ApplicationId>,
         //        reward_settings: Option<RewardSettings<T>>,
         successful_applications_info: Vec<ApplicationInfo<T, I>>,
     ) -> BTreeMap<T::ApplicationId, TeamWorkerId<T>> {
@@ -471,12 +479,21 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
                 application_id_to_worker_id.insert(*application_id, new_worker_id);
 
-                // // Sets a leader on successful opening when opening is for leader.
-                // if matches!(opening.opening_type, OpeningType::Leader) {
-                //     Self::set_lead(new_worker_id);
-                // }
+                // Sets a leader on successful opening when opening is for leader.
+                if matches!(opening.opening_type, JobOpeningType::Leader) {
+                    Self::set_lead(new_worker_id);
+                }
             });
 
         application_id_to_worker_id
+    }
+
+    // Set worker id as a leader id.
+    pub(crate) fn set_lead(worker_id: TeamWorkerId<T>) {
+        // Update current lead
+        <CurrentLead<T, I>>::put(worker_id);
+
+        // Trigger an event
+        Self::deposit_event(RawEvent::LeaderSet(worker_id));
     }
 }

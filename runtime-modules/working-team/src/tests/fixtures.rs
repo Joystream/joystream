@@ -4,13 +4,14 @@ use sp_runtime::traits::Hash;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use system::{EventRecord, Phase, RawOrigin};
 
+use super::hiring_workflow::HiringWorkflow;
 use super::mock::{Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance};
 use crate::{JobApplication, JobOpening, JobOpeningType, RawEvent, TeamWorker};
 
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(
-        expected_raw_event: RawEvent<u64, u64, BTreeMap<u64, u64>, TestWorkingTeamInstance>,
+        expected_raw_event: RawEvent<u64, u64, BTreeMap<u64, u64>, u64, TestWorkingTeamInstance>,
     ) {
         let converted_event = TestEvent::working_team_TestWorkingTeamInstance(expected_raw_event);
 
@@ -28,7 +29,7 @@ impl EventFixture {
     }
 }
 
-pub struct AddJobOpeningFixture {
+pub struct AddOpeningFixture {
     origin: RawOrigin<u64>,
     //    activate_at: hiring::ActivateOpeningAt<u64>,
     //    commitment: OpeningPolicyCommitment<u64, u64>,
@@ -37,7 +38,7 @@ pub struct AddJobOpeningFixture {
     starting_block: u64,
 }
 
-impl Default for AddJobOpeningFixture {
+impl Default for AddOpeningFixture {
     fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(1),
@@ -50,7 +51,7 @@ impl Default for AddJobOpeningFixture {
     }
 }
 
-impl AddJobOpeningFixture {
+impl AddOpeningFixture {
     // pub fn with_policy_commitment(
     //     self,
     //     policy_commitment: OpeningPolicyCommitment<u64, u64>,
@@ -342,5 +343,43 @@ impl FillOpeningFixture {
         }
 
         saved_worker_next_id
+    }
+}
+
+pub struct HireLeadFixture {
+    setup_environment: bool,
+    // stake: Option<u64>,
+    // reward_policy: Option<RewardPolicy<u64, u64>>,
+}
+
+impl Default for HireLeadFixture {
+    fn default() -> Self {
+        Self {
+            setup_environment: true,
+            // stake: None,
+            // reward_policy: None,
+        }
+    }
+}
+impl HireLeadFixture {
+    // pub fn with_stake(self, stake: u64) -> Self {
+    //     Self {
+    //         stake: Some(stake),
+    //         ..self
+    //     }
+    // }
+    // pub fn with_reward_policy(self, reward_policy: RewardPolicy<u64, u64>) -> Self {
+    //     Self {
+    //         reward_policy: Some(reward_policy),
+    //         ..self
+    //     }
+    // }
+
+    pub fn hire_lead(self) -> u64 {
+        HiringWorkflow::default()
+            .with_opening_type(JobOpeningType::Leader)
+            .add_application(b"leader".to_vec())
+            .execute()
+            .unwrap()
     }
 }

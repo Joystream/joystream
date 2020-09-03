@@ -1,10 +1,10 @@
-use crate::{Instance, JobOpening, JobOpeningType, Trait};
+use crate::{Instance, JobOpening, JobOpeningType, TeamWorkerId, Trait};
 
 use super::Error;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::{ensure, StorageMap, StorageValue};
 use sp_std::collections::btree_set::BTreeSet;
-use system::ensure_root;
+use system::{ensure_root, ensure_signed};
 
 use crate::types::ApplicationInfo;
 
@@ -29,8 +29,7 @@ pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
     match opening_type {
         JobOpeningType::Regular => {
             // Ensure lead is set and is origin signer.
-            //Self::ensure_origin_is_active_leader(origin)
-            Ok(())
+            ensure_origin_is_active_leader::<T, I>(origin)
         }
         JobOpeningType::Leader => {
             // Council proposal.
@@ -124,4 +123,38 @@ pub(crate) fn ensure_succesful_applications_exist<T: Trait<I>, I: Instance>(
     let result_applications_info = application_info_iterator.collect::<Vec<_>>();
 
     Ok(result_applications_info)
+}
+
+// Check leader: ensures that team leader was hired.
+fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<TeamWorkerId<T>, Error<T, I>> {
+    let leader_worker_id = <crate::CurrentLead<T, I>>::get();
+
+    if let Some(leader_worker_id) = leader_worker_id {
+        Ok(leader_worker_id)
+    } else {
+        Err(Error::<T, I>::CurrentLeadNotSet)
+    }
+}
+
+// Check leader: verifies that provided lead account id belongs to the current working group leader.
+fn ensure_is_lead_account<T: Trait<I>, I: Instance>(
+    lead_account_id: T::AccountId,
+) -> DispatchResult {
+    let leader_worker_id = ensure_lead_is_set::<T, I>()?;
+
+    let leader = <crate::WorkerById<T, I>>::get(leader_worker_id);
+
+    if leader.role_account_id != lead_account_id {
+        return Err(Error::<T, I>::IsNotLeadAccount.into());
+    }
+
+    Ok(())
+}
+
+// Check leader: ensures origin is signed by the leader.
+fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(origin: T::Origin) -> DispatchResult {
+    // Ensure is signed
+    let signer = ensure_signed(origin)?;
+
+    ensure_is_lead_account::<T, I>(signer)
 }

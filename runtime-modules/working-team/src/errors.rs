@@ -41,5 +41,14 @@ decl_error! {
 
         /// Successful worker application does not exist.
         SuccessfulWorkerApplicationDoesNotExist,
+
+        /// There is leader already, cannot hire another one.
+        CannotHireLeaderWhenLeaderExists,
+
+        /// Not a lead account.
+        IsNotLeadAccount,
+
+        /// Current lead is not set.
+        CurrentLeadNotSet,
     }
 }
