@@ -67,11 +67,15 @@ fn parse_forum_json(data_file: &Path) -> EncodedForumData {
     serde_json::from_str(&data).expect("failed parsing members data")
 }
 
+/// Generates a `ForumConfig` geneis config pre-populated with
+/// categories, threads and posts parsed
+/// from a json file serialized as `EncodedForumData`
 pub fn from_json(forum_sudo: AccountId, data_file: &Path) -> ForumConfig {
     let forum_data = parse_forum_json(data_file);
     create(forum_sudo, forum_data)
 }
 
+/// Generates a basic empty `ForumConfig` geneis config
 pub fn empty(forum_sudo: AccountId) -> ForumConfig {
     let forum_data = EncodedForumData {
         categories: vec![],
