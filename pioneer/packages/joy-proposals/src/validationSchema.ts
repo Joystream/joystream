@@ -53,7 +53,7 @@ const MIN_VOTING_STAKE_MAX = 100000;
 
 // Spending
 const TOKENS_MIN = 0;
-const TOKENS_MAX = 2000000;
+const TOKENS_MAX = 5000000;
 
 // Set Validator Count
 const MAX_VALIDATOR_COUNT_MIN = 4;
