@@ -36,8 +36,6 @@ class App extends React.PureComponent<Props> {
               <Route path={`${basePath}/categories/:id/page/:page`} component={LegacyPagingRedirect} />
               <Route path={`${basePath}/threads/:id/page/:page`} component={LegacyPagingRedirect} />
 
-              {/* <Route path={`${basePath}/sudo`} component={EditForumSudo} /> */}
-
               <Route path={`${basePath}/categories/:id/newSubcategory`} component={NewSubcategory} />
               <Route path={`${basePath}/categories/:id/newThread`} component={NewThread} />
               <Route path={`${basePath}/categories/:id/edit`} component={EditCategory} />
