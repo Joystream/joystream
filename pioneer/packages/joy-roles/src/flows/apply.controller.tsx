@@ -48,8 +48,8 @@ type State = {
 
 const newEmptyState = (): State => {
   return {
-    applicationStake: createType('u128', 0),
-    roleStake: createType('u128', 0),
+    applicationStake: createType('Balance', 0),
+    roleStake: createType('Balance', 0),
     appDetails: {},
     hasError: false,
     transactionDetails: new Map<string, string>(),

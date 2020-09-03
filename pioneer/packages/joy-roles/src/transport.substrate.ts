@@ -458,9 +458,9 @@ export class Transport extends BaseTransport implements ITransport {
         maxNumberOfApplications: opening.max_applicants,
         requiredApplicationStake: stakes.application,
         requiredRoleStake: stakes.role,
-        defactoMinimumStake: this.api.createType('u128', 0)
+        defactoMinimumStake: this.api.createType('Balance', 0)
       },
-      defactoMinimumStake: this.api.createType('u128', 0)
+      defactoMinimumStake: this.api.createType('Balance', 0)
     });
   }
 
@@ -642,13 +642,13 @@ export class Transport extends BaseTransport implements ITransport {
       workers
         .filter(([id, worker]) => worker.role_account_id.eq(roleKeyId) && worker.is_active)
         .map(async ([id, worker]) => {
-          let stakeValue: Balance = this.api.createType('u128', 0);
+          let stakeValue: Balance = this.api.createType('Balance', 0);
 
           if (worker.role_stake_profile && worker.role_stake_profile.isSome) {
             stakeValue = await this.workerStake(worker.role_stake_profile.unwrap());
           }
 
-          let earnedValue: Balance = this.api.createType('u128', 0);
+          let earnedValue: Balance = this.api.createType('Balance', 0);
 
           if (worker.reward_relationship && worker.reward_relationship.isSome) {
             earnedValue = await this.workerTotalReward(worker.reward_relationship.unwrap());

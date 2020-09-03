@@ -42,7 +42,7 @@ export class Transport extends MockTransportBase implements ITransport {
             'https://www.benholdencrowther.com/wp-content/uploads/2019/03/Hanging_Gardens_of_Babylon.jpg'
           ),
           title: 'Content curator',
-          stake: createType('u128', 10101),
+          stake: createType('Balance', 10101),
           workerId: 1,
           group: WorkingGroups.ContentCurators
         },
@@ -51,7 +51,7 @@ export class Transport extends MockTransportBase implements ITransport {
           roleAccount: createType('AccountId', '5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew'),
           profile: mockProfile('bwhm0'),
           title: 'Content curator',
-          stake: createType('u128', 10101),
+          stake: createType('Balance', 10101),
           workerId: 2,
           group: WorkingGroups.ContentCurators
         },
@@ -63,7 +63,7 @@ export class Transport extends MockTransportBase implements ITransport {
             'https://yhp.io/img/paul.svg'
           ),
           title: 'Content curator',
-          stake: createType('u128', 10101),
+          stake: createType('Balance', 10101),
           workerId: 3,
           group: WorkingGroups.ContentCurators
         },
@@ -75,7 +75,7 @@ export class Transport extends MockTransportBase implements ITransport {
             'https://avatars2.githubusercontent.com/u/153928?s=200&v=4'
           ),
           title: 'Content curator',
-          stake: createType('u128', 10101),
+          stake: createType('Balance', 10101),
           workerId: 4,
           group: WorkingGroups.ContentCurators
         },
@@ -87,7 +87,7 @@ export class Transport extends MockTransportBase implements ITransport {
             'https://avatars2.githubusercontent.com/u/1621012?s=460&v=4'
           ),
           title: 'Content curator',
-          stake: createType('u128', 10101),
+          stake: createType('Balance', 10101),
           workerId: 5,
           group: WorkingGroups.ContentCurators
         }
@@ -109,7 +109,7 @@ export class Transport extends MockTransportBase implements ITransport {
             'https://www.benholdencrowther.com/wp-content/uploads/2019/03/Hanging_Gardens_of_Babylon.jpg'
           ),
           title: 'Storage provider',
-          stake: createType('u128', 10101),
+          stake: createType('Balance', 10101),
           workerId: 1,
           group: WorkingGroups.StorageProviders
         }
@@ -178,14 +178,14 @@ export class Transport extends MockTransportBase implements ITransport {
             numberOfApplications: 0,
             maxNumberOfApplications: 0,
             requiredApplicationStake: new ApplicationStakeRequirement(
-              createType('u128', 500)
+              createType('Balance', 500)
             ),
             requiredRoleStake: new RoleStakeRequirement(
-              createType('u128', 0)
+              createType('Balance', 0)
             ),
-            defactoMinimumStake: createType('u128', 0)
+            defactoMinimumStake: createType('Balance', 0)
           },
-          defactoMinimumStake: createType('u128', 0)
+          defactoMinimumStake: createType('Balance', 0)
         }
       ]
     );
@@ -256,15 +256,15 @@ export class Transport extends MockTransportBase implements ITransport {
           numberOfApplications: 0,
           maxNumberOfApplications: 0,
           requiredApplicationStake: new ApplicationStakeRequirement(
-            createType('u128', 501),
+            createType('Balance', 501),
             StakeType.AtLeast
           ),
           requiredRoleStake: new RoleStakeRequirement(
-            createType('u128', 502)
+            createType('Balance', 502)
           ),
-          defactoMinimumStake: createType('u128', 0)
+          defactoMinimumStake: createType('Balance', 0)
         },
-        defactoMinimumStake: createType('u128', 0)
+        defactoMinimumStake: createType('Balance', 0)
       }
     );
   }
@@ -273,7 +273,7 @@ export class Transport extends MockTransportBase implements ITransport {
     const slots: Balance[] = [];
 
     for (let i = 0; i < 20; i++) {
-      slots.push(createType('u128', (i * 100) + 10 + i + 1));
+      slots.push(createType('Balance', (i * 100) + 10 + i + 1));
     }
 
     return this.simulateApiResponse<Balance[]>(slots);
@@ -298,17 +298,17 @@ export class Transport extends MockTransportBase implements ITransport {
           {
             shortName: 'KP1',
             accountId: createType('AccountId', '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
-            balance: createType('u128', 23342)
+            balance: createType('Balance', 23342)
           },
           {
             shortName: 'KP2',
             accountId: createType('AccountId', '5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
-            balance: createType('u128', 993342)
+            balance: createType('Balance', 993342)
           },
           {
             shortName: 'KP3',
             accountId: createType('AccountId', '5DBaczGTDhcHgwsZzNE5qW15GrQxxdyros4pYkcKrSUovFQ9'),
-            balance: createType('u128', 242)
+            balance: createType('Balance', 242)
           }
         ]
       );
@@ -374,8 +374,8 @@ export class Transport extends MockTransportBase implements ITransport {
           }
         })
       }),
-      applicationStake: createType('u128', 5),
-      roleStake: createType('u128', 15),
+      applicationStake: createType('Balance', 5),
+      roleStake: createType('Balance', 15),
       rank: 21,
       capacity: 20
     }];
@@ -389,8 +389,8 @@ export class Transport extends MockTransportBase implements ITransport {
         name: workerRoleNameByGroup[WorkingGroups.ContentCurators],
         group: WorkingGroups.ContentCurators,
         url: 'some URL',
-        reward: createType('u128', 321),
-        stake: createType('u128', 12343200)
+        reward: createType('Balance', 321),
+        stake: createType('Balance', 12343200)
       }
     ];
   }
