@@ -258,15 +258,115 @@ type SetWorkingGroupLeaderRewardProposal implements Proposal @entity {
 }
 
 "Fire the working group leader with possible slashing"
-# TerminateWorkingGroupLeaderRole(TerminateRoleParameters<WorkerId>),
+type TerminateWorkingGroupLeaderRoleProposal implements Proposal @entity {
+  "Leader worker id to fire"
+  workerId: BigInt!
 
-"Fill opening for the working group leader position"
-# FillWorkingGroupLeaderOpening(
-#     FillOpeningParameters<BlockNumber, MintedBalance, OpeningId, ApplicationId>,
-# )
+  "Terminate role rationale"
+  rationale: [Int!]
 
-"Add opening for the working group leader position"
-# AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, CurrencyBalance>)
+  slash: Bool!
+
+  workingGroup: WorkingGroup!
+
+}
+
+"""
+Fill opening for the working group leader position
+# FillOpeningParameters<BlockNumber, MintedBalance, OpeningId, ApplicationId>
+"""
+type FillWorkingGroupLeaderOpeningProposal implements Proposal @entity {
+  "Finalizing opening id"
+  openingId: BigInt!
+
+  "Id of the selected application"
+  applicationId: BigInt!
+
+  workingGroup: WorkingGroup
+
+  "Balance per payout"
+  amountPerPayout: BigInt
+
+  "Next payment time (in blocks)"
+  nextPaymentAtBlock: BigInt!
+
+  "Optional payout interval"
+  payoutInterval: BigInt
+
+}
+
+enum StakingAmountLimitMode {
+  "Stake should be equal or greater than provided value"
+  ATLEAST
+  "Stake should be equal to provided value"
+  EXACT
+}
+
+"""
+Add opening for the working group leader position
+AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, CurrencyBalance>)
+struct proposal_types/mod/AddOpeningParameters
+"""
+type AddWorkingGroupLeaderOpeningProposal implements Proposal @entity {
+  "Activate opening at block"
+  activateAt: BigInt!
+
+  "Opening description"
+  humanReadableText: String!
+  
+  "Defines working group with the open position"
+  workingGroup: WorkingGroup!
+
+  "The maximum number of applications that can be on the list at any time. Option<hiring::ApplicationRationingPolicy>"
+  maxActiveApplicants: Int
+  
+  "Maximum length of review period of applications."
+  maxReviewPeriodLength: BigInt
+  
+  "Staking policy for role itself."
+  roleStakingPolicy: Option<hiring::StakingPolicy<Balance, BlockNumber>>
+
+  "Slashing terms during role, NOT application itself!"
+  roleSlashingTerms: SlashingTerms
+
+  "When filling an opening: unstaking period for application stake of successful applicants."
+  fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BigInt
+
+  "When filling an opening: unstaking period for the application stake of failed applicants."
+  fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BigInt
+
+  "When filling an opening: unstaking period for the role stake of failed applicants."
+  fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BigInt
+
+  "When terminating a worker: unstaking period for application stake."
+  terminateApplicationStakeUnstakingPeriod: BigInt
+
+  "When terminating a worke/leadr: unstaking period for role stake."
+  terminateRoleStakeUnstakingPeriod: BigInt
+
+  "When a worker/lead exists: unstaking period for application stake."
+  exitRoleApplicationStakeUnstakingPeriod: BigInt
+
+  "When a worker/lead exists: unstaking period for role stake."
+  exitRoleRtakeUnstakingPeriod: BigInt
+
+  # ------- StakingPolicy ------
+
+  "Staking amount"
+  amount: BigInt
+
+  "How to interpret the amount requirement"
+  amountMode: StakingAmountLimitMo
+
+  """
+  The unstaking period length, if any, deactivation causes that are autonomous,
+  that is they are triggered internally to this module.
+  """
+  crowdedOutUnstakingPeriodLength: BigInt
+
+  "The review period length"
+  reviewPeriodExpiredUnstakingPeriodLength: BigInt
+}
 
 
 
