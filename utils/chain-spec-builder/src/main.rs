@@ -23,10 +23,11 @@ use ansi_term::Style;
 use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
 use structopt::StructOpt;
 
-use joystream_node::{
-    chain_spec::{self, chain_spec_properties, AccountId},
-    proposals_config,
+use joystream_node::chain_spec::{
+    self, chain_spec_properties, content_config, forum_config, initial_members, proposals_config,
+    AccountId,
 };
+
 use sc_chain_spec::ChainType;
 use sc_keystore::Store as Keystore;
 use sc_telemetry::TelemetryEndpoints;
@@ -58,6 +59,15 @@ enum ChainSpecBuilder {
         /// The path where the chain spec should be saved.
         #[structopt(long, short, default_value = "./chain_spec.json")]
         chain_spec_path: PathBuf,
+        /// The path to an initial members data
+        #[structopt(long, short)]
+        initial_members_path: Option<PathBuf>,
+        /// The path to an initial forum data
+        #[structopt(long, short)]
+        initial_forum_path: Option<PathBuf>,
+        /// The path to an initial content directory data file
+        #[structopt(long, short)]
+        initial_content_path: Option<PathBuf>,
     },
     /// Create a new chain spec with the given number of authorities and endowed
     /// accounts. Random keys will be generated as required.
@@ -78,6 +88,15 @@ enum ChainSpecBuilder {
         /// `auth-0`, `auth-1`, etc.
         #[structopt(long, short)]
         keystore_path: Option<PathBuf>,
+        /// The path to an initial members data
+        #[structopt(long, short)]
+        initial_members_path: Option<PathBuf>,
+        /// The path to an initial forum data
+        #[structopt(long, short)]
+        initial_forum_path: Option<PathBuf>,
+        /// The path to an initial content directory data file
+        #[structopt(long, short)]
+        initial_content_path: Option<PathBuf>,
     },
 }
 
@@ -93,12 +112,55 @@ impl ChainSpecBuilder {
             } => chain_spec_path.as_path(),
         }
     }
+
+    /// Returns the path to load initial members from
+    fn initial_members_path(&self) -> &Option<PathBuf> {
+        match self {
+            ChainSpecBuilder::New {
+                initial_members_path,
+                ..
+            } => initial_members_path,
+            ChainSpecBuilder::Generate {
+                initial_members_path,
+                ..
+            } => initial_members_path,
+        }
+    }
+
+    /// Returns the path to load initial forum from
+    fn initial_forum_path(&self) -> &Option<PathBuf> {
+        match self {
+            ChainSpecBuilder::New {
+                initial_forum_path, ..
+            } => initial_forum_path,
+            ChainSpecBuilder::Generate {
+                initial_forum_path, ..
+            } => initial_forum_path,
+        }
+    }
+
+    /// Returns the path to load initial platform content from
+    fn initial_content_path(&self) -> &Option<PathBuf> {
+        match self {
+            ChainSpecBuilder::New {
+                initial_content_path,
+                ..
+            } => initial_content_path,
+            ChainSpecBuilder::Generate {
+                initial_content_path,
+                ..
+            } => initial_content_path,
+        }
+    }
 }
 
 fn genesis_constructor(
     authority_seeds: &[String],
     endowed_accounts: &[AccountId],
     sudo_account: &AccountId,
+    initial_members_path: &Option<PathBuf>,
+    initial_forum_path: &Option<PathBuf>,
+    initial_content_path: &Option<PathBuf>,
 ) -> chain_spec::GenesisConfig {
     let authorities = authority_seeds
         .iter()
@@ -106,11 +168,52 @@ fn genesis_constructor(
         .map(chain_spec::get_authority_keys_from_seed)
         .collect::<Vec<_>>();
 
+    let members = if let Some(path) = initial_members_path {
+        initial_members::from_json(path.as_path())
+    } else {
+        initial_members::none()
+    };
+
+    let forum_cfg = if let Some(path) = initial_forum_path {
+        forum_config::from_json(sudo_account.clone(), path.as_path())
+    } else {
+        forum_config::empty(sudo_account.clone())
+    };
+
+    let (
+        versioned_store_cfg,
+        versioned_store_permissions_cfg,
+        data_directory_config,
+        content_working_group_config,
+    ) = if let Some(path) = initial_content_path {
+        let path = path.as_path();
+
+        (
+            content_config::versioned_store_config_from_json(path),
+            content_config::versioned_store_permissions_config_from_json(path),
+            content_config::data_directory_config_from_json(path),
+            content_config::content_working_group_config_from_json(path),
+        )
+    } else {
+        (
+            content_config::empty_versioned_store_config(),
+            content_config::empty_versioned_store_permissions_config(),
+            content_config::empty_data_directory_config(),
+            content_config::empty_content_working_group_config(),
+        )
+    };
+
     chain_spec::testnet_genesis(
         authorities,
         sudo_account.clone(),
         endowed_accounts.to_vec(),
         proposals_config::default(),
+        members,
+        forum_cfg,
+        versioned_store_cfg,
+        versioned_store_permissions_cfg,
+        data_directory_config,
+        content_working_group_config,
     )
 }
 
@@ -118,6 +221,9 @@ fn generate_chain_spec(
     authority_seeds: Vec<String>,
     endowed_accounts: Vec<String>,
     sudo_account: String,
+    initial_members_path: Option<PathBuf>,
+    initial_forum_path: Option<PathBuf>,
+    initial_content_path: Option<PathBuf>,
 ) -> Result<String, String> {
     let parse_account = |address: &String| {
         AccountId::from_string(address)
@@ -142,7 +248,16 @@ fn generate_chain_spec(
         "Joystream Testnet",
         "joy_testnet",
         ChainType::Development,
-        move || genesis_constructor(&authority_seeds, &endowed_accounts, &sudo_account),
+        move || {
+            genesis_constructor(
+                &authority_seeds,
+                &endowed_accounts,
+                &sudo_account,
+                &initial_members_path,
+                &initial_forum_path,
+                &initial_content_path,
+            )
+        },
         vec![],
         Some(telemetry_endpoints),
         Some(&*"/joy/testnet/0"),
@@ -212,6 +327,9 @@ fn main() -> Result<(), String> {
 
     let builder = ChainSpecBuilder::from_args();
     let chain_spec_path = builder.chain_spec_path().to_path_buf();
+    let initial_members_path = builder.initial_members_path().clone();
+    let initial_forum_path = builder.initial_forum_path().clone();
+    let initial_content_path = builder.initial_content_path().clone();
 
     let (authority_seeds, endowed_accounts, sudo_account) = match builder {
         ChainSpecBuilder::Generate {
@@ -240,8 +358,9 @@ fn main() -> Result<(), String> {
                 })
                 .collect();
 
-            let sudo_account =
-                chain_spec::get_account_id_from_seed::<sr25519::Public>(&sudo_seed).to_ss58check();
+            let sudo_account_id =
+                chain_spec::get_account_id_from_seed::<sr25519::Public>(&sudo_seed);
+            let sudo_account = sudo_account_id.to_ss58check();
 
             (authority_seeds, endowed_accounts, sudo_account)
         }
@@ -253,7 +372,14 @@ fn main() -> Result<(), String> {
         } => (authority_seeds, endowed_accounts, sudo_account),
     };
 
-    let json = generate_chain_spec(authority_seeds, endowed_accounts, sudo_account)?;
+    let json = generate_chain_spec(
+        authority_seeds,
+        endowed_accounts,
+        sudo_account,
+        initial_members_path,
+        initial_forum_path,
+        initial_content_path,
+    )?;
 
     fs::write(chain_spec_path, json).map_err(|err| err.to_string())
 }
