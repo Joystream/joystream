@@ -2,11 +2,14 @@ use crate::*;
 use core::ops::{Deref, DerefMut};
 
 /// Wrapper for existing `InputPropertyValue` and its respective `Class` `Property`
-pub struct InputValueForExistingProperty<'a, T: Trait>(&'a Property<T>, &'a InputPropertyValue<T>);
+pub struct InputValueForExistingProperty<'a, T: Trait>(
+    &'a Property<T>,
+    &'a InputPropertyValue<T::EntityId>,
+);
 
 impl<'a, T: Trait> InputValueForExistingProperty<'a, T> {
     /// Create single instance of `InputValueForExistingProperty` from provided `property` and `value`
-    fn new(property: &'a Property<T>, value: &'a InputPropertyValue<T>) -> Self {
+    fn new(property: &'a Property<T>, value: &'a InputPropertyValue<T::EntityId>) -> Self {
         Self(property, value)
     }
 
@@ -16,12 +19,12 @@ impl<'a, T: Trait> InputValueForExistingProperty<'a, T> {
     }
 
     /// Retrieve `InputPropertyValue` reference
-    pub fn get_value(&self) -> &InputPropertyValue<T> {
+    pub fn get_value(&self) -> &InputPropertyValue<T::EntityId> {
         self.1
     }
 
     /// Retrieve `Property` and `InputPropertyValue` references
-    pub fn unzip(&self) -> (&Property<T>, &InputPropertyValue<T>) {
+    pub fn unzip(&self) -> (&Property<T>, &InputPropertyValue<T::EntityId>) {
         (self.0, self.1)
     }
 }
@@ -56,7 +59,7 @@ impl<'a, T: Trait> InputValuesForExistingProperties<'a, T> {
     /// Throws an error, when `Class` `Property` under `property_id`, corresponding to provided `property_value` not found
     pub fn from(
         properties: &'a [Property<T>],
-        property_values: &'a BTreeMap<PropertyId, InputPropertyValue<T>>,
+        property_values: &'a BTreeMap<PropertyId, InputPropertyValue<T::EntityId>>,
     ) -> Result<Self, Error<T>> {
         let mut values_for_existing_properties = InputValuesForExistingProperties::<T>::default();
         for (&property_id, property_value) in property_values {
@@ -75,12 +78,15 @@ impl<'a, T: Trait> InputValuesForExistingProperties<'a, T> {
 /// Wrapper for existing `StoredPropertyValue` and its respective `Class` `Property`
 pub struct StoredValueForExistingProperty<'a, T: Trait>(
     &'a Property<T>,
-    &'a StoredPropertyValue<T>,
+    &'a StoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,
 );
 
 impl<'a, T: Trait> StoredValueForExistingProperty<'a, T> {
     /// Create single instance of `StoredValueForExistingProperty` from provided `property` and `value`
-    pub fn new(property: &'a Property<T>, value: &'a StoredPropertyValue<T>) -> Self {
+    pub fn new(
+        property: &'a Property<T>,
+        value: &'a StoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,
+    ) -> Self {
         Self(property, value)
     }
 
@@ -90,12 +96,17 @@ impl<'a, T: Trait> StoredValueForExistingProperty<'a, T> {
     }
 
     /// Retrieve `StoredPropertyValue` reference
-    pub fn get_value(&self) -> &StoredPropertyValue<T> {
+    pub fn get_value(&self) -> &StoredPropertyValue<T::Nonce, T::Hash, T::EntityId> {
         self.1
     }
 
     /// Retrieve `Property` and `StoredPropertyValue` references
-    pub fn unzip(&self) -> (&Property<T>, &StoredPropertyValue<T>) {
+    pub fn unzip(
+        &self,
+    ) -> (
+        &Property<T>,
+        &StoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,
+    ) {
         (self.0, self.1)
     }
 
@@ -135,7 +146,10 @@ impl<'a, T: Trait> StoredValuesForExistingProperties<'a, T> {
     /// Create `StoredValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
     pub fn from(
         properties: &'a [Property<T>],
-        property_values: &'a BTreeMap<PropertyId, StoredPropertyValue<T>>,
+        property_values: &'a BTreeMap<
+            PropertyId,
+            StoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,
+        >,
     ) -> Result<Self, Error<T>> {
         let mut values_for_existing_properties = StoredValuesForExistingProperties::<T>::default();
 

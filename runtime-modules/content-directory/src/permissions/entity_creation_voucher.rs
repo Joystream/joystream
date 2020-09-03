@@ -2,45 +2,45 @@ use super::*;
 
 /// A voucher for `Entity` creation
 #[derive(Encode, Decode, Clone, Copy, Debug, PartialEq, Eq)]
-pub struct EntityCreationVoucher<T: Trait> {
+pub struct EntityCreationVoucher<EntityId: BaseArithmetic> {
     /// How many are allowed in total
-    pub maximum_entities_count: T::EntityId,
+    pub maximum_entities_count: EntityId,
 
     /// How many have currently been created
-    pub entities_created: T::EntityId,
+    pub entities_created: EntityId,
 }
 
-impl<T: Trait> Default for EntityCreationVoucher<T> {
+impl<EntityId: BaseArithmetic> Default for EntityCreationVoucher<EntityId> {
     fn default() -> Self {
         Self {
-            maximum_entities_count: T::EntityId::zero(),
-            entities_created: T::EntityId::zero(),
+            maximum_entities_count: EntityId::zero(),
+            entities_created: EntityId::zero(),
         }
     }
 }
 
-impl<T: Trait> EntityCreationVoucher<T> {
+impl<EntityId: BaseArithmetic> EntityCreationVoucher<EntityId> {
     /// Create a new instance of `EntityCreationVoucher` with specified limit
-    pub fn new(maximum_entities_count: T::EntityId) -> Self {
+    pub fn new(maximum_entities_count: EntityId) -> Self {
         Self {
             maximum_entities_count,
-            entities_created: T::EntityId::zero(),
+            entities_created: EntityId::zero(),
         }
     }
 
     /// Set new `maximum_entities_count` limit
-    pub fn set_maximum_entities_count(&mut self, maximum_entities_count: T::EntityId) {
+    pub fn set_maximum_entities_count(&mut self, maximum_entities_count: EntityId) {
         self.maximum_entities_count = maximum_entities_count
     }
 
     /// Increase `entities_created` by 1
     pub fn increment_created_entities_count(&mut self) {
-        self.entities_created += T::EntityId::one();
+        self.entities_created += EntityId::one();
     }
 
     /// Decrease `entities_created` by 1
     pub fn decrement_created_entities_count(&mut self) {
-        self.entities_created -= T::EntityId::one();
+        self.entities_created -= EntityId::one();
     }
 
     /// Check if `entities_created` is less than `maximum_entities_count` limit set to this `EntityCreationVoucher`
@@ -49,7 +49,7 @@ impl<T: Trait> EntityCreationVoucher<T> {
     }
 
     /// Ensure voucher limit not reached
-    pub fn ensure_voucher_limit_not_reached(&self) -> Result<(), Error<T>> {
+    pub fn ensure_voucher_limit_not_reached<T: Trait>(&self) -> Result<(), Error<T>> {
         ensure!(self.limit_not_reached(), Error::<T>::VoucherLimitReached);
         Ok(())
     }

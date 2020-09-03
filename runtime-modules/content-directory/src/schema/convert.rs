@@ -1,23 +1,25 @@
 use super::*;
 use sp_runtime::traits::Hash;
 
-impl<T: Trait> From<InputPropertyValue<T>> for StoredPropertyValue<T> {
-    fn from(input_property_value: InputPropertyValue<T>) -> Self {
+impl<Nonce, Hash, EntityId> From<InputPropertyValue<EntityId>>
+    for StoredPropertyValue<Nonce, Hash, EntityId>
+{
+    fn from(input_property_value: InputPropertyValue<EntityId>) -> Self {
         match input_property_value {
             InputPropertyValue::Single(input_value) => {
                 StoredPropertyValue::Single(input_value.into())
             }
             InputPropertyValue::Vector(vector_input_value) => {
                 let vec_output_property_value =
-                    VecStoredPropertyValue::new(vector_input_value.into(), T::Nonce::default());
+                    VecStoredPropertyValue::new(vector_input_value.into(), Nonce::default());
                 StoredPropertyValue::Vector(vec_output_property_value)
             }
         }
     }
 }
 
-impl<T: Trait> From<InputValue<T>> for StoredValue<T> {
-    fn from(input_value: InputValue<T>) -> Self {
+impl<Hash, EntityId> From<InputValue<EntityId>> for StoredValue<Hash, EntityId> {
+    fn from(input_value: InputValue<EntityId>) -> Self {
         match input_value {
             InputValue::Bool(value) => StoredValue::Bool(value),
             InputValue::Uint16(value) => StoredValue::Uint16(value),
@@ -29,7 +31,7 @@ impl<T: Trait> From<InputValue<T>> for StoredValue<T> {
             InputValue::Text(value) => StoredValue::Text(value),
 
             InputValue::TextToHash(value) => {
-                let hash_value = value.using_encoded(<T as system::Trait>::Hashing::hash);
+                let hash_value = value.using_encoded(system::Trait::Hashing::hash);
                 StoredValue::Hash(hash_value)
             }
             InputValue::Reference(value) => StoredValue::Reference(value),
@@ -37,8 +39,8 @@ impl<T: Trait> From<InputValue<T>> for StoredValue<T> {
     }
 }
 
-impl<T: Trait> From<VecInputValue<T>> for VecStoredValue<T> {
-    fn from(vec_input_value: VecInputValue<T>) -> Self {
+impl<Hash, EntityId> From<VecInputValue<EntityId>> for VecStoredValue<Hash, EntityId> {
+    fn from(vec_input_value: VecInputValue<EntityId>) -> Self {
         match vec_input_value {
             VecInputValue::Bool(vec_value) => VecStoredValue::Bool(vec_value),
             VecInputValue::Uint16(vec_value) => VecStoredValue::Uint16(vec_value),
@@ -52,7 +54,7 @@ impl<T: Trait> From<VecInputValue<T>> for VecStoredValue<T> {
             VecInputValue::TextToHash(vec_value) => {
                 let hash_vec_value: Vec<_> = vec_value
                     .into_iter()
-                    .map(|value| value.using_encoded(<T as system::Trait>::Hashing::hash))
+                    .map(|value| value.using_encoded(system::Trait::Hashing::hash))
                     .collect();
                 VecStoredValue::Hash(hash_vec_value)
             }

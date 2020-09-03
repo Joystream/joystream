@@ -992,7 +992,7 @@ impl<T: Trait> PropertyType<T> {
     }
 }
 
-impl<T: Trait> InputPropertyValue<T> {
+impl<T: Trait> InputPropertyValue<T::EntityId> {
     pub fn vec_reference(entity_ids: Vec<EntityId>) -> InputPropertyValue<Runtime> {
         let vec_value = VecInputValue::<Runtime>::Reference(entity_ids);
         InputPropertyValue::<Runtime>::Vector(vec_value)

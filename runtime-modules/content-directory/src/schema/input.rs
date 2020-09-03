@@ -3,13 +3,13 @@ use super::*;
 /// Enum, representing either `SingleInputPropertyValue` or `VecInputPropertyValue`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum InputPropertyValue<T: Trait> {
-    Single(InputValue<T>),
-    Vector(VecInputValue<T>),
+pub enum InputPropertyValue<EntityId> {
+    Single(InputValue<EntityId>),
+    Vector(VecInputValue<EntityId>),
 }
 
-impl<T: Trait> InputPropertyValue<T> {
-    pub fn as_single_value(&self) -> Option<&InputValue<T>> {
+impl<EntityId> InputPropertyValue<EntityId> {
+    pub fn as_single_value(&self) -> Option<&InputValue<EntityId>> {
         if let InputPropertyValue::Single(single_value) = self {
             Some(single_value)
         } else {
@@ -17,7 +17,7 @@ impl<T: Trait> InputPropertyValue<T> {
         }
     }
 
-    pub fn as_vec_value(&self) -> Option<&VecInputValue<T>> {
+    pub fn as_vec_value(&self) -> Option<&VecInputValue<EntityId>> {
         if let InputPropertyValue::Vector(vec_value) = self {
             Some(vec_value)
         } else {
@@ -25,7 +25,7 @@ impl<T: Trait> InputPropertyValue<T> {
         }
     }
 
-    pub fn as_vec_value_mut(&mut self) -> Option<&mut VecInputValue<T>> {
+    pub fn as_vec_value_mut(&mut self) -> Option<&mut VecInputValue<EntityId>> {
         if let InputPropertyValue::Vector(vec_value) = self {
             Some(vec_value)
         } else {
@@ -34,7 +34,7 @@ impl<T: Trait> InputPropertyValue<T> {
     }
 
     /// Retrieve all involved `entity_id`'s, if current `InputPropertyValue` is reference
-    pub fn get_involved_entities(&self) -> Option<Vec<T::EntityId>> {
+    pub fn get_involved_entities(&self) -> Option<Vec<EntityId>> {
         match self {
             InputPropertyValue::Single(single_property_value) => {
                 if let Some(entity_id) = single_property_value.get_involved_entity() {
@@ -50,7 +50,7 @@ impl<T: Trait> InputPropertyValue<T> {
     }
 }
 
-impl<T: Trait> Default for InputPropertyValue<T> {
+impl<EntityId> Default for InputPropertyValue<EntityId> {
     fn default() -> Self {
         InputPropertyValue::Single(InputValue::default())
     }
@@ -59,7 +59,7 @@ impl<T: Trait> Default for InputPropertyValue<T> {
 /// InputValue enum representation, related to corresponding `SingleInputPropertyValue` structure
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum InputValue<T: Trait> {
+pub enum InputValue<EntityId> {
     Bool(bool),
     Uint16(u16),
     Uint32(u32),
@@ -70,18 +70,18 @@ pub enum InputValue<T: Trait> {
     Text(Vec<u8>),
     // Used to pass text value, which respective hash should be stored
     TextToHash(Vec<u8>),
-    Reference(T::EntityId),
+    Reference(EntityId),
 }
 
-impl<T: Trait> Default for InputValue<T> {
-    fn default() -> InputValue<T> {
+impl<EntityId> Default for InputValue<EntityId> {
+    fn default() -> InputValue<EntityId> {
         Self::Bool(false)
     }
 }
 
-impl<T: Trait> InputValue<T> {
+impl<EntityId> InputValue<EntityId> {
     /// Retrieve involved `entity_id`, if current `InputValue` is reference
-    pub fn get_involved_entity(&self) -> Option<T::EntityId> {
+    pub fn get_involved_entity(&self) -> Option<EntityId> {
         if let InputValue::Reference(entity_id) = self {
             Some(*entity_id)
         } else {
@@ -93,7 +93,7 @@ impl<T: Trait> InputValue<T> {
 /// Vector value enum representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum VecInputValue<T: Trait> {
+pub enum VecInputValue<EntityId> {
     Bool(Vec<bool>),
     Uint16(Vec<u16>),
     Uint32(Vec<u32>),
@@ -104,18 +104,18 @@ pub enum VecInputValue<T: Trait> {
     // Used to pass text vec value, which respective hashes should be stored
     TextToHash(Vec<Vec<u8>>),
     Text(Vec<Vec<u8>>),
-    Reference(Vec<T::EntityId>),
+    Reference(Vec<EntityId>),
 }
 
-impl<T: Trait> Default for VecInputValue<T> {
+impl<EntityId> Default for VecInputValue<EntityId> {
     fn default() -> Self {
         Self::Bool(vec![])
     }
 }
 
-impl<T: Trait> VecInputValue<T> {
+impl<EntityId> VecInputValue<EntityId> {
     /// Retrieve all involved `entity_id`'s, if current `VecInputValue` is reference
-    pub fn get_involved_entities(&self) -> Option<Vec<T::EntityId>> {
+    pub fn get_involved_entities(&self) -> Option<Vec<EntityId>> {
         if let Self::Reference(entity_ids) = self {
             Some(entity_ids.to_owned())
         } else {
