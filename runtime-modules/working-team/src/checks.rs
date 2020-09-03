@@ -6,6 +6,8 @@ use frame_support::{ensure, StorageMap, StorageValue};
 use sp_std::collections::btree_set::BTreeSet;
 use system::ensure_root;
 
+use crate::types::ApplicationInfo;
+
 // Check opening: verifies opening description length.
 pub(crate) fn ensure_opening_description_is_valid<T: Trait<I>, I: Instance>(
     text: &[u8],
@@ -80,4 +82,18 @@ pub(crate) fn ensure_member_has_no_active_application_on_opening<T: Trait<I>, I:
     }
     // Member does not have any active applications to the opening
     Ok(())
+}
+
+// Check application: returns applicationId and application tuple if exists.
+pub(crate) fn ensure_application_exists<T: Trait<I>, I: Instance>(
+    application_id: &T::ApplicationId,
+) -> Result<ApplicationInfo<T, I>, Error<T, I>> {
+    ensure!(
+        <crate::ApplicationById::<T, I>>::contains_key(application_id),
+        Error::<T, I>::WorkerApplicationDoesNotExist
+    );
+
+    let application = <crate::ApplicationById<T, I>>::get(application_id);
+
+    Ok((*application_id, application))
 }

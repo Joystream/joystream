@@ -4,9 +4,12 @@ mod mock;
 use system::RawOrigin;
 
 use crate::{Error, JobOpeningType, RawEvent};
-use fixtures::{setup_members, AddJobOpeningFixture, ApplyOnOpeningFixture, EventFixture};
+use fixtures::{
+    setup_members, AddJobOpeningFixture, ApplyOnOpeningFixture, EventFixture, FillOpeningFixture,
+};
 use frame_support::dispatch::DispatchError;
 use mock::{build_test_externalities, run_to_block, Test, TestWorkingTeamInstance};
+use sp_std::collections::btree_map::BTreeMap;
 
 #[test]
 fn add_opening_succeeded() {
@@ -177,5 +180,34 @@ fn apply_on_opening_fails_for_already_applied_members() {
         apply_on_opening_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingTeamInstance>::MemberHasActiveApplicationOnOpening.into(),
         ));
+    });
+}
+
+#[test]
+fn fill_opening_succeeded() {
+    build_test_externalities().execute_with(|| {
+        setup_members(2);
+
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let add_opening_fixture =
+            AddJobOpeningFixture::default().with_starting_block(starting_block);
+
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id);
+
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
+
+        let fill_opening_fixture =
+            FillOpeningFixture::default_for_ids(opening_id, vec![application_id]);
+
+        let worker_id = fill_opening_fixture.call_and_assert(Ok(()));
+
+        let mut result_map = BTreeMap::new();
+        result_map.insert(application_id, worker_id);
+
+        EventFixture::assert_last_crate_event(RawEvent::OpeningFilled(opening_id, result_map));
     });
 }

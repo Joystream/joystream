@@ -29,5 +29,11 @@ decl_error! {
 
         /// Member already has an active application on the opening.
         MemberHasActiveApplicationOnOpening,
+
+        /// Cannot fill opening with multiple applications.
+        CannotHireMultipleLeaders,
+
+        /// Worker application does not exist.
+        WorkerApplicationDoesNotExist,
     }
 }

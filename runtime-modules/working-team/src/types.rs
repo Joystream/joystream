@@ -6,6 +6,23 @@ use sp_std::collections::btree_set::BTreeSet;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
+/// Team job application type alias.
+pub type JobApplication<T, I> =
+    Application<<T as system::Trait>::AccountId, <T as crate::Trait<I>>::OpeningId, MemberId<T>>;
+
+/// Member identifier in membership::member module.
+pub type MemberId<T> = <T as membership::Trait>::MemberId;
+
+/// Type identifier for a worker role, which must be same as membership actor identifier.
+pub type TeamWorkerId<T> = <T as membership::Trait>::ActorId;
+
+// ApplicationId - JobApplication - helper tuple.
+pub(crate) type ApplicationInfo<T, I> =
+    (<T as crate::Trait<I>>::ApplicationId, JobApplication<T, I>);
+
+/// Team worker type alias.
+pub type TeamWorker<T> = Worker<<T as system::Trait>::AccountId, MemberId<T>>;
+
 /// Job opening for the normal or leader position.
 /// An opening represents the process of hiring one or more new actors into some available role.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -49,7 +66,7 @@ impl Default for JobOpeningType {
 /// An application for the regular worker/lead role opening.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct JobApplication<AccountId, OpeningId, MemberId> {
+pub struct Application<AccountId, OpeningId, MemberId> {
     /// Account used to authenticate in this role.
     pub role_account_id: AccountId,
 
@@ -64,7 +81,7 @@ pub struct JobApplication<AccountId, OpeningId, MemberId> {
 }
 
 impl<AccountId: Clone, OpeningId: Clone, MemberId: Clone>
-    JobApplication<AccountId, OpeningId, MemberId>
+    Application<AccountId, OpeningId, MemberId>
 {
     /// Creates a new job application using parameters.
     pub fn new(
@@ -73,11 +90,38 @@ impl<AccountId: Clone, OpeningId: Clone, MemberId: Clone>
         member_id: &MemberId,
         description_hash: Vec<u8>,
     ) -> Self {
-        JobApplication {
+        Application {
             role_account_id: role_account_id.clone(),
             opening_id: opening_id.clone(),
             member_id: member_id.clone(),
             description_hash,
+        }
+    }
+}
+
+/// Working team participant: regular worker or lead.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
+pub struct Worker<AccountId, MemberId> {
+    /// Member id related to the worker/lead.
+    pub member_id: MemberId,
+
+    /// Account used to authenticate in this role.
+    pub role_account_id: AccountId,
+    //
+    //     /// Whether the role has recurring reward, and if so an identifier for this.
+    //     pub reward_relationship: Option<RewardRelationshipId>,
+    //
+    //     /// When set, describes role stake of the worker/lead.
+    //     pub role_stake_profile: Option<RoleStakeProfile<StakeId, BlockNumber>>,
+}
+
+impl<AccountId: Clone, MemberId: Clone> Worker<AccountId, MemberId> {
+    /// Creates a new _TeamWorker_ using parameters.
+    pub fn new(member_id: &MemberId, role_account_id: &AccountId) -> Self {
+        Worker {
+            member_id: member_id.clone(),
+            role_account_id: role_account_id.clone(),
         }
     }
 }
