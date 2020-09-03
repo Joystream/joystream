@@ -177,6 +177,10 @@ type ProposalDiscussionThreadPost @entity {
   editionNumber: BigInt
 }
 
+
+############ Proposal Types ############
+
+
 "The text of the `text` proposal"
 type TextProposal implements Proposal @entity {
   text: String!
@@ -271,13 +275,14 @@ type SetElectionParametersProposal implements Proposal @entity {
   state: ProposalState!
 }
 
+"Spending proposal"
 type SpendingProposal implements Proposal @entity {
-  "Balance"
-  mintedBalance: BigInt!
+  "Balance for the 'spending' proposal"
+  balance: BigInt!
 
   "Destination account for the `spending` proposal"
-  accountId: String!
-  
+  destinationAccount: String!
+
   "Id of a newly created proposal"
   proposalId: BigInt!
 
@@ -303,8 +308,9 @@ type SpendingProposal implements Proposal @entity {
   state: ProposalState!
 }
 
-"New leader memberId and account_id for the `set lead` proposal (Option<(MemberId, AccountId)>)"
+"'Set lead' proposal type"
 type SetLeadProposal implements Proposal @entity {
+  "New lead"
   member: Member
 
   "Id of a newly created proposal"
@@ -332,9 +338,10 @@ type SetLeadProposal implements Proposal @entity {
   state: ProposalState!
 }
 
-"Balance for the `set content working group mint capacity` proposal"
+"'Set content working group mint capacity' proposal type"
 type SetContentWorkingGroupMintCapacityProposal implements Proposal @entity {
-  mintedBalance: BigInt!
+  "Mint capacity"
+  mintBalance: BigInt!
 
   "Id of a newly created proposal"
   proposalId: BigInt!
@@ -361,9 +368,9 @@ type SetContentWorkingGroupMintCapacityProposal implements Proposal @entity {
   state: ProposalState!
 }
 
-"Validator count for the `set validator count` proposal"
+"`Set validator count` proposal type"
 type SetValidatorCountProposal implements Proposal @entity {
-  validatorCount: Int!
+  newValidatorCount: Int!
 
   "Id of a newly created proposal"
   proposalId: BigInt!
@@ -391,14 +398,17 @@ type SetValidatorCountProposal implements Proposal @entity {
 }
 
 
+"Defines well-known working groups"
 enum WorkingGroup {
   STORAGE
+  # FORUM  # Not available yet!
 }
 
-"Begin review applications for the working group leader position"
+"'Begin review working group leader applications' proposal type"
 type BeginReviewWorkingGroupLeaderApplicationsProposal implements Proposal @entity {
   openingId: BigInt!
-  workingGroup: WorkingGroup
+
+  workingGroup: WorkingGroup!
 
   "Id of a newly created proposal"
   proposalId: BigInt!
@@ -425,10 +435,11 @@ type BeginReviewWorkingGroupLeaderApplicationsProposal implements Proposal @enti
   state: ProposalState!
 }
 
-"Set working group mint capacity"
+"'Set working group mint capacity' proposal type"
 type SetWorkingGroupMintCapacityProposal implements Proposal @entity {
-  mintedBalance: BigInt!
-  workingGroup: WorkingGroup
+  mintBalance: BigInt!
+
+  workingGroup: WorkingGroup!
 
   "Id of a newly created proposal"
   proposalId: BigInt!
@@ -455,9 +466,13 @@ type SetWorkingGroupMintCapacityProposal implements Proposal @entity {
   state: ProposalState!
 }
 
+"'Decrease working group leader stake' proposal type"
 type DecreaseWorkingGroupLeaderStakeProposal implements Proposal @entity {
   workerId: BigInt!
-  workingGroup: WorkingGroup
+
+  decreasingStake: BigInt!
+
+  workingGroup: WorkingGroup!
 
   "Id of a newly created proposal"
   proposalId: BigInt!
@@ -484,10 +499,13 @@ type DecreaseWorkingGroupLeaderStakeProposal implements Proposal @entity {
   state: ProposalState!
 }
 
-" Slash the working group leader stake."
+"'Slash working group leader stake' proposal type"
 type SlashWorkingGroupLeaderStakeProposal implements Proposal @entity {
   workerId: BigInt!
-  workingGroup: WorkingGroup
+
+  slashingStake: BigInt!
+
+  workingGroup: WorkingGroup!
 
   "Id of a newly created proposal"
   proposalId: BigInt!
@@ -514,11 +532,13 @@ type SlashWorkingGroupLeaderStakeProposal implements Proposal @entity {
   state: ProposalState!
 }
 
-"Set working group leader reward balance."
+"'Set working group leader reward' proposal type"
 type SetWorkingGroupLeaderRewardProposal implements Proposal @entity {
   workerId: BigInt!
-  mintedBalance: BigInt!
-  workingGroup: WorkingGroup
+
+  rewardAmount: BigInt!
+
+  workingGroup: WorkingGroup!
 
   "Id of a newly created proposal"
   proposalId: BigInt!
@@ -545,16 +565,18 @@ type SetWorkingGroupLeaderRewardProposal implements Proposal @entity {
   state: ProposalState!
 }
 
-"Fire the working group leader with possible slashing"
+"'Terminate working group leader rolw' proposal type"
 type TerminateWorkingGroupLeaderRoleProposal implements Proposal @entity {
   "Leader worker id to fire"
   workerId: BigInt!
 
   "Terminate role rationale"
-  rationale: [Int!]
+  rationale: Bytes!
 
+  "Slash the leader stake on terminating"
   slash: Bool!
 
+  "Defines working group with the open position"
   workingGroup: WorkingGroup!
 
   "Id of a newly created proposal"
@@ -583,18 +605,17 @@ type TerminateWorkingGroupLeaderRoleProposal implements Proposal @entity {
 
 }
 
-"""
-Fill opening for the working group leader position
-# FillOpeningParameters<BlockNumber, MintedBalance, OpeningId, ApplicationId>
-"""
+"'Fill working group leader opening' proposal type"
 type FillWorkingGroupLeaderOpeningProposal implements Proposal @entity {
   "Finalizing opening id"
   openingId: BigInt!
 
   "Id of the selected application"
-  applicationId: BigInt!
+  successfullApplicationId: BigInt!
 
-  workingGroup: WorkingGroup
+  workingGroup: WorkingGroup!
+
+  #### Begin - RewardPolicy ####
 
   "Balance per payout"
   amountPerPayout: BigInt
@@ -604,6 +625,8 @@ type FillWorkingGroupLeaderOpeningProposal implements Proposal @entity {
 
   "Optional payout interval"
   payoutInterval: BigInt
+
+  #### End - RewardPolicy ####
 
   "Id of a newly created proposal"
   proposalId: BigInt!
@@ -638,36 +661,14 @@ enum StakingAmountLimitMode {
   EXACT
 }
 
-"""
-Add opening for the working group leader position
-AddWorkingGroupLeaderOpening(AddOpeningParameters<BlockNumber, CurrencyBalance>)
-struct proposal_types/mod/AddOpeningParameters
-"""
+"Terms for what slashing can be applied in some context"
+enum SlashingTerms {
+  UNSLASHABLE
+  SLASHABLE
+}
+
+"'Add working group leader opening' proposal type"
 type AddWorkingGroupLeaderOpeningProposal implements Proposal @entity {
-
-  "Id of a newly created proposal"
-  proposalId: BigInt!
-
-  type: ProposalType!
-
-  "Identifier of member proposing"
-  proposer: Member!
-
-  "Proposal description"
-  title: String @fulltext(query: 'title')
-
-  "Proposal body"
-  description: String @fulltext(query: 'description')
-
-  "When it was created"
-  createdAtBlock: BigInt!
-
-  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
-
-  "Current status of the proposal"
-  status: ProposalStatus!
-
-  state: ProposalState!
 
   "Activate opening at block"
   activateAt: BigInt!
@@ -678,12 +679,15 @@ type AddWorkingGroupLeaderOpeningProposal implements Proposal @entity {
   "Defines working group with the open position"
   workingGroup: WorkingGroup!
 
-  "The maximum number of applications that can be on the list at any time. Option<hiring::ApplicationRationingPolicy>"
+  #### Begin - Opening Conditions ####
+
+  "The maximum number of applications that can be on the list at any time."
   maxActiveApplicants: Int
   
   "Maximum length of review period of applications."
   maxReviewPeriodLength: BigInt
   
+  # IMPORTANT!!! This line is commented out due the limited support of entity relationship
   # "Staking policy for role itself."
   # roleStakingPolicy: Option<hiring::StakingPolicy<Balance, BlockNumber>>
 
@@ -711,22 +715,48 @@ type AddWorkingGroupLeaderOpeningProposal implements Proposal @entity {
   "When a worker/lead exists: unstaking period for role stake."
   exitRoleRtakeUnstakingPeriod: BigInt
 
-  # ------- StakingPolicy ------
+  #### Begin - StakingPolicy ####
 
   "Staking amount"
   amount: BigInt
 
   "How to interpret the amount requirement"
-  amountMode: StakingAmountLimitMo
+  amountMode: StakingAmountLimitMode
 
-  """
-  The unstaking period length, if any, deactivation causes that are autonomous,
-  that is they are triggered internally to this module.
-  """
+  """The unstaking period length, if any, deactivation causes that are autonomous,
+  that is they are triggered internally to this module."""
   crowdedOutUnstakingPeriodLength: BigInt
 
   "The review period length"
   reviewPeriodExpiredUnstakingPeriodLength: BigInt
+
+  #### End - StakingPolicy ####
+
+  #### End - Opening Conditions ####
+
+  "Id of a newly created proposal"
+  proposalId: BigInt!
+
+  type: ProposalType!
+
+  "Identifier of member proposing"
+  proposer: Member!
+
+  "Proposal description"
+  title: String @fulltext(query: 'title')
+
+  "Proposal body"
+  description: String @fulltext(query: 'description')
+
+  "When it was created"
+  createdAtBlock: BigInt!
+
+  discussionThread: ProposalDiscussionThread! @derivedFrom(field: 'proposal')
+
+  "Current status of the proposal"
+  status: ProposalStatus!
+
+  state: ProposalState!
 }
 
 
