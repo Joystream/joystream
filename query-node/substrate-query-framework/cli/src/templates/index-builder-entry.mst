@@ -5,6 +5,10 @@ import * as figlet from "figlet";
 import * as commander from "commander";
 import { configure, getLogger } from "log4js";
 
+{{#typeRegistrator}}
+import { {{typeRegistrator}} } from '{{{packageName}}}';
+{{/typeRegistrator}}
+
 import {
   QueryNodeManager,
   BootstrapPack,
