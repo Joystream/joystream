@@ -281,10 +281,6 @@ decl_module! {
 
             let user_info = Self::check_user_registration_info(handle, avatar_uri, about)?;
 
-            // ensure handle is not already registered
-            Self::ensure_unique_handle(&user_info.handle)?;
-
-            let _ = T::Currency::slash(&who, terms.fee);
             let member_id = Self::insert_member(
                 &who,
                 &who,
@@ -293,6 +289,8 @@ decl_module! {
                 <system::Module<T>>::block_number(),
                 <pallet_timestamp::Module<T>>::now()
             )?;
+
+            let _ = T::Currency::slash(&who, terms.fee);
 
             Self::deposit_event(RawEvent::MemberRegistered(member_id, who));
         }
@@ -429,9 +427,6 @@ decl_module! {
             ensure!(Self::new_memberships_allowed(), "new members not allowed");
 
             let user_info = Self::check_user_registration_info(handle, avatar_uri, about)?;
-
-            // ensure handle is not already registered
-            Self::ensure_unique_handle(&user_info.handle)?;
 
             let member_id = Self::insert_member(
                 &new_member_account,
