@@ -8,10 +8,10 @@ pub fn development() -> ProposalsConfigParameters {
 
 /// Staging chain config. Shorter grace periods and voting periods than default.
 pub fn staging() -> ProposalsConfigParameters {
-    ProposalsConfigParameters::with_grace_and_voting_periods(200, 600)
+    ProposalsConfigParameters::with_grace_and_voting_periods(20, 30)
 }
 
 /// The default configuration as defined in the runtime module
-pub fn default() -> ProposalsConfigParameters {
+pub fn production() -> ProposalsConfigParameters {
     ProposalsConfigParameters::default()
 }
