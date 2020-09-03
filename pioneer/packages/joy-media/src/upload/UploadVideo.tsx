@@ -9,7 +9,7 @@ import { ContentId } from '@joystream/types/media';
 import { onImageError } from '../common/images';
 import { nonEmptyStr, filterSubstrateEventsAndExtractData } from '@polkadot/joy-utils/functions/misc';
 import { VideoValidationSchema, VideoType, VideoClass as Fields, VideoFormValues, VideoToFormValues, VideoCodec, VideoPropId } from '../schemas/video/Video';
-import { MediaFormProps, withMediaForm, datePlaceholder } from '../common/MediaForms';
+import { MediaFormProps, withMediaForm, datePlaceholder, boolOptions } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
 import { FormTabs } from '../common/FormTabs';
@@ -341,7 +341,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
     <MediaText field={Fields.description} textarea {...props} />
     <MediaDropdown field={Fields.language} options={opts.languageOptions} {...props} />
     <MediaText field={Fields.firstReleased} placeholder={datePlaceholder} {...props} />
-    <MediaText field={Fields.explicit} {...props} />
+    <MediaDropdown field={Fields.explicit} options={boolOptions} {...props} />
     <MediaDropdown field={Fields.license} options={opts.contentLicenseOptions} {...props} />
     <MediaDropdown field={Fields.publicationStatus} options={opts.publicationStatusOptions} {...props} />
   </Tab.Pane>;

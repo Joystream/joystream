@@ -11,6 +11,11 @@ import { componentName } from '@polkadot/joy-utils/react/helpers';
 
 export const datePlaceholder = 'Date in format yyyy-mm-dd';
 
+export const boolOptions: DropdownItemProps[] = [
+  { value: 'true', text: 'Yes' },
+  { value: 'false', text: 'No' }
+];
+
 export type FormCallbacks = {
   onSubmit: OnTxButtonClick;
   onTxSuccess: TxCallback;
