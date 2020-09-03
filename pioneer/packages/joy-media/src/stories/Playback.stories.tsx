@@ -8,7 +8,7 @@ import { Album1TrackSamples } from './data/MusicTrackSamples';
 import { MockMusicChannel, MockVideoChannel } from './data/ChannelSamples';
 import { withMockTransport } from './withMockTransport';
 import { Video } from '../mocks';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 
 export default {
   title: 'Media | Playback',
@@ -17,7 +17,7 @@ export default {
 
 export const PlayVideoStory = () =>
   <PlayVideo
-    id={createMock('EntityId', Video.id)}
+    id={createType('EntityId', Video.id)}
     video={Video}
     channel={MockVideoChannel}
   />;

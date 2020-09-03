@@ -17,7 +17,7 @@ import { OpeningMetadata } from '../OpeningMetadata';
 import 'semantic-ui-css/semantic.min.css';
 import '@polkadot/joy-roles/index.sass';
 import { WorkingGroups } from '../working_groups';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 
 export default {
   title: 'Roles / Components / Opportunities groups tab',
@@ -48,10 +48,10 @@ export function yesterday (): Date {
 }
 
 export function newMockHumanReadableText (obj: any) {
-  return createMock('Text', JSON.stringify(obj));
+  return createType('Text', JSON.stringify(obj));
 }
 
-export const opening = createMock('Opening', {
+export const opening = createType('Opening', {
   created: 100,
   stage: mockStage,
   max_review_period_length: 100,
@@ -131,15 +131,15 @@ export function OpportunitySandbox () {
     numberOfApplications: number('Applications count', 0, applicationSliderOptions, 'Role rationing policy'),
     maxNumberOfApplications: number('Application max', 0, applicationSliderOptions, 'Role rationing policy'),
     requiredApplicationStake: new ApplicationStakeRequirement(
-      createMock('Balance', number('Application stake', 500, moneySliderOptions, 'Role stakes'))
+      createType('Balance', number('Application stake', 500, moneySliderOptions, 'Role stakes'))
     ),
     requiredRoleStake: new RoleStakeRequirement(
-      createMock('Balance', number('Role stake', 0, moneySliderOptions, 'Role stakes'))
+      createType('Balance', number('Role stake', 0, moneySliderOptions, 'Role stakes'))
     ),
-    defactoMinimumStake: createMock('Balance', 0)
+    defactoMinimumStake: createType('Balance', 0)
   };
 
-  const defactoMinimumStake: Balance = createMock('Balance', number('Dynamic min stake', 0, moneySliderOptions, 'Role stakes'));
+  const defactoMinimumStake: Balance = createType('Balance', number('Dynamic min stake', 0, moneySliderOptions, 'Role stakes'));
 
   const meta: OpeningMetadata = {
     id: '1',

@@ -38,7 +38,7 @@ import { IStakeRequirement } from '../StakeRequirement';
 
 import { Loadable } from '@polkadot/joy-utils/react/hocs';
 import { Add } from '../balances';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 import { ApplicationDetailsData, ApplicationQuestionAnswers } from '@polkadot/joy-utils/types/workingGroups';
 
 type accordionProps = {
@@ -110,7 +110,7 @@ export function FundSourceSelector (props: FundSourceSelectorProps & FundSourceC
 
   const onChangeDropdown = (e: any, { value }: any) => {
     if (typeof props.addressCallback !== 'undefined') {
-      props.addressCallback(createMock('AccountId', value));
+      props.addressCallback(createType('AccountId', value));
     }
   };
 
@@ -213,7 +213,7 @@ export function StakeRankSelector (props: StakeRankSelectorProps) {
   props.slots.forEach((slotStake) => props.stake.gt(slotStake.sub(props.otherStake)) && --estimatedSlot);
 
   const changeValue = (e: any, { value }: any) => {
-    const newStake = createMock('Balance', value);
+    const newStake = createType('Balance', value);
 
     props.setStake(newStake);
   };
@@ -626,12 +626,12 @@ type StakeRankMiniSelectorProps = {
 function StakeRankMiniSelector (props: StakeRankMiniSelectorProps) {
   const changeValue = (e: any, { value }: any) => {
     if (value < 0) {
-      props.setValue(createMock('Balance', 0));
+      props.setValue(createType('Balance', 0));
 
       return;
     }
 
-    const newStake = createMock('Balance', value);
+    const newStake = createType('Balance', value);
 
     props.setValue(newStake);
   };
@@ -1061,7 +1061,7 @@ export const FlowModal = Loadable<FlowModalProps>(
 
     useEffect(() => {
       if (txKeyAddress.isEmpty) {
-        setTxKeyAddress(createMock('AccountId', accContext.state.address));
+        setTxKeyAddress(createType('AccountId', accContext.state.address));
       }
     }, [txKeyAddress]);
 

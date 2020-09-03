@@ -55,7 +55,7 @@ import { classifyOpeningStage,
 import { openingDescription } from '../openingStateMarkup';
 
 import { Add, Zero } from '../balances';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 
 type ids = {
   curatorId: number;
@@ -98,7 +98,7 @@ type State = {
 }
 
 function newHRT (title: string): Text {
-  return createMock('Text', JSON.stringify({
+  return createType('Text', JSON.stringify({
     version: 1,
     headline: 'some headline',
     job: {
@@ -143,49 +143,49 @@ function newHRT (title: string): Text {
 }
 
 const createRationingPolicyOpt = (maxApplicants: number) =>
-  createMock('Option<ApplicationRationingPolicy>', {
+  createType('Option<ApplicationRationingPolicy>', {
     max_active_applicants: maxApplicants
   });
 const createStakingPolicyOpt = (amount: number, amount_mode: StakingAmountLimitMode): Option<StakingPolicy> =>
-  createMock('Option<StakingPolicy>', {
+  createType('Option<StakingPolicy>', {
     amount,
     amount_mode
   });
 
-const STAKING_MODE_EXACT = createMock('StakingAmountLimitMode', StakingAmountLimitModeKeys.Exact);
-const STAKING_MODE_AT_LEAST = createMock('StakingAmountLimitMode', StakingAmountLimitModeKeys.AtLeast);
+const STAKING_MODE_EXACT = createType('StakingAmountLimitMode', StakingAmountLimitModeKeys.Exact);
+const STAKING_MODE_AT_LEAST = createType('StakingAmountLimitMode', StakingAmountLimitModeKeys.AtLeast);
 
 const stockOpenings: openingDescriptor[] = [
   {
     title: 'Test config A: no application stake, no role stake, no applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999)
+      max_review_period_length: createType('u32', 99999)
     },
     text: newHRT('Test configuration A')
   },
   {
     title: 'Test config B: no application stake, no role stake, 10 applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999)
+      max_review_period_length: createType('u32', 99999)
     },
     text: newHRT('Test configuration B')
   },
   {
     title: 'Test config C: fixed application stake (100), no role stake, no applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT)
     },
     text: newHRT('Test configuration C')
   },
   {
     title: 'Test config D: fixed application stake (100), no role stake, 10 applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT)
     },
@@ -193,18 +193,18 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config E: no application stake, fixed role stake (100), no applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       role_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT)
     },
     text: newHRT('Test configuration E')
   },
   {
     title: 'Test config F: no application stake, fixed role stake (100), 10 applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       role_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT)
     },
@@ -212,18 +212,18 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config G: minimum application stake (100), no role stake, no applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST)
     },
     text: newHRT('Test configuration G')
   },
   {
     title: 'Test config H: minimum application stake (100), no role stake, 10 applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST)
     },
@@ -231,18 +231,18 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config I: no application stake, minimum role stake (100), no applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       role_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST)
     },
     text: newHRT('Test configuration I')
   },
   {
     title: 'Test config J: no application stake, minimum role stake (100), 10 applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       role_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST)
     },
@@ -250,9 +250,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config K: fixed application stake (100), fixed role stake (200), no applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_EXACT)
     },
@@ -260,9 +260,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config L: fixed application stake (100), fixed role stake (200), 10 applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_EXACT)
@@ -271,9 +271,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config M: Minimum application stake (100), minimum role stake (200), no applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_AT_LEAST)
     },
@@ -281,9 +281,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config N: Minimum application stake (100), minimum role stake (200), 10 applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_AT_LEAST)
@@ -292,9 +292,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config O: Fixed application stake (100), minimum role stake (200), no applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_AT_LEAST)
     },
@@ -302,9 +302,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config P: Fixed application stake (100), minimum role stake (200), 10 applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_AT_LEAST)
@@ -313,9 +313,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config Q: Minimum application stake (100), fixed role stake (200), no applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_EXACT)
     },
@@ -323,9 +323,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config R: Minimum application stake (100), fixed role stake (200), 10 applicant limit',
-    start: createMock('ActivateOpeningAt', 'CurrentBlock'),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: createMock('u32', 99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_EXACT)
@@ -590,11 +590,11 @@ const NewOpening = (props: NewOpeningProps) => {
     switch (value) {
       case 'CurrentBlock':
         setShowExactBlock(false);
-        setStart(createMock('ActivateOpeningAt', 'CurrentBlock'));
+        setStart(createType('ActivateOpeningAt', 'CurrentBlock'));
         break;
 
       case 'ExactBlock':
-        setStart(createMock('ActivateOpeningAt', { ExactBlock: exactBlock }));
+        setStart(createType('ActivateOpeningAt', { ExactBlock: exactBlock }));
         setShowExactBlock(true);
         break;
     }
@@ -602,7 +602,7 @@ const NewOpening = (props: NewOpeningProps) => {
 
   const onChangeExactBlock = (e: any, { value }: InputOnChangeData) => {
     setExactBlock(typeof value === 'number' ? value : (parseInt(value) || 0));
-    setStart(createMock('ActivateOpeningAt', { ExactBlock: value }));
+    setStart(createType('ActivateOpeningAt', { ExactBlock: value }));
   };
 
   const [policy, setPolicy] = useState(props.desc.policy);
@@ -676,7 +676,7 @@ const NewOpening = (props: NewOpeningProps) => {
     props.fn({
       start: start,
       policy: policy,
-      text: createMock('Text', text),
+      text: createType('Text', text),
       title: ''
     });
   };
@@ -705,7 +705,7 @@ const NewOpening = (props: NewOpeningProps) => {
         <Input
           type='number'
           value={policy.max_review_period_length.toNumber()}
-          onChange={(e: any, { value }: any) => onChangePolicyField('max_review_period_length', createMock('u32', value))}
+          onChange={(e: any, { value }: any) => onChangePolicyField('max_review_period_length', createType('u32', value))}
         />
       </Form.Field>
 

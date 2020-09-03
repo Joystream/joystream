@@ -5,14 +5,14 @@ import '../index.scss';
 import { ContentId } from '@joystream/types/media';
 import { withMockTransport } from './withMockTransport';
 import EditVideoView from '../upload/EditVideo.view';
-import { createMock, mockRegistry } from '@joystream/types';
+import { createType, registry } from '@joystream/types';
 
 export default {
   title: 'Media | Upload video',
   decorators: [withMockTransport]
 };
 
-const contentId = ContentId.generate(mockRegistry);
+const contentId = ContentId.generate(registry);
 
 export const DefaultState = () =>
   <EditForm
@@ -22,5 +22,5 @@ export const DefaultState = () =>
 export const MockEditFormView = () =>
   <EditVideoView
     contentId={contentId}
-    id={createMock('EntityId', 1)}
+    id={createType('EntityId', 1)}
   />;

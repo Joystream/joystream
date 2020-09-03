@@ -1,5 +1,5 @@
 import BN from 'bn.js';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { EntityId, ClassId } from '@joystream/types/versioned-store';
 
@@ -17,7 +17,7 @@ export function asChannelId (id: AnyChannelId): ChannelId {
   if (id instanceof ChannelId) {
     return id;
   } else if (canBeId(id)) {
-    return createMock('ChannelId', id);
+    return createType('ChannelId', id);
   } else {
     throw new Error(`Not supported format for Channel id: ${typeof id === 'object' ? id.constructor.name : id}`);
   }
@@ -27,7 +27,7 @@ export function asEntityId (id: AnyEntityId): EntityId {
   if (id instanceof EntityId) {
     return id;
   } else if (canBeId(id)) {
-    return createMock('EntityId', id);
+    return createType('EntityId', id);
   } else {
     throw new Error(`Not supported format for Entity id: ${typeof id === 'object' ? id.constructor.name : id}`);
   }
@@ -37,7 +37,7 @@ export function asClassId (id: AnyClassId): ClassId {
   if (id instanceof ClassId) {
     return id;
   } else if (canBeId(id)) {
-    return createMock('ClassId', id);
+    return createType('ClassId', id);
   } else {
     throw new Error(`Not supported format for Class id: ${typeof id === 'object' ? id.constructor.name : id}`);
   }

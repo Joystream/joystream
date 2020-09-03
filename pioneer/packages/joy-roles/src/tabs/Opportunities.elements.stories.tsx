@@ -17,7 +17,7 @@ import { OpeningMetadata } from '../OpeningMetadata';
 import 'semantic-ui-css/semantic.min.css';
 import '@polkadot/joy-roles/index.sass';
 import { WorkingGroups } from '../working_groups';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 
 export default {
   title: 'Roles / Components / Opportunities groups tab / Elements',
@@ -88,81 +88,81 @@ export function OpeningApplicationsStatusByState () {
       _description: 'No limit, no applications, no stake',
       numberOfApplications: 0,
       maxNumberOfApplications: 0,
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 0)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'No limit, some applications, no stake',
       numberOfApplications: 15,
       maxNumberOfApplications: 0,
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 0)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'Limit, no applications, no stake',
       numberOfApplications: 0,
       maxNumberOfApplications: 20,
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 0)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'Limit, some applications, no stake',
       numberOfApplications: 10,
       maxNumberOfApplications: 20,
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 0)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'Limit, full applications, no stake (application impossible)',
       numberOfApplications: 20,
       maxNumberOfApplications: 20,
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 0)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'No limit, no applications, some stake',
       numberOfApplications: 0,
       maxNumberOfApplications: 0,
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 10)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 10)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'No limit, some applications, some stake',
       numberOfApplications: 15,
       maxNumberOfApplications: 0,
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 10)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 10)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'Limit, no applications, some stake',
       numberOfApplications: 0,
       maxNumberOfApplications: 20,
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 10)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 10)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'Limit, some applications, some stake',
       numberOfApplications: 10,
       maxNumberOfApplications: 20,
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 10)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 10)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'Limit, full applications, some stake',
       numberOfApplications: 20,
       maxNumberOfApplications: 20,
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 10)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 10)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     }
   ];
 
@@ -184,51 +184,51 @@ export function OpeningApplicationsStakeRequirementByStake () {
   const permutations: (StakeRequirementProps & TestProps)[] = [
     {
       _description: 'No stakes required (should be empty)',
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 0)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 0),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0),
       maxNumberOfApplications: 0
     },
     {
       _description: 'App stake required; no role stake required',
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 500)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 0),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 500)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0),
       maxNumberOfApplications: 0
     },
     {
       _description: 'App stake required >; no role stake required',
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 500), StakeType.AtLeast),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 0),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 500), StakeType.AtLeast),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0),
       maxNumberOfApplications: 0
     },
     {
       _description: 'No app stake required; role stake required',
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 0)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 101)),
-      defactoMinimumStake: createMock('Balance', 0),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 101)),
+      defactoMinimumStake: createType('Balance', 0),
       maxNumberOfApplications: 0
     },
     {
       _description: 'No app stake required; role stake required',
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 0), StakeType.AtLeast),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 102)),
-      defactoMinimumStake: createMock('Balance', 0),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0), StakeType.AtLeast),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 102)),
+      defactoMinimumStake: createType('Balance', 0),
       maxNumberOfApplications: 0
     },
     {
       _description: '>= App stake required; role stake required',
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 101), StakeType.AtLeast),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 102)),
-      defactoMinimumStake: createMock('Balance', 0),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 101), StakeType.AtLeast),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 102)),
+      defactoMinimumStake: createType('Balance', 0),
       maxNumberOfApplications: 0
     },
     {
       _description: 'App stake required; no role stake required; dynamic minimum > 0',
-      requiredApplicationStake: new ApplicationStakeRequirement(createMock('Balance', 500)),
-      requiredRoleStake: new RoleStakeRequirement(createMock('Balance', 0)),
-      defactoMinimumStake: createMock('Balance', 1000),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 500)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 1000),
       maxNumberOfApplications: 20
     }
   ];

@@ -3,7 +3,7 @@
 
 import React, { useReducer, createContext, useContext } from 'react';
 import { Category, Thread, Reply } from '@joystream/types/forum';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 
 type CategoryId = number;
 type ThreadId = number;
@@ -227,14 +227,14 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       const { threadById } = state;
 
       const thread = threadById.get(id) as Thread;
-      const moderation = createMock('ModerationAction', {
-        moderated_at: createMock('BlockAndTime', {}),
-        moderator_id: createMock('AccountId', moderator),
-        rationale: createMock('Text', rationale)
+      const moderation = createType('ModerationAction', {
+        moderated_at: createType('BlockAndTime', {}),
+        moderator_id: createType('AccountId', moderator),
+        rationale: createType('Text', rationale)
       });
-      const threadUpd = createMock('Thread', Object.assign(
+      const threadUpd = createType('Thread', Object.assign(
         thread.cloneValues(),
-        { moderation: createMock('Option<ModerationAction>', moderation) }
+        { moderation: createType('Option<ModerationAction>', moderation) }
       ));
 
       threadById.set(id, threadUpd);
@@ -296,14 +296,14 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       const { replyById } = state;
 
       const reply = replyById.get(id) as Reply;
-      const moderation = createMock('ModerationAction', {
-        moderated_at: createMock('BlockAndTime', {}),
-        moderator_id: createMock('AccountId', moderator),
-        rationale: createMock('Text', rationale)
+      const moderation = createType('ModerationAction', {
+        moderated_at: createType('BlockAndTime', {}),
+        moderator_id: createType('AccountId', moderator),
+        rationale: createType('Text', rationale)
       });
-      const replyUpd = createMock('Reply', Object.assign(
+      const replyUpd = createType('Reply', Object.assign(
         reply.cloneValues(),
-        { moderation: createMock('Option<ModerationAction>', moderation) }
+        { moderation: createType('Option<ModerationAction>', moderation) }
       ));
 
       replyById.set(id, replyUpd);

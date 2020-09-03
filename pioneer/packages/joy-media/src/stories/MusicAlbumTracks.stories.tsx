@@ -7,7 +7,7 @@ import { MusicAlbumSamples } from './data/MusicAlbumSamples';
 import { albumTracks, AllMusicTrackSamples } from './data/MusicTrackSamples';
 import { withMockTransport } from './withMockTransport';
 import { EditMusicAlbumView } from '../music/EditMusicAlbum.view';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 
 export default {
   title: 'Media | My music tracks',
@@ -19,7 +19,7 @@ export const DefaultState = () =>
 
 export const MockEditAlbumView = () =>
   <EditMusicAlbumView
-    id={createMock('EntityId', 1)}
+    id={createType('EntityId', 1)}
     tracks={albumTracks}
   />;
 

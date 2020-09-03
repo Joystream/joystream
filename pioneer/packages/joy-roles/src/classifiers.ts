@@ -21,7 +21,7 @@ import { StakeRequirement,
   ApplicationStakeRequirement,
   RoleStakeRequirement,
   StakeType } from './StakeRequirement';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 
 export enum CancelledReason {
   ApplicantCancelled = 0,
@@ -215,7 +215,7 @@ function classifyStakeRequirement<T extends StakeRequirement> (
   option: Option<StakingPolicy>
 ): T {
   if (option.isNone) {
-    return new constructor(createMock('Balance', 0));
+    return new constructor(createType('Balance', 0));
   }
 
   const policy = option.unwrap();

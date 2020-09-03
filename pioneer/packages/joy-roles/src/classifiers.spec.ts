@@ -3,7 +3,7 @@ import { Opening } from '@joystream/types/hiring';
 import { OpeningState,
   IBlockQueryer,
   classifyOpeningStage, OpeningStageClassification } from './classifiers';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 
 class MockBlockQueryer {
   hash: string
@@ -48,9 +48,9 @@ describe('hiring.Opening-> OpeningStageClassification', (): void => {
     {
       description: 'WaitingToBegin',
       input: {
-        opening: createMock('Opening', {
+        opening: createType('Opening', {
           created: 100,
-          stage: createMock('OpeningStage', {
+          stage: createType('OpeningStage', {
             WaitingToBegin: {
               begins_at_block: 100
             }
@@ -70,11 +70,11 @@ describe('hiring.Opening-> OpeningStageClassification', (): void => {
     {
       description: 'Accepting applications',
       input: {
-        opening: createMock('Opening', {
+        opening: createType('Opening', {
           created: 100,
-          stage: createMock('OpeningStage', {
+          stage: createType('OpeningStage', {
             Active: {
-              stage: createMock('ActiveOpeningStage', {
+              stage: createType('ActiveOpeningStage', {
                 acceptingApplications: {
                   started_accepting_applicants_at_block: 100
                 }
@@ -96,11 +96,11 @@ describe('hiring.Opening-> OpeningStageClassification', (): void => {
     {
       description: 'In review period',
       input: {
-        opening: createMock('Opening', {
+        opening: createType('Opening', {
           created: 100,
-          stage: createMock('OpeningStage', {
+          stage: createType('OpeningStage', {
             Active: {
-              stage: createMock('ActiveOpeningStage', {
+              stage: createType('ActiveOpeningStage', {
                 reviewPeriod: {
                   started_accepting_applicants_at_block: 100,
                   started_review_period_at_block: 100

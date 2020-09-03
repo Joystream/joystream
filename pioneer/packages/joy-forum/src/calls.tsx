@@ -6,7 +6,7 @@ import { withApi, withCall as withSubstrateCall } from '@polkadot/react-api/hoc'
 import { u64 } from '@polkadot/types';
 import { InterfaceTypes } from '@polkadot/types/types/registry';
 import { useForum, ForumState } from './Context';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 
 type Call = string | [string, Options];
 
@@ -22,11 +22,11 @@ const getReactValue = (state: ForumState, endpoint: string, paramValue: any) => 
     const id = (paramValue as u64).toNumber();
     const entity = state[mapName].get(id);
 
-    return createMock(type, entity);
+    return createType(type, entity);
   }
 
   switch (endpoint) {
-    case 'forumSudo': return createMock('Option<AccountId>', state.sudo);
+    case 'forumSudo': return createType('Option<AccountId>', state.sudo);
     case 'categoryById': return getEntityById(endpoint, 'Category');
     case 'threadById': return getEntityById(endpoint, 'Thread');
     case 'replyById': return getEntityById(endpoint, 'Reply');

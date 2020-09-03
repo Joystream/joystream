@@ -1,9 +1,9 @@
 import { IMembership } from '@joystream/types/members';
 
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 
 export function mockProfile (name: string, avatar_uri = ''): IMembership {
-  return createMock('Membership', {
+  return createType('Membership', {
     handle: name,
     avatar_uri: avatar_uri,
     root_account: '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp',
@@ -11,9 +11,9 @@ export function mockProfile (name: string, avatar_uri = ''): IMembership {
   });
 }
 
-export const mockStage = createMock('OpeningStage', {
+export const mockStage = createType('OpeningStage', {
   Active: {
-    stage: createMock('ActiveOpeningStage', {
+    stage: createType('ActiveOpeningStage', {
       AcceptingApplications: {
         started_accepting_applicants_at_block: 100
       }

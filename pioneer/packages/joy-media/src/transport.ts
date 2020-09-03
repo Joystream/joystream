@@ -18,7 +18,7 @@ import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { isVideoChannel, isPublicChannel } from './channels/ChannelHelpers';
 import { ValidationConstraint } from '@polkadot/joy-utils/types/ValidationConstraint';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 
 export interface ChannelValidationConstraints {
   handle: ValidationConstraint;
@@ -136,14 +136,14 @@ export abstract class MediaTransport {
     const content = await this.featuredContent();
     const topVideoId = content?.topVideo as unknown as number | undefined;
 
-    return !topVideoId ? undefined : await this.videoById(createMock('EntityId', topVideoId));
+    return !topVideoId ? undefined : await this.videoById(createType('EntityId', topVideoId));
   }
 
   async featuredVideos (): Promise<VideoType[]> {
     const content = await this.featuredContent();
     const videoIds = (content?.featuredVideos || []) as unknown as number[];
     const videos = await Promise.all(videoIds.map((id) =>
-      this.videoById(createMock('EntityId', id))));
+      this.videoById(createType('EntityId', id))));
 
     return videos.filter((x) => x !== undefined) as VideoType[];
   }
@@ -152,7 +152,7 @@ export abstract class MediaTransport {
     const content = await this.featuredContent();
     const albumIds = (content?.featuredAlbums || []) as unknown as EntityId[];
     const albums = await Promise.all(albumIds.map((id) =>
-      this.musicAlbumById(createMock('EntityId', id))));
+      this.musicAlbumById(createType('EntityId', id))));
 
     return albums.filter((x) => x !== undefined) as MusicAlbumType[];
   }

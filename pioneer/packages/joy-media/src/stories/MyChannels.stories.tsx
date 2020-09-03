@@ -7,7 +7,7 @@ import { withMockTransport } from './withMockTransport';
 import EditForm from '../channels/EditChannel';
 import { EditChannelView } from '../channels/EditChannel.view';
 import { AccountIdSamples } from './data/AccountIdSamples';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 
 export default {
   title: 'Media | My channels',
@@ -15,7 +15,7 @@ export default {
 };
 
 // TODO pass to mocked MyMembershipContext provider via Stories decorators:
-const accountId = createMock('AccountId', AccountIdSamples.Alice);
+const accountId = createType('AccountId', AccountIdSamples.Alice);
 
 export const DefaultState = () =>
   <ChannelsByOwner accountId={accountId} />;
@@ -30,4 +30,4 @@ export const DefaultEditForm = () =>
   <EditForm />;
 
 export const MockEditFormView = () =>
-  <EditChannelView id={createMock('ChannelId', 1)} />;
+  <EditChannelView id={createType('ChannelId', 1)} />;

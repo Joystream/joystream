@@ -4,7 +4,7 @@ import axios, { CancelTokenSource, AxiosError, AxiosRequestConfig } from 'axios'
 import { History } from 'history';
 import { Progress, Message } from 'semantic-ui-react';
 
-import { mockRegistry } from '@joystream/types';
+import { registry } from '@joystream/types';
 import { InputFileAsync, TxButton, JoyInfo, Loading } from '@polkadot/joy-utils/react/components';
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
@@ -59,7 +59,7 @@ const defaultState = (): State => ({
   file: undefined,
   computingHash: false,
   ipfs_cid: undefined,
-  newContentId: ContentId.generate(mockRegistry),
+  newContentId: ContentId.generate(registry),
   discovering: false,
   uploading: false,
   sendingTx: false,

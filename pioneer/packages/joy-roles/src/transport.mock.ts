@@ -6,7 +6,7 @@ import MockTransportBase from '@polkadot/joy-utils/transport/mock/base';
 
 import { ITransport } from './transport';
 
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 
 import { WorkingGroupMembership, GroupLeadStatus } from './tabs/WorkingGroup';
 import { WorkingGroupOpening } from './tabs/Opportunities';
@@ -35,59 +35,59 @@ export class Transport extends MockTransportBase implements ITransport {
       leadRolesAvailable: false,
       workers: [
         {
-          memberId: createMock('MemberId', 1),
-          roleAccount: createMock('AccountId', '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
+          memberId: createType('MemberId', 1),
+          roleAccount: createType('AccountId', '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
           profile: mockProfile(
             'benholdencrowther',
             'https://www.benholdencrowther.com/wp-content/uploads/2019/03/Hanging_Gardens_of_Babylon.jpg'
           ),
           title: 'Content curator',
-          stake: createMock('u128', 10101),
+          stake: createType('u128', 10101),
           workerId: 1,
           group: WorkingGroups.ContentCurators
         },
         {
-          memberId: createMock('MemberId', 2),
-          roleAccount: createMock('AccountId', '5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew'),
+          memberId: createType('MemberId', 2),
+          roleAccount: createType('AccountId', '5DfJWGbBAH8hLAg8rcRYZW5BEZbE4BJeCQKoxUeqoyewLSew'),
           profile: mockProfile('bwhm0'),
           title: 'Content curator',
-          stake: createMock('u128', 10101),
+          stake: createType('u128', 10101),
           workerId: 2,
           group: WorkingGroups.ContentCurators
         },
         {
-          memberId: createMock('MemberId', 3),
-          roleAccount: createMock('AccountId', '5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
+          memberId: createType('MemberId', 3),
+          roleAccount: createType('AccountId', '5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
           profile: mockProfile(
             'yourheropaul',
             'https://yhp.io/img/paul.svg'
           ),
           title: 'Content curator',
-          stake: createMock('u128', 10101),
+          stake: createType('u128', 10101),
           workerId: 3,
           group: WorkingGroups.ContentCurators
         },
         {
-          memberId: createMock('MemberId', 4),
-          roleAccount: createMock('AccountId', '5GSMNn8Sy8k64mGUWPDafjMZu9bQNX26GujbBQ1LeJpNbrfg'),
+          memberId: createType('MemberId', 4),
+          roleAccount: createType('AccountId', '5GSMNn8Sy8k64mGUWPDafjMZu9bQNX26GujbBQ1LeJpNbrfg'),
           profile: mockProfile(
             'alex_joystream',
             'https://avatars2.githubusercontent.com/u/153928?s=200&v=4'
           ),
           title: 'Content curator',
-          stake: createMock('u128', 10101),
+          stake: createType('u128', 10101),
           workerId: 4,
           group: WorkingGroups.ContentCurators
         },
         {
-          memberId: createMock('MemberId', 3),
-          roleAccount: createMock('AccountId', '5Gn9n7SDJ7VgHqHQWYzkSA4vX6DCmS5TFWdHxikTXp9b4L32'),
+          memberId: createType('MemberId', 3),
+          roleAccount: createType('AccountId', '5Gn9n7SDJ7VgHqHQWYzkSA4vX6DCmS5TFWdHxikTXp9b4L32'),
           profile: mockProfile(
             'mokhtar',
             'https://avatars2.githubusercontent.com/u/1621012?s=460&v=4'
           ),
           title: 'Content curator',
-          stake: createMock('u128', 10101),
+          stake: createType('u128', 10101),
           workerId: 5,
           group: WorkingGroups.ContentCurators
         }
@@ -102,14 +102,14 @@ export class Transport extends MockTransportBase implements ITransport {
       leadRolesAvailable: true,
       workers: [
         {
-          memberId: createMock('MemberId', 1),
-          roleAccount: createMock('AccountId', '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
+          memberId: createType('MemberId', 1),
+          roleAccount: createType('AccountId', '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
           profile: mockProfile(
             'benholdencrowther',
             'https://www.benholdencrowther.com/wp-content/uploads/2019/03/Hanging_Gardens_of_Babylon.jpg'
           ),
           title: 'Storage provider',
-          stake: createMock('u128', 10101),
+          stake: createType('u128', 10101),
           workerId: 1,
           group: WorkingGroups.StorageProviders
         }
@@ -121,7 +121,7 @@ export class Transport extends MockTransportBase implements ITransport {
     return this.simulateApiResponse<Array<WorkingGroupOpening>>(
       [
         {
-          opening: createMock('Opening', {
+          opening: createType('Opening', {
             created: 50000,
             stage: mockStage,
             max_review_period_length: 100,
@@ -178,14 +178,14 @@ export class Transport extends MockTransportBase implements ITransport {
             numberOfApplications: 0,
             maxNumberOfApplications: 0,
             requiredApplicationStake: new ApplicationStakeRequirement(
-              createMock('u128', 500)
+              createType('u128', 500)
             ),
             requiredRoleStake: new RoleStakeRequirement(
-              createMock('u128', 0)
+              createType('u128', 0)
             ),
-            defactoMinimumStake: createMock('u128', 0)
+            defactoMinimumStake: createType('u128', 0)
           },
-          defactoMinimumStake: createMock('u128', 0)
+          defactoMinimumStake: createType('u128', 0)
         }
       ]
     );
@@ -195,7 +195,7 @@ export class Transport extends MockTransportBase implements ITransport {
   async groupOpening (group: WorkingGroups, id: number): Promise<WorkingGroupOpening> {
     return this.simulateApiResponse<WorkingGroupOpening>(
       {
-        opening: createMock('Opening', {
+        opening: createType('Opening', {
           created: 50000,
           stage: mockStage,
           max_review_period_length: 100,
@@ -256,15 +256,15 @@ export class Transport extends MockTransportBase implements ITransport {
           numberOfApplications: 0,
           maxNumberOfApplications: 0,
           requiredApplicationStake: new ApplicationStakeRequirement(
-            createMock('u128', 501),
+            createType('u128', 501),
             StakeType.AtLeast
           ),
           requiredRoleStake: new RoleStakeRequirement(
-            createMock('u128', 502)
+            createType('u128', 502)
           ),
-          defactoMinimumStake: createMock('u128', 0)
+          defactoMinimumStake: createType('u128', 0)
         },
-        defactoMinimumStake: createMock('u128', 0)
+        defactoMinimumStake: createType('u128', 0)
       }
     );
   }
@@ -273,7 +273,7 @@ export class Transport extends MockTransportBase implements ITransport {
     const slots: Balance[] = [];
 
     for (let i = 0; i < 20; i++) {
-      slots.push(createMock('u128', (i * 100) + 10 + i + 1));
+      slots.push(createType('u128', (i * 100) + 10 + i + 1));
     }
 
     return this.simulateApiResponse<Balance[]>(slots);
@@ -297,18 +297,18 @@ export class Transport extends MockTransportBase implements ITransport {
         [
           {
             shortName: 'KP1',
-            accountId: createMock('AccountId', '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
-            balance: createMock('u128', 23342)
+            accountId: createType('AccountId', '5HZ6GtaeyxagLynPryM7ZnmLzoWFePKuDrkb4AT8rT4pU1fp'),
+            balance: createType('u128', 23342)
           },
           {
             shortName: 'KP2',
-            accountId: createMock('AccountId', '5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
-            balance: createMock('u128', 993342)
+            accountId: createType('AccountId', '5DQqNWRFPruFs9YKheVMqxUbqoXeMzAWfVfcJgzuia7NA3D3'),
+            balance: createType('u128', 993342)
           },
           {
             shortName: 'KP3',
-            accountId: createMock('AccountId', '5DBaczGTDhcHgwsZzNE5qW15GrQxxdyros4pYkcKrSUovFQ9'),
-            balance: createMock('u128', 242)
+            accountId: createType('AccountId', '5DBaczGTDhcHgwsZzNE5qW15GrQxxdyros4pYkcKrSUovFQ9'),
+            balance: createType('u128', 242)
           }
         ]
       );
@@ -329,7 +329,7 @@ export class Transport extends MockTransportBase implements ITransport {
         starting_block_hash: 'somehash',
         starting_time: yesterday()
       },
-      opening: createMock('Opening', {
+      opening: createType('Opening', {
         created: 50000,
         stage: mockStage,
         max_review_period_length: 100,
@@ -374,8 +374,8 @@ export class Transport extends MockTransportBase implements ITransport {
           }
         })
       }),
-      applicationStake: createMock('u128', 5),
-      roleStake: createMock('u128', 15),
+      applicationStake: createType('u128', 5),
+      roleStake: createType('u128', 15),
       rank: 21,
       capacity: 20
     }];
@@ -385,12 +385,12 @@ export class Transport extends MockTransportBase implements ITransport {
   async myRoles (address: string): Promise<ActiveRole[]> {
     return [
       {
-        workerId: createMock('CuratorId', 1),
+        workerId: createType('CuratorId', 1),
         name: workerRoleNameByGroup[WorkingGroups.ContentCurators],
         group: WorkingGroups.ContentCurators,
         url: 'some URL',
-        reward: createMock('u128', 321),
-        stake: createMock('u128', 12343200)
+        reward: createType('u128', 321),
+        stake: createType('u128', 12343200)
       }
     ];
   }

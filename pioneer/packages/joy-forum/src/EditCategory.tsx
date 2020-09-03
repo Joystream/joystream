@@ -16,7 +16,7 @@ import { withOnlyForumSudo } from './ForumSudo';
 import { withForumCalls } from './calls';
 import { ValidationProps, withCategoryValidation } from './validation';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 import { useApi } from '@polkadot/react-hooks';
 
 const buildSchema = (props: ValidationProps) => {
@@ -131,7 +131,7 @@ const InnerForm = (props: FormProps) => {
 
     if (isNew) {
       return [
-        createMock('Option<CategoryId>', parentId),
+        createType('Option<CategoryId>', parentId),
         title,
         description
       ];

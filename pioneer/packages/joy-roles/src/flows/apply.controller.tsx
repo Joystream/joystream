@@ -16,7 +16,7 @@ import { keyPairDetails, FlowModal, ProgressSteps } from './apply';
 import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities';
 import { Min, Step, Sum } from '../balances';
 import { WorkingGroups, AvailableGroups } from '../working_groups';
-import { createMock } from '@joystream/types';
+import { createType } from '@joystream/types';
 import { ApplicationDetailsData } from '@polkadot/joy-utils/types/workingGroups';
 
 type State = {
@@ -48,14 +48,14 @@ type State = {
 
 const newEmptyState = (): State => {
   return {
-    applicationStake: createMock('u128', 0),
-    roleStake: createMock('u128', 0),
+    applicationStake: createType('u128', 0),
+    roleStake: createType('u128', 0),
     appDetails: {},
     hasError: false,
     transactionDetails: new Map<string, string>(),
     roleKeyNameBase: '',
     roleKeyName: '',
-    txKeyAddress: createMock('AccountId', undefined),
+    txKeyAddress: createType('AccountId', undefined),
     activeStep: 0,
     txInProgress: false,
     complete: false
