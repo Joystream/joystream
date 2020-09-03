@@ -31,11 +31,11 @@
   "resolutions": {
     "@polkadot/api": "1.26.1",
     "@polkadot/api-contract": "1.26.1",
-    "@polkadot/keyring": "3.0.1",
+    "@polkadot/keyring": "^3.0.1",
     "@polkadot/types": "1.26.1",
-    "@polkadot/util": "3.0.1",
-    "@polkadot/util-crypto": "3.0.1",
-    "@polkadot/wasm-crypto": "1.2.1",
+    "@polkadot/util": "^3.0.1",
+    "@polkadot/util-crypto": "^3.0.1",
+    "@polkadot/wasm-crypto": "^1.2.1",
     "babel-core": "^7.0.0-bridge.0",
     "typescript": "^3.9.7"
   },
