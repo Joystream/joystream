@@ -3,7 +3,8 @@ LABEL description="Compiles all workspace artifacts"
 WORKDIR /joystream
 COPY . /joystream
 
-RUN cargo build --release
+# Build joystream-node and its dependencies - runtime
+RUN cargo build --release -p joystream-node
 
 FROM debian:stretch
 LABEL description="Joystream node"
@@ -13,6 +14,13 @@ COPY --from=builder /joystream/target/release/wbuild/joystream-node-runtime/joys
 
 # confirm it works
 RUN /joystream/node --version
+
+# https://manpages.debian.org/stretch/coreutils/b2sum.1.en.html
+# RUN apt-get install coreutils
+# print the blake2 256 hash of the wasm blob
+RUN b2sum -l 256 /joystream/runtime.compact.wasm
+# print the blake2 512 hash of the wasm blob
+RUN b2sum -l 512 /joystream/runtime.compact.wasm
 
 EXPOSE 30333 9933 9944
 

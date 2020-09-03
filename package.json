@@ -1,20 +1,57 @@
 {
-	"private": true,
-	"name": "joystream",
-	"license": "GPL-3.0-only",
-	"scripts": {
-		"test": "yarn && yarn workspaces run test"
-	},
-	"workspaces": [
-		"tests/network-tests"
-	],
-	"devDependencies": {
-		"husky": "^4.2.5"
-	},
-	"husky": {
-	  "hooks": {
-		"pre-commit": "devops/git-hooks/pre-commit",
-		"pre-push": "devops/git-hooks/pre-push"
-	  }
-	}
+  "private": true,
+  "name": "joystream",
+  "version": "1.0.0",
+  "license": "GPL-3.0-only",
+  "scripts": {
+    "test": "yarn && yarn workspaces run test",
+    "test-migration": "yarn && yarn workspaces run test-migration",
+    "postinstall": "yarn workspace @joystream/types build",
+    "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
+    "cargo-build": "scripts/cargo-build.sh",
+    "lint": "yarn workspaces run lint"
+  },
+  "workspaces": [
+    "tests/network-tests",
+    "cli",
+    "types",
+    "storage-node",
+    "storage-node/packages/*",
+    "devops/eslint-config",
+    "devops/prettier-config",
+    "pioneer",
+    "pioneer/packages/apps*",
+    "pioneer/packages/page*",
+    "pioneer/packages/react*",
+    "pioneer/packages/joy-utils",
+    "pioneer/packages/joy-members",
+    "pioneer/packages/joy-pages",
+    "utils/api-examples"
+  ],
+  "resolutions": {
+    "@polkadot/api": "1.26.1",
+    "@polkadot/api-contract": "1.26.1",
+    "@polkadot/keyring": "3.0.1",
+    "@polkadot/types": "1.26.1",
+    "@polkadot/util": "3.0.1",
+    "@polkadot/util-crypto": "3.0.1",
+    "@polkadot/wasm-crypto": "1.2.1",
+    "babel-core": "^7.0.0-bridge.0",
+    "typescript": "^3.9.7"
+  },
+  "devDependencies": {
+    "husky": "^4.2.5",
+    "prettier": "2.0.2",
+    "eslint": "^7.6.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "devops/git-hooks/pre-commit",
+      "pre-push": "devops/git-hooks/pre-push"
+    }
+  },
+  "engines": {
+    "node": ">=12.18.0",
+    "yarn": "^1.22.0"
+  }
 }

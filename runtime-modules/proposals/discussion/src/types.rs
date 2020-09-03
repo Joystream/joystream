@@ -3,13 +3,12 @@
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-
-use rstd::prelude::*;
+use sp_std::vec::Vec;
 
 /// Represents a discussion thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Thread<ThreadAuthorId, BlockNumber> {
+pub struct DiscussionThread<ThreadAuthorId, BlockNumber> {
     /// Title
     pub title: Vec<u8>,
 
@@ -23,7 +22,7 @@ pub struct Thread<ThreadAuthorId, BlockNumber> {
 /// Post for the discussion thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct Post<PostAuthorId, BlockNumber, ThreadId> {
+pub struct DiscussionPost<PostAuthorId, BlockNumber, ThreadId> {
     /// Text
     pub text: Vec<u8>,
 

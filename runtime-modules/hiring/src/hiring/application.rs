@@ -1,6 +1,6 @@
 use codec::{Decode, Encode};
-use rstd::clone::Clone;
-use rstd::vec::Vec;
+use sp_std::clone::Clone;
+use sp_std::vec::Vec;
 
 use crate::hiring::StakePurpose;
 

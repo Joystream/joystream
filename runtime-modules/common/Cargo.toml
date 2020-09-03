@@ -1,32 +1,24 @@
 [package]
-name = 'substrate-common-module'
-version = '1.0.0'
+name = 'pallet-common'
+version = '3.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
+
+[dependencies]
+serde = { version = "1.0.101", optional = true, features = ["derive"] }
+codec = { package = 'parity-scale-codec', version = '1.3.1', default-features = false, features = ['derive'] }
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+pallet-timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 
 [features]
 default = ['std']
 std = [
-	'sr-primitives/std',
-	'srml-support/std',
+	'serde',
+	'codec/std',
+	'sp-runtime/std',
+	'frame-support/std',
 	'system/std',
+	'pallet-timestamp/std',
 ]
-
-
-[dependencies.sr-primitives]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'sr-primitives'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.srml-support]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-support'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'
-
-[dependencies.system]
-default_features = false
-git = 'https://github.com/paritytech/substrate.git'
-package = 'srml-system'
-rev = 'c37bb08535c49a12320af7facfd555ce05cce2e8'

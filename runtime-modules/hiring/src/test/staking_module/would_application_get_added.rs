@@ -108,7 +108,7 @@ fn would_application_get_added_with_too_low_stake_with_mocks() {
                     }),
                 });
 
-                Rc::new(rstd::cell::RefCell::new(mock))
+                Rc::new(sp_std::cell::RefCell::new(mock))
             };
 
             set_stake_handler_impl(mock.clone());

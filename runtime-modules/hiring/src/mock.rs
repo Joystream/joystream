@@ -1,22 +1,20 @@
 #![cfg(test)]
 
-use primitives::H256;
-use runtime_primitives::{
+use frame_support::{impl_outer_origin, parameter_types};
+use sp_core::H256;
+use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_origin, parameter_types};
+use sp_std::cell::{Cell, RefCell};
+use sp_std::rc::Rc;
+use std::panic;
 
 use crate::hiring::ApplicationDeactivationCause;
 use crate::{Module, Trait};
 use balances;
 use stake;
-
-use std::cell::Cell;
-use std::cell::RefCell;
-use std::panic;
-use std::rc::Rc;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -27,7 +25,6 @@ parameter_types! {
     pub const MaximumBlockWeight: u32 = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
-    pub const MinimumPeriod: u64 = 5;
 }
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -35,10 +32,11 @@ parameter_types! {
 pub struct Test;
 
 impl system::Trait for Test {
+    type BaseCallFilter = ();
     type Origin = Origin;
+    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
@@ -47,45 +45,36 @@ impl system::Trait for Test {
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 100;
-    pub const TransferFee: u32 = 0;
-    pub const CreationFee: u32 = 0;
-    pub const TransactionBaseFee: u32 = 1;
-    pub const TransactionByteFee: u32 = 0;
-    pub const InitialMembersBalance: u64 = 2000;
     pub const StakePoolId: [u8; 8] = *b"joystake";
 }
 
 impl balances::Trait for Test {
-    /// The type for recording an account's balance.
     type Balance = u64;
-    /// What to do if an account's free balance gets zeroed.
-    type OnFreeBalanceZero = ();
-    /// What to do if a new account is created.
-    type OnNewAccount = ();
-    /// The ubiquitous event type.
-    type Event = ();
-
     type DustRemoval = ();
-    type TransferPayment = ();
+    type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
-    type TransferFee = TransferFee;
-    type CreationFee = CreationFee;
+    type AccountStore = System;
 }
 
 impl Trait for Test {
     type OpeningId = u64;
-
     type ApplicationId = u64;
-
     type ApplicationDeactivatedHandler = TestApplicationDeactivatedHandler;
-
     type StakeHandlerProvider = TestStakeHandlerProvider;
 }
 
@@ -137,7 +126,9 @@ thread_local! {
 }
 
 // Sets stake handler implementation in hiring module. Mockall frameworks integration
-pub(crate) fn set_stake_handler_impl(mock: Rc<rstd::cell::RefCell<dyn crate::StakeHandler<Test>>>) {
+pub(crate) fn set_stake_handler_impl(
+    mock: Rc<sp_std::cell::RefCell<dyn crate::StakeHandler<Test>>>,
+) {
     // Hiring::staking.mock_safe(move || MockResult::Return(mock.clone()));
     THREAD_LOCAL_STAKE_HANDLER.with(|f| {
         *f.borrow_mut() = mock.clone();
@@ -149,7 +140,7 @@ pub(crate) fn test_expectation_and_clear_mock() {
     set_stake_handler_impl(Rc::new(RefCell::new(crate::HiringStakeHandler {})));
 }
 
-pub fn build_test_externalities() -> runtime_io::TestExternalities {
+pub fn build_test_externalities() -> sp_io::TestExternalities {
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
@@ -202,3 +193,6 @@ impl TestApplicationDeactivatedHandler {
         );
     }
 }
+
+// Test fixtures starting block.
+pub(crate) static FIRST_BLOCK_HEIGHT: <Test as system::Trait>::BlockNumber = 0;

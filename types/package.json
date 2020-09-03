@@ -1,0 +1,57 @@
+{
+  "name": "@joystream/types",
+  "version": "0.13.0",
+  "description": "Types for Joystream Substrate Runtime - Alexandria release",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "prepublish": "npm run build",
+    "build": "tsc --build tsconfig.json",
+    "lint": "eslint ./ --quiet --ext .ts",
+    "format": "prettier ./ --write",
+    "checks": "yarn build && madge --circular ./ && yarn lint && prettier ./ --check",
+    "generate:defs": "ts-node node_modules/.bin/polkadot-types-from-defs --package ./src --input ./src/definitions",
+    "update:augment-types": "tsc --build tsconfig-scripts.json && node ./src/scripts/updateAugmentTypes.js",
+    "print:typedef": "tsc --build tsconfig-scripts.json && node ./src/scripts/defsFromTypes.js"
+  },
+  "author": "Joystream contributors",
+  "maintainers": [],
+  "dependencies": {
+    "@polkadot/api": "1.26.1",
+    "@polkadot/types": "1.26.1",
+    "@polkadot/keyring": "3.0.1",
+    "@types/lodash": "^4.14.157",
+    "@types/vfile": "^4.0.0",
+    "ajv": "^6.11.0",
+    "lodash": "^4.17.15",
+    "moment": "^2.24.0"
+  },
+  "devDependencies": {
+    "@polkadot/typegen": "1.26.1",
+    "ts-node": "^8.6.2",
+    "typescript": "^3.7.2",
+    "madge": "^3.9.2"
+  },
+  "engines": {
+    "node": ">=12.18.0",
+    "yarn": "^1.22.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Joystream/joystream.git"
+  },
+  "keywords": [
+    "substrate",
+    "joystream",
+    "runtime"
+  ],
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/Joystream/joystream/issues"
+  },
+  "homepage": "https://github.com/Joystream/joystream"
+}
