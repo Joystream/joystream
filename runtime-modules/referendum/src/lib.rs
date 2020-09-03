@@ -30,7 +30,7 @@ mod tests;
 #[derive(Encode, Decode, PartialEq, Eq, Debug)]
 pub enum ReferendumStage<BlockNumber, VotePower> {
     /// The referendum is dormant and waiting to be started by external source.
-    Inactive(ReferendumStageInactive<VotePower>),
+    Inactive,
     /// In the voting stage, users can cast their sealed votes.
     Voting(ReferendumStageVoting<BlockNumber>),
     /// In the revealing stage, users can reveal votes they cast in the voting stage.
@@ -39,31 +39,21 @@ pub enum ReferendumStage<BlockNumber, VotePower> {
 
 impl<BlockNumber, VotePower> Default for ReferendumStage<BlockNumber, VotePower> {
     fn default() -> ReferendumStage<BlockNumber, VotePower> {
-        ReferendumStage::Inactive(ReferendumStageInactive {
-            previous_cycle_result: ReferendumResult::NoVotesRevealed,
-        })
+        ReferendumStage::Inactive
     }
-}
-
-/// Representation for inactive stage state.
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
-pub struct ReferendumStageInactive<VotePower> {
-    previous_cycle_result: ReferendumResult<u64, VotePower>, // result of the previous referendum cycle
 }
 
 /// Representation for voting stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageVoting<BlockNumber> {
-    started: BlockNumber,            // block in which referendum started
-    extra_options_count: u64,        // number of options that exceeding the number of winners
-    extra_winning_target_count: u64, // positive number when there are more than 1 winner
+    started: BlockNumber,     // block in which referendum started
+    extra_options_count: u64, // number of options that exceeding the number of winners
 }
 
 /// Representation for revealing stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
     started: BlockNumber,                 // block in which referendum started
-    winning_target_count: u64,            // positive number when there are more than 1 winner
     intermediate_results: Vec<VotePower>, // votes that options have recieved at a given time
 }
 
@@ -74,26 +64,6 @@ pub struct CastVote<Hash, Currency> {
     cycle_id: u64,    // current referendum cycle number
     stake: Currency,  // stake locked for vote
     vote_for: Option<u64>, // target option this vote favors; is `None` before the vote is revealed
-}
-
-/// Possible referendum outcomes.
-#[derive(Clone, Encode, Decode, PartialEq, Eq, Debug)]
-pub enum ReferendumResult<ReferendumOption, VotePower> {
-    /// There are X winners as requested.
-    Winners(Vec<(ReferendumOption, VotePower)>),
-    /// X winners were expected, but Xth winning option has the same number of votes (X+1)th option.
-    /// In other words, can't decide only X winners because there is a tie in a significant place.
-    ExtraWinners(Vec<(ReferendumOption, VotePower)>),
-    /// X winners were expected, but only Y (Y < X) options received any votes.
-    NotEnoughWinners(Vec<(ReferendumOption, VotePower)>),
-    /// Nobody revealed a valid vote in a referendum.
-    NoVotesRevealed,
-}
-
-impl<T, U> Default for ReferendumResult<T, U> {
-    fn default() -> ReferendumResult<T, U> {
-        ReferendumResult::NoVotesRevealed
-    }
 }
 
 /////////////////// Type aliases ///////////////////////////////////////////////
@@ -108,7 +78,6 @@ pub type EzCastVote<T, I> = CastVote<<T as system::Trait>::Hash, Balance<T, I>>;
 pub type EzReferendumStageVoting<T> = ReferendumStageVoting<<T as system::Trait>::BlockNumber>;
 pub type EzReferendumStageRevealing<T, I> =
     ReferendumStageRevealing<<T as system::Trait>::BlockNumber, <T as Trait<I>>::VotePower>;
-pub type EzReferendumResult<T, I> = ReferendumResult<u64, <T as Trait<I>>::VotePower>;
 
 // types aliases for check functions return values
 pub type CanRevealResult<T, I> = (
@@ -123,11 +92,7 @@ pub type CanRevealResult<T, I> = (
 /// Trait enabling referendum start and vote commitment calculation.
 pub trait ReferendumManager<T: Trait<I>, I: Instance> {
     /// Start a new referendum.
-    fn start_referendum(
-        origin: T::Origin,
-        extra_options_count: u64,
-        extra_winning_target_count: u64,
-    ) -> Result<(), Error<T, I>>;
+    fn start_referendum(origin: T::Origin, extra_options_count: u64) -> Result<(), Error<T, I>>;
 
     /// Calculate commitment for a vote.
     fn calculate_commitment(
@@ -190,8 +155,7 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
 
     /// Gives runtime an ability to react on referendum result.
     fn process_results(
-        winners: &ReferendumResult<u64, Self::VotePower>, // winning options for this referendum cycle
-        all_options_results: &[Self::VotePower],          // list of votes each option recieved
+        all_options_results: &[Self::VotePower], // list of votes each option recieved
     );
 }
 
@@ -222,18 +186,18 @@ decl_event! {
     pub enum Event<T, I>
     where
         Balance = Balance<T, I>,
-        ReferendumResult = ReferendumResult<u64, <T as Trait<I>>::VotePower>,
         <T as system::Trait>::Hash,
         <T as system::Trait>::AccountId,
+        <T as Trait<I>>::VotePower,
     {
         /// Referendum started
-        ReferendumStarted(u64, u64),
+        ReferendumStarted(u64),
 
         /// Revealing phase has begun
         RevealingStageStarted(),
 
         /// Referendum ended and winning option was selected
-        ReferendumFinished(ReferendumResult),
+        ReferendumFinished(Vec<VotePower>),
 
         /// User cast a vote in referendum
         VoteCast(AccountId, Hash, Balance),
@@ -385,7 +349,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     /// Checkout expire of referendum stage.
     fn try_progress_stage(now: T::BlockNumber) {
         match Stage::<T, I>::get() {
-            ReferendumStage::Inactive(_) => (),
+            ReferendumStage::Inactive => (),
             ReferendumStage::Voting(stage_data) => {
                 if now == stage_data.started + T::VoteStageDuration::get() {
                     Self::end_voting_period(stage_data);
@@ -411,14 +375,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     /// Conclude the referendum.
     fn end_reveal_period(stage_data: EzReferendumStageRevealing<T, I>) {
         // conclude referendum
-        let (referendum_result, all_options_results) =
-            Mutations::<T, I>::conclude_referendum(stage_data);
+        let all_options_results = Mutations::<T, I>::conclude_referendum(stage_data);
 
         // let runtime know about referendum results
-        T::process_results(&referendum_result, &all_options_results);
+        T::process_results(&all_options_results);
 
         // emit event
-        Self::deposit_event(RawEvent::ReferendumFinished(referendum_result));
+        Self::deposit_event(RawEvent::ReferendumFinished(all_options_results));
     }
 }
 
@@ -426,13 +389,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
 impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
     /// Start new referendum run.
-    fn start_referendum(
-        origin: T::Origin,
-        extra_options_count: u64,
-        extra_winning_target_count: u64,
-    ) -> Result<(), Error<T, I>> {
-        let total_winners = extra_winning_target_count + 1;
-        let total_options = total_winners + extra_options_count;
+    fn start_referendum(origin: T::Origin, extra_options_count: u64) -> Result<(), Error<T, I>> {
+        let total_options = extra_options_count + 1;
 
         // ensure action can be started
         EnsureChecks::<T, I>::can_start_referendum(origin, total_options)?;
@@ -442,10 +400,10 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
         //
 
         // update state
-        Mutations::<T, I>::start_voting_period(&extra_options_count, &extra_winning_target_count);
+        Mutations::<T, I>::start_voting_period(&extra_options_count);
 
         // emit event
-        Self::deposit_event(RawEvent::ReferendumStarted(total_options, total_winners));
+        Self::deposit_event(RawEvent::ReferendumStarted(total_options));
 
         Ok(())
     }
@@ -478,21 +436,19 @@ struct Mutations<T: Trait<I>, I: Instance> {
 
 impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     /// Change the referendum stage from inactive to voting stage.
-    fn start_voting_period(extra_options_count: &u64, extra_winning_target_count: &u64) {
+    fn start_voting_period(extra_options_count: &u64) {
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Voting(ReferendumStageVoting::<
             T::BlockNumber,
         > {
             started: <system::Module<T>>::block_number(),
             extra_options_count: *extra_options_count,
-            extra_winning_target_count: *extra_winning_target_count,
         }));
     }
 
     /// Change the referendum stage from inactive to the voting stage.
     fn start_revealing_period(old_stage: EzReferendumStageVoting<T>) {
-        let total_options =
-            old_stage.extra_options_count + old_stage.extra_winning_target_count + 1;
+        let total_options = old_stage.extra_options_count + 1;
 
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Revealing(EzReferendumStageRevealing::<
@@ -500,88 +456,22 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             I,
         > {
             started: <system::Module<T>>::block_number(),
-            winning_target_count: old_stage.extra_winning_target_count + 1,
             intermediate_results: (0..total_options).map(|_| 0.into()).collect(),
         }));
     }
 
     /// Conclude referendum, count votes, and select the winners.
-    fn conclude_referendum(
-        revealing_stage: EzReferendumStageRevealing<T, I>,
-    ) -> (EzReferendumResult<T, I>, Vec<T::VotePower>) {
-        // select winning option
-        fn calculate_votes<T: Trait<I>, I: Instance>(
-            revealing_stage: &EzReferendumStageRevealing<T, I>,
-        ) -> EzReferendumResult<T, I> {
-            let mut winning_order: Vec<(u64, T::VotePower)> = vec![];
-
-            for i in 0..(revealing_stage.intermediate_results.len() as u64) {
-                let vote_sum: T::VotePower = revealing_stage.intermediate_results[i as usize];
-
-                // skip option with 0 votes
-                if vote_sum == 0.into() {
-                    continue;
-                }
-
-                winning_order.push((i, vote_sum));
-            }
-
-            // no votes revealed?
-            if winning_order.is_empty() {
-                return ReferendumResult::NoVotesRevealed;
-            }
-
-            // sort winners
-            winning_order.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap().reverse());
-
-            let voted_options_count = winning_order.len();
-            let target_count = revealing_stage.winning_target_count;
-
-            // is there enough options with votes to have requested amount of winners?
-            if (voted_options_count as u64) < target_count {
-                return ReferendumResult::NotEnoughWinners(winning_order);
-            }
-
-            // is there as many options voted for as requested winner count?
-            if (voted_options_count as u64) == target_count {
-                return ReferendumResult::Winners(winning_order);
-            }
-
-            // is there draw in the last winning place?
-            if winning_order[(target_count as usize) - 1].1
-                == winning_order[target_count as usize].1
-            {
-                let mut draw_end_index = target_count as usize;
-                while voted_options_count > draw_end_index + 1
-                    && winning_order[draw_end_index].1 == winning_order[draw_end_index + 1].1
-                {
-                    draw_end_index += 1;
-                }
-
-                return ReferendumResult::ExtraWinners(
-                    winning_order[..(draw_end_index as usize + 1)].to_vec(),
-                );
-            }
-
-            // return winning options
-            ReferendumResult::Winners(winning_order[..(target_count as usize)].to_vec())
-        }
-
-        // calculate votes and select winner(s)
-        let referendum_result = calculate_votes::<T, I>(&revealing_stage);
-
+    fn conclude_referendum(revealing_stage: EzReferendumStageRevealing<T, I>) -> Vec<T::VotePower> {
         // reset referendum state
-        Self::reset_referendum(&referendum_result);
+        Self::reset_referendum();
 
         // return winning option
-        (referendum_result, revealing_stage.intermediate_results)
+        revealing_stage.intermediate_results
     }
 
     /// Change the referendum stage from revealing to the inactive stage.
-    fn reset_referendum(previous_cycle_result: &EzReferendumResult<T, I>) {
-        Stage::<T, I>::put(ReferendumStage::Inactive(ReferendumStageInactive {
-            previous_cycle_result: previous_cycle_result.clone(),
-        }));
+    fn reset_referendum() {
+        Stage::<T, I>::put(ReferendumStage::Inactive);
         CurrentCycleId::<I>::put(CurrentCycleId::<I>::get() + 1);
     }
 
@@ -679,7 +569,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         // ensure referendum is not already running
         match Stage::<T, I>::get() {
-            ReferendumStage::Inactive(_) => Ok(()),
+            ReferendumStage::Inactive => Ok(()),
             _ => Err(Error::ReferendumAlreadyRunning),
         }?;
 
@@ -760,27 +650,6 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
     }
 
     fn can_release_stake(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
-        fn voted_for_winner_last_cycle<T: Trait<I>, I: Instance>(
-            previous_cycle_result: EzReferendumResult<T, I>,
-            option_voted_for: Option<u64>,
-        ) -> bool {
-            let voted_for = match option_voted_for {
-                Some(tmp_vote) => tmp_vote,
-                None => return false,
-            };
-
-            let previous_winners = match previous_cycle_result {
-                ReferendumResult::Winners(tmp_winners) => tmp_winners,
-                ReferendumResult::ExtraWinners(tmp_winners) => tmp_winners,
-                ReferendumResult::NotEnoughWinners(tmp_winners) => tmp_winners,
-                ReferendumResult::NoVotesRevealed => vec![],
-            };
-
-            let voted_for_winner = previous_winners.iter().position(|item| item.0 == voted_for);
-
-            voted_for_winner.is_some()
-        }
-
         let cycle_id = CurrentCycleId::<I>::get();
 
         // ensure superuser requested action
@@ -797,30 +666,6 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             match Stage::<T, I>::get() {
                 ReferendumStage::Voting(_) => Ok(()),
                 _ => Err(Error::InvalidTimeToRelease),
-            }?;
-        }
-
-        // enable unlocking stake locked in the last cycle only when option didn't win;
-        // or after the next inactive stage when voted for winning option
-        if cycle_id == cast_vote.cycle_id + 1 {
-            fn check_inactive_stage<T: Trait<I>, I: Instance>(
-                stage_data: ReferendumStageInactive<T::VotePower>,
-                vote_for: Option<u64>,
-            ) -> Result<(), Error<T, I>> {
-                let voted_winner =
-                    voted_for_winner_last_cycle::<T, I>(stage_data.previous_cycle_result, vote_for);
-                if voted_winner {
-                    return Err(Error::InvalidTimeToRelease);
-                }
-
-                Ok(())
-            }
-
-            match Stage::<T, I>::get() {
-                ReferendumStage::Inactive(stage_data) => {
-                    check_inactive_stage::<T, I>(stage_data, cast_vote.vote_for)
-                }
-                _ => Ok(()),
             }?;
         }
 
