@@ -30,12 +30,8 @@ const CURRENCY_UNIT = undefined;
 const TITLE_MAX_LENGTH = 40;
 const RATIONALE_MAX_LENGTH = 3000;
 
-// Text
-const DESCRIPTION_MAX_LENGTH = 5000;
-
 // Runtime Upgrade
 const FILE_SIZE_BYTES_MIN = 1;
-const FILE_SIZE_BYTES_MAX = 2000000;
 
 // Set Election Parameters
 const ANNOUNCING_PERIOD_MAX = 43200;
@@ -105,7 +101,7 @@ const DECREASE_LEAD_STAKE_MIN = 1;
 const SLASH_LEAD_STAKE_MIN = 1;
 // Max is validated in form component, because it depends on selected working group's leader stake
 
-function errorMessage (name: string, min?: number | string, max?: number | string, unit?: string): string {
+function errorMessage (name: string, min: number | string, max: number | string, unit?: string): string {
   return `${name} should be at least ${min} and no more than ${max}${unit ? ` ${unit}.` : '.'}`;
 }
 
@@ -119,7 +115,7 @@ Ex:
 import Validation from 'path/to/validationSchema'
 ...
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All()
     ...Validation.Text()
   }),
 
@@ -152,14 +148,16 @@ type FormValuesByType<T extends ValidationTypeKeys> =
   never;
 
 type ValidationSchemaFuncParamsByType<T extends ValidationTypeKeys> =
-  T extends 'AddWorkingGroupLeaderOpening' ? [number, InputValidationLengthConstraint] :
+  T extends 'Text' ? [number] :
+  T extends 'RuntimeUpgrade' ? [number] :
+  T extends 'AddWorkingGroupLeaderOpening' ? [number, InputValidationLengthConstraint | undefined] :
   T extends 'FillWorkingGroupLeaderOpening' ? [number] :
-  T extends 'TerminateWorkingGroupLeaderRole' ? [InputValidationLengthConstraint] :
+  T extends 'TerminateWorkingGroupLeaderRole' ? [InputValidationLengthConstraint | undefined] :
   [];
 
 /* eslint-enable @typescript-eslint/indent */
 
-type ValidationSchemaFunc<FieldValuesT extends {}, ParamsT extends any[] = []> = (...params: ParamsT) =>
+type ValidationSchemaFunc<FieldValuesT extends Record<string, any>, ParamsT extends any[] = []> = (...params: ParamsT) =>
 ({ [fieldK in keyof FieldValuesT]: Yup.Schema<any> });
 
 type ValidationType = {
@@ -178,6 +176,24 @@ function minMaxInt (min: number, max: number, fieldName: string) {
     .max(max, errorMessage(fieldName, min, max));
 }
 
+function minMaxStrFromConstraint (constraint: InputValidationLengthConstraint | undefined, fieldName: string) {
+  const schema = Yup.string().required(`${fieldName} is required!`);
+
+  return constraint
+    ? (
+      schema
+        .min(
+          constraint.min.toNumber(),
+          `${fieldName} must be at least ${constraint.min.toNumber()} character(s) long`
+        )
+        .max(
+          constraint.max.toNumber(),
+          `${fieldName} cannot be more than ${constraint.max.toNumber()} character(s) long`
+        )
+    )
+    : schema;
+}
+
 const Validation: ValidationType = {
   All: () => ({
     title: Yup.string()
@@ -187,16 +203,16 @@ const Validation: ValidationType = {
       .required('Rationale is required!')
       .max(RATIONALE_MAX_LENGTH, `Rationale should be under ${RATIONALE_MAX_LENGTH} characters.`)
   }),
-  Text: () => ({
+  Text: (maxLength: number) => ({
     description: Yup.string()
       .required('Description is required!')
-      .max(DESCRIPTION_MAX_LENGTH, `Description should be under ${DESCRIPTION_MAX_LENGTH}`)
+      .max(maxLength, `Description should be under ${maxLength}`)
   }),
-  RuntimeUpgrade: () => ({
+  RuntimeUpgrade: (maxFileSize: number) => ({
     WASM: Yup.mixed()
-      .test('fileArrayBuffer', 'Unexpected data format, file cannot be processed.', value => typeof value.byteLength !== 'undefined')
-      .test('fileSizeMin', `Minimum file size is ${FILE_SIZE_BYTES_MIN} bytes.`, value => value.byteLength >= FILE_SIZE_BYTES_MIN)
-      .test('fileSizeMax', `Maximum file size is ${FILE_SIZE_BYTES_MAX} bytes.`, value => value.byteLength <= FILE_SIZE_BYTES_MAX)
+      .test('fileArrayBuffer', 'Unexpected data format, file cannot be processed.', (value) => value instanceof ArrayBuffer)
+      .test('fileSizeMin', `Minimum file size is ${FILE_SIZE_BYTES_MIN} bytes.`, (value: ArrayBuffer) => value.byteLength >= FILE_SIZE_BYTES_MIN)
+      .test('fileSizeMax', `Maximum file size is ${maxFileSize} bytes.`, (value: ArrayBuffer) => value.byteLength <= maxFileSize)
   }),
   SetElectionParameters: () => ({
     announcingPeriod: Yup.number()
@@ -303,7 +319,7 @@ const Validation: ValidationType = {
         errorMessage('The max validator count', MAX_VALIDATOR_COUNT_MIN, MAX_VALIDATOR_COUNT_MAX)
       )
   }),
-  AddWorkingGroupLeaderOpening: (currentBlock: number, { min: HRTMin, max: HRTMax }: InputValidationLengthConstraint) => ({
+  AddWorkingGroupLeaderOpening: (currentBlock: number, HRTConstraint?: InputValidationLengthConstraint) => ({
     workingGroup: Yup.string(),
     activateAt: Yup.string().required(),
     activateAtBlock: Yup.number()
@@ -346,30 +362,31 @@ const Validation: ValidationType = {
       LEAVE_ROLE_UNSTAKING_MAX,
       'Leave role unstaking period'
     ),
-    humanReadableText: Yup.string()
-      .required()
+    humanReadableText: minMaxStrFromConstraint(HRTConstraint, 'human_readable_text')
       .test(
         'schemaIsValid',
         'Schema validation failed!',
-        function (val) {
-          let schemaObj: any;
+        function (val: string) {
+          let schemaObj: Record<string, unknown>;
+
           try {
-            schemaObj = JSON.parse(val);
+            schemaObj = JSON.parse(val) as Record<string, unknown>;
           } catch (e) {
             return this.createError({ message: 'Schema validation failed: Invalid JSON' });
           }
+
           const isValid = schemaValidator(schemaObj);
           const errors = schemaValidator.errors || [];
+
           if (!isValid) {
             return this.createError({
-              message: 'Schema validation failed: ' + errors.map(e => `${e.message}${e.dataPath && ` (${e.dataPath})`}`).join(', ')
+              message: 'Schema validation failed: ' + errors.map((e) => `${e.message || ''}${e.dataPath && ` (${e.dataPath})`}`).join(', ')
             });
           }
+
           return true;
         }
       )
-      .min(HRTMin.toNumber(), `human_readable_text must be at least ${HRTMin.toNumber()} character(s) long`)
-      .max(HRTMax.toNumber(), `human_readable_text cannot be more than ${HRTMax.toNumber()} character(s) long`)
   }),
   SetWorkingGroupMintCapacity: () => ({
     workingGroup: Yup.string(),
@@ -421,12 +438,9 @@ const Validation: ValidationType = {
     workingGroup: Yup.string(),
     amount: minMaxInt(MIN_REWARD_AMOUNT, MAX_REWARD_AMOUNT, 'Reward amount')
   }),
-  TerminateWorkingGroupLeaderRole: ({ min, max }: InputValidationLengthConstraint) => ({
+  TerminateWorkingGroupLeaderRole: (rationaleConstraint?: InputValidationLengthConstraint) => ({
     workingGroup: Yup.string(),
-    terminationRationale: Yup.string()
-      .required('Termination rationale is required')
-      .min(min.toNumber(), `Termination rationale must be at least ${min.toNumber()} character(s) long`)
-      .max(max.toNumber(), `Termination rationale cannot be more than ${max.toNumber()} character(s) long`),
+    terminationRationale: minMaxStrFromConstraint(rationaleConstraint, 'Termination rationale'),
     slashStake: Yup.boolean()
   })
 };

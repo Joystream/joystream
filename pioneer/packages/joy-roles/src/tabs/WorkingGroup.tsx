@@ -3,7 +3,7 @@ import { Button, Card, Icon, Message, SemanticICONS } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
 import { GroupLeadView, GroupMember, GroupMemberView, GroupLead } from '../elements';
-import { Loadable } from '@polkadot/joy-utils/index';
+import { Loadable } from '@polkadot/joy-utils/react/hocs';
 
 import { WorkingGroups } from '../working_groups';
 import styled from 'styled-components';
@@ -35,7 +35,7 @@ const JoinRole = ({ group, lead = false, title, description }: JoinRoleProps) =>
     <Message.Header>{title}</Message.Header>
     <p>{description}</p>
     <Link to={`/working-groups/opportunities/${group}${lead ? '/lead' : ''}`}>
-      <Button icon labelPosition="right" color="green" positive>
+      <Button icon labelPosition='right' color='green' positive>
         Find out more
         <Icon name={'right arrow' as SemanticICONS} />
       </Button>
@@ -93,6 +93,7 @@ const GroupOverview = Loadable<GroupOverviewProps>(
     const joinDesc = customJoinDesc || `There are openings for new ${groupName}. This is a great way to support Joystream!`;
     const becomeLeadTitle = customBecomeLeadTitle || `Become ${groupName} Lead!`;
     const becomeLeadDesc = customBecomeLeadDesc || `An opportunity to become ${groupName} Leader is currently available! This is a great way to support Joystream!`;
+
     return (
       <GroupOverviewSection>
         <h2>{ groupName }</h2>
@@ -151,6 +152,7 @@ export const CurrentLead = Loadable<CurrentLeadProps>(
   ['loaded'],
   ({ customLeadDesc, groupName, lead }: CurrentLeadProps) => {
     const leadDesc = customLeadDesc || `This role is responsible for hiring ${groupName}.`;
+
     return (
       <LeadSection>
         <Message>

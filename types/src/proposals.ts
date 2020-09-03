@@ -251,7 +251,7 @@ export class TerminateRoleParameters
 
 export class ProposalDetails extends JoyEnum({
   Text: Text,
-  RuntimeUpgrade: Vec.with(u8),
+  RuntimeUpgrade: Bytes,
   SetElectionParameters: ElectionParameters,
   Spending: SpendingParams,
   SetLead: SetLead,

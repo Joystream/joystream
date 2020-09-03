@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MusicAlbumPreviewProps, MusicAlbumPreview } from '../music/MusicAlbumPreview';
 import { MusicTrackReaderPreviewProps, MusicTrackReaderPreview } from '../music/MusicTrackReaderPreview';
-import { Pluralize } from '@polkadot/joy-utils/Pluralize';
+import { Pluralize } from '@polkadot/joy-utils/react/components';
 import { Table } from 'semantic-ui-react';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelPreview } from '../channels/ChannelPreview';
@@ -85,7 +85,7 @@ export function PlayContent (props: Props) {
     {featuredAlbums.length > 0 &&
       <div className='JoyPlayAlbum_RightSidePanel'>
         <h3>Featured albums</h3>
-        {featuredAlbums.map(x => <MusicAlbumPreview key={x.id} {...x} size={170} />)}
+        {featuredAlbums.map((x) => <MusicAlbumPreview key={x.id} {...x} size={170} />)}
       </div>
     }
   </div>;

@@ -10,6 +10,7 @@ type Props = {
 
 export const ChannelNameAsLink = (props: Props) => {
   const { channel, className, style } = props;
+
   return (
     <Link to={`/media/channels/${channel.id}`} className={className} style={style}>
       {channel.title || channel.handle}

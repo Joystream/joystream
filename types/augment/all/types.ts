@@ -192,7 +192,7 @@ export interface Channel extends Struct {
   readonly publication_status: ChannelPublicationStatus;
   readonly curation_status: ChannelCurationStatus;
   readonly created: u32;
-  readonly principal_id: u64;
+  readonly principal_id: PrincipalId;
 }
 
 /** @name ChannelContentType */
@@ -225,7 +225,7 @@ export interface ChildPositionInParentCategory extends Struct {
 
 /** @name Class */
 export interface Class extends Struct {
-  readonly id: u64;
+  readonly id: ClassId;
   readonly properties: Vec<Property>;
   readonly schemas: Vec<ClassSchema>;
   readonly name: Text;
@@ -262,7 +262,7 @@ export interface ContentId extends U8aFixed {}
 
 /** @name CreateEntity */
 export interface CreateEntity extends Struct {
-  readonly class_id: u64;
+  readonly class_id: ClassId;
 }
 
 /** @name Credential */
@@ -275,7 +275,7 @@ export interface CredentialSet extends Vec<Credential> {}
 export interface CurationActor extends Enum {
   readonly isLead: boolean;
   readonly isCurator: boolean;
-  readonly asCurator: u64;
+  readonly asCurator: CuratorId;
 }
 
 /** @name Curator */
@@ -285,13 +285,13 @@ export interface Curator extends Struct {
   readonly role_stake_profile: Option<CuratorRoleStakeProfile>;
   readonly stage: CuratorRoleStage;
   readonly induction: CuratorInduction;
-  readonly principal_id: u64;
+  readonly principal_id: PrincipalId;
 }
 
 /** @name CuratorApplication */
 export interface CuratorApplication extends Struct {
   readonly role_account: GenericAccountId;
-  readonly curator_opening_id: u64;
+  readonly curator_opening_id: CuratorOpeningId;
   readonly member_id: MemberId;
   readonly application_id: HiringApplicationId;
 }
@@ -300,10 +300,10 @@ export interface CuratorApplication extends Struct {
 export interface CuratorApplicationId extends u64 {}
 
 /** @name CuratorApplicationIdSet */
-export interface CuratorApplicationIdSet extends Vec<u64> {}
+export interface CuratorApplicationIdSet extends Vec<CuratorApplicationId> {}
 
 /** @name CuratorApplicationIdToCuratorIdMap */
-export interface CuratorApplicationIdToCuratorIdMap extends BTreeMap<HiringApplicationId, u64> {}
+export interface CuratorApplicationIdToCuratorIdMap extends BTreeMap<HiringApplicationId, CuratorId> {}
 
 /** @name CuratorExitInitiationOrigin */
 export interface CuratorExitInitiationOrigin extends Enum {
@@ -323,15 +323,15 @@ export interface CuratorId extends u64 {}
 
 /** @name CuratorInduction */
 export interface CuratorInduction extends Struct {
-  readonly lead: u64;
-  readonly curator_application_id: u64;
+  readonly lead: LeadId;
+  readonly curator_application_id: CuratorApplicationId;
   readonly at_block: u32;
 }
 
 /** @name CuratorOpening */
 export interface CuratorOpening extends Struct {
   readonly opening_id: u64;
-  readonly curator_applications: Vec<u64>;
+  readonly curator_applications: Vec<CuratorApplicationId>;
   readonly policy_commitment: OpeningPolicyCommitment;
 }
 
@@ -441,8 +441,8 @@ export interface ElectionStake extends Struct {
 
 /** @name Entity */
 export interface Entity extends Struct {
-  readonly id: u64;
-  readonly class_id: u64;
+  readonly id: EntityId;
+  readonly class_id: ClassId;
   readonly in_class_schema_indexes: Vec<u16>;
 }
 
@@ -724,9 +724,9 @@ export interface PostTextChange extends Struct {
 export interface Principal extends Enum {
   readonly isLead: boolean;
   readonly isCurator: boolean;
-  readonly asCurator: u64;
+  readonly asCurator: CuratorId;
   readonly isChannelOwner: boolean;
-  readonly asChannelOwner: u64;
+  readonly asChannelOwner: ChannelId;
 }
 
 /** @name PrincipalId */
@@ -742,7 +742,7 @@ export interface Property extends Struct {
 
 /** @name PropertyOfClass */
 export interface PropertyOfClass extends Struct {
-  readonly class_id: u64;
+  readonly class_id: ClassId;
   readonly property_index: u16;
 }
 
@@ -777,7 +777,7 @@ export interface PropertyType extends Enum {
   readonly isTextVec: boolean;
   readonly asTextVec: ITuple<[u16, u16]>;
   readonly isInternalVec: boolean;
-  readonly asInternalVec: ITuple<[u16, u64]>;
+  readonly asInternalVec: ITuple<[u16, ClassId]>;
 }
 
 /** @name PropertyValue */
@@ -818,7 +818,7 @@ export interface PropertyValue extends Enum {
   readonly isTextVec: boolean;
   readonly asTextVec: Vec<Text>;
   readonly isInternalVec: boolean;
-  readonly asInternalVec: Vec<u64>;
+  readonly asInternalVec: Vec<EntityId>;
 }
 
 /** @name ProposalDecisionStatus */
@@ -1234,9 +1234,9 @@ export interface WorkingGroupOpeningPolicyCommitment extends Struct {
 /** @name WorkingGroupUnstaker */
 export interface WorkingGroupUnstaker extends Enum {
   readonly isLead: boolean;
-  readonly asLead: u64;
+  readonly asLead: LeadId;
   readonly isCurator: boolean;
-  readonly asCurator: u64;
+  readonly asCurator: CuratorId;
 }
 
 export type PHANTOM_ALL = 'all';

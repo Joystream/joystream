@@ -11,9 +11,9 @@ import { Stake as Stake, StakingStatus as StakingStatus, Staked as Staked, Stake
 import { Mint as Mint, NextAdjustment as NextAdjustment, AdjustOnInterval as AdjustOnInterval, AdjustCapacityBy as AdjustCapacityBy } from '../mint'
 import { Recipient as Recipient, RewardRelationship as RewardRelationship } from '../recurring-rewards'
 import { Application as Application, ApplicationStage as ApplicationStage, ActivateOpeningAt as ActivateOpeningAt, ApplicationRationingPolicy as ApplicationRationingPolicy, OpeningStage as OpeningStage, StakingPolicy as StakingPolicy, Opening as Opening, WaitingToBeingOpeningStageVariant as WaitingToBeingOpeningStageVariant, ActiveOpeningStageVariant as ActiveOpeningStageVariant, ActiveOpeningStage as ActiveOpeningStage, AcceptingApplications as AcceptingApplications, ReviewPeriod as ReviewPeriod, Deactivated as Deactivated, OpeningDeactivationCause as OpeningDeactivationCause, InactiveApplicationStage as InactiveApplicationStage, UnstakingApplicationStage as UnstakingApplicationStage, ApplicationDeactivationCause as ApplicationDeactivationCause, StakingAmountLimitMode as StakingAmountLimitMode } from '../hiring'
-import { Class as Class, Entity as Entity, ClassSchema as ClassSchema, Property as Property, PropertyType as PropertyType, PropertyValue as PropertyValue, ClassPropertyValue as ClassPropertyValue } from '../versioned-store'
+import { ClassId as ClassId, EntityId as EntityId, Class as Class, Entity as Entity, ClassSchema as ClassSchema, Property as Property, PropertyType as PropertyType, PropertyValue as PropertyValue, ClassPropertyValue as ClassPropertyValue } from '../versioned-store'
 import { EntityPermissions as EntityPermissions, ReferenceConstraint as ReferenceConstraint, ClassPermissionsType as ClassPermissionsType, Operation as Operation, OperationType as OperationType, CreateEntity as CreateEntity, UpdatePropertyValues as UpdatePropertyValues, AddSchemaSupportToEntity as AddSchemaSupportToEntity, ParametrizedEntity as ParametrizedEntity, ParametrizedClassPropertyValue as ParametrizedClassPropertyValue, ParametrizedPropertyValue as ParametrizedPropertyValue, PropertyOfClass as PropertyOfClass } from '../versioned-store/permissions'
-import { OptionalText as OptionalText, Channel as Channel, ChannelContentType as ChannelContentType, ChannelCurationStatus as ChannelCurationStatus, ChannelPublicationStatus as ChannelPublicationStatus, CurationActor as CurationActor, Curator as Curator, CuratorApplication as CuratorApplication, CuratorOpening as CuratorOpening, Lead as Lead, OpeningPolicyCommitment as OpeningPolicyCommitment, Principal as Principal, WorkingGroupUnstaker as WorkingGroupUnstaker, CuratorApplicationIdToCuratorIdMap as CuratorApplicationIdToCuratorIdMap, CuratorApplicationIdSet as CuratorApplicationIdSet, CuratorRoleStakeProfile as CuratorRoleStakeProfile, CuratorRoleStage as CuratorRoleStage, CuratorExitSummary as CuratorExitSummary, CuratorExitInitiationOrigin as CuratorExitInitiationOrigin, LeadRoleState as LeadRoleState, ExitedLeadRole as ExitedLeadRole, CuratorInduction as CuratorInduction } from '../content-working-group'
+import { ChannelId as ChannelId, CuratorId as CuratorId, CuratorOpeningId as CuratorOpeningId, CuratorApplicationId as CuratorApplicationId, LeadId as LeadId, PrincipalId as PrincipalId, OptionalText as OptionalText, Channel as Channel, ChannelContentType as ChannelContentType, ChannelCurationStatus as ChannelCurationStatus, ChannelPublicationStatus as ChannelPublicationStatus, CurationActor as CurationActor, Curator as Curator, CuratorApplication as CuratorApplication, CuratorOpening as CuratorOpening, Lead as Lead, OpeningPolicyCommitment as OpeningPolicyCommitment, Principal as Principal, WorkingGroupUnstaker as WorkingGroupUnstaker, CuratorApplicationIdToCuratorIdMap as CuratorApplicationIdToCuratorIdMap, CuratorApplicationIdSet as CuratorApplicationIdSet, CuratorRoleStakeProfile as CuratorRoleStakeProfile, CuratorRoleStage as CuratorRoleStage, CuratorExitSummary as CuratorExitSummary, CuratorExitInitiationOrigin as CuratorExitInitiationOrigin, LeadRoleState as LeadRoleState, ExitedLeadRole as ExitedLeadRole, CuratorInduction as CuratorInduction } from '../content-working-group'
 import { RationaleText as RationaleText, Application as ApplicationOf, ApplicationIdSet as ApplicationIdSet, ApplicationIdToWorkerIdMap as ApplicationIdToWorkerIdMap, WorkerId as WorkerId, Worker as WorkerOf, Opening as OpeningOf, StorageProviderId as StorageProviderId, OpeningType as OpeningType, ApplicationId as HiringApplicationId, RewardPolicy as RewardPolicy, WorkingGroupOpeningPolicyCommitment as WorkingGroupOpeningPolicyCommitment, RoleStakeProfile as RoleStakeProfile } from '../working-group'
 import { Url as Url, IPNSIdentity as IPNSIdentity, ServiceProviderRecord as ServiceProviderRecord } from '../discovery'
 import { ContentId as ContentId, LiaisonJudgement as LiaisonJudgement, DataObject as DataObject, DataObjectStorageRelationshipId as DataObjectStorageRelationshipId, DataObjectStorageRelationship as DataObjectStorageRelationship, DataObjectTypeId as DataObjectTypeId, DataObjectType as DataObjectType, DataObjectsMap as DataObjectsMap } from '../media'
@@ -286,12 +286,12 @@ declare module '@polkadot/types/types/registry' {
     "StakingAmountLimitMode": StakingAmountLimitMode;
     "Option<StakingAmountLimitMode>": Option<StakingAmountLimitMode>;
     "Vec<StakingAmountLimitMode>": Vec<StakingAmountLimitMode>;
-    "ClassId": u64;
-    "Option<ClassId>": Option<u64>;
-    "Vec<ClassId>": Vec<u64>;
-    "EntityId": u64;
-    "Option<EntityId>": Option<u64>;
-    "Vec<EntityId>": Vec<u64>;
+    "ClassId": ClassId;
+    "Option<ClassId>": Option<ClassId>;
+    "Vec<ClassId>": Vec<ClassId>;
+    "EntityId": EntityId;
+    "Option<EntityId>": Option<EntityId>;
+    "Vec<EntityId>": Vec<EntityId>;
     "Class": Class;
     "Option<Class>": Option<Class>;
     "Vec<Class>": Vec<Class>;
@@ -349,24 +349,24 @@ declare module '@polkadot/types/types/registry' {
     "PropertyOfClass": PropertyOfClass;
     "Option<PropertyOfClass>": Option<PropertyOfClass>;
     "Vec<PropertyOfClass>": Vec<PropertyOfClass>;
-    "ChannelId": u64;
-    "Option<ChannelId>": Option<u64>;
-    "Vec<ChannelId>": Vec<u64>;
-    "CuratorId": u64;
-    "Option<CuratorId>": Option<u64>;
-    "Vec<CuratorId>": Vec<u64>;
-    "CuratorOpeningId": u64;
-    "Option<CuratorOpeningId>": Option<u64>;
-    "Vec<CuratorOpeningId>": Vec<u64>;
-    "CuratorApplicationId": u64;
-    "Option<CuratorApplicationId>": Option<u64>;
-    "Vec<CuratorApplicationId>": Vec<u64>;
-    "LeadId": u64;
-    "Option<LeadId>": Option<u64>;
-    "Vec<LeadId>": Vec<u64>;
-    "PrincipalId": u64;
-    "Option<PrincipalId>": Option<u64>;
-    "Vec<PrincipalId>": Vec<u64>;
+    "ChannelId": ChannelId;
+    "Option<ChannelId>": Option<ChannelId>;
+    "Vec<ChannelId>": Vec<ChannelId>;
+    "CuratorId": CuratorId;
+    "Option<CuratorId>": Option<CuratorId>;
+    "Vec<CuratorId>": Vec<CuratorId>;
+    "CuratorOpeningId": CuratorOpeningId;
+    "Option<CuratorOpeningId>": Option<CuratorOpeningId>;
+    "Vec<CuratorOpeningId>": Vec<CuratorOpeningId>;
+    "CuratorApplicationId": CuratorApplicationId;
+    "Option<CuratorApplicationId>": Option<CuratorApplicationId>;
+    "Vec<CuratorApplicationId>": Vec<CuratorApplicationId>;
+    "LeadId": LeadId;
+    "Option<LeadId>": Option<LeadId>;
+    "Vec<LeadId>": Vec<LeadId>;
+    "PrincipalId": PrincipalId;
+    "Option<PrincipalId>": Option<PrincipalId>;
+    "Vec<PrincipalId>": Vec<PrincipalId>;
     "OptionalText": OptionalText;
     "Option<OptionalText>": Option<OptionalText>;
     "Vec<OptionalText>": Vec<OptionalText>;

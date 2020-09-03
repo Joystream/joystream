@@ -2,8 +2,8 @@ import React from 'react';
 import { RouteComponentProps } from 'react-router';
 import { MediaView } from '../MediaView';
 import { OuterProps, EditForm } from './EditChannel';
-import { ChannelId } from '@joystream/types/content-working-group';
-import { JoyError } from '@polkadot/joy-utils/JoyStatus';
+import { JoyError } from '@polkadot/joy-utils/react/components';
+import { useApi } from '@polkadot/react-hooks';
 
 type Props = OuterProps;
 
@@ -15,18 +15,20 @@ export const EditChannelView = MediaView<Props>({
     const { transport, id } = props;
     const entity = id && await transport.channelById(id);
     const constraints = await transport.channelValidationConstraints();
+
     return { entity, constraints };
   }
 });
 
-type WithRouterProps = Props & RouteComponentProps<any>
+type WithRouterProps = Props & RouteComponentProps<Record<string, string | undefined>>
 
 export const EditChannelWithRouter = (props: WithRouterProps) => {
   const { match: { params: { id } } } = props;
+  const { api } = useApi();
 
   if (id) {
     try {
-      return <EditChannelView {...props} id={new ChannelId(id)} />;
+      return <EditChannelView {...props} id={api.createType('ChannelId', id)} />;
     } catch (err) {
       console.log('EditChannelWithRouter failed:', err);
     }

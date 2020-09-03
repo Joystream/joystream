@@ -1,15 +1,20 @@
 import React from 'react';
 import { Dropdown, DropdownItemProps, DropdownProps } from 'semantic-ui-react';
 import { FormikProps, Field } from 'formik';
-import * as JoyForms from '@polkadot/joy-utils/forms';
+import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { SubmittableResult } from '@polkadot/api';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 import { MediaDropdownOptions } from './MediaDropdownOptions';
-import { OnTxButtonClick } from '@polkadot/joy-utils/TxButton';
+import { OnTxButtonClick } from '@polkadot/joy-utils/react/components/TxButton';
 import isEqual from 'lodash/isEqual';
 import { componentName } from '@polkadot/joy-utils/react/helpers';
 
 export const datePlaceholder = 'Date in format yyyy-mm-dd';
+
+export const boolOptions: DropdownItemProps[] = [
+  { value: 'true', text: 'Yes' },
+  { value: 'false', text: 'No' }
+];
 
 export type FormCallbacks = {
   onSubmit: OnTxButtonClick;
@@ -40,7 +45,7 @@ type MediaTextProps<OuterProps, FormValues> =
 type MediaFieldProps<OuterProps, FormValues> =
   BaseFieldProps<OuterProps, FormValues> &
   JoyForms.LabelledProps<FormValues> & {
-    fieldProps: any;
+    fieldProps: Record<string, unknown>;
   }
 
 type MediaDropdownProps<OuterProps, FormValues> =
@@ -78,6 +83,7 @@ export function withMediaForm<OuterProps, FormValues>
 
   function MediaText (props: MediaTextProps<OuterProps, FormValues>) {
     const { field: f } = props;
+
     return !f ? null : <LabelledText name={f.id} label={f.name} tooltip={f.description} required={f.required} {...props} />;
   }
 
@@ -105,8 +111,8 @@ export function withMediaForm<OuterProps, FormValues>
 
   const MediaDropdown = (props: MediaDropdownProps<OuterProps, FormValues>) => {
     const { field: f, options = [] } = props;
-    const id = f.id as string;
-    const value = (props.values as any)[id] || '';
+    const id = f.id;
+    const value = props.values[id] || '';
 
     return <MediaField {...props} fieldProps={{
       component: Dropdown,
@@ -115,10 +121,10 @@ export function withMediaForm<OuterProps, FormValues>
       options,
       value,
       onBlur: (_event: any, _data: DropdownProps) => {
-        props.setFieldTouched(id, true);
+        props.setFieldTouched(id as string, true);
       },
       onChange: (_event: any, data: DropdownProps) => {
-        props.setFieldValue(id, data.value);
+        props.setFieldValue(id as string, data.value);
       }
     }} />;
   };
@@ -138,6 +144,7 @@ export function withMediaForm<OuterProps, FormValues>
 
       const isFieldChanged = (field: FieldName | FieldObject): boolean => {
         const fieldName = typeof field === 'string' ? field : (field as FieldObject).id;
+
         return (
           dirty &&
           touched[fieldName] === true &&
@@ -159,6 +166,7 @@ export function withMediaForm<OuterProps, FormValues>
 
       const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
         setSubmitting(false);
+
         if (txResult === null) {
           // Tx cancelled
 
@@ -187,6 +195,8 @@ export function withMediaForm<OuterProps, FormValues>
 
       return <Component {...allProps} />;
     };
+
   ResultComponent.displayName = `withMediaForm(${componentName(Component)})`;
+
   return ResultComponent;
 }

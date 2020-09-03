@@ -14,6 +14,7 @@ export type LabelledProps<FormValues> = {
   className?: string;
   style?: React.CSSProperties;
   children?: React.ReactNode;
+  flex?: boolean;
   errors: FormikErrors<FormValues>;
   touched: FormikTouched<FormValues>;
   isSubmitting: boolean;
@@ -22,7 +23,7 @@ export type LabelledProps<FormValues> = {
 export function LabelledField<FormValues> () {
   const LabelledFieldInner: React.FunctionComponent<LabelledProps<FormValues>> =
     (props: LabelledProps<FormValues>) => {
-      const { name, label, invisibleLabel = false, tooltip, required = false, touched, errors, children, style } = props;
+      const { name, label, invisibleLabel = false, tooltip, required = false, touched, errors, children, style, flex } = props;
 
       const hasError = name && touched[name] && errors[name];
 
@@ -30,7 +31,7 @@ export function LabelledField<FormValues> () {
 
       const fieldWithError =
         <>
-          <div>{children}</div>
+          <div style={{ display: flex ? 'flex' : 'block' }}>{children}</div>
           {name && hasError && <div className='ui pointing red label'>{errors[name]}</div>}
         </>;
 

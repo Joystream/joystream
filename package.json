@@ -20,12 +20,7 @@
     "devops/eslint-config",
     "devops/prettier-config",
     "pioneer",
-    "pioneer/packages/apps*",
-    "pioneer/packages/page*",
-    "pioneer/packages/react*",
-    "pioneer/packages/joy-utils",
-    "pioneer/packages/joy-members",
-    "pioneer/packages/joy-pages",
+    "pioneer/packages/*",
     "utils/api-examples"
   ],
   "resolutions": {
@@ -37,7 +32,8 @@
     "@polkadot/util-crypto": "3.0.1",
     "@polkadot/wasm-crypto": "1.2.1",
     "babel-core": "^7.0.0-bridge.0",
-    "typescript": "^3.9.7"
+    "typescript": "^3.9.7",
+    "bn.js": "^5.1.2"
   },
   "devDependencies": {
     "husky": "^4.2.5",

@@ -300,12 +300,12 @@ export class CuratorApplicationIdToCuratorIdMap extends BTreeMap.with(Applicatio
 export class CuratorApplicationIdSet extends Vec.with(CuratorApplicationId) {}
 
 export const contentWorkingGroupTypes = {
-  ChannelId: 'u64',
-  CuratorId: 'u64',
-  CuratorOpeningId: 'u64',
-  CuratorApplicationId: 'u64',
-  LeadId: 'u64',
-  PrincipalId: 'u64',
+  ChannelId,
+  CuratorId,
+  CuratorOpeningId,
+  CuratorApplicationId,
+  LeadId,
+  PrincipalId,
   OptionalText,
   Channel,
   ChannelContentType,

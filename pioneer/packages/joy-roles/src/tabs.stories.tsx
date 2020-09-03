@@ -3,7 +3,7 @@ import { withKnobs } from '@storybook/addon-knobs';
 import { Container, Tab } from 'semantic-ui-react';
 import { ContentCuratorsSection } from './tabs/WorkingGroup.stories';
 import { OpportunitySandbox } from './tabs/Opportunities.stories';
-import { ApplicationSandbox } from './flows/apply.stories';
+// import { ApplicationSandbox } from './flows/apply.stories';
 import { MyRolesSandbox } from './tabs/MyRoles.stories';
 
 export default {
@@ -14,7 +14,7 @@ export default {
 export const RolesPage = () => {
   const tab = (
     <Container>
-      <Container className="outer">
+      <Container className='outer'>
         <ContentCuratorsSection />
       </Container>
     </Container>
@@ -38,4 +38,4 @@ export const RolesPage = () => {
   );
 };
 
-export const ApplicationLightbox = ApplicationSandbox;
+// export const ApplicationLightbox = ApplicationSandbox;
