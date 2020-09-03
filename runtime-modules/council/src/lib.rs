@@ -6,7 +6,7 @@
 
 // used dependencies
 use codec::{Codec, Decode, Encode};
-use frame_support::traits::{Currency, Get};
+use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReason};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, Parameter,
 };
@@ -29,38 +29,39 @@ mod tests;
 /////////////////// Data Structures ////////////////////////////////////////////
 
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
-pub struct CouncilStageInfo<Currency, BlockNumber> {
-    stage: CouncilStage<Currency>,
+pub struct CouncilStageInfo<AccountId, Currency, BlockNumber> {
+    stage: CouncilStage<AccountId, Currency>,
     changed_at: BlockNumber,
 }
 
 #[derive(Encode, Decode, PartialEq, Eq, Debug)]
-pub enum CouncilStage<Balance> {
+pub enum CouncilStage<AccountId, Balance> {
     Void, // init state - behaves the same way as IdlePeriod but can be immediately changed to `Election`
-    Announcing(CouncilStageAnnouncing<Balance>), // candidacy announcment period
-    Election(CouncilStageElection<Balance>),
+    Announcing(CouncilStageAnnouncing<AccountId, Balance>), // candidacy announcment period
+    Election(CouncilStageElection<AccountId, Balance>),
     Idle,
 }
 
-impl<Balance> Default for CouncilStage<Balance> {
-    fn default() -> CouncilStage<Balance> {
-        CouncilStage::<Balance>::Void
+impl<AccountId, Balance> Default for CouncilStage<AccountId, Balance> {
+    fn default() -> CouncilStage<AccountId, Balance> {
+        CouncilStage::<AccountId, Balance>::Void
     }
 }
 
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
-pub struct CouncilStageAnnouncing<Balance> {
-    candidates: Vec<Candidate<Balance>>,
+pub struct CouncilStageAnnouncing<AccountId, Balance> {
+    candidates: Vec<Candidate<AccountId, Balance>>,
 }
 
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
-pub struct CouncilStageElection<Balance> {
-    candidates: Vec<Candidate<Balance>>,
+pub struct CouncilStageElection<AccountId, Balance> {
+    candidates: Vec<Candidate<AccountId, Balance>>,
 }
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
-pub struct Candidate<Balance> {
+pub struct Candidate<AccountId, Balance> {
+    account_id: AccountId,
     stake: Balance,
 }
 
@@ -73,9 +74,9 @@ pub type Balance<T> = <<T as referendum::Trait<ReferendumInstance>>::Currency as
     <T as system::Trait>::AccountId,
 >>::Balance;
 
-pub type EzCandidate<T> = Candidate<Balance<T>>;
-pub type EzCouncilStageAnnouncing<T> = CouncilStageAnnouncing<Balance<T>>;
-pub type EzCouncilStageElection<T> = CouncilStageElection<Balance<T>>;
+pub type EzCandidate<T> = Candidate<<T as system::Trait>::AccountId, Balance<T>>;
+pub type EzCouncilStageAnnouncing<T> = CouncilStageAnnouncing<<T as system::Trait>::AccountId, Balance<T>>;
+pub type EzCouncilStageElection<T> = CouncilStageElection<<T as system::Trait>::AccountId, Balance<T>>;
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
@@ -94,18 +95,19 @@ pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
     /// Minimum stake candidate has to lock
     type MinCandidateStake: Get<Balance::<Self>>;
 
+    /// Identifier for currency locks used for staking.
+    type LockId: Get<LockIdentifier>;
+
     /// Duration of annoncing period
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
     /// Duration of idle period
     type IdlePeriodDuration: Get<Self::BlockNumber>;
-
-    fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool;
 }
 
 decl_storage! {
     trait Store for Module<T: Trait> as Referendum {
         /// Current council voting stage
-        pub Stage get(fn stage) config(): CouncilStageInfo<Balance::<T>, T::BlockNumber>;
+        pub Stage get(fn stage) config(): CouncilStageInfo<T::AccountId, Balance::<T>, T::BlockNumber>;
 
         /// Current council members
         pub CouncilMembers get(fn council_members) config(): Vec<EzCandidate<T>>;
@@ -117,6 +119,7 @@ decl_event! {
     pub enum Event<T>
     where
         Balance = Balance::<T>,
+        <T as system::Trait>::AccountId,
     {
         /// New council was elected
         AnnouncingPeriodStarted(),
@@ -125,13 +128,13 @@ decl_event! {
         NotEnoughCandidates(),
 
         /// Candidates are announced and voting starts
-        VotingPeriodStarted(Vec<Candidate<Balance>>),
+        VotingPeriodStarted(Vec<Candidate<AccountId, Balance>>),
 
         /// New candidate announced
-        NewCandidate(Candidate<Balance>),
+        NewCandidate(Candidate<AccountId, Balance>),
 
         /// New council was elected and appointed
-        NewCouncilElected(Vec<Candidate<Balance>>),
+        NewCouncilElected(Vec<Candidate<AccountId, Balance>>),
     }
 }
 
@@ -149,6 +152,9 @@ decl_error! {
 
         /// Candidate haven't provide sufficient stake
         CandidacyStakeTooLow,
+
+        /// Council member and candidates can't withdraw stake
+        StakeStillNeeded,
     }
 }
 
@@ -224,6 +230,15 @@ decl_module! {
             Self::end_election_period(stage_data, );
         }
         */
+        #[weight = 10_000_000]
+        pub fn release_candidacy_stake(origin) -> Result<(), Error<T>> {
+            let account_id = EnsureChecks::<T>::can_release_candidacy_stake(origin.clone())?;
+
+            // update state
+            Mutations::<T>::release_candidacy_stake(&account_id);
+
+            Ok(())
+        }
 
         /////////////////// Referendum Wrap ////////////////////////////////////
         // start voting period
@@ -244,8 +259,8 @@ decl_module! {
         }
 
         #[weight = 10_000_000]
-        pub fn release_stake(origin) -> Result<(), Error<T>> {
-            EnsureChecks::<T>::can_release_stake(origin.clone())?;
+        pub fn release_vote_stake(origin) -> Result<(), Error<T>> {
+            EnsureChecks::<T>::can_release_vote_stake(origin.clone())?;
 
             // call referendum reveal vote extrinsic
             <Referendum<T>>::release_stake(origin)?;
@@ -343,15 +358,13 @@ impl<T: Trait> Mutations<T> {
     }
 
     fn finalize_announcing_period(stage_data: &EzCouncilStageAnnouncing<T>) -> Result<(), Error<T>> {
-        let extra_winning_target_count = T::CouncilSize::get() - 1;
-        let extra_options_count = stage_data.candidates.len() as u64 - extra_winning_target_count - 1;
+        let extra_options_count = stage_data.candidates.len() as u64 - 1;
         let origin = RawOrigin::Root;
 
         // IMPORTANT - because starting referendum can fail it has to be the first mutation!
         <Referendum<T> as ReferendumManager<T, ReferendumInstance>>::start_referendum(
             origin.into(),
             extra_options_count,
-            extra_winning_target_count,
         )?;
 
         let block_number = <system::Module<T>>::block_number();
@@ -452,6 +465,14 @@ impl<T: Trait> Mutations<T> {
             return;
         }
 
+        // lock stake
+        T::Currency::set_lock(
+            <T as Trait>::LockId::get(),
+            &candidate.account_id,
+            *stake,
+            WithdrawReason::Transfer.into(),
+        );
+
         let block_number = <system::Module<T>>::block_number();
 
         // store new candidacy list
@@ -463,8 +484,9 @@ impl<T: Trait> Mutations<T> {
         });
     }
 
-    fn unlock_stake(account_id: T::AccountId) -> () {
-        // TODO
+    fn release_candidacy_stake(account_id: &T::AccountId) {
+        // release stake amount
+        T::Currency::remove_lock(<T as Trait>::LockId::get(), account_id);
     }
 }
 
@@ -490,7 +512,7 @@ impl<T: Trait> EnsureChecks<T> {
         stake: &Balance<T>,
     ) -> Result<(EzCouncilStageAnnouncing<T>, EzCandidate<T>), Error<T>> {
         // ensure regular user requested action
-        Self::ensure_regular_user(origin)?;
+        let account_id = Self::ensure_regular_user(origin)?;
 
         let stage_data = match Stage::<T>::get().stage {
             CouncilStage::Announcing(stage_data) => stage_data,
@@ -502,13 +524,45 @@ impl<T: Trait> EnsureChecks<T> {
         }
 
         let candidate = Candidate {
+            account_id,
             stake: *stake
         };
 
         Ok((stage_data, candidate))
     }
 
-    fn can_release_stake(origin: T::Origin) -> Result<T::AccountId, Error<T>> {
+    fn can_release_candidacy_stake(origin: T::Origin) -> Result<T::AccountId, Error<T>> {
+        // ensure regular user requested action
+        let account_id = Self::ensure_regular_user(origin)?;
+
+        // ensure user is not current council member
+        let members = CouncilMembers::<T>::get();
+        let council_member = members
+           .iter()
+           .find(|item| item.account_id == account_id);
+        if council_member.is_some() {
+            return Err(Error::StakeStillNeeded);
+        }
+
+        // get candidates if any
+        let candidates = match Stage::<T>::get().stage {
+            CouncilStage::Announcing(tmp_stage_data) => tmp_stage_data.candidates,
+            CouncilStage::Election(tmp_stage_data) => tmp_stage_data.candidates,
+            _ => return Ok(account_id),
+        };
+
+        // ensure user is not council candidate
+        let candidate = candidates
+           .iter()
+           .find(|item| item.account_id == account_id);
+        if candidate.is_some() {
+            return Err(Error::StakeStillNeeded);
+        }
+
+        Ok(account_id)
+    }
+
+    fn can_release_vote_stake(origin: T::Origin) -> Result<T::AccountId, Error<T>> {
         // ensure regular user requested action
         let account_id = Self::ensure_regular_user(origin)?;
 

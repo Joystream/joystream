@@ -8,6 +8,7 @@ type MockUtils = InstanceMockUtils<Runtime>;
 type ReferendumInstance = referendum::Instance0;
 
 /////////////////// Lifetime - election cycle start ////////////////////////////
+/*
 #[test]
 #[ignore]
 fn election_() {
@@ -17,6 +18,7 @@ fn election_() {
         //Mocks::start_announcing_period(origin, Ok(()));
     });
 }
+*/
 /*
 #[test]
 // temporary test testing connection between council and referendum

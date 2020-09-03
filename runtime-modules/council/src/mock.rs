@@ -13,7 +13,7 @@ use frame_support::{
 };
 use pallet_balances;
 use rand::Rng;
-use referendum::{Balance, CastVote, CurrentCycleId, ReferendumManager, ReferendumResult};
+use referendum::{Balance, CastVote, CurrentCycleId, ReferendumManager};
 use sp_core::H256;
 use sp_io;
 use sp_runtime::{
@@ -47,20 +47,19 @@ parameter_types! {
     pub const IdlePeriodDuration: u64 = 10;
     pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 10;
+    pub const CouncilLockId: LockIdentifier = *b"council_";
 }
 
 impl Trait for Runtime {
     type Event = TestEvent;
 
+    type LockId = CouncilLockId;
     type MinNumberOfCandidates = MinNumberOfCandidates;
     type CouncilSize = CouncilSize;
     type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
     type IdlePeriodDuration = IdlePeriodDuration;
     type MinCandidateStake = MinCandidateStake;
 
-    fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool {
-        *account_id == USER_ADMIN
-    }
 }
 
 /////////////////// Module implementation //////////////////////////////////////
@@ -140,7 +139,7 @@ parameter_types! {
     pub const RevealStageDuration: u64 = 5;
     pub const MinimumStake: u64 = 10000;
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
-    pub const LockId: LockIdentifier = *b"referend";
+    pub const ReferendumLockId: LockIdentifier = *b"referend";
 }
 
 impl referendum::Trait<ReferendumInstance> for Runtime {
@@ -150,7 +149,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type MaxSaltLength = MaxSaltLength;
 
     type Currency = pallet_balances::Module<Runtime>;
-    type LockId = LockId;
+    type LockId = ReferendumLockId;
 
     type ManagerOrigin =
         EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
@@ -161,10 +160,6 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     type RevealStageDuration = RevealStageDuration;
 
     type MinimumStake = MinimumStake;
-
-    fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool {
-        *account_id == USER_ADMIN
-    }
 
     fn caclulate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
@@ -188,7 +183,6 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     }
 
     fn process_results(
-        _result: &ReferendumResult<u64, Self::VotePower>,
         _all_options_results: &[Self::VotePower],
     ) {
         // not used right now
@@ -281,7 +275,10 @@ where
     ) -> (OriginType<T::AccountId>, EzCandidate<T>) {
         let account_id = CANDIDATE_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
-        let candidate = EzCandidate::<T> { stake };
+        let candidate = EzCandidate::<T> {
+            account_id: account_id.into(),
+            stake,
+        };
 
         (origin, candidate)
     }
