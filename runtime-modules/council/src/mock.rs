@@ -46,6 +46,7 @@ parameter_types! {
     pub const AnnouncingPeriodDuration: u64 = 10;
     pub const IdlePeriodDuration: u64 = 10;
     pub const CouncilSize: u64 = 3;
+    pub const MinCandidateStake: u64 = 10;
 }
 
 impl Trait for Runtime {
@@ -55,6 +56,7 @@ impl Trait for Runtime {
     type CouncilSize = CouncilSize;
     type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
     type IdlePeriodDuration = IdlePeriodDuration;
+    type MinCandidateStake = MinCandidateStake;
 
     fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool {
         *account_id == USER_ADMIN

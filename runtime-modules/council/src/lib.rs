@@ -91,6 +91,8 @@ pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
     type MinNumberOfCandidates: Get<u64>;
     /// Council member count
     type CouncilSize: Get<u64>;
+    /// Minimum stake candidate has to lock
+    type MinCandidateStake: Get<Balance::<Self>>;
 
     /// Duration of annoncing period
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
@@ -144,6 +146,9 @@ decl_error! {
 
         /// User tried to candidate outside of the announcement period
         CantReleaseStakeNow,
+
+        /// Candidate haven't provide sufficient stake
+        CandidacyStakeTooLow,
     }
 }
 
@@ -203,6 +208,22 @@ decl_module! {
 
             Ok(())
         }
+
+        /*
+        // TODO reconsider this function. It is meant as temporary solution for recieving referendum results
+        #[weight = 10_000_000]
+        pub fn recieve_referendum_winners(origin, winners: &ReferendumResult<u64, Self::VotePower>, all_options_results: &[Self::VotePower]) -> Result<(), Error<T>> {
+            ensure_root(origin)?;
+
+
+            let stage_data = match Stage::<T>::get().stage {
+                CouncilStage::Election(stage_data) => stage_data,
+                _ => return Err(Error::BadOrigin), // TODO: if this part of code stay, create new proper error for this situation
+            };
+
+            Self::end_election_period(stage_data, );
+        }
+        */
 
         /////////////////// Referendum Wrap ////////////////////////////////////
         // start voting period
@@ -275,8 +296,8 @@ impl<T: Trait> Module<T> {
     }
 
     // TODO: invoke this somehow
-    fn end_election_period(stage_data: EzCouncilStageElection<T>) {
-        let elected_members = vec![]; // TODO
+    fn end_election_period(_stage_data: EzCouncilStageElection<T>, elected_members: Vec<EzCandidate<T>>) {
+        //let elected_members = vec![]; // TODO
 
         // update state
         Mutations::<T>::finalize_election_period(&elected_members);
@@ -475,6 +496,10 @@ impl<T: Trait> EnsureChecks<T> {
             CouncilStage::Announcing(stage_data) => stage_data,
             _ => return Err(Error::CantCandidateNow),
         };
+
+        if stake < &T::MinCandidateStake::get() {
+            return Err(Error::CandidacyStakeTooLow)
+        }
 
         let candidate = Candidate {
             stake: *stake
