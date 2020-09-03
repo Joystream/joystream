@@ -60,38 +60,55 @@ export default class Scaffold extends Command {
   }
 
   async promptDotEnv(): Promise<string> {
+    let ctx: Record<string, string> = {};
+
     const projectName = (await cli.prompt('Enter your project name', { required: true })) as string;
+    ctx = { ...ctx, projectName };
+
     const wsProviderUrl = (await cli.prompt('Substrate WS provider endpoint', {
       default: DEFAULT_WS_API_ENDPOINT,
     })) as string;
 
+    ctx = { ...ctx, wsProviderUrl };
+    
+    ctx = await this.promptCustomTypes(ctx);
+
     const blockHeight = (await cli.prompt('Start block height', { default: '0' })) as string;
+    ctx = { ...ctx, blockHeight };
 
     if (isNaN(parseInt(blockHeight))) {
       throw new Error('Starting block height must be an integer');
     }
 
     const dbName = (await cli.prompt('Database name', { default: projectName })) as string;
+    ctx = { ...ctx, dbName };
     const dbHost = (await cli.prompt('Database host', { default: 'localhost' })) as string;
+    ctx = { ...ctx, dbHost };
     const dbPort = (await cli.prompt('Database port', { default: '5432' })) as string;
+    ctx = { ...ctx, dbPort };
     const dbUser = (await cli.prompt('Database user', { default: 'postgres' })) as string;
+    ctx = { ...ctx, dbUser };
     const dbPassword = (await cli.prompt('Database user password', { type: 'mask', default: 'postgres' })) as string;
-
+    ctx = { ...ctx, dbPassword };
     const appPort = (await cli.prompt('GraphQL server port', { default: '4000' })) as string;
-
+    ctx = { ...ctx, appPort };
     const template = await fs.readFile(getTemplatePath('scaffold/.env'), 'utf-8');
 
-    return Mustache.render(template, {
-      projectName,
-      wsProviderUrl,
-      blockHeight,
-      dbName,
-      dbHost,
-      dbPort,
-      dbUser,
-      dbPassword,
-      appPort,
-    });
+    return Mustache.render(template, ctx);
+  }
+
+  async promptCustomTypes(ctx: Record<string, string>): Promise<Record<string, string>> {
+    const proceed = await cli.confirm('Do you have a custom type library?')
+    if (!proceed) {
+      return ctx;
+    }
+    const typeLib = (await cli.prompt('Please provide type library', { default: '@polkadot/types' })) as string;
+    let _ctx: Record<string, string> = { ...ctx, typeLib };
+    const typeVer = (await cli.prompt('Please provide library version')) as string;
+    _ctx = { ..._ctx, typeVer };
+    const typeFun = (await cli.prompt('What is the function name for type registration ')) as string;
+    _ctx = { ..._ctx, typeFun };
+    return _ctx;
   }
 
   // For now, we simply copy the hardcoded templates
