@@ -32,8 +32,8 @@ const videoFieldsFragment = gql`
 
 // TODO: Add proper query params (order, limit, etc.)
 export const GET_NEWEST_VIDEOS = gql`
-  query GetNewestVideos {
-    videos {
+  query GetNewestVideos($offset: Int, $limit: Int) {
+    videos(offset: $offset, limit: $limit) {
       ...VideoFields
     }
   }

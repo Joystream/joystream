@@ -8,8 +8,10 @@ type ContainerProps = {
   clickable: boolean
 }
 
+export const MAX_VIDEO_PREVIEW_WIDTH = '320px'
+
 export const CoverContainer = styled.div`
-  width: 320px;
+  width: 100%;
   height: 190px;
 
   transition-property: box-shadow, transform;
@@ -20,6 +22,7 @@ export const CoverContainer = styled.div`
 `
 
 export const Container = styled.article<ContainerProps>`
+  max-width: ${MAX_VIDEO_PREVIEW_WIDTH};
   color: ${colors.gray[300]};
   cursor: ${({ clickable }) => (clickable ? 'pointer' : 'auto')};
   display: inline-block;

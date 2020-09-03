@@ -8,13 +8,13 @@
 // ====================================================
 
 export interface GetNewestChannels_channels {
-  __typename: 'Channel'
-  id: string
-  handle: string
-  avatarPhotoURL: string
-  totalViews: number
+  __typename: "Channel";
+  id: string;
+  handle: string;
+  avatarPhotoURL: string;
+  totalViews: number;
 }
 
 export interface GetNewestChannels {
-  channels: GetNewestChannels_channels[]
+  channels: GetNewestChannels_channels[];
 }
