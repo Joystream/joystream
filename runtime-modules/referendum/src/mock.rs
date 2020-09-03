@@ -74,10 +74,6 @@ impl Trait<Instance0> for Runtime {
 
     type MinimumStake = MinimumStake;
 
-    fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool {
-        *account_id == USER_ADMIN
-    }
-
     fn caclulate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
         stake: &Balance<Self, Instance0>,

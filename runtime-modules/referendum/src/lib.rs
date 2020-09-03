@@ -140,9 +140,6 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
     /// Minimum stake needed for voting
     type MinimumStake: Get<Balance<Self, I>>;
 
-    /// Decide if user can control referendum (start referendum) via extrinsic(s).
-    fn is_super_user(account_id: &<Self as system::Trait>::AccountId) -> bool;
-
     /// Calculate the vote's power for user and his stake.
     fn caclulate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
