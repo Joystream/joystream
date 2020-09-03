@@ -55,7 +55,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const payoutAmount: BN = new BN(process.env.PAYOUT_AMOUNT!)
   const unstakingPeriod: BN = new BN(process.env.STORAGE_WORKING_GROUP_UNSTAKING_PERIOD!)
   const mintCapacity: BN = new BN(process.env.STORAGE_WORKING_GROUP_MINTING_CAPACITY!)
-  const durationInBlocks = 48
+  const durationInBlocks = 58
   const openingActivationDelay: BN = new BN(0)
 
   setTestTimeout(apiWrapper, durationInBlocks)
@@ -78,7 +78,6 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   }
 
   if (db.hasLeader(apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
-    m1KeyPairs = db.getMembers()
     leadKeyPair[0] = db.getLeader(apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))
   } else {
     const leaderHiringHappyCaseFixture: LeaderHiringHappyCaseFixture = new LeaderHiringHappyCaseFixture(

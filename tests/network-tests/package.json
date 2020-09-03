@@ -7,7 +7,7 @@
     "test": "tap --files src/iznik/tests/unknown.unknown src/iznik/tests/councilSetup.ts src/iznik/tests/proposals/*Test.ts src/iznik/tests/leaderSetup.ts src/iznik/tests/workingGroup/*Test.ts src/iznik/tests/proposals/updateRuntime.ts -T",
     "test-migration-constantinople": "tap --files src/rome/tests/romeRuntimeUpgradeTest.ts --files src/constantinople/tests/electingCouncilTest.ts -T",
     "test-migration-nicaea": "tap --files src/constantinople/tests/proposals/updateRuntimeTest.ts --files src/nicaea/tests/electingCouncilTest.ts -T",
-    "debug": "tap --files src/iznik/tests/workingGroup/workerApplicationHappyCaseTest.ts -T",
+    "debug": "tap --files src/iznik/tests/workingGroup/workerPayoutTest.ts -T",
     "lint": "eslint . --quiet --ext .ts",
     "checks": "yarn lint && tsc --noEmit --pretty && prettier ./ --check",
     "format": "prettier ./ --write "
