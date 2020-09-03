@@ -39,6 +39,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const N: number = +process.env.WORKING_GROUP_N!
   let m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   let m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
+  let m3KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const leadKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
 
   const paidTerms: PaidTermId = apiWrapper.createPaidTermId(new BN(+process.env.MEMBERSHIP_PAID_TERMS!))
@@ -83,7 +84,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
     const leaderHiringHappyCaseFixture: LeaderHiringHappyCaseFixture = new LeaderHiringHappyCaseFixture(
       apiWrapper,
       sudo,
-      m1KeyPairs,
+      m3KeyPairs,
       leadKeyPair,
       paidTerms,
       applicationStake,
