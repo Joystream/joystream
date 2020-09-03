@@ -84,7 +84,9 @@
       "@polkadot/react-query": [ "packages/react-query/src" ],
       "@polkadot/react-query/*": [ "packages/react-query/src/*" ],
       "@polkadot/react-signer": [ "packages/react-signer/src" ],
-      "@polkadot/react-signer/*": [ "packages/react-signer/src/*" ]
+      "@polkadot/react-signer/*": [ "packages/react-signer/src/*" ],
+      "@polkadot/app-tokenomics": [ "packages/app-tokenomics/src" ],
+      "@polkadot/app-tokenomics/*": [ "packages/app-tokenomics/src/*" ]
     },
     "skipLibCheck": true,
     "typeRoots": [

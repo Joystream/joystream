@@ -10,6 +10,7 @@ import election from './joy-election';
 import forum from './joy-forum';
 // import help from './joy-help';
 import media from './joy-media';
+import tokenomics from './tokenomics';
 import members from './joy-members';
 import proposals from './joy-proposals';
 import roles from './joy-roles';
@@ -41,6 +42,7 @@ let routes: Routes = ([] as Routes);
 // Basic routes
 routes = routes.concat(
   media,
+  tokenomics,
   roles,
   proposals,
   election,
