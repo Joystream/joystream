@@ -24,7 +24,7 @@
         state: started
 
     - name: execute network tests
-      shell: yarn test
+      shell: yarn test >> ../../.tmp/tests.log
       args:
         chdir: ../../tests/network-tests/
 

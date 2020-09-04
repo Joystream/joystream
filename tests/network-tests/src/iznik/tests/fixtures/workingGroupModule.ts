@@ -865,6 +865,7 @@ export class AwaitPayoutFixture implements Fixture {
     )
 
     const secondPayoutWaitingPeriod: BN = payoutInterval.addn(1)
+    console.log('waiting period ' + secondPayoutWaitingPeriod)
     await Utils.wait(this.apiWrapper.getBlockDuration().mul(secondPayoutWaitingPeriod).toNumber())
 
     const balanceAfterSecondPayout: BN = await this.apiWrapper.getBalance(this.membersKeyPairs[0].address)

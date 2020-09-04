@@ -23,6 +23,7 @@ import { ProposalId } from '@alexandria/types/proposals'
 import { DbService } from '../../services/dbService'
 import { CouncilElectionHappyCaseFixture } from '../fixtures/councilElectionHappyCase'
 import { LeaderHiringHappyCaseFixture } from '../fixtures/leaderHiringHappyCase'
+import {BuyMembershipHappyCaseFixture} from "../fixtures/membershipModule";
 
 tap.mocha.describe('Worker application happy case scenario', async () => {
   initConfig()
@@ -61,7 +62,13 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   setTestTimeout(apiWrapper, durationInBlocks)
 
   if (db.hasCouncil()) {
-    m1KeyPairs = db.getMembers()
+    const memberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
+      apiWrapper,
+      sudo,
+      m1KeyPairs,
+      paidTerms
+    )
+    tap.test('Recreating set of members', async () => memberSetFixture.runner(false))
     m2KeyPairs = db.getCouncil()
   } else {
     const councilElectionHappyCaseFixture = new CouncilElectionHappyCaseFixture(
