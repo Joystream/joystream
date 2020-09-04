@@ -17,6 +17,7 @@ use frame_support::{
 };
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
+use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use system::ensure_signed;
 
@@ -53,8 +54,8 @@ pub struct ReferendumStageVoting<BlockNumber> {
 /// Representation for revealing stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
-    started: BlockNumber,                 // block in which referendum started
-    intermediate_results: Vec<VotePower>, // votes that options have recieved at a given time
+    started: BlockNumber, // block in which referendum started
+    intermediate_results: BTreeMap<u64, VotePower>, // votes that options have recieved at a given time
 }
 
 /// Vote cast in referendum. Vote target is concealed until user reveals commitment's proof.
@@ -152,7 +153,7 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
 
     /// Gives runtime an ability to react on referendum result.
     fn process_results(
-        all_options_results: &[Self::VotePower], // list of votes each option recieved
+        all_options_results: &BTreeMap<u64, Self::VotePower>, // list of votes each option recieved
     );
 }
 
@@ -194,7 +195,7 @@ decl_event! {
         RevealingStageStarted(),
 
         /// Referendum ended and winning option was selected
-        ReferendumFinished(Vec<VotePower>),
+        ReferendumFinished(BTreeMap<u64, VotePower>),
 
         /// User cast a vote in referendum
         VoteCast(AccountId, Hash, Balance),
@@ -447,18 +448,25 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     fn start_revealing_period(old_stage: EzReferendumStageVoting<T>) {
         let total_options = old_stage.extra_options_count + 1;
 
+        let mut intermediate_results = BTreeMap::new();
+        for i in 0..total_options {
+            intermediate_results.insert(i, 0.into());
+        }
+
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Revealing(EzReferendumStageRevealing::<
             T,
             I,
         > {
             started: <system::Module<T>>::block_number(),
-            intermediate_results: (0..total_options).map(|_| 0.into()).collect(),
+            intermediate_results,
         }));
     }
 
     /// Conclude referendum, count votes, and select the winners.
-    fn conclude_referendum(revealing_stage: EzReferendumStageRevealing<T, I>) -> Vec<T::VotePower> {
+    fn conclude_referendum(
+        revealing_stage: EzReferendumStageRevealing<T, I>,
+    ) -> BTreeMap<u64, T::VotePower> {
         // reset referendum state
         Self::reset_referendum();
 
@@ -509,19 +517,18 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     ) -> Result<(), Error<T, I>> {
         let vote_power = T::caclulate_vote_power(&account_id, &cast_vote.stake);
 
-        let new_stage_data = ReferendumStageRevealing {
-            intermediate_results: stage_data
-                .intermediate_results
-                .iter()
-                .enumerate()
-                .map(|(i, current_vote_power)| {
-                    if i as u64 == *option_index {
-                        return *current_vote_power + vote_power;
-                    }
+        let mut intermediate_results = stage_data.intermediate_results.clone();
 
-                    *current_vote_power
-                })
-                .collect(),
+        // situation when key doesn't exist shouldn't ever happen, but let's be safe here
+        let new_power = match intermediate_results.get(option_index) {
+            Some(tmp_vote_power) => *tmp_vote_power + vote_power,
+            None => vote_power,
+        };
+        intermediate_results.insert(*option_index, new_power);
+
+        // create new stage data
+        let new_stage_data = ReferendumStageRevealing {
+            intermediate_results,
             ..stage_data
         };
 
