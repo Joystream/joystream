@@ -19,7 +19,6 @@ use sp_runtime::{
     Perbill,
 };
 use std::cell::RefCell;
-use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 
@@ -96,7 +95,7 @@ impl Trait<Instance0> for Runtime {
         true
     }
 
-    fn process_results(_all_options_results: &BTreeMap<u64, Self::VotePower>) {
+    fn process_results(_all_options_results: &[Self::VotePower]) {
         // not used right now
     }
 }
@@ -402,16 +401,11 @@ impl InstanceMocks<Runtime, Instance0> {
     pub fn check_voting_finished(options_count: u64) {
         let block_number = system::Module::<Runtime>::block_number();
 
-        let mut intermediate_results = BTreeMap::new();
-        for i in 0..options_count {
-            intermediate_results.insert(i, 0);
-        }
-
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Revealing(ReferendumStageRevealing {
                 started: block_number - 1,
-                intermediate_results,
+                intermediate_results: (0..options_count).map(|_| 0).collect(),
             }),
         );
 
@@ -430,15 +424,12 @@ impl InstanceMocks<Runtime, Instance0> {
             ReferendumStage::Inactive,
         );
 
-        let mut expected_map = BTreeMap::new();
-        for i in 0..expected_referendum_result.len() {
-            expected_map.insert(i as u64, expected_referendum_result[i]);
-        }
-
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::event_mod_Instance0(RawEvent::ReferendumFinished(expected_map,))
+            TestEvent::event_mod_Instance0(RawEvent::ReferendumFinished(
+                expected_referendum_result.clone()
+            ))
         );
     }
 
