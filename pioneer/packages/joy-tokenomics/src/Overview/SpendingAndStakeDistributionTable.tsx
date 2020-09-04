@@ -115,7 +115,7 @@ const SpendingAndStakeTableRow: React.FC<{
 };
 
 const SpendingAndStakeDistributionTable: React.FC<{data: TokenomicsData | undefined; statusData: StatusServerData | undefined | null}> = ({ data, statusData }) => {
-  const { height, width } = useWindowDimensions();
+  const { width } = useWindowDimensions();
 
   return (
     <StyledTable celled>

@@ -1,5 +1,5 @@
 {
-  "name": "@polkadot/app-tokenomics",
+  "name": "@polkadot/joy-tokenomics",
   "version": "0.37.0-beta.63",
   "description": "Tokenomics page, basic overview of data from the whole website.",
   "main": "index.js",

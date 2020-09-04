@@ -4,7 +4,7 @@
 
 import { Routes } from './types';
 
-import Tokenomics from '@polkadot/app-tokenomics/';
+import Tokenomics from '@polkadot/joy-tokenomics';
 
 export default ([
   {
