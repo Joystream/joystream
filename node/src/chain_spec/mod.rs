@@ -205,7 +205,8 @@ pub fn chain_spec_properties() -> json::map::Map<String, json::Value> {
     );
     properties
 }
-
+// This method should be refactored after Alexandria to reduce number of arguments
+// as more args will likely be needed
 #[allow(clippy::too_many_arguments)]
 pub fn testnet_genesis(
     initial_authorities: Vec<(

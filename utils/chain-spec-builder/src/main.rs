@@ -212,6 +212,8 @@ impl ChainSpecBuilder {
     }
 }
 
+// TODO: This method should be refactored after Alexandria to reduce number of arguments
+// as more args will likely be needed
 #[allow(clippy::too_many_arguments)]
 fn genesis_constructor(
     deployment: &ChainDeployment,
@@ -264,11 +266,9 @@ fn genesis_constructor(
         )
     };
 
-    let initial_account_balances = if let Some(path) = initial_balances_path {
-        initial_balances::from_json(path.as_path())
-    } else {
-        vec![]
-    };
+    let initial_account_balances = initial_balances_path
+        .map(|path| initial_balances::from_json(path.as_path()))
+        .unwrap_or_else(vec![]);
 
     let proposals_cfg = match deployment {
         ChainDeployment::live => proposals_config::production(),
@@ -291,6 +291,8 @@ fn genesis_constructor(
     )
 }
 
+// TODO: This method should be refactored after Alexandria to reduce number of arguments
+// as more args will likely be needed
 #[allow(clippy::too_many_arguments)]
 fn generate_chain_spec(
     deployment: ChainDeployment,
