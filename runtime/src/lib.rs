@@ -536,7 +536,7 @@ impl proposals_discussion::Trait for Runtime {
 
 parameter_types! {
     pub const TextProposalMaxLength: u32 = 5_000;
-    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 2_000_000;
+    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
 }
 
 impl proposals_codex::Trait for Runtime {
