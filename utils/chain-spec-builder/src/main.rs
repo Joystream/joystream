@@ -24,8 +24,8 @@ use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
 use structopt::StructOpt;
 
 use joystream_node::chain_spec::{
-    self, chain_spec_properties, content_config, forum_config, initial_members, proposals_config,
-    AccountId,
+    self, chain_spec_properties, content_config, forum_config, initial_balances, initial_members,
+    proposals_config, AccountId,
 };
 
 use sc_chain_spec::ChainType;
@@ -88,6 +88,9 @@ enum ChainSpecBuilder {
         /// The path to an initial content directory data file
         #[structopt(long, short)]
         initial_content_path: Option<PathBuf>,
+        /// The path to an initial balances file
+        #[structopt(long, short)]
+        initial_balances_path: Option<PathBuf>,
         /// Deployment type: dev, local, staging, live
         #[structopt(long, short, default_value = "live")]
         deployment: String,
@@ -120,6 +123,9 @@ enum ChainSpecBuilder {
         /// The path to an initial content directory data file
         #[structopt(long, short)]
         initial_content_path: Option<PathBuf>,
+        /// The path to an initial balances file
+        #[structopt(long, short)]
+        initial_balances_path: Option<PathBuf>,
         /// Deployment type: dev, local, staging, live
         #[structopt(long, short, default_value = "live")]
         deployment: String,
@@ -179,6 +185,21 @@ impl ChainSpecBuilder {
         }
     }
 
+    /// Returns the path to load initial platform content from
+    fn initial_balances_path(&self) -> &Option<PathBuf> {
+        match self {
+            ChainSpecBuilder::New {
+                initial_balances_path,
+                ..
+            } => initial_balances_path,
+            ChainSpecBuilder::Generate {
+                initial_balances_path,
+                ..
+            } => initial_balances_path,
+        }
+    }
+
+    /// Returns the chain deployment
     fn chain_deployment(&self) -> ChainDeployment {
         match self {
             ChainSpecBuilder::New { deployment, .. } => deployment
@@ -191,6 +212,9 @@ impl ChainSpecBuilder {
     }
 }
 
+// TODO: This method should be refactored after Alexandria to reduce number of arguments
+// as more args will likely be needed
+#[allow(clippy::too_many_arguments)]
 fn genesis_constructor(
     deployment: &ChainDeployment,
     authority_seeds: &[String],
@@ -199,6 +223,7 @@ fn genesis_constructor(
     initial_members_path: &Option<PathBuf>,
     initial_forum_path: &Option<PathBuf>,
     initial_content_path: &Option<PathBuf>,
+    initial_balances_path: &Option<PathBuf>,
 ) -> chain_spec::GenesisConfig {
     let authorities = authority_seeds
         .iter()
@@ -206,17 +231,15 @@ fn genesis_constructor(
         .map(chain_spec::get_authority_keys_from_seed)
         .collect::<Vec<_>>();
 
-    let members = if let Some(path) = initial_members_path {
-        initial_members::from_json(path.as_path())
-    } else {
-        initial_members::none()
-    };
+    let members = initial_members_path
+        .as_ref()
+        .map(|path| initial_members::from_json(path.as_path()))
+        .unwrap_or_else(initial_members::none);
 
-    let forum_cfg = if let Some(path) = initial_forum_path {
-        forum_config::from_json(sudo_account.clone(), path.as_path())
-    } else {
-        forum_config::empty(sudo_account.clone())
-    };
+    let forum_cfg = initial_forum_path
+        .as_ref()
+        .map(|path| forum_config::from_json(sudo_account.clone(), path.as_path()))
+        .unwrap_or_else(|| forum_config::empty(sudo_account.clone()));
 
     let (
         versioned_store_cfg,
@@ -241,6 +264,11 @@ fn genesis_constructor(
         )
     };
 
+    let initial_account_balances = initial_balances_path
+        .as_ref()
+        .map(|path| initial_balances::from_json(path.as_path()))
+        .unwrap_or_else(Vec::new);
+
     let proposals_cfg = match deployment {
         ChainDeployment::live => proposals_config::production(),
         ChainDeployment::staging => proposals_config::staging(),
@@ -258,9 +286,13 @@ fn genesis_constructor(
         versioned_store_permissions_cfg,
         data_directory_config,
         content_working_group_config,
+        initial_account_balances,
     )
 }
 
+// TODO: This method should be refactored after Alexandria to reduce number of arguments
+// as more args will likely be needed
+#[allow(clippy::too_many_arguments)]
 fn generate_chain_spec(
     deployment: ChainDeployment,
     authority_seeds: Vec<String>,
@@ -269,6 +301,7 @@ fn generate_chain_spec(
     initial_members_path: Option<PathBuf>,
     initial_forum_path: Option<PathBuf>,
     initial_content_path: Option<PathBuf>,
+    initial_balances_path: Option<PathBuf>,
 ) -> Result<String, String> {
     let parse_account = |address: &String| {
         AccountId::from_string(address)
@@ -302,6 +335,7 @@ fn generate_chain_spec(
                 &initial_members_path,
                 &initial_forum_path,
                 &initial_content_path,
+                &initial_balances_path,
             )
         },
         vec![],
@@ -376,6 +410,7 @@ fn main() -> Result<(), String> {
     let initial_members_path = builder.initial_members_path().clone();
     let initial_forum_path = builder.initial_forum_path().clone();
     let initial_content_path = builder.initial_content_path().clone();
+    let initial_balances_path = builder.initial_balances_path().clone();
     let deployment = builder.chain_deployment();
 
     let (authority_seeds, endowed_accounts, sudo_account) = match builder {
@@ -427,6 +462,7 @@ fn main() -> Result<(), String> {
         initial_members_path,
         initial_forum_path,
         initial_content_path,
+        initial_balances_path,
     )?;
 
     fs::write(chain_spec_path, json).map_err(|err| err.to_string())
