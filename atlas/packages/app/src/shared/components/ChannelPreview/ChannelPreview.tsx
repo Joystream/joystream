@@ -32,6 +32,12 @@ const ChannelPreview: React.FC<ChannelPreviewProps> = ({ name, avatarURL, views,
 const NameHeader = styled.h2`
   margin: 0;
   font-size: ${typography.sizes.h6};
+  line-height: 1.25;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 `
 
 const MetaSpan = styled.span`

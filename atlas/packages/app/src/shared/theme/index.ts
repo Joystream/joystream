@@ -5,5 +5,5 @@ import sizes from './sizes'
 import breakpoints from './breakpoints'
 import * as fragments from './fragments'
 
-export { typography, breakpoints, spacing, colors, fragments }
+export { typography, breakpoints, spacing, sizes, colors, fragments }
 export default { typography, breakpoints, spacing, sizes, colors, fragments }
