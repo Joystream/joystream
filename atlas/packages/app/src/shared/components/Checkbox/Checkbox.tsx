@@ -1,6 +1,6 @@
 import React from 'react'
 import { CheckboxStyleProps, useCSS } from './Checkbox.style'
-import { CheckIcon, DashIcon } from '../../icons'
+import Icon from '../Icon'
 
 type CheckboxProps = {
   label?: string
@@ -25,7 +25,7 @@ export default function Checkbox({
       <div css={styles.outerContainer}>
         <div css={styles.innerContainer}>
           <input css={styles.input} type="checkbox" checked={selected} disabled={disabled} onChange={onChange} />
-          {selected && (icon === 'check' ? <CheckIcon css={styles.icon} /> : <DashIcon css={styles.icon} />)}
+          {selected && <Icon name={icon === 'check' ? 'check' : 'dash'} css={styles.icon} />}
         </div>
       </div>
       {(labelPosition === 'end' || labelPosition === 'bottom') && <label css={styles.label}>{label}</label>}

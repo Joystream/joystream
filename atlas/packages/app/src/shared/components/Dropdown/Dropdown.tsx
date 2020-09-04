@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
 import { DropdownStyleProps, useCSS } from './Dropdown.style'
-import { ChevronIconDown, ChevronIconUp } from '../../icons'
+import Icon from '../Icon'
 import { spacing } from '../../theme'
 
 type DropdownOption = {
@@ -73,8 +73,10 @@ export default function Dropdown({
             disabled={true}
             value={inputTextValue}
           />
-          {!showOptions && <ChevronIconUp css={styles.iconOpen} />}
-          {!!showOptions && <ChevronIconDown css={styles.iconClose} />}
+          <Icon
+            name={showOptions ? 'chevron-up' : 'chevron-down'}
+            css={showOptions ? styles.iconClose : styles.iconOpen}
+          />
         </div>
         {showOptions && (
           <div css={styles.options}>

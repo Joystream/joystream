@@ -45,11 +45,11 @@ export const SecondaryFullSize = () => (
 
 export const PrimaryWithIcon = () => (
   <>
-    <Button icon>Regular</Button>
-    <Button icon size="small">
+    <Button icon="block">Regular</Button>
+    <Button icon="block" size="small">
       Small
     </Button>
-    <Button icon size="smaller">
+    <Button icon="block" size="smaller">
       Smaller
     </Button>
   </>
@@ -57,13 +57,13 @@ export const PrimaryWithIcon = () => (
 
 export const SecondaryWithIcon = () => (
   <>
-    <Button variant="secondary" icon>
+    <Button variant="secondary" icon="block">
       Regular
     </Button>
-    <Button variant="secondary" icon size="small">
+    <Button variant="secondary" icon="block" size="small">
       Small
     </Button>
-    <Button variant="secondary" icon size="smaller">
+    <Button variant="secondary" icon="block" size="smaller">
       Smaller
     </Button>
   </>
@@ -71,17 +71,17 @@ export const SecondaryWithIcon = () => (
 
 export const PrimaryWithoutText = () => (
   <>
-    <Button icon />
-    <Button icon size="small" />
-    <Button icon size="smaller" />
+    <Button icon="block" />
+    <Button icon="block" size="small" />
+    <Button icon="block" size="smaller" />
   </>
 )
 
 export const SecondaryWithoutText = () => (
   <>
-    <Button variant="secondary" icon />
-    <Button variant="secondary" icon size="small" />
-    <Button variant="secondary" icon size="smaller" />
+    <Button variant="secondary" icon="block" />
+    <Button variant="secondary" icon="block" size="small" />
+    <Button variant="secondary" icon="block" size="smaller" />
   </>
 )
 
@@ -90,9 +90,9 @@ export const Disabled = () => (
     <Button disabled={true} onClick={() => action('Clicked a disabled button, this should not happen.')}>
       Disabled
     </Button>
-    <Button disabled={true} icon={true}>
+    <Button disabled={true} icon="block">
       Disabled with icon
     </Button>
-    <Button disabled={true} icon />
+    <Button disabled={true} icon="block" />
   </>
 )

@@ -45,11 +45,11 @@ export const SecondaryFullSize = () => (
 
 export const PrimaryWithIcon = () => (
   <>
-    <ToggleButton icon>Regular</ToggleButton>
-    <ToggleButton icon size="small">
+    <ToggleButton icon="block">Regular</ToggleButton>
+    <ToggleButton icon="block" size="small">
       Small
     </ToggleButton>
-    <ToggleButton icon size="smaller">
+    <ToggleButton icon="block" size="smaller">
       Smaller
     </ToggleButton>
   </>
@@ -57,13 +57,13 @@ export const PrimaryWithIcon = () => (
 
 export const SecondaryWithIcon = () => (
   <>
-    <ToggleButton variant="secondary" icon>
+    <ToggleButton variant="secondary" icon="block">
       Regular
     </ToggleButton>
-    <ToggleButton variant="secondary" icon size="small">
+    <ToggleButton variant="secondary" icon="block" size="small">
       Small
     </ToggleButton>
-    <ToggleButton variant="secondary" icon size="smaller">
+    <ToggleButton variant="secondary" icon="block" size="smaller">
       Smaller
     </ToggleButton>
   </>
@@ -71,17 +71,17 @@ export const SecondaryWithIcon = () => (
 
 export const PrimaryWithoutText = () => (
   <>
-    <ToggleButton icon />
-    <ToggleButton icon size="small" />
-    <ToggleButton icon size="smaller" />
+    <ToggleButton icon="block" />
+    <ToggleButton icon="block" size="small" />
+    <ToggleButton icon="block" size="smaller" />
   </>
 )
 
 export const SecondaryWithoutText = () => (
   <>
-    <ToggleButton variant="secondary" icon />
-    <ToggleButton variant="secondary" icon size="small" />
-    <ToggleButton variant="secondary" icon size="smaller" />
+    <ToggleButton variant="secondary" icon="block" />
+    <ToggleButton variant="secondary" icon="block" size="small" />
+    <ToggleButton variant="secondary" icon="block" size="smaller" />
   </>
 )
 
@@ -90,9 +90,9 @@ export const Disabled = () => (
     <ToggleButton disabled={true} onClick={() => action('Clicked a disabled ToggleButton, this should not happen.')}>
       Disabled
     </ToggleButton>
-    <ToggleButton disabled={true} icon={true}>
+    <ToggleButton disabled={true} icon="block">
       Disabled with icon
     </ToggleButton>
-    <ToggleButton disabled={true} icon />
+    <ToggleButton disabled={true} icon="block" />
   </>
 )
