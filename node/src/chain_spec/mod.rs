@@ -42,6 +42,7 @@ pub use node_runtime::{AccountId, GenesisConfig};
 
 pub mod content_config;
 pub mod forum_config;
+pub mod initial_balances;
 pub mod initial_members;
 pub mod proposals_config;
 
@@ -138,6 +139,7 @@ impl Alternative {
                         content_config::empty_versioned_store_permissions_config(),
                         content_config::empty_data_directory_config(),
                         content_config::empty_content_working_group_config(),
+                        vec![],
                     )
                 },
                 Vec::new(),
@@ -178,6 +180,7 @@ impl Alternative {
                         content_config::empty_versioned_store_permissions_config(),
                         content_config::empty_data_directory_config(),
                         content_config::empty_content_working_group_config(),
+                        vec![],
                     )
                 },
                 Vec::new(),
@@ -222,6 +225,7 @@ pub fn testnet_genesis(
     versioned_store_permissions_config: VersionedStorePermissionsConfig,
     data_directory_config: DataDirectoryConfig,
     content_working_group_config: ContentWorkingGroupConfig,
+    initial_balances: Vec<(AccountId, Balance)>,
 ) -> GenesisConfig {
     const CENTS: Balance = 1;
     const DOLLARS: Balance = 100 * CENTS;
@@ -241,6 +245,11 @@ pub fn testnet_genesis(
                 .cloned()
                 .map(|k| (k, ENDOWMENT))
                 .chain(initial_authorities.iter().map(|x| (x.0.clone(), STASH)))
+                .chain(
+                    initial_balances
+                        .iter()
+                        .map(|(account, balance)| (account.clone(), *balance)),
+                )
                 .collect(),
         }),
         pallet_staking: Some(StakingConfig {

@@ -24,8 +24,8 @@ use rand::{distributions::Alphanumeric, rngs::OsRng, Rng};
 use structopt::StructOpt;
 
 use joystream_node::chain_spec::{
-    self, chain_spec_properties, content_config, forum_config, initial_members, proposals_config,
-    AccountId,
+    self, chain_spec_properties, content_config, forum_config, initial_balances, initial_members,
+    proposals_config, AccountId,
 };
 
 use sc_chain_spec::ChainType;
@@ -68,6 +68,9 @@ enum ChainSpecBuilder {
         /// The path to an initial content directory data file
         #[structopt(long, short)]
         initial_content_path: Option<PathBuf>,
+        /// The path to an initial balances file
+        #[structopt(long, short)]
+        initial_balances_path: Option<PathBuf>,
     },
     /// Create a new chain spec with the given number of authorities and endowed
     /// accounts. Random keys will be generated as required.
@@ -97,6 +100,9 @@ enum ChainSpecBuilder {
         /// The path to an initial content directory data file
         #[structopt(long, short)]
         initial_content_path: Option<PathBuf>,
+        /// The path to an initial balances file
+        #[structopt(long, short)]
+        initial_balances_path: Option<PathBuf>,
     },
 }
 
@@ -152,6 +158,20 @@ impl ChainSpecBuilder {
             } => initial_content_path,
         }
     }
+
+    /// Returns the path to load initial platform content from
+    fn initial_balances_path(&self) -> &Option<PathBuf> {
+        match self {
+            ChainSpecBuilder::New {
+                initial_balances_path,
+                ..
+            } => initial_balances_path,
+            ChainSpecBuilder::Generate {
+                initial_balances_path,
+                ..
+            } => initial_balances_path,
+        }
+    }
 }
 
 fn genesis_constructor(
@@ -161,6 +181,7 @@ fn genesis_constructor(
     initial_members_path: &Option<PathBuf>,
     initial_forum_path: &Option<PathBuf>,
     initial_content_path: &Option<PathBuf>,
+    initial_balances_path: &Option<PathBuf>,
 ) -> chain_spec::GenesisConfig {
     let authorities = authority_seeds
         .iter()
@@ -203,6 +224,12 @@ fn genesis_constructor(
         )
     };
 
+    let initial_account_balances = if let Some(path) = initial_balances_path {
+        initial_balances::from_json(path.as_path())
+    } else {
+        vec![]
+    };
+
     chain_spec::testnet_genesis(
         authorities,
         sudo_account.clone(),
@@ -214,6 +241,7 @@ fn genesis_constructor(
         versioned_store_permissions_cfg,
         data_directory_config,
         content_working_group_config,
+        initial_account_balances,
     )
 }
 
@@ -224,6 +252,7 @@ fn generate_chain_spec(
     initial_members_path: Option<PathBuf>,
     initial_forum_path: Option<PathBuf>,
     initial_content_path: Option<PathBuf>,
+    initial_balances_path: Option<PathBuf>,
 ) -> Result<String, String> {
     let parse_account = |address: &String| {
         AccountId::from_string(address)
@@ -256,6 +285,7 @@ fn generate_chain_spec(
                 &initial_members_path,
                 &initial_forum_path,
                 &initial_content_path,
+                &initial_balances_path,
             )
         },
         vec![],
@@ -330,6 +360,7 @@ fn main() -> Result<(), String> {
     let initial_members_path = builder.initial_members_path().clone();
     let initial_forum_path = builder.initial_forum_path().clone();
     let initial_content_path = builder.initial_content_path().clone();
+    let initial_balances_path = builder.initial_balances_path().clone();
 
     let (authority_seeds, endowed_accounts, sudo_account) = match builder {
         ChainSpecBuilder::Generate {
@@ -379,6 +410,7 @@ fn main() -> Result<(), String> {
         initial_members_path,
         initial_forum_path,
         initial_content_path,
+        initial_balances_path,
     )?;
 
     fs::write(chain_spec_path, json).map_err(|err| err.to_string())
