@@ -54,6 +54,21 @@ decl_storage! {
         /// How many blocks after the reward is created, the first payout will be made
         pub FirstPayoutAfterRewardCreated get(fn first_payout_after_reward_created): T::BlockNumber;
     }
+    add_extra_genesis {
+        build(|_config: &GenesisConfig<T>| {
+            // Create the council mint.
+            let mint_id_result = <minting::Module<T>>::add_mint(
+                minting::BalanceOf::<T>::from(0),
+                None
+            );
+
+            if let Ok(mint_id) = mint_id_result {
+                <CouncilMint<T>>::put(mint_id);
+            } else {
+                panic!("Failed to create a mint for the council");
+            }
+        });
+    }
 }
 
 // Event for this module.
