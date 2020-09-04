@@ -1,0 +1,34 @@
+[package]
+name = 'substrate-referendum-module'
+version = '2.0.0'
+authors = ['Joystream contributors']
+edition = '2018'
+
+[dependencies]
+codec = { package = 'parity-scale-codec', version = '1.0.0', default-features = false, features = ['derive'] }
+serde = { version = '1.0.101', optional = true}
+sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+
+
+[dev-dependencies]
+pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+rand = "0.7.3"
+
+[features]
+default = ['std']
+std = [
+    'codec/std',
+    'sp-core/std',
+    'sp-io/std',
+    'serde',
+    'sp-runtime/std',
+    'sp-arithmetic/std',
+    'frame-support/std',
+    'system/std',
+]
+
