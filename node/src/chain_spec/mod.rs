@@ -223,10 +223,8 @@ pub fn testnet_genesis(
     data_directory_config: DataDirectoryConfig,
     content_working_group_config: ContentWorkingGroupConfig,
 ) -> GenesisConfig {
-    const CENTS: Balance = 1;
-    const DOLLARS: Balance = 100 * CENTS;
-    const STASH: Balance = 20 * DOLLARS;
-    const ENDOWMENT: Balance = 100_000 * DOLLARS;
+    const STASH: Balance = 5_000;
+    const ENDOWMENT: Balance = 100_000_000;
 
     let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
@@ -287,9 +285,9 @@ pub fn testnet_genesis(
                 revealing_period: 1 * DAYS,
                 council_size: 6,
                 candidacy_limit: 25,
-                min_council_stake: 10 * DOLLARS,
+                min_council_stake: 1_000,
                 new_term_duration: 10 * DAYS,
-                min_voting_stake: 1 * DOLLARS,
+                min_voting_stake: 100,
             },
         }),
         membership: Some(MembersConfig {
