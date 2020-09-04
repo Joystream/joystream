@@ -212,6 +212,7 @@ impl ChainSpecBuilder {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn genesis_constructor(
     deployment: &ChainDeployment,
     authority_seeds: &[String],
@@ -290,6 +291,7 @@ fn genesis_constructor(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn generate_chain_spec(
     deployment: ChainDeployment,
     authority_seeds: Vec<String>,
