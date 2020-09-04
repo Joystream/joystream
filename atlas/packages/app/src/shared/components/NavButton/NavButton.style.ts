@@ -1,42 +1,21 @@
-import { typography, colors } from '../../theme'
-import { StyleFn, makeStyles } from '../../utils'
-
+import styled from '@emotion/styled'
+import { colors } from '../../theme'
+import Button from '../Button'
 export type NavButtonStyleProps = {
-  type?: 'primary' | 'secondary'
+  variant: 'primary' | 'secondary'
 }
 
-const baseStyles: StyleFn = () => ({
-  border: 0,
-  color: colors.white,
-  textAlign: 'center',
-  display: 'inline-block',
-  cursor: 'default',
-  fontFamily: typography.fonts.base,
-  fontWeight: typography.weights.medium,
-  fontSize: typography.sizes.subtitle1,
-  lineHeight: '50px',
-  '&:hover': {
-    borderColor: colors.blue[700],
-  },
-  '&:active': {
-    borderColor: colors.blue[900],
-  },
-  '&::selection': {
-    background: 'transparent',
-  },
-})
-
-const colorFromType: StyleFn = (styles, { type = 'primary' }) => ({
-  ...styles,
-  backgroundColor: type === 'primary' ? colors.blue[700] : colors.black,
-  '&:hover': {
-    backgroundColor: type === 'primary' ? colors.blue[700] : colors.black,
-    color: type === 'primary' ? colors.white : colors.blue[300],
-  },
-  '&:active': {
-    backgroundColor: type === 'primary' ? colors.blue[900] : colors.black,
-    color: type === 'primary' ? colors.white : colors.blue[700],
-  },
-})
-
-export const useCSS = (props: NavButtonStyleProps) => makeStyles([baseStyles, colorFromType])(props)
+export const StyledButton = styled(Button)`
+  color: ${(props) => (props.variant === 'primary' ? colors.white : colors.gray[600])};
+  background-color: ${(props) => (props.variant === 'primary' ? colors.blue[500] : 'transparent')};
+  border: unset;
+  width: 48px;
+  height: 48px;
+  &:hover {
+    color: ${colors.white};
+    background-color: ${(props) => (props.variant === 'primary' ? colors.blue[700] : 'transparent')};
+  }
+  &:active {
+    background-color: ${(props) => (props.variant === 'primary' ? colors.blue[900] : 'transparent')};
+  }
+`

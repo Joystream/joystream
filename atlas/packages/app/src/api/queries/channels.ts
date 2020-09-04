@@ -1,6 +1,6 @@
 import gql from 'graphql-tag'
 
-const channelFieldsFragment = gql`
+export const channelFieldsFragment = gql`
   fragment ChannelFields on Channel {
     id
     handle

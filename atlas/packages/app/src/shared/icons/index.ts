@@ -11,6 +11,7 @@ export { ReactComponent as ChevronLeft } from './chevron-left-big.svg'
 export { ReactComponent as Check } from './check.svg'
 export { ReactComponent as Dash } from './dash.svg'
 export { ReactComponent as Play } from './play.svg'
+export { ReactComponent as Times } from './times.svg'
 
 const icons = [
   'bars',
@@ -26,6 +27,7 @@ const icons = [
   'check',
   'dash',
   'play',
+  'times',
 ] as const
 
 export type IconType = typeof icons[number]
