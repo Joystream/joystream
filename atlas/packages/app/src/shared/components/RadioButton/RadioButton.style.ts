@@ -1,109 +1,98 @@
-import { StyleFn, makeStyles } from '../../utils'
-import { typography, colors, spacing } from '../../theme'
-import { CSSProperties } from 'react'
+import styled from '@emotion/styled'
+import { css } from '@emotion/core'
+import { colors } from '../../theme'
 
-export type RadioButtonStyleProps = {
-  selected?: boolean
-  disabled?: boolean
-  error?: boolean
-  position?: 'end' | 'start' | 'top' | 'bottom'
-}
-const container: StyleFn = (_, { position }) => ({
-  fontFamily: typography.fonts.base,
-  display: position === 'bottom' || position === 'bottom' ? 'inline-block' : 'inline-flex',
-  alignItems: 'center',
-  '&:focus': {
-    outline: 'none',
-  },
-})
+export type RadioButtonStyleProps = Partial<{
+  error: boolean
+  disabled: boolean
+  clickable: boolean
+  checked: boolean
+  position: 'end' | 'start' | 'top' | 'bottom'
+}>
 
-const outerDot: StyleFn = (_, { position, disabled }) => ({
-  width: spacing.xxl,
-  height: spacing.xxl,
-  borderRadius: '50%',
-  position: 'relative',
-  margin: position === 'bottom' ? `0 auto ${spacing.xs}` : position === 'top' ? `${spacing.xs} auto 0` : '',
-  '&:hover': {
-    backgroundColor: disabled ? 'none' : colors.gray[50],
-  },
-  '&:active': {
-    backgroundColor: disabled ? 'none' : colors.gray[100],
-  },
-  '&:focus': {
-    backgroundColor: disabled ? 'none' : colors.blue[100],
-    outline: 'none',
-  },
-})
+export const Input = styled.input`
+  margin: auto;
+  opacity: 0;
+`
 
-const dot: StyleFn = (_, { disabled, selected, error }) => {
-  return {
-    width: spacing.m,
-    height: spacing.m,
-    borderWidth: 1,
-    borderColor: disabled ? colors.gray[200] : error ? colors.error : selected ? colors.blue[500] : colors.gray[300],
-    borderStyle: 'solid',
-    borderRadius: '50%',
-    position: 'absolute',
-    top: '7px',
-    left: '7px',
-    '&:focus': {
-      borderColor: disabled ? colors.gray[200] : colors.gray[700],
-    },
-    '&:active': {
-      borderColor: disabled ? colors.gray[200] : colors.gray[700],
-    },
+const colorFromProps = ({ error, checked, disabled }: RadioButtonStyleProps) => {
+  if (error) {
+    return css`
+      background-color: ${checked ? colors.error : 'transparent'};
+      border: ${checked ? `2px solid ${colors.error}` : `1px solid ${colors.error}`};
+    `
+  } else if (disabled) {
+    return css`
+      background-color: ${checked ? colors.gray[200] : colors.gray[50]};
+      border: ${checked ? `2px solid ${colors.gray[200]}` : `1px solid ${colors.gray[200]}`};
+      background-clip: ${checked ? 'content-box' : 'unset'};
+      &::before {
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: ${checked ? colors.gray[50] : 'transparent'};
+      }
+    `
+  } else {
+    return css`
+      border: ${checked ? `2px solid ${colors.blue[500]}` : `1px solid ${colors.gray[300]}`};
+      background-color: ${checked ? colors.blue[500] : 'transparent'};
+      &:hover {
+        &::before {
+          background-color: ${checked ? colors.blue[50] : colors.gray[50]};
+        }
+      }
+      &:focus {
+        border-color: ${checked ? 'transparent' : colors.gray[700]};
+        &::before {
+          background-color: ${checked ? colors.blue[100] : colors.gray[50]};
+        }
+      }
+      &:active {
+        border-color: ${checked ? '' : colors.gray[700]};
+        &::before {
+          background-color: ${checked ? colors.blue[100] : colors.gray[100]};
+        }
+      }
+    `
   }
 }
 
-const BackgroundFromProps: StyleFn = (styles = {}, { disabled, selected, error }) => {
-  const key = selected ? `backgroundImage` : `backgroundColor`
-  const SELECTED_ERROR = `repeating-radial-gradient(circle, ${colors.error} 0px, ${colors.error} 3px, transparent 3px, transparent 6px, ${colors.error} 6px, ${colors.error} 8px)`
-  const SELECTED_DISABLED = `repeating-radial-gradient(circle, ${colors.gray[200]} 0px, ${colors.gray[200]} 3px, transparent 3px, transparent 6px, ${colors.gray[200]} 6px, ${colors.gray[200]} 8px)`
-  const SELECTED_DEFAULT = `repeating-radial-gradient(circle, ${colors.blue[500]} 0px, ${colors.blue[500]} 3px, transparent 3px, transparent 6px, ${colors.blue[500]} 6px, ${colors.blue[500]} 8px)`
-  const UNSELECTED_DISABLED = colors.gray[50]
-
-  const value =
-    selected && error
-      ? SELECTED_ERROR
-      : selected && disabled
-      ? SELECTED_DISABLED
-      : selected
-      ? SELECTED_DEFAULT
-      : disabled
-      ? UNSELECTED_DISABLED
-      : styles[key as keyof CSSProperties]
-  return {
-    ...styles,
-    [key]: value,
+export const StyledInput = styled.div<RadioButtonStyleProps>`
+  position: relative;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-clip: content-box;
+  padding: 4px;
+  &::before {
+    content: '';
+    top: -8px;
+    bottom: -8px;
+    left: -8px;
+    right: -8px;
+    border-radius: 50%;
+    position: absolute;
+    z-index: -1;
   }
-}
-
-const label: StyleFn = (_, { position }) => {
-  const key = position === 'end' ? 'margin-left' : position === 'start' ? 'margin-right' : 'margin'
-  const value =
-    key === 'margin-left' || key === 'margin-right'
-      ? spacing.xs
-      : position === 'bottom'
-      ? `0 auto ${spacing.xs}`
-      : `${spacing.xs} auto 0`
-
-  return {
-    color: colors.white,
-    [key]: value,
+  ${colorFromProps};
+  & + span {
+    color: ${(props) => (props.checked ? colors.white : '')};
   }
-}
+`
 
-export const useCSS = ({
-  selected = false,
-  disabled = false,
-  error = false,
-  position = 'end',
-}: RadioButtonStyleProps) => {
-  const props = { selected, disabled, error, position }
-  return {
-    container: makeStyles([container])(props),
-    outterDot: makeStyles([outerDot])(props),
-    dot: makeStyles([dot, BackgroundFromProps])(props),
-    label: makeStyles([label])(props),
+export const Label = styled.label<RadioButtonStyleProps>`
+  width: min-content;
+  display: flex;
+  flex-direction: ${({ position }) => (position === 'start' || position === 'end' ? 'row' : 'column')};
+  align-items: center;
+  cursor: ${(props) => (props.clickable && !props.disabled ? 'pointer' : 'auto')};
+  & > span:nth-of-type(1) {
+    margin: 8px;
   }
-}
+  & > span {
+    order: ${({ position }) => (position === 'start' || position === 'top' ? -1 : 1)};
+  }
+`

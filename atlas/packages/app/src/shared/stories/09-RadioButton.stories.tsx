@@ -7,83 +7,33 @@ export default {
 }
 
 export const Primary = () => {
-  const [isSelected, setIsSelected] = useState(false)
-  return (
-    <div style={{ backgroundColor: 'black', padding: '50px 20px' }}>
-      <RadioButton selected={isSelected} onClick={() => setIsSelected(!isSelected)} />
-    </div>
-  )
+  const [checked, setChecked] = useState(false)
+  return <RadioButton checked={checked} onClick={() => setChecked(!checked)} />
 }
 
-export const SelectedDisabled = () => {
-  const [isSelected, setIsSelected] = useState(true)
-  return (
-    <div style={{ backgroundColor: 'black', padding: '50px 20px' }}>
-      <RadioButton selected={isSelected} disabled={true} onClick={() => setIsSelected(!isSelected)} />
-    </div>
-  )
-}
+export const SelectedDisabled = () => <RadioButton checked disabled />
 
-export const UnselectedDisabled = () => {
-  const [isSelected, setIsSelected] = useState(false)
-  return (
-    <div style={{ backgroundColor: 'black', padding: '50px 20px' }}>
-      <RadioButton selected={isSelected} disabled={true} onClick={() => setIsSelected(!isSelected)} />
-    </div>
-  )
-}
-
+export const UnselectedDisabled = () => <RadioButton disabled />
 export const Error = () => {
-  const [isSelected, setIsSelected] = useState(false)
-  return (
-    <div style={{ backgroundColor: 'black', padding: '50px 20px' }}>
-      <RadioButton selected={isSelected} error={true} onClick={() => setIsSelected(!isSelected)} />
-    </div>
-  )
+  const [checked, setChecked] = useState(false)
+  return <RadioButton error checked={checked} onClick={() => setChecked(!checked)} />
 }
 
 export const WithLabel = () => {
-  const [isSelected, setIsSelected] = useState(false)
-  return (
-    <div style={{ backgroundColor: 'black', padding: '50px 20px' }}>
-      <RadioButton label="Label" selected={isSelected} onClick={() => setIsSelected(!isSelected)} />
-    </div>
-  )
+  const [checked, setChecked] = useState(false)
+  return <RadioButton label="Label" checked={checked} onClick={() => setChecked(!checked)} />
 }
 
 export const WithLabelStart = () => {
-  const [isSelected, setIsSelected] = useState(false)
-  return (
-    <div style={{ backgroundColor: 'black', padding: '50px 20px' }}>
-      <RadioButton label="Label" position="start" selected={isSelected} onClick={() => setIsSelected(!isSelected)} />
-    </div>
-  )
+  const [checked, setChecked] = useState(false)
+  return <RadioButton label="Label" position="start" checked={checked} onClick={() => setChecked(!checked)} />
 }
 
 export const WithLabelBottom = () => {
-  const [isSelected, setIsSelected] = useState(false)
-  return (
-    <div style={{ backgroundColor: 'black', padding: '50px 20px' }}>
-      <RadioButton
-        label="A longer label than normal"
-        position="bottom"
-        selected={isSelected}
-        onClick={() => setIsSelected(!isSelected)}
-      />
-    </div>
-  )
+  const [checked, setChecked] = useState(false)
+  return <RadioButton label="A longer label" position="bottom" checked={checked} onClick={() => setChecked(!checked)} />
 }
-
 export const WithLabelTop = () => {
-  const [isSelected, setIsSelected] = useState(false)
-  return (
-    <div style={{ backgroundColor: 'black', padding: '50px 20px' }}>
-      <RadioButton
-        label="A longer label than normal"
-        position="top"
-        selected={isSelected}
-        onClick={() => setIsSelected(!isSelected)}
-      />
-    </div>
-  )
+  const [checked, setChecked] = useState(false)
+  return <RadioButton label="A longer label" position="top" checked={checked} onClick={() => setChecked(!checked)} />
 }
