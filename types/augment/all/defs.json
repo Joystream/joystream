@@ -852,7 +852,7 @@
         }
     },
     "ExecutionFailed": {
-        "error": "Bytes"
+        "error": "Text"
     },
     "Approved": {
         "_enum": {

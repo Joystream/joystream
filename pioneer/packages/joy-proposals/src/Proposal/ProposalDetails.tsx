@@ -15,7 +15,6 @@ import { Seat } from '@joystream/types/council';
 import ProposalDiscussion from './discussion/ProposalDiscussion';
 
 import styled from 'styled-components';
-import { bytesToString } from '@polkadot/joy-utils/functions/misc';
 
 const ProposalDetailsMain = styled.div`
   display: flex;
@@ -100,7 +99,7 @@ export function getExtendedStatus (proposal: ParsedProposal, bestNumber: BlockNu
         if (approvedStatus === 'ExecutionFailed') {
           const executionFailedStatus = proposalStatus.asType('Approved').asType('ExecutionFailed');
 
-          executionFailReason = bytesToString(executionFailedStatus.error);
+          executionFailReason = executionFailedStatus.error.toString();
         }
       }
     }
