@@ -223,10 +223,8 @@ pub fn testnet_genesis(
     data_directory_config: DataDirectoryConfig,
     content_working_group_config: ContentWorkingGroupConfig,
 ) -> GenesisConfig {
-    const CENTS: Balance = 1;
-    const DOLLARS: Balance = 100 * CENTS;
-    const STASH: Balance = 20 * DOLLARS;
-    const ENDOWMENT: Balance = 100_000 * DOLLARS;
+    const STASH: Balance = 5_000;
+    const ENDOWMENT: Balance = 100_000_000;
 
     let default_text_constraint = node_runtime::working_group::default_text_constraint();
 
@@ -282,14 +280,14 @@ pub fn testnet_genesis(
         election: Some(CouncilElectionConfig {
             auto_start: true,
             election_parameters: ElectionParameters {
-                announcing_period: 3 * DAYS,
+                announcing_period: 2 * DAYS,
                 voting_period: 1 * DAYS,
                 revealing_period: 1 * DAYS,
-                council_size: 12,
+                council_size: 6,
                 candidacy_limit: 25,
-                min_council_stake: 10 * DOLLARS,
-                new_term_duration: 14 * DAYS,
-                min_voting_stake: 1 * DOLLARS,
+                min_council_stake: 1_000,
+                new_term_duration: 10 * DAYS,
+                min_voting_stake: 100,
             },
         }),
         membership: Some(MembersConfig {

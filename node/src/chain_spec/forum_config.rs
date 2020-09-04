@@ -142,7 +142,7 @@ fn create(forum_sudo: AccountId, forum_data: EncodedForumData) -> ForumConfig {
         category_title_constraint: new_validation(10, 90),
         category_description_constraint: new_validation(10, 490),
         thread_title_constraint: new_validation(10, 90),
-        post_text_constraint: new_validation(10, 990),
+        post_text_constraint: new_validation(10, 2990),
         thread_moderation_rationale_constraint: new_validation(10, 290),
         post_moderation_rationale_constraint: new_validation(10, 290),
     }
