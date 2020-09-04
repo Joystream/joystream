@@ -53,7 +53,7 @@ const MIN_VOTING_STAKE_MAX = 100000;
 
 // Spending
 const TOKENS_MIN = 0;
-const TOKENS_MAX = 2000000;
+const TOKENS_MAX = 5000000;
 
 // Set Validator Count
 const MAX_VALIDATOR_COUNT_MIN = 4;
@@ -83,7 +83,7 @@ const LEAVE_ROLE_UNSTAKING_MAX = 14 * 14400; // 14 days
 // Set Working Group Mint Capacity
 // TODO: Discuss the actual values
 const WG_MINT_CAP_MIN = 0;
-const WG_MINT_CAP_MAX = 1000000;
+const WG_MINT_CAP_MAX = 5000000;
 
 // Fill Working Group Leader Opening / Set Working Group Lead Reward
 // TODO: Discuss the actual values

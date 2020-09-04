@@ -39,6 +39,26 @@ use sp_core::{
 
 const STAGING_TELEMETRY_URL: &str = "wss://telemetry.polkadot.io/submit/";
 
+#[allow(non_camel_case_types)]
+#[derive(Debug, Clone, PartialEq, enum_utils::FromStr)]
+enum ChainDeployment {
+    dev,
+    local,
+    staging,
+    live,
+}
+
+impl Into<ChainType> for ChainDeployment {
+    fn into(self) -> ChainType {
+        match self {
+            ChainDeployment::dev => ChainType::Development,
+            ChainDeployment::local => ChainType::Local,
+            ChainDeployment::staging => ChainType::Live,
+            ChainDeployment::live => ChainType::Live,
+        }
+    }
+}
+
 /// A utility to easily create a testnet chain spec definition with a given set
 /// of authorities and endowed accounts and/or generate random accounts.
 #[derive(StructOpt)]
@@ -71,6 +91,9 @@ enum ChainSpecBuilder {
         /// The path to an initial balances file
         #[structopt(long, short)]
         initial_balances_path: Option<PathBuf>,
+        /// Deployment type: dev, local, staging, live
+        #[structopt(long, short, default_value = "live")]
+        deployment: String,
     },
     /// Create a new chain spec with the given number of authorities and endowed
     /// accounts. Random keys will be generated as required.
@@ -103,6 +126,9 @@ enum ChainSpecBuilder {
         /// The path to an initial balances file
         #[structopt(long, short)]
         initial_balances_path: Option<PathBuf>,
+        /// Deployment type: dev, local, staging, live
+        #[structopt(long, short, default_value = "live")]
+        deployment: String,
     },
 }
 
@@ -172,9 +198,22 @@ impl ChainSpecBuilder {
             } => initial_balances_path,
         }
     }
+
+    /// Returns the chain deployment
+    fn chain_deployment(&self) -> ChainDeployment {
+        match self {
+            ChainSpecBuilder::New { deployment, .. } => deployment
+                .parse()
+                .expect("Failed to parse deployment argument"),
+            ChainSpecBuilder::Generate { deployment, .. } => deployment
+                .parse()
+                .expect("Failed to parse deployment argument"),
+        }
+    }
 }
 
 fn genesis_constructor(
+    deployment: &ChainDeployment,
     authority_seeds: &[String],
     endowed_accounts: &[AccountId],
     sudo_account: &AccountId,
@@ -230,11 +269,17 @@ fn genesis_constructor(
         vec![]
     };
 
+    let proposals_cfg = match deployment {
+        ChainDeployment::live => proposals_config::production(),
+        ChainDeployment::staging => proposals_config::staging(),
+        _ => proposals_config::development(),
+    };
+
     chain_spec::testnet_genesis(
         authorities,
         sudo_account.clone(),
         endowed_accounts.to_vec(),
-        proposals_config::default(),
+        proposals_cfg,
         members,
         forum_cfg,
         versioned_store_cfg,
@@ -246,6 +291,7 @@ fn genesis_constructor(
 }
 
 fn generate_chain_spec(
+    deployment: ChainDeployment,
     authority_seeds: Vec<String>,
     endowed_accounts: Vec<String>,
     sudo_account: String,
@@ -276,9 +322,10 @@ fn generate_chain_spec(
     let chain_spec = chain_spec::ChainSpec::from_genesis(
         "Joystream Testnet",
         "joy_testnet",
-        ChainType::Development,
+        deployment.clone().into(),
         move || {
             genesis_constructor(
+                &deployment,
                 &authority_seeds,
                 &endowed_accounts,
                 &sudo_account,
@@ -361,6 +408,7 @@ fn main() -> Result<(), String> {
     let initial_forum_path = builder.initial_forum_path().clone();
     let initial_content_path = builder.initial_content_path().clone();
     let initial_balances_path = builder.initial_balances_path().clone();
+    let deployment = builder.chain_deployment();
 
     let (authority_seeds, endowed_accounts, sudo_account) = match builder {
         ChainSpecBuilder::Generate {
@@ -404,6 +452,7 @@ fn main() -> Result<(), String> {
     };
 
     let json = generate_chain_spec(
+        deployment,
         authority_seeds,
         endowed_accounts,
         sudo_account,
