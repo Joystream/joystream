@@ -1,16 +1,22 @@
 import { QueryEventProcessingPack } from '.';
 import { BootstrapPack } from './bootstrap';
 
-export interface QueryNodeStartUpOptions {
-  // Web socket endpoint url
-  wsProviderURI: string;
+export type QueryNodeStartUpOptions = IndexerOptions | ProcessorOptions | BootstrapOptions;
 
-  // Event processors they are defined in mappings/bootstrap
-  processingPack: QueryEventProcessingPack | BootstrapPack;
-
-  // Custum type register function
-  typeRegistrator?: () => void;
-
-  // Block number that indexer will start from, default is 0
+export interface IndexerOptions  {
   atBlock?: number;
+  typeRegistrator?: () => void;
+  wsProviderURI: string;
+}
+
+export interface ProcessorOptions {
+  processingPack: QueryEventProcessingPack
+  atBlock?: number;
+}
+
+export interface BootstrapOptions {
+  atBlock?: number;
+  typeRegistrator?: () => void;
+  wsProviderURI: string;
+  processingPack: BootstrapPack
 }

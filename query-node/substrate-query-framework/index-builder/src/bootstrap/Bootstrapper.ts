@@ -2,14 +2,15 @@ import {
   BootstrapPack,
   BootstrapFunc,
   SubstrateEvent,
-  SavedEntityEvent,
-  QueryNodeStartUpOptions,
+  SavedEntityEvent
 } from '..';
+
 import { WsProvider, ApiPromise } from '@polkadot/api';
 import { getConnection, EntityManager } from 'typeorm';
 import { makeDatabaseManager } from '..';
 
 import Debug from 'debug';
+import { BootstrapOptions } from '../QueryNodeStartOptions';
 const debug = Debug('index-builder:bootstrapper');
 
 export default class Bootstrapper {
@@ -21,7 +22,7 @@ export default class Bootstrapper {
     this._bootstrapPack = bootstrapPack;
   }
 
-  static async create(options: QueryNodeStartUpOptions): Promise<Bootstrapper> {
+  static async create(options: BootstrapOptions): Promise<Bootstrapper> {
     const { wsProviderURI, typeRegistrator, processingPack } = options;
 
     // Initialise the provider to connect to the local node
@@ -32,7 +33,7 @@ export default class Bootstrapper {
 
     // Create the API and wait until ready
     const api = await ApiPromise.create({ provider });
-    return new Bootstrapper(api, processingPack as BootstrapPack);
+    return new Bootstrapper(api, processingPack);
   }
 
   async bootstrap():Promise<void> {
