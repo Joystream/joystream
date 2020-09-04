@@ -231,17 +231,15 @@ fn genesis_constructor(
         .map(chain_spec::get_authority_keys_from_seed)
         .collect::<Vec<_>>();
 
-    let members = if let Some(path) = initial_members_path {
-        initial_members::from_json(path.as_path())
-    } else {
-        initial_members::none()
-    };
+    let members = initial_members_path
+        .as_ref()
+        .map(|path| initial_members::from_json(path.as_path()))
+        .unwrap_or_else(initial_members::none);
 
-    let forum_cfg = if let Some(path) = initial_forum_path {
-        forum_config::from_json(sudo_account.clone(), path.as_path())
-    } else {
-        forum_config::empty(sudo_account.clone())
-    };
+    let forum_cfg = initial_forum_path
+        .as_ref()
+        .map(|path| forum_config::from_json(sudo_account.clone(), path.as_path()))
+        .unwrap_or_else(|| forum_config::empty(sudo_account.clone()));
 
     let (
         versioned_store_cfg,
@@ -267,8 +265,9 @@ fn genesis_constructor(
     };
 
     let initial_account_balances = initial_balances_path
+        .as_ref()
         .map(|path| initial_balances::from_json(path.as_path()))
-        .unwrap_or_else(vec![]);
+        .unwrap_or_else(Vec::new);
 
     let proposals_cfg = match deployment {
         ChainDeployment::live => proposals_config::production(),
