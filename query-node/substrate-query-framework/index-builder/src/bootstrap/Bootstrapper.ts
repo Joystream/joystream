@@ -1,4 +1,3 @@
-import * as BN from 'bn.js';
 import {
   BootstrapPack,
   BootstrapFunc,
@@ -81,8 +80,8 @@ export default class Bootstrapper {
       event_name: 'Bootstrap',
       event_method: `Bootstrap.${boot.name}`,
       event_params: {},
-      index: new BN((Date.now() / 1000) | 0), // simply put the timestamp here
-      block_number: process.env.BLOCK_HEIGHT ? new BN(process.env.BLOCK_HEIGHT) : new BN(0),
+      index: (Date.now() / 1000) | 0, // simply put the timestamp here
+      block_number: process.env.BLOCK_HEIGHT ? Number.parseInt(process.env.BLOCK_HEIGHT) : 0,
     };
   }
 

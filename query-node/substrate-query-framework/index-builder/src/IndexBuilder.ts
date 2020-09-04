@@ -1,136 +1,155 @@
 // @ts-check
 
-import { getRepository, getConnection } from 'typeorm';
-import * as BN from 'bn.js';
+import { getConnection } from 'typeorm';
 
 import {
   QueryBlockProducer,
-  QueryEventProcessingPack,
   QueryEventBlock,
   ISubstrateQueryService,
-  SavedEntityEvent,
-  makeDatabaseManager,
-  SubstrateEvent,
 } from '.';
 
 import Debug from 'debug';
+import { doInTransaction } from './db/helper';
+import { PooledExecutor } from './PooledExecutor';
+import { SubstrateEventEntity } from './entities';
+import { EVENT_TABLE_NAME } from './entities/SubstrateEventEntity';
+import { numberEnv } from './utils/env-flags';
 
 const debug = Debug('index-builder:indexer');
 
+const WORKERS_NUMBER = numberEnv('INDEXER_WORKERS') || 50;
+
 export default class IndexBuilder {
-  private _producer: QueryBlockProducer;
+  private _producer!: QueryBlockProducer;
+  private _stopped = false;
 
-  private _processing_pack!: QueryEventProcessingPack;
+  private _indexingTimer = new Date().getMilliseconds();
 
-  private lastProcessedEvent!: SavedEntityEvent;
+  private _indexerHead = -1;
 
-  private constructor(producer: QueryBlockProducer, processing_pack: QueryEventProcessingPack) {
+  // set containing the indexer block heights that are ahead 
+  // of the current indexer head
+  private _recentlyIndexedBlocks = new Set<number>();
+
+  private constructor(producer: QueryBlockProducer) {
     this._producer = producer;
-    this._processing_pack = processing_pack;
   }
 
-  static create(service: ISubstrateQueryService, processing_pack: QueryEventProcessingPack): IndexBuilder {
+  static create(service: ISubstrateQueryService): IndexBuilder {
     const producer = new QueryBlockProducer(service);
 
-    return new IndexBuilder(producer, processing_pack);
+    return new IndexBuilder(producer);
   }
 
-  async start(atBlock?: BN): Promise<void> {
-    // check state
-
-    // STORE THIS SOMEWHERE
-    //this._producer.on('QueryEventBlock', (query_event_block: QueryEventBlock) => {
-    //  this._onQueryEventBlock(query_event_block);
-    //});
-
+  async start(atBlock?: number): Promise<void> {
     debug('Spawned worker.');
 
-    if (atBlock) {
-      debug(`Got block height hint: ${atBlock.toString()}`);
-    }
+    this._indexerHead = await this._restoreIndexerHead();
+    debug(`Last indexed block in the database: ${this._indexerHead.toString()}`);
+    let startBlock = this._indexerHead + 1;
     
-    const lastProcessedEvent = await getRepository(SavedEntityEvent).findOne({ where: { id: 1 } });
-
-    if (lastProcessedEvent) {
-      debug(`Found the most recent processed event at block ${lastProcessedEvent.blockNumber.toString()}`);
-    }
-
-    if (atBlock && lastProcessedEvent) {
-      debug(
-        `WARNING! Existing processed history detected on the database!
-        Last processed block is ${lastProcessedEvent.blockNumber.toString()}. The indexer 
-        will continue from block ${lastProcessedEvent.blockNumber.toString()} and ignore the block height hints.`
-      );
-    }
-
-    if (lastProcessedEvent) {
-      this.lastProcessedEvent = lastProcessedEvent;
-      await this._producer.start(this.lastProcessedEvent.blockNumber, this.lastProcessedEvent.index);
-    } else {
-      // Setup worker
-      await this._producer.start(atBlock);
-    }
-
-    for await (const eventBlock of this._producer.blocks()) {
-      try {
-        await this._onQueryEventBlock(eventBlock);
-      } catch (e) {
-        throw new Error(e);
+    if (atBlock) {
+      debug(`Got block height hint: ${atBlock}`);
+      if (this._indexerHead >= 0 && process.env.FORCE_BLOCK_HEIGHT !== 'true') {
+        debug(
+          `WARNING! The database contains indexed blocks.
+          The last indexed block height is ${this._indexerHead}. The indexer 
+          will continue from block ${this._indexerHead} ignoring the start 
+          block height hint. Set the environment variable FORCE_BLOCK_HEIGHT to true 
+          if you want to start from ${atBlock} anyway.`
+        );
+      } else {
+        startBlock = Math.max(startBlock, atBlock);
+        this._indexerHead = startBlock - 1;
       }
-      debug(`Successfully processed block ${eventBlock.block_number.toString()}`)
     }
 
-    debug('Started worker.');
+    debug(`Starting the block indexer at block ${startBlock}`);
+
+    await this._producer.start(startBlock);
+
+    const poolExecutor = new PooledExecutor(WORKERS_NUMBER, this._producer.blockHeights(), this._indexBlock());
+    
+    debug('Started a pool of indexers.');
+
+    await poolExecutor.run(() => this._stopped);
+
   }
 
   async stop(): Promise<void> { 
     return new Promise<void>((resolve) => {
       debug('Index builder has been stopped (NOOP)');
+      this._stopped = true;
       resolve();
     });
   }
 
-  async _onQueryEventBlock(query_event_block: QueryEventBlock): Promise<void> {
-    debug(`Yay, block producer at height: #${query_event_block.block_number.toString()}`);
 
-    await asyncForEach(query_event_block.query_events, async (query_event: SubstrateEvent, i: number) => {
+  async _restoreIndexerHead(): Promise<number> {
+    const qr = getConnection().createQueryRunner();
+    // take the first block such that next one has not yet been saved
+    const rawRslts = await qr.query(`
+      SELECT MIN(events.block_number) as head FROM 
+        (SELECT event.id, event.block_number, next_block_event.id as next_block_id 
+          FROM ${EVENT_TABLE_NAME} event 
+          LEFT JOIN ${EVENT_TABLE_NAME} next_block_event
+          ON event.block_number + 1 = next_block_event.block_number) events 
+      WHERE events.next_block_id is NULL`
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ) as Array<any>; 
+    
+    if ((rawRslts === undefined) || (rawRslts.length === 0)) {
+      return -1;
+    }     
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const head = rawRslts[0].head as number;
+    console.debug(`Got blknum: ${JSON.stringify(head, null, 2)}`);
+    
+    return (head) ? head : -1;
+  }
+
+  _indexBlock(): (h: number) => Promise<void> {
+    return async (h: number) => {
+      debug(`Processing block #${h.toString()}`);  
+      const queryEventsBlock: QueryEventBlock = await this._producer.fetchBlock(h);
       
-      debug(`Processing event ${query_event.event_name}, index: ${i}`)
-  
-      const queryRunner = getConnection().createQueryRunner();
-      try {
-        // establish real database connection
-        await queryRunner.connect();
-        await queryRunner.startTransaction();
+      debug(`Read ${queryEventsBlock.query_events.length} events`);  
+      
+      const qeEntities: SubstrateEventEntity[] = queryEventsBlock.query_events.map(
+        (qe) => SubstrateEventEntity.fromQueryEvent(qe));
+      
+      await doInTransaction(async (queryRunner) => {
+        debug(`Saving query event entities`);
+        await queryRunner.manager.save(qeEntities);
+        debug(`Done block #${h.toString()}`);
+      });
 
-        // Call event handler
-        if (this._processing_pack[query_event.event_name]) {
-          debug(`Recognized: ` + query_event.event_name);
-          await this._processing_pack[query_event.event_name](makeDatabaseManager(queryRunner.manager), query_event);
-        } else {
-          debug(`No mapping for  ${query_event.event_name}, skipping`);
-        }
-        // Update last processed event
-        await SavedEntityEvent.update(query_event, queryRunner.manager);
+      this._recentlyIndexedBlocks.add(h);
+      this._updateIndexerHead();
+    }
+  }
 
-        await queryRunner.commitTransaction();
-      } catch (error) {
-        debug(`There are errors. Rolling back the transaction. Reason: ${JSON.stringify(error, null, 2)}`);
+  private _updateIndexerHead(): void {
+    let nextHead = this._indexerHead + 1;
+    while (this._recentlyIndexedBlocks.has(nextHead)) {
+      this._indexerHead = nextHead;
 
-        // Since we have errors lets rollback changes we made
-        await queryRunner.rollbackTransaction();
-        throw new Error(error);
-      } finally {
-        // Query runner needs to be released manually.
-        await queryRunner.release();
+      if (this._indexerHead % 100 === 0) {
+        const _newTime = new Date().getMilliseconds();
+        debug(`Indexed 100 blocks in ${_newTime - this._indexingTimer} ms`);
+        this._indexingTimer = _newTime;
       }
-      
-    });
-  }
-}
 
-async function asyncForEach<T>(array: Array<T>, callback: (o: T, i: number, a: Array<T>) => Promise<void>): Promise<void> {
-  for (let index = 0; index < array.length; index++) {
-    await callback(array[index], index, array);
+      debug(`Updated indexer head to ${this._indexerHead}`);
+      // remove from the set as we don't need to keep it anymore
+      this._recentlyIndexedBlocks.delete(nextHead);
+      nextHead++;
+    }
   }
+
+  public get indexerHead(): number {
+    return this._indexerHead;
+  }
+  
 }

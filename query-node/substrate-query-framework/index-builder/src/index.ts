@@ -1,7 +1,7 @@
 import ISubstrateQueryService, { makeQueryService } from './ISubstrateQueryService';
 import QueryBlockProducer from './QueryBlockProducer';
 import QueryEventProcessingPack from './QueryEventProcessingPack';
-import QueryEvent, { SubstrateEvent } from './QueryEvent';
+import QueryEvent from './QueryEvent';
 import QueryEventBlock from './QueryEventBlock';
 import IndexBuilder from './IndexBuilder';
 import QueryNode, { QueryNodeState } from './QueryNode';
@@ -10,13 +10,15 @@ import { DatabaseManager, SavedEntityEvent, makeDatabaseManager, createDBConnect
 import BootstrapPack, { BootstrapFunc } from './bootstrap/BootstrapPack';
 import { QueryNodeStartUpOptions } from './QueryNodeStartOptions';
 
+export * from './entities';
+export * from './interfaces';
+
 export {
   ISubstrateQueryService,
   makeQueryService,
   QueryBlockProducer,
   QueryEventProcessingPack,
   QueryEvent,
-  SubstrateEvent,
   QueryEventBlock,
   IndexBuilder,
   QueryNode,
