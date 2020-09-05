@@ -167,8 +167,8 @@ export abstract class MediaTransport {
 
   async videosByChannelId (channelId: ChannelId, limit?: number, additionalFilter?: (x: VideoType) => boolean): Promise<VideoType[]> {
     let videos = (await this.allVideos())
-      .filter((x) => channelId && channelId.eq(x.channelId) && (additionalFilter || (() => true))(x))
-      .sort((x) => -1 * x.id);
+      .filter(x => channelId && channelId.eq(x.channelId) && (additionalFilter || (() => true))(x))
+      .sort((a, b) => b.id - a.id);
 
     if (limit && limit > 0) {
       videos = videos.slice(0, limit);
@@ -218,7 +218,7 @@ export abstract class MediaTransport {
   async allPublicVideoChannels (): Promise<ChannelEntity[]> {
     return (await this.allVideoChannels())
       .filter(isPublicChannel)
-      .sort((x) => -1 * x.id);
+      .sort((a, b) => b.id - a.id);
   }
 
   async latestPublicVideoChannels (limit = 6): Promise<ChannelEntity[]> {
@@ -247,7 +247,7 @@ export abstract class MediaTransport {
 
     return (await this.allVideos())
       .filter(isPublicAndNotCurated)
-      .sort((x) => -1 * x.id);
+      .sort((a, b) => b.id - a.id);
   }
 
   async latestPublicVideos (limit = 12): Promise<VideoType[]> {
