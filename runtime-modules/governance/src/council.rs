@@ -34,9 +34,7 @@ decl_storage! {
 
         pub TermEndsAt get(fn term_ends_at) config() : T::BlockNumber = T::BlockNumber::from(1);
 
-        /// The mint that funds council member rewards and spending proposals budget. It is an Option
-        /// because it was introduced in a runtime upgrade. It will be automatically created when
-        /// a successful call to set_council_mint_capacity() is made.
+        /// The mint that funds council member rewards and spending proposals budget
         pub CouncilMint get(fn council_mint) : <T as minting::Trait>::MintId;
 
         /// The reward relationships currently in place. There may not necessarily be a 1-1 correspondance with
