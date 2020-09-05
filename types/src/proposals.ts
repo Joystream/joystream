@@ -86,7 +86,7 @@ export class ActiveStake extends JoyStructDecorated({ stake_id: StakeId, source_
   implements IActiveStake {}
 
 export class ExecutionFailedStatus extends JoyStructDecorated({
-  error: Vec.with(u8),
+  error: Text,
 }) {}
 
 export class ExecutionFailed extends ExecutionFailedStatus {}

@@ -466,7 +466,7 @@ export interface EntryMethod extends Enum {
 
 /** @name ExecutionFailed */
 export interface ExecutionFailed extends Struct {
-  readonly error: Bytes;
+  readonly error: Text;
 }
 
 /** @name ExitedLeadRole */
