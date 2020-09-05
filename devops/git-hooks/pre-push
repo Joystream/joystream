@@ -1,10 +1,12 @@
 #!/bin/sh
 set -e
 
-echo '+cargo test --release --all'
-BUILD_DUMMY_WASM_BINARY=1 cargo test --all
+export WASM_BUILD_TOOLCHAIN=nightly-2020-05-23
 
-echo '+cargo clippy --release --all -- -D warnings'
-BUILD_DUMMY_WASM_BINARY=1 cargo clippy --all -- -D warnings
+echo '+cargo test --all'
+cargo test --all
+
+echo '+cargo clippy --all -- -D warnings'
+cargo clippy --all -- -D warnings
 
 
