@@ -34,7 +34,6 @@ before_script:
   - cargo fmt --all -- --check
 
 script:
-  # we set release as build type for all steps to benefit from already compiled packages in prior steps
   - export WASM_BUILD_TOOLCHAIN=nightly-2020-05-23
   - cargo clippy --all -- -D warnings
   - cargo test --verbose --all

@@ -1993,7 +1993,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
