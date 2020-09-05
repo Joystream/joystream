@@ -7,6 +7,6 @@ echo '+cargo test --all'
 cargo test --all
 
 echo '+cargo clippy --all -- -D warnings'
-cargo clippy --all -- -D warnings
+BUILD_DUMMY_WASM_BINARY=1 cargo clippy --all -- -D warnings
 
 
