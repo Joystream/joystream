@@ -53,8 +53,8 @@ pub struct ReferendumStageVoting<BlockNumber> {
 /// Representation for revealing stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
-    started: BlockNumber,                 // block in which referendum started
-    intermediate_results: Vec<VotePower>, // votes that options have recieved at a given time
+    pub started: BlockNumber, // block in which referendum started
+    pub intermediate_results: Vec<VotePower>, // votes that options have recieved at a given time
 }
 
 /// Vote cast in referendum. Vote target is concealed until user reveals commitment's proof.

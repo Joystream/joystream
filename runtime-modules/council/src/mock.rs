@@ -2,18 +2,17 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Candidate, CouncilStage, CouncilStageInfo, Error, Event, EzCandidate, GenesisConfig, Module,
-    RawEvent, Trait,
+    CouncilMembers, CouncilStage, CouncilStageInfo, Error, EzCandidate, EzCouncilStageAnnouncing,
+    EzCouncilStageElection, EzCouncilStageInfo, GenesisConfig, Module, Stage, Trait,
 };
 
-use codec::Encode;
-use frame_support::traits::LockIdentifier;
-use frame_support::{
-    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
-};
+use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageValue};
 use pallet_balances;
 use rand::Rng;
-use referendum::{Balance, CastVote, CurrentCycleId, ReferendumManager};
+use referendum::{
+    Balance, CastVote, CurrentCycleId, ReferendumManager, ReferendumStage, ReferendumStageRevealing,
+};
 use sp_core::H256;
 use sp_io;
 use sp_runtime::{
@@ -25,11 +24,7 @@ use std::cell::RefCell;
 use std::marker::PhantomData;
 use system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 
-pub const USER_ADMIN: u64 = 1;
-pub const USER_REGULAR: u64 = 2;
-pub const USER_REGULAR_POWER_VOTES: u64 = 3;
-pub const USER_REGULAR_2: u64 = 4;
-pub const USER_REGULAR_3: u64 = 5;
+pub const USER_REGULAR_POWER_VOTES: u64 = 0;
 
 pub const POWER_VOTE_STRENGTH: u64 = 10;
 
@@ -42,9 +37,9 @@ pub const CANDIDATE_BASE_ID: u64 = 5000;
 pub struct Runtime;
 
 parameter_types! {
-    pub const MinNumberOfCandidates: u64 = 2;
-    pub const AnnouncingPeriodDuration: u64 = 10;
-    pub const IdlePeriodDuration: u64 = 10;
+    pub const MinNumberOfExtraCandidates: u64 = 1;
+    pub const AnnouncingPeriodDuration: u64 = 15;
+    pub const IdlePeriodDuration: u64 = 15;
     pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 10;
     pub const CouncilLockId: LockIdentifier = *b"council_";
@@ -54,12 +49,11 @@ impl Trait for Runtime {
     type Event = TestEvent;
 
     type LockId = CouncilLockId;
-    type MinNumberOfCandidates = MinNumberOfCandidates;
+    type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
     type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
     type IdlePeriodDuration = IdlePeriodDuration;
     type MinCandidateStake = MinCandidateStake;
-
 }
 
 /////////////////// Module implementation //////////////////////////////////////
@@ -135,8 +129,8 @@ thread_local! {
 
 parameter_types! {
     pub const MaxReferendumOptions: u64 = 10;
-    pub const VoteStageDuration: u64 = 5;
-    pub const RevealStageDuration: u64 = 5;
+    pub const VoteStageDuration: u64 = 15;
+    pub const RevealStageDuration: u64 = 15;
     pub const MinimumStake: u64 = 10000;
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const ReferendumLockId: LockIdentifier = *b"referend";
@@ -182,10 +176,10 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
         true
     }
 
-    fn process_results(
-        _all_options_results: &[Self::VotePower],
-    ) {
-        // not used right now
+    fn process_results(all_options_results: &[Self::VotePower]) {
+        let origin = InstanceMockUtils::<Self>::mock_origin(OriginType::Root);
+
+        <Module<Self>>::recieve_referendum_winners(origin, all_options_results.to_vec()).unwrap();
     }
 }
 
@@ -199,7 +193,6 @@ impl pallet_balances::Trait for Runtime {
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = system::Module<Self>;
-    //type AccountStore = ();
 }
 
 /////////////////// Data structures ////////////////////////////////////////////
@@ -243,30 +236,34 @@ pub struct InstanceMockUtils<T: Trait> {
 impl<T: Trait> InstanceMockUtils<T>
 where
     T::AccountId: From<u64>,
+    T::BlockNumber: From<u64> + Into<u64>,
+    Balance<T, ReferendumInstance>: From<u64> + Into<u64>,
 {
     pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::Origin {
         match origin {
             OriginType::Signed(account_id) => T::Origin::from(RawOrigin::Signed(account_id)),
-            _ => panic!("not implemented"),
+            OriginType::Root => RawOrigin::Root.into(),
+            //_ => panic!("not implemented"),
         }
     }
 
-    pub fn origin_access<F: Fn(OriginType<T::AccountId>) -> ()>(
-        origin_account_id: T::AccountId,
-        f: F,
-    ) {
-        let config = default_genesis_config();
+    pub fn increase_block_number(increase: u64) -> () {
+        let block_number = system::Module::<T>::block_number();
 
-        build_test_externalities(config).execute_with(|| {
-            let origin = OriginType::Signed(origin_account_id);
+        for i in 0..increase {
+            let tmp_index: T::BlockNumber = block_number + i.into();
 
-            f(origin)
-        });
+            <Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(tmp_index);
+            <referendum::Module<T, ReferendumInstance> as OnFinalize<T::BlockNumber>>::on_finalize(
+                tmp_index,
+            );
+            system::Module::<T>::set_block_number(tmp_index + 1.into());
+        }
     }
 
-    pub fn increase_block_number(increase: T::BlockNumber) -> () {
-        let block_number = system::Module::<T>::block_number();
-        system::Module::<T>::set_block_number(block_number + increase);
+    // topup currency to the account
+    fn topup_account(account_id: u64, amount: Balance<T, ReferendumInstance>) {
+        let _ = pallet_balances::Module::<Runtime>::deposit_creating(&account_id, amount.into());
     }
 
     pub fn generate_candidate(
@@ -280,16 +277,21 @@ where
             stake,
         };
 
+        Self::topup_account(account_id.into(), stake);
+
         (origin, candidate)
     }
 
     pub fn generate_voter(
         index: u64,
+        balance: Balance<T, ReferendumInstance>,
         vote_for_index: u64,
     ) -> (OriginType<T::AccountId>, T::Hash, Vec<u8>) {
         let account_id = VOTER_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
         let (commitment, salt) = Self::vote_commitment(&account_id.into(), &vote_for_index.into());
+
+        Self::topup_account(account_id.into(), balance);
 
         (origin, commitment, salt)
     }
@@ -326,63 +328,79 @@ pub struct InstanceMocks<T: Trait> {
 impl<T: Trait> InstanceMocks<T>
 where
     T::AccountId: From<u64>,
+    T::BlockNumber: From<u64> + Into<u64>,
+    Balance<T, ReferendumInstance>: From<u64> + Into<u64>,
 {
-    /*
-        pub fn start_announcing_period(
-            origin: OriginType<T::AccountId>,
-            expected_result: Result<(), Error<T>>,
-        ) -> () {
-            // check method returns expected result
-            assert_eq!(
-                Module::<T>::start_announcing_period(InstanceMockUtils::<T>::mock_origin(origin),),
-                expected_result,
-            );
-        }
-    */
+    pub fn check_announcing_period(
+        expected_update_block_number: T::BlockNumber,
+        expected_state: EzCouncilStageAnnouncing<T>,
+    ) -> () {
+        // check stage is in proper state
+        assert_eq!(
+            Stage::<T>::get(),
+            EzCouncilStageInfo::<T> {
+                stage: CouncilStage::Announcing(expected_state),
+                changed_at: expected_update_block_number,
+            },
+        );
+    }
+
+    pub fn check_election_period(
+        expected_update_block_number: T::BlockNumber,
+        expected_state: EzCouncilStageElection<T>,
+    ) -> () {
+        // check stage is in proper state
+        assert_eq!(
+            Stage::<T>::get(),
+            EzCouncilStageInfo::<T> {
+                stage: CouncilStage::Election(expected_state),
+                changed_at: expected_update_block_number,
+            },
+        );
+    }
+
+    pub fn check_idle_period(expected_update_block_number: T::BlockNumber) -> () {
+        // check stage is in proper state
+        assert_eq!(
+            Stage::<T>::get(),
+            EzCouncilStageInfo::<T> {
+                stage: CouncilStage::Idle,
+                changed_at: expected_update_block_number,
+            },
+        );
+    }
+
+    pub fn check_council_members(expect_members: Vec<EzCandidate<T>>) -> () {
+        // check stage is in proper state
+        assert_eq!(CouncilMembers::<T>::get(), expect_members,);
+    }
+
+    pub fn check_referendum_revealing(
+        candidate_count: u64,
+        expected_update_block_number: T::BlockNumber,
+    ) {
+        // check stage is in proper state
+        assert_eq!(
+            referendum::Stage::<T, ReferendumInstance>::get(),
+            ReferendumStage::Revealing(ReferendumStageRevealing {
+                started: expected_update_block_number,
+                intermediate_results: (0..candidate_count).map(|_| 0.into()).collect(),
+            }),
+        );
+    }
 
     pub fn candidate(
         origin: OriginType<T::AccountId>,
         stake: Balance<T, ReferendumInstance>,
         expected_result: Result<(), Error<T>>,
-    ) -> () {
+    ) {
         // check method returns expected result
         assert_eq!(
             Module::<T>::candidate(InstanceMockUtils::<T>::mock_origin(origin), stake),
             expected_result,
         );
     }
-    /*
-        pub fn finalize_announcing_period(
-            origin: OriginType<T::AccountId>,
-            expected_result: Result<(), Error<T>>,
-            expect_candidates: Option<Vec<Candidate>>,
-        ) -> () {
-            // check method returns expected result
-            assert_eq!(
-                Module::<T>::finalize_announcing_period(InstanceMockUtils::<T>::mock_origin(origin),),
-                expected_result,
-            );
 
-            if expected_result.is_err() {
-                return;
-            }
-
-            if expect_candidates.is_none() {
-                // check event was emitted
-                assert_eq!(
-                    system::Module::<Runtime>::events().last().unwrap().event,
-                    TestEvent::event_mod(RawEvent::NotEnoughCandidates())
-                );
-                return;
-            }
-
-            // check event was emitted
-            assert_eq!(
-                system::Module::<Runtime>::events().last().unwrap().event,
-                TestEvent::event_mod(RawEvent::VotingPeriodStarted(expect_candidates.unwrap()))
-            );
-        }
-    */
     pub fn vote_for_candidate(
         origin: OriginType<T::AccountId>,
         commitment: T::Hash,
@@ -416,25 +434,4 @@ where
             expected_result,
         );
     }
-    /*
-        pub fn finish_voting_start_revealing(
-            origin: OriginType<T::AccountId>,
-            expected_result: Result<(), Error<T>>,
-        ) -> () {
-            assert_eq!(
-                Module::<T>::finish_voting_start_revealing(InstanceMockUtils::<T>::mock_origin(origin)),
-                expected_result,
-            );
-        }
-
-        pub fn finish_revealing_period(
-            origin: OriginType<T::AccountId>,
-            expected_result: Result<(), Error<T>>,
-        ) -> () {
-            assert_eq!(
-                Module::<T>::finish_revealing_period(InstanceMockUtils::<T>::mock_origin(origin)),
-                expected_result,
-            );
-        }
-    */
 }
