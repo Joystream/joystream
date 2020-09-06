@@ -253,7 +253,7 @@ pub fn testnet_genesis(
         }),
         pallet_staking: Some(StakingConfig {
             validator_count: 20,
-            minimum_validator_count: 1,
+            minimum_validator_count: initial_authorities.len() as u32,
             stakers: initial_authorities
                 .iter()
                 .map(|x| (x.0.clone(), x.1.clone(), STASH, StakerStatus::Validator))

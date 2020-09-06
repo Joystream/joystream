@@ -99,7 +99,7 @@ export function getExtendedStatus (proposal: ParsedProposal, bestNumber: BlockNu
         if (approvedStatus === 'ExecutionFailed') {
           const executionFailedStatus = proposalStatus.asType('Approved').asType('ExecutionFailed');
 
-          executionFailReason = Buffer.from(executionFailedStatus.error.toString().replace('0x', ''), 'hex').toString();
+          executionFailReason = executionFailedStatus.error.toString();
         }
       }
     }
