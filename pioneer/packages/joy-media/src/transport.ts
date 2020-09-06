@@ -167,7 +167,7 @@ export abstract class MediaTransport {
 
   async videosByChannelId (channelId: ChannelId, limit?: number, additionalFilter?: (x: VideoType) => boolean): Promise<VideoType[]> {
     let videos = (await this.allVideos())
-      .filter(x => channelId && channelId.eq(x.channelId) && (additionalFilter || (() => true))(x))
+      .filter((x) => channelId && channelId.eq(x.channelId) && (additionalFilter || (() => true))(x))
       .sort((a, b) => b.id - a.id);
 
     if (limit && limit > 0) {
