@@ -1,10 +1,28 @@
 use super::*;
 use sp_runtime::traits::Hash;
 
-impl<Nonce, Hash, EntityId> From<InputPropertyValue<EntityId>>
-    for StoredPropertyValue<Nonce, Hash, EntityId>
+impl<
+        Hashing: Hash<Output = HashType>,
+        HashType: Parameter
+            + Member
+            + MaybeSerializeDeserialize
+            + Debug
+            + MaybeDisplay
+            + SimpleBitOps
+            + Ord
+            + Default
+            + Copy
+            + CheckEqual
+            + sp_std::hash::Hash
+            + AsRef<[u8]>
+            + AsMut<[u8]>
+            + MaybeMallocSizeOf,
+        EntityId,
+        Nonce: Default,
+    > From<InputPropertyValue<Hashing, HashType, EntityId>>
+    for StoredPropertyValue<Nonce, HashType, EntityId>
 {
-    fn from(input_property_value: InputPropertyValue<EntityId>) -> Self {
+    fn from(input_property_value: InputPropertyValue<Hashing, HashType, EntityId>) -> Self {
         match input_property_value {
             InputPropertyValue::Single(input_value) => {
                 StoredPropertyValue::Single(input_value.into())
@@ -18,8 +36,26 @@ impl<Nonce, Hash, EntityId> From<InputPropertyValue<EntityId>>
     }
 }
 
-impl<Hash, EntityId> From<InputValue<EntityId>> for StoredValue<Hash, EntityId> {
-    fn from(input_value: InputValue<EntityId>) -> Self {
+impl<
+        Hashing: Hash<Output = HashType>,
+        HashType: Parameter
+            + Member
+            + MaybeSerializeDeserialize
+            + Debug
+            + MaybeDisplay
+            + SimpleBitOps
+            + Ord
+            + Default
+            + Copy
+            + CheckEqual
+            + sp_std::hash::Hash
+            + AsRef<[u8]>
+            + AsMut<[u8]>
+            + MaybeMallocSizeOf,
+        EntityId,
+    > From<InputValue<Hashing, HashType, EntityId>> for StoredValue<HashType, EntityId>
+{
+    fn from(input_value: InputValue<Hashing, HashType, EntityId>) -> Self {
         match input_value {
             InputValue::Bool(value) => StoredValue::Bool(value),
             InputValue::Uint16(value) => StoredValue::Uint16(value),
@@ -31,7 +67,7 @@ impl<Hash, EntityId> From<InputValue<EntityId>> for StoredValue<Hash, EntityId> 
             InputValue::Text(value) => StoredValue::Text(value),
 
             InputValue::TextToHash(value) => {
-                let hash_value = value.using_encoded(system::Trait::Hashing::hash);
+                let hash_value = value.using_encoded(Hashing::hash);
                 StoredValue::Hash(hash_value)
             }
             InputValue::Reference(value) => StoredValue::Reference(value),
@@ -39,8 +75,26 @@ impl<Hash, EntityId> From<InputValue<EntityId>> for StoredValue<Hash, EntityId> 
     }
 }
 
-impl<Hash, EntityId> From<VecInputValue<EntityId>> for VecStoredValue<Hash, EntityId> {
-    fn from(vec_input_value: VecInputValue<EntityId>) -> Self {
+impl<
+        Hashing: Hash<Output = HashType>,
+        HashType: Parameter
+            + Member
+            + MaybeSerializeDeserialize
+            + Debug
+            + MaybeDisplay
+            + SimpleBitOps
+            + Ord
+            + Default
+            + Copy
+            + CheckEqual
+            + sp_std::hash::Hash
+            + AsRef<[u8]>
+            + AsMut<[u8]>
+            + MaybeMallocSizeOf,
+        EntityId,
+    > From<VecInputValue<Hashing, HashType, EntityId>> for VecStoredValue<HashType, EntityId>
+{
+    fn from(vec_input_value: VecInputValue<Hashing, HashType, EntityId>) -> Self {
         match vec_input_value {
             VecInputValue::Bool(vec_value) => VecStoredValue::Bool(vec_value),
             VecInputValue::Uint16(vec_value) => VecStoredValue::Uint16(vec_value),
@@ -54,7 +108,7 @@ impl<Hash, EntityId> From<VecInputValue<EntityId>> for VecStoredValue<Hash, Enti
             VecInputValue::TextToHash(vec_value) => {
                 let hash_vec_value: Vec<_> = vec_value
                     .into_iter()
-                    .map(|value| value.using_encoded(system::Trait::Hashing::hash))
+                    .map(|value| value.using_encoded(Hashing::hash))
                     .collect();
                 VecStoredValue::Hash(hash_vec_value)
             }

@@ -3,28 +3,43 @@ use core::ops::{Deref, DerefMut};
 
 /// Wrapper for existing `InputPropertyValue` and its respective `Class` `Property`
 pub struct InputValueForExistingProperty<'a, T: Trait>(
-    &'a Property<T>,
-    &'a InputPropertyValue<T::EntityId>,
+    &'a Property<T::ClassId>,
+    &'a InputPropertyValue<<T as system::Trait>::Hashing, <T as system::Trait>::Hash, T::EntityId>,
 );
 
 impl<'a, T: Trait> InputValueForExistingProperty<'a, T> {
     /// Create single instance of `InputValueForExistingProperty` from provided `property` and `value`
-    fn new(property: &'a Property<T>, value: &'a InputPropertyValue<T::EntityId>) -> Self {
+    fn new(
+        property: &'a Property<T::ClassId>,
+        value: &'a InputPropertyValue<
+            <T as system::Trait>::Hashing,
+            <T as system::Trait>::Hash,
+            T::EntityId,
+        >,
+    ) -> Self {
         Self(property, value)
     }
 
     /// Retrieve `Property` reference
-    pub fn get_property(&self) -> &Property<T> {
+    pub fn get_property(&self) -> &Property<T::ClassId> {
         self.0
     }
 
     /// Retrieve `InputPropertyValue` reference
-    pub fn get_value(&self) -> &InputPropertyValue<T::EntityId> {
+    pub fn get_value(
+        &self,
+    ) -> &InputPropertyValue<<T as system::Trait>::Hashing, <T as system::Trait>::Hash, T::EntityId>
+    {
         self.1
     }
 
     /// Retrieve `Property` and `InputPropertyValue` references
-    pub fn unzip(&self) -> (&Property<T>, &InputPropertyValue<T::EntityId>) {
+    pub fn unzip(
+        &self,
+    ) -> (
+        &Property<T::ClassId>,
+        &InputPropertyValue<<T as system::Trait>::Hashing, <T as system::Trait>::Hash, T::EntityId>,
+    ) {
         (self.0, self.1)
     }
 }
@@ -58,8 +73,15 @@ impl<'a, T: Trait> InputValuesForExistingProperties<'a, T> {
     /// Create `InputValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
     /// Throws an error, when `Class` `Property` under `property_id`, corresponding to provided `property_value` not found
     pub fn from(
-        properties: &'a [Property<T>],
-        property_values: &'a BTreeMap<PropertyId, InputPropertyValue<T::EntityId>>,
+        properties: &'a [Property<T::ClassId>],
+        property_values: &'a BTreeMap<
+            PropertyId,
+            InputPropertyValue<
+                <T as system::Trait>::Hashing,
+                <T as system::Trait>::Hash,
+                T::EntityId,
+            >,
+        >,
     ) -> Result<Self, Error<T>> {
         let mut values_for_existing_properties = InputValuesForExistingProperties::<T>::default();
         for (&property_id, property_value) in property_values {
@@ -77,21 +99,21 @@ impl<'a, T: Trait> InputValuesForExistingProperties<'a, T> {
 
 /// Wrapper for existing `StoredPropertyValue` and its respective `Class` `Property`
 pub struct StoredValueForExistingProperty<'a, T: Trait>(
-    &'a Property<T>,
+    &'a Property<T::ClassId>,
     &'a StoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,
 );
 
 impl<'a, T: Trait> StoredValueForExistingProperty<'a, T> {
     /// Create single instance of `StoredValueForExistingProperty` from provided `property` and `value`
     pub fn new(
-        property: &'a Property<T>,
+        property: &'a Property<T::ClassId>,
         value: &'a StoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,
     ) -> Self {
         Self(property, value)
     }
 
     /// Retrieve `Property` reference
-    pub fn get_property(&self) -> &Property<T> {
+    pub fn get_property(&self) -> &Property<T::ClassId> {
         self.0
     }
 
@@ -104,7 +126,7 @@ impl<'a, T: Trait> StoredValueForExistingProperty<'a, T> {
     pub fn unzip(
         &self,
     ) -> (
-        &Property<T>,
+        &Property<T::ClassId>,
         &StoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,
     ) {
         (self.0, self.1)
@@ -145,7 +167,7 @@ impl<'a, T: Trait> DerefMut for StoredValuesForExistingProperties<'a, T> {
 impl<'a, T: Trait> StoredValuesForExistingProperties<'a, T> {
     /// Create `StoredValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
     pub fn from(
-        properties: &'a [Property<T>],
+        properties: &'a [Property<T::ClassId>],
         property_values: &'a BTreeMap<
             PropertyId,
             StoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,

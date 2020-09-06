@@ -7,7 +7,9 @@ use sp_std::prelude::*;
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub enum ParametrizedPropertyValue<T: Trait> {
     /// Same fields as normal InputPropertyValue
-    InputPropertyValue(InputPropertyValue<T::EntityId>),
+    InputPropertyValue(
+        InputPropertyValue<<T as system::Trait>::Hashing, <T as system::Trait>::Hash, T::EntityId>,
+    ),
 
     /// This is the index of an operation creating an entity in the transaction/batch operations
     InternalEntityJustAdded(u32), // should really be usize but it doesn't have Encode/Decode support
@@ -88,7 +90,13 @@ pub fn parametrized_entity_to_entity_id<T: Trait>(
 pub fn parametrized_property_values_to_property_values<T: Trait>(
     created_entities: &BTreeMap<usize, T::EntityId>,
     parametrized_property_values: Vec<ParametrizedClassPropertyValue<T>>,
-) -> Result<BTreeMap<PropertyId, InputPropertyValue<T::EntityId>>, Error<T>> {
+) -> Result<
+    BTreeMap<
+        PropertyId,
+        InputPropertyValue<<T as system::Trait>::Hashing, <T as system::Trait>::Hash, T::EntityId>,
+    >,
+    Error<T>,
+> {
     let mut class_property_values = BTreeMap::new();
 
     for parametrized_class_property_value in parametrized_property_values.into_iter() {

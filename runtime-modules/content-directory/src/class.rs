@@ -222,7 +222,7 @@ impl<CuratorGroupId: Ord, ClassId, EntityId: Default + BaseArithmetic>
         &self,
         in_class_schema_property_id: PropertyId,
         entity_access_level: EntityAccessLevel,
-    ) -> Result<Property<T>, Error<T>> {
+    ) -> Result<Property<T::ClassId>, Error<T>> {
         // Ensure property values were not locked on Class level
         self.ensure_property_values_unlocked()?;
 

@@ -24,7 +24,9 @@ pub struct Entity<ClassId: Default, EntityId, MemberId, Nonce, Hash> {
     reference_counter: InboundReferenceCounter,
 }
 
-impl<ClassId: Default, EntityId, MemberId, Nonce, Hash> Default for Entity<ClassId, EntityId, MemberId, Nonce, Hash> {
+impl<ClassId: Default, EntityId, MemberId, Nonce, Hash> Default
+    for Entity<ClassId, EntityId, MemberId, Nonce, Hash>
+{
     fn default() -> Self {
         Self {
             entity_permissions: EntityPermissions::<MemberId>::default(),
@@ -36,7 +38,9 @@ impl<ClassId: Default, EntityId, MemberId, Nonce, Hash> Default for Entity<Class
     }
 }
 
-impl<ClassId: Default, EntityId, MemberId, Nonce, Hash> Entity<ClassId, EntityId, MemberId, Nonce, Hash> {
+impl<ClassId: Default, EntityId, MemberId, Nonce, Hash>
+    Entity<ClassId, EntityId, MemberId, Nonce, Hash>
+{
     /// Create new `Entity` instance, related to a given `class_id` with provided parameters,  
     pub fn new(
         controller: EntityController<MemberId>,
@@ -123,7 +127,10 @@ impl<ClassId: Default, EntityId, MemberId, Nonce, Hash> Entity<ClassId, EntityId
     /// Ensure provided `property_values` are not added to the `Entity` `values` map yet
     pub fn ensure_property_values_are_not_added<T: Trait>(
         &self,
-        property_values: &BTreeMap<PropertyId, InputPropertyValue<EntityId>>,
+        property_values: &BTreeMap<
+            PropertyId,
+            InputPropertyValue<<T as system::Trait>::Hashing, <T as system::Trait>::Hash, EntityId>,
+        >,
     ) -> Result<(), Error<T>> {
         ensure!(
             property_values

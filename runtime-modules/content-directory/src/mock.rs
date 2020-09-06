@@ -435,7 +435,7 @@ pub fn generate_text(len: usize) -> Vec<u8> {
     vec![b'x'; len]
 }
 
-impl<T: Trait> Property<T> {
+impl<T: Trait> Property<T::ClassId> {
     pub fn required(mut self) -> Self {
         self.required = true;
         self
@@ -880,7 +880,7 @@ pub enum InvalidPropertyType {
     VecIsTooLong,
 }
 
-impl<T: Trait> Property<T> {
+impl<T: Trait> Property<T::ClassId> {
     pub fn default_with_name(name_len: usize) -> Self {
         let name = generate_text(name_len);
         let description = generate_text(PropertyDescriptionLengthConstraint::get().min() as usize);
@@ -992,7 +992,9 @@ impl<T: Trait> PropertyType<T> {
     }
 }
 
-impl<T: Trait> InputPropertyValue<T::EntityId> {
+impl<T: Trait>
+    InputPropertyValue<<T as system::Trait>::Hashing, <T as system::Trait>::Hash, T::EntityId>
+{
     pub fn vec_reference(entity_ids: Vec<EntityId>) -> InputPropertyValue<Runtime> {
         let vec_value = VecInputValue::<Runtime>::Reference(entity_ids);
         InputPropertyValue::<Runtime>::Vector(vec_value)

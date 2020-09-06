@@ -231,7 +231,14 @@ impl Schema {
     /// Ensure keys of provided `property_values` are valid indices of current `Schema`
     pub fn ensure_has_properties<T: Trait>(
         &self,
-        property_values: &BTreeMap<PropertyId, InputPropertyValue<T::EntityId>>,
+        property_values: &BTreeMap<
+            PropertyId,
+            InputPropertyValue<
+                <T as system::Trait>::Hashing,
+                <T as system::Trait>::Hash,
+                T::EntityId,
+            >,
+        >,
     ) -> Result<(), Error<T>> {
         let property_value_indices: BTreeSet<PropertyId> =
             property_values.keys().cloned().collect();
@@ -316,7 +323,11 @@ impl<ClassId> Property<ClassId> {
     /// and check any additional constraints
     pub fn ensure_property_value_to_update_is_valid<T: Trait>(
         &self,
-        value: &InputPropertyValue<T::EntityId>,
+        value: &InputPropertyValue<
+            <T as system::Trait>::Hashing,
+            <T as system::Trait>::Hash,
+            T::EntityId,
+        >,
         current_entity_controller: &EntityController<T::MemberId>,
     ) -> Result<(), Error<T>> {
         // Ensure provided InputPropertyValue matches its Type
@@ -349,7 +360,11 @@ impl<ClassId> Property<ClassId> {
     /// and check all constraints
     pub fn ensure_property_value_can_be_inserted_at_property_vector<T: Trait>(
         &self,
-        single_value: &InputValue<T::EntityId>,
+        single_value: &InputValue<
+            <T as system::Trait>::Hashing,
+            <T as system::Trait>::Hash,
+            T::EntityId,
+        >,
         vec_value: &VecStoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,
         index_in_property_vec: VecMaxLength,
         current_entity_controller: &EntityController<T::MemberId>,
@@ -429,7 +444,11 @@ impl<ClassId> Property<ClassId> {
     /// Ensure text property does not exceed its max len
     pub fn validate_max_len_if_text_property<T: Trait>(
         &self,
-        value: &InputPropertyValue<T::EntityId>,
+        value: &InputPropertyValue<
+            <T as system::Trait>::Hashing,
+            <T as system::Trait>::Hash,
+            T::EntityId,
+        >,
     ) -> Result<(), Error<T>> {
         let single_value = value.as_single_value();
 
@@ -481,7 +500,11 @@ impl<ClassId> Property<ClassId> {
     /// Ensure `VecInputValue` does not exceed its max len
     pub fn validate_max_len_if_vec_property<T: Trait>(
         &self,
-        value: &InputPropertyValue<T::EntityId>,
+        value: &InputPropertyValue<
+            <T as system::Trait>::Hashing,
+            <T as system::Trait>::Hash,
+            T::EntityId,
+        >,
     ) -> Result<(), Error<T>> {
         let (vec_value, vec_property_type) = if let (Some(vec_value), Some(vec_property_type)) =
             (value.as_vec_value(), self.property_type.as_vec_type())
@@ -531,7 +554,11 @@ impl<ClassId> Property<ClassId> {
     /// Ensure provided `InputPropertyValue` matches its `Type`
     pub fn ensure_property_value_matches_its_type<T: Trait>(
         &self,
-        value: &InputPropertyValue<T::EntityId>,
+        value: &InputPropertyValue<
+            <T as system::Trait>::Hashing,
+            <T as system::Trait>::Hash,
+            T::EntityId,
+        >,
     ) -> Result<(), Error<T>> {
         ensure!(
             self.does_prop_value_match_type(value),
@@ -543,7 +570,11 @@ impl<ClassId> Property<ClassId> {
     /// Check if provided `InputPropertyValue` matches its `Type`
     pub fn does_prop_value_match_type<T: Trait>(
         &self,
-        value: &InputPropertyValue<T::EntityId>,
+        value: &InputPropertyValue<
+            <T as system::Trait>::Hashing,
+            <T as system::Trait>::Hash,
+            T::EntityId,
+        >,
     ) -> bool {
         // A non required property can be updated to Bool(false):
         if !self.required && *value == InputPropertyValue::default() {
@@ -590,7 +621,11 @@ impl<ClassId> Property<ClassId> {
     /// when current `PropertyType` is `Reference`
     pub fn ensure_property_value_is_valid_reference<T: Trait>(
         &self,
-        value: &InputPropertyValue<T::EntityId>,
+        value: &InputPropertyValue<
+            <T as system::Trait>::Hashing,
+            <T as system::Trait>::Hash,
+            T::EntityId,
+        >,
         current_entity_controller: &EntityController<T::MemberId>,
     ) -> Result<(), Error<T>> {
         match (value, &self.property_type) {

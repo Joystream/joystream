@@ -146,7 +146,9 @@ use frame_support::{
     decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
 };
 use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
+pub use sp_runtime::traits::{
+    CheckEqual, MaybeDisplay, MaybeMallocSizeOf, MaybeSerializeDeserialize, Member, SimpleBitOps,
+};
 use sp_std::borrow::ToOwned;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec;
@@ -684,7 +686,7 @@ decl_module! {
             origin,
             class_id: T::ClassId,
             existing_properties: BTreeSet<PropertyId>,
-            new_properties: Vec<Property<T>>
+            new_properties: Vec<Property<T::ClassId>>
         ) -> DispatchResult {
 
             // Ensure given origin is lead
@@ -815,7 +817,7 @@ decl_module! {
             origin,
             entity_id: T::EntityId,
             new_controller: EntityController<T::MemberId>,
-            new_property_value_references_with_same_owner_flag_set: BTreeMap<PropertyId, InputPropertyValue<T::EntityId>>
+            new_property_value_references_with_same_owner_flag_set: BTreeMap<PropertyId, InputPropertyValue<<T as system::Trait>::Hashing, <T as system::Trait>::Hash, T::EntityId>>
         ) -> DispatchResult {
 
             // Ensure given origin is lead
@@ -1104,7 +1106,7 @@ decl_module! {
             actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             entity_id: T::EntityId,
             schema_id: SchemaId,
-            new_property_values: BTreeMap<PropertyId, InputPropertyValue<T::EntityId>>
+            new_property_values: BTreeMap<PropertyId, InputPropertyValue<<T as system::Trait>::Hashing, <T as system::Trait>::Hash, T::EntityId>>
         ) -> DispatchResult {
 
             let account_id = ensure_signed(origin)?;
@@ -1203,7 +1205,7 @@ decl_module! {
             origin,
             actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             entity_id: T::EntityId,
-            new_property_values: BTreeMap<PropertyId, InputPropertyValue<T::EntityId>>
+            new_property_values: BTreeMap<PropertyId, InputPropertyValue<<T as system::Trait>::Hashing, <T as system::Trait>::Hash, T::EntityId>>
         ) -> DispatchResult {
 
             let account_id = ensure_signed(origin)?;
@@ -1488,7 +1490,7 @@ decl_module! {
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
             index_in_property_vector: VecMaxLength,
-            value: InputValue<T::EntityId>,
+            value: InputValue<<T as system::Trait>::Hashing, <T as system::Trait>::Hash, T::EntityId>,
             nonce: T::Nonce
         ) -> DispatchResult {
 
@@ -1706,7 +1708,14 @@ impl<T: Trait> Module<T> {
 
     /// Convert all provided `InputPropertyValue`'s into `StoredPropertyValue`'s
     pub fn make_output_property_values(
-        input_property_values: BTreeMap<PropertyId, InputPropertyValue<T::EntityId>>,
+        input_property_values: BTreeMap<
+            PropertyId,
+            InputPropertyValue<
+                <T as system::Trait>::Hashing,
+                <T as system::Trait>::Hash,
+                T::EntityId,
+            >,
+        >,
     ) -> BTreeMap<PropertyId, StoredPropertyValue<T::Nonce, T::Hash, T::EntityId>> {
         input_property_values
             .into_iter()
@@ -1763,7 +1772,7 @@ impl<T: Trait> Module<T> {
     /// Returns calculated `ReferenceCounterSideEffects`
     pub fn make_side_effects_for_clear_property_vector_operation(
         property_value_vector: &VecStoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,
-        property: &Property<T>,
+        property: &Property<T::ClassId>,
     ) -> Option<ReferenceCounterSideEffects<T>> {
         let entity_ids_to_decrease_rc = property_value_vector
             .get_vec_value_ref()
@@ -1875,7 +1884,7 @@ impl<T: Trait> Module<T> {
     /// Returns updated `ReferenceCounterSideEffects`
     pub fn get_updated_inbound_rcs_delta(
         current_entity_id: T::EntityId,
-        class_properties: Vec<Property<T>>,
+        class_properties: Vec<Property<T::ClassId>>,
         entity_property_values: BTreeMap<
             PropertyId,
             StoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,
@@ -2148,7 +2157,13 @@ impl<T: Trait> Module<T> {
     /// Ensure `Entity` under given `entity_id` exists, retrieve corresponding `Entity` & `Class`
     pub fn ensure_known_entity_and_class(
         entity_id: T::EntityId,
-    ) -> Result<(Entity<T::ClassId, T::EntityId, T::MemberId, T::Nonce, T::Hash>, Class<T::CuratorGroupId, T::ClassId, T::EntityId>), Error<T>> {
+    ) -> Result<
+        (
+            Entity<T::ClassId, T::EntityId, T::MemberId, T::Nonce, T::Hash>,
+            Class<T::CuratorGroupId, T::ClassId, T::EntityId>,
+        ),
+        Error<T>,
+    > {
         // Ensure Entity under given id exists, retrieve corresponding one
         let entity = Self::ensure_known_entity_id(entity_id)?;
 
@@ -2187,7 +2202,11 @@ impl<T: Trait> Module<T> {
         entity_property_id_references_with_same_owner_flag_set: &BTreeSet<PropertyId>,
         new_property_value_references_with_same_owner_flag_set: &BTreeMap<
             PropertyId,
-            InputPropertyValue<T::EntityId>,
+            InputPropertyValue<
+                <T as system::Trait>::Hashing,
+                <T as system::Trait>::Hash,
+                T::EntityId,
+            >,
         >,
     ) -> Result<(), Error<T>> {
         let new_property_value_id_references_with_same_owner_flag_set: BTreeSet<PropertyId> =
@@ -2275,7 +2294,14 @@ impl<T: Trait> Module<T> {
 
     /// Retrieve `property_ids`, that are not in `property_values`
     pub fn compute_unused_property_ids(
-        property_values: &BTreeMap<PropertyId, InputPropertyValue<T::EntityId>>,
+        property_values: &BTreeMap<
+            PropertyId,
+            InputPropertyValue<
+                <T as system::Trait>::Hashing,
+                <T as system::Trait>::Hash,
+                T::EntityId,
+            >,
+        >,
         property_ids: &BTreeSet<PropertyId>,
     ) -> BTreeSet<PropertyId> {
         let property_value_indices: BTreeSet<PropertyId> =
@@ -2306,7 +2332,7 @@ impl<T: Trait> Module<T> {
 
     /// Perform checks to ensure all required `property_values` under provided `unused_schema_property_ids` provided
     pub fn ensure_all_required_properties_provided(
-        class_properties: &[Property<T>],
+        class_properties: &[Property<T::ClassId>],
         unused_schema_property_ids: &BTreeSet<PropertyId>,
     ) -> Result<(), Error<T>> {
         for &unused_schema_property_id in unused_schema_property_ids {
@@ -2345,7 +2371,14 @@ impl<T: Trait> Module<T> {
             PropertyId,
             StoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,
         >,
-        new_property_values: &BTreeMap<PropertyId, InputPropertyValue<T::EntityId>>,
+        new_property_values: &BTreeMap<
+            PropertyId,
+            InputPropertyValue<
+                <T as system::Trait>::Hashing,
+                <T as system::Trait>::Hash,
+                T::EntityId,
+            >,
+        >,
     ) -> Result<(), Error<T>> {
         ensure!(
             new_property_values
@@ -2377,8 +2410,18 @@ impl<T: Trait> Module<T> {
             PropertyId,
             StoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,
         >,
-        new_property_values: BTreeMap<PropertyId, InputPropertyValue<T::EntityId>>,
-    ) -> BTreeMap<PropertyId, InputPropertyValue<T::EntityId>> {
+        new_property_values: BTreeMap<
+            PropertyId,
+            InputPropertyValue<
+                <T as system::Trait>::Hashing,
+                <T as system::Trait>::Hash,
+                T::EntityId,
+            >,
+        >,
+    ) -> BTreeMap<
+        PropertyId,
+        InputPropertyValue<<T as system::Trait>::Hashing, <T as system::Trait>::Hash, T::EntityId>,
+    > {
         new_property_values
             .into_iter()
             .filter(|(id, new_property_value)| {
@@ -2427,7 +2470,7 @@ impl<T: Trait> Module<T> {
     pub fn insert_at_index_in_property_vector(
         mut property_value_vector: VecStoredPropertyValue<T::Nonce, T::Hash, T::EntityId>,
         index_in_property_vector: VecMaxLength,
-        value: InputValue<T::EntityId>,
+        value: InputValue<<T as system::Trait>::Hashing, <T as system::Trait>::Hash, T::EntityId>,
     ) -> StoredPropertyValue<T::Nonce, T::Hash, T::EntityId> {
         property_value_vector.insert_at(index_in_property_vector, value.into());
         StoredPropertyValue::Vector(property_value_vector)
@@ -2478,7 +2521,9 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure `Entity` under given id exists, return corresponding one
-    pub fn ensure_known_entity_id(entity_id: T::EntityId) -> Result<Entity<T::ClassId, T::EntityId, T::MemberId, T::Nonce, T::Hash>, Error<T>> {
+    pub fn ensure_known_entity_id(
+        entity_id: T::EntityId,
+    ) -> Result<Entity<T::ClassId, T::EntityId, T::MemberId, T::Nonce, T::Hash>, Error<T>> {
         ensure!(
             <EntityById<T>>::contains_key(entity_id),
             Error::<T>::EntityNotFound
@@ -2545,7 +2590,7 @@ impl<T: Trait> Module<T> {
     /// Ensure new `Schema` is not empty
     pub fn ensure_non_empty_schema(
         existing_properties: &BTreeSet<PropertyId>,
-        new_properties: &[Property<T>],
+        new_properties: &[Property<T::ClassId>],
     ) -> Result<(), Error<T>> {
         // Schema is empty if both existing_properties and new_properties are empty
         let non_empty_schema = !existing_properties.is_empty() || !new_properties.is_empty();
@@ -2634,7 +2679,9 @@ impl<T: Trait> Module<T> {
     }
 
     /// Complete all checks to ensure each `Property` is valid
-    pub fn ensure_all_properties_are_valid(new_properties: &[Property<T>]) -> Result<(), Error<T>> {
+    pub fn ensure_all_properties_are_valid(
+        new_properties: &[Property<T::ClassId>],
+    ) -> Result<(), Error<T>> {
         for new_property in new_properties.iter() {
             // Ensure PropertyNameLengthConstraint satisfied
             new_property.ensure_name_is_valid()?;
@@ -2653,8 +2700,8 @@ impl<T: Trait> Module<T> {
 
     /// Ensure all `Property` names are  unique within `Class`
     pub fn ensure_all_property_names_are_unique(
-        class_properties: &[Property<T>],
-        new_properties: &[Property<T>],
+        class_properties: &[Property<T::ClassId>],
+        new_properties: &[Property<T::ClassId>],
     ) -> Result<(), Error<T>> {
         // Used to ensure all property names are unique within class
         let mut unique_prop_names = BTreeSet::new();
@@ -2679,7 +2726,7 @@ impl<T: Trait> Module<T> {
     /// Ensure provided indices of `existing_properties`  are valid indices of `Class` properties
     pub fn ensure_schema_properties_are_valid_indices(
         existing_properties: &BTreeSet<PropertyId>,
-        class_properties: &[Property<T>],
+        class_properties: &[Property<T::ClassId>],
     ) -> Result<(), Error<T>> {
         let has_unknown_properties = existing_properties
             .iter()
@@ -2694,8 +2741,8 @@ impl<T: Trait> Module<T> {
     /// Create new `Schema` from existing and new property ids
     pub fn create_class_schema(
         existing_properties: BTreeSet<PropertyId>,
-        class_properties: &[Property<T>],
-        new_properties: &[Property<T>],
+        class_properties: &[Property<T::ClassId>],
+        new_properties: &[Property<T::ClassId>],
     ) -> Schema {
         // Calcualate new property ids
         let properties = new_properties
@@ -2711,9 +2758,9 @@ impl<T: Trait> Module<T> {
 
     /// Update existing `Class` properties with new ones provided, return updated ones
     pub fn make_updated_class_properties(
-        class_properties: Vec<Property<T>>,
-        new_properties: Vec<Property<T>>,
-    ) -> Vec<Property<T>> {
+        class_properties: Vec<Property<T::ClassId>>,
+        new_properties: Vec<Property<T::ClassId>>,
+    ) -> Vec<Property<T::ClassId>> {
         class_properties
             .into_iter()
             .chain(new_properties.into_iter())
