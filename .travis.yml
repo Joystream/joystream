@@ -36,7 +36,7 @@ before_script:
 script:
   - export WASM_BUILD_TOOLCHAIN=nightly-2020-05-23
   - BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings
-  - travis_wait 75 cargo test --release --verbose --all --ignored
+  - travis_wait 75 cargo test --release --verbose --all -- --ignored
   - cargo build --release
   - ls -l ./target/release/wbuild/joystream-node-runtime/
   - ./target/release/joystream-node --version
