@@ -24,16 +24,21 @@ mod tests;
 
 /////////////////// Data Structures ////////////////////////////////////////////
 
+/// Information about council's current state and when it changed the last time.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct CouncilStageInfo<AccountId, Currency, BlockNumber> {
     stage: CouncilStage<AccountId, Currency>,
     changed_at: BlockNumber,
 }
 
+/// Possible council states.
 #[derive(Encode, Decode, PartialEq, Eq, Debug)]
 pub enum CouncilStage<AccountId, Balance> {
-    Announcing(CouncilStageAnnouncing<AccountId, Balance>), // candidacy announcment period
+    /// Candidacy announcement period.
+    Announcing(CouncilStageAnnouncing<AccountId, Balance>),
+    /// Election of the new council.
     Election(CouncilStageElection<AccountId, Balance>),
+    /// The idle phase - no new council election is running now.
     Idle,
 }
 
@@ -45,16 +50,19 @@ impl<AccountId, Balance> Default for CouncilStage<AccountId, Balance> {
     }
 }
 
+/// Representation for announcing candidacy stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct CouncilStageAnnouncing<AccountId, Balance> {
     candidates: Vec<Candidate<AccountId, Balance>>,
 }
 
+/// Representation for new council members election stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct CouncilStageElection<AccountId, Balance> {
     candidates: Vec<Candidate<AccountId, Balance>>,
 }
 
+/// Candidate / council member representation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
 pub struct Candidate<AccountId, Balance> {
@@ -63,6 +71,9 @@ pub struct Candidate<AccountId, Balance> {
 }
 
 /////////////////// Type aliases ///////////////////////////////////////////////
+
+// `Ez` prefix in some of the following type aliases means *easy* and is meant to create unique short names
+// aliasing existing structs and enums
 
 // Alias for referendum's storage.
 pub(crate) type Referendum<T> = referendum::Module<T, ReferendumInstance>;
@@ -92,7 +103,8 @@ pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    /// Minimum number of candidates needed to conclude announcing period
+    /// Minimum number of extra candidates needed for the valid election.
+    /// Number of total candidates is equal to council size plus extra candidates.
     type MinNumberOfExtraCandidates: Get<u64>;
     /// Council member count
     type CouncilSize: Get<u64>;
@@ -165,6 +177,9 @@ decl_error! {
 
         /// Candidate can't vote for himself
         CantVoteForYourself,
+
+        // TODO: try to get rid of this error if possible
+        InvalidRuntimeImplementation,
     }
 }
 
@@ -225,16 +240,19 @@ decl_module! {
             Ok(())
         }
 
-        // TODO reconsider this function. It is meant as temporary solution for recieving referendum results via runtime bridge
+        // TODO: reconsider this function. It is meant as temporary solution for recieving referendum results via runtime bridge
+        /// Process candidates' results recieved from the referendum.
         #[weight = 10_000_000]
         pub fn recieve_referendum_winners(origin, all_options_results: Vec<T::VotePower>) -> Result<(), Error<T>> {
             ensure_root(origin)?;
 
+            // ensure this method was called during election stage
             let stage_data = match Stage::<T>::get().stage {
                 CouncilStage::Election(stage_data) => stage_data,
-                _ => return Err(Error::BadOrigin), // TODO: if this part of code stay, create new proper error for this situation
+                _ => return Err(Error::InvalidRuntimeImplementation),
             };
 
+            // conclude election
             Self::end_election_period(stage_data, all_options_results.as_slice());
 
             Ok(())
@@ -329,6 +347,10 @@ impl<T: Trait> Module<T> {
         stage_data: EzCouncilStageElection<T>,
         all_options_results: &[T::VotePower],
     ) {
+        /// Checks if there is a tie on the significant spot between candidates' received votes
+        /// Significant tie for a council of 3 members with 5 candidates can, for example, be:
+        /// [10, 5, 3, 3, 2], [10, 5, 3, 3, 3], [5, 5, 5, 5, 1], etc.
+        /// Note that result [10, 10, 10, 3, 2] has tie but not on the significant spot.
         fn has_significant_tie<T: Trait>(
             options_results: &[(u64, T::VotePower)],
             target_count: u64,
@@ -343,6 +365,7 @@ impl<T: Trait> Module<T> {
             if options_results[(target_count as usize) - 1].1
                 == options_results[target_count as usize].1
             {
+                //
                 let mut draw_end_index = target_count as usize;
                 while voted_options_count > draw_end_index + 1
                     && options_results[draw_end_index].1 == options_results[draw_end_index + 1].1
@@ -356,6 +379,7 @@ impl<T: Trait> Module<T> {
             None
         }
 
+        // filter only candidates who received at least one vote
         let council_size = T::CouncilSize::get();
         let mut options_results: Vec<(u64, T::VotePower)> = all_options_results
             .iter()
@@ -364,6 +388,7 @@ impl<T: Trait> Module<T> {
             .filter(|item| item.1 != 0.into())
             .collect();
 
+        // sort results by vote power from the highest to the lowest
         options_results.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap().reverse());
 
         // skip electing new council if not enough candidates recieved vote
@@ -381,7 +406,7 @@ impl<T: Trait> Module<T> {
         if let Some(_tied_winners) =
             has_significant_tie::<T>(options_results.as_slice(), council_size)
         {
-            // TODO: select new council from tied candidates
+            // TODO: select new council from tied candidates or reset election
 
             // update state
             Mutations::<T>::finalize_election_period();
@@ -392,6 +417,7 @@ impl<T: Trait> Module<T> {
             return;
         }
 
+        // prepare candidates that got elected
         let elected_members: Vec<EzCandidate<T>> = options_results[..council_size as usize]
             .iter()
             .map(|item| stage_data.candidates[item.0 as usize].clone())
@@ -404,6 +430,7 @@ impl<T: Trait> Module<T> {
         Self::deposit_event(RawEvent::NewCouncilElected(elected_members));
     }
 
+    /// Finish idle period and start new council election cycle (announcing period).
     fn end_idle_period() {
         // update state
         Mutations::<T>::start_announcing_period();
@@ -420,12 +447,14 @@ struct Mutations<T: Trait> {
 }
 
 impl<T: Trait> Mutations<T> {
+    /// Change the council stage from idle to candidacy announcing stage.
     fn start_announcing_period() {
         let stage_data = EzCouncilStageAnnouncing::<T> { candidates: vec![] };
 
         Self::prolong_announcing_period(stage_data);
     }
 
+    /// Prolong the announcing period when not enought candidates were announced.
     fn prolong_announcing_period(stage_data: EzCouncilStageAnnouncing<T>) {
         let block_number = <system::Module<T>>::block_number();
 
@@ -437,6 +466,7 @@ impl<T: Trait> Mutations<T> {
         });
     }
 
+    /// Change the council stage from the announcing to the election stage.
     fn finalize_announcing_period(
         stage_data: &EzCouncilStageAnnouncing<T>,
     ) -> Result<(), Error<T>> {
@@ -444,6 +474,7 @@ impl<T: Trait> Mutations<T> {
         let origin = RawOrigin::Root;
 
         // IMPORTANT - because starting referendum can fail it has to be the first mutation!
+        // start referendum
         <Referendum<T> as ReferendumManager<T, ReferendumInstance>>::start_referendum(
             origin.into(),
             extra_options_count,
@@ -451,6 +482,7 @@ impl<T: Trait> Mutations<T> {
 
         let block_number = <system::Module<T>>::block_number();
 
+        // change council state
         Stage::<T>::mutate(|value| {
             *value = CouncilStageInfo {
                 stage: CouncilStage::Election(EzCouncilStageElection::<T> {
@@ -463,15 +495,18 @@ impl<T: Trait> Mutations<T> {
         Ok(())
     }
 
+    /// Elect new council after successful election.
     fn elect_new_council(elected_members: &[EzCandidate<T>]) {
         Self::finalize_election_period();
 
         CouncilMembers::<T>::mutate(|value| *value = elected_members.to_vec());
     }
 
+    /// Change the council stage from the election to the idle stage.
     fn finalize_election_period() {
         let block_number = <system::Module<T>>::block_number();
 
+        // change council state
         Stage::<T>::mutate(|value| {
             *value = CouncilStageInfo {
                 stage: CouncilStage::Idle,
@@ -480,6 +515,7 @@ impl<T: Trait> Mutations<T> {
         });
     }
 
+    /// Announce user's candidacy.
     fn candidate(
         stage_data: &EzCouncilStageAnnouncing<T>,
         candidate: &EzCandidate<T>,
@@ -492,7 +528,7 @@ impl<T: Trait> Mutations<T> {
         ) -> Vec<EzCandidate<T>> {
             let max_candidates =
                 (T::CouncilSize::get() + T::MinNumberOfExtraCandidates::get()) as usize;
-            let full_candadite_list = current_candidates.len() == max_candidates;
+            let full_candidate_list = current_candidates.len() == max_candidates;
 
             let mut target: Option<usize> = None;
             for (i, c) in current_candidates.iter().enumerate() {
@@ -502,12 +538,14 @@ impl<T: Trait> Mutations<T> {
                 }
             }
 
+            // TODO: consider notable simplifying the following match statement by always concatenating 3 parts list
+            //       (seen in Some -> full_candidate_list branch) and cutting off any extra candidates from the end of list.
             match target {
                 Some(target_index) => {
                     let tmp = [new_candidate.clone()];
 
                     // somebody has to slide out of candidacy list?
-                    if full_candadite_list {
+                    if full_candidate_list {
                         return [
                             &current_candidates[0..target_index],
                             &tmp[..],
@@ -526,7 +564,7 @@ impl<T: Trait> Mutations<T> {
                 }
                 None => {
                     // stake not high enough to make it to the list?
-                    if full_candadite_list {
+                    if full_candidate_list {
                         return current_candidates.to_vec();
                     }
 
@@ -538,6 +576,7 @@ impl<T: Trait> Mutations<T> {
             }
         }
 
+        // prepare new stage
         let new_stage_data = CouncilStageAnnouncing {
             candidates: try_candidate_insert::<T>(
                 stage_data.candidates.as_slice(),
@@ -547,12 +586,12 @@ impl<T: Trait> Mutations<T> {
             //..*stage_data
         };
 
-        // exit when no changes are necessary
+        // exit when no changes are necessary (candidate didn't make it to candidacy list)
         if new_stage_data.candidates == stage_data.candidates {
             return;
         }
 
-        // lock stake
+        // lock candidacy stake
         T::Currency::set_lock(
             <T as Trait>::LockId::get(),
             &candidate.account_id,
@@ -571,6 +610,7 @@ impl<T: Trait> Mutations<T> {
         });
     }
 
+    /// Release user's stake that was used for candidacy.
     fn release_candidacy_stake(account_id: &T::AccountId) {
         // release stake amount
         T::Currency::remove_lock(<T as Trait>::LockId::get(), account_id);
@@ -668,6 +708,7 @@ impl<T: Trait> EnsureChecks<T> {
         // ensure regular user requested action
         let account_id = Self::ensure_regular_user(origin)?;
 
+        // ensure it's proper time to release stake
         match Stage::<T>::get().stage {
             CouncilStage::Idle => (),
             _ => return Err(Error::CantReleaseStakeNow),
