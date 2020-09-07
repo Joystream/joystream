@@ -53,8 +53,8 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       const module = apiModuleByGroup[this.group]
       const method = 'addOpening'
 
-      let saveDraft = false,
-        params: ApiMethodArg[]
+      let saveDraft = false
+      let params: ApiMethodArg[]
       if (flags.createDraftOnly) {
         params = await this.promptForExtrinsicParams(module, method, promptOptions)
         saveDraft = true
