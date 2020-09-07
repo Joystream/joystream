@@ -11,7 +11,7 @@
     "baseUrl": ".",
     "resolveJsonModule": true,
     "paths": {
-      "@polkadot/types/augment": ["../../types/src/definitions/augment-types.ts"]
+      "@polkadot/types/augment": ["../../types/augment-codec/augment-types.ts"]
     }
   }
 }
