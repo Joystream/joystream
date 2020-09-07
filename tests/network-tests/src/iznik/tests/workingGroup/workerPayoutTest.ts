@@ -23,7 +23,7 @@ import { ProposalId } from '@alexandria/types/proposals'
 import { DbService } from '../../services/dbService'
 import { CouncilElectionHappyCaseFixture } from '../fixtures/councilElectionHappyCase'
 import { LeaderHiringHappyCaseFixture } from '../fixtures/leaderHiringHappyCase'
-import {BuyMembershipHappyCaseFixture} from "../fixtures/membershipModule";
+import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
 
 tap.mocha.describe('Worker application happy case scenario', async () => {
   initConfig()
@@ -38,9 +38,9 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
   const sudo: KeyringPair = keyring.addFromUri(sudoUri)
 
   const N: number = +process.env.WORKING_GROUP_N!
-  let m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
+  const m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   let m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
-  let m3KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
+  const m3KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const leadKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
 
   const paidTerms: PaidTermId = apiWrapper.createPaidTermId(new BN(+process.env.MEMBERSHIP_PAID_TERMS!))
