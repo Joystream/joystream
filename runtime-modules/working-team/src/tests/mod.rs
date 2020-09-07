@@ -4,6 +4,7 @@ mod mock;
 
 use system::RawOrigin;
 
+use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::{Error, JobOpeningType, RawEvent};
 use fixtures::{
     setup_members, AddOpeningFixture, ApplyOnOpeningFixture, EventFixture, FillOpeningFixture,
@@ -296,5 +297,32 @@ fn fill_opening_fails_with_invalid_application_id() {
         fill_opening_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingTeamInstance>::SuccessfulWorkerApplicationDoesNotExist.into(),
         ));
+    });
+}
+
+#[test]
+fn cannot_hire_a_lead_twice() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+        HireLeadFixture::default()
+            .with_setup_environment(false)
+            .expect(
+                Error::<Test, TestWorkingTeamInstance>::CannotHireLeaderWhenLeaderExists.into(),
+            );
+    });
+}
+
+#[test]
+fn cannot_hire_muptiple_leaders() {
+    build_test_externalities().execute_with(|| {
+        HiringWorkflow::default()
+            .with_setup_environment(true)
+            .with_opening_type(JobOpeningType::Leader)
+            .add_default_application()
+            .add_application_with_origin(b"leader2".to_vec(), RawOrigin::Signed(2), 2)
+            .expect(Err(
+                Error::<Test, TestWorkingTeamInstance>::CannotHireMultipleLeaders.into(),
+            ))
+            .execute();
     });
 }

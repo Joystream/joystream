@@ -23,17 +23,12 @@ mod tests;
 mod types;
 
 use codec::Codec;
-//use frame_support::storage::IterableStorageMap;
-//use frame_support::traits::{Currency, ExistenceRequirement, Get, Imbalance, WithdrawReasons};
 use frame_support::traits::Get;
-use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue}; // print,
+use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue};
 use sp_arithmetic::traits::{BaseArithmetic, One};
 use sp_runtime::traits::{Hash, MaybeSerialize, Member};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-// use sp_std::vec;
-// use sp_std::vec::Vec;
 use system::ensure_signed;
-// use system::{ensure_root, ensure_signed};
 
 use common::constraints::InputValidationLengthConstraint;
 
@@ -178,9 +173,6 @@ decl_module! {
 
             checks::ensure_opening_description_is_valid::<T, I>(&description)?;
 
-            // Self::ensure_opening_policy_commitment_is_valid(&commitment)?;
-
-
             //
             // == MUTATION SAFE ==
             //
@@ -190,7 +182,6 @@ decl_module! {
             // Create and add worker opening.
             let new_opening = JobOpening{
                 applications: BTreeSet::new(),
-//                policy_commitment,
                 opening_type,
                 created: Self::current_block(),
                 description_hash: hashed_description.as_ref().to_vec(),
@@ -213,8 +204,6 @@ decl_module! {
             member_id: T::MemberId,
             opening_id: T::OpeningId,
             role_account_id: T::AccountId,
-//            opt_role_stake_balance: Option<BalanceOf<T>>,
-//            opt_application_stake_balance: Option<BalanceOf<T>>,
             description: Vec<u8>
         ) {
             // Ensure origin which will server as the source account for staked funds is signed
@@ -230,23 +219,8 @@ decl_module! {
             // Ensure job opening exists.
             let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
 
-            // // Ensure that there is sufficient balance to cover stake proposed
-            // Self::ensure_can_make_stake_imbalance(
-            //     vec![&opt_role_stake_balance, &opt_application_stake_balance],
-            //     &source_account
-            // )
-            // .map_err(|_| Error::<T, I>::InsufficientBalanceToApply)?;
-
             // Ensure application text is valid
             checks::ensure_application_description_is_valid::<T, I>(&description)?;
-
-            // // Ensure application can actually be added
-            // ensure_on_wrapped_error!(
-            //     hiring::Module::<T>::ensure_can_add_application(
-            //         opening.hiring_opening_id,
-            //         opt_role_stake_balance,
-            //         opt_application_stake_balance)
-            // )?;
 
             // Ensure member does not have an active application to this opening
             checks::ensure_member_has_no_active_application_on_opening::<T, I>(
@@ -257,13 +231,6 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
-
-            // // Make imbalances for staking
-            // let opt_role_stake_imbalance = Self::make_stake_opt_imbalance(&opt_role_stake_balance, &source_account);
-            // let opt_application_stake_imbalance = Self::make_stake_opt_imbalance(&opt_application_stake_balance, &source_account);
-
-            // Save member id to refund the stakes. This piece of date should outlive the 'worker'.
-//            <MemberIdByHiringApplicationId<T, I>>::insert(hiring_application_id, member_id);
 
             let hashed_description = T::Hashing::hash(&description);
 
@@ -300,7 +267,6 @@ decl_module! {
             origin,
             opening_id: T::OpeningId,
             successful_application_ids: BTreeSet<T::ApplicationId>,
-//            reward_policy: Option<RewardPolicy<minting::BalanceOf<T>, T::BlockNumber>>
         ) {
             // Ensure job opening exists.
             let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
@@ -320,39 +286,12 @@ decl_module! {
                 ensure!(!<CurrentLead<T,I>>::exists(), Error::<T, I>::CannotHireLeaderWhenLeaderExists);
             }
 
-            // Ensure a mint exists if lead is providing a reward for positions being filled
-            // let create_reward_settings = if let Some(policy) = reward_policy {
-            //
-            //     // A reward will need to be created so ensure our configured mint exists
-            //     let mint_id = Self::mint();
-            //
-            //     // Make sure valid parameters are selected for next payment at block number
-            //     ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(),
-            //         Error::<T, I>::FillOpeningInvalidNextPaymentBlock);
-            //
-            //     // The verified reward settings to use
-            //     Some((mint_id, policy))
-            // } else {
-            //     None
-            // };
-
             let checked_applications_info = checks::ensure_succesful_applications_exist::<T, I>(&successful_application_ids)?;
 
             // Check for a single application for a leader.
             if matches!(opening.opening_type, JobOpeningType::Leader) {
                 ensure!(successful_application_ids.len() == 1, Error::<T, I>::CannotHireMultipleLeaders);
             }
-
-            // // NB: Combined ensure check and mutation in hiring module
-            // ensure_on_wrapped_error!(
-            //     hiring::Module::<T>::fill_opening(
-            //         opening.hiring_opening_id,
-            //         successful_application_ids,
-            //         opening.policy_commitment.fill_opening_successful_applicant_application_stake_unstaking_period,
-            //         opening.policy_commitment.fill_opening_failed_applicant_application_stake_unstaking_period,
-            //         opening.policy_commitment.fill_opening_failed_applicant_role_stake_unstaking_period
-            //     )
-            // )?;
 
             //
             // == MUTATION SAFE ==
@@ -361,7 +300,6 @@ decl_module! {
             // Process successful applications
             let application_id_to_worker_id = Self::fulfill_successful_applications(
                 &opening,
-                //create_reward_settings,
                 checked_applications_info
             );
 
@@ -396,16 +334,9 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         <ActiveWorkerCount<I>>::put(next_active_worker_count_value);
     }
 
-    // Decreases active worker counter (saturating).
-    fn decrease_active_worker_counter() {
-        let next_active_worker_count_value = Self::active_worker_count().saturating_sub(1);
-        <ActiveWorkerCount<I>>::put(next_active_worker_count_value);
-    }
-
     // Processes successful application during the fill_opening().
     fn fulfill_successful_applications(
         opening: &JobOpening<T::BlockNumber, T::ApplicationId>,
-        //        reward_settings: Option<RewardSettings<T>>,
         successful_applications_info: Vec<ApplicationInfo<T, I>>,
     ) -> BTreeMap<T::ApplicationId, TeamWorkerId<T>> {
         let mut application_id_to_worker_id = BTreeMap::new();
@@ -413,53 +344,6 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         successful_applications_info
             .iter()
             .for_each(|(application_id, application)| {
-                // // Create a reward relationship.
-                // let reward_relationship = if let Some((mint_id, checked_policy)) =
-                // reward_settings.clone()
-                // {
-                //     // Create a new recipient for the new relationship.
-                //     let recipient = <recurringrewards::Module<T>>::add_recipient();
-                //
-                //     // Member must exist, since it was checked that it can enter the role.
-                //     let member_profile =
-                //         <membership::Module<T>>::membership(successful_application.member_id);
-                //
-                //     // Rewards are deposited in the member's root account.
-                //     let reward_destination_account = member_profile.root_account;
-                //
-                //     // Values have been checked so this should not fail!
-                //     let relationship_id = <recurringrewards::Module<T>>::add_reward_relationship(
-                //         mint_id,
-                //         recipient,
-                //         reward_destination_account,
-                //         checked_policy.amount_per_payout,
-                //         checked_policy.next_payment_at_block,
-                //         checked_policy.payout_interval,
-                //     )
-                //         .expect("Failed to create reward relationship!");
-                //
-                //     Some(relationship_id)
-                // } else {
-                //     None
-                // };
-                //
-                // // Get possible stake for role
-                // let application =
-                //     hiring::ApplicationById::<T>::get(successful_application.hiring_application_id);
-                //
-                // // Staking profile for worker
-                // let stake_profile = if let Some(ref stake_id) = application.active_role_staking_id {
-                //     Some(RoleStakeProfile::new(
-                //         stake_id,
-                //         &opening
-                //             .policy_commitment
-                //             .terminate_role_stake_unstaking_period,
-                //         &opening.policy_commitment.exit_role_stake_unstaking_period,
-                //     ))
-                // } else {
-                //     None
-                // };
-
                 // Get worker id
                 let new_worker_id = <NextWorkerId<T, I>>::get();
 

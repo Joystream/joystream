@@ -31,8 +31,6 @@ impl EventFixture {
 
 pub struct AddOpeningFixture {
     origin: RawOrigin<u64>,
-    //    activate_at: hiring::ActivateOpeningAt<u64>,
-    //    commitment: OpeningPolicyCommitment<u64, u64>,
     description: Vec<u8>,
     opening_type: JobOpeningType,
     starting_block: u64,
@@ -42,8 +40,6 @@ impl Default for AddOpeningFixture {
     fn default() -> Self {
         Self {
             origin: RawOrigin::Signed(1),
-            //            activate_at: hiring::ActivateOpeningAt::CurrentBlock,
-            //            commitment: <OpeningPolicyCommitment<u64, u64>>::default(),
             description: b"human_text".to_vec(),
             opening_type: JobOpeningType::Regular,
             starting_block: 0,
@@ -52,16 +48,6 @@ impl Default for AddOpeningFixture {
 }
 
 impl AddOpeningFixture {
-    // pub fn with_policy_commitment(
-    //     self,
-    //     policy_commitment: OpeningPolicyCommitment<u64, u64>,
-    // ) -> Self {
-    //     Self {
-    //         commitment: policy_commitment,
-    //         ..self
-    //     }
-    // }
-
     pub fn call_and_assert(&self, expected_result: DispatchResult) -> u64 {
         let saved_opening_next_id = TestWorkingTeam::next_opening_id();
         let actual_result = self.call().map(|_| ());
@@ -96,8 +82,6 @@ impl AddOpeningFixture {
         let saved_opening_next_id = TestWorkingTeam::next_opening_id();
         TestWorkingTeam::add_opening(
             self.origin.clone().into(),
-            //           self.activate_at.clone(),
-            //           self.commitment.clone(),
             self.description.clone(),
             self.opening_type,
         )?;
@@ -136,8 +120,6 @@ pub struct ApplyOnOpeningFixture {
     member_id: u64,
     opening_id: u64,
     role_account_id: u64,
-    // opt_role_stake_balance: Option<u64>,
-    // opt_application_stake_balance: Option<u64>,
     description: Vec<u8>,
 }
 
@@ -157,28 +139,12 @@ impl ApplyOnOpeningFixture {
         }
     }
 
-    // pub fn with_role_stake(self, stake: Option<u64>) -> Self {
-    //     Self {
-    //         opt_role_stake_balance: stake,
-    //         ..self
-    //     }
-    // }
-    //
-    // pub fn with_application_stake(self, stake: u64) -> Self {
-    //     Self {
-    //         opt_application_stake_balance: Some(stake),
-    //         ..self
-    //     }
-    // }
-
     pub fn default_for_opening_id(opening_id: u64) -> Self {
         Self {
             origin: RawOrigin::Signed(1),
             member_id: 1,
             opening_id,
             role_account_id: 1,
-            // opt_role_stake_balance: None,
-            // opt_application_stake_balance: None,
             description: b"human_text".to_vec(),
         }
     }
@@ -190,8 +156,6 @@ impl ApplyOnOpeningFixture {
             self.member_id,
             self.opening_id,
             self.role_account_id,
-            // self.opt_role_stake_balance,
-            // self.opt_application_stake_balance,
             self.description.clone(),
         )?;
 
@@ -303,26 +267,6 @@ impl FillOpeningFixture {
                     )
                 );
             }
-            //let _opening = TestWorkingTeam::opening_by_id(self.opening_id);
-
-            // let role_stake_profile = if opening
-            //     .policy_commitment
-            //     .application_staking_policy
-            //     .is_some()
-            //     || opening.policy_commitment.role_staking_policy.is_some()
-            // {
-            //     let stake_id = 0;
-            //     Some(RoleStakeProfile::new(
-            //         &stake_id,
-            //         &opening
-            //             .policy_commitment
-            //             .terminate_role_stake_unstaking_period,
-            //         &opening.policy_commitment.exit_role_stake_unstaking_period,
-            //     ))
-            // } else {
-            //     None
-            // };
-            // let reward_relationship = self.reward_policy.clone().map(|_| 0);
 
             let expected_worker = TeamWorker::<Test> {
                 member_id: 1,
@@ -348,38 +292,76 @@ impl FillOpeningFixture {
 
 pub struct HireLeadFixture {
     setup_environment: bool,
-    // stake: Option<u64>,
-    // reward_policy: Option<RewardPolicy<u64, u64>>,
 }
 
 impl Default for HireLeadFixture {
     fn default() -> Self {
         Self {
             setup_environment: true,
-            // stake: None,
-            // reward_policy: None,
         }
     }
 }
 impl HireLeadFixture {
-    // pub fn with_stake(self, stake: u64) -> Self {
-    //     Self {
-    //         stake: Some(stake),
-    //         ..self
-    //     }
-    // }
-    // pub fn with_reward_policy(self, reward_policy: RewardPolicy<u64, u64>) -> Self {
-    //     Self {
-    //         reward_policy: Some(reward_policy),
-    //         ..self
-    //     }
-    // }
+    pub fn with_setup_environment(self, setup_environment: bool) -> Self {
+        Self {
+            setup_environment,
+            ..self
+        }
+    }
 
     pub fn hire_lead(self) -> u64 {
         HiringWorkflow::default()
+            .with_setup_environment(self.setup_environment)
             .with_opening_type(JobOpeningType::Leader)
             .add_application(b"leader".to_vec())
             .execute()
             .unwrap()
+    }
+
+    pub fn expect(self, error: DispatchError) {
+        HiringWorkflow::default()
+            .with_setup_environment(self.setup_environment)
+            .with_opening_type(JobOpeningType::Leader)
+            .add_application(b"leader".to_vec())
+            .expect(Err(error))
+            .execute();
+    }
+}
+
+pub struct HireRegularWorkerFixture {
+    setup_environment: bool,
+}
+
+impl Default for HireRegularWorkerFixture {
+    fn default() -> Self {
+        Self {
+            setup_environment: true,
+        }
+    }
+}
+impl HireRegularWorkerFixture {
+    pub fn with_setup_environment(self, setup_environment: bool) -> Self {
+        Self {
+            setup_environment,
+            ..self
+        }
+    }
+
+    pub fn hire(self) -> u64 {
+        HiringWorkflow::default()
+            .with_setup_environment(self.setup_environment)
+            .with_opening_type(JobOpeningType::Regular)
+            .add_application(b"worker".to_vec())
+            .execute()
+            .unwrap()
+    }
+
+    pub fn expect(self, error: DispatchError) {
+        HiringWorkflow::default()
+            .with_setup_environment(self.setup_environment)
+            .with_opening_type(JobOpeningType::Regular)
+            .add_application(b"worker".to_vec())
+            .expect(Err(error))
+            .execute();
     }
 }

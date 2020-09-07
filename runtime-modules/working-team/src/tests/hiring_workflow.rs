@@ -43,13 +43,6 @@ impl HiringWorkflow {
         }
     }
 
-    pub fn disable_setup_environment(self) -> Self {
-        Self {
-            setup_environment: false,
-            ..self
-        }
-    }
-
     pub fn with_setup_environment(self, setup_environment: bool) -> Self {
         Self {
             setup_environment,
@@ -65,7 +58,7 @@ impl HiringWorkflow {
     }
 
     pub fn add_default_application(self) -> Self {
-        let worker_handle = b"default worker handle".to_vec();
+        let worker_handle = b"default".to_vec();
 
         self.add_application(worker_handle)
     }
@@ -98,7 +91,6 @@ impl HiringWorkflow {
         if matches!(self.opening_type, JobOpeningType::Regular) {
             HireLeadFixture::default().hire_lead();
         }
-        //        increase_total_balance_issuance_using_account_id(1, 10000);
         setup_members(6);
     }
 
@@ -133,19 +125,6 @@ impl HiringWorkflow {
             .with_opening_type(self.opening_type)
             .with_origin(origin.clone());
 
-        // if let Some(stake) = self.role_stake.clone() {
-        //     add_worker_opening_fixture =
-        //         add_worker_opening_fixture.with_policy_commitment(OpeningPolicyCommitment {
-        //             role_staking_policy: Some(hiring::StakingPolicy {
-        //                 amount: stake,
-        //                 amount_mode: hiring::StakingAmountLimitMode::AtLeast,
-        //                 crowded_out_unstaking_period_length: None,
-        //                 review_period_expired_unstaking_period_length: None,
-        //             }),
-        //             ..OpeningPolicyCommitment::default()
-        //         });
-        // }
-
         let opening_id = add_worker_opening_fixture.call()?;
 
         // Fill applications.
@@ -155,7 +134,6 @@ impl HiringWorkflow {
                 ApplyOnOpeningFixture::default_for_opening_id(opening_id)
                     .with_text(application.worker_handle)
                     .with_origin(application.origin, application.member_id);
-            //     .with_role_stake(self.role_stake);
 
             let application_id = apply_on_worker_opening_fixture.call()?;
             application_ids.push(application_id);
@@ -164,11 +142,6 @@ impl HiringWorkflow {
         // fill opening
         let fill_opening_fixture = FillOpeningFixture::default_for_ids(opening_id, application_ids)
             .with_origin(origin.clone());
-
-        // if let Some(reward_policy) = self.reward_policy.clone() {
-        //     fill_worker_opening_fixture =
-        //         fill_worker_opening_fixture.with_reward_policy(reward_policy);
-        // }
 
         let worker_id = fill_opening_fixture.call()?;
 

@@ -105,12 +105,6 @@ pub struct Worker<AccountId, MemberId> {
 
     /// Account used to authenticate in this role.
     pub role_account_id: AccountId,
-    //
-    //     /// Whether the role has recurring reward, and if so an identifier for this.
-    //     pub reward_relationship: Option<RewardRelationshipId>,
-    //
-    //     /// When set, describes role stake of the worker/lead.
-    //     pub role_stake_profile: Option<RoleStakeProfile<StakeId, BlockNumber>>,
 }
 
 impl<AccountId: Clone, MemberId: Clone> Worker<AccountId, MemberId> {
