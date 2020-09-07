@@ -184,6 +184,9 @@ impl EncodedContentData {
     }
 }
 
+/// Generates a VersionedStoreConfig genesis config
+/// with pre-populated classes and entities parsed from a json file serialized
+/// as a ContentData struct.
 pub fn versioned_store_config_from_json(data_file: &Path) -> VersionedStoreConfig {
     let content = parse_content_data(data_file).decode();
     let base_config = empty_versioned_store_config();
@@ -201,7 +204,6 @@ pub fn versioned_store_config_from_json(data_file: &Path) -> VersionedStoreConfi
         .map_or(first_id, |entity_and_maintainer| {
             entity_and_maintainer.entity.id + 1
         });
-    assert_eq!(next_entity_id, (content.entities.len() + 1) as EntityId);
 
     VersionedStoreConfig {
         class_by_id: content
@@ -227,6 +229,7 @@ pub fn versioned_store_config_from_json(data_file: &Path) -> VersionedStoreConfi
     }
 }
 
+/// Generates basic empty VersionedStoreConfig genesis config
 pub fn empty_versioned_store_config() -> VersionedStoreConfig {
     VersionedStoreConfig {
         class_by_id: vec![],
@@ -240,6 +243,7 @@ pub fn empty_versioned_store_config() -> VersionedStoreConfig {
     }
 }
 
+/// Generates a basic empty VersionedStorePermissionsConfig genesis config
 pub fn empty_versioned_store_permissions_config() -> VersionedStorePermissionsConfig {
     VersionedStorePermissionsConfig {
         class_permissions_by_class_id: vec![],
@@ -247,6 +251,9 @@ pub fn empty_versioned_store_permissions_config() -> VersionedStorePermissionsCo
     }
 }
 
+/// Generates a `VersionedStorePermissionsConfig` genesis config
+/// pre-populated with permissions and entity maintainers parsed from
+/// a json file serialized as a `ContentData` struct.
 pub fn versioned_store_permissions_config_from_json(
     data_file: &Path,
 ) -> VersionedStorePermissionsConfig {
@@ -270,6 +277,7 @@ pub fn versioned_store_permissions_config_from_json(
     }
 }
 
+/// Generates a basic empty `DataDirectoryConfig` genesis config
 pub fn empty_data_directory_config() -> DataDirectoryConfig {
     DataDirectoryConfig {
         data_object_by_content_id: vec![],
@@ -277,6 +285,9 @@ pub fn empty_data_directory_config() -> DataDirectoryConfig {
     }
 }
 
+/// Generates a `DataDirectoryConfig` genesis config
+/// pre-populated with data objects and known content ids parsed from
+/// a json file serialized as a `ContentData` struct
 pub fn data_directory_config_from_json(data_file: &Path) -> DataDirectoryConfig {
     let content = parse_content_data(data_file).decode();
 
@@ -294,6 +305,8 @@ pub fn data_directory_config_from_json(data_file: &Path) -> DataDirectoryConfig 
     }
 }
 
+/// Generates a basic `ContentWorkingGroupConfig` genesis config without any active curators
+/// curator lead or channels.
 pub fn empty_content_working_group_config() -> ContentWorkingGroupConfig {
     ContentWorkingGroupConfig {
         mint_capacity: 100_000,
@@ -321,6 +334,9 @@ pub fn empty_content_working_group_config() -> ContentWorkingGroupConfig {
     }
 }
 
+/// Generates a `ContentWorkingGroupConfig` genesis config
+/// pre-populated with channels and corresponding princial channel owners
+/// parsed from a json file serialized as a `ContentData` struct
 pub fn content_working_group_config_from_json(data_file: &Path) -> ContentWorkingGroupConfig {
     let content = parse_content_data(data_file).decode();
     let first_channel_id = 1;

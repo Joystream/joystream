@@ -4,8 +4,7 @@ WORKDIR /joystream
 COPY . /joystream
 
 # Build joystream-node and its dependencies - runtime
-RUN rustup override set 1.45.2
-RUN cargo build --release -p joystream-node
+RUN WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release -p joystream-node
 
 FROM debian:stretch
 LABEL description="Joystream node"

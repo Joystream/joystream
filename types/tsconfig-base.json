@@ -16,10 +16,7 @@
       "node"
     ],
     "forceConsistentCasingInFileNames": true,
-    "baseUrl": ".",
-    "paths": {
-      "@polkadot/types/augment": ["src/definitions/augment-types.ts"]
-    }
+    "baseUrl": "."
   },
   "exclude": [
     "node_modules",

@@ -20,7 +20,7 @@ export function FormTabs <FormValues> (props: FormTabsProps<FormValues>) {
 
   return <Tab
     menu={{ secondary: true, pointing: true, color: 'blue' }}
-    panes={panes.map(tab => {
+    panes={panes.map((tab) => {
       const {
         id,
         fields = [],
@@ -29,8 +29,10 @@ export function FormTabs <FormValues> (props: FormTabsProps<FormValues>) {
       } = tab;
 
       const tabErrors: any[] = [];
-      fields.forEach(f => {
+
+      fields.forEach((f) => {
         const err = errors[f.id];
+
         if (err) {
           tabErrors.push(err);
         }

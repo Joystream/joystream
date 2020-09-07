@@ -3,9 +3,9 @@ import { Button, Tab } from 'semantic-ui-react';
 import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
-import TxButton from '@polkadot/joy-utils/TxButton';
+import { TxButton } from '@polkadot/joy-utils/react/components';
 import { ContentId } from '@joystream/types/media';
-import { onImageError } from '@polkadot/joy-utils/images';
+import { onImageError } from '../common/images';
 import { MusicTrackValidationSchema, MusicTrackType, MusicTrackClass as Fields, MusicTrackFormValues, MusicTrackToFormValues } from '../schemas/music/MusicTrack';
 import { withMediaForm, MediaFormProps, datePlaceholder } from '../common/MediaForms';
 import EntityId from '@joystream/types/versioned-store/EntityId';
@@ -113,7 +113,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const renderMainButton = () =>
     <TxButton
       type='submit'
-      size='large'
       isDisabled={!dirty || isSubmitting}
       label={isNew
         ? 'Publish'
@@ -158,9 +157,11 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   mapPropsToValues: (props): FormValues => {
     const { entity, fileName } = props;
     const res = MusicTrackToFormValues(entity);
+
     if (!res.title && fileName) {
       res.title = fileName;
     }
+
     return res;
   },
 

@@ -54,9 +54,10 @@ function InnerCategoryCrumb (p: CategoryCrumbsProps) {
   if (category) {
     try {
       const url = `/forum/categories/${category.id.toString()}`;
+
       return <>
         {category.parent_id ? <CategoryCrumb categoryId={category.parent_id} /> : null}
-        <Breadcrumb.Divider icon="right angle" />
+        <Breadcrumb.Divider icon='right angle' />
         <Breadcrumb.Section as={Link} to={url}>{category.title}</Breadcrumb.Section>
       </>;
     } catch (err) {
@@ -80,9 +81,10 @@ function InnerThreadCrumb (p: CategoryCrumbsProps) {
   if (thread) {
     try {
       const url = `/forum/threads/${thread.id.toString()}`;
+
       return <>
         <CategoryCrumb categoryId={thread.category_id} />
-        <Breadcrumb.Divider icon="right angle" />
+        <Breadcrumb.Divider icon='right angle' />
         <Breadcrumb.Section as={Link} to={url}>{thread.title}</Breadcrumb.Section>
       </>;
     } catch (err) {
@@ -113,8 +115,8 @@ export const CategoryCrumbs = ({ categoryId, threadId, root }: CategoryCrumbsPro
       <Breadcrumb.Section>Forum</Breadcrumb.Section>
       {!root && (
         <>
-          <Breadcrumb.Divider icon="right angle" />
-          <Breadcrumb.Section as={Link} to="/forum">Top categories</Breadcrumb.Section>
+          <Breadcrumb.Divider icon='right angle' />
+          <Breadcrumb.Section as={Link} to='/forum'>Top categories</Breadcrumb.Section>
           <CategoryCrumb categoryId={categoryId} />
           <ThreadCrumb threadId={threadId} />
         </>
@@ -125,7 +127,7 @@ export const CategoryCrumbs = ({ categoryId, threadId, root }: CategoryCrumbsPro
 
 type TimeAgoDateProps = {
   date: moment.Moment;
-  id: any;
+  id: string | number;
 };
 
 export const TimeAgoDate: React.FC<TimeAgoDateProps> = ({ date, id }) => (
@@ -133,7 +135,7 @@ export const TimeAgoDate: React.FC<TimeAgoDateProps> = ({ date, id }) => (
     <span data-tip data-for={`${id}-date-tooltip`}>
       {date.fromNow()}
     </span>
-    <Tooltip id={`${id}-date-tooltip`} place="top" effect="solid">
+    <Tooltip id={`${id}-date-tooltip`} place='top' effect='solid'>
       {date.toLocaleString()}
     </Tooltip>
   </>
@@ -164,6 +166,7 @@ export const useQueryParam = (queryParam: string): QueryReturnType => {
   useEffect(() => {
     const params = new URLSearchParams(search);
     const paramValue = params.get(queryParam);
+
     if (paramValue !== value) {
       setValue(paramValue);
     }
@@ -171,6 +174,7 @@ export const useQueryParam = (queryParam: string): QueryReturnType => {
 
   const setParam: QuerySetValueType = (rawValue, paramsToReset = []) => {
     let parsedValue: string | null;
+
     if (!rawValue && rawValue !== 0) {
       parsedValue = null;
     } else {
@@ -178,13 +182,14 @@ export const useQueryParam = (queryParam: string): QueryReturnType => {
     }
 
     const params = new URLSearchParams(search);
+
     if (parsedValue) {
       params.set(queryParam, parsedValue);
     } else {
       params.delete(queryParam);
     }
 
-    paramsToReset.forEach(p => params.delete(p));
+    paramsToReset.forEach((p) => params.delete(p));
 
     setValue(parsedValue);
     history.push({ pathname, search: params.toString() });
@@ -197,8 +202,10 @@ export const usePagination = (): [number, QuerySetValueType] => {
   const [rawCurrentPage, setCurrentPage] = useQueryParam(PagingQueryParam);
 
   let currentPage = 1;
+
   if (rawCurrentPage) {
     const parsedPage = Number.parseInt(rawCurrentPage);
+
     if (!Number.isNaN(parsedPage)) {
       currentPage = parsedPage;
     } else {

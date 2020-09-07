@@ -86,7 +86,7 @@ export class ActiveStake extends JoyStructDecorated({ stake_id: StakeId, source_
   implements IActiveStake {}
 
 export class ExecutionFailedStatus extends JoyStructDecorated({
-  error: Vec.with(u8),
+  error: Text,
 }) {}
 
 export class ExecutionFailed extends ExecutionFailedStatus {}
@@ -153,7 +153,7 @@ export class ProposalId extends u32 {}
 
 export class SpendingParams extends Tuple.with(['Balance', 'AccountId']) {}
 
-class SetLeadParams extends Tuple.with([MemberId, AccountId]) {}
+export class SetLeadParams extends Tuple.with([MemberId, AccountId]) {}
 
 export class SetLead extends Option.with(SetLeadParams) {}
 
@@ -251,7 +251,7 @@ export class TerminateRoleParameters
 
 export class ProposalDetails extends JoyEnum({
   Text: Text,
-  RuntimeUpgrade: Vec.with(u8),
+  RuntimeUpgrade: Bytes,
   SetElectionParameters: ElectionParameters,
   Spending: SpendingParams,
   SetLead: SetLead,
@@ -287,9 +287,11 @@ export const proposalsTypes = {
   TerminateRoleParameters,
   // Expose in registry for api.createType purposes:
   ActiveStake,
-  FinalizationData,
+  Finalized,
   ProposalDecisionStatus,
   ExecutionFailed,
+  Approved,
+  SetLeadParams,
 }
 
 export default proposalsTypes

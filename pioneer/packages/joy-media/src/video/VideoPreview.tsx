@@ -2,7 +2,7 @@ import React, { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { BgImg } from '../common/BgImg';
 import { VideoType } from '../schemas/video/Video';
-import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
+import { useMyMembership } from '@polkadot/joy-utils/react/hooks';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { isAccountAChannelOwner } from '../channels/ChannelHelpers';
 import { ChannelAvatarAndName } from '../channels/ChannelAvatarAndName';
@@ -64,7 +64,7 @@ export function VideoPreview (props: VideoPreviewProps) {
         }
 
         {iAmOwner &&
-          <div>
+          <div style={{ marginTop: '0.5em' }}>
             <Link to={`/media/videos/${id}/edit`} className='ui button basic small'>
               <i className='icon pencil' />
               Edit
@@ -77,7 +77,7 @@ export function VideoPreview (props: VideoPreviewProps) {
 }
 
 export function toVideoPreviews (items: VideoType[]): VideoPreviewProps[] {
-  return items.map(x => ({
+  return items.map((x) => ({
     id: x.id,
     title: x.title,
     thumbnail: x.thumbnail

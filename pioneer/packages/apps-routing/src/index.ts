@@ -18,29 +18,47 @@ import storage from './storage';
 import sudo from './sudo';
 import toolbox from './toolbox';
 import transfer from './transfer';
+import memo from './memo';
 // Joy packages
 import members from './joy-members';
 import { terms, privacyPolicy } from './joy-pages';
+import election from './joy-election';
+import proposals from './joy-proposals';
+import roles from './joy-roles';
+import media from './joy-media';
+import forum from './joy-forum';
 
 export default function create (t: <T = string> (key: string, text: string, options: { ns: string }) => T): Routes {
   return appSettings.uiMode === 'light'
     ? [
+      media(t),
       members(t),
+      roles(t),
+      election(t),
+      proposals(t),
+      forum(t),
       staking(t),
       null,
       transfer(t),
       accounts(t),
+      memo(t),
       settings(t),
       // Those are hidden
       terms(t),
       privacyPolicy(t)
     ]
     : [
+      media(t),
       members(t),
+      roles(t),
+      election(t),
+      proposals(t),
+      forum(t),
       staking(t),
       null,
       transfer(t),
       accounts(t),
+      memo(t),
       settings(t),
       null,
       explorer(t),

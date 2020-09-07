@@ -4,7 +4,7 @@ import { BlockNumber, AccountId } from '@polkadot/types/interfaces';
 import { ChannelContentTypeValue, PrincipalId, Channel, ChannelId, ChannelPublicationStatusValue, ChannelCurationStatusValue } from '@joystream/types/content-working-group';
 import { MemberId } from '@joystream/types/members';
 import { ChannelValidationConstraints } from '@polkadot/joy-media/transport';
-import { ValidationConstraint } from '@polkadot/joy-utils/ValidationConstraint';
+import { ValidationConstraint } from '@polkadot/joy-utils/types/ValidationConstraint';
 
 function textValidation (constraint?: ValidationConstraint) {
   if (!constraint) {
@@ -12,10 +12,12 @@ function textValidation (constraint?: ValidationConstraint) {
   }
 
   const { min, max } = constraint;
+
   return Yup.string()
     .min(min, `Text is too short. Minimum length is ${min} chars.`)
     .max(max, `Text is too long. Maximum length is ${max} chars.`);
 }
+
 export const buildChannelValidationSchema = (constraints?: ChannelValidationConstraints) =>
   Yup.object().shape({
     handle: textValidation(constraints?.handle).required('This field is required'),
@@ -56,19 +58,19 @@ export class ChannelCodec {
   static fromSubstrate (id: ChannelId, sub: Channel): ChannelType {
     return {
       id: id.toNumber(),
-      verified: sub.getBoolean('verified'),
-      handle: sub.getString('handle'),
-      title: sub.getOptionalString('title'),
-      description: sub.getOptionalString('description'),
-      avatar: sub.getOptionalString('avatar'),
-      banner: sub.getOptionalString('banner'),
-      content: sub.getEnumAsString<ChannelContentTypeValue>('content'),
-      owner: sub.getField('owner'),
-      roleAccount: sub.getField('role_account'),
-      publicationStatus: sub.getEnumAsString<ChannelPublicationStatusValue>('publication_status'),
-      curationStatus: sub.getEnumAsString<ChannelCurationStatusValue>('curation_status'),
-      created: sub.getField('created'),
-      principalId: sub.getField('principal_id')
+      verified: sub.verified.valueOf(),
+      handle: sub.handle.toString(),
+      title: sub.title.unwrapOr(undefined)?.toString(),
+      description: sub.description.unwrapOr(undefined)?.toString(),
+      avatar: sub.avatar.unwrapOr(undefined)?.toString(),
+      banner: sub.banner.unwrapOr(undefined)?.toString(),
+      content: sub.content.type,
+      owner: sub.owner,
+      roleAccount: sub.role_account,
+      publicationStatus: sub.publication_status.type,
+      curationStatus: sub.curation_status.type,
+      created: sub.created,
+      principalId: sub.principal_id
     };
   }
 }

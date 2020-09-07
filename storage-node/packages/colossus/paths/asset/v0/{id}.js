@@ -121,7 +121,7 @@ module.exports = function (storage, runtime) {
 
             // Filter
             const filterResult = filter({}, req.headers, info.mimeType)
-            if (200 !== filterResult.code) {
+            if (filterResult.code !== 200) {
               debug('Rejecting content', filterResult.message)
               stream.end()
               res.status(filterResult.code).send({ message: filterResult.message })
@@ -181,7 +181,6 @@ module.exports = function (storage, runtime) {
         req.pipe(stream)
       } catch (err) {
         errorHandler(res, err)
-        return
       }
     },
 

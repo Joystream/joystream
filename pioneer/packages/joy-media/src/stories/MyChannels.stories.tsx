@@ -1,14 +1,13 @@
 import React from 'react';
-import '../common/index.css';
+import '../common/index.scss';
 
-import { GenericAccountId } from '@polkadot/types';
 import { ChannelsByOwner } from '../channels/ChannelsByOwner';
 import { AllMockChannels } from './data/ChannelSamples';
 import { withMockTransport } from './withMockTransport';
 import EditForm from '../channels/EditChannel';
 import { EditChannelView } from '../channels/EditChannel.view';
-import { ChannelId } from '@joystream/types/content-working-group';
 import { AccountIdSamples } from './data/AccountIdSamples';
+import { createType } from '@joystream/types';
 
 export default {
   title: 'Media | My channels',
@@ -16,7 +15,7 @@ export default {
 };
 
 // TODO pass to mocked MyMembershipContext provider via Stories decorators:
-const accountId = new GenericAccountId(AccountIdSamples.Alice);
+const accountId = createType('AccountId', AccountIdSamples.Alice);
 
 export const DefaultState = () =>
   <ChannelsByOwner accountId={accountId} />;
@@ -31,4 +30,4 @@ export const DefaultEditForm = () =>
   <EditForm />;
 
 export const MockEditFormView = () =>
-  <EditChannelView id={new ChannelId(1)} />;
+  <EditChannelView id={createType('ChannelId', 1)} />;

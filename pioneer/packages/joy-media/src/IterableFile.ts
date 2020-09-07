@@ -32,10 +32,11 @@ export class IterableFile implements AsyncIterable<Buffer> {
 
   readBlobAsBuffer (blob: Blob): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      this.reader.onload = (e: any) => {
-        e.target.result && resolve(Buffer.from(e.target.result));
-        e.target.error && reject(e.target.error);
+      this.reader.onload = (e) => {
+        e.target?.result && resolve(typeof e.target.result === 'string' ? Buffer.from(e.target.result) : Buffer.from(e.target.result));
+        e.target?.error && reject(e.target.error);
       };
+
       this.reader.readAsArrayBuffer(blob);
     });
   }

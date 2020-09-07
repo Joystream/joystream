@@ -79,12 +79,15 @@ function Item ({ isCollapsed, onClick, route }: Props): React.ReactElement<Props
     return null;
   }
 
-  const { Modal, icon, name, text } = route;
+  const { Modal, SubtitleComponent, icon, name, text } = route;
 
   const body = (
     <>
       <Icon icon={icon} />
-      <span className='text'>{text}</span>
+      <span className='text'>
+        {text}
+        { SubtitleComponent && <SubtitleComponent/> }
+      </span>
       {!!count && (
         <Badge
           color='counter'
