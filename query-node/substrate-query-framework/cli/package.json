@@ -1,7 +1,7 @@
 {
   "name": "@dzlzv/hydra-cli",
   "description": "CLI tool for building a Hydra query node",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "author": "metmirr @metmirr dzlzv @dzhelezov",
   "bin": {
     "hydra-cli": "./bin/run"

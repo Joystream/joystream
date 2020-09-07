@@ -114,7 +114,10 @@ export default class Codegen extends Command {
       task: async () => {
         await execa('yarn', ['install']);
         if (process.env.TYPE_REGISTER_PACKAGE_NAME) {
-          await execa('yarn', ['add', `${process.env.TYPE_REGISTER_PACKAGE_NAME}`]);
+          const lib = process.env.TYPE_REGISTER_PACKAGE_VERSION
+            ? `${process.env.TYPE_REGISTER_PACKAGE_NAME}@${process.env.TYPE_REGISTER_PACKAGE_VERSION}`
+            : `${process.env.TYPE_REGISTER_PACKAGE_NAME}`;
+          await execa('yarn', ['add', `${lib}`]);
         }
       },
     };
