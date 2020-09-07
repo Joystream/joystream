@@ -8,7 +8,7 @@ use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+    BuildStorage, Perbill,
 };
 pub use system;
 
@@ -140,6 +140,13 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
         .build()
         .assimilate_storage(&mut t)
         .unwrap();
+
+    // build the council config to initialize the mint
+    let council_config = council::GenesisConfig::<Test>::default()
+        .build_storage()
+        .unwrap();
+
+    council_config.assimilate_storage(&mut t).unwrap();
 
     t.into()
 }

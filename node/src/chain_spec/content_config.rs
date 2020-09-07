@@ -309,7 +309,7 @@ pub fn data_directory_config_from_json(data_file: &Path) -> DataDirectoryConfig 
 /// curator lead or channels.
 pub fn empty_content_working_group_config() -> ContentWorkingGroupConfig {
     ContentWorkingGroupConfig {
-        mint_capacity: 100_000,
+        mint_capacity: 0,
         curator_opening_by_id: vec![],
         next_curator_opening_id: 0,
         curator_application_by_id: vec![],

@@ -34,10 +34,8 @@ decl_storage! {
 
         pub TermEndsAt get(fn term_ends_at) config() : T::BlockNumber = T::BlockNumber::from(1);
 
-        /// The mint that funds council member rewards and spending proposals budget. It is an Option
-        /// because it was introduced in a runtime upgrade. It will be automatically created when
-        /// a successful call to set_council_mint_capacity() is made.
-        pub CouncilMint get(fn council_mint) : Option<<T as minting::Trait>::MintId>;
+        /// The mint that funds council member rewards and spending proposals budget
+        pub CouncilMint get(fn council_mint) : <T as minting::Trait>::MintId;
 
         /// The reward relationships currently in place. There may not necessarily be a 1-1 correspondance with
         /// the active council, since there are multiple ways of setting/adding/removing council members, some of which
@@ -53,6 +51,21 @@ decl_storage! {
 
         /// How many blocks after the reward is created, the first payout will be made
         pub FirstPayoutAfterRewardCreated get(fn first_payout_after_reward_created): T::BlockNumber;
+    }
+    add_extra_genesis {
+        build(|_config: &GenesisConfig<T>| {
+            // Create the council mint.
+            let mint_id_result = <minting::Module<T>>::add_mint(
+                minting::BalanceOf::<T>::from(0),
+                None
+            );
+
+            if let Ok(mint_id) = mint_id_result {
+                <CouncilMint<T>>::put(mint_id);
+            } else {
+                panic!("Failed to create a mint for the council");
+            }
+        });
     }
 }
 
@@ -72,15 +85,8 @@ impl<T: Trait> CouncilElected<Seats<T::AccountId, BalanceOf<T>>, T::BlockNumber>
 
         <TermEndsAt<T>>::put(next_term_ends_at);
 
-        if let Some(reward_source) = Self::council_mint() {
-            for seat in seats.iter() {
-                Self::add_reward_relationship(&seat.member, reward_source);
-            }
-        } else {
-            // Skip trying to create rewards since no mint has been created yet
-            debug::warn!(
-                "Not creating reward relationship for council seats because no mint exists"
-            );
+        for seat in seats.iter() {
+            Self::add_reward_relationship(&seat.member, Self::council_mint());
         }
 
         Self::deposit_event(RawEvent::NewCouncilTermStarted(next_term_ends_at));
@@ -94,15 +100,6 @@ impl<T: Trait> Module<T> {
 
     pub fn is_councilor(sender: &T::AccountId) -> bool {
         Self::active_council().iter().any(|c| c.member == *sender)
-    }
-
-    /// Initializes a new mint, discarding previous mint if it existed.
-    pub fn create_new_council_mint(
-        capacity: minting::BalanceOf<T>,
-    ) -> Result<T::MintId, &'static str> {
-        let mint_id = <minting::Module<T>>::add_mint(capacity, None)?;
-        CouncilMint::<T>::put(mint_id);
-        Ok(mint_id)
     }
 
     fn add_reward_relationship(destination: &T::AccountId, reward_source: T::MintId) {
@@ -174,10 +171,8 @@ decl_module! {
             // Council is being replaced so remove existing reward relationships if they exist
             Self::remove_reward_relationships();
 
-            if let Some(reward_source) = Self::council_mint() {
-                for account in accounts.clone() {
-                    Self::add_reward_relationship(&account, reward_source);
-                }
+            for account in accounts.clone() {
+                Self::add_reward_relationship(&account, Self::council_mint());
             }
 
             let new_council: Seats<T::AccountId, BalanceOf<T>> = accounts.into_iter().map(|account| {
@@ -198,9 +193,7 @@ decl_module! {
 
             ensure!(!Self::is_councilor(&account), "cannot add same account multiple times");
 
-            if let Some(reward_source) = Self::council_mint() {
-                Self::add_reward_relationship(&account, reward_source);
-            }
+            Self::add_reward_relationship(&account, Self::council_mint());
 
             let seat = Seat {
                 member: account,
@@ -246,11 +239,7 @@ decl_module! {
         pub fn set_council_mint_capacity(origin, capacity: minting::BalanceOf<T>) {
             ensure_root(origin)?;
 
-            if let Some(mint_id) = Self::council_mint() {
-                minting::Module::<T>::set_mint_capacity(mint_id, capacity).map_err(<&str>::from)?;
-            } else {
-                Self::create_new_council_mint(capacity)?;
-            }
+            minting::Module::<T>::set_mint_capacity(Self::council_mint(), capacity).map_err(<&str>::from)?;
         }
 
         /// Attempts to mint and transfer amount to destination account
@@ -258,12 +247,8 @@ decl_module! {
         fn spend_from_council_mint(origin, amount: minting::BalanceOf<T>, destination: T::AccountId) {
             ensure_root(origin)?;
 
-            if let Some(mint_id) = Self::council_mint() {
-                minting::Module::<T>::transfer_tokens(mint_id, amount, &destination)
-                    .map_err(<&str>::from)?;
-            } else {
-                return Err("CouncilHasNoMint".into());
-            }
+            minting::Module::<T>::transfer_tokens(Self::council_mint(), amount, &destination)
+                .map_err(<&str>::from)?;
         }
 
         /// Sets the council rewards which is only applied on new council being elected.
