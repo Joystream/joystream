@@ -1,18 +1,21 @@
 import React from 'react'
 import { Button } from '../components'
+import { text, withKnobs } from '@storybook/addon-knobs'
+import { action } from '@storybook/addon-actions'
 
 export default {
   title: 'Button',
   component: Button,
+  decorators: [withKnobs],
 }
 
 export const Primary = () => (
   <>
-    <Button onClick={() => console.log('Button clicked!')}>Regular</Button>
-    <Button size="small" onClick={() => console.log('Button clicked!')}>
+    <Button onClick={() => action('Button Clicked')}>{text('Button Text', 'Regular')}</Button>
+    <Button size="small" onClick={() => action('Button Clicked')}>
       Small
     </Button>
-    <Button size="smaller" onClick={() => console.log('Button clicked!')}>
+    <Button size="smaller" onClick={() => action('Button Clicked')}>
       Smaller
     </Button>
   </>
@@ -20,12 +23,14 @@ export const Primary = () => (
 
 export const Secondary = () => (
   <>
-    <Button type="secondary">Regular</Button>
-    <Button type="secondary" size="small">
+    <Button variant="secondary" onClick={() => action('Button Clicked')}>
+      Regular
+    </Button>
+    <Button variant="secondary" size="small">
       Small
     </Button>
-    <Button type="secondary" size="smaller">
-      Smaller
+    <Button variant="secondary" size="smaller">
+      Has no onClik
     </Button>
   </>
 )
@@ -33,7 +38,7 @@ export const Secondary = () => (
 export const PrimaryFullSize = () => <Button full>Primary Full Size</Button>
 
 export const SecondaryFullSize = () => (
-  <Button full type="secondary">
+  <Button full variant="secondary">
     Secondary Full Size
   </Button>
 )
@@ -52,13 +57,13 @@ export const PrimaryWithIcon = () => (
 
 export const SecondaryWithIcon = () => (
   <>
-    <Button type="secondary" icon>
+    <Button variant="secondary" icon>
       Regular
     </Button>
-    <Button type="secondary" icon size="small">
+    <Button variant="secondary" icon size="small">
       Small
     </Button>
-    <Button type="secondary" icon size="smaller">
+    <Button variant="secondary" icon size="smaller">
       Smaller
     </Button>
   </>
@@ -74,15 +79,17 @@ export const PrimaryWithoutText = () => (
 
 export const SecondaryWithoutText = () => (
   <>
-    <Button type="secondary" icon />
-    <Button type="secondary" icon size="small" />
-    <Button type="secondary" icon size="smaller" />
+    <Button variant="secondary" icon />
+    <Button variant="secondary" icon size="small" />
+    <Button variant="secondary" icon size="smaller" />
   </>
 )
 
 export const Disabled = () => (
   <>
-    <Button disabled={true}>Disabled</Button>
+    <Button disabled={true} onClick={() => action('Clicked a disabled button, this should not happen.')}>
+      Disabled
+    </Button>
     <Button disabled={true} icon={true}>
       Disabled with icon
     </Button>

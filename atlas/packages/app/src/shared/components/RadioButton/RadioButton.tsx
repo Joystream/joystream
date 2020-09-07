@@ -1,27 +1,35 @@
 import React from 'react'
-import { useCSS, RadioButtonStyleProps } from './RadioButton.style'
+import { Label, Input, StyledInput, RadioButtonStyleProps } from './RadioButton.style'
 
-type RadioButtonProps = {
-  label?: string
-  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void
-} & RadioButtonStyleProps
+type RadioButtonProps = Partial<{
+  label: string
+}> &
+  Omit<RadioButtonStyleProps, 'clickable'> &
+  React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>
 
-export default function RadioButton({
-  label = '',
+const RadioButton: React.FC<RadioButtonProps> = ({
+  label,
   position = 'end',
-  disabled = false,
-  onClick = () => {},
-  ...styleProps
-}: RadioButtonProps) {
-  const styles = useCSS({ disabled, position, ...styleProps })
-
+  disabled,
+  error,
+  onClick,
+  checked,
+  ...props
+}) => {
+  const clickable = !!onClick
+  const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    if (onClick) {
+      onClick(e)
+    }
+  }
   return (
-    <div css={styles.container} onClick={disabled ? () => {} : onClick}>
-      {(position === 'start' || position === 'top') && <label css={styles.label}>{label}</label>}
-      <div css={styles.outterDot}>
-        <div css={styles.dot}></div>
-      </div>
-      {(position === 'end' || position === 'bottom') && <label css={styles.label}>{label}</label>}
-    </div>
+    <Label position={position} clickable={clickable} disabled={disabled}>
+      <StyledInput checked={checked} error={error} disabled={disabled}>
+        <Input type="radio" onClick={handleClick} disabled={disabled} {...props} checked={checked} />
+      </StyledInput>
+      {label && <span>{label}</span>}
+    </Label>
   )
 }
+
+export default RadioButton

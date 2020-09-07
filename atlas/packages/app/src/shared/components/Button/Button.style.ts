@@ -1,129 +1,156 @@
 import React from 'react'
+import { css } from '@emotion/core'
+import styled from '@emotion/styled'
+import { BlockIcon } from '@/shared/icons'
 import { typography, colors } from '../../theme'
-import { makeStyles, StyleFn } from '../../utils'
-import { disabled, dimensionsFromProps } from '../../theme/fragments'
 
 export type ButtonStyleProps = {
-  text?: string
-  type?: 'primary' | 'secondary' | 'tertiary'
+  variant?: 'primary' | 'secondary' | 'tertiary'
   full?: boolean
   size?: 'regular' | 'small' | 'smaller'
-  children?: React.ReactNode
+  hasText?: boolean
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
   disabled?: boolean
+  clickable?: boolean
 }
 
-const baseStyles: StyleFn = () => ({
-  borderWidth: '1px',
-  borderStyle: 'solid',
-  fontFamily: typography.fonts.headers,
-  fontWeight: typography.weights.medium,
-  display: 'inline-flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  color: colors.white,
-  '&::selected': {
-    background: 'transparent',
-  },
-})
-const colorFromType: StyleFn = (styles = {}, { type }: ButtonStyleProps) => {
-  switch (type) {
+const colorsFromProps = ({ variant }: ButtonStyleProps) => {
+  let styles
+  switch (variant) {
+    case 'tertiary': {
+      styles = css`
+        background-color: transparent;
+        border-color: transparent;
+        color: ${colors.blue[500]};
+        &:hover {
+          color: ${colors.blue[300]};
+        }
+        &:active {
+          color: ${colors.blue[700]};
+        }
+      `
+      break
+    }
+    case 'secondary': {
+      styles = css`
+        color: ${colors.white};
+        background-color: ${colors.black};
+        border-color: ${colors.blue[500]};
+        &:hover {
+          border-color: ${colors.blue[700]};
+          color: ${colors.blue[300]};
+        }
+        &:active {
+          border-color: ${colors.blue[700]};
+          color: ${colors.blue[700]};
+        }
+      `
+      break
+    }
     case 'primary':
-      return {
-        ...styles,
-        backgroundColor: colors.blue[500],
-        borderColor: colors.blue[500],
-
-        '&:hover': {
-          backgroundColor: colors.blue[700],
-          borderColor: colors.blue[700],
-          color: colors.white,
-        },
-        '&:active': {
-          backgroundColor: colors.blue[900],
-          borderColor: colors.blue[900],
-          color: colors.white,
-        },
-      }
-
-    case 'secondary':
-      return {
-        ...styles,
-        backgroundColor: colors.black,
-        borderColor: colors.blue[500],
-
-        '&:hover': {
-          borderColor: colors.blue[700],
-          color: colors.blue[300],
-        },
-
-        '&:active': {
-          borderColor: colors.blue[700],
-          color: colors.blue[700],
-        },
-      }
-
-    case 'tertiary':
-      return {
-        ...styles,
-        backgroundColor: 'transparent',
-        borderColor: 'transparent',
-        color: colors.blue[500],
-        '&:hover': {
-          color: colors.blue[300],
-        },
-        '&:active': {
-          color: colors.blue[700],
-        },
-      }
-
-    default:
-      return { ...styles }
+    default: {
+      styles = css`
+        color: ${colors.white};
+        background-color: ${colors.blue[500]};
+        border-color: ${colors.blue[500]};
+        &:hover {
+          background-color: ${colors.blue[700]};
+          border-color: ${colors.blue[700]};
+          color: ${colors.white};
+        }
+        &:active {
+          background-color: ${colors.blue[900]};
+          border-color: ${colors.blue[900]};
+          color: ${colors.white};
+        }
+      `
+      break
+    }
   }
-}
-const paddingFromType: StyleFn = (
-  styles,
-  { size = 'regular', children }: { size: 'regular' | 'small' | 'smaller'; children?: React.ReactNode; full: boolean }
-) => {
-  return {
-    ...styles,
-    padding:
-      size === 'regular'
-        ? children
-          ? '14px 20px'
-          : '14px'
-        : size === 'small'
-        ? children
-          ? '12px 14px'
-          : '12px'
-        : '10px',
-    fontSize:
-      size === 'regular'
-        ? typography.sizes.button.large
-        : size === 'small'
-        ? typography.sizes.button.medium
-        : typography.sizes.button.small,
-  }
+  return styles
 }
 
-const iconStyles: StyleFn = (styles, { children, size }) => {
-  return {
-    ...styles,
-    marginRight: children != null ? '10px' : '0',
-    fontSize:
+const sizeFromProps = ({ size = 'regular', full, hasText }: ButtonStyleProps) => {
+  let padding, fontSize
+  switch (size) {
+    case 'smaller': {
+      padding = '10px'
+      fontSize = typography.sizes.button.small
+      break
+    }
+    case 'small': {
+      padding = hasText ? `12px 14px` : '12px'
+      fontSize = typography.sizes.button.medium
+      break
+    }
+    case 'regular':
+    default: {
+      padding = hasText ? `14px 20px` : '14px'
+      fontSize = typography.sizes.button.large
+      break
+    }
+  }
+  return css`
+    width: ${full ? '100%' : ''};
+    display: ${full ? 'flex' : 'inline-flex'};
+    font-size: ${fontSize};
+    padding: ${padding};
+  `
+}
+
+const disabled = ({ disabled }: ButtonStyleProps) =>
+  disabled
+    ? css`
+        box-shadow: none;
+        fill: unset;
+        stroke: unset;
+        color: ${colors.white};
+        background-color: ${colors.gray[100]};
+        border-color: ${colors.gray[100]};
+        &:hover {
+          color: ${colors.white};
+          background-color: ${colors.gray[100]};
+          border-color: ${colors.gray[100]};
+        }
+        &:active {
+          color: ${colors.white};
+          background-color: ${colors.gray[100]};
+          border-color: ${colors.gray[100]};
+        }
+      `
+    : null
+
+export const StyledIcon = styled(BlockIcon)`
+  flex-shrink: 0;
+  & > * {
+    stroke: currentColor;
+  }
+`
+export const StyledButton = styled.button<ButtonStyleProps>`
+	border-width: 1px;
+	border-style: solid;
+	font-family: ${typography.fonts.headers};
+	font-weight: ${typography.weights.medium};
+	display: inline-flex;
+	justify-content: center;
+	align-items: center;
+	&:hover {
+		cursor: ${(props) => (!props.disabled && props.clickable ? 'pointer' : '')}
+	}
+	&::selected {
+		background: transparent;
+	}
+	${colorsFromProps}
+	${sizeFromProps}
+	${disabled}
+	& > ${StyledIcon} {
+		font-size: ${({ size }) =>
       size === 'regular'
         ? typography.sizes.icon.large
         : size === 'small'
         ? typography.sizes.icon.medium
-        : typography.sizes.icon.small,
-
-    flexShrink: 0,
-    '& > *': {
-      stroke: 'currentColor',
-    },
-  }
-}
-
-export const useCSS = (props: ButtonStyleProps) => ({
-  container: makeStyles([baseStyles, colorFromType, dimensionsFromProps, paddingFromType, disabled])(props),
-  icon: makeStyles([iconStyles])(props),
-})
+        : typography.sizes.icon.small};
+		& + * {
+			margin-left: 10px
+		}
+	};`

@@ -1,6 +1,13 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const path = require('path')
-const { override, addBabelPreset, addWebpackAlias, disableEsLint, addWebpackModuleRule } = require('customize-cra')
+const {
+  override,
+  addBabelPreset,
+  addBabelPlugin,
+  addWebpackAlias,
+  disableEsLint,
+  addWebpackModuleRule,
+} = require('customize-cra')
 const eslintConfig = require('../../.eslintrc.js')
 
 const modifiedEslintConfig = {
@@ -46,6 +53,7 @@ const customEslintConfig = (configRules) => {
 
 module.exports = {
   webpack: override(
+    addBabelPlugin('babel-plugin-emotion'),
     addBabelPreset('@emotion/babel-preset-css-prop'),
     addWebpackAlias({
       '@': path.resolve(__dirname, 'src/'),

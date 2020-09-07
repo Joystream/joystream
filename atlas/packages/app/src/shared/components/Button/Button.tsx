@@ -1,31 +1,48 @@
 import React from 'react'
 import { SerializedStyles } from '@emotion/core'
-import { ButtonStyleProps, useCSS } from './Button.style'
-import { BlockIcon } from '../../icons'
+import { ButtonStyleProps, StyledButton, StyledIcon } from './Button.style'
 
-type ButtonProps = {
-  children?: React.ReactNode
-  icon?: boolean
-  disabled?: boolean
+export type ButtonProps = {
+  icon: boolean
+  disabled: boolean
   containerCss: SerializedStyles
-  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
-} & ButtonStyleProps
+  className: string
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
+} & Omit<ButtonStyleProps, 'clickable' | 'hasText'>
 
 const Button: React.FC<Partial<ButtonProps>> = ({
   children,
   icon,
-  type = 'primary',
+  variant = 'primary',
   disabled = false,
+  full = false,
+  size = 'regular',
   containerCss,
-  onClick = () => {},
-  ...styleProps
+  className,
+  onClick,
 }) => {
-  const styles = useCSS({ disabled, type, children, ...styleProps })
+  const clickable = !!onClick
+  const hasText = !!children
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!onClick) return
+    onClick(e)
+  }
+
   return (
-    <button css={[styles.container, containerCss]} onClick={onClick} disabled={disabled}>
-      {icon && <BlockIcon css={styles.icon} />}
-      {children}
-    </button>
+    <StyledButton
+      css={containerCss}
+      className={className}
+      onClick={handleClick}
+      disabled={disabled}
+      variant={variant}
+      clickable={clickable}
+      hasText={hasText}
+      full={full}
+      size={size}
+    >
+      {icon && <StyledIcon />}
+      {children && <span>{children}</span>}
+    </StyledButton>
   )
 }
 
