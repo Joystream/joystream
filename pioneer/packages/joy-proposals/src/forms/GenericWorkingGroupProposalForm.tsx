@@ -1,20 +1,17 @@
 import React from 'react';
 import { getFormErrorLabelsProps } from './errorHandling';
-import {
-  GenericProposalForm,
+import { GenericProposalForm,
   GenericFormValues,
   genericFormDefaultValues,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps
-} from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import { FormField } from './FormFields';
 import { ProposalType } from '@polkadot/joy-utils/types/proposals';
 import { WorkingGroupKey, WorkingGroupDef } from '@joystream/types/common';
-import './forms.css';
 import { Dropdown, Message } from 'semantic-ui-react';
 import { usePromise, useTransport } from '@polkadot/joy-utils/react/hooks';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { WorkerData } from '@polkadot/joy-utils/types/workingGroups';
 import { LeadInfo } from '@polkadot/joy-utils/react/components/working-groups/LeadInfo';
 
@@ -46,7 +43,7 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 export type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerProps> = props => {
+export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const {
     handleChange,
     errors,
@@ -70,20 +67,21 @@ export const GenericWorkingGroupProposalForm: React.FunctionComponent<FormInnerP
   const leadMissing = leadRequired && (!leadRes.loading && !leadRes.error) && !leadRes.lead;
   const stakeMissing = leadStakeRequired && (!leadRes.loading && !leadRes.error) && (leadRes.lead && !leadRes.lead.stake);
   const rewardMissing = leadRewardRequired && (!leadRes.loading && !leadRes.error) && (leadRes.lead && !leadRes.lead.reward);
-  const isDisabled = disabled || leadMissing || stakeMissing || rewardMissing || leadRes.error;
+  const isDisabled = disabled || leadMissing || stakeMissing || rewardMissing || Boolean(leadRes.error);
 
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
+
   return (
     <GenericProposalForm {...props} disabled={isDisabled}>
       <FormField
         error={errorLabelsProps.workingGroup}
-        label="Working group"
+        label='Working group'
       >
         <Dropdown
-          name="workingGroup"
-          placeholder="Select the working group"
+          name='workingGroup'
+          placeholder='Select the working group'
           selection
-          options={Object.keys(WorkingGroupDef).map(wgKey => ({ text: wgKey + ' Working Group', value: wgKey }))}
+          options={Object.keys(WorkingGroupDef).map((wgKey) => ({ text: wgKey + ' Working Group', value: wgKey }))}
           value={values.workingGroup}
           onChange={ handleChange }
         />

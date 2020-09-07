@@ -3,15 +3,14 @@ import { Button } from 'semantic-ui-react';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
-import TxButton from '@polkadot/joy-utils/TxButton';
+import { TxButton, Section } from '@polkadot/joy-utils/react/components';
 import { SubmittableResult } from '@polkadot/api';
-import { withMulti } from '@polkadot/react-api/with';
+import { withMulti } from '@polkadot/react-api/hoc';
 
-import * as JoyForms from '@polkadot/joy-utils/forms';
-import { Text } from '@polkadot/types';
+import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { ThreadId } from '@joystream/types/common';
 import { ReplyId } from '@joystream/types/forum';
-import Section from '@polkadot/joy-utils/Section';
+
 import { withOnlyForumSudo } from './ForumSudo';
 import { ValidationProps, withPostModerationValidation } from './validation';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
@@ -74,6 +73,7 @@ const InnerForm = (props: FormProps) => {
 
   const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
+
     if (txResult == null) {
       // Tx cancelled.
 
@@ -90,11 +90,10 @@ const InnerForm = (props: FormProps) => {
   const buildTxParams = () => {
     if (!isValid) return [];
 
-    const rationaleParam = new Text(rationale);
     if (isThread) {
-      return [id, rationaleParam];
+      return [id, rationale];
     } else {
-      return [id, rationaleParam];
+      return [id, rationale];
     }
   };
 
@@ -105,10 +104,9 @@ const InnerForm = (props: FormProps) => {
         <Field component='textarea' id='rationale' name='rationale' disabled={isSubmitting} rows={5} placeholder='Type a retionale here. You can use Markdown.' />
       </LabelledField>
 
-      <LabelledField {...props}>
+      <LabelledField {...props} flex>
         <TxButton
           type='submit'
-          size='large'
           label={'Moderate'}
           isDisabled={!dirty || isSubmitting}
           params={buildTxParams()}
@@ -144,7 +142,7 @@ const InnerForm = (props: FormProps) => {
 const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
-  mapPropsToValues: _props => {
+  mapPropsToValues: (_props) => {
     return {
       rationale: ''
     };
@@ -152,7 +150,7 @@ const EditForm = withFormik<OuterProps, FormValues>({
 
   validationSchema: buildSchema,
 
-  handleSubmit: values => {
+  handleSubmit: (values) => {
     // do submitting things
   }
 })(InnerForm);

@@ -24,7 +24,7 @@ before_install:
     fi
 
 install:
-  - rustup install nightly-2020-05-23
+  - rustup install nightly-2020-05-23 --force
   - rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-23
   # travis installs rust using rustup with the "minimal" profile so these tools are not installed by default
   - rustup component add rustfmt
@@ -34,9 +34,10 @@ before_script:
   - cargo fmt --all -- --check
 
 script:
-  # we set release as build type for all steps to benefit from already compiled packages in prior steps
-  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release -- -D warnings
-  - BUILD_DUMMY_WASM_BINARY=1 cargo test --release --verbose --all
-  - TRIGGER_WASM_BUILD=1 WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release -p joystream-node
+  - export WASM_BUILD_TOOLCHAIN=nightly-2020-05-23
+  - BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings
+  - travis_wait 50 cargo test --release --verbose --all
+  - cargo build --release
   - ls -l ./target/release/wbuild/joystream-node-runtime/
   - ./target/release/joystream-node --version
+  - ./target/release/chain-spec-builder --version

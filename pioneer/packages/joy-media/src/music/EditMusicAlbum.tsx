@@ -3,8 +3,8 @@ import { Button, Tab } from 'semantic-ui-react';
 import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
-import TxButton from '@polkadot/joy-utils/TxButton';
-import { onImageError } from '@polkadot/joy-utils/images';
+import { TxButton } from '@polkadot/joy-utils/react/components';
+import { onImageError } from '../common/images';
 import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumValidationSchema, MusicAlbumType, MusicAlbumClass as Fields, MusicAlbumFormValues, MusicAlbumToFormValues } from '../schemas/music/MusicAlbum';
 import { withMediaForm, MediaFormProps, datePlaceholder } from '../common/MediaForms';
@@ -123,7 +123,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const renderMainButton = () =>
     <TxButton
       type='submit'
-      size='large'
       isDisabled={!dirty || isSubmitting}
       label={isNew
         ? 'Publish'
@@ -148,7 +147,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
       {tabs}
 
-      <LabelledField style={{ marginTop: '1rem' }} {...props}>
+      <LabelledField style={{ marginTop: '1rem' }} {...props} flex>
         {renderMainButton()}
         <Button
           type='button'
@@ -167,6 +166,7 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   // Transform outer props into form values
   mapPropsToValues: (props): FormValues => {
     const { entity } = props;
+
     return MusicAlbumToFormValues(entity);
   },
 

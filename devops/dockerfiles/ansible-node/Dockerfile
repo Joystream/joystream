@@ -4,9 +4,7 @@ WORKDIR /joystream
 COPY . /joystream
 
 # Build joystream-node and its dependencies - runtime
-RUN rustup override set 1.45.2
-RUN rustc --version
-RUN cargo build --release -p joystream-node
+RUN WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release -p joystream-node
 RUN /joystream/scripts/create-test-chainspec.sh
 
 FROM debian:stretch

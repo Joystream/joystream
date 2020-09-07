@@ -5,7 +5,7 @@ import APlayer from 'react-aplayer';
 
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
-import { withCalls, withMulti } from '@polkadot/react-api/with';
+import { withCalls, withMulti } from '@polkadot/react-api/hoc';
 import { Option } from '@polkadot/types/codec';
 
 import translate from '../translate';
@@ -14,8 +14,8 @@ import { DataObject, ContentId } from '@joystream/types/media';
 import { VideoType } from '../schemas/video/Video';
 import { isAccountAChannelOwner } from '../channels/ChannelHelpers';
 import { ChannelEntity } from '../entities/ChannelEntity';
-import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
-import { JoyError } from '@polkadot/joy-utils/JoyStatus';
+import { useMyMembership } from '@polkadot/joy-utils/react/hooks';
+import { JoyError } from '@polkadot/joy-utils/react/components';
 
 const PLAYER_COMMON_PARAMS = {
   lang: 'en',
@@ -41,7 +41,7 @@ export type RequiredMediaPlayerProps = {
 type ContentProps = {
   contentType?: string;
   dataObjectOpt?: Option<DataObject>;
-  resolvedAssetUrl?: string;
+  resolvedAssetUrl: string;
 }
 
 type MediaPlayerViewProps = ApiProps & I18nProps &
@@ -78,6 +78,7 @@ function Player (props: PlayerProps) {
 
   if (prefix === 'video') {
     const video = { url, name, pic: cover };
+
     return <DPlayer
       video={video}
       {...PLAYER_COMMON_PARAMS}
@@ -86,6 +87,7 @@ function Player (props: PlayerProps) {
     />;
   } else if (prefix === 'audio') {
     const audio = { url, name, cover };
+
     return <APlayer
       audio={audio}
       {...PLAYER_COMMON_PARAMS}
@@ -101,14 +103,14 @@ function InnerComponent (props: MediaPlayerViewProps) {
   const { video, resolvedAssetUrl: url } = props;
 
   const { dataObjectOpt, channel } = props;
+  const { myAccountId } = useMyMembership();
+
   if (!dataObjectOpt || dataObjectOpt.isNone) {
     return null;
   }
 
   // TODO extract and show the next info from dataObject:
   // {"owner":"5GSMNn8Sy8k64mGUWPDafjMZu9bQNX26GujbBQ1LeJpNbrfg","added_at":{"block":2781,"time":1582750854000},"type_id":1,"size":3664485,"liaison":"5HN528fspu4Jg3KXWm7Pu7aUK64RSBz2ZSbwo1XKR9iz3hdY","liaison_judgement":1,"ipfs_content_id":"QmNk4QczoJyPTAKdfoQna6KhAz3FwfjpKyRBXAZHG5djYZ"}
-
-  const { myAccountId } = useMyMembership();
   const iAmOwner = isAccountAChannelOwner(channel, myAccountId);
 
   return (

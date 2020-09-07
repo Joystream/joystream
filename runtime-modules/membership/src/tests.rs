@@ -71,7 +71,7 @@ fn set_alice_free_balance(balance: u64) {
 #[test]
 fn initial_state() {
     const DEFAULT_FEE: u64 = 500;
-    let initial_members = [1, 2, 3];
+    let initial_members = [(0, 1), (1, 2), (2, 3)];
 
     TestExternalitiesBuilder::<Test>::default()
         .set_membership_config(
@@ -277,7 +277,7 @@ fn add_screened_member() {
 
 #[test]
 fn set_controller_key() {
-    let initial_members = [ALICE_ACCOUNT_ID];
+    let initial_members = [(0, ALICE_ACCOUNT_ID)];
     const ALICE_CONTROLLER_ID: u64 = 2;
 
     TestExternalitiesBuilder::<Test>::default()
@@ -311,7 +311,7 @@ fn set_controller_key() {
 
 #[test]
 fn set_root_account() {
-    let initial_members = [ALICE_ACCOUNT_ID];
+    let initial_members = [(0, ALICE_ACCOUNT_ID)];
     const ALICE_NEW_ROOT_ACCOUNT: u64 = 2;
 
     TestExternalitiesBuilder::<Test>::default()

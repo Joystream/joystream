@@ -15,7 +15,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod constants;
 mod integration;
-mod primitives;
+pub mod primitives;
 mod runtime_api;
 #[cfg(test)]
 mod tests; // Runtime integration tests
@@ -47,19 +47,22 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
-use content_working_group as content_wg;
 use governance::{council, election};
-use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
+use storage::data_object_storage_registry;
 
 // Node dependencies
 pub use common;
+pub use content_working_group as content_wg;
 pub use forum;
 pub use governance::election_params::ElectionParameters;
+pub use membership;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_codex::ProposalsConfigParameters;
+pub use storage::{data_directory, data_object_type_registry};
 pub use versioned_store;
+pub use versioned_store_permissions;
 pub use working_group;
 
 /// This runtime version.
@@ -275,9 +278,9 @@ impl pallet_session::historical::Trait for Runtime {
 
 pallet_staking_reward_curve::build! {
     const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
-        min_inflation: 0_025_000,
-        max_inflation: 0_300_000,
-        ideal_stake: 0_300_000,
+        min_inflation: 0_050_000,
+        max_inflation: 0_750_000,
+        ideal_stake: 0_250_000,
         falloff: 0_050_000,
         max_piece_count: 100,
         test_precision: 0_005_000,
@@ -533,7 +536,7 @@ impl proposals_discussion::Trait for Runtime {
 
 parameter_types! {
     pub const TextProposalMaxLength: u32 = 5_000;
-    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 2_000_000;
+    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
 }
 
 impl proposals_codex::Trait for Runtime {
@@ -597,7 +600,7 @@ construct_runtime!(
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
-        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage},
+        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage, Config<T>},
         Stake: stake::{Module, Call, Storage},
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
@@ -605,7 +608,7 @@ construct_runtime!(
         ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
+        DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},
         DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
         Discovery: service_discovery::{Module, Call, Storage, Event<T>},
         // --- Proposals

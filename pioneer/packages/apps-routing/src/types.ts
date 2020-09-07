@@ -24,6 +24,8 @@ export interface Route {
   name: string;
   text: string;
   useCounter?: () => number | string | null;
+  // Joystream-specific
+  SubtitleComponent?: React.ComponentType<any>;
 }
 
 export type Routes = (Route | null)[];

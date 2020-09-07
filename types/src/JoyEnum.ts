@@ -31,12 +31,16 @@ export function JoyEnum<Types extends Record<string, Constructor>>(types: Types)
     ) {
       return new JoyEnumObject(registry, { [typeKey]: value })
     }
+
+    // eslint-disable-next-line no-useless-constructor
     constructor(registry: Registry, value?: any, index?: number) {
       super(registry, value, index)
     }
+
     public isOfType(typeKey: keyof Types) {
       return this.type === typeKey
     }
+
     public asType<TypeKey extends keyof Types>(typeKey: TypeKey) {
       if (!this.isOfType(typeKey)) {
         throw new Error(`Enum.asType(${typeKey}) - value is not of type ${typeKey}`)
