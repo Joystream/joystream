@@ -36,16 +36,18 @@ export async function createDBConnection(): Promise<Connection> {
 }
 
 
-export async function doInTransaction(fn: (qn: QueryRunner) => Promise<void>): Promise<void> {
+export async function doInTransaction<T>(fn: (qn: QueryRunner) => Promise<T>): Promise<T> {
   const queryRunner = getConnection().createQueryRunner();
   try {
     // establish real database connection
     await queryRunner.connect();
     await queryRunner.startTransaction();
     
-    await fn(queryRunner);
+    const result = await fn(queryRunner);
 
     await queryRunner.commitTransaction();
+    
+    return result;
   } catch (error) {
     console.error(`Rolling back the transaction due to errors: ${JSON.stringify(error, null, 2)}`);
 

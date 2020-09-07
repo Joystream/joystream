@@ -44,9 +44,19 @@ export default class QueryNodeManager {
   async process(options: ProcessorOptions): Promise<void> {
     await createDBConnection();
     
-    const processor =  MappingsProcessor.create(options.processingPack);
-    await processor.start(options.atBlock);
+    const processor =  MappingsProcessor.create(options);
+    await processor.start();
   }
+
+  /**
+   * Run migrations in the "migrations" folder;
+   */
+  async migrate(): Promise<void> {
+    const connection = await createDBConnection();
+    await connection.runMigrations();
+    await connection.close();
+  }
+
 
    _onProcessExit(): void  {
     // Stop if query node has been constructed and started.

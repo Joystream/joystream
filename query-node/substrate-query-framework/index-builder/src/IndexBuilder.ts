@@ -41,9 +41,7 @@ export default class IndexBuilder {
   async start(atBlock?: number): Promise<void> {
     debug('Spawned worker.');
     
-    await doInTransaction(async (queryRunner) => {
-      this._indexerHead = await getIndexerHead(queryRunner);
-    })
+    this._indexerHead = await getIndexerHead();
     
     debug(`Last indexed block in the database: ${this._indexerHead.toString()}`);
     let startBlock = this._indexerHead + 1;

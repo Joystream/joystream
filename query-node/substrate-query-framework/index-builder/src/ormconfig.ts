@@ -3,6 +3,7 @@ import  { SnakeNamingStrategy } from './db/SnakeNamingStrategy';
 import { SubstrateEventEntity, SubstrateExtrinsicEntity } from './entities';
 import { SavedEntityEvent } from './db';
 import { CreateSchema } from './migrations/CreateSchema';
+import { ProcessedEventsLogEntity } from './entities/ProcessedEventsLogEntity';
 
 const config: () => ConnectionOptions = () => {
   return {
@@ -12,7 +13,7 @@ const config: () => ConnectionOptions = () => {
     username: process.env.TYPEORM_USERNAME,
     password: process.env.TYPEORM_PASSWORD,
     database: process.env.TYPEORM_DATABASE,
-    entities: [ SubstrateEventEntity, SubstrateExtrinsicEntity, SavedEntityEvent, process.env.TYPEORM_ENTITIES ],
+    entities: [ SubstrateEventEntity, SubstrateExtrinsicEntity, SavedEntityEvent, ProcessedEventsLogEntity, process.env.TYPEORM_ENTITIES ],
     migrations: [ CreateSchema ],
     cli: {
         migrationsDir: "migrations"

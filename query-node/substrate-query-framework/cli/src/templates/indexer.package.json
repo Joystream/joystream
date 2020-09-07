@@ -19,7 +19,7 @@
       "chalk": "^4.0.0",
       "dotenv": "^8.0.0",
       "figlet": "^1.4.0",
-      "@dzlzv/hydra-indexer-lib": "0.0.9-alpha",
+      "@dzlzv/hydra-indexer-lib": "0.0.10-alpha",
       "lodash": "^4.17.15",
       "log4js": "^6.2.1",
       "pg": "^8.0.3",
