@@ -86,7 +86,7 @@ export class ActiveStake extends JoyStructDecorated({ stake_id: StakeId, source_
   implements IActiveStake {}
 
 export class ExecutionFailedStatus extends JoyStructDecorated({
-  error: Vec.with(u8),
+  error: Text,
 }) {}
 
 export class ExecutionFailed extends ExecutionFailedStatus {}
@@ -251,7 +251,7 @@ export class TerminateRoleParameters
 
 export class ProposalDetails extends JoyEnum({
   Text: Text,
-  RuntimeUpgrade: Vec.with(u8),
+  RuntimeUpgrade: Bytes,
   SetElectionParameters: ElectionParameters,
   Spending: SpendingParams,
   SetLead: SetLead,

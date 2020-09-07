@@ -13,6 +13,7 @@ export const ChannelPreviewStats = (props: Props) => {
   const statSize = 'tiny';
 
   let itemsPublishedLabel = '';
+
   if (channel.content === 'Video') {
     itemsPublishedLabel = 'Videos';
   } else if (channel.content === 'Music') {

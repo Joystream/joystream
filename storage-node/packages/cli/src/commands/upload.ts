@@ -96,7 +96,7 @@ export class UploadCommand extends BaseCommand {
     return {
       accountId,
       ipfsCid: await this.computeIpfsHash(),
-      contentId: ContentId.generate(),
+      contentId: ContentId.generate(this.api.api.registry),
       fileSize: new BN(this.getFileSize()),
       dataObjectTypeId,
       memberId,

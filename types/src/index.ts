@@ -16,7 +16,7 @@ import discovery from './discovery'
 import media from './media'
 import proposals from './proposals'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
-import { createType, TypeRegistry } from '@polkadot/types'
+import { TypeRegistry } from '@polkadot/types'
 
 export {
   common,
@@ -62,12 +62,12 @@ export const types: RegistryTypes = {
 }
 
 // Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)
-export const mockRegistry = new TypeRegistry()
-mockRegistry.register(types)
+export const registry = new TypeRegistry()
+registry.register(types)
 
-export function createMock<TypeName extends keyof InterfaceTypes>(
+export function createType<TypeName extends keyof InterfaceTypes>(
   type: TypeName,
   value: any
 ): InterfaceTypes[TypeName] {
-  return createType(mockRegistry, type, value)
+  return registry.createType(type, value)
 }

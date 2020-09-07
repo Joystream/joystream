@@ -6,7 +6,7 @@ import { Item, Icon, Button, Label } from 'semantic-ui-react';
 import { ProposalType, Category } from '@polkadot/joy-utils/types/proposals';
 import _ from 'lodash';
 import styled from 'styled-components';
-import useVoteStyles from './useVoteStyles';
+import getVoteStyles from './getVoteStyles';
 import { formatBalance } from '@polkadot/util';
 
 import './ProposalType.css';
@@ -62,9 +62,9 @@ type ProposalTypePreviewProps = {
 };
 
 const ProposalTypeDetail = (props: { title: string; value: string }) => (
-  <div className="proposal-detail">
-    <div className="detail-title">{ `${props.title}:` }</div>
-    <div className="detail-value">{ props.value }</div>
+  <div className='proposal-detail'>
+    <div className='detail-title'>{ `${props.title}:` }</div>
+    <div className='detail-value'>{ props.value }</div>
   </div>
 );
 
@@ -90,7 +90,7 @@ export default function ProposalTypePreview (props: ProposalTypePreviewProps) {
   };
 
   return (
-    <Item className="ProposalType">
+    <Item className='ProposalType'>
       {/*
         TODO: We can add it once we have the actual assets
         <Item.Image size="tiny" src={image} />
@@ -98,51 +98,51 @@ export default function ProposalTypePreview (props: ProposalTypePreviewProps) {
       <Item.Content>
         <Item.Header>{_.startCase(type)}</Item.Header>
         <Item.Description>{description}</Item.Description>
-        <div className="proposal-details">
+        <div className='proposal-details'>
           <ProposalTypeDetail
-            title="Stake"
+            title='Stake'
             value={ formatBalance(stake) } />
           <ProposalTypeDetail
-            title="Cancellation fee"
+            title='Cancellation fee'
             value={ cancellationFee ? formatBalance(cancellationFee) : 'NONE' } />
           <ProposalTypeDetail
-            title="Grace period"
+            title='Grace period'
             value={ gracePeriod ? `${gracePeriod} block${gracePeriod > 1 ? 's' : ''}` : 'NONE' } />
           <ProposalTypeDetail
-            title="Voting period"
+            title='Voting period'
             value={ votingPeriod ? `${votingPeriod} block${votingPeriod > 1 ? 's' : ''}` : 'NONE' } />
         </div>
         <QuorumsAndThresholds>
           { approvalQuorum && (
-            <QuorumThresholdLabel color={ useVoteStyles('Approve').color }>
-              <Icon name={ useVoteStyles('Approve').icon } />
+            <QuorumThresholdLabel color={ getVoteStyles('Approve').color }>
+              <Icon name={ getVoteStyles('Approve').icon } />
               Approval Quorum: <b>{ approvalQuorum }%</b>
             </QuorumThresholdLabel>
           ) }
           { approvalThreshold && (
-            <QuorumThresholdLabel color={ useVoteStyles('Approve').color }>
-              <Icon name={ useVoteStyles('Approve').icon } />
+            <QuorumThresholdLabel color={ getVoteStyles('Approve').color }>
+              <Icon name={ getVoteStyles('Approve').icon } />
               Approval Threshold: <b>{ approvalThreshold }%</b>
             </QuorumThresholdLabel>
           ) }
           { slashingQuorum && (
-            <QuorumThresholdLabel color={ useVoteStyles('Slash').color }>
-              <Icon name={ useVoteStyles('Slash').icon } />
+            <QuorumThresholdLabel color={ getVoteStyles('Slash').color }>
+              <Icon name={ getVoteStyles('Slash').icon } />
               Slashing Quorum: <b>{ slashingQuorum }%</b>
             </QuorumThresholdLabel>
           ) }
           { slashingThreshold && (
-            <QuorumThresholdLabel color={ useVoteStyles('Slash').color }>
-              <Icon name={ useVoteStyles('Slash').icon } />
+            <QuorumThresholdLabel color={ getVoteStyles('Slash').color }>
+              <Icon name={ getVoteStyles('Slash').icon } />
               Slashing Threshold: <b>{ slashingThreshold }%</b>
             </QuorumThresholdLabel>
           ) }
         </QuorumsAndThresholds>
       </Item.Content>
-      <div className="actions">
-        <CreateButton primary size="medium" onClick={handleClick}>
+      <div className='actions'>
+        <CreateButton primary size='medium' onClick={handleClick}>
           Create
-          <Icon name="chevron right" />
+          <Icon name='chevron right' />
         </CreateButton>
       </div>
     </Item>

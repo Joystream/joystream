@@ -1,20 +1,18 @@
 import React from 'react';
 import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
-import {
-  GenericProposalForm,
+import { GenericProposalForm,
   GenericFormValues,
-  genericFormDefaultOptions,
   genericFormDefaultValues,
   withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps
-} from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import Validation from '../validationSchema';
 import { TextareaFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
-import './forms.css';
+import { u32 } from '@polkadot/types/primitive';
+import { withCalls } from '@polkadot/react-api';
 
 export type FormValues = GenericFormValues & {
   description: string;
@@ -25,28 +23,30 @@ const defaultValues: FormValues = {
   description: ''
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export comonent into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export comonent into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
-type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
+type FormContainerProps = ProposalFormContainerProps<ExportComponentProps> & {
+  textMaxLength: u32;
+};
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const SignalForm: React.FunctionComponent<FormInnerProps> = props => {
+const SignalForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
 
   return (
     <GenericProposalForm
       {...props}
-      txMethod="createTextProposal"
-      proposalType="Text"
-      submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.description]}
+      txMethod='createTextProposal'
+      proposalType='Text'
+      submitParams={[values.description]}
     >
       <TextareaFormField
-        label="Description"
-        help="The extensive description of your proposal"
+        label='Description'
+        help='The extensive description of your proposal'
         onChange={handleChange}
-        name="description"
-        placeholder="What I would like to propose is..."
+        name='description'
+        placeholder='What I would like to propose is...'
         error={errorLabelsProps.description}
         value={values.description}
       />
@@ -59,12 +59,16 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...defaultValues,
     ...(props.initialData || {})
   }),
-  validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
-    ...Validation.Text()
+  validationSchema: (props: FormContainerProps) => Yup.object().shape({
+    ...Validation.All(),
+    ...Validation.Text(props.textMaxLength.toNumber())
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'SignalForm'
 })(SignalForm);
 
-export default withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer);
+export default withCalls<ExportComponentProps>(
+  ['consts.proposalsCodex.textProposalMaxLength', { propName: 'textMaxLength' }]
+)(
+  withProposalFormData<FormContainerProps, ExportComponentProps>(FormContainer)
+);

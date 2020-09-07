@@ -6,3 +6,4 @@ lib/
 build/
 augment/
 augment-codec/
+src/hiring/schemas/role.schema.typings.ts

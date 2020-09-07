@@ -1,10 +1,11 @@
+// TODO: Move to joy-utils?
 import { AccountId } from '@polkadot/types/interfaces';
 
 // Keyring / identicon / address
 // -----------------------------------
 
 import createItem from '@polkadot/ui-keyring/options/item';
-import { findNameByAddress } from '@polkadot/joy-utils/index';
+import { findNameByAddress } from '@polkadot/joy-utils/functions/misc';
 
 // Hash
 // -----------------------------------
@@ -21,16 +22,19 @@ export type HashedVote = {
 
 const createAddressOption = (address: string) => {
   const name = findNameByAddress(address);
+
   return createItem(address, name);
 };
 
-export const accountIdsToOptions = (applicants: Array<AccountId>): any => {
+export const accountIdsToOptions = (applicants: Array<AccountId>) => {
   if (applicants && applicants.length) {
-    return applicants.map(a => {
+    return applicants.map((a) => {
       const addr = a.toString();
+
       return createAddressOption(addr);
     });
   }
+
   return [];
 };
 
@@ -44,10 +48,12 @@ export const hashVote = (accountId?: string | null, salt?: string): string | nul
   const accountU8a = decodeAddress(accountId);
   const saltU8a = stringToU8a(salt);
   const voteU8a = new Uint8Array(accountU8a.length + saltU8a.length);
+
   voteU8a.set(accountU8a);
   voteU8a.set(saltU8a, accountU8a.length);
 
   const hash = blake2AsHex(voteU8a, 256);
+
   // console.log('Vote hash:', hash, 'for', { accountId, salt });
   return hash;
 };

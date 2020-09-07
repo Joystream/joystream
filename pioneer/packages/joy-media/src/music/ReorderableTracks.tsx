@@ -6,6 +6,7 @@ import { EditableMusicTrackPreviewProps, MusicTrackPreview } from './MusicTrackP
 const reorder = (list: OrderableItem[], startIndex: number, endIndex: number) => {
   const result = Array.from(list);
   const [removed] = result.splice(startIndex, 1);
+
   result.splice(endIndex, 0, removed);
 
   return result;
@@ -72,7 +73,8 @@ export const ReorderableTracks = (props: Props) => {
                       withRemoveButton
                       onRemove={() => {
                         onRemove(item);
-                        const lessItems = items.filter(x => x.id !== item.id);
+                        const lessItems = items.filter((x) => x.id !== item.id);
+
                         setItems(lessItems);
                       }}
                     />

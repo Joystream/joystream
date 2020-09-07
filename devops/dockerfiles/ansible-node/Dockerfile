@@ -4,7 +4,7 @@ WORKDIR /joystream
 COPY . /joystream
 
 # Build joystream-node and its dependencies - runtime
-RUN cargo build --release -p joystream-node
+RUN WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release -p joystream-node
 RUN /joystream/scripts/create-test-chainspec.sh
 
 FROM debian:stretch

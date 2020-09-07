@@ -6,10 +6,10 @@ import { Button, Icon } from 'semantic-ui-react';
 
 import { Post, Category, Thread } from '@joystream/types/forum';
 import { Moderate } from './Moderate';
-import { JoyWarn } from '@polkadot/joy-utils/JoyStatus';
-import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { JoyWarn } from '@polkadot/joy-utils/react/components';
+import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 import { IfIAmForumSudo } from './ForumSudo';
-import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
+import MemberPreview from '@polkadot/joy-utils/react/components/MemberByAccountPreview';
 import { TimeAgoDate, ReplyIdxQueryParam } from './utils';
 
 const HORIZONTAL_PADDING = '1em';
@@ -96,43 +96,46 @@ export const ViewReply = React.forwardRef((props: ViewReplyProps, ref: React.Ref
     if (reply.moderated || thread.moderated || category.archived || category.deleted) {
       return null;
     }
+
     const isMyPost = reply.author_id.eq(myAddress);
+
     return <ReplyFooterActionsRow>
       <div>
         {isMyPost &&
-          <Button onClick={onEdit} size="mini">
-            <Icon name="pencil" />
+          <Button onClick={onEdit} size='mini'>
+            <Icon name='pencil' />
             Edit
           </Button>
         }
 
         <IfIAmForumSudo>
           <Button
-            size="mini"
+            size='mini'
             onClick={() => setShowModerateForm(!showModerateForm)}
           >
             Moderate
           </Button>
         </IfIAmForumSudo>
       </div>
-      <Button onClick={onQuote} size="mini">
-        <Icon name="quote left" />
+      <Button onClick={onQuote} size='mini'>
+        <Icon name='quote left' />
         Quote
       </Button>
     </ReplyFooterActionsRow>;
   };
 
   const replyLinkSearch = new URLSearchParams(search);
+
   replyLinkSearch.set(ReplyIdxQueryParam, reply.nr_in_thread.toString());
 
   return (
-    <ReplyContainer className="ui segment" ref={ref} selected={selected}>
+    <ReplyContainer className='ui segment' ref={ref} selected={selected}>
       <ReplyHeader>
         <ReplyHeaderAuthorRow>
-          <MemberPreview accountId={reply.author_id} />
+          <MemberPreview accountId={reply.author_id} showCouncilBadge showId={false}/>
         </ReplyHeaderAuthorRow>
         <ReplyHeaderDetailsRow>
-          <TimeAgoDate date={reply.created_at.momentDate} id={reply.id} />
+          <TimeAgoDate date={reply.created_at.momentDate} id={reply.id.toString()} />
           <Link to={{ pathname, search: replyLinkSearch.toString() }}>
             #{reply.nr_in_thread.toNumber()}
           </Link>

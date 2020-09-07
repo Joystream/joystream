@@ -16,14 +16,15 @@
     "generate:codec-defs": "ts-node ./src/scripts/generateCodecDefs.ts",
     "generate:registry-json": "ts-node ./src/scripts/generateRegistryJson.ts",
     "generate:augment": "yarn generate:registry-json && yarn generate:defs && yarn generate:meta",
-    "generate:all": "yarn generate:augment && yarn generate:codec-defs"
+    "generate:all": "yarn generate:augment && yarn generate:codec-defs",
+    "generate:json-schemas": "json2ts -i ./src/hiring/schemas/role.schema.json -o ./src/hiring/schemas/role.schema.typings.ts"
   },
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
     "@polkadot/api": "1.26.1",
     "@polkadot/types": "1.26.1",
-    "@polkadot/keyring": "3.0.1",
+    "@polkadot/keyring": "^3.0.1",
     "@types/lodash": "^4.14.157",
     "@types/vfile": "^4.0.0",
     "ajv": "^6.11.0",
@@ -34,7 +35,8 @@
     "@polkadot/typegen": "1.26.1",
     "ts-node": "^8.6.2",
     "typescript": "^3.7.2",
-    "madge": "^3.9.2"
+    "madge": "^3.9.2",
+    "json-schema-to-typescript": "^9.1.1"
   },
   "engines": {
     "node": ">=12.18.0",

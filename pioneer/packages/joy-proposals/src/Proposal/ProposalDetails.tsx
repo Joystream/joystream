@@ -4,13 +4,11 @@ import Details from './Details';
 import Body from './Body';
 import VotingSection from './VotingSection';
 import Votes from './Votes';
-import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
+import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/react/hocs/accounts';
 import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
 import { withCalls } from '@polkadot/react-api';
-import { withMulti } from '@polkadot/react-api/with';
-
-import './Proposal.css';
-import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses, ExecutionFailedStatus } from '@joystream/types/proposals';
+import { withMulti } from '@polkadot/react-api/hoc';
+import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses } from '@joystream/types/proposals';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import { MemberId } from '@joystream/types/members';
 import { Seat } from '@joystream/types/council';
@@ -59,7 +57,7 @@ export type ExtendedProposalStatus = {
 }
 
 export function getExtendedStatus (proposal: ParsedProposal, bestNumber: BlockNumber | undefined): ExtendedProposalStatus {
-  const basicStatus = Object.keys(proposal.status)[0] as BasicProposalStatus;
+  const basicStatus: BasicProposalStatus = proposal.status.type;
   let expiresIn: number | null = null;
 
   let displayStatus: ProposalDisplayStatus = basicStatus;
@@ -75,27 +73,33 @@ export function getExtendedStatus (proposal: ParsedProposal, bestNumber: BlockNu
 
   if (basicStatus === 'Active') {
     periodStatus = 'Voting period';
-    expiresIn = Math.max(votingPeriod - blockAge, 0) || null;
+    expiresIn = Math.max(votingPeriod.toNumber() - blockAge, 0) || null;
   }
 
   if (basicStatus === 'Finalized') {
-    const { finalizedAt, proposalStatus } = proposal.status.Finalized;
-    const decisionStatus: ProposalDecisionStatuses = Object.keys(proposalStatus)[0] as ProposalDecisionStatuses;
+    const { finalizedAt, proposalStatus } = proposal.status.asType('Finalized');
+    const decisionStatus: ProposalDecisionStatuses = proposalStatus.type;
+
     displayStatus = decisionStatus;
-    finalizedAtBlock = finalizedAt as number;
+    finalizedAtBlock = finalizedAt.toNumber();
+
     if (decisionStatus === 'Approved') {
-      const approvedStatus: ApprovedProposalStatuses = Object.keys(proposalStatus.Approved)[0] as ApprovedProposalStatuses;
+      const approvedStatus: ApprovedProposalStatuses = proposalStatus.asType('Approved').type;
+
       if (approvedStatus === 'PendingExecution') {
-        const finalizedAge = best - finalizedAt;
+        const finalizedAge = best - finalizedAt.toNumber();
+
         periodStatus = 'Grace period';
-        expiresIn = Math.max(gracePeriod - finalizedAge, 0) || null;
+        expiresIn = Math.max(gracePeriod.toNumber() - finalizedAge, 0) || null;
       } else {
         // Executed / ExecutionFailed
         displayStatus = approvedStatus;
-        executedAtBlock = finalizedAtBlock + gracePeriod;
+        executedAtBlock = finalizedAtBlock + gracePeriod.toNumber();
+
         if (approvedStatus === 'ExecutionFailed') {
-          const executionFailedStatus = proposalStatus.Approved.ExecutionFailed as ExecutionFailedStatus;
-          executionFailReason = Buffer.from(executionFailedStatus.error.toString().replace('0x', ''), 'hex').toString();
+          const executionFailedStatus = proposalStatus.asType('Approved').asType('ExecutionFailed');
+
+          executionFailReason = executionFailedStatus.error.toString();
         }
       }
     }
@@ -127,12 +131,13 @@ function ProposalDetails ({
   council,
   bestNumber
 }: ProposalDetailsProps) {
-  const iAmCouncilMember = Boolean(iAmMember && council && council.some(seat => seat.member.toString() === myAddress));
+  const iAmCouncilMember = Boolean(iAmMember && council && council.some((seat) => seat.member.toString() === myAddress));
   const iAmProposer = Boolean(iAmMember && myMemberId !== undefined && proposal.proposerId === myMemberId.toNumber());
   const extendedStatus = getExtendedStatus(proposal, bestNumber);
   const isVotingPeriod = extendedStatus.periodStatus === 'Voting period';
+
   return (
-    <div className="Proposal">
+    <div className='Proposal'>
       <Details proposal={proposal} extendedStatus={extendedStatus} proposerLink={ true }/>
       <ProposalDetailsMain>
         <Body

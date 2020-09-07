@@ -102,7 +102,7 @@ export function MusicAlbumToFormValues (entity?: MusicAlbumType): MusicAlbumForm
     genre: (entity && entity.genre?.id) || 0,
     mood: (entity && entity.mood?.id) || 0,
     theme: (entity && entity.theme?.id) || 0,
-    tracks: (entity && entity.tracks?.map(x => x.id)) || [],
+    tracks: (entity && entity.tracks?.map((x) => x.id)) || [],
     language: (entity && entity.language?.id) || 0,
     links: (entity && entity.links) || [],
     lyrics: (entity && entity.lyrics) || '',

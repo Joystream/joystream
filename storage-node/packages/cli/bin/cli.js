@@ -8,6 +8,7 @@ main()
     process.exit(0)
   })
   .catch((err) => {
-    console.error(chalk.red(err.stack))
+    console.error(chalk.red(`Error: ${JSON.stringify(err)}`))
+    console.error(chalk.red(`Stack: ${err.stack}`))
     process.exit(-1)
   })

@@ -42,7 +42,7 @@ export type VideoFormValues = {
   object: number;
   publicationStatus: number;
   curationStatus: number;
-  explicit: boolean;
+  explicit: 'true' | 'false';
   license: number;
   attribution: string;
   channelId: number;
@@ -83,7 +83,7 @@ export function VideoToFormValues (entity?: VideoType): VideoFormValues {
     object: (entity && entity.object?.id) || 0,
     publicationStatus: (entity && entity.publicationStatus?.id) || 0,
     curationStatus: (entity && entity.curationStatus?.id) || 0,
-    explicit: (entity && entity.explicit) || false,
+    explicit: (entity && entity.explicit) ? 'true' : 'false',
     license: (entity && entity.license?.id) || 0,
     attribution: (entity && entity.attribution) || '',
     channelId: (entity && entity.channelId) || 0
