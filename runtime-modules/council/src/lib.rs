@@ -243,7 +243,7 @@ decl_module! {
         // TODO: reconsider this function. It is meant as temporary solution for recieving referendum results via runtime bridge
         /// Process candidates' results recieved from the referendum.
         #[weight = 10_000_000]
-        pub fn recieve_referendum_winners(origin, all_options_results: Vec<T::VotePower>) -> Result<(), Error<T>> {
+        pub fn recieve_referendum_results(origin, all_options_results: Vec<T::VotePower>) -> Result<(), Error<T>> {
             ensure_root(origin)?;
 
             // ensure this method was called during election stage

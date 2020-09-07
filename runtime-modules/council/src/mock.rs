@@ -179,7 +179,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     fn process_results(all_options_results: &[Self::VotePower]) {
         let origin = InstanceMockUtils::<Self>::mock_origin(OriginType::Root);
 
-        <Module<Self>>::recieve_referendum_winners(origin, all_options_results.to_vec()).unwrap();
+        <Module<Self>>::recieve_referendum_results(origin, all_options_results.to_vec()).unwrap();
     }
 }
 
