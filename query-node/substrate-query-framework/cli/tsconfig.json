@@ -11,10 +11,7 @@
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "types": [ "node", "mocha" ],
-    "typeRoots": [
-        "./src/node_modules/@types"
-    ] 
+    "types": [ "node", "mocha" ] 
   },
   "include": ["./src/**/*.ts", "./test/**/*.ts"],
   "exclude": ["./src/templates/scaffold/mappings/*.ts"]
