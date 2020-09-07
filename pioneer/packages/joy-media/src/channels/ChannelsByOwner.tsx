@@ -19,7 +19,8 @@ const TabsAndChannels = (props: ChannelsByOwnerProps) => {
 
   let videoChannelsCount = 0;
   let musicChannelsCount = 0;
-  allChannels.forEach(x => {
+
+  allChannels.forEach((x) => {
     if (x.content === 'Video') {
       videoChannelsCount++;
     } else if (x.content === 'Music') {
@@ -38,6 +39,7 @@ const TabsAndChannels = (props: ChannelsByOwnerProps) => {
 
   const switchTab = (activeIndex: number) => {
     const activeContentType = contentTypeByTabIndex[activeIndex];
+
     if (activeContentType === undefined) {
       setChannels(allChannels);
     } else {

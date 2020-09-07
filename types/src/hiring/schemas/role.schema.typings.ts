@@ -5,56 +5,57 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type SchemaVersion = number
-export type Headline = string
-export type JobTitle = string
-export type JobDescriptionExpectsHTML = string
-export type QuestionFieldType = string
-export type QuestionsFields = QuestionField[]
-export type QuestionSections = QuestionSection[]
-export type TheRewardSchema = string
-export type HandleOrUsername = string
-export type TheItemsSchema = string
-export type AdditionalRolehiringProcessDetails = TheItemsSchema[]
+export type SchemaVersion = number;
+export type Headline = string;
+export type JobTitle = string;
+export type JobDescriptionExpectsHTML = string;
+export type FieldTitle = string;
+export type QuestionFieldType = string;
+export type QuestionsFields = QuestionField[];
+export type QuestionSections = QuestionSection[];
+export type TheRewardSchema = string;
+export type HandleOrUsername = string;
+export type TheItemsSchema = string;
+export type AdditionalRolehiringProcessDetails = TheItemsSchema[];
 
 export interface GenericJoyStreamRoleSchema {
-  version: SchemaVersion
-  headline: Headline
-  job: JobSpecifics
-  application: ApplicationDetails
-  reward: TheRewardSchema
-  creator: CreatorDetails
-  process?: HiringProcess
-  [k: string]: any
+  version: SchemaVersion;
+  headline: Headline;
+  job: JobSpecifics;
+  application: ApplicationDetails;
+  reward: TheRewardSchema;
+  creator: CreatorDetails;
+  process?: HiringProcess;
+  [k: string]: unknown;
 }
 export interface JobSpecifics {
-  title: JobTitle
-  description: JobDescriptionExpectsHTML
-  [k: string]: any
+  title: JobTitle;
+  description: JobDescriptionExpectsHTML;
+  [k: string]: unknown;
 }
 export interface ApplicationDetails {
-  sections?: QuestionSections
-  [k: string]: any
+  sections?: QuestionSections;
+  [k: string]: unknown;
 }
 export interface QuestionSection {
-  title: any
-  questions: QuestionsFields
-  [k: string]: any
+  title: FieldTitle;
+  questions: QuestionsFields;
+  [k: string]: unknown;
 }
 export interface QuestionField {
-  title: any
-  type: QuestionFieldType
-  [k: string]: any
+  title: FieldTitle;
+  type: QuestionFieldType;
+  [k: string]: unknown;
 }
 export interface CreatorDetails {
-  membership: EntryInMembershipModuke
-  [k: string]: any
+  membership: EntryInMembershipModuke;
+  [k: string]: unknown;
 }
 export interface EntryInMembershipModuke {
-  handle: HandleOrUsername
-  [k: string]: any
+  handle: HandleOrUsername;
+  [k: string]: unknown;
 }
 export interface HiringProcess {
-  details: AdditionalRolehiringProcessDetails
-  [k: string]: any
+  details: AdditionalRolehiringProcessDetails;
+  [k: string]: unknown;
 }

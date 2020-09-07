@@ -7,8 +7,9 @@ import { Vec } from '@polkadot/types';
 import { Url } from '@joystream/types/discovery';
 import ApiContext from '@polkadot/react-api/ApiContext';
 import { ApiProps } from '@polkadot/react-api/types';
-import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
+import { JoyInfo } from '@polkadot/joy-utils/react/components';
 import { componentName } from '@polkadot/joy-utils/react/helpers';
+import { isObjectWithProperties } from '@polkadot/joy-utils/functions/misc';
 
 export type BootstrapNodes = {
   bootstrapNodes?: Url[];
@@ -26,9 +27,11 @@ export type DiscoveryProviderProps = {
 // return string Url with last `/` removed
 function normalizeUrl (url: string | Url): string {
   const st: string = url.toString();
+
   if (st.endsWith('/')) {
     return st.substring(0, st.length - 1);
   }
+
   return st.toString();
 }
 
@@ -39,7 +42,7 @@ type ProviderStats = {
 }
 
 function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryProvider {
-  const stats: Map<string, ProviderStats> = new Map();
+  const stats = new Map<string, ProviderStats>();
 
   const resolveAssetEndpoint = async (storageProvider: StorageProviderId, contentId?: string, cancelToken?: CancelToken) => {
     const providerKey = storageProvider.toString();
@@ -65,23 +68,41 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
         try {
           console.log(`Resolving ${providerKey} using ${discoveryUrl}`);
 
-          const serviceInfo = await axios.get(serviceInfoQuery, { cancelToken }) as any;
+          const serviceInfo = await axios.get<unknown>(serviceInfoQuery, { cancelToken });
 
           if (!serviceInfo) {
             continue;
           }
 
+          const { data } = serviceInfo;
+
+          if (!isObjectWithProperties(data, 'serialized') || typeof data.serialized !== 'string') {
+            continue;
+          }
+
+          const dataParsed = JSON.parse(data.serialized) as unknown;
+
+          if (
+            !isObjectWithProperties(dataParsed, 'asset') ||
+            !isObjectWithProperties(dataParsed.asset, 'endpoint') ||
+            typeof dataParsed.asset.endpoint !== 'string'
+          ) {
+            continue;
+          }
+
           stats.set(providerKey, {
-            assetApiEndpoint: normalizeUrl(JSON.parse(serviceInfo.data.serialized).asset.endpoint),
+            assetApiEndpoint: normalizeUrl(dataParsed.asset.endpoint),
             unreachableReports: 0,
             resolvedAt: Date.now()
           });
           break;
         } catch (err) {
           console.log(err);
+
           if (axios.isCancel(err)) {
             throw err;
           }
+
           continue;
         }
       }
@@ -101,6 +122,7 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
   const reportUnreachable = (provider: StorageProviderId) => {
     const key = provider.toString();
     const stat = stats.get(key);
+
     if (stat) {
       stat.unreachableReports = stat.unreachableReports + 1;
     }
@@ -111,7 +133,7 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
 
 const DiscoveryProviderContext = createContext<DiscoveryProvider>(undefined as unknown as DiscoveryProvider);
 
-export const DiscoveryProviderProvider = (props: React.PropsWithChildren<{}>) => {
+export const DiscoveryProviderProvider = (props: React.PropsWithChildren<Record<any, unknown>>) => {
   const api: ApiProps = useContext(ApiContext);
   const [provider, setProvider] = useState<DiscoveryProvider | undefined>();
   const [loaded, setLoaded] = useState<boolean | undefined>();
@@ -122,12 +144,13 @@ export const DiscoveryProviderProvider = (props: React.PropsWithChildren<{}>) =>
 
       console.log('Discovery Provider: Loading bootstrap node from Substrate...');
       const bootstrapNodes = await api.api.query.discovery.bootstrapEndpoints() as Vec<Url>;
+
       setProvider(newDiscoveryProvider({ bootstrapNodes }));
       setLoaded(true);
       console.log('Discovery Provider: Initialized');
     };
 
-    load();
+    void load();
   }, [loaded]);
 
   if (!api || !api.isApiReady) {
@@ -157,8 +180,9 @@ export const useDiscoveryProvider = () =>
   useContext(DiscoveryProviderContext);
 
 export function withDiscoveryProvider (Component: React.ComponentType<DiscoveryProviderProps>) {
-  const ResultComponent: React.FunctionComponent<{}> = (props: React.PropsWithChildren<{}>) => {
+  const ResultComponent: React.FunctionComponent<Record<any, unknown>> = (props: React.PropsWithChildren<Record<any, unknown>>) => {
     const discoveryProvider = useDiscoveryProvider();
+
     if (!discoveryProvider) {
       return <JoyInfo title={'Please wait...'}>Loading discovery provider.</JoyInfo>;
     }
@@ -169,6 +193,8 @@ export function withDiscoveryProvider (Component: React.ComponentType<DiscoveryP
       </Component>
     );
   };
+
   ResultComponent.displayName = `withDiscoveryProvider(${componentName(Component)})`;
+
   return ResultComponent;
 }

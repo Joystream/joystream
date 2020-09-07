@@ -70,7 +70,6 @@ async function syncCallback(api, storage) {
         await api.assets.toggleStorageRelationshipReady(roleAddress, providerId, relationshipId, true)
       } catch (err) {
         debug(`Error creating new storage relationship ${contentId.encode()}: ${err.stack}`)
-        return
       }
     } else if (!relationship.ready) {
       debug(`Updating storage relationship to ready for ${contentId.encode()}`)

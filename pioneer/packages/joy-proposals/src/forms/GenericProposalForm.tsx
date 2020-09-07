@@ -1,14 +1,14 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { FormikProps, WithFormikConfig } from 'formik';
+import { FormikProps } from 'formik';
 import { Form, Icon, Button, Message } from 'semantic-ui-react';
 import { getFormErrorLabelsProps } from './errorHandling';
-import Validation from '../validationSchema';
 import { InputFormField, TextareaFormField } from './FormFields';
-import TxButton from '@polkadot/joy-utils/TxButton';
+import TxButton from '@polkadot/joy-utils/react/components/TxButton';
 import { SubmittableResult } from '@polkadot/api';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
-import { MyAccountProps, withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
-import { withMulti } from '@polkadot/react-api/with';
+import { MyAccountProps } from '@polkadot/joy-utils/react/hocs/accounts';
+import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
+import { withMulti } from '@polkadot/react-api/hoc';
 import { withCalls } from '@polkadot/react-api';
 import { CallProps } from '@polkadot/react-api/types';
 import { Balance, Event } from '@polkadot/types/interfaces';
@@ -16,8 +16,8 @@ import { RouteComponentProps } from 'react-router';
 import { ProposalType } from '@polkadot/joy-utils/types/proposals';
 import proposalsConsts from '@polkadot/joy-utils/consts/proposals';
 import { formatBalance } from '@polkadot/util';
-import './forms.css';
 import { ProposalId } from '@joystream/types/proposals';
+import styled from 'styled-components';
 
 // Generic form values
 export type GenericFormValues = {
@@ -46,9 +46,9 @@ export type ProposalFormInnerProps<ContainerPropsT, FormValuesT> = ContainerProp
 
 // Types only used in this file
 type GenericProposalFormAdditionalProps = {
-  txMethod?: string;
+  txMethod: string;
   submitParams?: any[];
-  proposalType?: ProposalType;
+  proposalType: ProposalType;
   disabled?: boolean;
 };
 
@@ -58,26 +58,36 @@ ProposalFormExportProps<GenericProposalFormAdditionalProps, GenericFormValues>
 
 >;
 type GenericFormInnerProps = ProposalFormInnerProps<GenericFormContainerProps, GenericFormValues>;
-type GenericFormDefaultOptions = WithFormikConfig<GenericFormContainerProps, GenericFormValues>;
 
-// Default "withFormik" options that can be extended in specific forms
-export const genericFormDefaultOptions: GenericFormDefaultOptions = {
-  mapPropsToValues: (props: GenericFormContainerProps) => ({
-    ...genericFormDefaultValues,
-    ...(props.initialData || {})
-  }),
-  validationSchema: {
-    ...Validation.All()
-  },
-  handleSubmit: (values, { setSubmitting, resetForm }) => {
-    // This is handled via TxButton
+const StyledGenericProposalForm = styled.div`
+  .proposal-form {
+    margin: 0 auto;
   }
-};
+
+  .ui.form.proposal-form {
+    & label {
+      font-size: 1rem;
+    }
+
+    & input[name="tokens"] {
+      max-width: 16rem;
+    }
+  }
+
+  .form-buttons {
+    display: flex;
+  }
+
+  .ui.dropdown .ui.avatar.image {
+    width: 2em !important;
+  }
+`;
 
 // Generic proposal form with basic structure, "Title" and "Rationale" fields
 // Other fields can be passed as children
-export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps> = props => {
+export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps> = (props) => {
   const {
+    myMemberId,
     handleChange,
     handleSubmit,
     errors,
@@ -93,7 +103,6 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
     submitParams,
     setSubmitting,
     history,
-    balances_totalIssuance,
     proposalType,
     disabled = false
   } = props;
@@ -111,9 +120,12 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
       if (isValid) {
         afterSubmit();
       }
+
       setAfterSubmit(null);
       setSubmitting(false);
     }
+    // setSubmitting shouldn't change, so we don't specify it as dependency to avoid complications
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isValidating, isValid, afterSubmit]);
 
   // Focus first error field when isValidating changes to false (which happens after form is validated)
@@ -121,9 +133,11 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
   useEffect(() => {
     if (!isValidating && formContainerRef.current !== null) {
       const [errorField] = formContainerRef.current.getElementsByClassName('error field');
+
       if (errorField) {
         errorField.scrollIntoView({ behavior: 'smooth' });
         const [errorInput] = errorField.querySelectorAll('input,textarea');
+
         if (errorInput) {
           (errorInput as (HTMLInputElement | HTMLTextAreaElement)).focus();
         }
@@ -145,82 +159,91 @@ export const GenericProposalForm: React.FunctionComponent<GenericFormInnerProps>
     if (!history) return;
     // Determine proposal id
     let createdProposalId: number | null = null;
+
     for (const e of txResult.events) {
       const event = e.get('event') as Event | undefined;
+
       if (event !== undefined && event.method === 'ProposalCreated') {
         createdProposalId = (event.data[1] as ProposalId).toNumber();
         break;
       }
     }
+
     setSubmitting(false);
-    history.push(`/proposals/${createdProposalId}`);
+
+    if (createdProposalId !== null) {
+      history.push(`/proposals/${createdProposalId}`);
+    }
   };
 
-  const requiredStake: number | undefined =
-    balances_totalIssuance &&
-    proposalType &&
-    proposalsConsts[proposalType].stake;
+  const requiredStake = proposalType && proposalsConsts[proposalType].stake;
 
   return (
-    <div className="Forms" ref={formContainerRef}>
+    <StyledGenericProposalForm ref={formContainerRef}>
       <Form
-        className="proposal-form"
+        className='proposal-form'
         onSubmit={txMethod
           ? () => { /* Do nothing. Tx button uses custom submit handler - "onTxButtonClick" */ }
           : handleSubmit
         }>
         <InputFormField
-          label="Title"
-          help="The title of your proposal"
+          label='Title'
+          help='The title of your proposal'
           onChange={handleChange}
-          name="title"
-          placeholder="Title for your awesome proposal..."
+          name='title'
+          placeholder='Title for your awesome proposal...'
           error={errorLabelsProps.title}
           value={values.title}
         />
         <TextareaFormField
-          label="Rationale"
-          help="The rationale behind your proposal"
+          label='Rationale'
+          help='The rationale behind your proposal'
           onChange={handleChange}
-          name="rationale"
-          placeholder="This proposal is awesome because..."
+          name='rationale'
+          placeholder='This proposal is awesome because...'
           error={errorLabelsProps.rationale}
           value={values.rationale}
         />
         {children}
         <Message warning visible>
           <Message.Content>
-            <Icon name="warning circle" />
+            <Icon name='warning circle' />
             Required stake: <b>{ formatBalance(requiredStake) }</b>
           </Message.Content>
         </Message>
-        <div className="form-buttons">
+        <div className='form-buttons'>
           {txMethod ? (
             <TxButton
-              type="button" // Tx button uses custom submit handler - "onTxButtonClick"
-              label="Submit proposal"
-              icon="paper plane"
+              type='button' // Tx button uses custom submit handler - "onTxButtonClick"
+              label='Submit proposal'
               isDisabled={disabled || isSubmitting}
-              params={(submitParams || []).map(p => (p === '{STAKE}' ? requiredStake : p))}
+              params={[
+                myMemberId,
+                values.title,
+                values.rationale,
+                requiredStake,
+                // submitParams is any[], but it's not much of an issue (params can vary a lot)
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                ...(submitParams || [])
+              ]}
               tx={`proposalsCodex.${txMethod}`}
               txFailedCb={onTxFailed}
               txSuccessCb={onTxSuccess}
               onClick={onTxButtonClick} // This replaces standard submit
             />
           ) : (
-            <Button type="submit" color="blue" loading={isSubmitting}>
-              <Icon name="paper plane" />
+            <Button type='submit' size='large' color='blue' loading={isSubmitting}>
+              <Icon name='paper plane' />
               Submit
             </Button>
           )}
 
-          <Button type="button" color="grey" onClick={handleReset}>
-            <Icon name="times" />
-            Clear
+          <Button type='button' size='large' onClick={handleReset}>
+            Reset form
           </Button>
         </div>
       </Form>
-    </div>
+    </StyledGenericProposalForm>
   );
 };
 

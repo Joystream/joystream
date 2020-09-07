@@ -7,7 +7,7 @@ import { Redirect } from 'react-router';
 
 function NotFound (): React.ReactElement {
   return (
-    <Redirect to='/staking' />
+    <Redirect to='/media' />
   );
 }
 

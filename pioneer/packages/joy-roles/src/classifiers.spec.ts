@@ -1,18 +1,9 @@
-import { Option, Text, u32 } from '@polkadot/types';
-import {
-  AcceptingApplications,
-  ActiveOpeningStage,
-  ApplicationRationingPolicy,
-  StakingPolicy,
-  Opening, OpeningStage,
-  ReviewPeriod
-} from '@joystream/types/hiring';
+import { Opening } from '@joystream/types/hiring';
 
-import {
-  OpeningState,
+import { OpeningState,
   IBlockQueryer,
-  classifyOpeningStage, OpeningStageClassification
-} from './classifiers';
+  classifyOpeningStage, OpeningStageClassification } from './classifiers';
+import { createType } from '@joystream/types';
 
 class MockBlockQueryer {
   hash: string
@@ -36,8 +27,7 @@ class MockBlockQueryer {
     return this.timestamp;
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  async expectedBlockTime (): Promise<number> {
+  expectedBlockTime (): number {
     return 6;
   }
 }
@@ -58,18 +48,15 @@ describe('hiring.Opening-> OpeningStageClassification', (): void => {
     {
       description: 'WaitingToBegin',
       input: {
-        opening: new Opening({
-          created: new u32(100),
-          stage: new OpeningStage({
+        opening: createType('Opening', {
+          created: 100,
+          stage: createType('OpeningStage', {
             WaitingToBegin: {
-              begins_at_block: new u32(100)
+              begins_at_block: 100
             }
           }),
-          max_review_period_length: new u32(100),
-          application_rationing_policy: new Option(ApplicationRationingPolicy),
-          application_staking_policy: new Option(StakingPolicy),
-          role_staking_policy: new Option(StakingPolicy),
-          human_readable_text: new Text()
+          max_review_period_length: 100,
+          human_readable_text: ''
         }),
         queryer: new MockBlockQueryer('somehash', now)
       },
@@ -83,22 +70,19 @@ describe('hiring.Opening-> OpeningStageClassification', (): void => {
     {
       description: 'Accepting applications',
       input: {
-        opening: new Opening({
-          created: new u32(100),
-          stage: new OpeningStage({
+        opening: createType('Opening', {
+          created: 100,
+          stage: createType('OpeningStage', {
             Active: {
-              stage: new ActiveOpeningStage({
-                acceptingApplications: new AcceptingApplications({
-                  started_accepting_applicants_at_block: new u32(100)
-                })
+              stage: createType('ActiveOpeningStage', {
+                acceptingApplications: {
+                  started_accepting_applicants_at_block: 100
+                }
               })
             }
           }),
-          max_review_period_length: new u32(100),
-          application_rationing_policy: new Option(ApplicationRationingPolicy),
-          application_staking_policy: new Option(StakingPolicy),
-          role_staking_policy: new Option(StakingPolicy),
-          human_readable_text: new Text()
+          max_review_period_length: 100,
+          human_readable_text: ''
         }),
         queryer: new MockBlockQueryer('somehash', now)
       },
@@ -112,23 +96,20 @@ describe('hiring.Opening-> OpeningStageClassification', (): void => {
     {
       description: 'In review period',
       input: {
-        opening: new Opening({
-          created: new u32(100),
-          stage: new OpeningStage({
+        opening: createType('Opening', {
+          created: 100,
+          stage: createType('OpeningStage', {
             Active: {
-              stage: new ActiveOpeningStage({
-                reviewPeriod: new ReviewPeriod({
-                  started_accepting_applicants_at_block: new u32(100),
-                  started_review_period_at_block: new u32(100)
-                })
+              stage: createType('ActiveOpeningStage', {
+                reviewPeriod: {
+                  started_accepting_applicants_at_block: 100,
+                  started_review_period_at_block: 100
+                }
               })
             }
           }),
-          max_review_period_length: new u32(14400),
-          application_rationing_policy: new Option(ApplicationRationingPolicy),
-          application_staking_policy: new Option(StakingPolicy),
-          role_staking_policy: new Option(StakingPolicy),
-          human_readable_text: new Text()
+          max_review_period_length: 14400,
+          human_readable_text: ''
         }),
         queryer: new MockBlockQueryer('somehash', now)
       },
@@ -141,43 +122,6 @@ describe('hiring.Opening-> OpeningStageClassification', (): void => {
         review_end_time: new Date('2020-01-24T11:47:04.433Z')
       }
     }
-    /*
-     * jest is having trouble with the enum type
-    {
-      description: "Deactivated: cancelled",
-      input: {
-        opening: new Opening({
-          created: new u32(100),
-          stage: new OpeningStage({
-            'Active': {
-              stage: new ActiveOpeningStage({
-                reviewPeriod: new Deactivated({
-                  cause: new OpeningDeactivationCause(
-        OpeningDeactivationCauseKeys.CancelledBeforeActivation,
-                  ),
-                  deactivated_at_block: new u32(123),
-                  started_accepting_applicants_at_block: new u32(100),
-                  started_review_period_at_block: new Option(u32, 100),
-                })
-              })
-            }
-          }),
-          max_review_period_length: new u32(100),
-          application_rationing_policy: new Option(ApplicationRationingPolicy),
-          application_staking_policy: new Option(StakingPolicy),
-          role_staking_policy: new Option(StakingPolicy),
-          human_readable_text: new Text(),
-        }),
-        queryer: new MockBlockQueryer("somehash", now),
-      },
-      output: {
-        state: OpeningState.Cancelled,
-        starting_block: 123,
-        starting_block_hash: "somehash",
-        starting_time: now,
-      },
-    },
-    */
   ];
 
   cases.forEach((test: Test) => {

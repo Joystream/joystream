@@ -93,7 +93,7 @@ function setMemberIdByAccountId (Component: React.ComponentType<MemberPreviewPro
     const { memberIdsByRootAccountId, memberIdsByControllerAccountId } = props;
 
     if (memberIdsByRootAccountId && memberIdsByControllerAccountId) {
-      memberIdsByRootAccountId.concat(memberIdsByControllerAccountId);
+      memberIdsByRootAccountId.toArray().concat(memberIdsByControllerAccountId.toArray());
 
       if (memberIdsByRootAccountId.length) {
         return <Component {...props} memberId={memberIdsByRootAccountId[0]} />;
