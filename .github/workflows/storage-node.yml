@@ -1,0 +1,37 @@
+name: storage-node
+on: [pull_request, push]
+
+jobs:
+  storage_node_build_ubuntu:
+    name: Ubuntu Checks
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: checks
+      run: |
+        yarn install --frozen-lockfile
+        yarn workspace storage-node checks
+
+  storage_node_build_osx:
+    name: MacOS Checks
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: checks
+      run: |
+        yarn install --frozen-lockfile --network-timeout 120000
+        yarn workspace storage-node checks

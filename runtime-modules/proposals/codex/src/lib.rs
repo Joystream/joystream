@@ -12,16 +12,28 @@
 //! module. For each proposal, [its crucial details](./enum.ProposalDetails.html) are saved to the
 //! `ProposalDetailsByProposalId` map.
 //!
-//! ### Supported extrinsics (proposal types)
+//! ### General proposals
 //! - [create_text_proposal](./struct.Module.html#method.create_text_proposal)
 //! - [create_runtime_upgrade_proposal](./struct.Module.html#method.create_runtime_upgrade_proposal)
-//! - [create_set_election_parameters_proposal](./struct.Module.html#method.create_set_election_parameters_proposal)
-//! - [create_set_content_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_content_working_group_mint_capacity_proposal)
-//! - [create_spending_proposal](./struct.Module.html#method.create_spending_proposal)
-//! - [create_set_lead_proposal](./struct.Module.html#method.create_set_lead_proposal)
-//! - [create_evict_storage_provider_proposal](./struct.Module.html#method.create_evict_storage_provider_proposal)
 //! - [create_set_validator_count_proposal](./struct.Module.html#method.create_set_validator_count_proposal)
-//! - [create_set_storage_role_parameters_proposal](./struct.Module.html#method.create_set_storage_role_parameters_proposal)
+//!
+//! ### Council and election proposals
+//! - [create_set_election_parameters_proposal](./struct.Module.html#method.create_set_election_parameters_proposal)
+//! - [create_spending_proposal](./struct.Module.html#method.create_spending_proposal)
+//!
+//! ### Content working group proposals
+//! - [create_set_lead_proposal](./struct.Module.html#method.create_set_lead_proposal)
+//! - [create_set_content_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_content_working_group_mint_capacity_proposal)
+//!
+//! ### Working group proposals
+//! - [create_add_working_group_leader_opening_proposal](./struct.Module.html#method.create_add_working_group_leader_opening_proposal)
+//! - [create_begin_review_working_group_leader_applications_proposal](./struct.Module.html#method.create_begin_review_working_group_leader_applications_proposal)
+//! - [create_fill_working_group_leader_opening_proposal](./struct.Module.html#method.create_fill_working_group_leader_opening_proposal)
+//! - [create_set_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_working_group_mint_capacity_proposal)
+//! - [create_decrease_working_group_leader_stake_proposal](./struct.Module.html#method.create_decrease_working_group_leader_stake_proposal)
+//! - [create_slash_working_group_leader_stake_proposal](./struct.Module.html#method.create_slash_working_group_leader_stake_proposal)
+//! - [create_set_working_group_leader_reward_proposal](./struct.Module.html#method.create_set_working_group_leader_reward_proposal)
+//! - [create_terminate_working_group_leader_role_proposal](./struct.Module.html#method.create_terminate_working_group_leader_role_proposal)
 //!
 //! ### Proposal implementations of this module
 //! - execute_text_proposal - prints the proposal to the log
@@ -38,15 +50,12 @@
 //! The module uses [ProposalEncoder](./trait.ProposalEncoder.html) to encode the proposal using
 //! its details. Encoded byte vector is passed to the _proposals engine_ as serialized executable code.
 
-// Clippy linter warning. TODO: remove after the Constaninople release
-#![allow(clippy::type_complexity)]
-// disable it because of possible frontend API break
-
-// Clippy linter warning. TODO: refactor "this function has too many argument"
-#![allow(clippy::too_many_arguments)] // disable it because of possible API break
-
+// `decl_module!` does a lot of recursion and requires us to increase the limit to 256.
+#![recursion_limit = "256"]
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
+// Disable this lint warning because Substrate generates function without an alias for the ProposalDetailsOf type.
+#![allow(clippy::too_many_arguments)]
 
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 // #![warn(missing_docs)]
@@ -56,67 +65,33 @@ mod proposal_types;
 #[cfg(test)]
 mod tests;
 
-use common::origin_validator::ActorOriginValidator;
-use governance::election_params::ElectionParameters;
-use proposal_engine::ProposalParameters;
-use roles::actors::RoleParameters;
-use rstd::clone::Clone;
-use rstd::prelude::*;
-use rstd::str::from_utf8;
-use rstd::vec::Vec;
-use sr_primitives::traits::Zero;
-use srml_support::dispatch::DispatchResult;
-use srml_support::traits::{Currency, Get};
-use srml_support::{decl_error, decl_module, decl_storage, ensure, print};
-use system::{ensure_root, RawOrigin};
+use frame_support::dispatch::DispatchResult;
+use frame_support::traits::{Currency, Get};
+use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
+use sp_arithmetic::traits::Zero;
+use sp_std::clone::Clone;
+use sp_std::str::from_utf8;
+use sp_std::vec::Vec;
+use system::ensure_root;
 
-pub use crate::proposal_types::ProposalsConfigParameters;
+use common::origin::ActorOriginValidator;
+use common::working_group::WorkingGroup;
+use governance::election_params::ElectionParameters;
+use proposals_engine::ProposalParameters;
+
+pub use crate::proposal_types::{
+    AddOpeningParameters, FillOpeningParameters, ProposalsConfigParameters, TerminateRoleParameters,
+};
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 
 // 'Set working group mint capacity' proposal limit
+const WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 5_000_000;
+// 'Set content working group mint capacity' proposal limit
 const CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 1_000_000;
 // Max allowed value for 'spending' proposal
 const MAX_SPENDING_PROPOSAL_VALUE: u32 = 2_000_000_u32;
 // Max validator count for the 'set validator count' proposal
 const MAX_VALIDATOR_COUNT: u32 = 100;
-// min_actors min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MIN_ACTORS_MAX_VALUE: u32 = 2;
-// max_actors min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MAX_ACTORS_MIN_VALUE: u32 = 2;
-// max_actors max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MAX_ACTORS_MAX_VALUE: u32 = 100;
-// reward_period min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_REWARD_PERIOD_MIN_VALUE: u32 = 600;
-// reward_period max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_REWARD_PERIOD_MAX_VALUE: u32 = 3600;
-// bonding_period min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_BONDING_PERIOD_MIN_VALUE: u32 = 600;
-// bonding_period max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_BONDING_PERIOD_MAX_VALUE: u32 = 28800;
-// unbonding_period min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_UNBONDING_PERIOD_MIN_VALUE: u32 = 600;
-// unbonding_period max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_UNBONDING_PERIOD_MAX_VALUE: u32 = 28800;
-// min_service_period min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MIN_SERVICE_PERIOD_MIN_VALUE: u32 = 600;
-// min_service_period max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MIN_SERVICE_PERIOD_MAX_VALUE: u32 = 28800;
-// startup_grace_period min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_STARTUP_GRACE_PERIOD_MIN_VALUE: u32 = 600;
-// startup_grace_period max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_STARTUP_GRACE_PERIOD_MAX_VALUE: u32 = 28800;
-// min_stake min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MIN_STAKE_MIN_VALUE: u32 = 0;
-// min_stake max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_MIN_STAKE_MAX_VALUE: u32 = 10_000_000;
-// entry_request_fee min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_ENTRY_REQUEST_FEE_MIN_VALUE: u32 = 0;
-// entry_request_fee max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_ENTRY_REQUEST_FEE_MAX_VALUE: u32 = 100_000;
-// reward min value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_REWARD_MIN_VALUE: u32 = 0;
-// reward max value for the 'set storage role parameters' proposal
-const ROLE_PARAMETERS_REWARD_MAX_VALUE: u32 = 1000;
 // council_size min value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_COUNCIL_SIZE_MIN_VALUE: u32 = 4;
 // council_size max value for the 'set election parameters' proposal
@@ -150,15 +125,27 @@ const ELECTION_PARAMETERS_MIN_COUNCIL_STAKE_MIN_VALUE: u32 = 1;
 // min_council_stake max value for the 'set election parameters' proposal
 const ELECTION_PARAMETERS_MIN_COUNCIL_STAKE_MAX_VALUE: u32 = 100_000_u32;
 
+// Data container struct to fix linter warning 'too many arguments for the function' for the
+// create_proposal() function.
+struct CreateProposalParameters<T: Trait> {
+    pub origin: T::Origin,
+    pub member_id: MemberId<T>,
+    pub title: Vec<u8>,
+    pub description: Vec<u8>,
+    pub stake_balance: Option<BalanceOf<T>>,
+    pub proposal_code: Vec<u8>,
+    pub proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>,
+    pub proposal_details: ProposalDetailsOf<T>,
+}
+
 /// 'Proposals codex' substrate module Trait
 pub trait Trait:
     system::Trait
-    + proposal_engine::Trait
-    + proposal_discussion::Trait
-    + membership::members::Trait
+    + proposals_engine::Trait
+    + proposals_discussion::Trait
+    + membership::Trait
     + governance::election::Trait
     + content_working_group::Trait
-    + roles::actors::Trait
     + staking::Trait
 {
     /// Defines max allowed text proposal length.
@@ -193,17 +180,17 @@ pub type BalanceOfGovernanceCurrency<T> =
 
 /// Balance alias for token mint balance from `token mint` module. TODO: replace with BalanceOf
 pub type BalanceOfMint<T> =
-    <<T as mint::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as minting::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
 /// Negative imbalance alias for staking
 pub type NegativeImbalance<T> =
     <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
-type MemberId<T> = <T as membership::members::Trait>::MemberId;
+type MemberId<T> = <T as membership::Trait>::MemberId;
 
 decl_error! {
     /// Codex module predefined errors
-    pub enum Error {
+    pub enum Error for Module<T: Trait> {
         /// The size of the provided text for text proposal exceeded the limit
         TextProposalSizeExceeded,
 
@@ -224,27 +211,6 @@ decl_error! {
 
         /// Require root origin in extrinsics
         RequireRootOrigin,
-
-        /// Invalid storage role parameter - min_actors
-        InvalidStorageRoleParameterMinActors,
-
-        /// Invalid storage role parameter - max_actors
-        InvalidStorageRoleParameterMaxActors,
-
-        /// Invalid storage role parameter - reward_period
-        InvalidStorageRoleParameterRewardPeriod,
-
-        /// Invalid storage role parameter - bonding_period
-        InvalidStorageRoleParameterBondingPeriod,
-
-        /// Invalid storage role parameter - unbonding_period
-        InvalidStorageRoleParameterUnbondingPeriod,
-
-        /// Invalid storage role parameter - min_service_period
-        InvalidStorageRoleParameterMinServicePeriod,
-
-        /// Invalid storage role parameter - startup_grace_period
-        InvalidStorageRoleParameterStartupGracePeriod,
 
         /// Invalid council election parameter - council_size
         InvalidCouncilElectionParameterCouncilSize,
@@ -270,50 +236,20 @@ decl_error! {
         /// Invalid council election parameter - announcing_period
         InvalidCouncilElectionParameterAnnouncingPeriod,
 
-        /// Invalid council election parameter - min_stake
-        InvalidStorageRoleParameterMinStake,
-
-        /// Invalid council election parameter - reward
-        InvalidStorageRoleParameterReward,
-
-        /// Invalid council election parameter - entry_request_fee
-        InvalidStorageRoleParameterEntryRequestFee,
+        /// Invalid content working group mint capacity parameter
+        InvalidContentWorkingGroupMintCapacity,
 
         /// Invalid working group mint capacity parameter
-        InvalidStorageWorkingGroupMintCapacity,
+        InvalidWorkingGroupMintCapacity,
 
         /// Invalid 'set lead proposal' parameter - proposed lead cannot be a councilor
-        InvalidSetLeadParameterCannotBeCouncilor
-    }
-}
+        InvalidSetLeadParameterCannotBeCouncilor,
 
-impl From<system::Error> for Error {
-    fn from(error: system::Error) -> Self {
-        match error {
-            system::Error::Other(msg) => Error::Other(msg),
-            system::Error::RequireRootOrigin => Error::RequireRootOrigin,
-            _ => Error::Other(error.into()),
-        }
-    }
-}
+        /// Invalid 'slash stake proposal' parameter - cannot slash by zero balance.
+        SlashingStakeIsZero,
 
-impl From<proposal_engine::Error> for Error {
-    fn from(error: proposal_engine::Error) -> Self {
-        match error {
-            proposal_engine::Error::Other(msg) => Error::Other(msg),
-            proposal_engine::Error::RequireRootOrigin => Error::RequireRootOrigin,
-            _ => Error::Other(error.into()),
-        }
-    }
-}
-
-impl From<proposal_discussion::Error> for Error {
-    fn from(error: proposal_discussion::Error) -> Self {
-        match error {
-            proposal_discussion::Error::Other(msg) => Error::Other(msg),
-            proposal_discussion::Error::RequireRootOrigin => Error::RequireRootOrigin,
-            _ => Error::Other(error.into()),
-        }
+        /// Invalid 'decrease stake proposal' parameter - cannot decrease by zero balance.
+        DecreasingStakeIsZero,
     }
 }
 
@@ -322,84 +258,120 @@ decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalCodex{
         /// Map proposal id to its discussion thread id
         pub ThreadIdByProposalId get(fn thread_id_by_proposal_id):
-            map T::ProposalId => T::ThreadId;
+            map hasher(blake2_128_concat) T::ProposalId => T::ThreadId;
 
         /// Map proposal id to proposal details
         pub ProposalDetailsByProposalId get(fn proposal_details_by_proposal_id):
-            map T::ProposalId => ProposalDetails<
-                BalanceOfMint<T>,
-                BalanceOfGovernanceCurrency<T>,
-                T::BlockNumber,
-                T::AccountId,
-                T::MemberId
-            >;
+            map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
 
         /// Voting period for the 'set validator count' proposal
-        pub SetValidatorCountProposalVotingPeriod get(set_validator_count_proposal_voting_period)
+        pub SetValidatorCountProposalVotingPeriod get(fn set_validator_count_proposal_voting_period)
             config(): T::BlockNumber;
 
         /// Grace period for the 'set validator count' proposal
-        pub SetValidatorCountProposalGracePeriod get(set_validator_count_proposal_grace_period)
+        pub SetValidatorCountProposalGracePeriod get(fn set_validator_count_proposal_grace_period)
             config(): T::BlockNumber;
 
         /// Voting period for the 'runtime upgrade' proposal
-        pub RuntimeUpgradeProposalVotingPeriod get(runtime_upgrade_proposal_voting_period)
+        pub RuntimeUpgradeProposalVotingPeriod get(fn runtime_upgrade_proposal_voting_period)
             config(): T::BlockNumber;
 
         /// Grace period for the 'runtime upgrade' proposal
-        pub RuntimeUpgradeProposalGracePeriod get(runtime_upgrade_proposal_grace_period)
+        pub RuntimeUpgradeProposalGracePeriod get(fn runtime_upgrade_proposal_grace_period)
             config(): T::BlockNumber;
 
         /// Voting period for the 'set election parameters' proposal
-        pub SetElectionParametersProposalVotingPeriod get(set_election_parameters_proposal_voting_period)
+        pub SetElectionParametersProposalVotingPeriod get(fn set_election_parameters_proposal_voting_period)
             config(): T::BlockNumber;
 
         /// Grace period for the 'set election parameters' proposal
-        pub SetElectionParametersProposalGracePeriod get(set_election_parameters_proposal_grace_period)
+        pub SetElectionParametersProposalGracePeriod get(fn set_election_parameters_proposal_grace_period)
             config(): T::BlockNumber;
 
         /// Voting period for the 'text' proposal
-        pub TextProposalVotingPeriod get(text_proposal_voting_period) config(): T::BlockNumber;
+        pub TextProposalVotingPeriod get(fn text_proposal_voting_period) config(): T::BlockNumber;
 
         /// Grace period for the 'text' proposal
-        pub TextProposalGracePeriod get(text_proposal_grace_period) config(): T::BlockNumber;
+        pub TextProposalGracePeriod get(fn text_proposal_grace_period) config(): T::BlockNumber;
 
         /// Voting period for the 'set content working group mint capacity' proposal
-        pub SetContentWorkingGroupMintCapacityProposalVotingPeriod get(set_content_working_group_mint_capacity_proposal_voting_period)
+        pub SetContentWorkingGroupMintCapacityProposalVotingPeriod get(fn set_content_working_group_mint_capacity_proposal_voting_period)
             config(): T::BlockNumber;
 
         /// Grace period for the 'set content working group mint capacity' proposal
-        pub SetContentWorkingGroupMintCapacityProposalGracePeriod get(set_content_working_group_mint_capacity_proposal_grace_period)
+        pub SetContentWorkingGroupMintCapacityProposalGracePeriod get(fn set_content_working_group_mint_capacity_proposal_grace_period)
             config(): T::BlockNumber;
 
         /// Voting period for the 'set lead' proposal
-        pub SetLeadProposalVotingPeriod get(set_lead_proposal_voting_period)
+        pub SetLeadProposalVotingPeriod get(fn set_lead_proposal_voting_period)
             config(): T::BlockNumber;
 
         /// Grace period for the 'set lead' proposal
-        pub SetLeadProposalGracePeriod get(set_lead_proposal_grace_period)
+        pub SetLeadProposalGracePeriod get(fn set_lead_proposal_grace_period)
             config(): T::BlockNumber;
 
         /// Voting period for the 'spending' proposal
-        pub SpendingProposalVotingPeriod get(spending_proposal_voting_period) config(): T::BlockNumber;
+        pub SpendingProposalVotingPeriod get(fn spending_proposal_voting_period) config(): T::BlockNumber;
 
         /// Grace period for the 'spending' proposal
-        pub SpendingProposalGracePeriod get(spending_proposal_grace_period) config(): T::BlockNumber;
+        pub SpendingProposalGracePeriod get(fn spending_proposal_grace_period) config(): T::BlockNumber;
 
-        /// Voting period for the 'evict storage provider' proposal
-        pub EvictStorageProviderProposalVotingPeriod get(evict_storage_provider_proposal_voting_period)
+        /// Voting period for the 'add working group opening' proposal
+        pub AddWorkingGroupOpeningProposalVotingPeriod get(fn add_working_group_opening_proposal_voting_period) config(): T::BlockNumber;
+
+        /// Grace period for the 'add working group opening' proposal
+        pub AddWorkingGroupOpeningProposalGracePeriod get(fn add_working_group_opening_proposal_grace_period) config(): T::BlockNumber;
+
+        /// Voting period for the 'begin review working group leader applications' proposal
+        pub BeginReviewWorkingGroupLeaderApplicationsProposalVotingPeriod get(fn begin_review_working_group_leader_applications_proposal_voting_period) config(): T::BlockNumber;
+
+        /// Grace period for the 'begin review working group leader applications' proposal
+        pub BeginReviewWorkingGroupLeaderApplicationsProposalGracePeriod get(fn begin_review_working_group_leader_applications_proposal_grace_period) config(): T::BlockNumber;
+
+        /// Voting period for the 'fill working group leader opening' proposal
+        pub FillWorkingGroupLeaderOpeningProposalVotingPeriod get(fn fill_working_group_leader_opening_proposal_voting_period) config(): T::BlockNumber;
+
+        /// Grace period for the 'fill working group leader opening' proposal
+        pub FillWorkingGroupLeaderOpeningProposalGracePeriod get(fn fill_working_group_leader_opening_proposal_grace_period) config(): T::BlockNumber;
+
+        /// Voting period for the 'set working group mint capacity' proposal
+        pub SetWorkingGroupMintCapacityProposalVotingPeriod get(fn set_working_group_mint_capacity_proposal_voting_period)
             config(): T::BlockNumber;
 
-        /// Grace period for the 'evict storage provider' proposal
-        pub EvictStorageProviderProposalGracePeriod get(evict_storage_provider_proposal_grace_period)
+        /// Grace period for the 'set working group mint capacity' proposal
+        pub SetWorkingGroupMintCapacityProposalGracePeriod get(fn set_working_group_mint_capacity_proposal_grace_period)
             config(): T::BlockNumber;
 
-        /// Voting period for the 'set storage role parameters' proposal
-        pub SetStorageRoleParametersProposalVotingPeriod get(set_storage_role_parameters_proposal_voting_period)
+        /// Voting period for the 'decrease working group leader stake' proposal
+        pub DecreaseWorkingGroupLeaderStakeProposalVotingPeriod get(fn decrease_working_group_leader_stake_proposal_voting_period)
             config(): T::BlockNumber;
 
-        /// Grace period for the 'set storage role parameters' proposal
-        pub SetStorageRoleParametersProposalGracePeriod get(set_storage_role_parameters_proposal_grace_period)
+        /// Grace period for the 'decrease working group leader stake' proposal
+        pub DecreaseWorkingGroupLeaderStakeProposalGracePeriod get(fn decrease_working_group_leader_stake_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'slash working group leader stake' proposal
+        pub SlashWorkingGroupLeaderStakeProposalVotingPeriod get(fn slash_working_group_leader_stake_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'slash working group leader stake' proposal
+        pub SlashWorkingGroupLeaderStakeProposalGracePeriod get(fn slash_working_group_leader_stake_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'set working group leader reward' proposal
+        pub SetWorkingGroupLeaderRewardProposalVotingPeriod get(fn set_working_group_leader_reward_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'set working group leader reward' proposal
+        pub SetWorkingGroupLeaderRewardProposalGracePeriod get(fn set_working_group_leader_reward_proposal_grace_period)
+            config(): T::BlockNumber;
+
+        /// Voting period for the 'terminate working group leader role' proposal
+        pub TerminateWorkingGroupLeaderRoleProposalVotingPeriod get(fn terminate_working_group_leader_role_proposal_voting_period)
+            config(): T::BlockNumber;
+
+        /// Grace period for the 'terminate working group leader role' proposal
+        pub TerminateWorkingGroupLeaderRoleProposalGracePeriod get(fn terminate_working_group_leader_role_proposal_grace_period)
             config(): T::BlockNumber;
     }
 }
@@ -408,7 +380,7 @@ decl_module! {
     /// Proposal codex substrate module Call
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         /// Predefined errors
-        type Error = Error;
+        type Error = Error<T>;
 
         /// Exports max allowed text proposal length const.
         const TextProposalMaxLength: u32 = T::TextProposalMaxLength::get();
@@ -417,6 +389,7 @@ decl_module! {
         const RuntimeUpgradeWasmProposalMaxLength: u32 = T::RuntimeUpgradeWasmProposalMaxLength::get();
 
         /// Create 'Text (signal)' proposal type.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_text_proposal(
             origin,
             member_id: MemberId<T>,
@@ -425,28 +398,28 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             text: Vec<u8>,
         ) {
-            ensure!(!text.is_empty(), Error::TextProposalIsEmpty);
+            ensure!(!text.is_empty(), Error::<T>::TextProposalIsEmpty);
             ensure!(text.len() as u32 <=  T::TextProposalMaxLength::get(),
-                Error::TextProposalSizeExceeded);
+                Error::<T>::TextProposalSizeExceeded);
 
-            let proposal_parameters = proposal_types::parameters::text_proposal::<T>();
-            let proposal_details = ProposalDetails::<BalanceOfMint<T>, BalanceOfGovernanceCurrency<T>, T::BlockNumber, T::AccountId, MemberId<T>>::Text(text);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+            let proposal_details = ProposalDetails::Text(text);
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::text_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
         /// Create 'Runtime upgrade' proposal type. Runtime upgrade can be initiated only by
         /// members from the hardcoded list `RuntimeUpgradeProposalAllowedProposers`
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_runtime_upgrade_proposal(
             origin,
             member_id: MemberId<T>,
@@ -455,28 +428,28 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             wasm: Vec<u8>,
         ) {
-            ensure!(!wasm.is_empty(), Error::RuntimeProposalIsEmpty);
+            ensure!(!wasm.is_empty(), Error::<T>::RuntimeProposalIsEmpty);
             ensure!(wasm.len() as u32 <= T::RuntimeUpgradeWasmProposalMaxLength::get(),
-                Error::RuntimeProposalSizeExceeded);
+                Error::<T>::RuntimeProposalSizeExceeded);
 
-            let proposal_parameters = proposal_types::parameters::runtime_upgrade_proposal::<T>();
             let proposal_details = ProposalDetails::RuntimeUpgrade(wasm);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::runtime_upgrade_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
         /// Create 'Set election parameters' proposal type. This proposal uses `set_election_parameters()`
         /// extrinsic from the `governance::election module`.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_set_election_parameters_proposal(
             origin,
             member_id: MemberId<T>,
@@ -490,24 +463,23 @@ decl_module! {
             Self::ensure_council_election_parameters_valid(&election_parameters)?;
 
             let proposal_details = ProposalDetails::SetElectionParameters(election_parameters);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-            let proposal_parameters =
-                proposal_types::parameters::set_election_parameters_proposal::<T>();
-
-            Self::create_proposal(
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::set_election_parameters_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
         /// Create 'Set content working group mint capacity' proposal type.
         /// This proposal uses `set_mint_capacity()` extrinsic from the `content-working-group`  module.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_set_content_working_group_mint_capacity_proposal(
             origin,
             member_id: MemberId<T>,
@@ -518,28 +490,27 @@ decl_module! {
         ) {
             ensure!(
                 mint_balance <= <BalanceOfMint<T>>::from(CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE),
-                Error::InvalidStorageWorkingGroupMintCapacity
+                Error::<T>::InvalidContentWorkingGroupMintCapacity
             );
 
-            let proposal_parameters =
-                proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<T>();
             let proposal_details = ProposalDetails::SetContentWorkingGroupMintCapacity(mint_balance);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
         /// Create 'Spending' proposal type.
         /// This proposal uses `spend_from_council_mint()` extrinsic from the `governance::council`  module.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_spending_proposal(
             origin,
             member_id: MemberId<T>,
@@ -549,31 +520,30 @@ decl_module! {
             balance: BalanceOfMint<T>,
             destination: T::AccountId,
         ) {
-            ensure!(balance != BalanceOfMint::<T>::zero(), Error::InvalidSpendingProposalBalance);
+            ensure!(balance != BalanceOfMint::<T>::zero(), Error::<T>::InvalidSpendingProposalBalance);
             ensure!(
                 balance <= <BalanceOfMint<T>>::from(MAX_SPENDING_PROPOSAL_VALUE),
-                Error::InvalidSpendingProposalBalance
+                Error::<T>::InvalidSpendingProposalBalance
             );
 
-            let proposal_parameters =
-                proposal_types::parameters::spending_proposal::<T>();
             let proposal_details = ProposalDetails::Spending(balance, destination);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::spending_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
         /// Create 'Set lead' proposal type.
         /// This proposal uses `replace_lead()` extrinsic from the `content_working_group`  module.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_set_lead_proposal(
             origin,
             member_id: MemberId<T>,
@@ -586,56 +556,27 @@ decl_module! {
                 let account_id = lead.1;
                 ensure!(
                     !<governance::council::Module<T>>::is_councilor(&account_id),
-                    Error::InvalidSetLeadParameterCannotBeCouncilor
+                    Error::<T>::InvalidSetLeadParameterCannotBeCouncilor
                 );
             }
-
-            let proposal_parameters =
-                proposal_types::parameters::set_lead_proposal::<T>();
             let proposal_details = ProposalDetails::SetLead(new_lead);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
-        }
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::set_lead_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
 
-        /// Create 'Evict storage provider' proposal type.
-        /// This proposal uses `remove_actor()` extrinsic from the `roles::actors`  module.
-        pub fn create_evict_storage_provider_proposal(
-            origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
-            actor_account: T::AccountId,
-        ) {
-            let proposal_parameters =
-                proposal_types::parameters::evict_storage_provider_proposal::<T>();
-            let proposal_details = ProposalDetails::EvictStorageProvider(actor_account);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
-                origin,
-                member_id,
-                title,
-                description,
-                stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+            Self::create_proposal(params)?;
         }
 
         /// Create 'Evict storage provider' proposal type.
         /// This proposal uses `set_validator_count()` extrinsic from the Substrate `staking`  module.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn create_set_validator_count_proposal(
             origin,
             member_id: MemberId<T>,
@@ -646,63 +587,286 @@ decl_module! {
         ) {
             ensure!(
                 new_validator_count >= <staking::Module<T>>::minimum_validator_count(),
-                Error::InvalidValidatorCount
+                Error::<T>::InvalidValidatorCount
             );
 
             ensure!(
                 new_validator_count <= MAX_VALIDATOR_COUNT,
-                Error::InvalidValidatorCount
+                Error::<T>::InvalidValidatorCount
             );
 
-            let proposal_parameters =
-                proposal_types::parameters::set_validator_count_proposal::<T>();
             let proposal_details = ProposalDetails::SetValidatorCount(new_validator_count);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::set_validator_count_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
 
-        /// Create 'Set storage roles parameters' proposal type.
-        /// This proposal uses `set_role_parameters()` extrinsic from the Substrate `roles::actors`  module.
-        pub fn create_set_storage_role_parameters_proposal(
+        /// Create 'Add working group leader opening' proposal type.
+        /// This proposal uses `add_opening()` extrinsic from the Joystream `working group` module.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_add_working_group_leader_opening_proposal(
             origin,
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
-            role_parameters: RoleParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>
+            add_opening_parameters: AddOpeningParameters<T::BlockNumber, BalanceOfGovernanceCurrency<T>>,
         ) {
-            Self::ensure_storage_role_parameters_valid(&role_parameters)?;
 
-            let proposal_parameters =
-                proposal_types::parameters::set_storage_role_parameters_proposal::<T>();
-            let proposal_details =  ProposalDetails::SetStorageRoleParameters(role_parameters);
-            let proposal_code = T::ProposalEncoder::encode_proposal(proposal_details.clone());
-
-            Self::create_proposal(
+            let proposal_details = ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_parameters);
+            let params = CreateProposalParameters{
                 origin,
                 member_id,
                 title,
                 description,
                 stake_balance,
-                proposal_code,
-                proposal_parameters,
-                proposal_details,
-            )?;
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::add_working_group_leader_opening_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
         }
+
+        /// Create 'Begin review working group leader applications' proposal type.
+        /// This proposal uses `begin_applicant_review()` extrinsic from the Joystream `working group` module.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_begin_review_working_group_leader_applications_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            opening_id: working_group::OpeningId<T>,
+            working_group: WorkingGroup,
+        ) {
+
+            let proposal_details = ProposalDetails::BeginReviewWorkingGroupLeaderApplications(opening_id, working_group);
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::begin_review_working_group_leader_applications_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+
+        /// Create 'Fill working group leader opening' proposal type.
+        /// This proposal uses `fill_opening()` extrinsic from the Joystream `working group` module.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_fill_working_group_leader_opening_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            fill_opening_parameters: FillOpeningParameters<
+                T::BlockNumber,
+                BalanceOfMint<T>,
+                working_group::OpeningId<T>,
+                working_group::ApplicationId<T>
+            >
+        ) {
+
+            let proposal_details = ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_parameters);
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::fill_working_group_leader_opening_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+
+        /// Create 'Set working group mint capacity' proposal type.
+        /// This proposal uses `set_mint_capacity()` extrinsic from the `working-group`  module.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_set_working_group_mint_capacity_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            mint_balance: BalanceOfMint<T>,
+            working_group: WorkingGroup,
+        ) {
+            ensure!(
+                mint_balance <= <BalanceOfMint<T>>::from(WORKING_GROUP_MINT_CAPACITY_MAX_VALUE),
+                Error::<T>::InvalidWorkingGroupMintCapacity
+            );
+
+            let proposal_details = ProposalDetails::SetWorkingGroupMintCapacity(mint_balance, working_group);
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::set_working_group_mint_capacity_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+
+        /// Create 'decrease working group leader stake' proposal type.
+        /// This proposal uses `decrease_stake()` extrinsic from the `working-group`  module.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_decrease_working_group_leader_stake_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            worker_id: working_group::WorkerId<T>,
+            decreasing_stake: BalanceOf<T>,
+            working_group: WorkingGroup,
+        ) {
+
+            ensure!(decreasing_stake != Zero::zero(), Error::<T>::DecreasingStakeIsZero);
+
+            let proposal_details = ProposalDetails::DecreaseWorkingGroupLeaderStake(
+                worker_id,
+                decreasing_stake,
+                working_group
+            );
+
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::decrease_working_group_leader_stake_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+
+        /// Create 'slash working group leader stake' proposal type.
+        /// This proposal uses `slash_stake()` extrinsic from the `working-group`  module.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_slash_working_group_leader_stake_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            worker_id: working_group::WorkerId<T>,
+            slashing_stake: BalanceOf<T>,
+            working_group: WorkingGroup,
+        ) {
+
+            ensure!(slashing_stake != Zero::zero(), Error::<T>::SlashingStakeIsZero);
+
+            let proposal_details = ProposalDetails::SlashWorkingGroupLeaderStake(
+                worker_id,
+                slashing_stake,
+                working_group
+            );
+
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::slash_working_group_leader_stake_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+
+        /// Create 'set working group leader reward' proposal type.
+        /// This proposal uses `update_reward_amount()` extrinsic from the `working-group`  module.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_set_working_group_leader_reward_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            worker_id: working_group::WorkerId<T>,
+            reward_amount: BalanceOfMint<T>,
+            working_group: WorkingGroup,
+        ) {
+
+            let proposal_details = ProposalDetails::SetWorkingGroupLeaderReward(
+                worker_id,
+                reward_amount,
+                working_group
+            );
+
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::set_working_group_leader_reward_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+
+        /// Create 'terminate working group leader rolw' proposal type.
+        /// This proposal uses `terminate_role()` extrinsic from the `working-group`  module.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn create_terminate_working_group_leader_role_proposal(
+            origin,
+            member_id: MemberId<T>,
+            title: Vec<u8>,
+            description: Vec<u8>,
+            stake_balance: Option<BalanceOf<T>>,
+            terminate_role_parameters: TerminateRoleParameters<working_group::WorkerId<T>>,
+        ) {
+            let proposal_details = ProposalDetails::TerminateWorkingGroupLeaderRole(terminate_role_parameters);
+
+            let params = CreateProposalParameters{
+                origin,
+                member_id,
+                title,
+                description,
+                stake_balance,
+                proposal_details: proposal_details.clone(),
+                proposal_parameters: proposal_types::parameters::terminate_working_group_leader_role_proposal::<T>(),
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+            };
+
+            Self::create_proposal(params)?;
+        }
+
 
 // *************** Extrinsic to execute
 
         /// Text proposal extrinsic. Should be used as callable object to pass to the `engine` module.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn execute_text_proposal(
             origin,
             text: Vec<u8>,
@@ -717,11 +881,12 @@ decl_module! {
 
         /// Runtime upgrade proposal extrinsic.
         /// Should be used as callable object to pass to the `engine` module.
+        #[weight = 10_000_000] // TODO: adjust weight
         pub fn execute_runtime_upgrade_proposal(
             origin,
             wasm: Vec<u8>,
         ) {
-            let (cloned_origin1, cloned_origin2) =  Self::double_origin(origin);
+            let (cloned_origin1, cloned_origin2) = common::origin::double_origin::<T>(origin);
             ensure_root(cloned_origin1)?;
 
             print("Runtime upgrade proposal execution started.");
@@ -734,282 +899,126 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    // Multiplies the T::Origin.
-    // In our current substrate version system::Origin doesn't support clone(),
-    // but it will be supported in latest up-to-date substrate version.
-    // TODO: delete when T::Origin will support the clone()
-    fn double_origin(origin: T::Origin) -> (T::Origin, T::Origin) {
-        let coerced_origin = origin.into().ok().unwrap_or(RawOrigin::None);
-
-        let (cloned_origin1, cloned_origin2) = match coerced_origin {
-            RawOrigin::None => (RawOrigin::None, RawOrigin::None),
-            RawOrigin::Root => (RawOrigin::Root, RawOrigin::Root),
-            RawOrigin::Signed(account_id) => (
-                RawOrigin::Signed(account_id.clone()),
-                RawOrigin::Signed(account_id),
-            ),
-        };
-
-        (cloned_origin1.into(), cloned_origin2.into())
-    }
-
     // Generic template proposal builder
-    fn create_proposal(
-        origin: T::Origin,
-        member_id: MemberId<T>,
-        title: Vec<u8>,
-        description: Vec<u8>,
-        stake_balance: Option<BalanceOf<T>>,
-        proposal_code: Vec<u8>,
-        proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>,
-        proposal_details: ProposalDetails<
-            BalanceOfMint<T>,
-            BalanceOfGovernanceCurrency<T>,
-            T::BlockNumber,
-            T::AccountId,
-            T::MemberId,
-        >,
-    ) -> DispatchResult<Error> {
-        let account_id = T::MembershipOriginValidator::ensure_actor_origin(origin, member_id)?;
+    fn create_proposal(params: CreateProposalParameters<T>) -> DispatchResult {
+        let account_id =
+            T::MembershipOriginValidator::ensure_actor_origin(params.origin, params.member_id)?;
 
-        <proposal_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
-            &proposal_parameters,
-            &title,
-            &description,
-            stake_balance,
+        <proposals_engine::Module<T>>::ensure_create_proposal_parameters_are_valid(
+            &params.proposal_parameters,
+            &params.title,
+            &params.description,
+            params.stake_balance,
         )?;
 
-        <proposal_discussion::Module<T>>::ensure_can_create_thread(member_id, &title)?;
+        <proposals_discussion::Module<T>>::ensure_can_create_thread(
+            params.member_id,
+            &params.title,
+        )?;
 
-        let discussion_thread_id =
-            <proposal_discussion::Module<T>>::create_thread(member_id, title.clone())?;
+        let discussion_thread_id = <proposals_discussion::Module<T>>::create_thread(
+            params.member_id,
+            params.title.clone(),
+        )?;
 
-        let proposal_id = <proposal_engine::Module<T>>::create_proposal(
+        let proposal_id = <proposals_engine::Module<T>>::create_proposal(
             account_id,
-            member_id,
-            proposal_parameters,
-            title,
-            description,
-            stake_balance,
-            proposal_code,
+            params.member_id,
+            params.proposal_parameters,
+            params.title,
+            params.description,
+            params.stake_balance,
+            params.proposal_code,
         )?;
 
         <ThreadIdByProposalId<T>>::insert(proposal_id, discussion_thread_id);
-        <ProposalDetailsByProposalId<T>>::insert(proposal_id, proposal_details);
+        <ProposalDetailsByProposalId<T>>::insert(proposal_id, params.proposal_details);
 
         Ok(())
     }
-
-    // validates storage role parameters for the 'Set storage role parameters' proposal
-    fn ensure_storage_role_parameters_valid(
-        role_parameters: &RoleParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>,
-    ) -> Result<(), Error> {
-        ensure!(
-            role_parameters.min_actors < ROLE_PARAMETERS_MIN_ACTORS_MAX_VALUE,
-            Error::InvalidStorageRoleParameterMinActors
-        );
-
-        ensure!(
-            role_parameters.max_actors >= ROLE_PARAMETERS_MAX_ACTORS_MIN_VALUE,
-            Error::InvalidStorageRoleParameterMaxActors
-        );
-
-        ensure!(
-            role_parameters.max_actors < ROLE_PARAMETERS_MAX_ACTORS_MAX_VALUE,
-            Error::InvalidStorageRoleParameterMaxActors
-        );
-
-        ensure!(
-            role_parameters.reward_period
-                >= T::BlockNumber::from(ROLE_PARAMETERS_REWARD_PERIOD_MIN_VALUE),
-            Error::InvalidStorageRoleParameterRewardPeriod
-        );
-
-        ensure!(
-            role_parameters.reward_period
-                <= T::BlockNumber::from(ROLE_PARAMETERS_REWARD_PERIOD_MAX_VALUE),
-            Error::InvalidStorageRoleParameterRewardPeriod
-        );
-
-        ensure!(
-            role_parameters.bonding_period
-                >= T::BlockNumber::from(ROLE_PARAMETERS_BONDING_PERIOD_MIN_VALUE),
-            Error::InvalidStorageRoleParameterBondingPeriod
-        );
-
-        ensure!(
-            role_parameters.bonding_period
-                <= T::BlockNumber::from(ROLE_PARAMETERS_BONDING_PERIOD_MAX_VALUE),
-            Error::InvalidStorageRoleParameterBondingPeriod
-        );
-
-        ensure!(
-            role_parameters.unbonding_period
-                >= T::BlockNumber::from(ROLE_PARAMETERS_UNBONDING_PERIOD_MIN_VALUE),
-            Error::InvalidStorageRoleParameterUnbondingPeriod
-        );
-
-        ensure!(
-            role_parameters.unbonding_period
-                <= T::BlockNumber::from(ROLE_PARAMETERS_UNBONDING_PERIOD_MAX_VALUE),
-            Error::InvalidStorageRoleParameterUnbondingPeriod
-        );
-
-        ensure!(
-            role_parameters.min_service_period
-                >= T::BlockNumber::from(ROLE_PARAMETERS_MIN_SERVICE_PERIOD_MIN_VALUE),
-            Error::InvalidStorageRoleParameterMinServicePeriod
-        );
-
-        ensure!(
-            role_parameters.min_service_period
-                <= T::BlockNumber::from(ROLE_PARAMETERS_MIN_SERVICE_PERIOD_MAX_VALUE),
-            Error::InvalidStorageRoleParameterMinServicePeriod
-        );
-
-        ensure!(
-            role_parameters.startup_grace_period
-                >= T::BlockNumber::from(ROLE_PARAMETERS_STARTUP_GRACE_PERIOD_MIN_VALUE),
-            Error::InvalidStorageRoleParameterStartupGracePeriod
-        );
-
-        ensure!(
-            role_parameters.startup_grace_period
-                <= T::BlockNumber::from(ROLE_PARAMETERS_STARTUP_GRACE_PERIOD_MAX_VALUE),
-            Error::InvalidStorageRoleParameterStartupGracePeriod
-        );
-
-        ensure!(
-            role_parameters.min_stake
-                > <BalanceOfGovernanceCurrency<T>>::from(ROLE_PARAMETERS_MIN_STAKE_MIN_VALUE),
-            Error::InvalidStorageRoleParameterMinStake
-        );
-
-        ensure!(
-            role_parameters.min_stake
-                <= <BalanceOfGovernanceCurrency<T>>::from(ROLE_PARAMETERS_MIN_STAKE_MAX_VALUE),
-            Error::InvalidStorageRoleParameterMinStake
-        );
-
-        ensure!(
-            role_parameters.entry_request_fee
-                > <BalanceOfGovernanceCurrency<T>>::from(
-                    ROLE_PARAMETERS_ENTRY_REQUEST_FEE_MIN_VALUE
-                ),
-            Error::InvalidStorageRoleParameterEntryRequestFee
-        );
-
-        ensure!(
-            role_parameters.entry_request_fee
-                <= <BalanceOfGovernanceCurrency<T>>::from(
-                    ROLE_PARAMETERS_ENTRY_REQUEST_FEE_MAX_VALUE
-                ),
-            Error::InvalidStorageRoleParameterEntryRequestFee
-        );
-
-        ensure!(
-            role_parameters.reward
-                > <BalanceOfGovernanceCurrency<T>>::from(ROLE_PARAMETERS_REWARD_MIN_VALUE),
-            Error::InvalidStorageRoleParameterReward
-        );
-
-        ensure!(
-            role_parameters.reward
-                < <BalanceOfGovernanceCurrency<T>>::from(ROLE_PARAMETERS_REWARD_MAX_VALUE),
-            Error::InvalidStorageRoleParameterReward
-        );
-
-        Ok(())
-    }
-
-    /*
-    entry_request_fee [tJOY]	>0	<1%	NA
-    * Not enforced by runtime. Should not be displayed in the UI, or at least grayed out.
-    ** Should not be displayed in the UI, or at least grayed out.
-        */
 
     // validates council election parameters for the 'Set election parameters' proposal
     pub(crate) fn ensure_council_election_parameters_valid(
         election_parameters: &ElectionParameters<BalanceOfGovernanceCurrency<T>, T::BlockNumber>,
-    ) -> Result<(), Error> {
+    ) -> DispatchResult {
         ensure!(
             election_parameters.council_size >= ELECTION_PARAMETERS_COUNCIL_SIZE_MIN_VALUE,
-            Error::InvalidCouncilElectionParameterCouncilSize
+            Error::<T>::InvalidCouncilElectionParameterCouncilSize
         );
 
         ensure!(
             election_parameters.council_size <= ELECTION_PARAMETERS_COUNCIL_SIZE_MAX_VALUE,
-            Error::InvalidCouncilElectionParameterCouncilSize
+            Error::<T>::InvalidCouncilElectionParameterCouncilSize
         );
 
         ensure!(
             election_parameters.candidacy_limit >= ELECTION_PARAMETERS_CANDIDACY_LIMIT_MIN_VALUE,
-            Error::InvalidCouncilElectionParameterCandidacyLimit
+            Error::<T>::InvalidCouncilElectionParameterCandidacyLimit
         );
 
         ensure!(
             election_parameters.candidacy_limit <= ELECTION_PARAMETERS_CANDIDACY_LIMIT_MAX_VALUE,
-            Error::InvalidCouncilElectionParameterCandidacyLimit
+            Error::<T>::InvalidCouncilElectionParameterCandidacyLimit
         );
 
         ensure!(
             election_parameters.min_voting_stake
                 >= <BalanceOfGovernanceCurrency<T>>::from(ELECTION_PARAMETERS_MIN_STAKE_MIN_VALUE),
-            Error::InvalidCouncilElectionParameterMinVotingStake
+            Error::<T>::InvalidCouncilElectionParameterMinVotingStake
         );
 
         ensure!(
             election_parameters.min_voting_stake
                 <= <BalanceOfGovernanceCurrency<T>>::from(ELECTION_PARAMETERS_MIN_STAKE_MAX_VALUE),
-            Error::InvalidCouncilElectionParameterMinVotingStake
+            Error::<T>::InvalidCouncilElectionParameterMinVotingStake
         );
 
         ensure!(
             election_parameters.new_term_duration
                 >= T::BlockNumber::from(ELECTION_PARAMETERS_NEW_TERM_DURATION_MIN_VALUE),
-            Error::InvalidCouncilElectionParameterNewTermDuration
+            Error::<T>::InvalidCouncilElectionParameterNewTermDuration
         );
 
         ensure!(
             election_parameters.new_term_duration
                 <= T::BlockNumber::from(ELECTION_PARAMETERS_NEW_TERM_DURATION_MAX_VALUE),
-            Error::InvalidCouncilElectionParameterNewTermDuration
+            Error::<T>::InvalidCouncilElectionParameterNewTermDuration
         );
 
         ensure!(
             election_parameters.revealing_period
                 >= T::BlockNumber::from(ELECTION_PARAMETERS_REVEALING_PERIOD_MIN_VALUE),
-            Error::InvalidCouncilElectionParameterRevealingPeriod
+            Error::<T>::InvalidCouncilElectionParameterRevealingPeriod
         );
 
         ensure!(
             election_parameters.revealing_period
                 <= T::BlockNumber::from(ELECTION_PARAMETERS_REVEALING_PERIOD_MAX_VALUE),
-            Error::InvalidCouncilElectionParameterRevealingPeriod
+            Error::<T>::InvalidCouncilElectionParameterRevealingPeriod
         );
 
         ensure!(
             election_parameters.voting_period
                 >= T::BlockNumber::from(ELECTION_PARAMETERS_VOTING_PERIOD_MIN_VALUE),
-            Error::InvalidCouncilElectionParameterVotingPeriod
+            Error::<T>::InvalidCouncilElectionParameterVotingPeriod
         );
 
         ensure!(
             election_parameters.voting_period
                 <= T::BlockNumber::from(ELECTION_PARAMETERS_VOTING_PERIOD_MAX_VALUE),
-            Error::InvalidCouncilElectionParameterVotingPeriod
+            Error::<T>::InvalidCouncilElectionParameterVotingPeriod
         );
 
         ensure!(
             election_parameters.announcing_period
                 >= T::BlockNumber::from(ELECTION_PARAMETERS_ANNOUNCING_PERIOD_MIN_VALUE),
-            Error::InvalidCouncilElectionParameterAnnouncingPeriod
+            Error::<T>::InvalidCouncilElectionParameterAnnouncingPeriod
         );
 
         ensure!(
             election_parameters.announcing_period
                 <= T::BlockNumber::from(ELECTION_PARAMETERS_ANNOUNCING_PERIOD_MAX_VALUE),
-            Error::InvalidCouncilElectionParameterAnnouncingPeriod
+            Error::<T>::InvalidCouncilElectionParameterAnnouncingPeriod
         );
 
         ensure!(
@@ -1017,7 +1026,7 @@ impl<T: Trait> Module<T> {
                 >= <BalanceOfGovernanceCurrency<T>>::from(
                     ELECTION_PARAMETERS_MIN_COUNCIL_STAKE_MIN_VALUE
                 ),
-            Error::InvalidCouncilElectionParameterMinCouncilStake
+            Error::<T>::InvalidCouncilElectionParameterMinCouncilStake
         );
 
         ensure!(
@@ -1025,17 +1034,15 @@ impl<T: Trait> Module<T> {
                 <= <BalanceOfGovernanceCurrency<T>>::from(
                     ELECTION_PARAMETERS_MIN_COUNCIL_STAKE_MAX_VALUE
                 ),
-            Error::InvalidCouncilElectionParameterMinCouncilStake
+            Error::<T>::InvalidCouncilElectionParameterMinCouncilStake
         );
 
         Ok(())
     }
 
-    /// Sets default config values for the proposals.
+    /// Sets config values for the proposals.
     /// Should be called on the migration to the new runtime version.
-    pub fn set_default_config_values() {
-        let p = ProposalsConfigParameters::default();
-
+    pub fn set_config_values(p: ProposalsConfigParameters) {
         <SetValidatorCountProposalVotingPeriod<T>>::put(T::BlockNumber::from(
             p.set_validator_count_proposal_voting_period,
         ));
@@ -1074,17 +1081,57 @@ impl<T: Trait> Module<T> {
         <SpendingProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.spending_proposal_grace_period,
         ));
-        <EvictStorageProviderProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.evict_storage_provider_proposal_voting_period,
+        <AddWorkingGroupOpeningProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.add_working_group_opening_proposal_voting_period,
         ));
-        <EvictStorageProviderProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.evict_storage_provider_proposal_grace_period,
+        <AddWorkingGroupOpeningProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.add_working_group_opening_proposal_grace_period,
         ));
-        <SetStorageRoleParametersProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.set_storage_role_parameters_proposal_voting_period,
+        <BeginReviewWorkingGroupLeaderApplicationsProposalVotingPeriod<T>>::put(
+            T::BlockNumber::from(
+                p.begin_review_working_group_leader_applications_proposal_voting_period,
+            ),
+        );
+        <BeginReviewWorkingGroupLeaderApplicationsProposalGracePeriod<T>>::put(
+            T::BlockNumber::from(
+                p.begin_review_working_group_leader_applications_proposal_grace_period,
+            ),
+        );
+        <FillWorkingGroupLeaderOpeningProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.fill_working_group_leader_opening_proposal_voting_period,
         ));
-        <SetStorageRoleParametersProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.set_storage_role_parameters_proposal_grace_period,
+        <FillWorkingGroupLeaderOpeningProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.fill_working_group_leader_opening_proposal_grace_period,
+        ));
+        <SetWorkingGroupMintCapacityProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.set_working_group_mint_capacity_proposal_voting_period,
+        ));
+        <SetWorkingGroupMintCapacityProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.set_working_group_mint_capacity_proposal_grace_period,
+        ));
+        <DecreaseWorkingGroupLeaderStakeProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.decrease_working_group_leader_stake_proposal_voting_period,
+        ));
+        <DecreaseWorkingGroupLeaderStakeProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.decrease_working_group_leader_stake_proposal_grace_period,
+        ));
+        <SlashWorkingGroupLeaderStakeProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.slash_working_group_leader_stake_proposal_voting_period,
+        ));
+        <SlashWorkingGroupLeaderStakeProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.slash_working_group_leader_stake_proposal_grace_period,
+        ));
+        <SetWorkingGroupLeaderRewardProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.set_working_group_leader_reward_proposal_voting_period,
+        ));
+        <SetWorkingGroupLeaderRewardProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.set_working_group_leader_reward_proposal_grace_period,
+        ));
+        <TerminateWorkingGroupLeaderRoleProposalVotingPeriod<T>>::put(T::BlockNumber::from(
+            p.terminate_working_group_leader_role_proposal_voting_period,
+        ));
+        <TerminateWorkingGroupLeaderRoleProposalGracePeriod<T>>::put(T::BlockNumber::from(
+            p.terminate_working_group_leader_role_proposal_grace_period,
         ));
     }
 }

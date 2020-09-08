@@ -1,0 +1,20 @@
+version: '3'
+services:
+  ipfs:
+    image: ipfs/go-ipfs:latest
+    ports:
+      - '127.0.0.1:5001:5001'
+    volumes:
+      - ipfs-data:/data/ipfs
+  chain:
+    image: joystream/node:latest
+    ports:
+      - '127.0.0.1:9944:9944'
+    volumes:
+      - chain-data:/data
+    command: --dev --ws-external --base-path /data
+volumes:
+  ipfs-data:
+    driver: local
+  chain-data:
+    driver: local

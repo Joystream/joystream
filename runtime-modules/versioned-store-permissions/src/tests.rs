@@ -2,10 +2,10 @@
 
 use super::*;
 use crate::mock::*;
-use rstd::collections::btree_set::BTreeSet;
+use sp_std::collections::btree_set::BTreeSet;
 use versioned_store::PropertyType;
 
-use srml_support::{assert_err, assert_ok};
+use frame_support::{assert_err, assert_ok};
 
 fn simple_test_schema() -> Vec<Property> {
     vec![Property {
@@ -77,7 +77,7 @@ fn create_class_then_entity_with_default_class_permissions() {
 
         let class_id = create_simple_class_with_default_permissions();
 
-        assert!(<ClassPermissionsByClassId<Runtime>>::exists(class_id));
+        assert!(<ClassPermissionsByClassId<Runtime>>::contains_key(class_id));
 
         // default class permissions have empty add_schema acl
         assert_err!(
@@ -94,7 +94,7 @@ fn create_class_then_entity_with_default_class_permissions() {
         // give members of GROUP_ZERO permission to add schemas
         let add_schema_set = CredentialSet::from(vec![0]);
         assert_ok!(Permissions::set_class_add_schemas_set(
-            Origin::ROOT,
+            system::RawOrigin::Root.into(),
             None,
             class_id,
             add_schema_set
@@ -111,9 +111,15 @@ fn create_class_then_entity_with_default_class_permissions() {
 
         // System can always create entities (provided class exists) bypassing any permissions
         let entity_id_1 = next_entity_id();
-        assert_ok!(Permissions::create_entity(Origin::ROOT, None, class_id,));
+        assert_ok!(Permissions::create_entity(
+            system::RawOrigin::Root.into(),
+            None,
+            class_id,
+        ));
         // entities created by system are "un-owned"
-        assert!(!<EntityMaintainerByEntityId<Runtime>>::exists(entity_id_1));
+        assert!(!<EntityMaintainerByEntityId<Runtime>>::contains_key(
+            entity_id_1
+        ));
         assert_eq!(
             Permissions::entity_maintainer_by_entity_id(entity_id_1),
             None
@@ -130,7 +136,7 @@ fn create_class_then_entity_with_default_class_permissions() {
         );
 
         assert_ok!(Permissions::set_class_entities_can_be_created(
-            Origin::ROOT,
+            system::RawOrigin::Root.into(),
             None,
             class_id,
             true
@@ -148,7 +154,7 @@ fn create_class_then_entity_with_default_class_permissions() {
         // give members of GROUP_ONE permission to create entities
         let create_entities_set = CredentialSet::from(vec![1]);
         assert_ok!(Permissions::set_class_create_entities_set(
-            Origin::ROOT,
+            system::RawOrigin::Root.into(),
             None,
             class_id,
             create_entities_set
@@ -160,7 +166,9 @@ fn create_class_then_entity_with_default_class_permissions() {
             Some(1),
             class_id,
         ));
-        assert!(<EntityMaintainerByEntityId<Runtime>>::exists(entity_id_2));
+        assert!(<EntityMaintainerByEntityId<Runtime>>::contains_key(
+            entity_id_2
+        ));
         assert_eq!(
             Permissions::entity_maintainer_by_entity_id(entity_id_2),
             Some(1)
@@ -216,7 +224,7 @@ fn class_permissions_set_admins() {
         );
         assert_err!(
             Permissions::set_class_admins(
-                Origin::NONE, //unsigned inherent?
+                system::RawOrigin::None.into(), //unsigned inherent?
                 class_id,
                 credential_set.clone()
             ),
@@ -225,7 +233,7 @@ fn class_permissions_set_admins() {
 
         // root origin can set admins
         assert_ok!(Permissions::set_class_admins(
-            Origin::ROOT,
+            system::RawOrigin::Root.into(),
             class_id,
             credential_set.clone()
         ));
@@ -250,7 +258,7 @@ fn class_permissions_set_add_schemas_set() {
 
         // root
         assert_ok!(Permissions::set_class_add_schemas_set(
-            Origin::ROOT,
+            system::RawOrigin::Root.into(),
             None,
             class_id,
             credential_set1.clone()
@@ -296,7 +304,7 @@ fn class_permissions_set_class_create_entities_set() {
 
         // root
         assert_ok!(Permissions::set_class_create_entities_set(
-            Origin::ROOT,
+            system::RawOrigin::Root.into(),
             None,
             class_id,
             credential_set1.clone()
@@ -339,7 +347,7 @@ fn class_permissions_set_class_entities_can_be_created() {
 
         // root
         assert_ok!(Permissions::set_class_entities_can_be_created(
-            Origin::ROOT,
+            system::RawOrigin::Root.into(),
             None,
             class_id,
             true
@@ -387,7 +395,7 @@ fn class_permissions_set_class_entity_permissions() {
 
         //root
         assert_ok!(Permissions::set_class_entity_permissions(
-            Origin::ROOT,
+            system::RawOrigin::Root.into(),
             None,
             class_id,
             entity_permissions1.clone()
@@ -441,7 +449,7 @@ fn class_permissions_set_class_reference_constraint() {
 
         //root
         assert_ok!(Permissions::set_class_reference_constraint(
-            Origin::ROOT,
+            system::RawOrigin::Root.into(),
             None,
             class_id,
             reference_constraint1.clone()
@@ -505,7 +513,7 @@ fn batch_transaction_simple() {
         }];
 
         assert_ok!(Permissions::add_class_schema(
-            Origin::ROOT,
+            system::RawOrigin::Root.into(),
             None,
             new_class_id,
             vec![],
@@ -564,8 +572,8 @@ fn batch_transaction_simple() {
         ));
 
         // two entities created
-        assert!(versioned_store::EntityById::exists(entity_id));
-        assert!(versioned_store::EntityById::exists(entity_id + 1));
+        assert!(versioned_store::EntityById::contains_key(entity_id));
+        assert!(versioned_store::EntityById::contains_key(entity_id + 1));
     })
 }
 
@@ -589,7 +597,7 @@ fn batch_transaction_vector_of_entities() {
         }];
 
         assert_ok!(Permissions::add_class_schema(
-            Origin::ROOT,
+            system::RawOrigin::Root.into(),
             None,
             new_class_id,
             vec![],
@@ -645,9 +653,9 @@ fn batch_transaction_vector_of_entities() {
         ));
 
         // three entities created
-        assert!(versioned_store::EntityById::exists(entity_id));
-        assert!(versioned_store::EntityById::exists(entity_id + 1));
-        assert!(versioned_store::EntityById::exists(entity_id + 2));
+        assert!(versioned_store::EntityById::contains_key(entity_id));
+        assert!(versioned_store::EntityById::contains_key(entity_id + 1));
+        assert!(versioned_store::EntityById::contains_key(entity_id + 2));
 
         assert_eq!(
             versioned_store::EntityById::get(entity_id),

@@ -6,13 +6,12 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#[cfg(feature = "std")]
-use rstd::prelude::*;
-
 use codec::{Codec, Decode, Encode};
-use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic, Zero};
-use srml_support::traits::Currency;
-use srml_support::{decl_module, decl_storage, ensure, Parameter};
+use frame_support::storage::IterableStorageMap;
+use frame_support::traits::Currency;
+use frame_support::{decl_module, decl_storage, ensure, Parameter};
+use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
+use sp_runtime::traits::{MaybeSerialize, Member};
 
 mod mint;
 mod mock;
@@ -27,7 +26,7 @@ pub trait Trait: system::Trait {
     /// The type used as a mint identifier.
     type MintId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -107,13 +106,13 @@ pub enum Adjustment<Balance: Zero, BlockNumber> {
 decl_storage! {
     trait Store for Module<T: Trait> as TokenMint {
         /// Mints
-        pub Mints get(mints) : linked_map T::MintId => Mint<BalanceOf<T>, T::BlockNumber>;
+        pub Mints get(fn mints) : map hasher(blake2_128_concat) T::MintId => Mint<BalanceOf<T>, T::BlockNumber>;
 
         /// The number of mints created.
-        pub MintsCreated get(mints_created): T::MintId;
+        pub MintsCreated get(fn mints_created): T::MintId;
     }
 }
-
+// pub Account: map hasher(blake2_128_concat) T::AccountId => AccountData<T::Balance>;
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn on_finalize(now: T::BlockNumber) {
@@ -125,7 +124,7 @@ decl_module! {
 impl<T: Trait> Module<T> {
     fn update_mints(now: T::BlockNumber) {
         // Are we reading value from storage twice?
-        for (mint_id, ref mut mint) in <Mints<T>>::enumerate() {
+        for (mint_id, ref mut mint) in <Mints<T>>::iter() {
             if mint.maybe_do_capacity_adjustment(now) {
                 <Mints<T>>::insert(&mint_id, mint);
             }
@@ -199,7 +198,10 @@ impl<T: Trait> Module<T> {
             return Ok(());
         }
 
-        ensure!(<Mints<T>>::exists(&mint_id), TransferError::MintNotFound);
+        ensure!(
+            <Mints<T>>::contains_key(&mint_id),
+            TransferError::MintNotFound
+        );
 
         let mut mint = Self::mints(&mint_id);
 
@@ -219,7 +221,10 @@ impl<T: Trait> Module<T> {
         mint_id: T::MintId,
         capacity: BalanceOf<T>,
     ) -> Result<(), GeneralError> {
-        ensure!(<Mints<T>>::exists(&mint_id), GeneralError::MintNotFound);
+        ensure!(
+            <Mints<T>>::contains_key(&mint_id),
+            GeneralError::MintNotFound
+        );
 
         <Mints<T>>::mutate(&mint_id, |mint| {
             mint.set_capacity(capacity);
@@ -237,11 +242,11 @@ impl<T: Trait> Module<T> {
         capacity_to_transfer: BalanceOf<T>,
     ) -> Result<(), CapacityTransferError> {
         ensure!(
-            <Mints<T>>::exists(&source),
+            <Mints<T>>::contains_key(&source),
             CapacityTransferError::SourceMintNotFound
         );
         ensure!(
-            <Mints<T>>::exists(&destination),
+            <Mints<T>>::contains_key(&destination),
             CapacityTransferError::DestinationMintNotFound
         );
 
@@ -256,7 +261,10 @@ impl<T: Trait> Module<T> {
 
     /// Returns a mint's capacity if it exists, error otherwise.
     pub fn get_mint_capacity(mint_id: T::MintId) -> Result<BalanceOf<T>, GeneralError> {
-        ensure!(<Mints<T>>::exists(&mint_id), GeneralError::MintNotFound);
+        ensure!(
+            <Mints<T>>::contains_key(&mint_id),
+            GeneralError::MintNotFound
+        );
         let mint = Self::mints(&mint_id);
 
         Ok(mint.capacity())
@@ -266,7 +274,10 @@ impl<T: Trait> Module<T> {
     pub fn get_mint_next_adjustment(
         mint_id: T::MintId,
     ) -> Result<Option<NextAdjustment<BalanceOf<T>, T::BlockNumber>>, GeneralError> {
-        ensure!(<Mints<T>>::exists(&mint_id), GeneralError::MintNotFound);
+        ensure!(
+            <Mints<T>>::contains_key(&mint_id),
+            GeneralError::MintNotFound
+        );
 
         let mint = Self::mints(&mint_id);
 
@@ -275,6 +286,6 @@ impl<T: Trait> Module<T> {
 
     /// Returns true if a mint exists.
     pub fn mint_exists(mint_id: T::MintId) -> bool {
-        <Mints<T>>::exists(&mint_id)
+        <Mints<T>>::contains_key(&mint_id)
     }
 }

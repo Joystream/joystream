@@ -3,7 +3,7 @@
 use super::*;
 use crate::mock::*;
 
-use srml_support::assert_ok;
+use frame_support::assert_ok;
 
 /// This example uses Class, Properties, Schema and Entity structures
 /// to describe the Staked podcast channel and its second episode.

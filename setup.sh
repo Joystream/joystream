@@ -9,7 +9,14 @@ set -e
 #  - skips installing substrate and subkey
 curl https://getsubstrate.io -sSf | bash -s -- --fast
 
+source ~/.cargo/env
+
 rustup component add rustfmt clippy
 
 # TODO: Install additional tools...
+
 # - b2sum
+# - nodejs
+# - npm
+# - yarn
+# .... ?

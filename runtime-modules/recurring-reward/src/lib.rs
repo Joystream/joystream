@@ -7,13 +7,14 @@
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
-use rstd::prelude::*;
 
 use codec::{Codec, Decode, Encode};
-use runtime_primitives::traits::{MaybeSerialize, Member, One, SimpleArithmetic, Zero};
-use srml_support::{decl_module, decl_storage, ensure, Parameter};
+use frame_support::storage::IterableStorageMap;
+use frame_support::{decl_module, decl_storage, ensure, Parameter};
+use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
+use sp_runtime::traits::{MaybeSerialize, Member};
 
-use minting::{self, BalanceOf};
+use minting::BalanceOf;
 
 mod mock;
 mod tests;
@@ -24,7 +25,7 @@ pub trait Trait: system::Trait + minting::Trait {
     /// Type of identifier for recipients.
     type RecipientId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -34,7 +35,7 @@ pub trait Trait: system::Trait + minting::Trait {
     /// Type for identifier for relationship representing that a recipient recieves recurring reward from a token mint
     type RewardRelationshipId: Parameter
         + Member
-        + SimpleArithmetic
+        + BaseArithmetic
         + Codec
         + Default
         + Copy
@@ -94,10 +95,10 @@ pub struct RewardRelationship<AccountId, Balance, BlockNumber, MintId, Recipient
     mint_id: MintId,
 
     /// Destination account for reward
-    account: AccountId,
+    pub account: AccountId,
 
     /// The payout amount at the next payout
-    amount_per_payout: Balance,
+    pub amount_per_payout: Balance,
 
     /// When set, identifies block when next payout should be processed,
     /// otherwise there is no pending payout
@@ -142,13 +143,15 @@ impl<AccountId: Clone, Balance: Clone, BlockNumber: Clone, MintId: Clone, Recipi
 
 decl_storage! {
     trait Store for Module<T: Trait> as RecurringReward {
-        Recipients get(recipients): linked_map T::RecipientId => Recipient<BalanceOf<T>>;
+        Recipients get(fn recipients): map hasher(blake2_128_concat)
+            T::RecipientId => Recipient<BalanceOf<T>>;
 
-        RecipientsCreated get(recipients_created): T::RecipientId;
+        RecipientsCreated get(fn recipients_created): T::RecipientId;
 
-        RewardRelationships get(reward_relationships): linked_map T::RewardRelationshipId => RewardRelationship<T::AccountId, BalanceOf<T>, T::BlockNumber, T::MintId, T::RecipientId>;
+        pub RewardRelationships get(fn reward_relationships): map hasher(blake2_128_concat)
+            T::RewardRelationshipId => RewardRelationship<T::AccountId, BalanceOf<T>, T::BlockNumber, T::MintId, T::RecipientId>;
 
-        RewardRelationshipsCreated get(reward_relationships_created): T::RewardRelationshipId;
+        RewardRelationshipsCreated get(fn reward_relationships_created): T::RewardRelationshipId;
     }
 }
 
@@ -192,7 +195,7 @@ impl<T: Trait> Module<T> {
             RewardsError::RewardSourceNotFound
         );
         ensure!(
-            <Recipients<T>>::exists(recipient),
+            <Recipients<T>>::contains_key(recipient),
             RewardsError::RecipientNotFound
         );
         ensure!(
@@ -220,7 +223,7 @@ impl<T: Trait> Module<T> {
 
     /// Removes a relationship from RewardRelashionships and its recipient.
     pub fn remove_reward_relationship(id: T::RewardRelationshipId) {
-        if <RewardRelationships<T>>::exists(&id) {
+        if <RewardRelationships<T>>::contains_key(&id) {
             <Recipients<T>>::remove(<RewardRelationships<T>>::take(&id).recipient);
         }
     }
@@ -282,7 +285,7 @@ impl<T: Trait> Module<T> {
         new_payout_interval: Option<Option<T::BlockNumber>>,
     ) -> Result<(), RewardsError> {
         ensure!(
-            <RewardRelationships<T>>::exists(&id),
+            <RewardRelationships<T>>::contains_key(&id),
             RewardsError::RewardRelationshipNotFound
         );
 
@@ -320,8 +323,8 @@ impl<T: Trait> Module<T> {
     Otherwise, analogous steps for failure.
     */
     fn do_payouts(now: T::BlockNumber) {
-        for (relationship_id, ref mut relationship) in <RewardRelationships<T>>::enumerate() {
-            assert!(<Recipients<T>>::exists(&relationship.recipient));
+        for (relationship_id, ref mut relationship) in <RewardRelationships<T>>::iter() {
+            assert!(<Recipients<T>>::contains_key(&relationship.recipient));
 
             let mut recipient = Self::recipients(relationship.recipient);
 
@@ -394,7 +397,7 @@ impl<T: Trait> Module<T> {
         RewardRelationship<T::AccountId, BalanceOf<T>, T::BlockNumber, T::MintId, T::RecipientId>,
         (),
     > {
-        ensure!(RewardRelationships::<T>::exists(id), ());
+        ensure!(RewardRelationships::<T>::contains_key(id), ());
 
         let relationship = RewardRelationships::<T>::get(id);
 

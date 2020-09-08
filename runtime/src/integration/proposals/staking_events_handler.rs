@@ -1,8 +1,8 @@
 #![warn(missing_docs)]
 
-use rstd::marker::PhantomData;
-use srml_support::traits::{Currency, Imbalance};
-use srml_support::StorageMap;
+use frame_support::traits::{Currency, Imbalance};
+use frame_support::StorageMap;
+use sp_std::marker::PhantomData;
 
 // Balance alias
 type BalanceOf<T> =
@@ -27,7 +27,7 @@ impl<T: stake::Trait + proposals_engine::Trait> stake::StakingEventsHandler<T>
         _unstaked_amount: BalanceOf<T>,
         remaining_imbalance: NegativeImbalance<T>,
     ) -> NegativeImbalance<T> {
-        if <proposals_engine::StakesProposals<T>>::exists(id) {
+        if <proposals_engine::StakesProposals<T>>::contains_key(id) {
             <proposals_engine::Module<T>>::refund_proposal_stake(*id, remaining_imbalance);
 
             return <NegativeImbalance<T>>::zero(); // imbalance was consumed

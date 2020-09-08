@@ -7,7 +7,6 @@
 
 # joystream/rust-raspberry image was built from:
 # https://github.com/mnaamani/rust-on-raspberry-docker/commit/8536508b743d55c8573043c4082c62da3b4fd3e2
-docker pull joystream/rust-raspberry
 
 docker run \
     --volume ${PWD}/:/home/cross/project \

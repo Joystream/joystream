@@ -1,8 +1,8 @@
 use codec::{Decode, Encode};
-use srml_support::dispatch;
 
 use crate::constraint::*;
 use crate::credentials::*;
+use crate::DispatchResult;
 
 /// Permissions for an instance of a Class in the versioned store.
 #[derive(Encode, Decode, Default, Eq, PartialEq, Clone, Debug)]
@@ -48,7 +48,7 @@ where
     pub fn is_admin(
         class_permissions: &Self,
         access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         match access_level {
             AccessLevel::System => Ok(()),
             AccessLevel::Credential(credential) => {
@@ -66,7 +66,7 @@ where
     pub fn can_add_class_schema(
         class_permissions: &Self,
         access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         match access_level {
             AccessLevel::System => Ok(()),
             AccessLevel::Credential(credential) => {
@@ -84,7 +84,7 @@ where
     pub fn can_create_entity(
         class_permissions: &Self,
         access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         match access_level {
             AccessLevel::System => Ok(()),
             AccessLevel::Credential(credential) => {
@@ -104,7 +104,7 @@ where
     pub fn can_update_entity(
         class_permissions: &Self,
         access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         match access_level {
             AccessLevel::System => Ok(()),
             AccessLevel::Credential(credential) => {

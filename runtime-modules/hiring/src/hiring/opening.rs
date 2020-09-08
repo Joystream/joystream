@@ -1,12 +1,11 @@
-use rstd::clone::Clone;
-use rstd::collections::btree_set::BTreeSet;
-use rstd::prelude::*;
-use rstd::vec::Vec;
+use sp_std::clone::Clone;
+use sp_std::collections::btree_set::BTreeSet;
+use sp_std::prelude::*;
+use sp_std::vec::Vec;
 
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use srml_support::ensure;
 
 use crate::hiring;
 use crate::hiring::*;
@@ -148,48 +147,6 @@ where
             panic!("stage MUST be active")
         }
     }
-
-    /// Performs all necessary check before adding an opening
-    pub(crate) fn ensure_can_add_opening(
-        current_block_height: BlockNumber,
-        activate_at: ActivateOpeningAt<BlockNumber>,
-        runtime_minimum_balance: Balance,
-        application_rationing_policy: Option<ApplicationRationingPolicy>,
-        application_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
-        role_staking_policy: Option<StakingPolicy<Balance, BlockNumber>>,
-    ) -> Result<(), AddOpeningError> {
-        // Check that exact activation is actually in the future
-        ensure!(
-            match activate_at {
-                ActivateOpeningAt::ExactBlock(block_number) => block_number > current_block_height,
-                _ => true,
-            },
-            AddOpeningError::OpeningMustActivateInTheFuture
-        );
-
-        if let Some(app_rationing_policy) = application_rationing_policy {
-            ensure!(
-                app_rationing_policy.max_active_applicants > 0,
-                AddOpeningError::ApplicationRationingZeroMaxApplicants
-            );
-        }
-
-        // Check that staking amounts clear minimum balance required.
-        StakingPolicy::ensure_amount_valid_in_opt_staking_policy(
-            application_staking_policy,
-            runtime_minimum_balance.clone(),
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Application),
-        )?;
-
-        // Check that staking amounts clear minimum balance required.
-        StakingPolicy::ensure_amount_valid_in_opt_staking_policy(
-            role_staking_policy,
-            runtime_minimum_balance,
-            AddOpeningError::StakeAmountLessThanMinimumCurrencyBalance(StakePurpose::Role),
-        )?;
-
-        Ok(())
-    }
 }
 
 /// The stage at which an `Opening` may be at.
@@ -234,8 +191,6 @@ pub enum OpeningStage<BlockNumber, ApplicationId> {
 
         /// Deactivated at any time for any cause.
         deactivated_application_count: u32,
-        // Removed at any time.
-        //removed_application_count: u32
     },
 }
 
@@ -420,20 +375,21 @@ pub enum OpeningDeactivationCause {
     /// Opening was cancelled during accepting application stage
     CancelledInReviewPeriod,
 
-    /// Opening was cancelled after review period exprired
+    /// Opening was cancelled after review period expired.
     ReviewPeriodExpired,
 
-    /// Opening was filled
+    /// Opening was filled.
     Filled,
 }
 
-/// Safe and explict way of chosing
+/// Defines the moment of the opening activation.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
 pub enum ActivateOpeningAt<BlockNumber> {
-    /// Activate opening now (current block)
+    /// Activate opening now (current block).
     CurrentBlock,
 
-    /// Activate opening at block number
+    /// Activate opening at block number.
     ExactBlock(BlockNumber),
 }
 
@@ -443,6 +399,4 @@ pub enum ActivateOpeningAt<BlockNumber> {
 pub struct ApplicationRationingPolicy {
     /// The maximum number of applications that can be on the list at any time.
     pub max_active_applicants: u32,
-    // How applicants will be ranked, in order to respect the maximum simultaneous application limit
-    //pub applicant_ranking: ApplicationRankingPolicy
 }

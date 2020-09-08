@@ -12,16 +12,21 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 #[cfg(feature = "std")]
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use codec::{Decode, Encode};
-use rstd::collections::btree_set::BTreeSet;
-use rstd::prelude::*;
-use srml_support::{decl_event, decl_module, decl_storage, dispatch, ensure};
+use frame_support::{decl_event, decl_module, decl_storage, ensure};
+use sp_std::collections::btree_set::BTreeSet;
+use sp_std::vec;
+use sp_std::vec::Vec;
 
 mod example;
 mod mock;
 mod tests;
+
+//TODO: Convert errors to the Substrate decl_error! macro.
+/// Result with string error message. This exists for backward compatibility purpose.
+pub type DispatchResult = Result<(), &'static str>;
 
 // Validation errors
 // --------------------------------------
@@ -135,7 +140,6 @@ pub struct Entity {
     /// Values for properties on class that are used by some schema used by this entity!
     /// Length is no more than Class.properties.
     pub values: Vec<ClassPropertyValue>,
-    // pub deleted: bool,
 }
 
 /// A schema defines what properties describe an entity
@@ -253,24 +257,24 @@ decl_storage! {
 
     trait Store for Module<T: Trait> as VersionedStore {
 
-        pub ClassById get(class_by_id) config(): map ClassId => Class;
+        pub ClassById get(fn class_by_id) config(): map hasher(blake2_128_concat) ClassId => Class;
 
-        pub EntityById get(entity_by_id) config(): map EntityId => Entity;
+        pub EntityById get(fn entity_by_id) config(): map hasher(blake2_128_concat) EntityId => Entity;
 
-        pub NextClassId get(next_class_id) config(): ClassId;
+        pub NextClassId get(fn next_class_id) config(): ClassId;
 
-        pub NextEntityId get(next_entity_id) config(): EntityId;
+        pub NextEntityId get(fn next_entity_id) config(): EntityId;
 
-        pub PropertyNameConstraint get(property_name_constraint)
+        pub PropertyNameConstraint get(fn property_name_constraint)
             config(): InputValidationLengthConstraint;
 
-        pub PropertyDescriptionConstraint get(property_description_constraint)
+        pub PropertyDescriptionConstraint get(fn property_description_constraint)
             config(): InputValidationLengthConstraint;
 
-        pub ClassNameConstraint get(class_name_constraint)
+        pub ClassNameConstraint get(fn class_name_constraint)
             config(): InputValidationLengthConstraint;
 
-        pub ClassDescriptionConstraint get(class_description_constraint)
+        pub ClassDescriptionConstraint get(fn class_description_constraint)
             config(): InputValidationLengthConstraint;
     }
 }
@@ -346,7 +350,7 @@ impl<T: Trait> Module<T> {
 
         // TODO Use BTreeSet for prop unique names when switched to Substrate 2.
         // There is no support for BTreeSet in Substrate 1 runtime.
-        // use rstd::collections::btree_set::BTreeSet;
+        // use sp_std::collections::btree_set::BTreeSet;
         let mut unique_prop_names = BTreeSet::new();
         for prop in class.properties.iter() {
             unique_prop_names.insert(prop.name.clone());
@@ -375,7 +379,7 @@ impl<T: Trait> Module<T> {
 
         // Check validity of Internal(ClassId) for new_properties.
         let has_unknown_internal_id = new_properties.iter().any(|prop| match prop.prop_type {
-            PropertyType::Internal(other_class_id) => !ClassById::exists(other_class_id),
+            PropertyType::Internal(other_class_id) => !ClassById::contains_key(other_class_id),
             _ => false,
         });
         ensure!(
@@ -434,7 +438,7 @@ impl<T: Trait> Module<T> {
         entity_id: EntityId,
         schema_id: u16,
         property_values: Vec<ClassPropertyValue>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         Self::ensure_known_entity_id(entity_id)?;
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
@@ -521,7 +525,7 @@ impl<T: Trait> Module<T> {
     pub fn update_entity_property_values(
         entity_id: EntityId,
         new_property_values: Vec<ClassPropertyValue>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         Self::ensure_known_entity_id(entity_id)?;
 
         let (entity, class) = Self::get_entity_and_class(entity_id);
@@ -580,7 +584,7 @@ impl<T: Trait> Module<T> {
     }
 
     // Commented out for now <- requested by Bedeho.
-    // pub fn delete_entity(entity_id: EntityId) -> dispatch::Result {
+    // pub fn delete_entity(entity_id: EntityId) -> DispatchResult {
     //     Self::ensure_known_entity_id(entity_id)?;
 
     //     let is_deleted = EntityById::get(entity_id).deleted;
@@ -597,17 +601,17 @@ impl<T: Trait> Module<T> {
     // Helper functions:
     // ----------------------------------------------------------------
 
-    pub fn ensure_known_class_id(class_id: ClassId) -> dispatch::Result {
-        ensure!(ClassById::exists(class_id), ERROR_CLASS_NOT_FOUND);
+    pub fn ensure_known_class_id(class_id: ClassId) -> DispatchResult {
+        ensure!(ClassById::contains_key(class_id), ERROR_CLASS_NOT_FOUND);
         Ok(())
     }
 
-    pub fn ensure_known_entity_id(entity_id: EntityId) -> dispatch::Result {
-        ensure!(EntityById::exists(entity_id), ERROR_ENTITY_NOT_FOUND);
+    pub fn ensure_known_entity_id(entity_id: EntityId) -> DispatchResult {
+        ensure!(EntityById::contains_key(entity_id), ERROR_ENTITY_NOT_FOUND);
         Ok(())
     }
 
-    pub fn ensure_valid_internal_prop(value: PropertyValue, prop: Property) -> dispatch::Result {
+    pub fn ensure_valid_internal_prop(value: PropertyValue, prop: Property) -> DispatchResult {
         match (value, prop.prop_type) {
             (PV::Internal(entity_id), PT::Internal(class_id)) => {
                 Self::ensure_known_class_id(class_id)?;
@@ -625,7 +629,7 @@ impl<T: Trait> Module<T> {
 
     pub fn is_unknown_internal_entity_id(id: PropertyValue) -> bool {
         if let PropertyValue::Internal(entity_id) = id {
-            !EntityById::exists(entity_id)
+            !EntityById::contains_key(entity_id)
         } else {
             false
         }
@@ -637,10 +641,7 @@ impl<T: Trait> Module<T> {
         (entity, class)
     }
 
-    pub fn ensure_property_value_is_valid(
-        value: PropertyValue,
-        prop: Property,
-    ) -> dispatch::Result {
+    pub fn ensure_property_value_is_valid(value: PropertyValue, prop: Property) -> DispatchResult {
         Self::ensure_prop_value_matches_its_type(value.clone(), prop.clone())?;
         Self::ensure_valid_internal_prop(value.clone(), prop.clone())?;
         Self::validate_max_len_if_text_prop(value.clone(), prop.clone())?;
@@ -648,14 +649,14 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    pub fn validate_max_len_if_text_prop(value: PropertyValue, prop: Property) -> dispatch::Result {
+    pub fn validate_max_len_if_text_prop(value: PropertyValue, prop: Property) -> DispatchResult {
         match (value, prop.prop_type) {
             (PV::Text(text), PT::Text(max_len)) => Self::validate_max_len_of_text(text, max_len),
             _ => Ok(()),
         }
     }
 
-    pub fn validate_max_len_of_text(text: Vec<u8>, max_len: u16) -> dispatch::Result {
+    pub fn validate_max_len_of_text(text: Vec<u8>, max_len: u16) -> DispatchResult {
         if text.len() <= max_len as usize {
             Ok(())
         } else {
@@ -667,7 +668,7 @@ impl<T: Trait> Module<T> {
     pub fn validate_max_len_if_vec_prop(
         value: PropertyValue,
         prop: Property,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
 
         fn validate_vec_len<T>(vec: Vec<T>, max_len: u16) -> bool {
             vec.len() <= max_len as usize
@@ -724,7 +725,7 @@ impl<T: Trait> Module<T> {
     pub fn ensure_prop_value_matches_its_type(
         value: PropertyValue,
         prop: Property,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         if Self::does_prop_value_match_type(value, prop) {
             Ok(())
         } else {
@@ -774,7 +775,7 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    pub fn ensure_property_name_is_valid(text: &[u8]) -> dispatch::Result {
+    pub fn ensure_property_name_is_valid(text: &[u8]) -> DispatchResult {
         PropertyNameConstraint::get().ensure_valid(
             text.len(),
             ERROR_PROPERTY_NAME_TOO_SHORT,
@@ -782,7 +783,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    pub fn ensure_property_description_is_valid(text: &[u8]) -> dispatch::Result {
+    pub fn ensure_property_description_is_valid(text: &[u8]) -> DispatchResult {
         PropertyDescriptionConstraint::get().ensure_valid(
             text.len(),
             ERROR_PROPERTY_DESCRIPTION_TOO_SHORT,
@@ -790,7 +791,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    pub fn ensure_class_name_is_valid(text: &[u8]) -> dispatch::Result {
+    pub fn ensure_class_name_is_valid(text: &[u8]) -> DispatchResult {
         ClassNameConstraint::get().ensure_valid(
             text.len(),
             ERROR_CLASS_NAME_TOO_SHORT,
@@ -798,7 +799,7 @@ impl<T: Trait> Module<T> {
         )
     }
 
-    pub fn ensure_class_description_is_valid(text: &[u8]) -> dispatch::Result {
+    pub fn ensure_class_description_is_valid(text: &[u8]) -> DispatchResult {
         ClassDescriptionConstraint::get().ensure_valid(
             text.len(),
             ERROR_CLASS_DESCRIPTION_TOO_SHORT,

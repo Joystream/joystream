@@ -2,7 +2,7 @@
 
 use super::*;
 use crate::mock::*;
-use srml_support::traits::Currency;
+use frame_support::traits::Currency;
 
 fn create_new_mint_with_capacity(capacity: u64) -> u64 {
     let mint_id = Minting::add_mint(capacity, None).ok().unwrap();
@@ -15,9 +15,9 @@ fn create_new_mint_with_capacity(capacity: u64) -> u64 {
 fn adding_recipients() {
     build_test_externalities().execute_with(|| {
         let next_id = Rewards::recipients_created();
-        assert!(!<Recipients<Test>>::exists(&next_id));
+        assert!(!<Recipients<Test>>::contains_key(&next_id));
         let recipient_id = Rewards::add_recipient();
-        assert!(<Recipients<Test>>::exists(&next_id));
+        assert!(<Recipients<Test>>::contains_key(&next_id));
         assert_eq!(recipient_id, next_id);
         assert_eq!(Rewards::recipients_created(), next_id + 1);
     });
@@ -49,7 +49,7 @@ fn adding_relationships() {
             Rewards::reward_relationships_created(),
             next_relationship_id + 1
         );
-        assert!(<RewardRelationships<Test>>::exists(&relationship_id));
+        assert!(<RewardRelationships<Test>>::contains_key(&relationship_id));
         let relationship = Rewards::reward_relationships(&relationship_id);
         assert_eq!(relationship.next_payment_at_block, Some(next_payment_at));
         assert_eq!(relationship.amount_per_payout, payout);

@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig-base.json",
+  "include": [
+    "src/**/*.ts" // Include all files to make sure they're always up-to-date when running scripts
+  ],
+}
