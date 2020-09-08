@@ -1,6 +1,6 @@
 import { css } from '@emotion/core'
 import styled from '@emotion/styled'
-import { colors, spacing } from '../../theme'
+import { colors, sizes, spacing } from '../../theme'
 
 const imageTopOverflow = '2rem'
 
@@ -30,6 +30,7 @@ export const InnerContainer = styled.div<InnerContainerProps>`
   color: ${colors.gray[300]};
   display: flex;
   flex-direction: column;
+  align-items: center;
   height: 100%;
   ${hoverTransition}
 `
@@ -40,7 +41,9 @@ export const Info = styled.div`
   align-items: center;
   text-align: center;
 
-  margin: 12px auto 10px;
+  margin-top: ${sizes.b3}px;
+  padding: 0 ${sizes.b1}px;
+  max-width: 100%;
 `
 
 export const AvatarContainer = styled.div`
