@@ -6,7 +6,7 @@ use crate::{
     EzCouncilStageElection, EzCouncilStageInfo, GenesisConfig, Module, Stage, Trait,
 };
 
-use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
+use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageValue};
 use pallet_balances;
 use rand::Rng;
@@ -205,6 +205,55 @@ pub enum OriginType<AccountId> {
     Root,
 }
 
+pub struct CandidateInfo<T: Trait> {
+    pub origin: OriginType<T::AccountId>,
+    pub candidate: EzCandidate<T>,
+}
+
+pub struct VoterInfo<T: Trait> {
+    pub origin: OriginType<T::AccountId>,
+    pub commitment: T::Hash,
+    pub salt: Vec<u8>,
+    pub vote_for: u64,
+    pub stake: Balance<T, ReferendumInstance>,
+}
+
+pub struct CouncilSettings<T: Trait> {
+    pub council_size: u64,
+    pub min_candidate_count: u64,
+    pub min_candidate_stake: Balance<T, ReferendumInstance>,
+    pub announcing_stage_duration: T::BlockNumber,
+    pub voting_stage_duration: T::BlockNumber,
+    pub reveal_stage_duration: T::BlockNumber,
+}
+
+impl<T: Trait> CouncilSettings<T> {
+    pub fn extract_settings() -> CouncilSettings<T> {
+        let council_size = T::CouncilSize::get();
+
+        CouncilSettings {
+            council_size,
+            min_candidate_count: council_size + <T as Trait>::MinNumberOfExtraCandidates::get(),
+            min_candidate_stake: T::MinCandidateStake::get(),
+            announcing_stage_duration: <T as Trait>::AnnouncingPeriodDuration::get(),
+            voting_stage_duration:
+                <T as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get(),
+            reveal_stage_duration:
+                <T as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(),
+        }
+    }
+}
+
+pub struct CouncilCycleParams<T: Trait> {
+    pub council_settings: CouncilSettings<T>,
+    pub cycle_start_block_number: T::BlockNumber,
+    pub expected_initial_council_members: Vec<EzCandidate<T>>, // council members
+    pub expected_final_council_members: Vec<EzCandidate<T>>, // council members after cycle finishes
+    pub candidates_announcing: Vec<CandidateInfo<T>>, // candidates announcing their candidacy
+    pub expected_candidates: Vec<EzCandidate<T>>, // expected list of candidates after announcement period is over
+    pub voters: Vec<VoterInfo<T>>,                // voters that will participate in council voting
+}
+
 /////////////////// Utility mocks //////////////////////////////////////////////
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
@@ -269,7 +318,7 @@ where
     pub fn generate_candidate(
         index: u64,
         stake: Balance<T, ReferendumInstance>,
-    ) -> (OriginType<T::AccountId>, EzCandidate<T>) {
+    ) -> CandidateInfo<T> {
         let account_id = CANDIDATE_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
         let candidate = EzCandidate::<T> {
@@ -279,21 +328,27 @@ where
 
         Self::topup_account(account_id.into(), stake);
 
-        (origin, candidate)
+        CandidateInfo { origin, candidate }
     }
 
     pub fn generate_voter(
         index: u64,
-        balance: Balance<T, ReferendumInstance>,
+        stake: Balance<T, ReferendumInstance>,
         vote_for_index: u64,
-    ) -> (OriginType<T::AccountId>, T::Hash, Vec<u8>) {
+    ) -> VoterInfo<T> {
         let account_id = VOTER_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
         let (commitment, salt) = Self::vote_commitment(&account_id.into(), &vote_for_index.into());
 
-        Self::topup_account(account_id.into(), balance);
+        Self::topup_account(account_id.into(), stake);
 
-        (origin, commitment, salt)
+        VoterInfo {
+            origin,
+            commitment,
+            salt,
+            vote_for: vote_for_index,
+            stake,
+        }
     }
 
     pub fn generate_salt() -> Vec<u8> {
@@ -433,5 +488,80 @@ where
             ),
             expected_result,
         );
+    }
+
+    /// simulate one council's election cycle
+    pub fn simulate_council_cycle(params: CouncilCycleParams<T>) {
+        let settings = params.council_settings;
+
+        // check initial council members
+        Self::check_council_members(params.expected_initial_council_members.clone());
+
+        // start announcing
+        Self::check_announcing_period(
+            params.cycle_start_block_number,
+            EzCouncilStageAnnouncing::<T> {
+                candidates: params.expected_initial_council_members.clone(),
+            },
+        );
+
+        // announce candidacy for each candidate
+        params.candidates_announcing.iter().for_each(|candidate| {
+            Self::candidate(
+                candidate.origin.clone(),
+                settings.min_candidate_stake,
+                Ok(()),
+            );
+        });
+
+        // forward to election period
+        InstanceMockUtils::<T>::increase_block_number(
+            settings.announcing_stage_duration.into() + 1,
+        );
+
+        // finish announcing period / start referendum -> will cause period prolongement
+        Self::check_election_period(
+            settings.announcing_stage_duration + 1.into(),
+            EzCouncilStageElection::<T> {
+                candidates: params.expected_candidates.clone(),
+            },
+        );
+
+        // vote with all voters
+        params.voters.iter().for_each(|voter| {
+            Self::vote_for_candidate(
+                voter.origin.clone(),
+                voter.commitment.clone(),
+                voter.stake.clone(),
+                Ok(()),
+            )
+        });
+
+        // referendum - start revealing period
+        InstanceMockUtils::<T>::increase_block_number(settings.voting_stage_duration.into() + 1);
+        Self::check_referendum_revealing(
+            settings.min_candidate_count,
+            settings.announcing_stage_duration + settings.voting_stage_duration + 1.into(),
+        );
+
+        // reveal vote for all voters
+        params.voters.iter().for_each(|voter| {
+            Self::reveal_vote(
+                voter.origin.clone(),
+                voter.salt.clone(),
+                voter.vote_for,
+                Ok(()),
+            );
+        });
+
+        // finish election / start idle period
+        InstanceMockUtils::<T>::increase_block_number(settings.reveal_stage_duration.into() + 1);
+        Self::check_idle_period(
+            settings.reveal_stage_duration
+                + settings.announcing_stage_duration
+                + settings.voting_stage_duration
+                + 1.into(),
+        );
+        Self::check_council_members(params.expected_final_council_members.clone());
     }
 }
