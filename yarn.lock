@@ -3464,7 +3464,7 @@
   dependencies:
     "@babel/runtime" "^7.10.5"
 
-"@polkadot/keyring@^1.7.0-beta.5", "@polkadot/keyring@^3.0.1":
+"@polkadot/keyring@3.0.1", "@polkadot/keyring@^1.7.0-beta.5", "@polkadot/keyring@^3.0.1":
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@polkadot/keyring/-/keyring-3.0.1.tgz#3944079697c15b2af81e1f57b1c4aeab703a4fef"
   integrity sha512-vAHSBnisiDYHsBbEzAgIpuwQp3vIDN2uWQ/1wAE2BrKzXCBQM7RrF3LRcLFySk0xzQoDs7AP1TlPoakxJ/C/Qw==
