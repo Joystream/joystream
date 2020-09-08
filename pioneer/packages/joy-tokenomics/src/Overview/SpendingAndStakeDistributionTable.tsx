@@ -1,13 +1,24 @@
 import React from 'react';
-import { Table } from 'semantic-ui-react';
+import { Table, Popup, Icon } from 'semantic-ui-react';
 import styled from 'styled-components';
-import Help from './Help';
-import useWindowDimensions from './hooks/useWindowDimensions';
+import { useWindowDimensions } from '../../../joy-utils/src/react/hooks';
 
 import { TokenomicsData } from '../lib/getTokenomicsData';
 import { StatusServerData } from './index';
 
 const round = (num: number): number => Math.round((num + Number.EPSILON) * 100) / 100;
+
+const applyCss = (columns: number[]): string => {
+  let columnString = '';
+  columns.forEach((column, index) => {
+    if (index === 0) {
+      columnString += `td:nth-of-type(${column}), th:nth-of-type(${column})`;
+    } else {
+      columnString += ` ,td:nth-of-type(${column}), th:nth-of-type(${column})`;
+    }
+  });
+  return columnString;
+};
 
 const StyledTable = styled(Table)`
   border: none !important;
@@ -16,40 +27,30 @@ const StyledTable = styled(Table)`
   @media (max-width: 1400px){
     width:100% !important;
   }
-  & > tbody > tr{
-    td:nth-of-type(1), td:nth-of-type(3), td:nth-of-type(6){
+  & tr {
+    td:nth-of-type(1),
+    th:nth-of-type(1),
+    ${(props): string => applyCss(props.dividecolumnsat)} {
       border-left: 0.12rem solid rgba(20,20,20,0.3) !important;
-    }
-    td:nth-of-type(9){
-      border-right: 0.12rem solid rgba(20,20,20,0.3) !important;
-      border-left:0.12rem solid rgba(20,20,20,0.3) !important;
-    }
-  }
-  & > tbody > tr:nth-of-type(6){
-    td{
-      border-bottom: 0.12rem solid rgba(20,20,20,0.3) !important;
     }
     td:nth-of-type(1){
-      border-bottom-left-radius: .28571429rem !important;
+      position: relative !important;
     }
-    td:nth-of-type(9){
-      border-bottom-right-radius: .28571429rem !important;
-    }
-  }
-  & > thead > tr{
-    th{
-      border-top: 0.12rem solid rgba(20,20,20,0.3) !important;
-    }
-    th:nth-of-type(1), th:nth-of-type(3), th:nth-of-type(6){
-      border-left: 0.12rem solid rgba(20,20,20,0.3) !important;
-    }
-    th:nth-of-type(9){
-      border-right:0.12rem solid rgba(20,20,20,0.3) !important;
-      border-left:0.12rem solid rgba(20,20,20,0.3) !important;
+    td:last-child, th:last-child{
+      border-right: 0.12rem solid rgba(20,20,20,0.3) !important;
     }
   }
-  & > tbody > tr > td:nth-of-type(1){
-    position:relative !important;
+  & tr:last-child > td{
+    border-bottom: 0.12rem solid rgba(20,20,20,0.3) !important;
+  }
+  & tr:last-child > td:nth-of-type(1){
+    border-bottom-left-radius: 0.2rem !important;
+  }
+  & tr:last-child > td:last-child{
+    border-bottom-right-radius: 0.2rem !important;
+  }
+  th{
+    border-top: 0.12rem solid rgba(20,20,20,0.3) !important;
   }
   & .tableColorBlock{
     height: 1rem;
@@ -61,15 +62,15 @@ const StyledTable = styled(Table)`
   }
 `;
 
-const SpendingAndStakeDistributionTableHelp = styled(Help)`
-    position:absolute;
-    cursor:pointer;
-    right:1.7rem;
-    top:0.7rem;
-    @media(max-width: 767px){
-      top:0.8rem;
-      right:3rem;
+const StyledTableRow = styled(Table.Row)`
+  .help-icon{
+    position: absolute !important;
+    right: 0.5rem !important;
+    top: 0.8rem !important;
+    @media (max-width: 767px){
+      top:0.8rem !important;
     }
+  }
 `;
 
 const SpendingAndStakeTableRow: React.FC<{
@@ -84,8 +85,7 @@ const SpendingAndStakeTableRow: React.FC<{
   color?: string;
   active?: boolean;
   helpContent?: string;
-  helpPosition?: string;
-}> = ({ role, numberOfActors, groupEarning, groupEarningDollar, earningShare, groupStake, groupStakeDollar, stakeShare, color, active, helpContent, helpPosition }) => {
+}> = ({ role, numberOfActors, groupEarning, groupEarningDollar, earningShare, groupStake, groupStakeDollar, stakeShare, color, active, helpContent }) => {
   const parseData = (data: string | undefined): string | JSX.Element => {
     if (data && active) {
       return <em>{data}</em>;
@@ -97,10 +97,14 @@ const SpendingAndStakeTableRow: React.FC<{
   };
 
   return (
-    <Table.Row color={active && 'rgb(150, 150, 150)'}>
+    <StyledTableRow color={active && 'rgb(150, 150, 150)'}>
       <Table.Cell>
         {active ? <strong>{role}</strong> : role}
-        {(helpContent && helpPosition) && <SpendingAndStakeDistributionTableHelp position={helpPosition === 'left' ? { left: '2rem' } : { right: '2rem' }} help={helpContent} />}
+        {helpContent && <Popup
+          trigger={<Icon className='help-icon' name="help circle" color="grey"/>}
+          content={helpContent}
+          position='right center'
+        />}
       </Table.Cell>
       <Table.Cell>{parseData(numberOfActors)}</Table.Cell>
       <Table.Cell>{parseData(groupEarning)}</Table.Cell>
@@ -110,15 +114,23 @@ const SpendingAndStakeTableRow: React.FC<{
       <Table.Cell>{parseData(groupStakeDollar)}</Table.Cell>
       <Table.Cell>{parseData(stakeShare)}</Table.Cell>
       <Table.Cell><div className='tableColorBlock' style={{ backgroundColor: color }}></div></Table.Cell>
-    </Table.Row>
+    </StyledTableRow>
   );
 };
 
 const SpendingAndStakeDistributionTable: React.FC<{data: TokenomicsData | undefined; statusData: StatusServerData | undefined | null}> = ({ data, statusData }) => {
   const { width } = useWindowDimensions();
 
+  const displayStatusData = (group: 'validators' | 'council' | 'storageProviders' | 'storageProviderLead' | 'contentCurators', action: 'rewardsPerWeek' | 'totalStake'): string | undefined => {
+    if (group === 'storageProviderLead') {
+      return statusData === null ? 'Data currently unavailable...' : (data && statusData) && `${(data.storageProviders.lead[action] * Number(statusData.price)).toFixed(2)}`;
+    } else {
+      return statusData === null ? 'Data currently unavailable...' : (data && statusData) && `${(data[group][action] * Number(statusData.price)).toFixed(2)}`;
+    }
+  };
+
   return (
-    <StyledTable celled>
+    <StyledTable dividecolumnsat={[3, 6, 9]} celled>
       <Table.Header>
         <Table.Row>
           <Table.HeaderCell width={4}>Group/Role</Table.HeaderCell>
@@ -137,65 +149,60 @@ const SpendingAndStakeDistributionTable: React.FC<{data: TokenomicsData | undefi
         <SpendingAndStakeTableRow
           role={width <= 1050 ? 'Validators' : 'Validators (Nominators)'}
           helpContent='The current set of active Validators (and Nominators), and the sum of the sets projected rewards and total stakes (including Nominators).'
-          helpPosition={width <= 767 ? 'right' : 'left'}
           numberOfActors={data && `${data.validators.number} (${data.validators.nominators.number})`}
           groupEarning={data && `${Math.round(data.validators.rewardsPerWeek)}`}
-          groupEarningDollar={statusData === null ? 'Data currently unavailable..' : (data && statusData) && `${round(data.validators.rewardsPerWeek * Number(statusData.price))}`}
+          groupEarningDollar={displayStatusData('validators', 'rewardsPerWeek')}
           earningShare={data && `${round(data.validators.rewardsShare * 100)}`}
           groupStake={data && `${data.validators.totalStake}`}
-          groupStakeDollar={statusData === null ? 'Data currently unavailable..' : (data && statusData) && `${round(data.validators.totalStake * Number(statusData.price))}`}
+          groupStakeDollar={displayStatusData('validators', 'totalStake')}
           stakeShare={data && `${round(data.validators.stakeShare * 100)}`}
           color='rgb(246, 109, 68)'
         />
         <SpendingAndStakeTableRow
           role={width <= 1015 ? 'Council' : 'Council Members'}
           helpContent='The current Council Members, and the sum of their projected rewards and total stakes (including voters/backers).'
-          helpPosition={width <= 767 ? 'right' : 'left'}
           numberOfActors={data && `${data.council.number}`}
           groupEarning={data && `${Math.round(data.council.rewardsPerWeek)}`}
-          groupEarningDollar={statusData === null ? 'Data currently unavailable..' : (data && statusData) && `${round(data.council.rewardsPerWeek * Number(statusData.price))}`}
+          groupEarningDollar={displayStatusData('council', 'rewardsPerWeek')}
           earningShare={data && `${round(data.council.rewardsShare * 100)}`}
           groupStake={data && `${data.council.totalStake}`}
-          groupStakeDollar={statusData === null ? 'Data currently unavailable..' : (data && statusData) && `${round(data.council.totalStake * Number(statusData.price))}`}
+          groupStakeDollar={displayStatusData('council', 'totalStake')}
           stakeShare={data && `${round(data.council.stakeShare * 100)}`}
           color='rgb(254, 174, 101)'
         />
         <SpendingAndStakeTableRow
           role={width <= 1015 ? 'Storage' : 'Storage Providers'}
           helpContent='The current Storage Providers, and the sum of their projected rewards and stakes.'
-          helpPosition={width <= 767 ? 'right' : 'left'}
           numberOfActors={data && `${data.storageProviders.number}`}
           groupEarning={data && `${Math.round(data.storageProviders.rewardsPerWeek)}`}
-          groupEarningDollar={statusData === null ? 'Data currently unavailable..' : (data && statusData) && `${round(data.storageProviders.rewardsPerWeek * Number(statusData.price))}`}
+          groupEarningDollar={displayStatusData('storageProviders', 'rewardsPerWeek')}
           earningShare={data && `${round(data.storageProviders.rewardsShare * 100)}`}
           groupStake={data && `${data.storageProviders.totalStake}`}
-          groupStakeDollar={statusData === null ? 'Data currently unavailable..' : (data && statusData) && `${round(data.storageProviders.totalStake * Number(statusData.price))}`}
+          groupStakeDollar={displayStatusData('storageProviders', 'totalStake')}
           stakeShare={data && `${round(data.storageProviders.stakeShare * 100)}`}
           color='rgb(230, 246, 157)'
         />
         <SpendingAndStakeTableRow
           role={width <= 1015 ? 'S. Lead' : width <= 1050 ? 'Storage Lead' : 'Storage Provider Lead'}
           helpContent='Current Storage Provider Lead, and their projected reward and stake.'
-          helpPosition={width <= 767 ? 'right' : 'left'}
           numberOfActors={data && `${data.storageProviders.lead.number}`}
           groupEarning={data && `${Math.round(data.storageProviders.lead.rewardsPerWeek)}`}
-          groupEarningDollar={statusData === null ? 'Data currently unavailable..' : (data && statusData) && `${round(data.storageProviders.lead.rewardsPerWeek * Number(statusData.price))}`}
+          groupEarningDollar={displayStatusData('storageProviderLead', 'rewardsPerWeek')}
           earningShare={data && `${round(data.storageProviders.lead.rewardsShare * 100)}`}
           groupStake={data && `${data.storageProviders.lead.totalStake}`}
-          groupStakeDollar={statusData === null ? 'Data currently unavailable..' : (data && statusData) && `${round(data.storageProviders.lead.totalStake * Number(statusData.price))}`}
+          groupStakeDollar={displayStatusData('storageProviderLead', 'totalStake')}
           stakeShare={data && `${round(data.storageProviders.lead.stakeShare * 100)}`}
           color='rgb(170, 222, 167)'
         />
         <SpendingAndStakeTableRow
           role={width <= 1015 ? 'Content' : 'Content Curators'}
           helpContent='The current Content Curators (and their Lead), and the sum of their projected rewards and stakes.'
-          helpPosition={width <= 767 ? 'right' : 'left'}
           numberOfActors={data && `${data.contentCurators.number} (${data.contentCurators.contentCuratorLead})`}
           groupEarning={data && `${Math.round(data.contentCurators.rewardsPerWeek)}`}
-          groupEarningDollar={statusData === null ? 'Data currently unavailable..' : (data && statusData) && `${round(data.contentCurators.rewardsPerWeek * Number(statusData.price))}`}
+          groupEarningDollar={displayStatusData('contentCurators', 'rewardsPerWeek')}
           earningShare={data && `${round(data.contentCurators.rewardsShare * 100)}`}
           groupStake={data && `${data.contentCurators.totalStake}`}
-          groupStakeDollar={statusData === null ? 'Data currently unavailable..' : (data && statusData) && `${round(data.contentCurators.totalStake * Number(statusData.price))}`}
+          groupStakeDollar={displayStatusData('contentCurators', 'totalStake')}
           stakeShare={data && `${round(data.contentCurators.stakeShare * 100)}`}
           color='rgb(100, 194, 166)'
         />
