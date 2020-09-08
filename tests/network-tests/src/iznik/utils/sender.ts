@@ -48,6 +48,7 @@ export class Sender {
               if (event.event.method === 'ExtrinsicFailed') {
                 if (expectFailure) {
                   resolve()
+                  this.clearNonce(account.address)
                 } else {
                   reject(new Error('Extrinsic failed unexpectedly'))
                 }
