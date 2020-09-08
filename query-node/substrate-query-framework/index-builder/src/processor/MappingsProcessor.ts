@@ -123,7 +123,7 @@ export default class MappingsProcessor {
 
   async _onQueryEventBlock(query_event_block: SubstrateEventEntity[]): Promise<void> {
     //debug(`Yay, block producer at height: #${query_event_block.block_number.toString()}`);
-    await asyncForEach(query_event_block, async (event: SubstrateEventEntity) => {
+    for (const event of query_event_block) {
       await doInTransaction(async (queryRunner: QueryRunner) => {
 
         debug(`Processing event ${event.name}, 
@@ -145,7 +145,7 @@ export default class MappingsProcessor {
         debug(`Last saved event: ${JSON.stringify(lastSavedEvent, null, 2)}`);
       });
       
-    });
+    }
   }
 
 
@@ -173,11 +173,5 @@ export default class MappingsProcessor {
 
     this._indexerHead = await getIndexerHead();
     debug(`Current indexer head: ${this._indexerHead}`);
-  }
-}
-
-async function asyncForEach<T>(array: Array<T>, callback: (o: T, i: number, a: Array<T>) => Promise<void>): Promise<void> {
-  for (let index = 0; index < array.length; index++) {
-    await callback(array[index], index, array);
   }
 }
