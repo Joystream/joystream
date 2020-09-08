@@ -25,8 +25,7 @@ pub struct ClassPermissions<T: Trait> {
 
 impl<T: Trait> core::fmt::Debug for ClassPermissions<T> {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "ClassPermissions {{ any_member {:?}, entity_creation_blocked {:?}, all_entity_property_values_locked {:?}, maintainers {:?} }}",
-         self.any_member, self.entity_creation_blocked, self.all_entity_property_values_locked, self.maintainers)
+        write!(formatter, "ClassPermissions {:?}", self)
     }
 }
 
