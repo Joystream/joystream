@@ -62,6 +62,11 @@ pub use proposals_codex::ProposalsConfigParameters;
 pub use versioned_store;
 pub use working_group;
 
+pub use content_directory;
+pub use content_directory::{
+    HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
+};
+
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
@@ -370,6 +375,77 @@ impl versioned_store_permissions::Trait for Runtime {
     );
     type CreateClassPermissionsChecker =
         integration::versioned_store_permissions::ContentLeadOrSudoKeyCanCreateClasses;
+}
+
+impl content_directory::ActorAuthenticator for Runtime {
+    type CuratorId = u64;
+    type MemberId = u64;
+    type CuratorGroupId = u64;
+
+    fn is_lead() -> bool {
+        true
+    }
+
+    fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
+        true
+    }
+
+    fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
+        true
+    }
+}
+
+type EntityId = <Runtime as content_directory::Trait>::EntityId;
+
+parameter_types! {
+    pub const PropertyNameLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 49);
+    pub const PropertyDescriptionLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 500);
+    pub const ClassNameLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 49);
+    pub const ClassDescriptionLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 500);
+
+    pub const MaxNumberOfClasses: MaxNumber = 100;
+    pub const MaxNumberOfMaintainersPerClass: MaxNumber = 10;
+    pub const MaxNumberOfSchemasPerClass: MaxNumber = 20;
+    pub const MaxNumberOfPropertiesPerSchema: MaxNumber = 40;
+    pub const MaxNumberOfEntitiesPerClass: MaxNumber = 400;
+
+    pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
+
+    pub const MaxNumberOfOperationsDuringAtomicBatching: MaxNumber = 500;
+
+    pub const VecMaxLengthConstraint: VecMaxLength = 200;
+    pub const TextMaxLengthConstraint: TextMaxLength = 5000;
+    pub const HashedTextMaxLengthConstraint: HashedTextMaxLength = Some(25000);
+
+    pub const IndividualEntitiesCreationLimit: EntityId = 50;
+}
+
+impl content_directory::Trait for Runtime {
+    type Event = Event;
+    type Nonce = u64;
+    type ClassId = u64;
+    type EntityId = u64;
+
+    type PropertyNameLengthConstraint = PropertyNameLengthConstraint;
+    type PropertyDescriptionLengthConstraint = PropertyDescriptionLengthConstraint;
+    type ClassNameLengthConstraint = ClassNameLengthConstraint;
+    type ClassDescriptionLengthConstraint = ClassDescriptionLengthConstraint;
+
+    type MaxNumberOfClasses = MaxNumberOfClasses;
+    type MaxNumberOfMaintainersPerClass = MaxNumberOfMaintainersPerClass;
+    type MaxNumberOfSchemasPerClass = MaxNumberOfSchemasPerClass;
+    type MaxNumberOfPropertiesPerSchema = MaxNumberOfPropertiesPerSchema;
+    type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
+
+    type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
+
+    type MaxNumberOfOperationsDuringAtomicBatching = MaxNumberOfOperationsDuringAtomicBatching;
+
+    type VecMaxLengthConstraint = VecMaxLengthConstraint;
+    type TextMaxLengthConstraint = TextMaxLengthConstraint;
+    type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
+
+    type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
 }
 
 impl hiring::Trait for Runtime {

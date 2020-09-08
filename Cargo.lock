@@ -2040,6 +2040,7 @@ dependencies = [
  "pallet-balances",
  "pallet-collective",
  "pallet-common",
+ "pallet-content-directory",
  "pallet-content-working-group",
  "pallet-finality-tracker",
  "pallet-forum",
