@@ -30,6 +30,7 @@ pub const POWER_VOTE_STRENGTH: u64 = 10;
 
 pub const VOTER_BASE_ID: u64 = 4000;
 pub const CANDIDATE_BASE_ID: u64 = 5000;
+pub const VOTER_CANDIDATE_OFFSET: u64 = CANDIDATE_BASE_ID - VOTER_BASE_ID;
 
 /////////////////// Runtime and Instances //////////////////////////////////////
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -121,7 +122,7 @@ impl system::Trait for Runtime {
 
 /////////////////// Election module ////////////////////////////////////////////
 
-type ReferendumInstance = referendum::Instance0;
+pub type ReferendumInstance = referendum::Instance0;
 
 thread_local! {
     pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
@@ -205,11 +206,13 @@ pub enum OriginType<AccountId> {
     Root,
 }
 
+#[derive(Clone)]
 pub struct CandidateInfo<T: Trait> {
     pub origin: OriginType<T::AccountId>,
     pub candidate: EzCandidate<T>,
 }
 
+#[derive(Clone)]
 pub struct VoterInfo<T: Trait> {
     pub origin: OriginType<T::AccountId>,
     pub commitment: T::Hash,
@@ -218,6 +221,7 @@ pub struct VoterInfo<T: Trait> {
     pub stake: Balance<T, ReferendumInstance>,
 }
 
+#[derive(Clone)]
 pub struct CouncilSettings<T: Trait> {
     pub council_size: u64,
     pub min_candidate_count: u64,
@@ -244,6 +248,17 @@ impl<T: Trait> CouncilSettings<T> {
     }
 }
 
+#[derive(Clone, PartialEq, Debug)]
+pub enum CouncilCycleInterrupt {
+    BeforeCandidatesAnnounce,
+    AfterCandidatesAnnounce,
+    BeforeVoting,
+    AfterVoting,
+    BeforeRevealing,
+    AfterRevealing,
+}
+
+#[derive(Clone)]
 pub struct CouncilCycleParams<T: Trait> {
     pub council_settings: CouncilSettings<T>,
     pub cycle_start_block_number: T::BlockNumber,
@@ -252,6 +267,22 @@ pub struct CouncilCycleParams<T: Trait> {
     pub candidates_announcing: Vec<CandidateInfo<T>>, // candidates announcing their candidacy
     pub expected_candidates: Vec<EzCandidate<T>>, // expected list of candidates after announcement period is over
     pub voters: Vec<VoterInfo<T>>,                // voters that will participate in council voting
+
+    pub interrupt_point: Option<CouncilCycleInterrupt>, // info about when should be cycle interrupted (used to customize the test)
+}
+
+/////////////////// Util macros ////////////////////////////////////////////////
+macro_rules! escape_checkpoint {
+    ($item:expr, $expected_value:expr) => {
+        if $item == $expected_value {
+            return;
+        }
+    };
+    ($item:expr, $expected_value:expr, $return_value:expr) => {
+        if $item == $expected_value {
+            return $c;
+        }
+    };
 }
 
 /////////////////// Utility mocks //////////////////////////////////////////////
@@ -505,6 +536,11 @@ where
             },
         );
 
+        escape_checkpoint!(
+            params.interrupt_point.clone(),
+            Some(CouncilCycleInterrupt::BeforeCandidatesAnnounce)
+        );
+
         // announce candidacy for each candidate
         params.candidates_announcing.iter().for_each(|candidate| {
             Self::candidate(
@@ -514,7 +550,12 @@ where
             );
         });
 
-        // forward to election period
+        escape_checkpoint!(
+            params.interrupt_point.clone(),
+            Some(CouncilCycleInterrupt::AfterCandidatesAnnounce)
+        );
+
+        // forward to election-voting period
         InstanceMockUtils::<T>::increase_block_number(
             settings.announcing_stage_duration.into() + 1,
         );
@@ -527,6 +568,11 @@ where
             },
         );
 
+        escape_checkpoint!(
+            params.interrupt_point.clone(),
+            Some(CouncilCycleInterrupt::BeforeVoting)
+        );
+
         // vote with all voters
         params.voters.iter().for_each(|voter| {
             Self::vote_for_candidate(
@@ -537,11 +583,23 @@ where
             )
         });
 
-        // referendum - start revealing period
+        escape_checkpoint!(
+            params.interrupt_point.clone(),
+            Some(CouncilCycleInterrupt::AfterVoting)
+        );
+
+        // forward to election-revealing period
         InstanceMockUtils::<T>::increase_block_number(settings.voting_stage_duration.into() + 1);
+
+        // referendum - start revealing period
         Self::check_referendum_revealing(
             settings.min_candidate_count,
             settings.announcing_stage_duration + settings.voting_stage_duration + 1.into(),
+        );
+
+        escape_checkpoint!(
+            params.interrupt_point.clone(),
+            Some(CouncilCycleInterrupt::BeforeRevealing)
         );
 
         // reveal vote for all voters
@@ -553,6 +611,11 @@ where
                 Ok(()),
             );
         });
+
+        escape_checkpoint!(
+            params.interrupt_point.clone(),
+            Some(CouncilCycleInterrupt::AfterRevealing)
+        );
 
         // finish election / start idle period
         InstanceMockUtils::<T>::increase_block_number(settings.reveal_stage_duration.into() + 1);
