@@ -1,5 +1,7 @@
 import { ApiPromise } from '@polkadot/api';
 import { Reward } from './getTokenomicsData';
+import { LeadId } from '@joystream/types/content-working-group';
+import { Option } from '@polkadot/types';
 
 type ContentCurator = {
   reward_relationship: number;
@@ -21,7 +23,7 @@ const getCurators = async (api: ApiPromise): Promise<Array<ContentCurator>> => {
 
 const calculateRewards = (curators: Array<ContentCurator>, recurringRewards: Array<Reward>): number => {
   let rewardsPerBlock = 0;
-  curators.forEach((curator: ContentCurator) => {
+  curators.forEach((curator) => {
     const reward: Reward = recurringRewards.filter((reward: Reward) => reward.recipient === curator.reward_relationship)[0];
     if (reward && reward.amount_per_payout && reward.payout_interval) {
       rewardsPerBlock += reward.amount_per_payout / reward.payout_interval;
@@ -32,7 +34,7 @@ const calculateRewards = (curators: Array<ContentCurator>, recurringRewards: Arr
 
 const calculateStake = async (api: ApiPromise, curators: Array<ContentCurator>): Promise<number> => {
   const stakeIds: Array<number> = []; let totalContentCuratorStake = 0;
-  curators.forEach((curator: any) => {
+  curators.forEach((curator) => {
     if (curator.role_stake_profile) {
       stakeIds.push(curator.role_stake_profile.stake_id);
     }
@@ -44,8 +46,9 @@ const calculateStake = async (api: ApiPromise, curators: Array<ContentCurator>):
   return totalContentCuratorStake;
 };
 
-export default async (api: ApiPromise, recurringRewards: Array<Reward>): Promise<any> => {
-  const currentLead = (await api.query.contentWorkingGroup.currentLeadId()).toJSON() as number;
+export default async (api: ApiPromise, recurringRewards: Array<Reward>) => {
+  const optLeadId = (await api.query.contentWorkingGroup.currentLeadId()) as Option<LeadId>;
+  const currentLead = optLeadId.unwrapOr(null);
   const curators = await getCurators(api);
   const rewardsPerBlock = calculateRewards(curators, recurringRewards);
   const totalContentCuratorStake = await calculateStake(api, curators);

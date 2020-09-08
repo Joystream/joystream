@@ -88,9 +88,6 @@ const calculateProviders = async (api: ApiPromise, storageProviders: Array<Stora
 export default async (api: ApiPromise, recurringRewards: Array<Reward>): Promise<any> => {
   const { numberOfStorageProviders, leadNumber, storageProviders } = await getStorageProviders(api);
   const { totalProviderStake, leadStake, providerRewardsPerBlock, leadRewardsPerBlock } = await calculateProviders(api, storageProviders, recurringRewards);
-
-  console.log(totalProviderStake, leadStake, providerRewardsPerBlock, leadRewardsPerBlock);
-
   return {
     numberOfStorageProviders,
     totalProviderStake,

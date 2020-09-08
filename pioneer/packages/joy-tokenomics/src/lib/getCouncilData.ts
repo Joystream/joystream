@@ -1,29 +1,32 @@
-import { Vec, u32 } from '@polkadot/types';
+import { Vec, Option } from '@polkadot/types';
 import { ApiPromise } from '@polkadot/api';
 import { BlockNumber, BalanceOf } from '@polkadot/types/interfaces';
+import { Seats, Backer } from '@joystream/types/src/council';
 
-const getCouncilMembers = async (api: ApiPromise): Promise<any> => {
+const getCouncilMembers = async (api: ApiPromise) => {
   let totalStake = 0;
-  const activeCouncil = await api.query.council.activeCouncil() as Vec<u32>;
-  const payoutInterval = (await api.query.council.payoutInterval()).toJSON() as number;
+  const activeCouncil = await api.query.council.activeCouncil() as Seats;
+  const payoutInterval = Number((await api.query.council.payoutInterval() as Option<BlockNumber>).unwrapOr(0));
   const amountPerPayout = (await api.query.council.amountPerPayout() as BalanceOf).toNumber();
-  console.log(amountPerPayout, payoutInterval);
-  activeCouncil.map((member: any) => {
+  activeCouncil.map((member) => {
     let stakeAmount = 0;
-    stakeAmount += member.get('stake').toNumber();
-    member.get('backers').forEach((backer: any) => {
-      stakeAmount += backer.stake.toNumber();
-    });
+    stakeAmount += Number(member.get('stake'));
+    const backers = member.get('backers') as Vec<Backer>;
+    if (!backers?.isEmpty) {
+      backers.forEach((backer) => {
+        stakeAmount += Number(backer.get('stake'));
+      });
+    }
     totalStake += stakeAmount;
   });
   return {
     numberOfCouncilMembers: activeCouncil.length,
-    totalCouncilRewardsPerBlock: (amountPerPayout * activeCouncil.length) / payoutInterval,
+    totalCouncilRewardsPerBlock: (amountPerPayout && payoutInterval) ? (amountPerPayout * activeCouncil.length) / payoutInterval : 0,
     totalCouncilStake: totalStake
   };
 };
 
-const calculateCouncilRewards = async (api: ApiPromise, totalCouncilRewardsPerBlock: number): Promise<any> => {
+const calculateCouncilRewards = async (api: ApiPromise, totalCouncilRewardsPerBlock: number): Promise<number> => {
   let weekInBlocks = 100800;
   let councilRewardsInOneWeek = 0;
   const termDuration = (await api.query.councilElection.newTermDuration() as BlockNumber).toNumber();
@@ -57,11 +60,12 @@ const calculateCouncilRewards = async (api: ApiPromise, totalCouncilRewardsPerBl
       return councilRewardsInOneWeek;
     }
   }
+  return councilRewardsInOneWeek;
 };
 
-export default async (api: ApiPromise): Promise<any> => {
+export default async (api: ApiPromise) => {
   const { numberOfCouncilMembers, totalCouncilRewardsPerBlock, totalCouncilStake } = await getCouncilMembers(api);
-  const totalCouncilRewardsInOneWeek = await calculateCouncilRewards(api, totalCouncilRewardsPerBlock) as number;
+  const totalCouncilRewardsInOneWeek = await calculateCouncilRewards(api, totalCouncilRewardsPerBlock);
   return {
     numberOfCouncilMembers,
     totalCouncilRewardsInOneWeek,

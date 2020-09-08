@@ -12,7 +12,21 @@ export default ([
     display: {
       needsAccounts: true,
       needsApi: [
-        'tx.balances.transfer'
+        'query.balances.totalIssuance',
+        'query.recurringRewards.rewardRelationships',
+        'query.contentWorkingGroup.curatorById',
+        'query.contentWorkingGroup.currentLeadId',
+        'query.council.activeCouncil',
+        'query.council.payoutInterval',
+        'query.council.amountPerPayout',
+        'query.councilElection.newTermDuration',
+        'query.councilElection.votingPeriod',
+        'query.councilElection.revealingPeriod',
+        'query.councilElection.announcingPeriod',
+        'query.storageWorkingGroup.currentLead',
+        'query.storageWorkingGroup.workerById',
+        'query.stake.stakes',
+        'query.staking.currentElected'
       ]
     },
     i18n: {

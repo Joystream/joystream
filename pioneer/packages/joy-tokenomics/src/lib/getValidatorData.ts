@@ -1,13 +1,13 @@
 import { ApiPromise } from '@polkadot/api';
 import { Vec } from '@polkadot/types';
-import { AccountId, IndividualExposure } from '@polkadot/types/interfaces';
+import { AccountId } from '@polkadot/types/interfaces';
 
-const getValidators = async (api: ApiPromise): Promise<any> => {
+const getValidators = async (api: ApiPromise) => {
   let [totalValidatorStake, slotStake, numberOfNominators, numberOfValidators] = [0, 0, 0, 0];
   const validatorIds = await api.query.staking.currentElected() as Vec<AccountId>;
   await Promise.all(validatorIds.map(async (id: AccountId, index: number) => {
-    const nominators = (await api.derive.staking.info(id)).stakers?.others as Vec<IndividualExposure>;
-    const totalStake = (await api.derive.staking.info(id)).stakers?.total.toNumber() as number;
+    const nominators = (await api.derive.staking.info(id)).stakers?.others.toArray() || [];
+    const totalStake = (await api.derive.staking.info(id)).stakers?.total.toNumber() || 0;
     numberOfValidators += 1;
     totalValidatorStake += totalStake;
     numberOfNominators += nominators.length;

@@ -1,38 +1,46 @@
 import React from 'react';
-import { Table } from 'semantic-ui-react';
-import Help from './Help';
+import { Table, Popup, Icon } from 'semantic-ui-react';
 import styled from 'styled-components';
 
 import { TokenomicsData } from '../lib/getTokenomicsData';
 import { StatusServerData } from './index';
 
-const round = (num: number): number => Math.round((num + Number.EPSILON) * 100) / 100;
-
-const OverviewTableHelp = styled(Help)`
-    position:absolute;
-    cursor:pointer;
-    right:2rem;
-    top:0;
-    @media(max-width: 767px){
-      top:0.8rem;
+const StyledTableRow = styled(Table.Row)`
+  .help-icon{
+    position: absolute !important;
+    right: 0rem !important;
+    top: 0 !important;
+    @media (max-width: 767px){
+      right: 1rem !important;
+      top:0.8rem !important;
     }
+  }
 `;
 
 const OverviewTableRow: React.FC<{item: string; value: string; help?: string}> = ({ item, value, help }) => {
   return (
-    <Table.Row>
+    <StyledTableRow>
       <Table.Cell>
         <div style={{ position: 'relative' }}>
           {item}
-          {help && <OverviewTableHelp position={{ right: '2rem' }} help={help} />}
+          {help &&
+            <Popup
+              trigger={<Icon className='help-icon' name="help circle" color="grey"/>}
+              content={help}
+              position='right center'
+            />}
         </div>
       </Table.Cell>
       <Table.Cell>{value}</Table.Cell>
-    </Table.Row>
+    </StyledTableRow>
   );
 };
 
-const OverviewTable: React.FC<{data: TokenomicsData | undefined; statusData: StatusServerData | undefined | null}> = ({ data, statusData }) => {
+const OverviewTable: React.FC<{data?: TokenomicsData; statusData?: StatusServerData | null}> = ({ data, statusData }) => {
+  const displayStatusData = (val?: string, unit?: string): string => (
+    statusData === null ? 'Data currently unavailable...' : statusData ? `${val} ${unit}` : 'Loading...'
+  );
+
   return (
     <Table style={{ marginBottom: '1.5rem' }} celled>
       <Table.Header>
@@ -51,7 +59,7 @@ const OverviewTable: React.FC<{data: TokenomicsData | undefined; statusData: Sta
         <OverviewTableRow
           item='Fiat Pool'
           help='The current value of the Fiat Pool.'
-          value={statusData === null ? 'Data currently unavailable..' : statusData ? `${round(statusData.dollarPool.size)} USD` : 'Loading...'}
+          value={displayStatusData(`${statusData?.dollarPool.size.toFixed(2)}`, 'USD')}
         />
         <OverviewTableRow
           item='Currently Staked Tokens'
@@ -60,12 +68,12 @@ const OverviewTable: React.FC<{data: TokenomicsData | undefined; statusData: Sta
         />
         <OverviewTableRow
           item='Currently Staked Value'
-          value={statusData === null ? 'Data currently unavailable..' : (data && statusData) ? `${round(data.currentlyStakedTokens * Number(statusData.price))} USD` : 'Loading...'}
+          value={statusData === null ? 'Data currently unavailable..' : (data && statusData) ? `${(data.currentlyStakedTokens * Number(statusData.price)).toFixed(2)} USD` : 'Loading...'}
           help='The value of all tokens currently staked for active roles.'
         />
         <OverviewTableRow
           item='Exchange Rate'
-          value={statusData === null ? 'Data currently unavailable..' : statusData ? `${round(Number(statusData.price) * 1000000)} USD/1MJOY` : 'Loading...'}
+          value={displayStatusData(`${(Number(statusData?.price) * 1000000).toFixed(2)}`, 'USD/1MJOY')}
           help='The current exchange rate.'
         />
         {/* <OverviewTableRow help='Sum of all tokens burned through exchanges' item='Total Tokens Burned/Exchanged' value={statusData ? `${statusData.burned} JOY` : 'Loading...'}/> */}
@@ -76,17 +84,17 @@ const OverviewTable: React.FC<{data: TokenomicsData | undefined; statusData: Sta
         />
         <OverviewTableRow
           item='Projected Weekly Token Inflation Rate'
-          value={data ? `${round((data.totalWeeklySpending / data.totalIssuance) * 100)} %` : 'Loading...'}
+          value={data ? `${((data.totalWeeklySpending / data.totalIssuance) * 100).toFixed(2)} %` : 'Loading...'}
           help={'Based on \'Projected Weekly Token Mint Rate\'. Does not include any deflationary forces (fees, slashes, burns, etc.)'}
         />
         <OverviewTableRow
           item='Projected Weekly Value Of Mint'
-          value={statusData === null ? 'Data currently unavailable..' : (data && statusData) ? `${round(data.totalWeeklySpending * Number(statusData.price))} USD` : 'Loading...'}
+          value={statusData === null ? 'Data currently unavailable..' : (data && statusData) ? `${(data.totalWeeklySpending * Number(statusData.price)).toFixed(2)} USD` : 'Loading...'}
           help={'Based on \'Projected Weekly Token Mint Rate\', and current \'Exchange Rate\'.'}
         />
         <OverviewTableRow
           item='Weekly Top Ups'
-          value={statusData === null ? 'Data currently unavailable..' : statusData ? `${statusData.dollarPool.replenishAmount} USD` : 'Loading...'}
+          value={displayStatusData(`${statusData?.dollarPool.replenishAmount}`, 'USD')}
           help={'The current weekly \'Fiat Pool\' replenishment amount. Does not include KPIs, or other potential top ups.'}
         />
       </Table.Body>
