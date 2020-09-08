@@ -19,7 +19,7 @@ use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
 
 /// Model of authentication manager.
-pub trait ActorAuthenticator: system::Trait + Debug {
+pub trait ActorAuthenticator: system::Trait {
     /// Curator identifier
     type CuratorId: Parameter
         + Member
@@ -108,7 +108,7 @@ pub fn ensure_is_lead<T: Trait>(origin: T::Origin) -> DispatchResult {
 
 /// Enum, representing all possible `Actor`s
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Copy, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Copy)]
 pub enum Actor<T: Trait> {
     Curator(T::CuratorGroupId, T::CuratorId),
     Member(T::MemberId),
@@ -118,5 +118,11 @@ pub enum Actor<T: Trait> {
 impl<T: Trait> Default for Actor<T> {
     fn default() -> Self {
         Self::Lead
+    }
+}
+
+impl<T: Trait> core::fmt::Debug for Actor<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "Actor {:?}", self)
     }
 }

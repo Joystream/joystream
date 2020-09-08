@@ -162,7 +162,7 @@ use core::debug_assert;
 type MaxNumber = u32;
 
 /// Module configuration trait for this Substrate module.
-pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
+pub trait Trait: system::Trait + ActorAuthenticator + Clone {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 

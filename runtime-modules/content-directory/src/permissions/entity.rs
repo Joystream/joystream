@@ -2,7 +2,7 @@ use super::*;
 
 /// Owner of an `Entity`.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
 pub enum EntityController<T: Trait> {
     Maintainers,
     Member(T::MemberId),
@@ -23,6 +23,12 @@ impl<T: Trait> EntityController<T> {
 impl<T: Trait> Default for EntityController<T> {
     fn default() -> Self {
         Self::Lead
+    }
+}
+
+impl<T: Trait> core::fmt::Debug for EntityController<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "EntityController {:?}", self)
     }
 }
 

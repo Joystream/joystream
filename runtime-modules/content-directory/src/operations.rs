@@ -4,7 +4,7 @@ use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
 
 /// Parametrized entity property value
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub enum ParametrizedPropertyValue<T: Trait> {
     /// Same fields as normal InputPropertyValue
     InputPropertyValue(InputPropertyValue<T>),
@@ -16,15 +16,27 @@ pub enum ParametrizedPropertyValue<T: Trait> {
     InternalEntityVec(Vec<ParameterizedEntity<T>>),
 }
 
+impl<T: Trait> core::fmt::Debug for ParametrizedPropertyValue<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "ParametrizedPropertyValue {:?}", self)
+    }
+}
+
 /// Parametrized entity
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub enum ParameterizedEntity<T: Trait> {
     InternalEntityJustAdded(u32),
     ExistingEntity(T::EntityId),
 }
 
+impl<T: Trait> core::fmt::Debug for ParameterizedEntity<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "ParameterizedEntity {:?}", self)
+    }
+}
+
 /// Parametrized class property value
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub struct ParametrizedClassPropertyValue<T: Trait> {
     /// Index is into properties vector of class.
     pub in_class_index: PropertyId,
@@ -33,15 +45,27 @@ pub struct ParametrizedClassPropertyValue<T: Trait> {
     pub value: ParametrizedPropertyValue<T>,
 }
 
+impl<T: Trait> core::fmt::Debug for ParametrizedClassPropertyValue<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "ParametrizedClassPropertyValue {:?}", self)
+    }
+}
+
 /// Operation, that represents `Entity` creation
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub struct CreateEntityOperation<T: Trait> {
     /// Class of an Entity
     pub class_id: T::ClassId,
 }
 
+impl<T: Trait> core::fmt::Debug for CreateEntityOperation<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "CreateEntityOperation {:?}", self)
+    }
+}
+
 /// Operation, that represents property values update
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub struct UpdatePropertyValuesOperation<T: Trait> {
     /// Entity id to perfrom operation
     pub entity_id: ParameterizedEntity<T>,
@@ -49,8 +73,14 @@ pub struct UpdatePropertyValuesOperation<T: Trait> {
     pub new_parametrized_property_values: Vec<ParametrizedClassPropertyValue<T>>,
 }
 
+impl<T: Trait> core::fmt::Debug for UpdatePropertyValuesOperation<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "UpdatePropertyValuesOperation {:?}", self)
+    }
+}
+
 /// Operation, that represents adding `Entity` `Schema` support
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub struct AddSchemaSupportToEntityOperation<T: Trait> {
     /// Entity id to perfrom operation
     pub entity_id: ParameterizedEntity<T>,
@@ -60,12 +90,24 @@ pub struct AddSchemaSupportToEntityOperation<T: Trait> {
     pub parametrized_property_values: Vec<ParametrizedClassPropertyValue<T>>,
 }
 
+impl<T: Trait> core::fmt::Debug for AddSchemaSupportToEntityOperation<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "AddSchemaSupportToEntityOperation {:?}", self)
+    }
+}
+
 /// The type of operation performed
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub enum OperationType<T: Trait> {
     CreateEntity(CreateEntityOperation<T>),
     UpdatePropertyValues(UpdatePropertyValuesOperation<T>),
     AddSchemaSupportToEntity(AddSchemaSupportToEntityOperation<T>),
+}
+
+impl<T: Trait> core::fmt::Debug for OperationType<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "OperationType {:?}", self)
+    }
 }
 
 /// Retrieve entity_id of parametrized `Entity`
