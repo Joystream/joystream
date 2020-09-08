@@ -155,7 +155,7 @@ pub enum PropertyType<T: Trait> {
 
 impl<T: Trait> core::fmt::Debug for PropertyType<T> {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "Type {:?}", self)
+        write!(formatter, "PropertyType {:?}", self)
     }
 }
 
