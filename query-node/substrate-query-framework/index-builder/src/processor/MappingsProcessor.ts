@@ -123,10 +123,9 @@ export default class MappingsProcessor {
 
   async _onQueryEventBlock(query_event_block: SubstrateEventEntity[]): Promise<void> {
     //debug(`Yay, block producer at height: #${query_event_block.block_number.toString()}`);
+    await asyncForEach(query_event_block, async (event: SubstrateEventEntity) => {
+      await doInTransaction(async (queryRunner: QueryRunner) => {
 
-    await doInTransaction(async (queryRunner: QueryRunner) => {
-      await asyncForEach(query_event_block, async (event: SubstrateEventEntity) => {
-      
         debug(`Processing event ${event.name}, 
           id: ${event.id}`)
 
