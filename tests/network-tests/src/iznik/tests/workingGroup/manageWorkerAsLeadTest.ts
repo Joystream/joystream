@@ -25,7 +25,7 @@ import { OpeningId } from '@alexandria/types/hiring'
 import { DbService } from '../../services/dbService'
 import { LeaderHiringHappyCaseFixture } from '../fixtures/leaderHiringHappyCase'
 
-tap.mocha.describe('Manage worker as worker scenario', async () => {
+tap.mocha.describe('Manage worker as lead scenario', async () => {
   initConfig()
 
   const nodeUrl: string = process.env.NODE_URL!
