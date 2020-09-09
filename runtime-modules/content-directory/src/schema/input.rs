@@ -104,7 +104,7 @@ impl<T: Trait> InputValue<T> {
 
 /// Vector value enum representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum VecInputValue<T: Trait> {
     Bool(Vec<bool>),
     Uint16(Vec<u16>),
@@ -117,12 +117,6 @@ pub enum VecInputValue<T: Trait> {
     TextToHash(Vec<Vec<u8>>),
     Text(Vec<Vec<u8>>),
     Reference(Vec<T::EntityId>),
-}
-
-impl<T: Trait> core::fmt::Debug for VecInputValue<T> {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "VecInputValue {:?}", self)
-    }
 }
 
 impl<T: Trait> Default for VecInputValue<T> {
