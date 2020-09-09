@@ -24,6 +24,7 @@ pub struct ClassPermissions<T: Trait> {
 }
 
 impl<T: Trait> core::fmt::Debug for ClassPermissions<T> {
+    #[cfg(feature = "std")]
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(formatter, "ClassPermissions {:?}", self)
     }

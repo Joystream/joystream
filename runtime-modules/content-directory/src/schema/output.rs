@@ -2,8 +2,8 @@ use super::*;
 use sp_runtime::traits::Hash;
 
 /// Enum, representing either `StoredValue` or `VecStoredPropertyValue`
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub enum StoredPropertyValue<T: Trait> {
     Single(StoredValue<T>),
     Vector(VecStoredPropertyValue<T>),
@@ -84,8 +84,8 @@ impl<T: Trait> Default for StoredPropertyValue<T> {
 }
 
 /// StoredValue enum representation, related to corresponding `SingleStoredPropertyValue` structure
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Hash, Clone, PartialEq, PartialOrd, Ord, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Hash, Clone, PartialEq, PartialOrd, Ord, Eq)]
 pub enum StoredValue<T: Trait> {
     Bool(bool),
     Uint16(u16),
@@ -117,8 +117,8 @@ impl<T: Trait> StoredValue<T> {
 }
 
 /// Consists of `VecStoredPropertyValue` enum representation and `nonce`, used to avoid vector data race update conditions
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct VecStoredPropertyValue<T: Trait> {
     vec_value: VecStoredValue<T>,
     nonce: T::Nonce,
@@ -276,8 +276,8 @@ impl<T: Trait> VecStoredPropertyValue<T> {
 }
 
 /// Vector value enum representation, related to corresponding `VecStoredPropertyValue` structure
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Hash, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum VecStoredValue<T: Trait> {
     Bool(Vec<bool>),
     Uint16(Vec<u16>),

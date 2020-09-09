@@ -31,8 +31,8 @@ pub type SchemaId = u16;
 pub type SameController = bool;
 
 /// Locking policy, representing `Property` locking status for both controller and maintainer
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Default, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Default, Decode, Clone, Copy, PartialEq, Eq)]
 pub struct PropertyLockingPolicy {
     /// If property is locked from maintainer
     pub is_locked_from_maintainer: bool,
@@ -41,7 +41,7 @@ pub struct PropertyLockingPolicy {
 }
 
 /// Enum, used for `PropertyType` representation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
 pub enum Type<T: Trait> {
     Bool,
@@ -56,12 +56,6 @@ pub enum Type<T: Trait> {
     Hash(HashedTextMaxLength),
     /// Can reference only specific class id entities
     Reference(T::ClassId, SameController),
-}
-
-impl<T: Trait> core::fmt::Debug for Type<T> {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "Type {:?}", self)
-    }
 }
 
 impl<T: Trait> Default for Type<T> {
@@ -92,7 +86,7 @@ impl<T: Trait> Type<T> {
 }
 
 /// Vector property type representation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
 pub struct VecPropertyType<T: Trait> {
     vec_type: Type<T>,
@@ -106,12 +100,6 @@ impl<T: Trait> Default for VecPropertyType<T> {
             vec_type: Type::default(),
             max_length: 0,
         }
-    }
-}
-
-impl<T: Trait> core::fmt::Debug for VecPropertyType<T> {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "VecPropertyType {:?}", self)
     }
 }
 
@@ -146,17 +134,11 @@ impl<T: Trait> VecPropertyType<T> {
 }
 
 /// Enum, representing either `Type` or `VecPropertyType`
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
 pub enum PropertyType<T: Trait> {
     Single(Type<T>),
     Vector(VecPropertyType<T>),
-}
-
-impl<T: Trait> core::fmt::Debug for PropertyType<T> {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "PropertyType {:?}", self)
-    }
 }
 
 impl<T: Trait> Default for PropertyType<T> {
@@ -201,8 +183,8 @@ impl<T: Trait> PropertyType<T> {
 }
 
 /// A schema defines what properties describe an entity
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub struct Schema {
     /// Indices into properties vector for the corresponding class.
     properties: BTreeSet<PropertyId>,
@@ -305,6 +287,7 @@ impl<T: Trait> Default for Property<T> {
 }
 
 impl<T: Trait> core::fmt::Debug for Property<T> {
+    #[cfg(feature = "std")]
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(formatter, "Property {:?}", self)
     }
