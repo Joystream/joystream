@@ -1,7 +1,7 @@
 use super::*;
 
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub struct Class<T: Trait> {
     /// Permissions for an instance of a Class.
     class_permissions: ClassPermissions<T>,

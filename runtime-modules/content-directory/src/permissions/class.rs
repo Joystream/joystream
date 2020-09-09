@@ -2,7 +2,7 @@ use super::*;
 
 /// Permissions for an instance of a `Class` in the versioned store.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub struct ClassPermissions<T: Trait> {
     /// For this permission, the individual member is allowed to create the entity and become controller.
     any_member: bool,
@@ -21,6 +21,13 @@ pub struct ClassPermissions<T: Trait> {
 
     /// Current class maintainer curator groups
     maintainers: BTreeSet<T::CuratorGroupId>,
+}
+
+impl<T: Trait> core::fmt::Debug for ClassPermissions<T> {
+    #[cfg(feature = "std")]
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "ClassPermissions {:?}", self)
+    }
 }
 
 impl<T: Trait> Default for ClassPermissions<T> {

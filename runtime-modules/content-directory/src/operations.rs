@@ -4,7 +4,7 @@ use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
 
 /// Parametrized entity property value
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub enum ParametrizedPropertyValue<T: Trait> {
     /// Same fields as normal InputPropertyValue
     InputPropertyValue(InputPropertyValue<T>),
@@ -17,14 +17,14 @@ pub enum ParametrizedPropertyValue<T: Trait> {
 }
 
 /// Parametrized entity
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub enum ParameterizedEntity<T: Trait> {
     InternalEntityJustAdded(u32),
     ExistingEntity(T::EntityId),
 }
 
 /// Parametrized class property value
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub struct ParametrizedClassPropertyValue<T: Trait> {
     /// Index is into properties vector of class.
     pub in_class_index: PropertyId,
@@ -34,14 +34,14 @@ pub struct ParametrizedClassPropertyValue<T: Trait> {
 }
 
 /// Operation, that represents `Entity` creation
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub struct CreateEntityOperation<T: Trait> {
     /// Class of an Entity
     pub class_id: T::ClassId,
 }
 
 /// Operation, that represents property values update
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub struct UpdatePropertyValuesOperation<T: Trait> {
     /// Entity id to perfrom operation
     pub entity_id: ParameterizedEntity<T>,
@@ -50,7 +50,7 @@ pub struct UpdatePropertyValuesOperation<T: Trait> {
 }
 
 /// Operation, that represents adding `Entity` `Schema` support
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub struct AddSchemaSupportToEntityOperation<T: Trait> {
     /// Entity id to perfrom operation
     pub entity_id: ParameterizedEntity<T>,
@@ -61,11 +61,18 @@ pub struct AddSchemaSupportToEntityOperation<T: Trait> {
 }
 
 /// The type of operation performed
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Clone)]
 pub enum OperationType<T: Trait> {
     CreateEntity(CreateEntityOperation<T>),
     UpdatePropertyValues(UpdatePropertyValuesOperation<T>),
     AddSchemaSupportToEntity(AddSchemaSupportToEntityOperation<T>),
+}
+
+impl<T: Trait> core::fmt::Debug for OperationType<T> {
+    #[cfg(feature = "std")]
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "OperationType {:?}", self)
+    }
 }
 
 /// Retrieve entity_id of parametrized `Entity`

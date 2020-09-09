@@ -2,10 +2,17 @@ use super::*;
 
 /// Enum, representing either `SingleInputPropertyValue` or `VecInputPropertyValue`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub enum InputPropertyValue<T: Trait> {
     Single(InputValue<T>),
     Vector(VecInputValue<T>),
+}
+
+impl<T: Trait> core::fmt::Debug for InputPropertyValue<T> {
+    #[cfg(feature = "std")]
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "InputPropertyValue {:?}", self)
+    }
 }
 
 impl<T: Trait> InputPropertyValue<T> {
@@ -58,7 +65,7 @@ impl<T: Trait> Default for InputPropertyValue<T> {
 
 /// InputValue enum representation, related to corresponding `SingleInputPropertyValue` structure
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub enum InputValue<T: Trait> {
     Bool(bool),
     Uint16(u16),
@@ -71,6 +78,13 @@ pub enum InputValue<T: Trait> {
     // Used to pass text value, which respective hash should be stored
     TextToHash(Vec<u8>),
     Reference(T::EntityId),
+}
+
+impl<T: Trait> core::fmt::Debug for InputValue<T> {
+    #[cfg(feature = "std")]
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "InputValue {:?}", self)
+    }
 }
 
 impl<T: Trait> Default for InputValue<T> {
@@ -91,8 +105,8 @@ impl<T: Trait> InputValue<T> {
 }
 
 /// Vector value enum representation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub enum VecInputValue<T: Trait> {
     Bool(Vec<bool>),
     Uint16(Vec<u16>),
