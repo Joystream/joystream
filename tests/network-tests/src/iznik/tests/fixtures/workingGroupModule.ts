@@ -1025,7 +1025,8 @@ export class ExpectLeaderRewardAmountUpdatedFixture implements Fixture {
     const event: Event = await this.apiWrapper.expectEvent('WorkerRewardAmountUpdated')
     this.events.push(event)
     const leadWorkerId: WorkerId = (await this.apiWrapper.getLeadWorkerId(this.module))!
-    const receivedReward: BN = (await this.apiWrapper.getRewardRelationship(leadWorkerId)).amount_per_payout
+    const leadWorker: Worker = await this.apiWrapper.getWorkerById(leadWorkerId, this.module)
+    const receivedReward: BN = (await this.apiWrapper.getRewardRelationship(leadWorker.reward_relationship.unwrap())).amount_per_payout
     assert(
       receivedReward.eq(this.expectedReward),
       `Unexpected reward amount for worker with id ${leadWorkerId}: ${receivedReward}, expected ${this.expectedReward}`
