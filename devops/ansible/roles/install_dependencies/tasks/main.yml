@@ -37,5 +37,5 @@
     name: yarn
     global: yes
 
-- name: Install docker compose
-  pip: name=docker-compose
+#- name: Install docker compose
+#  pip: name=docker-compose

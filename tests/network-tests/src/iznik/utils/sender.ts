@@ -47,7 +47,7 @@ export class Sender {
             result.events.forEach((event) => {
               if (event.event.method === 'ExtrinsicFailed') {
                 if (expectFailure) {
-                  resolve()
+                  resolve()6
                 } else {
                   reject(new Error('Extrinsic failed unexpectedly'))
                 }
