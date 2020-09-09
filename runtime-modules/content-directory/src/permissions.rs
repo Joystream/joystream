@@ -122,6 +122,7 @@ impl<T: Trait> Default for Actor<T> {
 }
 
 impl<T: Trait> core::fmt::Debug for Actor<T> {
+    #[cfg(feature = "std")]
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(formatter, "Actor {:?}", self)
     }

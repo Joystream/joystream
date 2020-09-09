@@ -9,6 +9,7 @@ pub enum InputPropertyValue<T: Trait> {
 }
 
 impl<T: Trait> core::fmt::Debug for InputPropertyValue<T> {
+    #[cfg(feature = "std")]
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(formatter, "InputPropertyValue {:?}", self)
     }
@@ -80,6 +81,7 @@ pub enum InputValue<T: Trait> {
 }
 
 impl<T: Trait> core::fmt::Debug for InputValue<T> {
+    #[cfg(feature = "std")]
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(formatter, "InputValue {:?}", self)
     }
@@ -103,8 +105,8 @@ impl<T: Trait> InputValue<T> {
 }
 
 /// Vector value enum representation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub enum VecInputValue<T: Trait> {
     Bool(Vec<bool>),
     Uint16(Vec<u16>),
