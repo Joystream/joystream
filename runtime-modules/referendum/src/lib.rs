@@ -17,6 +17,7 @@ use frame_support::{
 };
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
+use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use system::ensure_signed;
 
@@ -37,7 +38,7 @@ pub enum ReferendumStage<BlockNumber, VotePower> {
     Revealing(ReferendumStageRevealing<BlockNumber, VotePower>),
 }
 
-impl<BlockNumber, VotePower> Default for ReferendumStage<BlockNumber, VotePower> {
+impl<BlockNumber, VotePower: Encode + Decode> Default for ReferendumStage<BlockNumber, VotePower> {
     fn default() -> ReferendumStage<BlockNumber, VotePower> {
         ReferendumStage::Inactive
     }
@@ -46,15 +47,24 @@ impl<BlockNumber, VotePower> Default for ReferendumStage<BlockNumber, VotePower>
 /// Representation for voting stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageVoting<BlockNumber> {
-    started: BlockNumber,     // block in which referendum started
-    extra_options_count: u64, // number of options that exceeding the number of winners
+    started: BlockNumber,      // block in which referendum started
+    winning_target_count: u64, // target number of winners
 }
 
 /// Representation for revealing stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
-    started: BlockNumber,                 // block in which referendum started
-    intermediate_results: Vec<VotePower>, // votes that options have recieved at a given time
+    started: BlockNumber,      // block in which referendum started
+    winning_target_count: u64, // target number of winners
+    intermediate_winners: Vec<OptionResult<VotePower>>, // intermediate winning options
+    //intermediate_results: HashMap<u64, VotePower>, // votes that options have recieved at a given time
+    intermediate_results: BTreeMap<u64, VotePower>, // votes that options have recieved at a given time
+}
+
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
+pub struct OptionResult<VotePower> {
+    option_index: u64,
+    vote_power: VotePower,
 }
 
 /// Vote cast in referendum. Vote target is concealed until user reveals commitment's proof.
@@ -78,6 +88,10 @@ type EzCastVote<T, I> = CastVote<<T as system::Trait>::Hash, Balance<T, I>>;
 type EzReferendumStageVoting<T> = ReferendumStageVoting<<T as system::Trait>::BlockNumber>;
 type EzReferendumStageRevealing<T, I> =
     ReferendumStageRevealing<<T as system::Trait>::BlockNumber, <T as Trait<I>>::VotePower>;
+type ConcludeResult<T, I> = (
+    Vec<OptionResult<<T as Trait<I>>::VotePower>>,
+    BTreeMap<u64, <T as Trait<I>>::VotePower>,
+);
 
 // types aliases for check functions return values
 type CanRevealResult<T, I> = (
@@ -92,7 +106,10 @@ type CanRevealResult<T, I> = (
 /// Trait enabling referendum start and vote commitment calculation.
 pub trait ReferendumManager<T: Trait<I>, I: Instance> {
     /// Start a new referendum.
-    fn start_referendum(origin: T::Origin, extra_options_count: u64) -> Result<(), Error<T, I>>;
+    fn start_referendum(
+        origin: T::Origin,
+        extra_winning_target_count: u64,
+    ) -> Result<(), Error<T, I>>;
 
     /// Calculate commitment for a vote.
     fn calculate_commitment(
@@ -106,9 +123,6 @@ pub trait ReferendumManager<T: Trait<I>, I: Instance> {
 pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
-
-    /// Maximum number of options in one referendum.
-    type MaxReferendumOptions: Get<u64>;
 
     /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing e.g. std::u64::MAX.
     type MaxSaltLength: Get<u64>;
@@ -152,8 +166,12 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
 
     /// Gives runtime an ability to react on referendum result.
     fn process_results(
-        all_options_results: &[Self::VotePower], // list of votes each option recieved
+        winners: &[OptionResult<Self::VotePower>],
+        all_options_results: &BTreeMap<u64, Self::VotePower>, // list of votes each option recieved
     );
+
+    /// Check if an option a user is voting for actually exists.
+    fn is_valid_option_id(option_index: &u64) -> bool;
 }
 
 decl_storage! {
@@ -194,7 +212,7 @@ decl_event! {
         RevealingStageStarted(),
 
         /// Referendum ended and winning option was selected
-        ReferendumFinished(Vec<VotePower>),
+        ReferendumFinished(Vec<OptionResult<VotePower>>, BTreeMap<u64, VotePower>),
 
         /// User cast a vote in referendum
         VoteCast(AccountId, Hash, Balance),
@@ -215,9 +233,6 @@ decl_error! {
 
         /// Referendum cannot run twice at the same time
         ReferendumAlreadyRunning,
-
-        /// Number of referendum options exceeds the limit
-        TooManyReferendumOptions,
 
         /// Referendum is not running when expected to
         ReferendumNotRunning,
@@ -372,13 +387,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     /// Conclude the referendum.
     fn end_reveal_period(stage_data: EzReferendumStageRevealing<T, I>) {
         // conclude referendum
-        let all_options_results = Mutations::<T, I>::conclude_referendum(stage_data);
+        let (winners, all_options_results) = Mutations::<T, I>::conclude_referendum(stage_data);
 
         // let runtime know about referendum results
-        T::process_results(&all_options_results);
+        T::process_results(&winners, &all_options_results);
 
         // emit event
-        Self::deposit_event(RawEvent::ReferendumFinished(all_options_results));
+        Self::deposit_event(RawEvent::ReferendumFinished(winners, all_options_results));
     }
 }
 
@@ -386,21 +401,24 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
 impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
     /// Start new referendum run.
-    fn start_referendum(origin: T::Origin, extra_options_count: u64) -> Result<(), Error<T, I>> {
-        let total_options = extra_options_count + 1;
+    fn start_referendum(
+        origin: T::Origin,
+        extra_winning_target_count: u64,
+    ) -> Result<(), Error<T, I>> {
+        let winning_target_count = extra_winning_target_count + 1;
 
         // ensure action can be started
-        EnsureChecks::<T, I>::can_start_referendum(origin, total_options)?;
+        EnsureChecks::<T, I>::can_start_referendum(origin)?;
 
         //
         // == MUTATION SAFE ==
         //
 
         // update state
-        Mutations::<T, I>::start_voting_period(&extra_options_count);
+        Mutations::<T, I>::start_voting_period(&winning_target_count);
 
         // emit event
-        Self::deposit_event(RawEvent::ReferendumStarted(total_options));
+        Self::deposit_event(RawEvent::ReferendumStarted(winning_target_count));
 
         Ok(())
     }
@@ -433,37 +451,43 @@ struct Mutations<T: Trait<I>, I: Instance> {
 
 impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     /// Change the referendum stage from inactive to voting stage.
-    fn start_voting_period(extra_options_count: &u64) {
+    fn start_voting_period(winning_target_count: &u64) {
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Voting(ReferendumStageVoting::<
             T::BlockNumber,
         > {
             started: <system::Module<T>>::block_number(),
-            extra_options_count: *extra_options_count,
+            winning_target_count: *winning_target_count,
         }));
     }
 
     /// Change the referendum stage from inactive to the voting stage.
     fn start_revealing_period(old_stage: EzReferendumStageVoting<T>) {
-        let total_options = old_stage.extra_options_count + 1;
-
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Revealing(EzReferendumStageRevealing::<
             T,
             I,
         > {
             started: <system::Module<T>>::block_number(),
-            intermediate_results: (0..total_options).map(|_| 0.into()).collect(),
+            winning_target_count: old_stage.winning_target_count,
+            intermediate_winners: vec![],
+            intermediate_results: BTreeMap::new(),
         }));
     }
 
     /// Conclude referendum, count votes, and select the winners.
-    fn conclude_referendum(revealing_stage: EzReferendumStageRevealing<T, I>) -> Vec<T::VotePower> {
+    //fn conclude_referendum(revealing_stage: EzReferendumStageRevealing<T, I>) -> Vec<OptionResult<T::VotePower>> {
+    fn conclude_referendum(
+        revealing_stage: EzReferendumStageRevealing<T, I>,
+    ) -> ConcludeResult<T, I> {
         // reset referendum state
         Self::reset_referendum();
 
         // return winning option
-        revealing_stage.intermediate_results
+        (
+            revealing_stage.intermediate_winners,
+            revealing_stage.intermediate_results,
+        )
     }
 
     /// Change the referendum stage from revealing to the inactive stage.
@@ -507,21 +531,121 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         option_index: &u64,
         cast_vote: EzCastVote<T, I>,
     ) -> Result<(), Error<T, I>> {
+        /// Moves winner to new position in winners list. Expects `target_index` to be always smaller or equal to `current_index`.
+        fn move_winner<T: Trait<I>, I: Instance>(
+            current_winners: &[OptionResult<T::VotePower>],
+            current_index: usize,
+            target_index: usize,
+            new_vote_power: T::VotePower,
+        ) -> Vec<OptionResult<T::VotePower>> {
+            let tmp = [OptionResult {
+                vote_power: new_vote_power,
+                ..current_winners[current_index].clone()
+            }];
+
+            if current_index == target_index {
+                return [
+                    &current_winners[0..target_index],
+                    &tmp[..],
+                    &current_winners[target_index + 1..],
+                ]
+                .concat();
+            }
+
+            [
+                &current_winners[0..target_index],
+                &tmp[..],
+                &current_winners[target_index..current_index],
+                &current_winners[current_index + 1..current_winners.len()],
+            ]
+            .concat()
+        }
+
+        /// Tries to insert option to the winners list
+        fn try_winner_insert<T: Trait<I>, I: Instance>(
+            option_result: &OptionResult<T::VotePower>,
+            current_winners: &[OptionResult<T::VotePower>],
+            winning_target_count: u64,
+        ) -> Option<Vec<OptionResult<T::VotePower>>> {
+            let current_winners_count = current_winners.len();
+
+            // find where should the vote be inserted into winners list
+            let mut insert_index: usize = current_winners_count; // set initial index higher than last winner's index
+            for (index, value) in current_winners.iter().enumerate() {
+                if option_result.vote_power > value.vote_power {
+                    insert_index = index;
+                    break;
+                }
+            }
+
+            // no need to insert?
+            if insert_index >= winning_target_count as usize {
+                return None;
+            }
+
+            // check if option is already somewhere in list
+            let mut already_existing_index: Option<usize> = None;
+            for (index, value) in current_winners.iter().enumerate() {
+                if option_result.option_index == value.option_index {
+                    already_existing_index = Some(index);
+                    break;
+                }
+            }
+
+            // option is already in the list and only needs to change it's position?
+            if let Some(current_index) = already_existing_index {
+                return Some(move_winner::<T, I>(
+                    current_winners,
+                    current_index,
+                    insert_index,
+                    option_result.vote_power,
+                ));
+            }
+
+            let tmp = [option_result.clone()];
+
+            // are we appending at the end of list?
+            if insert_index >= current_winners_count {
+                return Some([&current_winners, &tmp[..]].concat());
+            }
+
+            // insert into middle of list
+            Some(
+                [
+                    &current_winners[0..insert_index],
+                    &tmp[..],
+                    &current_winners[insert_index..current_winners_count],
+                ]
+                .concat()[0..winning_target_count as usize]
+                    .to_vec(),
+            )
+        }
+
+        // prepare new values
         let vote_power = T::caclulate_vote_power(&account_id, &cast_vote.stake);
+        let new_option_total = vote_power
+            + match stage_data.intermediate_results.get(option_index) {
+                Some(value) => *value,
+                None => 0.into(),
+            };
+        let option_result = OptionResult {
+            option_index: *option_index,
+            vote_power: new_option_total,
+        };
+        let new_winners = match try_winner_insert::<T, I>(
+            &option_result,
+            &stage_data.intermediate_winners,
+            stage_data.winning_target_count,
+        ) {
+            Some(tmp_winners) => tmp_winners,
+            None => stage_data.intermediate_winners.clone(),
+        };
 
+        let mut intermediate_results = stage_data.intermediate_results;
+        intermediate_results.insert(*option_index, new_option_total);
         let new_stage_data = ReferendumStageRevealing {
-            intermediate_results: stage_data
-                .intermediate_results
-                .iter()
-                .enumerate()
-                .map(|(i, current_vote_power)| {
-                    if i as u64 == *option_index {
-                        return *current_vote_power + vote_power;
-                    }
-
-                    *current_vote_power
-                })
-                .collect(),
+            intermediate_winners: new_winners,
+            intermediate_results,
             ..stage_data
         };
 
@@ -561,7 +685,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     /////////////////// Action checks //////////////////////////////////////////
 
-    fn can_start_referendum(origin: T::Origin, options_count: u64) -> Result<(), Error<T, I>> {
+    fn can_start_referendum(origin: T::Origin) -> Result<(), Error<T, I>> {
         T::ManagerOrigin::ensure_origin(origin)?;
 
         // ensure referendum is not already running
@@ -569,11 +693,6 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             ReferendumStage::Inactive => Ok(()),
             _ => Err(Error::ReferendumAlreadyRunning),
         }?;
-
-        // ensure number of options doesn't exceed limit
-        if options_count > T::MaxReferendumOptions::get() {
-            return Err(Error::TooManyReferendumOptions);
-        }
 
         Ok(())
     }
@@ -623,7 +742,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         let cast_vote = Self::ensure_vote_exists(&account_id)?;
 
-        if vote_option_index >= &(stage_data.intermediate_results.len() as u64) {
+        if !T::is_valid_option_id(vote_option_index) {
             return Err(Error::InvalidVote);
         }
 
