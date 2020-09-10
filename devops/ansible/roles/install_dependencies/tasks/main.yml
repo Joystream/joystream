@@ -37,5 +37,10 @@
     name: yarn
     global: yes
 
-#- name: Install docker compose
-#  pip: name=docker-compose
+- name: Install pyrsistent
+  pip:
+    name: pyrsistent==0.16.0
+
+- name: Install docker compose
+  pip:
+    name: docker-compose==1.26.2

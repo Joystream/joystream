@@ -1885,4 +1885,12 @@ export class ApiWrapper {
   public async getLeadWorkerId(module: WorkingGroups): Promise<WorkerId | undefined> {
     return (await this.api.query[module].currentLead<Option<WorkerId>>()).unwrapOr(undefined)
   }
+
+  public async getActiveWorkersCount(module: WorkingGroups): Promise<BN> {
+    return this.api.query[module].activeWorkerCount<u32>()
+  }
+
+  public getMaxWorkersCount(module: WorkingGroups): BN {
+    return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
+  }
 }
