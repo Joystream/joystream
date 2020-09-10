@@ -260,6 +260,7 @@ pub fn testnet_genesis(
                 .collect(),
             invulnerables: initial_authorities.iter().map(|x| x.0.clone()).collect(),
             slash_reward_fraction: Perbill::from_percent(10),
+            history_depth: 336,
             ..Default::default()
         }),
         pallet_sudo: Some(SudoConfig { key: root_key }),
