@@ -2,9 +2,8 @@ import { flags } from '@oclif/command'
 import { CLIError } from '@oclif/errors'
 import { displayNameValueTable } from '../../helpers/display'
 import { ApiPromise } from '@polkadot/api'
-import { Option } from '@polkadot/types'
 import { Codec } from '@polkadot/types/types'
-import { ConstantCodec } from '@polkadot/api-metadata/consts/types'
+import { ConstantCodec } from '@polkadot/metadata/Decorated/consts/types'
 import ExitCodes from '../../ExitCodes'
 import chalk from 'chalk'
 import { NameValueObj, ApiMethodArg } from '../../Types'
@@ -99,7 +98,7 @@ export default class ApiInspect extends ApiCommandBase {
       return [type.asDoubleMap.key1.toString(), type.asDoubleMap.key2.toString()]
     }
     if (type.isMap) {
-      return type.asMap.linked.isTrue ? [`Option<${type.asMap.key.toString()}>`] : [type.asMap.key.toString()]
+      return [type.asMap.key.toString()]
     }
     return []
   }
@@ -110,14 +109,17 @@ export default class ApiInspect extends ApiCommandBase {
       const {
         meta: { type, modifier },
       } = method.creator
+      let typeName = type.toString()
       if (type.isDoubleMap) {
-        return type.asDoubleMap.value.toString()
+        typeName = type.asDoubleMap.value.toString()
       }
-      if (modifier.isOptional) {
-        return `Option<${type.toString()}>`
+      if (type.isMap) {
+        typeName = type.asMap.value.toString()
       }
+
+      return modifier.isOptional ? `Option<${typeName}>` : typeName
     }
-    // Fallback for "query" and default for "consts"
+    // Fallback for "consts"
     return this.getMethodMeta(apiType, apiModule, apiMethod).type.toString()
   }
 
@@ -127,7 +129,7 @@ export default class ApiInspect extends ApiCommandBase {
     api: ApiPromise,
     flags: ApiInspectFlags
   ): { apiType: ApiType | undefined; apiModule: string | undefined; apiMethod: string | undefined } {
-    let apiType: ApiType | undefined = undefined
+    let apiType: ApiType | undefined
     const { module: apiModule, method: apiMethod } = flags
 
     if (flags.type !== undefined) {
@@ -155,12 +157,7 @@ export default class ApiInspect extends ApiCommandBase {
     for (const [key, paramType] of Object.entries(paramTypes)) {
       this.log(chalk.bold.white(`Parameter no. ${parseInt(key) + 1} (${paramType}):`))
       const paramValue = await this.promptForParam(paramType)
-      if (paramValue instanceof Option && paramValue.isSome) {
-        result.push(paramValue.unwrap())
-      } else if (!(paramValue instanceof Option)) {
-        result.push(paramValue)
-      }
-      // In case of empty option we MUST NOT add anything to the array (otherwise it causes some error)
+      result.push(paramValue)
     }
 
     return result

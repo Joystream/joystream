@@ -5,7 +5,7 @@ import { Constructor, Codec } from '@polkadot/types/types'
 import { Struct, Vec } from '@polkadot/types/codec'
 import { u32 } from '@polkadot/types/primitive'
 import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces'
-import { DerivedBalances } from '@polkadot/api-derive/types'
+import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { WorkerId, OpeningType } from '@joystream/types/working-group'
 import { Membership, MemberId } from '@joystream/types/members'
@@ -25,6 +25,7 @@ import {
 import ajv from 'ajv'
 import { Opening, StakingPolicy, ApplicationStageKeys } from '@joystream/types/hiring'
 import { Validator } from 'inquirer'
+import { JoyStructCustom } from '@joystream/types/common'
 
 // KeyringPair type extended with mandatory "meta.name"
 // It's used for accounts/keys management within CLI.
@@ -37,7 +38,7 @@ export type NamedKeyringPair = KeyringPair & {
 
 // Summary of the account information fetched from the api for "account:current" purposes (currently just balances)
 export type AccountSummary = {
-  balances: DerivedBalances
+  balances: DeriveBalancesAll
 }
 
 // This function allows us to easily transform the tuple into the object
@@ -186,187 +187,174 @@ export type GroupOpening = {
 // Note those types are not part of the runtime etc., we just use them to simplify prompting for values
 // (since there exists functionality that handles that for substrate types like: Struct, Vec etc.)
 interface WithJSONable<T> {
-  toJSON: () => T
+  toJSONObj: () => T
 }
-export class HRTJobSpecificsStruct extends Struct implements WithJSONable<JobSpecifics> {
-  constructor(value?: JobSpecifics) {
-    super(
-      {
-        title: 'Text',
-        description: 'Text',
-      },
-      value
-    )
-  }
+export class HRTJobSpecificsStruct
+  extends JoyStructCustom({
+    title: Text,
+    description: Text,
+  })
+  implements WithJSONable<JobSpecifics> {
   get title(): string {
-    return (this.get('title') as Text).toString()
+    return this.getField('title').toString()
   }
+
   get description(): string {
-    return (this.get('description') as Text).toString()
+    return this.getField('description').toString()
   }
-  toJSON(): JobSpecifics {
+
+  toJSONObj(): JobSpecifics {
     const { title, description } = this
     return { title, description }
   }
 }
-export class HRTEntryInMembershipModukeStruct extends Struct implements WithJSONable<EntryInMembershipModuke> {
-  constructor(value?: EntryInMembershipModuke) {
-    super(
-      {
-        handle: 'Text',
-      },
-      value
-    )
-  }
+export class HRTEntryInMembershipModukeStruct
+  extends JoyStructCustom({
+    handle: Text,
+  })
+  implements WithJSONable<EntryInMembershipModuke> {
   get handle(): string {
-    return (this.get('handle') as Text).toString()
+    return this.getField('handle').toString()
   }
-  toJSON(): EntryInMembershipModuke {
+
+  toJSONObj(): EntryInMembershipModuke {
     const { handle } = this
     return { handle }
   }
 }
-export class HRTCreatorDetailsStruct extends Struct implements WithJSONable<CreatorDetails> {
-  constructor(value?: CreatorDetails) {
-    super(
-      {
-        membership: HRTEntryInMembershipModukeStruct,
-      },
-      value
-    )
-  }
+export class HRTCreatorDetailsStruct
+  extends JoyStructCustom({
+    membership: HRTEntryInMembershipModukeStruct,
+  })
+  implements WithJSONable<CreatorDetails> {
   get membership(): EntryInMembershipModuke {
-    return (this.get('membership') as HRTEntryInMembershipModukeStruct).toJSON()
+    return this.getField('membership').toJSONObj()
   }
-  toJSON(): CreatorDetails {
+
+  toJSONObj(): CreatorDetails {
     const { membership } = this
     return { membership }
   }
 }
-export class HRTHiringProcessStruct extends Struct implements WithJSONable<HiringProcess> {
-  constructor(value?: HiringProcess) {
-    super(
-      {
-        details: 'Vec<Text>',
-      },
-      value
-    )
-  }
+export class HRTHiringProcessStruct
+  extends JoyStructCustom({
+    details: Vec.with(Text),
+  })
+  implements WithJSONable<HiringProcess> {
   get details(): AdditionalRolehiringProcessDetails {
-    return (this.get('details') as Vec<Text>).toArray().map((v) => v.toString())
+    return this.getField('details')
+      .toArray()
+      .map((v) => v.toString())
   }
-  toJSON(): HiringProcess {
+
+  toJSONObj(): HiringProcess {
     const { details } = this
     return { details }
   }
 }
-export class HRTQuestionFieldStruct extends Struct implements WithJSONable<QuestionField> {
-  constructor(value?: QuestionField) {
-    super(
-      {
-        title: 'Text',
-        type: 'Text',
-      },
-      value
-    )
-  }
+export class HRTQuestionFieldStruct
+  extends JoyStructCustom({
+    title: Text,
+    type: Text,
+  })
+  implements WithJSONable<QuestionField> {
   get title(): string {
-    return (this.get('title') as Text).toString()
+    return this.getField('title').toString()
   }
+
   get type(): string {
-    return (this.get('type') as Text).toString()
+    return this.getField('type').toString()
   }
-  toJSON(): QuestionField {
+
+  toJSONObj(): QuestionField {
     const { title, type } = this
     return { title, type }
   }
 }
 class HRTQuestionsFieldsVec extends Vec.with(HRTQuestionFieldStruct) implements WithJSONable<QuestionsFields> {
-  toJSON(): QuestionsFields {
-    return this.toArray().map((v) => v.toJSON())
+  toJSONObj(): QuestionsFields {
+    return this.toArray().map((v) => v.toJSONObj())
   }
 }
-export class HRTQuestionSectionStruct extends Struct implements WithJSONable<QuestionSection> {
-  constructor(value?: QuestionSection) {
-    super(
-      {
-        title: 'Text',
-        questions: HRTQuestionsFieldsVec,
-      },
-      value
-    )
-  }
+export class HRTQuestionSectionStruct
+  extends JoyStructCustom({
+    title: Text,
+    questions: HRTQuestionsFieldsVec,
+  })
+  implements WithJSONable<QuestionSection> {
   get title(): string {
-    return (this.get('title') as Text).toString()
+    return this.getField('title').toString()
   }
+
   get questions(): QuestionsFields {
-    return (this.get('questions') as HRTQuestionsFieldsVec).toJSON()
+    return this.getField('questions').toJSONObj()
   }
-  toJSON(): QuestionSection {
+
+  toJSONObj(): QuestionSection {
     const { title, questions } = this
     return { title, questions }
   }
 }
 export class HRTQuestionSectionsVec extends Vec.with(HRTQuestionSectionStruct)
   implements WithJSONable<QuestionSections> {
-  toJSON(): QuestionSections {
-    return this.toArray().map((v) => v.toJSON())
+  toJSONObj(): QuestionSections {
+    return this.toArray().map((v) => v.toJSONObj())
   }
 }
-export class HRTApplicationDetailsStruct extends Struct implements WithJSONable<ApplicationDetails> {
-  constructor(value?: ApplicationDetails) {
-    super(
-      {
-        sections: HRTQuestionSectionsVec,
-      },
-      value
-    )
-  }
+export class HRTApplicationDetailsStruct
+  extends JoyStructCustom({
+    sections: HRTQuestionSectionsVec,
+  })
+  implements WithJSONable<ApplicationDetails> {
   get sections(): QuestionSections {
-    return (this.get('sections') as HRTQuestionSectionsVec).toJSON()
+    return this.getField('sections').toJSONObj()
   }
-  toJSON(): ApplicationDetails {
+
+  toJSONObj(): ApplicationDetails {
     const { sections } = this
     return { sections }
   }
 }
-export class HRTStruct extends Struct implements WithJSONable<GenericJoyStreamRoleSchema> {
-  constructor(value?: GenericJoyStreamRoleSchema) {
-    super(
-      {
-        version: 'u32',
-        headline: 'Text',
-        job: HRTJobSpecificsStruct,
-        application: HRTApplicationDetailsStruct,
-        reward: 'Text',
-        creator: HRTCreatorDetailsStruct,
-        process: HRTHiringProcessStruct,
-      },
-      value
-    )
-  }
+export class HRTStruct
+  extends JoyStructCustom({
+    version: u32,
+    headline: Text,
+    job: HRTJobSpecificsStruct,
+    application: HRTApplicationDetailsStruct,
+    reward: Text,
+    creator: HRTCreatorDetailsStruct,
+    process: HRTHiringProcessStruct,
+  })
+  implements WithJSONable<GenericJoyStreamRoleSchema> {
   get version(): number {
-    return (this.get('version') as u32).toNumber()
+    return this.getField('version').toNumber()
   }
+
   get headline(): string {
-    return (this.get('headline') as Text).toString()
+    return this.getField('headline').toString()
   }
+
   get job(): JobSpecifics {
-    return (this.get('job') as HRTJobSpecificsStruct).toJSON()
+    return this.getField('job').toJSONObj()
   }
+
   get application(): ApplicationDetails {
-    return (this.get('application') as HRTApplicationDetailsStruct).toJSON()
+    return this.getField('application').toJSONObj()
   }
+
   get reward(): string {
-    return (this.get('reward') as Text).toString()
+    return this.getField('reward').toString()
   }
+
   get creator(): CreatorDetails {
-    return (this.get('creator') as HRTCreatorDetailsStruct).toJSON()
+    return this.getField('creator').toJSONObj()
   }
+
   get process(): HiringProcess {
-    return (this.get('process') as HRTHiringProcessStruct).toJSON()
+    return this.getField('process').toJSONObj()
   }
-  toJSON(): GenericJoyStreamRoleSchema {
+
+  toJSONObj(): GenericJoyStreamRoleSchema {
     const { version, headline, job, application, reward, creator, process } = this
     return { version, headline, job, application, reward, creator, process }
   }

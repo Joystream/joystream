@@ -110,13 +110,13 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
       })),
     })
 
-    return acceptedApplications
+    return acceptedApplications.sort() // Sort just in case, since runtime expects them to be sorted
   }
 
   async promptForNewOpeningDraftName() {
-    let draftName = '',
-      fileExists = false,
-      overrideConfirmed = false
+    let draftName = ''
+    let fileExists = false
+    let overrideConfirmed = false
 
     do {
       draftName = await this.simplePrompt({

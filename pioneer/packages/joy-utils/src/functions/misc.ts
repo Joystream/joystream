@@ -6,6 +6,7 @@ import { Options as QueryOptions } from '@polkadot/react-api/hoc/types';
 import queryString from 'query-string';
 import { SubmittableResult } from '@polkadot/api';
 import { Codec } from '@polkadot/types/types';
+import { Location } from 'history';
 
 export const ZERO = new BN(0);
 
@@ -164,4 +165,26 @@ export function includeKeys<T extends { [k: string]: any }> (obj: T, ...allowedK
 
 export function bytesToString (bytes: Bytes) {
   return Buffer.from(bytes.toString().substr(2), 'hex').toString();
+}
+
+// Based on: https://fettblog.eu/typescript-hasownproperty/
+export function isObjectWithProperties<X extends unknown, Y extends PropertyKey[]> (input: X, ...props: Y): input is X & Record<Y[number], unknown> {
+  return typeof input === 'object' && input !== null && props.every((prop) => prop in input);
+}
+
+export function normalizeError (e: unknown): string {
+  let message: string;
+
+  if (e instanceof Error) {
+    message = e.message;
+  } else if (isObjectWithProperties(e, 'toString') && typeof e.toString === 'function') {
+    message = e.toString() as string;
+  } else if (typeof e === 'string') {
+    message = e;
+  } else {
+    message = JSON.stringify(e);
+  }
+
+  // Prevent returning falsely value
+  return message || 'Unexpected error';
 }

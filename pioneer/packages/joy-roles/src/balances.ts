@@ -1,15 +1,15 @@
 import { Balance } from '@polkadot/types/interfaces';
-import { u128 } from '@polkadot/types';
+import { createType } from '@joystream/types';
 
-export const Zero = new u128(0);
-export const One = new u128(1);
+export const Zero = createType('Balance', 0);
+export const One = createType('Balance', 1);
 
-export const Add = (x: Balance, y: Balance): Balance => new u128(x.add(y));
-export const Sub = (x: Balance, y: Balance): Balance => new u128(x.sub(y));
+export const Add = (x: Balance, y: Balance): Balance => createType('Balance', x.add(y));
+export const Sub = (x: Balance, y: Balance): Balance => createType('Balance', x.sub(y));
 export const Sum = (balances: Balance[]): Balance => balances.reduce(Add, Zero);
 
 export const Avg = (xs: Balance[]): Balance =>
-  xs[0] === undefined ? Zero : new u128(Sum(xs).divn(xs.length));
+  xs[0] === undefined ? Zero : createType('Balance', Sum(xs).divn(xs.length));
 
 export const AvgDelta = (xs: Balance[]): Balance => {
   if (xs.length < 2) {
@@ -28,8 +28,9 @@ export const AvgDelta = (xs: Balance[]): Balance => {
 };
 
 // An average value to 'step' up balances, like on the nudge controls for a slider
-export const Step = (xs: Balance[], ticks = 10): Balance => new u128(Avg(xs).divn(ticks));
+export const Step = (xs: Balance[], ticks = 10): Balance => createType('Balance', Avg(xs).divn(ticks));
 export const Min = (x: Balance, min: Balance = One): Balance => x.gte(min) ? x : min;
+
 export const Sort = (xs: Balance[]): Balance[] => {
   xs.sort((a, b): number => {
     if (a.eq(b)) {
@@ -37,7 +38,9 @@ export const Sort = (xs: Balance[]): Balance[] => {
     } else if (a.gt(b)) {
       return 1;
     }
+
     return -1;
   });
+
   return xs;
 };

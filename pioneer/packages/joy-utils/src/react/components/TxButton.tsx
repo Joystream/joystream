@@ -1,67 +1,55 @@
-import React from 'react';
-import { BareProps, ApiProps } from '@polkadot/react-api/types';
-import { QueueTxExtrinsicAdd, PartialQueueTxExtrinsic, TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
+import React, { useContext } from 'react';
+import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
 import { Button } from '@polkadot/react-components/index';
-import { QueueConsumer } from '@polkadot/react-components/Status/Context';
-import { withApi } from '@polkadot/react-api/index';
+import QueueContext from '@polkadot/react-components/Status/Context';
 import { assert } from '@polkadot/util';
-import { withMyAccount, MyAccountProps } from '../hocs/accounts';
-import { IconName } from '@fortawesome/fontawesome-svg-core';
-
-type InjectedProps = {
-  queueExtrinsic: QueueTxExtrinsicAdd;
-};
+import { ButtonProps as DefaultButtonProps } from '@polkadot/react-components/Button/types';
+import { StrictButtonProps as SemanticButtonStrictProps, Button as SemanticButton } from 'semantic-ui-react';
+import { useApi } from '@polkadot/react-hooks';
+import { useMyAccount } from '../hooks';
+import _ from 'lodash';
 
 export type OnTxButtonClick = (sendTx: () => void) => void;
 
-type BasicButtonProps = {
+type TxButtonBaseProps = {
   accountId?: string;
   type?: 'submit' | 'button';
-  isBasic?: boolean;
-  isDisabled?: boolean;
-  label?: React.ReactNode;
   params: Array<any>;
   tx: string;
-
-  className?: string;
-  style?: Record<string, string | number>;
-  children?: React.ReactNode;
-  compact?: boolean;
-  icon?: IconName;
-
   onClick?: OnTxButtonClick;
   txFailedCb?: TxFailedCallback;
   txSuccessCb?: TxCallback;
   txStartCb?: () => void;
   txUpdateCb?: TxCallback;
-};
+}
 
-type PropsWithApi = BareProps & ApiProps & MyAccountProps & PartialQueueTxExtrinsic & BasicButtonProps
+// Allows us to exclude those from button props
+const txButtonNotPassedProps: readonly (keyof TxButtonBaseProps)[] = [
+  'accountId',
+  'params',
+  'tx',
+  'onClick',
+  'txFailedCb',
+  'txSuccessCb',
+  'txStartCb',
+  'txUpdateCb'
+] as const;
 
-class TxButtonInner extends React.PureComponent<PropsWithApi & InjectedProps> {
-  render () {
-    const { myAddress, accountId, isDisabled, icon = 'check', onClick } = this.props;
-    const origin = accountId || myAddress;
+type SemanticButtonProps = SemanticButtonStrictProps & { style?: React.CSSProperties };
 
-    return (
-      <Button
-        {...this.props}
-        isDisabled={isDisabled || !origin}
-        icon={icon}
-        onClick={() => {
-          if (onClick) onClick(this.send);
-          else this.send();
-        }}
-      />
-    );
-  }
+type TxButtonProps<ButtonComponentProps extends Record<string, any>> = Omit<ButtonComponentProps, 'onClick'> & TxButtonBaseProps;
 
-  private send = (): void => {
-    const {
-      myAddress, accountId, api, params, queueExtrinsic, tx,
-      txFailedCb, txSuccessCb, txStartCb, txUpdateCb
-    } = this.props;
-    const origin = accountId || myAddress;
+function useTxButton (props: TxButtonBaseProps) {
+  const { queueExtrinsic } = useContext(QueueContext);
+  const { api } = useApi();
+  const { state: { address: myAddress } } = useMyAccount();
+  const {
+    accountId, params, tx,
+    txFailedCb, txSuccessCb, txStartCb, txUpdateCb
+  } = props;
+  const origin = accountId || myAddress;
+
+  const sendTx = () => {
     const [section, method] = tx.split('.');
 
     assert(api.tx[section] && api.tx[section][method], `Unable to find api.tx.${section}.${method}`);
@@ -74,25 +62,52 @@ class TxButtonInner extends React.PureComponent<PropsWithApi & InjectedProps> {
       txStartCb,
       txUpdateCb
     });
-  }
+  };
+
+  return { origin, sendTx };
 }
 
-class TxButton extends React.PureComponent<PropsWithApi> {
-  render () {
-    return (
-      <QueueConsumer>
-        {({ queueExtrinsic }) => (
-          <TxButtonInner
-            {...this.props}
-            queueExtrinsic={queueExtrinsic}
-          />
-        )}
-      </QueueConsumer>
-    );
-  }
-}
+// Make icon optional since we provide default value
+type DefaultTxButtonProps = TxButtonProps<Omit<DefaultButtonProps, 'icon'> & { icon?: DefaultButtonProps['icon'] }>;
 
-export default withApi(withMyAccount(TxButton));
+export const DefaultTxButton = (props: DefaultTxButtonProps) => {
+  const { origin, sendTx } = useTxButton(props);
+  const { isDisabled, icon = 'check', onClick } = props;
+  const buttonProps = _.omit(props, txButtonNotPassedProps);
+
+  return (
+    <Button
+      {...buttonProps}
+      isDisabled={isDisabled || !origin}
+      icon={icon}
+      onClick={() => {
+        if (onClick) onClick(sendTx);
+        else sendTx();
+      }}
+    />
+  );
+};
+
+type SemanticTxButtonProps = TxButtonProps<SemanticButtonProps>;
+
+export const SemanticTxButton = (props: SemanticTxButtonProps) => {
+  const { origin, sendTx } = useTxButton(props);
+  const { disabled, onClick } = props;
+  const buttonProps = _.omit(props, txButtonNotPassedProps);
+
+  return (
+    <SemanticButton
+      {...buttonProps}
+      disabled={disabled || !origin}
+      onClick={() => {
+        if (onClick) onClick(sendTx);
+        else sendTx();
+      }}
+    />
+  );
+};
+
+export default DefaultTxButton;
 
 // const SubstrateTxButton = withApi(withMyAccount(TxButton));
 
