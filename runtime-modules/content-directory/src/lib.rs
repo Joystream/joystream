@@ -160,7 +160,7 @@ pub use errors::Error;
 use core::debug_assert;
 
 /// Type, used in diffrent numeric constraints representations
-type MaxNumber = u32;
+pub type MaxNumber = u32;
 
 /// Module configuration trait for this Substrate module.
 pub trait Trait: system::Trait + ActorAuthenticator + Clone {
