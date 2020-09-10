@@ -52,7 +52,7 @@ tap.mocha.describe('Set storage working group mint capacity scenario', async () 
       greaterStake,
       lesserStake
     )
-    councilElectionHappyCaseFixture.runner(false)
+    await councilElectionHappyCaseFixture.runner(false)
   }
 
   const newMintCapacity: BN = (await apiWrapper.getWorkingGroupMintCapacity(WorkingGroups.StorageWorkingGroup)).add(
@@ -65,7 +65,7 @@ tap.mocha.describe('Set storage working group mint capacity scenario', async () 
     newMintCapacity,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Propose mint capacity', async () => workingGroupMintCapacityProposalFixture.runner(false))
+  tap.test('Propose mint capacity', async () => await workingGroupMintCapacityProposalFixture.runner(false))
 
   let voteForProposalFixture: VoteForProposalFixture
   const expectMintCapacityChanged: ExpectMintCapacityChangedFixture = new ExpectMintCapacityChangedFixture(

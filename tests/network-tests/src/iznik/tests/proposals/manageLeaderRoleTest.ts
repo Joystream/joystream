@@ -81,7 +81,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       greaterStake,
       lesserStake
     )
-    councilElectionHappyCaseFixture.runner(false)
+    await councilElectionHappyCaseFixture.runner(false)
   }
 
   const leaderMembershipFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
@@ -90,7 +90,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
     leadKeyPair,
     paidTerms
   )
-  tap.test('Buy membership for lead', async () => leaderMembershipFixture.runner(false))
+  tap.test('Buy membership for lead', async () => await leaderMembershipFixture.runner(false))
 
   const createWorkingGroupLeaderOpeningFixture: CreateWorkingGroupLeaderOpeningFixture = new CreateWorkingGroupLeaderOpeningFixture(
     apiWrapper,
@@ -100,7 +100,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
     roleStake,
     'Storage'
   )
-  tap.test('Propose create leader opening', async () => createWorkingGroupLeaderOpeningFixture.runner(false))
+  tap.test('Propose create leader opening', async () => await createWorkingGroupLeaderOpeningFixture.runner(false))
 
   let voteForCreateOpeningProposalFixture: VoteForProposalFixture
   const expectLeadOpeningAddedFixture: ExpectLeadOpeningAddedFixture = new ExpectLeadOpeningAddedFixture(apiWrapper)
@@ -251,7 +251,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
     slashAmount,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Propose leader slash', async () => slashLeaderProposalFixture.runner(false))
+  tap.test('Propose leader slash', async () => await slashLeaderProposalFixture.runner(false))
 
   let voteForSlashProposalFixture: VoteForProposalFixture
   let expectLeaderSlashedFixture: ExpectLeaderSlashedFixture
@@ -276,7 +276,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
     false,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Propose terminate leader role', async () => terminateLeaderRoleProposalFixture.runner(false))
+  tap.test('Propose terminate leader role', async () => await terminateLeaderRoleProposalFixture.runner(false))
 
   let voteForLeaderRoleTerminationFixture: VoteForProposalFixture
   const expectLeaderRoleTerminatedFixture: ExpectLeaderRoleTerminatedFixture = new ExpectLeaderRoleTerminatedFixture(

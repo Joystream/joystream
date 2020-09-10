@@ -51,7 +51,7 @@ tap.mocha.describe('Spending proposal scenario', async () => {
       greaterStake,
       lesserStake
     )
-    councilElectionHappyCaseFixture.runner(false)
+    await councilElectionHappyCaseFixture.runner(false)
   }
 
   const spendingProposalFixture: SpendingProposalFixture = new SpendingProposalFixture(
@@ -62,7 +62,7 @@ tap.mocha.describe('Spending proposal scenario', async () => {
     spendingBalance,
     mintCapacity
   )
-  tap.test('Spending proposal test', async () => spendingProposalFixture.runner(false))
+  tap.test('Spending proposal test', async () => await spendingProposalFixture.runner(false))
 
   closeApi(apiWrapper)
 })

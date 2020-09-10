@@ -49,11 +49,11 @@ tap.mocha.describe('Text proposal scenario', async () => {
       greaterStake,
       lesserStake
     )
-    councilElectionHappyCaseFixture.runner(false)
+    await councilElectionHappyCaseFixture.runner(false)
   }
 
   const textProposalFixture: TextProposalFixture = new TextProposalFixture(apiWrapper, m1KeyPairs, m2KeyPairs, sudo)
-  tap.test('Text proposal test', async () => textProposalFixture.runner(false))
+  tap.test('Text proposal test', async () => await textProposalFixture.runner(false))
 
   closeApi(apiWrapper)
 })

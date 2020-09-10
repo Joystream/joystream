@@ -50,7 +50,7 @@ tap.mocha.describe('Election parameters proposal scenario', async () => {
       greaterStake,
       lesserStake
     )
-    councilElectionHappyCaseFixture.runner(false)
+    await councilElectionHappyCaseFixture.runner(false)
   }
 
   const electionParametersProposalFixture: ElectionParametersProposalFixture = new ElectionParametersProposalFixture(
@@ -59,7 +59,7 @@ tap.mocha.describe('Election parameters proposal scenario', async () => {
     m2KeyPairs,
     sudo
   )
-  tap.test('Election parameters proposal test', async () => electionParametersProposalFixture.runner(false))
+  tap.test('Election parameters proposal test', async () => await electionParametersProposalFixture.runner(false))
 
   closeApi(apiWrapper)
 })

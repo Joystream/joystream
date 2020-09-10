@@ -25,7 +25,7 @@ import { CouncilElectionHappyCaseFixture } from '../fixtures/councilElectionHapp
 import { LeaderHiringHappyCaseFixture } from '../fixtures/leaderHiringHappyCase'
 import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
 
-tap.mocha.describe('Worker application happy case scenario', async () => {
+tap.mocha.describe('Worker payout scenario', async () => {
   initConfig()
 
   const nodeUrl: string = process.env.NODE_URL!
@@ -68,7 +68,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       m1KeyPairs,
       paidTerms
     )
-    tap.test('Recreating set of members', async () => memberSetFixture.runner(false))
+    tap.test('Recreating set of members', async () => await memberSetFixture.runner(false))
     m2KeyPairs = db.getCouncil()
   } else {
     const councilElectionHappyCaseFixture = new CouncilElectionHappyCaseFixture(
@@ -81,7 +81,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       greaterStake,
       lesserStake
     )
-    councilElectionHappyCaseFixture.runner(false)
+    await councilElectionHappyCaseFixture.runner(false)
   }
 
   if (db.hasLeader(apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
@@ -111,7 +111,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
     mintCapacity,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Propose mint capacity', async () => workingGroupMintCapacityProposalFixture.runner(false))
+  tap.test('Propose mint capacity', async () => await workingGroupMintCapacityProposalFixture.runner(false))
 
   let voteForProposalFixture: VoteForProposalFixture
   const expectMintCapacityChanged: ExpectMintCapacityChangedFixture = new ExpectMintCapacityChangedFixture(
@@ -140,7 +140,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
     unstakingPeriod,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Add worker opening', async () => addWorkerOpeningFixture.runner(false))
+  tap.test('Add worker opening', async () => await addWorkerOpeningFixture.runner(false))
 
   let applyForWorkerOpeningFixture: ApplyForOpeningFixture
   tap.test('First apply for worker opening', async () => {
@@ -189,7 +189,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
     m1KeyPairs,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Await worker payout', async () => awaitPayoutFixture.runner(false))
+  tap.test('Await worker payout', async () => await awaitPayoutFixture.runner(false))
 
   if (!db.hasLeader(apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
     const leaveRoleFixture: LeaveRoleFixture = new LeaveRoleFixture(
@@ -198,7 +198,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       sudo,
       WorkingGroups.StorageWorkingGroup
     )
-    tap.test('Leaving lead role', async () => leaveRoleFixture.runner(false))
+    tap.test('Leaving lead role', async () => await leaveRoleFixture.runner(false))
   }
 
   closeApi(apiWrapper)

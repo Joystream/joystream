@@ -50,7 +50,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       greaterStake,
       lesserStake
     )
-    councilElectionHappyCaseFixture.runner(false)
+    await councilElectionHappyCaseFixture.runner(false)
   }
 
   const setLeadProposalFixture: SetLeadProposalFixture = new SetLeadProposalFixture(
@@ -59,7 +59,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
     m2KeyPairs,
     sudo
   )
-  tap.test('Set lead proposal test', async () => setLeadProposalFixture.runner(false))
+  tap.test('Set lead proposal test', async () => await setLeadProposalFixture.runner(false))
 
   closeApi(apiWrapper)
 })

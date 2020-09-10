@@ -50,7 +50,7 @@ tap.mocha.describe('Validator count proposal scenario', async () => {
       greaterStake,
       lesserStake
     )
-    councilElectionHappyCaseFixture.runner(false)
+    await councilElectionHappyCaseFixture.runner(false)
   }
 
   const validatorCountProposalFixture: ValidatorCountProposalFixture = new ValidatorCountProposalFixture(
@@ -60,7 +60,7 @@ tap.mocha.describe('Validator count proposal scenario', async () => {
     sudo,
     validatorCountIncrement
   )
-  tap.test('Validator count proposal', async () => validatorCountProposalFixture.runner(false))
+  tap.test('Validator count proposal', async () => await validatorCountProposalFixture.runner(false))
 
   closeApi(apiWrapper)
 })

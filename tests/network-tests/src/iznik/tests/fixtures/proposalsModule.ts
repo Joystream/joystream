@@ -4,10 +4,10 @@ import { v4 as uuid } from 'uuid'
 import BN from 'bn.js'
 import { ProposalId } from '@alexandria/types/proposals'
 import { Fixture } from './interfaces/fixture'
-import { Bytes } from '@polkadot/types'
 import { assert } from 'chai'
 import { ApplicationId, OpeningId } from '@alexandria/types/hiring'
 import { WorkerId } from '@alexandria/types/working-group'
+import { Utils } from '../../utils/utils'
 
 export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
   private apiWrapper: ApiWrapper
@@ -1004,22 +1004,25 @@ export class UpdateRuntimeFixture implements Fixture {
   private membersKeyPairs: KeyringPair[]
   private councilKeyPairs: KeyringPair[]
   private treasury: KeyringPair
+  private runtimePath: string
 
   constructor(
     apiWrapper: ApiWrapper,
     membersKeyPairs: KeyringPair[],
     councilKeyPairs: KeyringPair[],
-    treasury: KeyringPair
+    treasury: KeyringPair,
+    runtimePath: string
   ) {
     this.apiWrapper = apiWrapper
     this.membersKeyPairs = membersKeyPairs
     this.councilKeyPairs = councilKeyPairs
     this.treasury = treasury
+    this.runtimePath = runtimePath
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Setup
-    const runtime: Bytes = await this.apiWrapper.getRuntime()
+    const runtime: string = Utils.readRuntimeFromFile(this.runtimePath)
     const description = 'runtime upgrade proposal which is used for API network testing'
     const runtimeVoteFee: BN = this.apiWrapper.estimateVoteForProposalFee()
 

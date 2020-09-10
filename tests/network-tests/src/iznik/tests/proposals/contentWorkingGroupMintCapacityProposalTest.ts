@@ -51,7 +51,7 @@ tap.mocha.describe('Validator count proposal scenario', async () => {
       greaterStake,
       lesserStake
     )
-    councilElectionHappyCaseFixture.runner(false)
+    await councilElectionHappyCaseFixture.runner(false)
   }
 
   const contentWorkingGroupMintCapacityProposalFixture: ContentWorkingGroupMintCapacityProposalFixture = new ContentWorkingGroupMintCapacityProposalFixture(
@@ -61,8 +61,9 @@ tap.mocha.describe('Validator count proposal scenario', async () => {
     sudo,
     mintingCapacityIncrement
   )
-  tap.test('Content working group mint capacity test', async () =>
-    contentWorkingGroupMintCapacityProposalFixture.runner(false)
+  tap.test(
+    'Content working group mint capacity test',
+    async () => await contentWorkingGroupMintCapacityProposalFixture.runner(false)
   )
 
   closeApi(apiWrapper)

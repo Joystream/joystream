@@ -80,7 +80,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
     unstakingPeriod,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Add worker opening', async () => addWorkerOpeningFixture.runner(false))
+  tap.test('Add worker opening', async () => await addWorkerOpeningFixture.runner(false))
 
   let firstApplyForWorkerOpeningFixture: ApplyForOpeningFixture
   tap.test('First apply for worker opening', async () => {
@@ -102,7 +102,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
     sudo,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Withdraw worker application', async () => withdrawApplicationFixture.runner(false))
+  tap.test('Withdraw worker application', async () => await withdrawApplicationFixture.runner(false))
 
   let secondApplyForWorkerOpeningFixture: ApplyForOpeningFixture
   tap.test('Second apply for worker opening', async () => {
@@ -153,7 +153,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       sudo,
       WorkingGroups.StorageWorkingGroup
     )
-    tap.test('Leaving lead role', async () => leaveRoleFixture.runner(false))
+    tap.test('Leaving lead role', async () => await leaveRoleFixture.runner(false))
   }
 
   closeApi(apiWrapper)

@@ -81,7 +81,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
     unstakingPeriod,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Add worker opening', async () => addWorkerOpeningFixture.runner(false))
+  tap.test('Add worker opening', async () => await addWorkerOpeningFixture.runner(false))
 
   let applyForWorkerOpeningFixture: ApplyForOpeningFixture
   tap.test('First apply for worker opening', async () => {
@@ -131,7 +131,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
     sudo,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Increase worker stake', async () => increaseStakeFixture.runner(false))
+  tap.test('Increase worker stake', async () => await increaseStakeFixture.runner(false))
 
   const updateRewardAccountFixture: UpdateRewardAccountFixture = new UpdateRewardAccountFixture(
     apiWrapper,
@@ -140,7 +140,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
     sudo,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Update reward account', async () => updateRewardAccountFixture.runner(false))
+  tap.test('Update reward account', async () => await updateRewardAccountFixture.runner(false))
 
   const updateRoleAccountFixture: UpdateRewardAccountFixture = new UpdateRewardAccountFixture(
     apiWrapper,
@@ -149,7 +149,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
     sudo,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Update role account', async () => updateRoleAccountFixture.runner(false))
+  tap.test('Update role account', async () => await updateRoleAccountFixture.runner(false))
 
   if (!db.hasLeader(apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
     const leaveRoleFixture: LeaveRoleFixture = new LeaveRoleFixture(
@@ -158,7 +158,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       sudo,
       WorkingGroups.StorageWorkingGroup
     )
-    tap.test('Leaving lead role', async () => leaveRoleFixture.runner(false))
+    tap.test('Leaving lead role', async () => await leaveRoleFixture.runner(false))
   }
 
   closeApi(apiWrapper)

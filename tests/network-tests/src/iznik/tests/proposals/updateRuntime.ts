@@ -32,6 +32,7 @@ tap.mocha.describe('Update runtime scenario', async () => {
   const K: number = +process.env.COUNCIL_ELECTION_K!
   const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!)
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!)
+  const runtimePath: string = process.env.RUNTIME_WASM_PATH!
   const durationInBlocks = 54
 
   setTestTimeout(apiWrapper, durationInBlocks)
@@ -50,11 +51,17 @@ tap.mocha.describe('Update runtime scenario', async () => {
       greaterStake,
       lesserStake
     )
-    councilElectionHappyCaseFixture.runner(false)
+    await councilElectionHappyCaseFixture.runner(false)
   }
 
-  const updateRuntimeFixture: UpdateRuntimeFixture = new UpdateRuntimeFixture(apiWrapper, m1KeyPairs, m2KeyPairs, sudo)
-  tap.test('Upgrade runtime', async () => updateRuntimeFixture.runner(false))
+  const updateRuntimeFixture: UpdateRuntimeFixture = new UpdateRuntimeFixture(
+    apiWrapper,
+    m1KeyPairs,
+    m2KeyPairs,
+    sudo,
+    runtimePath
+  )
+  tap.test('Upgrade runtime', async () => await updateRuntimeFixture.runner(false))
 
   const thirdMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
     apiWrapper,
@@ -62,7 +69,7 @@ tap.mocha.describe('Update runtime scenario', async () => {
     Utils.createKeyPairs(keyring, N),
     paidTerms
   )
-  tap.test('Creating third set of members', async () => thirdMemberSetFixture.runner(false))
+  tap.test('Creating third set of members', async () => await thirdMemberSetFixture.runner(false))
 
   closeApi(apiWrapper)
 })

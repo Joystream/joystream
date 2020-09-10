@@ -19,7 +19,7 @@ import { OpeningId } from '@alexandria/types/hiring'
 import { DbService } from '../../services/dbService'
 import { LeaderHiringHappyCaseFixture } from '../fixtures/leaderHiringHappyCase'
 
-tap.mocha.describe('Worker application happy case scenario', async () => {
+tap.mocha.describe('Worker application rejection case scenario', async () => {
   initConfig()
 
   const nodeUrl: string = process.env.NODE_URL!
@@ -81,7 +81,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
     unstakingPeriod,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Add worker opening', async () => addWorkerOpeningFixture.runner(false))
+  tap.test('Add worker opening', async () => await addWorkerOpeningFixture.runner(false))
 
   let applyForWorkerOpeningBeforeAcceptanceFixture: ApplyForOpeningFixture
   tap.test('Apply for worker opening, expect failure', async () => {
@@ -106,7 +106,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
-    acceptApplicationsFixture.runner(false)
+    await acceptApplicationsFixture.runner(false)
   })
 
   let applyForWorkerOpeningAsNonMemberFixture: ApplyForOpeningFixture
@@ -144,7 +144,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
     sudo,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Terminate worker applicaitons', async () => terminateApplicationsFixture.runner(false))
+  tap.test('Terminate worker applicaitons', async () => await terminateApplicationsFixture.runner(false))
 
   if (!db.hasLeader(apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
     const leaveRoleFixture: LeaveRoleFixture = new LeaveRoleFixture(
@@ -153,7 +153,7 @@ tap.mocha.describe('Worker application happy case scenario', async () => {
       sudo,
       WorkingGroups.StorageWorkingGroup
     )
-    tap.test('Leaving lead role', async () => leaveRoleFixture.runner(false))
+    tap.test('Leaving lead role', async () => await leaveRoleFixture.runner(false))
   }
 
   closeApi(apiWrapper)
