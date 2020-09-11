@@ -1,7 +1,6 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode};
-use sp_std::collections::btree_set::BTreeSet;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -27,10 +26,7 @@ pub type TeamWorker<T> = Worker<<T as system::Trait>::AccountId, MemberId<T>>;
 /// An opening represents the process of hiring one or more new actors into some available role.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq)]
-pub struct JobOpening<BlockNumber, ApplicationId: Ord> {
-    /// Set of identifiers for all worker applications ever added.
-    pub applications: BTreeSet<ApplicationId>,
-
+pub struct JobOpening<BlockNumber: Ord> {
     /// Defines opening type: Leader or worker.
     pub opening_type: JobOpeningType,
 

@@ -65,8 +65,6 @@ impl AddOpeningFixture {
 
             let expected_hash = <Test as system::Trait>::Hashing::hash(&self.description);
             let expected_opening = JobOpening {
-                applications: BTreeSet::new(),
-                //                policy_commitment: self.commitment.clone(),
                 created: self.starting_block,
                 description_hash: expected_hash.as_ref().to_vec(),
                 opening_type: self.opening_type,
@@ -185,9 +183,6 @@ impl ApplyOnOpeningFixture {
             };
 
             assert_eq!(actual_application, expected_application);
-
-            let current_opening = TestWorkingTeam::opening_by_id(self.opening_id);
-            assert!(current_opening.applications.contains(&application_id));
         }
 
         saved_application_next_id

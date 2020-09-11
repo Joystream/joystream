@@ -103,7 +103,7 @@ decl_storage! {
 
         /// Maps identifier to job opening.
         pub OpeningById get(fn opening_by_id): map hasher(blake2_128_concat)
-            T::OpeningId => JobOpening<T::BlockNumber, T::ApplicationId>;
+            T::OpeningId => JobOpening<T::BlockNumber>;
 
         /// Count of active workers.
         pub ActiveWorkerCount get(fn active_worker_count): u32;
@@ -143,7 +143,7 @@ decl_module! {
 
         /// Add a job opening for a regular worker/lead role.
         /// Require signed leader origin or the root (to add opening for the leader position).
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = 10_000_000] // TODO: adjust weight: it should also consider a description length
         pub fn add_opening(
             origin,
             description: Vec<u8>,
@@ -159,7 +159,6 @@ decl_module! {
 
             // Create and add worker opening.
             let new_opening = JobOpening{
-                applications: BTreeSet::new(),
                 opening_type,
                 created: Self::current_block(),
                 description_hash: hashed_description.as_ref().to_vec(),
@@ -176,7 +175,7 @@ decl_module! {
         }
 
         /// Apply on a worker opening.
-        #[weight = 10_000_000] // TODO: adjust weight
+        #[weight = 10_000_000] // TODO: adjust weight: it should also consider a description length
         pub fn apply_on_opening(
             origin,
             member_id: T::MemberId,
@@ -219,11 +218,6 @@ decl_module! {
 
             // Update the next application identifier value.
             NextApplicationId::<T, I>::mutate(|id| *id += <T::ApplicationId as One>::one());
-
-            // Add application to set of application in the job opening.
-            OpeningById::<T, I>::mutate(opening_id, |opening| {
-                opening.applications.insert(new_application_id);
-            });
 
             // Trigger the event.
             Self::deposit_event(RawEvent::AppliedOnOpening(opening_id, new_application_id));
@@ -295,7 +289,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Processes successful application during the fill_opening().
     fn fulfill_successful_applications(
-        opening: &JobOpening<T::BlockNumber, T::ApplicationId>,
+        opening: &JobOpening<T::BlockNumber>,
         successful_applications_info: Vec<ApplicationInfo<T, I>>,
     ) -> BTreeMap<T::ApplicationId, TeamWorkerId<T>> {
         let mut application_id_to_worker_id = BTreeMap::new();

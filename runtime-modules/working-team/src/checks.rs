@@ -28,7 +28,7 @@ pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
 // Check opening: returns the opening by id if it is exists.
 pub(crate) fn ensure_opening_exists<T: Trait<I>, I: Instance>(
     opening_id: &T::OpeningId,
-) -> Result<JobOpening<T::BlockNumber, T::ApplicationId>, Error<T, I>> {
+) -> Result<JobOpening<T::BlockNumber>, Error<T, I>> {
     ensure!(
         <crate::OpeningById::<T, I>>::contains_key(opening_id),
         Error::<T, I>::OpeningDoesNotExist
