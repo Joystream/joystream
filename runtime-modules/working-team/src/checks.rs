@@ -160,3 +160,21 @@ pub(crate) fn ensure_worker_signed<T: Trait<I>, I: Instance>(
 
     Ok(worker)
 }
+
+// Check worker: verifies proper origin for the worker operation. Returns whether the origin is sudo.
+pub(crate) fn ensure_origin_for_terminate_worker<T: Trait<I>, I: Instance>(
+    origin: T::Origin,
+    worker_id: TeamWorkerId<T>,
+) -> Result<bool, DispatchError> {
+    let leader_worker_id = ensure_lead_is_set::<T, I>()?;
+
+    let (worker_opening_type, is_sudo) = if leader_worker_id == worker_id {
+        (JobOpeningType::Leader, true)
+    } else {
+        (JobOpeningType::Regular, false)
+    };
+
+    ensure_origin_for_opening_type::<T, I>(origin, worker_opening_type)?;
+
+    Ok(is_sudo)
+}

@@ -111,6 +111,16 @@ decl_event!(
         /// Params:
         /// - worker id.
         WorkerExited(TeamWorkerId),
+
+        /// Emits on terminating the worker.
+        /// Params:
+        /// - worker id.
+        TerminatedWorker(TeamWorkerId),
+
+        /// Emits on terminating the leader.
+        /// Params:
+        /// - leader worker id.
+        TerminatedLeader(TeamWorkerId),
     }
 );
 
@@ -333,6 +343,35 @@ decl_module! {
             Self::deactivate_worker(&worker_id);
 
             Self::deposit_event(RawEvent::WorkerExited(worker_id));
+        }
+
+        /// Terminate the active worker by the lead.
+        /// Require signed leader origin or the root (to terminate the leader role).
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn terminate_role(
+            origin,
+            worker_id: TeamWorkerId<T>,
+        ) {
+            // Ensure lead is set or it is the council terminating the leader.
+            let is_sudo = checks::ensure_origin_for_terminate_worker::<T,I>(origin, worker_id)?;
+
+            // Ensuring worker actually exists.
+            checks::ensure_worker_exists::<T,I>(&worker_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deactivate_worker(&worker_id);
+
+            // Trigger the event
+            let event = if is_sudo {
+                RawEvent::TerminatedLeader(worker_id)
+            } else {
+                RawEvent::TerminatedWorker(worker_id)
+            };
+
+            Self::deposit_event(event);
         }
     }
 }
