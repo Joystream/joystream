@@ -90,8 +90,9 @@ impl HiringWorkflow {
     fn setup_environment(&self) {
         if matches!(self.opening_type, JobOpeningType::Regular) {
             HireLeadFixture::default().hire_lead();
+        } else {
+            setup_members(6);
         }
-        setup_members(6);
     }
 
     pub fn execute(&self) -> Option<u64> {

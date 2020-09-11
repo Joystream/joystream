@@ -31,7 +31,7 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use system::ensure_signed;
 
 pub use errors::Error;
-use types::{ApplicationInfo, TeamWorker, TeamWorkerId};
+use types::{ApplicationInfo, MemberId, TeamWorker, TeamWorkerId};
 pub use types::{JobApplication, JobOpening, JobOpeningType};
 
 /// The _Team_ main _Trait_
@@ -70,7 +70,8 @@ decl_event!(
        <T as Trait<I>>::OpeningId,
        <T as Trait<I>>::ApplicationId,
        ApplicationIdToWorkerIdMap = BTreeMap<<T as Trait<I>>::ApplicationId, TeamWorkerId<T>>,
-       TeamWorkerId = TeamWorkerId<T>
+       TeamWorkerId = TeamWorkerId<T>,
+       <T as system::Trait>::AccountId,
     {
         /// Emits on adding new job opening.
         /// Params:
@@ -93,6 +94,12 @@ decl_event!(
         /// Params:
         /// - Team worker id.
         LeaderSet(TeamWorkerId),
+
+        /// Emits on updating the role account of the worker.
+        /// Params:
+        /// - Id of the worker.
+        /// - Role account id of the worker.
+        WorkerRoleAccountUpdated(TeamWorkerId, AccountId),
     }
 );
 
@@ -271,6 +278,32 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::OpeningFilled(opening_id, application_id_to_worker_id));
+        }
+
+        /// Update the associated role account of the active regular worker/lead.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_role_account(
+            origin,
+            worker_id: TeamWorkerId<T>,
+            new_role_account_id: T::AccountId
+        ) {
+            // Ensuring worker actually exists
+            let worker = checks::ensure_worker_exists::<T, I>(&worker_id)?;
+
+            // Ensure that origin is signed by member with given id.
+            checks::ensure_origin_signed_by_member::<T, I>(origin, &worker.member_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update role account
+            WorkerById::<T, I>::mutate(worker_id, |worker| {
+                worker.role_account_id = new_role_account_id.clone()
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerRoleAccountUpdated(worker_id, new_role_account_id));
         }
     }
 }

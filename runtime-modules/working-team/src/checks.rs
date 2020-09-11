@@ -1,4 +1,4 @@
-use crate::{Instance, JobOpening, JobOpeningType, TeamWorkerId, Trait};
+use crate::{Instance, JobOpening, JobOpeningType, MemberId, TeamWorker, TeamWorkerId, Trait};
 
 use super::Error;
 use frame_support::dispatch::DispatchResult;
@@ -113,4 +113,29 @@ fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(origin: T::Origin) -
     let signer = ensure_signed(origin)?;
 
     ensure_is_lead_account::<T, I>(signer)
+}
+
+// Check worker: ensures the worker was already created.
+pub(crate) fn ensure_worker_exists<T: Trait<I>, I: Instance>(
+    worker_id: &TeamWorkerId<T>,
+) -> Result<TeamWorker<T>, Error<T, I>> {
+    ensure!(
+        <crate::WorkerById::<T, I>>::contains_key(worker_id),
+        Error::<T, I>::WorkerDoesNotExist
+    );
+
+    let worker = <crate::WorkerById<T, I>>::get(worker_id);
+
+    Ok(worker)
+}
+
+// Check worker: verifies that origin is signed and corresponds with the membership.
+pub(crate) fn ensure_origin_signed_by_member<T: Trait<I>, I: Instance>(
+    origin: T::Origin,
+    member_id: &MemberId<T>,
+) -> Result<(), Error<T, I>> {
+    membership::Module::<T>::ensure_member_controller_account_signed(origin, member_id)
+        .map_err(|_| Error::<T, I>::InvalidMemberOrigin)?;
+
+    Ok(())
 }

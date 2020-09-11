@@ -5,13 +5,15 @@ mod mock;
 use system::RawOrigin;
 
 use crate::tests::hiring_workflow::HiringWorkflow;
-use crate::{Error, JobOpeningType, RawEvent};
+use crate::{Error, JobOpeningType, RawEvent, TeamWorker};
 use fixtures::{
     setup_members, AddOpeningFixture, ApplyOnOpeningFixture, EventFixture, FillOpeningFixture,
-    HireLeadFixture,
+    HireLeadFixture, HireRegularWorkerFixture, UpdateWorkerRoleAccountFixture,
 };
 use frame_support::dispatch::DispatchError;
-use mock::{build_test_externalities, run_to_block, Test, TestWorkingTeamInstance};
+use mock::{
+    build_test_externalities, run_to_block, Test, TestWorkingTeam, TestWorkingTeamInstance,
+};
 use sp_std::collections::btree_map::BTreeMap;
 
 #[test]
@@ -261,5 +263,70 @@ fn cannot_hire_muptiple_leaders() {
                 Error::<Test, TestWorkingTeamInstance>::CannotHireMultipleLeaders.into(),
             ))
             .execute();
+    });
+}
+
+#[test]
+fn update_worker_role_account_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let new_account_id = 10;
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        let update_worker_account_fixture =
+            UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, new_account_id);
+
+        update_worker_account_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerRoleAccountUpdated(
+            worker_id,
+            new_account_id,
+        ));
+    });
+}
+
+#[test]
+fn update_worker_role_account_by_leader_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let new_account_id = 10;
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        let old_lead = TestWorkingTeam::worker_by_id(worker_id);
+
+        let update_worker_account_fixture =
+            UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, new_account_id);
+
+        update_worker_account_fixture.call_and_assert(Ok(()));
+
+        let new_lead = TestWorkingTeam::worker_by_id(worker_id);
+
+        assert_eq!(
+            new_lead,
+            TeamWorker::<Test> {
+                role_account_id: new_account_id,
+                ..old_lead
+            }
+        );
+    });
+}
+
+#[test]
+fn update_worker_role_account_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        let update_worker_account_fixture =
+            UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, 1)
+                .with_origin(RawOrigin::None);
+
+        update_worker_account_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::InvalidMemberOrigin.into(),
+        ));
     });
 }

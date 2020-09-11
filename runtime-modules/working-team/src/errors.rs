@@ -35,5 +35,11 @@ decl_error! {
 
         /// Current lead is not set.
         CurrentLeadNotSet,
+
+        /// Worker does not exist.
+        WorkerDoesNotExist,
+
+        /// Invalid origin for a member.
+        InvalidMemberOrigin,
     }
 }
