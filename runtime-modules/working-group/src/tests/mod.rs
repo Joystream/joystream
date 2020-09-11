@@ -204,7 +204,7 @@ fn add_opening_succeeds() {
 }
 
 #[test]
-fn add_leader_opening_succeeds_fails_with_incorrect_origin_for_opening_type() {
+fn add_leader_opening_fails_with_incorrect_origin_for_opening_type() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 

@@ -1,5 +1,5 @@
 //! # Working group module
-//! Working group module for the Joystream platform. Version 1.
+//! Working group module for the Joystream platform.
 //! Contains abstract working group workflow.
 //!
 //! ## Overview

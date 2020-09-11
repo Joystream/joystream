@@ -1993,7 +1993,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "3.0.1"
+version = "3.1.0"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -3874,6 +3874,25 @@ dependencies = [
  "pallet-stake",
  "pallet-timestamp",
  "pallet-token-mint",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-working-team"
+version = "1.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-common",
+ "pallet-membership",
+ "pallet-timestamp",
  "parity-scale-codec",
  "serde",
  "sp-arithmetic",
