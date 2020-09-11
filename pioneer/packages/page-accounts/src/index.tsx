@@ -8,7 +8,7 @@ import React, { useMemo } from 'react';
 import { Route, Switch } from 'react-router';
 import { useAccounts, useIpfs } from '@polkadot/react-hooks';
 import { HelpOverlay, Tabs } from '@polkadot/react-components';
-import { MemoForm } from '@polkadot/joy-utils/react/components/Memo'
+import { MemoForm } from '@polkadot/joy-utils/react/components/Memo';
 
 import basicMd from './md/basic.md';
 import { useTranslation } from './translate';
