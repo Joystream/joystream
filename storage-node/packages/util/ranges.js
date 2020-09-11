@@ -27,12 +27,16 @@ const streamBuf = require('stream-buffers')
  * Range parsing
  */
 
+// Increase performance by "pre-computing" these regex expressions
+const PARSE_RANGE_REGEX = /^(\d+-\d+|\d+-|-\d+|\*)$/u
+const PARSE_RANGE_HEADERS_REGEX = /^(([^\s]+)=)?((?:(?:\d+-\d+|-\d+|\d+-),?)+)$/u
+
 /*
  * Parse a range string, e.g. '0-100' or '-100' or '0-'. Return the values
  * in an array of int or undefined (if not provided).
  */
 function parseRange(range) {
-  const matches = range.match(/^(\d+-\d+|\d+-|-\d+|\*)$/u)
+  const matches = range.match(PARSE_RANGE_REGEX)
   if (!matches) {
     throw new Error(`Not a valid range: ${range}`)
   }
@@ -57,7 +61,7 @@ function parseRange(range) {
 function parse(rangeStr) {
   const res = {}
   // debug('Parse range header value:', rangeStr)
-  const matches = rangeStr.match(/^(([^\s]+)=)?((?:(?:\d+-\d+|-\d+|\d+-),?)+)$/u)
+  const matches = rangeStr.match(PARSE_RANGE_HEADERS_REGEX)
   if (!matches) {
     throw new Error(`Not a valid range header: ${rangeStr}`)
   }
