@@ -30,8 +30,6 @@ use sp_runtime::traits::{Hash, MaybeSerialize, Member};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use system::ensure_signed;
 
-use common::constraints::InputValidationLengthConstraint;
-
 pub use errors::Error;
 use types::{ApplicationInfo, TeamWorker, TeamWorkerId};
 pub use types::{JobApplication, JobOpening, JobOpeningType};
@@ -110,20 +108,12 @@ decl_storage! {
         /// Count of active workers.
         pub ActiveWorkerCount get(fn active_worker_count): u32;
 
-        /// Opening human readable text length limits.
-        pub OpeningDescriptionTextLimit get(fn opening_description_text_limit):
-            InputValidationLengthConstraint;
-
                 /// Maps identifier to worker application on opening.
         pub ApplicationById get(fn application_by_id) : map hasher(blake2_128_concat)
             T::ApplicationId => JobApplication<T, I>;
 
         /// Next identifier value for new worker application.
         pub NextApplicationId get(fn next_application_id) : T::ApplicationId;
-
-        /// Job application description text length limits.
-        pub ApplicationDescriptionTextLimit get(fn application_description_text_limit):
-            InputValidationLengthConstraint;
 
         /// Next identifier for a new worker.
         pub NextWorkerId get(fn next_worker_id) : TeamWorkerId<T>;
@@ -134,16 +124,6 @@ decl_storage! {
 
         /// Current team lead.
         pub CurrentLead get(fn current_lead) : Option<TeamWorkerId<T>>;
-    }
-    add_extra_genesis {
-        config(opening_description_constraint): InputValidationLengthConstraint;
-        config(application_description_constraint): InputValidationLengthConstraint;
-        build(|config: &GenesisConfig| {
-            Module::<T, I>::initialize_working_group(
-                config.opening_description_constraint,
-                config.application_description_constraint,
-            );
-        });
     }
 }
 
@@ -170,8 +150,6 @@ decl_module! {
             opening_type: JobOpeningType,
         ){
             checks::ensure_origin_for_opening_type::<T, I>(origin, opening_type)?;
-
-            checks::ensure_opening_description_is_valid::<T, I>(&description)?;
 
             //
             // == MUTATION SAFE ==
@@ -217,16 +195,7 @@ decl_module! {
             );
 
             // Ensure job opening exists.
-            let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
-
-            // Ensure application text is valid
-            checks::ensure_application_description_is_valid::<T, I>(&description)?;
-
-            // Ensure member does not have an active application to this opening
-            checks::ensure_member_has_no_active_application_on_opening::<T, I>(
-                opening.applications,
-                member_id
-            )?;
+            checks::ensure_opening_exists::<T, I>(&opening_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -313,16 +282,6 @@ decl_module! {
 }
 
 impl<T: Trait<I>, I: Instance> Module<T, I> {
-    // Initialize working group constraints and mint.
-    pub(crate) fn initialize_working_group(
-        opening_description_constraint: InputValidationLengthConstraint,
-        application_description_constraint: InputValidationLengthConstraint,
-    ) {
-        // Create constraints
-        <OpeningDescriptionTextLimit<I>>::put(opening_description_constraint);
-        <ApplicationDescriptionTextLimit<I>>::put(application_description_constraint);
-    }
-
     // Wrapper-function over system::block_number()
     fn current_block() -> T::BlockNumber {
         <system::Module<T>>::block_number()

@@ -42,25 +42,6 @@ fn add_opening_fails_with_bad_origin() {
 }
 
 #[test]
-fn add_opening_fails_with_invalid_description() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddOpeningFixture::default().with_text(Vec::new());
-
-        add_opening_fixture.call_and_assert(Err(DispatchError::Other(
-            Error::<Test, TestWorkingTeamInstance>::OpeningDescriptionTooShort.into(),
-        )));
-
-        let add_opening_fixture = AddOpeningFixture::default().with_text(b"Too long text".to_vec());
-
-        add_opening_fixture.call_and_assert(Err(DispatchError::Other(
-            Error::<Test, TestWorkingTeamInstance>::OpeningDescriptionTooLong.into(),
-        )));
-    });
-}
-
-#[test]
 fn add_leader_opening_fails_with_incorrect_origin_for_opening_type() {
     build_test_externalities().execute_with(|| {
         let add_opening_fixture =
@@ -143,50 +124,6 @@ fn apply_on_opening_fails_with_bad_member_id() {
 
         apply_on_opening_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingTeamInstance>::OriginIsNeitherMemberControllerOrRoot.into(),
-        ));
-    });
-}
-
-#[test]
-fn apply_on_opening_fails_with_invalid_description() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddOpeningFixture::default();
-
-        let opening_id = add_opening_fixture.call().unwrap();
-
-        let apply_on_opening_fixture =
-            ApplyOnOpeningFixture::default_for_opening_id(opening_id).with_text(Vec::new());
-
-        apply_on_opening_fixture.call_and_assert(Err(DispatchError::Other(
-            Error::<Test, TestWorkingTeamInstance>::JobApplicationDescriptionTooShort.into(),
-        )));
-
-        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_text(b"Too long text".to_vec());
-
-        apply_on_opening_fixture.call_and_assert(Err(DispatchError::Other(
-            Error::<Test, TestWorkingTeamInstance>::JobApplicationDescriptionTooLong.into(),
-        )));
-    });
-}
-
-#[test]
-fn apply_on_opening_fails_for_already_applied_members() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddOpeningFixture::default();
-
-        let opening_id = add_opening_fixture.call().unwrap();
-
-        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id);
-
-        apply_on_opening_fixture.call_and_assert(Ok(()));
-
-        apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::MemberHasActiveApplicationOnOpening.into(),
         ));
     });
 }
