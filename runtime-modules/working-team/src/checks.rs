@@ -1,7 +1,7 @@
 use crate::{Instance, JobOpening, JobOpeningType, MemberId, TeamWorker, TeamWorkerId, Trait};
 
 use super::Error;
-use frame_support::dispatch::DispatchResult;
+use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::{ensure, StorageMap, StorageValue};
 use sp_std::collections::btree_set::BTreeSet;
 use system::{ensure_root, ensure_signed};
@@ -82,7 +82,8 @@ pub(crate) fn ensure_succesful_applications_exist<T: Trait<I>, I: Instance>(
 }
 
 // Check leader: ensures that team leader was hired.
-fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<TeamWorkerId<T>, Error<T, I>> {
+pub(crate) fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<TeamWorkerId<T>, Error<T, I>>
+{
     let leader_worker_id = <crate::CurrentLead<T, I>>::get();
 
     if let Some(leader_worker_id) = leader_worker_id {
@@ -138,4 +139,24 @@ pub(crate) fn ensure_origin_signed_by_member<T: Trait<I>, I: Instance>(
         .map_err(|_| Error::<T, I>::InvalidMemberOrigin)?;
 
     Ok(())
+}
+
+// Check worker: ensures the origin contains signed account that belongs to existing worker.
+pub(crate) fn ensure_worker_signed<T: Trait<I>, I: Instance>(
+    origin: T::Origin,
+    worker_id: &TeamWorkerId<T>,
+) -> Result<TeamWorker<T>, DispatchError> {
+    // Ensure that it is signed
+    let signer_account = ensure_signed(origin)?;
+
+    // Ensure that id corresponds to active worker
+    let worker = ensure_worker_exists::<T, I>(&worker_id)?;
+
+    // Ensure that signer is actually role account of worker
+    ensure!(
+        signer_account == worker.role_account_id,
+        Error::<T, I>::SignerIsNotWorkerRoleAccount
+    );
+
+    Ok(worker)
 }

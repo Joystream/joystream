@@ -378,3 +378,31 @@ impl UpdateWorkerRoleAccountFixture {
         }
     }
 }
+
+pub(crate) struct LeaveWorkerRoleFixture {
+    worker_id: u64,
+    origin: RawOrigin<u64>,
+}
+
+impl LeaveWorkerRoleFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        Self {
+            worker_id,
+            origin: RawOrigin::Signed(1),
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = TestWorkingTeam::leave_role(self.origin.clone().into(), self.worker_id);
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert!(
+                !<crate::WorkerById<Test, TestWorkingTeamInstance>>::contains_key(self.worker_id)
+            );
+        }
+    }
+}

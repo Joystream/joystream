@@ -41,5 +41,8 @@ decl_error! {
 
         /// Invalid origin for a member.
         InvalidMemberOrigin,
+
+        /// Signer is not worker role account.
+        SignerIsNotWorkerRoleAccount,
     }
 }

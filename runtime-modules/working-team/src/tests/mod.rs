@@ -8,7 +8,8 @@ use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::{Error, JobOpeningType, RawEvent, TeamWorker};
 use fixtures::{
     setup_members, AddOpeningFixture, ApplyOnOpeningFixture, EventFixture, FillOpeningFixture,
-    HireLeadFixture, HireRegularWorkerFixture, UpdateWorkerRoleAccountFixture,
+    HireLeadFixture, HireRegularWorkerFixture, LeaveWorkerRoleFixture,
+    UpdateWorkerRoleAccountFixture,
 };
 use frame_support::dispatch::DispatchError;
 use mock::{
@@ -327,6 +328,82 @@ fn update_worker_role_account_fails_with_invalid_origin() {
 
         update_worker_account_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingTeamInstance>::InvalidMemberOrigin.into(),
+        ));
+    });
+}
+
+#[test]
+fn leave_worker_role_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerExited(worker_id));
+    });
+}
+
+#[test]
+fn leave_worker_role_by_leader_succeeds() {
+    build_test_externalities().execute_with(|| {
+        // Ensure that lead is default
+        assert_eq!(TestWorkingTeam::current_lead(), None);
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        assert!(TestWorkingTeam::current_lead().is_some());
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(TestWorkingTeam::current_lead(), None);
+    });
+}
+
+#[test]
+fn leave_worker_role_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let leave_worker_role_fixture =
+            LeaveWorkerRoleFixture::default_for_worker_id(1).with_origin(RawOrigin::None);
+
+        leave_worker_role_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn leave_worker_role_fails_with_invalid_origin_signed_account() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::Signed(2));
+
+        leave_worker_role_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::SignerIsNotWorkerRoleAccount.into(),
+        ));
+    });
+}
+
+#[test]
+fn leave_worker_role_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_worker_id = 10;
+        HireRegularWorkerFixture::default().hire();
+
+        let leave_worker_role_fixture =
+            LeaveWorkerRoleFixture::default_for_worker_id(invalid_worker_id);
+
+        leave_worker_role_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::WorkerDoesNotExist.into(),
         ));
     });
 }
