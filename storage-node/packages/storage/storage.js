@@ -381,7 +381,7 @@ class Storage {
         delete this.pins[resolved]
       } else {
         debug(`Pinned ${resolved}`)
-        // why aren't we doing this.pins[resolved] = true
+        this.pins[resolved] = true
       }
     })
   }
