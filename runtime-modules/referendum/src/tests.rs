@@ -619,9 +619,9 @@ fn winners_multiple_winners() {
     });
 }
 
-/// Test that winners are properly selected when there is a important tie. N-th option and (N+1)-th option has the same amount of votes but only N winners are expected.
+/// Test that winners are properly selected when there is a important tie.
+/// N-th option and (N+1)-th option has the same amount of votes but only N winners are expected.
 #[test]
-#[ignore]
 fn winners_multiple_winners_extra() {
     let config = default_genesis_config();
 
@@ -678,14 +678,20 @@ fn winners_multiple_winners_extra() {
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        // TODO: handle multiple winners
-        // Mocks::check_revealing_finished(vec![stake, stake, 0]);
+        let expected_winners = vec![OptionResult {
+            option_index: option_to_vote_for1,
+            vote_power: stake,
+        }];
+        assert!((expected_winners.len() as u64) == winning_target_count); // sanity check - check that there will be expected number of winners
+        Mocks::check_revealing_finished(
+            expected_winners,
+            MockUtils::transform_results(vec![stake, stake]),
+        );
     });
 }
 
 // Test that winners are properly selected when there only votes for fewer options than expected winners.
 #[test]
-#[ignore]
 fn winners_multiple_not_enough() {
     let config = default_genesis_config();
 
@@ -696,7 +702,7 @@ fn winners_multiple_not_enough() {
         let account_id1 = USER_REGULAR;
         let origin = OriginType::Signed(account_superuser);
         let origin_voter1 = OriginType::Signed(account_id1);
-        let winning_target_count = 1;
+        let winning_target_count = 3;
 
         let option_to_vote_for = 0;
         let stake = <Runtime as Trait<Instance0>>::MinimumStake::get();
@@ -723,8 +729,15 @@ fn winners_multiple_not_enough() {
         );
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
-        // TODO: handle less than expected winners
-        //Mocks::check_revealing_finished(vec![stake, 0, 0]);
+        let expected_winners = vec![OptionResult {
+            option_index: option_to_vote_for,
+            vote_power: stake,
+        }];
+        assert!((expected_winners.len() as u64) < winning_target_count); // sanity check - check that there will be less winners than expected
+        Mocks::check_revealing_finished(
+            expected_winners,
+            MockUtils::transform_results(vec![stake]),
+        );
     });
 }
 
