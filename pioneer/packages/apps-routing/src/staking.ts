@@ -16,6 +16,6 @@ export default function create (t: <T = string> (key: string, text: string, opti
     },
     icon: 'certificate',
     name: 'staking',
-    text: t<string>('nav.staking', 'Staking', { ns: 'apps-routing' })
+    text: t<string>('nav.staking', 'Validators', { ns: 'apps-routing' })
   };
 }
