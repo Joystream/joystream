@@ -217,7 +217,8 @@ class Storage {
 
     this.ipfs = ipfsClient(this.options.ipfs.connect_options)
 
-    this.pins = {}
+    this.pinned = {}
+    this.pinning = {}
 
     this.ipfs.id((err, identity) => {
       if (err) {
@@ -366,24 +367,40 @@ class Storage {
   async synchronize(contentId) {
     const resolved = await this.resolveContentIdWithTimeout(this._timeout, contentId)
 
-    // validate resolved id is proper ipfs_cid, not null or empty string
+    // TODO: validate resolved id is proper ipfs_cid, not null or empty string
 
-    if (this.pins[resolved]) {
+    // noop if already pinned or pinning (assuming no external forces remove the pin)
+    // note: ipfs GC will NOT remove pinned content. Only explicit call to remove the pin
+    // will result in inconsistency.
+    if (this.pinning[resolved] || this.pinned[resolved]) {
       return
     }
 
-    debug(`Pinning ${resolved}`)
+    debug(`Pinning hash: ${resolved} content-id: ${contentId}`)
+    this.pinning[resolved] = true
 
-    // This call blocks until file is retrieved..
+    // Callback passed to add() will be called on error or when the entire file
+    // is retrieved. So on success we consider the content synced.
     this.ipfs.pin.add(resolved, { quiet: true, pin: true }, (err) => {
+      delete this.pinning[resolved]
       if (err) {
         debug(`Error Pinning: ${resolved}`)
-        delete this.pins[resolved]
       } else {
         debug(`Pinned ${resolved}`)
-        this.pins[resolved] = true
+        this.pinned[resolved] = true
       }
     })
+  }
+
+  /*
+   * Get the syncing status of a content ID
+   */
+  async syncStatus(contentId) {
+    const resolved = await this.resolveContentIdWithTimeout(this._timeout, contentId)
+    return {
+      syncing: this.pinning[resolved] === true,
+      synced: this.pinned[resolved] === true,
+    }
   }
 }
 
