@@ -19,6 +19,10 @@
 'use strict'
 
 const debug = require('debug')('joystream:sync')
+const _ = require('lodash')
+
+const MAX_CONCURRENT_SYNC_ITEMS = 15
+const contentBeingSynced = new Map()
 
 async function syncCallback(api, storage) {
   const knownContentIds = await api.assets.getKnownContentIds()
@@ -31,9 +35,16 @@ async function syncCallback(api, storage) {
   // by storage to ipfs cid, maybe we can resolve them locally
   // and cache result to simplify async code below and reduce
   // queries
+
+  // Since we are limiting concurrent content ids being synced, to ensure
+  // better distribution of content across storage nodes during a potentially long
+  // sync process we don't want all nodes to replicate items in the same order, so
+  // we simply shuffle ids around.
+  const shuffledIds = _.shuffle(knownContentIds)
+
   const syncedIds = (
     await Promise.all(
-      knownContentIds.map(async (contentId) => {
+      shuffledIds.map(async (contentId) => {
         // TODO: get the data object
         // make sure the data object was Accepted by the liaison,
         // don't just blindly attempt to fetch them
@@ -45,9 +56,16 @@ async function syncCallback(api, storage) {
             return contentId
           }
 
-          if (!synced && !syncing) {
-            // Todo: limit concurrent syncing ?
-            storage.synchronize(contentId).catch()
+          if (!synced && !syncing && contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS) {
+            try {
+              contentBeingSynced.set(contentId, true)
+
+              await storage.synchronize(contentId, () => {
+                contentBeingSynced.delete(contentId)
+              })
+            } catch (err) {
+              contentBeingSynced.delete(contentId)
+            }
           }
         } catch (err) {
           //

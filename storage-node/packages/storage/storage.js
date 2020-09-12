@@ -364,7 +364,7 @@ class Storage {
   /*
    * Synchronize the given content ID
    */
-  async synchronize(contentId) {
+  async synchronize(contentId, callback) {
     const resolved = await this.resolveContentIdWithTimeout(this._timeout, contentId)
 
     // TODO: validate resolved id is proper ipfs_cid, not null or empty string
@@ -385,9 +385,11 @@ class Storage {
       delete this.pinning[resolved]
       if (err) {
         debug(`Error Pinning: ${resolved}`)
+        callback && callback(err)
       } else {
         debug(`Pinned ${resolved}`)
         this.pinned[resolved] = true
+        callback && callback()
       }
     })
   }
