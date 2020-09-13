@@ -29,12 +29,14 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_runtime::Perbill;
 
 use node_runtime::{
+    content_directory::InputValidationLengthConstraint as CdInputValidation,
     versioned_store::InputValidationLengthConstraint as VsInputValidation,
-    AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
-    CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, MembersConfig,
-    ProposalsCodexConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
-    StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
+    AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentDirectoryConfig,
+    ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
+    DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters,
+    GrandpaConfig, ImOnlineConfig, MembersConfig, ProposalsCodexConfig, SessionConfig, SessionKeys,
+    Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
+    VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 
 pub use node_runtime::{AccountId, GenesisConfig};
@@ -325,6 +327,16 @@ pub fn testnet_genesis(
             channel_avatar_constraint: InputValidationLengthConstraint::new(5, 1024),
             channel_banner_constraint: InputValidationLengthConstraint::new(5, 1024),
             channel_title_constraint: InputValidationLengthConstraint::new(5, 1024),
+        }),
+        content_directory: Some({
+            ContentDirectoryConfig {
+                class_by_id: vec![],
+                entity_by_id: vec![],
+                curator_group_by_id: vec![],
+                next_class_id: 1,
+                next_entity_id: 1,
+                next_curator_group_id: 1,
+            }
         }),
         proposals_codex: Some(ProposalsCodexConfig {
             set_validator_count_proposal_voting_period: cpcp
