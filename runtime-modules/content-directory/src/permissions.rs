@@ -51,7 +51,6 @@ pub trait ActorAuthenticator: system::Trait {
         + Member
         + BaseArithmetic
         + Codec
-        + One
         + Default
         + Copy
         + Clone
@@ -122,7 +121,6 @@ impl<T: Trait> Default for Actor<T> {
 }
 
 impl<T: Trait> core::fmt::Debug for Actor<T> {
-    #[cfg(feature = "std")]
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(formatter, "Actor {:?}", self)
     }

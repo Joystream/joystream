@@ -185,7 +185,7 @@ pub struct InputValidationLengthConstraint {
 
 impl InputValidationLengthConstraint {
     /// Create new `InputValidationLengthConstraint` constraint
-    pub fn new(min: u16, max_min_diff: u16) -> Self {
+    pub const fn new(min: u16, max_min_diff: u16) -> Self {
         Self { min, max_min_diff }
     }
 

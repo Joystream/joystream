@@ -135,7 +135,6 @@ pub use operations::*;
 pub use permissions::*;
 pub use schema::*;
 
-use core::fmt::Debug;
 use core::hash::Hash;
 use core::ops::AddAssign;
 
@@ -175,8 +174,6 @@ pub trait Trait: system::Trait + ActorAuthenticator + Clone {
         + Default
         + Copy
         + Clone
-        + One
-        + Zero
         + MaybeSerializeDeserialize
         + Eq
         + PartialEq
@@ -191,9 +188,7 @@ pub trait Trait: system::Trait + ActorAuthenticator + Clone {
         + Default
         + Copy
         + Clone
-        + One
         + Hash
-        + Zero
         + MaybeSerializeDeserialize
         + Eq
         + PartialEq
@@ -208,8 +203,6 @@ pub trait Trait: system::Trait + ActorAuthenticator + Clone {
         + Copy
         + Clone
         + Hash
-        + One
-        + Zero
         + MaybeSerializeDeserialize
         + Eq
         + PartialEq

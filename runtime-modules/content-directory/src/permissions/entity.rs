@@ -27,7 +27,6 @@ impl<T: Trait> Default for EntityController<T> {
 }
 
 impl<T: Trait> core::fmt::Debug for EntityController<T> {
-    #[cfg(feature = "std")]
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(formatter, "EntityController {:?}", self)
     }

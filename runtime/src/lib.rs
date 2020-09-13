@@ -382,15 +382,15 @@ impl content_directory::ActorAuthenticator for Runtime {
     type MemberId = u64;
     type CuratorGroupId = u64;
 
-    fn is_lead() -> bool {
+    fn is_lead(account_id: &AccountId) -> bool {
         true
     }
 
-    fn is_curator(curator_id: &Self::CuratorId, account_id: &Self::AccountId) -> bool {
+    fn is_curator(curator_id: &Self::CuratorId, account_id: &AccountId) -> bool {
         true
     }
 
-    fn is_member(member_id: &Self::MemberId, account_id: &Self::AccountId) -> bool {
+    fn is_member(member_id: &Self::MemberId, account_id: &AccountId) -> bool {
         true
     }
 }
@@ -679,6 +679,7 @@ construct_runtime!(
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
         ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
+        ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
