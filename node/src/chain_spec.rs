@@ -29,7 +29,6 @@ use sp_runtime::traits::{IdentifyAccount, Verify};
 use sp_runtime::Perbill;
 
 use node_runtime::{
-    content_directory::InputValidationLengthConstraint as CdInputValidation,
     versioned_store::InputValidationLengthConstraint as VsInputValidation,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentDirectoryConfig,
     ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
