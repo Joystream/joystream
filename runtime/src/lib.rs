@@ -70,7 +70,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 7,
-    spec_version: 2,
+    spec_version: 3,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -125,6 +125,11 @@ impl system::Trait for Runtime {
     type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+}
+
+impl pallet_utility::Trait for Runtime {
+    type Event = Event;
+    type Call = Call;
 }
 
 parameter_types! {
@@ -578,6 +583,7 @@ construct_runtime!(
     {
         // Substrate
         System: system::{Module, Call, Storage, Config, Event<T>},
+        Utility: pallet_utility::{Module, Call, Event},
         Babe: pallet_babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
         Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
         Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
