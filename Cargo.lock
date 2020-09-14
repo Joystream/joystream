@@ -2053,7 +2053,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "7.2.0"
+version = "7.3.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -2095,6 +2095,7 @@ dependencies = [
  "pallet-token-mint",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-utility",
  "pallet-versioned-store",
  "pallet-versioned-store-permissions",
  "pallet-working-group",
@@ -3822,6 +3823,22 @@ dependencies = [
  "parity-scale-codec",
  "serde",
  "sp-api",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-utility"
+version = "2.0.0-rc4"
+source = "git+https://github.com/paritytech/substrate.git?rev=00768a1f21a579c478fe5d4f51e1fa71f7db9fd4#00768a1f21a579c478fe5d4f51e1fa71f7db9fd4"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-std",
 ]
