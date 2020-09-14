@@ -55,7 +55,7 @@ function Import ({ className = '', onClose, onStatusChange }: Props): React.Reac
   const { t } = useTranslation();
   const [isBusy, setIsBusy] = useState(false);
   const [{ address, isFileValid, json }, setFile] = useState<FileState>({ address: null, isFileValid: false, json: null });
-  const [{ isPassValid, password }, setPass] = useState<PassState>({ isPassValid: false, password: '' });
+  const [{ isPassValid, password }, setPass] = useState<PassState>({ isPassValid: true, password: '' });
 
   const _onChangeFile = useCallback(
     (file: Uint8Array) => setFile(parseFile(file)),
@@ -63,7 +63,7 @@ function Import ({ className = '', onClose, onStatusChange }: Props): React.Reac
   );
 
   const _onChangePass = useCallback(
-    (password: string) => setPass({ isPassValid: keyring.isPassValid(password), password }),
+    (password: string) => setPass({ isPassValid: true, password }),
     []
   );
 

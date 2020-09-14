@@ -170,7 +170,7 @@ function Create ({ className = '', onClose, onStatusChange, seed: propsSeed, typ
   const [isConfirmationOpen, toggleConfirmation] = useToggle();
   const [isBusy, setIsBusy] = useState(false);
   const [{ isNameValid, name }, setName] = useState({ isNameValid: false, name: '' });
-  const [{ isPasswordValid, password }, setPassword] = useState({ isPasswordValid: false, password: '' });
+  const [{ isPasswordValid, password }, setPassword] = useState({ isPasswordValid: true, password: '' });
   const isValid = !!address && !deriveError && isNameValid && isPasswordValid && isSeedValid;
   const seedOpt = useMemo(() => (
     isDevelopment

@@ -17,9 +17,9 @@ interface Props {
 function Backup ({ address, onClose }: Props): React.ReactElement<Props> {
   const { t } = useTranslation();
   const [isBusy, setIsBusy] = useState(false);
-  const [{ isPassTouched, password }, setPassword] = useState({ isPassTouched: false, password: '' });
+  const [{ isPassTouched, password }, setPassword] = useState({ isPassTouched: true, password: '' });
   const [backupFailed, setBackupFailed] = useState(false);
-  const isPassValid = !backupFailed && keyring.isPassValid(password);
+  const isPassValid = !backupFailed;
 
   const _onChangePass = useCallback(
     (password: string): void => {

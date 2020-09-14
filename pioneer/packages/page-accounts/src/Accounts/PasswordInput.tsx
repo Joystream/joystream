@@ -3,7 +3,7 @@
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { Modal, Password } from '@polkadot/react-components';
-import keyring from '@polkadot/ui-keyring';
+// import keyring from '@polkadot/ui-keyring';
 
 import React, { useCallback, useState } from 'react';
 
@@ -17,13 +17,11 @@ type Props = {
 
 export default function PasswordInput ({ onChange, onEnter, password }: Props): React.ReactElement {
   const { t } = useTranslation();
-  const [isPassValid, setPassValid] = useState<boolean>(false);
-  const [{ isPass2Valid, password2 }, setPassword2] = useState({ isPass2Valid: false, password2: '' });
+  const [isPassValid, setPassValid] = useState<boolean>(true);
+  const [{ isPass2Valid, password2 }, setPassword2] = useState({ isPass2Valid: true, password2: '' });
 
   const _onPasswordChange = useCallback(
     (password: string) => {
-      const isPassValid = keyring.isPassValid(password);
-
       setPassValid(isPassValid);
 
       const isValid = isPassValid && isPass2Valid;
@@ -35,7 +33,7 @@ export default function PasswordInput ({ onChange, onEnter, password }: Props): 
 
   const onPassword2Change = useCallback(
     (password2: string) => {
-      const isPass2Valid = keyring.isPassValid(password2) && (password2 === password);
+      const isPass2Valid = password2 === password;
 
       setPassword2({ isPass2Valid, password2 });
 
