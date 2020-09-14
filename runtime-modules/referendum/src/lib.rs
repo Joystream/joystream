@@ -55,16 +55,16 @@ pub struct ReferendumStageVoting<BlockNumber> {
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
     pub started: BlockNumber,      // block in which referendum started
-    winning_target_count: u64, // target number of winners
-    intermediate_winners: Vec<OptionResult<VotePower>>, // intermediate winning options
+    pub winning_target_count: u64, // target number of winners
+    pub intermediate_winners: Vec<OptionResult<VotePower>>, // intermediate winning options
     //intermediate_results: HashMap<u64, VotePower>, // votes that options have recieved at a given time
     pub intermediate_results: BTreeMap<u64, VotePower>, // votes that options have recieved at a given time
 }
 
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
 pub struct OptionResult<VotePower> {
-    option_index: u64,
-    vote_power: VotePower,
+    pub option_index: u64,
+    pub vote_power: VotePower,
 }
 
 /// Vote cast in referendum. Vote target is concealed until user reveals commitment's proof.

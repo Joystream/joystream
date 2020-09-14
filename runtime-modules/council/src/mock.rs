@@ -11,7 +11,8 @@ use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, Storag
 use pallet_balances;
 use rand::Rng;
 use referendum::{
-    Balance, CastVote, CurrentCycleId, ReferendumManager, ReferendumStage, ReferendumStageRevealing,
+    Balance, CastVote, CurrentCycleId, OptionResult, ReferendumManager, ReferendumStage,
+    ReferendumStageRevealing,
 };
 use sp_core::H256;
 use sp_io;
@@ -21,6 +22,7 @@ use sp_runtime::{
     Perbill,
 };
 use std::cell::RefCell;
+use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 
@@ -126,10 +128,10 @@ pub type ReferendumInstance = referendum::Instance0;
 
 thread_local! {
     pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
+    pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, )); // global switch used to test is_valid_option_id()
 }
 
 parameter_types! {
-    pub const MaxReferendumOptions: u64 = 10;
     pub const VoteStageDuration: u64 = 15;
     pub const RevealStageDuration: u64 = 15;
     pub const MinimumStake: u64 = 10000;
@@ -140,7 +142,6 @@ parameter_types! {
 impl referendum::Trait<ReferendumInstance> for Runtime {
     type Event = TestEvent;
 
-    type MaxReferendumOptions = MaxReferendumOptions;
     type MaxSaltLength = MaxSaltLength;
 
     type Currency = pallet_balances::Module<Runtime>;
@@ -177,10 +178,28 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
         true
     }
 
-    fn process_results(all_options_results: &[Self::VotePower]) {
-        let origin = InstanceMockUtils::<Self>::mock_origin(OriginType::Root);
+    fn process_results(
+        winners: &[OptionResult<Self::VotePower>],
+        all_options_results: &BTreeMap<u64, Self::VotePower>,
+    ) {
+        println!("{:?} fofoffofoff", winners);
+        <Module<Self>>::recieve_referendum_results(winners, all_options_results).unwrap();
+    }
 
-        <Module<Self>>::recieve_referendum_results(origin, all_options_results.to_vec()).unwrap();
+    fn is_valid_option_id(_option_index: &u64) -> bool {
+        if !IS_OPTION_ID_VALID.with(|value| value.borrow().0) {
+            return false;
+        }
+
+        true
+    }
+}
+
+impl Runtime {
+    pub fn _feature_option_id_valid(is_valid: bool) -> () {
+        IS_OPTION_ID_VALID.with(|value| {
+            *value.borrow_mut() = (is_valid,);
+        });
     }
 }
 
@@ -462,15 +481,20 @@ where
     }
 
     pub fn check_referendum_revealing(
-        candidate_count: u64,
+        //        candidate_count: u64,
+        winning_target_count: u64,
+        intermediate_winners: Vec<OptionResult<T::VotePower>>,
+        intermediate_results: BTreeMap<u64, T::VotePower>,
         expected_update_block_number: T::BlockNumber,
     ) {
         // check stage is in proper state
         assert_eq!(
             referendum::Stage::<T, ReferendumInstance>::get(),
             ReferendumStage::Revealing(ReferendumStageRevealing {
+                winning_target_count,
                 started: expected_update_block_number,
-                intermediate_results: (0..candidate_count).map(|_| 0.into()).collect(),
+                intermediate_winners,
+                intermediate_results,
             }),
         );
     }
@@ -593,7 +617,9 @@ where
 
         // referendum - start revealing period
         Self::check_referendum_revealing(
-            settings.min_candidate_count,
+            settings.council_size,
+            vec![],
+            BTreeMap::new(), //<u64, T::VotePower>,
             settings.announcing_stage_duration + settings.voting_stage_duration + 1.into(),
         );
 

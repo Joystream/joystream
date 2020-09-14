@@ -12,11 +12,12 @@ use frame_support::{decl_error, decl_event, decl_module, decl_storage, error::Ba
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
-use system::{ensure_root, ensure_signed, RawOrigin};
+use system::{ensure_signed, RawOrigin};
 
 use referendum::Instance as ReferendumInstanceGeneric;
-use referendum::ReferendumManager;
 use referendum::Trait as ReferendumTrait;
+use referendum::{OptionResult, ReferendumManager};
+use std::collections::BTreeMap;
 
 // declared modules
 mod mock;
@@ -240,24 +241,6 @@ decl_module! {
             Ok(())
         }
 
-        // TODO: reconsider this function. It is meant as temporary solution for recieving referendum results via runtime bridge
-        /// Process candidates' results recieved from the referendum.
-        #[weight = 10_000_000]
-        pub fn recieve_referendum_results(origin, all_options_results: Vec<T::VotePower>) -> Result<(), Error<T>> {
-            ensure_root(origin)?;
-
-            // ensure this method was called during election stage
-            let stage_data = match Stage::<T>::get().stage {
-                CouncilStage::Election(stage_data) => stage_data,
-                _ => return Err(Error::InvalidRuntimeImplementation),
-            };
-
-            // conclude election
-            Self::end_election_period(stage_data, all_options_results.as_slice());
-
-            Ok(())
-        }
-
         #[weight = 10_000_000]
         pub fn release_candidacy_stake(origin) -> Result<(), Error<T>> {
             let account_id = EnsureChecks::<T>::can_release_candidacy_stake(origin)?;
@@ -345,67 +328,11 @@ impl<T: Trait> Module<T> {
     /// Conclude election period and elect new council if possible.
     fn end_election_period(
         stage_data: EzCouncilStageElection<T>,
-        all_options_results: &[T::VotePower],
+        winners: &[OptionResult<T::VotePower>],
     ) {
-        /// Checks if there is a tie on the significant spot between candidates' received votes
-        /// Significant tie for a council of 3 members with 5 candidates can, for example, be:
-        /// [10, 5, 3, 3, 2], [10, 5, 3, 3, 3], [5, 5, 5, 5, 1], etc.
-        /// Note that result [10, 10, 10, 3, 2] has tie but not on the significant spot.
-        fn has_significant_tie<T: Trait>(
-            options_results: &[(u64, T::VotePower)],
-            target_count: u64,
-        ) -> Option<Vec<(u64, T::VotePower)>> {
-            let voted_options_count = options_results.len();
-
-            if voted_options_count as u64 == target_count {
-                return None;
-            }
-
-            // is there draw in the last winning place?
-            if options_results[(target_count as usize) - 1].1
-                == options_results[target_count as usize].1
-            {
-                //
-                let mut draw_end_index = target_count as usize;
-                while voted_options_count > draw_end_index + 1
-                    && options_results[draw_end_index].1 == options_results[draw_end_index + 1].1
-                {
-                    draw_end_index += 1;
-                }
-
-                return Some(options_results[..(draw_end_index as usize + 1)].to_vec());
-            }
-
-            None
-        }
-
-        // filter only candidates who received at least one vote
         let council_size = T::CouncilSize::get();
-        let mut options_results: Vec<(u64, T::VotePower)> = all_options_results
-            .iter()
-            .enumerate()
-            .map(|(option_index, vote_power)| (option_index as u64, *vote_power))
-            .filter(|item| item.1 != 0.into())
-            .collect();
-
-        // sort results by vote power from the highest to the lowest
-        options_results.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap().reverse());
-
-        // skip electing new council if not enough candidates recieved vote
-        if (options_results.len() as u64) < council_size {
-            // update state
-            Mutations::<T>::finalize_election_period();
-
-            // emit event
-            Self::deposit_event(RawEvent::NewCouncilNotElected());
-
-            return;
-        }
-
-        // select council members when candidates are tied
-        if let Some(_tied_winners) =
-            has_significant_tie::<T>(options_results.as_slice(), council_size)
-        {
+        if winners.len() as u64 != council_size {
+            // this should be same as `winners.len() < council_size`, but let's use `!=` for code safety
             // TODO: select new council from tied candidates or reset election
 
             // update state
@@ -418,9 +345,9 @@ impl<T: Trait> Module<T> {
         }
 
         // prepare candidates that got elected
-        let elected_members: Vec<EzCandidate<T>> = options_results[..council_size as usize]
+        let elected_members: Vec<EzCandidate<T>> = winners
             .iter()
-            .map(|item| stage_data.candidates[item.0 as usize].clone())
+            .map(|item| stage_data.candidates[item.option_index as usize].clone())
             .collect();
 
         // update state
@@ -437,6 +364,23 @@ impl<T: Trait> Module<T> {
 
         // emit event
         Self::deposit_event(RawEvent::AnnouncingPeriodStarted());
+    }
+
+    /// Process candidates' results recieved from the referendum.
+    pub fn recieve_referendum_results(
+        winners: &[OptionResult<T::VotePower>],
+        _all_options_results: &BTreeMap<u64, T::VotePower>,
+    ) -> Result<(), Error<T>> {
+        // ensure this method was called during election stage
+        let stage_data = match Stage::<T>::get().stage {
+            CouncilStage::Election(stage_data) => stage_data,
+            _ => return Err(Error::InvalidRuntimeImplementation),
+        };
+
+        // conclude election
+        Self::end_election_period(stage_data, winners);
+
+        Ok(())
     }
 }
 
@@ -470,14 +414,14 @@ impl<T: Trait> Mutations<T> {
     fn finalize_announcing_period(
         stage_data: &EzCouncilStageAnnouncing<T>,
     ) -> Result<(), Error<T>> {
-        let extra_options_count = stage_data.candidates.len() as u64 - 1;
+        let extra_winning_target_count = T::CouncilSize::get() - 1;
         let origin = RawOrigin::Root;
 
         // IMPORTANT - because starting referendum can fail it has to be the first mutation!
         // start referendum
         <Referendum<T> as ReferendumManager<T, ReferendumInstance>>::start_referendum(
             origin.into(),
-            extra_options_count,
+            extra_winning_target_count,
         )?;
 
         let block_number = <system::Module<T>>::block_number();
