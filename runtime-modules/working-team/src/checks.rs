@@ -1,7 +1,7 @@
-use crate::{Instance, JobOpening, JobOpeningType, TeamWorkerId, Trait};
+use crate::{Instance, JobOpening, JobOpeningType, MemberId, TeamWorker, TeamWorkerId, Trait};
 
 use super::Error;
-use frame_support::dispatch::DispatchResult;
+use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::{ensure, StorageMap, StorageValue};
 use sp_std::collections::btree_set::BTreeSet;
 use system::{ensure_root, ensure_signed};
@@ -82,7 +82,8 @@ pub(crate) fn ensure_succesful_applications_exist<T: Trait<I>, I: Instance>(
 }
 
 // Check leader: ensures that team leader was hired.
-fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<TeamWorkerId<T>, Error<T, I>> {
+pub(crate) fn ensure_lead_is_set<T: Trait<I>, I: Instance>() -> Result<TeamWorkerId<T>, Error<T, I>>
+{
     let leader_worker_id = <crate::CurrentLead<T, I>>::get();
 
     if let Some(leader_worker_id) = leader_worker_id {
@@ -113,4 +114,67 @@ fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(origin: T::Origin) -
     let signer = ensure_signed(origin)?;
 
     ensure_is_lead_account::<T, I>(signer)
+}
+
+// Check worker: ensures the worker was already created.
+pub(crate) fn ensure_worker_exists<T: Trait<I>, I: Instance>(
+    worker_id: &TeamWorkerId<T>,
+) -> Result<TeamWorker<T>, Error<T, I>> {
+    ensure!(
+        <crate::WorkerById::<T, I>>::contains_key(worker_id),
+        Error::<T, I>::WorkerDoesNotExist
+    );
+
+    let worker = <crate::WorkerById<T, I>>::get(worker_id);
+
+    Ok(worker)
+}
+
+// Check worker: verifies that origin is signed and corresponds with the membership.
+pub(crate) fn ensure_origin_signed_by_member<T: Trait<I>, I: Instance>(
+    origin: T::Origin,
+    member_id: &MemberId<T>,
+) -> Result<(), Error<T, I>> {
+    membership::Module::<T>::ensure_member_controller_account_signed(origin, member_id)
+        .map_err(|_| Error::<T, I>::InvalidMemberOrigin)?;
+
+    Ok(())
+}
+
+// Check worker: ensures the origin contains signed account that belongs to existing worker.
+pub(crate) fn ensure_worker_signed<T: Trait<I>, I: Instance>(
+    origin: T::Origin,
+    worker_id: &TeamWorkerId<T>,
+) -> Result<TeamWorker<T>, DispatchError> {
+    // Ensure that it is signed
+    let signer_account = ensure_signed(origin)?;
+
+    // Ensure that id corresponds to active worker
+    let worker = ensure_worker_exists::<T, I>(&worker_id)?;
+
+    // Ensure that signer is actually role account of worker
+    ensure!(
+        signer_account == worker.role_account_id,
+        Error::<T, I>::SignerIsNotWorkerRoleAccount
+    );
+
+    Ok(worker)
+}
+
+// Check worker: verifies proper origin for the worker operation. Returns whether the origin is sudo.
+pub(crate) fn ensure_origin_for_terminate_worker<T: Trait<I>, I: Instance>(
+    origin: T::Origin,
+    worker_id: TeamWorkerId<T>,
+) -> Result<bool, DispatchError> {
+    let leader_worker_id = ensure_lead_is_set::<T, I>()?;
+
+    let (worker_opening_type, is_sudo) = if leader_worker_id == worker_id {
+        (JobOpeningType::Leader, true)
+    } else {
+        (JobOpeningType::Regular, false)
+    };
+
+    ensure_origin_for_opening_type::<T, I>(origin, worker_opening_type)?;
+
+    Ok(is_sudo)
 }

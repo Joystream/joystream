@@ -9,6 +9,9 @@
 //! - [add_opening](./struct.Module.html#method.add_opening) - Add an opening for a regular worker/lead role.
 //! - [apply_on_opening](./struct.Module.html#method.apply_on_opening) - Apply on a regular/lead opening.
 //! - [fill_opening](./struct.Module.html#method.fill_opening) - Fill opening for regular worker/lead role.
+//! - [update_role_account](./struct.Module.html#method.update_role_account) -  Update the role account of the worker/lead.
+//! - [leave_role](./struct.Module.html#method.leave_role) - Leave the role by the active worker/lead.
+//! - [terminate_role](./struct.Module.html#method.terminate_role) - Terminate the worker/lead role.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -31,7 +34,7 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use system::ensure_signed;
 
 pub use errors::Error;
-use types::{ApplicationInfo, TeamWorker, TeamWorkerId};
+use types::{ApplicationInfo, MemberId, TeamWorker, TeamWorkerId};
 pub use types::{JobApplication, JobOpening, JobOpeningType};
 
 /// The _Team_ main _Trait_
@@ -70,7 +73,8 @@ decl_event!(
        <T as Trait<I>>::OpeningId,
        <T as Trait<I>>::ApplicationId,
        ApplicationIdToWorkerIdMap = BTreeMap<<T as Trait<I>>::ApplicationId, TeamWorkerId<T>>,
-       TeamWorkerId = TeamWorkerId<T>
+       TeamWorkerId = TeamWorkerId<T>,
+       <T as system::Trait>::AccountId,
     {
         /// Emits on adding new job opening.
         /// Params:
@@ -93,6 +97,30 @@ decl_event!(
         /// Params:
         /// - Team worker id.
         LeaderSet(TeamWorkerId),
+
+        /// Emits on updating the role account of the worker.
+        /// Params:
+        /// - Id of the worker.
+        /// - Role account id of the worker.
+        WorkerRoleAccountUpdated(TeamWorkerId, AccountId),
+
+        /// Emits on un-setting the leader.
+        LeaderUnset(),
+
+        /// Emits on exiting the worker.
+        /// Params:
+        /// - worker id.
+        WorkerExited(TeamWorkerId),
+
+        /// Emits on terminating the worker.
+        /// Params:
+        /// - worker id.
+        TerminatedWorker(TeamWorkerId),
+
+        /// Emits on terminating the leader.
+        /// Params:
+        /// - leader worker id.
+        TerminatedLeader(TeamWorkerId),
     }
 );
 
@@ -272,6 +300,79 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::OpeningFilled(opening_id, application_id_to_worker_id));
         }
+
+        /// Update the associated role account of the active regular worker/lead.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_role_account(
+            origin,
+            worker_id: TeamWorkerId<T>,
+            new_role_account_id: T::AccountId
+        ) {
+            // Ensuring worker actually exists
+            let worker = checks::ensure_worker_exists::<T, I>(&worker_id)?;
+
+            // Ensure that origin is signed by member with given id.
+            checks::ensure_origin_signed_by_member::<T, I>(origin, &worker.member_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update role account
+            WorkerById::<T, I>::mutate(worker_id, |worker| {
+                worker.role_account_id = new_role_account_id.clone()
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerRoleAccountUpdated(worker_id, new_role_account_id));
+        }
+
+        /// Leave the role by the active worker.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn leave_role(
+            origin,
+            worker_id: TeamWorkerId<T>,
+        ) {
+            // Ensure there is a signer which matches role account of worker corresponding to provided id.
+            checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deactivate_worker(&worker_id);
+
+            Self::deposit_event(RawEvent::WorkerExited(worker_id));
+        }
+
+        /// Terminate the active worker by the lead.
+        /// Require signed leader origin or the root (to terminate the leader role).
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn terminate_role(
+            origin,
+            worker_id: TeamWorkerId<T>,
+        ) {
+            // Ensure lead is set or it is the council terminating the leader.
+            let is_sudo = checks::ensure_origin_for_terminate_worker::<T,I>(origin, worker_id)?;
+
+            // Ensuring worker actually exists.
+            checks::ensure_worker_exists::<T,I>(&worker_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::deactivate_worker(&worker_id);
+
+            // Trigger the event
+            let event = if is_sudo {
+                RawEvent::TerminatedLeader(worker_id)
+            } else {
+                RawEvent::TerminatedWorker(worker_id)
+            };
+
+            Self::deposit_event(event);
+        }
     }
 }
 
@@ -284,6 +385,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     // Increases active worker counter (saturating).
     fn increase_active_worker_counter() {
         let next_active_worker_count_value = Self::active_worker_count().saturating_add(1);
+        <ActiveWorkerCount<I>>::put(next_active_worker_count_value);
+    }
+
+    // Decreases active worker counter (saturating).
+    fn decrease_active_worker_counter() {
+        let next_active_worker_count_value = Self::active_worker_count().saturating_sub(1);
         <ActiveWorkerCount<I>>::put(next_active_worker_count_value);
     }
 
@@ -332,5 +439,30 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         // Trigger an event
         Self::deposit_event(RawEvent::LeaderSet(worker_id));
+    }
+
+    // Evict the currently set lead.
+    pub(crate) fn unset_lead() {
+        if checks::ensure_lead_is_set::<T, I>().is_ok() {
+            // Update current lead
+            <CurrentLead<T, I>>::kill();
+
+            Self::deposit_event(RawEvent::LeaderUnset());
+        }
+    }
+
+    // Fires the worker. Unsets the leader if necessary. Decreases active worker counter.
+    fn deactivate_worker(worker_id: &TeamWorkerId<T>) {
+        // Unset lead if the leader is leaving.
+        let leader_worker_id = <CurrentLead<T, I>>::get();
+        if let Some(leader_worker_id) = leader_worker_id {
+            if leader_worker_id == *worker_id {
+                Self::unset_lead();
+            }
+        }
+
+        // Remove the worker from the storage.
+        WorkerById::<T, I>::remove(worker_id);
+        Self::decrease_active_worker_counter();
     }
 }

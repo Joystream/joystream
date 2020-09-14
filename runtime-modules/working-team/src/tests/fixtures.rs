@@ -11,7 +11,14 @@ use crate::{JobApplication, JobOpening, JobOpeningType, RawEvent, TeamWorker};
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(
-        expected_raw_event: RawEvent<u64, u64, BTreeMap<u64, u64>, u64, TestWorkingTeamInstance>,
+        expected_raw_event: RawEvent<
+            u64,
+            u64,
+            BTreeMap<u64, u64>,
+            u64,
+            u64,
+            TestWorkingTeamInstance,
+        >,
     ) {
         let converted_event = TestEvent::working_team_TestWorkingTeamInstance(expected_raw_event);
 
@@ -85,13 +92,6 @@ impl AddOpeningFixture {
         )?;
 
         Ok(saved_opening_next_id)
-    }
-
-    pub fn with_text(self, text: Vec<u8>) -> Self {
-        Self {
-            description: text,
-            ..self
-        }
     }
 
     pub fn with_opening_type(self, opening_type: JobOpeningType) -> Self {
@@ -335,13 +335,6 @@ impl Default for HireRegularWorkerFixture {
     }
 }
 impl HireRegularWorkerFixture {
-    pub fn with_setup_environment(self, setup_environment: bool) -> Self {
-        Self {
-            setup_environment,
-            ..self
-        }
-    }
-
     pub fn hire(self) -> u64 {
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
@@ -350,13 +343,99 @@ impl HireRegularWorkerFixture {
             .execute()
             .unwrap()
     }
+}
 
-    pub fn expect(self, error: DispatchError) {
-        HiringWorkflow::default()
-            .with_setup_environment(self.setup_environment)
-            .with_opening_type(JobOpeningType::Regular)
-            .add_application(b"worker".to_vec())
-            .expect(Err(error))
-            .execute();
+pub struct UpdateWorkerRoleAccountFixture {
+    worker_id: u64,
+    new_role_account_id: u64,
+    origin: RawOrigin<u64>,
+}
+
+impl UpdateWorkerRoleAccountFixture {
+    pub fn default_with_ids(worker_id: u64, new_role_account_id: u64) -> Self {
+        Self {
+            worker_id,
+            new_role_account_id,
+            origin: RawOrigin::Signed(1),
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = TestWorkingTeam::update_role_account(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.new_role_account_id,
+        );
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            let worker = TestWorkingTeam::worker_by_id(self.worker_id);
+
+            assert_eq!(worker.role_account_id, self.new_role_account_id);
+        }
+    }
+}
+
+pub(crate) struct LeaveWorkerRoleFixture {
+    worker_id: u64,
+    origin: RawOrigin<u64>,
+}
+
+impl LeaveWorkerRoleFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        Self {
+            worker_id,
+            origin: RawOrigin::Signed(1),
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = TestWorkingTeam::leave_role(self.origin.clone().into(), self.worker_id);
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            assert!(
+                !<crate::WorkerById<Test, TestWorkingTeamInstance>>::contains_key(self.worker_id)
+            );
+        }
+    }
+}
+
+pub struct TerminateWorkerRoleFixture {
+    worker_id: u64,
+    origin: RawOrigin<u64>,
+}
+
+impl TerminateWorkerRoleFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        Self {
+            worker_id,
+            origin: RawOrigin::Signed(1),
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result =
+            TestWorkingTeam::terminate_role(self.origin.clone().into(), self.worker_id);
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            if actual_result.is_ok() {
+                assert!(
+                    !<crate::WorkerById<Test, TestWorkingTeamInstance>>::contains_key(
+                        self.worker_id
+                    )
+                );
+            }
+        }
     }
 }
