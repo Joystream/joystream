@@ -8,7 +8,7 @@ use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::{Error, JobOpeningType, RawEvent, TeamWorker};
 use fixtures::{
     setup_members, AddOpeningFixture, ApplyOnOpeningFixture, EventFixture, FillOpeningFixture,
-    HireLeadFixture, HireRegularWorkerFixture, LeaveWorkerRoleFixture,
+    HireLeadFixture, HireRegularWorkerFixture, LeaveWorkerRoleFixture, TerminateWorkerRoleFixture,
     UpdateWorkerRoleAccountFixture,
 };
 use frame_support::dispatch::DispatchError;
@@ -405,5 +405,137 @@ fn leave_worker_role_fails_with_invalid_worker_id() {
         leave_worker_role_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingTeamInstance>::WorkerDoesNotExist.into(),
         ));
+    });
+}
+
+#[test]
+fn terminate_worker_role_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        terminate_worker_role_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::TerminatedWorker(worker_id));
+    });
+}
+
+#[test]
+fn terminate_leader_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
+                .with_origin(RawOrigin::Root);
+
+        terminate_worker_role_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::TerminatedLeader(worker_id));
+
+        assert_eq!(TestWorkingTeam::current_lead(), None);
+    });
+}
+
+#[test]
+fn terminate_worker_role_fails_with_unset_lead() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        // Remove the leader from the storage.
+        TestWorkingTeam::unset_lead();
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        terminate_worker_role_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::CurrentLeadNotSet.into(),
+        ));
+    });
+}
+
+#[test]
+fn terminate_worker_role_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let worker_id = HiringWorkflow::default()
+            .with_setup_environment(false)
+            .add_application_with_origin(b"worker_handle".to_vec(), RawOrigin::Signed(2), 2)
+            .execute()
+            .unwrap();
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
+                .with_origin(RawOrigin::None);
+
+        terminate_worker_role_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn terminate_leader_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
+                .with_origin(RawOrigin::None);
+
+        terminate_worker_role_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn unset_lead_event_emitted() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        HireRegularWorkerFixture::default().hire();
+
+        // Remove the leader from the storage.
+        TestWorkingTeam::unset_lead();
+
+        EventFixture::assert_last_crate_event(RawEvent::LeaderUnset());
+    });
+}
+
+#[test]
+fn set_lead_event_emitted() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let worker_id = 10;
+
+        // Add the leader to the storage.
+        TestWorkingTeam::set_lead(worker_id);
+
+        EventFixture::assert_last_crate_event(RawEvent::LeaderSet(worker_id));
     });
 }
