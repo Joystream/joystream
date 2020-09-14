@@ -8,6 +8,9 @@ export const OuterContainer = styled.article`
   width: 200px;
   height: ${`calc(186px + ${imageTopOverflow})`};
   padding-top: ${imageTopOverflow};
+  :hover {
+    cursor: ${(props) => (props.onClick ? 'pointer' : 'default')};
+  }
 `
 
 type InnerContainerProps = {

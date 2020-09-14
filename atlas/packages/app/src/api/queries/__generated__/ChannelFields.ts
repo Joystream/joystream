@@ -12,5 +12,6 @@ export interface ChannelFields {
   id: string;
   handle: string;
   avatarPhotoURL: string;
+  coverPhotoURL: string;
   totalViews: number;
 }

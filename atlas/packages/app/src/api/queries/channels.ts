@@ -1,10 +1,12 @@
 import gql from 'graphql-tag'
+import { videoFieldsFragment } from './videos'
 
 export const channelFieldsFragment = gql`
   fragment ChannelFields on Channel {
     id
     handle
     avatarPhotoURL
+    coverPhotoURL
     totalViews
   }
 `
@@ -17,4 +19,25 @@ export const GET_NEWEST_CHANNELS = gql`
     }
   }
   ${channelFieldsFragment}
+`
+
+export const GET_CHANNEL = gql`
+  query GetChannel($id: ID!) {
+    channel(id: $id) {
+      ...ChannelFields
+    }
+  }
+  ${channelFieldsFragment}
+`
+export const GET_FULL_CHANNEL = gql`
+  query GetFullChannel($id: ID!) {
+    channel(id: $id) {
+      ...ChannelFields
+      videos {
+        ...VideoFields
+      }
+    }
+  }
+  ${channelFieldsFragment}
+  ${videoFieldsFragment}
 `

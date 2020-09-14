@@ -11,9 +11,17 @@ type ChannelPreviewProps = {
   avatarURL?: string
   className?: string
   animated?: boolean
+  onClick?: (e: React.MouseEvent<HTMLElement>) => void
 }
 
-const ChannelPreview: React.FC<ChannelPreviewProps> = ({ name, avatarURL, views, className, animated = false }) => {
+const ChannelPreview: React.FC<ChannelPreviewProps> = ({
+  name,
+  avatarURL,
+  views,
+  className,
+  animated = false,
+  onClick,
+}) => {
   const avatarNode = <StyledAvatar img={avatarURL} />
   const nameNode = <NameHeader>{name}</NameHeader>
   const metaNode = <MetaSpan>{formatNumberShort(views)} views</MetaSpan>
@@ -25,6 +33,7 @@ const ChannelPreview: React.FC<ChannelPreviewProps> = ({ name, avatarURL, views,
       nameNode={nameNode}
       metaNode={metaNode}
       animated={animated}
+      onClick={onClick}
     />
   )
 }

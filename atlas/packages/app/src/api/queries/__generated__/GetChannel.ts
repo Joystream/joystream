@@ -4,10 +4,10 @@
 // This file was automatically generated and should not be edited.
 
 // ====================================================
-// GraphQL query operation: GetNewestChannels
+// GraphQL query operation: GetChannel
 // ====================================================
 
-export interface GetNewestChannels_channels {
+export interface GetChannel_channel {
   __typename: "Channel";
   id: string;
   handle: string;
@@ -16,6 +16,10 @@ export interface GetNewestChannels_channels {
   totalViews: number;
 }
 
-export interface GetNewestChannels {
-  channels: GetNewestChannels_channels[];
+export interface GetChannel {
+  channel: GetChannel_channel | null;
+}
+
+export interface GetChannelVariables {
+  id: string;
 }

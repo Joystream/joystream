@@ -1,5 +1,5 @@
 import { shuffle } from 'lodash'
-import { channelSources } from './mockImages'
+import { channelSources, coverSources } from './mockImages'
 import { ChannelFields } from '@/api/queries/__generated__/ChannelFields'
 
 const rawChannels = [
@@ -62,6 +62,7 @@ const mockChannels: RawChannel[] = shuffledRawChannels.map((rawChannel, idx) => 
   ...rawChannel,
   __typename: 'Channel',
   avatarPhotoURL: channelSources[idx % channelSources.length],
+  coverPhotoURL: coverSources[idx % coverSources.length],
 }))
 
 export default mockChannels

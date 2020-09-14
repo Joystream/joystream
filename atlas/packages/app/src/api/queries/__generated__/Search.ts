@@ -52,6 +52,7 @@ export interface Search_search_item_Channel {
   id: string;
   handle: string;
   avatarPhotoURL: string;
+  coverPhotoURL: string;
   totalViews: number;
 }
 
