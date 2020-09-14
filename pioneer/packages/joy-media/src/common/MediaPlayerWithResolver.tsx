@@ -80,7 +80,7 @@ function InnerComponent (props: Props) {
       let assetUrl: string | undefined;
 
       try {
-        assetUrl = await discoveryProvider.resolveAssetEndpoint(provider, contentId.encode(), cancelSource.token);
+        assetUrl = await discoveryProvider.resolveAssetEndpoint(provider, 'download', contentId.encode(), cancelSource.token);
       } catch (err) {
         if (axios.isCancel(err)) {
           return;

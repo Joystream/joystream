@@ -32,6 +32,7 @@ const yaml = require('js-yaml')
 // Project requires
 const validateResponses = require('./middleware/validate_responses')
 const fileUploads = require('./middleware/file_uploads')
+const ipfsGateway = require('./middleware/ipfs_proxy')
 const pagination = require('@joystream/storage-utils/pagination')
 
 // Configure app
@@ -61,6 +62,9 @@ function createApp(projectRoot, storage, runtime) {
       runtime,
     },
   })
+
+  // Proxy asset GET and HEAD directly to the IPFS gateway
+  app.use('/asset/v1/:id', ipfsGateway.createProxy(storage))
 
   // If no other handler gets triggered (errors), respond with the
   // error serialized to JSON.

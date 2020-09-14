@@ -5,7 +5,7 @@ import { ContentId } from '@joystream/types/media'
 // Commands base abstract class. Contains reusable methods.
 export abstract class BaseCommand {
   // Creates the Colossus asset URL and logs it.
-  protected createAndLogAssetUrl(url: string, contentId: string | ContentId): string {
+  protected createAndLogAssetUrl(url: string, operation: 'download' | 'upload', contentId: string | ContentId): string {
     let normalizedContentId: string
 
     if (typeof contentId === 'string') {
@@ -13,9 +13,9 @@ export abstract class BaseCommand {
     } else {
       normalizedContentId = contentId.encode()
     }
-
+    const ver = operation === 'download' ? 'v1' : 'v0'
     const normalizedUrl = removeEndingForwardSlash(url)
-    const assetUrl = `${normalizedUrl}/asset/v0/${normalizedContentId}`
+    const assetUrl = `${normalizedUrl}/asset/${ver}/${normalizedContentId}`
     console.log(chalk.yellow('Generated asset URL:', assetUrl))
 
     return assetUrl

@@ -16,7 +16,7 @@ export type BootstrapNodes = {
 };
 
 export type DiscoveryProvider = {
-  resolveAssetEndpoint: (provider: StorageProviderId, contentId?: string, cancelToken?: CancelToken) => Promise<string>;
+  resolveAssetEndpoint: (provider: StorageProviderId, operation: 'download'| 'upload', contentId?: string, cancelToken?: CancelToken) => Promise<string>;
   reportUnreachable: (provider: StorageProviderId) => void;
 };
 
@@ -44,7 +44,12 @@ type ProviderStats = {
 function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryProvider {
   const stats = new Map<string, ProviderStats>();
 
-  const resolveAssetEndpoint = async (storageProvider: StorageProviderId, contentId?: string, cancelToken?: CancelToken) => {
+  const resolveAssetEndpoint = async (
+    storageProvider: StorageProviderId,
+    operation: 'download' | 'upload',
+    contentId?: string,
+    cancelToken?: CancelToken
+  ) => {
     const providerKey = storageProvider.toString();
 
     let stat = stats.get(providerKey);
@@ -113,7 +118,9 @@ function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryPro
     console.log(stat);
 
     if (stat) {
-      return `${stat.assetApiEndpoint}/asset/v0/${contentId || ''}`;
+      const ver = operation === 'download' ? 'v1' : 'v0';
+
+      return `${stat.assetApiEndpoint}/asset/${ver}/${contentId || ''}`;
     }
 
     throw new Error('Resolving failed.');
