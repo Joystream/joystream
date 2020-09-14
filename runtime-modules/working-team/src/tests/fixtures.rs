@@ -6,7 +6,7 @@ use system::{EventRecord, Phase, RawOrigin};
 
 use super::hiring_workflow::HiringWorkflow;
 use super::mock::{Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance};
-use crate::{JobApplication, JobOpening, JobOpeningType, RawEvent, TeamWorker};
+use crate::{JobApplication, JobOpening, JobOpeningType, RawEvent, StakePolicy, TeamWorker};
 
 pub struct EventFixture;
 impl EventFixture {
@@ -41,6 +41,7 @@ pub struct AddOpeningFixture {
     description: Vec<u8>,
     opening_type: JobOpeningType,
     starting_block: u64,
+    staking_policy: Option<StakePolicy<u64, u64>>,
 }
 
 impl Default for AddOpeningFixture {
@@ -50,6 +51,7 @@ impl Default for AddOpeningFixture {
             description: b"human_text".to_vec(),
             opening_type: JobOpeningType::Regular,
             starting_block: 0,
+            staking_policy: None,
         }
     }
 }
@@ -75,6 +77,7 @@ impl AddOpeningFixture {
                 created: self.starting_block,
                 description_hash: expected_hash.as_ref().to_vec(),
                 opening_type: self.opening_type,
+                stake_policy: self.staking_policy.clone(),
             };
 
             assert_eq!(actual_opening, expected_opening);
@@ -89,6 +92,7 @@ impl AddOpeningFixture {
             self.origin.clone().into(),
             self.description.clone(),
             self.opening_type,
+            self.staking_policy.clone(),
         )?;
 
         Ok(saved_opening_next_id)
@@ -108,6 +112,13 @@ impl AddOpeningFixture {
     pub fn with_starting_block(self, starting_block: u64) -> Self {
         Self {
             starting_block,
+            ..self
+        }
+    }
+
+    pub fn with_staking_policy(self, staking_policy: Option<StakePolicy<u64, u64>>) -> Self {
+        Self {
+            staking_policy,
             ..self
         }
     }

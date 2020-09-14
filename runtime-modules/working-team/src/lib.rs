@@ -35,10 +35,12 @@ use system::ensure_signed;
 
 pub use errors::Error;
 use types::{ApplicationInfo, MemberId, TeamWorker, TeamWorkerId};
-pub use types::{JobApplication, JobOpening, JobOpeningType};
+pub use types::{JobApplication, JobOpening, JobOpeningType, StakePolicy};
+
+pub trait StakingHandler {}
 
 /// The _Team_ main _Trait_
-pub trait Trait<I: Instance>: system::Trait + membership::Trait {
+pub trait Trait<I: Instance>: system::Trait + membership::Trait + balances::Trait {
     /// OpeningId type
     type OpeningId: Parameter
         + Member
@@ -64,6 +66,8 @@ pub trait Trait<I: Instance>: system::Trait + membership::Trait {
 
     /// Defines max workers number in the team.
     type MaxWorkerNumberLimit: Get<u32>;
+
+    //    type StakingHandler: StakingHandler;
 }
 
 decl_event!(
@@ -131,12 +135,12 @@ decl_storage! {
 
         /// Maps identifier to job opening.
         pub OpeningById get(fn opening_by_id): map hasher(blake2_128_concat)
-            T::OpeningId => JobOpening<T::BlockNumber>;
+            T::OpeningId => JobOpening<T::BlockNumber, T::Balance>;
 
         /// Count of active workers.
         pub ActiveWorkerCount get(fn active_worker_count): u32;
 
-                /// Maps identifier to worker application on opening.
+        /// Maps identifier to worker application on opening.
         pub ApplicationById get(fn application_by_id) : map hasher(blake2_128_concat)
             T::ApplicationId => JobApplication<T, I>;
 
@@ -176,23 +180,27 @@ decl_module! {
             origin,
             description: Vec<u8>,
             opening_type: JobOpeningType,
+            stake_policy: Option<StakePolicy<T::BlockNumber, T::Balance>>
         ){
             checks::ensure_origin_for_opening_type::<T, I>(origin, opening_type)?;
+
+            checks::ensure_valid_stake_policy::<T, I>(&stake_policy)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-           let hashed_description = T::Hashing::hash(&description);
+            let hashed_description = T::Hashing::hash(&description);
 
             // Create and add worker opening.
             let new_opening = JobOpening{
                 opening_type,
                 created: Self::current_block(),
                 description_hash: hashed_description.as_ref().to_vec(),
+                stake_policy
             };
 
-             let new_opening_id = NextOpeningId::<T, I>::get();
+            let new_opening_id = NextOpeningId::<T, I>::get();
 
             OpeningById::<T, I>::insert(new_opening_id, new_opening);
 
@@ -396,7 +404,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Processes successful application during the fill_opening().
     fn fulfill_successful_applications(
-        opening: &JobOpening<T::BlockNumber>,
+        opening: &JobOpening<T::BlockNumber, T::Balance>,
         successful_applications_info: Vec<ApplicationInfo<T, I>>,
     ) -> BTreeMap<T::ApplicationId, TeamWorkerId<T>> {
         let mut application_id_to_worker_id = BTreeMap::new();

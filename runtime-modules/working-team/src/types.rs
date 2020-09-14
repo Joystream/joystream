@@ -26,7 +26,7 @@ pub type TeamWorker<T> = Worker<<T as system::Trait>::AccountId, MemberId<T>>;
 /// An opening represents the process of hiring one or more new actors into some available role.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Default, Clone, PartialEq, Eq)]
-pub struct JobOpening<BlockNumber: Ord> {
+pub struct JobOpening<BlockNumber: Ord, Balance> {
     /// Defines opening type: Leader or worker.
     pub opening_type: JobOpeningType,
 
@@ -35,6 +35,9 @@ pub struct JobOpening<BlockNumber: Ord> {
 
     /// Hash of the opening description.
     pub description_hash: Vec<u8>,
+
+    /// Stake policy for the job opening.
+    pub stake_policy: Option<StakePolicy<BlockNumber, Balance>>,
 }
 
 /// Defines type of the opening: regular working group fellow or group leader.
@@ -111,4 +114,15 @@ impl<AccountId: Clone, MemberId: Clone> Worker<AccountId, MemberId> {
             role_account_id: role_account_id.clone(),
         }
     }
+}
+
+/// Stake policy for the job opening.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
+pub struct StakePolicy<BlockNumber, Balance> {
+    /// Stake amount for applicants..
+    pub stake_amount: Balance,
+
+    /// Unstaking period for the stake. Zero means no unstaking period.
+    pub unstaking_period: BlockNumber,
 }

@@ -44,5 +44,8 @@ decl_error! {
 
         /// Signer is not worker role account.
         SignerIsNotWorkerRoleAccount,
+
+        /// Cannot stake zero.
+        CannotStakeZero,
     }
 }

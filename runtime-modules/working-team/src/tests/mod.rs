@@ -5,7 +5,7 @@ mod mock;
 use system::RawOrigin;
 
 use crate::tests::hiring_workflow::HiringWorkflow;
-use crate::{Error, JobOpeningType, RawEvent, TeamWorker};
+use crate::{Error, JobOpeningType, RawEvent, StakePolicy, TeamWorker};
 use fixtures::{
     setup_members, AddOpeningFixture, ApplyOnOpeningFixture, EventFixture, FillOpeningFixture,
     HireLeadFixture, HireRegularWorkerFixture, LeaveWorkerRoleFixture, TerminateWorkerRoleFixture,
@@ -25,7 +25,12 @@ fn add_opening_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let add_opening_fixture = AddOpeningFixture::default().with_starting_block(starting_block);
+        let add_opening_fixture = AddOpeningFixture::default()
+            .with_starting_block(starting_block)
+            .with_staking_policy(Some(StakePolicy {
+                stake_amount: 10,
+                unstaking_period: 100,
+            }));
 
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
@@ -537,5 +542,22 @@ fn set_lead_event_emitted() {
         TestWorkingTeam::set_lead(worker_id);
 
         EventFixture::assert_last_crate_event(RawEvent::LeaderSet(worker_id));
+    });
+}
+
+#[test]
+fn add_opening_fails_with_zero_stake() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_staking_policy(Some(StakePolicy {
+                stake_amount: 0,
+                unstaking_period: 0,
+            }));
+
+        add_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::CannotStakeZero.into(),
+        ));
     });
 }

@@ -1,8 +1,11 @@
-use crate::{Instance, JobOpening, JobOpeningType, MemberId, TeamWorker, TeamWorkerId, Trait};
+use crate::{
+    Instance, JobOpening, JobOpeningType, MemberId, StakePolicy, TeamWorker, TeamWorkerId, Trait,
+};
 
 use super::Error;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::{ensure, StorageMap, StorageValue};
+use sp_arithmetic::traits::Zero;
 use sp_std::collections::btree_set::BTreeSet;
 use system::{ensure_root, ensure_signed};
 
@@ -28,7 +31,7 @@ pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
 // Check opening: returns the opening by id if it is exists.
 pub(crate) fn ensure_opening_exists<T: Trait<I>, I: Instance>(
     opening_id: &T::OpeningId,
-) -> Result<JobOpening<T::BlockNumber>, Error<T, I>> {
+) -> Result<JobOpening<T::BlockNumber, T::Balance>, Error<T, I>> {
     ensure!(
         <crate::OpeningById::<T, I>>::contains_key(opening_id),
         Error::<T, I>::OpeningDoesNotExist
@@ -177,4 +180,18 @@ pub(crate) fn ensure_origin_for_terminate_worker<T: Trait<I>, I: Instance>(
     ensure_origin_for_opening_type::<T, I>(origin, worker_opening_type)?;
 
     Ok(is_sudo)
+}
+
+// Check opening: verifies stake policy for the opening.
+pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
+    stake_policy: &Option<StakePolicy<T::BlockNumber, T::Balance>>,
+) -> Result<(), DispatchError> {
+    if let Some(stake_policy) = stake_policy {
+        ensure!(
+            stake_policy.stake_amount != Zero::zero(),
+            Error::<T, I>::CannotStakeZero
+        )
+    }
+
+    Ok(())
 }
