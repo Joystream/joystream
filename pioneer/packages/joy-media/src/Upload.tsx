@@ -350,7 +350,7 @@ class Upload extends React.PureComponent<Props, State> {
     let url: string;
 
     try {
-      url = await discoveryProvider.resolveAssetEndpoint(storageProvider, contentId, cancelSource.token);
+      url = await discoveryProvider.resolveAssetEndpoint(storageProvider, 'upload', contentId, cancelSource.token);
     } catch (err) {
       return this.setState({
         error: `Failed to contact storage provider: ${normalizeError(err)}`,
