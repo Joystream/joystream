@@ -329,8 +329,6 @@ pub fn testnet_genesis(
         }),
         content_directory: Some({
             ContentDirectoryConfig {
-                class_by_id: vec![],
-                entity_by_id: vec![],
                 curator_group_by_id: vec![],
                 next_class_id: 1,
                 next_entity_id: 1,
