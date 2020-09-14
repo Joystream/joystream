@@ -358,8 +358,6 @@ export async function updateRoleAccount(
     newRoleAccount === createdAccount.address,
     `Unexpected role account ${newRoleAccount}, expected ${createdAccount.address}`
   )
-
-  membersKeyPairs[0] = createdAccount
 }
 
 export async function terminateApplications(

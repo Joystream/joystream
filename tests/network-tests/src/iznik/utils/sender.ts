@@ -1,33 +1,36 @@
 import BN from 'bn.js'
 import { ApiPromise } from '@polkadot/api'
-import { Index } from '@polkadot/types/interfaces'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { AccountInfo } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
+import { DbService } from '../services/dbService'
 
 export class Sender {
   private readonly api: ApiPromise
-  private static nonceMap: Map<string, BN> = new Map()
+  private db: DbService = DbService.getInstance()
 
   constructor(api: ApiPromise) {
     this.api = api
   }
 
   private async getNonce(address: string): Promise<BN> {
-    let oncahinNonce: BN = new BN(0)
-    if (!Sender.nonceMap.get(address)) {
-      oncahinNonce = await this.api.query.system.accountNonce<Index>(address)
+    const oncahinNonce: BN = (await this.api.query.system.account<AccountInfo>(address)).nonce
+    let nonce: BN
+    if (!this.db.hasNonce(address)) {
+      nonce = oncahinNonce
+    } else {
+      nonce = this.db.getNonce(address)
     }
-    let nonce: BN | undefined = Sender.nonceMap.get(address)
-    if (!nonce) {
+    if (oncahinNonce.gt(nonce)) {
       nonce = oncahinNonce
     }
     const nextNonce: BN = nonce.addn(1)
-    Sender.nonceMap.set(address, nextNonce)
+    this.db.setNonce(address, nextNonce)
     return nonce
   }
 
   private clearNonce(address: string): void {
-    Sender.nonceMap.delete(address)
+    this.db.removeNonce(address)
   }
 
   public async signAndSend(
@@ -40,7 +43,7 @@ export class Sender {
       const signedTx = tx.sign(account, { nonce })
       await signedTx
         .send(async (result) => {
-          if (result.status.isFinalized === true && result.events !== undefined) {
+          if (result.status.isInBlock && result.events !== undefined) {
             result.events.forEach((event) => {
               if (event.event.method === 'ExtrinsicFailed') {
                 if (expectFailure) {
