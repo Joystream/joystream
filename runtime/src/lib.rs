@@ -70,7 +70,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 7,
-    spec_version: 1,
+    spec_version: 3,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -125,6 +125,11 @@ impl system::Trait for Runtime {
     type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+}
+
+impl pallet_utility::Trait for Runtime {
+    type Event = Event;
+    type Call = Call;
 }
 
 parameter_types! {
@@ -232,14 +237,14 @@ impl pallet_sudo::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const UncleGenerations: BlockNumber = 5;
+    pub const UncleGenerations: BlockNumber = 0;
 }
 
 impl pallet_authorship::Trait for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
     type UncleGenerations = UncleGenerations;
     type FilterUncle = ();
-    type EventHandler = Staking;
+    type EventHandler = (Staking, ImOnline);
 }
 
 impl_opaque_keys! {
@@ -296,8 +301,8 @@ parameter_types! {
 
 parameter_types! {
     pub const SessionsPerEra: sp_staking::SessionIndex = 6;
-    pub const BondingDuration: pallet_staking::EraIndex = 24;
-    pub const SlashDeferDuration: pallet_staking::EraIndex = 6; // 1/4 the bonding duration.
+    pub const BondingDuration: pallet_staking::EraIndex = BONDING_DURATION;
+    pub const SlashDeferDuration: pallet_staking::EraIndex = BONDING_DURATION - 1; // 'slightly less' than the bonding duration.
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
     pub const MaxNominatorRewardedPerValidator: u32 = 64;
     pub const ElectionLookahead: BlockNumber = EPOCH_DURATION_IN_BLOCKS / 4;
@@ -578,6 +583,7 @@ construct_runtime!(
     {
         // Substrate
         System: system::{Module, Call, Storage, Config, Event<T>},
+        Utility: pallet_utility::{Module, Call, Event},
         Babe: pallet_babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
         Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
         Authorship: pallet_authorship::{Module, Call, Storage, Inherent},

@@ -9,6 +9,10 @@
       include_role:
         name: install_dependencies
 
+    - name: alter block creation time
+      include_role:
+        name: alter_block_creation_time
+
     - name: build node
       include_role:
         name: build_docker_image

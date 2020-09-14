@@ -18,7 +18,7 @@ import storage from './storage';
 import sudo from './sudo';
 import toolbox from './toolbox';
 import transfer from './transfer';
-import memo from './memo';
+// import memo from './memo';
 // Joy packages
 import members from './joy-members';
 import { terms, privacyPolicy } from './joy-pages';
@@ -41,7 +41,6 @@ export default function create (t: <T = string> (key: string, text: string, opti
       null,
       transfer(t),
       accounts(t),
-      memo(t),
       settings(t),
       // Those are hidden
       terms(t),
@@ -58,7 +57,6 @@ export default function create (t: <T = string> (key: string, text: string, opti
       null,
       transfer(t),
       accounts(t),
-      memo(t),
       settings(t),
       null,
       explorer(t),
