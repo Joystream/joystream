@@ -377,24 +377,6 @@ impl versioned_store_permissions::Trait for Runtime {
         integration::versioned_store_permissions::ContentLeadOrSudoKeyCanCreateClasses;
 }
 
-impl content_directory::ActorAuthenticator for Runtime {
-    type CuratorId = u64;
-    type MemberId = u64;
-    type CuratorGroupId = u64;
-
-    fn is_lead(account_id: &AccountId) -> bool {
-        true
-    }
-
-    fn is_curator(curator_id: &Self::CuratorId, account_id: &AccountId) -> bool {
-        true
-    }
-
-    fn is_member(member_id: &Self::MemberId, account_id: &AccountId) -> bool {
-        true
-    }
-}
-
 type EntityId = <Runtime as content_directory::Trait>::EntityId;
 
 parameter_types! {
@@ -530,9 +512,11 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type ContentIdExists = DataDirectory;
 }
 
+pub type MemberId = u64;
+
 impl membership::Trait for Runtime {
     type Event = Event;
-    type MemberId = u64;
+    type MemberId = MemberId;
     type PaidTermId = u64;
     type SubscriptionId = u64;
     type ActorId = ActorId;
