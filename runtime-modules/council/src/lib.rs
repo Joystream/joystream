@@ -5,14 +5,16 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // used dependencies
-use codec::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReason};
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, error::BadOrigin};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, Parameter};
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 use system::{ensure_signed, RawOrigin};
+use sp_arithmetic::traits::BaseArithmetic;
+use sp_runtime::traits::{MaybeSerialize, Member};
 
 use referendum::Instance as ReferendumInstanceGeneric;
 use referendum::Trait as ReferendumTrait;
@@ -79,13 +81,20 @@ pub struct Candidate<AccountId, Balance> {
 // Alias for referendum's storage.
 //pub(crate) type Referendum<T> = referendum::Module<T, T::ReferendumInstance>;
 
-pub type EzCurrency<T> = <<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::Currency;
-pub type Balance<T> = <<<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::Currency as Currency<
-    <<T as Trait>::ReferendumTrait as system::Trait>::AccountId,
->>::Balance;
+
+//pub type EzCurrency<T> = <<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::Currency;
+//pub type Balance<T> = <<<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::Currency as Currency<
+//    <<T as Trait>::ReferendumTrait as system::Trait>::AccountId,
+//>>::Balance;
+//pub type EzCurrency<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Currency;
+pub type EzCurrency<T> = <T as Trait>::Currency;
+pub type Balance<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+//pub type BalanceReferendum<T, ReferendumInstance> = <<T as referendum::Trait<ReferendumInstance>>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+//pub type Balance<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 
 //pub type EzVotePower<T> = <<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::VotePower;
-pub type EzVotePower<T> = <<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::VotePower;
+//pub type EzVotePower<T> = <<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::VotePower;
+pub type EzVotePower<T> = <T as Trait>::VotePower;
 
 
 pub type EzCandidate<T> = Candidate<<T as system::Trait>::AccountId, Balance<T>>;
@@ -102,10 +111,16 @@ pub type EzCouncilStageElection<T> =
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
 pub trait Trait: system::Trait {
+//pub trait Trait: system::Trait
+//where <Self::ReferendumTrait as system::Trait>::AccountId: system::Trait::AccountId {
+//where <Self::ReferendumTrait as system::Trait>::AccountId: Into<Self::AccountId>{
+//pub trait Trait: system::Trait<AccountId = Self::ReferendumTrait::AccountId> {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
-    // TODO: find a way how to get rid of these two types
+
+    // TODO: find a way how to get rid of these types
+    /*
     /// Currency for referendum staking.
     type Currency: LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
     type ReferendumInstance: referendum::Instance;
@@ -113,11 +128,38 @@ pub trait Trait: system::Trait {
     type ReferendumTrait: referendum::Trait<
         Self::ReferendumInstance,
         //AccountId = Self::AccountId,
+        //AccountId = Into<Self::AccountId>,
         //Currency = Currency<Self::AccountId, Balance = Type, PositiveImbalance = Type, NegativeImbalance = Type>,
         //Currency = LockableCurrency<Self::AccountId, Moment = Self::BlockNumber, Balance = LockableCurrency::Balance, >,
-        Currency = Self::Currency,
+        //Currency = Self::Currency,
+        /*
+        Currency = LockableCurrency<
+            Self::AccountId,
+            Moment = Self::BlockNumber,
+            /*
+            Balance = Self::Balance,
+            PositiveImbalance = Self::Balance,
+            NegativeImbalance = Self::Balance,
+            */
+            Balance = <Self as system::Trait>::Balance,
+            PositiveImbalance = <Self as system::Trait>::Balance,
+            NegativeImbalance = <Self as system::Trait>::Balance,
+        >,
+        */
+        //Currency = Self::Currency,
     >;
     //type Referendum: referendum::ReferendumManager<referendum::Trait<referendum::Instance>, referendum::Instance>;
+    */
+    type Currency: LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
+    type VotePower: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+    type Referendum: referendum::ReferendumManager<Self::Origin, Self::AccountId, Self::Hash, Error<Self>>;
 
     /// Minimum number of extra candidates needed for the valid election.
     /// Number of total candidates is equal to council size plus extra candidates.
@@ -265,7 +307,7 @@ decl_module! {
 
             Ok(())
         }
-
+/*
         /////////////////// Referendum Wrap ////////////////////////////////////
         // start voting period
         #[weight = 10_000_000]
@@ -295,6 +337,7 @@ decl_module! {
 
             Ok(())
         }
+*/
     }
 }
 
@@ -362,7 +405,7 @@ impl<T: Trait> Module<T> {
         // prepare candidates that got elected
         let elected_members: Vec<EzCandidate<T>> = winners
             .iter()
-            .map(|item| stage_data.candidates[item.option_index as usize].clone())
+            .map(|item| stage_data.candidates[item.option_id as usize].clone())
             .collect();
 
         // update state

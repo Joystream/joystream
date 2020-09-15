@@ -3,8 +3,10 @@
 use super::{Error, EzCandidate};
 use crate::mock::*;
 
-type Mocks = InstanceMocks<Runtime>;
-type MockUtils = InstanceMockUtils<Runtime>;
+type ReferendumInstance = referendum::Instance0;
+
+type Mocks = InstanceMocks<Runtime, ReferendumInstance>;
+type MockUtils = InstanceMockUtils<Runtime, ReferendumInstance>;
 
 /////////////////// Lifetime - election cycle start ////////////////////////////
 /// Test one referendum cycle with succesfull council election

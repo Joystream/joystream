@@ -97,6 +97,7 @@ pub type CanRevealResult<T, I> = (
 
 // TODO: get rid of dependency on Error<T, I> - create some nongeneric error
 /// Trait enabling referendum start and vote commitment calculation.
+/*
 pub trait ReferendumManager<T: Trait<I>, I: Instance> {
     /// Start a new referendum.
     fn start_referendum(
@@ -111,6 +112,22 @@ pub trait ReferendumManager<T: Trait<I>, I: Instance> {
         cycle_id: &u64,
         vote_option_id: &u64,
     ) -> T::Hash;
+}
+*/
+pub trait ReferendumManager<Origin, AccountId, Hash, Error> {
+    /// Start a new referendum.
+    fn start_referendum(
+        origin: Origin,
+        extra_winning_target_count: u64,
+    ) -> Result<(), Error>;
+
+    /// Calculate commitment for a vote.
+    fn calculate_commitment(
+        account_id: &AccountId,
+        salt: &[u8],
+        cycle_id: &u64,
+        vote_option_id: &u64,
+    ) -> Hash;
 }
 
 pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
@@ -395,7 +412,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
 /////////////////// ReferendumManager //////////////////////////////////////////
 
-impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
+//impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
+impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Hash, Error<T, I>> for Module<T, I> {
     /// Start new referendum run.
     fn start_referendum(
         origin: T::Origin,
@@ -709,7 +727,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(account_id)
     }
 
-    fn can_reveal_vote<R: ReferendumManager<T, I>>(
+    fn can_reveal_vote<R: ReferendumManager<T::Origin, T::AccountId, T::Hash, Error<T, I>>>(
         origin: T::Origin,
         salt: &[u8],
         vote_option_id: &u64,

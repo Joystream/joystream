@@ -57,6 +57,10 @@ impl Trait for Runtime {
     type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
     type IdlePeriodDuration = IdlePeriodDuration;
     type MinCandidateStake = MinCandidateStake;
+
+    type Currency = pallet_balances::Module<Runtime>;
+    type VotePower = u64;
+    //type Referendum = referendum::Module<Runtime Referendum;
 }
 
 /////////////////// Module implementation //////////////////////////////////////
@@ -69,10 +73,12 @@ mod event_mod {
     pub use crate::Event;
 }
 
+/*
 mod referendum_mod {
     pub use referendum::Event;
     pub use referendum::Instance0;
 }
+*/
 
 mod balances_mod {
     pub use pallet_balances::Event;
@@ -81,7 +87,7 @@ mod balances_mod {
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         event_mod<T>,
-        referendum_mod Instance0 <T>,
+        //referendum_mod Instance0 <T>,
         balances_mod<T>,
         system<T>,
     }
@@ -124,7 +130,7 @@ impl system::Trait for Runtime {
 
 /////////////////// Election module ////////////////////////////////////////////
 
-pub type ReferendumInstance = referendum::Instance0;
+//pub type ReferendumInstance = referendum::Instance0;
 
 thread_local! {
     pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
@@ -139,7 +145,9 @@ parameter_types! {
     pub const ReferendumLockId: LockIdentifier = *b"referend";
 }
 
-impl referendum::Trait<ReferendumInstance> for Runtime {
+/*
+//impl referendum::Trait<ReferendumInstance> for Runtime {
+impl<ReferendumInstance: referendum::Instance> referendum::Trait<ReferendumInstance> for Runtime {
     type Event = TestEvent;
 
     type MaxSaltLength = MaxSaltLength;
@@ -194,7 +202,7 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
         true
     }
 }
-
+*/
 impl Runtime {
     pub fn _feature_option_id_valid(is_valid: bool) -> () {
         IS_OPTION_ID_VALID.with(|value| {
@@ -232,26 +240,26 @@ pub struct CandidateInfo<T: Trait> {
 }
 
 #[derive(Clone)]
-pub struct VoterInfo<T: Trait> {
+pub struct VoterInfo<T: Trait, ReferendumInstance: referendum::Instance> {
     pub origin: OriginType<T::AccountId>,
     pub commitment: T::Hash,
     pub salt: Vec<u8>,
     pub vote_for: u64,
-    pub stake: Balance<T, ReferendumInstance>,
+    pub stake: BalanceReferendum<T, ReferendumInstance>,
 }
 
 #[derive(Clone)]
-pub struct CouncilSettings<T: Trait> {
+pub struct CouncilSettings<T: Trait, ReferendumInstance: referendum::Instance> {
     pub council_size: u64,
     pub min_candidate_count: u64,
-    pub min_candidate_stake: Balance<T, ReferendumInstance>,
+    pub min_candidate_stake: BalanceReferendum<T, ReferendumInstance>,
     pub announcing_stage_duration: T::BlockNumber,
     pub voting_stage_duration: T::BlockNumber,
     pub reveal_stage_duration: T::BlockNumber,
 }
 
-impl<T: Trait> CouncilSettings<T> {
-    pub fn extract_settings() -> CouncilSettings<T> {
+impl<T: Trait, ReferendumInstance: referendum::Instance> CouncilSettings<T, ReferendumInstance> {
+    pub fn extract_settings() -> CouncilSettings<T, ReferendumInstance> {
         let council_size = T::CouncilSize::get();
 
         CouncilSettings {
@@ -278,14 +286,14 @@ pub enum CouncilCycleInterrupt {
 }
 
 #[derive(Clone)]
-pub struct CouncilCycleParams<T: Trait> {
-    pub council_settings: CouncilSettings<T>,
+pub struct CouncilCycleParams<T: Trait, ReferendumInstance: referendum::Instance> {
+    pub council_settings: CouncilSettings<T, ReferendumInstance>,
     pub cycle_start_block_number: T::BlockNumber,
     pub expected_initial_council_members: Vec<EzCandidate<T>>, // council members
     pub expected_final_council_members: Vec<EzCandidate<T>>, // council members after cycle finishes
     pub candidates_announcing: Vec<CandidateInfo<T>>, // candidates announcing their candidacy
     pub expected_candidates: Vec<EzCandidate<T>>, // expected list of candidates after announcement period is over
-    pub voters: Vec<VoterInfo<T>>,                // voters that will participate in council voting
+    pub voters: Vec<VoterInfo<T, ReferendumInstance>>,                // voters that will participate in council voting
 
     pub interrupt_point: Option<CouncilCycleInterrupt>, // info about when should be cycle interrupted (used to customize the test)
 }
@@ -328,15 +336,15 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestEx
     result
 }
 
-pub struct InstanceMockUtils<T: Trait> {
-    _dummy: PhantomData<T>, // 0-sized data meant only to bound generic parameters
+pub struct InstanceMockUtils<T: Trait, ReferendumInstance: referendum::Instance> {
+    _dummy: PhantomData<(T, ReferendumInstance)>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait> InstanceMockUtils<T>
+impl<T: Trait, ReferendumInstance: referendum::Instance> InstanceMockUtils<T, ReferendumInstance>
 where
     T::AccountId: From<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
-    Balance<T, ReferendumInstance>: From<u64> + Into<u64>,
+    BalanceReferendum<T, ReferendumInstance>: From<u64> + Into<u64>,
 {
     pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::Origin {
         match origin {
@@ -361,13 +369,13 @@ where
     }
 
     // topup currency to the account
-    fn topup_account(account_id: u64, amount: Balance<T, ReferendumInstance>) {
+    fn topup_account(account_id: u64, amount: BalanceReferendum<T, ReferendumInstance>) {
         let _ = pallet_balances::Module::<Runtime>::deposit_creating(&account_id, amount.into());
     }
 
     pub fn generate_candidate(
         index: u64,
-        stake: Balance<T, ReferendumInstance>,
+        stake: BalanceReferendum<T, ReferendumInstance>,
     ) -> CandidateInfo<T> {
         let account_id = CANDIDATE_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
@@ -383,9 +391,9 @@ where
 
     pub fn generate_voter(
         index: u64,
-        stake: Balance<T, ReferendumInstance>,
+        stake: BalanceReferendum<T, ReferendumInstance>,
         vote_for_index: u64,
-    ) -> VoterInfo<T> {
+    ) -> VoterInfo<T, ReferendumInstance> {
         let account_id = VOTER_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
         let (commitment, salt) = Self::vote_commitment(&account_id.into(), &vote_for_index.into());
@@ -426,15 +434,15 @@ where
 
 /////////////////// Mocks of Module's actions //////////////////////////////////
 
-pub struct InstanceMocks<T: Trait> {
-    _dummy: PhantomData<T>, // 0-sized data meant only to bound generic parameters
+pub struct InstanceMocks<T: Trait, ReferendumInstance: referendum::Instance> {
+    _dummy: PhantomData<(T, ReferendumInstance)>, // 0-sized data meant only to bound generic parameters
 }
 
-impl<T: Trait> InstanceMocks<T>
+impl<T: Trait, ReferendumInstance: referendum::Instance> InstanceMocks<T, ReferendumInstance>
 where
     T::AccountId: From<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
-    Balance<T, ReferendumInstance>: From<u64> + Into<u64>,
+    BalanceReferendum<T, ReferendumInstance>: From<u64> + Into<u64>,
 {
     pub fn check_announcing_period(
         expected_update_block_number: T::BlockNumber,
@@ -501,7 +509,7 @@ where
 
     pub fn candidate(
         origin: OriginType<T::AccountId>,
-        stake: Balance<T, ReferendumInstance>,
+        stake: BalanceReferendum<T, ReferendumInstance>,
         expected_result: Result<(), Error<T>>,
     ) {
         // check method returns expected result
@@ -514,7 +522,7 @@ where
     pub fn vote_for_candidate(
         origin: OriginType<T::AccountId>,
         commitment: T::Hash,
-        stake: Balance<T, ReferendumInstance>,
+        stake: BalanceReferendum<T, ReferendumInstance>,
         expected_result: Result<(), Error<T>>,
     ) -> () {
         // check method returns expected result
@@ -546,7 +554,7 @@ where
     }
 
     /// simulate one council's election cycle
-    pub fn simulate_council_cycle(params: CouncilCycleParams<T>) {
+    pub fn simulate_council_cycle(params: CouncilCycleParams<T, ReferendumInstance>) {
         let settings = params.council_settings;
 
         // check initial council members
