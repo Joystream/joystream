@@ -40,7 +40,7 @@ where
     invalid_stake_call: InvalidStakeCall,
     successful_call: SuccessfulCall,
     proposal_parameters: ProposalParameters<u64, u64>,
-    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64, u64, u64, u64>,
+    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64, u64, u64>,
 }
 
 impl<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
@@ -472,25 +472,6 @@ fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
 }
 
 #[test]
-fn create_content_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-
-        assert_eq!(
-            ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
-                RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(50000u32)),
-                (crate::CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
-            ),
-            Err(Error::<Test>::InvalidContentWorkingGroupMintCapacity.into())
-        );
-    });
-}
-
-#[test]
 fn create_spending_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
@@ -705,14 +686,6 @@ fn set_default_proposal_parameters_succeeded() {
         assert_eq!(
             <SetElectionParametersProposalGracePeriod<Test>>::get(),
             p.set_election_parameters_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <SetLeadProposalVotingPeriod<Test>>::get(),
-            p.set_lead_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <SetLeadProposalGracePeriod<Test>>::get(),
-            p.set_lead_proposal_grace_period as u64
         );
         assert_eq!(
             <SpendingProposalVotingPeriod<Test>>::get(),

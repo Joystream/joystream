@@ -31,7 +31,6 @@ pub type ProposalsEngine = proposals_engine::Module<Runtime>;
 pub type Council = governance::council::Module<Runtime>;
 pub type Election = governance::election::Module<Runtime>;
 pub type ProposalCodex = proposals_codex::Module<Runtime>;
-pub type Mint = minting::Module<Runtime>;
 
 fn setup_members(count: u8) {
     let authority_account_id = <Runtime as system::Trait>::AccountId::default();
