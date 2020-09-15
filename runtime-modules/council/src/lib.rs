@@ -77,11 +77,16 @@ pub struct Candidate<AccountId, Balance> {
 // aliasing existing structs and enums
 
 // Alias for referendum's storage.
-pub(crate) type Referendum<T> = referendum::Module<T, ReferendumInstance>;
+//pub(crate) type Referendum<T> = referendum::Module<T, T::ReferendumInstance>;
 
-pub type Balance<T> = <<T as referendum::Trait<ReferendumInstance>>::Currency as Currency<
-    <T as system::Trait>::AccountId,
+pub type EzCurrency<T> = <<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::Currency;
+pub type Balance<T> = <<<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::Currency as Currency<
+    <<T as Trait>::ReferendumTrait as system::Trait>::AccountId,
 >>::Balance;
+
+//pub type EzVotePower<T> = <<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::VotePower;
+pub type EzVotePower<T> = <<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::VotePower;
+
 
 pub type EzCandidate<T> = Candidate<<T as system::Trait>::AccountId, Balance<T>>;
 pub type EzCouncilStageInfo<T> = CouncilStageInfo<
@@ -96,13 +101,23 @@ pub type EzCouncilStageElection<T> =
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
-// TODO: look for ways to check that selected instance is only used in this module to prevent unexpected behaviour
-// The storage alias for referendum instance.
-pub(crate) type ReferendumInstance = referendum::Instance0;
-
-pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
+pub trait Trait: system::Trait {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+
+    // TODO: find a way how to get rid of these two types
+    /// Currency for referendum staking.
+    type Currency: LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
+    type ReferendumInstance: referendum::Instance;
+    //type ReferendumTrait: referendum::Trait<Self::ReferendumInstance>;
+    type ReferendumTrait: referendum::Trait<
+        Self::ReferendumInstance,
+        //AccountId = Self::AccountId,
+        //Currency = Currency<Self::AccountId, Balance = Type, PositiveImbalance = Type, NegativeImbalance = Type>,
+        //Currency = LockableCurrency<Self::AccountId, Moment = Self::BlockNumber, Balance = LockableCurrency::Balance, >,
+        Currency = Self::Currency,
+    >;
+    //type Referendum: referendum::ReferendumManager<referendum::Trait<referendum::Instance>, referendum::Instance>;
 
     /// Minimum number of extra candidates needed for the valid election.
     /// Number of total candidates is equal to council size plus extra candidates.
@@ -122,7 +137,7 @@ pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
 }
 
 decl_storage! {
-    trait Store for Module<T: Trait> as Referendum {
+    trait Store for Module<T: Trait> as Council {
         /// Current council voting stage
         pub Stage get(fn stage) config(): CouncilStageInfo<T::AccountId, Balance::<T>, T::BlockNumber>;
 
@@ -256,7 +271,7 @@ decl_module! {
         #[weight = 10_000_000]
         pub fn vote(origin, commitment: T::Hash, balance: Balance<T>) -> Result<(), Error<T>> {
             // call referendum vote extrinsic
-            <Referendum<T>>::vote(origin, commitment, balance)?;
+            T::ReferendumTrait::vote(origin, commitment, balance)?;
 
             Ok(())
         }
@@ -266,7 +281,7 @@ decl_module! {
             EnsureChecks::<T>::can_reveal_vote(origin.clone(), vote_option_index)?;
 
             // call referendum reveal vote extrinsic
-            <Referendum<T>>::reveal_vote(origin, salt, vote_option_index)?;
+            T::Referendum::reveal_vote(origin, salt, vote_option_index)?;
 
             Ok(())
         }
@@ -276,7 +291,7 @@ decl_module! {
             EnsureChecks::<T>::can_release_vote_stake(origin.clone())?;
 
             // call referendum reveal vote extrinsic
-            <Referendum<T>>::release_stake(origin)?;
+            T::Referendum::release_stake(origin)?;
 
             Ok(())
         }
@@ -328,7 +343,7 @@ impl<T: Trait> Module<T> {
     /// Conclude election period and elect new council if possible.
     fn end_election_period(
         stage_data: EzCouncilStageElection<T>,
-        winners: &[OptionResult<T::VotePower>],
+        winners: &[OptionResult<EzVotePower<T>>],
     ) {
         let council_size = T::CouncilSize::get();
         if winners.len() as u64 != council_size {
@@ -368,8 +383,8 @@ impl<T: Trait> Module<T> {
 
     /// Process candidates' results recieved from the referendum.
     pub fn recieve_referendum_results(
-        winners: &[OptionResult<T::VotePower>],
-        _all_options_results: &BTreeMap<u64, T::VotePower>,
+        winners: &[OptionResult<EzVotePower<T>>],
+        _all_options_results: &BTreeMap<u64, EzVotePower<T>>,
     ) -> Result<(), Error<T>> {
         // ensure this method was called during election stage
         let stage_data = match Stage::<T>::get().stage {
@@ -419,7 +434,8 @@ impl<T: Trait> Mutations<T> {
 
         // IMPORTANT - because starting referendum can fail it has to be the first mutation!
         // start referendum
-        <Referendum<T> as ReferendumManager<T, ReferendumInstance>>::start_referendum(
+        //<T::Referendum as ReferendumManager<T::Referendum, T::ReferendumInstance>>::start_referendum(
+        T::Referendum::start_referendum(
             origin.into(),
             extra_winning_target_count,
         )?;
@@ -536,7 +552,7 @@ impl<T: Trait> Mutations<T> {
         }
 
         // lock candidacy stake
-        T::Currency::set_lock(
+        EzCurrency::<T>::set_lock(
             <T as Trait>::LockId::get(),
             &candidate.account_id,
             *stake,
@@ -557,7 +573,7 @@ impl<T: Trait> Mutations<T> {
     /// Release user's stake that was used for candidacy.
     fn release_candidacy_stake(account_id: &T::AccountId) {
         // release stake amount
-        T::Currency::remove_lock(<T as Trait>::LockId::get(), account_id);
+        EzCurrency::<T>::remove_lock(<T as Trait>::LockId::get(), account_id);
     }
 }
 
