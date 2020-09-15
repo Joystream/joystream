@@ -10,31 +10,47 @@ type InfiniteVideoGridProps = {
   title?: string
   videos?: VideoFields[]
   loadVideos: (offset: number, limit: number) => void
+  initialOffset?: number
+  initialLoading?: boolean
   className?: string
 }
 
-const INITIAL_ROWS = 2
-const VIDEOS_PER_ROW = 4
+export const INITIAL_ROWS = 4
+export const VIDEOS_PER_ROW = 4
 
-const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({ title, videos, loadVideos, className }) => {
+const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({
+  title,
+  videos,
+  loadVideos,
+  initialOffset = 0,
+  initialLoading,
+  className,
+}) => {
   // TODO: base this on the container width and some responsive items/row
   const videosPerRow = VIDEOS_PER_ROW
 
-  const [currentRowsCount, setCurrentRowsCount] = useState(INITIAL_ROWS)
+  const loadedVideosCount = videos?.length || 0
+  const videoRowsCount = Math.floor(loadedVideosCount / videosPerRow)
+  const initialRows = Math.max(videoRowsCount, INITIAL_ROWS)
+
+  const [currentRowsCount, setCurrentRowsCount] = useState(initialRows)
 
   const targetVideosCount = currentRowsCount * videosPerRow
-  const loadedVideosCount = videos?.length || 0
 
   useEffect(() => {
+    if (initialLoading) {
+      return
+    }
+
     if (targetVideosCount > loadedVideosCount) {
+      const offset = initialOffset + loadedVideosCount
       const missingVideosCount = targetVideosCount - loadedVideosCount
-      loadVideos(loadedVideosCount, missingVideosCount)
+      loadVideos(offset, missingVideosCount)
       // TODO: handle a situation when there are no more videos to fetch
       // this will require query node to provide some pagination metadata (total items count at minimum)
     }
-  }, [loadedVideosCount, targetVideosCount, loadVideos])
+  }, [initialOffset, initialLoading, loadedVideosCount, targetVideosCount, loadVideos])
 
-  const videoRowsCount = Math.floor(loadedVideosCount / videosPerRow)
   const displayedVideos = videos?.slice(0, videoRowsCount * videosPerRow) || []
   const placeholderRowsCount = currentRowsCount - videoRowsCount
   const placeholdersCount = placeholderRowsCount * videosPerRow
@@ -56,14 +72,14 @@ const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({ title, videos, lo
 
   const gridContent = (
     <>
-      {displayedVideos.map((v, idx) => (
+      {displayedVideos.map((v) => (
         <StyledVideoPreview
           title={v.title}
           channelName={v.channel.handle}
           createdAt={v.publishedOnJoystreamAt}
           views={v.views}
           posterURL={v.thumbnailURL}
-          key={`${v.id}-${idx}`} // TODO: remove idx from key once we get the real data without duplicated IDs
+          key={v.id}
         />
       ))}
       {Array.from({ length: placeholdersCount }, (_, idx) => (

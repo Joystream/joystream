@@ -7,6 +7,11 @@
 // GraphQL query operation: GetChannel
 // ====================================================
 
+export interface GetChannel_channel_videos_category {
+  __typename: "Category";
+  id: string;
+}
+
 export interface GetChannel_channel_videos_media_location_HTTPVideoMediaLocation {
   __typename: "HTTPVideoMediaLocation";
   host: string;
@@ -30,7 +35,7 @@ export interface GetChannel_channel_videos_media {
 export interface GetChannel_channel_videos_channel {
   __typename: "Channel";
   id: string;
-  avatarPhotoURL: string;
+  avatarPhotoURL: string | null;
   handle: string;
 }
 
@@ -39,6 +44,7 @@ export interface GetChannel_channel_videos {
   id: string;
   title: string;
   description: string;
+  category: GetChannel_channel_videos_category;
   views: number;
   duration: number;
   thumbnailURL: string;
@@ -51,8 +57,8 @@ export interface GetChannel_channel {
   __typename: "Channel";
   id: string;
   handle: string;
-  avatarPhotoURL: string;
-  coverPhotoURL: string;
+  avatarPhotoURL: string | null;
+  coverPhotoURL: string | null;
   totalViews: number;
   videos: GetChannel_channel_videos[] | null;
 }

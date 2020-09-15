@@ -5,6 +5,9 @@ export const videoFieldsFragment = gql`
     id
     title
     description
+    category {
+      id
+    }
     views
     duration
     thumbnailURL
@@ -30,10 +33,9 @@ export const videoFieldsFragment = gql`
   }
 `
 
-// TODO: Add proper query params (order, limit, etc.)
-export const GET_NEWEST_VIDEOS = gql`
-  query GetNewestVideos($offset: Int, $limit: Int) {
-    videos(offset: $offset, limit: $limit) {
+export const GET_VIDEOS = gql`
+  query GetVideos($offset: Int, $limit: Int, $categoryId: ID) {
+    videos(offset: $offset, limit: $limit, where: { categoryId_eq: $categoryId }) {
       ...VideoFields
     }
   }

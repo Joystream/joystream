@@ -4,14 +4,15 @@
 // This file was automatically generated and should not be edited.
 
 // ====================================================
-// GraphQL fragment: ChannelFields
+// GraphQL query operation: GetCategories
 // ====================================================
 
-export interface ChannelFields {
-  __typename: "Channel";
+export interface GetCategories_categories {
+  __typename: "Category";
   id: string;
-  handle: string;
-  avatarPhotoURL: string | null;
-  coverPhotoURL: string | null;
-  totalViews: number;
+  name: string;
+}
+
+export interface GetCategories {
+  categories: GetCategories_categories[];
 }

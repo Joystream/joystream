@@ -7,6 +7,11 @@
 // GraphQL fragment: VideoFields
 // ====================================================
 
+export interface VideoFields_category {
+  __typename: "Category";
+  id: string;
+}
+
 export interface VideoFields_media_location_HTTPVideoMediaLocation {
   __typename: "HTTPVideoMediaLocation";
   host: string;
@@ -30,7 +35,7 @@ export interface VideoFields_media {
 export interface VideoFields_channel {
   __typename: "Channel";
   id: string;
-  avatarPhotoURL: string;
+  avatarPhotoURL: string | null;
   handle: string;
 }
 
@@ -39,6 +44,7 @@ export interface VideoFields {
   id: string;
   title: string;
   description: string;
+  category: VideoFields_category;
   views: number;
   duration: number;
   thumbnailURL: string;

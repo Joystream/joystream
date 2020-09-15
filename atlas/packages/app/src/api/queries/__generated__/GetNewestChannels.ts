@@ -11,8 +11,8 @@ export interface GetNewestChannels_channels {
   __typename: "Channel";
   id: string;
   handle: string;
-  avatarPhotoURL: string;
-  coverPhotoURL: string;
+  avatarPhotoURL: string | null;
+  coverPhotoURL: string | null;
   totalViews: number;
 }
 

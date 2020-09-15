@@ -7,6 +7,11 @@
 // GraphQL query operation: GetFeaturedVideos
 // ====================================================
 
+export interface GetFeaturedVideos_featured_videos_category {
+  __typename: "Category";
+  id: string;
+}
+
 export interface GetFeaturedVideos_featured_videos_media_location_HTTPVideoMediaLocation {
   __typename: "HTTPVideoMediaLocation";
   host: string;
@@ -30,7 +35,7 @@ export interface GetFeaturedVideos_featured_videos_media {
 export interface GetFeaturedVideos_featured_videos_channel {
   __typename: "Channel";
   id: string;
-  avatarPhotoURL: string;
+  avatarPhotoURL: string | null;
   handle: string;
 }
 
@@ -39,6 +44,7 @@ export interface GetFeaturedVideos_featured_videos {
   id: string;
   title: string;
   description: string;
+  category: GetFeaturedVideos_featured_videos_category;
   views: number;
   duration: number;
   thumbnailURL: string;

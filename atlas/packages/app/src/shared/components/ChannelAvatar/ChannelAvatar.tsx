@@ -3,7 +3,7 @@ import { Container, Name, StyledAvatar } from './ChannelAvatar.style'
 
 type ChannelAvatarProps = {
   name: string
-  avatarUrl?: string
+  avatarUrl?: string | null
   className?: string
 }
 
