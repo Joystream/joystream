@@ -22,7 +22,6 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     crate::BalanceOfGovernanceCurrency<T>,
     <T as system::Trait>::BlockNumber,
     <T as system::Trait>::AccountId,
-    crate::MemberId<T>,
     working_group::OpeningId<T>,
     working_group::ApplicationId<T>,
     crate::BalanceOf<T>,
@@ -37,7 +36,6 @@ pub enum ProposalDetails<
     CurrencyBalance,
     BlockNumber,
     AccountId,
-    MemberId,
     OpeningId,
     ApplicationId,
     StakeBalance,
@@ -54,9 +52,6 @@ pub enum ProposalDetails<
 
     /// Balance and destination account for the `spending` proposal
     Spending(MintedBalance, AccountId),
-
-    /// New leader memberId and account_id for the `set lead` proposal
-    SetLead(Option<(MemberId, AccountId)>),
 
     /// Balance for the `set content working group mint capacity` proposal
     SetContentWorkingGroupMintCapacity(MintedBalance),
@@ -106,7 +101,6 @@ impl<
         CurrencyBalance,
         BlockNumber,
         AccountId,
-        MemberId,
         OpeningId,
         ApplicationId,
         StakeBalance,
@@ -117,7 +111,6 @@ impl<
         CurrencyBalance,
         BlockNumber,
         AccountId,
-        MemberId,
         OpeningId,
         ApplicationId,
         StakeBalance,

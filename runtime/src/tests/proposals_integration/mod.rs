@@ -568,32 +568,6 @@ fn text_proposal_execution_succeeds() {
 }
 
 #[test]
-fn set_lead_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = 10;
-        let account_id: [u8; 32] = [member_id; 32];
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_set_lead_proposal(
-                RawOrigin::Signed(account_id.clone().into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Runtime>>::from(50000u32)),
-                Some((member_id as u64, account_id.into())),
-            )
-        })
-        .with_member_id(member_id as u64);
-
-        assert!(content_working_group::Module::<Runtime>::ensure_lead_is_set().is_err());
-
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-
-        assert!(content_working_group::Module::<Runtime>::ensure_lead_is_set().is_ok());
-    });
-}
-
-#[test]
 fn spending_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
         let member_id = 10;

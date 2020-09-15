@@ -22,7 +22,6 @@
 //! - [create_spending_proposal](./struct.Module.html#method.create_spending_proposal)
 //!
 //! ### Content working group proposals
-//! - [create_set_lead_proposal](./struct.Module.html#method.create_set_lead_proposal)
 //! - [create_set_content_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_content_working_group_mint_capacity_proposal)
 //!
 //! ### Working group proposals
@@ -302,14 +301,6 @@ decl_storage! {
         pub SetContentWorkingGroupMintCapacityProposalGracePeriod get(fn set_content_working_group_mint_capacity_proposal_grace_period)
             config(): T::BlockNumber;
 
-        /// Voting period for the 'set lead' proposal
-        pub SetLeadProposalVotingPeriod get(fn set_lead_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'set lead' proposal
-        pub SetLeadProposalGracePeriod get(fn set_lead_proposal_grace_period)
-            config(): T::BlockNumber;
-
         /// Voting period for the 'spending' proposal
         pub SpendingProposalVotingPeriod get(fn spending_proposal_voting_period) config(): T::BlockNumber;
 
@@ -535,39 +526,6 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::spending_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
-            };
-
-            Self::create_proposal(params)?;
-        }
-
-        /// Create 'Set lead' proposal type.
-        /// This proposal uses `replace_lead()` extrinsic from the `content_working_group`  module.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_set_lead_proposal(
-            origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
-            new_lead: Option<(T::MemberId, T::AccountId)>
-        ) {
-            if let Some(lead) = new_lead.clone() {
-                let account_id = lead.1;
-                ensure!(
-                    !<governance::council::Module<T>>::is_councilor(&account_id),
-                    Error::<T>::InvalidSetLeadParameterCannotBeCouncilor
-                );
-            }
-            let proposal_details = ProposalDetails::SetLead(new_lead);
-            let params = CreateProposalParameters{
-                origin,
-                member_id,
-                title,
-                description,
-                stake_balance,
-                proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::set_lead_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
             };
 
@@ -1068,12 +1026,6 @@ impl<T: Trait> Module<T> {
         ));
         <SetContentWorkingGroupMintCapacityProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.set_content_working_group_mint_capacity_proposal_grace_period,
-        ));
-        <SetLeadProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.set_lead_proposal_voting_period,
-        ));
-        <SetLeadProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.set_lead_proposal_grace_period,
         ));
         <SpendingProposalVotingPeriod<T>>::put(T::BlockNumber::from(
             p.spending_proposal_voting_period,

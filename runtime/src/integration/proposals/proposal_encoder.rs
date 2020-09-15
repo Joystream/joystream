@@ -43,9 +43,6 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::Spending(balance, destination) => Call::Council(
                 governance::council::Call::spend_from_council_mint(balance, destination),
             ),
-            ProposalDetails::SetLead(new_lead) => {
-                Call::ContentWorkingGroup(content_working_group::Call::replace_lead(new_lead))
-            }
             ProposalDetails::SetValidatorCount(new_validator_count) => Call::Staking(
                 pallet_staking::Call::set_validator_count(new_validator_count),
             ),
