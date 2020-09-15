@@ -601,36 +601,6 @@ fn spending_proposal_execution_succeeds() {
 }
 
 #[test]
-fn set_content_working_group_mint_capacity_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = 1;
-        let account_id: [u8; 32] = [member_id; 32];
-        let new_balance = <BalanceOf<Runtime>>::from(55u32);
-
-        let mint_id =
-            Mint::add_mint(0, None).expect("Failed to create a mint for the content working group");
-        <content_working_group::Mint<Runtime>>::put(mint_id);
-
-        assert_eq!(Mint::get_mint_capacity(mint_id), Ok(0));
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
-                RawOrigin::Signed(account_id.clone().into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Runtime>>::from(50000u32)),
-                new_balance,
-            )
-        });
-
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-
-        assert_eq!(Mint::get_mint_capacity(mint_id), Ok(new_balance));
-    });
-}
-
-#[test]
 fn set_election_parameters_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
         let member_id = 1;

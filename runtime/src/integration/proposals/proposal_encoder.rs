@@ -35,11 +35,6 @@ impl ProposalEncoder<Runtime> for ExtrinsicProposalEncoder {
             ProposalDetails::SetElectionParameters(election_parameters) => Call::CouncilElection(
                 governance::election::Call::set_election_parameters(election_parameters),
             ),
-            ProposalDetails::SetContentWorkingGroupMintCapacity(mint_balance) => {
-                Call::ContentWorkingGroup(content_working_group::Call::set_mint_capacity(
-                    mint_balance,
-                ))
-            }
             ProposalDetails::Spending(balance, destination) => Call::Council(
                 governance::council::Call::spend_from_council_mint(balance, destination),
             ),

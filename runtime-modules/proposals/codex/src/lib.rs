@@ -21,9 +21,6 @@
 //! - [create_set_election_parameters_proposal](./struct.Module.html#method.create_set_election_parameters_proposal)
 //! - [create_spending_proposal](./struct.Module.html#method.create_spending_proposal)
 //!
-//! ### Content working group proposals
-//! - [create_set_content_working_group_mint_capacity_proposal](./struct.Module.html#method.create_set_content_working_group_mint_capacity_proposal)
-//!
 //! ### Working group proposals
 //! - [create_add_working_group_leader_opening_proposal](./struct.Module.html#method.create_add_working_group_leader_opening_proposal)
 //! - [create_begin_review_working_group_leader_applications_proposal](./struct.Module.html#method.create_begin_review_working_group_leader_applications_proposal)
@@ -85,8 +82,6 @@ pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 
 // 'Set working group mint capacity' proposal limit
 const WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 5_000_000;
-// 'Set content working group mint capacity' proposal limit
-const CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE: u32 = 1_000_000;
 // Max allowed value for 'spending' proposal
 const MAX_SPENDING_PROPOSAL_VALUE: u32 = 2_000_000_u32;
 // Max validator count for the 'set validator count' proposal
@@ -293,14 +288,6 @@ decl_storage! {
         /// Grace period for the 'text' proposal
         pub TextProposalGracePeriod get(fn text_proposal_grace_period) config(): T::BlockNumber;
 
-        /// Voting period for the 'set content working group mint capacity' proposal
-        pub SetContentWorkingGroupMintCapacityProposalVotingPeriod get(fn set_content_working_group_mint_capacity_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'set content working group mint capacity' proposal
-        pub SetContentWorkingGroupMintCapacityProposalGracePeriod get(fn set_content_working_group_mint_capacity_proposal_grace_period)
-            config(): T::BlockNumber;
-
         /// Voting period for the 'spending' proposal
         pub SpendingProposalVotingPeriod get(fn spending_proposal_voting_period) config(): T::BlockNumber;
 
@@ -462,37 +449,6 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::set_election_parameters_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
-            };
-
-            Self::create_proposal(params)?;
-        }
-
-        /// Create 'Set content working group mint capacity' proposal type.
-        /// This proposal uses `set_mint_capacity()` extrinsic from the `content-working-group`  module.
-        #[weight = 10_000_000] // TODO: adjust weight
-        pub fn create_set_content_working_group_mint_capacity_proposal(
-            origin,
-            member_id: MemberId<T>,
-            title: Vec<u8>,
-            description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
-            mint_balance: BalanceOfMint<T>,
-        ) {
-            ensure!(
-                mint_balance <= <BalanceOfMint<T>>::from(CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE),
-                Error::<T>::InvalidContentWorkingGroupMintCapacity
-            );
-
-            let proposal_details = ProposalDetails::SetContentWorkingGroupMintCapacity(mint_balance);
-            let params = CreateProposalParameters{
-                origin,
-                member_id,
-                title,
-                description,
-                stake_balance,
-                proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
             };
 
@@ -1020,12 +976,6 @@ impl<T: Trait> Module<T> {
         ));
         <SetElectionParametersProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.set_election_parameters_proposal_grace_period,
-        ));
-        <SetContentWorkingGroupMintCapacityProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.set_content_working_group_mint_capacity_proposal_voting_period,
-        ));
-        <SetContentWorkingGroupMintCapacityProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.set_content_working_group_mint_capacity_proposal_grace_period,
         ));
         <SpendingProposalVotingPeriod<T>>::put(T::BlockNumber::from(
             p.spending_proposal_voting_period,

@@ -491,59 +491,6 @@ fn create_content_working_group_mint_capacity_proposal_fails_with_invalid_parame
 }
 
 #[test]
-fn create_set_content_working_group_mint_capacity_proposal_common_checks_succeed() {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
-
-        let proposal_fixture = ProposalTestFixture {
-            insufficient_rights_call: || {
-                ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
-                    RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    0,
-                )
-            },
-            empty_stake_call: || {
-                ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    0,
-                )
-            },
-            invalid_stake_call: || {
-                ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
-                    0,
-                )
-            },
-            successful_call: || {
-                ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(50000u32)),
-                    10,
-                )
-            },
-            proposal_parameters: crate::proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<Test>(),
-            proposal_details: ProposalDetails::SetContentWorkingGroupMintCapacity(10),
-        };
-        proposal_fixture.check_all();
-    });
-}
-
-#[test]
 fn create_spending_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
@@ -758,14 +705,6 @@ fn set_default_proposal_parameters_succeeded() {
         assert_eq!(
             <SetElectionParametersProposalGracePeriod<Test>>::get(),
             p.set_election_parameters_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <SetContentWorkingGroupMintCapacityProposalVotingPeriod<Test>>::get(),
-            p.set_content_working_group_mint_capacity_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <SetContentWorkingGroupMintCapacityProposalGracePeriod<Test>>::get(),
-            p.set_content_working_group_mint_capacity_proposal_grace_period as u64
         );
         assert_eq!(
             <SetLeadProposalVotingPeriod<Test>>::get(),
