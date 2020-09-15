@@ -1,10 +1,11 @@
 use crate::{AccountId, MemberId, Runtime};
 
-// The storage working group instance alias.
-pub type StorageWorkingGroupInstance = working_group::Instance2;
+// The content directory working group instance alias.
+pub type ContentDirectoryWorkingGroupInstance = working_group::Instance2;
 
-// Alias for storage working group
-pub(crate) type StorageWorkingGroup<T> = working_group::Module<T, StorageWorkingGroupInstance>;
+// Alias for content directory working group
+pub(crate) type ContentDirectoryWorkingGroup<T> =
+    working_group::Module<T, ContentDirectoryWorkingGroupInstance>;
 
 impl content_directory::ActorAuthenticator for Runtime {
     type CuratorId = u64;
@@ -12,11 +13,25 @@ impl content_directory::ActorAuthenticator for Runtime {
     type CuratorGroupId = u64;
 
     fn is_lead(account_id: &AccountId) -> bool {
-        <pallet_sudo::Module<Runtime>>::key() == *account_id
+        // get current lead id
+        let maybe_current_lead_id = ContentDirectoryWorkingGroup::<Runtime>::current_lead();
+        if let Some(ref current_lead_id) = maybe_current_lead_id {
+            if let Ok(worker) =
+                ContentDirectoryWorkingGroup::<Runtime>::ensure_worker_exists(current_lead_id)
+            {
+                *account_id == worker.role_account_id
+            } else {
+                false
+            }
+        } else {
+            false
+        }
     }
 
     fn is_curator(curator_id: &Self::CuratorId, account_id: &AccountId) -> bool {
-        if let Ok(worker) = StorageWorkingGroup::<Runtime>::ensure_worker_exists(curator_id) {
+        if let Ok(worker) =
+            ContentDirectoryWorkingGroup::<Runtime>::ensure_worker_exists(curator_id)
+        {
             *account_id == worker.role_account_id
         } else {
             false
