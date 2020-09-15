@@ -4,11 +4,9 @@ import { Keyring, WsProvider } from '@polkadot/api'
 import BN from 'bn.js'
 import { setTestTimeout } from '../../utils/setTestTimeout'
 import tap from 'tap'
-import { registerJoystreamTypes } from '@alexandria/types'
 import { closeApi } from '../../utils/closeApi'
 import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
 import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
-import { ElectCouncilFixture } from '../fixtures/councilElectionModule'
 import {
   BeginWorkingGroupLeaderApplicationReviewFixture,
   CreateWorkingGroupLeaderOpeningFixture,
@@ -30,27 +28,30 @@ import {
   ExpectLeadOpeningAddedFixture,
 } from '../fixtures/workingGroupModule'
 import { Utils } from '../../utils/utils'
-import { PaidTermId } from '@nicaea/types/members'
-import { OpeningId } from '@nicaea/types/hiring'
-import { ProposalId } from '@nicaea/types/proposals'
+import { PaidTermId } from '@alexandria/types/members'
+import { OpeningId } from '@alexandria/types/hiring'
+import { ProposalId } from '@alexandria/types/proposals'
+import { DbService } from '../../services/dbService'
+import { CouncilElectionHappyCaseFixture } from '../fixtures/councilElectionHappyCase'
 
 tap.mocha.describe('Set lead proposal scenario', async () => {
   initConfig()
-  registerJoystreamTypes()
 
   const nodeUrl: string = process.env.NODE_URL!
   const sudoUri: string = process.env.SUDO_ACCOUNT_URI!
   const keyring = new Keyring({ type: 'sr25519' })
+  const db: DbService = DbService.getInstance()
+
   const provider = new WsProvider(nodeUrl)
   const apiWrapper: ApiWrapper = await ApiWrapper.create(provider)
   const sudo: KeyringPair = keyring.addFromUri(sudoUri)
 
   const N: number = +process.env.MEMBERSHIP_CREATION_N!
-  const m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
-  const m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
+  let m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
+  let m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const leadKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
 
-  const paidTerms: PaidTermId = new PaidTermId(+process.env.MEMBERSHIP_PAID_TERMS!)
+  const paidTerms: PaidTermId = apiWrapper.createPaidTermId(new BN(+process.env.MEMBERSHIP_PAID_TERMS!))
   const K: number = +process.env.COUNCIL_ELECTION_K!
   const greaterStake: BN = new BN(+process.env.COUNCIL_STAKE_GREATER_AMOUNT!)
   const lesserStake: BN = new BN(+process.env.COUNCIL_STAKE_LESSER_AMOUNT!)
@@ -66,21 +67,22 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
 
   setTestTimeout(apiWrapper, durationInBlocks)
 
-  const firstMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
-    apiWrapper,
-    sudo,
-    m1KeyPairs,
-    paidTerms
-  )
-  tap.test('Creating first set of members', async () => firstMemberSetFixture.runner(false))
-
-  const secondMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
-    apiWrapper,
-    sudo,
-    m2KeyPairs,
-    paidTerms
-  )
-  tap.test('Creating second set of members', async () => secondMemberSetFixture.runner(false))
+  if (db.hasCouncil()) {
+    m1KeyPairs = db.getMembers()
+    m2KeyPairs = db.getCouncil()
+  } else {
+    const councilElectionHappyCaseFixture = new CouncilElectionHappyCaseFixture(
+      apiWrapper,
+      sudo,
+      m1KeyPairs,
+      m2KeyPairs,
+      paidTerms,
+      K,
+      greaterStake,
+      lesserStake
+    )
+    await councilElectionHappyCaseFixture.runner(false)
+  }
 
   const leaderMembershipFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
     apiWrapper,
@@ -88,18 +90,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
     leadKeyPair,
     paidTerms
   )
-  tap.test('Buy membership for lead', async () => leaderMembershipFixture.runner(false))
-
-  const electCouncilFixture: ElectCouncilFixture = new ElectCouncilFixture(
-    apiWrapper,
-    m1KeyPairs,
-    m2KeyPairs,
-    K,
-    sudo,
-    greaterStake,
-    lesserStake
-  )
-  tap.test('Elect council', async () => electCouncilFixture.runner(false))
+  tap.test('Buy membership for lead', async () => await leaderMembershipFixture.runner(false))
 
   const createWorkingGroupLeaderOpeningFixture: CreateWorkingGroupLeaderOpeningFixture = new CreateWorkingGroupLeaderOpeningFixture(
     apiWrapper,
@@ -109,7 +100,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
     roleStake,
     'Storage'
   )
-  tap.test('Propose create leader opening', async () => createWorkingGroupLeaderOpeningFixture.runner(false))
+  tap.test('Propose create leader opening', async () => await createWorkingGroupLeaderOpeningFixture.runner(false))
 
   let voteForCreateOpeningProposalFixture: VoteForProposalFixture
   const expectLeadOpeningAddedFixture: ExpectLeadOpeningAddedFixture = new ExpectLeadOpeningAddedFixture(apiWrapper)
@@ -118,7 +109,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      createWorkingGroupLeaderOpeningFixture.getResult() as OpeningId
+      createWorkingGroupLeaderOpeningFixture.getCreatedProposalId() as OpeningId
     )
     voteForCreateOpeningProposalFixture.runner(false)
     await expectLeadOpeningAddedFixture.runner(false)
@@ -132,7 +123,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       sudo,
       applicationStake,
       roleStake,
-      expectLeadOpeningAddedFixture.getResult() as OpeningId,
+      expectLeadOpeningAddedFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await applyForLeaderOpeningFixture.runner(false)
@@ -144,7 +135,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m1KeyPairs,
       sudo,
-      expectLeadOpeningAddedFixture.getResult() as OpeningId,
+      expectLeadOpeningAddedFixture.getCreatedOpeningId() as OpeningId,
       'Storage'
     )
     await beginWorkingGroupLeaderApplicationReviewFixture.runner(false)
@@ -159,7 +150,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      beginWorkingGroupLeaderApplicationReviewFixture.getResult() as ProposalId
+      beginWorkingGroupLeaderApplicationReviewFixture.getCreatedProposalId() as ProposalId
     )
     voteForBeginReviewProposal.runner(false)
     await expectBeganApplicationReviewFixture.runner(false)
@@ -175,7 +166,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       firstRewardInterval,
       rewardInterval,
       payoutAmount,
-      expectLeadOpeningAddedFixture.getResult() as OpeningId,
+      expectLeadOpeningAddedFixture.getCreatedOpeningId() as OpeningId,
       WorkingGroups.StorageWorkingGroup
     )
     await fillLeaderOpeningProposalFixture.runner(false)
@@ -192,7 +183,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      fillLeaderOpeningProposalFixture.getResult() as ProposalId
+      fillLeaderOpeningProposalFixture.getCreatedProposalId() as ProposalId
     )
     voteForFillLeaderProposalFixture.runner(false)
     await expectLeaderSetFixture.runner(false)
@@ -218,7 +209,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      setLeaderRewardProposalFixture.getResult() as ProposalId
+      setLeaderRewardProposalFixture.getCreatedProposalId() as ProposalId
     )
     voteForeLeaderRewardFixture.runner(false)
     await expectLeaderRewardAmountUpdatedFixture.runner(false)
@@ -238,13 +229,13 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
   let expectLeaderStakeDecreasedFixture: ExpectLeaderStakeDecreasedFixture
   tap.test('Approve decreased leader stake', async () => {
     newStake = applicationStake.sub(stakeDecrement)
-    voteForFillLeaderProposalFixture = new VoteForProposalFixture(
+    voteForDecreaseStakeProposal = new VoteForProposalFixture(
       apiWrapper,
       m2KeyPairs,
       sudo,
-      decreaseLeaderStakeProposalFixture.getResult() as ProposalId
+      decreaseLeaderStakeProposalFixture.getCreatedProposalId() as ProposalId
     )
-    voteForFillLeaderProposalFixture.runner(false)
+    voteForDecreaseStakeProposal.runner(false)
     expectLeaderStakeDecreasedFixture = new ExpectLeaderStakeDecreasedFixture(
       apiWrapper,
       newStake,
@@ -260,7 +251,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
     slashAmount,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Propose leader slash', async () => slashLeaderProposalFixture.runner(false))
+  tap.test('Propose leader slash', async () => await slashLeaderProposalFixture.runner(false))
 
   let voteForSlashProposalFixture: VoteForProposalFixture
   let expectLeaderSlashedFixture: ExpectLeaderSlashedFixture
@@ -270,7 +261,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      slashLeaderProposalFixture.getResult() as ProposalId
+      slashLeaderProposalFixture.getCreatedProposalId() as ProposalId
     )
     voteForSlashProposalFixture.runner(false)
     expectLeaderSlashedFixture = new ExpectLeaderSlashedFixture(apiWrapper, newStake, WorkingGroups.StorageWorkingGroup)
@@ -285,7 +276,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
     false,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Propose terminate leader role', async () => terminateLeaderRoleProposalFixture.runner(false))
+  tap.test('Propose terminate leader role', async () => await terminateLeaderRoleProposalFixture.runner(false))
 
   let voteForLeaderRoleTerminationFixture: VoteForProposalFixture
   const expectLeaderRoleTerminatedFixture: ExpectLeaderRoleTerminatedFixture = new ExpectLeaderRoleTerminatedFixture(
@@ -297,7 +288,7 @@ tap.mocha.describe('Set lead proposal scenario', async () => {
       apiWrapper,
       m2KeyPairs,
       sudo,
-      terminateLeaderRoleProposalFixture.getResult() as ProposalId
+      terminateLeaderRoleProposalFixture.getCreatedProposalId() as ProposalId
     )
     voteForLeaderRoleTerminationFixture.runner(false)
     await expectLeaderRoleTerminatedFixture.runner(false)
