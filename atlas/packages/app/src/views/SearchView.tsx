@@ -1,18 +1,25 @@
 import React, { useState, useMemo } from 'react'
 import { css } from '@emotion/core'
+import styled from '@emotion/styled'
+import { spacing, typography } from '@/shared/theme'
 import { RouteComponentProps, navigate } from '@reach/router'
 import { useQuery } from '@apollo/client'
 
 import { SEARCH } from '@/api/queries'
 import { Search, SearchVariables } from '@/api/queries/__generated__/Search'
 import { TabsMenu } from '@/shared/components'
-import { Main, VideoGallery, ChannelGallery, VideoBestMatch } from '@/components'
+import { Main, VideoGrid, ChannelGallery, VideoBestMatch } from '@/components'
 import routes from '@/config/routes'
 
 type SearchViewProps = {
   search?: string
 } & RouteComponentProps
 const tabs = ['all results', 'videos', 'channels']
+
+const VideosHeader = styled.h5`
+  margin: 0 0 ${spacing.m};
+  font-size: ${typography.sizes.h5};
+`
 const SearchView: React.FC<SearchViewProps> = ({ search = '' }) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const { data, loading } = useQuery<Search, SearchVariables>(SEARCH, { variables: { query_string: search } })
@@ -49,7 +56,10 @@ const SearchView: React.FC<SearchViewProps> = ({ search = '' }) => {
       <TabsMenu tabs={tabs} onSelectTab={setSelectedIndex} initialIndex={0} />
       {bestMatch && <VideoBestMatch video={bestMatch} onClick={() => navigate(routes.video(bestMatch.id))} />}
       {videos.length > 0 && (selectedIndex === 0 || selectedIndex === 1) && (
-        <VideoGallery title="Videos" action="See all" loading={loading} videos={videos} />
+        <div>
+          <VideosHeader>Videos</VideosHeader>
+          <VideoGrid videos={videos} />
+        </div>
       )}
       {channels.length > 0 && (selectedIndex === 0 || selectedIndex === 2) && (
         <ChannelGallery title="Channels" action="See all" loading={loading} channels={channels} />

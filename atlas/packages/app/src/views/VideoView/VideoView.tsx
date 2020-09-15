@@ -7,14 +7,13 @@ import {
   InfoContainer,
   Meta,
   MoreVideosContainer,
-  MoreVideosGrid,
   MoreVideosHeader,
-  MoreVideosPreview,
   PlayerContainer,
   StyledChannelAvatar,
   Title,
   TitleActionsContainer,
 } from './VideoView.style'
+import { VideoGrid } from '@/components'
 import { Button, VideoPlayer } from '@/shared/components'
 import { formatDateAgo } from '@/utils/time'
 import { formatNumber } from '@/utils/number'
@@ -63,19 +62,7 @@ const VideoView: React.FC<RouteComponentProps> = () => {
         </DescriptionContainer>
         <MoreVideosContainer>
           <MoreVideosHeader>More from {channel.handle}</MoreVideosHeader>
-          <MoreVideosGrid>
-            {moreVideos.map((v, idx) => (
-              <MoreVideosPreview
-                key={idx}
-                title={v.title}
-                channelName={v.channel.handle}
-                createdAt={v.publishedOnJoystreamAt}
-                duration={v.duration}
-                views={v.views}
-                posterURL={v.thumbnailURL}
-              />
-            ))}
-          </MoreVideosGrid>
+          <VideoGrid videos={moreVideos} />
         </MoreVideosContainer>
       </InfoContainer>
     </Container>
