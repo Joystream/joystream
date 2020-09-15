@@ -21,6 +21,8 @@
 const debug = require('debug')('joystream:sync')
 const _ = require('lodash')
 
+// TODO: refactor these two values into a new class
+// The number of concurrent sync sessions allowed. Must be greater than zero.
 const MAX_CONCURRENT_SYNC_ITEMS = 15
 const contentBeingSynced = new Map()
 
@@ -54,21 +56,25 @@ async function syncCallback(api, storage) {
 
           if (synced) {
             return contentId
-          }
+          } else if (!syncing) {
+            if (contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS) {
+              try {
+                contentBeingSynced.set(contentId, true)
 
-          if (!synced && !syncing && contentBeingSynced.size < MAX_CONCURRENT_SYNC_ITEMS) {
-            try {
-              contentBeingSynced.set(contentId, true)
-
-              await storage.synchronize(contentId, () => {
+                await storage.synchronize(contentId, () => {
+                  contentBeingSynced.delete(contentId)
+                })
+              } catch (err) {
+                debug(`Failed calling synchronize ${err}`)
                 contentBeingSynced.delete(contentId)
-              })
-            } catch (err) {
-              contentBeingSynced.delete(contentId)
+              }
+            } else {
+              // Content needs to be synced, but limit on concurrent syncs reached
+              debug('Deferring, concurrent sessions exhausted.')
             }
           }
         } catch (err) {
-          //
+          debug(`Failed getting syncStatus. contnetId: ${contentId} ${err}`)
         }
 
         return null
