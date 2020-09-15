@@ -1298,6 +1298,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Ok(worker)
     }
 
+    /// Ensures worker under given id already exists
     pub fn ensure_worker_exists(worker_id: &WorkerId<T>) -> Result<WorkerOf<T>, Error<T, I>> {
         ensure!(
             WorkerById::<T, I>::contains_key(worker_id),
