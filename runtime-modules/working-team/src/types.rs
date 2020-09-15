@@ -2,6 +2,8 @@
 
 use codec::{Decode, Encode};
 
+use frame_support::traits::Currency;
+
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
@@ -21,6 +23,12 @@ pub(crate) type ApplicationInfo<T, I> =
 
 /// Team worker type alias.
 pub type TeamWorker<T> = Worker<<T as system::Trait>::AccountId, MemberId<T>>;
+
+/// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
+pub type BalanceOfCurrency<T> =
+    <<T as common::currency::GovernanceCurrency>::Currency as Currency<
+        <T as system::Trait>::AccountId,
+    >>::Balance;
 
 /// Job opening for the normal or leader position.
 /// An opening represents the process of hiring one or more new actors into some available role.

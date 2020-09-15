@@ -7,11 +7,13 @@ use system::RawOrigin;
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::{Error, JobOpeningType, RawEvent, StakePolicy, TeamWorker};
 use fixtures::{
-    setup_members, AddOpeningFixture, ApplyOnOpeningFixture, EventFixture, FillOpeningFixture,
-    HireLeadFixture, HireRegularWorkerFixture, LeaveWorkerRoleFixture, TerminateWorkerRoleFixture,
+    increase_total_balance_issuance_using_account_id, setup_members, AddOpeningFixture,
+    ApplyOnOpeningFixture, EventFixture, FillOpeningFixture, HireLeadFixture,
+    HireRegularWorkerFixture, LeaveWorkerRoleFixture, TerminateWorkerRoleFixture,
     UpdateWorkerRoleAccountFixture,
 };
 use frame_support::dispatch::DispatchError;
+use frame_support::traits::{LockableCurrency, WithdrawReason};
 use mock::{
     build_test_externalities, run_to_block, Test, TestWorkingTeam, TestWorkingTeamInstance,
 };
@@ -27,10 +29,10 @@ fn add_opening_succeeded() {
 
         let add_opening_fixture = AddOpeningFixture::default()
             .with_starting_block(starting_block)
-            .with_staking_policy(Some(StakePolicy {
+            .with_staking_policy(StakePolicy {
                 stake_amount: 10,
                 unstaking_period: 100,
-            }));
+            });
 
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
@@ -550,14 +552,84 @@ fn add_opening_fails_with_zero_stake() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let add_opening_fixture =
-            AddOpeningFixture::default().with_staking_policy(Some(StakePolicy {
-                stake_amount: 0,
-                unstaking_period: 0,
-            }));
+        let add_opening_fixture = AddOpeningFixture::default().with_staking_policy(StakePolicy {
+            stake_amount: 0,
+            unstaking_period: 0,
+        });
 
         add_opening_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingTeamInstance>::CannotStakeZero.into(),
+        ));
+    });
+}
+
+#[test]
+fn apply_on_opening_fails_with_insufficient_balance() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default();
+
+        let opening_id = add_opening_fixture.call().unwrap();
+
+        let apply_on_opening_fixture =
+            ApplyOnOpeningFixture::default_for_opening_id(opening_id).with_stake(100);
+
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::InsufficientBalanceToCoverStake.into(),
+        ));
+    });
+}
+
+#[test]
+fn apply_on_opening_fails_with_locked_balance() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let account_id = 1;
+        increase_total_balance_issuance_using_account_id(account_id, 300);
+
+        let lock_id: [u8; 8] = [0; 8];
+        <Test as common::currency::GovernanceCurrency>::Currency::set_lock(
+            lock_id,
+            &account_id,
+            250,
+            WithdrawReason::TransactionPayment.into(),
+        );
+
+        let add_opening_fixture = AddOpeningFixture::default();
+        let opening_id = add_opening_fixture.call().unwrap();
+
+        let apply_on_opening_fixture =
+            ApplyOnOpeningFixture::default_for_opening_id(opening_id).with_stake(100);
+
+        apply_on_opening_fixture.call_and_assert(Err(balances::Error::<
+            Test,
+            balances::DefaultInstance,
+        >::LiquidityRestrictions
+            .into()));
+    });
+}
+
+#[test]
+fn apply_on_opening_fails_with_stake_inconsistent_with_opening_stake() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let account_id = 1;
+        increase_total_balance_issuance_using_account_id(account_id, 300);
+
+        let add_opening_fixture = AddOpeningFixture::default().with_staking_policy(StakePolicy {
+            stake_amount: 200,
+            unstaking_period: 0,
+        });
+        let opening_id = add_opening_fixture.call().unwrap();
+
+        let apply_on_opening_fixture =
+            ApplyOnOpeningFixture::default_for_opening_id(opening_id).with_stake(100);
+
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::ApplicationStakeDoesntMatchOpening.into(),
         ));
     });
 }

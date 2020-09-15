@@ -1,9 +1,11 @@
 use crate::{
-    Instance, JobOpening, JobOpeningType, MemberId, StakePolicy, TeamWorker, TeamWorkerId, Trait,
+    BalanceOfCurrency, Instance, JobOpening, JobOpeningType, MemberId, StakePolicy, TeamWorker,
+    TeamWorkerId, Trait,
 };
 
 use super::Error;
 use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::traits::{Currency, WithdrawReasons};
 use frame_support::{ensure, StorageMap, StorageValue};
 use sp_arithmetic::traits::Zero;
 use sp_std::collections::btree_set::BTreeSet;
@@ -31,7 +33,7 @@ pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
 // Check opening: returns the opening by id if it is exists.
 pub(crate) fn ensure_opening_exists<T: Trait<I>, I: Instance>(
     opening_id: &T::OpeningId,
-) -> Result<JobOpening<T::BlockNumber, T::Balance>, Error<T, I>> {
+) -> Result<JobOpening<T::BlockNumber, BalanceOfCurrency<T>>, Error<T, I>> {
     ensure!(
         <crate::OpeningById::<T, I>>::contains_key(opening_id),
         Error::<T, I>::OpeningDoesNotExist
@@ -184,13 +186,59 @@ pub(crate) fn ensure_origin_for_terminate_worker<T: Trait<I>, I: Instance>(
 
 // Check opening: verifies stake policy for the opening.
 pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
-    stake_policy: &Option<StakePolicy<T::BlockNumber, T::Balance>>,
+    stake_policy: &Option<StakePolicy<T::BlockNumber, BalanceOfCurrency<T>>>,
 ) -> Result<(), DispatchError> {
     if let Some(stake_policy) = stake_policy {
         ensure!(
             stake_policy.stake_amount != Zero::zero(),
             Error::<T, I>::CannotStakeZero
         )
+    }
+
+    Ok(())
+}
+
+// Check application: verifies free balance for a given account.
+pub(crate) fn ensure_can_make_stake<T: Trait<I>, I: Instance>(
+    account: &T::AccountId,
+    stake: &Option<BalanceOfCurrency<T>>,
+) -> DispatchResult {
+    let stake_balance = stake.unwrap_or_default();
+
+    if stake_balance > (Zero::zero()) {
+        let free_balance = T::Currency::free_balance(account);
+
+        if free_balance < stake_balance {
+            return Err(Error::<T, I>::InsufficientBalanceToCoverStake.into());
+        } else {
+            let new_balance = free_balance - stake_balance;
+
+            return T::Currency::ensure_can_withdraw(
+                account,
+                stake_balance,
+                WithdrawReasons::all(),
+                new_balance,
+            );
+        }
+    }
+
+    Ok(())
+}
+
+// Check application: verifies that proposed stake is enough for the opening.
+pub(crate) fn ensure_application_stake_match_opening<T: Trait<I>, I: Instance>(
+    opening: &JobOpening<T::BlockNumber, BalanceOfCurrency<T>>,
+    stake: &Option<BalanceOfCurrency<T>>,
+) -> DispatchResult {
+    let opening_stake_balance = opening
+        .stake_policy
+        .clone()
+        .unwrap_or_default()
+        .stake_amount;
+    let application_stake_balance = stake.unwrap_or_default();
+
+    if application_stake_balance < opening_stake_balance {
+        return Err(Error::<T, I>::ApplicationStakeDoesntMatchOpening.into());
     }
 
     Ok(())

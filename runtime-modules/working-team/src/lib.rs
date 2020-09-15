@@ -34,7 +34,7 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use system::ensure_signed;
 
 pub use errors::Error;
-use types::{ApplicationInfo, MemberId, TeamWorker, TeamWorkerId};
+use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId};
 pub use types::{JobApplication, JobOpening, JobOpeningType, StakePolicy};
 
 pub trait StakingHandler {}
@@ -135,7 +135,7 @@ decl_storage! {
 
         /// Maps identifier to job opening.
         pub OpeningById get(fn opening_by_id): map hasher(blake2_128_concat)
-            T::OpeningId => JobOpening<T::BlockNumber, T::Balance>;
+            T::OpeningId => JobOpening<T::BlockNumber, BalanceOfCurrency<T>>;
 
         /// Count of active workers.
         pub ActiveWorkerCount get(fn active_worker_count): u32;
@@ -180,7 +180,7 @@ decl_module! {
             origin,
             description: Vec<u8>,
             opening_type: JobOpeningType,
-            stake_policy: Option<StakePolicy<T::BlockNumber, T::Balance>>
+            stake_policy: Option<StakePolicy<T::BlockNumber, BalanceOfCurrency<T>>>
         ){
             checks::ensure_origin_for_opening_type::<T, I>(origin, opening_type)?;
 
@@ -217,7 +217,8 @@ decl_module! {
             member_id: T::MemberId,
             opening_id: T::OpeningId,
             role_account_id: T::AccountId,
-            description: Vec<u8>
+            description: Vec<u8>,
+            stake: Option<BalanceOfCurrency<T>>,
         ) {
             // Ensure origin which will server as the source account for staked funds is signed
             let source_account = ensure_signed(origin)?;
@@ -230,7 +231,13 @@ decl_module! {
             );
 
             // Ensure job opening exists.
-            checks::ensure_opening_exists::<T, I>(&opening_id)?;
+            let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
+
+            // Ensure that there is sufficient balance to cover the proposed stake.
+            checks::ensure_can_make_stake::<T, I>(&source_account, &stake)?;
+
+            // Ensure that proposed stake is enough for the opening.
+            checks::ensure_application_stake_match_opening::<T, I>(&opening, &stake)?;
 
             //
             // == MUTATION SAFE ==
@@ -404,7 +411,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Processes successful application during the fill_opening().
     fn fulfill_successful_applications(
-        opening: &JobOpening<T::BlockNumber, T::Balance>,
+        opening: &JobOpening<T::BlockNumber, BalanceOfCurrency<T>>,
         successful_applications_info: Vec<ApplicationInfo<T, I>>,
     ) -> BTreeMap<T::ApplicationId, TeamWorkerId<T>> {
         let mut application_id_to_worker_id = BTreeMap::new();

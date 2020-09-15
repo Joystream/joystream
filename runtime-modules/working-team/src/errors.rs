@@ -47,5 +47,11 @@ decl_error! {
 
         /// Cannot stake zero.
         CannotStakeZero,
+
+        /// Insufficient balance to cover stake.
+        InsufficientBalanceToCoverStake,
+
+        /// Application stake is less than required opening stake.
+        ApplicationStakeDoesntMatchOpening,
     }
 }

@@ -5,7 +5,9 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use system::{EventRecord, Phase, RawOrigin};
 
 use super::hiring_workflow::HiringWorkflow;
-use super::mock::{Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance};
+use super::mock::{
+    Balances, Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance,
+};
 use crate::{JobApplication, JobOpening, JobOpeningType, RawEvent, StakePolicy, TeamWorker};
 
 pub struct EventFixture;
@@ -116,9 +118,9 @@ impl AddOpeningFixture {
         }
     }
 
-    pub fn with_staking_policy(self, staking_policy: Option<StakePolicy<u64, u64>>) -> Self {
+    pub fn with_staking_policy(self, staking_policy: StakePolicy<u64, u64>) -> Self {
         Self {
-            staking_policy,
+            staking_policy: Some(staking_policy),
             ..self
         }
     }
@@ -130,6 +132,7 @@ pub struct ApplyOnOpeningFixture {
     opening_id: u64,
     role_account_id: u64,
     description: Vec<u8>,
+    stake: Option<u64>,
 }
 
 impl ApplyOnOpeningFixture {
@@ -148,6 +151,13 @@ impl ApplyOnOpeningFixture {
         }
     }
 
+    pub fn with_stake(self, stake: u64) -> Self {
+        Self {
+            stake: Some(stake),
+            ..self
+        }
+    }
+
     pub fn default_for_opening_id(opening_id: u64) -> Self {
         Self {
             origin: RawOrigin::Signed(1),
@@ -155,6 +165,7 @@ impl ApplyOnOpeningFixture {
             opening_id,
             role_account_id: 1,
             description: b"human_text".to_vec(),
+            stake: None,
         }
     }
 
@@ -166,6 +177,7 @@ impl ApplyOnOpeningFixture {
             self.opening_id,
             self.role_account_id,
             self.description.clone(),
+            self.stake,
         )?;
 
         Ok(saved_application_next_id)
@@ -449,4 +461,9 @@ impl TerminateWorkerRoleFixture {
             }
         }
     }
+}
+
+pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
+    let _ =
+        <Balances as frame_support::traits::Currency<u64>>::deposit_creating(&account_id, balance);
 }
