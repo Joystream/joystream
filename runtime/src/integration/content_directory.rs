@@ -1,7 +1,4 @@
-use crate::{AccountId, MemberId, Runtime};
-
-// The content directory working group instance alias.
-pub type ContentDirectoryWorkingGroupInstance = working_group::Instance2;
+use crate::{AccountId, ContentDirectoryWorkingGroupInstance, MemberId, Runtime};
 
 // Alias for content directory working group
 pub(crate) type ContentDirectoryWorkingGroup<T> =

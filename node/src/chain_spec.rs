@@ -31,11 +31,11 @@ use sp_runtime::Perbill;
 use node_runtime::{
     versioned_store::InputValidationLengthConstraint as VsInputValidation,
     AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentDirectoryConfig,
-    ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig,
-    DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters,
-    GrandpaConfig, ImOnlineConfig, MembersConfig, ProposalsCodexConfig, SessionConfig, SessionKeys,
-    Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
-    VersionedStoreConfig, DAYS, WASM_BINARY,
+    ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig, CouncilConfig,
+    CouncilElectionConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
+    ElectionParameters, GrandpaConfig, ImOnlineConfig, MembersConfig, ProposalsCodexConfig,
+    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig,
+    SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 
 pub use node_runtime::{AccountId, GenesisConfig};
@@ -287,6 +287,13 @@ pub fn testnet_genesis(
             first_relationship_id: 1,
         }),
         working_group_Instance2: Some(StorageWorkingGroupConfig {
+            phantom: Default::default(),
+            storage_working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+        }),
+        working_group_Instance3: Some(ContentDirectoryWorkingGroupConfig {
             phantom: Default::default(),
             storage_working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
