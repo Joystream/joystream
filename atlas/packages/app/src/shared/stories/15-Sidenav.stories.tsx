@@ -1,7 +1,6 @@
 import React from 'react'
 import styled from '@emotion/styled'
-import { NavItem, Sidenav, SIDENAV_WIDTH } from '../components'
-import { BinocularIcon, BrowseIcon, HomeIcon } from '../icons'
+import { NavItem, Sidenav, SIDENAV_WIDTH, Icon } from '../components'
 
 export default {
   title: 'Sidenav',
@@ -11,11 +10,11 @@ export default {
 const NAV_ITEMS: NavItem[] = [
   {
     name: 'Home',
-    icon: <HomeIcon />,
+    icon: <Icon name="home" />,
   },
   {
     name: 'Discover',
-    icon: <BinocularIcon />,
+    icon: <Icon name="binocular" />,
     subitems: [
       {
         name: 'Channels 1',
@@ -36,7 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   },
   {
     name: 'Browse',
-    icon: <BrowseIcon />,
+    icon: <Icon icon="browse" />,
     subitems: [
       {
         name: 'Channels',

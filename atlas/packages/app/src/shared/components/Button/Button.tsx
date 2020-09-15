@@ -1,9 +1,10 @@
 import React from 'react'
 import { SerializedStyles } from '@emotion/core'
 import { ButtonStyleProps, StyledButton, StyledIcon } from './Button.style'
+import type { IconType } from '../Icon'
 
 export type ButtonProps = {
-  icon: boolean
+  icon: IconType
   disabled: boolean
   containerCss: SerializedStyles
   className: string
@@ -40,7 +41,7 @@ const Button: React.FC<Partial<ButtonProps>> = ({
       full={full}
       size={size}
     >
-      {icon && <StyledIcon />}
+      {icon && <StyledIcon name={icon} />}
       {children && <span>{children}</span>}
     </StyledButton>
   )

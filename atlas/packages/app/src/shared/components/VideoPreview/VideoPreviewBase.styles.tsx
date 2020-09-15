@@ -1,6 +1,6 @@
 import styled from '@emotion/styled'
 import { colors, spacing } from '@/shared/theme'
-import { CoverHoverOverlay, CoverPlayIcon, ProgressOverlay } from './VideoPreview.styles'
+import { CoverHoverOverlay, CoverIcon, ProgressOverlay } from './VideoPreview.styles'
 
 export const HOVER_BORDER_SIZE = '2px'
 
@@ -39,7 +39,7 @@ export const Container = styled.article<ContainerProps>`
 						opacity: 1;
 					}
 					
-					${CoverPlayIcon} {
+					${CoverIcon} {
 						transform: translateY(0);
 					}
 

@@ -1,7 +1,7 @@
 import React from 'react'
 import { SerializedStyles } from '@emotion/core'
 import { NavButtonStyleProps, useCSS } from './NavButton.style'
-import { ChevronLeftIcon, ChevronRightIcon } from '../../icons'
+import Icon from '../Icon'
 
 type NavButtonProps = {
   direction: 'right' | 'left'
@@ -13,7 +13,7 @@ export default function NavButton({ direction = 'right', onClick, outerCss, ...s
   const styles = useCSS(styleProps)
   return (
     <button css={[styles, outerCss]} onClick={onClick}>
-      {direction === 'right' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+      <Icon name={direction === 'right' ? 'chevron-right' : 'chevron-left'} />
     </button>
   )
 }

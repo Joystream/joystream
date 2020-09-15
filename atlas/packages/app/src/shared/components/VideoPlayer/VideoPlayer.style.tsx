@@ -1,6 +1,7 @@
+import React from 'react'
 import styled from '@emotion/styled'
 import { colors, spacing, typography } from '../../theme'
-import { PlayIcon } from '../../icons'
+import Icon from '../Icon'
 
 export const Container = styled.div`
   position: relative;
@@ -134,7 +135,9 @@ export const PlayOverlay = styled.div`
   cursor: pointer;
 `
 
-export const StyledPlayIcon = styled(PlayIcon)`
+const StyledIcon = styled(Icon)`
   height: 72px;
   width: 72px;
+  color: ${colors.white};
 `
+export const StyledPlayIcon = ({ ...svgProps }) => <StyledIcon name="play" {...svgProps} />

@@ -1,7 +1,7 @@
 import React from 'react'
 import { css } from '@emotion/core'
 import styled from '@emotion/styled'
-import { BlockIcon } from '@/shared/icons'
+import Icon from '../Icon'
 import { typography, colors } from '../../theme'
 
 export type ButtonStyleProps = {
@@ -120,7 +120,7 @@ const disabled = ({ disabled }: ButtonStyleProps) =>
       `
     : null
 
-export const StyledIcon = styled(BlockIcon)`
+export const StyledIcon = styled(Icon)`
   flex-shrink: 0;
   & > * {
     stroke: currentColor;
