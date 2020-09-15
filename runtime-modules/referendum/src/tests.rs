@@ -423,7 +423,7 @@ fn finish_revealing_period() {
 
         Mocks::check_revealing_finished(
             vec![OptionResult {
-                option_index: option_to_vote_for,
+                option_id: option_to_vote_for,
                 vote_power: stake,
             }],
             MockUtils::transform_results(vec![1 * stake, 0, 0]),
@@ -493,7 +493,7 @@ fn finish_revealing_period_vote_power() {
         // option 2 should win because prominent user has more powerfull vote with the same stake
         Mocks::check_revealing_finished(
             vec![OptionResult {
-                option_index: option_to_vote_for2,
+                option_id: option_to_vote_for2,
                 vote_power: stake_smaller * POWER_VOTE_STRENGTH,
             }],
             MockUtils::transform_results(vec![
@@ -606,11 +606,11 @@ fn winners_multiple_winners() {
         Mocks::check_revealing_finished(
             vec![
                 OptionResult {
-                    option_index: option_to_vote_for1,
+                    option_id: option_to_vote_for1,
                     vote_power: 2 * stake,
                 },
                 OptionResult {
-                    option_index: option_to_vote_for2,
+                    option_id: option_to_vote_for2,
                     vote_power: stake,
                 },
             ],
@@ -679,7 +679,7 @@ fn winners_multiple_winners_extra() {
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
         let expected_winners = vec![OptionResult {
-            option_index: option_to_vote_for1,
+            option_id: option_to_vote_for1,
             vote_power: stake,
         }];
         assert!((expected_winners.len() as u64) == winning_target_count); // sanity check - check that there will be expected number of winners
@@ -730,7 +730,7 @@ fn winners_multiple_not_enough() {
         MockUtils::increase_block_number(reveal_stage_duration + 1);
 
         let expected_winners = vec![OptionResult {
-            option_index: option_to_vote_for,
+            option_id: option_to_vote_for,
             vote_power: stake,
         }];
         assert!((expected_winners.len() as u64) < winning_target_count); // sanity check - check that there will be less winners than expected
@@ -781,7 +781,7 @@ fn referendum_release_stake() {
 
         Mocks::check_revealing_finished(
             vec![OptionResult {
-                option_index: option_to_vote_for,
+                option_id: option_to_vote_for,
                 vote_power: stake,
             }],
             MockUtils::transform_results(vec![stake, 0, 0]),
