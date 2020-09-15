@@ -21,7 +21,6 @@ governance = { package = 'pallet-governance', default-features = false, path = '
 hiring = { package = 'pallet-hiring', default-features = false, path = '../../hiring'}
 minting = { package = 'pallet-token-mint', default-features = false, path = '../../token-minting'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../../working-group'}
-content-working-group = { package = 'pallet-content-working-group', default-features = false, path = '../../content-working-group'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
 proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../engine'}
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../discussion'}
@@ -53,7 +52,6 @@ std = [
     'governance/std',
     'hiring/std',
     'minting/std',
-    'content-working-group/std',
     'working-group/std',
     'common/std',
     'proposals-engine/std',

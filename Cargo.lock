@@ -3501,7 +3501,6 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-common",
- "pallet-content-working-group",
  "pallet-governance",
  "pallet-hiring",
  "pallet-membership",
