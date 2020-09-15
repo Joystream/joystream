@@ -17,7 +17,6 @@ use frame_support::{
 };
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
-use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use system::ensure_signed;
 
@@ -57,13 +56,11 @@ pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
     pub started: BlockNumber,      // block in which referendum started
     pub winning_target_count: u64, // target number of winners
     pub intermediate_winners: Vec<OptionResult<VotePower>>, // intermediate winning options
-    //intermediate_results: HashMap<u64, VotePower>, // votes that options have recieved at a given time
-    pub intermediate_results: BTreeMap<u64, VotePower>, // votes that options have recieved at a given time
 }
 
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
 pub struct OptionResult<VotePower> {
-    pub option_index: u64,
+    pub option_id: u64,
     pub vote_power: VotePower,
 }
 
@@ -88,10 +85,6 @@ pub type EzCastVote<T, I> = CastVote<<T as system::Trait>::Hash, Balance<T, I>>;
 pub type EzReferendumStageVoting<T> = ReferendumStageVoting<<T as system::Trait>::BlockNumber>;
 pub type EzReferendumStageRevealing<T, I> =
     ReferendumStageRevealing<<T as system::Trait>::BlockNumber, <T as Trait<I>>::VotePower>;
-type ConcludeResult<T, I> = (
-    Vec<OptionResult<<T as Trait<I>>::VotePower>>,
-    BTreeMap<u64, <T as Trait<I>>::VotePower>,
-);
 
 // types aliases for check functions return values
 pub type CanRevealResult<T, I> = (
@@ -116,7 +109,7 @@ pub trait ReferendumManager<T: Trait<I>, I: Instance> {
         account_id: &<T as system::Trait>::AccountId,
         salt: &[u8],
         cycle_id: &u64,
-        vote_option_index: &u64,
+        vote_option_id: &u64,
     ) -> T::Hash;
 }
 
@@ -165,13 +158,16 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
     fn can_unstake(vote: &CastVote<Self::Hash, Balance<Self, I>>) -> bool;
 
     /// Gives runtime an ability to react on referendum result.
-    fn process_results(
-        winners: &[OptionResult<Self::VotePower>],
-        all_options_results: &BTreeMap<u64, Self::VotePower>, // list of votes each option recieved
-    );
+    fn process_results(winners: &[OptionResult<Self::VotePower>]);
 
     /// Check if an option a user is voting for actually exists.
-    fn is_valid_option_id(option_index: &u64) -> bool;
+    fn is_valid_option_id(option_id: &u64) -> bool;
+
+    // If the id is a valid alternative, the current total voting mass backing it is returned, otherwise nothing.
+    fn get_option_power(option_id: &u64) -> Self::VotePower;
+
+    // Increases voting mass behind given alternative by given amount, if present and return true, otherwise return false.
+    fn increase_option_power(option_id: &u64, amount: &Self::VotePower);
 }
 
 decl_storage! {
@@ -212,7 +208,7 @@ decl_event! {
         RevealingStageStarted(),
 
         /// Referendum ended and winning option was selected
-        ReferendumFinished(Vec<OptionResult<VotePower>>, BTreeMap<u64, VotePower>),
+        ReferendumFinished(Vec<OptionResult<VotePower>>),
 
         /// User cast a vote in referendum
         VoteCast(AccountId, Hash, Balance),
@@ -318,18 +314,18 @@ decl_module! {
 
         /// Reveal a sealed vote in the referendum.
         #[weight = 10_000_000]
-        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_index: u64) -> Result<(), Error<T, I>> {
-            let (stage_data, account_id, cast_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_index)?;
+        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_id: u64) -> Result<(), Error<T, I>> {
+            let (stage_data, account_id, cast_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // reveal the vote - it can return error when stake fails to unlock
-            Mutations::<T, I>::reveal_vote(stage_data, &account_id, &vote_option_index, cast_vote)?;
+            Mutations::<T, I>::reveal_vote(stage_data, &account_id, &vote_option_id, cast_vote)?;
 
             // emit event
-            Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_index));
+            Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_id));
 
             Ok(())
         }
@@ -387,13 +383,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     /// Conclude the referendum.
     fn end_reveal_period(stage_data: EzReferendumStageRevealing<T, I>) {
         // conclude referendum
-        let (winners, all_options_results) = Mutations::<T, I>::conclude_referendum(stage_data);
+        let winners = Mutations::<T, I>::conclude_referendum(stage_data);
 
         // let runtime know about referendum results
-        T::process_results(&winners, &all_options_results);
+        T::process_results(&winners);
 
         // emit event
-        Self::deposit_event(RawEvent::ReferendumFinished(winners, all_options_results));
+        Self::deposit_event(RawEvent::ReferendumFinished(winners));
     }
 }
 
@@ -428,14 +424,14 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
         account_id: &<T as system::Trait>::AccountId,
         salt: &[u8],
         cycle_id: &u64,
-        vote_option_index: &u64,
+        vote_option_id: &u64,
     ) -> T::Hash {
         let mut payload = account_id.encode();
-        let mut mut_option_index = vote_option_index.encode();
+        let mut mut_option_id = vote_option_id.encode();
         let mut mut_salt = salt.encode(); //.to_vec();
         let mut mut_cycle_id = cycle_id.encode(); //.to_vec();
 
-        payload.append(&mut mut_option_index);
+        payload.append(&mut mut_option_id);
         payload.append(&mut mut_salt);
         payload.append(&mut mut_cycle_id);
 
@@ -471,7 +467,6 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             started: <system::Module<T>>::block_number(),
             winning_target_count: old_stage.winning_target_count,
             intermediate_winners: vec![],
-            intermediate_results: BTreeMap::new(),
         }));
     }
 
@@ -479,15 +474,12 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     //fn conclude_referendum(revealing_stage: EzReferendumStageRevealing<T, I>) -> Vec<OptionResult<T::VotePower>> {
     fn conclude_referendum(
         revealing_stage: EzReferendumStageRevealing<T, I>,
-    ) -> ConcludeResult<T, I> {
+    ) -> Vec<OptionResult<<T as Trait<I>>::VotePower>> {
         // reset referendum state
         Self::reset_referendum();
 
         // return winning option
-        (
-            revealing_stage.intermediate_winners,
-            revealing_stage.intermediate_results,
-        )
+        revealing_stage.intermediate_winners
     }
 
     /// Change the referendum stage from revealing to the inactive stage.
@@ -528,7 +520,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     fn reveal_vote(
         stage_data: EzReferendumStageRevealing<T, I>,
         account_id: &<T as system::Trait>::AccountId,
-        option_index: &u64,
+        option_id: &u64,
         cast_vote: EzCastVote<T, I>,
     ) -> Result<(), Error<T, I>> {
         /// Moves winner to new position in winners list. Expects `target_index` to be always smaller or equal to `current_index`.
@@ -586,7 +578,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             // check if option is already somewhere in list
             let mut already_existing_index: Option<usize> = None;
             for (index, value) in current_winners.iter().enumerate() {
-                if option_result.option_index == value.option_index {
+                if option_result.option_id == value.option_id {
                     already_existing_index = Some(index);
                     break;
                 }
@@ -623,13 +615,10 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
         // prepare new values
         let vote_power = T::caclulate_vote_power(&account_id, &cast_vote.stake);
-        let new_option_total = vote_power
-            + match stage_data.intermediate_results.get(option_index) {
-                Some(value) => *value,
-                None => 0.into(),
-            };
+        let old_option_total = T::get_option_power(option_id);
+        let new_option_total = old_option_total + vote_power;
         let option_result = OptionResult {
-            option_index: *option_index,
+            option_id: *option_id,
             vote_power: new_option_total,
         };
         let new_winners = match try_winner_insert::<T, I>(
@@ -640,20 +629,18 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             Some(tmp_winners) => tmp_winners,
             None => stage_data.intermediate_winners.clone(),
         };
-
-        let mut intermediate_results = stage_data.intermediate_results;
-        intermediate_results.insert(*option_index, new_option_total);
         let new_stage_data = ReferendumStageRevealing {
             intermediate_winners: new_winners,
-            intermediate_results,
             ..stage_data
         };
+
+        T::increase_option_power(option_id, &vote_power);
 
         // store revealed vote
         Stage::<T, I>::mutate(|stage| *stage = ReferendumStage::Revealing(new_stage_data));
 
         // remove user commitment to prevent repeated revealing
-        Votes::<T, I>::mutate(account_id, |vote| (*vote).vote_for = Some(*option_index));
+        Votes::<T, I>::mutate(account_id, |vote| (*vote).vote_for = Some(*option_id));
 
         Ok(())
     }
@@ -725,7 +712,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
     fn can_reveal_vote<R: ReferendumManager<T, I>>(
         origin: T::Origin,
         salt: &[u8],
-        vote_option_index: &u64,
+        vote_option_id: &u64,
     ) -> Result<CanRevealResult<T, I>, Error<T, I>> {
         let cycle_id = CurrentCycleId::<I>::get();
 
@@ -742,7 +729,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         let cast_vote = Self::ensure_vote_exists(&account_id)?;
 
-        if !T::is_valid_option_id(vote_option_index) {
+        if !T::is_valid_option_id(vote_option_id) {
             return Err(Error::InvalidVote);
         }
 
@@ -757,7 +744,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ensure commitment corresponds to salt and vote option
-        let commitment = R::calculate_commitment(&account_id, salt, &cycle_id, vote_option_index);
+        let commitment = R::calculate_commitment(&account_id, salt, &cycle_id, vote_option_id);
         if commitment != cast_vote.commitment {
             return Err(Error::InvalidReveal);
         }

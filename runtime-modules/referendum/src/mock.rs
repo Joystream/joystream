@@ -56,6 +56,9 @@ parameter_types! {
 thread_local! {
     pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
     pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, )); // global switch used to test is_valid_option_id()
+
+    // complete intermediate results
+    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <Runtime as Trait<Instance0>>::VotePower>> = RefCell::new(BTreeMap::<u64, <Runtime as Trait<Instance0>>::VotePower>::new());
 }
 
 impl Trait<Instance0> for Runtime {
@@ -97,10 +100,7 @@ impl Trait<Instance0> for Runtime {
         true
     }
 
-    fn process_results(
-        _winners: &[OptionResult<Self::VotePower>],
-        _all_options_results: &BTreeMap<u64, Self::VotePower>,
-    ) {
+    fn process_results(_winners: &[OptionResult<Self::VotePower>]) {
         // not used right now
     }
 
@@ -110,6 +110,21 @@ impl Trait<Instance0> for Runtime {
         }
 
         true
+    }
+
+    fn get_option_power(option_id: &u64) -> Self::VotePower {
+        INTERMEDIATE_RESULTS.with(|value| match value.borrow().get(option_id) {
+            Some(vote_power) => *vote_power,
+            None => 0,
+        })
+    }
+
+    fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
+        INTERMEDIATE_RESULTS.with(|value| {
+            let current = Self::get_option_power(option_id);
+
+            value.borrow_mut().insert(*option_id, amount + current);
+        });
     }
 }
 
@@ -437,7 +452,6 @@ impl InstanceMocks<Runtime, Instance0> {
                 started: block_number - 1,
                 winning_target_count,
                 intermediate_winners: vec![],
-                intermediate_results: BTreeMap::new(),
             }),
         );
 
@@ -460,11 +474,10 @@ impl InstanceMocks<Runtime, Instance0> {
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::event_mod_Instance0(RawEvent::ReferendumFinished(
-                expected_winners,
-                expected_referendum_result,
-            ))
+            TestEvent::event_mod_Instance0(RawEvent::ReferendumFinished(expected_winners,))
         );
+
+        INTERMEDIATE_RESULTS.with(|value| assert_eq!(*value.borrow(), expected_referendum_result,));
     }
 
     pub fn vote(
