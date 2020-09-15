@@ -21,8 +21,6 @@
 const uuid = require('uuid')
 const streamBuf = require('stream-buffers')
 
-// const debug = require('debug')('joystream:util:ranges')
-
 /*
  * Range parsing
  */
@@ -60,7 +58,6 @@ function parseRange(range) {
  */
 function parse(rangeStr) {
   const res = {}
-  // debug('Parse range header value:', rangeStr)
   const matches = rangeStr.match(PARSE_RANGE_HEADERS_REGEX)
   if (!matches) {
     throw new Error(`Not a valid range header: ${rangeStr}`)
@@ -78,15 +75,12 @@ function parse(rangeStr) {
 
   // Merge ranges into result.
   ranges.forEach((newRange) => {
-    // debug('Found range:', newRange)
-
     let isMerged = false
     for (const i in res.ranges) {
       const oldRange = res.ranges[i]
 
       // Skip if the new range is fully separate from the old range.
       if (oldRange[1] + 1 < newRange[0] || newRange[1] + 1 < oldRange[0]) {
-        // debug('Range does not overlap with', oldRange)
         continue
       }
 
@@ -96,11 +90,9 @@ function parse(rangeStr) {
       const merged = [Math.min(oldRange[0], newRange[0]), Math.max(oldRange[1], newRange[1])]
       res.ranges[i] = merged
       isMerged = true
-      // debug('Merged', newRange, 'into', oldRange, 'as', merged)
     }
 
     if (!isMerged) {
-      // debug('Non-overlapping range!')
       res.ranges.push(newRange)
     }
   })
@@ -114,7 +106,6 @@ function parse(rangeStr) {
     return first[0] < second[0] ? -1 : 1
   })
 
-  // debug('Result of parse is', res)
   return res
 }
 
@@ -163,11 +154,6 @@ class RangeSender {
     this.handlers = {}
     this.opened = false
 
-    // debug('RangeSender:', this)
-    if (opts.ranges) {
-      // debug('Parsed ranges:', opts.ranges.ranges)
-    }
-
     // Parameters
     this.response = response
     this.stream = stream
@@ -177,7 +163,6 @@ class RangeSender {
 
   onError(err) {
     // Assume hiding the actual error is best, and default to 404.
-    // debug('Error:', err)
     if (!this.response.headersSent) {
       this.response.status(err.code || 404).send({
         message: err.message || `File not found: ${this.name}`,
@@ -189,7 +174,6 @@ class RangeSender {
   }
 
   onEnd() {
-    // debug('End of stream.')
     this.response.end()
     if (this.endCallback) {
       this.endCallback()
@@ -199,7 +183,6 @@ class RangeSender {
   // **** No ranges
   onOpenNoRange() {
     // File got opened, so we can set headers/status
-    // debug('Open succeeded:', this.name, this.type)
     this.opened = true
 
     this.response.status(200)
@@ -232,7 +215,6 @@ class RangeSender {
     // Next range
     this.rangeIndex += 1
     if (this.rangeIndex >= this.ranges.ranges.length) {
-      // debug('Cannot advance range index; we are done.')
       return undefined
     }
 
@@ -280,7 +262,6 @@ class RangeSender {
 
   nextRange() {
     if (this.ranges.ranges.length === 1) {
-      // debug('Cannot start new range; only one requested.')
       this.stream.off('data', this.handlers.data)
       return false
     }
@@ -298,20 +279,17 @@ class RangeSender {
       }
       onDataRanges.write('\r\n')
       this.response.write(onDataRanges.getContents())
-      // debug('New range started.')
       return true
     }
 
     // No headers means we're finishing the last range.
     this.response.write(`\r\n--${this.rangeBoundary}--\r\n`)
-    // debug('End of ranges sent.')
     this.stream.off('data', this.handlers.data)
     return false
   }
 
   onOpenRanges() {
     // File got opened, so we can set headers/status
-    // debug('Open succeeded:', this.name, this.type)
     this.opened = true
 
     this.response.header('Accept-Ranges', 'bytes')
@@ -351,34 +329,29 @@ class RangeSender {
     // The simplest optimization would be at ever range start to seek() to the
     // start.
     const chunkRange = [this.readOffset, this.readOffset + chunk.length - 1]
-    // debug('= Got chunk with byte range', chunkRange)
     while (true) {
       let reqRange = this.ranges.ranges[this.rangeIndex]
       if (!reqRange) {
         break
       }
-      // debug('Current requested range is', reqRange)
+
       if (!reqRange[1]) {
         reqRange = [reqRange[0], Number.MAX_SAFE_INTEGER]
-        // debug('Treating as', reqRange)
       }
 
       // No overlap in the chunk and requested range; don't write.
       if (chunkRange[1] < reqRange[0] || chunkRange[0] > reqRange[1]) {
-        // debug('Ignoring chunk; it is out of range.')
         break
       }
 
       // Since there is overlap, find the segment that's entirely within the
       // chunk.
       const segment = [Math.max(chunkRange[0], reqRange[0]), Math.min(chunkRange[1], reqRange[1])]
-      // debug('Segment to send within chunk is', segment)
 
       // Normalize the segment to a chunk offset
       const start = segment[0] - this.readOffset
       const end = segment[1] - this.readOffset
       const len = end - start + 1
-      // debug('Offsets into buffer are', [start, end], 'with length', len)
 
       // Write the slice that we want to write. We first create a buffer from the
       // chunk. Then we slice a new buffer from the same underlying ArrayBuffer,
@@ -389,12 +362,10 @@ class RangeSender {
 
       // If the requested range is finished, we should start the next one.
       if (reqRange[1] > chunkRange[1]) {
-        // debug('Chunk is finished, but the requested range is missing bytes.')
         break
       }
 
       if (reqRange[1] <= chunkRange[1]) {
-        // debug('Range is finished.')
         if (!this.nextRange(segment)) {
           break
         }
@@ -428,11 +399,9 @@ class RangeSender {
     this.handlers.end = this.onEnd.bind(this)
 
     if (this.ranges) {
-      // debug('Preparing to handle ranges.')
       this.handlers.open = this.onOpenRanges.bind(this)
       this.handlers.data = this.onDataRanges.bind(this)
     } else {
-      // debug('No ranges, just send the whole file.')
       this.handlers.open = this.onOpenNoRange.bind(this)
       this.handlers.data = this.onDataNoRange.bind(this)
     }
