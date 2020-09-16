@@ -1,22 +1,18 @@
 import React from 'react';
 import * as Yup from 'yup';
 import { getFormErrorLabelsProps } from './errorHandling';
-import {
-  GenericProposalForm,
+import { GenericProposalForm,
   GenericFormValues,
-  genericFormDefaultOptions,
   genericFormDefaultValues,
   withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps
-} from './GenericProposalForm';
+  ProposalFormInnerProps } from './GenericProposalForm';
 import Validation from '../validationSchema';
 import { InputFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
 import { ProposalType } from '@polkadot/joy-utils/types/proposals';
 import { formatBalance } from '@polkadot/util';
-import './forms.css';
 
 export type FormValues = GenericFormValues & {
   capacity: string;
@@ -39,20 +35,21 @@ type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormVal
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const MintCapacityForm: React.FunctionComponent<FormInnerProps> = props => {
+const MintCapacityForm: React.FunctionComponent<FormInnerProps> = (props) => {
   const { handleChange, errors, touched, mintCapacityGroup, values, txMethod, initialData, proposalType } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
+
   return (
     <GenericProposalForm
       {...props}
       txMethod={txMethod}
       proposalType={proposalType}
-      submitParams={[props.myMemberId, values.title, values.rationale, '{STAKE}', values.capacity]}
+      submitParams={[values.capacity]}
     >
       <InputFormField
         error={errorLabelsProps.capacity}
         onChange={handleChange}
-        name="capacity"
+        name='capacity'
         placeholder={ (initialData && initialData.capacity) }
         label={`${mintCapacityGroup} Mint Capacity`}
         help={`The new mint capacity you propse for ${mintCapacityGroup}`}
@@ -69,10 +66,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.SetContentWorkingGroupMintCapacity()
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'MintCapacityForm'
 })(MintCapacityForm);
 

@@ -14,6 +14,7 @@ export function MusicTrackReaderPreview (props: MusicTrackReaderPreviewProps) {
   const { size = 200, orientation = 'vertical' } = props;
 
   const descStyle: CSSProperties = {};
+
   if (orientation === 'vertical') {
     descStyle.maxWidth = size;
   }

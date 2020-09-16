@@ -93,8 +93,8 @@ You can also run your our own joystream-node:
 
 ```sh
 git checkout master
-cargo build --release
-cargo run --release -- --pruning archive --chain testnets/rome.json
+WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release
+./target/release/joystream-node -- --pruning archive --chain testnets/rome.json
 ```
 
 Wait for the node to sync to the latest block, then change pioneer settings "remote node" option to "Local Node", or follow the link below:

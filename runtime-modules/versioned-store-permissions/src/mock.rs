@@ -3,6 +3,7 @@
 use crate::*;
 use crate::{Module, Trait};
 
+use common::constraints::InputValidationLengthConstraint;
 use frame_support::{impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -10,7 +11,6 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use versioned_store::InputValidationLengthConstraint;
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}

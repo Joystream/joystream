@@ -4,8 +4,16 @@ services:
     image: ipfs/go-ipfs:latest
     ports:
       - '127.0.0.1:5001:5001'
+      - '127.0.0.1:8080:8080'
     volumes:
       - ipfs-data:/data/ipfs
+    entrypoint: ''
+    command: |
+      /bin/sh -c "
+        set -e
+        /usr/local/bin/start_ipfs config --json Gateway.PublicGateways '{\"localhost\": null }'
+        /sbin/tini -- /usr/local/bin/start_ipfs daemon --migrate=true
+      "
   chain:
     image: joystream/node:latest
     ports:

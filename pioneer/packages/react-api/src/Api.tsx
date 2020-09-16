@@ -53,7 +53,7 @@ interface ChainData {
 
 const DEFAULT_DECIMALS = registry.createType('u32', 15);
 const DEFAULT_SS58 = registry.createType('u32', addressDefaults.prefix);
-const injectedPromise = web3Enable('polkadot-js/apps');
+const injectedPromise = web3Enable('pioneer');
 let api: ApiPromise;
 
 export { api };

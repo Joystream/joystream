@@ -88,11 +88,11 @@ pub trait Trait: system::Trait + versioned_store::Trait {
 decl_storage! {
     trait Store for Module<T: Trait> as VersionedStorePermissions {
       /// ClassPermissions of corresponding Classes in the versioned store
-      pub ClassPermissionsByClassId get(fn class_permissions_by_class_id): map hasher(blake2_128_concat)
+      pub ClassPermissionsByClassId get(fn class_permissions_by_class_id) config(): map hasher(blake2_128_concat)
         ClassId => ClassPermissionsType<T>;
 
       /// Owner of an entity in the versioned store. If it is None then it is owned by the system.
-      pub EntityMaintainerByEntityId get(fn entity_maintainer_by_entity_id): map hasher(blake2_128_concat)
+      pub EntityMaintainerByEntityId get(fn entity_maintainer_by_entity_id) config(): map hasher(blake2_128_concat)
         EntityId => Option<T::Credential>;
     }
 }

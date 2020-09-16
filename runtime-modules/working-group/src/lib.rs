@@ -1396,6 +1396,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             .collect()
     }
 
+    /// Returns all existing worker id list.
+    pub fn get_all_worker_ids() -> Vec<WorkerId<T>> {
+        <WorkerById<T, I>>::iter()
+            .map(|(worker_id, _)| worker_id)
+            .collect()
+    }
+
     fn make_stake_opt_imbalance(
         opt_balance: &Option<BalanceOf<T>>,
         source_account: &T::AccountId,

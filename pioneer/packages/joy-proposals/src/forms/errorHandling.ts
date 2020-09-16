@@ -27,6 +27,7 @@ export function getFormErrorLabelsProps<ValuesT> (
   touched: FormikTouched<ValuesT>
 ): FormErrorLabelsProps<ValuesT> {
   const errorStates: Partial<FormErrorLabelsProps<ValuesT>> = {};
+
   for (const fieldName in errors) {
     errorStates[fieldName] = getErrorLabelProps<ValuesT>(errors, touched, fieldName);
   }

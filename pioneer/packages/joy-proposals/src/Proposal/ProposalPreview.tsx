@@ -7,8 +7,6 @@ import { BlockNumber } from '@polkadot/types/interfaces';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
 
-import './Proposal.css';
-
 const ProposalIdBox = styled.div`
   position: absolute;
   top: 0;
@@ -28,17 +26,18 @@ export type ProposalPreviewProps = {
   proposal: ParsedProposal;
   bestNumber?: BlockNumber;
 };
+
 export default function ProposalPreview ({ proposal, bestNumber }: ProposalPreviewProps) {
   const extendedStatus = getExtendedStatus(proposal, bestNumber);
+
   return (
     <Card
       fluid
-      className="Proposal"
-      href={`#/proposals/${proposal.id}`}>
+      href={`#/proposals/${proposal.id.toString()}`}>
       <ProposalIdBox>{ `#${proposal.id.toString()}` }</ProposalIdBox>
       <Card.Content>
         <Card.Header>
-          <Header as="h1">{proposal.title}</Header>
+          <Header as='h1'>{proposal.title}</Header>
         </Card.Header>
         <Card.Description>
           <ProposalDesc>

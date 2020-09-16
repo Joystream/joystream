@@ -1,5 +1,5 @@
 import React from 'react';
-import '../common/index.css';
+import '../common/index.scss';
 
 import { MockMusicChannel } from './data/ChannelSamples';
 import { ViewMusicChannel } from '../channels/ViewMusicChannel';

@@ -2,22 +2,22 @@ import React from 'react';
 
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
-import { withCalls } from '@polkadot/react-api/with';
+import { withCalls } from '@polkadot/react-api/hoc';
 import { Table } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import CouncilCandidate from './CandidatePreview';
 
-import { calcBackersStake } from '@polkadot/joy-utils/index';
+import { calcBackersStake } from '@polkadot/joy-utils/functions/misc';
 import { Seat } from '@joystream/types/council';
 import translate from './translate';
-import Section from '@polkadot/joy-utils/Section';
+import Section from '@polkadot/joy-utils/react/components/Section';
+import { RouteProps } from 'react-router-dom';
 
-type Props = ApiProps &
-I18nProps & {
+type Props = RouteProps & ApiProps & I18nProps & {
   council?: Seat[];
 };
 
-type State = {};
+type State = Record<any, never>;
 
 class Council extends React.PureComponent<Props, State> {
   state: State = {};
@@ -53,9 +53,10 @@ class Council extends React.PureComponent<Props, State> {
 
   render () {
     const { council = [] } = this.props;
+
     // console.log({ council });
     return (
-      <Section title="Active council members">
+      <Section title='Active council members'>
         {!council.length ? <em>Council is not elected yet</em> : this.renderTable(council)}
       </Section>
     );

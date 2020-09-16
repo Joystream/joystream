@@ -156,8 +156,8 @@ export function unifyPropName(propName: string): string {
 }
 
 export const versionedStoreTypes: RegistryTypes = {
-  ClassId: 'u64',
-  EntityId: 'u64',
+  ClassId,
+  EntityId,
   Class,
   Entity,
   ClassSchema,

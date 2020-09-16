@@ -34,6 +34,7 @@ export abstract class StakeRequirement {
     if (this.type === StakeType.AtLeast) {
       return 'at least';
     }
+
     return null;
   }
 
