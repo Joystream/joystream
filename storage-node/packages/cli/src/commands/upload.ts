@@ -214,7 +214,7 @@ export class UploadCommand extends BaseCommand {
     const colossusEndpoint = await this.discoverStorageProviderEndpoint(dataObject.liaison.toString())
     debug(`Discovered storage node endpoint: ${colossusEndpoint}`)
 
-    const assetUrl = this.createAndLogAssetUrl(colossusEndpoint, 'upload', addContentParams.contentId)
+    const assetUrl = this.createAndLogAssetUrl(colossusEndpoint, addContentParams.contentId)
     await this.uploadFile(assetUrl)
   }
 }
