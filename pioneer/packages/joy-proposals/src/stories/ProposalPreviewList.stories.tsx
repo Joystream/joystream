@@ -1,4 +1,3 @@
-import '../index.css';
 import { ProposalPreviewList } from '../Proposal';
 import withMock from './withMock';
 

@@ -26,7 +26,7 @@ cd joystream/
 Compile the node and runtime:
 
 ```bash
-cargo build --release
+WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release
 ```
 
 This produces the binary in `./target/release/joystream-node`
@@ -34,7 +34,7 @@ This produces the binary in `./target/release/joystream-node`
 ### Running local development chain
 
 ```bash
-cargo run --release -- --dev
+./target/release/joystream-node --dev
 ```
 
 If you repeatedly need to restart a new chain,
@@ -49,7 +49,7 @@ this script will build and run a fresh new local development chain (purging exis
 Use the `--chain` argument, and specify the path to the genesis `chain.json` file for that public network. The JSON "chain spec" files for Joystream public networks can be found in [../testnets/](../testnets/).
 
 ```bash
-cargo run --release -- --chain testnets/rome.json
+./target/release/joystream-node --chain testnets/rome.json
 ```
 
 ### Tests and code quality

@@ -9,8 +9,8 @@ import { Fixture } from './interfaces/fixture'
 
 export class ElectCouncilFixture implements Fixture {
   private apiWrapper: ApiWrapper
-  private m1KeyPairs: KeyringPair[]
-  private m2KeyPairs: KeyringPair[]
+  private membersKeyPairs: KeyringPair[]
+  private councilKeyPairs: KeyringPair[]
   private k: number
   private sudo: KeyringPair
   private greaterStake: BN
@@ -18,16 +18,16 @@ export class ElectCouncilFixture implements Fixture {
 
   public constructor(
     apiWrapper: ApiWrapper,
-    m1KeyPairs: KeyringPair[],
-    m2KeyPairs: KeyringPair[],
+    membersKeyPairs: KeyringPair[],
+    councilKeyPairs: KeyringPair[],
     k: number,
     sudo: KeyringPair,
     greaterStake: BN,
     lesserStake: BN
   ) {
     this.apiWrapper = apiWrapper
-    this.m1KeyPairs = m1KeyPairs
-    this.m2KeyPairs = m2KeyPairs
+    this.membersKeyPairs = membersKeyPairs
+    this.councilKeyPairs = councilKeyPairs
     this.k = k
     this.sudo = sudo
     this.greaterStake = greaterStake
@@ -43,7 +43,7 @@ export class ElectCouncilFixture implements Fixture {
       this.greaterStake
     )
     const salt: string[] = []
-    this.m1KeyPairs.forEach(() => {
+    this.membersKeyPairs.forEach(() => {
       salt.push(''.concat(uuid().replace(/-/g, '')))
     })
     const revealVoteFee: BN = this.apiWrapper.estimateRevealVoteFee(this.sudo.address, salt[0])
@@ -51,19 +51,19 @@ export class ElectCouncilFixture implements Fixture {
     // Topping the balances
     await this.apiWrapper.transferBalanceToAccounts(
       this.sudo,
-      this.m2KeyPairs,
+      this.councilKeyPairs,
       applyForCouncilFee.add(this.greaterStake)
     )
     await this.apiWrapper.transferBalanceToAccounts(
       this.sudo,
-      this.m1KeyPairs,
+      this.membersKeyPairs,
       voteForCouncilFee.add(revealVoteFee).add(this.greaterStake)
     )
 
     // First K members stake more
     await this.apiWrapper.sudoStartAnnouncingPerion(this.sudo, now.addn(100))
-    await this.apiWrapper.batchApplyForCouncilElection(this.m2KeyPairs.slice(0, this.k), this.greaterStake)
-    this.m2KeyPairs.slice(0, this.k).forEach((keyPair) =>
+    await this.apiWrapper.batchApplyForCouncilElection(this.councilKeyPairs.slice(0, this.k), this.greaterStake)
+    this.councilKeyPairs.slice(0, this.k).forEach((keyPair) =>
       this.apiWrapper.getCouncilElectionStake(keyPair.address).then((stake) => {
         assert(
           stake.eq(this.greaterStake),
@@ -73,8 +73,8 @@ export class ElectCouncilFixture implements Fixture {
     )
 
     // Last members stake less
-    await this.apiWrapper.batchApplyForCouncilElection(this.m2KeyPairs.slice(this.k), this.lesserStake)
-    this.m2KeyPairs.slice(this.k).forEach((keyPair) =>
+    await this.apiWrapper.batchApplyForCouncilElection(this.councilKeyPairs.slice(this.k), this.lesserStake)
+    this.councilKeyPairs.slice(this.k).forEach((keyPair) =>
       this.apiWrapper.getCouncilElectionStake(keyPair.address).then((stake) => {
         assert(
           stake.eq(this.lesserStake),
@@ -86,14 +86,14 @@ export class ElectCouncilFixture implements Fixture {
     // Voting
     await this.apiWrapper.sudoStartVotingPerion(this.sudo, now.addn(100))
     await this.apiWrapper.batchVoteForCouncilMember(
-      this.m1KeyPairs.slice(0, this.k),
-      this.m2KeyPairs.slice(0, this.k),
+      this.membersKeyPairs.slice(0, this.k),
+      this.councilKeyPairs.slice(0, this.k),
       salt.slice(0, this.k),
       this.lesserStake
     )
     await this.apiWrapper.batchVoteForCouncilMember(
-      this.m1KeyPairs.slice(this.k),
-      this.m2KeyPairs.slice(this.k),
+      this.membersKeyPairs.slice(this.k),
+      this.councilKeyPairs.slice(this.k),
       salt.slice(this.k),
       this.greaterStake
     )
@@ -101,13 +101,13 @@ export class ElectCouncilFixture implements Fixture {
     // Revealing
     await this.apiWrapper.sudoStartRevealingPerion(this.sudo, now.addn(100))
     await this.apiWrapper.batchRevealVote(
-      this.m1KeyPairs.slice(0, this.k),
-      this.m2KeyPairs.slice(0, this.k),
+      this.membersKeyPairs.slice(0, this.k),
+      this.councilKeyPairs.slice(0, this.k),
       salt.slice(0, this.k)
     )
     await this.apiWrapper.batchRevealVote(
-      this.m1KeyPairs.slice(this.k),
-      this.m2KeyPairs.slice(this.k),
+      this.membersKeyPairs.slice(this.k),
+      this.councilKeyPairs.slice(this.k),
       salt.slice(this.k)
     )
     now = await this.apiWrapper.getBestBlock()
@@ -119,14 +119,14 @@ export class ElectCouncilFixture implements Fixture {
     const seats: Seat[] = await this.apiWrapper.getCouncil()
 
     // Preparing collections to increase assertion readability
-    const m2addresses: string[] = this.m2KeyPairs.map((keyPair) => keyPair.address)
-    const m1addresses: string[] = this.m1KeyPairs.map((keyPair) => keyPair.address)
+    const councilAddresses: string[] = this.councilKeyPairs.map((keyPair) => keyPair.address)
+    const membersAddresses: string[] = this.membersKeyPairs.map((keyPair) => keyPair.address)
     const members: string[] = seats.map((seat) => seat.member.toString())
     const bakers: string[] = seats.map((seat) => seat.backers.map((baker) => baker.member.toString())).flat()
 
     // Assertions
-    m2addresses.forEach((address) => assert(members.includes(address), `Account ${address} is not in the council`))
-    m1addresses.forEach((address) => assert(bakers.includes(address), `Account ${address} is not in the voters`))
+    councilAddresses.forEach((address) => assert(members.includes(address), `Account ${address} is not in the council`))
+    membersAddresses.forEach((address) => assert(bakers.includes(address), `Account ${address} is not in the voters`))
     seats.forEach((seat) =>
       assert(
         Utils.getTotalStake(seat).eq(this.greaterStake.add(this.lesserStake)),

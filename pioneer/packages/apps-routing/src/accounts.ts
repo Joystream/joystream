@@ -12,9 +12,9 @@ export default function create (t: <T = string> (key: string, text: string, opti
     display: {
       needsApi: []
     },
-    icon: 'users',
+    icon: 'key',
     name: 'accounts',
-    text: t<string>('nav.accounts', 'Accounts', { ns: 'apps-routing' }),
+    text: t<string>('nav.accounts', 'My Keys', { ns: 'apps-routing' }),
     useCounter
   };
 }

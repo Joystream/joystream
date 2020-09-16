@@ -172,7 +172,6 @@ const InnerForm = (props: FormProps) => {
           <div style={{ display: 'flex' }}>
             <TxButton
               type='submit'
-              size='large'
               label={profile ? 'Update my profile' : 'Register'}
               isDisabled={!dirty || isSubmitting}
               params={buildTxParams()}

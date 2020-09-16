@@ -4,7 +4,7 @@ import { ChannelPublicationStatusAllValues } from '@joystream/types/content-work
 
 export const ChannelPublicationStatusDropdownOptions =
   ChannelPublicationStatusAllValues
-    .map(x => ({ key: x, value: x, text: x }));
+    .map((x) => ({ key: x, value: x, text: x }));
 
 export const isVideoChannel = (channel: ChannelType) => {
   return channel.content === 'Video';

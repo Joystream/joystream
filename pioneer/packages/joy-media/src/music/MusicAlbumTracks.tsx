@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button, CheckboxProps } from 'semantic-ui-react';
-import { Pluralize } from '@polkadot/joy-utils/Pluralize';
+import { Pluralize } from '@polkadot/joy-utils/react/components';
 import { EditableMusicTrackPreviewProps, MusicTrackPreview } from './MusicTrackPreview';
 import { MusicAlbumPreviewProps, MusicAlbumPreview } from './MusicAlbumPreview';
 
@@ -21,6 +21,7 @@ export function TracksOfMyMusicAlbum (props: TracksOfMyMusicAlbumProps) {
     data: CheckboxProps
   ) => {
     const set = new Set(idxsOfSelectedTracks);
+
     data.checked
       ? set.add(trackIdx)
       : set.delete(trackIdx)

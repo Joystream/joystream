@@ -2,8 +2,8 @@ import React from 'react';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
-import TxButton from '@polkadot/joy-utils/TxButton';
-import * as JoyForms from '@polkadot/joy-utils/forms';
+import TxButton from '@polkadot/joy-utils/react/components/TxButton';
+import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { SubmittableResult } from '@polkadot/api';
 import { Button } from 'semantic-ui-react';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
@@ -76,7 +76,7 @@ const DiscussionPostFormInner = (props: InnerProps) => {
   };
 
   return (
-    <Form className="ui form JoyForm">
+    <Form className='ui form JoyForm'>
       <LabelledField name='text' {...props}>
         <Field
           component='textarea'
@@ -86,10 +86,9 @@ const DiscussionPostFormInner = (props: InnerProps) => {
           rows={5}
           placeholder='Content of the post...' />
       </LabelledField>
-      <LabelledField invisibleLabel {...props}>
+      <LabelledField invisibleLabel {...props} flex>
         <TxButton
-          type="submit"
-          size="large"
+          type='submit'
           label={isEditForm ? 'Update' : 'Add Post'}
           isDisabled={isSubmitting || !isValid}
           params={buildTxParams()}
@@ -100,20 +99,20 @@ const DiscussionPostFormInner = (props: InnerProps) => {
         />
         { isEditForm ? (
           <Button
-            type="button"
-            size="large"
+            type='button'
+            size='large'
             disabled={isSubmitting}
-            color="red"
+            color='red'
             onClick={() => onSuccess()}
-            content="Cancel"
+            content='Cancel'
           />
         ) : (
           <Button
-            type="button"
-            size="large"
+            type='button'
+            size='large'
             disabled={isSubmitting}
             onClick={() => resetForm()}
-            content="Clear"
+            content='Clear'
           />
         ) }
       </LabelledField>
@@ -123,8 +122,9 @@ const DiscussionPostFormInner = (props: InnerProps) => {
 
 const DiscussionPostFormOuter = withFormik<OuterProps, FormValues>({
   // Transform outer props into form values
-  mapPropsToValues: props => {
+  mapPropsToValues: (props) => {
     const { post } = props;
+
     return { text: post && post.postId ? post.text : '' };
   },
   validationSchema: ({ constraints: c }: OuterProps) => (Yup.object().shape({
@@ -133,7 +133,7 @@ const DiscussionPostFormOuter = withFormik<OuterProps, FormValues>({
       .required('Post content is required')
       .max(c.maxPostLength, `The content cannot be longer than ${c.maxPostLength} characters`)
   })),
-  handleSubmit: values => {
+  handleSubmit: (values) => {
     // do submitting things
   }
 })(DiscussionPostFormInner);

@@ -3,7 +3,7 @@ services:
   node_alice:
     image: joystream/node-testing
     container_name: alice
-    entrypoint: ./node --chain=chainspec.json --alice --validator --ws-external --rpc-cors=all
+    entrypoint: ./node --dev --alice --validator --unsafe-ws-external --rpc-cors=all
     ports:
       - "30333:30333"
       - "9933:9933"
@@ -15,7 +15,7 @@ services:
   node_bob:
     image: joystream/node-testing
     container_name: bob
-    entrypoint: ./node --chain=chainspec.json --bob --ws-external --rpc-cors=all
+    entrypoint: ./node --dev --bob --validator --unsafe-ws-external --rpc-cors=all
     ports:
       - "30335:30333"
       - "9935:9933"

@@ -2,13 +2,14 @@ import ExitCodes from '../ExitCodes'
 import { CLIError } from '@oclif/errors'
 import StateAwareCommandBase from './StateAwareCommandBase'
 import Api from '../Api'
-import { getTypeDef, createType, Option, Tuple, Bytes } from '@polkadot/types'
-import { Codec, TypeDef, TypeDefInfo, Constructor } from '@polkadot/types/types'
+import { getTypeDef, Option, Tuple, Bytes } from '@polkadot/types'
+import { Registry, Codec, CodecArg, TypeDef, TypeDefInfo, Constructor } from '@polkadot/types/types'
+
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
-import { SubmittableResultImpl } from '@polkadot/api/types'
+import { InterfaceTypes } from '@polkadot/types/types/registry'
 import ajv from 'ajv'
 import { ApiMethodArg, ApiMethodNamedArgs, ApiParamsOptions, ApiParamOptions } from '../Types'
 import { createParamOptions } from '../helpers/promptOptions'
@@ -30,6 +31,14 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   // Get original api for lower-level api calls
   getOriginalApi(): ApiPromise {
     return this.getApi().getOriginalApi()
+  }
+
+  getTypesRegistry(): Registry {
+    return this.getOriginalApi().registry
+  }
+
+  createType<K extends keyof InterfaceTypes>(typeName: K, value?: unknown): InterfaceTypes[K] {
+    return this.getOriginalApi().createType(typeName, value)
   }
 
   async init() {
@@ -81,6 +90,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
   isApiUriValid(uri: string) {
     try {
+      // eslint-disable-next-line no-new
       new WsProvider(uri)
     } catch (e) {
       return false
@@ -90,8 +100,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
   // This is needed to correctly handle some structs, enums etc.
   // Where the main typeDef doesn't provide enough information
-  protected getRawTypeDef(type: string) {
-    const instance = createType(type as any)
+  protected getRawTypeDef(type: keyof InterfaceTypes) {
+    const instance = this.createType(type)
     return getTypeDef(instance.toRawType())
   }
 
@@ -120,7 +130,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   async promptForSimple(typeDef: TypeDef, paramOptions?: ApiParamOptions): Promise<Codec> {
     // If no default provided - get default value resulting from providing empty string
     const defaultValueString =
-      paramOptions?.value?.default?.toString() || createType(typeDef.type as any, '').toString()
+      paramOptions?.value?.default?.toString() || this.createType(typeDef.type as any, '').toString()
     const providedValue = await this.simplePrompt({
       message: `Provide value for ${this.paramName(typeDef)}`,
       type: 'input',
@@ -129,7 +139,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       default: (defaultValueString === '0x' ? '' : defaultValueString) || undefined,
       validate: paramOptions?.validator,
     })
-    return createType(typeDef.type as any, providedValue)
+    return this.createType(typeDef.type as any, providedValue)
   }
 
   // Prompt for Option<Codec> value
@@ -149,10 +159,10 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         createParamOptions(subtype.name, defaultValue?.unwrapOr(undefined))
       )
       this.closeIndentGroup()
-      return new Option(subtype.type as any, value)
+      return this.createType(`Option<${subtype.type}>` as any, value)
     }
 
-    return new Option(subtype.type as any, null)
+    return this.createType(`Option<${subtype.type}>` as any, null)
   }
 
   // Prompt for Tuple
@@ -173,7 +183,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
     this.closeIndentGroup()
 
-    return new Tuple(subtypes.map((subtype) => subtype.type) as any, result)
+    return new Tuple(this.getTypesRegistry(), subtypes.map((subtype) => subtype.type) as any, result)
   }
 
   // Prompt for Struct
@@ -182,7 +192,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
     this.openIndentGroup()
     const structType = typeDef.type
-    const rawTypeDef = this.getRawTypeDef(structType)
+    const rawTypeDef = this.getRawTypeDef(structType as keyof InterfaceTypes)
     // We assume struct typeDef always has array of typeDefs inside ".sub"
     const structSubtypes = rawTypeDef.sub as TypeDef[]
     const structDefault = paramOptions?.value?.default as Struct | undefined
@@ -200,7 +210,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
     this.closeIndentGroup()
 
-    return createType(structType as any, structValues)
+    return this.createType(structType as any, structValues)
   }
 
   // Prompt for Vec
@@ -228,12 +238,12 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     } while (addAnother)
     this.closeIndentGroup()
 
-    return new Vec(subtype.type as any, entries)
+    return this.createType(`Vec<${subtype.type}>` as any, entries)
   }
 
   // Prompt for Enum
   async promptForEnum(typeDef: TypeDef, paramOptions?: ApiParamOptions): Promise<Enum> {
-    const enumType = typeDef.type
+    const enumType = typeDef.type as keyof InterfaceTypes
     const rawTypeDef = this.getRawTypeDef(enumType)
     // We assume enum always has array on TypeDefs inside ".sub"
     const enumSubtypes = rawTypeDef.sub as TypeDef[]
@@ -253,12 +263,12 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
 
     if (enumSubtype.type !== 'Null') {
       const subtypeOptions = createParamOptions(enumSubtype.name, defaultValue?.value)
-      return createType(enumType as any, {
+      return this.createType(enumType as any, {
         [enumSubtype.name!]: await this.promptForParam(enumSubtype.type, subtypeOptions),
       })
     }
 
-    return createType(enumType as any, enumSubtype.name)
+    return this.createType(enumType as any, enumSubtype.name)
   }
 
   // Prompt for param based on "paramType" string (ie. Option<MemeberId>)
@@ -268,7 +278,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     paramOptions?: ApiParamOptions // TODO: This is not fully implemented for all types yet
   ): Promise<ApiMethodArg> {
     const typeDef = getTypeDef(paramType)
-    const rawTypeDef = this.getRawTypeDef(paramType)
+    const rawTypeDef = this.getRawTypeDef(paramType as keyof InterfaceTypes)
 
     if (paramOptions?.forcedName) {
       typeDef.name = paramOptions.forcedName
@@ -309,18 +319,23 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     defaultValue?: Bytes,
     schemaValidator?: ajv.ValidateFunction
   ) {
-    const rawType = new jsonStruct().toRawType()
+    const JsonStructObject = jsonStruct
+    const rawType = new JsonStructObject(this.getTypesRegistry()).toRawType()
     const typeDef = getTypeDef(rawType)
 
     const defaultStruct =
-      defaultValue && new jsonStruct(JSON.parse(Buffer.from(defaultValue.toHex().replace('0x', ''), 'hex').toString()))
+      defaultValue &&
+      new JsonStructObject(
+        this.getTypesRegistry(),
+        JSON.parse(Buffer.from(defaultValue.toHex().replace('0x', ''), 'hex').toString())
+      )
 
     if (argName) {
       typeDef.name = argName
     }
 
-    let isValid = true,
-      jsonText: string
+    let isValid = true
+    let jsonText: string
     do {
       const structVal = await this.promptForStruct(typeDef, createParamOptions(typeDef.name, defaultStruct))
       jsonText = JSON.stringify(structVal.toJSON())
@@ -338,7 +353,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       }
     } while (!isValid)
 
-    return new Bytes('0x' + Buffer.from(jsonText, 'ascii').toString('hex'))
+    return this.createType('Bytes', '0x' + Buffer.from(jsonText, 'ascii').toString('hex'))
   }
 
   async promptForExtrinsicParams(
@@ -364,18 +379,18 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return values
   }
 
-  sendExtrinsic(account: KeyringPair, module: string, method: string, params: Codec[]) {
+  sendExtrinsic(account: KeyringPair, module: string, method: string, params: CodecArg[]) {
     return new Promise((resolve, reject) => {
       const extrinsicMethod = this.getOriginalApi().tx[module][method]
       let unsubscribe: () => void
       extrinsicMethod(...params)
-        .signAndSend(account, {}, (result: SubmittableResultImpl) => {
+        .signAndSend(account, {}, (result) => {
           // Implementation loosely based on /pioneer/packages/react-signer/src/Modal.tsx
           if (!result || !result.status) {
             return
           }
 
-          if (result.status.isFinalized) {
+          if (result.status.isInBlock) {
             unsubscribe()
             result.events
               .filter(({ event: { section } }): boolean => section === 'system')
@@ -401,7 +416,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     account: KeyringPair,
     module: string,
     method: string,
-    params: Codec[],
+    params: CodecArg[],
     warnOnly = false // If specified - only warning will be displayed (instead of error beeing thrown)
   ) {
     try {
@@ -449,7 +464,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       const argName = arg.name.toString()
       const argType = arg.type.toString()
       try {
-        parsedArgs.push({ name: argName, value: createType(argType as any, draftJSONObj[parseInt(index)]) })
+        parsedArgs.push({ name: argName, value: this.createType(argType as any, draftJSONObj[parseInt(index)]) })
       } catch (e) {
         throw new CLIError(`Couldn't parse ${argName} value from draft at ${draftFilePath}!`, {
           exit: ExitCodes.InvalidFile,

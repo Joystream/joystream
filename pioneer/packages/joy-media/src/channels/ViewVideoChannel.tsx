@@ -1,5 +1,5 @@
 import React from 'react';
-import Section from '@polkadot/joy-utils/Section';
+import { Section } from '@polkadot/joy-utils/react/components';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelHeader } from './ChannelHeader';
 import { VideoPreview, VideoPreviewProps } from '../video/VideoPreview';

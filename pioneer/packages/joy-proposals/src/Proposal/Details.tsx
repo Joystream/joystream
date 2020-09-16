@@ -5,7 +5,7 @@ import { metadata as proposalConsts } from '@polkadot/joy-utils/consts/proposals
 import { ExtendedProposalStatus } from './ProposalDetails';
 import styled from 'styled-components';
 
-import ProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
+import ProfilePreview from '@polkadot/joy-utils/react/components/MemberProfilePreview';
 
 const DetailsContainer = styled(Item.Group)`
   display: grid;
@@ -57,7 +57,7 @@ const Detail: React.FunctionComponent<DetailProps> = ({ name, value, children })
   <Item>
     <Item.Content>
       <Item.Extra>{ name }:</Item.Extra>
-      { value && <Header as="h4">{value}</Header> }
+      { value && <Header as='h4'>{value}</Header> }
       { children }
     </Item.Content>
   </Item>
@@ -72,9 +72,10 @@ type DetailsProps = {
 export default function Details ({ proposal, extendedStatus, proposerLink = false }: DetailsProps) {
   const { type, createdAt, createdAtBlock, proposer } = proposal;
   const { displayStatus, periodStatus, expiresIn, finalizedAtBlock, executedAtBlock, executionFailReason } = extendedStatus;
+
   return (
     <DetailsContainer>
-      <Detail name="Proposed By">
+      <Detail name='Proposed By'>
         <ProfilePreview
           avatar_uri={proposer.avatar_uri}
           root_account={proposer.root_account}
@@ -83,10 +84,10 @@ export default function Details ({ proposal, extendedStatus, proposerLink = fals
         />
         <Item.Extra>{ `${createdAt.toLocaleString()}` }</Item.Extra>
       </Detail>
-      <Detail name="Proposal type" value={type}>
-        <Item.Extra>{ proposalConsts[type].outdated && <Label size="small">Outdated proposal type</Label> }</Item.Extra>
+      <Detail name='Proposal type' value={type}>
+        <Item.Extra>{ proposalConsts[type].outdated && <Label size='small'>Outdated proposal type</Label> }</Item.Extra>
       </Detail>
-      <Detail name="Stage" value={displayStatus}>
+      <Detail name='Stage' value={displayStatus}>
         <Item.Extra>
           { createdAtBlock && <BlockInfo>Created at block <b>#{ createdAtBlock }</b></BlockInfo> }
           { finalizedAtBlock && <BlockInfo>Finalized at block <b>#{ finalizedAtBlock }</b></BlockInfo> }
@@ -98,13 +99,13 @@ export default function Details ({ proposal, extendedStatus, proposerLink = fals
           ) }
         </Item.Extra>
       </Detail>
-      { (periodStatus !== null) && <Detail name="Substage" value={periodStatus} /> }
+      { (periodStatus !== null) && <Detail name='Substage' value={periodStatus} /> }
       {expiresIn !== null && (
         <Detail
           name={ periodStatus === 'Grace period' ? 'Executes in' : 'Expires in' }
           value={`${expiresIn.toLocaleString('en-US')} blocks`} />
       ) }
-      {executionFailReason && <Detail name="Execution error" value={ executionFailReason } /> }
+      {executionFailReason && <Detail name='Execution error' value={ executionFailReason } /> }
     </DetailsContainer>
   );
 }

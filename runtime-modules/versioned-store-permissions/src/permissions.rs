@@ -4,7 +4,11 @@ use crate::constraint::*;
 use crate::credentials::*;
 use crate::DispatchResult;
 
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
+
 /// Permissions for an instance of a Class in the versioned store.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Eq, PartialEq, Clone, Debug)]
 pub struct ClassPermissions<ClassId, Credential, PropertyIndex, BlockNumber>
 where
@@ -133,6 +137,7 @@ where
     }
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Debug, Eq, PartialEq)]
 pub struct EntityPermissions<Credential>
 where

@@ -1,14 +1,14 @@
 import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
-import { ProposalId } from '@joystream/types/proposals';
+import { createType } from '@joystream/types';
 
 const mockedProposal: ParsedProposal = {
-  id: new ProposalId(100),
+  id: createType('ProposalId', 100),
   title: 'Awesome Proposal',
   description: 'Please send me some tokens for coffee',
   createdAtBlock: 36,
   type: 'Text',
-  details: ['Ciao'],
-  parameters: {
+  details: createType('ProposalDetails', { Text: 'Ciao' }),
+  parameters: createType('ProposalParameters', {
     approvalQuorumPercentage: 66,
     approvalThresholdPercentage: 80,
     gracePeriod: 0,
@@ -16,14 +16,14 @@ const mockedProposal: ParsedProposal = {
     slashingQuorumPercentage: 60,
     slashingThresholdPercentage: 80,
     votingPeriod: 7200
-  },
+  }),
   proposerId: 303,
-  status: {
+  status: createType('ProposalStatus', {
     Active: {
       stakeId: 0,
       sourceAccountId: '5C4hrfkRjSLwQSFVtCvtbV6wctV1WFnkiexUZWLAh4Bc7jib'
     }
-  },
+  }),
   proposer: {
     about: 'Bob',
     avatar_uri: 'https://react.semantic-ui.com/images/avatar/large/steve.jpg',
@@ -38,12 +38,12 @@ const mockedProposal: ParsedProposal = {
     subscription: null,
     suspended: false
   },
-  votingResults: {
+  votingResults: createType('VotingResults', {
     abstensions: 3,
     approvals: 0,
     rejections: 1,
     slashes: 0
-  },
+  }),
   createdAt: new Date('Mar 25, 2020 at 14:20'),
   cancellationFee: 5
 };
