@@ -45,17 +45,20 @@ type ProposalDiscussionPostProps = {
   post: ParsedPost;
   memberId?: MemberId;
   refreshDiscussion: () => void;
+  historical?: boolean;
 }
 
 export default function DiscussionPost ({
   post,
   memberId,
-  refreshDiscussion
+  refreshDiscussion,
+  historical
 }: ProposalDiscussionPostProps) {
   const { author, authorId, text, createdAt, editsCount } = post;
   const [editing, setEditing] = useState(false);
   const constraints = useTransport().proposals.discussionContraints();
   const canEdit = (
+    !historical &&
     memberId &&
     post.postId &&
     authorId.toNumber() === memberId.toNumber() &&

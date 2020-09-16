@@ -8,13 +8,15 @@ import { ParsedProposal,
   DiscussionContraints,
   ProposalStatusFilter,
   ProposalsBatch,
-  ParsedProposalDetails } from '../types/proposals';
+  ParsedProposalDetails,
+  RuntimeUpgradeProposalDetails,
+  HistoricalProposalData } from '../types/proposals';
 import { ParsedMember } from '../types/members';
 
 import BaseTransport from './base';
 
 import { ThreadId, PostId } from '@joystream/types/common';
-import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost, ProposalDetails } from '@joystream/types/proposals';
+import { Proposal, ProposalId, VoteKind, DiscussionThread, DiscussionPost, ProposalDetails, ProposalStatus } from '@joystream/types/proposals';
 import { MemberId } from '@joystream/types/members';
 import { u32, Bytes, Null } from '@polkadot/types/';
 import { BalanceOf } from '@polkadot/types/interfaces';
@@ -30,6 +32,8 @@ import CouncilTransport from './council';
 
 import { blake2AsHex } from '@polkadot/util-crypto';
 import { APIQueryCache } from './APIQueryCache';
+
+import HISTORICAL_PROPOSALS from './static/historical-proposals.json';
 
 type ProposalDetailsCacheEntry = {
   type: ProposalType;
@@ -143,21 +147,31 @@ export default class ProposalsTransport extends BaseTransport {
     return result.map(([proposalId]) => proposalId);
   }
 
-  async proposalsBatch (status: ProposalStatusFilter, batchNumber = 1, batchSize = 5): Promise<ProposalsBatch> {
+  private checkProposalStatusFilter (status: ProposalStatus, filter: ProposalStatusFilter) {
+    if (filter === 'All') {
+      return true;
+    }
+
+    if (filter === 'Active' && status.isOfType('Active')) {
+      return true;
+    }
+
+    if (!status.isOfType('Finalized')) {
+      return false;
+    }
+
+    return status.asType('Finalized').proposalStatus.type === filter;
+  }
+
+  async proposalsBatch (statusFilter: ProposalStatusFilter, batchNumber = 1, batchSize = 5): Promise<ProposalsBatch> {
     const ids = (status === 'Active' ? await this.activeProposalsIds() : await this.proposalsIds())
       .sort((id1, id2) => id2.cmp(id1)); // Sort by newest
     let rawProposalsWithIds = (await Promise.all(ids.map((id) => this.rawProposalById(id))))
       .map((proposal, index) => ({ id: ids[index], proposal }));
 
-    if (status !== 'All' && status !== 'Active') {
-      rawProposalsWithIds = rawProposalsWithIds.filter(({ proposal }) => {
-        if (!proposal.status.isOfType('Finalized')) {
-          return false;
-        }
-
-        return proposal.status.asType('Finalized').proposalStatus.type === status;
-      });
-    }
+    rawProposalsWithIds = rawProposalsWithIds.filter(({ proposal }) => (
+      this.checkProposalStatusFilter(proposal.status, statusFilter)
+    ));
 
     const totalBatches = Math.ceil(rawProposalsWithIds.length / batchSize);
 
@@ -282,5 +296,115 @@ export default class ProposalsTransport extends BaseTransport {
       maxPostEdits: (this.api.consts.proposalsDiscussion.maxPostEditionNumber as u32).toNumber(),
       maxPostLength: (this.api.consts.proposalsDiscussion.postLengthLimit as u32).toNumber()
     };
+  }
+
+  // Historical proposals methods
+  private parseHistoricalProposal ({ proposal }: HistoricalProposalData): ParsedProposal {
+    return {
+      ...proposal,
+      id: this.api.createType('ProposalId', proposal.id),
+      type: proposal.type as ProposalType,
+      status: this.api.createType('ProposalStatus', proposal.status),
+      createdAt: new Date(proposal.createdAt),
+      parameters: this.api.createType('ProposalParameters', proposal.parameters),
+      votingResults: this.api.createType('VotingResults', proposal.votingResults),
+      details: proposal.type === 'RuntimeUpgrade'
+        ? proposal.details as RuntimeUpgradeProposalDetails
+        : this.api.createType('ProposalDetails', {
+          [proposal.type]: proposal.details.length > 1 ? proposal.details : proposal.details[0]
+        })
+    };
+  }
+
+  historicalProposalById (id: ProposalId): Promise<ParsedProposal> {
+    return new Promise((resolve, reject) => {
+      const proposalData = HISTORICAL_PROPOSALS.find(({ proposal }) => proposal.id === id.toNumber());
+
+      if (!proposalData) {
+        reject(new Error('Historical proposal not found!'));
+      } else {
+        resolve(this.parseHistoricalProposal(proposalData));
+      }
+    });
+  }
+
+  private parseHistoricalProposalDiscussion (proposalData: HistoricalProposalData): ParsedDiscussion {
+    const { discussion } = proposalData;
+
+    return {
+      ...discussion,
+      threadId: this.api.createType('ThreadId', discussion.threadId),
+      posts: discussion.posts.map((post) => ({
+        ...post,
+        postId: this.api.createType('PostId', post.postId),
+        threadId: this.api.createType('ThreadId', post.threadId),
+        createdAt: new Date(post.createdAt),
+        updatedAt: new Date(post.updatedAt),
+        author: this.api.createType('Membership', post.author),
+        authorId: this.api.createType('MemberId', post.authorId)
+      }))
+    };
+  }
+
+  historicalProposalsBatch (statusFilter: ProposalStatusFilter, batchNumber = 1, batchSize = 5): Promise<ProposalsBatch> {
+    return new Promise((resolve, reject) => {
+      const filteredProposalsData = HISTORICAL_PROPOSALS
+        .sort((a, b) => b.proposal.id - a.proposal.id)
+        .filter(({ proposal }) => (
+          this.checkProposalStatusFilter(this.api.createType('ProposalStatus', proposal.status), statusFilter)
+        ));
+
+      const totalBatches = Math.ceil(filteredProposalsData.length / batchSize);
+      const proposalsInBatchData = filteredProposalsData.slice((batchNumber - 1) * batchSize, batchNumber * batchSize);
+      const parsedProposals: ParsedProposal[] = proposalsInBatchData
+        .map((proposalData) => this.parseHistoricalProposal(proposalData));
+
+      resolve({
+        batchNumber,
+        batchSize: parsedProposals.length,
+        totalBatches,
+        proposals: parsedProposals
+      });
+    });
+  }
+
+  historicalDiscussion (id: number|ProposalId): Promise<ParsedDiscussion | null> {
+    return new Promise((resolve, reject) => {
+      const proposalData = HISTORICAL_PROPOSALS.find(({ proposal }) => proposal.id.toString() === id.toString());
+
+      if (!proposalData) {
+        reject(new Error('Historical proposal not found!'));
+      } else {
+        resolve(this.parseHistoricalProposalDiscussion(proposalData));
+      }
+    });
+  }
+
+  private parseHistoricalVotes (proposalData: HistoricalProposalData): ProposalVotes {
+    const { votes } = proposalData;
+
+    return {
+      ...votes,
+      votes: votes.votes.map((vote) => ({
+        ...vote,
+        vote: this.api.createType('VoteKind', vote.vote),
+        member: {
+          ...vote.member,
+          memberId: this.api.createType('MemberId', vote.member.memberId)
+        }
+      }))
+    };
+  }
+
+  historicalVotes (proposalId: ProposalId): Promise<ProposalVotes> {
+    return new Promise((resolve, reject) => {
+      const proposalData = HISTORICAL_PROPOSALS.find(({ proposal }) => proposal.id.toString() === proposalId.toString());
+
+      if (!proposalData) {
+        reject(new Error('Historical proposal not found!'));
+      } else {
+        resolve(this.parseHistoricalVotes(proposalData));
+      }
+    });
   }
 }
