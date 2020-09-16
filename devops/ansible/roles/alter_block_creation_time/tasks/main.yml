@@ -1,0 +1,4 @@
+- name: alter block creation time
+  shell: ./scripts/alter-block-creation-time.sh
+  args:
+    chdir: ../../

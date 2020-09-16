@@ -4,17 +4,16 @@ import styled from 'styled-components';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
-import TxButton from '@polkadot/joy-utils/TxButton';
+import { TxButton, Section } from '@polkadot/joy-utils/react/components';
 import { SubmittableResult } from '@polkadot/api';
-import { withMulti } from '@polkadot/react-api/with';
+import { withMulti } from '@polkadot/react-api/hoc';
 
-import * as JoyForms from '@polkadot/joy-utils/forms';
-import { Text } from '@polkadot/types';
+import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { PostId, ThreadId } from '@joystream/types/common';
 import { Post } from '@joystream/types/forum';
-import { withOnlyMembers } from '@polkadot/joy-utils/MyAccount';
-import Section from '@polkadot/joy-utils/Section';
-import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
+import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
+
+import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 import { withForumCalls } from './calls';
 import { ValidationProps, withReplyValidation } from './validation';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
@@ -88,6 +87,7 @@ const InnerForm = (props: FormProps) => {
 
   const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
+
     if (txResult == null) {
       // Tx cancelled.
 
@@ -97,6 +97,7 @@ const InnerForm = (props: FormProps) => {
   const onTxSuccess: TxCallback = (_txResult: SubmittableResult) => {
     setSubmitting(false);
     resetForm();
+
     if (!isNew && onEditSuccess) {
       onEditSuccess();
     }
@@ -105,11 +106,10 @@ const InnerForm = (props: FormProps) => {
   const buildTxParams = () => {
     if (!isValid) return [];
 
-    const textParam = new Text(text);
     if (!id) {
-      return [threadId, textParam];
+      return [threadId, text];
     } else {
-      return [id, textParam];
+      return [id, text];
     }
   };
 
@@ -122,10 +122,9 @@ const InnerForm = (props: FormProps) => {
 
       <LabelledField {...props}>
         <FormActionsContainer>
-          <div>
+          <div style={{ display: 'flex' }}>
             <TxButton
               type='submit'
-              size='large'
               label={isNew
                 ? 'Post a reply'
                 : 'Update a reply'
@@ -165,7 +164,7 @@ const InnerForm = (props: FormProps) => {
 
   const sectionTitle = isNew
     ? 'New reply'
-    : `Edit my reply #${struct?.nr_in_thread}`;
+    : `Edit my reply #${struct?.nr_in_thread.toString() || ''}`;
 
   return (
     <Section className='EditEntityBox' title={sectionTitle}>
@@ -176,6 +175,7 @@ const InnerForm = (props: FormProps) => {
 
 const getQuotedPostString = (post: Post) => {
   const lines = post.current_text.split('\n');
+
   return lines.reduce((acc, line) => {
     return `${acc}> ${line}\n`;
   }, '');
@@ -184,8 +184,9 @@ const getQuotedPostString = (post: Post) => {
 const EditForm = withFormik<OuterProps, FormValues>({
 
   // Transform outer props into form values
-  mapPropsToValues: props => {
+  mapPropsToValues: (props) => {
     const { struct, quotedPost } = props;
+
     return {
       text: struct
         ? struct.current_text
@@ -197,7 +198,7 @@ const EditForm = withFormik<OuterProps, FormValues>({
 
   validationSchema: buildSchema,
 
-  handleSubmit: values => {
+  handleSubmit: (values) => {
     // do submitting things
   }
 })(InnerForm);
@@ -215,6 +216,7 @@ function FormOrLoading (props: OuterProps) {
   }
 
   const isMyStruct = address === struct.author_id.toString();
+
   if (isMyStruct) {
     return <EditForm {...props} threadId={struct.thread_id} />;
   }

@@ -3,16 +3,15 @@ import { Link } from 'react-router-dom';
 import { formatBalance } from '@polkadot/util';
 
 import { ApiPromise } from '@polkadot/api';
-import { GenericAccountId, Option, Text, Vec, u32, u128 } from '@polkadot/types';
+import { Option, Text, Vec } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
 
-import { SingleLinkedMapEntry, Controller, View } from '@polkadot/joy-utils/index';
-import { useMyAccount } from '@polkadot/joy-utils/MyAccountContext';
-import { SubmittableExtrinsic } from '@polkadot/api/promise/types';
+import { Controller } from '@polkadot/joy-utils/react/helpers';
+import { View } from '@polkadot/joy-utils/react/hocs';
+import { useMyAccount } from '@polkadot/joy-utils/react/hooks';
 import { QueueTxExtrinsicAdd } from '@polkadot/react-components/Status/types';
 
-import {
-  Accordion,
+import { Accordion,
   Button,
   Card,
   Checkbox,
@@ -26,48 +25,37 @@ import {
   Message,
   Modal,
   Table,
-  TextArea
-} from 'semantic-ui-react';
+  TextArea,
+  InputOnChangeData } from 'semantic-ui-react';
 
 import { ITransport } from '../transport';
 
-import {
-  Application,
+import { Application,
   ApplicationStage,
   ActivateOpeningAt,
-  ApplicationRationingPolicy,
-  CurrentBlock,
   Opening,
   OpeningStage,
   StakingPolicy,
   StakingAmountLimitModeKeys,
-  StakingAmountLimitMode
-} from '@joystream/types/hiring';
+  StakingAmountLimitMode } from '@joystream/types/hiring';
 
-import {
-  Profile,
-  MemberId
-} from '@joystream/types/members';
+import { Membership,
+  MemberId } from '@joystream/types/members';
 
 import { Stake, StakeId } from '@joystream/types/stake';
 
-import {
-  CuratorApplication, CuratorApplicationId,
+import { CuratorApplication, CuratorApplicationId,
   CuratorOpening,
-  IOpeningPolicyCommitment, CuratorOpeningId
-} from '@joystream/types/content-working-group';
+  IOpeningPolicyCommitment, CuratorOpeningId } from '@joystream/types/content-working-group';
 
-import {
-  classifyOpeningStage,
+import { classifyOpeningStage,
   OpeningStageClassification,
-  OpeningState
-} from '../classifiers';
+  OpeningState } from '../classifiers';
 
-import {
-  openingDescription
-} from '../openingStateMarkup';
+import { openingDescription } from '../openingStateMarkup';
 
 import { Add, Zero } from '../balances';
+import { createType } from '@joystream/types';
 
 type ids = {
   curatorId: number;
@@ -77,7 +65,7 @@ type ids = {
 type application = ids & {
   account: string;
   memberId: number;
-  profile: Profile;
+  profile: Membership;
   stage: ApplicationStage;
   applicationStake: Balance;
   roleStake: Balance;
@@ -110,7 +98,7 @@ type State = {
 }
 
 function newHRT (title: string): Text {
-  return new Text(JSON.stringify({
+  return createType('Text', JSON.stringify({
     version: 1,
     headline: 'some headline',
     job: {
@@ -155,57 +143,49 @@ function newHRT (title: string): Text {
 }
 
 const createRationingPolicyOpt = (maxApplicants: number) =>
-  new Option<ApplicationRationingPolicy>(
-    ApplicationRationingPolicy,
-    new ApplicationRationingPolicy({
-      max_active_applicants: new u32(maxApplicants)
-    })
-  );
+  createType('Option<ApplicationRationingPolicy>', {
+    max_active_applicants: maxApplicants
+  });
 const createStakingPolicyOpt = (amount: number, amount_mode: StakingAmountLimitMode): Option<StakingPolicy> =>
-  new Option(
-    StakingPolicy,
-    new StakingPolicy({
-      amount: new u128(amount),
-      amount_mode,
-      crowded_out_unstaking_period_length: new Option('BlockNumber', null),
-      review_period_expired_unstaking_period_length: new Option('BlockNumber', null)
-    })
-  );
+  createType('Option<StakingPolicy>', {
+    amount,
+    amount_mode
+  });
 
-const STAKING_MODE_EXACT = new StakingAmountLimitMode(StakingAmountLimitModeKeys.Exact);
-const STAKING_MODE_AT_LEAST = new StakingAmountLimitMode(StakingAmountLimitModeKeys.AtLeast);
+const STAKING_MODE_EXACT = createType('StakingAmountLimitMode', StakingAmountLimitModeKeys.Exact);
+const STAKING_MODE_AT_LEAST = createType('StakingAmountLimitMode', StakingAmountLimitModeKeys.AtLeast);
 
 const stockOpenings: openingDescriptor[] = [
   {
     title: 'Test config A: no application stake, no role stake, no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999)
+      max_review_period_length: createType('u32', 99999)
     },
     text: newHRT('Test configuration A')
   },
   {
     title: 'Test config B: no application stake, no role stake, 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999)
+      max_review_period_length: createType('u32', 99999)
     },
     text: newHRT('Test configuration B')
   },
   {
     title: 'Test config C: fixed application stake (100), no role stake, no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT)
     },
     text: newHRT('Test configuration C')
   },
   {
     title: 'Test config D: fixed application stake (100), no role stake, 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT)
     },
@@ -213,18 +193,18 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config E: no application stake, fixed role stake (100), no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       role_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT)
     },
     text: newHRT('Test configuration E')
   },
   {
     title: 'Test config F: no application stake, fixed role stake (100), 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       role_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT)
     },
@@ -232,18 +212,18 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config G: minimum application stake (100), no role stake, no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST)
     },
     text: newHRT('Test configuration G')
   },
   {
     title: 'Test config H: minimum application stake (100), no role stake, 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST)
     },
@@ -251,18 +231,18 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config I: no application stake, minimum role stake (100), no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       role_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST)
     },
     text: newHRT('Test configuration I')
   },
   {
     title: 'Test config J: no application stake, minimum role stake (100), 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       role_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST)
     },
@@ -270,9 +250,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config K: fixed application stake (100), fixed role stake (200), no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_EXACT)
     },
@@ -280,9 +260,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config L: fixed application stake (100), fixed role stake (200), 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_EXACT)
@@ -291,9 +271,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config M: Minimum application stake (100), minimum role stake (200), no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_AT_LEAST)
     },
@@ -301,9 +281,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config N: Minimum application stake (100), minimum role stake (200), 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_AT_LEAST)
@@ -312,9 +292,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config O: Fixed application stake (100), minimum role stake (200), no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_AT_LEAST)
     },
@@ -322,15 +302,10 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config P: Fixed application stake (100), minimum role stake (200), 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
-      application_rationing_policy: new Option<ApplicationRationingPolicy>(
-        ApplicationRationingPolicy,
-        new ApplicationRationingPolicy({
-          max_active_applicants: new u32(10)
-        })
-      ),
+      max_review_period_length: createType('u32', 99999),
+      application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_EXACT),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_AT_LEAST)
     },
@@ -338,9 +313,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config Q: Minimum application stake (100), fixed role stake (200), no applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_EXACT)
     },
@@ -348,9 +323,9 @@ const stockOpenings: openingDescriptor[] = [
   },
   {
     title: 'Test config R: Minimum application stake (100), fixed role stake (200), 10 applicant limit',
-    start: new ActivateOpeningAt(CurrentBlock),
+    start: createType('ActivateOpeningAt', 'CurrentBlock'),
     policy: {
-      max_review_period_length: new u32(99999),
+      max_review_period_length: createType('u32', 99999),
       application_rationing_policy: createRationingPolicyOpt(10),
       application_staking_policy: createStakingPolicyOpt(100, STAKING_MODE_AT_LEAST),
       role_staking_policy: createStakingPolicyOpt(200, STAKING_MODE_EXACT)
@@ -376,48 +351,51 @@ export class AdminController extends Controller<State, ITransport> {
     this.api = api;
     this.queueExtrinsic = queueExtrinsic;
     this.state.currentDescriptor = stockOpenings[0];
-    this.updateState();
+    void this.refreshState();
   }
 
-  onTxSuccess = () => { this.updateState(); }
+  onTxSuccess = () => { this.closeModal(); void this.refreshState(); }
 
   newOpening (accountId: string, desc: openingDescriptor) {
     const tx = this.api.tx.contentWorkingGroup.addCuratorOpening(
       desc.start,
       desc.policy,
       desc.text
-    ) as unknown as SubmittableExtrinsic;
+    );
 
-    // FIXME: Normally we would keep it open in case of errror, but due to bad design
-    // the values in the form are reset at this point anyway, so there is no point
-    this.closeModal();
     this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
   startAcceptingApplications (accountId: string, id = 0) {
     const tx = this.api.tx.contentWorkingGroup.acceptCuratorApplications(id);
+
     this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
   async applyAsACurator (creatorAddress: string, openingId: number) {
     const membershipIds = (await this.api.query.members.memberIdsByControllerAccountId(creatorAddress)) as Vec<MemberId>;
+
     if (membershipIds.length === 0) {
       console.error('No membship ID associated with this address');
+
       return;
     }
+
     const tx = this.api.tx.contentWorkingGroup.applyOnCuratorOpening(
       membershipIds[0],
       openingId,
-      new GenericAccountId(creatorAddress),
-      new Option(u128, 400),
-      new Option(u128, 400),
-      new Text('This is my application')
-    ) as unknown as SubmittableExtrinsic;
+      creatorAddress,
+      400,
+      400,
+      'This is my application'
+    );
+
     this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId: creatorAddress });
   }
 
   beginApplicantReview (accountId: string, openingId: number) {
     const tx = this.api.tx.contentWorkingGroup.beginCuratorApplicantReview(openingId);
+
     this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
@@ -426,22 +404,25 @@ export class AdminController extends Controller<State, ITransport> {
       openingId,
       applications,
       null
-    ) as unknown as SubmittableExtrinsic;
+    );
+
     this.queueExtrinsic({ extrinsic: tx, txSuccessCb: this.onTxSuccess, accountId });
   }
 
-  protected async profile (id: MemberId): Promise<Option<Profile>> {
-    return (await this.api.query.members.memberProfile(id)) as Option<Profile>;
+  protected async profile (id: MemberId): Promise<Membership> {
+    const member = (await this.api.query.members.membershipById(id)) as Membership;
+
+    if (member.isEmpty) {
+      throw new Error(`Expected member profile not found! (id: ${id.toString()}`);
+    }
+
+    return member;
   }
 
   protected async stakeValue (stakeId: StakeId): Promise<Balance> {
-    const stake = new SingleLinkedMapEntry<Stake>(
-      Stake,
-      await this.api.query.stake.stakes(
-        stakeId
-      )
-    );
-    return stake.value.value;
+    const stake = await this.api.query.stake.stakes(stakeId) as Stake;
+
+    return stake.value;
   }
 
   protected async roleStake (application: Application): Promise<Balance> {
@@ -460,67 +441,51 @@ export class AdminController extends Controller<State, ITransport> {
     return this.stakeValue(application.active_application_staking_id.unwrap());
   }
 
-  async updateState () {
+  async refreshState () {
     this.state.openings = new Map<number, opening>();
 
     const nextOpeningId = await this.api.query.contentWorkingGroup.nextCuratorOpeningId() as CuratorOpeningId;
+
     for (let i = nextOpeningId.toNumber() - 1; i >= 0; i--) {
-      const curatorOpening = new SingleLinkedMapEntry<CuratorOpening>(
-        CuratorOpening,
-        await this.api.query.contentWorkingGroup.curatorOpeningById(i)
-      );
+      const curatorOpening = await this.api.query.contentWorkingGroup.curatorOpeningById(i) as CuratorOpening;
 
-      const openingId = curatorOpening.value.opening_id;
+      const openingId = curatorOpening.opening_id;
 
-      const baseOpening = new SingleLinkedMapEntry<Opening>(
-        Opening,
-        await this.api.query.hiring.openingById(
-          openingId
-        )
-      );
+      const baseOpening = await this.api.query.hiring.openingById(openingId) as Opening;
 
-      const hrt = baseOpening.value.parse_human_readable_text_with_fallback();
+      const hrt = baseOpening.parse_human_readable_text_with_fallback();
       const title = hrt.job.title;
 
       this.state.openings.set(i, {
         openingId: openingId.toNumber(),
         curatorId: i,
         applications: new Array<application>(),
-        state: baseOpening.value.stage,
+        state: baseOpening.stage,
         title: title,
-        classification: await classifyOpeningStage(this.transport, baseOpening.value)
+        classification: await classifyOpeningStage(this.transport, baseOpening)
       });
     }
 
     const nextAppid = await this.api.query.contentWorkingGroup.nextCuratorApplicationId() as CuratorApplicationId;
+
     for (let i = 0; i < nextAppid.toNumber(); i++) {
-      const cApplication = new SingleLinkedMapEntry<CuratorApplication>(
-        CuratorApplication,
-        await this.api.query.contentWorkingGroup.curatorApplicationById(i)
-      );
+      const cApplication = await this.api.query.contentWorkingGroup.curatorApplicationById(i) as CuratorApplication;
 
-      const appId = cApplication.value.application_id;
-      const baseApplications = new SingleLinkedMapEntry<Application>(
-        Application,
-        await this.api.query.hiring.applicationById(
-          appId
-        )
-      );
+      const appId = cApplication.application_id;
+      const baseApplications = await this.api.query.hiring.applicationById(appId) as Application;
 
-      const curatorOpening = this.state.openings.get(
-        cApplication.value.curator_opening_id.toNumber()
-      ) as opening;
+      const curatorOpening = this.state.openings.get(cApplication.curator_opening_id.toNumber()) as opening;
 
       curatorOpening.applications.push({
         openingId: appId.toNumber(),
         curatorId: i,
-        stage: baseApplications.value.stage,
-        account: cApplication.value.role_account_id.toString(),
-        memberId: cApplication.value.member_id.toNumber(),
-        profile: (await this.profile(cApplication.value.member_id)).unwrap(),
-        applicationStake: await this.applicationStake(baseApplications.value),
-        roleStake: await this.roleStake(baseApplications.value),
-        application: baseApplications.value
+        stage: baseApplications.stage,
+        account: cApplication.role_account_id.toString(),
+        memberId: cApplication.member_id.toNumber(),
+        profile: (await this.profile(cApplication.member_id)),
+        applicationStake: await this.applicationStake(baseApplications),
+        roleStake: await this.roleStake(baseApplications),
+        application: baseApplications
       });
     }
 
@@ -543,12 +508,14 @@ type AdminContainerProps = {
   state: State;
   controller: AdminController;
 }
+
 const AdminContainer = ({ state, controller }: AdminContainerProps) => {
   const address = useMyAccount().state.address;
   const containerRef = useRef<HTMLDivElement>(null);
+
   return (
     <div ref={containerRef}>
-      <Container className="admin">
+      <Container className='admin'>
         <Card fluid color='orange'>
           <Card.Content>
             <Dropdown text='Create new opening...'>
@@ -569,7 +536,7 @@ const AdminContainer = ({ state, controller }: AdminContainerProps) => {
             <Modal
               open={state.modalOpen}
               onClose={() => controller.closeModal()}
-              mountNode={containerRef.current} // Prevent conflicts with tx-modal (after form values reset issue is fixed, see FIXME: above)
+              mountNode={containerRef.current} // Prevent conflicts with tx-modal
             >
               <Modal.Content image>
                 <Modal.Description>
@@ -580,7 +547,7 @@ const AdminContainer = ({ state, controller }: AdminContainerProps) => {
           </Card.Content>
         </Card>
         {
-          [...state.openings.keys()].map(key => <OpeningView key={key} opening={state.openings.get(key) as opening} controller={controller} />)
+          [...state.openings.keys()].map((key) => <OpeningView key={key} opening={state.openings.get(key) as opening} controller={controller} />)
         }
         <br />
       </Container>
@@ -589,7 +556,7 @@ const AdminContainer = ({ state, controller }: AdminContainerProps) => {
 };
 
 export const AdminView = View<AdminController, State>(
-  (state, controller) => {
+  ({ state, controller }) => {
     return (
       <AdminContainer state={state} controller={controller} />
     );
@@ -623,25 +590,26 @@ const NewOpening = (props: NewOpeningProps) => {
     switch (value) {
       case 'CurrentBlock':
         setShowExactBlock(false);
-        setStart(new ActivateOpeningAt(CurrentBlock));
+        setStart(createType('ActivateOpeningAt', 'CurrentBlock'));
         break;
 
       case 'ExactBlock':
-        setStart(new ActivateOpeningAt({ ExactBlock: exactBlock }));
+        setStart(createType('ActivateOpeningAt', { ExactBlock: exactBlock }));
         setShowExactBlock(true);
         break;
     }
   };
 
-  const onChangeExactBlock = (e: any, { value }: any) => {
-    setExactBlock(value);
-    setStart(new ActivateOpeningAt({ ExactBlock: value }));
+  const onChangeExactBlock = (e: any, { value }: InputOnChangeData) => {
+    setExactBlock(typeof value === 'number' ? value : (parseInt(value) || 0));
+    setStart(createType('ActivateOpeningAt', { ExactBlock: value }));
   };
 
   const [policy, setPolicy] = useState(props.desc.policy);
 
   const onChangePolicyField = <PolicyKey extends keyof policyDescriptor>(fieldName: PolicyKey, value: policyDescriptor[PolicyKey]) => {
     const newState = { ...policy };
+
     newState[fieldName] = value;
     setPolicy(newState);
   };
@@ -678,14 +646,17 @@ const NewOpening = (props: NewOpeningProps) => {
   ) => {
     if (mode === '') {
       const policyField = policy[fieldName];
+
       mode = policyField && policyField.isSome
         ? (policyField.unwrap().amount_mode.type as StakingAmountLimitModeKeys)
         : StakingAmountLimitModeKeys.Exact; // Default
     }
+
     const value = createStakingPolicyOpt(
       stakeValue,
       mode === StakingAmountLimitModeKeys.Exact ? STAKING_MODE_EXACT : STAKING_MODE_AT_LEAST
     );
+
     onChangePolicyField(fieldName, value);
   };
 
@@ -705,7 +676,7 @@ const NewOpening = (props: NewOpeningProps) => {
     props.fn({
       start: start,
       policy: policy,
-      text: new Text(text),
+      text: createType('Text', text),
       title: ''
     });
   };
@@ -722,7 +693,7 @@ const NewOpening = (props: NewOpeningProps) => {
         />
         {showExactBlock === true &&
           <Input
-            type="number"
+            type='number'
             value={exactBlock}
             onChange={onChangeExactBlock}
           />
@@ -732,15 +703,15 @@ const NewOpening = (props: NewOpeningProps) => {
       <Form.Field>
         <label>Max review period length (in blocks)</label>
         <Input
-          type="number"
+          type='number'
           value={policy.max_review_period_length.toNumber()}
-          onChange={(e: any, { value }: any) => onChangePolicyField('max_review_period_length', new u32(value))}
+          onChange={(e: any, { value }: any) => onChangePolicyField('max_review_period_length', createType('u32', value))}
         />
       </Form.Field>
 
       <Form.Field>
         <label>Application staking policy</label>
-        <Checkbox label="Require an application stake" checked={requireAppStakingPolicy} onChange={(e, { checked }: any) => onStakeModeCheckboxChange(setRequireAppStakingPolicy, 'application_staking_policy', checked, 0)} />
+        <Checkbox label='Require an application stake' checked={requireAppStakingPolicy} onChange={(e, { checked }: any) => onStakeModeCheckboxChange(setRequireAppStakingPolicy, 'application_staking_policy', checked, 0)} />
         {requireAppStakingPolicy && (
           <Message>
             <label>Stake mode</label>
@@ -753,7 +724,7 @@ const NewOpening = (props: NewOpeningProps) => {
 
             <label>Stake value</label>
             <Input
-              type="number"
+              type='number'
               value={policy.application_staking_policy?.unwrap().amount.toNumber()}
               onChange={(e: any, { value }: any) => changeStakingMode('application_staking_policy', '', value)}
             />
@@ -763,7 +734,7 @@ const NewOpening = (props: NewOpeningProps) => {
 
       <Form.Field>
         <label>Role staking policy</label>
-        <Checkbox label="Require a role stake" checked={requireRoleStakingPolicy} onChange={(e, { checked }: any) => onStakeModeCheckboxChange(setRequireRoleStakingPolicy, 'role_staking_policy', checked, 0)} />
+        <Checkbox label='Require a role stake' checked={requireRoleStakingPolicy} onChange={(e, { checked }: any) => onStakeModeCheckboxChange(setRequireRoleStakingPolicy, 'role_staking_policy', checked, 0)} />
         {requireRoleStakingPolicy && (
           <Message>
             <label>Stake mode</label>
@@ -776,7 +747,7 @@ const NewOpening = (props: NewOpeningProps) => {
 
             <label>Stake value</label>
             <Input
-              type="number"
+              type='number'
               value={policy.role_staking_policy?.unwrap().amount.toNumber()}
               onChange={(e: any, { value }: any) => changeStakingMode('role_staking_policy', '', value)}
             />
@@ -788,7 +759,7 @@ const NewOpening = (props: NewOpeningProps) => {
         <TextArea value={text} rows={10} onChange={(e: any, { value }: any) => setText(value)} />
       </Form.Field>
 
-      <Form.Field align="right">
+      <Form.Field align='right'>
         <Button positive onClick={() => submit()}>Create opening</Button>
       </Form.Field>
     </Form>
@@ -807,7 +778,7 @@ const OpeningView = (props: OpeningViewProps) => {
 
   const toggleApplication = (id: number) => {
     if (selected.includes(id)) {
-      setSelected(selected.filter(v => v !== id));
+      setSelected(selected.filter((v) => v !== id));
     } else {
       setSelected([...selected, id]);
     }
@@ -818,7 +789,7 @@ const OpeningView = (props: OpeningViewProps) => {
   switch (props.opening.classification.state) {
     case OpeningState.InReview:
       CTAs = (
-        <Container align="right">
+        <Container align='right'>
           <Button onClick={() => { props.controller.acceptCuratorApplications(address, props.opening.curatorId, selected.sort()); }}>Accept curator applications</Button>
         </Container>
       );
@@ -828,8 +799,8 @@ const OpeningView = (props: OpeningViewProps) => {
     <Card fluid>
       <Card.Content>
         <Card.Header>
-          <Label attached="top right">Opening</Label>
-          <Link to={'/working-groups/opportunities/curators/' + props.opening.curatorId}>
+          <Label attached='top right'>Opening</Label>
+          <Link to={`/working-groups/opportunities/curators/${props.opening.curatorId}`}>
             {props.opening.title}
           </Link>
 
@@ -872,7 +843,7 @@ const OpeningView = (props: OpeningViewProps) => {
                     <Table.Cell>{app.curatorId}</Table.Cell>
                     <Table.Cell>{app.openingId}</Table.Cell>
                     <Table.Cell>
-                      <Link to={'/members/' + app.profile.handle}>
+                      <Link to={`/members/${app.profile.handle.toString()}`}>
                         {app.profile.handle}
                       </Link>
                     </Table.Cell>
@@ -926,7 +897,7 @@ const OpeningView = (props: OpeningViewProps) => {
                 </Dropdown.Menu>
               </Dropdown>
             </Grid.Column>
-            <Grid.Column align="right">
+            <Grid.Column align='right'>
             </Grid.Column>
           </Grid.Row>
         </Grid>

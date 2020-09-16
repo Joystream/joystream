@@ -1,28 +1,15 @@
 import { ParametrizedPropertyValue } from './parametrized-property-value'
-import { JoyStruct } from '../../../common'
 import { u16 } from '@polkadot/types'
+import { JoyStructDecorated } from '../../../common'
 
 type IParametrizedClassPropertyValue = {
   in_class_index: u16
   value: ParametrizedPropertyValue
 }
 
-export default class ParametrizedClassPropertyValue extends JoyStruct<IParametrizedClassPropertyValue> {
-  constructor(value: IParametrizedClassPropertyValue) {
-    super(
-      {
-        in_class_index: u16,
-        value: ParametrizedPropertyValue,
-      },
-      value
-    )
-  }
-
-  get in_class_index(): u16 {
-    return this.getField('in_class_index')
-  }
-
-  get value(): ParametrizedPropertyValue {
-    return this.getField('value')
-  }
-}
+export default class ParametrizedClassPropertyValue
+  extends JoyStructDecorated({
+    in_class_index: u16,
+    value: ParametrizedPropertyValue,
+  })
+  implements IParametrizedClassPropertyValue {}

@@ -1,21 +1,22 @@
-import { getTypeRegistry } from '@polkadot/types'
-
-import * as common from './common'
-import * as members from './members'
-import * as council from './council'
-import * as roles from './roles'
-import * as forum from './forum'
-import * as stake from './stake'
-import * as mint from './mint'
-import * as recurringRewards from './recurring-rewards'
-import * as hiring from './hiring'
-import * as versionedStore from './versioned-store'
-import * as versionedStorePermissions from './versioned-store/permissions'
-import * as contentWorkingGroup from './content-working-group'
-import * as workingGroup from './working-group'
-import * as discovery from './discovery'
-import * as media from './media'
-import * as proposals from './proposals'
+import { RegistryTypes } from '@polkadot/types/types'
+import common from './common'
+import members from './members'
+import council from './council'
+import roles from './roles'
+import forum from './forum'
+import stake from './stake'
+import mint from './mint'
+import recurringRewards from './recurring-rewards'
+import hiring from './hiring'
+import versionedStore from './versioned-store'
+import versionedStorePermissions from './versioned-store/permissions'
+import contentWorkingGroup from './content-working-group'
+import workingGroup from './working-group'
+import discovery from './discovery'
+import media from './media'
+import proposals from './proposals'
+import { InterfaceTypes } from '@polkadot/types/types/registry'
+import { TypeRegistry } from '@polkadot/types'
 
 export {
   common,
@@ -36,27 +37,37 @@ export {
   proposals,
 }
 
-export function registerJoystreamTypes() {
-  const typeRegistry = getTypeRegistry()
+export const types: RegistryTypes = {
+  MemoText: 'Text', // for the memo module
+  ...common,
+  ...members,
+  ...council,
+  ...roles,
+  ...forum,
+  ...stake,
+  ...mint,
+  ...recurringRewards,
+  ...hiring,
+  ...versionedStore,
+  ...versionedStorePermissions,
+  ...contentWorkingGroup,
+  ...workingGroup,
+  ...discovery,
+  ...media,
+  ...proposals,
+  // Required since migration to Substrate 2.0,
+  // see: https://polkadot.js.org/api/start/FAQ.html#the-node-returns-a-could-not-convert-error-on-send
+  Address: 'AccountId',
+  LookupSource: 'AccountId',
+}
 
-  typeRegistry.register({
-    MemoText: 'Text', // for the memo module
-  })
+// Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)
+export const registry = new TypeRegistry()
+registry.register(types)
 
-  common.registerCommonTypes()
-  members.registerMembershipTypes()
-  council.registerCouncilAndElectionTypes()
-  roles.registerRolesTypes()
-  forum.registerForumTypes()
-  stake.registerStakeTypes()
-  mint.registerMintTypes()
-  recurringRewards.registerRecurringRewardsTypes()
-  hiring.registerHiringTypes()
-  versionedStore.registerVersionedStoreTypes()
-  versionedStorePermissions.registerVersionedStorePermissionsTypes()
-  contentWorkingGroup.registerContentWorkingGroupTypes()
-  workingGroup.registerWorkingGroupTypes()
-  discovery.registerDiscoveryTypes()
-  media.registerMediaTypes()
-  proposals.registerProposalTypes()
+export function createType<TypeName extends keyof InterfaceTypes>(
+  type: TypeName,
+  value: any
+): InterfaceTypes[TypeName] {
+  return registry.createType(type, value)
 }

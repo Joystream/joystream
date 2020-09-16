@@ -1,5 +1,5 @@
 import React from 'react';
-import '../index.css';
+import withMock from './withMock';
 
 import MockProposalDetails from './data/ProposalDetails.mock';
 import { ProposalDetails } from '../Proposal';
@@ -8,18 +8,18 @@ export default {
   title: 'Proposals | Details'
 };
 
-export const HasToVote = () => <ProposalDetails {...MockProposalDetails} />;
+export const HasToVote = withMock(() => <ProposalDetails {...MockProposalDetails} />);
 
-export const VotedApproved = () => (
+export const VotedApproved = withMock(() => (
   <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: 'Approve' }} />
-);
+));
 
-export const VotedAbstain = () => (
+export const VotedAbstain = withMock(() => (
   <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: 'Abstain' }} />
-);
+));
 
-export const VotedReject = () => (
+export const VotedReject = withMock(() => (
   <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: 'Reject' }} />
-);
+));
 
-export const VotedSlash = () => <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: 'Slash' }} />;
+export const VotedSlash = withMock(() => <ProposalDetails {...MockProposalDetails} vote={{ hasVoted: true, value: 'Slash' }} />);

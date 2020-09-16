@@ -1,41 +1,57 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { BareProps } from './types';
-
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import styled from 'styled-components';
 
 import addressToAddress from './util/toAddress';
 import IdentityIcon from './IdentityIcon';
 import Input from './Input';
 
-interface Props extends BareProps {
+interface Props {
+  autoFocus?: boolean;
+  children?: React.ReactNode;
+  className?: string;
+  defaultValue?: string | null;
   help?: React.ReactNode;
+  isError?: boolean;
+  isFull?: boolean;
   label?: React.ReactNode;
   onChange?: (address: string | null) => void;
+  onEnter?: () => void;
+  onEscape?: () => void;
 }
 
-function InputAddressSimple ({ className, help, label, onChange }: Props): React.ReactElement<Props> {
-  const [address, setAddress] = useState<string | null>(null);
+function InputAddressSimple ({ autoFocus, children, className = '', defaultValue, help, isError, isFull, label, onChange, onEnter, onEscape }: Props): React.ReactElement<Props> {
+  const [address, setAddress] = useState<string | null>(defaultValue || null);
 
-  const _onChange = (_address: string): void => {
-    const address = addressToAddress(_address) || null;
+  const _onChange = useCallback(
+    (_address: string): void => {
+      const address = addressToAddress(_address) || null;
 
-    setAddress(address);
+      setAddress(address);
 
-    onChange && onChange(address);
-  };
+      onChange && onChange(address);
+    },
+    [onChange]
+  );
 
   return (
     <div className={className}>
       <Input
+        autoFocus={autoFocus}
+        defaultValue={defaultValue}
         help={help}
-        isError={!address}
+        isError={isError || !address}
+        isFull={isFull}
         label={label}
         onChange={_onChange}
-      />
+        onEnter={onEnter}
+        onEscape={onEscape}
+      >
+        {children}
+      </Input>
       <IdentityIcon
         className='ui--InputAddressSimpleIcon'
         size={32}
@@ -45,7 +61,7 @@ function InputAddressSimple ({ className, help, label, onChange }: Props): React
   );
 }
 
-export default styled(InputAddressSimple)`
+export default React.memo(styled(InputAddressSimple)`
   position: relative;
 
   .ui--InputAddressSimpleIcon {
@@ -56,4 +72,4 @@ export default styled(InputAddressSimple)`
     position: absolute;
     top: 1rem;
   }
-`;
+`);

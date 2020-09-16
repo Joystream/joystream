@@ -1,35 +1,32 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Card, Header, Button, Icon, Message } from 'semantic-ui-react';
-import { ProposalType } from '@polkadot/joy-utils/types/proposals';
+import { Card, Header, Message, Icon } from 'semantic-ui-react';
+import { ProposalType, ParsedProposalDetails, SpecificProposalDetails, RuntimeUpgradeProposalDetails } from '@polkadot/joy-utils/types/proposals';
 import { bytesToString } from '@polkadot/joy-utils/functions/misc';
 import styled from 'styled-components';
-import AddressMini from '@polkadot/react-components/AddressMiniJoy';
-import TxButton from '@polkadot/joy-utils/TxButton';
-import { ProposalId, TerminateRoleParameters } from '@joystream/types/proposals';
-import { MemberId, Profile } from '@joystream/types/members';
-import ProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
+import AddressMini from '@polkadot/react-components/AddressMini';
+import { SemanticTxButton } from '@polkadot/joy-utils/react/components/TxButton';
+import { ProposalId, ProposalDetails } from '@joystream/types/proposals';
+import { MemberId, Membership } from '@joystream/types/members';
+import ProfilePreview from '@polkadot/joy-utils/react/components/MemberProfilePreview';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
-import { Option, Bytes } from '@polkadot/types/';
-import { BlockNumber } from '@polkadot/types/interfaces';
+import { Option } from '@polkadot/types/';
+import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import ReactMarkdown from 'react-markdown';
-import { WorkingGroupOpeningPolicyCommitment, RewardPolicy } from '@joystream/types/working-group';
-import {
-  ActivateOpeningAt,
-  ActivateOpeningAtKeys,
-  StakingPolicy
-} from '@joystream/types/hiring';
-import { WorkingGroup, WorkingGroupKey } from '@joystream/types/common';
+import { StakingPolicy } from '@joystream/types/hiring';
+import { WorkingGroup } from '@joystream/types/common';
 import { ApplicationsDetailsByOpening } from '@polkadot/joy-utils/react/components/working-groups/ApplicationDetails';
 import { LeadInfoFromId } from '@polkadot/joy-utils/react/components/working-groups/LeadInfo';
 import { formatReward } from '@polkadot/joy-utils/functions/format';
+import BN from 'bn.js';
+import { WorkerId } from '@joystream/types/src/working-group';
 
 type BodyProps = {
   title: string;
   description: string;
-  params: any[];
+  params: ParsedProposalDetails;
   type: ProposalType;
   iAmProposer: boolean;
   proposalId: number | ProposalId;
@@ -38,37 +35,36 @@ type BodyProps = {
   cancellationFee: number;
 };
 
-function ProposedAddress (props: { address?: string | null }) {
-  if (props.address === null || props.address === undefined) {
+function ProposedAddress (props: { accountId?: AccountId }) {
+  if (!props.accountId) {
     return <>NONE</>;
   }
 
   return (
-    <AddressMini value={props.address} isShort={false} isPadded={false} withAddress={true} style={{ padding: 0 }} />
+    <AddressMini
+      value={props.accountId.toString()}
+      isShort={false}
+      isPadded={false}
+      withAddress={true}
+      style={{ padding: 0 }} />
   );
 }
 
-function ProposedMember (props: { memberId?: MemberId | number | null }) {
-  if (props.memberId === null || props.memberId === undefined) {
-    return <>NONE</>;
-  }
-  const memberId: MemberId | number = props.memberId;
-
+function ProposedMember (props: { memberId: MemberId | number }) {
   const transport = useTransport();
-  const [member, error, loading] = usePromise<Option<Profile> | null>(
-    () => transport.members.memberProfile(memberId),
+
+  const [member, error, loading] = usePromise<Membership | null>(
+    () => transport.members.membershipById(props.memberId),
     null
   );
 
-  const profile = member && member.unwrapOr(null);
-
   return (
-    <PromiseComponent error={error} loading={loading} message="Fetching profile...">
-      { profile ? (
+    <PromiseComponent error={error} loading={loading} message='Fetching profile...'>
+      { (member && !member.isEmpty) ? (
         <ProfilePreview
-          avatar_uri={ profile.avatar_uri.toString() }
-          root_account={ profile.root_account.toString() }
-          handle={ profile.handle.toString() }
+          avatar_uri={ member.avatar_uri.toString() }
+          root_account={ member.root_account.toString() }
+          handle={ member.handle.toString() }
           link={ true }
         />
       ) : 'Profile not found' }
@@ -101,75 +97,83 @@ class ParsedParam {
 }
 
 // The methods for parsing params by Proposal type.
-const paramParsers: { [x in ProposalType]: (params: any[]) => ParsedParam[]} = {
-  Text: ([content]) => [
+const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>) => ParsedParam[]} = {
+  Text: (content) => [
     new ParsedParam(
       'Content',
-      <ReactMarkdown className='TextProposalContent' source={content} linkTarget='_blank' />,
+      <ReactMarkdown className='TextProposalContent' source={content.toString()} linkTarget='_blank' />,
       true
     )
   ],
   RuntimeUpgrade: ([hash, filesize]) => [
     new ParsedParam('Blake2b256 hash of WASM code', hash, true),
-    new ParsedParam('File size', filesize + ' bytes')
+    new ParsedParam('File size', `${filesize} bytes`)
   ],
-  SetElectionParameters: ([params]) => [
-    new ParsedParam('Announcing period', params.announcing_period + ' blocks'),
-    new ParsedParam('Voting period', params.voting_period + ' blocks'),
-    new ParsedParam('Revealing period', params.revealing_period + ' blocks'),
-    new ParsedParam('Council size', params.council_size + ' members'),
-    new ParsedParam('Candidacy limit', params.candidacy_limit + ' members'),
-    new ParsedParam('New term duration', params.new_term_duration + ' blocks'),
+  SetElectionParameters: (params) => [
+    new ParsedParam('Announcing period', `${params.announcing_period.toString()} blocks`),
+    new ParsedParam('Voting period', `${params.voting_period.toString()} blocks`),
+    new ParsedParam('Revealing period', `${params.revealing_period.toString()} blocks`),
+    new ParsedParam('Council size', `${params.council_size.toString()} members`),
+    new ParsedParam('Candidacy limit', `${params.candidacy_limit.toString()} members`),
+    new ParsedParam('New term duration', `${params.new_term_duration.toString()} blocks`),
     new ParsedParam('Min. council stake', formatBalance(params.min_council_stake)),
     new ParsedParam('Min. voting stake', formatBalance(params.min_voting_stake))
   ],
   Spending: ([amount, account]) => [
-    new ParsedParam('Amount', formatBalance(amount)),
-    new ParsedParam('Account', <ProposedAddress address={account} />)
+    new ParsedParam('Amount', formatBalance(amount as Balance)),
+    new ParsedParam('Account', <ProposedAddress accountId={account as AccountId} />)
   ],
-  SetLead: ([memberId, accountId]) => [
-    new ParsedParam('Member', <ProposedMember memberId={ memberId } />),
-    new ParsedParam('Account id', <ProposedAddress address={accountId} />)
+  SetLead: (params) => [
+    new ParsedParam(
+      'Member',
+      params.isSome ? <ProposedMember memberId={params.unwrap()[0] as MemberId} /> : 'NONE'
+    ),
+    new ParsedParam('Account id', <ProposedAddress accountId={params.unwrapOr([])[1] as AccountId | undefined} />)
   ],
-  SetContentWorkingGroupMintCapacity: ([capacity]) => [
+  SetContentWorkingGroupMintCapacity: (capacity) => [
     new ParsedParam('Mint capacity', formatBalance(capacity))
   ],
-  EvictStorageProvider: ([accountId]) => [
-    new ParsedParam('Storage provider account', <ProposedAddress address={accountId} />)
+  EvictStorageProvider: (accountId) => [
+    new ParsedParam('Storage provider account', <ProposedAddress accountId={accountId} />)
   ],
-  SetValidatorCount: ([count]) => [
-    new ParsedParam('Validator count', count)
+  SetValidatorCount: (count) => [
+    new ParsedParam('Validator count', count.toString())
   ],
-  SetStorageRoleParameters: ([params]) => [
+  SetStorageRoleParameters: (params) => [
     new ParsedParam('Min. stake', formatBalance(params.min_stake)),
     // "Min. actors": params.min_actors,
-    new ParsedParam('Max. actors', params.max_actors),
+    new ParsedParam('Max. actors', params.max_actors.toString()),
     new ParsedParam('Reward', formatBalance(params.reward)),
-    new ParsedParam('Reward period', params.reward_period + ' blocks'),
+    new ParsedParam('Reward period', `${params.reward_period.toString()} blocks`),
     // "Bonding period": params.bonding_period + " blocks",
-    new ParsedParam('Unbonding period', params.unbonding_period + ' blocks'),
+    new ParsedParam('Unbonding period', `${params.unbonding_period.toString()} blocks`),
     // "Min. service period": params.min_service_period + " blocks",
     // "Startup grace period": params.startup_grace_period + " blocks",
     new ParsedParam('Entry request fee', formatBalance(params.entry_request_fee))
   ],
-  AddWorkingGroupLeaderOpening: ([{ activate_at, commitment, human_readable_text, working_group }]) => {
-    const workingGroup = new WorkingGroup(working_group);
-    const activateAt = new ActivateOpeningAt(activate_at);
-    const activateAtBlock = activateAt.type === ActivateOpeningAtKeys.ExactBlock ? activateAt.value : null;
-    const OPCommitment = new WorkingGroupOpeningPolicyCommitment(commitment);
+  AddWorkingGroupLeaderOpening: ({
+    activate_at: activateAt,
+    commitment,
+    human_readable_text: humanReadableText,
+    working_group: workingGroup
+  }) => {
+    const activateAtBlock = activateAt.isOfType('ExactBlock') ? activateAt.asType('ExactBlock') : null;
     const {
       application_staking_policy: applicationSP,
       role_staking_policy: roleSP,
       application_rationing_policy: rationingPolicy
-    } = OPCommitment;
-    let HRT = bytesToString(new Bytes(human_readable_text));
+    } = commitment;
+    let HRT = bytesToString(humanReadableText);
+
     try { HRT = JSON.stringify(JSON.parse(HRT), undefined, 4); } catch (e) { /* Do nothing */ }
+
     const formatStake = (stake: Option<StakingPolicy>) => (
-      stake.isSome ? stake.unwrap().amount_mode.type + `(${stake.unwrap().amount})` : 'NONE'
+      stake.isSome ? stake.unwrap().amount_mode.type + `(${stake.unwrap().amount.toString()})` : 'NONE'
     );
     const formatPeriod = (unstakingPeriod: Option<BlockNumber>) => (
-      unstakingPeriod.unwrapOr(0) + ' blocks'
+      `${unstakingPeriod.unwrapOr(new BN(0)).toString()} blocks`
     );
+
     return [
       new ParsedParam('Working group', workingGroup.type),
       new ParsedParam('Activate at', `${activateAt.type}${activateAtBlock ? `(${activateAtBlock.toString()})` : ''}`),
@@ -179,34 +183,35 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => ParsedParam[]} = {
         'Max. applications',
         rationingPolicy.isSome ? rationingPolicy.unwrap().max_active_applicants.toNumber() : 'UNLIMITED'
       ),
+      new ParsedParam('Max. review period length', `${commitment.max_review_period_length.toString()} blocks`),
       new ParsedParam(
         'Terminate unstaking period (role stake)',
-        formatPeriod(OPCommitment.terminate_role_stake_unstaking_period)
+        formatPeriod(commitment.terminate_role_stake_unstaking_period)
       ),
       new ParsedParam(
         'Exit unstaking period (role stake)',
-        formatPeriod(OPCommitment.exit_role_stake_unstaking_period)
+        formatPeriod(commitment.exit_role_stake_unstaking_period)
       ),
       // <required_to_prevent_sneaking>
       new ParsedParam(
         'Terminate unstaking period (appl. stake)',
-        formatPeriod(OPCommitment.terminate_application_stake_unstaking_period)
+        formatPeriod(commitment.terminate_application_stake_unstaking_period)
       ),
       new ParsedParam(
         'Exit unstaking period (appl. stake)',
-        formatPeriod(OPCommitment.exit_role_application_stake_unstaking_period)
+        formatPeriod(commitment.exit_role_application_stake_unstaking_period)
       ),
       new ParsedParam(
         'Appl. accepted unstaking period (appl. stake)',
-        formatPeriod(OPCommitment.fill_opening_successful_applicant_application_stake_unstaking_period)
+        formatPeriod(commitment.fill_opening_successful_applicant_application_stake_unstaking_period)
       ),
       new ParsedParam(
         'Appl. failed unstaking period (role stake)',
-        formatPeriod(OPCommitment.fill_opening_failed_applicant_role_stake_unstaking_period)
+        formatPeriod(commitment.fill_opening_failed_applicant_role_stake_unstaking_period)
       ),
       new ParsedParam(
         'Appl. failed unstaking period (appl. stake)',
-        formatPeriod(OPCommitment.fill_opening_failed_applicant_application_stake_unstaking_period)
+        formatPeriod(commitment.fill_opening_failed_applicant_application_stake_unstaking_period)
       ),
       new ParsedParam(
         'Crowded out unstaking period (role stake)',
@@ -229,55 +234,76 @@ const paramParsers: { [x in ProposalType]: (params: any[]) => ParsedParam[]} = {
     ];
   },
   SetWorkingGroupMintCapacity: ([capacity, group]) => [
-    new ParsedParam('Working group', (new WorkingGroup(group)).type),
-    new ParsedParam('Mint capacity', formatBalance(capacity))
+    new ParsedParam('Working group', (group as WorkingGroup).type),
+    new ParsedParam('Mint capacity', formatBalance((capacity as Balance)))
   ],
   BeginReviewWorkingGroupLeaderApplication: ([id, group]) => [
-    new ParsedParam('Working group', (new WorkingGroup(group)).type),
+    new ParsedParam('Working group', (group as WorkingGroup).type),
     // TODO: Adjust the link to work with multiple groups after working-groups are normalized!
-    new ParsedParam('Opening id', <Link to={`/working-groups/opportunities/storageProviders/${id}`}>#{id}</Link>)
+    new ParsedParam(
+      'Opening id',
+      <Link to={`/working-groups/opportunities/storageProviders/${id.toString()}`}>#{id.toString()}</Link>
+    )
   ],
-  FillWorkingGroupLeaderOpening: ([params]) => {
-    const { opening_id, successful_application_id, reward_policy, working_group } = params;
-    const rewardPolicy = reward_policy && new RewardPolicy(reward_policy);
-    return [
-      new ParsedParam('Working group', (new WorkingGroup(working_group)).type),
-      // TODO: Adjust the link to work with multiple groups after working-groups are normalized!
-      new ParsedParam('Opening id', <Link to={`/working-groups/opportunities/storageProviders/${opening_id}`}>#{opening_id}</Link>),
-      new ParsedParam('Reward policy', rewardPolicy ? formatReward(rewardPolicy, true) : 'NONE'),
-      new ParsedParam(
-        'Result',
-        <ApplicationsDetailsByOpening
-          openingId={opening_id}
-          acceptedIds={[successful_application_id]}
-          group={(new WorkingGroup(working_group)).type as WorkingGroupKey}/>,
-        true
-      )
-    ];
-  },
+  FillWorkingGroupLeaderOpening: ({
+    opening_id: openingId,
+    successful_application_id: succesfulApplicationId,
+    reward_policy: rewardPolicy,
+    working_group: workingGroup
+  }) => [
+    new ParsedParam('Working group', workingGroup.type),
+    // TODO: Adjust the link to work with multiple groups after working-groups are normalized!
+    new ParsedParam(
+      'Opening id',
+      <Link to={`/working-groups/opportunities/storageProviders/${openingId.toString()}`}>#{openingId.toString()}</Link>),
+    new ParsedParam('Reward policy', rewardPolicy.isSome ? formatReward(rewardPolicy.unwrap(), true) : 'NONE'),
+    new ParsedParam(
+      'Result',
+      <ApplicationsDetailsByOpening
+        openingId={openingId.toNumber()}
+        acceptedIds={[succesfulApplicationId.toNumber()]}
+        group={workingGroup.type}/>,
+      true
+    )
+  ],
   SlashWorkingGroupLeaderStake: ([leadId, amount, group]) => [
-    new ParsedParam('Working group', (new WorkingGroup(group)).type),
-    new ParsedParam('Slash amount', formatBalance(amount)),
-    new ParsedParam('Lead', <LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKey)} leadId={leadId}/>, true)
+    new ParsedParam('Working group', (group as WorkingGroup).type),
+    new ParsedParam('Slash amount', formatBalance(amount as Balance)),
+    new ParsedParam(
+      'Lead',
+      <LeadInfoFromId group={(group as WorkingGroup).type} leadId={(leadId as WorkerId).toNumber()}/>,
+      true
+    )
   ],
   DecreaseWorkingGroupLeaderStake: ([leadId, amount, group]) => [
-    new ParsedParam('Working group', (new WorkingGroup(group)).type),
-    new ParsedParam('Decrease amount', formatBalance(amount)),
-    new ParsedParam('Lead', <LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKey)} leadId={leadId}/>, true)
+    new ParsedParam('Working group', (group as WorkingGroup).type),
+    new ParsedParam('Decrease amount', formatBalance(amount as Balance)),
+    new ParsedParam(
+      'Lead',
+      <LeadInfoFromId group={(group as WorkingGroup).type} leadId={(leadId as WorkerId).toNumber()}/>,
+      true
+    )
   ],
   SetWorkingGroupLeaderReward: ([leadId, amount, group]) => [
-    new ParsedParam('Working group', (new WorkingGroup(group)).type),
-    new ParsedParam('New reward amount', formatBalance(amount)),
-    new ParsedParam('Lead', <LeadInfoFromId group={(new WorkingGroup(group).type as WorkingGroupKey)} leadId={leadId}/>, true)
+    new ParsedParam('Working group', (group as WorkingGroup).type),
+    new ParsedParam('New reward amount', formatBalance(amount as Balance)),
+    new ParsedParam(
+      'Lead',
+      <LeadInfoFromId group={(group as WorkingGroup).type} leadId={(leadId as WorkerId).toNumber()}/>,
+      true
+    )
   ],
-  TerminateWorkingGroupLeaderRole: ([params]) => {
-    const paramsObj = new TerminateRoleParameters(params);
-    const { working_group: workingGroup, rationale, worker_id: leadId, slash } = paramsObj;
+  TerminateWorkingGroupLeaderRole: ({
+    working_group: workingGroup,
+    rationale,
+    worker_id: leadId,
+    slash
+  }) => {
     return [
       new ParsedParam('Working group', workingGroup.type),
       new ParsedParam('Rationale', bytesToString(rationale), true),
       new ParsedParam('Slash stake', slash.isTrue ? 'YES' : 'NO'),
-      new ParsedParam('Lead', <LeadInfoFromId group={workingGroup.type as WorkingGroupKey} leadId={leadId.toNumber()}/>, true)
+      new ParsedParam('Lead', <LeadInfoFromId group={workingGroup.type} leadId={leadId.toNumber()}/>, true)
     ];
   }
 };
@@ -307,6 +333,7 @@ const ParamsHeader = styled.h4`
   padding: 0.3rem;
   left: 0.5rem;
 `;
+
 type ProposalParamProps = { fullWidth?: boolean };
 const ProposalParam = ({ fullWidth, children }: React.PropsWithChildren<ProposalParamProps>) => (
   <div style={{ gridColumn: (fullWidth || undefined) && '1/3' }}>
@@ -332,20 +359,26 @@ export default function Body ({
   type,
   title,
   description,
-  params = [],
+  params,
   iAmProposer,
   proposalId,
   proposerId,
   isCancellable,
   cancellationFee
 }: BodyProps) {
-  const parseParams = paramParsers[type];
-  const parsedParams = parseParams(params);
+  // Assert more generic type (since TypeScript cannot possibly know the value of "type" here yet)
+  const parseParams = paramParsers[type] as (params: SpecificProposalDetails<ProposalType>) => ParsedParam[];
+  const parsedParams = parseParams(
+    type === 'RuntimeUpgrade'
+      ? params as RuntimeUpgradeProposalDetails
+      : (params as ProposalDetails).asType(type)
+  );
+
   return (
     <Card fluid>
       <Card.Content>
         <Card.Header>
-          <Header as="h1">{title}</Header>
+          <Header as='h1'>{title}</Header>
         </Card.Header>
         <StyledProposalDescription>
           <ReactMarkdown source={description} linkTarget='_blank' />
@@ -370,20 +403,20 @@ export default function Body ({
                 The cancellation fee for this type of proposal is:&nbsp;
                 <b>{ cancellationFee ? formatBalance(cancellationFee) : 'NONE' }</b>
               </p>
-              <Button.Group color="red">
-                <TxButton
-                  params={ [proposerId, proposalId] }
-                  tx={ 'proposalsEngine.cancelProposal' }
-                  onClick={ sendTx => { sendTx(); } }
-                  className={'icon left labeled'}
-                >
-                  <Icon name="cancel" inverted />
-                  Withdraw proposal
-                </TxButton>
-              </Button.Group>
+              <SemanticTxButton
+                params={ [proposerId, proposalId] }
+                tx={ 'proposalsEngine.cancelProposal' }
+                onClick={ (sendTx) => { sendTx(); } }
+                icon
+                color={ 'red' }
+                labelPosition={ 'left' }
+              >
+                <Icon name='cancel' inverted />
+                Withdraw proposal
+              </SemanticTxButton>
             </Message.Content>
           </Message>
-          </>) }
+        </>) }
       </Card.Content>
     </Card>
   );

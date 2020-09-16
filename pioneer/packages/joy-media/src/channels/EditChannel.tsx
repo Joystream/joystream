@@ -3,21 +3,21 @@ import { Button } from 'semantic-ui-react';
 import { Form, withFormik } from 'formik';
 import { History } from 'history';
 
-import { Text, Option } from '@polkadot/types';
-import TxButton from '@polkadot/joy-utils/TxButton';
-import { onImageError } from '@polkadot/joy-utils/images';
+import { Option } from '@polkadot/types';
+import { TxButton, JoyError, Section } from '@polkadot/joy-utils/react/components';
+import { onImageError } from '../common/images';
 import { withMediaForm, MediaFormProps } from '../common/MediaForms';
 import { ChannelType, ChannelClass as Fields, buildChannelValidationSchema, ChannelFormValues, ChannelToFormValues, ChannelGenericProp } from '../schemas/channel/Channel';
 import { MediaDropdownOptions } from '../common/MediaDropdownOptions';
-import { ChannelId, ChannelContentType, ChannelPublicationStatus, OptionalText } from '@joystream/types/content-working-group';
-import { newOptionalText, findFirstParamOfSubstrateEvent } from '@polkadot/joy-utils/index';
-import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
+import { ChannelId, OptionalText } from '@joystream/types/content-working-group';
+import { findFirstParamOfSubstrateEvent } from '@polkadot/joy-utils/functions/misc';
+import { useMyMembership } from '@polkadot/joy-utils/react/hooks';
 import { ChannelPublicationStatusDropdownOptions, isAccountAChannelOwner } from './ChannelHelpers';
 import { TxCallback } from '@polkadot/react-components/Status/types';
 import { SubmittableResult } from '@polkadot/api';
 import { ChannelValidationConstraints } from '../transport';
-import { JoyError } from '@polkadot/joy-utils/JoyStatus';
-import Section from '@polkadot/joy-utils/Section';
+
+import { useApi } from '@polkadot/react-hooks';
 
 export type OuterProps = {
   history?: History;
@@ -56,6 +56,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   } = props;
 
   const { myAccountId, myMemberId } = useMyMembership();
+  const { api } = useApi();
 
   if (entity && !isAccountAChannelOwner(entity, myAccountId)) {
     return <JoyError title={'Only owner can edit channel'} />;
@@ -83,52 +84,49 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const buildTxParams = () => {
     if (!isValid) return [];
 
-    // TODO get value from the form:
-    const publicationStatus = new ChannelPublicationStatus('Public');
-
     if (!entity) {
       // Create a new channel
 
       const channelOwner = myMemberId;
       const roleAccount = myAccountId;
-      const contentType = new ChannelContentType(values.content);
+      const contentType = api.createType('ChannelContentType', values.content);
 
       return [
         channelOwner,
         roleAccount,
         contentType,
-        new Text(values.handle),
-        newOptionalText(values.title),
-        newOptionalText(values.description),
-        newOptionalText(values.avatar),
-        newOptionalText(values.banner),
-        publicationStatus
+        values.handle,
+        values.title || null,
+        values.description || null,
+        values.avatar || null,
+        values.banner || null,
+        values.publicationStatus
       ];
     } else {
       // Update an existing channel
 
       const updOptText = (field: ChannelGenericProp): Option<OptionalText> => {
-        return new Option(OptionalText,
+        return api.createType('Option<OptionalText>',
           isFieldChanged(field)
-            ? newOptionalText(values[field.id])
+            ? api.createType('Option<Text>', values[field.id])
             : null
         );
       };
 
-      const updHandle = new Option(Text,
+      const updHandle = api.createType('Option<Text>',
         isFieldChanged(Fields.handle)
           ? values[Fields.handle.id]
           : null
       );
 
-      const updPublicationStatus = new Option(ChannelPublicationStatus,
+      const updPublicationStatus = api.createType('Option<ChannelPublicationStatus>',
         isFieldChanged(Fields.publicationStatus)
-          ? new ChannelPublicationStatus(values[Fields.publicationStatus.id] as any)
+          ? api.createType('ChannelPublicationStatus', values[Fields.publicationStatus.id])
           : null
       );
 
       return [
-        new ChannelId(entity.id),
+        entity.id,
         updHandle,
         updOptText(Fields.title),
         updOptText(Fields.description),
@@ -156,7 +154,6 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
   const renderMainButton = () =>
     <TxButton
       type='submit'
-      size='large'
       isDisabled={!dirty || isSubmitting}
       label={isNew
         ? 'Create channel'
@@ -182,7 +179,7 @@ const InnerForm = (props: MediaFormProps<OuterProps, FormValues>) => {
 
         {formFields()}
 
-        <LabelledField style={{ marginTop: '1rem' }} {...props}>
+        <LabelledField style={{ marginTop: '1rem' }} {...props} flex>
           {renderMainButton()}
           <Button
             type='button'
@@ -202,11 +199,13 @@ export const EditForm = withFormik<OuterProps, FormValues>({
   // Transform outer props into form values
   mapPropsToValues: (props): FormValues => {
     const { entity } = props;
+
     return ChannelToFormValues(entity);
   },
 
   validationSchema: (props: OuterProps): any => {
     const { constraints } = props;
+
     if (!constraints) return null;
 
     return buildChannelValidationSchema(constraints);

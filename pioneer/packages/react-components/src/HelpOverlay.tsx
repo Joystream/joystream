@@ -1,42 +1,49 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { BareProps } from './types';
-
-import React, { useState } from 'react';
+import React from 'react';
 import ReactMd from 'react-markdown';
 import styled from 'styled-components';
+import { useToggle } from '@polkadot/react-hooks';
 
 import Icon from './Icon';
 
-interface Props extends BareProps {
+interface Props {
+  className?: string;
   md: string;
 }
 
-function HelpOverlay ({ className, md, style }: Props): React.ReactElement<Props> {
-  const [isVisible, setIsVisible] = useState(false);
-
-  const _toggleVisible = (): void => setIsVisible(!isVisible);
+function HelpOverlay ({ className = '', md }: Props): React.ReactElement<Props> {
+  const [isVisible, toggleVisible] = useToggle();
 
   return (
     <div className={className}>
-      <div className="help-button" style={style}>
-        <Icon name="help circle" onClick={_toggleVisible} />
+      <div className='help-button'>
+        <Icon
+          icon='question-circle'
+          onClick={toggleVisible}
+        />
       </div>
       <div className={`help-slideout ${isVisible ? 'open' : 'closed'}`}>
-        <div className="help-button">
-          <Icon name="close" onClick={_toggleVisible} />
+        <div className='help-button'>
+          <Icon
+            icon='times'
+            onClick={toggleVisible}
+          />
         </div>
-        <ReactMd className="help-content" escapeHtml={false} source={md} />
+        <ReactMd
+          className='help-content'
+          escapeHtml={false}
+          source={md}
+        />
       </div>
     </div>
   );
 }
 
-export default styled(HelpOverlay)`
+export default React.memo(styled(HelpOverlay)`
   .help-button {
-    color: #2196f3;
     cursor: pointer;
     font-size: 2rem;
     padding: 1.25rem 1.5rem 0 0;
@@ -45,6 +52,7 @@ export default styled(HelpOverlay)`
   > .help-button {
     position: absolute;
     right: 0rem;
+    top: 0rem;
   }
 
   .help-slideout {
@@ -56,7 +64,7 @@ export default styled(HelpOverlay)`
     position: fixed;
     right: -50rem;
     top: 0;
-    transition-duration: 0.5s;
+    transition-duration: .5s;
     transition-property: all;
     z-index: 10;
 
@@ -72,4 +80,4 @@ export default styled(HelpOverlay)`
       right: 0;
     }
   }
-`;
+`);

@@ -1,21 +1,21 @@
 {
   "name": "@joystream/cli",
   "description": "Command Line Interface for Joystream community and governance activities",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": "Leszek Wiesner",
   "bin": {
     "joystream-cli": "./bin/run"
   },
   "bugs": "https://github.com/Joystream/joystream/issues",
   "dependencies": {
-    "@joystream/types": "^0.12.0",
+    "@joystream/types": "^0.13.0",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
     "@oclif/plugin-autocomplete": "^0.2.0",
     "@oclif/plugin-help": "^2.2.3",
     "@oclif/plugin-not-found": "^1.2.4",
     "@oclif/plugin-warn-if-update-available": "^1.7.0",
-    "@polkadot/api": "^0.96.1",
+    "@polkadot/api": "1.26.1",
     "@types/inquirer": "^6.5.0",
     "@types/proper-lockfile": "^4.1.1",
     "@types/slug": "^0.9.1",
@@ -35,7 +35,7 @@
     "@types/mocha": "^5.2.7",
     "@types/node": "^10.17.18",
     "chai": "^4.2.0",
-    "eslint": "^5.16.0",
+    "eslint": "^7.6.0",
     "eslint-config-oclif": "^3.1.0",
     "eslint-config-oclif-typescript": "^0.1.0",
     "globby": "^10.0.2",

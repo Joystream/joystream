@@ -19,17 +19,12 @@ import { ChannelEntity } from './entities/ChannelEntity';
 import { ChannelId, Channel } from '@joystream/types/content-working-group';
 import { ApiPromise } from '@polkadot/api/index';
 import { ApiProps } from '@polkadot/react-api/types';
-import { Vec } from '@polkadot/types';
-import { LinkageResult } from '@polkadot/types/codec/Linkage';
 import { ChannelCodec } from './schemas/channel/Channel';
 import { FeaturedContentType } from './schemas/general/FeaturedContent';
-import { AnyChannelId, asChannelId, AnyClassId, AnyEntityId } from './common/TypeHelpers';
-import { SimpleCache } from '@polkadot/joy-utils/SimpleCache';
-import { ValidationConstraint } from '@polkadot/joy-utils/ValidationConstraint';
-
-const FIRST_CHANNEL_ID = 1;
-const FIRST_CLASS_ID = 1;
-const FIRST_ENTITY_ID = 1;
+import { AnyChannelId, AnyClassId, AnyEntityId, asChannelId } from './common/TypeHelpers';
+import { SimpleCache } from '@polkadot/joy-utils/transport/SimpleCache';
+import { ValidationConstraint } from '@polkadot/joy-utils/types/ValidationConstraint';
+import { ids } from '@polkadot/joy-utils/transport/base';
 
 /**
  * There are entities that refer to other entities.
@@ -120,27 +115,14 @@ export class SubstrateTransport extends MediaTransport {
   // Channels (Content Working Group module)
   // -----------------------------------------------------------------
 
-  async nextChannelId (): Promise<ChannelId> {
-    return await this.cwgQuery().nextChannelId<ChannelId>();
-  }
-
   async allChannelIds (): Promise<ChannelId[]> {
-    let nextId = (await this.nextChannelId()).toNumber();
-    if (nextId < 1) nextId = 1;
-
-    const allIds: ChannelId[] = [];
-    for (let id = FIRST_CHANNEL_ID; id < nextId; id++) {
-      allIds.push(new ChannelId(id));
-    }
-
-    return allIds;
+    return ids<ChannelId>(this.cwgQuery().channelById);
   }
 
   async loadChannelsByIds (ids: AnyChannelId[]): Promise<ChannelEntity[]> {
-    const channelTuples = await this.cwgQuery().channelById.multi<LinkageResult>(ids);
+    const channels = await this.cwgQuery().channelById.multi<Channel>(ids);
 
-    return channelTuples.map((tuple, i) => {
-      const channel = tuple[0] as Channel;
+    return channels.map((channel, i) => {
       const id = asChannelId(ids[i]);
       const plain = ChannelCodec.fromSubstrate(id, channel);
 
@@ -154,11 +136,13 @@ export class SubstrateTransport extends MediaTransport {
 
   async allChannels (): Promise<ChannelEntity[]> {
     const ids = await this.allChannelIds();
+
     return await this.channelCache.getOrLoadByIds(ids);
   }
 
   protected async getValidationConstraint (constraintName: string): Promise<ValidationConstraint> {
     const constraint = await this.cwgQuery()[constraintName]<InputValidationLengthConstraint>();
+
     return {
       min: constraint.min.toNumber(),
       max: constraint.max.toNumber()
@@ -179,6 +163,7 @@ export class SubstrateTransport extends MediaTransport {
       this.getValidationConstraint('channelAvatarConstraint'),
       this.getValidationConstraint('channelBannerConstraint')
     ]);
+
     return {
       handle,
       title,
@@ -190,79 +175,61 @@ export class SubstrateTransport extends MediaTransport {
 
   // Classes (Versioned Store module)
   // -----------------------------------------------------------------
-
-  async nextClassId (): Promise<ClassId> {
-    return await this.vsQuery().nextClassId<ClassId>();
-  }
-
   async allClassIds (): Promise<ClassId[]> {
-    const nextId = (await this.nextClassId()).toNumber();
-
-    const allIds: ClassId[] = [];
-    for (let id = FIRST_CLASS_ID; id < nextId; id++) {
-      allIds.push(new ClassId(id));
-    }
-
-    return allIds;
+    return ids<ClassId>(this.vsQuery().classById);
   }
 
   async loadClassesByIds (ids: AnyClassId[]): Promise<Class[]> {
-    return await this.vsQuery().classById.multi<Vec<Class>>(ids) as unknown as Class[];
+    return await this.vsQuery().classById.multi<Class>(ids);
   }
 
   async allClasses (): Promise<Class[]> {
     const ids = await this.allClassIds();
+
     return await this.classCache.getOrLoadByIds(ids);
   }
 
   async getEntityCodecResolver (): Promise<EntityCodecResolver> {
     if (!this.entityCodecResolver) {
       const classes = await this.allClasses();
+
       this.entityCodecResolver = new EntityCodecResolver(classes);
     }
+
     return this.entityCodecResolver;
   }
 
   async classNamesToIdSet (classNames: ClassName[]): Promise<Set<string>> {
     const classNameToIdMap = await this.classIdByNameMap();
+
     return new Set(classNames
-      .map(name => {
+      .map((name) => {
         const classId = classNameToIdMap[name];
+
         return classId ? classId.toString() : undefined;
       })
-      .filter(classId => typeof classId !== 'undefined') as string[]
+      .filter((classId) => typeof classId !== 'undefined') as string[]
     );
   }
 
   // Entities (Versioned Store module)
   // -----------------------------------------------------------------
-
-  async nextEntityId (): Promise<EntityId> {
-    return await this.vsQuery().nextEntityId<EntityId>();
-  }
-
   async allEntityIds (): Promise<EntityId[]> {
-    const nextId = (await this.nextEntityId()).toNumber();
-
-    const allIds: EntityId[] = [];
-    for (let id = FIRST_ENTITY_ID; id < nextId; id++) {
-      allIds.push(new EntityId(id));
-    }
-
-    return allIds;
+    return ids<EntityId>(this.vsQuery().entityById);
   }
 
   private async loadEntitiesByIds (ids: AnyEntityId[]): Promise<Entity[]> {
     if (!ids || ids.length === 0) return [];
 
-    return await this.vsQuery().entityById.multi<Vec<Entity>>(ids) as unknown as Entity[];
+    return await this.vsQuery().entityById.multi<Entity>(ids);
   }
 
   // TODO try to cache this func
   private async loadPlainEntitiesByIds (ids: AnyEntityId[]): Promise<PlainEntity[]> {
     const entities = await this.loadEntitiesByIds(ids);
     const cacheClassIds = await this.classNamesToIdSet(ClassNamesThatCanBeCached);
-    entities.forEach(e => {
+
+    entities.forEach((e) => {
       if (cacheClassIds.has(e.class_id.toString())) {
         this.idsOfEntitiesToKeepInCache.add(e.id.toString());
       }
@@ -277,20 +244,23 @@ export class SubstrateTransport extends MediaTransport {
 
   async allPlainEntities (): Promise<PlainEntity[]> {
     const ids = await this.allEntityIds();
+
     return await this.entityCache.getOrLoadByIds(ids);
   }
 
   async findPlainEntitiesByClassName<T extends PlainEntity> (className: ClassName): Promise<T[]> {
     const res: T[] = [];
     const clazz = await this.classByName(className);
+
     if (!clazz) {
       console.warn(`No class found by name '${className}'`);
+
       return res;
     }
 
     const allIds = await this.allEntityIds();
     const filteredEntities = (await this.entityCache.getOrLoadByIds(allIds))
-      .filter(entity => clazz.id.eq(entity.classId)) as T[];
+      .filter((entity) => clazz.id.eq(entity.classId)) as T[];
 
     console.log(`Found ${filteredEntities.length} plain entities by class name '${className}'`);
 
@@ -305,6 +275,7 @@ export class SubstrateTransport extends MediaTransport {
     const loadableClassIds = await this.classNamesToIdSet(ClassNamesThatRequireLoadingInternals);
 
     const converted: PlainEntity[] = [];
+
     for (const entity of entities) {
       const classIdStr = entity.class_id.toString();
       const codec = entityCodecResolver.getCodecByClassId(entity.class_id);
@@ -337,6 +308,7 @@ export class SubstrateTransport extends MediaTransport {
 
   async featuredContent (): Promise<FeaturedContentType | undefined> {
     const arr = await this.findPlainEntitiesByClassName('FeaturedContent');
+
     return arr && arr.length ? arr[0] : undefined;
   }
 

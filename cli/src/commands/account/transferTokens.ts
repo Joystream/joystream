@@ -6,7 +6,6 @@ import { formatBalance } from '@polkadot/util'
 import { Hash } from '@polkadot/types/interfaces'
 import { NamedKeyringPair } from '../../Types'
 import { checkBalance, validateAddress } from '../../helpers/validation'
-import { DerivedBalances } from '@polkadot/api-derive/types'
 
 type AccountTransferArgs = {
   recipient: string
@@ -36,15 +35,16 @@ export default class AccountTransferTokens extends AccountsCommandBase {
 
     // Initial validation
     validateAddress(args.recipient, 'Invalid recipient address')
-    const accBalances: DerivedBalances = (await this.getApi().getAccountsBalancesInfo([selectedAccount.address]))[0]
+    const accBalances = (await this.getApi().getAccountsBalancesInfo([selectedAccount.address]))[0]
     checkBalance(accBalances, amountBN)
 
     await this.requestAccountDecoding(selectedAccount)
 
     this.log(chalk.white('Estimating fee...'))
+    const tx = await this.getApi().createTransferTx(args.recipient, amountBN)
     let estimatedFee: BN
     try {
-      estimatedFee = await this.getApi().estimateFee(selectedAccount, args.recipient, amountBN)
+      estimatedFee = await this.getApi().estimateFee(selectedAccount, tx)
     } catch (e) {
       this.error('Could not estimate the fee.', { exit: ExitCodes.UnexpectedException })
     }
@@ -57,7 +57,7 @@ export default class AccountTransferTokens extends AccountsCommandBase {
     await this.requireConfirmation('Do you confirm the transfer?')
 
     try {
-      const txHash: Hash = await this.getApi().transfer(selectedAccount, args.recipient, amountBN)
+      const txHash: Hash = await tx.signAndSend(selectedAccount)
       this.log(chalk.greenBright('Transaction succesfully sent!'))
       this.log(chalk.white('Hash:', txHash.toString()))
     } catch (e) {

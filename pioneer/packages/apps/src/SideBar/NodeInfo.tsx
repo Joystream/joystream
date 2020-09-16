@@ -1,21 +1,21 @@
-// Copyright 2017-2019 @polkadot/apps authors & contributors
+// Copyright 2017-2020 @polkadot/apps authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { BareProps as Props } from '@polkadot/react-components/types';
 
-import React, { useContext } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import { ApiContext } from '@polkadot/react-api';
+import { useApi } from '@polkadot/react-hooks';
 import { NodeName, NodeVersion } from '@polkadot/react-query';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const pkgJson = require('../../package.json');
+const pkgJson = require('../../package.json') as { version: string };
 
 const uiInfo = `apps v${pkgJson.version}`;
 
 function NodeInfo ({ className }: Props): React.ReactElement<Props> {
-  const { api, isApiReady } = useContext(ApiContext);
+  const { api, isApiReady } = useApi();
 
   return (
     <div className={className}>
@@ -31,7 +31,7 @@ function NodeInfo ({ className }: Props): React.ReactElement<Props> {
   );
 }
 
-export default styled(NodeInfo)`
+export default React.memo(styled(NodeInfo)`
   background: transparent;
   color: white;
   font-size: 0.75rem;
@@ -49,8 +49,4 @@ export default styled(NodeInfo)`
       margin-bottom: 0.5rem;
     }
   }
-
-  .rx--updated {
-    background: inherit !important;
-  }
-`;
+`);

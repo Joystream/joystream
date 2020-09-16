@@ -1,10 +1,10 @@
 import BN from 'bn.js'
-import { Text, bool, Vec, u16 } from '@polkadot/types'
-import { Codec } from '@polkadot/types/types'
+import { Text, bool, Vec } from '@polkadot/types'
+import { Codec, Registry } from '@polkadot/types/types'
 import { Class, Entity, VecClassPropertyValue, ClassPropertyValue, EntityId, ClassId, unifyPropName } from '.'
 import * as PV from './PropertyValue'
 import { PropertyValue } from './PropertyValue'
-import { PropertyTypeName } from './PropertyTypeName'
+import { PropertyTypeKeys } from './PropertyType'
 import ChannelId from '../content-working-group/ChannelId'
 
 /**
@@ -12,7 +12,7 @@ import ChannelId from '../content-working-group/ChannelId'
  * like string, number, boolean, etc.
  */
 function substrateToPlain<T>(x: Codec): T | undefined {
-  let res: any = undefined
+  let res: any
 
   if (x instanceof PV.None) {
     res = undefined
@@ -40,9 +40,9 @@ function substrateToPlain<T>(x: Codec): T | undefined {
  *
  * @throws Error
  */
-function plainToSubstrate(propType: string, value: any): PropertyValue {
+function plainToSubstrate(registry: Registry, propType: string, value: any): PropertyValue {
   const ok = (typeEnum: PV.PropertyValueEnum) => {
-    return new PropertyValue({ [propType]: typeEnum })
+    return new PropertyValue(registry, { [propType]: typeEnum }) // FIXME: createType?
   }
 
   const valueAsBool = (): boolean => {
@@ -79,51 +79,48 @@ function plainToSubstrate(propType: string, value: any): PropertyValue {
     return valueAsArr() as string[]
   }
 
+  // FIXME: use createType?
   switch (propType) {
     // Primitives:
-
     case 'None':
-      return ok(new PV.None())
+      return ok(new PV.None(registry))
     case 'Bool':
-      return ok(new PV.Bool(valueAsBool()))
+      return ok(new PV.Bool(registry, valueAsBool()))
     case 'Uint16':
-      return ok(new PV.Uint16(value as string))
+      return ok(new PV.Uint16(registry, value as string))
     case 'Uint32':
-      return ok(new PV.Uint32(value as string))
+      return ok(new PV.Uint32(registry, value as string))
     case 'Uint64':
-      return ok(new PV.Uint64(value as string))
+      return ok(new PV.Uint64(registry, value as string))
     case 'Int16':
-      return ok(new PV.Int16(value as string))
+      return ok(new PV.Int16(registry, value as string))
     case 'Int32':
-      return ok(new PV.Int32(value as string))
+      return ok(new PV.Int32(registry, value as string))
     case 'Int64':
-      return ok(new PV.Int64(value as string))
+      return ok(new PV.Int64(registry, value as string))
     case 'Text':
-      return ok(new PV.Text(value as string))
+      return ok(new PV.Text(registry, value as string))
     case 'Internal':
-      return ok(new PV.Internal(value as string))
-
+      return ok(new PV.Internal(registry, value as string))
     // Vectors:
-
     case 'BoolVec':
-      return ok(new PV.BoolVec(valueAsBoolArr()))
+      return ok(new PV.BoolVec(registry, valueAsBoolArr()))
     case 'Uint16Vec':
-      return ok(new PV.Uint16Vec(valueAsStrArr()))
+      return ok(new PV.Uint16Vec(registry, valueAsStrArr()))
     case 'Uint32Vec':
-      return ok(new PV.Uint32Vec(valueAsStrArr()))
+      return ok(new PV.Uint32Vec(registry, valueAsStrArr()))
     case 'Uint64Vec':
-      return ok(new PV.Uint64Vec(valueAsStrArr()))
+      return ok(new PV.Uint64Vec(registry, valueAsStrArr()))
     case 'Int16Vec':
-      return ok(new PV.Int16Vec(valueAsStrArr()))
+      return ok(new PV.Int16Vec(registry, valueAsStrArr()))
     case 'Int32Vec':
-      return ok(new PV.Int32Vec(valueAsStrArr()))
+      return ok(new PV.Int32Vec(registry, valueAsStrArr()))
     case 'Int64Vec':
-      return ok(new PV.Int64Vec(valueAsStrArr()))
+      return ok(new PV.Int64Vec(registry, valueAsStrArr()))
     case 'TextVec':
-      return ok(new PV.TextVec(valueAsStrArr()))
+      return ok(new PV.TextVec(registry, valueAsStrArr()))
     case 'InternalVec':
-      return ok(new PV.InternalVec(valueAsArr()))
-
+      return ok(new PV.InternalVec(registry, valueAsArr()))
     default: {
       throw new Error(`Unknown property type name: ${propType}`)
     }
@@ -174,8 +171,10 @@ export interface ToPlainObjectProps {
 export abstract class EntityCodec<T extends PlainEntity> {
   private propNameToMetaMap: Map<string, PropMeta> = new Map()
   private propIndexToNameMap: Map<number, string> = new Map()
+  private registry: Registry
 
   public constructor(entityClass: Class) {
+    this.registry = entityClass.registry
     entityClass.properties.map((p, index) => {
       const propName = unifyPropName(p.name.toString())
       const propMeta = { index, type: p.prop_type.type.toString() }
@@ -244,26 +243,29 @@ export abstract class EntityCodec<T extends PlainEntity> {
     // console.log('propNameToMetaMap propNameToMetaMap', this.propNameToMetaMap)
     // console.log('toSubstrateUpdate updatedProps', updatedProps)
 
-    const res = new VecClassPropertyValue()
+    const res = new VecClassPropertyValue(this.registry) // FIXME: createType?
     Object.keys(updatedProps).map((propName) => {
       const meta = this.propNameToMetaMap.get(propName)
       if (meta) {
-        const propType = meta.type as PropertyTypeName
+        const propType = meta.type as PropertyTypeKeys
         const plainValue = (updatedProps as any)[propName]
 
         let codecValue: PropertyValue | undefined
         try {
-          codecValue = plainToSubstrate(propType, plainValue)
+          codecValue = plainToSubstrate(this.registry, propType, plainValue)
         } catch (err) {
           console.error(`Failed to convert plain value '${plainValue}' to Substrate codec. Error:`, err)
         }
 
         if (codecValue) {
           res.push(
-            new ClassPropertyValue({
-              in_class_index: new u16(meta.index),
-              value: codecValue,
-            })
+            new ClassPropertyValue(
+              this.registry, // FIXME: createType?
+              {
+                in_class_index: this.registry.createType('u16', meta.index),
+                value: codecValue,
+              }
+            )
           )
         }
       }

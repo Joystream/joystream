@@ -8,7 +8,7 @@ import ApiCommandBase from './ApiCommandBase'
 import { Keyring } from '@polkadot/api'
 import { formatBalance } from '@polkadot/util'
 import { NamedKeyringPair } from '../Types'
-import { DerivedBalances } from '@polkadot/api-derive/types'
+import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { toFixedLength } from '../helpers/display'
 
 const ACCOUNTS_DIRNAME = 'accounts'
@@ -54,7 +54,9 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     const keyring = new Keyring({ type: 'sr25519' })
     keyring.addFromUri('//Alice', { name: 'Alice' })
     keyring.addFromUri('//Bob', { name: 'Bob' })
-    keyring.getPairs().forEach((pair) => this.saveAccount({ ...pair, meta: { name: pair.meta.name } }, '', true))
+    keyring
+      .getPairs()
+      .forEach((pair) => this.saveAccount({ ...pair, meta: { name: pair.meta.name as string } }, '', true))
   }
 
   fetchAccountFromJsonFile(jsonBackupFilePath: string): NamedKeyringPair {
@@ -186,7 +188,7 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     message = 'Select an account',
     showBalances = true
   ): Promise<NamedKeyringPair> {
-    let balances: DerivedBalances[]
+    let balances: DeriveBalancesAll[]
     if (showBalances) {
       balances = await this.getApi().getAccountsBalancesInfo(accounts.map((acc) => acc.address))
     }

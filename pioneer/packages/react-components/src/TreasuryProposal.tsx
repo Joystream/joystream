@@ -1,20 +1,19 @@
-// Copyright 2017-2019 @polkadot/app-democracy authors & contributors
+// Copyright 2017-2020 @polkadot/app-democracy authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { TreasuryProposal as TreasuryProposalType } from '@polkadot/types/interfaces';
-import { I18nProps } from '@polkadot/react-components/types';
 
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { InputAddress, Labelled, Static } from '@polkadot/react-components';
-import { ApiContext } from '@polkadot/react-api';
+import { useApi } from '@polkadot/react-hooks';
 import { Option } from '@polkadot/types';
-import { formatBalance } from '@polkadot/util';
+import { FormatBalance } from '@polkadot/react-query';
 
 import Inset, { InsetProps } from './Inset';
-import translate from './translate';
+import { useTranslation } from './translate';
 
-interface Props extends I18nProps {
+interface Props {
   className?: string;
   asInset?: boolean;
   insetProps?: Partial<InsetProps>;
@@ -24,9 +23,10 @@ interface Props extends I18nProps {
   withLink?: boolean;
 }
 
-function TreasuryProposal ({ className, asInset, insetProps, onClick, proposal, proposalId, t }: Props): React.ReactElement<Props> | null {
+function TreasuryProposal ({ asInset, className = '', insetProps, onClick, proposal, proposalId }: Props): React.ReactElement<Props> | null {
+  const { t } = useTranslation();
   const [stateProposal, setProposal] = useState<TreasuryProposalType | null>(null);
-  const { api } = useContext(ApiContext);
+  const { api } = useApi();
 
   useEffect((): void => {
     if (!proposal && proposalId) {
@@ -34,41 +34,42 @@ function TreasuryProposal ({ className, asInset, insetProps, onClick, proposal, 
         .proposals<Option<TreasuryProposalType>>(proposalId)
         .then((proposal): TreasuryProposalType | null => proposal.unwrapOr(null))
         .catch((): null => null)
-        .then(setProposal);
+        .then(setProposal)
+        .catch(console.error);
     } else {
       setProposal(proposal || null);
     }
-  }, [proposal, proposalId]);
+  }, [api, proposal, proposalId]);
 
   if (!stateProposal) {
     return null;
   }
 
-  const { bond, beneficiary, proposer, value } = stateProposal;
+  const { beneficiary, bond, proposer, value } = stateProposal;
 
   const inner = (
     <>
-      <Labelled label={t('proposed by')}>
+      <Labelled label={t<string>('proposed by')}>
         <InputAddress
-          isDisabled
           defaultValue={proposer}
+          isDisabled
           value={proposer}
           withLabel={false}
         />
       </Labelled>
-      <Labelled label={t('beneficiary')}>
+      <Labelled label={t<string>('beneficiary')}>
         <InputAddress
-          isDisabled
           defaultValue={beneficiary}
+          isDisabled
           value={beneficiary}
           withLabel={false}
         />
       </Labelled>
-      <Static label={t('value')}>
-        {formatBalance(value)}
+      <Static label={t<string>('value')}>
+        <FormatBalance value={value} />
       </Static>
-      <Static label={t('bond')}>
-        {formatBalance(bond)}
+      <Static label={t<string>('bond')}>
+        <FormatBalance value={bond} />
       </Static>
     </>
   );
@@ -94,4 +95,4 @@ function TreasuryProposal ({ className, asInset, insetProps, onClick, proposal, 
   );
 }
 
-export default translate(TreasuryProposal);
+export default React.memo(TreasuryProposal);

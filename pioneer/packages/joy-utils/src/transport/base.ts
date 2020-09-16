@@ -1,8 +1,32 @@
 import { ApiPromise } from '@polkadot/api';
-import { Codec } from '@polkadot/types/types';
-import { APIQueryCache } from '../APIQueryCache';
+import { UInt } from '@polkadot/types/codec';
+import { Codec, CodecArg } from '@polkadot/types/types';
+import { QueryableStorageEntry } from '@polkadot/api/types/storage';
+import { APIQueryCache } from './APIQueryCache';
 
-export default abstract class BaseTransport {
+export async function entriesByIds<IDType extends UInt, ValueType extends Codec> (
+  apiMethod: QueryableStorageEntry<'promise'>,
+  firstKey?: CodecArg // First key in case of double maps
+): Promise<[IDType, ValueType][]> {
+  const entries: [IDType, ValueType][] = (await apiMethod.entries<ValueType>(firstKey))
+    .map(([storageKey, value]) => ([
+      // If double-map (first key is provided), we map entries by second key
+      storageKey.args[firstKey !== undefined ? 1 : 0] as IDType,
+      value
+    ]));
+
+  return entries.sort((a, b) => a[0].toNumber() - b[0].toNumber());
+}
+
+export async function ids<IDType extends UInt> (
+  apiMethod: QueryableStorageEntry<'promise'>
+): Promise<IDType[]> {
+  const storageKeys = await apiMethod.keys();
+
+  return storageKeys.map((key) => key.args[0] as IDType).sort((a, b) => a.toNumber() - b.toNumber());
+}
+
+export default class BaseTransport {
   protected api: ApiPromise;
   protected cacheApi: APIQueryCache;
 
@@ -61,47 +85,10 @@ export default abstract class BaseTransport {
 
   protected queryMethodByName (name: string) {
     const [module, method] = name.split('.');
+
     return this.api.query[module][method];
   }
 
-  // Fetch all double map entries using only the first key
-  //
-  // TODO: FIXME: This may be a risky implementation, because it relies on a few assumptions about how the data is stored etc.
-  // With the current runtime version we can rely on the fact that all storage keys for double-map values start with the same
-  // 32-bytes prefix assuming a given (fixed) value of the first key (ie. for all values like map[x][y], the storage key starts
-  // with the same prefix as long as x remains the same. Changing y will not affect this prefix)
-  protected async doubleMapEntries<T extends Codec> (
-    methodName: string,
-    firstKey: Codec,
-    valueConverter: (hex: string) => T,
-    getEntriesCount: () => Promise<number>,
-    secondKeyStart = 1
-  ): Promise<{ secondKey: number; value: T}[]> {
-    // Get prefix and storage keys of all entries
-    const firstEntryStorageKey = this.queryMethodByName(methodName).key(firstKey, secondKeyStart);
-    const entryStorageKeyPrefix = firstEntryStorageKey.substr(0, 66); // "0x" + 64 hex characters (32 bytes)
-    const allEntriesStorageKeys = await this.api.rpc.state.getKeys(entryStorageKeyPrefix);
-
-    // Create storageKey-to-secondKey map
-    const maxSecondKey = (await getEntriesCount()) - 1 + secondKeyStart;
-    const storageKeyToSecondKey: { [key: string]: number } = {};
-    for (let secondKey = secondKeyStart; secondKey <= maxSecondKey; ++secondKey) {
-      const storageKey = this.queryMethodByName(methodName).key(firstKey, secondKey);
-      storageKeyToSecondKey[storageKey] = secondKey;
-    }
-
-    // Create the resulting entries array
-    const entries: { secondKey: number; value: T }[] = [];
-    for (const key of allEntriesStorageKeys) {
-      const value: any = await this.api.rpc.state.getStorage(key);
-      if (typeof value === 'object' && value !== null && value.raw) {
-        entries.push({
-          secondKey: storageKeyToSecondKey[key.toString()],
-          value: valueConverter(value.raw.toString())
-        });
-      }
-    }
-
-    return entries;
-  }
+  protected entriesByIds = entriesByIds
+  protected ids = ids
 }

@@ -1,7 +1,7 @@
 use crate::{AccountId, Credential, Runtime};
 
-use srml_support::traits::{Currency, Imbalance};
-use srml_support::{parameter_types, StorageLinkedMap, StorageMap};
+use frame_support::traits::{Currency, Imbalance};
+use frame_support::{parameter_types, IterableStorageMap, StorageMap};
 
 parameter_types! {
     pub const CurrentLeadCredential: Credential = 0;
@@ -29,7 +29,7 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
             credential if credential == AnyActiveCuratorCredential::get() => {
                 // Look for a Curator with a matching role account
                 for (_principal_id, principal) in
-                    <content_working_group::PrincipalById<Runtime>>::enumerate()
+                    <content_working_group::PrincipalById<Runtime>>::iter()
                 {
                     if let content_working_group::Principal::Curator(curator_id) = principal {
                         let curator =
@@ -48,7 +48,7 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
             credential if credential == AnyActiveChannelOwnerCredential::get() => {
                 // Look for a ChannelOwner with a matching role account
                 for (_principal_id, principal) in
-                    <content_working_group::PrincipalById<Runtime>>::enumerate()
+                    <content_working_group::PrincipalById<Runtime>>::iter()
                 {
                     if let content_working_group::Principal::ChannelOwner(channel_id) = principal {
                         let channel =
@@ -80,14 +80,14 @@ impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHan
         _unstaked_amount: stake::BalanceOf<Runtime>,
         remaining_imbalance: stake::NegativeImbalance<Runtime>,
     ) -> stake::NegativeImbalance<Runtime> {
-        if !hiring::ApplicationIdByStakingId::<Runtime>::exists(stake_id) {
+        if !hiring::ApplicationIdByStakingId::<Runtime>::contains_key(stake_id) {
             // Stake not related to a staked role managed by the hiring module
             return remaining_imbalance;
         }
 
         let application_id = hiring::ApplicationIdByStakingId::<Runtime>::get(stake_id);
 
-        if !content_working_group::CuratorApplicationById::<Runtime>::exists(application_id) {
+        if !content_working_group::CuratorApplicationById::<Runtime>::contains_key(application_id) {
             // Stake not for a Curator
             return remaining_imbalance;
         }
@@ -97,7 +97,7 @@ impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHan
         hiring::Module::<Runtime>::unstaked(*stake_id);
 
         // Only notify working group module if non instantaneous unstaking occured
-        if content_working_group::UnstakerByStakeId::<Runtime>::exists(stake_id) {
+        if content_working_group::UnstakerByStakeId::<Runtime>::contains_key(stake_id) {
             content_working_group::Module::<Runtime>::unstaked(*stake_id);
         }
 
@@ -107,7 +107,7 @@ impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHan
         let member_id = curator_application.member_id;
 
         // get member's profile
-        let member_profile = membership::members::MemberProfile::<Runtime>::get(member_id).unwrap();
+        let member_profile = membership::MembershipById::<Runtime>::get(member_id);
 
         // deposit funds to member's root_account
         // The application doesn't recorded the original source_account from which staked funds were

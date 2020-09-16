@@ -1,10 +1,14 @@
 use codec::{Decode, Encode};
-use srml_support::dispatch;
 
 use crate::constraint::*;
 use crate::credentials::*;
+use crate::DispatchResult;
+
+#[cfg(feature = "std")]
+use serde::{Deserialize, Serialize};
 
 /// Permissions for an instance of a Class in the versioned store.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Eq, PartialEq, Clone, Debug)]
 pub struct ClassPermissions<ClassId, Credential, PropertyIndex, BlockNumber>
 where
@@ -48,7 +52,7 @@ where
     pub fn is_admin(
         class_permissions: &Self,
         access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         match access_level {
             AccessLevel::System => Ok(()),
             AccessLevel::Credential(credential) => {
@@ -66,7 +70,7 @@ where
     pub fn can_add_class_schema(
         class_permissions: &Self,
         access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         match access_level {
             AccessLevel::System => Ok(()),
             AccessLevel::Credential(credential) => {
@@ -84,7 +88,7 @@ where
     pub fn can_create_entity(
         class_permissions: &Self,
         access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         match access_level {
             AccessLevel::System => Ok(()),
             AccessLevel::Credential(credential) => {
@@ -104,7 +108,7 @@ where
     pub fn can_update_entity(
         class_permissions: &Self,
         access_level: &AccessLevel<Credential>,
-    ) -> dispatch::Result {
+    ) -> DispatchResult {
         match access_level {
             AccessLevel::System => Ok(()),
             AccessLevel::Credential(credential) => {
@@ -133,6 +137,7 @@ where
     }
 }
 
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Debug, Eq, PartialEq)]
 pub struct EntityPermissions<Credential>
 where

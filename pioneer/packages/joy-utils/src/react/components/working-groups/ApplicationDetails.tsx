@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ParsedApplication } from '../../../types/workingGroups';
-import { ProfilePreviewFromStruct as MemberPreview } from '../../../MemberProfilePreview';
+import { ProfilePreviewFromStruct as MemberPreview } from '../MemberProfilePreview';
 import { useTransport, usePromise } from '../../hooks';
 import { Item, Label, Button } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
@@ -13,16 +13,19 @@ type ApplicationsDetailsProps = {
 }
 
 export const ApplicationsDetails = ({ applications, acceptedIds }: ApplicationsDetailsProps) => {
-  const rejectedApplications = acceptedIds !== undefined ? applications.filter(a => !acceptedIds.includes(a.wgApplicationId)) : [];
+  const rejectedApplications = acceptedIds !== undefined ? applications.filter((a) => !acceptedIds.includes(a.wgApplicationId)) : [];
   const [showAll, setShowAll] = useState(!rejectedApplications.length);
-  const shownApplications = applications.filter(a => showAll || acceptedIds?.includes(a.wgApplicationId));
+  const shownApplications = applications.filter((a) => showAll || acceptedIds?.includes(a.wgApplicationId));
+
   return (<>
     <Item.Group>
       {
         shownApplications.map(({ member, stakes, wgApplicationId, humanReadableText }) => {
           let HRT = humanReadableText.toString();
           const accepted = acceptedIds?.includes(wgApplicationId);
+
           try { HRT = JSON.stringify(JSON.parse(HRT), undefined, 4); } catch (e) { /* Do nothing */ }
+
           return (
             <Item key={wgApplicationId} style={{
               background: 'white',
@@ -51,7 +54,7 @@ export const ApplicationsDetails = ({ applications, acceptedIds }: ApplicationsD
       }
     </Item.Group>
     {rejectedApplications.length > 0 && (
-      <Button fluid onClick={() => setShowAll(current => !current)}>
+      <Button fluid onClick={() => setShowAll((current) => !current)}>
         { showAll ? 'Hide rejected applications' : 'Show rejected applications' }
       </Button>
     )}
@@ -67,13 +70,13 @@ type ApplicationsDetailsByIdsProps = {
 export const ApplicationsDetailsByIds = ({ group, ids, acceptedIds }: ApplicationsDetailsByIdsProps) => {
   const transport = useTransport();
   const [applications, error, loading] = usePromise<ParsedApplication[]>(
-    () => Promise.all(ids.map(id => transport.workingGroups.parsedApplicationById(group, id))),
+    () => Promise.all(ids.map((id) => transport.workingGroups.parsedApplicationById(group, id))),
     [],
     [ids]
   );
 
   return (
-    <PromiseComponent {...{ error, loading }} message="Fetching application(s)...">
+    <PromiseComponent {...{ error, loading }} message='Fetching application(s)...'>
       <ApplicationsDetails applications={applications} acceptedIds={acceptedIds}/>
     </PromiseComponent>
   );
@@ -95,7 +98,7 @@ export const ApplicationsDetailsByOpening = ({ group, openingId, acceptedIds }: 
   );
 
   return (
-    <PromiseComponent {...{ error, loading }} message="Fetching applications...">
+    <PromiseComponent {...{ error, loading }} message='Fetching applications...'>
       <ApplicationsDetails applications={applications} acceptedIds={acceptedIds}/>
     </PromiseComponent>
   );

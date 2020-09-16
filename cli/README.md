@@ -108,7 +108,7 @@ OPTIONS
   --showSpecial  Whether to show special (DEV chain) accounts
 ```
 
-_See code: [src/commands/account/choose.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/choose.ts)_
+_See code: [src/commands/account/choose.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/choose.ts)_
 
 ## `joystream-cli account:create NAME`
 
@@ -122,7 +122,7 @@ ARGUMENTS
   NAME  Account name
 ```
 
-_See code: [src/commands/account/create.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/create.ts)_
+_See code: [src/commands/account/create.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/create.ts)_
 
 ## `joystream-cli account:current`
 
@@ -137,7 +137,7 @@ ALIASES
   $ joystream-cli account:default
 ```
 
-_See code: [src/commands/account/current.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/current.ts)_
+_See code: [src/commands/account/current.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/current.ts)_
 
 ## `joystream-cli account:export PATH`
 
@@ -154,7 +154,7 @@ OPTIONS
   -a, --all  If provided, exports all existing accounts into "exported_accounts" folder inside given path
 ```
 
-_See code: [src/commands/account/export.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/export.ts)_
+_See code: [src/commands/account/export.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/export.ts)_
 
 ## `joystream-cli account:forget`
 
@@ -165,7 +165,7 @@ USAGE
   $ joystream-cli account:forget
 ```
 
-_See code: [src/commands/account/forget.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/forget.ts)_
+_See code: [src/commands/account/forget.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/forget.ts)_
 
 ## `joystream-cli account:import BACKUPFILEPATH`
 
@@ -179,7 +179,7 @@ ARGUMENTS
   BACKUPFILEPATH  Path to account backup JSON file
 ```
 
-_See code: [src/commands/account/import.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/import.ts)_
+_See code: [src/commands/account/import.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/import.ts)_
 
 ## `joystream-cli account:transferTokens RECIPIENT AMOUNT`
 
@@ -194,7 +194,7 @@ ARGUMENTS
   AMOUNT     Amount of tokens to transfer
 ```
 
-_See code: [src/commands/account/transferTokens.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/account/transferTokens.ts)_
+_See code: [src/commands/account/transferTokens.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/account/transferTokens.ts)_
 
 ## `joystream-cli api:getUri`
 
@@ -205,7 +205,7 @@ USAGE
   $ joystream-cli api:getUri
 ```
 
-_See code: [src/commands/api/getUri.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/getUri.ts)_
+_See code: [src/commands/api/getUri.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/api/getUri.ts)_
 
 ## `joystream-cli api:inspect`
 
@@ -221,15 +221,15 @@ OPTIONS
       If no "--method" flag is provided then all methods in that module will be listed along with the descriptions.
 
   -a, --callArgs=callArgs
-      Specifies the arguments to use when calling a method. Multiple arguments can be separated with a comma, ie.
+      Specifies the arguments to use when calling a method. Multiple arguments can be separated with a comma, ie. 
       "-a=arg1,arg2".
       You can omit this flag even if the method requires some aguments.
       In that case you will be promted to provide value for each required argument.
-      Ommiting this flag is recommended when input parameters are of more complex types (and it's hard to specify them as
+      Ommiting this flag is recommended when input parameters are of more complex types (and it's hard to specify them as 
       just simple comma-separated strings)
 
   -e, --exec
-      Provide this flag if you want to execute the actual call, instead of displaying the method description (which is
+      Provide this flag if you want to execute the actual call, instead of displaying the method description (which is 
       default)
 
   -m, --method=method
@@ -244,12 +244,12 @@ EXAMPLES
   $ api:inspect
   $ api:inspect -t=query
   $ api:inspect -t=query -M=members
-  $ api:inspect -t=query -M=members -m=memberProfile
-  $ api:inspect -t=query -M=members -m=memberProfile -e
-  $ api:inspect -t=query -M=members -m=memberProfile -e -a=1
+  $ api:inspect -t=query -M=members -m=membershipById
+  $ api:inspect -t=query -M=members -m=membershipById -e
+  $ api:inspect -t=query -M=members -m=membershipById -e -a=1
 ```
 
-_See code: [src/commands/api/inspect.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/inspect.ts)_
+_See code: [src/commands/api/inspect.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/api/inspect.ts)_
 
 ## `joystream-cli api:setUri [URI]`
 
@@ -263,7 +263,7 @@ ARGUMENTS
   URI  Uri of the node api WS provider (if skipped, a prompt will be displayed)
 ```
 
-_See code: [src/commands/api/setUri.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/api/setUri.ts)_
+_See code: [src/commands/api/setUri.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/api/setUri.ts)_
 
 ## `joystream-cli autocomplete [SHELL]`
 
@@ -297,7 +297,7 @@ USAGE
   $ joystream-cli council:info
 ```
 
-_See code: [src/commands/council/info.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/council/info.ts)_
+_See code: [src/commands/council/info.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/council/info.ts)_
 
 ## `joystream-cli help [COMMAND]`
 
@@ -333,7 +333,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/application.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/application.ts)_
+_See code: [src/commands/working-groups/application.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/application.ts)_
 
 ## `joystream-cli working-groups:createOpening`
 
@@ -359,7 +359,7 @@ OPTIONS
   -s, --skipPrompts          Whether to skip all prompts when adding from draft (will use all default values)
 ```
 
-_See code: [src/commands/working-groups/createOpening.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/createOpening.ts)_
+_See code: [src/commands/working-groups/createOpening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/createOpening.ts)_
 
 ## `joystream-cli working-groups:decreaseWorkerStake WORKERID`
 
@@ -378,7 +378,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/decreaseWorkerStake.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/decreaseWorkerStake.ts)_
+_See code: [src/commands/working-groups/decreaseWorkerStake.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/decreaseWorkerStake.ts)_
 
 ## `joystream-cli working-groups:evictWorker WORKERID`
 
@@ -397,7 +397,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/evictWorker.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/evictWorker.ts)_
+_See code: [src/commands/working-groups/evictWorker.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/evictWorker.ts)_
 
 ## `joystream-cli working-groups:fillOpening WGOPENINGID`
 
@@ -416,7 +416,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/fillOpening.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/fillOpening.ts)_
+_See code: [src/commands/working-groups/fillOpening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/fillOpening.ts)_
 
 ## `joystream-cli working-groups:increaseStake`
 
@@ -432,7 +432,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/increaseStake.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/increaseStake.ts)_
+_See code: [src/commands/working-groups/increaseStake.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/increaseStake.ts)_
 
 ## `joystream-cli working-groups:leaveRole`
 
@@ -448,7 +448,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/leaveRole.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/leaveRole.ts)_
+_See code: [src/commands/working-groups/leaveRole.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/leaveRole.ts)_
 
 ## `joystream-cli working-groups:opening WGOPENINGID`
 
@@ -467,7 +467,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/opening.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/opening.ts)_
+_See code: [src/commands/working-groups/opening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/opening.ts)_
 
 ## `joystream-cli working-groups:openings`
 
@@ -483,7 +483,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/openings.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/openings.ts)_
+_See code: [src/commands/working-groups/openings.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/openings.ts)_
 
 ## `joystream-cli working-groups:overview`
 
@@ -499,7 +499,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/overview.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/overview.ts)_
+_See code: [src/commands/working-groups/overview.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/overview.ts)_
 
 ## `joystream-cli working-groups:slashWorker WORKERID`
 
@@ -518,7 +518,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/slashWorker.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/slashWorker.ts)_
+_See code: [src/commands/working-groups/slashWorker.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/slashWorker.ts)_
 
 ## `joystream-cli working-groups:startAcceptingApplications WGOPENINGID`
 
@@ -537,7 +537,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/startAcceptingApplications.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/startAcceptingApplications.ts)_
+_See code: [src/commands/working-groups/startAcceptingApplications.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/startAcceptingApplications.ts)_
 
 ## `joystream-cli working-groups:startReviewPeriod WGOPENINGID`
 
@@ -556,7 +556,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/startReviewPeriod.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/startReviewPeriod.ts)_
+_See code: [src/commands/working-groups/startReviewPeriod.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/startReviewPeriod.ts)_
 
 ## `joystream-cli working-groups:terminateApplication WGAPPLICATIONID`
 
@@ -575,7 +575,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/terminateApplication.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/terminateApplication.ts)_
+_See code: [src/commands/working-groups/terminateApplication.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/terminateApplication.ts)_
 
 ## `joystream-cli working-groups:updateRewardAccount [ACCOUNTADDRESS]`
 
@@ -594,7 +594,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/updateRewardAccount.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/updateRewardAccount.ts)_
+_See code: [src/commands/working-groups/updateRewardAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRewardAccount.ts)_
 
 ## `joystream-cli working-groups:updateRoleAccount [ACCOUNTADDRESS]`
 
@@ -613,7 +613,7 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/updateRoleAccount.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/updateRoleAccount.ts)_
+_See code: [src/commands/working-groups/updateRoleAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleAccount.ts)_
 
 ## `joystream-cli working-groups:updateWorkerReward WORKERID`
 
@@ -632,5 +632,5 @@ OPTIONS
                      Available values are: storageProviders.
 ```
 
-_See code: [src/commands/working-groups/updateWorkerReward.ts](https://github.com/Joystream/substrate-runtime-joystream/blob/master/cli/src/commands/working-groups/updateWorkerReward.ts)_
+_See code: [src/commands/working-groups/updateWorkerReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateWorkerReward.ts)_
 <!-- commandsstop -->

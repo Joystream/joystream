@@ -1,17 +1,17 @@
-// Copyright 2017-2019 @polkadot/app-extrinsics authors & contributors
+// Copyright 2017-2020 @polkadot/app-extrinsics authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { SubmittableExtrinsicFunction } from '@polkadot/api/types';
 import { Props } from '@polkadot/react-params/types';
 
-import React, { useContext } from 'react';
-import { ApiContext } from '@polkadot/react-api';
+import React from 'react';
+import { useApi } from '@polkadot/react-hooks';
 
 import Extrinsic from './Extrinsic';
 
-export default function Call ({ className, isDisabled, isError, label, onChange, onEnter, style, withLabel }: Props): React.ReactElement<Props> {
-  const { api, apiDefaultTx } = useContext(ApiContext);
+function Call ({ className = '', isDisabled, isError, label, onChange, onEnter, onEscape, withLabel }: Props): React.ReactElement<Props> {
+  const { api, apiDefaultTx } = useApi();
 
   const defaultValue = ((): SubmittableExtrinsicFunction<'promise'> => {
     try {
@@ -31,8 +31,10 @@ export default function Call ({ className, isDisabled, isError, label, onChange,
       label={label}
       onChange={onChange}
       onEnter={onEnter}
-      style={style}
+      onEscape={onEscape}
       withLabel={withLabel}
     />
   );
 }
+
+export default React.memo(Call);

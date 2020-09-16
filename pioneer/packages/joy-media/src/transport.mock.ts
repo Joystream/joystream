@@ -17,6 +17,7 @@ import { PublicationStatusType } from './schemas/general/PublicationStatus';
 import { VideoCategoryType } from './schemas/video/VideoCategory';
 import { ChannelEntity } from './entities/ChannelEntity';
 import { AllMockChannels } from './stories/data/ChannelSamples';
+import { mockPromise } from '@polkadot/joy-utils/transport/mock/base';
 
 export class MockTransport extends MediaTransport {
   constructor () {
@@ -29,7 +30,7 @@ export class MockTransport extends MediaTransport {
   }
 
   allChannels (): Promise<ChannelEntity[]> {
-    return this.promise(AllMockChannels);
+    return mockPromise(AllMockChannels);
   }
 
   channelValidationConstraints (): Promise<ChannelValidationConstraints> {
@@ -45,54 +46,54 @@ export class MockTransport extends MediaTransport {
   }
 
   allVideos (): Promise<VideoType[]> {
-    return this.promise(mocks.AllVideos);
+    return mockPromise(mocks.AllVideos);
   }
 
   allMusicTracks (): Promise<MusicTrackType[]> {
-    return this.promise(mocks.AllMusicTracks);
+    return mockPromise(mocks.AllMusicTracks);
   }
 
   allMusicAlbums (): Promise<MusicAlbumType[]> {
-    return this.promise(mocks.AllMusicAlbums);
+    return mockPromise(mocks.AllMusicAlbums);
   }
 
   featuredContent (): Promise<FeaturedContentType | undefined> {
-    return this.promise(mocks.FeaturedContent);
+    return mockPromise(mocks.FeaturedContent);
   }
 
   allContentLicenses (): Promise<ContentLicenseType[]> {
-    return this.promise(mocks.AllContentLicenses);
+    return mockPromise(mocks.AllContentLicenses);
   }
 
   allCurationStatuses (): Promise<CurationStatusType[]> {
-    return this.promise(mocks.AllCurationStatuses);
+    return mockPromise(mocks.AllCurationStatuses);
   }
 
   allLanguages (): Promise<LanguageType[]> {
-    return this.promise(mocks.AllLanguages);
+    return mockPromise(mocks.AllLanguages);
   }
 
   allMediaObjects (): Promise<MediaObjectType[]> {
-    return this.promise(mocks.AllMediaObjects);
+    return mockPromise(mocks.AllMediaObjects);
   }
 
   allMusicGenres (): Promise<MusicGenreType[]> {
-    return this.promise(mocks.AllMusicGenres);
+    return mockPromise(mocks.AllMusicGenres);
   }
 
   allMusicMoods (): Promise<MusicMoodType[]> {
-    return this.promise(mocks.AllMusicMoods);
+    return mockPromise(mocks.AllMusicMoods);
   }
 
   allMusicThemes (): Promise<MusicThemeType[]> {
-    return this.promise(mocks.AllMusicThemes);
+    return mockPromise(mocks.AllMusicThemes);
   }
 
   allPublicationStatuses (): Promise<PublicationStatusType[]> {
-    return this.promise(mocks.AllPublicationStatuses);
+    return mockPromise(mocks.AllPublicationStatuses);
   }
 
   allVideoCategories (): Promise<VideoCategoryType[]> {
-    return this.promise(mocks.AllVideoCategories);
+    return mockPromise(mocks.AllVideoCategories);
   }
 }

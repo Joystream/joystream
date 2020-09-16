@@ -1,10 +1,11 @@
 import React from 'react';
 import BN from 'bn.js';
-import axios, { CancelTokenSource } from 'axios';
+import axios, { CancelTokenSource, AxiosError, AxiosRequestConfig } from 'axios';
 import { History } from 'history';
 import { Progress, Message } from 'semantic-ui-react';
 
-import { InputFileAsync } from '@polkadot/react-components/index';
+import { registry } from '@joystream/types';
+import { InputFileAsync, TxButton, JoyInfo, Loading } from '@polkadot/joy-utils/react/components';
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
 import { SubmittableResult } from '@polkadot/api';
@@ -15,15 +16,17 @@ import { formatNumber } from '@polkadot/util';
 import translate from './translate';
 import { fileNameWoExt } from './utils';
 import { ContentId, DataObject } from '@joystream/types/media';
-import { withOnlyMembers, MyAccountProps } from '@polkadot/joy-utils/MyAccount';
+import { MyAccountProps } from '@polkadot/joy-utils/react/hocs/accounts';
+import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
 import { DiscoveryProviderProps, withDiscoveryProvider } from './DiscoveryProvider';
-import TxButton from '@polkadot/joy-utils/TxButton';
+
 import IpfsHash from 'ipfs-only-hash';
 import { ChannelId } from '@joystream/types/content-working-group';
 import { EditVideoView } from './upload/EditVideo.view';
-import { JoyInfo } from '@polkadot/joy-utils/JoyStatus';
+
 import { IterableFile } from './IterableFile';
 import { StorageProviderId } from '@joystream/types/working-group';
+import { normalizeError, isObjectWithProperties } from '@polkadot/joy-utils/functions/misc';
 
 const MAX_FILE_SIZE_MB = 500;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -39,13 +42,14 @@ type Props = ApiProps & I18nProps & DiscoveryProviderProps & MyAccountProps & {
 };
 
 type State = {
-  error?: any;
+  error?: string;
   file?: File;
   computingHash: boolean;
   ipfs_cid?: string;
   newContentId: ContentId;
   discovering: boolean;
   uploading: boolean;
+  sendingTx: boolean;
   progress: number;
   cancelSource: CancelTokenSource;
 };
@@ -55,9 +59,10 @@ const defaultState = (): State => ({
   file: undefined,
   computingHash: false,
   ipfs_cid: undefined,
-  newContentId: ContentId.generate(),
+  newContentId: ContentId.generate(registry),
   discovering: false,
   uploading: false,
+  sendingTx: false,
   progress: 0,
   cancelSource: axios.CancelToken.source()
 });
@@ -72,6 +77,7 @@ class Upload extends React.PureComponent<Props, State> {
     });
 
     const { cancelSource } = this.state;
+
     cancelSource.cancel('unmounting');
   }
 
@@ -84,21 +90,21 @@ class Upload extends React.PureComponent<Props, State> {
   }
 
   private renderContent () {
-    const { error, uploading, discovering, computingHash } = this.state;
+    const { error, uploading, discovering, computingHash, sendingTx } = this.state;
 
-    if (error) return this.renderError();
+    if (error) return this.renderError(error);
     else if (discovering) return this.renderDiscovering();
     else if (uploading) return this.renderUploading();
     else if (computingHash) return this.renderComputingHash();
+    else if (sendingTx) return this.renderSendingTx();
     else return this.renderFileInput();
   }
 
-  private renderError () {
-    const { error } = this.state;
+  private renderError (error: string) {
     return (
       <Message error className='JoyMainStatus'>
         <Message.Header>Failed to upload your file</Message.Header>
-        <p>{error.toString()}</p>
+        <p>{error}</p>
         <button className='ui button' onClick={this.resetForm}>Start over</button>
       </Message>
     );
@@ -106,6 +112,7 @@ class Upload extends React.PureComponent<Props, State> {
 
   private resetForm = () => {
     const { cancelSource } = this.state;
+
     this.setState({
       ...defaultState(),
       cancelSource
@@ -114,22 +121,27 @@ class Upload extends React.PureComponent<Props, State> {
 
   private renderUploading () {
     const { file, newContentId, progress, error } = this.state;
+
     if (!file || !file.name) return <JoyInfo title='Loading...' />;
 
     const success = !error && progress >= 100;
-    const { history, match: { params: { channelId } } } = this.props;
+    const { history, match: { params: { channelId } }, api } = this.props;
 
     return <div style={{ width: '100%' }}>
       {this.renderProgress()}
       {success &&
         <EditVideoView
-          channelId={new ChannelId(channelId)}
+          channelId={api.createType('ChannelId', channelId)}
           contentId={newContentId}
           fileName={fileNameWoExt(file.name)}
           history={history}
         />
       }
     </div>;
+  }
+
+  private renderSendingTx () {
+    return <JoyInfo title='Please wait...'><Loading text='Waiting for the transaction confirmation...' /></JoyInfo>;
   }
 
   private renderDiscovering () {
@@ -142,6 +154,7 @@ class Upload extends React.PureComponent<Props, State> {
     const success = !error && progress >= 100;
 
     let label = '';
+
     if (active) {
       label = 'Your file is uploading. Please keep this page open until it\'s done.';
     } else if (success) {
@@ -165,7 +178,7 @@ class Upload extends React.PureComponent<Props, State> {
 
     return <div className='UploadSelectForm'>
       <InputFileAsync
-        label=""
+        label=''
         withLabel={false}
         className={`UploadInputFile ${file_name ? 'FileSelected' : ''}`}
         placeholder={
@@ -184,12 +197,16 @@ class Upload extends React.PureComponent<Props, State> {
       />
       {file_name && <div className='UploadButtonBox'>
         <TxButton
-          size='large'
           label={'Upload'}
           isDisabled={!file_name}
           tx={'dataDirectory.addContent'}
           params={this.buildTxParams()}
-          txSuccessCb={this.onDataObjectCreated}
+          onClick={(sendTx) => {
+            this.setState({ sendingTx: true });
+            sendTx();
+          }}
+          txSuccessCb={ this.onDataObjectCreated }
+          txFailedCb={() => { this.setState({ sendingTx: false }); }}
         />
       </div>}
     </div>;
@@ -205,7 +222,7 @@ class Upload extends React.PureComponent<Props, State> {
       });
     } else {
       this.setState({ file, computingHash: true });
-      this.startComputingHash();
+      void this.startComputingHash();
     }
   }
 
@@ -218,7 +235,8 @@ class Upload extends React.PureComponent<Props, State> {
 
     try {
       const iterableFile = new IterableFile(file, { chunkSize: 65535 });
-      const ipfs_cid = await IpfsHash.of(iterableFile);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call
+      const ipfs_cid = (await IpfsHash.of(iterableFile)) as string;
 
       this.hashComputationComplete(ipfs_cid);
     } catch (err) {
@@ -244,27 +262,31 @@ class Upload extends React.PureComponent<Props, State> {
 
   private buildTxParams = () => {
     const { file, newContentId, ipfs_cid } = this.state;
+
     if (!file || !ipfs_cid) return [];
 
     // TODO get corresponding data type id based on file content
     const dataObjectTypeId = new BN(1);
     const { myMemberId } = this.props;
+
     return [myMemberId, newContentId, dataObjectTypeId, new BN(file.size), ipfs_cid];
   }
 
   private onDataObjectCreated = async (_txResult: SubmittableResult) => {
-    this.setState({ discovering: true });
+    this.setState({ sendingTx: false, discovering: true });
 
     const { api } = this.props;
     const { newContentId } = this.state;
     let dataObject: Option<DataObject>;
+
     try {
       dataObject = await api.query.dataDirectory.dataObjectByContentId(newContentId) as Option<DataObject>;
     } catch (err) {
       this.setState({
-        error: err,
+        error: normalizeError(err),
         discovering: false
       });
+
       return;
     }
 
@@ -276,10 +298,11 @@ class Upload extends React.PureComponent<Props, State> {
 
     if (dataObject.isSome) {
       const storageProvider = dataObject.unwrap().liaison;
-      this.uploadFileTo(storageProvider);
+
+      void this.uploadFileTo(storageProvider);
     } else {
       this.setState({
-        error: new Error('No Storage Provider assigned to process upload'),
+        error: 'No Storage Provider assigned to process upload',
         discovering: false
       });
     }
@@ -287,16 +310,18 @@ class Upload extends React.PureComponent<Props, State> {
 
   private uploadFileTo = async (storageProvider: StorageProviderId) => {
     const { file, newContentId, cancelSource } = this.state;
+
     if (!file || !file.size) {
       this.setState({
-        error: new Error('No file to upload!'),
+        error: 'No file to upload!',
         discovering: false
       });
+
       return;
     }
 
     const contentId = newContentId.encode();
-    const config = {
+    const config: AxiosRequestConfig = {
       headers: {
         // TODO uncomment this once the issue fixed:
         // https://github.com/Joystream/storage-node-joystream/issues/16
@@ -304,8 +329,17 @@ class Upload extends React.PureComponent<Props, State> {
         'Content-Type': '' // <-- this is a temporary hack
       },
       cancelToken: cancelSource.token,
-      onUploadProgress: (progressEvent: any) => {
+      onUploadProgress: (progressEvent: unknown) => {
+        if (
+          !isObjectWithProperties(progressEvent, 'loaded', 'total') ||
+          typeof progressEvent.loaded !== 'number' ||
+          typeof progressEvent.total !== 'number'
+        ) {
+          return;
+        }
+
         const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+
         this.setState({
           progress: percentCompleted
         });
@@ -314,11 +348,12 @@ class Upload extends React.PureComponent<Props, State> {
 
     const { discoveryProvider } = this.props;
     let url: string;
+
     try {
       url = await discoveryProvider.resolveAssetEndpoint(storageProvider, contentId, cancelSource.token);
     } catch (err) {
       return this.setState({
-        error: new Error(`Failed to contact storage provider: ${err.message}`),
+        error: `Failed to contact storage provider: ${normalizeError(err)}`,
         discovering: false
       });
     }
@@ -335,12 +370,20 @@ class Upload extends React.PureComponent<Props, State> {
 
     try {
       await axios.put<{ message: string }>(url, file, config);
-    } catch (err) {
-      this.setState({ progress: 0, error: err, uploading: false });
+    } catch (e) {
+      const err = e as unknown;
+
+      this.setState({ progress: 0, error: normalizeError(err), uploading: false });
+
       if (axios.isCancel(err)) {
         return;
       }
-      if (!err.response || (err.response.status >= 500 && err.response.status <= 504)) {
+
+      const response = isObjectWithProperties(err, 'response')
+        ? (err as AxiosError).response
+        : undefined;
+
+      if (!response || (response.status >= 500 && response.status <= 504)) {
         // network connection error
         discoveryProvider.reportUnreachable(storageProvider);
       }

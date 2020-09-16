@@ -6,8 +6,8 @@ import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelAvatar, ChannelAvatarSize } from './ChannelAvatar';
 import { isPublicChannel, isMusicChannel, isVideoChannel, isAccountAChannelOwner, isVerifiedChannel } from './ChannelHelpers';
 
-import { useMyMembership } from '@polkadot/joy-utils/MyMembershipContext';
-import { nonEmptyStr } from '@polkadot/joy-utils/index';
+import { useMyMembership } from '@polkadot/joy-utils/react/hooks';
+import { nonEmptyStr } from '@polkadot/joy-utils/functions/misc';
 import { CurationPanel } from './CurationPanel';
 import { ChannelNameAsLink } from './ChannelNameAsLink';
 
@@ -51,8 +51,6 @@ export const ChannelPreview = (props: ChannelPreviewProps) => {
       <div className='ChannelDetails'>
         <h3 className='ChannelTitle' style={{ display: 'block' }}>
           <ChannelNameAsLink channel={channel} style={{ marginRight: '1rem' }} />
-
-          <CurationPanel channel={channel} />
 
           {isAccountAChannelOwner(channel, myAccountId) &&
             <div style={{ float: 'right' }}>
@@ -100,6 +98,8 @@ export const ChannelPreview = (props: ChannelPreviewProps) => {
             </Label>
           }
         </div>
+
+        <CurationPanel channel={channel} />
 
         {withDescription && nonEmptyStr(channel.description) &&
           <ReactMarkdown className='JoyMemo--full ChannelDesc' source={channel.description} linkTarget='_blank' />
