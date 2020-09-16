@@ -5,6 +5,7 @@
 import React, { useCallback, useState } from 'react';
 import { AddressRow, Button, Modal, Password } from '@polkadot/react-components';
 import keyring from '@polkadot/ui-keyring';
+import { isPasswordValid } from '@polkadot/joy-utils/functions/accounts';
 
 import { useTranslation } from '../../translate';
 
@@ -33,18 +34,18 @@ function ChangePass ({ address, className = '', onClose }: Props): React.ReactEl
 
   const _onChangeNew1 = useCallback(
     (password: string) =>
-      setNewPass1({ isValid: true, password }),
+      setNewPass1({ isValid: isPasswordValid(password), password }),
     []
   );
 
   const _onChangeNew2 = useCallback(
     (password: string) =>
-      setNewPass2({ isValid: newPass1.password === password, password }),
+      setNewPass2({ isValid: isPasswordValid(password) && (newPass1.password === password), password }),
     [newPass1]
   );
 
   const _onChangeOld = useCallback(
-    (oldPass: string) => setOldPass({ isOldValid: true, oldPass }),
+    (oldPass: string) => setOldPass({ isOldValid: isPasswordValid(oldPass), oldPass }),
     []
   );
 

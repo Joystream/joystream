@@ -10,6 +10,7 @@ import React, { useCallback, useState } from 'react';
 import { AddressRow, Button, InputAddress, InputFile, Modal, Password } from '@polkadot/react-components';
 import { isObject, u8aToString } from '@polkadot/util';
 import keyring from '@polkadot/ui-keyring';
+import { isPasswordValid } from '@polkadot/joy-utils/functions/accounts';
 
 import { useTranslation } from '../../translate';
 
@@ -63,7 +64,7 @@ function Import ({ className = '', onClose, onStatusChange }: Props): React.Reac
   );
 
   const _onChangePass = useCallback(
-    (password: string) => setPass({ isPassValid: true, password }),
+    (password: string) => setPass({ isPassValid: isPasswordValid(password), password }),
     []
   );
 

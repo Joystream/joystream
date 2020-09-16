@@ -4,6 +4,7 @@
 
 import { Modal, Password } from '@polkadot/react-components';
 // import keyring from '@polkadot/ui-keyring';
+import { isPasswordValid } from '@polkadot/joy-utils/functions/accounts';
 
 import React, { useCallback, useState } from 'react';
 
@@ -22,6 +23,8 @@ export default function PasswordInput ({ onChange, onEnter, password }: Props): 
 
   const _onPasswordChange = useCallback(
     (password: string) => {
+      const isPassValid = isPasswordValid(password);
+
       setPassValid(isPassValid);
 
       const isValid = isPassValid && isPass2Valid;
@@ -33,7 +36,7 @@ export default function PasswordInput ({ onChange, onEnter, password }: Props): 
 
   const onPassword2Change = useCallback(
     (password2: string) => {
-      const isPass2Valid = password2 === password;
+      const isPass2Valid = isPasswordValid(password2) && (password2 === password);
 
       setPassword2({ isPass2Valid, password2 });
 

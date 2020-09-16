@@ -11,6 +11,7 @@ import { AddressRow, Button, Input, InputAddress, Modal, Password, StatusContext
 import { useApi, useDebounce, useToggle } from '@polkadot/react-hooks';
 import keyring from '@polkadot/ui-keyring';
 import { keyExtractPath } from '@polkadot/util-crypto';
+import { isPasswordValid } from '@polkadot/joy-utils/functions/accounts';
 
 import { useTranslation } from '../../translate';
 import { downloadAccount } from './Create';
@@ -85,7 +86,7 @@ function Derive ({ className = '', from, onClose }: Props): React.ReactElement {
   const [{ isNameValid, name }, setName] = useState({ isNameValid: false, name: '' });
   const [{ isPassValid, password }, setPassword] = useState({ isPassValid: true, password: '' });
   const [{ isPass2Valid, password2 }, setPassword2] = useState({ isPass2Valid: true, password2: '' });
-  const [{ isRootValid, rootPass }, setRootPass] = useState({ isRootValid: false, rootPass: '' });
+  const [{ isRootValid, rootPass }, setRootPass] = useState({ isRootValid: true, rootPass: '' });
   const [suri, setSuri] = useState('');
   const debouncedSuri = useDebounce(suri);
   const isValid = !!address && !deriveError && isNameValid && isPassValid && isPass2Valid;
@@ -115,12 +116,12 @@ function Derive ({ className = '', from, onClose }: Props): React.ReactElement {
   );
 
   const _onChangePass = useCallback(
-    (password: string) => setPassword({ isPassValid: true, password }),
+    (password: string) => setPassword({ isPassValid: isPasswordValid(password), password }),
     []
   );
 
   const _onChangePass2 = useCallback(
-    (password2: string) => setPassword2({ isPass2Valid: password2 === password, password2 }),
+    (password2: string) => setPassword2({ isPass2Valid: isPasswordValid(password2) && (password2 === password), password2 }),
     [password]
   );
 

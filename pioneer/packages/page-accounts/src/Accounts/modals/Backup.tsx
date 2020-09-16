@@ -6,6 +6,7 @@ import FileSaver from 'file-saver';
 import React, { useCallback, useState } from 'react';
 import { AddressRow, Button, Modal, Password } from '@polkadot/react-components';
 import keyring from '@polkadot/ui-keyring';
+import { isPasswordValid } from '@polkadot/joy-utils/functions/accounts';
 
 import { useTranslation } from '../../translate';
 
@@ -19,7 +20,7 @@ function Backup ({ address, onClose }: Props): React.ReactElement<Props> {
   const [isBusy, setIsBusy] = useState(false);
   const [{ isPassTouched, password }, setPassword] = useState({ isPassTouched: true, password: '' });
   const [backupFailed, setBackupFailed] = useState(false);
-  const isPassValid = !backupFailed;
+  const isPassValid = !backupFailed && isPasswordValid(password);
 
   const _onChangePass = useCallback(
     (password: string): void => {
