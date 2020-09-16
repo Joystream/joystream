@@ -69,3 +69,63 @@ type Class @entity {
 	"All vouchers for this class"
 	vouchers: [EntityCreationVoucher!] @derivedFrom(field: "class")
 }
+
+enum PropertyType {
+	BOOL
+	UINT16
+	UINT32
+	UINT64
+	INT16
+	INT32
+	INT64
+	TEXT
+	REFERENCE
+	VECBOOL
+	VECUINT16
+	VECUINT32
+	VECUINT64
+	VECINT16
+	VECINT32
+	VECINT64
+	VECTEXT
+	VECREFERENCE
+}
+
+"`Property` representation, related to a given `Class`"
+type Property @entity {
+	"Runtime identifier for property in class"
+	propertyID: BigInt!
+
+	"Type of `Property`"
+	propertyType: PropertyType!
+
+	"If property value can be skipped, when adding entity schema support"
+	required: Boolean!
+
+	"Used to enforce uniqeness of a property across all entities that have this property"
+	unique: Boolean!
+
+	"Name of property"
+	name: String!
+
+	"Description of property"
+	description: String!
+
+	# Property is locked from maintainer
+	isLockedFromMaintainer: Boolean!
+
+	# Property is locked from controller
+	isLockedFromController: Boolean!
+
+	"Upper bound for vector length when property is a vector"
+	maximumLength: BigInt
+
+	"Optional field, it must reference a class then PropertyType is Reference"
+	referencedClass: Class
+
+	"Optional field, Only will be set when PropertyType is Reference"
+	sameControllerStatus: Boolean
+
+	"Schemas which involve this property"
+	schemas: [Schema!] @derivedFrom(field: "properties")
+}
