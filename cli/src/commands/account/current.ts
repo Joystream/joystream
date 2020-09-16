@@ -1,6 +1,5 @@
 import AccountsCommandBase from '../../base/AccountsCommandBase'
 import { AccountSummary, NameValueObj, NamedKeyringPair } from '../../Types'
-import { DerivedBalances } from '@polkadot/api-derive/types'
 import { displayHeader, displayNameValueTable } from '../../helpers/display'
 import { formatBalance } from '@polkadot/util'
 import moment from 'moment'
@@ -15,7 +14,7 @@ export default class AccountCurrent extends AccountsCommandBase {
 
     displayHeader('Account information')
     const creationDate: string = currentAccount.meta.whenCreated
-      ? moment(currentAccount.meta.whenCreated).format('YYYY-MM-DD HH:mm:ss')
+      ? moment(currentAccount.meta.whenCreated as string | number).format('YYYY-MM-DD HH:mm:ss')
       : '?'
     const accountRows: NameValueObj[] = [
       { name: 'Account name:', value: currentAccount.meta.name },
@@ -25,7 +24,7 @@ export default class AccountCurrent extends AccountsCommandBase {
     displayNameValueTable(accountRows)
 
     displayHeader('Balances')
-    const balances: DerivedBalances = summary.balances
+    const balances = summary.balances
     const balancesRows: NameValueObj[] = [
       { name: 'Total balance:', value: formatBalance(balances.votingBalance) },
       { name: 'Transferable balance:', value: formatBalance(balances.availableBalance) },

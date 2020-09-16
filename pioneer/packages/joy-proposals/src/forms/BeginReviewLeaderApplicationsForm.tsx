@@ -1,26 +1,20 @@
 import React from 'react';
 import * as Yup from 'yup';
-import {
-  withProposalFormData,
+import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps,
-  genericFormDefaultOptions
-} from './GenericProposalForm';
-import {
-  GenericWorkingGroupProposalForm,
+  ProposalFormInnerProps } from './GenericProposalForm';
+import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
-  defaultValues as wgFromDefaultValues
-} from './GenericWorkingGroupProposalForm';
+  defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
 import FormField from './FormFields';
 import { withFormContainer } from './FormContainer';
-import './forms.css';
 import { Dropdown, Message } from 'semantic-ui-react';
 import _ from 'lodash';
 import Validation from '../validationSchema';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { OpeningData } from '@polkadot/joy-utils/types/workingGroups';
-import { PromiseComponent } from '@polkadot/joy-utils/react/components';
+import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { getFormErrorLabelsProps } from './errorHandling';
 
 export type FormValues = WGFormValues & {
@@ -32,13 +26,13 @@ const defaultValues: FormValues = {
   openingId: ''
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export component into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export component into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { handleChange, values, myMemberId, errors, touched } = props;
+const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> = (props) => {
+  const { handleChange, values, errors, touched } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
   const [openings, openingsError, openingsLoading] = usePromise(
@@ -48,8 +42,9 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
   );
   const openingsOptions = openings
     // Map to options
-    .map(od => {
+    .map((od) => {
       const hrt = od.hiringOpening.parse_human_readable_text_with_fallback();
+
       return {
         text: `${od.id.toString()}: ${hrt.headline} (${hrt.job.title})`,
         value: od.id.toString()
@@ -59,19 +54,15 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
   return (
     <GenericWorkingGroupProposalForm
       {...props}
-      txMethod="createBeginReviewWorkingGroupLeaderApplicationsProposal"
-      proposalType="BeginReviewWorkingGroupLeaderApplication"
+      txMethod='createBeginReviewWorkingGroupLeaderApplicationsProposal'
+      proposalType='BeginReviewWorkingGroupLeaderApplication'
       disabled={!openingsOptions.length}
       submitParams={[
-        myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
         values.openingId,
         values.workingGroup
       ]}
     >
-      <PromiseComponent error={openingsError} loading={openingsLoading} message="Fetching openings...">
+      <PromiseComponent error={openingsError} loading={openingsLoading} message='Fetching openings...'>
         { !openingsOptions.length
           ? (
             <Message error visible>
@@ -84,7 +75,7 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
           )
           : (
             <FormField
-              label="Working Group Opening"
+              label='Working Group Opening'
               error={errorLabelsProps.openingId}
               showErrorMsg>
               <Dropdown
@@ -108,10 +99,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.BeginReviewWorkingGroupLeaderApplication()
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'BeginReviewLeadeApplicationsForm'
 })(BeginReviewLeadeApplicationsForm);
 

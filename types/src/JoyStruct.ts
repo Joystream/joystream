@@ -42,15 +42,19 @@ export function JoyStructCustom<FieldTypes extends Record<string, Constructor>>(
   fields: FieldTypes
 ): ExtendedStructConstructor<FieldTypes> {
   return class JoyStructObject extends Struct.with(fields) {
+    // eslint-disable-next-line no-useless-constructor
     constructor(registry: Registry, value?: { [k in keyof FieldTypes]: InstanceType<FieldTypes[k]> }) {
       super(registry, value)
     }
+
     getField<FieldKey extends keyof FieldTypes>(key: FieldKey): InstanceType<FieldTypes[FieldKey]> {
       return this.get(key as string) as InstanceType<FieldTypes[FieldKey]>
     }
+
     getString<FieldKey extends keyof FieldTypes>(key: FieldKey): string {
       return this.getField(key).toString()
     }
+
     // TODO: Check why would this ever be needed
     cloneValues(): { [k in keyof FieldTypes]: FieldTypes[k] } {
       const objectClone = {} as Partial<{ [k in keyof FieldTypes]: Codec }>

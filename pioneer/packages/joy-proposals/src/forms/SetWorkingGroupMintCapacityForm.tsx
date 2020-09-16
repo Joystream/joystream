@@ -1,21 +1,15 @@
 import React from 'react';
 import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
-import {
-  withProposalFormData,
+import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps,
-  genericFormDefaultOptions
-} from './GenericProposalForm';
-import {
-  GenericWorkingGroupProposalForm,
+  ProposalFormInnerProps } from './GenericProposalForm';
+import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
-  defaultValues as wgFromDefaultValues
-} from './GenericWorkingGroupProposalForm';
+  defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
 import { InputFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
-import './forms.css';
 import { Grid } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import _ from 'lodash';
@@ -30,35 +24,31 @@ const defaultValues: FormValues = {
   capacity: ''
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export component into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export component into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const SetWorkingGroupMintCapacityForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { handleChange, errors, touched, values, myMemberId } = props;
+const SetWorkingGroupMintCapacityForm: React.FunctionComponent<FormInnerProps> = (props) => {
+  const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
 
   return (
     <GenericWorkingGroupProposalForm
       {...props}
-      txMethod="createSetWorkingGroupMintCapacityProposal"
-      proposalType="SetWorkingGroupMintCapacity"
+      txMethod='createSetWorkingGroupMintCapacityProposal'
+      proposalType='SetWorkingGroupMintCapacity'
       submitParams={[
-        myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
         values.capacity,
         values.workingGroup
       ]}
     >
-      <Grid columns="4" doubling stackable verticalAlign="bottom">
+      <Grid columns='4' doubling stackable verticalAlign='bottom'>
         <Grid.Column>
           <InputFormField
-            label="Mint capacity"
+            label='Mint capacity'
             onChange={handleChange}
-            name="capacity"
+            name='capacity'
             error={errorLabelsProps.capacity}
             value={values.capacity}
             placeholder={'ie. 100000'}
@@ -76,10 +66,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.SetWorkingGroupMintCapacity()
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'SetWorkingGroupMintCapacityForm'
 })(SetWorkingGroupMintCapacityForm);
 

@@ -8,7 +8,7 @@ import { ViewVideoChannel } from './ViewVideoChannel';
 import { ViewMusicChannel } from './ViewMusicChannel';
 import { toVideoPreviews } from '../video/VideoPreview';
 import { isVideoChannel, isMusicChannel } from './ChannelHelpers';
-import { JoyError } from '@polkadot/joy-utils/JoyStatus';
+import { JoyError } from '@polkadot/joy-utils/react/components';
 
 export type ViewChannelProps = {
   id: ChannelId;
@@ -31,6 +31,7 @@ export function ViewChannel (props: ViewChannelProps) {
 
   if (isVideoChannel(channel)) {
     const previews = toVideoPreviews(videos);
+
     return <ViewVideoChannel channel={channel} videos={previews} />;
   } else if (isMusicChannel(channel)) {
     return <ViewMusicChannel channel={channel} albums={albums} tracks={tracks} />;

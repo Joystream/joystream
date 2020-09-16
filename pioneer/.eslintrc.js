@@ -27,6 +27,8 @@ module.exports = {
     'react/jsx-max-props-per-line': 'off',
     'sort-destructure-keys/sort-destructure-keys': 'off',
     '@typescript-eslint/unbound-method': 'warn', // Doesn't work well with our version of Formik, see: https://github.com/formium/formik/issues/2589
+    'react-hooks/exhaustive-deps': 'warn', // Causes more issues than it solves currently
+    'no-void': 'off' // Otherwise we cannot mark unhandles promises
   },
   // isolate pioneer from monorepo eslint rules
   root: true

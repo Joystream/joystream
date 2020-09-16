@@ -1,7 +1,6 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { apiModuleByGroup } from '../../Api'
 import { validateAddress } from '../../helpers/validation'
-import { GenericAccountId } from '@polkadot/types'
 import chalk from 'chalk'
 
 export default class WorkingGroupsUpdateRoleAccount extends WorkingGroupsCommandBase {
@@ -13,6 +12,7 @@ export default class WorkingGroupsUpdateRoleAccount extends WorkingGroupsCommand
       description: 'New role account address (if omitted, one of the existing CLI accounts can be selected)',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }
@@ -34,7 +34,7 @@ export default class WorkingGroupsUpdateRoleAccount extends WorkingGroupsCommand
 
     await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'updateRoleAccount', [
       worker.workerId,
-      new GenericAccountId(newRoleAccount),
+      newRoleAccount,
     ])
 
     this.log(chalk.green(`Succesfully updated the role account to: ${chalk.white(newRoleAccount)})`))

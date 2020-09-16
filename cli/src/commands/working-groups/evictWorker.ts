@@ -1,7 +1,5 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { apiModuleByGroup } from '../../Api'
-import { WorkerId } from '@joystream/types/working-group'
-import { bool } from '@polkadot/types/primitive'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
 import { createParamOptions } from '../../helpers/promptOptions'
@@ -15,6 +13,7 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
       description: 'Worker ID',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }
@@ -43,9 +42,9 @@ export default class WorkingGroupsEvictWorker extends WorkingGroupsCommandBase {
     await this.requestAccountDecoding(account)
 
     await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'terminateRole', [
-      new WorkerId(workerId),
+      workerId,
       rationale,
-      new bool(shouldSlash),
+      shouldSlash,
     ])
 
     this.log(chalk.green(`Worker ${chalk.white(workerId)} has been evicted!`))

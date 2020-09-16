@@ -12,7 +12,7 @@ module.exports = function (runtime) {
         name: 'id',
         in: 'path',
         required: true,
-        description: 'Actor accouuntId',
+        description: 'Storage Provider Id',
         schema: {
           type: 'string', // integer ?
         },

@@ -2,9 +2,8 @@
 // NOTE: The purpose of this context is to immitate a Substrate storage for the forum until it's implemented as a substrate runtime module.
 
 import React, { useReducer, createContext, useContext } from 'react';
-import { Category, Thread, Reply, ModerationAction } from '@joystream/types/forum';
-import { BlockAndTime } from '@joystream/types/common';
-import { Option, Text, GenericAccountId } from '@polkadot/types';
+import { Category, Thread, Reply } from '@joystream/types/forum';
+import { createType } from '@joystream/types';
 
 type CategoryId = number;
 type ThreadId = number;
@@ -31,17 +30,17 @@ const initialState: ForumState = {
   sudo: undefined,
 
   nextCategoryId: 1,
-  categoryById: new Map(),
+  categoryById: new Map<CategoryId, Category>(),
   rootCategoryIds: [],
-  categoryIdsByParentId: new Map(),
+  categoryIdsByParentId: new Map<CategoryId, CategoryId[]>(),
 
   nextThreadId: 1,
-  threadById: new Map(),
-  threadIdsByCategoryId: new Map(),
+  threadById: new Map<ThreadId, Thread>(),
+  threadIdsByCategoryId: new Map<CategoryId, ThreadId[]>(),
 
   nextReplyId: 1,
-  replyById: new Map(),
-  replyIdsByThreadId: new Map()
+  replyById: new Map<ReplyId, Reply>(),
+  replyIdsByThreadId: new Map<ThreadId, ReplyId[]>()
 };
 
 type SetForumSudo = {
@@ -114,6 +113,7 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
   switch (action.type) {
     case 'SetForumSudo': {
       const { sudo } = action;
+
       return {
         ...state,
         sudo
@@ -133,19 +133,23 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
 
       if (parent_id) {
         let childrenIds = categoryIdsByParentId.get(parent_id.toNumber());
+
         if (!childrenIds) {
           childrenIds = [];
         }
+
         childrenIds.push(nextCategoryId);
         categoryIdsByParentId.set(parent_id.toNumber(), childrenIds);
       } else {
         if (!rootCategoryIds) {
           rootCategoryIds = [];
         }
+
         rootCategoryIds.push(nextCategoryId);
       }
 
       const newId = nextCategoryId;
+
       categoryById.set(newId, category);
       nextCategoryId = nextCategoryId + 1;
 
@@ -183,13 +187,16 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       } = state;
 
       let threadIds = threadIdsByCategoryId.get(category_id.toNumber());
+
       if (!threadIds) {
         threadIds = [];
         threadIdsByCategoryId.set(category_id.toNumber(), threadIds);
       }
+
       threadIds.push(nextThreadId);
 
       const newId = nextThreadId;
+
       threadById.set(newId, thread);
       nextThreadId = nextThreadId + 1;
 
@@ -220,15 +227,16 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       const { threadById } = state;
 
       const thread = threadById.get(id) as Thread;
-      const moderation = new ModerationAction({
-        moderated_at: BlockAndTime.newEmpty(),
-        moderator_id: new GenericAccountId(moderator),
-        rationale: new Text(rationale)
+      const moderation = createType('ModerationAction', {
+        moderated_at: createType('BlockAndTime', {}),
+        moderator_id: createType('AccountId', moderator),
+        rationale: createType('Text', rationale)
       });
-      const threadUpd = new Thread(Object.assign(
+      const threadUpd = createType('Thread', Object.assign(
         thread.cloneValues(),
-        { moderation: new Option(ModerationAction, moderation) }
+        { moderation: createType('Option<ModerationAction>', moderation) }
       ));
+
       threadById.set(id, threadUpd);
 
       return {
@@ -248,13 +256,16 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       } = state;
 
       let replyIds = replyIdsByThreadId.get(thread_id.toNumber());
+
       if (!replyIds) {
         replyIds = [];
         replyIdsByThreadId.set(thread_id.toNumber(), replyIds);
       }
+
       replyIds.push(nextReplyId);
 
       const newId = nextReplyId;
+
       replyById.set(newId, reply);
       nextReplyId = nextReplyId + 1;
 
@@ -285,15 +296,16 @@ function reducer (state: ForumState, action: ForumAction): ForumState {
       const { replyById } = state;
 
       const reply = replyById.get(id) as Reply;
-      const moderation = new ModerationAction({
-        moderated_at: BlockAndTime.newEmpty(),
-        moderator_id: new GenericAccountId(moderator),
-        rationale: new Text(rationale)
+      const moderation = createType('ModerationAction', {
+        moderated_at: createType('BlockAndTime', {}),
+        moderator_id: createType('AccountId', moderator),
+        rationale: createType('Text', rationale)
       });
-      const replyUpd = new Reply(Object.assign(
+      const replyUpd = createType('Reply', Object.assign(
         reply.cloneValues(),
-        { moderation: new Option(ModerationAction, moderation) }
+        { moderation: createType('Option<ModerationAction>', moderation) }
       ));
+
       replyById.set(id, replyUpd);
 
       return {
@@ -323,8 +335,9 @@ const contextStub: ForumContextProps = {
 
 export const ForumContext = createContext<ForumContextProps>(contextStub);
 
-export function ForumProvider (props: React.PropsWithChildren<{}>) {
+export function ForumProvider (props: React.PropsWithChildren<Record<any, unknown>>) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
   return (
     <ForumContext.Provider value={{ state, dispatch }}>
       {props.children}

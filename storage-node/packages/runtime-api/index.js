@@ -21,7 +21,7 @@
 const debug = require('debug')('joystream:runtime:base')
 const debugTx = require('debug')('joystream:runtime:base:tx')
 
-const { registerJoystreamTypes } = require('@joystream/types')
+const { types } = require('@joystream/types')
 const { ApiPromise, WsProvider } = require('@polkadot/api')
 const { IdentitiesApi } = require('@joystream/storage-runtime-api/identities')
 const { BalancesApi } = require('@joystream/storage-runtime-api/balances')
@@ -54,18 +54,12 @@ class RuntimeApi {
 
     options = options || {}
 
-    // Register joystream types
-    registerJoystreamTypes()
-
     const provider = new WsProvider(options.provider_url || 'ws://localhost:9944')
 
     // Create the API instrance
-    this.api = await ApiPromise.create({ provider })
+    this.api = await ApiPromise.create({ provider, types: types })
 
     this.asyncLock = new AsyncLock()
-
-    // Keep track locally of account nonces.
-    this.nonces = {}
 
     // The storage provider id to use
     this.storageProviderId = parseInt(options.storageProviderId) // u64 instead ?
@@ -151,26 +145,6 @@ class RuntimeApi {
     })
   }
 
-  // Get cached nonce and use unless system nonce is greater, to avoid stale nonce if
-  // there was a long gap in time between calls to signAndSend during which an external app
-  // submitted a transaction.
-  async selectBestNonce(accountId) {
-    const cachedNonce = this.nonces[accountId]
-    // In future use this rpc method to take the pending tx pool into account when fetching the nonce
-    // const nonce = await this.api.rpc.system.accountNextIndex(accountId)
-    const systemNonce = await this.api.query.system.accountNonce(accountId)
-
-    const bestNonce = cachedNonce && cachedNonce.gte(systemNonce) ? cachedNonce : systemNonce
-
-    this.nonces[accountId] = bestNonce
-
-    return bestNonce.toNumber()
-  }
-
-  incrementAndSaveNonce(accountId) {
-    this.nonces[accountId] = this.nonces[accountId].addn(1)
-  }
-
   /*
    * signAndSend() with nonce tracking, to enable concurrent sending of transacctions
    * so that they can be included in the same block. Allows you to use the accountId instead
@@ -209,12 +183,12 @@ class RuntimeApi {
 
     // object used to communicate back information from the tx updates handler
     const out = {
-      lastResult: undefined,
+      lastResult: { status: {} },
     }
 
     // synchronize access to nonce
     await this.executeWithAccountLock(accountId, async () => {
-      const nonce = await this.selectBestNonce(accountId)
+      const nonce = await this.api.rpc.system.accountNextIndex(accountId)
       const signed = tx.sign(fromKey, { nonce })
       const txhash = signed.hash
 
@@ -238,9 +212,6 @@ class RuntimeApi {
         } else {
           debugTx(`Submitted: ${serialized}`)
         }
-
-        // transaction submitted successfully, increment and save nonce.
-        this.incrementAndSaveNonce(accountId)
       } catch (err) {
         const errstr = err.toString()
         debugTx(`Rejected: ${errstr} txhash: ${txhash} nonce: ${nonce}`)
@@ -337,7 +308,7 @@ class RuntimeApi {
 
         onFinalizedFailed &&
           onFinalizedFailed({ err: status.type, result, tx: status.isUsurped ? status.asUsurped : undefined })
-      } else if (result.isFinalized) {
+      } else if (result.isCompleted) {
         unsubscribe()
 
         debugTx('Finalized', txinfo())
@@ -357,7 +328,7 @@ class RuntimeApi {
             err: 'ExtrinsicFailed',
             mappedEvents,
             result,
-            block: status.asFinalized,
+            block: status.asCompleted,
             dispatchError, // we get module number/id and index into the Error enum
           })
         } else if (success) {
@@ -365,20 +336,20 @@ class RuntimeApi {
           // console, we cannot get it in the events
           if (sudid) {
             const dispatchSuccess = sudid.event.data[0]
-            if (dispatchSuccess.isTrue) {
-              onFinalizedSuccess({ mappedEvents, result, block: status.asFinalized })
+            if (dispatchSuccess.isOk) {
+              onFinalizedSuccess({ mappedEvents, result, block: status.asCompleted })
             } else {
-              onFinalizedFailed({ err: 'SudoFailed', mappedEvents, result, block: status.asFinalized })
+              onFinalizedFailed({ err: 'SudoFailed', mappedEvents, result, block: status.asCompleted })
             }
           } else if (sudoAsDone) {
             const dispatchSuccess = sudoAsDone.event.data[0]
-            if (dispatchSuccess.isTrue) {
-              onFinalizedSuccess({ mappedEvents, result, block: status.asFinalized })
+            if (dispatchSuccess.isOk) {
+              onFinalizedSuccess({ mappedEvents, result, block: status.asCompleted })
             } else {
-              onFinalizedFailed({ err: 'SudoAsFailed', mappedEvents, result, block: status.asFinalized })
+              onFinalizedFailed({ err: 'SudoAsFailed', mappedEvents, result, block: status.asCompleted })
             }
           } else {
-            onFinalizedSuccess({ mappedEvents, result, block: status.asFinalized })
+            onFinalizedSuccess({ mappedEvents, result, block: status.asCompleted })
           }
         }
       }

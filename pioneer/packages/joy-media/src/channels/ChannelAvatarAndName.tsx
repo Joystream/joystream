@@ -9,6 +9,7 @@ type Props = {
 
 export const ChannelAvatarAndName = (props: Props) => {
   const { channel } = props;
+
   return (
     <div className={'ChannelPreview small'}>
       <ChannelAvatar channel={channel} size='small' />

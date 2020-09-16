@@ -15,6 +15,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
       description: 'Working Group Opening ID',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }

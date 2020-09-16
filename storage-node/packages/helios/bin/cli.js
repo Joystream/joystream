@@ -26,7 +26,7 @@ function mapInfoToStatus(providers, currentHeight) {
 
 function makeAssetUrl(contentId, source) {
   source = stripEndingSlash(source)
-  return `${source}/asset/v0/${encodeAddress(contentId)}`
+  return `${source}/asset/v1/${encodeAddress(contentId)}`
 }
 
 async function assetRelationshipState(api, contentId, providers) {

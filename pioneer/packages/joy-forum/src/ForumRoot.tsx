@@ -4,13 +4,13 @@ import styled from 'styled-components';
 import { orderBy } from 'lodash';
 import BN from 'bn.js';
 
-import Section from '@polkadot/joy-utils/Section';
+import { Section } from '@polkadot/joy-utils/react/components';
 import { withMulti, withApi } from '@polkadot/react-api';
 import { PostId } from '@joystream/types/common';
 import { Post, Thread } from '@joystream/types/forum';
-import { bnToStr } from '@polkadot/joy-utils/';
+import { bnToStr } from '@polkadot/joy-utils/functions/misc';
 import { ApiProps } from '@polkadot/react-api/types';
-import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
+import MemberPreview from '@polkadot/joy-utils/react/components/MemberByAccountPreview';
 
 import { CategoryCrumbs, RecentActivityPostsCount, ReplyIdxQueryParam, TimeAgoDate } from './utils';
 import { withForumCalls } from './calls';
@@ -21,7 +21,7 @@ const ForumRoot: React.FC = () => {
     <>
       <CategoryCrumbs root />
       <RecentActivity />
-      <Section title="Top categories">
+      <Section title='Top categories'>
         <CategoryList />
       </Section>
     </>
@@ -62,9 +62,10 @@ const InnerRecentActivity: React.FC<RecentActivityProps> = ({ nextPostId, api })
     const loadPosts = async () => {
       if (!nextPostId) return;
 
-      const newId = (id: number | BN) => new PostId(id);
+      const newId = (id: number | BN) => api.createType('PostId', id);
       const apiCalls: Promise<Post>[] = [];
       let id = newId(1);
+
       while (nextPostId.gt(id)) {
         apiCalls.push(api.query.forum.postById(id) as Promise<Post>);
         id = newId(id.add(newId(1)));
@@ -73,16 +74,18 @@ const InnerRecentActivity: React.FC<RecentActivityProps> = ({ nextPostId, api })
       const allPosts = await Promise.all(apiCalls);
       const sortedPosts = orderBy(
         allPosts,
-        [x => x.id.toNumber()],
+        [(x) => x.id.toNumber()],
         ['desc']
       );
 
       const threadsIdsLookup = {} as Record<number, boolean>;
       const postsWithUniqueThreads = sortedPosts.reduce((acc, post) => {
         const threadId = post.thread_id.toNumber();
+
         if (threadsIdsLookup[threadId]) return acc;
 
         threadsIdsLookup[threadId] = true;
+
         return [
           ...acc,
           post
@@ -90,22 +93,24 @@ const InnerRecentActivity: React.FC<RecentActivityProps> = ({ nextPostId, api })
       }, [] as Post[]);
 
       const recentUniquePosts = postsWithUniqueThreads.slice(0, RecentActivityPostsCount);
+
       setRecentPosts(recentUniquePosts);
       setLoaded(true);
     };
 
-    loadPosts();
+    void loadPosts();
   }, [bnToStr(nextPostId)]);
 
   useEffect(() => {
     const loadThreads = async () => {
       const apiCalls: Promise<Thread>[] = recentPosts
-        .filter(p => !threadsLookup[p.thread_id.toNumber()])
-        .map(p => api.query.forum.threadById(p.thread_id) as Promise<Thread>);
+        .filter((p) => !threadsLookup[p.thread_id.toNumber()])
+        .map((p) => api.query.forum.threadById(p.thread_id) as Promise<Thread>);
 
       const threads = await Promise.all(apiCalls);
       const newThreadsLookup = threads.reduce((acc, thread) => {
         acc[thread.id.toNumber()] = thread;
+
         return acc;
       }, {} as Record<number, Thread>);
       const newLookup = {
@@ -116,21 +121,23 @@ const InnerRecentActivity: React.FC<RecentActivityProps> = ({ nextPostId, api })
       setThreadsLookup(newLookup);
     };
 
-    loadThreads();
+    void loadThreads();
   }, [recentPosts]);
 
   const renderSectionContent = () => {
     if (!loaded) {
       return <i>Loading recent activity...</i>;
     }
+
     if (loaded && !recentPosts.length) {
       return <span>No recent activity</span>;
     }
 
-    return recentPosts.map(p => {
+    return recentPosts.map((p) => {
       const threadId = p.thread_id.toNumber();
 
       const postLinkSearch = new URLSearchParams();
+
       postLinkSearch.set(ReplyIdxQueryParam, p.nr_in_thread.toString());
       const postLinkPathname = `/forum/threads/${threadId}`;
 
@@ -138,7 +145,7 @@ const InnerRecentActivity: React.FC<RecentActivityProps> = ({ nextPostId, api })
 
       return (
         <RecentActivityEntry key={p.id.toNumber()}>
-          <StyledMemberPreview accountId={p.author_id} inline />
+          <StyledMemberPreview accountId={p.author_id} size='small' showId={false}/>
           posted in
           {thread && (
             <StyledPostLink to={{ pathname: postLinkPathname, search: postLinkSearch.toString() }}>{thread.title}</StyledPostLink>
@@ -150,7 +157,7 @@ const InnerRecentActivity: React.FC<RecentActivityProps> = ({ nextPostId, api })
   };
 
   return (
-    <Section title="Recent activity">
+    <Section title='Recent activity'>
       {renderSectionContent()}
     </Section>
   );

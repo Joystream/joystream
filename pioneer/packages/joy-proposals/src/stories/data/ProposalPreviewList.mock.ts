@@ -92,4 +92,5 @@ import mockedProposal from './ProposalDetails.mock';
 //   }
 // ];
 const MockProposalPreviewList = Array.from({ length: 5 }, (_, i) => mockedProposal);
+
 export default MockProposalPreviewList;

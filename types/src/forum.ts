@@ -144,7 +144,7 @@ export class Category extends JoyStructCustom({
   }
 
   get num_threads_created(): u32 {
-    return new u32(this.registry, this.num_direct_unmoderated_threads.add(this.num_direct_moderated_threads))
+    return this.registry.createType('u32', this.num_direct_unmoderated_threads.add(this.num_direct_moderated_threads))
   }
 
   get hasSubcategories(): boolean {
@@ -219,12 +219,12 @@ export class Thread extends JoyStructCustom({
     return this.getField('nr_in_category')
   }
 
-  get moderation(): ModerationAction | undefined {
-    return this.getField('moderation').unwrapOr(undefined)
+  get moderation(): ModerationAction | null {
+    return this.getField('moderation').unwrapOr(null)
   }
 
   get moderated(): boolean {
-    return this.moderation !== undefined
+    return this.moderation !== null
   }
 
   get num_unmoderated_posts(): u32 {
@@ -236,7 +236,7 @@ export class Thread extends JoyStructCustom({
   }
 
   get num_posts_ever_created(): u32 {
-    return new u32(this.registry, this.num_unmoderated_posts.add(this.num_moderated_posts))
+    return this.registry.createType('u32', this.num_unmoderated_posts.add(this.num_moderated_posts))
   }
 
   get created_at(): BlockAndTime {
@@ -288,12 +288,12 @@ export class Post extends JoyStructCustom({
     return this.getString('current_text')
   }
 
-  get moderation(): ModerationAction | undefined {
-    return this.getField('moderation').unwrapOr(undefined)
+  get moderation(): ModerationAction | null {
+    return this.getField('moderation').unwrapOr(null)
   }
 
   get moderated(): boolean {
-    return this.moderation !== undefined
+    return this.moderation !== null
   }
 
   get text_change_history(): VecPostTextChange {
@@ -337,12 +337,12 @@ export class Reply extends JoyStructCustom({
     return this.getString('text')
   }
 
-  get moderation(): ModerationAction | undefined {
-    return this.getField('moderation').unwrapOr(undefined)
+  get moderation(): ModerationAction | null {
+    return this.getField('moderation').unwrapOr(null)
   }
 
   get moderated(): boolean {
-    return this.moderation !== undefined
+    return this.moderation !== null
   }
 }
 
