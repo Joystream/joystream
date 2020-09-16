@@ -18,12 +18,9 @@
 
 'use strict'
 
-const path = require('path')
-
 const debug = require('debug')('joystream:colossus:api:asset')
-
-const utilRanges = require('@joystream/storage-utils/ranges')
 const filter = require('@joystream/storage-node-backend/filter')
+const ipfsProxy = require('../../../lib/middleware/ipfs_proxy')
 
 function errorHandler(response, err, code) {
   debug(err)
@@ -31,6 +28,9 @@ function errorHandler(response, err, code) {
 }
 
 module.exports = function (storage, runtime) {
+  // Creat the IPFS HTTP Gateway proxy middleware
+  const proxy = ipfsProxy.createProxy(storage)
+
   const doc = {
     // parameters for all operations in this path
     parameters: [
@@ -44,34 +44,6 @@ module.exports = function (storage, runtime) {
         },
       },
     ],
-
-    // Head: report that ranges are OK
-    async head(req, res) {
-      const id = req.params.id
-
-      // Open file
-      try {
-        const size = await storage.size(id)
-        const stream = await storage.open(id, 'r')
-        const type = stream.fileInfo.mimeType
-
-        // Close the stream; we don't need to fetch the file (if we haven't
-        // already). Then return result.
-        stream.destroy()
-
-        res.status(200)
-        res.contentType(type)
-        res.header('Content-Disposition', 'inline')
-        res.header('Content-Transfer-Encoding', 'binary')
-        res.header('Accept-Ranges', 'bytes')
-        if (size > 0) {
-          res.header('Content-Length', size)
-        }
-        res.send()
-      } catch (err) {
-        errorHandler(res, err, err.code)
-      }
-    },
 
     // Put for uploads
     async put(req, res) {
@@ -184,60 +156,20 @@ module.exports = function (storage, runtime) {
       }
     },
 
-    // Get content
     async get(req, res) {
-      const id = req.params.id
-      const download = req.query.download
+      proxy(req, res)
+    },
 
-      // Parse range header
-      let ranges
-      if (!download) {
-        try {
-          const rangeHeader = req.headers.range
-          ranges = utilRanges.parse(rangeHeader)
-        } catch (err) {
-          // Do nothing; it's ok to ignore malformed ranges and respond with the
-          // full content according to https://www.rfc-editor.org/rfc/rfc7233.txt
-        }
-        if (ranges && ranges.unit !== 'bytes') {
-          // Ignore ranges that are not byte units.
-          ranges = undefined
-        }
-      }
-      debug('Requested range(s) is/are', ranges)
-
-      // Open file
-      try {
-        const size = await storage.size(id)
-        const stream = await storage.open(id, 'r')
-
-        // Add a file extension to download requests if necessary. If the file
-        // already contains an extension, don't add one.
-        let sendName = id
-        const type = stream.fileInfo.mimeType
-        if (download) {
-          let ext = path.extname(sendName)
-          if (!ext) {
-            ext = stream.fileInfo.ext
-            if (ext) {
-              sendName = `${sendName}.${ext}`
-            }
-          }
-        }
-
-        const opts = {
-          name: sendName,
-          type,
-          size,
-          ranges,
-          download,
-        }
-        utilRanges.send(res, stream, opts)
-      } catch (err) {
-        errorHandler(res, err, err.code)
-      }
+    async head(req, res) {
+      proxy(req, res)
     },
   }
+
+  // doc.get = proxy
+  // doc.head = proxy
+  // Note: Adding the middleware this way is causing problems!
+  // We are loosing some information from the request, specifically req.query.download parameters for some reason.
+  // Does it have to do with how/when the apiDoc is being processed? binding issue?
 
   // OpenAPI specs
   doc.get.apiDoc = {

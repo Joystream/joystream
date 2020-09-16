@@ -224,6 +224,10 @@ class Storage {
         debug(`Warning IPFS daemon not running: ${err.message}`)
       } else {
         debug(`IPFS node is up with identity: ${identity.id}`)
+        // TODO: wait for IPFS daemon to be online for this to be effective..?
+        // set the IPFS HTTP Gateway config we desire.. operator might need
+        // to restart their daemon if the config was changed.
+        this.ipfs.config.set('Gateway.PublicGateways', { 'localhost': null })
       }
     })
   }
