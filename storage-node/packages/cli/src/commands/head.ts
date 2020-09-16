@@ -36,7 +36,7 @@ export class HeadCommand extends BaseCommand {
     // Checks for input parameters, shows usage if they are invalid.
     if (!this.assertParameters()) return
 
-    const assetUrl = this.createAndLogAssetUrl(this.storageNodeUrl, 'download', this.contentId)
+    const assetUrl = this.createAndLogAssetUrl(this.storageNodeUrl, this.contentId)
 
     try {
       const response = await axios.head(assetUrl)
