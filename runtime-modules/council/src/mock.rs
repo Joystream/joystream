@@ -2,7 +2,7 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    CouncilMembers, CouncilStage, CouncilStageInfo, Error, EzCandidate, EzCouncilStageAnnouncing,
+    BalanceReferendum, CouncilMembers, CouncilStage, CouncilStageInfo, Error, EzCandidate, EzCouncilStageAnnouncing,
     EzCouncilStageElection, EzCouncilStageInfo, GenesisConfig, Module, Stage, Trait,
 };
 
@@ -49,6 +49,10 @@ parameter_types! {
 }
 
 impl Trait for Runtime {
+//impl Trait for Runtime where
+//Self::ReferendumTrait::AccountId: Self::AccountId{
+//<<Self as Trait>::ReferendumTrait as system::Trait>::AccountId: Self::AccountId{
+//<<Self as Trait>::ReferendumTrait as system::Trait>::AccountId: system::Trait::AccountId{
     type Event = TestEvent;
 
     type LockId = CouncilLockId;
@@ -60,7 +64,13 @@ impl Trait for Runtime {
 
     type Currency = pallet_balances::Module<Runtime>;
     type VotePower = u64;
-    //type Referendum = referendum::Module<Runtime Referendum;
+    //type Referendum = referendum::Module<ReferendumInstance>;
+
+    type ReferendumInstance = ReferendumInstance;
+    //type ReferendumTrait = TmpReferendum<Self::ReferendumInstance>;
+    //type ReferendumTrait = TmpReferendum; spatne trait
+    type ReferendumTrait = TmpReferendum;
+    type ReferendumManager = referendum::Module<TmpReferendum, ReferendumInstance>;
 }
 
 /////////////////// Module implementation //////////////////////////////////////
@@ -73,17 +83,16 @@ mod event_mod {
     pub use crate::Event;
 }
 
-/*
 mod referendum_mod {
     pub use referendum::Event;
     pub use referendum::Instance0;
 }
-*/
 
 mod balances_mod {
     pub use pallet_balances::Event;
 }
 
+/*
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         event_mod<T>,
@@ -92,6 +101,8 @@ impl_outer_event! {
         system<T>,
     }
 }
+*/
+type TestEvent = ();
 
 parameter_types! {
     pub const BlockHashCount: u64 = 250;
@@ -100,6 +111,11 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
     pub const MinimumPeriod: u64 = 5;
 }
+
+trait SystemTrait {}
+
+impl SystemTrait for Runtime {}
+impl SystemTrait for TmpReferendum {}
 
 impl system::Trait for Runtime {
     type BaseCallFilter = ();
@@ -128,13 +144,43 @@ impl system::Trait for Runtime {
     type OnKilledAccount = ();
 }
 
+impl system::Trait for TmpReferendum {
+    type BaseCallFilter = ();
+    type Origin = Origin;
+    type Index = u64;
+    type BlockNumber = u64;
+    type Call = ();
+    type Hash = H256;
+    type Hashing = BlakeTwo256;
+    type AccountId = u64;
+    type Lookup = IdentityLookup<Self::AccountId>;
+    type Header = Header;
+    type Event = TestEvent;
+    type BlockHashCount = BlockHashCount;
+    type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
+    type MaximumBlockLength = MaximumBlockLength;
+    type AvailableBlockRatio = AvailableBlockRatio;
+    type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = pallet_balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
+}
+
 /////////////////// Election module ////////////////////////////////////////////
 
-//pub type ReferendumInstance = referendum::Instance0;
+pub type ReferendumInstance = referendum::Instance0;
 
 thread_local! {
     pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
     pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, )); // global switch used to test is_valid_option_id()
+
+    // complete intermediate results
+    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <TmpReferendum as referendum::Trait<ReferendumInstance>>::VotePower>> = RefCell::new(BTreeMap::<u64, <TmpReferendum as referendum::Trait<ReferendumInstance>>::VotePower>::new());
 }
 
 parameter_types! {
@@ -145,6 +191,81 @@ parameter_types! {
     pub const ReferendumLockId: LockIdentifier = *b"referend";
 }
 
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+struct TmpReferendum;
+
+impl<ReferendumInstance: referendum::Instance> referendum::Trait<ReferendumInstance> for TmpReferendum {
+    type Event = TestEvent;
+
+    type MaxSaltLength = MaxSaltLength;
+
+    type Currency = pallet_balances::Module<Runtime>;
+    type LockId = ReferendumLockId;
+
+    type ManagerOrigin =
+        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+
+    type VotePower = u64;
+
+    type VoteStageDuration = VoteStageDuration;
+    type RevealStageDuration = RevealStageDuration;
+
+    type MinimumStake = MinimumStake;
+
+    fn caclulate_vote_power(
+        account_id: &<Self as system::Trait>::AccountId,
+        stake: &Balance<Self, ReferendumInstance>,
+    ) -> <Self as referendum::Trait<ReferendumInstance>>::VotePower {
+        let stake: u64 = u64::from(*stake);
+        if *account_id == USER_REGULAR_POWER_VOTES {
+            return stake * POWER_VOTE_STRENGTH;
+        }
+
+        stake
+    }
+
+    fn can_unstake(_vote: &CastVote<Self::Hash, Balance<Self, ReferendumInstance>>) -> bool {
+        // trigger fail when requested to do so
+        if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
+            return false;
+        }
+
+        true
+    }
+
+    fn process_results(
+        winners: &[OptionResult<Self::VotePower>],
+        //all_options_results: &BTreeMap<u64, Self::VotePower>,
+    ) {
+        println!("{:?} fofoffofoff", winners);
+        //<Module<Self>>::recieve_referendum_results(winners, all_options_results).unwrap();
+        //<Module<Self>>::recieve_referendum_results(winners).unwrap();
+    }
+
+    fn is_valid_option_id(_option_index: &u64) -> bool {
+        if !IS_OPTION_ID_VALID.with(|value| value.borrow().0) {
+            return false;
+        }
+
+        true
+    }
+
+    fn get_option_power(option_id: &u64) -> Self::VotePower {
+        INTERMEDIATE_RESULTS.with(|value| match value.borrow().get(option_id) {
+            Some(vote_power) => *vote_power,
+            None => 0,
+        })
+    }
+
+    fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
+        INTERMEDIATE_RESULTS.with(|value| {
+//            let current = Self::get_option_power(option_id);
+//
+//            value.borrow_mut().insert(*option_id, amount + current);
+        });
+    }
+}
 /*
 //impl referendum::Trait<ReferendumInstance> for Runtime {
 impl<ReferendumInstance: referendum::Instance> referendum::Trait<ReferendumInstance> for Runtime {
@@ -240,26 +361,27 @@ pub struct CandidateInfo<T: Trait> {
 }
 
 #[derive(Clone)]
-pub struct VoterInfo<T: Trait, ReferendumInstance: referendum::Instance> {
+pub struct VoterInfo<T: Trait> {
     pub origin: OriginType<T::AccountId>,
     pub commitment: T::Hash,
     pub salt: Vec<u8>,
     pub vote_for: u64,
-    pub stake: BalanceReferendum<T, ReferendumInstance>,
+    pub stake: BalanceReferendum<T>,
 }
 
 #[derive(Clone)]
-pub struct CouncilSettings<T: Trait, ReferendumInstance: referendum::Instance> {
+pub struct CouncilSettings<T: Trait> {
     pub council_size: u64,
     pub min_candidate_count: u64,
-    pub min_candidate_stake: BalanceReferendum<T, ReferendumInstance>,
+    pub min_candidate_stake: BalanceReferendum<T>,
     pub announcing_stage_duration: T::BlockNumber,
     pub voting_stage_duration: T::BlockNumber,
     pub reveal_stage_duration: T::BlockNumber,
 }
 
-impl<T: Trait, ReferendumInstance: referendum::Instance> CouncilSettings<T, ReferendumInstance> {
-    pub fn extract_settings() -> CouncilSettings<T, ReferendumInstance> {
+impl<T: Trait> CouncilSettings<T> {
+//impl<T: Trait + Trait<ReferendumTrait = T>> CouncilSettings<T> {
+    pub fn extract_settings() -> CouncilSettings<T> {
         let council_size = T::CouncilSize::get();
 
         CouncilSettings {
@@ -267,10 +389,20 @@ impl<T: Trait, ReferendumInstance: referendum::Instance> CouncilSettings<T, Refe
             min_candidate_count: council_size + <T as Trait>::MinNumberOfExtraCandidates::get(),
             min_candidate_stake: T::MinCandidateStake::get(),
             announcing_stage_duration: <T as Trait>::AnnouncingPeriodDuration::get(),
+            //voting_stage_duration:
+            //    <T as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get(),
+            //reveal_stage_duration:
+            //    <T as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(),
+            
             voting_stage_duration:
-                <T as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get(),
+            <T::ReferendumTrait as referendum::Trait<T::ReferendumInstance>>::VoteStageDuration::get(),
             reveal_stage_duration:
-                <T as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(),
+            <T::ReferendumTrait as referendum::Trait<T::ReferendumInstance>>::RevealStageDuration::get(),
+
+            //voting_stage_duration:
+            //    T::ReferendumTrait::VoteStageDuration::get(),
+            //reveal_stage_duration:
+            //    <T::ReferendumTrait as referendum::Trait<T::ReferendumInstance>>::RevealStageDuration::get(),
         }
     }
 }
@@ -286,18 +418,18 @@ pub enum CouncilCycleInterrupt {
 }
 
 #[derive(Clone)]
-pub struct CouncilCycleParams<T: Trait, ReferendumInstance: referendum::Instance> {
-    pub council_settings: CouncilSettings<T, ReferendumInstance>,
+pub struct CouncilCycleParams<T: Trait> {
+    pub council_settings: CouncilSettings<T>,
     pub cycle_start_block_number: T::BlockNumber,
     pub expected_initial_council_members: Vec<EzCandidate<T>>, // council members
     pub expected_final_council_members: Vec<EzCandidate<T>>, // council members after cycle finishes
     pub candidates_announcing: Vec<CandidateInfo<T>>, // candidates announcing their candidacy
     pub expected_candidates: Vec<EzCandidate<T>>, // expected list of candidates after announcement period is over
-    pub voters: Vec<VoterInfo<T, ReferendumInstance>>,                // voters that will participate in council voting
+    pub voters: Vec<VoterInfo<T>>,                // voters that will participate in council voting
 
     pub interrupt_point: Option<CouncilCycleInterrupt>, // info about when should be cycle interrupted (used to customize the test)
 }
-
+/*
 /////////////////// Util macros ////////////////////////////////////////////////
 macro_rules! escape_checkpoint {
     ($item:expr, $expected_value:expr) => {
@@ -344,7 +476,7 @@ impl<T: Trait, ReferendumInstance: referendum::Instance> InstanceMockUtils<T, Re
 where
     T::AccountId: From<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
-    BalanceReferendum<T, ReferendumInstance>: From<u64> + Into<u64>,
+    BalanceReferendum<T>: From<u64> + Into<u64>,
 {
     pub fn mock_origin(origin: OriginType<T::AccountId>) -> T::Origin {
         match origin {
@@ -369,13 +501,13 @@ where
     }
 
     // topup currency to the account
-    fn topup_account(account_id: u64, amount: BalanceReferendum<T, ReferendumInstance>) {
+    fn topup_account(account_id: u64, amount: BalanceReferendum<T>) {
         let _ = pallet_balances::Module::<Runtime>::deposit_creating(&account_id, amount.into());
     }
 
     pub fn generate_candidate(
         index: u64,
-        stake: BalanceReferendum<T, ReferendumInstance>,
+        stake: BalanceReferendum<T>,
     ) -> CandidateInfo<T> {
         let account_id = CANDIDATE_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
@@ -391,9 +523,9 @@ where
 
     pub fn generate_voter(
         index: u64,
-        stake: BalanceReferendum<T, ReferendumInstance>,
+        stake: BalanceReferendum<T>,
         vote_for_index: u64,
-    ) -> VoterInfo<T, ReferendumInstance> {
+    ) -> VoterInfo<T> {
         let account_id = VOTER_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
         let (commitment, salt) = Self::vote_commitment(&account_id.into(), &vote_for_index.into());
@@ -442,7 +574,7 @@ impl<T: Trait, ReferendumInstance: referendum::Instance> InstanceMocks<T, Refere
 where
     T::AccountId: From<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
-    BalanceReferendum<T, ReferendumInstance>: From<u64> + Into<u64>,
+    BalanceReferendum<T>: From<u64> + Into<u64>,
 {
     pub fn check_announcing_period(
         expected_update_block_number: T::BlockNumber,
@@ -502,14 +634,13 @@ where
                 winning_target_count,
                 started: expected_update_block_number,
                 intermediate_winners,
-                intermediate_results,
             }),
         );
     }
 
     pub fn candidate(
         origin: OriginType<T::AccountId>,
-        stake: BalanceReferendum<T, ReferendumInstance>,
+        stake: BalanceReferendum<T>,
         expected_result: Result<(), Error<T>>,
     ) {
         // check method returns expected result
@@ -522,7 +653,7 @@ where
     pub fn vote_for_candidate(
         origin: OriginType<T::AccountId>,
         commitment: T::Hash,
-        stake: BalanceReferendum<T, ReferendumInstance>,
+        stake: BalanceReferendum<T>,
         expected_result: Result<(), Error<T>>,
     ) -> () {
         // check method returns expected result
@@ -554,7 +685,7 @@ where
     }
 
     /// simulate one council's election cycle
-    pub fn simulate_council_cycle(params: CouncilCycleParams<T, ReferendumInstance>) {
+    pub fn simulate_council_cycle(params: CouncilCycleParams<T>) {
         let settings = params.council_settings;
 
         // check initial council members
@@ -662,3 +793,4 @@ where
         Self::check_council_members(params.expected_final_council_members.clone());
     }
 }
+*/

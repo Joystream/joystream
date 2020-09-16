@@ -4,7 +4,7 @@ use super::{Error, EzCandidate};
 use crate::mock::*;
 
 type ReferendumInstance = referendum::Instance0;
-
+/*
 type Mocks = InstanceMocks<Runtime, ReferendumInstance>;
 type MockUtils = InstanceMockUtils<Runtime, ReferendumInstance>;
 
@@ -184,3 +184,4 @@ fn council_cant_vote_for_yourself() {
         );
     });
 }
+*/
