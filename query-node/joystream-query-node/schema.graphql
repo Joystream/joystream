@@ -129,3 +129,19 @@ type Property @entity {
 	"Schemas which involve this property"
 	schemas: [Schema!] @derivedFrom(field: "properties")
 }
+
+"Represents a standard for what information must be associated with any entity of a given class"
+type Schema @entity {
+	"Runtime identifier of schema in class"
+	schemaId: BigInteger!
+
+	"Class to which this schema corresponds"
+	class: Class!
+
+	"Properties of class that are in this schema"
+	properties: [Property!]
+
+	"If schema can be added to an entity"
+	isActive: Boolean!
+}
+
