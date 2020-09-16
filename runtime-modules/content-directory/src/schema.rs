@@ -287,7 +287,6 @@ impl<T: Trait> Default for Property<T> {
 }
 
 impl<T: Trait> core::fmt::Debug for Property<T> {
-    #[cfg(feature = "std")]
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(formatter, "Property {:?}", self)
     }

@@ -89,21 +89,16 @@ thread_local! {
     static PROPERTY_DESCRIPTION_CONSTRAINT: RefCell<InputValidationLengthConstraint> = RefCell::new(InputValidationLengthConstraint::default());
     static CLASS_NAME_CONSTRAINT: RefCell<InputValidationLengthConstraint> = RefCell::new(InputValidationLengthConstraint::default());
     static CLASS_DESCRIPTION_CONSTRAINT: RefCell<InputValidationLengthConstraint> = RefCell::new(InputValidationLengthConstraint::default());
-
     static MAX_NUMBER_OF_CLASSES: RefCell<MaxNumber> = RefCell::new(0);
     static MAX_NUMBER_OF_MAINTAINERS_PER_CLASS: RefCell<MaxNumber> = RefCell::new(0);
     static MAX_NUMBER_OF_SCHEMAS_PER_CLASS: RefCell<MaxNumber> = RefCell::new(0);
     static MAX_NUMBER_OF_PROPERTIES_PER_CLASS: RefCell<MaxNumber> = RefCell::new(0);
     static MAX_NUMBER_OF_ENTITIES_PER_CLASS: RefCell<EntityId> = RefCell::new(0);
-
     static MAX_NUMBER_OF_CURATORS_PER_GROUP: RefCell<MaxNumber> = RefCell::new(0);
-
     static MAX_NUMBER_OF_OPERATIONS_DURING_ATOMIC_BATCHING: RefCell<MaxNumber> = RefCell::new(0);
-
     static VEC_MAX_LENGTH_CONSTRAINT: RefCell<VecMaxLength> = RefCell::new(0);
     static TEXT_MAX_LENGTH_CONSTRAINT: RefCell<TextMaxLength> = RefCell::new(0);
     static HASHED_TEXT_MAX_LENGTH_CONSTRAINT: RefCell<HashedTextMaxLength> = RefCell::new(Some(0));
-
     static INDIVIDUAL_ENTITIES_CREATION_LIMIT: RefCell<EntityId> = RefCell::new(0);
 }
 
@@ -252,31 +247,23 @@ impl_outer_event! {
 
 impl Trait for Runtime {
     type Event = TestEvent;
-
     type Nonce = u64;
-
     type ClassId = u64;
     type EntityId = u64;
-
     type PropertyNameLengthConstraint = PropertyNameLengthConstraint;
     type PropertyDescriptionLengthConstraint = PropertyDescriptionLengthConstraint;
     type ClassNameLengthConstraint = ClassNameLengthConstraint;
     type ClassDescriptionLengthConstraint = ClassDescriptionLengthConstraint;
-
     type MaxNumberOfClasses = MaxNumberOfClasses;
     type MaxNumberOfMaintainersPerClass = MaxNumberOfMaintainersPerClass;
     type MaxNumberOfSchemasPerClass = MaxNumberOfSchemasPerClass;
     type MaxNumberOfPropertiesPerSchema = MaxNumberOfPropertiesPerSchema;
     type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
-
     type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
-
     type MaxNumberOfOperationsDuringAtomicBatching = MaxNumberOfOperationsDuringAtomicBatching;
-
     type VecMaxLengthConstraint = VecMaxLengthConstraint;
     type TextMaxLengthConstraint = TextMaxLengthConstraint;
     type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
-
     type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
 }
 
@@ -311,21 +298,16 @@ pub struct ExtBuilder {
     property_description_constraint: InputValidationLengthConstraint,
     class_name_constraint: InputValidationLengthConstraint,
     class_description_constraint: InputValidationLengthConstraint,
-
     max_number_of_classes: MaxNumber,
     max_number_of_maintainers_per_class: MaxNumber,
     max_number_of_schemas_per_class: MaxNumber,
     max_number_of_properties_per_class: MaxNumber,
     max_number_of_entities_per_class: EntityId,
-
     max_number_of_curators_per_group: MaxNumber,
-
     max_number_of_operations_during_atomic_batching: MaxNumber,
-
     vec_max_length_constraint: VecMaxLength,
     text_max_length_constraint: TextMaxLength,
     hashed_text_max_length_constraint: HashedTextMaxLength,
-
     individual_entities_creation_limit: EntityId,
 }
 
@@ -336,21 +318,16 @@ impl Default for ExtBuilder {
             property_description_constraint: InputValidationLengthConstraint::new(1, 500),
             class_name_constraint: InputValidationLengthConstraint::new(1, 49),
             class_description_constraint: InputValidationLengthConstraint::new(1, 500),
-
             max_number_of_classes: 100,
             max_number_of_maintainers_per_class: 10,
             max_number_of_schemas_per_class: 20,
             max_number_of_properties_per_class: 40,
             max_number_of_entities_per_class: 400,
-
             max_number_of_curators_per_group: 50,
-
             max_number_of_operations_during_atomic_batching: 500,
-
             vec_max_length_constraint: 200,
             text_max_length_constraint: 5000,
             hashed_text_max_length_constraint: Some(25000),
-
             individual_entities_creation_limit: 50,
         }
     }
@@ -363,7 +340,6 @@ impl ExtBuilder {
             .with(|v| *v.borrow_mut() = self.property_description_constraint);
         CLASS_NAME_CONSTRAINT.with(|v| *v.borrow_mut() = self.class_name_constraint);
         CLASS_DESCRIPTION_CONSTRAINT.with(|v| *v.borrow_mut() = self.class_description_constraint);
-
         MAX_NUMBER_OF_CLASSES.with(|v| *v.borrow_mut() = self.max_number_of_classes);
         MAX_NUMBER_OF_MAINTAINERS_PER_CLASS
             .with(|v| *v.borrow_mut() = self.max_number_of_maintainers_per_class);
@@ -373,19 +349,14 @@ impl ExtBuilder {
             .with(|v| *v.borrow_mut() = self.max_number_of_properties_per_class);
         MAX_NUMBER_OF_ENTITIES_PER_CLASS
             .with(|v| *v.borrow_mut() = self.max_number_of_entities_per_class);
-
         MAX_NUMBER_OF_CURATORS_PER_GROUP
             .with(|v| *v.borrow_mut() = self.max_number_of_curators_per_group);
-
         MAX_NUMBER_OF_OPERATIONS_DURING_ATOMIC_BATCHING
             .with(|v| *v.borrow_mut() = self.max_number_of_operations_during_atomic_batching);
-
         VEC_MAX_LENGTH_CONSTRAINT.with(|v| *v.borrow_mut() = self.vec_max_length_constraint);
         TEXT_MAX_LENGTH_CONSTRAINT.with(|v| *v.borrow_mut() = self.text_max_length_constraint);
-
         HASHED_TEXT_MAX_LENGTH_CONSTRAINT
             .with(|v| *v.borrow_mut() = self.hashed_text_max_length_constraint);
-
         INDIVIDUAL_ENTITIES_CREATION_LIMIT
             .with(|v| *v.borrow_mut() = self.individual_entities_creation_limit);
     }
@@ -405,8 +376,6 @@ impl ExtBuilder {
 
 fn default_content_directory_genesis_config() -> GenesisConfig<Runtime> {
     GenesisConfig {
-        class_by_id: vec![],
-        entity_by_id: vec![],
         curator_group_by_id: vec![],
         next_class_id: 1,
         next_entity_id: 1,

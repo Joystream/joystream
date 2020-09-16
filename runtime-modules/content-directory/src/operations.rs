@@ -69,7 +69,6 @@ pub enum OperationType<T: Trait> {
 }
 
 impl<T: Trait> core::fmt::Debug for OperationType<T> {
-    #[cfg(feature = "std")]
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(formatter, "OperationType {:?}", self)
     }

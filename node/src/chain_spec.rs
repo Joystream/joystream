@@ -30,11 +30,12 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     versioned_store::InputValidationLengthConstraint as VsInputValidation,
-    AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentWorkingGroupConfig,
-    CouncilConfig, CouncilElectionConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ElectionParameters, GrandpaConfig, ImOnlineConfig, MembersConfig,
-    ProposalsCodexConfig, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
-    StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
+    AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig, ContentDirectoryConfig,
+    ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig, CouncilConfig,
+    CouncilElectionConfig, DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig,
+    ElectionParameters, GrandpaConfig, ImOnlineConfig, MembersConfig, ProposalsCodexConfig,
+    SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig,
+    SudoConfig, SystemConfig, VersionedStoreConfig, DAYS, WASM_BINARY,
 };
 
 pub use node_runtime::{AccountId, GenesisConfig};
@@ -292,6 +293,13 @@ pub fn testnet_genesis(
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
         }),
+        working_group_Instance3: Some(ContentDirectoryWorkingGroupConfig {
+            phantom: Default::default(),
+            storage_working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+        }),
         versioned_store: Some(VersionedStoreConfig {
             class_by_id: vec![],
             entity_by_id: vec![],
@@ -325,6 +333,14 @@ pub fn testnet_genesis(
             channel_avatar_constraint: InputValidationLengthConstraint::new(5, 1024),
             channel_banner_constraint: InputValidationLengthConstraint::new(5, 1024),
             channel_title_constraint: InputValidationLengthConstraint::new(5, 1024),
+        }),
+        content_directory: Some({
+            ContentDirectoryConfig {
+                curator_group_by_id: vec![],
+                next_class_id: 1,
+                next_entity_id: 1,
+                next_curator_group_id: 1,
+            }
         }),
         proposals_codex: Some(ProposalsCodexConfig {
             set_validator_count_proposal_voting_period: cpcp

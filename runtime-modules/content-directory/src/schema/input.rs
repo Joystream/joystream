@@ -9,7 +9,6 @@ pub enum InputPropertyValue<T: Trait> {
 }
 
 impl<T: Trait> core::fmt::Debug for InputPropertyValue<T> {
-    #[cfg(feature = "std")]
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(formatter, "InputPropertyValue {:?}", self)
     }
@@ -81,8 +80,7 @@ pub enum InputValue<T: Trait> {
 }
 
 impl<T: Trait> core::fmt::Debug for InputValue<T> {
-    #[cfg(feature = "std")]
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> sp_std::fmt::Result {
         write!(formatter, "InputValue {:?}", self)
     }
 }
