@@ -15,7 +15,7 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod constants;
 mod integration;
-mod primitives;
+pub mod primitives;
 mod runtime_api;
 #[cfg(test)]
 mod tests; // Runtime integration tests
@@ -47,19 +47,22 @@ pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
 
-use content_working_group as content_wg;
 use governance::{council, election};
-use storage::{data_directory, data_object_storage_registry, data_object_type_registry};
+use storage::data_object_storage_registry;
 
 // Node dependencies
 pub use common;
+pub use content_working_group as content_wg;
 pub use forum;
 pub use governance::election_params::ElectionParameters;
+pub use membership;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_codex::ProposalsConfigParameters;
+pub use storage::{data_directory, data_object_type_registry};
 pub use versioned_store;
+pub use versioned_store_permissions;
 pub use working_group;
 
 pub use content_directory;
@@ -72,7 +75,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 7,
-    spec_version: 0,
+    spec_version: 3,
     impl_version: 0,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -127,6 +130,11 @@ impl system::Trait for Runtime {
     type AccountData = pallet_balances::AccountData<Balance>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+}
+
+impl pallet_utility::Trait for Runtime {
+    type Event = Event;
+    type Call = Call;
 }
 
 parameter_types! {
@@ -234,14 +242,14 @@ impl pallet_sudo::Trait for Runtime {
 }
 
 parameter_types! {
-    pub const UncleGenerations: BlockNumber = 5;
+    pub const UncleGenerations: BlockNumber = 0;
 }
 
 impl pallet_authorship::Trait for Runtime {
     type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Babe>;
     type UncleGenerations = UncleGenerations;
     type FilterUncle = ();
-    type EventHandler = Staking;
+    type EventHandler = (Staking, ImOnline);
 }
 
 impl_opaque_keys! {
@@ -280,9 +288,9 @@ impl pallet_session::historical::Trait for Runtime {
 
 pallet_staking_reward_curve::build! {
     const REWARD_CURVE: PiecewiseLinear<'static> = curve!(
-        min_inflation: 0_025_000,
-        max_inflation: 0_300_000,
-        ideal_stake: 0_300_000,
+        min_inflation: 0_050_000,
+        max_inflation: 0_750_000,
+        ideal_stake: 0_250_000,
         falloff: 0_050_000,
         max_piece_count: 100,
         test_precision: 0_005_000,
@@ -298,8 +306,8 @@ parameter_types! {
 
 parameter_types! {
     pub const SessionsPerEra: sp_staking::SessionIndex = 6;
-    pub const BondingDuration: pallet_staking::EraIndex = 24;
-    pub const SlashDeferDuration: pallet_staking::EraIndex = 6; // 1/4 the bonding duration.
+    pub const BondingDuration: pallet_staking::EraIndex = BONDING_DURATION;
+    pub const SlashDeferDuration: pallet_staking::EraIndex = BONDING_DURATION - 1; // 'slightly less' than the bonding duration.
     pub const RewardCurve: &'static PiecewiseLinear<'static> = &REWARD_CURVE;
     pub const MaxNominatorRewardedPerValidator: u32 = 64;
     pub const ElectionLookahead: BlockNumber = EPOCH_DURATION_IN_BLOCKS / 4;
@@ -590,7 +598,7 @@ impl proposals_discussion::Trait for Runtime {
 
 parameter_types! {
     pub const TextProposalMaxLength: u32 = 5_000;
-    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 2_000_000;
+    pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
 }
 
 impl proposals_codex::Trait for Runtime {
@@ -632,6 +640,7 @@ construct_runtime!(
     {
         // Substrate
         System: system::{Module, Call, Storage, Config, Event<T>},
+        Utility: pallet_utility::{Module, Call, Event},
         Babe: pallet_babe::{Module, Call, Storage, Config, Inherent(Timestamp)},
         Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},
         Authorship: pallet_authorship::{Module, Call, Storage, Inherent},
@@ -654,7 +663,7 @@ construct_runtime!(
         Members: membership::{Module, Call, Storage, Event<T>, Config<T>},
         Forum: forum::{Module, Call, Storage, Event<T>, Config<T>},
         VersionedStore: versioned_store::{Module, Call, Storage, Event<T>, Config},
-        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage},
+        VersionedStorePermissions: versioned_store_permissions::{Module, Call, Storage, Config<T>},
         Stake: stake::{Module, Call, Storage},
         Minting: minting::{Module, Call, Storage},
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
@@ -663,7 +672,7 @@ construct_runtime!(
         ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
-        DataDirectory: data_directory::{Module, Call, Storage, Event<T>},
+        DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},
         DataObjectStorageRegistry: data_object_storage_registry::{Module, Call, Storage, Event<T>, Config<T>},
         Discovery: service_discovery::{Module, Call, Storage, Event<T>},
         // --- Proposals

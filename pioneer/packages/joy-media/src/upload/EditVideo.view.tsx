@@ -2,9 +2,8 @@ import React from 'react';
 import { RouteComponentProps } from 'react-router';
 import { MediaView } from '../MediaView';
 import { OuterProps, EditForm } from './UploadVideo';
-import EntityId from '@joystream/types/versioned-store/EntityId';
-import { ChannelId } from '@joystream/types/content-working-group';
-import { JoyError } from '@polkadot/joy-utils/JoyStatus';
+import { JoyError } from '@polkadot/joy-utils/react/components';
+import { useApi } from '@polkadot/react-hooks';
 
 type Props = OuterProps;
 
@@ -19,18 +18,20 @@ export const EditVideoView = MediaView<Props>({
     const entityClass = await transport.videoClass();
     const entity = id && await transport.videoById(id);
     const opts = await transport.dropdownOptions();
+
     return { channel, mediaObjectClass, entityClass, entity, opts };
   }
 });
 
-type WithRouterProps = Props & RouteComponentProps<any>
+type WithRouterProps = Props & RouteComponentProps<Record<string, string | undefined>>
 
 export const UploadVideoWithRouter = (props: WithRouterProps) => {
   const { match: { params: { channelId } } } = props;
+  const { api } = useApi();
 
   if (channelId) {
     try {
-      return <EditVideoView {...props} channelId={new ChannelId(channelId)} />;
+      return <EditVideoView {...props} channelId={api.createType('ChannelId', channelId)} />;
     } catch (err) {
       console.log('UploadVideoWithRouter failed:', err);
     }
@@ -41,10 +42,11 @@ export const UploadVideoWithRouter = (props: WithRouterProps) => {
 
 export const EditVideoWithRouter = (props: WithRouterProps) => {
   const { match: { params: { id } } } = props;
+  const { api } = useApi();
 
   if (id) {
     try {
-      return <EditVideoView {...props} id={new EntityId(id)} />;
+      return <EditVideoView {...props} id={api.createType('EntityId', id)} />;
     } catch (err) {
       console.log('EditVideoWithRouter failed:', err);
     }

@@ -2157,7 +2157,7 @@ fn slash_worker_stake_fails_with_not_set_lead() {
 }
 
 #[test]
-fn get_all_worker_ids_succeeds() {
+fn get_regular_worker_ids_succeeds() {
     build_test_externalities().execute_with(|| {
         let worker_ids = TestWorkingGroup::get_regular_worker_ids();
         assert_eq!(worker_ids, Vec::new());
@@ -2179,6 +2179,30 @@ fn get_all_worker_ids_succeeds() {
         <crate::WorkerById<Test, TestWorkingGroupInstance>>::remove(worker_id1);
         let worker_ids = TestWorkingGroup::get_regular_worker_ids();
         assert_eq!(worker_ids, vec![worker_id2]);
+    });
+}
+
+#[test]
+fn get_all_worker_ids_succeeds() {
+    build_test_externalities().execute_with(|| {
+        let worker_ids = TestWorkingGroup::get_all_worker_ids();
+        assert_eq!(worker_ids, Vec::new());
+
+        let leader_worker_id = HireLeadFixture::default().hire_lead();
+
+        let worker_id1 = fill_worker_position(None, None, false, OpeningType::Worker, None);
+        let worker_id2 = fill_worker_position(None, None, false, OpeningType::Worker, None);
+
+        let mut expected_ids = vec![leader_worker_id, worker_id1, worker_id2];
+        expected_ids.sort();
+
+        let mut worker_ids = TestWorkingGroup::get_all_worker_ids();
+        worker_ids.sort();
+        assert_eq!(worker_ids, expected_ids);
+
+        <crate::WorkerById<Test, TestWorkingGroupInstance>>::remove(worker_id1);
+        let worker_ids = TestWorkingGroup::get_all_worker_ids();
+        assert_eq!(worker_ids, vec![leader_worker_id, worker_id2]);
     });
 }
 

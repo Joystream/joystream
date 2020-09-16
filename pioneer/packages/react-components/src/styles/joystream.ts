@@ -31,60 +31,6 @@ export default css`
     }
   }
 
-  .ui--AddressMini {
-    .ui--IdentityIcon {
-      margin-left: 0;
-    }
-    .ui--AddressMini-info {
-      display: block;
-    }
-    .ui--AddressMini-details {
-      display: block;
-      text-align: left;
-    }
-    .ui--AddressSummary-name,
-    .ui--AddressSummary-balance,
-    .ui--AddressSummary-memo {
-      display: inline-block;
-      margin-top: 0;
-      padding-top: 0;
-      font-size: 0.8rem !important;
-      margin-right: 1rem;
-      font-weight: 100;
-      opacity: 0.8;
-      overflow: hidden;
-    }
-  }
-
-  .ui--Bubble.ui.label {
-    background-color: #f2f2f2;
-    margin: 0.25rem 0;
-    margin-right: 0.5rem;
-
-    &.pointing:before {
-      background-color: #e6e6e6;
-    }
-    &.warn {
-      color: #f2711c !important;
-      border: 1px solid;
-    }
-    &.ok {
-      color: #21ba45 !important;
-      border: 1px solid;
-    }
-  }
-
-  .SidebarItem {
-    display: inline-flex;
-    flex-direction: column;
-
-    .SidebarSubtitle {
-      display: block;
-      font-size: 0.85rem;
-      color: grey;
-    }
-  }
-
   .JoySection {
     margin: 2rem 0;
 
@@ -185,19 +131,61 @@ export default css`
     color: #3b83c0;
   }
 
-  /* Overrides */
+  /* Main apps bg */
+  .apps-Main {
+    background: rgba(250,250,250);
+  }
+
+  /* Remove IdentityIcon border (not working well for members list) */
   .ui--IdentityIcon {
     border: none !important;
   }
-  /* Normalize SideBar icons width */
-  .apps--SideBar-Item-NavLink svg {
-    width: 20px !important;
+
+  .apps--SideBar-Item-NavLink {
+    /* Normalize SideBar icons width */
+    svg {
+      width: 20px !important;
+    }
+    /* Display SideBar subtitle below title */
+    .text {
+      display: inline-flex;
+      flex-direction: column;
+    }
   }
+
   /* Fix "collapsed" sidebar on mobile */
   .apps--Wrapper:not(.menu-open) .apps--SideBar-Scroll {
     padding: 0 !important;
   }
+
+  /* Turn off global text-transform on h1 */
   h1 {
     text-transform: none;
+  }
+
+  /* AddressMini customization */
+  .ui--AddressMini {
+    display: grid;
+    grid-template-rows: auto auto;
+    grid-template-columns: min-content min-content;
+    .ui--AddressMini-icon {
+      grid-row: 1/3;
+      grid-column: 2/3;
+      align-self: center;
+    }
+    .ui--AddressMini-balances .ui--FormatBalance {
+      font-size: 1rem !important;
+      margin: 0 !important;
+    }
+    .ui--AddressMini-info {
+      min-width: 10em;
+      max-width: 10em;
+    }
+  }
+
+  /* Fix options inside struct UI bug */
+  .ui--Params-Struct + .ui--Param-Option-toggle {
+    bottom: auto;
+    top: 0;
   }
 `;

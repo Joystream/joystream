@@ -111,7 +111,7 @@ pub struct PostTextChange<BlockNumber, Moment> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Post<BlockNumber, Moment, AccountId, ThreadId, PostId> {
     /// Post identifier
-    id: PostId,
+    pub id: PostId,
 
     /// Id of thread to which this post corresponds.
     thread_id: ThreadId,
@@ -144,7 +144,7 @@ pub struct Post<BlockNumber, Moment, AccountId, ThreadId, PostId> {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Thread<BlockNumber, Moment, AccountId, ThreadId> {
     /// Thread identifier
-    id: ThreadId,
+    pub id: ThreadId,
 
     /// Title
     title: Vec<u8>,
@@ -208,7 +208,7 @@ pub struct ChildPositionInParentCategory {
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Category<BlockNumber, Moment, AccountId> {
     /// Category identifier
-    id: CategoryId,
+    pub id: CategoryId,
 
     /// Title
     title: Vec<u8>,

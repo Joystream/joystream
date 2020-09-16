@@ -48,6 +48,9 @@ function createWebpack (ENV, context) {
     return alias;
   }, {});
 
+  // Add @joystream/types as alias to automatically process any changes:
+  alias['@joystream/types'] = path.resolve(context, '../../../types/src');
+
   return {
     context,
     entry: ['@babel/polyfill', './src/index.tsx'],
@@ -67,6 +70,17 @@ function createWebpack (ENV, context) {
                 importLoaders: 1
               }
             }
+          ]
+        },
+        {
+          test: /\.s[ac]ss$/i,
+          use: [
+            // Creates `style` nodes from JS strings
+            'style-loader',
+            // Translates CSS into CommonJS
+            'css-loader',
+            // Compiles Sass to CSS
+            'sass-loader'
           ]
         },
         {

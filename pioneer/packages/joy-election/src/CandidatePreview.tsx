@@ -1,6 +1,6 @@
 import React from 'react';
-import AddressMini from '@polkadot/react-components/AddressMiniJoy';
-import MemberByAccount from '@polkadot/joy-utils/MemberByAccountPreview';
+import AddressMini from '@polkadot/react-components/AddressMini';
+import MemberByAccount from '@polkadot/joy-utils/react/components/MemberByAccountPreview';
 import { AccountId } from '@polkadot/types/interfaces';
 
 import styled from 'styled-components';

@@ -175,8 +175,6 @@ export const workingGroupTypes: RegistryTypes = {
   /// Alias used by the runtime working-group module
   HiringApplicationId: ApplicationId,
   RewardPolicy,
-  'working_group::OpeningId': OpeningId,
-  'working_group::WorkerId': WorkerId,
   // Expose in registry for api.createType purposes:
   WorkingGroupOpeningPolicyCommitment,
   RoleStakeProfile,

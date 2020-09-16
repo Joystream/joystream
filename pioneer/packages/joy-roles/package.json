@@ -11,10 +11,10 @@
   "author": "Joystream contributors",
   "maintainers": [],
   "dependencies": {
-    "@babel/runtime": "^7.7.1",
+    "@babel/runtime": "^7.10.5",
     "@polkadot/joy-utils": "^0.1.1",
-    "@polkadot/react-components": "0.37.0-beta.63",
-    "@polkadot/react-query": "0.37.0-beta.63",
+    "@polkadot/react-components": "0.51.1",
+    "@polkadot/react-query": "0.51.1",
     "@types/faker": "^4.1.8",
     "faker": "^4.1.0",
     "marked": "^0.7.0",

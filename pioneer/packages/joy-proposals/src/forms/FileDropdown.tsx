@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FormikProps } from 'formik';
 import { Icon, Loader } from 'semantic-ui-react';
-import Dropzone from 'react-dropzone';
+import Dropzone, { FileRejection } from 'react-dropzone';
 
 enum Status {
   Accepted = 'accepted',
@@ -13,13 +13,13 @@ enum Status {
 
 const determineStatus = (
   acceptedFiles: File[],
-  rejectedFiles: File[],
+  fileRejections: FileRejection[],
   error: string | undefined,
   isDragActive: boolean,
   parsing: boolean
 ): Status => {
   if (parsing) return Status.Parsing;
-  if (error || rejectedFiles.length) return Status.Rejected;
+  if (error || fileRejections.length) return Status.Rejected;
   if (acceptedFiles.length) return Status.Accepted;
   if (isDragActive) return Status.Active;
 
@@ -71,14 +71,15 @@ const innerSpanStyle = (): React.CSSProperties => {
 
 // Interpret the file as a UTF-8 string
 // https://developer.mozilla.org/en-US/docs/Web/API/Blob/text
-const parseFileAsUtf8 = async (file: any): Promise<string> => {
+const parseFileAsUtf8 = async (file: File): Promise<string> => {
   const text = await file.text();
+
   return text;
 };
 
 // Interpret the file as containing binary data. This will load the entire
 // file into memory which may crash the brower with very large files.
-const parseFileAsBinary = async (file: any): Promise<ArrayBuffer> => {
+const parseFileAsBinary = async (file: File): Promise<ArrayBuffer> => {
   // return file.arrayBuffer();
   // This newer API not fully supported yet in all browsers
   // https://developer.mozilla.org/en-US/docs/Web/API/Blob/arrayBuffer
@@ -106,19 +107,22 @@ type FileDropdownProps<FormValuesT> = {
   interpretAs: 'utf-8' | 'binary';
 };
 
-export default function FileDropdown<ValuesT = {}> (props: FileDropdownProps<ValuesT>) {
+export default function FileDropdown<ValuesT = Record<string, any>> (props: FileDropdownProps<ValuesT>) {
   const [parsing, setParsing] = useState(false);
   const { error, name, setFieldValue, setFieldTouched, acceptedFormats, defaultText, interpretAs } = props;
+
   return (
     <Dropzone
-      onDropAccepted={async acceptedFiles => {
+      onDropAccepted={async (acceptedFiles: File[]) => {
         setParsing(true);
         let contents;
+
         if (interpretAs === 'utf-8') {
           contents = await parseFileAsUtf8(acceptedFiles[0]);
         } else {
           contents = await parseFileAsBinary(acceptedFiles[0]);
         }
+
         setFieldValue(name, contents, true);
         setFieldTouched(name, true);
         setParsing(false);
@@ -126,19 +130,20 @@ export default function FileDropdown<ValuesT = {}> (props: FileDropdownProps<Val
       multiple={false}
       accept={acceptedFormats}
     >
-      {({ getRootProps, getInputProps, acceptedFiles, rejectedFiles, isDragActive }) => {
-        const status = determineStatus(acceptedFiles, rejectedFiles, error, isDragActive, parsing);
+      {({ getRootProps, getInputProps, acceptedFiles, fileRejections, isDragActive }) => {
+        const status = determineStatus(acceptedFiles, fileRejections, error, isDragActive, parsing);
+
         return (
           <section>
             <div {...getRootProps({ style: dropdownDivStyle(status) })}>
               <input {...getInputProps()} />
               {
                 <span style={innerSpanStyle()}>
-                  <Icon name="cloud upload" size="huge" style={dropdownIconStyle()} />
+                  <Icon name='cloud upload' size='huge' style={dropdownIconStyle()} />
                   <p>
                     {status === Status.Parsing && (
                       <>
-                        <Loader style={{ marginRight: '0.5em' }} size="small" inline active /> Uploading...
+                        <Loader style={{ marginRight: '0.5em' }} size='small' inline active /> Uploading...
                       </>
                     )}
                     {status === Status.Rejected && (

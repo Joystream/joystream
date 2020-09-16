@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from 'semantic-ui-react';
-import { Pluralize } from '@polkadot/joy-utils/Pluralize';
+import { Pluralize } from '@polkadot/joy-utils/react/components';
 import { BgImg } from '../common/BgImg';
 import { ChannelEntity } from '../entities/ChannelEntity';
 

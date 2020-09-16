@@ -4,4 +4,6 @@
 hiring/schemas/role.schema.json
 lib/
 build/
-src/definitions
+augment/
+augment-codec/
+src/hiring/schemas/role.schema.typings.ts

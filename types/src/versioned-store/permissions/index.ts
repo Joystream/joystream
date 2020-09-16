@@ -7,6 +7,7 @@ import { ParametrizedEntity } from './batching/parametrized-entity'
 import { RegistryTypes } from '@polkadot/types/types'
 import ParametrizedClassPropertyValue from './batching/ParametrizedClassPropertyValue'
 import { ParametrizedPropertyValue } from './batching/parametrized-property-value'
+import PropertyOfClass from './PropertyOfClass'
 
 export {
   EntityPermissions,
@@ -20,6 +21,7 @@ export {
   ParametrizedEntity,
   ParametrizedClassPropertyValue,
   ParametrizedPropertyValue,
+  PropertyOfClass,
 }
 
 export const versionedStorePermissionsTypes: RegistryTypes = {
@@ -35,6 +37,7 @@ export const versionedStorePermissionsTypes: RegistryTypes = {
   ParametrizedEntity,
   ParametrizedClassPropertyValue,
   ParametrizedPropertyValue,
+  PropertyOfClass,
 }
 
 export default versionedStorePermissionsTypes

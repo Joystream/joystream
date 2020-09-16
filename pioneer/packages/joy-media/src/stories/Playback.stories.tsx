@@ -1,5 +1,5 @@
 import React from 'react';
-import '../common/index.css';
+import '../common/index.scss';
 
 import { PlayContent } from '../explore/PlayContent';
 import { PlayVideo } from '../video/PlayVideo';
@@ -8,7 +8,7 @@ import { Album1TrackSamples } from './data/MusicTrackSamples';
 import { MockMusicChannel, MockVideoChannel } from './data/ChannelSamples';
 import { withMockTransport } from './withMockTransport';
 import { Video } from '../mocks';
-import { EntityId } from '@joystream/types/versioned-store';
+import { createType } from '@joystream/types';
 
 export default {
   title: 'Media | Playback',
@@ -17,7 +17,7 @@ export default {
 
 export const PlayVideoStory = () =>
   <PlayVideo
-    id={new EntityId(Video.id)}
+    id={createType('EntityId', Video.id)}
     video={Video}
     channel={MockVideoChannel}
   />;

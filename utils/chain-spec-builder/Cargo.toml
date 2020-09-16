@@ -15,3 +15,4 @@ sc-chain-spec = { git = 'https://github.com/paritytech/substrate.git', rev = '00
 sp-core = { git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4' }
 joystream-node = { path = "../../node" }
 
+enum-utils = "0.1.2"
