@@ -145,3 +145,36 @@ type Schema @entity {
 	isActive: Boolean!
 }
 
+type Worker @entity {
+	member: Member!
+
+	"Account used to authenticate in this role"
+	roleAccountId: AccountId
+
+	# "Whether the role has recurring reward, and if so an identifier for this"
+	# rewardRelationship: Option<RewardRelationshipId>
+
+	# "When set, describes role stake of the worker/lead"
+	# roleStakeProfile: Option<RoleStakeProfile<StakeId, BlockNumber>>
+}
+
+type Curator @entity {
+	"Account used to authenticate"
+	worker: Worker!
+
+	groups: [CuratorGroup] @derivedFrom(field: "curators")
+}
+
+type CuratorGroup @entity {
+	"Runtime identifier for group"
+	groupId: BigInt!
+
+	"Activity stats of group"
+	isActive: Boolean!
+
+	"All member curators of this group"
+	curators: [Curator!]
+
+	"All classes this group maintains"
+	maintainerOfClasses: [Class!] @derivedFrom(field: "maintainers")
+}
