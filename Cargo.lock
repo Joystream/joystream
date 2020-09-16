@@ -2040,6 +2040,7 @@ dependencies = [
  "pallet-balances",
  "pallet-collective",
  "pallet-common",
+ "pallet-content-directory",
  "pallet-content-working-group",
  "pallet-finality-tracker",
  "pallet-forum",
@@ -3275,6 +3276,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-content-directory"
+version = "3.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-content-working-group"
 version = "3.0.0"
 dependencies = [
@@ -3933,9 +3949,9 @@ dependencies = [
 
 [[package]]
 name = "parity-scale-codec-derive"
-version = "1.2.0"
+version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a0ec292e92e8ec7c58e576adacc1e3f399c597c8f263c42f18420abe58e7245"
+checksum = "198db82bb1c18fc00176004462dd809b2a6d851669550aa17af6dacd21ae0c14"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",

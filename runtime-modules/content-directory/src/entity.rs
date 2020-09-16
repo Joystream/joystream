@@ -1,8 +1,8 @@
 use super::*;
 
 /// Represents `Entity`, related to a specific `Class`
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub struct Entity<T: Trait> {
     /// Permissions for an instance of an Entity.
     entity_permissions: EntityPermissions<T>,
@@ -165,8 +165,8 @@ impl<T: Trait> Entity<T> {
 }
 
 /// Structure, respresenting inbound entity rcs for each `Entity`
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Copy, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Copy)]
 pub struct InboundReferenceCounter {
     /// Total number of inbound references from another entities
     pub total: u32,

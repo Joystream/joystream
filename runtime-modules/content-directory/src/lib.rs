@@ -135,7 +135,6 @@ pub use operations::*;
 pub use permissions::*;
 pub use schema::*;
 
-use core::fmt::Debug;
 use core::hash::Hash;
 use core::ops::AddAssign;
 
@@ -145,24 +144,25 @@ use frame_support::storage::IterableStorageMap;
 use frame_support::{
     decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure, traits::Get, Parameter,
 };
-use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
-use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use sp_std::vec::Vec;
-use system::ensure_signed;
-
 #[cfg(feature = "std")]
 pub use serde::{Deserialize, Serialize};
+use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
+use sp_runtime::traits::{MaybeSerializeDeserialize, Member};
+use sp_std::borrow::ToOwned;
+use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use sp_std::vec;
+use sp_std::vec::Vec;
+use system::ensure_signed;
 
 pub use errors::Error;
 
 use core::debug_assert;
 
 /// Type, used in diffrent numeric constraints representations
-type MaxNumber = u32;
+pub type MaxNumber = u32;
 
 /// Module configuration trait for this Substrate module.
-pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
+pub trait Trait: system::Trait + ActorAuthenticator + Clone {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
@@ -174,8 +174,6 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
         + Default
         + Copy
         + Clone
-        + One
-        + Zero
         + MaybeSerializeDeserialize
         + Eq
         + PartialEq
@@ -190,9 +188,7 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
         + Default
         + Copy
         + Clone
-        + One
         + Hash
-        + Zero
         + MaybeSerializeDeserialize
         + Eq
         + PartialEq
@@ -207,8 +203,6 @@ pub trait Trait: system::Trait + ActorAuthenticator + Debug + Clone {
         + Copy
         + Clone
         + Hash
-        + One
-        + Zero
         + MaybeSerializeDeserialize
         + Eq
         + PartialEq
@@ -266,10 +260,10 @@ decl_storage! {
     trait Store for Module<T: Trait> as ContentDirectory {
 
         /// Map, representing ClassId -> Class relation
-        pub ClassById get(fn class_by_id) config(): map hasher(blake2_128_concat) T::ClassId => Class<T>;
+        pub ClassById get(fn class_by_id): map hasher(blake2_128_concat) T::ClassId => Class<T>;
 
         /// Map, representing EntityId -> Entity relation
-        pub EntityById get(fn entity_by_id) config(): map hasher(blake2_128_concat) T::EntityId => Entity<T>;
+        pub EntityById get(fn entity_by_id): map hasher(blake2_128_concat) T::EntityId => Entity<T>;
 
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id) config(): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;

@@ -2,7 +2,7 @@ use super::*;
 
 /// Owner of an `Entity`.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
 pub enum EntityController<T: Trait> {
     Maintainers,
     Member(T::MemberId),
@@ -26,9 +26,15 @@ impl<T: Trait> Default for EntityController<T> {
     }
 }
 
+impl<T: Trait> core::fmt::Debug for EntityController<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "EntityController {:?}", self)
+    }
+}
+
 /// Permissions for a given entity.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub struct EntityPermissions<T: Trait> {
     /// Current controller, which is initially set based on who created entity
     pub controller: EntityController<T>,
@@ -115,7 +121,7 @@ impl<T: Trait> EntityPermissions<T> {
 }
 
 /// Type, derived from dispatchable call, identifies the caller
-#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Copy, Debug)]
+#[derive(Encode, Decode, Eq, PartialEq, Ord, PartialOrd, Clone, Copy)]
 pub enum EntityAccessLevel {
     /// Caller identified as the entity maintainer
     EntityMaintainer,

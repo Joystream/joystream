@@ -31,8 +31,8 @@ pub type SchemaId = u16;
 pub type SameController = bool;
 
 /// Locking policy, representing `Property` locking status for both controller and maintainer
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Default, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Default, Decode, Clone, Copy, PartialEq, Eq)]
 pub struct PropertyLockingPolicy {
     /// If property is locked from maintainer
     pub is_locked_from_maintainer: bool,
@@ -41,8 +41,8 @@ pub struct PropertyLockingPolicy {
 }
 
 /// Enum, used for `PropertyType` representation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
 pub enum Type<T: Trait> {
     Bool,
     Uint16,
@@ -86,8 +86,8 @@ impl<T: Trait> Type<T> {
 }
 
 /// Vector property type representation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
 pub struct VecPropertyType<T: Trait> {
     vec_type: Type<T>,
     /// Max length of vector, corresponding to a given type
@@ -134,8 +134,8 @@ impl<T: Trait> VecPropertyType<T> {
 }
 
 /// Enum, representing either `Type` or `VecPropertyType`
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
 pub enum PropertyType<T: Trait> {
     Single(Type<T>),
     Vector(VecPropertyType<T>),
@@ -183,8 +183,8 @@ impl<T: Trait> PropertyType<T> {
 }
 
 /// A schema defines what properties describe an entity
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub struct Schema {
     /// Indices into properties vector for the corresponding class.
     properties: BTreeSet<PropertyId>,
@@ -257,7 +257,7 @@ impl Schema {
 
 /// `Property` representation, related to a given `Class`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub struct Property<T: Trait> {
     /// The type of `Property`
     pub property_type: PropertyType<T>,
@@ -283,6 +283,12 @@ impl<T: Trait> Default for Property<T> {
             description: vec![],
             locking_policy: PropertyLockingPolicy::default(),
         }
+    }
+}
+
+impl<T: Trait> core::fmt::Debug for Property<T> {
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(formatter, "Property {:?}", self)
     }
 }
 

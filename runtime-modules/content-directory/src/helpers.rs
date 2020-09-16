@@ -170,8 +170,8 @@ impl<'a, T: Trait> StoredValuesForExistingProperties<'a, T> {
 }
 
 /// Length constraint for input validation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq)]
 pub struct InputValidationLengthConstraint {
     /// Minimum length
     min: u16,
@@ -185,7 +185,7 @@ pub struct InputValidationLengthConstraint {
 
 impl InputValidationLengthConstraint {
     /// Create new `InputValidationLengthConstraint` constraint
-    pub fn new(min: u16, max_min_diff: u16) -> Self {
+    pub const fn new(min: u16, max_min_diff: u16) -> Self {
         Self { min, max_min_diff }
     }
 
@@ -218,7 +218,7 @@ impl InputValidationLengthConstraint {
 }
 
 /// Enum, used to specify, which mode of operation should be chosen
-#[derive(Clone, PartialEq, Eq, Copy, Debug)]
+#[derive(Clone, PartialEq, Eq, Copy)]
 pub enum DeltaMode {
     Increment,
     Decrement,
@@ -231,8 +231,8 @@ impl Default for DeltaMode {
 }
 
 /// Representing delta on which respective `InboundReferenceCounter` should be changed.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Default, PartialEq, Eq)]
 pub struct EntityReferenceCounterSideEffect {
     /// Delta number of all inbound references from another entities
     pub total: i32,
@@ -281,8 +281,8 @@ impl AddAssign for EntityReferenceCounterSideEffect {
 }
 
 /// The net side effect on a set of entities from some operations.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
 pub struct ReferenceCounterSideEffects<T: Trait>(
     BTreeMap<T::EntityId, EntityReferenceCounterSideEffect>,
 );
