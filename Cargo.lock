@@ -3512,8 +3512,6 @@ dependencies = [
  "pallet-staking-reward-curve",
  "pallet-timestamp",
  "pallet-token-mint",
- "pallet-versioned-store",
- "pallet-versioned-store-permissions",
  "pallet-working-group",
  "parity-scale-codec",
  "serde",
