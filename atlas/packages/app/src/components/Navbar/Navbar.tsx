@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { navigate, Link, RouteComponentProps } from '@reach/router'
 
+import routes from '@/config/routes'
 import { Icon } from '@/shared/components'
 import { Header, NavigationContainer, StyledIcon, StyledSearchbar, CancelButton, Logo } from './Navbar.style'
 
@@ -14,7 +15,7 @@ const Navbar: React.FC<RouteComponentProps> = () => {
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' || (e.key === 'NumpadEnter' && search.trim() !== '')) {
-      navigate(`/search/${search}`)
+      navigate(routes.search(search))
     }
   }
 

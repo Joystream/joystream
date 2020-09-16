@@ -28,6 +28,7 @@ const VideoGrid: React.FC<VideoGridProps> = ({ videos }) => {
           key={idx}
           title={v.title}
           channelName={v.channel.handle}
+          channelAvatarURL={v.channel.avatarPhotoURL}
           createdAt={v.publishedOnJoystreamAt}
           duration={v.duration}
           views={v.views}

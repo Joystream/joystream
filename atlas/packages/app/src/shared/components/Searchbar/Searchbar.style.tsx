@@ -1,10 +1,10 @@
 import styled from '@emotion/styled'
-import { colors } from '../../theme'
+import { colors, sizes } from '../../theme'
 
 export const Input = styled.input`
   border: unset;
-  padding: 14px 12px;
-  height: 48px;
+  padding: 14px ${sizes.b3}px;
+  height: ${sizes.b12}px;
   background-color: ${colors.gray[800]};
   color: ${colors.white};
   &::placeholder {

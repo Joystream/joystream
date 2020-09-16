@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react'
 import { css } from '@emotion/core'
 import styled from '@emotion/styled'
-import { spacing, typography } from '@/shared/theme'
+import { spacing, typography, sizes } from '@/shared/theme'
 import { RouteComponentProps, navigate } from '@reach/router'
 import { useQuery } from '@apollo/client'
 
@@ -47,9 +47,9 @@ const SearchView: React.FC<SearchViewProps> = ({ search = '' }) => {
   return (
     <Main
       containerCss={css`
-        margin: 1rem 0;
+        margin: ${sizes.b4} 0;
         & > * {
-          margin-bottom: 3rem;
+          margin-bottom: ${sizes.b12}px;
         }
       `}
     >

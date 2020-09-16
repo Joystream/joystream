@@ -1,7 +1,7 @@
 import styled from '@emotion/styled'
 
 import { Searchbar, Icon } from '@/shared/components'
-import { colors } from '@/shared/theme'
+import { colors, sizes } from '@/shared/theme'
 import { ReactComponent as UnstyledLogo } from '@/assets/logo.svg'
 
 export const Header = styled.header<{ isSearching: boolean }>`
@@ -9,14 +9,14 @@ export const Header = styled.header<{ isSearching: boolean }>`
   grid-template-columns: ${(props) => (props.isSearching ? `134px 1fr 134px` : `repeat(3, 1fr)`)};
   grid-template-areas: ${(props) => (props.isSearching ? `". searchbar cancel"` : `"navigation searchbar ."`)};
   width: 100%;
-  padding: ${(props) => (props.isSearching ? '8px' : '12px 32px')};
+  padding: ${(props) => (props.isSearching ? `${sizes.b2}px` : `${sizes.b3}px ${sizes.b8}px`)};
   border-bottom: 1px solid ${colors.gray[800]};
   background-color: ${(props) => (props.isSearching ? colors.gray[900] : colors.black)};
 `
 
 export const Logo = styled(UnstyledLogo)`
-  width: 48px;
-  height: 48px;
+  width: ${sizes.b12}px;
+  height: ${sizes.b12}px;
 `
 
 export const NavigationContainer = styled.div`
@@ -24,7 +24,7 @@ export const NavigationContainer = styled.div`
   grid-area: navigation;
   align-items: center;
   > * + * {
-    margin-left: 24px;
+    margin-left: ${sizes.b6}px;
   }
 `
 
@@ -34,7 +34,7 @@ export const StyledSearchbar = styled(Searchbar)`
 `
 
 export const StyledIcon = styled(Icon)`
-  color: ${colors.gray[600]};
+  color: ${colors.gray[300]};
   &:hover {
     color: ${colors.white};
     cursor: pointer;
@@ -42,8 +42,8 @@ export const StyledIcon = styled(Icon)`
 `
 
 export const CancelButton = styled.div`
-  width: 48px;
-  height: 48px;
+  width: ${sizes.b12}px;
+  height: ${sizes.b12}px;
   color: ${colors.white};
   grid-area: cancel;
   display: flex;

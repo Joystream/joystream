@@ -1,5 +1,5 @@
 import styled from '@emotion/styled'
-import { ChannelAvatar, VideoPreview } from '@/shared/components'
+import { ChannelAvatar } from '@/shared/components'
 import theme from '@/shared/theme'
 
 export const Container = styled.div`

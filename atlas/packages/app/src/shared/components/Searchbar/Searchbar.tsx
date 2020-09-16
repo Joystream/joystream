@@ -19,7 +19,6 @@ const Searchbar: React.FC<SearchbarProps> = ({
       placeholder={placeholder}
       type="search"
       autoSave="some_unique_value"
-      name="s"
       onChange={onChange}
       onFocus={onFocus}
       onBlur={onBlur}
