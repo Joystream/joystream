@@ -154,6 +154,18 @@ impl governance::election::Trait for Test {
     type CouncilElected = ();
 }
 
+// The working group instance alias.
+pub type WorkingGroupInstance = working_group::Instance2;
+
+parameter_types! {
+    pub const MaxWorkerNumberLimit: u32 = 100;
+}
+
+impl working_group::Trait<WorkingGroupInstance> for Test {
+    type Event = ();
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
 impl recurring_rewards::Trait for Test {
     type PayoutStatusHandler = ();
     type RecipientId = u64;
