@@ -20,3 +20,52 @@ type Member @entity {
 	"Member's root account id"
 	rootAccount: Bytes!
 }
+
+"""
+It represents a conceptual category, similar - but not identical,
+to tables in relational databases and classes in object-oriented programming
+Examples of classes in our example could be:
+- Person: represents the concept of a person.
+- Place: represents the concept of a place.
+- PersonLivedInPlace: represents the concept that a person lived in a place.
+"""
+type Class @entity {
+	"Runtime identifier for class"
+	classId: BigInt!
+
+	"Name of class"
+	name: String!
+
+	"Description of class"
+	description: String!
+
+	"The maximum number of entities which can be created"
+	maximumEntitiesCount: BigInt!
+
+	"The current number of entities which exist"
+	currentNumberOfEntities: BigInt!
+
+	"How many entities a given controller may create at most"
+	defaultEntityCreationVoucherUpperBound: BigInt!
+
+	"For this permission, the individual member is allowed to create the entity and become controller"
+	anyMemberCanCreate: Boolean
+
+	"Whether to prevent everyone from creating an entity"
+	entityCreationBlocked: Boolean!
+
+	"Whether to prevent everyone from updating entity properties"
+	allEntityPropertyValuesLocked: Boolean!
+
+	"All properties that have been used on this class across different class schemas"
+	properties: [Property!]
+
+	"All schemas that are available for this class, think v0.0 Person, v.1.0 Person, etc."
+	schemas: [Schema!] @derivedFrom(field: "class")
+
+	"Current class maintainer curator groups"
+	maintainers: [CuratorGroup!]
+
+	"All vouchers for this class"
+	vouchers: [EntityCreationVoucher!] @derivedFrom(field: "class")
+}
