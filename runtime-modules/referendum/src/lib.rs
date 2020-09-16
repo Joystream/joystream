@@ -130,7 +130,8 @@ pub trait ReferendumManager<Origin, AccountId, Hash, Error> {
     ) -> Hash;
 }
 */
-pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
+//pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
+pub trait Trait<I: Instance>: system::Trait {
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
 
@@ -413,65 +414,65 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 /////////////////// ReferendumManager //////////////////////////////////////////
 
 impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
-//impl<T: Trait<I>, I: Instance, Origin, AccountId, Hash, Error> ReferendumManager<Origin, AccountId, Hash, Error> for Module<T, I> {
-//impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Hash, Error<T, I>> for Module<T, I> {
-/*
-    /// Start new referendum run.
-    fn start_referendum(
-        origin: T::Origin,
-        extra_winning_target_count: u64,
-    ) -> Result<(), Error<T, I>> {
-/*
-        fn can_start_referendum<Origin, ManagerOrigin: EnsureOrigin<Origin>, >(origin: Origin) -> Result<(), Error> {
-            ManagerOrigin::ensure_origin(origin)?;
+    //impl<T: Trait<I>, I: Instance, Origin, AccountId, Hash, Error> ReferendumManager<Origin, AccountId, Hash, Error> for Module<T, I> {
+    //impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Hash, Error<T, I>> for Module<T, I> {
+    /*
+        /// Start new referendum run.
+        fn start_referendum(
+            origin: T::Origin,
+            extra_winning_target_count: u64,
+        ) -> Result<(), Error<T, I>> {
+    /*
+            fn can_start_referendum<Origin, ManagerOrigin: EnsureOrigin<Origin>, >(origin: Origin) -> Result<(), Error> {
+                ManagerOrigin::ensure_origin(origin)?;
 
-            // ensure referendum is not already running
-            match Stage::<T, I>::get() {
-                ReferendumStage::Inactive => Ok(()),
-                _ => Err(Error::ReferendumAlreadyRunning),
-            }?;
+                // ensure referendum is not already running
+                match Stage::<T, I>::get() {
+                    ReferendumStage::Inactive => Ok(()),
+                    _ => Err(Error::ReferendumAlreadyRunning),
+                }?;
+
+                Ok(())
+            }
+    */
+
+            let winning_target_count = extra_winning_target_count + 1;
+
+            // ensure action can be started
+            EnsureChecks::<T, I>::can_start_referendum(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // update state
+            Mutations::<T, I>::start_voting_period(&winning_target_count);
+
+            // emit event
+            Self::deposit_event(RawEvent::ReferendumStarted(winning_target_count));
 
             Ok(())
         }
-*/
 
-        let winning_target_count = extra_winning_target_count + 1;
+        /// Calculate commitment for a vote.
+        fn calculate_commitment(
+            account_id: &<T as system::Trait>::AccountId,
+            salt: &[u8],
+            cycle_id: &u64,
+            vote_option_id: &u64,
+        ) -> T::Hash {
+            let mut payload = account_id.encode();
+            let mut mut_option_id = vote_option_id.encode();
+            let mut mut_salt = salt.encode(); //.to_vec();
+            let mut mut_cycle_id = cycle_id.encode(); //.to_vec();
 
-        // ensure action can be started
-        EnsureChecks::<T, I>::can_start_referendum(origin)?;
+            payload.append(&mut mut_option_id);
+            payload.append(&mut mut_salt);
+            payload.append(&mut mut_cycle_id);
 
-        //
-        // == MUTATION SAFE ==
-        //
-
-        // update state
-        Mutations::<T, I>::start_voting_period(&winning_target_count);
-
-        // emit event
-        Self::deposit_event(RawEvent::ReferendumStarted(winning_target_count));
-
-        Ok(())
-    }
-
-    /// Calculate commitment for a vote.
-    fn calculate_commitment(
-        account_id: &<T as system::Trait>::AccountId,
-        salt: &[u8],
-        cycle_id: &u64,
-        vote_option_id: &u64,
-    ) -> T::Hash {
-        let mut payload = account_id.encode();
-        let mut mut_option_id = vote_option_id.encode();
-        let mut mut_salt = salt.encode(); //.to_vec();
-        let mut mut_cycle_id = cycle_id.encode(); //.to_vec();
-
-        payload.append(&mut mut_option_id);
-        payload.append(&mut mut_salt);
-        payload.append(&mut mut_cycle_id);
-
-        <T::Hashing as sp_runtime::traits::Hash>::hash(&payload)
-    }
-*/
+            <T::Hashing as sp_runtime::traits::Hash>::hash(&payload)
+        }
+    */
     /// Start new referendum run.
     fn start_referendum(
         origin: T::Origin,
@@ -610,20 +611,27 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
                 vote_power: new_vote_power,
                 ..current_winners[current_index].clone()
             }];
+            let list_size = current_winners.len();
+            let final_target = if target_index >= list_size {
+                list_size - 1
+            } else {
+                target_index
+            };
 
-            if current_index == target_index {
+            // item is in right spot? just update value
+            if final_target == current_index {
                 return [
-                    &current_winners[0..target_index],
+                    &current_winners[0..final_target],
                     &tmp[..],
-                    &current_winners[target_index + 1..],
+                    &current_winners[final_target + 1..],
                 ]
                 .concat();
             }
 
             [
-                &current_winners[0..target_index],
+                &current_winners[0..final_target],
                 &tmp[..],
-                &current_winners[target_index..current_index],
+                &current_winners[final_target..current_index],
                 &current_winners[current_index + 1..current_winners.len()],
             ]
             .concat()

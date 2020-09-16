@@ -5,21 +5,18 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // used dependencies
-use codec::{Codec, Decode, Encode};
+use codec::{Decode, Encode};
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReason};
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, error::BadOrigin, Parameter};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, error::BadOrigin};
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 use system::{ensure_signed, RawOrigin};
-use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{MaybeSerialize, Member};
 
 use referendum::Instance as ReferendumInstanceGeneric;
 use referendum::Trait as ReferendumTrait;
 use referendum::{OptionResult, ReferendumManager};
-use std::collections::BTreeMap;
 
 // declared modules
 mod mock;
@@ -75,29 +72,20 @@ pub struct Candidate<AccountId, Balance> {
 
 /////////////////// Type aliases ///////////////////////////////////////////////
 
+pub(crate) type ReferendumInstance = referendum::Instance0;
+
 // `Ez` prefix in some of the following type aliases means *easy* and is meant to create unique short names
 // aliasing existing structs and enums
 
 // Alias for referendum's storage.
-//pub(crate) type Referendum<T> = referendum::Module<T, T::ReferendumInstance>;
+pub(crate) type Referendum<T> = referendum::Module<T, ReferendumInstance>;
 
-
-//pub type EzCurrency<T> = <<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::Currency;
-//pub type Balance<T> = <<<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::Currency as Currency<
-//    <<T as Trait>::ReferendumTrait as system::Trait>::AccountId,
-//>>::Balance;
-//pub type EzCurrency<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Currency;
-pub type EzCurrency<T> = <T as Trait>::Currency;
-pub type Balance<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-//pub type BalanceReferendum<T, ReferendumInstance> = <<T as referendum::Trait<ReferendumInstance>>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-//pub type BalanceReferendum<T, ReferendumInstance> = Balance<T>;
+pub type EzCurrency<T> = <T as referendum::Trait<ReferendumInstance>>::Currency;
+pub type Balance<T> = <<T as referendum::Trait<ReferendumInstance>>::Currency as Currency<
+    <T as system::Trait>::AccountId,
+>>::Balance;
 pub type BalanceReferendum<T> = Balance<T>;
-//pub type Balance<T> = <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-
-//pub type EzVotePower<T> = <<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::VotePower;
-//pub type EzVotePower<T> = <<T as Trait>::ReferendumTrait as referendum::Trait<<T as Trait>::ReferendumInstance>>::VotePower;
-pub type EzVotePower<T> = <T as Trait>::VotePower;
-
+pub type EzVotePower<T> = <T as referendum::Trait<ReferendumInstance>>::VotePower;
 
 pub type EzCandidate<T> = Candidate<<T as system::Trait>::AccountId, Balance<T>>;
 pub type EzCouncilStageInfo<T> = CouncilStageInfo<
@@ -112,91 +100,9 @@ pub type EzCouncilStageElection<T> =
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
-//pub trait Trait: system::Trait {
-//pub trait Trait: system::Trait
-//where <Self::ReferendumTrait as system::Trait>::AccountId: system::Trait::AccountId {
-//where <Self::ReferendumTrait as system::Trait>::AccountId: Into<Self::AccountId>{
-//pub trait Trait: system::Trait<AccountId = Self::ReferendumTrait::AccountId> {
-
-pub trait Trait: system::Trait
-//where
-//<<Self as Trait>::ReferendumTrait as referendum::Trait<<Self as Trait>::ReferendumInstance>>::Currency: LockableCurrency<<Self as system::Trait>::AccountId>
-{
-
+pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
-
-
-    // TODO: find a way how to get rid of these types
-    /*
-    /// Currency for referendum staking.
-    type Currency: LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
-    type ReferendumInstance: referendum::Instance;
-    //type ReferendumTrait: referendum::Trait<Self::ReferendumInstance>;
-    type ReferendumTrait: referendum::Trait<
-        Self::ReferendumInstance,
-        //AccountId = Self::AccountId,
-        //AccountId = Into<Self::AccountId>,
-        //Currency = Currency<Self::AccountId, Balance = Type, PositiveImbalance = Type, NegativeImbalance = Type>,
-        //Currency = LockableCurrency<Self::AccountId, Moment = Self::BlockNumber, Balance = LockableCurrency::Balance, >,
-        //Currency = Self::Currency,
-        /*
-        Currency = LockableCurrency<
-            Self::AccountId,
-            Moment = Self::BlockNumber,
-            /*
-            Balance = Self::Balance,
-            PositiveImbalance = Self::Balance,
-            NegativeImbalance = Self::Balance,
-            */
-            Balance = <Self as system::Trait>::Balance,
-            PositiveImbalance = <Self as system::Trait>::Balance,
-            NegativeImbalance = <Self as system::Trait>::Balance,
-        >,
-        */
-        //Currency = Self::Currency,
-    >;
-    //type Referendum: referendum::ReferendumManager<referendum::Trait<referendum::Instance>, referendum::Instance>;
-    */
-
-    /*
-    type Currency: LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
-    type VotePower: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-    type Referendum: referendum::ReferendumManager<Self::Origin, Self::AccountId, Self::Hash, Error<Self>>;
-    */
-    type Currency: LockableCurrency<Self::AccountId, Moment = Self::BlockNumber>;
-    type VotePower: Parameter
-        + Member
-        + BaseArithmetic
-        + Codec
-        + Default
-        + Copy
-        + MaybeSerialize
-        + PartialEq;
-    type ReferendumInstance: referendum::Instance;
-    //type ReferendumTrait: referendum::Trait<Self::ReferendumInstance>;
-    type ReferendumManager: referendum::ReferendumManager<Self::ReferendumTrait, Self::ReferendumInstance>;
-
-
-    type ReferendumTrait: referendum::Trait<Self::ReferendumInstance> + system::Trait<AccountId = Self::AccountId>;
-/*
-    type ReferendumTrait: referendum::Trait<
-        Self::ReferendumInstance,
-        AccountId = Self::AccountId,
-        //Currency =  Moment = Self::BlockNumber
-        Currency = Self::Currency,
-
-        Origin = Self::Origin,
-    >;
-*/
-
 
     /// Minimum number of extra candidates needed for the valid election.
     /// Number of total candidates is equal to council size plus extra candidates.
@@ -249,19 +155,6 @@ decl_event! {
 
         /// New council was elected and appointed
         NewCouncilNotElected(),
-    }
-}
-
-// TODO: mb remove
-//impl<T: Trait, ReferendumTrait: referendum::Trait<ReferendumInstance>, ReferendumInstance: referendum::Instance> From<<ReferendumTrait as referendum::Trait<ReferendumInstance>>::Event> for Event<T> {
-//impl<T, ReferendumTrait, ReferendumInstance> From<<ReferendumTrait as referendum::Trait<ReferendumInstance>>::Event> for Event<T>
-impl<T: Trait, TmpEvent> Event<T> {
-//where T: Trait, ReferendumTrait: referendum::Trait<ReferendumInstance>, ReferendumInstance: referendum::Instance {
-//where T: Trait, ReferendumTrait<ReferendumInstance>: referendum::Trait<ReferendumInstance>, ReferendumInstance: referendum::Instance {
-    //fn from(error: <ReferendumTrait as referendum::Trait<ReferendumInstance>>::Event) -> Self {
-    fn from(error: TmpEvent) -> Self {
-        // TODO: proper work
-        Event::<T>::NewCouncilNotElected()
     }
 }
 
@@ -357,13 +250,13 @@ decl_module! {
 
             Ok(())
         }
-/*
+
         /////////////////// Referendum Wrap ////////////////////////////////////
         // start voting period
         #[weight = 10_000_000]
         pub fn vote(origin, commitment: T::Hash, balance: Balance<T>) -> Result<(), Error<T>> {
             // call referendum vote extrinsic
-            T::ReferendumTrait::vote(origin, commitment, balance)?;
+            <Referendum<T>>::vote(origin, commitment, balance)?;
 
             Ok(())
         }
@@ -373,7 +266,7 @@ decl_module! {
             EnsureChecks::<T>::can_reveal_vote(origin.clone(), vote_option_index)?;
 
             // call referendum reveal vote extrinsic
-            T::Referendum::reveal_vote(origin, salt, vote_option_index)?;
+            <Referendum<T>>::reveal_vote(origin, salt, vote_option_index)?;
 
             Ok(())
         }
@@ -383,11 +276,10 @@ decl_module! {
             EnsureChecks::<T>::can_release_vote_stake(origin.clone())?;
 
             // call referendum reveal vote extrinsic
-            T::Referendum::release_stake(origin)?;
+            <Referendum<T>>::release_stake(origin)?;
 
             Ok(())
         }
-*/
     }
 }
 
@@ -477,7 +369,6 @@ impl<T: Trait> Module<T> {
     /// Process candidates' results recieved from the referendum.
     pub fn recieve_referendum_results(
         winners: &[OptionResult<EzVotePower<T>>],
-        //_all_options_results: &BTreeMap<u64, EzVotePower<T>>,
     ) -> Result<(), Error<T>> {
         // ensure this method was called during election stage
         let stage_data = match Stage::<T>::get().stage {
@@ -527,10 +418,7 @@ impl<T: Trait> Mutations<T> {
 
         // IMPORTANT - because starting referendum can fail it has to be the first mutation!
         // start referendum
-        //<T::Referendum as ReferendumManager<T::Referendum, T::ReferendumInstance>>::start_referendum(
-        //T::Referendum::start_referendum(
-        //<T::ReferendumTrait as ReferendumManager<T::ReferendumTrait, T::ReferendumInstance>>::start_referendum(
-        T::ReferendumManager::start_referendum(
+        <Referendum<T> as ReferendumManager<T, ReferendumInstance>>::start_referendum(
             origin.into(),
             extra_winning_target_count,
         )?;
