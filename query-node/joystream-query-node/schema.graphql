@@ -1,21 +1,22 @@
+"Stored information about a registered user"
 type Member @entity {
-  memberId: BigInt!
+	memberId: BigInt!
 
-  # The unique handle chosen by member
-  handle: String @fulltext(query: "handles")
+	"The unique handle chosen by member"
+	handle: String @fulltext(query: "handles")
 
-  # A Url to member's Avatar image
-  avatarUri: String
+	"A Url to member's Avatar image"
+	avatarUri: String
 
-  # Short text chosen by member to share information about themselves
-  about: String
+	"Short text chosen by member to share information about themselves"
+	about: String
 
-  # Blocknumber when member was registered
-  registeredAtBlock: BigInt!
+	"Blocknumber when member was registered"
+	registeredAtBlock: BigInt!
 
-  # Member's controller account id.
-  controllerAccount: Bytes!
+	"Member's controller account id"
+	controllerAccount: Bytes!
 
-  # Member's root account id
-  rootAccount: Bytes!
+	"Member's root account id"
+	rootAccount: Bytes!
 }
