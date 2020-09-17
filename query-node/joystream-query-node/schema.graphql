@@ -178,3 +178,32 @@ type CuratorGroup @entity {
 	"All classes this group maintains"
 	maintainerOfClasses: [Class!] @derivedFrom(field: "maintainers")
 }
+
+type EntityCreationVoucher @entity {
+	"Class to which voucher applies"
+	class: Class!
+
+	"Controller to which this voucher applies"
+	controller: EntityController!
+
+	"How many are allowed in total"
+	maximumEntitiesCount: BigInt!
+
+	"How many have currently been created"
+	entitiesCreated: BigInt!
+}
+
+enum EntityControllerType {
+	LEAD
+	MEMBER
+	MAINTAINERS
+}
+
+"Owner of an `Entity`"
+type EntityController @entity {
+	"Current controller, which is initially set based on who created entity"
+	controllerType: EntityControllerType!
+
+	"Optional field, will be set when EntityControllerType is MEMBER"
+	controllerWhenMember: Member
+}
