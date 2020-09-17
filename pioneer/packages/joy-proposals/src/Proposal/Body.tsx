@@ -33,6 +33,7 @@ type BodyProps = {
   proposerId: number | MemberId;
   isCancellable: boolean;
   cancellationFee: number;
+  historical?: boolean;
 };
 
 function ProposedAddress (props: { accountId?: AccountId }) {
@@ -97,7 +98,7 @@ class ParsedParam {
 }
 
 // The methods for parsing params by Proposal type.
-const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>) => ParsedParam[]} = {
+const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>, historical?: boolean) => ParsedParam[]} = {
   Text: (content) => [
     new ParsedParam(
       'Content',
@@ -237,12 +238,14 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>) 
     new ParsedParam('Working group', (group as WorkingGroup).type),
     new ParsedParam('Mint capacity', formatBalance((capacity as Balance)))
   ],
-  BeginReviewWorkingGroupLeaderApplication: ([id, group]) => [
+  BeginReviewWorkingGroupLeaderApplication: ([id, group], historical) => [
     new ParsedParam('Working group', (group as WorkingGroup).type),
     // TODO: Adjust the link to work with multiple groups after working-groups are normalized!
     new ParsedParam(
       'Opening id',
-      <Link to={`/working-groups/opportunities/storageProviders/${id.toString()}`}>#{id.toString()}</Link>
+      historical
+        ? `#${id.toString()}`
+        : <Link to={`/working-groups/opportunities/storageProviders/${id.toString()}`}>#{id.toString()}</Link>
     )
   ],
   FillWorkingGroupLeaderOpening: ({
@@ -250,46 +253,56 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>) 
     successful_application_id: succesfulApplicationId,
     reward_policy: rewardPolicy,
     working_group: workingGroup
-  }) => [
+  }, historical) => [
     new ParsedParam('Working group', workingGroup.type),
     // TODO: Adjust the link to work with multiple groups after working-groups are normalized!
     new ParsedParam(
       'Opening id',
-      <Link to={`/working-groups/opportunities/storageProviders/${openingId.toString()}`}>#{openingId.toString()}</Link>),
+      historical
+        ? `#${openingId.toString()}`
+        : <Link to={`/working-groups/opportunities/storageProviders/${openingId.toString()}`}>#{openingId.toString()}</Link>),
     new ParsedParam('Reward policy', rewardPolicy.isSome ? formatReward(rewardPolicy.unwrap(), true) : 'NONE'),
     new ParsedParam(
       'Result',
-      <ApplicationsDetailsByOpening
-        openingId={openingId.toNumber()}
-        acceptedIds={[succesfulApplicationId.toNumber()]}
-        group={workingGroup.type}/>,
+      historical
+        ? `Accepted application ID: ${succesfulApplicationId.toNumber()}`
+        : <ApplicationsDetailsByOpening
+          openingId={openingId.toNumber()}
+          acceptedIds={[succesfulApplicationId.toNumber()]}
+          group={workingGroup.type}/>,
       true
     )
   ],
-  SlashWorkingGroupLeaderStake: ([leadId, amount, group]) => [
+  SlashWorkingGroupLeaderStake: ([leadId, amount, group], historical) => [
     new ParsedParam('Working group', (group as WorkingGroup).type),
     new ParsedParam('Slash amount', formatBalance(amount as Balance)),
     new ParsedParam(
       'Lead',
-      <LeadInfoFromId group={(group as WorkingGroup).type} leadId={(leadId as WorkerId).toNumber()}/>,
+      historical
+        ? `#${(leadId as WorkerId).toNumber()}`
+        : <LeadInfoFromId group={(group as WorkingGroup).type} leadId={(leadId as WorkerId).toNumber()}/>,
       true
     )
   ],
-  DecreaseWorkingGroupLeaderStake: ([leadId, amount, group]) => [
+  DecreaseWorkingGroupLeaderStake: ([leadId, amount, group], historical) => [
     new ParsedParam('Working group', (group as WorkingGroup).type),
     new ParsedParam('Decrease amount', formatBalance(amount as Balance)),
     new ParsedParam(
       'Lead',
-      <LeadInfoFromId group={(group as WorkingGroup).type} leadId={(leadId as WorkerId).toNumber()}/>,
+      historical
+        ? `#${(leadId as WorkerId).toNumber()}`
+        : <LeadInfoFromId group={(group as WorkingGroup).type} leadId={(leadId as WorkerId).toNumber()}/>,
       true
     )
   ],
-  SetWorkingGroupLeaderReward: ([leadId, amount, group]) => [
+  SetWorkingGroupLeaderReward: ([leadId, amount, group], historical) => [
     new ParsedParam('Working group', (group as WorkingGroup).type),
     new ParsedParam('New reward amount', formatBalance(amount as Balance)),
     new ParsedParam(
       'Lead',
-      <LeadInfoFromId group={(group as WorkingGroup).type} leadId={(leadId as WorkerId).toNumber()}/>,
+      historical
+        ? `#${(leadId as WorkerId).toNumber()}`
+        : <LeadInfoFromId group={(group as WorkingGroup).type} leadId={(leadId as WorkerId).toNumber()}/>,
       true
     )
   ],
@@ -298,12 +311,19 @@ const paramParsers: { [k in ProposalType]: (params: SpecificProposalDetails<k>) 
     rationale,
     worker_id: leadId,
     slash
-  }) => {
+  },
+  historical) => {
     return [
       new ParsedParam('Working group', workingGroup.type),
       new ParsedParam('Rationale', bytesToString(rationale), true),
       new ParsedParam('Slash stake', slash.isTrue ? 'YES' : 'NO'),
-      new ParsedParam('Lead', <LeadInfoFromId group={workingGroup.type} leadId={leadId.toNumber()}/>, true)
+      new ParsedParam(
+        'Lead',
+        historical
+          ? `#${leadId.toNumber()}`
+          : <LeadInfoFromId group={workingGroup.type} leadId={leadId.toNumber()}/>,
+        true
+      )
     ];
   }
 };
@@ -364,14 +384,16 @@ export default function Body ({
   proposalId,
   proposerId,
   isCancellable,
-  cancellationFee
+  cancellationFee,
+  historical
 }: BodyProps) {
   // Assert more generic type (since TypeScript cannot possibly know the value of "type" here yet)
-  const parseParams = paramParsers[type] as (params: SpecificProposalDetails<ProposalType>) => ParsedParam[];
+  const parseParams = paramParsers[type] as (params: SpecificProposalDetails<ProposalType>, historical?: boolean) => ParsedParam[];
   const parsedParams = parseParams(
     type === 'RuntimeUpgrade'
       ? params as RuntimeUpgradeProposalDetails
-      : (params as ProposalDetails).asType(type)
+      : (params as ProposalDetails).asType(type),
+    historical
   );
 
   return (
