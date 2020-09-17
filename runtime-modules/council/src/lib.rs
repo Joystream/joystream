@@ -26,7 +26,7 @@ mod tests;
 
 /// Information about council's current state and when it changed the last time.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
-pub struct CouncilStageInfo<AccountId, Currency, BlockNumber> {
+pub struct CouncilStageUpdate<AccountId, Currency, BlockNumber> {
     stage: CouncilStage<AccountId, Currency>,
     changed_at: BlockNumber,
 }
@@ -88,7 +88,7 @@ pub type BalanceReferendum<T> = Balance<T>;
 pub type VotePowerOf<T> = <T as referendum::Trait<ReferendumInstance>>::VotePower;
 
 pub type CandidateOf<T> = Candidate<<T as system::Trait>::AccountId, Balance<T>>;
-pub type CouncilStageInfoOf<T> = CouncilStageInfo<
+pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<
     <T as system::Trait>::AccountId,
     Balance<T>,
     <T as system::Trait>::BlockNumber,
@@ -124,7 +124,7 @@ pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
 decl_storage! {
     trait Store for Module<T: Trait> as Council {
         /// Current council voting stage
-        pub Stage get(fn stage) config(): CouncilStageInfo<T::AccountId, Balance::<T>, T::BlockNumber>;
+        pub Stage get(fn stage) config(): CouncilStageUpdate<T::AccountId, Balance::<T>, T::BlockNumber>;
 
         /// Current council members
         pub CouncilMembers get(fn council_members) config(): Vec<CandidateOf<T>>;
@@ -418,7 +418,7 @@ impl<T: Trait> Mutations<T> {
         let block_number = <system::Module<T>>::block_number();
 
         Stage::<T>::mutate(|value| {
-            *value = CouncilStageInfo {
+            *value = CouncilStageUpdate {
                 stage: CouncilStage::Announcing(stage_data),
                 changed_at: block_number,
             }
@@ -443,7 +443,7 @@ impl<T: Trait> Mutations<T> {
 
         // change council state
         Stage::<T>::mutate(|value| {
-            *value = CouncilStageInfo {
+            *value = CouncilStageUpdate {
                 stage: CouncilStage::Election(CouncilStageElectionOf::<T> {
                     candidates: stage_data.candidates.clone(),
                 }),
@@ -467,7 +467,7 @@ impl<T: Trait> Mutations<T> {
 
         // change council state
         Stage::<T>::mutate(|value| {
-            *value = CouncilStageInfo {
+            *value = CouncilStageUpdate {
                 stage: CouncilStage::Idle,
                 changed_at: block_number,
             }
@@ -562,7 +562,7 @@ impl<T: Trait> Mutations<T> {
 
         // store new candidacy list
         Stage::<T>::mutate(|value| {
-            *value = CouncilStageInfo {
+            *value = CouncilStageUpdate {
                 stage: CouncilStage::Announcing(new_stage_data),
                 changed_at: block_number,
             }

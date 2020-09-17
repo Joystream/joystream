@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::{Error, CandidateOf};
+use super::{CandidateOf, Error};
 use crate::mock::*;
 
 type Mocks = InstanceMocks<Runtime>;

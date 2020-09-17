@@ -2,8 +2,8 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    BalanceReferendum, CouncilMembers, CouncilStage, CouncilStageInfo, Error, CandidateOf,
-    CouncilStageAnnouncingOf, CouncilStageElectionOf, CouncilStageInfoOf, GenesisConfig, Module,
+    BalanceReferendum, CandidateOf, CouncilMembers, CouncilStage, CouncilStageAnnouncingOf,
+    CouncilStageElectionOf, CouncilStageUpdate, CouncilStageUpdateOf, Error, GenesisConfig, Module,
     Stage, Trait,
 };
 
@@ -325,7 +325,7 @@ macro_rules! escape_checkpoint {
 
 pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
-        stage: CouncilStageInfo::default(),
+        stage: CouncilStageUpdate::default(),
         council_members: vec![],
     }
 }
@@ -457,7 +457,7 @@ where
         // check stage is in proper state
         assert_eq!(
             Stage::<T>::get(),
-            CouncilStageInfoOf::<T> {
+            CouncilStageUpdateOf::<T> {
                 stage: CouncilStage::Announcing(expected_state),
                 changed_at: expected_update_block_number,
             },
@@ -471,7 +471,7 @@ where
         // check stage is in proper state
         assert_eq!(
             Stage::<T>::get(),
-            CouncilStageInfoOf::<T> {
+            CouncilStageUpdateOf::<T> {
                 stage: CouncilStage::Election(expected_state),
                 changed_at: expected_update_block_number,
             },
@@ -482,7 +482,7 @@ where
         // check stage is in proper state
         assert_eq!(
             Stage::<T>::get(),
-            CouncilStageInfoOf::<T> {
+            CouncilStageUpdateOf::<T> {
                 stage: CouncilStage::Idle,
                 changed_at: expected_update_block_number,
             },
