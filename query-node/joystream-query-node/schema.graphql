@@ -111,10 +111,10 @@ type Property @entity {
 	"Description of property"
 	description: String!
 
-	# Property is locked from maintainer
+	"Property is locked from maintainer"
 	isLockedFromMaintainer: Boolean!
 
-	# Property is locked from controller
+	"Property is locked from controller"
 	isLockedFromController: Boolean!
 
 	"Upper bound for vector length when property is a vector"
