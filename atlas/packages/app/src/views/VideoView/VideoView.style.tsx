@@ -1,5 +1,5 @@
 import styled from '@emotion/styled'
-import { ChannelAvatar, VideoPreview } from '@/shared/components'
+import { ChannelAvatar } from '@/shared/components'
 import theme from '@/shared/theme'
 
 export const Container = styled.div`
@@ -58,14 +58,4 @@ export const MoreVideosContainer = styled.div`
 export const MoreVideosHeader = styled.h5`
   margin: 0 0 ${theme.spacing.m};
   font-size: ${theme.typography.sizes.h5};
-`
-
-export const MoreVideosGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  grid-gap: ${theme.spacing.xl};
-`
-
-export const MoreVideosPreview = styled(VideoPreview)`
-  margin: 0 auto;
 `

@@ -1,6 +1,6 @@
 import gql from 'graphql-tag'
 
-const videoFieldsFragment = gql`
+export const videoFieldsFragment = gql`
   fragment VideoFields on Video {
     id
     title

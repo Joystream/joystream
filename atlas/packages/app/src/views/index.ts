@@ -1,4 +1,4 @@
 import HomeView from './HomeView'
 import VideoView from './VideoView'
-
-export { HomeView, VideoView }
+import SearchView from './SearchView'
+export { HomeView, VideoView, SearchView }

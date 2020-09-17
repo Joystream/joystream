@@ -22,6 +22,9 @@ const apolloClient = new ApolloClient({
         },
       },
     },
+    possibleTypes: {
+      FreeTextSearchResultItemType: ['Video', 'Channel'],
+    },
   }),
 })
 

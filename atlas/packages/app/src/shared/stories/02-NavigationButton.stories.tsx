@@ -10,13 +10,13 @@ export const PrimaryRight = () => <NavButton />
 
 export const PrimaryLeft = () => <NavButton direction="left" />
 
-export const SecondaryRight = () => <NavButton type="secondary" />
+export const SecondaryRight = () => <NavButton variant="secondary" />
 
-export const SecondaryLeft = () => <NavButton type="secondary" direction="left" />
+export const SecondaryLeft = () => <NavButton variant="secondary" direction="left" />
 
 export const AppNavigation = () => (
   <div>
-    <NavButton type="secondary" direction="left" />
-    <NavButton type="secondary" direction="right" />
+    <NavButton variant="secondary" direction="left" />
+    <NavButton variant="secondary" direction="right" />
   </div>
 )
