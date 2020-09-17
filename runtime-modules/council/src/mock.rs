@@ -2,8 +2,8 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    BalanceReferendum, CouncilMembers, CouncilStage, CouncilStageInfo, Error, EzCandidate,
-    EzCouncilStageAnnouncing, EzCouncilStageElection, EzCouncilStageInfo, GenesisConfig, Module,
+    BalanceReferendum, CouncilMembers, CouncilStage, CouncilStageInfo, Error, CandidateOf,
+    CouncilStageAnnouncingOf, CouncilStageElectionOf, CouncilStageInfoOf, GenesisConfig, Module,
     Stage, Trait,
 };
 
@@ -244,7 +244,7 @@ pub enum OriginType<AccountId> {
 #[derive(Clone)]
 pub struct CandidateInfo<T: Trait> {
     pub origin: OriginType<T::AccountId>,
-    pub candidate: EzCandidate<T>,
+    pub candidate: CandidateOf<T>,
 }
 
 #[derive(Clone)]
@@ -298,10 +298,10 @@ pub enum CouncilCycleInterrupt {
 pub struct CouncilCycleParams<T: Trait> {
     pub council_settings: CouncilSettings<T>,
     pub cycle_start_block_number: T::BlockNumber,
-    pub expected_initial_council_members: Vec<EzCandidate<T>>, // council members
-    pub expected_final_council_members: Vec<EzCandidate<T>>, // council members after cycle finishes
+    pub expected_initial_council_members: Vec<CandidateOf<T>>, // council members
+    pub expected_final_council_members: Vec<CandidateOf<T>>, // council members after cycle finishes
     pub candidates_announcing: Vec<CandidateInfo<T>>, // candidates announcing their candidacy
-    pub expected_candidates: Vec<EzCandidate<T>>, // expected list of candidates after announcement period is over
+    pub expected_candidates: Vec<CandidateOf<T>>, // expected list of candidates after announcement period is over
     pub voters: Vec<VoterInfo<T>>,                // voters that will participate in council voting
 
     pub interrupt_point: Option<CouncilCycleInterrupt>, // info about when should be cycle interrupted (used to customize the test)
@@ -385,7 +385,7 @@ where
     pub fn generate_candidate(index: u64, stake: BalanceReferendum<T>) -> CandidateInfo<T> {
         let account_id = CANDIDATE_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
-        let candidate = EzCandidate::<T> {
+        let candidate = CandidateOf::<T> {
             account_id: account_id.into(),
             stake,
         };
@@ -452,12 +452,12 @@ where
 {
     pub fn check_announcing_period(
         expected_update_block_number: T::BlockNumber,
-        expected_state: EzCouncilStageAnnouncing<T>,
+        expected_state: CouncilStageAnnouncingOf<T>,
     ) -> () {
         // check stage is in proper state
         assert_eq!(
             Stage::<T>::get(),
-            EzCouncilStageInfo::<T> {
+            CouncilStageInfoOf::<T> {
                 stage: CouncilStage::Announcing(expected_state),
                 changed_at: expected_update_block_number,
             },
@@ -466,12 +466,12 @@ where
 
     pub fn check_election_period(
         expected_update_block_number: T::BlockNumber,
-        expected_state: EzCouncilStageElection<T>,
+        expected_state: CouncilStageElectionOf<T>,
     ) -> () {
         // check stage is in proper state
         assert_eq!(
             Stage::<T>::get(),
-            EzCouncilStageInfo::<T> {
+            CouncilStageInfoOf::<T> {
                 stage: CouncilStage::Election(expected_state),
                 changed_at: expected_update_block_number,
             },
@@ -482,14 +482,14 @@ where
         // check stage is in proper state
         assert_eq!(
             Stage::<T>::get(),
-            EzCouncilStageInfo::<T> {
+            CouncilStageInfoOf::<T> {
                 stage: CouncilStage::Idle,
                 changed_at: expected_update_block_number,
             },
         );
     }
 
-    pub fn check_council_members(expect_members: Vec<EzCandidate<T>>) -> () {
+    pub fn check_council_members(expect_members: Vec<CandidateOf<T>>) -> () {
         // check stage is in proper state
         assert_eq!(CouncilMembers::<T>::get(), expect_members,);
     }
@@ -575,7 +575,7 @@ where
         // start announcing
         Self::check_announcing_period(
             params.cycle_start_block_number,
-            EzCouncilStageAnnouncing::<T> {
+            CouncilStageAnnouncingOf::<T> {
                 candidates: params.expected_initial_council_members.clone(),
             },
         );
@@ -607,7 +607,7 @@ where
         // finish announcing period / start referendum -> will cause period prolongement
         Self::check_election_period(
             settings.announcing_stage_duration + 1.into(),
-            EzCouncilStageElection::<T> {
+            CouncilStageElectionOf::<T> {
                 candidates: params.expected_candidates.clone(),
             },
         );

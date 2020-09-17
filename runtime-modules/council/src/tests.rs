@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::{Error, EzCandidate};
+use super::{Error, CandidateOf};
 use crate::mock::*;
 
 type Mocks = InstanceMocks<Runtime>;
@@ -30,7 +30,7 @@ fn council_lifecycle() {
             .map(|item| item.candidate.clone())
             .collect();
 
-        let expected_final_council_members: Vec<EzCandidate<Runtime>> = vec![
+        let expected_final_council_members: Vec<CandidateOf<Runtime>> = vec![
             candidates[3].candidate.clone(),
             candidates[0].candidate.clone(),
             candidates[1].candidate.clone(),
