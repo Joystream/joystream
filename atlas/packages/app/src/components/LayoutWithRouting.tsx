@@ -1,7 +1,7 @@
 import React from 'react'
 import { GlobalStyle } from '@/shared/components'
 import { Navbar } from '@/components'
-import { HomeView, VideoView, SearchView } from '@/views'
+import { HomeView, VideoView, SearchView, ChannelView } from '@/views'
 import routes from '@/config/routes'
 import { Router } from '@reach/router'
 
@@ -15,6 +15,7 @@ const LayoutWithRouting: React.FC = () => (
       <HomeView default />
       <VideoView path={routes.video()} />
       <SearchView path={routes.search()} />
+      <ChannelView path={routes.channel()} />
     </Router>
   </main>
 )

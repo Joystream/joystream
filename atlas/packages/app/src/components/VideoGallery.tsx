@@ -43,6 +43,9 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, action, videos, load
   const handleVideoClick = (id: string) => {
     navigate(routes.video(id))
   }
+  const handleChannelClick = (id: string) => {
+    navigate(routes.channel(id))
+  }
 
   return (
     <Gallery
@@ -66,6 +69,7 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, action, videos, load
               duration={video.duration}
               posterURL={video.thumbnailURL}
               onClick={() => handleVideoClick(video.id)}
+              onChannelClick={() => handleChannelClick(video.channel.id)}
               imgRef={idx === 0 ? imgRef : null}
               key={video.id}
             />
