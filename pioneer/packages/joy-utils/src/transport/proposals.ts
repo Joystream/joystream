@@ -298,6 +298,29 @@ export default class ProposalsTransport extends BaseTransport {
     };
   }
 
+  private replaceHistoricalProposalLinks (text: string) {
+    return text.replace(
+      /testnet\.joystream\.org\/#\/proposals\/([0-9]+)/g,
+      'testnet.joystream.org/#/proposals/historical/$1'
+    );
+  }
+
+  private parseHistoricalProposalDetails (proposal: HistoricalProposalData['proposal']): ParsedProposalDetails {
+    const { type, details } = proposal;
+
+    if (type === 'RuntimeUpgrade') {
+      return details as RuntimeUpgradeProposalDetails;
+    }
+
+    if (type === 'Text') {
+      details[0] = this.replaceHistoricalProposalLinks(details[0] as string);
+    }
+
+    return this.api.createType('ProposalDetails', {
+      [type]: details.length > 1 ? details : details[0]
+    });
+  }
+
   // Historical proposals methods
   private parseHistoricalProposal ({ proposal }: HistoricalProposalData): ParsedProposal {
     return {
@@ -308,11 +331,8 @@ export default class ProposalsTransport extends BaseTransport {
       createdAt: new Date(proposal.createdAt),
       parameters: this.api.createType('ProposalParameters', proposal.parameters),
       votingResults: this.api.createType('VotingResults', proposal.votingResults),
-      details: proposal.type === 'RuntimeUpgrade'
-        ? proposal.details as RuntimeUpgradeProposalDetails
-        : this.api.createType('ProposalDetails', {
-          [proposal.type]: proposal.details.length > 1 ? proposal.details : proposal.details[0]
-        })
+      details: this.parseHistoricalProposalDetails(proposal),
+      description: this.replaceHistoricalProposalLinks(proposal.description)
     };
   }
 
