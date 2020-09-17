@@ -392,6 +392,10 @@ impl<T: Trait> Module<T> {
             _ => return Err(Error::InvalidRuntimeImplementation),
         };
 
+        //
+        // == MUTATION SAFE ==
+        //
+
         // conclude election
         Self::end_election_period(stage_data, winners);
 
