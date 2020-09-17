@@ -369,39 +369,32 @@ class Storage {
 
     // TODO: validate resolved id is proper ipfs_cid, not null or empty string
 
-    // noop if already pinned or pinning (assuming no external forces remove the pin)
-    // note: ipfs GC will NOT remove pinned content. Only explicit call to remove the pin
-    // will result in inconsistency.
-    if (this.pinning[resolved] || this.pinned[resolved]) {
-      return
+    if (!this.pinning[resolved] && !this.pinned[resolved]) {
+      debug(`Pinning hash: ${resolved} content-id: ${contentId}`)
+      this.pinning[resolved] = true
+
+      // Callback passed to add() will be called on error or when the entire file
+      // is retrieved. So on success we consider the content synced.
+      this.ipfs.pin.add(resolved, { quiet: true, pin: true }, (err) => {
+        delete this.pinning[resolved]
+        if (err) {
+          debug(`Error Pinning: ${resolved}`)
+          callback && callback(err)
+        } else {
+          debug(`Pinned ${resolved}`)
+          this.pinned[resolved] = true
+          callback && callback(null, this.syncStatus(resolved))
+        }
+      })
+    } else {
+      callback && callback(null, this.syncStatus(resolved))
     }
-
-    debug(`Pinning hash: ${resolved} content-id: ${contentId}`)
-    this.pinning[resolved] = true
-
-    // Callback passed to add() will be called on error or when the entire file
-    // is retrieved. So on success we consider the content synced.
-    this.ipfs.pin.add(resolved, { quiet: true, pin: true }, (err) => {
-      delete this.pinning[resolved]
-      if (err) {
-        debug(`Error Pinning: ${resolved}`)
-        callback && callback(err)
-      } else {
-        debug(`Pinned ${resolved}`)
-        this.pinned[resolved] = true
-        callback && callback()
-      }
-    })
   }
 
-  /*
-   * Get the syncing status of a content ID
-   */
-  async syncStatus(contentId) {
-    const resolved = await this.resolveContentIdWithTimeout(this._timeout, contentId)
+  async syncStatus(ipfsHash) {
     return {
-      syncing: this.pinning[resolved] === true,
-      synced: this.pinned[resolved] === true,
+      syncing: this.pinning[ipfsHash] === true,
+      synced: this.pinned[ipfsHash] === true,
     }
   }
 }
