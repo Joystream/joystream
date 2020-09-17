@@ -531,12 +531,13 @@ function Account ({ account: { address, meta }, className = '', delegation, filt
                 {t('Delegate democracy votes')}
               </Menu.Item>
             ])}
-            <ChainLock
+            {/* Joystream specific - disallow "Only this network" to avoid confusion */}
+            {/* <ChainLock
               className='accounts--network-toggle'
               genesisHash={genesisHash}
               isDisabled={api.isDevelopment}
               onChange={onSetGenesisHash}
-            />
+            /> */}
           </Menu>
         </Popup>
       </td>
