@@ -149,7 +149,7 @@ type Worker @entity {
 	member: Member!
 
 	"Account used to authenticate in this role"
-	roleAccountId: AccountId
+	roleAccountId: Bytes!
 
 	# "Whether the role has recurring reward, and if so an identifier for this"
 	# rewardRelationship: Option<RewardRelationshipId>
