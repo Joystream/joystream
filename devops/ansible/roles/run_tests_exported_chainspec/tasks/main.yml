@@ -12,7 +12,7 @@
     - name: run docker container
       docker_container:
         name: "joystream-node"
-        image: "joystream/node"
+        image: "joystream/node:alexandria"
         ports:
           - "9944:9944"
         mounts:
