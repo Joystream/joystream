@@ -246,3 +246,46 @@ type Entity @entity {
 	"Number of inbound references from another entities with `SameOwner` flag set"
 	sameOwnerInboundReferences: BigInt!
 }
+
+"Fields encode a flattened representation of non-vector properties, only one will be non-null"
+type SingleValue @variant {
+	bool: Boolean
+
+	integer: BigInt
+
+	text: Bytes
+
+	hash: Bytes
+
+	reference: Entity
+}
+
+"""
+Fields encode a flattened representation of vector properties, only one will be non-null
+"""
+type VectorValue @variant {
+	boolVec: [Boolean!]
+
+	intVec: [BigInt!]
+
+	textVec: [Bytes!]
+
+	hashVec: [Bytes!]
+
+	referenceVec: [Entity!]
+
+	"Used to avoid vector data race update conditions"
+	nonce: BigInt!
+}
+
+union StoredValue = SingleValue | VectorValue
+
+type PropertyValue @entity {
+	"Runtime identifier of property value in entity"
+	propertyValueID: BigInteger!
+
+	"Property to which this value corresponds"
+	property: Property!
+
+	value: StoredValue!
+}
