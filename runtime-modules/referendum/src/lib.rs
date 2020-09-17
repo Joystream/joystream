@@ -155,7 +155,7 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
 
     /// Checks if user can unlock his stake from the given vote.
     /// Gives runtime an ability to penalize user for not revealing stake, etc.
-    fn can_unstake(vote: &CastVote<Self::Hash, Balance<Self, I>>) -> bool;
+    fn can_release_voting_stake(vote: &CastVote<Self::Hash, Balance<Self, I>>) -> bool;
 
     /// Gives runtime an ability to react on referendum result.
     fn process_results(winners: &[OptionResult<Self::VotePower>]);
@@ -251,8 +251,11 @@ decl_error! {
         /// Trying to reveal vote that was not cast
         VoteNotExisting,
 
+        /// Trying to vote multiple time in the same cycle
+        AlreadyVotedThisCycle,
+
         /// Invalid time to release the locked stake
-        InvalidTimeToRelease,
+        UnstakingVoteInSameCycle,
 
         /// Salt is too long
         SaltTooLong,
@@ -685,6 +688,23 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
     }
 
     fn can_vote(origin: T::Origin, stake: &Balance<T, I>) -> Result<T::AccountId, Error<T, I>> {
+        fn get_existing_stake<T: Trait<I>, I: Instance>(
+            account_id: &T::AccountId,
+        ) -> Result<Balance<T, I>, Error<T, I>> {
+            if !Votes::<T, I>::contains_key(&account_id) {
+                return Ok(0.into());
+            }
+
+            let existing_vote = Votes::<T, I>::get(&account_id);
+
+            // don't allow repeated vote
+            if existing_vote.cycle_id == CurrentCycleId::<I>::get() {
+                return Err(Error::<T, I>::AlreadyVotedThisCycle);
+            }
+
+            Ok(existing_vote.stake)
+        }
+
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;
 
@@ -696,13 +716,18 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             _ => return Err(Error::ReferendumNotRunning),
         };
 
+        // get current lock balance if still staking for some past cycle
+        let existing_stake: Balance<T, I> = get_existing_stake(&account_id)?;
+
         // ensure stake is enough for voting
         if stake < &T::MinimumStake::get() {
             return Err(Error::InsufficientStake);
         }
 
+        let stake_diff = *stake - existing_stake;
+
         // ensure account can lock the stake
-        if T::Currency::total_balance(&account_id) < *stake {
+        if T::Currency::total_balance(&account_id) < stake_diff {
             return Err(Error::InsufficientBalanceToStakeCurrency);
         }
 
@@ -760,21 +785,13 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         let cast_vote = Self::ensure_vote_exists(&account_id)?;
 
-        if !T::can_unstake(&cast_vote) {
-            return Err(Error::UnstakingForbidden);
-        }
-
-        // enable stake release in current cycle only during voting stage
+        // allow release only for past cycles
         if cycle_id == cast_vote.cycle_id {
-            match Stage::<T, I>::get() {
-                ReferendumStage::Voting(_) => Ok(()),
-                _ => Err(Error::InvalidTimeToRelease),
-            }?;
+            return Err(Error::UnstakingVoteInSameCycle);
         }
 
-        // eliminate possibility of unexpected cycle_id
-        if cycle_id < cast_vote.cycle_id {
-            return Err(Error::InvalidTimeToRelease);
+        if !T::can_release_voting_stake(&cast_vote) {
+            return Err(Error::UnstakingForbidden);
         }
 
         Ok(account_id)

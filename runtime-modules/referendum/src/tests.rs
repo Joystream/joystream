@@ -139,7 +139,7 @@ fn voting_stake_too_low() {
     });
 }
 
-/// Test that a user can change his vote/stake during the voting stage.
+/// Test that a user is prevented from voting multiple times in the same cycle.
 #[test]
 fn voting_user_repeated_vote() {
     let config = default_genesis_config();
@@ -168,7 +168,7 @@ fn voting_user_repeated_vote() {
             account_id,
             commitment,
             different_stake.clone(),
-            Ok(()),
+            Err(Error::AlreadyVotedThisCycle),
         );
     });
 }
