@@ -5,7 +5,7 @@ use crate::tests::fixtures::{
     setup_members, AddOpeningFixture, ApplyOnOpeningFixture, FillOpeningFixture, HireLeadFixture,
 };
 use crate::tests::mock::TestWorkingTeam;
-use crate::JobOpeningType;
+use crate::{JobOpeningType, StakePolicy};
 
 #[derive(Clone)]
 struct HiringWorkflowApplication {
@@ -18,7 +18,7 @@ struct HiringWorkflowApplication {
 pub struct HiringWorkflow {
     opening_type: JobOpeningType,
     expected_result: DispatchResult,
-    role_stake: Option<u64>,
+    stake_policy: Option<StakePolicy<u64, u64>>,
     applications: Vec<HiringWorkflowApplication>,
     setup_environment: bool,
 }
@@ -28,7 +28,7 @@ impl Default for HiringWorkflow {
         Self {
             opening_type: JobOpeningType::Regular,
             expected_result: Ok(()),
-            role_stake: None,
+            stake_policy: None,
             applications: Vec::new(),
             setup_environment: true,
         }
@@ -36,6 +36,13 @@ impl Default for HiringWorkflow {
 }
 
 impl HiringWorkflow {
+    pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
+        Self {
+            stake_policy,
+            ..self
+        }
+    }
+
     pub fn expect(self, result: DispatchResult) -> Self {
         Self {
             expected_result: result,
@@ -76,7 +83,7 @@ impl HiringWorkflow {
         let mut applications = self.applications;
         applications.push(HiringWorkflowApplication {
             worker_handle,
-            stake: self.role_stake.clone(),
+            stake: self.stake_policy.clone().map(|policy| policy.stake_amount),
             origin,
             member_id,
         });
@@ -123,6 +130,7 @@ impl HiringWorkflow {
 
         // create the opening
         let add_worker_opening_fixture = AddOpeningFixture::default()
+            .with_stake_policy(self.stake_policy.clone())
             .with_opening_type(self.opening_type)
             .with_origin(origin.clone());
 
@@ -133,6 +141,7 @@ impl HiringWorkflow {
         for application in self.applications.clone() {
             let apply_on_worker_opening_fixture =
                 ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+                    .with_stake(application.stake)
                     .with_text(application.worker_handle)
                     .with_origin(application.origin, application.member_id);
 

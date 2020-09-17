@@ -43,7 +43,7 @@ pub struct AddOpeningFixture {
     description: Vec<u8>,
     opening_type: JobOpeningType,
     starting_block: u64,
-    staking_policy: Option<StakePolicy<u64, u64>>,
+    stake_policy: Option<StakePolicy<u64, u64>>,
 }
 
 impl Default for AddOpeningFixture {
@@ -53,7 +53,7 @@ impl Default for AddOpeningFixture {
             description: b"human_text".to_vec(),
             opening_type: JobOpeningType::Regular,
             starting_block: 0,
-            staking_policy: None,
+            stake_policy: None,
         }
     }
 }
@@ -79,7 +79,7 @@ impl AddOpeningFixture {
                 created: self.starting_block,
                 description_hash: expected_hash.as_ref().to_vec(),
                 opening_type: self.opening_type,
-                stake_policy: self.staking_policy.clone(),
+                stake_policy: self.stake_policy.clone(),
             };
 
             assert_eq!(actual_opening, expected_opening);
@@ -94,7 +94,7 @@ impl AddOpeningFixture {
             self.origin.clone().into(),
             self.description.clone(),
             self.opening_type,
-            self.staking_policy.clone(),
+            self.stake_policy.clone(),
         )?;
 
         Ok(saved_opening_next_id)
@@ -118,9 +118,9 @@ impl AddOpeningFixture {
         }
     }
 
-    pub fn with_staking_policy(self, staking_policy: StakePolicy<u64, u64>) -> Self {
+    pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
         Self {
-            staking_policy: Some(staking_policy),
+            stake_policy,
             ..self
         }
     }
@@ -131,6 +131,7 @@ pub struct ApplyOnOpeningFixture {
     member_id: u64,
     opening_id: u64,
     role_account_id: u64,
+    staking_account_id: u64,
     description: Vec<u8>,
     stake: Option<u64>,
 }
@@ -151,9 +152,13 @@ impl ApplyOnOpeningFixture {
         }
     }
 
-    pub fn with_stake(self, stake: u64) -> Self {
+    pub fn with_stake(self, stake: Option<u64>) -> Self {
+        Self { stake, ..self }
+    }
+
+    pub fn with_stake_account_id(self, staking_account_id: u64) -> Self {
         Self {
-            stake: Some(stake),
+            staking_account_id,
             ..self
         }
     }
@@ -164,6 +169,7 @@ impl ApplyOnOpeningFixture {
             member_id: 1,
             opening_id,
             role_account_id: 1,
+            staking_account_id: 1,
             description: b"human_text".to_vec(),
             stake: None,
         }
@@ -176,6 +182,7 @@ impl ApplyOnOpeningFixture {
             self.member_id,
             self.opening_id,
             self.role_account_id,
+            self.staking_account_id,
             self.description.clone(),
             self.stake,
         )?;
@@ -348,20 +355,35 @@ impl HireLeadFixture {
 
 pub struct HireRegularWorkerFixture {
     setup_environment: bool,
+    stake: Option<u64>,
 }
 
 impl Default for HireRegularWorkerFixture {
     fn default() -> Self {
         Self {
             setup_environment: true,
+            stake: None,
         }
     }
 }
 impl HireRegularWorkerFixture {
+    pub fn with_stake(self, stake: u64) -> Self {
+        Self {
+            stake: Some(stake),
+            ..self
+        }
+    }
+
     pub fn hire(self) -> u64 {
+        let stake_policy = self.stake.map(|amount| StakePolicy {
+            stake_amount: amount,
+            unstaking_period: 10,
+        });
+
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
             .with_opening_type(JobOpeningType::Regular)
+            .with_stake_policy(stake_policy)
             .add_application(b"worker".to_vec())
             .execute()
             .unwrap()

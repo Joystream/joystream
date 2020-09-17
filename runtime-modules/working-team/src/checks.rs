@@ -198,8 +198,8 @@ pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
     Ok(())
 }
 
-// Check application: verifies free balance for a given account.
-pub(crate) fn ensure_can_make_stake<T: Trait<I>, I: Instance>(
+// Check application: verifies free balance for a given account for staking.
+pub(crate) fn ensure_enough_balance_for_staking<T: Trait<I>, I: Instance>(
     account: &T::AccountId,
     stake: &Option<BalanceOfCurrency<T>>,
 ) -> DispatchResult {

@@ -1,14 +1,18 @@
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{
+    LockIdentifier, LockableCurrency, OnFinalize, OnInitialize, WithdrawReasons,
+};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+    DispatchError, Perbill,
 };
 use system;
 
-use crate::{Module, Trait};
+use crate::{BalanceOfCurrency, Module, StakingHandler, Trait};
+use common::currency::GovernanceCurrency;
+use frame_support::dispatch::DispatchResult;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -105,6 +109,7 @@ pub type System = system::Module<Test>;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const LockId: [u8; 8] = [1; 8];
 }
 
 impl Trait<TestWorkingTeamInstance> for Test {
@@ -112,10 +117,42 @@ impl Trait<TestWorkingTeamInstance> for Test {
     type ApplicationId = u64;
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = Test;
+    type LockId = LockId;
 }
 
 pub type TestWorkingTeamInstance = crate::Instance1;
 pub type TestWorkingTeam = Module<Test, TestWorkingTeamInstance>;
+
+pub const STAKING_ACCOUNT_ID_FOR_FAILED_EXTERNAL_CHECK: u64 = 111;
+impl StakingHandler<Test> for Test {
+    fn lock(
+        lock_id: LockIdentifier,
+        account_id: &<Test as system::Trait>::AccountId,
+        amount: BalanceOfCurrency<Test>,
+    ) {
+        <Test as GovernanceCurrency>::Currency::set_lock(
+            lock_id,
+            &account_id,
+            amount,
+            WithdrawReasons::all(),
+        )
+    }
+
+    fn unlock(lock_id: LockIdentifier, account_id: &<Test as system::Trait>::AccountId) {
+        <Test as GovernanceCurrency>::Currency::remove_lock(lock_id, &account_id);
+    }
+
+    fn ensure_can_make_stake(
+        account_id: &<Test as system::Trait>::AccountId,
+        _stake: &BalanceOfCurrency<Test>,
+    ) -> DispatchResult {
+        if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_EXTERNAL_CHECK {
+            return Err(DispatchError::Other("External check failed"));
+        }
+        Ok(())
+    }
+}
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     let t = system::GenesisConfig::default()

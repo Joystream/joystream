@@ -2,8 +2,10 @@
 
 use codec::{Decode, Encode};
 
-use frame_support::traits::Currency;
+use common::currency::GovernanceCurrency;
+use frame_support::traits::{Currency, LockIdentifier};
 
+use frame_support::dispatch::DispatchResult;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
@@ -133,4 +135,21 @@ pub struct StakePolicy<BlockNumber, Balance> {
 
     /// Unstaking period for the stake. Zero means no unstaking period.
     pub unstaking_period: BlockNumber,
+}
+
+/// Defines abstract staking handler to manage user stakes for different activities
+/// like adding a proposal. Implementation should use built-in LockableCurrency
+/// and LockIdentifier to lock balance consistently with pallet_staking.
+pub trait StakingHandler<T: system::Trait + GovernanceCurrency> {
+    /// Locks the specified balance on the account using specific lock identifier.
+    fn lock(lock_id: LockIdentifier, account_id: &T::AccountId, amount: BalanceOfCurrency<T>);
+
+    /// Removes the specified lock on the account.
+    fn unlock(lock_id: LockIdentifier, account_id: &T::AccountId);
+
+    /// Verifies that stake could be placed using given account.
+    fn ensure_can_make_stake(
+        account_id: &T::AccountId,
+        stake: &BalanceOfCurrency<T>,
+    ) -> DispatchResult;
 }

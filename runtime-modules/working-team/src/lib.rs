@@ -26,7 +26,7 @@ mod tests;
 mod types;
 
 use codec::Codec;
-use frame_support::traits::Get;
+use frame_support::traits::{Get, LockIdentifier};
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue};
 use sp_arithmetic::traits::{BaseArithmetic, One};
 use sp_runtime::traits::{Hash, MaybeSerialize, Member};
@@ -35,12 +35,12 @@ use system::ensure_signed;
 
 pub use errors::Error;
 use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId};
-pub use types::{JobApplication, JobOpening, JobOpeningType, StakePolicy};
-
-pub trait StakingHandler {}
+pub use types::{JobApplication, JobOpening, JobOpeningType, StakePolicy, StakingHandler};
 
 /// The _Team_ main _Trait_
-pub trait Trait<I: Instance>: system::Trait + membership::Trait + balances::Trait {
+pub trait Trait<I: Instance>:
+    system::Trait + membership::Trait + balances::Trait + common::currency::GovernanceCurrency
+{
     /// OpeningId type
     type OpeningId: Parameter
         + Member
@@ -67,7 +67,11 @@ pub trait Trait<I: Instance>: system::Trait + membership::Trait + balances::Trai
     /// Defines max workers number in the team.
     type MaxWorkerNumberLimit: Get<u32>;
 
-    //    type StakingHandler: StakingHandler;
+    /// Stakes and balance locks handler.
+    type StakingHandler: StakingHandler<Self>;
+
+    /// Defines work team ID for balance locking.
+    type LockId: Get<LockIdentifier>;
 }
 
 decl_event!(
@@ -217,13 +221,14 @@ decl_module! {
             member_id: T::MemberId,
             opening_id: T::OpeningId,
             role_account_id: T::AccountId,
+            staking_account_id: T::AccountId,
             description: Vec<u8>,
             stake: Option<BalanceOfCurrency<T>>,
         ) {
-            // Ensure origin which will server as the source account for staked funds is signed
+            // Ensure origin which will server as the source account for staked funds is signed.
             let source_account = ensure_signed(origin)?;
 
-            // Ensure the source_account is either the controller or root account of member with given id
+            // Ensure the source_account is either the controller or root account of member with given id.
             ensure!(
                 membership::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
                 membership::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
@@ -234,14 +239,23 @@ decl_module! {
             let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
 
             // Ensure that there is sufficient balance to cover the proposed stake.
-            checks::ensure_can_make_stake::<T, I>(&source_account, &stake)?;
+            checks::ensure_enough_balance_for_staking::<T, I>(&staking_account_id, &stake)?;
 
             // Ensure that proposed stake is enough for the opening.
             checks::ensure_application_stake_match_opening::<T, I>(&opening, &stake)?;
 
+            // Checks external conditions for staking.
+            if let Some(amount) = stake {
+                T::StakingHandler::ensure_can_make_stake(&staking_account_id, &amount)?;
+            }
+
             //
             // == MUTATION SAFE ==
             //
+
+            if let Some(amount) = stake {
+                T::StakingHandler::lock(T::LockId::get(), &role_account_id, amount);
+            }
 
             let hashed_description = T::Hashing::hash(&description);
 
@@ -250,7 +264,7 @@ decl_module! {
                 &role_account_id,
                 &opening_id,
                 &member_id,
-                hashed_description.as_ref().to_vec()
+                hashed_description.as_ref().to_vec(),
             );
 
             // Get id of new worker/lead application
@@ -349,13 +363,13 @@ decl_module! {
             worker_id: TeamWorkerId<T>,
         ) {
             // Ensure there is a signer which matches role account of worker corresponding to provided id.
-            checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
+            let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            Self::deactivate_worker(&worker_id);
+            Self::deactivate_worker(&worker_id, &worker);
 
             Self::deposit_event(RawEvent::WorkerExited(worker_id));
         }
@@ -371,13 +385,13 @@ decl_module! {
             let is_sudo = checks::ensure_origin_for_terminate_worker::<T,I>(origin, worker_id)?;
 
             // Ensuring worker actually exists.
-            checks::ensure_worker_exists::<T,I>(&worker_id)?;
+            let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
-            Self::deactivate_worker(&worker_id);
+            Self::deactivate_worker(&worker_id, &worker);
 
             // Trigger the event
             let event = if is_sudo {
@@ -467,7 +481,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Fires the worker. Unsets the leader if necessary. Decreases active worker counter.
-    fn deactivate_worker(worker_id: &TeamWorkerId<T>) {
+    fn deactivate_worker(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
         // Unset lead if the leader is leaving.
         let leader_worker_id = <CurrentLead<T, I>>::get();
         if let Some(leader_worker_id) = leader_worker_id {
@@ -479,5 +493,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         // Remove the worker from the storage.
         WorkerById::<T, I>::remove(worker_id);
         Self::decrease_active_worker_counter();
+
+        T::StakingHandler::unlock(T::LockId::get(), &worker.role_account_id);
     }
 }
