@@ -3,8 +3,7 @@ import { createGraphQLHandler, mirageGraphQLFieldResolver } from '@miragejs/grap
 import { shuffle } from 'lodash'
 
 import schema from '../schema.graphql'
-import { mockChannels, mockVideos } from '@/mocking/data'
-import { GetNewestVideosVariables } from '@/api/queries/__generated__/GetNewestVideos'
+import { mockCategories, mockChannels, mockVideos } from '@/mocking/data'
 import { SearchVariables } from '@/api/queries/__generated__/Search'
 
 createServer({
@@ -12,23 +11,22 @@ createServer({
     const graphQLHandler = createGraphQLHandler(schema, this.schema, {
       resolvers: {
         Query: {
-          videos: (obj: unknown, args: GetNewestVideosVariables, context: unknown, info: unknown) => {
-            const videos = mirageGraphQLFieldResolver(obj, {}, context, info)
+          videos: (obj: unknown, { limit, offset, where: { categoryId_eq } }: any, context: unknown, info: unknown) => {
+            const resolverArgs = categoryId_eq ? { categoryId: categoryId_eq } : {}
+            const videos = mirageGraphQLFieldResolver(obj, resolverArgs, context, info)
 
-            const { limit } = args
-            if (!limit) {
+            if (!limit && !offset) {
               return videos
             }
 
-            const videosCount = videos.length
-            const repeatVideosCount = Math.ceil(limit / videosCount)
-            const repeatedVideos = Array.from({ length: repeatVideosCount }, () => videos).flat()
-            const slicedVideos = repeatedVideos.slice(0, limit)
-            return slicedVideos
+            const start = offset || 0
+            const end = limit ? start + limit : videos.length
+
+            return videos.slice(start, end)
           },
           featured_videos: (...params: unknown[]) => {
             const videos = mirageGraphQLFieldResolver(...params)
-            return shuffle(videos)
+            return shuffle(videos.slice(0, 16))
           },
           channels: (...params: unknown[]) => {
             const channels = mirageGraphQLFieldResolver(...params)
@@ -75,6 +73,13 @@ createServer({
       return models
     })
 
+    const categories = mockCategories.map((category) => {
+      const models = server.create('Category', {
+        ...category,
+      })
+      return models
+    })
+
     const location = server.schema.create('HTTPVideoMediaLocation', {
       id: 'locationID',
       host: 'https://js-video-example.s3.eu-central-1.amazonaws.com/waves.mp4',
@@ -89,11 +94,18 @@ createServer({
       location,
     })
 
-    mockVideos.forEach((video, idx) =>
+    // repeat videos 15 times
+    // TODO: expand as part of https://github.com/Joystream/joystream/issues/1270
+    const fakedMockVideos = Array.from({ length: 15 }, (_, idx) =>
+      mockVideos.map((v) => ({ ...v, id: `${v.id}${idx}` }))
+    ).flat()
+
+    fakedMockVideos.forEach((video, idx) =>
       server.create('Video', {
         ...video,
         media,
         channel: channels[idx % channels.length],
+        category: categories[idx % categories.length],
       })
     )
   },

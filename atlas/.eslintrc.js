@@ -7,12 +7,7 @@ module.exports = {
   },
   extends: ['plugin:react-hooks/recommended', '@joystream/eslint-config'],
   rules: {
-    camelcase: [
-      'warn',
-      {
-        ignoreImports: true,
-      },
-    ],
+    camelcase: ['off'],
     'react/prop-types': 'off',
     '@typescript-eslint/explicit-module-boundary-types': 'off',
     '@typescript-eslint/no-empty-function': 'warn',

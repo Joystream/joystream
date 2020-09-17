@@ -7,6 +7,11 @@
 // GraphQL query operation: Search
 // ====================================================
 
+export interface Search_search_item_Video_category {
+  __typename: "Category";
+  id: string;
+}
+
 export interface Search_search_item_Video_media_location_HTTPVideoMediaLocation {
   __typename: "HTTPVideoMediaLocation";
   host: string;
@@ -30,7 +35,7 @@ export interface Search_search_item_Video_media {
 export interface Search_search_item_Video_channel {
   __typename: "Channel";
   id: string;
-  avatarPhotoURL: string;
+  avatarPhotoURL: string | null;
   handle: string;
 }
 
@@ -39,6 +44,7 @@ export interface Search_search_item_Video {
   id: string;
   title: string;
   description: string;
+  category: Search_search_item_Video_category;
   views: number;
   duration: number;
   thumbnailURL: string;
@@ -51,8 +57,8 @@ export interface Search_search_item_Channel {
   __typename: "Channel";
   id: string;
   handle: string;
-  avatarPhotoURL: string;
-  coverPhotoURL: string;
+  avatarPhotoURL: string | null;
+  coverPhotoURL: string | null;
   totalViews: number;
 }
 

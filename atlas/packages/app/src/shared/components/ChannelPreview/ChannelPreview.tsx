@@ -8,7 +8,7 @@ import { Avatar } from '..'
 type ChannelPreviewProps = {
   name: string
   views: number
-  avatarURL?: string
+  avatarURL?: string | null
   className?: string
   animated?: boolean
   onClick?: (e: React.MouseEvent<HTMLElement>) => void

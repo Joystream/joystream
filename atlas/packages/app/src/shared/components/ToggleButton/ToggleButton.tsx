@@ -1,21 +1,36 @@
 import React, { useState } from 'react'
-import { StyledToggleButton, ToggleButtonStyleProps } from './ToggleButton.styles'
+import { StyledToggleButton } from './ToggleButton.styles'
 
 import type { ButtonProps } from '../Button/Button'
 
-type ToggleButtonProps = ButtonProps & Omit<ToggleButtonStyleProps, 'pressedDown'>
-const ToggleButton: React.FC<Partial<ToggleButtonProps>> = ({ onClick, children, ...buttonProps }) => {
-  const [pressedDown, setPressedDown] = useState(false)
+type ToggleButtonProps = {
+  controlled?: boolean
+  toggled?: boolean
+} & ButtonProps
+
+const ToggleButton: React.FC<Partial<ToggleButtonProps>> = ({
+  onClick,
+  controlled = false,
+  toggled: externalToggled = false,
+  children,
+  ...buttonProps
+}) => {
+  const [toggled, setToggled] = useState(false)
+
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (onClick) {
       onClick(e)
     }
-    setPressedDown(!pressedDown)
+    if (!controlled) {
+      setToggled(!toggled)
+    }
   }
+
   return (
-    <StyledToggleButton onClick={handleClick} pressedDown={pressedDown} {...buttonProps}>
+    <StyledToggleButton onClick={handleClick} toggled={controlled ? externalToggled : toggled} {...buttonProps}>
       {children}
     </StyledToggleButton>
   )
 }
+
 export default ToggleButton

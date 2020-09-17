@@ -4,14 +4,11 @@
 // This file was automatically generated and should not be edited.
 
 // ====================================================
-// GraphQL fragment: ChannelFields
+// GraphQL fragment: CategoryFields
 // ====================================================
 
-export interface ChannelFields {
-  __typename: "Channel";
+export interface CategoryFields {
+  __typename: "Category";
   id: string;
-  handle: string;
-  avatarPhotoURL: string | null;
-  coverPhotoURL: string | null;
-  totalViews: number;
+  name: string;
 }

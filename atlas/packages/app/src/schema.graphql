@@ -8,6 +8,11 @@ enum Language {
   French
 }
 
+type Member {
+  id: ID!
+  handle: String!
+}
+
 type Channel {
   id: ID!
 
@@ -18,9 +23,11 @@ type Channel {
 
   description: String!
 
-  coverPhotoURL: String!
+  coverPhotoURL: String
 
-  avatarPhotoURL: String!
+  avatarPhotoURL: String
+
+  owner: Member!
 
   isPublic: Boolean!
 
@@ -49,6 +56,7 @@ type JoystreamVideoMediaLocation {
 }
 
 type HTTPVideoMediaLocation {
+  # TODO: join these fields together
   host: String!
   port: Int
 }
@@ -159,18 +167,23 @@ type FreeTextSearchResult {
   rank: Int!
 }
 
+input ChannelWhereInput {
+  isCurated_eq: Boolean
+  isPublic_eq: Boolean
+}
+
+input VideoWhereInput {
+  categoryId_eq: ID
+  isCurated_eq: Boolean
+  isPublic_eq: Boolean
+}
+
 type Query {
   # Lookup a channel by its ID
   channel(id: ID!): Channel
 
   # List all channel by given constraints
-  channels(
-    order_by_creation_date: Boolean
-    ignore_curated: Boolean
-    ignore_non_public: Boolean
-    offset: Int
-    limit: Int
-  ): [Channel!]!
+  channels(order_by_creation_date: Boolean, where: ChannelWhereInput, offset: Int, limit: Int): [Channel!]!
 
   # Lookup a channel by its ID
   category(id: ID!): Category
@@ -182,14 +195,7 @@ type Query {
   video(id: ID!): Video
 
   # List all videos by given constraints
-  videos(
-    order_by_publication_date: Boolean
-    ignore_curated: Boolean
-    ignore_non_public: Boolean
-    in_category_with_ID: ID
-    offset: Int
-    limit: Int
-  ): [Video!]!
+  videos(order_by_publication_date: Boolean, where: VideoWhereInput, offset: Int, limit: Int): [Video!]!
 
   # List all top trending videos
   featured_videos: [Video!]!

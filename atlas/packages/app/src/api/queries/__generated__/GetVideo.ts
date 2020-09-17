@@ -7,6 +7,11 @@
 // GraphQL query operation: GetVideo
 // ====================================================
 
+export interface GetVideo_video_category {
+  __typename: "Category";
+  id: string;
+}
+
 export interface GetVideo_video_media_location_HTTPVideoMediaLocation {
   __typename: "HTTPVideoMediaLocation";
   host: string;
@@ -30,7 +35,7 @@ export interface GetVideo_video_media {
 export interface GetVideo_video_channel {
   __typename: "Channel";
   id: string;
-  avatarPhotoURL: string;
+  avatarPhotoURL: string | null;
   handle: string;
 }
 
@@ -39,6 +44,7 @@ export interface GetVideo_video {
   id: string;
   title: string;
   description: string;
+  category: GetVideo_video_category;
   views: number;
   duration: number;
   thumbnailURL: string;

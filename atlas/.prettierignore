@@ -3,3 +3,4 @@ dist/
 .yarn/
 storybook-static/
 .coverage
+__generated__/

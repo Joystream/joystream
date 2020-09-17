@@ -15,7 +15,7 @@ export const PlayerContainer = styled.div`
 `
 
 export const InfoContainer = styled.div`
-  padding: ${theme.spacing.xxl};
+  padding: ${theme.spacing.xxl} 0;
 `
 
 export const TitleActionsContainer = styled.div`

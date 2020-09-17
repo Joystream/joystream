@@ -5,7 +5,6 @@ import 'video.js/dist/video-js.css'
 import { VideoFields_media_location } from '@/api/queries/__generated__/VideoFields'
 
 export type VideoJsConfig = {
-  // eslint-disable-next-line camelcase
   src: VideoFields_media_location
   width?: number
   height?: number

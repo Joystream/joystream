@@ -3,7 +3,7 @@ import { Avatar } from '@/shared/components'
 import theme from '@/shared/theme'
 
 type ChannelHeaderProps = {
-  coverPhotoURL: string
+  coverPhotoURL: string | null
 }
 export const Header = styled.section<ChannelHeaderProps>`
   background-image: linear-gradient(0deg, #000000 10.85%, rgba(0, 0, 0, 0) 88.35%),

@@ -1,16 +1,14 @@
-import React from 'react'
 import { css } from '@emotion/core'
 import styled from '@emotion/styled'
 import Icon from '../Icon'
-import { typography, colors } from '../../theme'
+import { colors, typography } from '../../theme'
 
 export type ButtonStyleProps = {
   variant?: 'primary' | 'secondary' | 'tertiary'
   full?: boolean
   size?: 'regular' | 'small' | 'smaller'
-  hasText?: boolean
-  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
   disabled?: boolean
+  hasText?: boolean
   clickable?: boolean
 }
 

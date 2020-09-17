@@ -95,7 +95,7 @@ const rawVideos = [
   },
 ]
 
-type RawVideo = Omit<VideoFields, 'media' | 'channel' | 'publishedOnJoystreamAt' | 'duration'> & {
+type RawVideo = Omit<VideoFields, 'media' | 'category' | 'channel' | 'publishedOnJoystreamAt' | 'duration'> & {
   publishedOnJoystreamAt: unknown
   duration: unknown
 }
