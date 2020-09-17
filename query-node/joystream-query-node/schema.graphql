@@ -133,7 +133,7 @@ type Property @entity {
 "Represents a standard for what information must be associated with any entity of a given class"
 type Schema @entity {
 	"Runtime identifier of schema in class"
-	schemaId: BigInteger!
+	schemaId: BigInt!
 
 	"Class to which this schema corresponds"
 	class: Class!
@@ -209,4 +209,40 @@ type EntityController @entity {
 
 	"Optional field, will be set when EntityControllerType is MEMBER"
 	controllerWhenMember: Member
+}
+
+"""
+Represents a particular instance of a class,
+hence each entity corresponds to exactly one class
+"""
+type Entity @entity {
+	"Runtime identifier for entity"
+	entityID: BigInt!
+
+	"Current controller, which is initially set based on who created entity"
+	controller: EntityController!
+
+	"Forbid groups to mutate any property value"
+	isFrozen: Boolean!
+
+	"Prevent from being referenced by any entity (including self-references)"
+	isReferenceable: Boolean!
+
+	"The class of this entity"
+	class: Class!
+
+	"""
+	What schemas under which this entity of a class is available, think
+	v.2.0 Person schema for John, v3.0 Person schema for John
+	"""
+	supportedSchemas: [Schema!]
+
+	"Values for properties on class that are used by some schema used by this entity!"
+	values: [PropertyValue!] @derivedFrom(field: "property")
+
+	"Total number of inbound references from another entities"
+	totalNumberOfInboundReferences: BigInt!
+
+	"Number of inbound references from another entities with `SameOwner` flag set"
+	sameOwnerInboundReferences: BigInt!
 }
