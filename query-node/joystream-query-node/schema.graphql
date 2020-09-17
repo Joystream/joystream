@@ -145,6 +145,7 @@ type Schema @entity {
 	isActive: Boolean!
 }
 
+"Working group participant: working-group/src/types.rs"
 type Worker @entity {
 	member: Member!
 
@@ -165,6 +166,7 @@ type Curator @entity {
 	groups: [CuratorGroup] @derivedFrom(field: "curators")
 }
 
+"A group, that consists of `curators` set"
 type CuratorGroup @entity {
 	"Runtime identifier for group"
 	groupId: BigInt!
@@ -179,6 +181,7 @@ type CuratorGroup @entity {
 	maintainerOfClasses: [Class!] @derivedFrom(field: "maintainers")
 }
 
+"A voucher for `Entity` creation"
 type EntityCreationVoucher @entity {
 	"Class to which voucher applies"
 	class: Class!
