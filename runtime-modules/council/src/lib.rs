@@ -245,6 +245,10 @@ decl_module! {
         pub fn release_candidacy_stake(origin) -> Result<(), Error<T>> {
             let account_id = EnsureChecks::<T>::can_release_candidacy_stake(origin)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // update state
             Mutations::<T>::release_candidacy_stake(&account_id);
 
@@ -255,6 +259,10 @@ decl_module! {
         // start voting period
         #[weight = 10_000_000]
         pub fn vote(origin, commitment: T::Hash, balance: Balance<T>) -> Result<(), Error<T>> {
+            //
+            // == MUTATION SAFE ==
+            //
+
             // call referendum vote extrinsic
             <Referendum<T>>::vote(origin, commitment, balance)?;
 
@@ -265,6 +273,10 @@ decl_module! {
         pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_index: u64) -> Result<(), Error<T>> {
             EnsureChecks::<T>::can_reveal_vote(origin.clone(), vote_option_index)?;
 
+            //
+            // == MUTATION SAFE ==
+            //
+
             // call referendum reveal vote extrinsic
             <Referendum<T>>::reveal_vote(origin, salt, vote_option_index)?;
 
@@ -274,6 +286,10 @@ decl_module! {
         #[weight = 10_000_000]
         pub fn release_vote_stake(origin) -> Result<(), Error<T>> {
             EnsureChecks::<T>::can_release_vote_stake(origin.clone())?;
+
+            //
+            // == MUTATION SAFE ==
+            //
 
             // call referendum reveal vote extrinsic
             <Referendum<T>>::release_stake(origin)?;

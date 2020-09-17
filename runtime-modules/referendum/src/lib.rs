@@ -113,24 +113,7 @@ pub trait ReferendumManager<T: Trait<I>, I: Instance> {
         vote_option_id: &u64,
     ) -> T::Hash;
 }
-/*
-pub trait ReferendumManager<Origin, AccountId, Hash, Error> {
-    /// Start a new referendum.
-    fn start_referendum(
-        origin: Origin,
-        extra_winning_target_count: u64,
-    ) -> Result<(), Error>;
 
-    /// Calculate commitment for a vote.
-    fn calculate_commitment(
-        account_id: &AccountId,
-        salt: &[u8],
-        cycle_id: &u64,
-        vote_option_id: &u64,
-    ) -> Hash;
-}
-*/
-//pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
 pub trait Trait<I: Instance>: system::Trait {
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
@@ -414,65 +397,6 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 /////////////////// ReferendumManager //////////////////////////////////////////
 
 impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
-    //impl<T: Trait<I>, I: Instance, Origin, AccountId, Hash, Error> ReferendumManager<Origin, AccountId, Hash, Error> for Module<T, I> {
-    //impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Hash, Error<T, I>> for Module<T, I> {
-    /*
-        /// Start new referendum run.
-        fn start_referendum(
-            origin: T::Origin,
-            extra_winning_target_count: u64,
-        ) -> Result<(), Error<T, I>> {
-    /*
-            fn can_start_referendum<Origin, ManagerOrigin: EnsureOrigin<Origin>, >(origin: Origin) -> Result<(), Error> {
-                ManagerOrigin::ensure_origin(origin)?;
-
-                // ensure referendum is not already running
-                match Stage::<T, I>::get() {
-                    ReferendumStage::Inactive => Ok(()),
-                    _ => Err(Error::ReferendumAlreadyRunning),
-                }?;
-
-                Ok(())
-            }
-    */
-
-            let winning_target_count = extra_winning_target_count + 1;
-
-            // ensure action can be started
-            EnsureChecks::<T, I>::can_start_referendum(origin)?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // update state
-            Mutations::<T, I>::start_voting_period(&winning_target_count);
-
-            // emit event
-            Self::deposit_event(RawEvent::ReferendumStarted(winning_target_count));
-
-            Ok(())
-        }
-
-        /// Calculate commitment for a vote.
-        fn calculate_commitment(
-            account_id: &<T as system::Trait>::AccountId,
-            salt: &[u8],
-            cycle_id: &u64,
-            vote_option_id: &u64,
-        ) -> T::Hash {
-            let mut payload = account_id.encode();
-            let mut mut_option_id = vote_option_id.encode();
-            let mut mut_salt = salt.encode(); //.to_vec();
-            let mut mut_cycle_id = cycle_id.encode(); //.to_vec();
-
-            payload.append(&mut mut_option_id);
-            payload.append(&mut mut_salt);
-            payload.append(&mut mut_cycle_id);
-
-            <T::Hashing as sp_runtime::traits::Hash>::hash(&payload)
-        }
-    */
     /// Start new referendum run.
     fn start_referendum(
         origin: T::Origin,
