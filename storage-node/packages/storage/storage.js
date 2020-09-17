@@ -391,7 +391,7 @@ class Storage {
     }
   }
 
-  async syncStatus(ipfsHash) {
+  syncStatus(ipfsHash) {
     return {
       syncing: this.pinning[ipfsHash] === true,
       synced: this.pinned[ipfsHash] === true,
