@@ -361,7 +361,8 @@ export default class ProposalsTransport extends BaseTransport {
         createdAt: new Date(post.createdAt),
         updatedAt: new Date(post.updatedAt),
         author: this.api.createType('Membership', post.author),
-        authorId: this.api.createType('MemberId', post.authorId)
+        authorId: this.api.createType('MemberId', post.authorId),
+        text: this.replaceHistoricalProposalLinks(post.text)
       }))
     };
   }
