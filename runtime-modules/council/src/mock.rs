@@ -526,7 +526,7 @@ where
     ) {
         // check method returns expected result
         assert_eq!(
-            Module::<T>::candidate(InstanceMockUtils::<T>::mock_origin(origin), stake),
+            Module::<T>::announce_candidacy(InstanceMockUtils::<T>::mock_origin(origin), stake),
             expected_result,
         );
     }

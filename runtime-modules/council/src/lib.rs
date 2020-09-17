@@ -224,7 +224,7 @@ decl_module! {
 
         /// Subscribe candidate
         #[weight = 10_000_000]
-        pub fn candidate(origin, stake: Balance<T>) -> Result<(), Error<T>> {
+        pub fn announce_candidacy(origin, stake: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
             let (stage_data, candidate) = EnsureChecks::<T>::can_candidate(origin, &stake)?;
 
@@ -233,7 +233,7 @@ decl_module! {
             //
 
             // update state
-            Mutations::<T>::candidate(&stage_data, &candidate, &stake);
+            Mutations::<T>::announce_candidacy(&stage_data, &candidate, &stake);
 
             // emit event
             Self::deposit_event(RawEvent::NewCandidate(candidate));
@@ -475,7 +475,7 @@ impl<T: Trait> Mutations<T> {
     }
 
     /// Announce user's candidacy.
-    fn candidate(
+    fn announce_candidacy(
         stage_data: &CouncilStageAnnouncingOf<T>,
         candidate: &CandidateOf<T>,
         stake: &Balance<T>,
