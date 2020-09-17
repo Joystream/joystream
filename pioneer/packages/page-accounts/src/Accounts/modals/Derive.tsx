@@ -127,7 +127,7 @@ function Derive ({ className = '', from, onClose }: Props): React.ReactElement {
 
   const _onChangeRootPass = useCallback(
     (rootPass: string): void => {
-      setRootPass({ isRootValid: !!rootPass, rootPass });
+      setRootPass({ isRootValid: isPasswordValid(rootPass), rootPass });
       setIsLocked(({ isLocked }) => ({ isLocked, lockedError: null }));
     },
     []
