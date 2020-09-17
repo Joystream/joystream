@@ -25,14 +25,6 @@ export const GET_CHANNEL = gql`
   query GetChannel($id: ID!) {
     channel(id: $id) {
       ...ChannelFields
-    }
-  }
-  ${channelFieldsFragment}
-`
-export const GET_FULL_CHANNEL = gql`
-  query GetFullChannel($id: ID!) {
-    channel(id: $id) {
-      ...ChannelFields
       videos {
         ...VideoFields
       }

@@ -20,7 +20,7 @@ export const TitleSection = styled.div`
   padding-top: ${theme.sizes.b10}px;
 `
 export const Title = styled.h1`
-  font-size: ${theme.typography.sizes.h2}px;
+  font-size: ${theme.typography.sizes.h2};
   font-weight: bold;
   max-width: 320px;
   display: inline-block;

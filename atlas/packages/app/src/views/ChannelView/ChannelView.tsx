@@ -3,8 +3,8 @@ import { RouteComponentProps, useParams, navigate } from '@reach/router'
 import { useQuery } from '@apollo/client'
 
 import routes from '@/config/routes'
-import { GET_FULL_CHANNEL } from '@/api/queries/channels'
-import { GetFullChannel, GetFullChannelVariables } from '@/api/queries/__generated__/GetFullChannel'
+import { GET_CHANNEL } from '@/api/queries/channels'
+import { GetChannel, GetChannelVariables } from '@/api/queries/__generated__/GetChannel'
 import { VideoPreview } from '@/shared/components'
 
 import {
@@ -19,7 +19,7 @@ import {
 
 const ChannelView: React.FC<RouteComponentProps> = () => {
   const { id } = useParams()
-  const { loading, data } = useQuery<GetFullChannel, GetFullChannelVariables>(GET_FULL_CHANNEL, {
+  const { loading, data } = useQuery<GetChannel, GetChannelVariables>(GET_CHANNEL, {
     variables: { id },
   })
 
