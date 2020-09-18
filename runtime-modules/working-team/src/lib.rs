@@ -7,11 +7,14 @@
 //! ## Supported extrinsics
 //!
 //! - [add_opening](./struct.Module.html#method.add_opening) - Add an opening for a regular worker/lead role.
-//! - [apply_on_opening](./struct.Module.html#method.apply_on_opening) - Apply on a regular/lead opening.
+//! - [apply_on_opening](./struct.Module.html#method.apply_on_opening) - Apply on a regular worker/lead opening.
 //! - [fill_opening](./struct.Module.html#method.fill_opening) - Fill opening for regular worker/lead role.
-//! - [update_role_account](./struct.Module.html#method.update_role_account) -  Update the role account of the worker/lead.
-//! - [leave_role](./struct.Module.html#method.leave_role) - Leave the role by the active worker/lead.
-//! - [terminate_role](./struct.Module.html#method.terminate_role) - Terminate the worker/lead role.
+//! - [update_role_account](./struct.Module.html#method.update_role_account) -  Update the role account of the regular worker/lead.
+//! - [leave_role](./struct.Module.html#method.leave_role) - Leave the role by the active regular worker/lead.
+//! - [terminate_role](./struct.Module.html#method.terminate_role) - Terminate the regular worker/lead role.
+//! - [slash_stake](./struct.Module.html#method.slash_stake) - Slashes the regular worker/lead stake.
+//! - [decrease_stake](./struct.Module.html#method.decrease_stake) - Decreases the regular worker/lead stake and returns the remainder to the worker _role_account_.
+//! - [increase_stake](./struct.Module.html#method.increase_stake) - Increases the regular worker/lead stake.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -28,7 +31,7 @@ mod types;
 use codec::Codec;
 use frame_support::traits::{Get, LockIdentifier};
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue};
-use sp_arithmetic::traits::{BaseArithmetic, One};
+use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{Hash, MaybeSerialize, Member};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use system::ensure_signed;
@@ -83,6 +86,7 @@ decl_event!(
        ApplicationIdToWorkerIdMap = BTreeMap<<T as Trait<I>>::ApplicationId, TeamWorkerId<T>>,
        TeamWorkerId = TeamWorkerId<T>,
        <T as system::Trait>::AccountId,
+       Balance = BalanceOfCurrency<T>,
     {
         /// Emits on adding new job opening.
         /// Params:
@@ -129,6 +133,12 @@ decl_event!(
         /// Params:
         /// - leader worker id.
         TerminatedLeader(TeamWorkerId),
+
+        /// Emits on slashing the regular worker/lead stake.
+        /// Params:
+        /// - regular worker/lead id.
+        /// - actual slashed balance.
+        StakeSlashed(TeamWorkerId, Balance),
     }
 );
 
@@ -384,7 +394,7 @@ decl_module! {
             slash_stake: bool,
         ) {
             // Ensure lead is set or it is the council terminating the leader.
-            let is_sudo = checks::ensure_origin_for_terminate_worker::<T,I>(origin, worker_id)?;
+            let is_sudo = checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
 
             // Ensuring worker actually exists.
             let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
@@ -394,7 +404,7 @@ decl_module! {
             //
 
             if slash_stake {
-                T::StakingHandler::slash(T::LockId::get(), &worker.staking_account_id, None);
+                Self::slash(worker_id, &worker.staking_account_id, None)
             }
 
             Self::deactivate_worker(&worker_id, &worker);
@@ -407,6 +417,26 @@ decl_module! {
             };
 
             Self::deposit_event(event);
+        }
+
+        /// Slashes the regular worker stake, demands a leader origin. No limits, no actions on zero stake.
+        /// If slashing balance greater than the existing stake - stake is slashed to zero.
+        /// Require signed leader origin or the root (to slash the leader stake).
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn slash_stake(origin, worker_id: TeamWorkerId<T>, balance: BalanceOfCurrency<T>) {
+            // Ensure lead is set or it is the council slashing the leader.
+            checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
+
+            // Ensuring worker actually exists.
+            let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
+
+            ensure!(balance != <BalanceOfCurrency<T>>::zero(), Error::<T, I>::StakeBalanceCannotBeZero);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::slash(worker_id, &worker.staking_account_id, Some(balance))
         }
     }
 }
@@ -504,5 +534,16 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Self::decrease_active_worker_counter();
 
         T::StakingHandler::unlock(T::LockId::get(), &worker.staking_account_id);
+    }
+
+    // Slash the stake.
+    fn slash(
+        worker_id: TeamWorkerId<T>,
+        staking_account_id: &T::AccountId,
+        balance: Option<BalanceOfCurrency<T>>,
+    ) {
+        let slashed_balance =
+            T::StakingHandler::slash(T::LockId::get(), staking_account_id, balance);
+        Self::deposit_event(RawEvent::StakeSlashed(worker_id, slashed_balance));
     }
 }

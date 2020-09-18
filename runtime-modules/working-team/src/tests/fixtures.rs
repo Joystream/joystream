@@ -6,7 +6,7 @@ use system::{EventRecord, Phase, RawOrigin};
 
 use super::hiring_workflow::HiringWorkflow;
 use super::mock::{
-    Balances, Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance,
+    Balances, LockId, Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance,
 };
 use crate::{JobApplication, JobOpening, JobOpeningType, RawEvent, StakePolicy, TeamWorker};
 
@@ -17,6 +17,7 @@ impl EventFixture {
             u64,
             u64,
             BTreeMap<u64, u64>,
+            u64,
             u64,
             u64,
             TestWorkingTeamInstance,
@@ -321,12 +322,14 @@ impl FillOpeningFixture {
 
 pub struct HireLeadFixture {
     setup_environment: bool,
+    stake: Option<u64>,
 }
 
 impl Default for HireLeadFixture {
     fn default() -> Self {
         Self {
             setup_environment: true,
+            stake: None,
         }
     }
 }
@@ -338,19 +341,38 @@ impl HireLeadFixture {
         }
     }
 
+    pub fn with_stake(self, stake: u64) -> Self {
+        Self {
+            stake: Some(stake),
+            ..self
+        }
+    }
+
     pub fn hire_lead(self) -> u64 {
+        let stake_policy = self.stake.map(|amount| StakePolicy {
+            stake_amount: amount,
+            unstaking_period: 10,
+        });
+
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
             .with_opening_type(JobOpeningType::Leader)
+            .with_stake_policy(stake_policy)
             .add_application(b"leader".to_vec())
             .execute()
             .unwrap()
     }
 
     pub fn expect(self, error: DispatchError) {
+        let stake_policy = self.stake.map(|amount| StakePolicy {
+            stake_amount: amount,
+            unstaking_period: 10,
+        });
+
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
             .with_opening_type(JobOpeningType::Leader)
+            .with_stake_policy(stake_policy)
             .add_application(b"leader".to_vec())
             .expect(Err(error))
             .execute();
@@ -501,4 +523,74 @@ impl TerminateWorkerRoleFixture {
 pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
     let _ =
         <Balances as frame_support::traits::Currency<u64>>::deposit_creating(&account_id, balance);
+}
+
+pub struct SlashWorkerStakeFixture {
+    origin: RawOrigin<u64>,
+    worker_id: u64,
+    balance: u64,
+    account_id: u64,
+}
+
+impl SlashWorkerStakeFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        let account_id = 1;
+
+        let lead_account_id = get_current_lead_account_id();
+
+        Self {
+            origin: RawOrigin::Signed(lead_account_id),
+            worker_id,
+            balance: 10,
+            account_id,
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_balance(self, balance: u64) -> Self {
+        Self { balance, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_balance = Balances::usable_balance(&self.account_id);
+        let old_stake = get_stake_balance(&self.account_id);
+        let actual_result =
+            TestWorkingTeam::slash_stake(self.origin.clone().into(), self.worker_id, self.balance);
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            // stake decreased
+            assert_eq!(
+                old_stake,
+                get_stake_balance(&self.account_id) + self.balance
+            );
+
+            let new_balance = Balances::usable_balance(&self.account_id);
+
+            // worker balance unchanged
+            assert_eq!(new_balance, old_balance,);
+        }
+    }
+}
+
+pub(crate) fn get_stake_balance(account_id: &u64) -> u64 {
+    let locks = Balances::locks(account_id);
+
+    let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
+
+    existing_lock.map_or(0, |lock| lock.amount)
+}
+
+fn get_current_lead_account_id() -> u64 {
+    let leader_worker_id = TestWorkingTeam::current_lead();
+
+    if let Some(leader_worker_id) = leader_worker_id {
+        let leader = TestWorkingTeam::worker_by_id(leader_worker_id);
+        leader.role_account_id
+    } else {
+        0 // return invalid lead_account_id for testing
+    }
 }

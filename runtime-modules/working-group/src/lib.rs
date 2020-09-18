@@ -890,7 +890,7 @@ decl_module! {
         /// Require signed leader origin or the root (to slash the leader stake).
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn slash_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
-            // Ensure lead is set or it is the council terminating the leader.
+            // Ensure lead is set or it is the council slashing the leader.
             Self::ensure_origin_for_leader(origin, worker_id)?;
 
             // Ensuring worker actually exists.

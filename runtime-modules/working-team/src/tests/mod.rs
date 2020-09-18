@@ -4,6 +4,7 @@ mod mock;
 
 use system::RawOrigin;
 
+use crate::tests::fixtures::SlashWorkerStakeFixture;
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::STAKING_ACCOUNT_ID_FOR_FAILED_EXTERNAL_CHECK;
 use crate::{Error, JobOpeningType, RawEvent, StakePolicy, TeamWorker};
@@ -760,5 +761,130 @@ fn terminate_worker_with_slashing_works() {
         terminate_worker_role_fixture.call_and_assert(Ok(()));
 
         assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
+    });
+}
+
+#[test]
+fn slash_worker_stake_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+          Events are not emitted on block 0.
+          So any dispatchable calls made during genesis block formation will have no events emitted.
+          https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let account_id = 1;
+        let total_balance = 700;
+        let stake = 200;
+        let slash_stake = 100;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        let worker_id = HireRegularWorkerFixture::default().with_stake(stake).hire();
+
+        let slash_stake_fixture =
+            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(slash_stake);
+
+        slash_stake_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(worker_id, slash_stake));
+    });
+}
+
+#[test]
+fn slash_leader_stake_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let account_id = 1;
+        let total_balance = 700;
+        let stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        let leader_worker_id = HireLeadFixture::default().with_stake(stake).hire_lead();
+
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(leader_worker_id)
+            .with_balance(stake)
+            .with_origin(RawOrigin::Root);
+
+        slash_stake_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::StakeSlashed(leader_worker_id, stake));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let invalid_worker_id = 22;
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id)
+            .with_origin(RawOrigin::None);
+
+        slash_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn slash_leader_stake_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default().hire_lead();
+
+        let slash_stake_fixture =
+            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_origin(RawOrigin::None);
+
+        slash_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_zero_balance() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 700;
+        let stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        let worker_id = HireRegularWorkerFixture::default().with_stake(stake).hire();
+
+        let slash_stake_fixture =
+            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
+
+        slash_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::StakeBalanceCannotBeZero.into(),
+        ));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+        let invalid_worker_id = 11;
+
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+
+        slash_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::WorkerDoesNotExist.into(),
+        ));
+    });
+}
+
+#[test]
+fn slash_worker_stake_fails_with_not_set_lead() {
+    build_test_externalities().execute_with(|| {
+        let invalid_worker_id = 11;
+
+        let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+
+        slash_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::CurrentLeadNotSet.into(),
+        ));
     });
 }

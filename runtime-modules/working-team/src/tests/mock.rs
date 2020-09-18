@@ -157,11 +157,12 @@ impl StakingHandler<Test> for Test {
         lock_id: LockIdentifier,
         account_id: &<Test as system::Trait>::AccountId,
         amount: Option<BalanceOfCurrency<Test>>,
-    ) {
+    ) -> BalanceOfCurrency<Test> {
         let locks = Balances::locks(&account_id);
 
         let existing_lock = locks.iter().find(|lock| lock.id == lock_id);
 
+        let mut actually_slashed_balance = Default::default();
         if let Some(existing_lock) = existing_lock {
             Self::unlock(lock_id, &account_id);
 
@@ -176,7 +177,11 @@ impl StakingHandler<Test> for Test {
             }
 
             let _ = Balances::slash(&account_id, slashable_amount);
+
+            actually_slashed_balance = slashable_amount
         }
+
+        actually_slashed_balance
     }
 }
 

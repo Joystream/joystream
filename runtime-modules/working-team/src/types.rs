@@ -167,9 +167,12 @@ pub trait StakingHandler<T: system::Trait + GovernanceCurrency> {
     ) -> DispatchResult;
 
     /// Slash the specified balance on the account using specific lock identifier.
+    /// No limits, no actions on zero stake.
+    /// If slashing balance greater than the existing stake - stake is slashed to zero.
+    /// Returns actually slashed balance.
     fn slash(
         lock_id: LockIdentifier,
         account_id: &T::AccountId,
         amount: Option<BalanceOfCurrency<T>>,
-    );
+    ) -> BalanceOfCurrency<T>;
 }
