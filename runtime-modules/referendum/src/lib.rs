@@ -156,7 +156,7 @@ pub trait Trait<I: Instance>: system::Trait {
 
     /// Checks if user can unlock his stake from the given vote.
     /// Gives runtime an ability to penalize user for not revealing stake, etc.
-    fn can_unstake(vote: &CastVote<Self::Hash, Balance<Self, I>>) -> bool;
+    fn can_release_voting_stake(vote: &CastVote<Self::Hash, Balance<Self, I>>) -> bool;
 
     /// Gives runtime an ability to react on referendum result.
     fn process_results(winners: &[OptionResult<Self::VotePower>]);
@@ -252,8 +252,11 @@ decl_error! {
         /// Trying to reveal vote that was not cast
         VoteNotExisting,
 
+        /// Trying to vote multiple time in the same cycle
+        AlreadyVotedThisCycle,
+
         /// Invalid time to release the locked stake
-        InvalidTimeToRelease,
+        UnstakingVoteInSameCycle,
 
         /// Salt is too long
         SaltTooLong,
@@ -524,63 +527,17 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         option_id: &u64,
         cast_vote: CastVoteOf<T, I>,
     ) -> Result<(), Error<T, I>> {
-        /// Moves winner to new position in winners list. Expects `target_index` to be always smaller or equal to `current_index`.
-        fn move_winner<T: Trait<I>, I: Instance>(
-            current_winners: &[OptionResult<T::VotePower>],
-            current_index: usize,
-            target_index: usize,
-            new_vote_power: T::VotePower,
-        ) -> Vec<OptionResult<T::VotePower>> {
-            let tmp = [OptionResult {
-                vote_power: new_vote_power,
-                ..current_winners[current_index].clone()
-            }];
-            let list_size = current_winners.len();
-            let final_target = if target_index >= list_size {
-                list_size - 1
-            } else {
-                target_index
-            };
-
-            // item is in right spot? just update value
-            if final_target == current_index {
-                return [
-                    &current_winners[0..final_target],
-                    &tmp[..],
-                    &current_winners[final_target + 1..],
-                ]
-                .concat();
-            }
-
-            [
-                &current_winners[0..final_target],
-                &tmp[..],
-                &current_winners[final_target..current_index],
-                &current_winners[current_index + 1..current_winners.len()],
-            ]
-            .concat()
-        }
-
         /// Tries to insert option to the winners list
         fn try_winner_insert<T: Trait<I>, I: Instance>(
-            option_result: &OptionResult<T::VotePower>,
+            option_result: OptionResult<T::VotePower>,
             current_winners: &[OptionResult<T::VotePower>],
             winning_target_count: u64,
-        ) -> Option<Vec<OptionResult<T::VotePower>>> {
+        ) -> Vec<OptionResult<T::VotePower>> {
             let current_winners_count = current_winners.len();
 
-            // find where should the vote be inserted into winners list
-            let mut insert_index: usize = current_winners_count; // set initial index higher than last winner's index
-            for (index, value) in current_winners.iter().enumerate() {
-                if option_result.vote_power > value.vote_power {
-                    insert_index = index;
-                    break;
-                }
-            }
-
-            // no need to insert?
-            if insert_index >= winning_target_count as usize {
-                return None;
+            // if there are no winners right now return list with only current option
+            if current_winners_count == 0 {
+                return vec![option_result];
             }
 
             // check if option is already somewhere in list
@@ -592,56 +549,76 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
                 }
             }
 
-            // option is already in the list and only needs to change it's position?
-            if let Some(current_index) = already_existing_index {
-                return Some(move_winner::<T, I>(
-                    current_winners,
-                    current_index,
-                    insert_index,
-                    option_result.vote_power,
-                ));
+            let mut new_winners = current_winners.to_vec();
+
+            // insert record to list when needed and return it's index
+            let new_virtual_index = match already_existing_index {
+                // update record in list
+                Some(index) => {
+                    let old_option_total = T::get_option_power(&option_result.option_id);
+                    let new_option_total = old_option_total + option_result.vote_power;
+
+                    new_winners[index] = OptionResult {
+                        option_id: option_result.option_id,
+                        vote_power: new_option_total,
+                    };
+
+                    index
+                }
+                // put record to end of list
+                None => match current_winners_count as u64 == winning_target_count {
+                    // list already full
+                    true => {
+                        // don't change list when new record has less vote power then last winner in list
+                        if option_result.vote_power
+                            <= current_winners[current_winners_count - 1].vote_power
+                        {
+                            return current_winners.to_vec();
+                        }
+
+                        // update record in list
+                        let virtual_index = current_winners_count - 1;
+                        new_winners[virtual_index] = option_result;
+
+                        virtual_index
+                    }
+                    // list not full yet
+                    false => {
+                        // append winner to list
+                        new_winners.push(option_result);
+
+                        current_winners_count
+                    }
+                },
+            };
+
+            // resort list
+            for i in (1..=new_virtual_index).rev() {
+                if new_winners[i].vote_power > new_winners[i - 1].vote_power {
+                    new_winners.swap(i, i - 1);
+                }
             }
 
-            let tmp = [option_result.clone()];
-
-            // are we appending at the end of list?
-            if insert_index >= current_winners_count {
-                return Some([&current_winners, &tmp[..]].concat());
-            }
-
-            // insert into middle of list
-            Some(
-                [
-                    &current_winners[0..insert_index],
-                    &tmp[..],
-                    &current_winners[insert_index..current_winners_count],
-                ]
-                .concat()[0..winning_target_count as usize]
-                    .to_vec(),
-            )
+            new_winners.to_vec()
         }
 
         // prepare new values
         let vote_power = T::caclulate_vote_power(&account_id, &cast_vote.stake);
-        let old_option_total = T::get_option_power(option_id);
-        let new_option_total = old_option_total + vote_power;
         let option_result = OptionResult {
             option_id: *option_id,
-            vote_power: new_option_total,
+            vote_power,
         };
-        let new_winners = match try_winner_insert::<T, I>(
-            &option_result,
+        let new_winners = try_winner_insert::<T, I>(
+            option_result,
             &stage_data.intermediate_winners,
             stage_data.winning_target_count,
-        ) {
-            Some(tmp_winners) => tmp_winners,
-            None => stage_data.intermediate_winners.clone(),
-        };
+        );
         let new_stage_data = ReferendumStageRevealing {
             intermediate_winners: new_winners,
             ..stage_data
         };
 
+        // let runtime update option's vote power
         T::increase_option_power(option_id, &vote_power);
 
         // store revealed vote
@@ -693,6 +670,23 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
     }
 
     fn can_vote(origin: T::Origin, stake: &Balance<T, I>) -> Result<T::AccountId, Error<T, I>> {
+        fn get_existing_stake<T: Trait<I>, I: Instance>(
+            account_id: &T::AccountId,
+        ) -> Result<Balance<T, I>, Error<T, I>> {
+            if !Votes::<T, I>::contains_key(&account_id) {
+                return Ok(0.into());
+            }
+
+            let existing_vote = Votes::<T, I>::get(&account_id);
+
+            // don't allow repeated vote
+            if existing_vote.cycle_id == CurrentCycleId::<I>::get() {
+                return Err(Error::<T, I>::AlreadyVotedThisCycle);
+            }
+
+            Ok(existing_vote.stake)
+        }
+
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;
 
@@ -704,13 +698,18 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             _ => return Err(Error::ReferendumNotRunning),
         };
 
+        // get current lock balance if still staking for some past cycle
+        let existing_stake: Balance<T, I> = get_existing_stake(&account_id)?;
+
         // ensure stake is enough for voting
         if stake < &T::MinimumStake::get() {
             return Err(Error::InsufficientStake);
         }
 
+        let stake_diff = *stake - existing_stake;
+
         // ensure account can lock the stake
-        if T::Currency::total_balance(&account_id) < *stake {
+        if T::Currency::total_balance(&account_id) < stake_diff {
             return Err(Error::InsufficientBalanceToStakeCurrency);
         }
 
@@ -737,6 +736,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         let cast_vote = Self::ensure_vote_exists(&account_id)?;
 
+        // ask runtime if option is valid
         if !T::is_valid_option_id(vote_option_id) {
             return Err(Error::InvalidVote);
         }
@@ -768,21 +768,14 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         let cast_vote = Self::ensure_vote_exists(&account_id)?;
 
-        if !T::can_unstake(&cast_vote) {
-            return Err(Error::UnstakingForbidden);
-        }
-
-        // enable stake release in current cycle only during voting stage
+        // allow release only for past cycles
         if cycle_id == cast_vote.cycle_id {
-            match Stage::<T, I>::get() {
-                ReferendumStage::Voting(_) => Ok(()),
-                _ => Err(Error::InvalidTimeToRelease),
-            }?;
+            return Err(Error::UnstakingVoteInSameCycle);
         }
 
-        // eliminate possibility of unexpected cycle_id
-        if cycle_id < cast_vote.cycle_id {
-            return Err(Error::InvalidTimeToRelease);
+        // ask runtime if stake can be released
+        if !T::can_release_voting_stake(&cast_vote) {
+            return Err(Error::UnstakingForbidden);
         }
 
         Ok(account_id)

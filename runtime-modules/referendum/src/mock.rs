@@ -91,7 +91,7 @@ impl Trait<Instance0> for Runtime {
         stake
     }
 
-    fn can_unstake(_vote: &CastVote<Self::Hash, Balance<Self, Instance0>>) -> bool {
+    fn can_release_voting_stake(_vote: &CastVote<Self::Hash, Balance<Self, Instance0>>) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
             return false;
