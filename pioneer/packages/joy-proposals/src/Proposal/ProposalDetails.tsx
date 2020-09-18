@@ -56,7 +56,7 @@ export type ExtendedProposalStatus = {
   executionFailReason: string | null;
 }
 
-export function getExtendedStatus (proposal: ParsedProposal, bestNumber: BlockNumber | undefined): ExtendedProposalStatus {
+export function getExtendedStatus (proposal: ParsedProposal, bestNumber?: BlockNumber): ExtendedProposalStatus {
   const basicStatus: BasicProposalStatus = proposal.status.type;
   let expiresIn: number | null = null;
 
@@ -120,6 +120,7 @@ type ProposalDetailsProps = MyAccountProps & {
   proposalId: ProposalId;
   bestNumber?: BlockNumber;
   council?: Seat[];
+  historical?: boolean;
 };
 
 function ProposalDetails ({
@@ -129,11 +130,12 @@ function ProposalDetails ({
   myMemberId,
   iAmMember,
   council,
-  bestNumber
+  bestNumber,
+  historical
 }: ProposalDetailsProps) {
   const iAmCouncilMember = Boolean(iAmMember && council && council.some((seat) => seat.member.toString() === myAddress));
   const iAmProposer = Boolean(iAmMember && myMemberId !== undefined && proposal.proposerId === myMemberId.toNumber());
-  const extendedStatus = getExtendedStatus(proposal, bestNumber);
+  const extendedStatus = getExtendedStatus(proposal, historical ? undefined : bestNumber);
   const isVotingPeriod = extendedStatus.periodStatus === 'Voting period';
 
   return (
@@ -150,21 +152,23 @@ function ProposalDetails ({
           proposerId={ proposal.proposerId }
           isCancellable={ isVotingPeriod }
           cancellationFee={ proposal.cancellationFee }
+          historical={historical}
         />
         <ProposalDetailsVoting>
-          { iAmCouncilMember && (
+          { (iAmCouncilMember && !historical) && (
             <VotingSection
               proposalId={proposalId}
               memberId={ myMemberId as MemberId }
               isVotingPeriod={ isVotingPeriod }/>
           ) }
-          <Votes proposal={proposal}/>
+          <Votes proposal={proposal} historical={historical}/>
         </ProposalDetailsVoting>
       </ProposalDetailsMain>
       <ProposalDetailsDiscussion>
         <ProposalDiscussion
           proposalId={proposalId}
-          memberId={ iAmMember ? myMemberId : undefined }/>
+          memberId={ iAmMember ? myMemberId : undefined }
+          historical={historical}/>
       </ProposalDetailsDiscussion>
     </div>
   );
