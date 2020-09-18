@@ -1,18 +1,12 @@
 - name: run network
   block:
     - name: yarn install for joystream types
-      shell: yarn workspace @joystream/types install
-
-    - name: yarn build for joystream types
-      shell: yarn workspace @joystream/types build
-
-    - name: yarn install for network tests
-      shell: yarn workspace joystream-testing install
+      shell: yarn
 
     - name: run docker container
       docker_container:
         name: "joystream-node"
-        image: "joystream/node"
+        image: "joystream/node:alexandria"
         ports:
           - "9944:9944"
         entrypoint: ./node --dev --alice --validator --unsafe-ws-external --rpc-cors=all
