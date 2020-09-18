@@ -9,7 +9,7 @@ import { GetNewestChannels } from '@/api/queries/__generated__/GetNewestChannels
 import { GetVideos, GetVideosVariables } from '@/api/queries/__generated__/GetVideos'
 import { InfiniteVideoGrid } from '@/shared/components'
 
-const backgroundImg = 'https://source.unsplash.com/Nyvq2juw4_o/1920x1080'
+const backgroundImg = 'https://eu-central-1.linodeobjects.com/atlas-assets/hero.jpeg'
 
 const NEWEST_VIDEOS_COUNT = 8
 
