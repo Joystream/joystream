@@ -207,6 +207,7 @@ impl ApplyOnOpeningFixture {
             let expected_hash = <Test as system::Trait>::Hashing::hash(&self.description);
             let expected_application = JobApplication::<Test, TestWorkingTeamInstance> {
                 role_account_id: self.role_account_id,
+                staking_account_id: self.staking_account_id,
                 opening_id: self.opening_id,
                 member_id: self.member_id,
                 description_hash: expected_hash.as_ref().to_vec(),
@@ -242,6 +243,7 @@ pub struct FillOpeningFixture {
     opening_id: u64,
     successful_application_ids: BTreeSet<u64>,
     role_account_id: u64,
+    staking_account_id: u64,
 }
 
 impl FillOpeningFixture {
@@ -253,6 +255,7 @@ impl FillOpeningFixture {
             opening_id,
             successful_application_ids: application_ids,
             role_account_id: 1,
+            staking_account_id: 1,
         }
     }
 
@@ -296,6 +299,7 @@ impl FillOpeningFixture {
             let expected_worker = TeamWorker::<Test> {
                 member_id: 1,
                 role_account_id: self.role_account_id,
+                staking_account_id: self.staking_account_id,
             };
 
             let actual_worker = TestWorkingTeam::worker_by_id(worker_id);
@@ -455,6 +459,7 @@ impl LeaveWorkerRoleFixture {
 pub struct TerminateWorkerRoleFixture {
     worker_id: u64,
     origin: RawOrigin<u64>,
+    slash: bool,
 }
 
 impl TerminateWorkerRoleFixture {
@@ -462,15 +467,23 @@ impl TerminateWorkerRoleFixture {
         Self {
             worker_id,
             origin: RawOrigin::Signed(1),
+            slash: false,
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
     }
 
+    pub fn with_slash(self) -> Self {
+        Self {
+            slash: true,
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result =
-            TestWorkingTeam::terminate_role(self.origin.clone().into(), self.worker_id);
+            TestWorkingTeam::terminate_role(self.origin.clone().into(), self.worker_id, self.slash);
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {

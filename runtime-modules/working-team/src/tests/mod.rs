@@ -740,3 +740,25 @@ fn leave_worker_unlocks_the_stake() {
         assert_eq!(Balances::usable_balance(&account_id), total_balance);
     });
 }
+
+#[test]
+fn terminate_worker_with_slashing_works() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default().with_stake(stake).hire();
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_slash();
+
+        terminate_worker_role_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
+    });
+}

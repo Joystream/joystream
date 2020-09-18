@@ -254,7 +254,7 @@ decl_module! {
             //
 
             if let Some(amount) = stake {
-                T::StakingHandler::lock(T::LockId::get(), &role_account_id, amount);
+                T::StakingHandler::lock(T::LockId::get(), &staking_account_id, amount);
             }
 
             let hashed_description = T::Hashing::hash(&description);
@@ -262,6 +262,7 @@ decl_module! {
             // Make regular/lead application.
             let application = JobApplication::<T, I>::new(
                 &role_account_id,
+                &staking_account_id,
                 &opening_id,
                 &member_id,
                 hashed_description.as_ref().to_vec(),
@@ -380,6 +381,7 @@ decl_module! {
         pub fn terminate_role(
             origin,
             worker_id: TeamWorkerId<T>,
+            slash_stake: bool,
         ) {
             // Ensure lead is set or it is the council terminating the leader.
             let is_sudo = checks::ensure_origin_for_terminate_worker::<T,I>(origin, worker_id)?;
@@ -390,6 +392,10 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            if slash_stake {
+                T::StakingHandler::slash(T::LockId::get(), &worker.staking_account_id, None);
+            }
 
             Self::deactivate_worker(&worker_id, &worker);
 
@@ -437,8 +443,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 let new_worker_id = <NextWorkerId<T, I>>::get();
 
                 // Construct worker
-                let worker =
-                    TeamWorker::<T>::new(&application.member_id, &application.role_account_id);
+                let worker = TeamWorker::<T>::new(
+                    &application.member_id,
+                    &application.role_account_id,
+                    &application.staking_account_id,
+                );
 
                 // Store a worker
                 <WorkerById<T, I>>::insert(new_worker_id, worker);
@@ -494,6 +503,6 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         WorkerById::<T, I>::remove(worker_id);
         Self::decrease_active_worker_counter();
 
-        T::StakingHandler::unlock(T::LockId::get(), &worker.role_account_id);
+        T::StakingHandler::unlock(T::LockId::get(), &worker.staking_account_id);
     }
 }

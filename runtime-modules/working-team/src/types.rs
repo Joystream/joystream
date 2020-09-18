@@ -76,6 +76,9 @@ pub struct Application<AccountId, OpeningId, MemberId> {
     /// Account used to authenticate in this role.
     pub role_account_id: AccountId,
 
+    /// Account used to stake in this role.
+    pub staking_account_id: AccountId,
+
     /// Opening on which this application applies.
     pub opening_id: OpeningId,
 
@@ -92,12 +95,14 @@ impl<AccountId: Clone, OpeningId: Clone, MemberId: Clone>
     /// Creates a new job application using parameters.
     pub fn new(
         role_account_id: &AccountId,
+        staking_account_id: &AccountId,
         opening_id: &OpeningId,
         member_id: &MemberId,
         description_hash: Vec<u8>,
     ) -> Self {
         Application {
             role_account_id: role_account_id.clone(),
+            staking_account_id: staking_account_id.clone(),
             opening_id: opening_id.clone(),
             member_id: member_id.clone(),
             description_hash,
@@ -114,14 +119,22 @@ pub struct Worker<AccountId, MemberId> {
 
     /// Account used to authenticate in this role.
     pub role_account_id: AccountId,
+
+    /// Account used to stake in this role.
+    pub staking_account_id: AccountId,
 }
 
 impl<AccountId: Clone, MemberId: Clone> Worker<AccountId, MemberId> {
     /// Creates a new _TeamWorker_ using parameters.
-    pub fn new(member_id: &MemberId, role_account_id: &AccountId) -> Self {
+    pub fn new(
+        member_id: &MemberId,
+        role_account_id: &AccountId,
+        staking_account_id: &AccountId,
+    ) -> Self {
         Worker {
             member_id: member_id.clone(),
             role_account_id: role_account_id.clone(),
+            staking_account_id: staking_account_id.clone(),
         }
     }
 }
@@ -152,4 +165,11 @@ pub trait StakingHandler<T: system::Trait + GovernanceCurrency> {
         account_id: &T::AccountId,
         stake: &BalanceOfCurrency<T>,
     ) -> DispatchResult;
+
+    /// Slash the specified balance on the account using specific lock identifier.
+    fn slash(
+        lock_id: LockIdentifier,
+        account_id: &T::AccountId,
+        amount: Option<BalanceOfCurrency<T>>,
+    );
 }

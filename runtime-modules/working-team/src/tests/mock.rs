@@ -1,5 +1,5 @@
 use frame_support::traits::{
-    LockIdentifier, LockableCurrency, OnFinalize, OnInitialize, WithdrawReasons,
+    Currency, LockIdentifier, LockableCurrency, OnFinalize, OnInitialize, WithdrawReasons,
 };
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
@@ -151,6 +151,32 @@ impl StakingHandler<Test> for Test {
             return Err(DispatchError::Other("External check failed"));
         }
         Ok(())
+    }
+
+    fn slash(
+        lock_id: LockIdentifier,
+        account_id: &<Test as system::Trait>::AccountId,
+        amount: Option<BalanceOfCurrency<Test>>,
+    ) {
+        let locks = Balances::locks(&account_id);
+
+        let existing_lock = locks.iter().find(|lock| lock.id == lock_id);
+
+        if let Some(existing_lock) = existing_lock {
+            Self::unlock(lock_id, &account_id);
+
+            let mut slashable_amount = existing_lock.amount;
+            if let Some(amount) = amount {
+                if existing_lock.amount > amount {
+                    let new_amount = existing_lock.amount - amount;
+                    Self::lock(lock_id, &account_id, new_amount);
+
+                    slashable_amount = amount;
+                }
+            }
+
+            let _ = Balances::slash(&account_id, slashable_amount);
+        }
     }
 }
 
