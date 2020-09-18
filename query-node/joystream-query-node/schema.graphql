@@ -58,7 +58,7 @@ type Class @entity {
 	allEntityPropertyValuesLocked: Boolean!
 
 	"All properties that have been used on this class across different class schemas"
-	properties: [Property!]
+	properties: [Property!] @derivedFrom(field: "referencedClass")
 
 	"All schemas that are available for this class, think v0.0 Person, v.1.0 Person, etc."
 	schemas: [Schema!] @derivedFrom(field: "class")
@@ -91,12 +91,12 @@ enum PropertyType {
 	VECREFERENCE
 }
 
-"`Property` representation, related to a given `Class`"
+"'Property' representation, related to a given 'Class'"
 type Property @entity {
 	"Runtime identifier for property in class"
 	propertyID: BigInt!
 
-	"Type of `Property`"
+	"Type of 'Property'"
 	propertyType: PropertyType!
 
 	"If property value can be skipped, when adding entity schema support"
@@ -166,7 +166,7 @@ type Curator @entity {
 	groups: [CuratorGroup] @derivedFrom(field: "curators")
 }
 
-"A group, that consists of `curators` set"
+"A group, that consists of 'curators' set"
 type CuratorGroup @entity {
 	"Runtime identifier for group"
 	groupId: BigInt!
@@ -181,7 +181,7 @@ type CuratorGroup @entity {
 	maintainerOfClasses: [Class!] @derivedFrom(field: "maintainers")
 }
 
-"A voucher for `Entity` creation"
+"A voucher for 'Entity' creation"
 type EntityCreationVoucher @entity {
 	"Class to which voucher applies"
 	class: Class!
@@ -202,7 +202,7 @@ enum EntityControllerType {
 	MAINTAINERS
 }
 
-"Owner of an `Entity`"
+"Owner of an 'Entity'"
 type EntityController @entity {
 	"Current controller, which is initially set based on who created entity"
 	controllerType: EntityControllerType!
@@ -243,7 +243,7 @@ type Entity @entity {
 	"Total number of inbound references from another entities"
 	totalNumberOfInboundReferences: BigInt!
 
-	"Number of inbound references from another entities with `SameOwner` flag set"
+	"Number of inbound references from another entities with 'SameOwner' flag set"
 	sameOwnerInboundReferences: BigInt!
 }
 
@@ -282,7 +282,7 @@ union StoredValue = SingleValue | VectorValue
 
 type PropertyValue @entity {
 	"Runtime identifier of property value in entity"
-	propertyValueID: BigInteger!
+	propertyValueID: BigInt!
 
 	"Property to which this value corresponds"
 	property: Property!
