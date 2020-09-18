@@ -1,7 +1,16 @@
 - name: run network
   block:
-    - name: yarn install for joystream types
+    - name: yarn install
       shell: yarn
+
+      # is this step necessary?
+      # related to 'link' dependency? "@alexandria/types": "link:../../types"
+    - name: yarn install for network tests
+      shell: yarn workspace joystream-testing install
+
+    # TODO: build chainspec into "{{ playbook_dir }}/../../testnets/nicaea-exported-state"
+    # - name: build chainspec
+    # ...
 
     - name: run docker container
       docker_container:

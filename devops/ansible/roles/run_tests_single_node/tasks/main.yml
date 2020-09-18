@@ -1,7 +1,11 @@
 - name: run network
   block:
-    - name: yarn install for joystream types
+    - name: yarn install
       shell: yarn
+
+      # is this step necessary?
+    - name: yarn install for network tests
+      shell: yarn workspace joystream-testing install
 
     - name: run docker container
       docker_container:
