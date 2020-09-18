@@ -50,3 +50,13 @@ Historically, Atlas codebase was split between two packages - `app` and `@joystr
 ## Deploy Previews
 
 Each PR has deploy previews for both for Storybook and for the App on Chromia and Netlify respectively.
+
+## Mocked assets
+
+Mocked assets for Atlas are hosted on the Linode object storage provided by Jsgenesis.
+
+The storage is S3-compatible and can be accessed with any S3 client. The endpoint is `eu-central-1.linodeobjects.com` and a generated keypair must be used to access it.
+
+Example on how to configure `s3cmd` client for access can be found [here](https://www.linode.com/docs/platform/object-storage/how-to-use-object-storage/#s3cmd).
+
+When inside a directory with all the assets, you can run `s3cmd sync --acl-public . s3://atlas-assets` to sync your local directory with the remote storage.
