@@ -217,7 +217,8 @@ class Storage {
 
     this.ipfs = ipfsClient(this.options.ipfs.connect_options)
 
-    this.pins = {}
+    this.pinned = {}
+    this.pinning = {}
 
     this.ipfs.id((err, identity) => {
       if (err) {
@@ -367,27 +368,38 @@ class Storage {
   /*
    * Synchronize the given content ID
    */
-  async synchronize(contentId) {
+  async synchronize(contentId, callback) {
     const resolved = await this.resolveContentIdWithTimeout(this._timeout, contentId)
 
-    // validate resolved id is proper ipfs_cid, not null or empty string
+    // TODO: validate resolved id is proper ipfs_cid, not null or empty string
 
-    if (this.pins[resolved]) {
-      return
+    if (!this.pinning[resolved] && !this.pinned[resolved]) {
+      debug(`Pinning hash: ${resolved} content-id: ${contentId}`)
+      this.pinning[resolved] = true
+
+      // Callback passed to add() will be called on error or when the entire file
+      // is retrieved. So on success we consider the content synced.
+      this.ipfs.pin.add(resolved, { quiet: true, pin: true }, (err) => {
+        delete this.pinning[resolved]
+        if (err) {
+          debug(`Error Pinning: ${resolved}`)
+          callback && callback(err)
+        } else {
+          debug(`Pinned ${resolved}`)
+          this.pinned[resolved] = true
+          callback && callback(null, this.syncStatus(resolved))
+        }
+      })
+    } else {
+      callback && callback(null, this.syncStatus(resolved))
     }
+  }
 
-    debug(`Pinning ${resolved}`)
-
-    // This call blocks until file is retrieved..
-    this.ipfs.pin.add(resolved, { quiet: true, pin: true }, (err) => {
-      if (err) {
-        debug(`Error Pinning: ${resolved}`)
-        delete this.pins[resolved]
-      } else {
-        debug(`Pinned ${resolved}`)
-        // why aren't we doing this.pins[resolved] = true
-      }
-    })
+  syncStatus(ipfsHash) {
+    return {
+      syncing: this.pinning[ipfsHash] === true,
+      synced: this.pinned[ipfsHash] === true,
+    }
   }
 }
 
