@@ -17,8 +17,9 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-      - name: install toolchain
-        run: curl https://getsubstrate.io -sSf | bash -s -- --fast
+      # Not required when using docker images for joystream-node
+      # - name: install toolchain
+      #   run: curl https://getsubstrate.io -sSf | bash -s -- --fast
       - name: ansible build and tests
         run: |
           cd ./devops/ansible
