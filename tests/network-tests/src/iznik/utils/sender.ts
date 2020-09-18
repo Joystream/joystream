@@ -1,7 +1,6 @@
 import BN from 'bn.js'
 import { ApiPromise } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { AccountInfo } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { DbService } from '../services/dbService'
 
@@ -14,7 +13,7 @@ export class Sender {
   }
 
   private async getNonce(address: string): Promise<BN> {
-    const oncahinNonce: BN = (await this.api.query.system.account<AccountInfo>(address)).nonce
+    const oncahinNonce: BN = await this.api.rpc.system.accountNextIndex(address)
     let nonce: BN
     if (!this.db.hasNonce(address)) {
       nonce = oncahinNonce
@@ -55,13 +54,18 @@ export class Sender {
             })
             resolve()
           }
+
           if (result.status.isFuture) {
             console.log('nonce ' + nonce + ' for account ' + account.address + ' is in future')
+            console.log(tx.toHuman())
             this.clearNonce(account.address)
             reject(new Error('Extrinsic nonce is in future'))
           }
         })
         .catch((error) => {
+          // Transaction submission failed!
+          console.log(tx.toHuman())
+          this.clearNonce(account.address)
           reject(error)
         })
     })
