@@ -594,3 +594,57 @@ fn get_current_lead_account_id() -> u64 {
         0 // return invalid lead_account_id for testing
     }
 }
+
+pub struct DecreaseWorkerStakeFixture {
+    origin: RawOrigin<u64>,
+    worker_id: u64,
+    balance: u64,
+    account_id: u64,
+}
+
+impl DecreaseWorkerStakeFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        let account_id = 1;
+
+        let lead_account_id = get_current_lead_account_id();
+
+        Self {
+            origin: RawOrigin::Signed(lead_account_id),
+            worker_id,
+            balance: 10,
+            account_id,
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_balance(self, balance: u64) -> Self {
+        Self { balance, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_balance = Balances::usable_balance(&self.account_id);
+        let old_stake = get_stake_balance(&self.account_id);
+        let actual_result = TestWorkingTeam::decrease_stake(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.balance,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            // stake decreased
+            assert_eq!(
+                old_stake,
+                get_stake_balance(&self.account_id) + self.balance
+            );
+
+            let new_balance = Balances::usable_balance(&self.account_id);
+
+            // worker balance increased
+            assert_eq!(new_balance, old_balance + self.balance,);
+        }
+    }
+}

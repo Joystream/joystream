@@ -145,7 +145,7 @@ impl StakingHandler<Test> for Test {
 
     fn ensure_can_make_stake(
         account_id: &<Test as system::Trait>::AccountId,
-        _stake: &BalanceOfCurrency<Test>,
+        _stake: BalanceOfCurrency<Test>,
     ) -> DispatchResult {
         if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_EXTERNAL_CHECK {
             return Err(DispatchError::Other("External check failed"));
@@ -182,6 +182,30 @@ impl StakingHandler<Test> for Test {
         }
 
         actually_slashed_balance
+    }
+
+    fn ensure_can_decrease_stake(
+        _lock_id: LockIdentifier,
+        _account_id: &<Test as system::Trait>::AccountId,
+        amount: BalanceOfCurrency<Test>,
+    ) -> DispatchResult {
+        if amount > 1000 {
+            return Err(DispatchError::Other("External check failed"));
+        }
+        Ok(())
+    }
+
+    fn decrease_stake(
+        lock_id: LockIdentifier,
+        account_id: &<Test as system::Trait>::AccountId,
+        amount: BalanceOfCurrency<Test>,
+    ) -> DispatchResult {
+        Self::ensure_can_decrease_stake(lock_id, account_id, amount)?;
+
+        Self::unlock(lock_id, account_id);
+        Self::lock(lock_id, account_id, amount);
+
+        Ok(())
     }
 }
 

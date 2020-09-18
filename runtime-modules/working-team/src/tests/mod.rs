@@ -4,7 +4,7 @@ mod mock;
 
 use system::RawOrigin;
 
-use crate::tests::fixtures::SlashWorkerStakeFixture;
+use crate::tests::fixtures::{DecreaseWorkerStakeFixture, SlashWorkerStakeFixture};
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::STAKING_ACCOUNT_ID_FOR_FAILED_EXTERNAL_CHECK;
 use crate::{Error, JobOpeningType, RawEvent, StakePolicy, TeamWorker};
@@ -269,7 +269,7 @@ fn cannot_hire_muptiple_leaders() {
             .with_setup_environment(true)
             .with_opening_type(JobOpeningType::Leader)
             .add_default_application()
-            .add_application_with_origin(b"leader2".to_vec(), RawOrigin::Signed(2), 2)
+            .add_application_full(b"leader2".to_vec(), RawOrigin::Signed(2), 2, 2)
             .expect(Err(
                 Error::<Test, TestWorkingTeamInstance>::CannotHireMultipleLeaders.into(),
             ))
@@ -487,7 +487,7 @@ fn terminate_worker_role_fails_with_invalid_origin() {
 
         let worker_id = HiringWorkflow::default()
             .with_setup_environment(false)
-            .add_application_with_origin(b"worker_handle".to_vec(), RawOrigin::Signed(2), 2)
+            .add_application_full(b"worker_handle".to_vec(), RawOrigin::Signed(2), 2, 2)
             .execute()
             .unwrap();
 
@@ -775,7 +775,7 @@ fn slash_worker_stake_succeeds() {
         run_to_block(1);
 
         let account_id = 1;
-        let total_balance = 700;
+        let total_balance = 300;
         let stake = 200;
         let slash_stake = 100;
 
@@ -802,7 +802,7 @@ fn slash_leader_stake_succeeds() {
         run_to_block(1);
 
         let account_id = 1;
-        let total_balance = 700;
+        let total_balance = 300;
         let stake = 200;
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -847,7 +847,7 @@ fn slash_leader_stake_fails_with_invalid_origin() {
 fn slash_worker_stake_fails_with_zero_balance() {
     build_test_externalities().execute_with(|| {
         let account_id = 1;
-        let total_balance = 700;
+        let total_balance = 300;
         let stake = 200;
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -884,6 +884,147 @@ fn slash_worker_stake_fails_with_not_set_lead() {
         let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
         slash_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::CurrentLeadNotSet.into(),
+        ));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+        let new_stake_balance = 100;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        let worker_id = HireRegularWorkerFixture::default().with_stake(stake).hire();
+
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_balance(new_stake_balance);
+
+        decrease_stake_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::StakeDecreased(
+            worker_id,
+            new_stake_balance,
+        ));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_succeeds_for_leader() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireLeadFixture::default().with_stake(stake).hire_lead();
+
+        let new_stake = 100;
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::Root)
+            .with_balance(new_stake);
+
+        decrease_stake_fixture.call_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let worker_id = 22; // random worker id
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::None);
+
+        decrease_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_invalid_origin_for_leader() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireLeadFixture::default().hire_lead();
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_origin(RawOrigin::None);
+
+        decrease_stake_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_zero_balance() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default().with_stake(stake).hire();
+
+        let decrease_stake_fixture =
+            DecreaseWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
+
+        decrease_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::StakeBalanceCannotBeZero.into(),
+        ));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+        let invalid_worker_id = 11;
+
+        let decrease_stake_fixture =
+            DecreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+
+        decrease_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::WorkerDoesNotExist.into(),
+        ));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_external_check() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default().with_stake(stake).hire();
+
+        let invalid_new_stake = 2000;
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_balance(invalid_new_stake);
+
+        decrease_stake_fixture.call_and_assert(Err(DispatchError::Other("External check failed")));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_not_set_lead() {
+    build_test_externalities().execute_with(|| {
+        let invalid_worker_id = 11;
+
+        let decrease_stake_fixture =
+            DecreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
+
+        decrease_stake_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingTeamInstance>::CurrentLeadNotSet.into(),
         ));
     });

@@ -19,9 +19,11 @@ pub type MemberId<T> = <T as membership::Trait>::MemberId;
 /// Type identifier for a worker role, which must be same as membership actor identifier.
 pub type TeamWorkerId<T> = <T as membership::Trait>::ActorId;
 
-// ApplicationId - JobApplication - helper tuple.
-pub(crate) type ApplicationInfo<T, I> =
-    (<T as crate::Trait<I>>::ApplicationId, JobApplication<T, I>);
+// ApplicationId - JobApplication - helper struct.
+pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
+    pub application_id: T::ApplicationId,
+    pub application: JobApplication<T, I>,
+}
 
 /// Team worker type alias.
 pub type TeamWorker<T> = Worker<<T as system::Trait>::AccountId, MemberId<T>>;
@@ -163,7 +165,7 @@ pub trait StakingHandler<T: system::Trait + GovernanceCurrency> {
     /// Verifies that stake could be placed using given account.
     fn ensure_can_make_stake(
         account_id: &T::AccountId,
-        stake: &BalanceOfCurrency<T>,
+        stake: BalanceOfCurrency<T>,
     ) -> DispatchResult;
 
     /// Slash the specified balance on the account using specific lock identifier.
@@ -175,4 +177,18 @@ pub trait StakingHandler<T: system::Trait + GovernanceCurrency> {
         account_id: &T::AccountId,
         amount: Option<BalanceOfCurrency<T>>,
     ) -> BalanceOfCurrency<T>;
+
+    /// Verifies that the stake could be decreased to a given amount.
+    fn ensure_can_decrease_stake(
+        lock_id: LockIdentifier,
+        account_id: &T::AccountId,
+        new_stake: BalanceOfCurrency<T>,
+    ) -> DispatchResult;
+
+    /// Decreases the stake for to a given amount.
+    fn decrease_stake(
+        lock_id: LockIdentifier,
+        account_id: &T::AccountId,
+        new_stake: BalanceOfCurrency<T>,
+    ) -> DispatchResult;
 }

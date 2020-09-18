@@ -55,7 +55,10 @@ pub(crate) fn ensure_application_exists<T: Trait<I>, I: Instance>(
 
     let application = <crate::ApplicationById<T, I>>::get(application_id);
 
-    Ok((*application_id, application))
+    Ok(ApplicationInfo {
+        application_id: *application_id,
+        application,
+    })
 }
 
 // Check application: returns applicationId and application tuple if exists.

@@ -13,6 +13,7 @@ struct HiringWorkflowApplication {
     worker_handle: Vec<u8>,
     origin: RawOrigin<u64>,
     member_id: u64,
+    staking_account_id: u64,
 }
 
 pub struct HiringWorkflow {
@@ -71,14 +72,15 @@ impl HiringWorkflow {
     }
 
     pub fn add_application(self, worker_handle: Vec<u8>) -> Self {
-        self.add_application_with_origin(worker_handle, RawOrigin::Signed(1), 1)
+        self.add_application_full(worker_handle, RawOrigin::Signed(1), 1, 1)
     }
 
-    pub fn add_application_with_origin(
+    pub fn add_application_full(
         self,
         worker_handle: Vec<u8>,
         origin: RawOrigin<u64>,
         member_id: u64,
+        staking_account_id: u64,
     ) -> Self {
         let mut applications = self.applications;
         applications.push(HiringWorkflowApplication {
@@ -86,6 +88,7 @@ impl HiringWorkflow {
             stake: self.stake_policy.clone().map(|policy| policy.stake_amount),
             origin,
             member_id,
+            staking_account_id,
         });
 
         Self {
@@ -142,6 +145,7 @@ impl HiringWorkflow {
             let apply_on_worker_opening_fixture =
                 ApplyOnOpeningFixture::default_for_opening_id(opening_id)
                     .with_stake(application.stake)
+                    .with_stake_account_id(application.staking_account_id)
                     .with_text(application.worker_handle)
                     .with_origin(application.origin, application.member_id);
 
