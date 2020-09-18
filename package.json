@@ -9,6 +9,7 @@
     "postinstall": "yarn workspace @joystream/types build",
     "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
     "cargo-build": "scripts/cargo-build.sh",
+    "dev-chain": "scripts/run-dev-chain.sh",
     "lint": "yarn workspaces run lint"
   },
   "workspaces": [
