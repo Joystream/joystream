@@ -2,8 +2,7 @@ import React from 'react';
 import { Table, Popup, Icon } from 'semantic-ui-react';
 import styled from 'styled-components';
 
-import { TokenomicsData } from '../lib/getTokenomicsData';
-import { StatusServerData } from './index';
+import { TokenomicsData, StatusServerData } from '@polkadot/joy-utils/src/types/tokenomics';
 
 const StyledTableRow = styled(Table.Row)`
   .help-icon{
@@ -25,7 +24,7 @@ const OverviewTableRow: React.FC<{item: string; value: string; help?: string}> =
           {item}
           {help &&
             <Popup
-              trigger={<Icon className='help-icon' name="help circle" color="grey"/>}
+              trigger={<Icon className='help-icon' name='help circle' color='grey'/>}
               content={help}
               position='right center'
             />}
@@ -37,7 +36,7 @@ const OverviewTableRow: React.FC<{item: string; value: string; help?: string}> =
 };
 
 const OverviewTable: React.FC<{data?: TokenomicsData; statusData?: StatusServerData | null}> = ({ data, statusData }) => {
-  const displayStatusData = (val?: string, unit?: string): string => (
+  const displayStatusData = (val: string, unit: string): string => (
     statusData === null ? 'Data currently unavailable...' : statusData ? `${val} ${unit}` : 'Loading...'
   );
 

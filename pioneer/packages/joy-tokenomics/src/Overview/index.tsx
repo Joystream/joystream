@@ -1,12 +1,12 @@
 import React from 'react';
-import getTokenomicsData from '../lib/getTokenomicsData';
-import { api } from '@polkadot/react-api';
 import OverviewTable from './OverviewTable';
 import SpendingAndStakeDistributionTable from './SpendingAndStakeDistributionTable';
 import TokenomicsCharts from './TokenomicsCharts';
 import styled from 'styled-components';
 
 import usePromise from '@polkadot/joy-utils/react/hooks/usePromise';
+import { useTransport } from '@polkadot/joy-utils/react/hooks';
+import { StatusServerData } from '@polkadot/joy-utils/src/types/tokenomics';
 
 const SpendingAndStakeContainer = styled('div')`
   display:flex;
@@ -38,28 +38,21 @@ const StyledTokenomicsCharts = styled(TokenomicsCharts)`
   }
 `;
 
-export type StatusServerData = {
-  dollarPool: {
-    size: number;
-    replenishAmount: number;
-  };
-  price: string;
-}
-
-const Overview: React.FC<{}> = () => {
-  const [tokenomicsData] = usePromise(() => getTokenomicsData(api), undefined, []);
-  const [statusDataValue, statusDataError] = usePromise(() => fetch('https://status.joystream.org/status').then((res) => res.json()), undefined, []);
+const Overview: React.FC = () => {
+  const transport = useTransport();
+  const [statusDataValue, statusDataError] = usePromise<StatusServerData | undefined>(() => fetch('https://status.joystream.org/status').then((res) => res.json().then((data) => data as StatusServerData)), undefined, []);
+  const [tokenomicsData] = usePromise(() => transport.tokenomics.getTokenomicsData(), undefined, []);
 
   return (
-        <>
-          <Title> Overview </Title>
-          <OverviewTable data={tokenomicsData} statusData={statusDataError ? null : statusDataValue}/>
-          <Title> Spending and Stake Distribution </Title>
-          <SpendingAndStakeContainer>
-            <SpendingAndStakeDistributionTable data={tokenomicsData} statusData={statusDataError ? null : statusDataValue}/>
-            <StyledTokenomicsCharts data={tokenomicsData} />
-          </SpendingAndStakeContainer>
-        </>
+    <>
+      <Title> Overview </Title>
+      <OverviewTable data={tokenomicsData} statusData={statusDataError ? null : statusDataValue}/>
+      <Title> Spending and Stake Distribution </Title>
+      <SpendingAndStakeContainer>
+        <SpendingAndStakeDistributionTable data={tokenomicsData} statusData={statusDataError ? null : statusDataValue}/>
+        <StyledTokenomicsCharts data={tokenomicsData} />
+      </SpendingAndStakeContainer>
+    </>
   );
 };
 

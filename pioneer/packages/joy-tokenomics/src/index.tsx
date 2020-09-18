@@ -1,33 +1,37 @@
 import React from 'react';
-import translate from './translate';
+import { useTranslation } from './translate';
 import { Route, Switch } from 'react-router';
 import { Tabs } from '@polkadot/react-components';
 import Overview from './Overview';
-
 import { AppProps, I18nProps } from '@polkadot/react-components/types';
+import { TransportProvider } from '@polkadot/joy-utils/react/context';
 
 interface Props extends AppProps, I18nProps {}
 
-function App ({ basePath, t }: Props): React.ReactElement<Props> {
+function App ({ basePath }: Props): React.ReactElement<Props> {
+  const { t } = useTranslation();
+
   return (
-    <main>
-      <header>
-        <Tabs
-          basePath={basePath}
-          items={[
-            {
-              isRoot: true,
-              name: 'overview',
-              text: t('Tokenomics')
-            }
-          ]}
-        />
-      </header>
-      <Switch>
-        <Route component={Overview} />
-      </Switch>
-    </main>
+    <TransportProvider>
+      <main>
+        <header>
+          <Tabs
+            basePath={basePath}
+            items={[
+              {
+                isRoot: true,
+                name: 'overview',
+                text: t('Tokenomics')
+              }
+            ]}
+          />
+        </header>
+        <Switch>
+          <Route component={Overview} />
+        </Switch>
+      </main>
+    </TransportProvider>
   );
 }
 
-export default translate(App);
+export default App;

@@ -3,13 +3,13 @@ import { Table, Popup, Icon } from 'semantic-ui-react';
 import styled from 'styled-components';
 import { useWindowDimensions } from '../../../joy-utils/src/react/hooks';
 
-import { TokenomicsData } from '../lib/getTokenomicsData';
-import { StatusServerData } from './index';
+import { TokenomicsData, StatusServerData } from '@polkadot/joy-utils/src/types/tokenomics';
 
 const round = (num: number): number => Math.round((num + Number.EPSILON) * 100) / 100;
 
 const applyCss = (columns: number[]): string => {
   let columnString = '';
+
   columns.forEach((column, index) => {
     if (index === 0) {
       columnString += `td:nth-of-type(${column}), th:nth-of-type(${column})`;
@@ -17,6 +17,7 @@ const applyCss = (columns: number[]): string => {
       columnString += ` ,td:nth-of-type(${column}), th:nth-of-type(${column})`;
     }
   });
+
   return columnString;
 };
 
@@ -101,7 +102,7 @@ const SpendingAndStakeTableRow: React.FC<{
       <Table.Cell>
         {active ? <strong>{role}</strong> : role}
         {helpContent && <Popup
-          trigger={<Icon className='help-icon' name="help circle" color="grey"/>}
+          trigger={<Icon className='help-icon' name='help circle' color='grey'/>}
           content={helpContent}
           position='right center'
         />}
@@ -118,7 +119,7 @@ const SpendingAndStakeTableRow: React.FC<{
   );
 };
 
-const SpendingAndStakeDistributionTable: React.FC<{data: TokenomicsData | undefined; statusData: StatusServerData | undefined | null}> = ({ data, statusData }) => {
+const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; statusData?: StatusServerData | null}> = ({ data, statusData }) => {
   const { width } = useWindowDimensions();
 
   const displayStatusData = (group: 'validators' | 'council' | 'storageProviders' | 'storageProviderLead' | 'contentCurators', action: 'rewardsPerWeek' | 'totalStake'): string | undefined => {
