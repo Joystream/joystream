@@ -10,6 +10,7 @@ import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/
 import { ParsedPost, DiscussionContraints } from '@polkadot/joy-utils/types/proposals';
 import { ThreadId } from '@joystream/types/common';
 import { MemberId } from '@joystream/types/members';
+import { Loading } from '@polkadot/joy-utils/react/components/PromiseComponent';
 
 type OuterProps = {
   post?: ParsedPost;
@@ -86,36 +87,42 @@ const DiscussionPostFormInner = (props: InnerProps) => {
           rows={5}
           placeholder='Content of the post...' />
       </LabelledField>
-      <LabelledField invisibleLabel {...props} flex>
-        <TxButton
-          type='submit'
-          label={isEditForm ? 'Update' : 'Add Post'}
-          isDisabled={isSubmitting || !isValid}
-          params={buildTxParams()}
-          tx={isEditForm ? 'proposalsDiscussion.updatePost' : 'proposalsDiscussion.addPost'}
-          onClick={onSubmit}
-          txFailedCb={onTxFailed}
-          txSuccessCb={onTxSuccess}
-        />
-        { isEditForm ? (
-          <Button
-            type='button'
-            size='large'
-            disabled={isSubmitting}
-            color='red'
-            onClick={() => onSuccess()}
-            content='Cancel'
-          />
-        ) : (
-          <Button
-            type='button'
-            size='large'
-            disabled={isSubmitting}
-            onClick={() => resetForm()}
-            content='Clear'
-          />
-        ) }
-      </LabelledField>
+      {
+        isSubmitting
+          ? <Loading text={'Submitting...'}/>
+          : (
+            <LabelledField invisibleLabel {...props} flex>
+              <TxButton
+                type='submit'
+                label={isEditForm ? 'Update' : 'Add Post'}
+                isDisabled={isSubmitting || !isValid}
+                params={buildTxParams()}
+                tx={isEditForm ? 'proposalsDiscussion.updatePost' : 'proposalsDiscussion.addPost'}
+                onClick={onSubmit}
+                txFailedCb={onTxFailed}
+                txSuccessCb={onTxSuccess}
+              />
+              { isEditForm ? (
+                <Button
+                  type='button'
+                  size='large'
+                  disabled={isSubmitting}
+                  color='red'
+                  onClick={() => onSuccess()}
+                  content='Cancel'
+                />
+              ) : (
+                <Button
+                  type='button'
+                  size='large'
+                  disabled={isSubmitting}
+                  onClick={() => resetForm()}
+                  content='Clear'
+                />
+              ) }
+            </LabelledField>
+          )
+      }
     </Form>
   );
 };
