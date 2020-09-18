@@ -10,14 +10,17 @@ import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseCompon
 
 type VotesProps = {
   proposal: ParsedProposal;
+  historical?: boolean;
 };
 
-export default function Votes ({ proposal: { id, votingResults } }: VotesProps) {
+export default function Votes ({ proposal: { id, votingResults }, historical }: VotesProps) {
   const transport = useTransport();
   const [votes, error, loading] = usePromise<ProposalVotes | null>(
-    () => transport.proposals.votes(id),
+    () => historical
+      ? transport.proposals.historicalVotes(id)
+      : transport.proposals.votes(id),
     null,
-    [votingResults]
+    [votingResults, historical]
   );
 
   return (
