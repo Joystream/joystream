@@ -207,6 +207,30 @@ impl StakingHandler<Test> for Test {
 
         Ok(())
     }
+
+    fn ensure_can_increase_stake(
+        _lock_id: LockIdentifier,
+        _account_id: &<Test as system::Trait>::AccountId,
+        amount: BalanceOfCurrency<Test>,
+    ) -> DispatchResult {
+        if amount > 1000 {
+            return Err(DispatchError::Other("External check failed"));
+        }
+        Ok(())
+    }
+
+    fn increase_stake(
+        lock_id: LockIdentifier,
+        account_id: &<Test as system::Trait>::AccountId,
+        amount: BalanceOfCurrency<Test>,
+    ) -> DispatchResult {
+        Self::ensure_can_decrease_stake(lock_id, account_id, amount)?;
+
+        Self::unlock(lock_id, account_id);
+        Self::lock(lock_id, account_id, amount);
+
+        Ok(())
+    }
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {

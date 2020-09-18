@@ -145,6 +145,12 @@ decl_event!(
         /// - regular worker/lead id.
         /// - new stake amount
         StakeDecreased(TeamWorkerId, Balance),
+
+        /// Emits on increasing the regular worker/lead stake.
+        /// Params:
+        /// - regular worker/lead id.
+        /// - new stake amount
+        StakeIncreased(TeamWorkerId, Balance),
     }
 );
 
@@ -478,6 +484,38 @@ decl_module! {
             )?;
 
             Self::deposit_event(RawEvent::StakeDecreased(worker_id, new_stake_balance));
+        }
+
+        /// Increases the regular worker/lead stake, demands a worker origin.
+        /// Locks tokens from the worker staking_account_id equal to new stake. No limits on the stake.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn increase_stake(origin, worker_id: TeamWorkerId<T>, new_stake_balance: BalanceOfCurrency<T>) {
+            // Checks worker origin and worker existence.
+            let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
+
+            ensure!(
+                new_stake_balance != <BalanceOfCurrency<T>>::zero(),
+                Error::<T, I>::StakeBalanceCannotBeZero
+            );
+
+            T::StakingHandler::ensure_can_increase_stake(
+                T::LockId::get(),
+                &worker.staking_account_id,
+                new_stake_balance,
+            )?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // This external module call both checks and mutates the state.
+            T::StakingHandler::increase_stake(
+                T::LockId::get(),
+                &worker.staking_account_id,
+                new_stake_balance,
+            )?;
+
+            Self::deposit_event(RawEvent::StakeIncreased(worker_id, new_stake_balance));
         }
     }
 }

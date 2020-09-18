@@ -191,4 +191,18 @@ pub trait StakingHandler<T: system::Trait + GovernanceCurrency> {
         account_id: &T::AccountId,
         new_stake: BalanceOfCurrency<T>,
     ) -> DispatchResult;
+
+    /// Verifies that the stake could be increased to a given amount.
+    fn ensure_can_increase_stake(
+        lock_id: LockIdentifier,
+        account_id: &T::AccountId,
+        new_stake: BalanceOfCurrency<T>,
+    ) -> DispatchResult;
+
+    /// Increases the stake for to a given amount.
+    fn increase_stake(
+        lock_id: LockIdentifier,
+        account_id: &T::AccountId,
+        new_stake: BalanceOfCurrency<T>,
+    ) -> DispatchResult;
 }
