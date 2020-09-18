@@ -9,7 +9,7 @@
 
     - name: run docker container
       docker_container:
-        name: "joystream-node"
+        name: "joystream-node-testing-a"
         image: "joystream/node:alexandria"
         ports:
           - "9944:9944"
@@ -27,5 +27,5 @@
 
     - name: stop docker container
       docker_container:
-        name: "joystream-node-testing"
+        name: "joystream-node-testing-a"
         state: absent
