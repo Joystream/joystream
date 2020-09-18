@@ -12,6 +12,7 @@ const cpx = require('cpx');
 const fs = require('fs');
 const mkdirp = require('mkdirp');
 const path = require('path');
+const IS_LIVE = !(process.env.IS_LIVE === false || process.env.IS_LIVE === 'false');
 
 const CPX = ['css', 'gif', 'hbs', 'jpg', 'js', 'png', 'svg', 'd.ts']
   .map((ext) => `src/**/*.${ext}`)
@@ -55,7 +56,8 @@ async function buildJs (dir) {
 
     if (fs.existsSync(path.join(process.cwd(), 'public'))) {
       buildWebpack(dir);
-    } else {
+      // Skip building anything else if we're not going for a LIVE build
+    } else if (IS_LIVE) {
       await buildBabel(dir);
     }
 
@@ -66,6 +68,8 @@ async function buildJs (dir) {
 async function main () {
   execSync('yarn polkadot-dev-clean-build');
 
+  console.log('IS_LIVE:', process.env.IS_LIVE);
+
   // By default the entry point is pioneer/, so here we move to pioneer/packages
   process.chdir('packages');
 
@@ -74,7 +78,9 @@ async function main () {
   // This caused the build folder to end up in the root directory of the monorepo (instead of "pioneer/build")
   //
   // execSync('yarn polkadot-exec-tsc --emitDeclarationOnly --outdir ../build');
-  execSync('yarn tsc --emitDeclarationOnly --outdir ./build');
+  if (IS_LIVE) {
+    execSync('yarn tsc --emitDeclarationOnly --outdir ./build');
+  }
 
   const dirs = fs
     .readdirSync('.')
