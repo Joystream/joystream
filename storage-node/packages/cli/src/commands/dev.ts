@@ -215,4 +215,102 @@ const init = async (api: RuntimeApi): Promise<any> => {
   return check(api)
 }
 
-export { init, check, aliceKeyPair, roleKeyPair, developmentPort, vstoreInit }
+// Using sudo create initial storage lead and worker with given keys taken from env variables.
+// Used to quickly setup a storage provider on a new chain before a council is ready.
+const makeMemberInitialLeadAndStorageProvider = async (api: RuntimeApi): Promise<any> => {
+  const sudoKey = getKeyFromAddressOrSuri(api, process.env.SUDO_URI)
+  const memberId = parseInt(process.env.MEMBER_ID)
+  const memberController = getKeyFromAddressOrSuri(api, process.env.MEMBER_URI).address
+  const leadAccount = memberController
+  const workerAccount = process.env.WORKER_ACCOUNT
+
+  // make sure alice is sudo - indirectly checking this is a dev chain
+  const sudo = await api.identities.getSudoAccount()
+
+  if (!sudo.eq(sudoKey.address)) {
+    throw new Error('Provided SUDO_URI is not the chain sudo')
+  }
+
+  debug(`Creating Leader with role key: ${leadAccount}`)
+  debug('Creating Lead Opening')
+  const leadOpeningId = await api.workers.devAddStorageLeadOpening(getLeadOpeningInfo())
+  debug('Applying')
+  const leadApplicationId = await api.workers.devApplyOnOpening(leadOpeningId, memberId, memberController, leadAccount)
+  debug('Starting Review')
+  api.workers.devBeginLeadOpeningReview(leadOpeningId)
+  debug('Filling Opening')
+  await api.workers.devFillLeadOpening(leadOpeningId, leadApplicationId)
+
+  const setLeadAccount = await api.workers.getLeadRoleAccount()
+  if (!setLeadAccount.eq(leadAccount)) {
+    throw new Error('Setting Lead failed!')
+  }
+
+  // Create a storage openinging, apply, start review, and fill opening
+  debug(`Making ${workerAccount} account a storage provider.`)
+
+  const openingId = await api.workers.devAddStorageOpening(getWorkerOpeningInfo())
+  debug(`Created new storage opening: ${openingId}`)
+
+  const applicationId = await api.workers.devApplyOnOpening(openingId, memberId, memberController, workerAccount)
+  debug(`Applied with application id: ${applicationId}`)
+
+  api.workers.devBeginStorageOpeningReview(openingId)
+
+  debug(`Filling storage opening.`)
+  const providerId = await api.workers.devFillStorageOpening(openingId, applicationId)
+
+  debug(`Assigned storage provider id: ${providerId}`)
+}
+
+export { init, check, aliceKeyPair, roleKeyPair, developmentPort, vstoreInit, makeMemberInitialLeadAndStorageProvider }
+
+function getLeadOpeningInfo() {
+  return `{
+    "version": 1,
+    "headline": "Initial Storage Lead",
+    "job": {
+      "title": "Bootstrap Lead",
+      "description": "Starting opportunity to bootstrap the network"
+    },
+    "application": {
+      "sections": []
+    },
+    "reward": "None",
+    "creator": {
+      "membership": {
+        "handle": "mokhtar"
+      }
+    },
+    "process": {
+      "details": [
+        "automated"
+      ]
+    }
+  }`
+}
+
+function getWorkerOpeningInfo() {
+  return `{
+    "version": 1,
+    "headline": "Initial Storage Worker",
+    "job": {
+      "title": "Bootstrap Worker",
+      "description": "Starting opportunity to bootstrap the network"
+    },
+    "application": {
+      "sections": []
+    },
+    "reward": "None",
+    "creator": {
+      "membership": {
+        "handle": "mokhtar"
+      }
+    },
+    "process": {
+      "details": [
+        "automated"
+      ]
+    }
+  }`
+}

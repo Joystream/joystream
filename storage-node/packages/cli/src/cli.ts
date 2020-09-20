@@ -78,6 +78,9 @@ const commands = {
   'vstore-init': async (api, suri: string) => {
     return dev.vstoreInit(api, suri)
   },
+  'sudo-create-sp': async (api) => {
+    return dev.makeMemberInitialLeadAndStorageProvider(api)
+  },
   // Uploads the file to the system. Registers new data object in the runtime, obtains proper colossus instance URL.
   upload: async (
     api: any,
