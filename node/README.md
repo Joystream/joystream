@@ -49,7 +49,7 @@ this script will build and run a fresh new local development chain (purging exis
 Use the `--chain` argument, and specify the path to the genesis `chain.json` file for that public network. The JSON "chain spec" files for Joystream public networks can be found in [../testnets/](../testnets/).
 
 ```bash
-./target/release/joystream-node --chain testnets/rome.json
+./target/release/joystream-node --chain testnets/joy-tesnet-4.json
 ```
 
 ### Tests and code quality
@@ -57,7 +57,7 @@ Use the `--chain` argument, and specify the path to the genesis `chain.json` fil
 Running unit tests:
 
 ```bash
-cargo test --all
+cargo test --release --all
 ```
 
 Running full suite of checks, tests, formatting and linting:
@@ -75,7 +75,7 @@ cargo fmt --all
 ### Integration tests
 
 ```bash
-./scripts/run-test-chain.sh
+./scripts/run-dev-chain.sh
 yarn workspace joystream-testing test
 ```
 
@@ -91,8 +91,8 @@ This will install the executable `joystream-node` to your `~/.cargo/bin` folder,
 cargo install joystream-node --path node/
 ```
 
-Now you can run and connect to the Rome testnet:
+Now you can run and connect to the testnet:
 
 ```bash
-joystream-node --chain testnets/rome.json
+joystream-node --chain testnets/joy-testnet-4.json
 ```
