@@ -9,7 +9,7 @@ import 'semantic-ui-css/semantic.min.css';
 import '@polkadot/react-components/i18n';
 
 import queryString from 'query-string';
-import React, { Suspense } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom';
 import { HashRouter } from 'react-router-dom';
 import store from 'store';
@@ -83,28 +83,26 @@ if (!rootElement) {
 }
 
 ReactDOM.render(
-  <Suspense fallback="...">
-    <MyAccountProvider>
-      <Queue>
-        <QueueConsumer>
-          {({ queuePayload, queueSetTxStatus }): React.ReactNode => (
-            <Api queuePayload={queuePayload} queueSetTxStatus={queueSetTxStatus} url={wsEndpoint}>
-              <MyMembershipProvider>
-                <BlockAuthors>
-                  <Events>
-                    <HashRouter>
-                      <ThemeProvider theme={theme}>
-                        <Apps />
-                      </ThemeProvider>
-                    </HashRouter>
-                  </Events>
-                </BlockAuthors>
-              </MyMembershipProvider>
-            </Api>
-          )}
-        </QueueConsumer>
-      </Queue>
-    </MyAccountProvider>
-  </Suspense>,
+  <MyAccountProvider>
+    <Queue>
+      <QueueConsumer>
+        {({ queuePayload, queueSetTxStatus }): React.ReactNode => (
+          <Api queuePayload={queuePayload} queueSetTxStatus={queueSetTxStatus} url={wsEndpoint}>
+            <MyMembershipProvider>
+              <BlockAuthors>
+                <Events>
+                  <HashRouter>
+                    <ThemeProvider theme={theme}>
+                      <Apps />
+                    </ThemeProvider>
+                  </HashRouter>
+                </Events>
+              </BlockAuthors>
+            </MyMembershipProvider>
+          </Api>
+        )}
+      </QueueConsumer>
+    </Queue>
+  </MyAccountProvider>,
   rootElement
 );

@@ -4,7 +4,7 @@
 
 import { I18nProps } from '@polkadot/react-components/types';
 
-import React, { useContext } from 'react';
+import React, {Suspense, useContext} from 'react';
 import { withRouter, RouteComponentProps } from 'react-router';
 import styled from 'styled-components';
 import routing from '@polkadot/apps-routing';
@@ -57,11 +57,13 @@ function Content ({ className, location, t }: Props): React.ReactElement<Props> 
         : (
           <Wrapper>
             <TopBar />
-            <Component
-              basePath={`/${name}`}
-              location={location}
-              onStatusChange={queueAction}
-            />
+            <Suspense fallback={<div className="spinner"/>}>
+              <Component
+                basePath={`/${name}`}
+                location={location}
+                onStatusChange={queueAction}
+              />
+            </Suspense>
             <Status
               queueAction={queueAction}
               stqueue={stqueue}
