@@ -10,13 +10,12 @@ import stake from '../stake'
 import mint from '../mint'
 import recurringRewards from '../recurring-rewards'
 import hiring from '../hiring'
-import versionedStore from '../versioned-store'
-import versionedStorePermissions from '../versioned-store/permissions'
 import contentWorkingGroup from '../content-working-group'
 import workingGroup from '../working-group'
 import discovery from '../discovery'
 import media from '../media'
 import proposals from '../proposals'
+import contentDirectory from '../content-directory'
 import fs from 'fs'
 import path from 'path'
 import * as defaultDefinitions from '@polkadot/types/interfaces/definitions'
@@ -35,13 +34,12 @@ const typesByModule = {
   'mint': mint,
   'recurring-rewards': recurringRewards,
   'hiring': hiring,
-  'versioned-store': versionedStore,
-  'versioned-store/permissions': versionedStorePermissions,
   'content-working-group': contentWorkingGroup,
   'working-group': workingGroup,
   'discovery': discovery,
   'media': media,
   'proposals': proposals,
+  'content-directory': contentDirectory,
 }
 
 type Imports = { [moduleName: string]: string[] }

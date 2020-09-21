@@ -13,6 +13,8 @@ function normalizeDef(registry: Registry, defOrConstructor: any, typeName: strin
   if (typeof defOrConstructor === 'string') {
     // Replace unhandled BTreeSet with Vec
     defOrConstructor = defOrConstructor.replace('BTreeSet<', 'Vec<')
+    // Workaround for "Unhandled type VecFixed"
+    defOrConstructor = defOrConstructor.replace('[u8;32]', 'Hash')
     return defOrConstructor
   } else if (typeof defOrConstructor === 'function') {
     const defString = new (defOrConstructor as Constructor<Codec>)(registry).toRawType().toString()

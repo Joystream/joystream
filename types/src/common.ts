@@ -1,6 +1,7 @@
-import { Struct, Option, Text, bool, Vec, u16, u32, u64, Null } from '@polkadot/types'
-import { BlockNumber, Moment } from '@polkadot/types/interfaces'
+import { Struct, Option, Text, bool, Vec, u16, u32, u64, Null, U8aFixed, BTreeSet, Compact } from '@polkadot/types'
+import { BlockNumber, H256, Moment } from '@polkadot/types/interfaces'
 import { Codec, RegistryTypes } from '@polkadot/types/types'
+import { u8aConcat, u8aToHex } from '@polkadot/util'
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment'
 import { JoyStructCustom, JoyStructDecorated } from './JoyStruct'
@@ -8,12 +9,38 @@ import { JoyEnum } from './JoyEnum'
 
 export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 
+// Adds ".sort()" during BTreeSet toU8a encoding (required by the runtime)
+// FIXME: Will not cover cases where BTreeSet is part of extrinsic args metadata
+export class JoyBTreeSet<V extends Codec> extends BTreeSet<V> {
+  public toU8a(isBare?: boolean): Uint8Array {
+    const encoded = new Array<Uint8Array>()
+
+    if (!isBare) {
+      encoded.push(Compact.encodeU8a(this.size))
+    }
+
+    Array.from(this)
+      .sort()
+      .forEach((v: V) => {
+        encoded.push(v.toU8a(isBare))
+      })
+
+    return u8aConcat(...encoded)
+  }
+
+  public toHex(): string {
+    return u8aToHex(this.toU8a())
+  }
+}
+
 export class Credential extends u64 {}
 export class CredentialSet extends Vec.with(Credential) {} // BtreeSet ?
 
 // common types between Forum and Proposal Discussions modules
 export class ThreadId extends u64 {}
 export class PostId extends u64 {}
+
+export class Hash extends U8aFixed implements H256 {}
 
 export type BlockAndTimeType = {
   block: BlockNumber

@@ -1,6 +1,6 @@
-import { BTreeMap, BTreeSet, bool, u32, Text, Null, Option, Vec } from '@polkadot/types'
+import { BTreeMap, bool, u32, Text, Null, Option, Vec } from '@polkadot/types'
 import { BlockNumber } from '@polkadot/types/interfaces'
-import { OptionText, Credential, JoyEnum, JoyStructDecorated, SlashingTerms } from '../common'
+import { OptionText, Credential, JoyEnum, JoyStructDecorated, SlashingTerms, JoyBTreeSet } from '../common'
 import { ActorId, MemberId } from '../members'
 import { StakeId } from '../stake'
 import { OpeningId, ApplicationId, ApplicationRationingPolicy, StakingPolicy } from '../hiring/index'
@@ -235,16 +235,15 @@ export class OpeningPolicyCommitment
   })
   implements IOpeningPolicyCommitment {}
 
-// Not entierly sure that using BTreeSet will work correctly when reading/decoding this type from chain state
 export type ICuratorOpening = {
   opening_id: OpeningId
-  curator_applications: BTreeSet<CuratorApplicationId>
+  curator_applications: JoyBTreeSet<CuratorApplicationId>
   policy_commitment: OpeningPolicyCommitment
 }
 export class CuratorOpening
   extends JoyStructDecorated({
     opening_id: OpeningId,
-    curator_applications: BTreeSet.with(CuratorApplicationId),
+    curator_applications: JoyBTreeSet.with(CuratorApplicationId),
     policy_commitment: OpeningPolicyCommitment,
   })
   implements ICuratorOpening {
