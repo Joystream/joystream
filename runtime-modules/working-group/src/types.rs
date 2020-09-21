@@ -1,7 +1,7 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode};
-use rstd::collections::btree_set::BTreeSet;
+use sp_std::collections::btree_set::BTreeSet;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};

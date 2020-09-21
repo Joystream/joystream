@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Icon } from 'semantic-ui-react';
 import { ParsedPost } from '@polkadot/joy-utils/types/proposals';
-import MemberProfilePreview from '@polkadot/joy-utils/MemberProfilePreview';
+import MemberProfilePreview from '@polkadot/joy-utils/react/components/MemberProfilePreview';
 import DiscussionPostForm from './DiscussionPostForm';
 import { MemberId } from '@joystream/types/members';
 import { useTransport } from '@polkadot/joy-utils/react/hooks';
@@ -45,22 +45,26 @@ type ProposalDiscussionPostProps = {
   post: ParsedPost;
   memberId?: MemberId;
   refreshDiscussion: () => void;
+  historical?: boolean;
 }
 
 export default function DiscussionPost ({
   post,
   memberId,
-  refreshDiscussion
+  refreshDiscussion,
+  historical
 }: ProposalDiscussionPostProps) {
   const { author, authorId, text, createdAt, editsCount } = post;
   const [editing, setEditing] = useState(false);
   const constraints = useTransport().proposals.discussionContraints();
   const canEdit = (
+    !historical &&
     memberId &&
     post.postId &&
     authorId.toNumber() === memberId.toNumber() &&
     editsCount < constraints.maxPostEdits
   );
+
   const onEditSuccess = () => {
     setEditing(false);
     refreshDiscussion();
@@ -98,9 +102,9 @@ export default function DiscussionPost ({
               <CommentAction
                 onClick={() => setEditing(true)}
                 primary
-                size="tiny"
+                size='tiny'
                 icon>
-                <Icon name="pencil" />
+                <Icon name='pencil' />
               </CommentAction>
             </CommentActions>
           ) }

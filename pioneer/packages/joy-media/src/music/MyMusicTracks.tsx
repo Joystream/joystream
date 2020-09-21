@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Button, CheckboxProps, Dropdown, Message } from 'semantic-ui-react';
 
-import { Pluralize } from '@polkadot/joy-utils/Pluralize';
-import Section from '@polkadot/joy-utils/Section';
+import { Pluralize, Section } from '@polkadot/joy-utils/react/components';
+
 import { EditableMusicTrackPreviewProps, MusicTrackPreview } from './MusicTrackPreview';
 import { ReorderableTracks } from './ReorderableTracks';
 import { MusicAlbumPreviewProps } from './MusicAlbumPreview';
@@ -36,14 +36,16 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
   const selectedCount = idsOfSelectedTracks.size;
 
   let longestAlbumName = '';
-  albums.forEach(x => {
+
+  albums.forEach((x) => {
     if (longestAlbumName.length < x.title.length) {
       longestAlbumName = x.title;
     }
   });
 
-  const albumsDropdownOptions = albums.map(x => {
+  const albumsDropdownOptions = albums.map((x) => {
     const { id } = x;
+
     return {
       key: id,
       value: id,
@@ -67,7 +69,8 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
     return <div style={style}>
       <Dropdown
         onChange={(_e, { value: id }) => {
-          const selectedAlbum = albums.find(x => x.id === id);
+          const selectedAlbum = albums.find((x) => x.id === id);
+
           if (selectedAlbum) {
             setAlbumName(selectedAlbum.title);
             setShowSecondScreen(true);
@@ -125,10 +128,10 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
     </Section>;
   };
 
-  const selectedTracks = tracks.filter(track => idsOfSelectedTracks.has(track.id));
+  const selectedTracks = tracks.filter((track) => idsOfSelectedTracks.has(track.id));
 
   const renderReorderTracks = () => {
-    return <Section title={`Add tracks to album "${albumName}"`}>
+    return <Section title={`Add tracks to album "${albumName || ''}"`}>
 
       <Message
         info
@@ -138,8 +141,9 @@ export function MyMusicTracks (props: MyMusicTracksProps) {
 
       <ReorderableTracks
         tracks={selectedTracks}
-        onRemove={track => {
+        onRemove={(track) => {
           const set = new Set(idsOfSelectedTracks);
+
           set.delete(track.id);
           setIdsOfSelectedTracks(set);
         }}

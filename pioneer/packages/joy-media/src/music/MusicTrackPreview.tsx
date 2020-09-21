@@ -35,10 +35,11 @@ export function MusicTrackPreview (props: EditableMusicTrackPreviewProps) {
     } catch (err) {
       console.log('Error during checkbox change:', err);
     }
+
     setChecked(d.checked || false);
   };
 
-  return <div className={`JoyMusicTrackPreview ${checked && 'SelectedItem'} ${props.isDraggable && 'DraggableItem'}`}>
+  return <div className={`JoyMusicTrackPreview ${checked ? 'SelectedItem' : ''} ${props.isDraggable ? 'DraggableItem' : ''}`}>
     {props.onSelect && <div className='CheckboxCell'>
       <Checkbox checked={checked} onChange={onChange} />
     </div>}

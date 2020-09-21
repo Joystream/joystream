@@ -1,21 +1,15 @@
 import React, { useState } from 'react';
 import { getFormErrorLabelsProps } from './errorHandling';
 import * as Yup from 'yup';
-import {
-  withProposalFormData,
+import { withProposalFormData,
   ProposalFormExportProps,
   ProposalFormContainerProps,
-  ProposalFormInnerProps,
-  genericFormDefaultOptions
-} from './GenericProposalForm';
-import {
-  GenericWorkingGroupProposalForm,
+  ProposalFormInnerProps } from './GenericProposalForm';
+import { GenericWorkingGroupProposalForm,
   FormValues as WGFormValues,
-  defaultValues as wgFromDefaultValues
-} from './GenericWorkingGroupProposalForm';
+  defaultValues as wgFromDefaultValues } from './GenericWorkingGroupProposalForm';
 import { InputFormField } from './FormFields';
 import { withFormContainer } from './FormContainer';
-import './forms.css';
 import { Grid } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import _ from 'lodash';
@@ -31,41 +25,37 @@ const defaultValues: FormValues = {
   amount: ''
 };
 
-type FormAdditionalProps = {}; // Aditional props coming all the way from export component into the inner form.
+type FormAdditionalProps = Record<any, never>; // Aditional props coming all the way from export component into the inner form.
 type ExportComponentProps = ProposalFormExportProps<FormAdditionalProps, FormValues>;
 type FormContainerProps = ProposalFormContainerProps<ExportComponentProps>;
 type FormInnerProps = ProposalFormInnerProps<FormContainerProps, FormValues>;
 
-const SetWorkingGroupLeadRewardForm: React.FunctionComponent<FormInnerProps> = props => {
-  const { handleChange, errors, touched, values, myMemberId } = props;
+const SetWorkingGroupLeadRewardForm: React.FunctionComponent<FormInnerProps> = (props) => {
+  const { handleChange, errors, touched, values } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const [lead, setLead] = useState<WorkerData | null>(null);
 
   return (
     <GenericWorkingGroupProposalForm
       {...props}
-      txMethod="createSetWorkingGroupLeaderRewardProposal"
-      proposalType="SetWorkingGroupLeaderReward"
+      txMethod='createSetWorkingGroupLeaderRewardProposal'
+      proposalType='SetWorkingGroupLeaderReward'
       leadRequired={true}
       leadRewardRequired={true}
       onLeadChange={(lead: WorkerData | null) => setLead(lead)}
       submitParams={[
-        myMemberId,
-        values.title,
-        values.rationale,
-        '{STAKE}',
         lead?.workerId,
         values.amount,
         values.workingGroup
       ]}
     >
       { (lead && lead.reward) && (
-        <Grid columns="4" doubling stackable verticalAlign="bottom">
+        <Grid columns='4' doubling stackable verticalAlign='bottom'>
           <Grid.Column>
             <InputFormField
-              label="New reward amount"
+              label='New reward amount'
               onChange={handleChange}
-              name="amount"
+              name='amount'
               error={errorLabelsProps.amount}
               value={values.amount}
               unit={formatBalance.getDefaults().unit}
@@ -83,10 +73,10 @@ const FormContainer = withFormContainer<FormContainerProps, FormValues>({
     ...(props.initialData || {})
   }),
   validationSchema: Yup.object().shape({
-    ...genericFormDefaultOptions.validationSchema,
+    ...Validation.All(),
     ...Validation.SetWorkingGroupLeaderReward()
   }),
-  handleSubmit: genericFormDefaultOptions.handleSubmit,
+  handleSubmit: () => null,
   displayName: 'SetWorkingGroupLeadRewardForm'
 })(SetWorkingGroupLeadRewardForm);
 

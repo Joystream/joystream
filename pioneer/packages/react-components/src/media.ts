@@ -1,4 +1,4 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
@@ -13,9 +13,9 @@ type MediaCss = {
 const media = Object
   .keys(ScreenSizes)
   .reduce((acc: MediaCss, label: any): MediaCss => {
-    const size: number = ScreenSizes[label] as any;
+    const size: number = ScreenSizes[label as 'TABLET'];
 
-    acc[label] = (values: TemplateStringsArray): unknown =>
+    acc[label as 'TABLET'] = (values: TemplateStringsArray): unknown =>
       css`
         @media (min-width: ${size / 16}em) {
           ${values}

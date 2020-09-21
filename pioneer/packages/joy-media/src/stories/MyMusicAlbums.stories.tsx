@@ -1,5 +1,5 @@
 import React from 'react';
-import '../common/index.css';
+import '../common/index.scss';
 
 import { MyMusicAlbums } from '../music/MyMusicAlbums';
 import { MusicAlbumSamples } from './data/MusicAlbumSamples';

@@ -1,6 +1,6 @@
 use crate::mock::*;
 use crate::test::*;
-use rstd::collections::btree_set::BTreeSet;
+use sp_std::collections::btree_set::BTreeSet;
 
 #[test]
 fn begin_accepting_applications_fails_with_no_opening() {
@@ -42,10 +42,10 @@ fn begin_accepting_applications_succeeds() {
         let updated_opening = <OpeningById<Test>>::get(opening_id);
 
         let expected_opening_state = Opening {
-            created: 1,
+            created: FIRST_BLOCK_HEIGHT,
             stage: OpeningStage::Active {
                 stage: ActiveOpeningStage::AcceptingApplications {
-                    started_accepting_applicants_at_block: 1,
+                    started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT,
                 },
                 applications_added: BTreeSet::new(),
                 active_application_count: 0,

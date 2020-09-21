@@ -10,12 +10,12 @@ export const TransportContext = createContext<MediaTransport>(undefined as unkno
 export const useTransportContext = () =>
   useContext(TransportContext);
 
-export const MockTransportProvider = (props: React.PropsWithChildren<{}>) =>
+export const MockTransportProvider = (props: React.PropsWithChildren<Record<any, unknown>>) =>
   <TransportContext.Provider value={new MockTransport()}>
     {props.children}
   </TransportContext.Provider>;
 
-export const SubstrateTransportProvider = (props: React.PropsWithChildren<{}>) => {
+export const SubstrateTransportProvider = (props: React.PropsWithChildren<Record<any, unknown>>) => {
   const api: ApiProps = useContext(ApiContext);
   const [transport, setTransport] = useState<SubstrateTransport>();
   const [loaded, setLoaded] = useState<boolean>();

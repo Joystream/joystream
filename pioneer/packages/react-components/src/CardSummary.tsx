@@ -1,8 +1,6 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
-
-import { BareProps } from './types';
 
 import BN from 'bn.js';
 import React from 'react';
@@ -10,25 +8,27 @@ import styled from 'styled-components';
 import { UInt } from '@polkadot/types';
 import { formatNumber, isUndefined } from '@polkadot/util';
 
-import Progress, { Colors as ProgressColors } from './Progress';
+import Progress from './Progress';
 import Labelled from './Labelled';
+import { BlockToTime } from '@polkadot/react-query';
 
 interface ProgressProps {
-  color?: ProgressColors;
   hideValue?: boolean;
   isPercent?: boolean;
   total?: BN | UInt;
   value?: BN | UInt;
+  withTime?: boolean;
 }
 
-interface Props extends BareProps {
+interface Props {
   children?: React.ReactNode;
+  className?: string;
   help?: React.ReactNode;
   label: React.ReactNode;
   progress?: ProgressProps;
 }
 
-function CardSummary ({ children, className, help, label, progress }: Props): React.ReactElement<Props> | null {
+function CardSummary ({ children, className = '', help, label, progress }: Props): React.ReactElement<Props> | null {
   const value = progress && progress.value;
   const total = progress && progress.total;
   const left = progress && !isUndefined(value) && !isUndefined(total) && value.gten(0) && total.gtn(0)
@@ -51,6 +51,8 @@ function CardSummary ({ children, className, help, label, progress }: Props): Re
     return null;
   }
 
+  const isTimed = progress && progress.withTime && !isUndefined(progress.total);
+
   return (
     <article className={className}>
       <Labelled
@@ -60,22 +62,37 @@ function CardSummary ({ children, className, help, label, progress }: Props): Re
       >
         {children}{
           progress && !progress.hideValue && (
-            !left || isUndefined(progress.total)
-              ? '-'
-              : `${left}${progress.isPercent ? '' : '/'}${
-                progress.isPercent
-                  ? '%'
-                  : formatNumber(progress.total)
-              }`
+            <>
+              {isTimed && (
+                <BlockToTime blocks={progress.total} />
+              )}
+              <div className={isTimed ? 'isSecondary' : 'isPrimary'}>
+                {!left || isUndefined(progress.total)
+                  ? '-'
+                  : !isTimed || progress.isPercent || !progress.value
+                    ? `${left}${progress.isPercent ? '' : '/'}${
+                      progress.isPercent
+                        ? '%'
+                        : formatNumber(progress.total)
+                    }`
+                    : (
+                      <BlockToTime
+                        blocks={progress.total.sub(progress.value)}
+                        className='timer'
+                      />
+                    )
+                }
+              </div>
+            </>
           )
         }
-        {progress && <Progress {...progress} />}
       </Labelled>
+      {progress && <Progress {...progress} />}
     </article>
   );
 }
 
-export default styled(CardSummary)`
+export default React.memo(styled(CardSummary)`
   align-items: center;
   background: transparent !important;
   border: none !important;
@@ -87,15 +104,23 @@ export default styled(CardSummary)`
   justify-content: flex-end;
   padding: 0rem 1.5rem 0.5rem 1.5rem;
 
-  > div {
-    font-size: 2.1rem;
+  .ui--FormatBalance .balance-postfix {
+    opacity: 1;
+  }
+
+  .ui--Progress {
+    margin: 0.5rem 0.125rem 0.125rem 0.75rem;
+  }
+
+  > .ui--Labelled {
+    font-size: 1.75rem;
     font-weight: 100;
     position: relative;
-    line-height: 2.1rem;
+    line-height: 1;
     text-align: right;
 
     > * {
-      margin: 0.6rem 0;
+      margin: 0.5rem 0;
 
       &:first-child {
         margin-top: 0;
@@ -107,14 +132,16 @@ export default styled(CardSummary)`
     }
 
     > label {
-      line-height: 1rem;
       font-size: 0.95rem;
-      min-height: 1rem;
     }
 
-    .progress {
-      margin: 0.2rem 0 -0.5rem !important;
-      background: rgba(0,0,0,0.05);
+    .isSecondary {
+      font-size: 1rem;
+      font-weight: 100;
+
+      .timer {
+        min-width: 8rem;
+      }
     }
   }
 
@@ -124,7 +151,6 @@ export default styled(CardSummary)`
 
     > div {
       font-size: 1.4rem;
-      line-height: 1.4rem;
     }
   }
-`;
+`);

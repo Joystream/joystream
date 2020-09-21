@@ -1,8 +1,6 @@
-// Copyright 2017-2019 @polkadot/react-query authors & contributors
+// Copyright 2017-2020 @polkadot/react-query authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
-
-import { BareProps } from '@polkadot/react-api/types';
 
 import BN from 'bn.js';
 import React, { useEffect, useState } from 'react';
@@ -10,7 +8,8 @@ import { bnToBn } from '@polkadot/util';
 
 type Ticker = (now: number) => void;
 
-interface Props extends BareProps {
+interface Props {
+  className?: string;
   value?: BN | Date | number;
 }
 
@@ -36,19 +35,19 @@ function getDisplayValue (now = 0, value: BN | Date | number = 0): string {
       ? (value as Date).getTime()
       : bnToBn(value as number).toNumber()
   ) || 0;
-  let display = '0.0s';
+  let display = '0.0 s';
 
   if (now && tsValue) {
     const elapsed = Math.max(Math.abs(now - tsValue), 0) / 1000;
 
     if (elapsed < 15) {
-      display = `${elapsed.toFixed(1)}s`;
+      display = `${elapsed.toFixed(1)} s`;
     } else if (elapsed < 60) {
-      display = `${elapsed | 0}s`;
+      display = `${elapsed | 0} s`;
     } else if (elapsed < 3600) {
-      display = `${elapsed / 60 | 0}m`;
+      display = `${elapsed / 60 | 0} min`;
     } else {
-      display = `${elapsed / 3600 | 0}h`;
+      display = `${elapsed / 3600 | 0} hr`;
     }
   }
 
@@ -57,7 +56,7 @@ function getDisplayValue (now = 0, value: BN | Date | number = 0): string {
 
 tick();
 
-export default function Elapsed ({ className, style, value }: Props): React.ReactElement<Props> {
+function Elapsed ({ className = '', value }: Props): React.ReactElement<Props> {
   const [now, setNow] = useState(lastNow);
 
   useEffect((): () => void => {
@@ -71,11 +70,10 @@ export default function Elapsed ({ className, style, value }: Props): React.Reac
   }, []);
 
   return (
-    <div
-      className={['ui--Elapsed', className].join(' ')}
-      style={style}
-    >
+    <div className={['ui--Elapsed', className].join(' ')}>
       {getDisplayValue(now, value)}
     </div>
   );
 }
+
+export default React.memo(Elapsed);

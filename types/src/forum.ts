@@ -1,6 +1,7 @@
-import { getTypeRegistry, bool, u32, u64, Text, Option, Vec as Vector, GenericAccountId } from '@polkadot/types'
-import { AccountId } from '@polkadot/types/interfaces'
-import { BlockAndTime, JoyStruct, ThreadId, PostId } from './common'
+import { bool, u32, u64, Text, Option, Vec as Vector } from '@polkadot/types'
+import { BlockAndTime, ThreadId, PostId, JoyStructCustom, JoyStructDecorated } from './common'
+import { RegistryTypes } from '@polkadot/types/types'
+import AccountId from '@polkadot/types/generic/AccountId'
 
 export type ModerationActionType = {
   moderated_at: BlockAndTime
@@ -8,18 +9,13 @@ export type ModerationActionType = {
   rationale: Text
 }
 
-export class ModerationAction extends JoyStruct<ModerationActionType> {
-  constructor(value: ModerationActionType) {
-    super(
-      {
-        moderated_at: BlockAndTime,
-        moderator_id: GenericAccountId,
-        rationale: Text,
-      },
-      value
-    )
-  }
-
+export class ModerationAction extends JoyStructCustom({
+  moderated_at: BlockAndTime,
+  moderator_id: AccountId,
+  rationale: Text,
+})
+// FIXME: Make it JoyStructDecorated compatible
+{
   get moderated_at(): BlockAndTime {
     return this.getField('moderated_at')
   }
@@ -38,17 +34,12 @@ export type PostTextChangeType = {
   text: Text
 }
 
-export class PostTextChange extends JoyStruct<PostTextChangeType> {
-  constructor(value: PostTextChangeType) {
-    super(
-      {
-        expired_at: BlockAndTime,
-        text: Text,
-      },
-      value
-    )
-  }
-
+export class PostTextChange extends JoyStructCustom({
+  expired_at: BlockAndTime,
+  text: Text,
+})
+// FIXME: Make it JoyStructDecorated compatible
+{
   get expired_at(): BlockAndTime {
     return this.getField('expired_at')
   }
@@ -78,25 +69,12 @@ export type ChildPositionInParentCategoryType = {
   child_nr_in_parent_category: u32
 }
 
-export class ChildPositionInParentCategory extends JoyStruct<ChildPositionInParentCategoryType> {
-  constructor(value: ChildPositionInParentCategoryType) {
-    super(
-      {
-        parent_id: CategoryId,
-        child_nr_in_parent_category: u32,
-      },
-      value
-    )
-  }
-
-  get parent_id(): CategoryId {
-    return this.getField('parent_id')
-  }
-
-  get child_nr_in_parent_category(): u32 {
-    return this.getField('child_nr_in_parent_category')
-  }
-}
+export class ChildPositionInParentCategory
+  extends JoyStructDecorated({
+    parent_id: CategoryId,
+    child_nr_in_parent_category: u32,
+  })
+  implements ChildPositionInParentCategoryType {}
 
 export class OptionChildPositionInParentCategory extends Option.with(ChildPositionInParentCategory) {}
 
@@ -114,30 +92,21 @@ export type CategoryType = {
   moderator_id: AccountId
 }
 
-export class Category extends JoyStruct<CategoryType> {
-  constructor(value: CategoryType) {
-    super(
-      {
-        id: CategoryId,
-        title: Text,
-        description: Text,
-        created_at: BlockAndTime,
-        deleted: bool,
-        archived: bool,
-        num_direct_subcategories: u32,
-        num_direct_unmoderated_threads: u32,
-        num_direct_moderated_threads: u32,
-        position_in_parent_category: OptionChildPositionInParentCategory,
-        moderator_id: GenericAccountId,
-      },
-      value
-    )
-  }
-
-  static newEmpty(): Category {
-    return new Category({} as CategoryType)
-  }
-
+export class Category extends JoyStructCustom({
+  id: CategoryId,
+  title: Text,
+  description: Text,
+  created_at: BlockAndTime,
+  deleted: bool,
+  archived: bool,
+  num_direct_subcategories: u32,
+  num_direct_unmoderated_threads: u32,
+  num_direct_moderated_threads: u32,
+  position_in_parent_category: OptionChildPositionInParentCategory,
+  moderator_id: AccountId,
+})
+// FIXME: Make it JoyStructDecorated compatible
+{
   get id(): CategoryId {
     return this.getField('id')
   }
@@ -155,11 +124,11 @@ export class Category extends JoyStruct<CategoryType> {
   }
 
   get deleted(): boolean {
-    return this.getBoolean('deleted')
+    return this.getField('deleted').valueOf()
   }
 
   get archived(): boolean {
-    return this.getBoolean('archived')
+    return this.getField('archived').valueOf()
   }
 
   get num_direct_subcategories(): u32 {
@@ -175,7 +144,7 @@ export class Category extends JoyStruct<CategoryType> {
   }
 
   get num_threads_created(): u32 {
-    return new u32(this.num_direct_unmoderated_threads.add(this.num_direct_moderated_threads))
+    return this.registry.createType('u32', this.num_direct_unmoderated_threads.add(this.num_direct_moderated_threads))
   }
 
   get hasSubcategories(): boolean {
@@ -221,28 +190,19 @@ export type ThreadType = {
   author_id: AccountId
 }
 
-export class Thread extends JoyStruct<ThreadType> {
-  constructor(value: ThreadType) {
-    super(
-      {
-        id: ThreadId,
-        title: Text,
-        category_id: CategoryId,
-        nr_in_category: u32,
-        moderation: OptionModerationAction,
-        num_unmoderated_posts: u32,
-        num_moderated_posts: u32,
-        created_at: BlockAndTime,
-        author_id: GenericAccountId,
-      },
-      value
-    )
-  }
-
-  static newEmpty(): Thread {
-    return new Thread({} as ThreadType)
-  }
-
+export class Thread extends JoyStructCustom({
+  id: ThreadId,
+  title: Text,
+  category_id: CategoryId,
+  nr_in_category: u32,
+  moderation: OptionModerationAction,
+  num_unmoderated_posts: u32,
+  num_moderated_posts: u32,
+  created_at: BlockAndTime,
+  author_id: AccountId,
+})
+// FIXME: Make it JoyStructDecorated compatible
+{
   get id(): ThreadId {
     return this.getField('id')
   }
@@ -259,12 +219,12 @@ export class Thread extends JoyStruct<ThreadType> {
     return this.getField('nr_in_category')
   }
 
-  get moderation(): ModerationAction | undefined {
-    return this.unwrapOrUndefined('moderation')
+  get moderation(): ModerationAction | null {
+    return this.getField('moderation').unwrapOr(null)
   }
 
   get moderated(): boolean {
-    return this.moderation !== undefined
+    return this.moderation !== null
   }
 
   get num_unmoderated_posts(): u32 {
@@ -276,7 +236,7 @@ export class Thread extends JoyStruct<ThreadType> {
   }
 
   get num_posts_ever_created(): u32 {
-    return new u32(this.num_unmoderated_posts.add(this.num_moderated_posts))
+    return this.registry.createType('u32', this.num_unmoderated_posts.add(this.num_moderated_posts))
   }
 
   get created_at(): BlockAndTime {
@@ -300,27 +260,18 @@ export type PostType = {
 }
 
 // TODO deprectated: replaced w/ Post
-export class Post extends JoyStruct<PostType> {
-  constructor(value: PostType) {
-    super(
-      {
-        id: PostId,
-        thread_id: ThreadId,
-        nr_in_thread: u32,
-        current_text: Text,
-        moderation: OptionModerationAction,
-        text_change_history: VecPostTextChange,
-        created_at: BlockAndTime,
-        author_id: GenericAccountId,
-      },
-      value
-    )
-  }
-
-  static newEmpty(): Post {
-    return new Post({} as PostType)
-  }
-
+export class Post extends JoyStructCustom({
+  id: PostId,
+  thread_id: ThreadId,
+  nr_in_thread: u32,
+  current_text: Text,
+  moderation: OptionModerationAction,
+  text_change_history: VecPostTextChange,
+  created_at: BlockAndTime,
+  author_id: AccountId,
+})
+// FIXME: Make it JoyStructDecorated compatible
+{
   get id(): PostId {
     return this.getField('id')
   }
@@ -337,12 +288,12 @@ export class Post extends JoyStruct<PostType> {
     return this.getString('current_text')
   }
 
-  get moderation(): ModerationAction | undefined {
-    return this.unwrapOrUndefined('moderation')
+  get moderation(): ModerationAction | null {
+    return this.getField('moderation').unwrapOr(null)
   }
 
   get moderated(): boolean {
-    return this.moderation !== undefined
+    return this.moderation !== null
   }
 
   get text_change_history(): VecPostTextChange {
@@ -366,19 +317,14 @@ export type ReplyType = {
 }
 
 // TODO deprectated: replaced w/ Post
-export class Reply extends JoyStruct<ReplyType> {
-  constructor(value: ReplyType) {
-    super(
-      {
-        owner: GenericAccountId,
-        thread_id: ThreadId,
-        text: Text,
-        moderation: OptionModerationAction,
-      },
-      value
-    )
-  }
-
+export class Reply extends JoyStructCustom({
+  owner: AccountId,
+  thread_id: ThreadId,
+  text: Text,
+  moderation: OptionModerationAction,
+})
+// FIXME: Make it JoyStructDecorated compatible
+{
   get owner(): AccountId {
     return this.getField('owner')
   }
@@ -391,29 +337,25 @@ export class Reply extends JoyStruct<ReplyType> {
     return this.getString('text')
   }
 
-  get moderation(): ModerationAction | undefined {
-    return this.unwrapOrUndefined('moderation')
+  get moderation(): ModerationAction | null {
+    return this.getField('moderation').unwrapOr(null)
   }
 
   get moderated(): boolean {
-    return this.moderation !== undefined
+    return this.moderation !== null
   }
 }
 
-export function registerForumTypes() {
-  try {
-    getTypeRegistry().register({
-      PostTextChange,
-      ModerationAction,
-      ChildPositionInParentCategory,
-      CategoryId,
-      Category,
-      Thread,
-      Post,
-      ReplyId,
-      Reply,
-    })
-  } catch (err) {
-    console.error('Failed to register custom types of forum module', err)
-  }
+export const forumTypes: RegistryTypes = {
+  PostTextChange,
+  ModerationAction,
+  ChildPositionInParentCategory,
+  CategoryId,
+  Category,
+  Thread,
+  Post,
+  ReplyId,
+  Reply,
 }
+
+export default forumTypes

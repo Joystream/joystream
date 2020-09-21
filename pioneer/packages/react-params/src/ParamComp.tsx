@@ -1,11 +1,11 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-params authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { TypeDef } from '@polkadot/types/types';
 import { ComponentMap, RawParam, RawParams, RawParamOnChangeValue } from './types';
 
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import Param from './Param';
 
@@ -16,14 +16,18 @@ interface Props {
   name?: string;
   onChange: (index: number, value: RawParamOnChangeValue) => void;
   onEnter?: () => void;
+  onEscape?: () => void;
   overrides?: ComponentMap;
   type: TypeDef;
   values?: RawParams | null;
 }
 
-export default function ParamComp ({ defaultValue, index, isDisabled, name, onChange, onEnter, overrides, type }: Props): React.ReactElement<Props> {
-  const _onChange = (value: RawParamOnChangeValue): void =>
-    onChange(index, value);
+function ParamComp ({ defaultValue, index, isDisabled, name, onChange, onEnter, onEscape, overrides, type }: Props): React.ReactElement<Props> {
+  const _onChange = useCallback(
+    (value: RawParamOnChangeValue): void =>
+      onChange(index, value),
+    [index, onChange]
+  );
 
   return (
     <div className='ui--Param-composite'>
@@ -34,9 +38,12 @@ export default function ParamComp ({ defaultValue, index, isDisabled, name, onCh
         name={name}
         onChange={_onChange}
         onEnter={onEnter}
+        onEscape={onEscape}
         overrides={overrides}
         type={type}
       />
     </div>
   );
 }
+
+export default React.memo(ParamComp);

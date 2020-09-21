@@ -1,8 +1,6 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { OpeningStatus } from '../../Types'
 import { apiModuleByGroup } from '../../Api'
-import { OpeningId } from '@joystream/types/hiring'
-import { ApplicationIdSet, RewardPolicy } from '@joystream/types/working-group'
 import chalk from 'chalk'
 import { createParamOptions } from '../../helpers/promptOptions'
 
@@ -15,6 +13,7 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
       description: 'Working Group Opening ID',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }
@@ -30,16 +29,13 @@ export default class WorkingGroupsFillOpening extends WorkingGroupsCommandBase {
     const opening = await this.getOpeningForLeadAction(openingId, OpeningStatus.InReview)
 
     const applicationIds = await this.promptForApplicationsToAccept(opening)
-    const rewardPolicyOpt = await this.promptForParam(
-      `Option<${RewardPolicy.name}>`,
-      createParamOptions('RewardPolicy')
-    )
+    const rewardPolicyOpt = await this.promptForParam(`Option<RewardPolicy>`, createParamOptions('RewardPolicy'))
 
     await this.requestAccountDecoding(account)
 
     await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'fillOpening', [
-      new OpeningId(openingId),
-      new ApplicationIdSet(applicationIds),
+      openingId,
+      applicationIds,
       rewardPolicyOpt,
     ])
 

@@ -1,4 +1,7 @@
 #!/bin/bash
+
+export WASM_BUILD_TOOLCHAIN=nightly-2020-05-23
+
 mkdir -p .tmp
 cargo run --release -p joystream-node build-spec --chain dev > .tmp/chainspec.json
 perl -i -pe's/"setValidatorCountProposalGracePeriod":.*/"setValidatorCountProposalGracePeriod": 0,/' .tmp/chainspec.json

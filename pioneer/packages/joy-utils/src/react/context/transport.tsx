@@ -6,7 +6,7 @@ import Transport from '../../transport/index';
 
 export const TransportContext = createContext<Transport>((null as unknown) as Transport);
 
-export function TransportProvider ({ children }: { children: React.PropsWithChildren<{}> }) {
+export function TransportProvider ({ children }: { children: React.PropsWithChildren<unknown> }) {
   const api: ApiProps = useContext(ApiContext);
 
   if (!api) {

@@ -1,38 +1,47 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Table } from 'semantic-ui-react';
+import { Table, Message } from 'semantic-ui-react';
 
 import { I18nProps } from '@polkadot/react-components/types';
 import { ApiProps } from '@polkadot/react-api/types';
-import { withCalls } from '@polkadot/react-api/with';
+import { withCalls } from '@polkadot/react-api/hoc';
 import { Hash } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
 
 import translate from './translate';
-import { calcTotalStake } from '@polkadot/joy-utils/index';
+import { calcTotalStake } from '@polkadot/joy-utils/functions/misc';
 import { SealedVote } from '@joystream/types/council';
-import AddressMini from '@polkadot/react-components/AddressMiniJoy';
+import AddressMini from '@polkadot/react-components/AddressMini';
 import CandidatePreview from './CandidatePreview';
 import { findVoteByHash } from './myVotesStore';
 
 type Props = ApiProps & I18nProps & {
   hash: Hash;
   sealedVote?: SealedVote;
+  isStageRevealing: boolean;
+  isMyVote: boolean;
 };
 
 class Comp extends React.PureComponent<Props> {
   renderCandidateOrAction () {
-    const { hash, sealedVote } = this.props;
+    const { hash, sealedVote, isStageRevealing, isMyVote } = this.props;
+
     if (!sealedVote) {
       return <em>Unknown hashed vote: {hash.toHex()}</em>;
     }
 
     if (sealedVote.vote.isSome) {
       const candidateId = sealedVote.vote.unwrap();
+
       return <CandidatePreview accountId={candidateId} />;
-    } else {
+    } else if (isStageRevealing && isMyVote) {
       const revealUrl = `/council/reveals?hashedVote=${hash.toHex()}`;
+
       return <Link to={revealUrl} className='ui button primary inverted'>Reveal this vote</Link>;
+    } else if (isMyVote) {
+      return <Message warning>Wait until <i><b>Revealing</b></i> stage in order to reveal this vote.</Message>;
+    } else {
+      return <Message info>This vote has not been revealed yet.</Message>;
     }
   }
 

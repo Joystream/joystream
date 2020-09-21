@@ -1,12 +1,13 @@
+use frame_support::dispatch::{DispatchError, DispatchResult};
+use system::RawOrigin;
+
 use crate::tests::fixtures::{
     create_mint, increase_total_balance_issuance_using_account_id, set_mint_id, setup_members,
     AddWorkerOpeningFixture, ApplyOnWorkerOpeningFixture, BeginReviewWorkerApplicationsFixture,
     FillWorkerOpeningFixture, SetLeadFixture,
 };
 use crate::tests::mock::TestWorkingGroup;
-use crate::Error;
 use crate::{OpeningPolicyCommitment, OpeningType, RewardPolicy};
-use system::RawOrigin;
 
 #[derive(Clone)]
 struct HiringWorkflowApplication {
@@ -18,7 +19,7 @@ struct HiringWorkflowApplication {
 
 pub struct HiringWorkflow {
     opening_type: OpeningType,
-    expected_result: Result<(), Error>,
+    expected_result: DispatchResult,
     role_stake: Option<u64>,
     applications: Vec<HiringWorkflowApplication>,
     setup_environment: bool,
@@ -39,7 +40,7 @@ impl Default for HiringWorkflow {
 }
 
 impl HiringWorkflow {
-    pub fn expect(self, result: Result<(), Error>) -> Self {
+    pub fn expect(self, result: DispatchResult) -> Self {
         Self {
             expected_result: result,
             ..self
@@ -131,7 +132,7 @@ impl HiringWorkflow {
         result.ok()
     }
 
-    fn fill_worker_position(&self) -> Result<u64, Error> {
+    fn fill_worker_position(&self) -> Result<u64, DispatchError> {
         let origin = match self.opening_type {
             OpeningType::Leader => RawOrigin::Root,
             OpeningType::Worker => {

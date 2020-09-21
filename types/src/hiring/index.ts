@@ -1,14 +1,15 @@
-import { getTypeRegistry, Null, u128, u64, u32, Vec, Option, Text } from '@polkadot/types'
-import { Enum } from '@polkadot/types/codec'
+import { Null, u128, u64, u32, Option, Text } from '@polkadot/types'
+import { BTreeSet } from '@polkadot/types/codec'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
-import { JoyStruct, JoyEnum } from '../common'
+import { JoyEnum, JoyStructDecorated } from '../common'
 import { StakeId } from '../stake'
 
 import { GenericJoyStreamRoleSchema } from './schemas/role.schema.typings'
 
-import ajv from 'ajv'
+import Ajv from 'ajv'
 
 import * as role_schema_json from './schemas/role.schema.json'
+import { RegistryTypes } from '@polkadot/types/types'
 
 export class ApplicationId extends u64 {}
 export class OpeningId extends u64 {}
@@ -25,9 +26,9 @@ export const ActivateOpeningAtKeys: { [k in keyof typeof ActivateOpeningAtDef]: 
   ExactBlock: 'ExactBlock',
 } as const
 export type ActivateOpeningAtKey = keyof typeof ActivateOpeningAtDef
-// TODO: Replace with JoyEnum
-export class ActivateOpeningAt extends Enum.with(ActivateOpeningAtDef) {}
+export class ActivateOpeningAt extends JoyEnum(ActivateOpeningAtDef) {}
 
+// FIXME: Replace usages with isOfType, asType wherever possible
 export enum ApplicationDeactivationCauseKeys {
   External = 'External',
   Hired = 'Hired',
@@ -37,118 +38,74 @@ export enum ApplicationDeactivationCauseKeys {
   ReviewPeriodExpired = 'ReviewPeriodExpired',
   OpeningFilled = 'OpeningFilled',
 }
-
-export class ApplicationDeactivationCause extends Enum {
-  constructor(value?: any, index?: number) {
-    super(
-      [
-        ApplicationDeactivationCauseKeys.External,
-        ApplicationDeactivationCauseKeys.Hired,
-        ApplicationDeactivationCauseKeys.NotHired,
-        ApplicationDeactivationCauseKeys.CrowdedOut,
-        ApplicationDeactivationCauseKeys.OpeningCancelled,
-        ApplicationDeactivationCauseKeys.ReviewPeriodExpired,
-        ApplicationDeactivationCauseKeys.OpeningFilled,
-      ],
-      value,
-      index
-    )
-  }
-}
+const ApplicationDeactivationCauseDef = {
+  External: Null,
+  Hired: Null,
+  NotHired: Null,
+  CrowdedOut: Null,
+  OpeningCancelled: Null,
+  ReviewPeriodExpired: Null,
+  OpeningFilled: Null,
+} as const
+export class ApplicationDeactivationCause extends JoyEnum(ApplicationDeactivationCauseDef) {}
 
 export type UnstakingApplicationStageType = {
   deactivation_initiated: BlockNumber
   cause: ApplicationDeactivationCause
 }
-export class UnstakingApplicationStage extends JoyStruct<UnstakingApplicationStageType> {
-  constructor(value?: UnstakingApplicationStageType) {
-    super(
-      {
-        deactivation_initiated: u32, // BlockNumber
-        cause: ApplicationDeactivationCause,
-      },
-      value
-    )
-  }
-
-  get cause(): ApplicationDeactivationCause {
-    return this.getField<ApplicationDeactivationCause>('cause')
-  }
-}
+export class UnstakingApplicationStage
+  extends JoyStructDecorated({
+    deactivation_initiated: u32, // BlockNumber
+    cause: ApplicationDeactivationCause,
+  })
+  implements UnstakingApplicationStageType {}
 
 export type InactiveApplicationStageType = {
   deactivation_initiated: BlockNumber
   deactivated: BlockNumber
   cause: ApplicationDeactivationCause
 }
-export class InactiveApplicationStage extends JoyStruct<InactiveApplicationStageType> {
-  constructor(value?: InactiveApplicationStageType) {
-    super(
-      {
-        deactivation_initiated: u32, // BlockNumber
-        deactivated: u32,
-        cause: ApplicationDeactivationCause,
-      },
-      value
-    )
-  }
-
-  get cause(): ApplicationDeactivationCause {
-    return this.getField<ApplicationDeactivationCause>('cause')
-  }
-}
+export class InactiveApplicationStage
+  extends JoyStructDecorated({
+    deactivation_initiated: u32, // BlockNumber
+    deactivated: u32,
+    cause: ApplicationDeactivationCause,
+  })
+  implements InactiveApplicationStageType {}
 
 export class ActiveApplicationStage extends Null {}
-
-// TODO: Find usages and replace with "JoyEnum-standard"
+// FIXME: Replace usages with isOfType, asType wherever possible
 export enum ApplicationStageKeys {
   Active = 'Active',
   Unstaking = 'Unstaking',
   Inactive = 'Inactive',
 }
-export class ApplicationStage extends JoyEnum({
+export const ApplicationStageDef = {
   Active: ActiveApplicationStage,
   Unstaking: UnstakingApplicationStage,
   Inactive: InactiveApplicationStage,
-} as const) {}
+} as const
+export class ApplicationStage extends JoyEnum(ApplicationStageDef) {}
 
 export type IApplicationRationingPolicy = {
   max_active_applicants: u32
 }
-export class ApplicationRationingPolicy extends JoyStruct<IApplicationRationingPolicy> {
-  constructor(value?: IApplicationRationingPolicy) {
-    super(
-      {
-        max_active_applicants: u32,
-      },
-      value
-    )
-  }
-
-  get max_active_applicants(): u32 {
-    return this.getField<u32>('max_active_applicants')
-  }
-}
+export class ApplicationRationingPolicy
+  extends JoyStructDecorated({
+    max_active_applicants: u32,
+  })
+  implements IApplicationRationingPolicy {}
 
 export type WaitingToBeingOpeningStageVariantType = {
   begins_at_block: BlockNumber
 }
-export class WaitingToBeingOpeningStageVariant extends JoyStruct<WaitingToBeingOpeningStageVariantType> {
-  constructor(value?: WaitingToBeingOpeningStageVariantType) {
-    super(
-      {
-        begins_at_block: u32,
-      },
-      value
-    )
-  }
+export class WaitingToBeingOpeningStageVariant
+  extends JoyStructDecorated({
+    begins_at_block: u32,
+  })
+  implements WaitingToBeingOpeningStageVariantType {}
 
-  get begins_at_block(): BlockNumber {
-    return this.getField<BlockNumber>('begins_at_block')
-  }
-}
-
-// TODO: Find usages and replace them with JoyEnum helpers
+// FIXME: Replace usages with isOfType, asType wherever possible
 export enum OpeningDeactivationCauseKeys {
   CancelledBeforeActivation = 'CancelledBeforeActivation',
   CancelledAcceptingApplications = 'CancelledAcceptingApplications',
@@ -156,62 +113,34 @@ export enum OpeningDeactivationCauseKeys {
   ReviewPeriodExpired = 'ReviewPeriodExpired',
   Filled = 'Filled',
 }
-
-class OpeningDeactivationCause_CancelledBeforeActivation extends Null {}
-class OpeningDeactivationCause_CancelledAcceptingApplications extends Null {}
-class OpeningDeactivationCause_CancelledInReviewPeriod extends Null {}
-class OpeningDeactivationCause_ReviewPeriodExpired extends Null {}
-class OpeningDeactivationCause_Filled extends Null {}
-
-export class OpeningDeactivationCause extends JoyEnum({
-  CancelledBeforeActivation: OpeningDeactivationCause_CancelledBeforeActivation,
-  CancelledAcceptingApplications: OpeningDeactivationCause_CancelledAcceptingApplications,
-  CancelledInReviewPeriod: OpeningDeactivationCause_CancelledInReviewPeriod,
-  ReviewPeriodExpired: OpeningDeactivationCause_ReviewPeriodExpired,
-  Filled: OpeningDeactivationCause_Filled,
-} as const) {}
+const OpeningDeactivationCauseDef = {
+  CancelledBeforeActivation: Null,
+  CancelledAcceptingApplications: Null,
+  CancelledInReviewPeriod: Null,
+  ReviewPeriodExpired: Null,
+  Filled: Null,
+} as const
+export class OpeningDeactivationCause extends JoyEnum(OpeningDeactivationCauseDef) {}
 
 export type IAcceptingApplications = {
   started_accepting_applicants_at_block: BlockNumber
 }
-export class AcceptingApplications extends JoyStruct<IAcceptingApplications> {
-  constructor(value?: IAcceptingApplications) {
-    super(
-      {
-        started_accepting_applicants_at_block: u32,
-      },
-      value
-    )
-  }
-
-  get started_accepting_applicants_at_block(): BlockNumber {
-    return this.getField<BlockNumber>('started_accepting_applicants_at_block')
-  }
-}
+export class AcceptingApplications
+  extends JoyStructDecorated({
+    started_accepting_applicants_at_block: u32,
+  })
+  implements IAcceptingApplications {}
 
 export type IReviewPeriod = {
   started_accepting_applicants_at_block: BlockNumber
   started_review_period_at_block: BlockNumber
 }
-export class ReviewPeriod extends JoyStruct<IReviewPeriod> {
-  constructor(value?: IReviewPeriod) {
-    super(
-      {
-        started_accepting_applicants_at_block: u32,
-        started_review_period_at_block: u32,
-      },
-      value
-    )
-  }
-
-  get started_accepting_applicants_at_block(): BlockNumber {
-    return this.getField<BlockNumber>('started_accepting_applicants_at_block')
-  }
-
-  get started_review_period_at_block(): BlockNumber {
-    return this.getField<BlockNumber>('started_review_period_at_block')
-  }
-}
+export class ReviewPeriod
+  extends JoyStructDecorated({
+    started_accepting_applicants_at_block: u32,
+    started_review_period_at_block: u32,
+  })
+  implements IReviewPeriod {}
 
 export type IDeactivated = {
   cause: OpeningDeactivationCause
@@ -219,35 +148,14 @@ export type IDeactivated = {
   started_accepting_applicants_at_block: BlockNumber
   started_review_period_at_block: Option<BlockNumber>
 }
-export class Deactivated extends JoyStruct<IDeactivated> {
-  constructor(value?: IDeactivated) {
-    super(
-      {
-        cause: OpeningDeactivationCause,
-        deactivated_at_block: u32,
-        started_accepting_applicants_at_block: u32,
-        started_review_period_at_block: Option.with(u32),
-      },
-      value
-    )
-  }
-
-  get cause(): OpeningDeactivationCause {
-    return this.getField<OpeningDeactivationCause>('cause')
-  }
-
-  get deactivated_at_block(): BlockNumber {
-    return this.getField<BlockNumber>('deactivated_at_block')
-  }
-
-  get started_accepting_applicants_at_block(): BlockNumber {
-    return this.getField<BlockNumber>('started_accepting_applicants_at_block')
-  }
-
-  get started_review_period_at_block(): BlockNumber {
-    return this.getField<BlockNumber>('started_review_period_at_block')
-  }
-}
+export class Deactivated
+  extends JoyStructDecorated({
+    cause: OpeningDeactivationCause,
+    deactivated_at_block: u32,
+    started_accepting_applicants_at_block: u32,
+    started_review_period_at_block: Option.with(u32),
+  })
+  implements IDeactivated {}
 
 export const ActiveOpeningStageDef = {
   AcceptingApplications: AcceptingApplications,
@@ -255,60 +163,48 @@ export const ActiveOpeningStageDef = {
   Deactivated: Deactivated,
 } as const
 export type ActiveOpeningStageKey = keyof typeof ActiveOpeningStageDef
-
 export class ActiveOpeningStage extends JoyEnum(ActiveOpeningStageDef) {}
 
 export type ActiveOpeningStageVariantType = {
   stage: ActiveOpeningStage
-  applications_added: Vec<ApplicationId> //BTreeSet<ApplicationId>,
+  applications_added: BTreeSet<ApplicationId>
   active_application_count: u32
   unstaking_application_count: u32
   deactivated_application_count: u32
 }
-export class ActiveOpeningStageVariant extends JoyStruct<ActiveOpeningStageVariantType> {
-  constructor(value?: ActiveOpeningStageVariantType) {
-    super(
-      {
-        stage: ActiveOpeningStage,
-        applications_added: Vec.with(ApplicationId), //BTreeSet<ApplicationId>,
-        active_application_count: u32,
-        unstaking_application_count: u32,
-        deactivated_application_count: u32,
-      },
-      value
-    )
-  }
-
-  get stage(): ActiveOpeningStage {
-    return this.getField<ActiveOpeningStage>('stage')
-  }
-
+export class ActiveOpeningStageVariant extends JoyStructDecorated({
+  stage: ActiveOpeningStage,
+  applications_added: BTreeSet.with(ApplicationId),
+  active_application_count: u32,
+  unstaking_application_count: u32,
+  deactivated_application_count: u32,
+}) {
   get is_active(): boolean {
     return this.stage.isOfType('AcceptingApplications')
   }
 }
 
-// TODO: Find usages and replace them with JoyEnum helpers
+// FIXME: Replace usages with isOfType, asType wherever possible
 export enum OpeningStageKeys {
   WaitingToBegin = 'WaitingToBegin',
   Active = 'Active',
 }
-
-export class OpeningStage extends JoyEnum({
+export const OpeningStageDef = {
   WaitingToBegin: WaitingToBeingOpeningStageVariant,
   Active: ActiveOpeningStageVariant,
-} as const) {}
+} as const
+export class OpeningStage extends JoyEnum(OpeningStageDef) {}
 
+// FIXME: Replace usages with isOfType, asType wherever possible
 export enum StakingAmountLimitModeKeys {
   AtLeast = 'AtLeast',
   Exact = 'Exact',
 }
-
-export class StakingAmountLimitMode extends Enum {
-  constructor(value?: any, index?: number) {
-    super([StakingAmountLimitModeKeys.AtLeast, StakingAmountLimitModeKeys.Exact], value, index)
-  }
-}
+export const StakingAmountLimitModeDef = {
+  AtLeast: Null,
+  Exact: Null,
+} as const
+export class StakingAmountLimitMode extends JoyEnum(StakingAmountLimitModeDef) {}
 
 export type IStakingPolicy = {
   amount: Balance
@@ -316,36 +212,15 @@ export type IStakingPolicy = {
   crowded_out_unstaking_period_length: Option<BlockNumber>
   review_period_expired_unstaking_period_length: Option<BlockNumber>
 }
-export class StakingPolicy extends JoyStruct<IStakingPolicy> {
-  constructor(value?: IStakingPolicy) {
-    super(
-      {
-        amount: u128,
-        amount_mode: StakingAmountLimitMode,
-        crowded_out_unstaking_period_length: Option.with(u32),
-        review_period_expired_unstaking_period_length: Option.with(u32),
-      },
-      value
-    )
-  }
-
-  get amount(): u128 {
-    return this.getField<u128>('amount')
-  }
-
-  get amount_mode(): StakingAmountLimitMode {
-    return this.getField<StakingAmountLimitMode>('amount_mode')
-  }
-
-  get crowded_out_unstaking_period_length(): Option<u32> {
-    return this.getField<Option<u32>>('crowded_out_unstaking_period_length')
-  }
-
-  get review_period_expired_unstaking_period_length(): Option<u32> {
-    return this.getField<Option<u32>>('review_period_expired_unstaking_period_length')
-  }
-}
-export const schemaValidator: ajv.ValidateFunction = new ajv({ allErrors: true }).compile(role_schema_json)
+export class StakingPolicy
+  extends JoyStructDecorated({
+    amount: u128,
+    amount_mode: StakingAmountLimitMode,
+    crowded_out_unstaking_period_length: Option.with(u32),
+    review_period_expired_unstaking_period_length: Option.with(u32),
+  })
+  implements IStakingPolicy {}
+export const schemaValidator: Ajv.ValidateFunction = new Ajv({ allErrors: true }).compile(role_schema_json)
 
 const OpeningHRTFallback: GenericJoyStreamRoleSchema = {
   version: 1,
@@ -373,24 +248,19 @@ export type IOpening = {
   human_readable_text: Text // Vec<u8>,
 }
 
-export class Opening extends JoyStruct<IOpening> {
-  constructor(value?: IOpening) {
-    super(
-      {
-        created: u32,
-        stage: OpeningStage,
-        max_review_period_length: u32,
-        application_rationing_policy: Option.with(ApplicationRationingPolicy),
-        application_staking_policy: Option.with(StakingPolicy),
-        role_staking_policy: Option.with(StakingPolicy),
-        human_readable_text: Text, // Vec.with(u8),
-      },
-      value
-    )
-  }
-
+export class Opening
+  extends JoyStructDecorated({
+    created: u32,
+    stage: OpeningStage,
+    max_review_period_length: u32,
+    application_rationing_policy: Option.with(ApplicationRationingPolicy),
+    application_staking_policy: Option.with(StakingPolicy),
+    role_staking_policy: Option.with(StakingPolicy),
+    human_readable_text: Text, // Vec.with(u8),
+  })
+  implements IOpening {
   parse_human_readable_text(): GenericJoyStreamRoleSchema | string | undefined {
-    const hrt = this.getField<Text>('human_readable_text')
+    const hrt = this.human_readable_text
 
     if (!hrt) {
       return undefined
@@ -419,34 +289,6 @@ export class Opening extends JoyStruct<IOpening> {
     }
 
     return hrt
-  }
-
-  get created(): BlockNumber {
-    return this.getField<BlockNumber>('created')
-  }
-
-  get stage(): OpeningStage {
-    return this.getField<OpeningStage>('stage')
-  }
-
-  get max_review_period_length(): BlockNumber {
-    return this.getField<BlockNumber>('max_review_period_length')
-  }
-
-  get application_rationing_policy(): Option<ApplicationRationingPolicy> {
-    return this.getField<Option<ApplicationRationingPolicy>>('application_rationing_policy')
-  }
-
-  get application_staking_policy(): Option<StakingPolicy> {
-    return this.getField<Option<StakingPolicy>>('application_staking_policy')
-  }
-
-  get role_staking_policy(): Option<StakingPolicy> {
-    return this.getField<Option<StakingPolicy>>('role_staking_policy')
-  }
-
-  get human_readable_text(): Text {
-    return this.getField<Text>('human_readable_text')
   }
 
   get max_applicants(): number {
@@ -480,54 +322,40 @@ export type IApplication = {
   human_readable_text: Text
 }
 
-export class Application extends JoyStruct<IApplication> {
-  constructor(value?: IOpening) {
-    super(
-      {
-        opening_id: OpeningId,
-        application_index_in_opening: u32,
-        add_to_opening_in_block: u32,
-        active_role_staking_id: Option.with(StakeId),
-        active_application_staking_id: Option.with(StakeId),
-        stage: ApplicationStage,
-        human_readable_text: Text,
-      },
-      value
-    )
-  }
+export class Application
+  extends JoyStructDecorated({
+    opening_id: OpeningId,
+    application_index_in_opening: u32,
+    add_to_opening_in_block: u32,
+    active_role_staking_id: Option.with(StakeId),
+    active_application_staking_id: Option.with(StakeId),
+    stage: ApplicationStage,
+    human_readable_text: Text,
+  })
+  implements IApplication {}
 
-  get stage(): ApplicationStage {
-    return this.getField<ApplicationStage>('stage')
-  }
-
-  get active_role_staking_id(): Option<StakeId> {
-    return this.getField<Option<StakeId>>('active_role_staking_id')
-  }
-
-  get active_application_staking_id(): Option<StakeId> {
-    return this.getField<Option<StakeId>>('active_application_staking_id')
-  }
-
-  get human_readable_text(): Text {
-    return this.getField<Text>('human_readable_text')
-  }
+export const hiringTypes: RegistryTypes = {
+  ApplicationId: 'u64',
+  OpeningId: 'u64',
+  Application,
+  ApplicationStage,
+  ActivateOpeningAt,
+  ApplicationRationingPolicy,
+  OpeningStage,
+  StakingPolicy,
+  Opening,
+  // Expose in registry for api.createType purposes:
+  WaitingToBeingOpeningStageVariant,
+  ActiveOpeningStageVariant,
+  ActiveOpeningStage,
+  AcceptingApplications,
+  ReviewPeriod,
+  Deactivated,
+  OpeningDeactivationCause,
+  InactiveApplicationStage,
+  UnstakingApplicationStage,
+  ApplicationDeactivationCause,
+  StakingAmountLimitMode,
 }
 
-export function registerHiringTypes() {
-  try {
-    getTypeRegistry().register({
-      ApplicationId: 'u64',
-      OpeningId: 'u64',
-      Application,
-      ApplicationStage,
-      // why the prefix? is there some other identically named type?
-      'hiring::ActivateOpeningAt': ActivateOpeningAt,
-      ApplicationRationingPolicy,
-      OpeningStage,
-      StakingPolicy,
-      Opening,
-    })
-  } catch (err) {
-    console.error('Failed to register custom types of hiring module', err)
-  }
-}
+export default hiringTypes

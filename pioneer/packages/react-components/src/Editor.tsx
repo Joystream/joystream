@@ -1,15 +1,20 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { BareProps } from '@polkadot/react-components/types';
+// Something is seriously going wrong here...
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 
 import CodeFlask from 'codeflask';
 import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { classes } from '@polkadot/react-components/util';
 
-interface Props extends BareProps {
+interface Props {
+  className?: string;
   code: string;
   isValid?: boolean;
   onEdit: (code: string) => void;
@@ -34,9 +39,9 @@ interface Props extends BareProps {
  *  />
  * ```
  */
-function Editor ({ className, code, isValid, onEdit }: Props): React.ReactElement<Props> {
+function Editor ({ className = '', code, isValid, onEdit }: Props): React.ReactElement<Props> {
   const [editorId] = useState(`flask-${Date.now()}`);
-  const editorRef = useRef<typeof CodeFlask | null>(null);
+  const editorRef = useRef<CodeFlask | null>(null);
 
   useEffect((): void => {
     const editor = new CodeFlask(`#${editorId}`, {
@@ -45,11 +50,12 @@ function Editor ({ className, code, isValid, onEdit }: Props): React.ReactElemen
     });
 
     editor.updateCode(code);
-    editor.editorRoot.addEventListener('keydown', (): void => {
-      editor.onUpdate(onEdit);
+    (editor as any).editorRoot.addEventListener('keydown', (): void => {
+      (editor as unknown as Record<string, (value: unknown) => void>).onUpdate(onEdit);
     });
 
     editorRef.current = editor;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect((): void => {
@@ -64,7 +70,7 @@ function Editor ({ className, code, isValid, onEdit }: Props): React.ReactElemen
   );
 }
 
-export default styled(Editor)`
+export default React.memo(styled(Editor)`
   .codeflask {
     border: 1px solid rgba(34,36,38,.15);
     background: transparent;
@@ -76,4 +82,4 @@ export default styled(Editor)`
       border-color: #e0b4b4;
     }
   }
-`;
+`);

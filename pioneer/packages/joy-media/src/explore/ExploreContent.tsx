@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import Section from '@polkadot/joy-utils/Section';
+import { Section } from '@polkadot/joy-utils/react/components';
 import { VideoPreviewProps, VideoPreview } from '../video/VideoPreview';
 import { ChannelEntity } from '../entities/ChannelEntity';
 import { ChannelPreview } from '../channels/ChannelPreview';

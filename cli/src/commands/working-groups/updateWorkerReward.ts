@@ -1,6 +1,5 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { apiModuleByGroup } from '../../Api'
-import { WorkerId } from '@joystream/types/working-group'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
 import { Reward } from '../../Types'
@@ -17,6 +16,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
       description: 'Worker ID',
     },
   ]
+
   static flags = {
     ...WorkingGroupsCommandBase.flags,
   }
@@ -56,7 +56,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
     await this.requestAccountDecoding(account)
 
     await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'updateRewardAmount', [
-      new WorkerId(workerId),
+      workerId,
       newRewardValue,
     ])
 

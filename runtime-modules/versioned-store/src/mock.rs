@@ -3,13 +3,13 @@
 use crate::*;
 use crate::{GenesisConfig, Module, Trait};
 
-use primitives::H256;
-use runtime_primitives::{
+use frame_support::{assert_err, assert_ok, impl_outer_origin, parameter_types};
+use sp_core::H256;
+use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use srml_support::{assert_err, assert_ok, impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}
@@ -27,10 +27,11 @@ parameter_types! {
 }
 
 impl system::Trait for Runtime {
+    type BaseCallFilter = ();
     type Origin = Origin;
+    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
@@ -39,12 +40,20 @@ impl system::Trait for Runtime {
     type Event = ();
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = ();
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
-impl timestamp::Trait for Runtime {
+impl pallet_timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -60,14 +69,8 @@ pub const UNKNOWN_ENTITY_ID: EntityId = 222;
 
 pub const UNKNOWN_PROP_ID: u16 = 333;
 
-// pub const UNKNOWN_SCHEMA_ID: u16 = 444;
-
 pub const SCHEMA_ID_0: u16 = 0;
 pub const SCHEMA_ID_1: u16 = 1;
-
-// pub fn generate_text(len: usize) -> Vec<u8> {
-//     vec![b'x'; len]
-// }
 
 pub fn good_class_name() -> Vec<u8> {
     b"Name of a class".to_vec()
@@ -206,7 +209,7 @@ pub fn assert_class_schemas(class_id: ClassId, expected_schema_prop_ids: Vec<Vec
     assert_eq!(class.schemas, schemas);
 }
 
-pub fn assert_entity_not_found(result: dispatch::Result) {
+pub fn assert_entity_not_found(result: crate::DispatchResult) {
     assert_err!(result, ERROR_ENTITY_NOT_FOUND);
 }
 
@@ -238,7 +241,7 @@ pub fn default_genesis_config() -> GenesisConfig {
     }
 }
 
-fn build_test_externalities(config: GenesisConfig) -> runtime_io::TestExternalities {
+fn build_test_externalities(config: GenesisConfig) -> sp_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
@@ -252,8 +255,6 @@ pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
     let config = default_genesis_config();
     build_test_externalities(config).execute_with(f)
 }
-
-// pub type System = system::Module;
 
 /// Export module on a test runtime
 pub type TestModule = Module<Runtime>;

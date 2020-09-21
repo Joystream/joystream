@@ -1,8 +1,6 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
-
-import { BareProps } from './types';
 
 import React from 'react';
 import styled from 'styled-components';
@@ -10,9 +8,11 @@ import styled from 'styled-components';
 import LabelHelp from './LabelHelp';
 import { classes } from './util';
 
-interface Props extends BareProps {
+interface Props {
+  className?: string;
   help?: React.ReactNode;
   isHidden?: boolean;
+  isFull?: boolean;
   isOuter?: boolean;
   isSmall?: boolean;
   label?: React.ReactNode;
@@ -64,6 +64,14 @@ const Wrapper = styled.div`
       }
     }
 
+    &.label-full {
+      padding-left: 0;
+
+      > label {
+        left: 1.55rem;
+      }
+    }
+
     .labelExtra {
       color: rgba(78, 78, 78, .85);
       font-weight: 100;
@@ -88,7 +96,8 @@ const Wrapper = styled.div`
           }
 
           .text {
-            padding: 0.45rem 0
+            line-height: 1;
+            padding: 0.47rem 0
           }
         }
 
@@ -123,7 +132,7 @@ const Wrapper = styled.div`
   }
 `;
 
-export default function Labelled ({ className, children, help, isHidden, isOuter, isSmall, label = defaultLabel, labelExtra, style, withEllipsis, withLabel = true }: Props): React.ReactElement<Props> | null {
+function Labelled ({ className = '', children, help, isFull, isHidden, isOuter, isSmall, label = defaultLabel, labelExtra, withEllipsis, withLabel = true }: Props): React.ReactElement<Props> | null {
   if (isHidden) {
     return null;
   } else if (!withLabel) {
@@ -133,10 +142,7 @@ export default function Labelled ({ className, children, help, isHidden, isOuter
   }
 
   return (
-    <Wrapper
-      className={classes('ui--Labelled', isSmall && 'label-small', isOuter && 'label-outer', className)}
-      style={style}
-    >
+    <Wrapper className={classes('ui--Labelled', isSmall && 'label-small', isFull && 'label-full', isOuter && 'label-outer', className)}>
       <label>
         {
           withEllipsis
@@ -151,3 +157,5 @@ export default function Labelled ({ className, children, help, isHidden, isOuter
     </Wrapper>
   );
 }
+
+export default React.memo(Labelled);

@@ -7,6 +7,7 @@ export const UploadAudioView = MediaView<OuterProps>({
     const { transport, id } = props;
     const entity = id ? await transport.musicTrackById(id) : undefined;
     const opts = await transport.dropdownOptions();
+
     return { entity, opts };
   }
 });

@@ -4,15 +4,15 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode};
-use rstd::cmp::PartialOrd;
-use rstd::ops::Add;
-use rstd::prelude::*;
-
+use frame_support::dispatch::DispatchResult;
+use frame_support::traits::Currency;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
-use sr_primitives::Perbill;
-use srml_support::dispatch;
-use srml_support::traits::Currency;
+use sp_runtime::Perbill;
+use sp_std::boxed::Box;
+use sp_std::cmp::PartialOrd;
+use sp_std::ops::Add;
+use sp_std::vec::Vec;
 
 mod proposal_statuses;
 mod stakes;
@@ -304,7 +304,7 @@ where
 /// Proposal executable code wrapper
 pub trait ProposalExecutable {
     /// Executes proposal code
-    fn execute(&self) -> dispatch::Result;
+    fn execute(&self) -> DispatchResult;
 }
 
 /// Proposal code binary converter

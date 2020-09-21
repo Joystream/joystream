@@ -13,7 +13,7 @@ type Props = {
 export function BgImg (props: Props) {
   let { url, width, height, size, circle, className, style } = props;
 
-  const fullClass = 'JoyBgImg ' + className;
+  const fullClass = `JoyBgImg ${className || ''}`;
 
   let fullStyle: CSSProperties = {
     backgroundImage: `url(${url})`

@@ -93,8 +93,8 @@ You can also run your our own joystream-node:
 
 ```sh
 git checkout master
-cargo build --release
-cargo run --release -- --pruning archive --chain testnets/rome.json
+WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release
+./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-4.json
 ```
 
 Wait for the node to sync to the latest block, then change pioneer settings "remote node" option to "Local Node", or follow the link below:
@@ -122,6 +122,12 @@ During a rebase/merge you may want to skip all hooks, you can use `HUSKY_SKIP_HO
 ```
 HUSKY_SKIP_HOOKS=1 git rebase ...
 ```
+
+## RLS Extension in VScode or Atom Editors
+
+If you use RLS extension in your IDE, start your editor with the `BUILD_DUMMY_WASM_BINARY=1` environment set to workaround a build issue that occurs in the IDE only.
+
+`BUILD_DUMMY_WASM_BINARY=1 code ./joystream`
 
 ## Authors
 

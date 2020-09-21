@@ -5,33 +5,32 @@ import ReactMarkdown from 'react-markdown';
 import { IdentityIcon } from '@polkadot/react-components';
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
-import { withCalls } from '@polkadot/react-api/with';
+import { withCalls } from '@polkadot/react-api/hoc';
 import { Option } from '@polkadot/types';
 import BalanceDisplay from '@polkadot/react-components/Balance';
-import AddressMini from '@polkadot/react-components/AddressMiniJoy';
+import AddressMini from '@polkadot/react-components/AddressMini';
 import { formatNumber } from '@polkadot/util';
 
 import translate from './translate';
-import { MemberId, Profile, EntryMethod, Paid, Screening, Genesis, SubscriptionId } from '@joystream/types/members';
+import { MemberId, Membership, EntryMethod, Paid, Screening, Genesis, SubscriptionId } from '@joystream/types/members';
 import { queryMembershipToProp } from './utils';
 import { Seat } from '@joystream/types/council';
-import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/index';
-import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
+import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/react/hocs/accounts';
 
 type Props = ApiProps & I18nProps & MyAccountProps & {
   preview?: boolean;
   memberId: MemberId;
-  // This cannot be named just "memberProfile", since it will conflict with "withAccount's" memberProfile
-  // (which holds  member profile associated with currently selected account)
-  detailsMemberProfile?: Option<any>; // TODO refactor to Option<Profile>
+  membership?: Membership;
   activeCouncil?: Seat[];
 };
 
 class Component extends React.PureComponent<Props> {
   render () {
-    const { detailsMemberProfile } = this.props;
-    return detailsMemberProfile
-      ? this.renderProfile(detailsMemberProfile.unwrap() as Profile)
+    const { membership } = this.props;
+
+    return membership && !membership.handle.isEmpty
+      ? this.renderProfile(membership)
       : (
         <div className={'item ProfileDetails'}>
           <Loader active inline/>
@@ -39,7 +38,7 @@ class Component extends React.PureComponent<Props> {
       );
   }
 
-  private renderProfile (memberProfile: Profile) {
+  private renderProfile (membership: Membership) {
     const {
       preview = false,
       myAddress,
@@ -51,44 +50,44 @@ class Component extends React.PureComponent<Props> {
       avatar_uri,
       root_account,
       controller_account
-    } = memberProfile;
+    } = membership;
 
     const hasAvatar = avatar_uri && nonEmptyStr(avatar_uri.toString());
     const isMyProfile = myAddress && (myAddress === root_account.toString() || myAddress === controller_account.toString());
     const isCouncilor: boolean = (
-      (activeCouncil.find(x => root_account.eq(x.member)) !== undefined) ||
-      (activeCouncil.find(x => controller_account.eq(x.member)) !== undefined)
+      (activeCouncil.find((x) => root_account.eq(x.member)) !== undefined) ||
+      (activeCouncil.find((x) => controller_account.eq(x.member)) !== undefined)
     );
 
     return (
       <>
-      <div className={`item ProfileDetails ${isMyProfile && 'MyProfile'}`}>
-        {hasAvatar
-          ? <img className='ui avatar image' src={avatar_uri.toString()} />
-          : <IdentityIcon className='image' value={root_account} size={40} />
-        }
-        <div className='content'>
-          <div className='header'>
-            <Link to={`/members/${handle.toString()}`} className='handle'>{handle.toString()}</Link>
-            {isMyProfile && <Link to={'/members/edit'} className='ui tiny button'>Edit my profile</Link>}
-          </div>
-          <div className='description'>
-            {isCouncilor &&
-              <b className='muted text' style={{ color: '#607d8b' }}>
+        <div className={`item ProfileDetails${isMyProfile ? ' MyProfile' : ''}`}>
+          {hasAvatar
+            ? <img className='ui avatar image' src={avatar_uri.toString()} />
+            : <IdentityIcon className='image' value={root_account} size={40} />
+          }
+          <div className='content'>
+            <div className='header'>
+              <Link to={`/members/${handle.toString()}`} className='handle'>{handle.toString()}</Link>
+              {isMyProfile && <Link to={'/members/edit'} className='ui tiny button'>Edit my profile</Link>}
+            </div>
+            <div className='description'>
+              {isCouncilor &&
+              <b className='muted text' style={{ color: '#607d8b', display: 'block' }}>
                 <i className='university icon'></i>
                 Council member
               </b>}
-            <BalanceDisplay label='Balance(root): ' params={root_account} />
-            <div>MemberId: {this.props.memberId.toString()}</div>
+              <BalanceDisplay label='Balance(root): ' params={root_account} />
+              <div>MemberId: {this.props.memberId.toString()}</div>
+            </div>
           </div>
         </div>
-      </div>
-      {!preview && this.renderDetails(memberProfile, isCouncilor)}
+        {!preview && this.renderDetails(membership, isCouncilor)}
       </>
     );
   }
 
-  private renderDetails (memberProfile: Profile, isCouncilor: boolean) {
+  private renderDetails (membership: Membership, isCouncilor: boolean) {
     const {
       about,
       registered_at_block,
@@ -99,7 +98,7 @@ class Component extends React.PureComponent<Props> {
       root_account,
       controller_account
 
-    } = memberProfile;
+    } = membership;
 
     const { memberId } = this.props;
 
@@ -149,11 +148,14 @@ class Component extends React.PureComponent<Props> {
 
   private renderEntryMethod (entry: EntryMethod) {
     const etype = entry.type;
+
     if (etype === Paid.name) {
       const paid = entry.value as Paid;
+
       return <div>Paid, terms ID: {paid.toNumber()}</div>;
     } else if (etype === Screening.name) {
       const accountId = entry.value as Screening;
+
       return <div>Screened by <AddressMini value={accountId} isShort={false} isPadded={false} withBalance /></div>;
     } else if (etype === Genesis.name) {
       return <div>Created at Genesis</div>;
@@ -173,8 +175,8 @@ export default translate(withMyAccount(
   withCalls<Props>(
     queryToProp('query.council.activeCouncil'),
     queryMembershipToProp(
-      'memberProfile',
-      { paramName: 'memberId', propName: 'detailsMemberProfile' }
+      'membershipById',
+      { paramName: 'memberId', propName: 'membership' }
     )
   )(Component)
 ));
