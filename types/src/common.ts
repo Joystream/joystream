@@ -1,6 +1,6 @@
 import { Struct, Option, Text, bool, Vec, u16, u32, u64, Null, U8aFixed, BTreeSet, Compact } from '@polkadot/types'
 import { BlockNumber, H256, Moment } from '@polkadot/types/interfaces'
-import { Codec, RegistryTypes } from '@polkadot/types/types'
+import { Codec, Constructor, InterfaceTypes, Registry, RegistryTypes } from '@polkadot/types/types'
 import { u8aConcat, u8aToHex } from '@polkadot/util'
 // we get 'moment' because it is a dependency of @polkadot/util, via @polkadot/keyring
 import moment from 'moment'
@@ -12,6 +12,14 @@ export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 // Adds ".sort()" during BTreeSet toU8a encoding (required by the runtime)
 // FIXME: Will not cover cases where BTreeSet is part of extrinsic args metadata
 export class JoyBTreeSet<V extends Codec> extends BTreeSet<V> {
+  public static with<V extends Codec>(valType: Constructor<V> | keyof InterfaceTypes): Constructor<JoyBTreeSet<V>> {
+    return class extends JoyBTreeSet<V> {
+      constructor(registry: Registry, value?: Uint8Array | string | Set<any>) {
+        super(registry, valType, value)
+      }
+    }
+  }
+
   public toU8a(isBare?: boolean): Uint8Array {
     const encoded = new Array<Uint8Array>()
 
