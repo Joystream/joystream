@@ -289,3 +289,34 @@ type PropertyValue @entity {
 
 	value: StoredValue!
 }
+
+"The lead when the actor type is 'ActorType.Lead'"
+type ActorTypeLead @variant {
+	lead: CurationLead
+}
+
+"The curator group and actual curator when the actor type is 'ActorType.CuratorGroup'"
+type ActorTypeCuratorGroup @variant {
+	groupWhenCuratorGroupMember: CuratorGroup
+	curatorWhenCuratorGroupMember: Curator
+}
+
+"The member when the actor type is 'ActorType.Member'"
+type ActorTypeMember @variant {
+	member: Member
+}
+
+union ActorInfo = ActorTypeLead | ActorTypeCuratorGroup | ActorTypeMember
+
+enum ActorType {
+	CURATORGROUPMEMBER
+	MEMBER
+	LEAD
+}
+
+type Actor @entity {
+	"The type of actor"
+	type: ActorType
+
+	actorInfo: ActorInfo
+}
