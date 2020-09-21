@@ -2,9 +2,7 @@ import React from 'react'
 import { fluidRange } from 'polished'
 import { css } from '@emotion/core'
 import { Button, Header } from '@/shared/components'
-import { navigate } from '@reach/router'
 import sizes from '@/shared/theme/sizes'
-import routes from '@/config/routes'
 
 type HeroProps = {
   backgroundImg: string
@@ -41,16 +39,6 @@ const Hero: React.FC<Partial<HeroProps>> = ({ backgroundImg }) => {
           `}
         >
           Play
-        </Button>
-        <Button
-          variant="secondary"
-          containerCss={css`
-            width: 96px;
-          `}
-          // FIXME: remove after rebasing on navbar
-          onClick={() => navigate(routes.browse())}
-        >
-          Share
         </Button>
       </div>
     </Header>
