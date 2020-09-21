@@ -79,6 +79,7 @@ enum PropertyType {
 	INT32
 	INT64
 	TEXT
+	HASH
 	REFERENCE
 	VECBOOL
 	VECUINT16
