@@ -2554,9 +2554,9 @@ impl<T: Trait> Module<T> {
         maximum_entities_count: T::EntityId,
         default_entity_creation_voucher_upper_bound: T::EntityId,
     ) -> Result<(), Error<T>> {
-        // Ensure `per_controller_entities_creation_limit` does not exceed
+        // Ensure default_entity_creation_voucher_upper_bound does not exceed default_entity_creation_voucher_upper_bound
         ensure!(
-            default_entity_creation_voucher_upper_bound < maximum_entities_count,
+            default_entity_creation_voucher_upper_bound <= maximum_entities_count,
             Error::<T>::PerControllerEntitiesCreationLimitExceedsOverallLimit
         );
 
