@@ -769,7 +769,7 @@ fn create_add_working_group_leader_opening_proposal_common_checks_succeed() {
             activate_at: ActivateOpeningAt::CurrentBlock,
             commitment: OpeningPolicyCommitment::default(),
             human_readable_text: b"some text".to_vec(),
-            working_group: WorkingGroup::Storage,
+            working_group: WorkingGroup::Content,
         };
 
         increase_total_balance_issuance_using_account_id(1, 500000);
@@ -840,7 +840,7 @@ fn create_begin_review_working_group_leader_applications_proposal_common_checks_
                     b"body".to_vec(),
                     None,
                     opening_id,
-                    WorkingGroup::Storage
+                    WorkingGroup::Content
                 )
             },
             empty_stake_call: || {
@@ -851,7 +851,7 @@ fn create_begin_review_working_group_leader_applications_proposal_common_checks_
                     b"body".to_vec(),
                     None,
                     opening_id,
-                    WorkingGroup::Storage
+                    WorkingGroup::Content
                 )
             },
             invalid_stake_call: || {
@@ -862,7 +862,7 @@ fn create_begin_review_working_group_leader_applications_proposal_common_checks_
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     opening_id,
-                    WorkingGroup::Storage
+                    WorkingGroup::Content
                 )
             },
             successful_call: || {
@@ -873,14 +873,14 @@ fn create_begin_review_working_group_leader_applications_proposal_common_checks_
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(25000u32)),
                     opening_id,
-                    WorkingGroup::Storage
+                    WorkingGroup::Content
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::begin_review_working_group_leader_applications_proposal::<
                 Test,
             >(),
             proposal_details: ProposalDetails::BeginReviewWorkingGroupLeaderApplications(opening_id,
-                WorkingGroup::Storage),
+                WorkingGroup::Content),
         };
         proposal_fixture.check_all();
     });
@@ -895,7 +895,7 @@ fn create_fill_working_group_leader_opening_proposal_common_checks_succeed() {
             opening_id,
             successful_application_id: 1,
             reward_policy: None,
-            working_group: WorkingGroup::Storage,
+            working_group: WorkingGroup::Content,
         };
 
         increase_total_balance_issuance_using_account_id(1, 500000);
@@ -963,7 +963,7 @@ fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
                 b"body".to_vec(),
                 Some(<BalanceOf<Test>>::from(50000u32)),
                 (crate::WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
-                WorkingGroup::Storage,
+                WorkingGroup::Content,
             ),
             Err(Error::<Test>::InvalidWorkingGroupMintCapacity.into())
         );
@@ -984,7 +984,7 @@ fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     None,
                     0,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             empty_stake_call: || {
@@ -995,7 +995,7 @@ fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     None,
                     0,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             invalid_stake_call: || {
@@ -1006,7 +1006,7 @@ fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     0,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             successful_call: || {
@@ -1017,7 +1017,7 @@ fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(50000u32)),
                     10,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             proposal_parameters:
@@ -1025,7 +1025,7 @@ fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
                 ),
             proposal_details: ProposalDetails::SetWorkingGroupMintCapacity(
                 10,
-                WorkingGroup::Storage,
+                WorkingGroup::Content,
             ),
         };
         proposal_fixture.check_all();
@@ -1047,7 +1047,7 @@ fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
                     None,
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             empty_stake_call: || {
@@ -1059,7 +1059,7 @@ fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
                     None,
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             invalid_stake_call: || {
@@ -1071,7 +1071,7 @@ fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             successful_call: || {
@@ -1083,7 +1083,7 @@ fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(50000u32)),
                     10,
                     10,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             proposal_parameters:
@@ -1093,7 +1093,7 @@ fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
             proposal_details: ProposalDetails::DecreaseWorkingGroupLeaderStake(
                 10,
                 10,
-                WorkingGroup::Storage,
+                WorkingGroup::Content,
             ),
         };
         proposal_fixture.check_all();
@@ -1115,7 +1115,7 @@ fn create_slash_working_group_leader_stake_proposal_common_checks_succeed() {
                     None,
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             empty_stake_call: || {
@@ -1127,7 +1127,7 @@ fn create_slash_working_group_leader_stake_proposal_common_checks_succeed() {
                     None,
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             invalid_stake_call: || {
@@ -1139,7 +1139,7 @@ fn create_slash_working_group_leader_stake_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             successful_call: || {
@@ -1151,7 +1151,7 @@ fn create_slash_working_group_leader_stake_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(50000u32)),
                     10,
                     10,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             proposal_parameters:
@@ -1161,7 +1161,7 @@ fn create_slash_working_group_leader_stake_proposal_common_checks_succeed() {
             proposal_details: ProposalDetails::SlashWorkingGroupLeaderStake(
                 10,
                 10,
-                WorkingGroup::Storage,
+                WorkingGroup::Content,
             ),
         };
         proposal_fixture.check_all();
@@ -1189,7 +1189,7 @@ fn slash_stake_with_zero_staking_balance_fails() {
                 Some(<BalanceOf<Test>>::from(50000u32)),
                 10,
                 0,
-                WorkingGroup::Storage,
+                WorkingGroup::Content,
             ),
             Err(Error::<Test>::SlashingStakeIsZero.into())
         );
@@ -1217,7 +1217,7 @@ fn decrease_stake_with_zero_staking_balance_fails() {
                 Some(<BalanceOf<Test>>::from(50000u32)),
                 10,
                 0,
-                WorkingGroup::Storage,
+                WorkingGroup::Content,
             ),
             Err(Error::<Test>::DecreasingStakeIsZero.into())
         );
@@ -1237,7 +1237,7 @@ fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
                     None,
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             empty_stake_call: || {
@@ -1249,7 +1249,7 @@ fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
                     None,
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             invalid_stake_call: || {
@@ -1261,7 +1261,7 @@ fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             successful_call: || {
@@ -1273,7 +1273,7 @@ fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(50000u32)),
                     10,
                     10,
-                    WorkingGroup::Storage,
+                    WorkingGroup::Content,
                 )
             },
             proposal_parameters:
@@ -1282,7 +1282,7 @@ fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
             proposal_details: ProposalDetails::SetWorkingGroupLeaderReward(
                 10,
                 10,
-                WorkingGroup::Storage,
+                WorkingGroup::Content,
             ),
         };
         proposal_fixture.check_all();
@@ -1298,7 +1298,7 @@ fn create_terminate_working_group_leader_role_proposal_common_checks_succeed() {
             worker_id: 10,
             rationale: Vec::new(),
             slash: false,
-            working_group: WorkingGroup::Storage,
+            working_group: WorkingGroup::Content,
         };
 
         let proposal_fixture = ProposalTestFixture {

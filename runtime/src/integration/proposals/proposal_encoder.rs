@@ -18,6 +18,9 @@ use sp_std::vec::Vec;
 macro_rules! wrap_working_group_call {
     ($working_group:expr, $working_group_instance_call:expr) => {{
         match $working_group {
+            WorkingGroup::Content => {
+                Call::ContentDirectoryWorkingGroup($working_group_instance_call)
+            }
             WorkingGroup::Storage => Call::StorageWorkingGroup($working_group_instance_call),
         }
     }};

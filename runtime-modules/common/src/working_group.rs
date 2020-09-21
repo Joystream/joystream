@@ -12,4 +12,6 @@ pub enum WorkingGroup {
     */
     /// Storage working group: working_group::Instance2.
     Storage,
+    /// Storage working group: working_group::Instance3.
+    Content,
 }

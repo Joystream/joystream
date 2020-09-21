@@ -7,10 +7,10 @@ use hiring::ActivateOpeningAt;
 use proposals_codex::AddOpeningParameters;
 use working_group::{OpeningPolicyCommitment, RewardPolicy};
 
-use crate::{Balance, BlockNumber, StorageWorkingGroupInstance};
+use crate::{
+    Balance, BlockNumber, ContentDirectoryWorkingGroup, ContentDirectoryWorkingGroupInstance,
+};
 use sp_std::collections::btree_set::BTreeSet;
-
-type StorageWorkingGroup = working_group::Module<Runtime, StorageWorkingGroupInstance>;
 
 type Hiring = hiring::Module<Runtime>;
 
@@ -24,11 +24,11 @@ fn add_opening(
     let expected_proposal_id = sequence_number;
     let run_to_block = sequence_number * 2;
 
-    let opening_id = StorageWorkingGroup::next_opening_id();
+    let opening_id = ContentDirectoryWorkingGroup::next_opening_id();
 
     assert!(!<working_group::OpeningById<
         Runtime,
-        StorageWorkingGroupInstance,
+        ContentDirectoryWorkingGroupInstance,
     >>::contains_key(opening_id));
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
@@ -44,7 +44,7 @@ fn add_opening(
                     .clone()
                     .unwrap_or(OpeningPolicyCommitment::default()),
                 human_readable_text: Vec::new(),
-                working_group: WorkingGroup::Storage,
+                working_group: WorkingGroup::Content,
             },
         )
     })
@@ -73,7 +73,7 @@ fn begin_review_applications(
             b"body".to_vec(),
             Some(<BalanceOf<Runtime>>::from(25_000_u32)),
             opening_id,
-            WorkingGroup::Storage,
+            WorkingGroup::Content,
         )
     })
     .disable_setup_enviroment()
@@ -105,7 +105,7 @@ fn fill_opening(
                 opening_id,
                 successful_application_id,
                 reward_policy: reward_policy.clone(),
-                working_group: WorkingGroup::Storage,
+                working_group: WorkingGroup::Content,
             },
         )
     })
@@ -143,7 +143,7 @@ fn decrease_stake(
             Some(<BalanceOf<Runtime>>::from(50_000_u32)),
             leader_worker_id,
             stake_amount,
-            WorkingGroup::Storage,
+            WorkingGroup::Content,
         )
     })
     .disable_setup_enviroment()
@@ -172,7 +172,7 @@ fn slash_stake(
             Some(<BalanceOf<Runtime>>::from(50_000_u32)),
             leader_worker_id,
             stake_amount,
-            WorkingGroup::Storage,
+            WorkingGroup::Content,
         )
     })
     .disable_setup_enviroment()
@@ -201,7 +201,7 @@ fn set_reward(
             Some(<BalanceOf<Runtime>>::from(50_000_u32)),
             leader_worker_id,
             reward_amount,
-            WorkingGroup::Storage,
+            WorkingGroup::Content,
         )
     })
     .disable_setup_enviroment()
@@ -224,7 +224,7 @@ fn set_mint_capacity(
     let mint_id_result = <minting::Module<Runtime>>::add_mint(0, None);
 
     if let Ok(mint_id) = mint_id_result {
-        <working_group::Mint<Runtime, StorageWorkingGroupInstance>>::put(mint_id);
+        <working_group::Mint<Runtime, ContentDirectoryWorkingGroupInstance>>::put(mint_id);
     }
 
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
@@ -235,7 +235,7 @@ fn set_mint_capacity(
             b"body".to_vec(),
             Some(<BalanceOf<Runtime>>::from(50_000_u32)),
             mint_capacity,
-            WorkingGroup::Storage,
+            WorkingGroup::Content,
         )
     })
     .with_setup_enviroment(setup_environment)
@@ -266,7 +266,7 @@ fn terminate_role(
                 worker_id: leader_worker_id,
                 rationale: Vec::new(),
                 slash,
-                working_group: WorkingGroup::Storage,
+                working_group: WorkingGroup::Content,
             },
         )
     })
@@ -283,11 +283,11 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
         let member_id = 1;
         let account_id: [u8; 32] = [member_id; 32];
 
-        let next_opening_id = StorageWorkingGroup::next_opening_id();
+        let next_opening_id = ContentDirectoryWorkingGroup::next_opening_id();
 
         assert!(!<working_group::OpeningById<
             Runtime,
-            StorageWorkingGroupInstance,
+            ContentDirectoryWorkingGroupInstance,
         >>::contains_key(next_opening_id));
 
         let opening_id = add_opening(
@@ -304,7 +304,7 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
         // Check for the new opening creation.
         assert!(<working_group::OpeningById<
             Runtime,
-            StorageWorkingGroupInstance,
+            ContentDirectoryWorkingGroupInstance,
         >>::contains_key(opening_id));
     });
 }
@@ -323,7 +323,7 @@ fn create_begin_review_working_group_leader_applications_proposal_execution_succ
             1,
         );
 
-        let opening = StorageWorkingGroup::opening_by_id(opening_id);
+        let opening = ContentDirectoryWorkingGroup::opening_by_id(opening_id);
 
         let hiring_opening = Hiring::opening_by_id(opening.hiring_opening_id);
         assert_eq!(
@@ -372,7 +372,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             1,
         );
 
-        let apply_result = StorageWorkingGroup::apply_on_opening(
+        let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
             RawOrigin::Signed(account_id.clone().into()).into(),
             member_id as u64,
             opening_id,
@@ -388,7 +388,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
 
         begin_review_applications(member_id, account_id, opening_id, 2);
 
-        let lead = StorageWorkingGroup::current_lead();
+        let lead = ContentDirectoryWorkingGroup::current_lead();
         assert!(lead.is_none());
 
         fill_opening(
@@ -400,7 +400,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             3,
         );
 
-        let lead = StorageWorkingGroup::current_lead();
+        let lead = ContentDirectoryWorkingGroup::current_lead();
         assert!(lead.is_some());
     });
 }
@@ -430,7 +430,7 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
             1,
         );
 
-        let apply_result = StorageWorkingGroup::apply_on_opening(
+        let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
             RawOrigin::Signed(account_id.clone().into()).into(),
             member_id as u64,
             opening_id,
@@ -446,7 +446,7 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
 
         begin_review_applications(member_id, account_id, opening_id, 2);
 
-        let lead = StorageWorkingGroup::current_lead();
+        let lead = ContentDirectoryWorkingGroup::current_lead();
         assert!(lead.is_none());
 
         fill_opening(
@@ -458,7 +458,7 @@ fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
             3,
         );
 
-        let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
+        let leader_worker_id = ContentDirectoryWorkingGroup::current_lead().unwrap();
 
         let stake_id = 1;
         let old_balance = Balances::free_balance(&account_id.into());
@@ -511,7 +511,7 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
             1,
         );
 
-        let apply_result = StorageWorkingGroup::apply_on_opening(
+        let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
             RawOrigin::Signed(account_id.clone().into()).into(),
             member_id as u64,
             opening_id,
@@ -527,7 +527,7 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
 
         begin_review_applications(member_id, account_id, opening_id, 2);
 
-        let lead = StorageWorkingGroup::current_lead();
+        let lead = ContentDirectoryWorkingGroup::current_lead();
         assert!(lead.is_none());
 
         fill_opening(
@@ -539,7 +539,7 @@ fn create_slash_group_leader_stake_proposal_execution_succeeds() {
             3,
         );
 
-        let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
+        let leader_worker_id = ContentDirectoryWorkingGroup::current_lead().unwrap();
 
         let stake_id = 1;
         let old_balance = Balances::free_balance(&account_id.into());
@@ -573,12 +573,12 @@ fn create_set_working_group_mint_capacity_proposal_execution_succeeds() {
         let member_id = 1;
         let account_id: [u8; 32] = [member_id; 32];
 
-        assert_eq!(StorageWorkingGroup::mint(), 0);
+        assert_eq!(ContentDirectoryWorkingGroup::mint(), 0);
 
         let mint_capacity = 999999;
         set_mint_capacity(member_id, account_id, mint_capacity, 1, true);
 
-        let mint_id = StorageWorkingGroup::mint();
+        let mint_id = ContentDirectoryWorkingGroup::mint();
         let mint = <minting::Module<Runtime>>::mints(mint_id);
 
         assert_eq!(mint.capacity(), mint_capacity);
@@ -610,7 +610,7 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
             1,
         );
 
-        let apply_result = StorageWorkingGroup::apply_on_opening(
+        let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
             RawOrigin::Signed(account_id.clone().into()).into(),
             member_id as u64,
             opening_id,
@@ -626,7 +626,7 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
 
         begin_review_applications(member_id, account_id, opening_id, 2);
 
-        let lead = StorageWorkingGroup::current_lead();
+        let lead = ContentDirectoryWorkingGroup::current_lead();
         assert!(lead.is_none());
 
         let old_reward_amount = 100;
@@ -647,9 +647,9 @@ fn create_set_group_leader_reward_proposal_execution_succeeds() {
             4,
         );
 
-        let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
+        let leader_worker_id = ContentDirectoryWorkingGroup::current_lead().unwrap();
 
-        let worker = StorageWorkingGroup::worker_by_id(leader_worker_id);
+        let worker = ContentDirectoryWorkingGroup::worker_by_id(leader_worker_id);
         let relationship_id = worker.reward_relationship.unwrap();
 
         let relationship = recurring_rewards::RewardRelationships::<Runtime>::get(relationship_id);
@@ -694,7 +694,7 @@ fn create_terminate_group_leader_role_proposal_execution_succeeds() {
             1,
         );
 
-        let apply_result = StorageWorkingGroup::apply_on_opening(
+        let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
             RawOrigin::Signed(account_id.clone().into()).into(),
             member_id as u64,
             opening_id,
@@ -710,7 +710,7 @@ fn create_terminate_group_leader_role_proposal_execution_succeeds() {
 
         begin_review_applications(member_id, account_id, opening_id, 2);
 
-        let lead = StorageWorkingGroup::current_lead();
+        let lead = ContentDirectoryWorkingGroup::current_lead();
         assert!(lead.is_none());
 
         let old_reward_amount = 100;
@@ -731,7 +731,7 @@ fn create_terminate_group_leader_role_proposal_execution_succeeds() {
             4,
         );
 
-        let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
+        let leader_worker_id = ContentDirectoryWorkingGroup::current_lead().unwrap();
 
         let stake_id = 1;
         let old_balance = Balances::free_balance(&account_id.into());
@@ -741,7 +741,7 @@ fn create_terminate_group_leader_role_proposal_execution_succeeds() {
 
         terminate_role(member_id, account_id, leader_worker_id, false, 5);
 
-        assert!(StorageWorkingGroup::current_lead().is_none());
+        assert!(ContentDirectoryWorkingGroup::current_lead().is_none());
 
         let new_balance = Balances::free_balance(&account_id.into());
         let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
@@ -776,7 +776,7 @@ fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
             1,
         );
 
-        let apply_result = StorageWorkingGroup::apply_on_opening(
+        let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
             RawOrigin::Signed(account_id.clone().into()).into(),
             member_id as u64,
             opening_id,
@@ -792,7 +792,7 @@ fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
 
         begin_review_applications(member_id, account_id, opening_id, 2);
 
-        let lead = StorageWorkingGroup::current_lead();
+        let lead = ContentDirectoryWorkingGroup::current_lead();
         assert!(lead.is_none());
 
         let old_reward_amount = 100;
@@ -813,7 +813,7 @@ fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
             4,
         );
 
-        let leader_worker_id = StorageWorkingGroup::current_lead().unwrap();
+        let leader_worker_id = ContentDirectoryWorkingGroup::current_lead().unwrap();
 
         let stake_id = 1;
         let old_balance = Balances::free_balance(&account_id.into());
@@ -823,7 +823,7 @@ fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
 
         terminate_role(member_id, account_id, leader_worker_id, true, 5);
 
-        assert!(StorageWorkingGroup::current_lead().is_none());
+        assert!(ContentDirectoryWorkingGroup::current_lead().is_none());
 
         let new_balance = Balances::free_balance(&account_id.into());
         let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
