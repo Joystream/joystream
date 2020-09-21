@@ -5,6 +5,7 @@
 import React, { useCallback, useState } from 'react';
 import { AddressRow, Button, Modal, Password } from '@polkadot/react-components';
 import keyring from '@polkadot/ui-keyring';
+import { isPasswordValid } from '@polkadot/joy-utils/functions/accounts';
 
 import { useTranslation } from '../../translate';
 
@@ -27,24 +28,24 @@ interface OldPass {
 function ChangePass ({ address, className = '', onClose }: Props): React.ReactElement<Props> {
   const { t } = useTranslation();
   const [isBusy, setIsBusy] = useState(false);
-  const [newPass1, setNewPass1] = useState<NewPass>({ isValid: false, password: '' });
-  const [newPass2, setNewPass2] = useState<NewPass>({ isValid: false, password: '' });
-  const [{ isOldValid, oldPass }, setOldPass] = useState<OldPass>({ isOldValid: false, oldPass: '' });
+  const [newPass1, setNewPass1] = useState<NewPass>({ isValid: true, password: '' });
+  const [newPass2, setNewPass2] = useState<NewPass>({ isValid: true, password: '' });
+  const [{ isOldValid, oldPass }, setOldPass] = useState<OldPass>({ isOldValid: true, oldPass: '' });
 
   const _onChangeNew1 = useCallback(
     (password: string) =>
-      setNewPass1({ isValid: keyring.isPassValid(password), password }),
+      setNewPass1({ isValid: isPasswordValid(password), password }),
     []
   );
 
   const _onChangeNew2 = useCallback(
     (password: string) =>
-      setNewPass2({ isValid: keyring.isPassValid(password) && (newPass1.password === password), password }),
+      setNewPass2({ isValid: isPasswordValid(password) && (newPass1.password === password), password }),
     [newPass1]
   );
 
   const _onChangeOld = useCallback(
-    (oldPass: string) => setOldPass({ isOldValid: keyring.isPassValid(oldPass), oldPass }),
+    (oldPass: string) => setOldPass({ isOldValid: isPasswordValid(oldPass), oldPass }),
     []
   );
 
