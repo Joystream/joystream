@@ -15,7 +15,9 @@
 //! - [slash_stake](./struct.Module.html#method.slash_stake) - Slashes the regular worker/lead stake.
 //! - [decrease_stake](./struct.Module.html#method.decrease_stake) - Decreases the regular worker/lead stake and returns the remainder to the worker _role_account_.
 //! - [increase_stake](./struct.Module.html#method.increase_stake) - Increases the regular worker/lead stake.
-
+//! - [cancel_opening](./struct.Module.html#method.cancel_opening) - Cancel opening for a regular worker/lead.
+//! - [withdraw_application](./struct.Module.html#method.withdraw_application) - Withdraw the regular worker/lead application.
+//!
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -156,6 +158,11 @@ decl_event!(
         /// Params:
         /// - Job application id
         ApplicationWithdrawn(ApplicationId),
+
+        /// Emits on canceling the job opening.
+        /// Params:
+        /// - Opening id
+        OpeningCanceled(OpeningId),
     }
 );
 
@@ -551,6 +558,29 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::ApplicationWithdrawn(application_id));
+        }
+
+        /// Cancel an opening for the regular worker/lead position.
+        /// Require signed leader origin or the root (to cancel opening for the leader position).
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn cancel_opening(
+            origin,
+            opening_id: T::OpeningId,
+        ) {
+            // Ensure job opening exists.
+            let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
+
+            checks::ensure_origin_for_opening_type::<T, I>(origin, opening.opening_type)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Remove the opening.
+            <OpeningById::<T, I>>::remove(opening_id);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::OpeningCanceled(opening_id));
         }
     }
 }

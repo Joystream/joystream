@@ -747,3 +747,43 @@ impl WithdrawApplicationFixture {
         }
     }
 }
+
+pub struct CancelOpeningFixture {
+    origin: RawOrigin<u64>,
+    opening_id: u64,
+}
+
+impl CancelOpeningFixture {
+    pub fn default_for_opening_id(opening_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            opening_id,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call(&self) -> DispatchResult {
+        TestWorkingTeam::cancel_opening(self.origin.clone().into(), self.opening_id)
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        if expected_result.is_ok() {
+            assert!(
+                <crate::OpeningById<Test, TestWorkingTeamInstance>>::contains_key(self.opening_id)
+            );
+        }
+
+        let actual_result = self.call().map(|_| ());
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            assert!(
+                !<crate::OpeningById<Test, TestWorkingTeamInstance>>::contains_key(self.opening_id)
+            );
+        }
+    }
+}

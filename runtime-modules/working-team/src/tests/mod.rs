@@ -5,8 +5,8 @@ mod mock;
 use system::RawOrigin;
 
 use crate::tests::fixtures::{
-    DecreaseWorkerStakeFixture, IncreaseWorkerStakeFixture, SlashWorkerStakeFixture,
-    WithdrawApplicationFixture,
+    CancelOpeningFixture, DecreaseWorkerStakeFixture, IncreaseWorkerStakeFixture,
+    SlashWorkerStakeFixture, WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::STAKING_ACCOUNT_ID_FOR_FAILED_EXTERNAL_CHECK;
@@ -1235,6 +1235,57 @@ fn withdraw_worker_application_fails_with_invalid_application_author() {
                 .with_signer(invalid_author_account_id);
         withdraw_application_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingTeamInstance>::OriginIsNotApplicant.into(),
+        ));
+    });
+}
+
+#[test]
+fn cancel_opening_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default().with_starting_block(starting_block);
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let cancel_opening_fixture = CancelOpeningFixture::default_for_opening_id(opening_id);
+        cancel_opening_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::OpeningCanceled(opening_id));
+    });
+}
+
+#[test]
+fn cancel_opening_fails_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let cancel_opening_fixture =
+            CancelOpeningFixture::default_for_opening_id(opening_id).with_origin(RawOrigin::None);
+        cancel_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn cancel_opening_fails_invalid_opening_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_opening_id = 11;
+
+        let cancel_opening_fixture =
+            CancelOpeningFixture::default_for_opening_id(invalid_opening_id);
+
+        cancel_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::OpeningDoesNotExist.into(),
         ));
     });
 }
