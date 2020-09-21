@@ -10,8 +10,7 @@ use frame_support::dispatch::DispatchResult;
 use serde::{Deserialize, Serialize};
 
 /// Team job application type alias.
-pub type JobApplication<T, I> =
-    Application<<T as system::Trait>::AccountId, <T as crate::Trait<I>>::OpeningId, MemberId<T>>;
+pub type JobApplication<T> = Application<<T as system::Trait>::AccountId, MemberId<T>>;
 
 /// Member identifier in membership::member module.
 pub type MemberId<T> = <T as membership::Trait>::MemberId;
@@ -22,7 +21,7 @@ pub type TeamWorkerId<T> = <T as membership::Trait>::ActorId;
 // ApplicationId - JobApplication - helper struct.
 pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
     pub application_id: T::ApplicationId,
-    pub application: JobApplication<T, I>,
+    pub application: JobApplication<T>,
 }
 
 /// Team worker type alias.
@@ -74,15 +73,12 @@ impl Default for JobOpeningType {
 /// An application for the regular worker/lead role opening.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct Application<AccountId, OpeningId, MemberId> {
+pub struct Application<AccountId, MemberId> {
     /// Account used to authenticate in this role.
     pub role_account_id: AccountId,
 
     /// Account used to stake in this role.
     pub staking_account_id: AccountId,
-
-    /// Opening on which this application applies.
-    pub opening_id: OpeningId,
 
     /// Member applying.
     pub member_id: MemberId,
@@ -91,21 +87,17 @@ pub struct Application<AccountId, OpeningId, MemberId> {
     pub description_hash: Vec<u8>,
 }
 
-impl<AccountId: Clone, OpeningId: Clone, MemberId: Clone>
-    Application<AccountId, OpeningId, MemberId>
-{
+impl<AccountId: Clone, MemberId: Clone> Application<AccountId, MemberId> {
     /// Creates a new job application using parameters.
     pub fn new(
         role_account_id: &AccountId,
         staking_account_id: &AccountId,
-        opening_id: &OpeningId,
         member_id: &MemberId,
         description_hash: Vec<u8>,
     ) -> Self {
         Application {
             role_account_id: role_account_id.clone(),
             staking_account_id: staking_account_id.clone(),
-            opening_id: opening_id.clone(),
             member_id: member_id.clone(),
             description_hash,
         }

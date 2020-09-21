@@ -6,6 +6,7 @@ use system::RawOrigin;
 
 use crate::tests::fixtures::{
     DecreaseWorkerStakeFixture, IncreaseWorkerStakeFixture, SlashWorkerStakeFixture,
+    WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::STAKING_ACCOUNT_ID_FOR_FAILED_EXTERNAL_CHECK;
@@ -1144,5 +1145,96 @@ fn increase_worker_stake_fails_external_check() {
             .with_balance(invalid_new_stake);
 
         decrease_stake_fixture.call_and_assert(Err(DispatchError::Other("External check failed")));
+    });
+}
+
+#[test]
+fn withdraw_application_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        let starting_block = 1;
+        run_to_block(starting_block);
+
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default()
+            .with_starting_block(starting_block)
+            .with_stake_policy(Some(StakePolicy {
+                stake_amount: stake,
+                unstaking_period: 10,
+            }));
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let apply_on_opening_fixture =
+            ApplyOnOpeningFixture::default_for_opening_id(opening_id).with_stake(Some(stake));
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
+
+        let withdraw_application_fixture =
+            WithdrawApplicationFixture::default_for_application_id(application_id).with_stake();
+        withdraw_application_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::ApplicationWithdrawn(application_id));
+    });
+}
+
+#[test]
+fn withdraw_application_fails_invalid_application_id() {
+    build_test_externalities().execute_with(|| {
+        let invalid_application_id = 6;
+
+        let withdraw_application_fixture =
+            WithdrawApplicationFixture::default_for_application_id(invalid_application_id);
+        withdraw_application_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::WorkerApplicationDoesNotExist.into(),
+        ));
+    });
+}
+
+#[test]
+fn withdraw_application_fails_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id);
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
+
+        let withdraw_application_fixture =
+            WithdrawApplicationFixture::default_for_application_id(application_id)
+                .with_origin(RawOrigin::None);
+        withdraw_application_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn withdraw_worker_application_fails_with_invalid_application_author() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture = AddOpeningFixture::default();
+        let opening_id = add_opening_fixture.call_and_assert(Ok(()));
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id);
+        let application_id = apply_on_opening_fixture.call_and_assert(Ok(()));
+
+        let invalid_author_account_id = 55;
+        let withdraw_application_fixture =
+            WithdrawApplicationFixture::default_for_application_id(application_id)
+                .with_signer(invalid_author_account_id);
+        withdraw_application_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::OriginIsNotApplicant.into(),
+        ));
     });
 }

@@ -689,7 +689,7 @@ decl_module! {
             Self::deposit_event(RawEvent::AppliedOnOpening(opening_id, new_application_id));
         }
 
-        /// Withdraw the worker application. Can be done by the worker itself only.
+        /// Withdraw the worker application. Can be done by the worker only.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn withdraw_application(
             origin,

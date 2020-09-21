@@ -151,6 +151,11 @@ decl_event!(
         /// - regular worker/lead id.
         /// - new stake amount
         StakeIncreased(TeamWorkerId, Balance),
+
+        /// Emits on withdrawing the application for the regular worker/lead opening.
+        /// Params:
+        /// - Job application id
+        ApplicationWithdrawn(ApplicationId),
     }
 );
 
@@ -168,7 +173,7 @@ decl_storage! {
 
         /// Maps identifier to worker application on opening.
         pub ApplicationById get(fn application_by_id) : map hasher(blake2_128_concat)
-            T::ApplicationId => JobApplication<T, I>;
+            T::ApplicationId => JobApplication<T>;
 
         /// Next identifier value for new worker application.
         pub NextApplicationId get(fn next_application_id) : T::ApplicationId;
@@ -282,10 +287,9 @@ decl_module! {
             let hashed_description = T::Hashing::hash(&description);
 
             // Make regular/lead application.
-            let application = JobApplication::<T, I>::new(
+            let application = JobApplication::<T>::new(
                 &role_account_id,
                 &staking_account_id,
-                &opening_id,
                 &member_id,
                 hashed_description.as_ref().to_vec(),
             );
@@ -516,6 +520,37 @@ decl_module! {
             )?;
 
             Self::deposit_event(RawEvent::StakeIncreased(worker_id, new_stake_balance));
+        }
+
+        /// Withdraw the worker application. Can be done by the worker only.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn withdraw_application(
+            origin,
+            application_id: T::ApplicationId
+        ) {
+            // Ensuring worker application actually exists
+            let application_info = checks::ensure_application_exists::<T, I>(&application_id)?;
+
+            // Ensure that it is signed
+            let signer_account = ensure_signed(origin)?;
+
+            // Ensure that signer is applicant role account
+            ensure!(
+                signer_account == application_info.application.role_account_id,
+                Error::<T, I>::OriginIsNotApplicant
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            T::StakingHandler::unlock(T::LockId::get(), &application_info.application.staking_account_id);
+
+            // Remove an application.
+            <ApplicationById<T, I>>::remove(application_info.application_id);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::ApplicationWithdrawn(application_id));
         }
     }
 }

@@ -53,5 +53,8 @@ decl_error! {
 
         /// Application stake is less than required opening stake.
         ApplicationStakeDoesntMatchOpening,
+
+        /// Origin is not applicant.
+        OriginIsNotApplicant,
     }
 }

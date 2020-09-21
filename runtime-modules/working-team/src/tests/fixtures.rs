@@ -206,10 +206,9 @@ impl ApplyOnOpeningFixture {
             let actual_application = TestWorkingTeam::application_by_id(application_id);
 
             let expected_hash = <Test as system::Trait>::Hashing::hash(&self.description);
-            let expected_application = JobApplication::<Test, TestWorkingTeamInstance> {
+            let expected_application = JobApplication::<Test> {
                 role_account_id: self.role_account_id,
                 staking_account_id: self.staking_account_id,
-                opening_id: self.opening_id,
                 member_id: self.member_id,
                 description_hash: expected_hash.as_ref().to_vec(),
             };
@@ -690,6 +689,61 @@ impl IncreaseWorkerStakeFixture {
 
             // worker balance equilibrium
             assert_eq!(old_balance + old_stake, new_balance + self.balance);
+        }
+    }
+}
+
+pub struct WithdrawApplicationFixture {
+    origin: RawOrigin<u64>,
+    application_id: u64,
+    stake: bool,
+    account_id: u64,
+}
+
+impl WithdrawApplicationFixture {
+    pub fn with_signer(self, account_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(account_id),
+            ..self
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_stake(self) -> Self {
+        Self {
+            stake: true,
+            ..self
+        }
+    }
+
+    pub fn default_for_application_id(application_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            application_id,
+            stake: false,
+            account_id: 1,
+        }
+    }
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_balance = Balances::usable_balance(&self.account_id);
+        let old_stake = get_stake_balance(&self.account_id);
+
+        let actual_result =
+            TestWorkingTeam::withdraw_application(self.origin.clone().into(), self.application_id);
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            if self.stake {
+                // the stake was removed
+                assert_eq!(0, get_stake_balance(&self.account_id));
+
+                let new_balance = Balances::usable_balance(&self.account_id);
+
+                // worker balance equilibrium
+                assert_eq!(old_balance + old_stake, new_balance);
+            }
         }
     }
 }
