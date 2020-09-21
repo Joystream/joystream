@@ -49,7 +49,7 @@ type Class @entity {
 	defaultEntityCreationVoucherUpperBound: BigInt!
 
 	"For this permission, the individual member is allowed to create the entity and become controller"
-	anyMemberCanCreate: Boolean
+	anyMemberCanCreate: Boolean!
 
 	"Whether to prevent everyone from creating an entity"
 	entityCreationBlocked: Boolean!
