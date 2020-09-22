@@ -56,5 +56,8 @@ decl_error! {
 
         /// Origin is not applicant.
         OriginIsNotApplicant,
+
+        /// Invalid operation - worker is leaving.
+        WorkerIsLeaving,
     }
 }

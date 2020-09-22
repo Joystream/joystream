@@ -141,6 +141,11 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber> Worker<AccountId, MemberId,
             job_unstaking_period,
         }
     }
+
+    /// Defines whether the worker is leaving the role.
+    pub fn is_leaving(&self) -> bool {
+        self.started_leaving_at.is_some()
+    }
 }
 
 /// Stake policy for the job opening.

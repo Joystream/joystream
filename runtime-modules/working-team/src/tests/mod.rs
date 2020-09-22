@@ -375,6 +375,40 @@ fn update_worker_role_account_by_leader_succeeds() {
 }
 
 #[test]
+fn update_worker_role_fails_with_leaving_worker() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+        let unstaking_period = 10;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            unstaking_period,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy.clone())
+            .hire();
+
+        let new_account_id = 10;
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_stake_policy(stake_policy);
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        let update_worker_account_fixture =
+            UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, new_account_id);
+
+        update_worker_account_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::WorkerIsLeaving.into(),
+        ));
+    });
+}
+
+#[test]
 fn update_worker_role_account_fails_with_invalid_origin() {
     build_test_externalities().execute_with(|| {
         let worker_id = HireRegularWorkerFixture::default().hire();
@@ -446,6 +480,34 @@ fn leave_worker_role_fails_with_invalid_origin_signed_account() {
 
         leave_worker_role_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingTeamInstance>::SignerIsNotWorkerRoleAccount.into(),
+        ));
+    });
+}
+
+#[test]
+fn leave_worker_role_fails_already_leaving_worker() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            unstaking_period: 10,
+        });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy.clone())
+            .hire();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_stake_policy(stake_policy);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+        leave_worker_role_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::WorkerIsLeaving.into(),
         ));
     });
 }
@@ -1470,6 +1532,72 @@ fn cancel_opening_fails_invalid_opening_id() {
 
         cancel_opening_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingTeamInstance>::OpeningDoesNotExist.into(),
+        ));
+    });
+}
+
+#[test]
+fn decrease_worker_stake_fails_with_leaving_worker() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+        let new_stake_balance = 100;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            unstaking_period: 10,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy.clone())
+            .hire();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_stake_policy(stake_policy);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_balance(new_stake_balance);
+
+        decrease_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::WorkerIsLeaving.into(),
+        ));
+    });
+}
+
+#[test]
+fn increase_worker_stake_fails_with_leaving_worker() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+        let new_stake_balance = 100;
+
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            unstaking_period: 10,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_stake_policy(stake_policy.clone())
+            .hire();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_stake_policy(stake_policy);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
+            .with_balance(new_stake_balance);
+
+        increase_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::WorkerIsLeaving.into(),
         ));
     });
 }

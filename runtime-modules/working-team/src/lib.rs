@@ -212,14 +212,15 @@ decl_module! {
         const MaxWorkerNumberLimit: u32 = T::MaxWorkerNumberLimit::get();
 
         fn on_initialize() -> Weight{
-            let mut workers_to_leave = Vec::new();
-            WorkerById::<T, I>::iter().for_each(|(worker_id, worker)| {
+            let workers_to_leave = WorkerById::<T, I>::iter().filter_map(|(worker_id, worker)| {
                 if let Some(started_leaving_at) = worker.started_leaving_at {
                     if started_leaving_at + worker.job_unstaking_period == Self::current_block(){
-                        workers_to_leave.push((worker_id, worker));
+                        return Some((worker_id, worker))
                     }
                 }
-            });
+
+                None
+            }).collect::<Vec<_>>();
 
             workers_to_leave.iter().for_each(|(worker_id, worker)| {
                 Self::deactivate_worker(&worker_id, &worker, RawEvent::WorkerExited(*worker_id));
@@ -394,6 +395,9 @@ decl_module! {
             // Ensure that origin is signed by member with given id.
             checks::ensure_origin_signed_by_member::<T, I>(origin, &worker.member_id)?;
 
+            // Ensure the worker is active.
+            ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
+
             //
             // == MUTATION SAFE ==
             //
@@ -415,6 +419,9 @@ decl_module! {
         ) {
             // Ensure there is a signer which matches role account of worker corresponding to provided id.
             let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
+
+            // Ensure the worker is active.
+            ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
 
             //
             // == MUTATION SAFE ==
@@ -491,6 +498,9 @@ decl_module! {
 
             let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
 
+            // Ensure the worker is active.
+            ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
+
             ensure!(
                 new_stake_balance != <BalanceOfCurrency<T>>::zero(),
                 Error::<T, I>::StakeBalanceCannotBeZero
@@ -522,6 +532,9 @@ decl_module! {
         pub fn increase_stake(origin, worker_id: TeamWorkerId<T>, new_stake_balance: BalanceOfCurrency<T>) {
             // Checks worker origin and worker existence.
             let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
+
+            // Ensure the worker is active.
+            ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
 
             ensure!(
                 new_stake_balance != <BalanceOfCurrency<T>>::zero(),
