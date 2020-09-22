@@ -219,12 +219,12 @@ function Overview ({ className = '', onStatusChange }: Props): React.ReactElemen
             />
           </>
         )}
-        <Button
+        {/* <Button
           icon='plus'
           isDisabled={!(api.tx.multisig || api.tx.utility)}
           label={t<string>('Multisig')}
           onClick={toggleMultisig}
-        />
+        /> */}
         {/* <Button
           icon='plus'
           isDisabled={!api.tx.proxy}
