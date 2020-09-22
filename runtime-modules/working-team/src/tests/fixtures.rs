@@ -244,6 +244,7 @@ pub struct FillOpeningFixture {
     successful_application_ids: BTreeSet<u64>,
     role_account_id: u64,
     staking_account_id: u64,
+    stake_policy: Option<StakePolicy<u64, u64>>,
 }
 
 impl FillOpeningFixture {
@@ -256,11 +257,18 @@ impl FillOpeningFixture {
             successful_application_ids: application_ids,
             role_account_id: 1,
             staking_account_id: 1,
+            stake_policy: None,
         }
     }
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
+    }
+    pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
+        Self {
+            stake_policy,
+            ..self
+        }
     }
 
     pub fn call(&self) -> Result<u64, DispatchError> {
@@ -300,6 +308,11 @@ impl FillOpeningFixture {
                 member_id: 1,
                 role_account_id: self.role_account_id,
                 staking_account_id: self.staking_account_id,
+                started_leaving_at: None,
+                job_unstaking_period: self
+                    .stake_policy
+                    .as_ref()
+                    .map_or(0, |sp| sp.unstaking_period),
             };
 
             let actual_worker = TestWorkingTeam::worker_by_id(worker_id);
@@ -321,14 +334,14 @@ impl FillOpeningFixture {
 
 pub struct HireLeadFixture {
     setup_environment: bool,
-    stake: Option<u64>,
+    stake_policy: Option<StakePolicy<u64, u64>>,
 }
 
 impl Default for HireLeadFixture {
     fn default() -> Self {
         Self {
             setup_environment: true,
-            stake: None,
+            stake_policy: None,
         }
     }
 }
@@ -340,38 +353,28 @@ impl HireLeadFixture {
         }
     }
 
-    pub fn with_stake(self, stake: u64) -> Self {
+    pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
         Self {
-            stake: Some(stake),
+            stake_policy,
             ..self
         }
     }
 
     pub fn hire_lead(self) -> u64 {
-        let stake_policy = self.stake.map(|amount| StakePolicy {
-            stake_amount: amount,
-            unstaking_period: 10,
-        });
-
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
             .with_opening_type(JobOpeningType::Leader)
-            .with_stake_policy(stake_policy)
+            .with_stake_policy(self.stake_policy)
             .add_application(b"leader".to_vec())
             .execute()
             .unwrap()
     }
 
     pub fn expect(self, error: DispatchError) {
-        let stake_policy = self.stake.map(|amount| StakePolicy {
-            stake_amount: amount,
-            unstaking_period: 10,
-        });
-
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
             .with_opening_type(JobOpeningType::Leader)
-            .with_stake_policy(stake_policy)
+            .with_stake_policy(self.stake_policy)
             .add_application(b"leader".to_vec())
             .expect(Err(error))
             .execute();
@@ -380,35 +383,30 @@ impl HireLeadFixture {
 
 pub struct HireRegularWorkerFixture {
     setup_environment: bool,
-    stake: Option<u64>,
+    stake_policy: Option<StakePolicy<u64, u64>>,
 }
 
 impl Default for HireRegularWorkerFixture {
     fn default() -> Self {
         Self {
             setup_environment: true,
-            stake: None,
+            stake_policy: None,
         }
     }
 }
 impl HireRegularWorkerFixture {
-    pub fn with_stake(self, stake: u64) -> Self {
+    pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
         Self {
-            stake: Some(stake),
+            stake_policy,
             ..self
         }
     }
 
     pub fn hire(self) -> u64 {
-        let stake_policy = self.stake.map(|amount| StakePolicy {
-            stake_amount: amount,
-            unstaking_period: 10,
-        });
-
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
             .with_opening_type(JobOpeningType::Regular)
-            .with_stake_policy(stake_policy)
+            .with_stake_policy(self.stake_policy)
             .add_application(b"worker".to_vec())
             .execute()
             .unwrap()
@@ -452,6 +450,7 @@ impl UpdateWorkerRoleAccountFixture {
 pub(crate) struct LeaveWorkerRoleFixture {
     worker_id: u64,
     origin: RawOrigin<u64>,
+    stake_policy: Option<StakePolicy<u64, u64>>,
 }
 
 impl LeaveWorkerRoleFixture {
@@ -459,10 +458,18 @@ impl LeaveWorkerRoleFixture {
         Self {
             worker_id,
             origin: RawOrigin::Signed(1),
+            stake_policy: None,
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
+    }
+
+    pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
+        Self {
+            stake_policy,
+            ..self
+        }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
@@ -470,6 +477,18 @@ impl LeaveWorkerRoleFixture {
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
+            if self.stake_policy.is_some() {
+                let worker = TestWorkingTeam::worker_by_id(self.worker_id);
+
+                if worker.job_unstaking_period > 0 {
+                    assert_eq!(
+                        worker.started_leaving_at,
+                        Some(<system::Module<Test>>::block_number())
+                    );
+                    return;
+                }
+            }
+
             assert!(
                 !<crate::WorkerById<Test, TestWorkingTeamInstance>>::contains_key(self.worker_id)
             );

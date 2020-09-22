@@ -32,6 +32,8 @@ mod types;
 
 use codec::Codec;
 use frame_support::traits::{Get, LockIdentifier};
+use frame_support::weights::Weight;
+use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{Hash, MaybeSerialize, Member};
@@ -209,7 +211,22 @@ decl_module! {
         /// Exports const -  max simultaneous active worker number.
         const MaxWorkerNumberLimit: u32 = T::MaxWorkerNumberLimit::get();
 
-        // ****************** Hiring flow **********************
+        fn on_initialize() -> Weight{
+            let mut workers_to_leave = Vec::new();
+            WorkerById::<T, I>::iter().for_each(|(worker_id, worker)| {
+                if let Some(started_leaving_at) = worker.started_leaving_at {
+                    if started_leaving_at + worker.job_unstaking_period == Self::current_block(){
+                        workers_to_leave.push((worker_id, worker));
+                    }
+                }
+            });
+
+            workers_to_leave.iter().for_each(|(worker_id, worker)| {
+                Self::deactivate_worker(&worker_id, &worker, RawEvent::WorkerExited(*worker_id));
+            });
+
+            10_000_000 //TODO: adjust weight
+        }
 
         /// Add a job opening for a regular worker/lead role.
         /// Require signed leader origin or the root (to add opening for the leader position).
@@ -403,9 +420,13 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::deactivate_worker(&worker_id, &worker);
-
-            Self::deposit_event(RawEvent::WorkerExited(worker_id));
+            if worker.job_unstaking_period == Zero::zero(){
+                Self::deactivate_worker(&worker_id, &worker, RawEvent::WorkerExited(worker_id));
+            } else{
+                WorkerById::<T, I>::mutate(worker_id, |worker| {
+                    worker.started_leaving_at = Some(Self::current_block())
+                });
+            }
         }
 
         /// Terminate the active worker by the lead.
@@ -430,8 +451,6 @@ decl_module! {
                 Self::slash(worker_id, &worker.staking_account_id, None)
             }
 
-            Self::deactivate_worker(&worker_id, &worker);
-
             // Trigger the event
             let event = if is_sudo {
                 RawEvent::TerminatedLeader(worker_id)
@@ -439,7 +458,7 @@ decl_module! {
                 RawEvent::TerminatedWorker(worker_id)
             };
 
-            Self::deposit_event(event);
+            Self::deactivate_worker(&worker_id, &worker, event);
         }
 
         /// Slashes the regular worker stake, demands a leader origin. No limits, no actions on zero stake.
@@ -613,7 +632,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         successful_applications_info
             .iter()
             .for_each(|application_info| {
-                let new_worker_id = Self::create_worker_by_application(&application_info);
+                let new_worker_id = Self::create_worker_by_application(&opening, &application_info);
 
                 application_id_to_worker_id.insert(application_info.application_id, new_worker_id);
 
@@ -627,7 +646,10 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Creates worker by the application. Deletes application from the storage.
-    fn create_worker_by_application(application_info: &ApplicationInfo<T, I>) -> TeamWorkerId<T> {
+    fn create_worker_by_application(
+        opening: &JobOpening<T::BlockNumber, BalanceOfCurrency<T>>,
+        application_info: &ApplicationInfo<T, I>,
+    ) -> TeamWorkerId<T> {
         // Get worker id
         let new_worker_id = <NextWorkerId<T, I>>::get();
 
@@ -636,6 +658,10 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             &application_info.application.member_id,
             &application_info.application.role_account_id,
             &application_info.application.staking_account_id,
+            opening
+                .stake_policy
+                .as_ref()
+                .map_or(Zero::zero(), |sp| sp.unstaking_period),
         );
 
         // Store a worker
@@ -671,7 +697,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Fires the worker. Unsets the leader if necessary. Decreases active worker counter.
-    fn deactivate_worker(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
+    // Deposits an event.
+    fn deactivate_worker(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>, event: Event<T, I>) {
         // Unset lead if the leader is leaving.
         let leader_worker_id = <CurrentLead<T, I>>::get();
         if let Some(leader_worker_id) = leader_worker_id {
@@ -685,6 +712,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         Self::decrease_active_worker_counter();
 
         T::StakingHandler::unlock(T::LockId::get(), &worker.staking_account_id);
+
+        Self::deposit_event(event);
     }
 
     // Slash the stake.

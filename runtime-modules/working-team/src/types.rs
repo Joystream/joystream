@@ -1,11 +1,10 @@
 #![warn(missing_docs)]
 
 use codec::{Decode, Encode};
-
 use common::currency::GovernanceCurrency;
+use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, LockIdentifier};
 
-use frame_support::dispatch::DispatchResult;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 
@@ -25,7 +24,8 @@ pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
 }
 
 /// Team worker type alias.
-pub type TeamWorker<T> = Worker<<T as system::Trait>::AccountId, MemberId<T>>;
+pub type TeamWorker<T> =
+    Worker<<T as system::Trait>::AccountId, MemberId<T>, <T as system::Trait>::BlockNumber>;
 
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
 pub type BalanceOfCurrency<T> =
@@ -107,7 +107,7 @@ impl<AccountId: Clone, MemberId: Clone> Application<AccountId, MemberId> {
 /// Working team participant: regular worker or lead.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct Worker<AccountId, MemberId> {
+pub struct Worker<AccountId, MemberId, BlockNumber> {
     /// Member id related to the worker/lead.
     pub member_id: MemberId,
 
@@ -116,19 +116,29 @@ pub struct Worker<AccountId, MemberId> {
 
     /// Account used to stake in this role.
     pub staking_account_id: AccountId,
+
+    /// Specifies the block when the worker chose to leave.
+    pub started_leaving_at: Option<BlockNumber>,
+
+    /// Unstaking period when the worker chooses to leave the role.
+    /// It is defined by the job opening.
+    pub job_unstaking_period: BlockNumber,
 }
 
-impl<AccountId: Clone, MemberId: Clone> Worker<AccountId, MemberId> {
+impl<AccountId: Clone, MemberId: Clone, BlockNumber> Worker<AccountId, MemberId, BlockNumber> {
     /// Creates a new _TeamWorker_ using parameters.
     pub fn new(
         member_id: &MemberId,
         role_account_id: &AccountId,
         staking_account_id: &AccountId,
+        job_unstaking_period: BlockNumber,
     ) -> Self {
         Worker {
             member_id: member_id.clone(),
             role_account_id: role_account_id.clone(),
             staking_account_id: staking_account_id.clone(),
+            started_leaving_at: None,
+            job_unstaking_period,
         }
     }
 }
