@@ -1,10 +1,14 @@
 import { createServer } from 'miragejs'
 import { createGraphQLHandler, mirageGraphQLFieldResolver } from '@miragejs/graphql'
 import { shuffle } from 'lodash'
+import faker from 'faker'
 
 import schema from '../schema.graphql'
-import { mockCategories, mockChannels, mockVideos } from '@/mocking/data'
+import { FEATURED_VIDEOS_INDEXES, mockCategories, mockChannels, mockVideos, mockVideosMedia } from '@/mocking/data'
 import { SearchVariables } from '@/api/queries/__generated__/Search'
+import { ModelInstance } from 'miragejs/-types'
+import { ChannelFields } from '@/api/queries/__generated__/ChannelFields'
+import { CategoryFields } from '@/api/queries/__generated__/CategoryFields'
 
 createServer({
   routes() {
@@ -25,8 +29,8 @@ createServer({
             return videos.slice(start, end)
           },
           featured_videos: (...params: unknown[]) => {
-            const videos = mirageGraphQLFieldResolver(...params)
-            return shuffle(videos.slice(0, 16))
+            const videos = mirageGraphQLFieldResolver(...params) as unknown[]
+            return videos.filter((_, idx) => FEATURED_VIDEOS_INDEXES.includes(idx))
           },
           channels: (...params: unknown[]) => {
             const channels = mirageGraphQLFieldResolver(...params)
@@ -67,46 +71,40 @@ createServer({
 
   seeds(server) {
     const channels = mockChannels.map((channel) => {
-      const models = server.create('Channel', {
+      return server.schema.create('Channel', {
         ...channel,
-      })
-      return models
+      }) as ModelInstance<ChannelFields>
     })
 
     const categories = mockCategories.map((category) => {
-      const models = server.create('Category', {
+      return server.schema.create('Category', {
         ...category,
+      }) as ModelInstance<CategoryFields>
+    })
+
+    const videoMedias = mockVideosMedia.map((videoMedia) => {
+      // FIXME: This suffers from the same behaviour as the search resolver - all the returned items have the same location
+      const location = server.schema.create('HTTPVideoMediaLocation', {
+        id: faker.random.uuid(),
+        ...videoMedia.location,
       })
-      return models
+
+      const model = server.schema.create('VideoMedia', {
+        ...videoMedia,
+        location,
+      })
+      return model
     })
 
-    const location = server.schema.create('HTTPVideoMediaLocation', {
-      id: 'locationID',
-      host: 'https://js-video-example.s3.eu-central-1.amazonaws.com/waves.mp4',
-    })
-
-    const media = server.schema.create('VideoMedia', {
-      id: 'videoMediaID',
-      entityID: 'videoMediaEntityID',
-      encoding: 'H264_mpeg4',
-      pixelWidth: 1920,
-      pixelHeight: 1080,
-      location,
-    })
-
-    // repeat videos 15 times
-    // TODO: expand as part of https://github.com/Joystream/joystream/issues/1270
-    const fakedMockVideos = Array.from({ length: 15 }, (_, idx) =>
-      mockVideos.map((v) => ({ ...v, id: `${v.id}${idx}` }))
-    ).flat()
-
-    fakedMockVideos.forEach((video, idx) =>
-      server.create('Video', {
+    mockVideos.forEach((video, idx) => {
+      const mediaIndex = idx % mockVideosMedia.length
+      server.schema.create('Video', {
         ...video,
-        media,
+        duration: mockVideosMedia[mediaIndex].duration,
         channel: channels[idx % channels.length],
         category: categories[idx % categories.length],
+        media: videoMedias[mediaIndex],
       })
-    )
+    })
   },
 })

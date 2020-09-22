@@ -14,8 +14,7 @@ export interface GetVideo_video_category {
 
 export interface GetVideo_video_media_location_HTTPVideoMediaLocation {
   __typename: "HTTPVideoMediaLocation";
-  host: string;
-  port: number | null;
+  URL: string;
 }
 
 export interface GetVideo_video_media_location_JoystreamVideoMediaLocation {
@@ -27,6 +26,7 @@ export type GetVideo_video_media_location = GetVideo_video_media_location_HTTPVi
 
 export interface GetVideo_video_media {
   __typename: "VideoMedia";
+  id: string;
   pixelHeight: number;
   pixelWidth: number;
   location: GetVideo_video_media_location;

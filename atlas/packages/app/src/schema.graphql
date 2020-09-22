@@ -16,9 +16,6 @@ type Member {
 type Channel {
   id: ID!
 
-  # Id of underlying entity.
-  entityID: String!
-
   handle: String!
 
   description: String!
@@ -43,9 +40,6 @@ type Channel {
 type Category {
   id: ID!
 
-  # Id of underlying entity.
-  entityID: String!
-
   name: String!
 
   videos: [Video!]
@@ -56,9 +50,7 @@ type JoystreamVideoMediaLocation {
 }
 
 type HTTPVideoMediaLocation {
-  # TODO: join these fields together
-  host: String!
-  port: Int
+  URL: String!
 }
 
 # In the future we can add IPFS, Dat, etc.
@@ -96,9 +88,6 @@ union License = UserDefinedLicense | CreativeCommonsLicense
 type VideoMedia {
   id: ID!
 
-  # Id of underlying entity.
-  entityID: String!
-
   encoding: VideoMediaEncoding!
 
   # Resolution width
@@ -116,9 +105,6 @@ type VideoMedia {
 
 type Video {
   id: ID!
-
-  # Id of underlying entity.
-  entityID: String!
 
   channel: Channel!
 

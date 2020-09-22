@@ -1,5 +1,21 @@
 import gql from 'graphql-tag'
 
+const videoMediaFieldsFragment = gql`
+  fragment VideoMediaFields on VideoMedia {
+    id
+    pixelHeight
+    pixelWidth
+    location {
+      ... on HTTPVideoMediaLocation {
+        URL
+      }
+      ... on JoystreamVideoMediaLocation {
+        dataObjectID
+      }
+    }
+  }
+`
+
 export const videoFieldsFragment = gql`
   fragment VideoFields on Video {
     id
@@ -13,17 +29,7 @@ export const videoFieldsFragment = gql`
     thumbnailURL
     publishedOnJoystreamAt
     media {
-      pixelHeight
-      pixelWidth
-      location {
-        ... on HTTPVideoMediaLocation {
-          host
-          port
-        }
-        ... on JoystreamVideoMediaLocation {
-          dataObjectID
-        }
-      }
+      ...VideoMediaFields
     }
     channel {
       id
@@ -31,6 +37,7 @@ export const videoFieldsFragment = gql`
       handle
     }
   }
+  ${videoMediaFieldsFragment}
 `
 
 export const GET_VIDEOS = gql`
