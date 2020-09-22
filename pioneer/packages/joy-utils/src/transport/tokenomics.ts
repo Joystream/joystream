@@ -136,10 +136,10 @@ export default class TokenomicsTransport extends BaseTransport {
   async calcuateStorageProvider (stakeIds: StakeId[], leadStakeId: StakeId | null, rewardIds: RewardRelationshipId[], leadRewardId: RewardRelationshipId | null) {
     let totalStorageProviderStake = 0; let leadStake = 0; let storageProviderRewardsPerBlock = 0; let storageLeadRewardsPerBlock = 0;
 
-    (await this.api.query.stake.stakes.multi(stakeIds) as Stake[]).forEach((stake) => {
+    (await this.api.query.stake.stakes.multi<Stake>(stakeIds)).forEach((stake) => {
       totalStorageProviderStake += stake.value.toNumber();
     });
-    (await this.api.query.recurringRewards.rewardRelationships.multi(rewardIds) as RewardRelationship[]).map((rewardRelationship) => {
+    (await this.api.query.recurringRewards.rewardRelationships.multi<RewardRelationship>(rewardIds)).map((rewardRelationship) => {
       const amount = rewardRelationship.amount_per_payout.toNumber();
       const payoutInterval = rewardRelationship.payout_interval.isSome ? rewardRelationship.payout_interval.unwrap().toNumber() : null;
 
@@ -185,7 +185,7 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async getContentCurators () {
-    const stakeIds: StakeId[] = []; const rewardIds: RewardRelationshipId[] = []; let numberOfContentCurators = 0; let leadNumber = 0;
+    const stakeIds: StakeId[] = []; const rewardIds: RewardRelationshipId[] = []; let numberOfContentCurators = 0;
     const contentCurators = await this.entriesByIds<CuratorId, Curator>(this.api.query.contentWorkingGroup.curatorById);
     const currentLeadId = (await this.api.query.contentWorkingGroup.currentLeadId() as Option<LeadId>).unwrapOr(null)?.toNumber();
 
@@ -193,9 +193,7 @@ export default class TokenomicsTransport extends BaseTransport {
       const stakeId = curator.role_stake_profile.isSome ? curator.role_stake_profile.unwrap().stake_id : null;
       const rewardId = curator.reward_relationship.unwrapOr(null);
 
-      if (currentLeadId !== undefined && currentLeadId === curatorId.toNumber()) {
-        leadNumber += 1;
-      } else {
+      if (curator.is_active) {
         numberOfContentCurators += 1;
 
         if (stakeId) {
@@ -212,17 +210,17 @@ export default class TokenomicsTransport extends BaseTransport {
       stakeIds,
       rewardIds,
       numberOfContentCurators,
-      contentCuratorLeadNumber: leadNumber
+      contentCuratorLeadNumber: currentLeadId ? 1 : 0
     };
   }
 
   async calculateContentCurator (stakeIds: StakeId[], rewardIds: RewardRelationshipId[]) {
     let totalContentCuratorStake = 0; let contentCuratorRewardsPerBlock = 0;
 
-    (await this.api.query.stake.stakes.multi(stakeIds) as Stake[]).forEach((stake) => {
+    (await this.api.query.stake.stakes.multi<Stake>(stakeIds)).forEach((stake) => {
       totalContentCuratorStake += stake.value.toNumber();
     });
-    (await this.api.query.recurringRewards.rewardRelationships.multi(rewardIds) as RewardRelationship[]).map((rewardRelationship) => {
+    (await this.api.query.recurringRewards.rewardRelationships.multi<RewardRelationship>(rewardIds)).map((rewardRelationship) => {
       const amount = rewardRelationship.amount_per_payout.toNumber();
       const payoutInterval = rewardRelationship.payout_interval.isSome ? rewardRelationship.payout_interval.unwrap().toNumber() : null;
 
@@ -255,7 +253,7 @@ export default class TokenomicsTransport extends BaseTransport {
     let totalValidatorStake = 0; let numberOfNominators = 0;
 
     if (currentEra !== null) {
-      const validatorStakeData = await this.api.query.staking.erasStakers.multi(validatorIds.map((validatorId) => [currentEra, validatorId])) as Exposure[];
+      const validatorStakeData = await this.api.query.staking.erasStakers.multi<Exposure>(validatorIds.map((validatorId) => [currentEra, validatorId]));
 
       validatorStakeData.forEach((data) => {
         if (!data.total.isEmpty) {
