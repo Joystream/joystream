@@ -118,3 +118,46 @@ export type DiscussionContraints = {
   maxPostLength: number;
   maxPostEdits: number;
 }
+
+export type HistoricalParsedPost = {
+  postId: number;
+  threadId: number;
+  text: string;
+  createdAt: string;
+  createdAtBlock: number;
+  updatedAt: string;
+  updatedAtBlock: number;
+  author: ParsedMember;
+  authorId: number;
+  editsCount: number;
+}
+
+export type HistoricalProposalData = {
+  proposal: {
+    id: number,
+    parameters: unknown, // JSON of ProposalParameters
+    proposerId: number,
+    title: string,
+    description: string,
+    createdAt: string,
+    status: unknown, // JSON of ProposalStatus
+    votingResults: unknown, // JSON of VotingResults
+    details: unknown[], // JSON of ParsedProposalDetails
+    type: string,
+    proposer: ParsedMember,
+    createdAtBlock: number,
+    cancellationFee: number
+  },
+  votes: {
+    councilMembersLength: number,
+    votes: {
+      vote: number;
+      member: ParsedMember & { memberId: number },
+    }[]
+  },
+  discussion: {
+    title: string,
+    threadId: number,
+    posts: HistoricalParsedPost[]
+  }
+}

@@ -401,6 +401,7 @@ decl_module! {
                 });
 
                 membership.root_account = new_root_account.clone();
+                <MembershipById<T>>::insert(member_id, membership);
                 Self::deposit_event(RawEvent::MemberSetRootAccount(member_id, new_root_account));
             }
         }

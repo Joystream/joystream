@@ -138,12 +138,13 @@ export function downloadAccount ({ json, pair }: CreateResult): void {
   FileSaver.saveAs(blob, `${pair.address}.json`);
 }
 
-function createAccount (suri: string, pairType: KeypairType, { genesisHash, name, tags = [] }: CreateOptions, password: string, success: string): ActionStatus {
+function createAccount (suri: string, pairType: KeypairType, { name, tags = [] }: CreateOptions, password: string, success: string): ActionStatus {
   // we will fill in all the details below
   const status = { action: 'create' } as ActionStatus;
 
   try {
-    const result = keyring.addUri(suri, password, { genesisHash, name, tags }, pairType);
+    // Joystream-specific - ignore genesisHash when creating new accounts
+    const result = keyring.addUri(suri, password, { name, tags }, pairType);
     const { address } = result.pair;
 
     status.account = address;
@@ -170,7 +171,7 @@ function Create ({ className = '', onClose, onStatusChange, seed: propsSeed, typ
   const [isConfirmationOpen, toggleConfirmation] = useToggle();
   const [isBusy, setIsBusy] = useState(false);
   const [{ isNameValid, name }, setName] = useState({ isNameValid: false, name: '' });
-  const [{ isPasswordValid, password }, setPassword] = useState({ isPasswordValid: false, password: '' });
+  const [{ isPasswordValid, password }, setPassword] = useState({ isPasswordValid: true, password: '' });
   const isValid = !!address && !deriveError && isNameValid && isPasswordValid && isSeedValid;
   const seedOpt = useMemo(() => (
     isDevelopment
