@@ -38,7 +38,7 @@ use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, St
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{Hash, MaybeSerialize, Member};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use system::ensure_signed;
+use system::{ensure_root, ensure_signed};
 
 pub use errors::Error;
 use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId, WorkerInfo};
@@ -167,6 +167,11 @@ decl_event!(
         /// Params:
         /// - Opening id
         OpeningCanceled(OpeningId),
+
+        /// Emits on setting the budget for the working team.
+        /// Params:
+        /// - new budget
+        BudgetSet(Balance),
     }
 );
 
@@ -618,6 +623,26 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::OpeningCanceled(opening_id));
+        }
+
+        /// Sets a new budget for the working team.
+        /// Requires root origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_budget(
+            origin,
+            new_budget: BalanceOfCurrency<T>,
+        ) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update the budget.
+            <Budget::<T, I>>::put(new_budget);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::BudgetSet(new_budget));
         }
     }
 }

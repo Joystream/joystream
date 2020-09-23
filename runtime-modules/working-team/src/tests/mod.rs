@@ -5,7 +5,7 @@ mod mock;
 use system::RawOrigin;
 
 use crate::tests::fixtures::{
-    CancelOpeningFixture, DecreaseWorkerStakeFixture, IncreaseWorkerStakeFixture,
+    CancelOpeningFixture, DecreaseWorkerStakeFixture, IncreaseWorkerStakeFixture, SetBudgetFixture,
     SlashWorkerStakeFixture, WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
@@ -19,7 +19,7 @@ use fixtures::{
 };
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::{LockableCurrency, WithdrawReason};
-use frame_support::{StorageMap, StorageValue};
+use frame_support::StorageMap;
 use mock::{
     build_test_externalities, run_to_block, Balances, Test, TestWorkingTeam,
     TestWorkingTeamInstance,
@@ -1642,7 +1642,7 @@ fn rewards_payments_are_successful() {
 
         let account_id = worker.role_account_id;
 
-        <crate::Budget<Test, TestWorkingTeamInstance>>::put(10000);
+        SetBudgetFixture::default().execute();
 
         assert_eq!(Balances::usable_balance(&account_id), 0);
 
@@ -1703,7 +1703,9 @@ fn rewards_payments_with_insufficient_budget() {
         assert_eq!(Balances::usable_balance(&account_id), 0);
 
         let paid_blocks = 3;
-        <crate::Budget<Test, TestWorkingTeamInstance>>::put(reward_per_block * paid_blocks);
+        SetBudgetFixture::default()
+            .with_budget(reward_per_block * paid_blocks)
+            .execute();
 
         let block_number = 10;
         run_to_block(block_number);
@@ -1719,5 +1721,31 @@ fn rewards_payments_with_insufficient_budget() {
             worker.missed_reward.unwrap(),
             (block_number - paid_blocks) * reward_per_block
         );
+    });
+}
+
+#[test]
+fn set_budget_succeeded() {
+    build_test_externalities().execute_with(|| {
+        run_to_block(1);
+
+        let new_budget = 10000;
+        SetBudgetFixture::default()
+            .with_budget(new_budget)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::BudgetSet(new_budget));
+    });
+}
+
+#[test]
+fn set_budget_fails_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+        let leader_account_id = 1;
+
+        SetBudgetFixture::default()
+            .with_origin(RawOrigin::Signed(leader_account_id))
+            .call_and_assert(Err(DispatchError::BadOrigin));
     });
 }

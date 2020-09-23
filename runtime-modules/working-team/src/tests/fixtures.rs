@@ -841,3 +841,51 @@ impl CancelOpeningFixture {
         }
     }
 }
+
+pub struct SetBudgetFixture {
+    origin: RawOrigin<u64>,
+    new_budget: u64,
+}
+
+impl Default for SetBudgetFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Root,
+            new_budget: 1000000,
+        }
+    }
+}
+
+impl SetBudgetFixture {
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_budget(self, new_budget: u64) -> Self {
+        Self { new_budget, ..self }
+    }
+
+    pub fn execute(self) {
+        self.call().unwrap();
+    }
+
+    pub fn call(&self) -> DispatchResult {
+        TestWorkingTeam::set_budget(self.origin.clone().into(), self.new_budget)
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_budget = TestWorkingTeam::budget();
+
+        let actual_result = self.call().map(|_| ());
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        let new_budget = TestWorkingTeam::budget();
+
+        if actual_result.is_ok() {
+            assert_eq!(new_budget, self.new_budget);
+        } else {
+            assert_eq!(new_budget, old_budget);
+        }
+    }
+}
