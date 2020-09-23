@@ -1,6 +1,6 @@
 {
   "name": "@polkadot/joy-tokenomics",
-  "version": "0.37.0-beta.63",
+  "version": "0.1.1",
   "description": "Tokenomics page, basic overview of data from the whole website.",
   "main": "index.js",
   "scripts": {},
@@ -10,7 +10,7 @@
   ],
   "license": "Apache-2.0",
   "dependencies": {
-    "@babel/runtime": "^7.7.1",
-    "@polkadot/react-components": "^0.37.0-beta.63"
+    "@babel/runtime": "^7.10.5",
+    "@polkadot/react-components": "0.51.1"
   }
 }

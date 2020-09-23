@@ -11,6 +11,7 @@ import { RewardRelationshipId, RewardRelationship } from '@joystream/types/recur
 import { StakeId, Stake } from '@joystream/types/stake';
 import { CuratorId, Curator, LeadId } from '@joystream/types/content-working-group';
 import { TokenomicsData } from '@polkadot/joy-utils/src/types/tokenomics';
+import { calculateValidatorsRewardsPerEra } from '../functions/staking';
 
 export default class TokenomicsTransport extends BaseTransport {
   private councilT: CouncilTransport;
@@ -24,7 +25,7 @@ export default class TokenomicsTransport extends BaseTransport {
 
   async getCouncilMembers () {
     let totalCouncilStake = 0;
-    const activeCouncil = await this.api.query.council.activeCouncil() as Seats;
+    const activeCouncil = await this.council.activeCouncil() as Seats;
 
     activeCouncil.map((member) => {
       let stakeAmount = 0;
@@ -43,13 +44,20 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async calculateCouncilRewards (numberOfCouncilMembers: number) {
-    let weekInBlocks = 100800; let councilRewardsInOneWeek = 0; let totalCouncilRewardsPerBlock = 0;
+    let weekInBlocks = 100800;
+    let councilRewardsInOneWeek = 0;
+    let totalCouncilRewardsPerBlock = 0;
     const payoutInterval = Number((await this.api.query.council.payoutInterval() as Option<BlockNumber>).unwrapOr(0));
     const amountPerPayout = (await this.api.query.council.amountPerPayout() as BalanceOf).toNumber();
 
-    totalCouncilRewardsPerBlock = (amountPerPayout && payoutInterval) ? (amountPerPayout * numberOfCouncilMembers) / payoutInterval : 0;
+    totalCouncilRewardsPerBlock = (amountPerPayout && payoutInterval)
+      ? (amountPerPayout * numberOfCouncilMembers) / payoutInterval
+      : 0;
     const { new_term_duration, voting_period, revealing_period, announcing_period } = await this.councilT.electionParameters();
-    const termDuration = new_term_duration.toNumber(); const votingPeriod = voting_period.toNumber(); const revealingPeriod = revealing_period.toNumber(); const announcingPeriod = announcing_period.toNumber();
+    const termDuration = new_term_duration.toNumber();
+    const votingPeriod = voting_period.toNumber();
+    const revealingPeriod = revealing_period.toNumber();
+    const announcingPeriod = announcing_period.toNumber();
 
     while (weekInBlocks > 0) {
       if (weekInBlocks > termDuration) {
@@ -98,7 +106,12 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async getStorageProviders () {
-    const stakeIds: StakeId[] = []; const rewardIds: RewardRelationshipId[] = []; let leadStakeId = null as (StakeId | null); let leadRewardId = null as (RewardRelationshipId | null); let numberOfStorageProviders = 0; let leadNumber = 0;
+    const stakeIds: StakeId[] = [];
+    const rewardIds: RewardRelationshipId[] = [];
+    let leadStakeId: StakeId | null = null;
+    let leadRewardId: RewardRelationshipId | null = null;
+    let numberOfStorageProviders = 0;
+    let leadNumber = 0;
     const allWorkers = await this.workingGroupT.allWorkers('Storage');
     const currentLeadId = (await this.api.query.storageWorkingGroup.currentLead() as Option<WorkerId>).unwrapOr(null)?.toNumber();
 
@@ -133,15 +146,25 @@ export default class TokenomicsTransport extends BaseTransport {
     };
   }
 
-  async calcuateStorageProvider (stakeIds: StakeId[], leadStakeId: StakeId | null, rewardIds: RewardRelationshipId[], leadRewardId: RewardRelationshipId | null) {
-    let totalStorageProviderStake = 0; let leadStake = 0; let storageProviderRewardsPerBlock = 0; let storageLeadRewardsPerBlock = 0;
+  async calcuateStorageProvider (
+    stakeIds: StakeId[],
+    leadStakeId: StakeId | null,
+    rewardIds: RewardRelationshipId[],
+    leadRewardId: RewardRelationshipId | null
+  ) {
+    let totalStorageProviderStake = 0;
+    let leadStake = 0;
+    let storageProviderRewardsPerBlock = 0;
+    let storageLeadRewardsPerBlock = 0;
 
     (await this.api.query.stake.stakes.multi<Stake>(stakeIds)).forEach((stake) => {
       totalStorageProviderStake += stake.value.toNumber();
     });
     (await this.api.query.recurringRewards.rewardRelationships.multi<RewardRelationship>(rewardIds)).map((rewardRelationship) => {
       const amount = rewardRelationship.amount_per_payout.toNumber();
-      const payoutInterval = rewardRelationship.payout_interval.isSome ? rewardRelationship.payout_interval.unwrap().toNumber() : null;
+      const payoutInterval = rewardRelationship.payout_interval.isSome
+        ? rewardRelationship.payout_interval.unwrap().toNumber()
+        : null;
 
       if (amount && payoutInterval) {
         storageProviderRewardsPerBlock += amount / payoutInterval;
@@ -172,7 +195,8 @@ export default class TokenomicsTransport extends BaseTransport {
 
   async getStorageProviderData () {
     const { numberOfStorageProviders, leadNumber, stakeIds, rewardIds, leadRewardId, leadStakeId } = await this.getStorageProviders();
-    const { totalStorageProviderStake, leadStake, storageProviderRewardsPerWeek, storageProviderLeadRewardsPerWeek } = await this.calcuateStorageProvider(stakeIds, leadStakeId, rewardIds, leadRewardId);
+    const { totalStorageProviderStake, leadStake, storageProviderRewardsPerWeek, storageProviderLeadRewardsPerWeek } =
+      await this.calcuateStorageProvider(stakeIds, leadStakeId, rewardIds, leadRewardId);
 
     return {
       numberOfStorageProviders,
@@ -215,14 +239,17 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async calculateContentCurator (stakeIds: StakeId[], rewardIds: RewardRelationshipId[]) {
-    let totalContentCuratorStake = 0; let contentCuratorRewardsPerBlock = 0;
+    let totalContentCuratorStake = 0;
+    let contentCuratorRewardsPerBlock = 0;
 
     (await this.api.query.stake.stakes.multi<Stake>(stakeIds)).forEach((stake) => {
       totalContentCuratorStake += stake.value.toNumber();
     });
     (await this.api.query.recurringRewards.rewardRelationships.multi<RewardRelationship>(rewardIds)).map((rewardRelationship) => {
       const amount = rewardRelationship.amount_per_payout.toNumber();
-      const payoutInterval = rewardRelationship.payout_interval.isSome ? rewardRelationship.payout_interval.unwrap().toNumber() : null;
+      const payoutInterval = rewardRelationship.payout_interval.isSome
+        ? rewardRelationship.payout_interval.unwrap().toNumber()
+        : null;
 
       if (amount && payoutInterval) {
         contentCuratorRewardsPerBlock += amount / payoutInterval;
@@ -253,7 +280,9 @@ export default class TokenomicsTransport extends BaseTransport {
     let totalValidatorStake = 0; let numberOfNominators = 0;
 
     if (currentEra !== null) {
-      const validatorStakeData = await this.api.query.staking.erasStakers.multi<Exposure>(validatorIds.map((validatorId) => [currentEra, validatorId]));
+      const validatorStakeData = await this.api.query.staking.erasStakers.multi<Exposure>(
+        validatorIds.map((validatorId) => [currentEra, validatorId])
+      );
 
       validatorStakeData.forEach((data) => {
         if (!data.total.isEmpty) {
@@ -273,31 +302,15 @@ export default class TokenomicsTransport extends BaseTransport {
     };
   }
 
-  calculateValidators (totalValidatorStake: number, totalIssuance: number) {
-    let validatorRewards = 0;
-    const [idealStakingRate, minimumInflation, maximumInflation, fallOff, eraLength, year] = [0.25, 0.05, 0.75, 0.05, 3600, (365.2425 * 24 * 60 * 60)];
-    const stakingRate = totalValidatorStake / totalIssuance;
-
-    if (stakingRate > idealStakingRate) {
-      validatorRewards = totalIssuance * (minimumInflation + (maximumInflation - minimumInflation) * 2 ** ((idealStakingRate - stakingRate) / fallOff)) * eraLength / year;
-    } else if (stakingRate === idealStakingRate) {
-      validatorRewards = (totalIssuance * maximumInflation * eraLength) / year;
-    } else {
-      validatorRewards = (totalIssuance * minimumInflation + totalIssuance * (maximumInflation - minimumInflation) * (stakingRate / idealStakingRate)) * eraLength / year;
-    }
-
-    return validatorRewards;
-  }
-
   async getValidatorData (totalIssuance: number) {
     const { numberOfValidators, numberOfNominators, totalValidatorStake } = await this.getValidators();
-    const validatorRewardsPerEra = this.calculateValidators(totalValidatorStake, totalIssuance);
+    const validatorRewardsPerEra = calculateValidatorsRewardsPerEra(totalValidatorStake, totalIssuance);
 
     return {
       numberOfValidators,
       numberOfNominators,
       totalValidatorStake,
-      validatorRewardsPerWeek: validatorRewardsPerEra * 168
+      validatorRewardsPerWeek: validatorRewardsPerEra * 168 // Assuming 1 era = 1h
     };
   }
 

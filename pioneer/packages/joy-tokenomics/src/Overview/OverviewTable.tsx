@@ -58,7 +58,7 @@ const OverviewTable: React.FC<{data?: TokenomicsData; statusData?: StatusServerD
         <OverviewTableRow
           item='Fiat Pool'
           help='The current value of the Fiat Pool.'
-          value={displayStatusData(`${statusData?.dollarPool.size.toFixed(2)}`, 'USD')}
+          value={displayStatusData(statusData?.dollarPool.size.toFixed(2) || '', 'USD')}
         />
         <OverviewTableRow
           item='Currently Staked Tokens'
@@ -67,7 +67,7 @@ const OverviewTable: React.FC<{data?: TokenomicsData; statusData?: StatusServerD
         />
         <OverviewTableRow
           item='Currently Staked Value'
-          value={statusData === null ? 'Data currently unavailable..' : (data && statusData) ? `${(data.currentlyStakedTokens * Number(statusData.price)).toFixed(2)} USD` : 'Loading...'}
+          value={ data ? displayStatusData(`${(data.currentlyStakedTokens * Number(statusData?.price)).toFixed(2)}`, 'USD') : 'Loading...' }
           help='The value of all tokens currently staked for active roles.'
         />
         <OverviewTableRow
@@ -88,12 +88,12 @@ const OverviewTable: React.FC<{data?: TokenomicsData; statusData?: StatusServerD
         />
         <OverviewTableRow
           item='Projected Weekly Value Of Mint'
-          value={statusData === null ? 'Data currently unavailable..' : (data && statusData) ? `${(data.totalWeeklySpending * Number(statusData.price)).toFixed(2)} USD` : 'Loading...'}
+          value={ data ? displayStatusData(`${(data.totalWeeklySpending * Number(statusData?.price)).toFixed(2)}`, 'USD') : 'Loading...'}
           help={'Based on \'Projected Weekly Token Mint Rate\', and current \'Exchange Rate\'.'}
         />
         <OverviewTableRow
           item='Weekly Top Ups'
-          value={displayStatusData(`${statusData?.dollarPool.replenishAmount}`, 'USD')}
+          value={displayStatusData(statusData?.dollarPool.replenishAmount.toFixed(2) || '', 'USD')}
           help={'The current weekly \'Fiat Pool\' replenishment amount. Does not include KPIs, or other potential top ups.'}
         />
       </Table.Body>
