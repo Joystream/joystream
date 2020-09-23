@@ -561,6 +561,7 @@
         "owner": "MemberId",
         "added_at": "BlockAndTime",
         "type_id": "DataObjectTypeId",
+        "size": "u64",
         "liaison": "StorageProviderId",
         "liaison_judgement": "LiaisonJudgement",
         "ipfs_content_id": "Text"
@@ -848,6 +849,7 @@
         "entity_permissions": "EntityPermissions",
         "class_id": "ClassId",
         "supported_schemas": "Vec<SchemaId>",
+        "values": "BTreeMap<PropertyId,StoredPropertyValue>",
         "reference_counter": "InboundReferenceCounter"
     },
     "CuratorGroup": {
