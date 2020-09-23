@@ -21,7 +21,7 @@ const applyCss = (columns: number[]): string => {
   return columnString;
 };
 
-const StyledTable = styled(Table)`
+const StyledTable = styled(({ divideColumnsAt, ...rest }) => <Table {...rest} />)`
   border: none !important;
   width: 70% !important;
   margin-bottom:1.5rem;
@@ -31,7 +31,7 @@ const StyledTable = styled(Table)`
   & tr {
     td:nth-of-type(1),
     th:nth-of-type(1),
-    ${(props): string => applyCss(props.divideColumnsAt)} {
+    ${(props: { divideColumnsAt: number[]}): string => applyCss(props.divideColumnsAt)} {
       border-left: 0.12rem solid rgba(20,20,20,0.3) !important;
     }
     td:nth-of-type(1){

@@ -44,8 +44,8 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async calculateCouncilRewards (numberOfCouncilMembers: number) {
-    let weekInBlocks = 100800;
-    let councilRewardsInOneWeek = 0;
+    let twoWeeksInBlocks = 201600;
+    let councilRewardsInTwoWeeks = 0;
     let totalCouncilRewardsPerBlock = 0;
     const payoutInterval = Number((await this.api.query.council.payoutInterval() as Option<BlockNumber>).unwrapOr(0));
     const amountPerPayout = (await this.api.query.council.amountPerPayout() as BalanceOf).toNumber();
@@ -59,48 +59,48 @@ export default class TokenomicsTransport extends BaseTransport {
     const revealingPeriod = revealing_period.toNumber();
     const announcingPeriod = announcing_period.toNumber();
 
-    while (weekInBlocks > 0) {
-      if (weekInBlocks > termDuration) {
-        councilRewardsInOneWeek += termDuration * totalCouncilRewardsPerBlock;
-        weekInBlocks -= termDuration;
+    while (twoWeeksInBlocks > 0) {
+      if (twoWeeksInBlocks > termDuration) {
+        councilRewardsInTwoWeeks += termDuration * totalCouncilRewardsPerBlock;
+        twoWeeksInBlocks -= termDuration;
       } else {
-        councilRewardsInOneWeek += weekInBlocks * totalCouncilRewardsPerBlock;
+        councilRewardsInTwoWeeks += twoWeeksInBlocks * totalCouncilRewardsPerBlock;
 
-        return councilRewardsInOneWeek;
+        return councilRewardsInTwoWeeks;
       }
 
       // -----------------------------
-      if (weekInBlocks > revealingPeriod) {
-        weekInBlocks -= revealingPeriod;
+      if (twoWeeksInBlocks > revealingPeriod) {
+        twoWeeksInBlocks -= revealingPeriod;
       } else {
-        return councilRewardsInOneWeek;
+        return councilRewardsInTwoWeeks;
       }
 
       // -----------------------------
-      if (weekInBlocks > votingPeriod) {
-        weekInBlocks -= votingPeriod;
+      if (twoWeeksInBlocks > votingPeriod) {
+        twoWeeksInBlocks -= votingPeriod;
       } else {
-        return councilRewardsInOneWeek;
+        return councilRewardsInTwoWeeks;
       }
 
       // -----------------------------
-      if (weekInBlocks > announcingPeriod) {
-        weekInBlocks -= announcingPeriod;
+      if (twoWeeksInBlocks > announcingPeriod) {
+        twoWeeksInBlocks -= announcingPeriod;
       } else {
-        return councilRewardsInOneWeek;
+        return councilRewardsInTwoWeeks;
       }
     }
 
-    return councilRewardsInOneWeek;
+    return councilRewardsInTwoWeeks;
   }
 
   async getCouncilData () {
     const { numberOfCouncilMembers, totalCouncilStake } = await this.getCouncilMembers();
-    const totalCouncilRewardsInOneWeek = await this.calculateCouncilRewards(numberOfCouncilMembers);
+    const councilRewardsInTwoWeeks = await this.calculateCouncilRewards(numberOfCouncilMembers);
 
     return {
       numberOfCouncilMembers,
-      totalCouncilRewardsInOneWeek,
+      totalCouncilRewardsInOneWeek: councilRewardsInTwoWeeks / 2,
       totalCouncilStake
     };
   }
