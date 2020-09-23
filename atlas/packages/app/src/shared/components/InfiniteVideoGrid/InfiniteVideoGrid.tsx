@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import styled from '@emotion/styled'
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 import { spacing, typography } from '../../theme'
-import { VideoPreview, VideoPreviewBase } from '..'
+import { VideoPreview, VideoPreviewBase, Grid } from '..'
 import sizes from '@/shared/theme/sizes'
 import { debounce } from 'lodash'
 
@@ -26,8 +26,7 @@ const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({
   initialLoading,
   className,
 }) => {
-  // TODO: base this on the container width and some responsive items/row
-  const videosPerRow = VIDEOS_PER_ROW
+  const [videosPerRow, setVideosPerRow] = useState(VIDEOS_PER_ROW)
 
   const loadedVideosCount = videos?.length || 0
   const videoRowsCount = Math.floor(loadedVideosCount / videosPerRow)
@@ -91,7 +90,9 @@ const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({
   return (
     <section className={className}>
       {title && <Title>{title}</Title>}
-      <Grid videosPerRow={videosPerRow}>{gridContent}</Grid>
+      <Grid gap={spacing.xl} onResize={(sizes) => setVideosPerRow(sizes.length)}>
+        {gridContent}
+      </Grid>
     </section>
   )
 }
@@ -109,12 +110,6 @@ const StyledVideoPreview = styled(VideoPreview)`
 const StyledVideoPreviewBase = styled(VideoPreviewBase)`
   margin: 0 auto;
   width: 100%;
-`
-
-const Grid = styled.div<{ videosPerRow: number }>`
-  display: grid;
-  grid-template-columns: repeat(${({ videosPerRow }) => videosPerRow}, 1fr);
-  grid-gap: ${spacing.xl};
 `
 
 export default InfiniteVideoGrid

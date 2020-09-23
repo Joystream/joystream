@@ -72,6 +72,7 @@
     "redux": "^4.0.5",
     "storybook-addon-jsx": "^7.1.15",
     "use-resize-observer": "^6.1.0",
+    "uuid": "^8.3.0",
     "video.js": "^7.8.3"
   },
   "browserslist": {

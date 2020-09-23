@@ -5,13 +5,7 @@ import { navigate } from '@reach/router'
 import routes from '@/config/routes'
 import { spacing } from '@/shared/theme'
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
-import { VideoPreview } from '@/shared/components'
-
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  grid-gap: ${spacing.xl};
-`
+import { VideoPreview, Grid } from '@/shared/components'
 
 const StyledVideoPreview = styled(VideoPreview)`
   margin: 0 auto;
@@ -22,7 +16,7 @@ type VideoGridProps = {
 }
 const VideoGrid: React.FC<VideoGridProps> = ({ videos }) => {
   return (
-    <Grid>
+    <Grid gap={spacing.xl} onResize={(siz) => console.log(siz)}>
       {videos.map((v, idx) => (
         <StyledVideoPreview
           key={idx}
