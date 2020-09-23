@@ -23,9 +23,27 @@ pub(crate) struct ApplicationInfo<T: crate::Trait<I>, I: crate::Instance> {
     pub application: JobApplication<T>,
 }
 
+// WorkerId - TeamWorker - helper struct.
+pub(crate) struct WorkerInfo<T: membership::Trait + system::Trait> {
+    pub worker_id: TeamWorkerId<T>,
+    pub worker: TeamWorker<T>,
+}
+
+impl<T: membership::Trait + system::Trait> From<(TeamWorkerId<T>, TeamWorker<T>)>
+    for WorkerInfo<T>
+{
+    fn from((worker_id, worker): (TeamWorkerId<T>, TeamWorker<T>)) -> Self {
+        WorkerInfo { worker_id, worker }
+    }
+}
+
 /// Team worker type alias.
-pub type TeamWorker<T> =
-    Worker<<T as system::Trait>::AccountId, MemberId<T>, <T as system::Trait>::BlockNumber>;
+pub type TeamWorker<T> = Worker<
+    <T as system::Trait>::AccountId,
+    MemberId<T>,
+    <T as system::Trait>::BlockNumber,
+    BalanceOfCurrency<T>,
+>;
 
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
 pub type BalanceOfCurrency<T> =
@@ -49,6 +67,9 @@ pub struct JobOpening<BlockNumber: Ord, Balance> {
 
     /// Stake policy for the job opening.
     pub stake_policy: Option<StakePolicy<BlockNumber, Balance>>,
+
+    /// Reward policy for the job opening.
+    pub reward_policy: Option<RewardPolicy<Balance>>,
 }
 
 /// Defines type of the opening: regular working group fellow or group leader.
@@ -107,7 +128,7 @@ impl<AccountId: Clone, MemberId: Clone> Application<AccountId, MemberId> {
 /// Working team participant: regular worker or lead.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Debug, Clone, PartialEq)]
-pub struct Worker<AccountId, MemberId, BlockNumber> {
+pub struct Worker<AccountId, MemberId, BlockNumber, Balance> {
     /// Member id related to the worker/lead.
     pub member_id: MemberId,
 
@@ -123,15 +144,24 @@ pub struct Worker<AccountId, MemberId, BlockNumber> {
     /// Unstaking period when the worker chooses to leave the role.
     /// It is defined by the job opening.
     pub job_unstaking_period: BlockNumber,
+
+    /// Optional reward setting for the worker.
+    pub reward_per_block: Option<Balance>,
+
+    /// Total missed reward amount.
+    pub missed_reward: Option<Balance>,
 }
 
-impl<AccountId: Clone, MemberId: Clone, BlockNumber> Worker<AccountId, MemberId, BlockNumber> {
+impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
+    Worker<AccountId, MemberId, BlockNumber, Balance>
+{
     /// Creates a new _TeamWorker_ using parameters.
     pub fn new(
         member_id: &MemberId,
         role_account_id: &AccountId,
         staking_account_id: &AccountId,
         job_unstaking_period: BlockNumber,
+        reward_per_block: Option<Balance>,
     ) -> Self {
         Worker {
             member_id: member_id.clone(),
@@ -139,6 +169,8 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber> Worker<AccountId, MemberId,
             staking_account_id: staking_account_id.clone(),
             started_leaving_at: None,
             job_unstaking_period,
+            reward_per_block,
+            missed_reward: None,
         }
     }
 
@@ -148,11 +180,19 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber> Worker<AccountId, MemberId,
     }
 }
 
+/// Reward policy for the job opening.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
+pub struct RewardPolicy<Balance> {
+    /// Reward per block for the worker.
+    pub reward_per_block: Balance,
+}
+
 /// Stake policy for the job opening.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
 pub struct StakePolicy<BlockNumber, Balance> {
-    /// Stake amount for applicants..
+    /// Stake amount for applicants.
     pub stake_amount: Balance,
 
     /// Unstaking period for the stake. Zero means no unstaking period.

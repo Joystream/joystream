@@ -5,7 +5,7 @@ use crate::tests::fixtures::{
     setup_members, AddOpeningFixture, ApplyOnOpeningFixture, FillOpeningFixture, HireLeadFixture,
 };
 use crate::tests::mock::TestWorkingTeam;
-use crate::{JobOpeningType, StakePolicy};
+use crate::{JobOpeningType, RewardPolicy, StakePolicy};
 
 #[derive(Clone)]
 struct HiringWorkflowApplication {
@@ -20,6 +20,7 @@ pub struct HiringWorkflow {
     opening_type: JobOpeningType,
     expected_result: DispatchResult,
     stake_policy: Option<StakePolicy<u64, u64>>,
+    reward_policy: Option<RewardPolicy<u64>>,
     applications: Vec<HiringWorkflowApplication>,
     setup_environment: bool,
 }
@@ -30,6 +31,7 @@ impl Default for HiringWorkflow {
             opening_type: JobOpeningType::Regular,
             expected_result: Ok(()),
             stake_policy: None,
+            reward_policy: None,
             applications: Vec::new(),
             setup_environment: true,
         }
@@ -40,6 +42,13 @@ impl HiringWorkflow {
     pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
         Self {
             stake_policy,
+            ..self
+        }
+    }
+
+    pub fn with_reward_policy(self, reward_policy: Option<RewardPolicy<u64>>) -> Self {
+        Self {
+            reward_policy,
             ..self
         }
     }
@@ -134,6 +143,7 @@ impl HiringWorkflow {
         // create the opening
         let add_worker_opening_fixture = AddOpeningFixture::default()
             .with_stake_policy(self.stake_policy.clone())
+            .with_reward_policy(self.reward_policy.clone())
             .with_opening_type(self.opening_type)
             .with_origin(origin.clone());
 

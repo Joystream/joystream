@@ -8,7 +8,9 @@ use super::hiring_workflow::HiringWorkflow;
 use super::mock::{
     Balances, LockId, Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance,
 };
-use crate::{JobApplication, JobOpening, JobOpeningType, RawEvent, StakePolicy, TeamWorker};
+use crate::{
+    JobApplication, JobOpening, JobOpeningType, RawEvent, RewardPolicy, StakePolicy, TeamWorker,
+};
 
 pub struct EventFixture;
 impl EventFixture {
@@ -45,6 +47,7 @@ pub struct AddOpeningFixture {
     opening_type: JobOpeningType,
     starting_block: u64,
     stake_policy: Option<StakePolicy<u64, u64>>,
+    reward_policy: Option<RewardPolicy<u64>>,
 }
 
 impl Default for AddOpeningFixture {
@@ -55,6 +58,7 @@ impl Default for AddOpeningFixture {
             opening_type: JobOpeningType::Regular,
             starting_block: 0,
             stake_policy: None,
+            reward_policy: None,
         }
     }
 }
@@ -81,6 +85,7 @@ impl AddOpeningFixture {
                 description_hash: expected_hash.as_ref().to_vec(),
                 opening_type: self.opening_type,
                 stake_policy: self.stake_policy.clone(),
+                reward_policy: self.reward_policy.clone(),
             };
 
             assert_eq!(actual_opening, expected_opening);
@@ -96,6 +101,7 @@ impl AddOpeningFixture {
             self.description.clone(),
             self.opening_type,
             self.stake_policy.clone(),
+            self.reward_policy.clone(),
         )?;
 
         Ok(saved_opening_next_id)
@@ -122,6 +128,13 @@ impl AddOpeningFixture {
     pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
         Self {
             stake_policy,
+            ..self
+        }
+    }
+
+    pub fn with_reward_policy(self, reward_policy: Option<RewardPolicy<u64>>) -> Self {
+        Self {
+            reward_policy,
             ..self
         }
     }
@@ -245,6 +258,7 @@ pub struct FillOpeningFixture {
     role_account_id: u64,
     staking_account_id: u64,
     stake_policy: Option<StakePolicy<u64, u64>>,
+    reward_policy: Option<RewardPolicy<u64>>,
 }
 
 impl FillOpeningFixture {
@@ -258,15 +272,24 @@ impl FillOpeningFixture {
             role_account_id: 1,
             staking_account_id: 1,
             stake_policy: None,
+            reward_policy: None,
         }
     }
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
     }
+
     pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
         Self {
             stake_policy,
+            ..self
+        }
+    }
+
+    pub fn with_reward_policy(self, reward_policy: Option<RewardPolicy<u64>>) -> Self {
+        Self {
+            reward_policy,
             ..self
         }
     }
@@ -313,6 +336,8 @@ impl FillOpeningFixture {
                     .stake_policy
                     .as_ref()
                     .map_or(0, |sp| sp.unstaking_period),
+                reward_per_block: self.reward_policy.as_ref().map(|rp| rp.reward_per_block),
+                missed_reward: None,
             };
 
             let actual_worker = TestWorkingTeam::worker_by_id(worker_id);
@@ -384,6 +409,7 @@ impl HireLeadFixture {
 pub struct HireRegularWorkerFixture {
     setup_environment: bool,
     stake_policy: Option<StakePolicy<u64, u64>>,
+    reward_policy: Option<RewardPolicy<u64>>,
 }
 
 impl Default for HireRegularWorkerFixture {
@@ -391,6 +417,7 @@ impl Default for HireRegularWorkerFixture {
         Self {
             setup_environment: true,
             stake_policy: None,
+            reward_policy: None,
         }
     }
 }
@@ -402,11 +429,19 @@ impl HireRegularWorkerFixture {
         }
     }
 
+    pub fn with_reward_policy(self, reward_policy: Option<RewardPolicy<u64>>) -> Self {
+        Self {
+            reward_policy,
+            ..self
+        }
+    }
+
     pub fn hire(self) -> u64 {
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
             .with_opening_type(JobOpeningType::Regular)
             .with_stake_policy(self.stake_policy)
+            .with_reward_policy(self.reward_policy)
             .add_application(b"worker".to_vec())
             .execute()
             .unwrap()

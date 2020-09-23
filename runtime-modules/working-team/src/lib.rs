@@ -31,7 +31,7 @@ mod tests;
 mod types;
 
 use codec::Codec;
-use frame_support::traits::{Get, LockIdentifier};
+use frame_support::traits::{Currency, Get, LockIdentifier};
 use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue};
@@ -41,8 +41,10 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use system::ensure_signed;
 
 pub use errors::Error;
-use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId};
-pub use types::{JobApplication, JobOpening, JobOpeningType, StakePolicy, StakingHandler};
+use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId, WorkerInfo};
+pub use types::{
+    JobApplication, JobOpening, JobOpeningType, RewardPolicy, StakePolicy, StakingHandler,
+};
 
 /// The _Team_ main _Trait_
 pub trait Trait<I: Instance>:
@@ -196,6 +198,9 @@ decl_storage! {
 
         /// Current team lead.
         pub CurrentLead get(fn current_lead) : Option<TeamWorkerId<T>>;
+
+        /// Budget for the working team.
+        pub Budget get(fn budget) : BalanceOfCurrency<T>;
     }
 }
 
@@ -212,18 +217,14 @@ decl_module! {
         const MaxWorkerNumberLimit: u32 = T::MaxWorkerNumberLimit::get();
 
         fn on_initialize() -> Weight{
-            let workers_to_leave = WorkerById::<T, I>::iter().filter_map(|(worker_id, worker)| {
-                if let Some(started_leaving_at) = worker.started_leaving_at {
-                    if started_leaving_at + worker.job_unstaking_period == Self::current_block(){
-                        return Some((worker_id, worker))
-                    }
-                }
+            let leaving_workers = Self::get_leaving_workers();
 
-                None
-            }).collect::<Vec<_>>();
+            leaving_workers.iter().for_each(|wi| {
+                Self::deactivate_worker(&wi.worker_id, &wi.worker, RawEvent::WorkerExited(wi.worker_id));
+            });
 
-            workers_to_leave.iter().for_each(|(worker_id, worker)| {
-                Self::deactivate_worker(&worker_id, &worker, RawEvent::WorkerExited(*worker_id));
+            WorkerById::<T, I>::iter().for_each(|(worker_id, worker)| {
+                Self::reward_worker(&worker_id, &worker);
             });
 
             10_000_000 //TODO: adjust weight
@@ -236,11 +237,14 @@ decl_module! {
             origin,
             description: Vec<u8>,
             opening_type: JobOpeningType,
-            stake_policy: Option<StakePolicy<T::BlockNumber, BalanceOfCurrency<T>>>
+            stake_policy: Option<StakePolicy<T::BlockNumber, BalanceOfCurrency<T>>>,
+            reward_policy: Option<RewardPolicy<BalanceOfCurrency<T>>>
         ){
             checks::ensure_origin_for_opening_type::<T, I>(origin, opening_type)?;
 
             checks::ensure_valid_stake_policy::<T, I>(&stake_policy)?;
+
+            checks::ensure_valid_reward_policy::<T, I>(&reward_policy)?;
 
             //
             // == MUTATION SAFE ==
@@ -253,7 +257,8 @@ decl_module! {
                 opening_type,
                 created: Self::current_block(),
                 description_hash: hashed_description.as_ref().to_vec(),
-                stake_policy
+                stake_policy,
+                reward_policy,
             };
 
             let new_opening_id = NextOpeningId::<T, I>::get();
@@ -663,10 +668,10 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         opening: &JobOpening<T::BlockNumber, BalanceOfCurrency<T>>,
         application_info: &ApplicationInfo<T, I>,
     ) -> TeamWorkerId<T> {
-        // Get worker id
+        // Get worker id.
         let new_worker_id = <NextWorkerId<T, I>>::get();
 
-        // Construct worker
+        // Construct a worker.
         let worker = TeamWorker::<T>::new(
             &application_info.application.member_id,
             &application_info.application.role_account_id,
@@ -675,13 +680,14 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 .stake_policy
                 .as_ref()
                 .map_or(Zero::zero(), |sp| sp.unstaking_period),
+            opening.reward_policy.as_ref().map(|rp| rp.reward_per_block),
         );
 
-        // Store a worker
+        // Store a worker.
         <WorkerById<T, I>>::insert(new_worker_id, worker);
         Self::increase_active_worker_counter();
 
-        // Update next worker id
+        // Update the next worker id.
         <NextWorkerId<T, I>>::mutate(|id| *id += <TeamWorkerId<T> as One>::one());
 
         // Remove an application.
@@ -738,5 +744,42 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         let slashed_balance =
             T::StakingHandler::slash(T::LockId::get(), staking_account_id, balance);
         Self::deposit_event(RawEvent::StakeSlashed(worker_id, slashed_balance));
+    }
+
+    // Reward a worker using reward presets and working team budget.
+    fn reward_worker(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
+        if let Some(reward_per_block) = worker.reward_per_block {
+            let budget = Self::budget();
+
+            if budget >= reward_per_block {
+                let new_budget = budget - reward_per_block;
+                <Budget<T, I>>::put(new_budget);
+
+                T::Currency::deposit_creating(&worker.role_account_id, reward_per_block);
+            } else {
+                let missed_reward_so_far = worker.missed_reward.map_or(Zero::zero(), |val| val);
+
+                let new_missed_reward = missed_reward_so_far + reward_per_block;
+
+                // Update worker missed reward.
+                WorkerById::<T, I>::mutate(worker_id, |worker| {
+                    worker.missed_reward = Some(new_missed_reward);
+                });
+            }
+        }
+    }
+
+    fn get_leaving_workers() -> Vec<WorkerInfo<T>> {
+        WorkerById::<T, I>::iter()
+            .filter_map(|(worker_id, worker)| {
+                if let Some(started_leaving_at) = worker.started_leaving_at {
+                    if started_leaving_at + worker.job_unstaking_period == Self::current_block() {
+                        return Some((worker_id, worker).into());
+                    }
+                }
+
+                None
+            })
+            .collect::<Vec<_>>()
     }
 }

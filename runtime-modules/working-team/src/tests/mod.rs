@@ -10,7 +10,7 @@ use crate::tests::fixtures::{
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::STAKING_ACCOUNT_ID_FOR_FAILED_EXTERNAL_CHECK;
-use crate::{Error, JobOpeningType, RawEvent, StakePolicy, TeamWorker};
+use crate::{Error, JobOpeningType, RawEvent, RewardPolicy, StakePolicy, TeamWorker};
 use fixtures::{
     increase_total_balance_issuance_using_account_id, setup_members, AddOpeningFixture,
     ApplyOnOpeningFixture, EventFixture, FillOpeningFixture, HireLeadFixture,
@@ -19,7 +19,7 @@ use fixtures::{
 };
 use frame_support::dispatch::DispatchError;
 use frame_support::traits::{LockableCurrency, WithdrawReason};
-use frame_support::StorageMap;
+use frame_support::{StorageMap, StorageValue};
 use mock::{
     build_test_externalities, run_to_block, Balances, Test, TestWorkingTeam,
     TestWorkingTeamInstance,
@@ -39,6 +39,9 @@ fn add_opening_succeeded() {
             .with_stake_policy(Some(StakePolicy {
                 stake_amount: 10,
                 unstaking_period: 100,
+            }))
+            .with_reward_policy(Some(RewardPolicy {
+                reward_per_block: 10,
             }));
 
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
@@ -55,6 +58,39 @@ fn add_opening_fails_with_bad_origin() {
             .with_origin(RawOrigin::None);
 
         add_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn add_opening_fails_with_zero_stake() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
+                stake_amount: 0,
+                unstaking_period: 0,
+            }));
+
+        add_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::CannotStakeZero.into(),
+        ));
+    });
+}
+
+#[test]
+fn add_opening_fails_with_zero_reward() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_reward_policy(Some(RewardPolicy {
+                reward_per_block: 0,
+            }));
+
+        add_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::CannotRewardWithZero.into(),
+        ));
     });
 }
 
@@ -153,7 +189,13 @@ fn fill_opening_succeeded() {
         let starting_block = 1;
         run_to_block(starting_block);
 
-        let add_opening_fixture = AddOpeningFixture::default().with_starting_block(starting_block);
+        let reward_policy = Some(RewardPolicy {
+            reward_per_block: 10,
+        });
+
+        let add_opening_fixture = AddOpeningFixture::default()
+            .with_starting_block(starting_block)
+            .with_reward_policy(reward_policy.clone());
 
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -162,7 +204,8 @@ fn fill_opening_succeeded() {
         let application_id = apply_on_opening_fixture.call().unwrap();
 
         let fill_opening_fixture =
-            FillOpeningFixture::default_for_ids(opening_id, vec![application_id]);
+            FillOpeningFixture::default_for_ids(opening_id, vec![application_id])
+                .with_reward_policy(reward_policy);
 
         let worker_id = fill_opening_fixture.call_and_assert(Ok(()));
 
@@ -656,23 +699,6 @@ fn set_lead_event_emitted() {
         TestWorkingTeam::set_lead(worker_id);
 
         EventFixture::assert_last_crate_event(RawEvent::LeaderSet(worker_id));
-    });
-}
-
-#[test]
-fn add_opening_fails_with_zero_stake() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture =
-            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
-                stake_amount: 0,
-                unstaking_period: 0,
-            }));
-
-        add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::CannotStakeZero.into(),
-        ));
     });
 }
 
@@ -1599,5 +1625,99 @@ fn increase_worker_stake_fails_with_leaving_worker() {
         increase_stake_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingTeamInstance>::WorkerIsLeaving.into(),
         ));
+    });
+}
+
+#[test]
+fn rewards_payments_are_successful() {
+    build_test_externalities().execute_with(|| {
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+
+        let worker = TestWorkingTeam::worker_by_id(worker_id);
+
+        let account_id = worker.role_account_id;
+
+        <crate::Budget<Test, TestWorkingTeamInstance>>::put(10000);
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        let block_number = 10;
+        run_to_block(block_number);
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            block_number * reward_per_block
+        );
+    });
+}
+
+#[test]
+fn rewards_payments_with_no_budget() {
+    build_test_externalities().execute_with(|| {
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+
+        let worker = TestWorkingTeam::worker_by_id(worker_id);
+
+        let account_id = worker.role_account_id;
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        let block_number = 10;
+        run_to_block(block_number);
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        let worker = TestWorkingTeam::worker_by_id(worker_id);
+
+        assert_eq!(
+            worker.missed_reward.unwrap(),
+            block_number * reward_per_block
+        );
+    });
+}
+
+#[test]
+fn rewards_payments_with_insufficient_budget() {
+    build_test_externalities().execute_with(|| {
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+
+        let worker = TestWorkingTeam::worker_by_id(worker_id);
+
+        let account_id = worker.role_account_id;
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        let paid_blocks = 3;
+        <crate::Budget<Test, TestWorkingTeamInstance>>::put(reward_per_block * paid_blocks);
+
+        let block_number = 10;
+        run_to_block(block_number);
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            paid_blocks * reward_per_block
+        );
+
+        let worker = TestWorkingTeam::worker_by_id(worker_id);
+
+        assert_eq!(
+            worker.missed_reward.unwrap(),
+            (block_number - paid_blocks) * reward_per_block
+        );
     });
 }

@@ -59,5 +59,8 @@ decl_error! {
 
         /// Invalid operation - worker is leaving.
         WorkerIsLeaving,
+
+        /// Reward could not be zero.
+        CannotRewardWithZero,
     }
 }
