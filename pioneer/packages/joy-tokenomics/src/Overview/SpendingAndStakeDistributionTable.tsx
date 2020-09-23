@@ -31,7 +31,7 @@ const StyledTable = styled(Table)`
   & tr {
     td:nth-of-type(1),
     th:nth-of-type(1),
-    ${(props): string => applyCss(props.dividecolumnsat)} {
+    ${(props): string => applyCss(props.divideColumnsAt)} {
       border-left: 0.12rem solid rgba(20,20,20,0.3) !important;
     }
     td:nth-of-type(1){
@@ -131,7 +131,7 @@ const SpendingAndStakeDistributionTable: React.FC<{data?: TokenomicsData; status
   };
 
   return (
-    <StyledTable dividecolumnsat={[3, 6, 9]} celled>
+    <StyledTable divideColumnsAt={[3, 6, 9]} celled>
       <Table.Header>
         <Table.Row>
           <Table.HeaderCell width={4}>Group/Role</Table.HeaderCell>
