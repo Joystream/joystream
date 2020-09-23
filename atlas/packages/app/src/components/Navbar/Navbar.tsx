@@ -37,7 +37,7 @@ const Navbar: React.FC<RouteComponentProps> = () => {
           <Link to="/">
             <StyledIcon name="home" />
           </Link>
-          <Link to="/discover">
+          <Link to={routes.browse()}>
             <StyledIcon name="binocular" />
           </Link>
         </NavigationContainer>

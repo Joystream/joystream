@@ -1,7 +1,6 @@
 import React from 'react'
 import { RouteComponentProps, useParams } from '@reach/router'
 import {
-  ActionsContainer,
   Container,
   DescriptionContainer,
   InfoContainer,
@@ -14,7 +13,7 @@ import {
   TitleActionsContainer,
 } from './VideoView.style'
 import { VideoGrid } from '@/components'
-import { Button, VideoPlayer } from '@/shared/components'
+import { VideoPlayer } from '@/shared/components'
 import { formatDateAgo } from '@/utils/time'
 import { formatNumber } from '@/utils/number'
 import { useQuery } from '@apollo/client'
@@ -47,9 +46,6 @@ const VideoView: React.FC<RouteComponentProps> = () => {
       <InfoContainer>
         <TitleActionsContainer>
           <Title>{title}</Title>
-          <ActionsContainer>
-            <Button variant="secondary">Share</Button>
-          </ActionsContainer>
         </TitleActionsContainer>
         <Meta>
           {formatNumber(views)} views • {formatDateAgo(publishedOnJoystreamAt)}

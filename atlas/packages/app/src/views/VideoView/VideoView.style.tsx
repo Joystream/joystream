@@ -5,8 +5,6 @@ import theme from '@/shared/theme'
 export const Container = styled.div`
   display: flex;
   flex-direction: column;
-  // TODO: remove once we have the navbar
-  padding-top: 72px;
 `
 
 export const PlayerContainer = styled.div`
@@ -27,8 +25,6 @@ export const Title = styled.h2`
   font-size: ${theme.typography.sizes.h2};
   margin: 0;
 `
-
-export const ActionsContainer = styled.div``
 
 export const Meta = styled.span`
   display: block;
