@@ -134,10 +134,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
 	align-items: center;
 	&:hover {
 		cursor: ${(props) => (!props.disabled && props.clickable ? 'pointer' : '')}
-	}
-  &:focus {
-    outline: 0
-  }
+	} 
 	&::selected {
 		background: transparent;
 	}

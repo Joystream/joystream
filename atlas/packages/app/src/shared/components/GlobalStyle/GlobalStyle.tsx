@@ -18,6 +18,10 @@ const globalStyles = css`
     box-sizing: border-box;
   }
 
+  *:focus {
+    outline: 0;
+  }
+
   h1,
   h2,
   h3,
