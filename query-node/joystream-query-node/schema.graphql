@@ -107,12 +107,12 @@ enum PropertyType {
 	VECREFERENCE
 }
 
-"`Property` representation, related to a given `Class`"
+"'Property' representation, related to a given 'Class'"
 type Property @entity {
 	"Runtime identifier for property in class"
 	propertyId: BigInt! @unique
 
-	"Type of `Property`"
+	"Type of 'Property'"
 	propertyType: PropertyType!
 
 	"If property value can be skipped, when adding entity schema support"
@@ -182,7 +182,7 @@ type Curator @entity {
 	groups: [CuratorGroup] @derivedFrom(field: "curators")
 }
 
-"A group, that consists of `curators` set"
+"A group, that consists of 'curators' set"
 type CuratorGroup @entity {
 	"Runtime identifier for group"
 	groupId: BigInt! @unique
@@ -197,7 +197,7 @@ type CuratorGroup @entity {
 	maintainerOfClasses: [Class!] @derivedFrom(field: "maintainers")
 }
 
-"A voucher for `Entity` creation"
+"A voucher for 'Entity' creation"
 type EntityCreationVoucher @entity {
 	"Class to which voucher applies"
 	class: Class!
@@ -218,7 +218,7 @@ enum EntityControllerType {
 	MAINTAINERS
 }
 
-"Owner of an `Entity`"
+"Owner of an 'Entity'"
 type EntityController @entity {
 	"Current controller, which is initially set based on who created entity"
 	controllerType: EntityControllerType!
@@ -310,6 +310,39 @@ type PropertyValue @entity {
 
 	"Virtual field for entity property values"
 	entities: [Entity!] @derivedFrom(field: "values")
+}
+
+"The stage of the involvement of a lead in the working group"
+enum LeadRoleState {
+	ACTIVE
+	EXITED
+}
+
+"Working group lead: curator lead content-working-group/src"
+type Lead @entity {
+	"Leader membership"
+	member: Member!
+
+	"Account used to authenticate in this role"
+	roleAccountId: Bytes!
+
+	# "Whether the role has recurring reward, and if so an identifier for this."
+	# rewardRelationship: RewardRelationshipId
+
+	"When was inducted"
+	inducted: BigInt!
+
+	"The stage of the involvement of this lead in the working group"
+	stage: LeadRoleState!
+
+	"Will be filled when LeadRoleState is EXITED, Blocknumber"
+	exitedAt: BigInt
+}
+
+"Should be created whenever lead is added to corresponding working group"
+type CurationLead @entity {
+	# UNIQUE
+	workingGroupLead: Lead! # This Lead is not defined in this schema
 }
 
 "The lead when the actor type is 'ActorType.Lead'"
