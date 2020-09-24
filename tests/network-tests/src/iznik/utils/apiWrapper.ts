@@ -40,6 +40,16 @@ export class ApiWrapper {
 
   public static async create(provider: WsProvider): Promise<ApiWrapper> {
     const api = await ApiPromise.create({ provider, types })
+
+    // Wait for api to be connected and ready
+    await api.isReady
+
+    // If a node was just started up it might take a few seconds to start producing blocks
+    // Give it a few seconds to be ready.
+    await new Promise((resolve) => {
+      setTimeout(resolve, 5000)
+    })
+
     return new ApiWrapper(api)
   }
 

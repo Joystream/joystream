@@ -5,9 +5,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  run_ansible_tests:
+  run_network_tests:
     if: github.event.label.name == 'run-network-tests' || github.event.action == null
-    name: run network tests using ansible
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -17,9 +16,13 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-      - name: install toolchain
-        run: curl https://getsubstrate.io -sSf | bash -s -- --fast
-      - name: ansible build and tests
+      - name: build npm packages
         run: |
-          cd ./devops/ansible
-          ansible-playbook -i hosts build-and-run-tests-single-node-playbook.yml --become -v
+          yarn install --frozen-lockfile
+          yarn workspace joystream-testing install
+      - name: set block production to 2000ms for faster tests
+        run: ./scripts/alter-block-creation-time.sh
+      - name: start network
+        run: docker-compose -f devops/dockerfiles/node-and-runtime/build-and-run-single-node-dev.yml up -d
+      - name: execute tests
+        run: yarn workspace joystream-testing test
