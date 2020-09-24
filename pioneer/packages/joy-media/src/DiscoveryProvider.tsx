@@ -44,7 +44,11 @@ type ProviderStats = {
 function newDiscoveryProvider ({ bootstrapNodes }: BootstrapNodes): DiscoveryProvider {
   const stats = new Map<string, ProviderStats>();
 
-  const resolveAssetEndpoint = async (storageProvider: StorageProviderId, contentId?: string, cancelToken?: CancelToken) => {
+  const resolveAssetEndpoint = async (
+    storageProvider: StorageProviderId,
+    contentId?: string,
+    cancelToken?: CancelToken
+  ) => {
     const providerKey = storageProvider.toString();
 
     let stat = stats.get(providerKey);

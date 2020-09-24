@@ -61,9 +61,6 @@ class RuntimeApi {
 
     this.asyncLock = new AsyncLock()
 
-    // Keep track locally of account nonces.
-    this.nonces = {}
-
     // The storage provider id to use
     this.storageProviderId = parseInt(options.storageProviderId) // u64 instead ?
 
@@ -148,28 +145,6 @@ class RuntimeApi {
     })
   }
 
-  // Get cached nonce and use unless system nonce is greater, to avoid stale nonce if
-  // there was a long gap in time between calls to signAndSend during which an external app
-  // submitted a transaction.
-  async selectBestNonce(accountId) {
-    const cachedNonce = this.nonces[accountId]
-    // In future use this rpc method to take the pending tx pool into account when fetching the nonce
-    // const nonce = await this.api.rpc.system.accountNextIndex(accountId)
-    const { nonce } = await this.api.query.system.account(accountId)
-
-    const systemNonce = nonce
-
-    const bestNonce = cachedNonce && cachedNonce.gte(systemNonce) ? cachedNonce : systemNonce
-
-    this.nonces[accountId] = bestNonce
-
-    return bestNonce.toNumber()
-  }
-
-  incrementAndSaveNonce(accountId) {
-    this.nonces[accountId] = this.nonces[accountId].addn(1)
-  }
-
   /*
    * signAndSend() with nonce tracking, to enable concurrent sending of transacctions
    * so that they can be included in the same block. Allows you to use the accountId instead
@@ -213,7 +188,7 @@ class RuntimeApi {
 
     // synchronize access to nonce
     await this.executeWithAccountLock(accountId, async () => {
-      const nonce = await this.selectBestNonce(accountId)
+      const nonce = await this.api.rpc.system.accountNextIndex(accountId)
       const signed = tx.sign(fromKey, { nonce })
       const txhash = signed.hash
 
@@ -237,9 +212,6 @@ class RuntimeApi {
         } else {
           debugTx(`Submitted: ${serialized}`)
         }
-
-        // transaction submitted successfully, increment and save nonce.
-        this.incrementAndSaveNonce(accountId)
       } catch (err) {
         const errstr = err.toString()
         debugTx(`Rejected: ${errstr} txhash: ${txhash} nonce: ${nonce}`)
