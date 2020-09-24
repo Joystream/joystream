@@ -75,6 +75,7 @@ const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({
         <StyledVideoPreview
           title={v.title}
           channelName={v.channel.handle}
+          channelAvatarURL={v.channel.avatarPhotoURL}
           createdAt={v.publishedOnJoystreamAt}
           views={v.views}
           posterURL={v.thumbnailURL}

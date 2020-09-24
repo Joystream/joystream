@@ -16,7 +16,7 @@ type VideoGridProps = {
 }
 const VideoGrid: React.FC<VideoGridProps> = ({ videos }) => {
   return (
-    <Grid gap={spacing.xl} onResize={(siz) => console.log(siz)}>
+    <Grid gap={spacing.xl}>
       {videos.map((v, idx) => (
         <StyledVideoPreview
           key={idx}
