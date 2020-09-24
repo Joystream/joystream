@@ -1,7 +1,7 @@
 {
     "MemoText": "Text",
     "Credential": "u64",
-    "CredentialSet": "Vec<Credential>",
+    "CredentialSet": "BTreeSet<Credential>",
     "BlockAndTime": {
         "block": "u32",
         "time": "u64"
@@ -451,7 +451,7 @@
         }
     },
     "CuratorApplicationIdToCuratorIdMap": "BTreeMap<HiringApplicationId,CuratorId>",
-    "CuratorApplicationIdSet": "Vec<CuratorApplicationId>",
+    "CuratorApplicationIdSet": "BTreeSet<CuratorApplicationId>",
     "CuratorRoleStakeProfile": {
         "stake_id": "u64",
         "termination_unstaking_period": "Option<u32>",
@@ -934,7 +934,7 @@
     },
     "AddSchemaSupportToEntityOperation": {
         "entity_id": "ParameterizedEntity",
-        "schema_id": "u16",
+        "schema_id": "SchemaId",
         "parametrized_property_values": "Vec<ParametrizedClassPropertyValue>"
     },
     "OperationType": {

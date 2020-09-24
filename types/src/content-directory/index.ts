@@ -19,7 +19,7 @@ export class ClassPermissions extends JoyStructDecorated({
   any_member: bool,
   entity_creation_blocked: bool,
   all_entity_property_values_locked: bool,
-  maintainers: JoyBTreeSet.with(CuratorGroupId),
+  maintainers: JoyBTreeSet(CuratorGroupId),
 }) {}
 
 // Named just "Type" in the runtime, but this name conflicts with @polkadot/types/primitive/Type.ts
@@ -61,7 +61,7 @@ export class Property extends JoyStructDecorated({
 }) {}
 
 export class Schema extends JoyStructDecorated({
-  properties: JoyBTreeSet.with(PropertyId),
+  properties: JoyBTreeSet(PropertyId),
   is_active: bool,
 }) {}
 
@@ -132,13 +132,13 @@ export class InboundReferenceCounter extends JoyStructDecorated({
 export class Entity extends JoyStructDecorated({
   entity_permissions: EntityPermissions,
   class_id: ClassId,
-  supported_schemas: JoyBTreeSet.with(SchemaId),
+  supported_schemas: JoyBTreeSet(SchemaId),
   values: BTreeMap.with(PropertyId, StoredPropertyValue),
   reference_counter: InboundReferenceCounter,
 }) {}
 
 export class CuratorGroup extends JoyStructDecorated({
-  curators: JoyBTreeSet.with(CuratorId),
+  curators: JoyBTreeSet(CuratorId),
   active: bool,
   number_of_classes_maintained: u32,
 }) {}

@@ -34,7 +34,7 @@ export class WorkerId extends ActorId {}
 
 export class StorageProviderId extends WorkerId {}
 
-export class ApplicationIdSet extends JoyBTreeSet.with(ApplicationId) {}
+export class ApplicationIdSet extends JoyBTreeSet(ApplicationId) {}
 
 export class ApplicationIdToWorkerIdMap extends BTreeMap.with(ApplicationId, WorkerId) {}
 
@@ -138,7 +138,7 @@ export type IOpening = {
 export class Opening
   extends JoyStructDecorated({
     hiring_opening_id: OpeningId,
-    applications: JoyBTreeSet.with(ApplicationId),
+    applications: JoyBTreeSet(ApplicationId),
     policy_commitment: WorkingGroupOpeningPolicyCommitment,
     opening_type: OpeningType,
   })

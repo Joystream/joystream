@@ -70,7 +70,7 @@ export interface Address extends AccountId {}
 /** @name AddSchemaSupportToEntityOperation */
 export interface AddSchemaSupportToEntityOperation extends Struct {
   readonly entity_id: ParameterizedEntity;
-  readonly schema_id: u16;
+  readonly schema_id: SchemaId;
   readonly parametrized_property_values: Vec<ParametrizedClassPropertyValue>;
 }
 
@@ -273,7 +273,7 @@ export interface CreateEntityOperation extends Struct {
 export interface Credential extends u64 {}
 
 /** @name CredentialSet */
-export interface CredentialSet extends Vec<Credential> {}
+export interface CredentialSet extends BTreeSet<Credential> {}
 
 /** @name CurationActor */
 export interface CurationActor extends Enum {
@@ -304,7 +304,7 @@ export interface CuratorApplication extends Struct {
 export interface CuratorApplicationId extends u64 {}
 
 /** @name CuratorApplicationIdSet */
-export interface CuratorApplicationIdSet extends Vec<CuratorApplicationId> {}
+export interface CuratorApplicationIdSet extends BTreeSet<CuratorApplicationId> {}
 
 /** @name CuratorApplicationIdToCuratorIdMap */
 export interface CuratorApplicationIdToCuratorIdMap extends BTreeMap<HiringApplicationId, CuratorId> {}
