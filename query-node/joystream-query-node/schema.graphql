@@ -320,6 +320,8 @@ enum LeadRoleState {
 
 "Working group lead: curator lead content-working-group/src"
 type Lead @entity {
+	leadId: BigInt! @unique
+
 	"Leader membership"
 	member: Member!
 
@@ -341,8 +343,7 @@ type Lead @entity {
 
 "Should be created whenever lead is added to corresponding working group"
 type CurationLead @entity {
-	# UNIQUE
-	workingGroupLead: Lead! # This Lead is not defined in this schema
+	workingGroupLead: Lead!
 }
 
 "The lead when the actor type is 'ActorType.Lead'"
@@ -388,6 +389,8 @@ enum Language {
 }
 
 type Channel @entity {
+	channelId: BigInt! @unique
+
 	"Underlying entity"
 	entity: Entity!
 
