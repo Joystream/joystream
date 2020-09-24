@@ -44,63 +44,33 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async calculateCouncilRewards (numberOfCouncilMembers: number) {
-    let twoWeeksInBlocks = 201600;
-    let councilRewardsInTwoWeeks = 0;
-    let totalCouncilRewardsPerBlock = 0;
     const payoutInterval = Number((await this.api.query.council.payoutInterval() as Option<BlockNumber>).unwrapOr(0));
     const amountPerPayout = (await this.api.query.council.amountPerPayout() as BalanceOf).toNumber();
-
-    totalCouncilRewardsPerBlock = (amountPerPayout && payoutInterval)
+    const totalCouncilRewardsPerBlock = (amountPerPayout && payoutInterval)
       ? (amountPerPayout * numberOfCouncilMembers) / payoutInterval
       : 0;
+
     const { new_term_duration, voting_period, revealing_period, announcing_period } = await this.councilT.electionParameters();
     const termDuration = new_term_duration.toNumber();
     const votingPeriod = voting_period.toNumber();
     const revealingPeriod = revealing_period.toNumber();
     const announcingPeriod = announcing_period.toNumber();
+    const weekInBlocks = 100800;
 
-    while (twoWeeksInBlocks > 0) {
-      if (twoWeeksInBlocks > termDuration) {
-        councilRewardsInTwoWeeks += termDuration * totalCouncilRewardsPerBlock;
-        twoWeeksInBlocks -= termDuration;
-      } else {
-        councilRewardsInTwoWeeks += twoWeeksInBlocks * totalCouncilRewardsPerBlock;
+    const councilTermDurationRatio = termDuration / (termDuration + votingPeriod + revealingPeriod + announcingPeriod);
+    const avgCouncilRewardPerBlock = councilTermDurationRatio * totalCouncilRewardsPerBlock;
+    const avgCouncilRewardPerWeek = avgCouncilRewardPerBlock * weekInBlocks;
 
-        return councilRewardsInTwoWeeks;
-      }
-
-      // -----------------------------
-      if (twoWeeksInBlocks > revealingPeriod) {
-        twoWeeksInBlocks -= revealingPeriod;
-      } else {
-        return councilRewardsInTwoWeeks;
-      }
-
-      // -----------------------------
-      if (twoWeeksInBlocks > votingPeriod) {
-        twoWeeksInBlocks -= votingPeriod;
-      } else {
-        return councilRewardsInTwoWeeks;
-      }
-
-      // -----------------------------
-      if (twoWeeksInBlocks > announcingPeriod) {
-        twoWeeksInBlocks -= announcingPeriod;
-      } else {
-        return councilRewardsInTwoWeeks;
-      }
-    }
-
-    return councilRewardsInTwoWeeks;
+    return avgCouncilRewardPerWeek;
   }
 
   async getCouncilData () {
     const { numberOfCouncilMembers, totalCouncilStake } = await this.getCouncilMembers();
-    const councilRewardsInTwoWeeks = await this.calculateCouncilRewards(numberOfCouncilMembers);
+    const totalCouncilRewardsInOneWeek = await this.calculateCouncilRewards(numberOfCouncilMembers);
 
     return {
       numberOfCouncilMembers,
-      totalCouncilRewardsInOneWeek: councilRewardsInTwoWeeks / 2,
+      totalCouncilRewardsInOneWeek,
       totalCouncilStake
     };
   }
