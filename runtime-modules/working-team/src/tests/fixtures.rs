@@ -5,8 +5,10 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use system::{EventRecord, Phase, RawOrigin};
 
 use super::hiring_workflow::HiringWorkflow;
-use super::mock::{Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance};
-use crate::{JobApplication, JobOpening, JobOpeningType, RawEvent, TeamWorker};
+use super::mock::{
+    Balances, LockId, Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance,
+};
+use crate::{JobApplication, JobOpening, JobOpeningType, RawEvent, StakePolicy, TeamWorker};
 
 pub struct EventFixture;
 impl EventFixture {
@@ -15,6 +17,7 @@ impl EventFixture {
             u64,
             u64,
             BTreeMap<u64, u64>,
+            u64,
             u64,
             u64,
             TestWorkingTeamInstance,
@@ -41,6 +44,7 @@ pub struct AddOpeningFixture {
     description: Vec<u8>,
     opening_type: JobOpeningType,
     starting_block: u64,
+    stake_policy: Option<StakePolicy<u64, u64>>,
 }
 
 impl Default for AddOpeningFixture {
@@ -50,6 +54,7 @@ impl Default for AddOpeningFixture {
             description: b"human_text".to_vec(),
             opening_type: JobOpeningType::Regular,
             starting_block: 0,
+            stake_policy: None,
         }
     }
 }
@@ -75,6 +80,7 @@ impl AddOpeningFixture {
                 created: self.starting_block,
                 description_hash: expected_hash.as_ref().to_vec(),
                 opening_type: self.opening_type,
+                stake_policy: self.stake_policy.clone(),
             };
 
             assert_eq!(actual_opening, expected_opening);
@@ -89,6 +95,7 @@ impl AddOpeningFixture {
             self.origin.clone().into(),
             self.description.clone(),
             self.opening_type,
+            self.stake_policy.clone(),
         )?;
 
         Ok(saved_opening_next_id)
@@ -111,6 +118,13 @@ impl AddOpeningFixture {
             ..self
         }
     }
+
+    pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
+        Self {
+            stake_policy,
+            ..self
+        }
+    }
 }
 
 pub struct ApplyOnOpeningFixture {
@@ -118,7 +132,9 @@ pub struct ApplyOnOpeningFixture {
     member_id: u64,
     opening_id: u64,
     role_account_id: u64,
+    staking_account_id: u64,
     description: Vec<u8>,
+    stake: Option<u64>,
 }
 
 impl ApplyOnOpeningFixture {
@@ -137,13 +153,26 @@ impl ApplyOnOpeningFixture {
         }
     }
 
+    pub fn with_stake(self, stake: Option<u64>) -> Self {
+        Self { stake, ..self }
+    }
+
+    pub fn with_stake_account_id(self, staking_account_id: u64) -> Self {
+        Self {
+            staking_account_id,
+            ..self
+        }
+    }
+
     pub fn default_for_opening_id(opening_id: u64) -> Self {
         Self {
             origin: RawOrigin::Signed(1),
             member_id: 1,
             opening_id,
             role_account_id: 1,
+            staking_account_id: 1,
             description: b"human_text".to_vec(),
+            stake: None,
         }
     }
 
@@ -154,7 +183,9 @@ impl ApplyOnOpeningFixture {
             self.member_id,
             self.opening_id,
             self.role_account_id,
+            self.staking_account_id,
             self.description.clone(),
+            self.stake,
         )?;
 
         Ok(saved_application_next_id)
@@ -175,9 +206,9 @@ impl ApplyOnOpeningFixture {
             let actual_application = TestWorkingTeam::application_by_id(application_id);
 
             let expected_hash = <Test as system::Trait>::Hashing::hash(&self.description);
-            let expected_application = JobApplication::<Test, TestWorkingTeamInstance> {
+            let expected_application = JobApplication::<Test> {
                 role_account_id: self.role_account_id,
-                opening_id: self.opening_id,
+                staking_account_id: self.staking_account_id,
                 member_id: self.member_id,
                 description_hash: expected_hash.as_ref().to_vec(),
             };
@@ -212,6 +243,7 @@ pub struct FillOpeningFixture {
     opening_id: u64,
     successful_application_ids: BTreeSet<u64>,
     role_account_id: u64,
+    staking_account_id: u64,
 }
 
 impl FillOpeningFixture {
@@ -223,6 +255,7 @@ impl FillOpeningFixture {
             opening_id,
             successful_application_ids: application_ids,
             role_account_id: 1,
+            staking_account_id: 1,
         }
     }
 
@@ -266,6 +299,7 @@ impl FillOpeningFixture {
             let expected_worker = TeamWorker::<Test> {
                 member_id: 1,
                 role_account_id: self.role_account_id,
+                staking_account_id: self.staking_account_id,
             };
 
             let actual_worker = TestWorkingTeam::worker_by_id(worker_id);
@@ -287,12 +321,14 @@ impl FillOpeningFixture {
 
 pub struct HireLeadFixture {
     setup_environment: bool,
+    stake: Option<u64>,
 }
 
 impl Default for HireLeadFixture {
     fn default() -> Self {
         Self {
             setup_environment: true,
+            stake: None,
         }
     }
 }
@@ -304,19 +340,38 @@ impl HireLeadFixture {
         }
     }
 
+    pub fn with_stake(self, stake: u64) -> Self {
+        Self {
+            stake: Some(stake),
+            ..self
+        }
+    }
+
     pub fn hire_lead(self) -> u64 {
+        let stake_policy = self.stake.map(|amount| StakePolicy {
+            stake_amount: amount,
+            unstaking_period: 10,
+        });
+
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
             .with_opening_type(JobOpeningType::Leader)
+            .with_stake_policy(stake_policy)
             .add_application(b"leader".to_vec())
             .execute()
             .unwrap()
     }
 
     pub fn expect(self, error: DispatchError) {
+        let stake_policy = self.stake.map(|amount| StakePolicy {
+            stake_amount: amount,
+            unstaking_period: 10,
+        });
+
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
             .with_opening_type(JobOpeningType::Leader)
+            .with_stake_policy(stake_policy)
             .add_application(b"leader".to_vec())
             .expect(Err(error))
             .execute();
@@ -325,20 +380,35 @@ impl HireLeadFixture {
 
 pub struct HireRegularWorkerFixture {
     setup_environment: bool,
+    stake: Option<u64>,
 }
 
 impl Default for HireRegularWorkerFixture {
     fn default() -> Self {
         Self {
             setup_environment: true,
+            stake: None,
         }
     }
 }
 impl HireRegularWorkerFixture {
+    pub fn with_stake(self, stake: u64) -> Self {
+        Self {
+            stake: Some(stake),
+            ..self
+        }
+    }
+
     pub fn hire(self) -> u64 {
+        let stake_policy = self.stake.map(|amount| StakePolicy {
+            stake_amount: amount,
+            unstaking_period: 10,
+        });
+
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
             .with_opening_type(JobOpeningType::Regular)
+            .with_stake_policy(stake_policy)
             .add_application(b"worker".to_vec())
             .execute()
             .unwrap()
@@ -410,6 +480,7 @@ impl LeaveWorkerRoleFixture {
 pub struct TerminateWorkerRoleFixture {
     worker_id: u64,
     origin: RawOrigin<u64>,
+    slash: bool,
 }
 
 impl TerminateWorkerRoleFixture {
@@ -417,15 +488,23 @@ impl TerminateWorkerRoleFixture {
         Self {
             worker_id,
             origin: RawOrigin::Signed(1),
+            slash: false,
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
     }
 
+    pub fn with_slash(self) -> Self {
+        Self {
+            slash: true,
+            ..self
+        }
+    }
+
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let actual_result =
-            TestWorkingTeam::terminate_role(self.origin.clone().into(), self.worker_id);
+            TestWorkingTeam::terminate_role(self.origin.clone().into(), self.worker_id, self.slash);
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
@@ -436,6 +515,275 @@ impl TerminateWorkerRoleFixture {
                     )
                 );
             }
+        }
+    }
+}
+
+pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
+    let _ =
+        <Balances as frame_support::traits::Currency<u64>>::deposit_creating(&account_id, balance);
+}
+
+pub struct SlashWorkerStakeFixture {
+    origin: RawOrigin<u64>,
+    worker_id: u64,
+    balance: u64,
+    account_id: u64,
+}
+
+impl SlashWorkerStakeFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        let account_id = 1;
+
+        let lead_account_id = get_current_lead_account_id();
+
+        Self {
+            origin: RawOrigin::Signed(lead_account_id),
+            worker_id,
+            balance: 10,
+            account_id,
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_balance(self, balance: u64) -> Self {
+        Self { balance, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_balance = Balances::usable_balance(&self.account_id);
+        let old_stake = get_stake_balance(&self.account_id);
+        let actual_result =
+            TestWorkingTeam::slash_stake(self.origin.clone().into(), self.worker_id, self.balance);
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            // stake decreased
+            assert_eq!(
+                old_stake,
+                get_stake_balance(&self.account_id) + self.balance
+            );
+
+            let new_balance = Balances::usable_balance(&self.account_id);
+
+            // worker balance unchanged
+            assert_eq!(new_balance, old_balance,);
+        }
+    }
+}
+
+pub(crate) fn get_stake_balance(account_id: &u64) -> u64 {
+    let locks = Balances::locks(account_id);
+
+    let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
+
+    existing_lock.map_or(0, |lock| lock.amount)
+}
+
+fn get_current_lead_account_id() -> u64 {
+    let leader_worker_id = TestWorkingTeam::current_lead();
+
+    if let Some(leader_worker_id) = leader_worker_id {
+        let leader = TestWorkingTeam::worker_by_id(leader_worker_id);
+        leader.role_account_id
+    } else {
+        0 // return invalid lead_account_id for testing
+    }
+}
+
+pub struct DecreaseWorkerStakeFixture {
+    origin: RawOrigin<u64>,
+    worker_id: u64,
+    balance: u64,
+    account_id: u64,
+}
+
+impl DecreaseWorkerStakeFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        let account_id = 1;
+
+        let lead_account_id = get_current_lead_account_id();
+
+        Self {
+            origin: RawOrigin::Signed(lead_account_id),
+            worker_id,
+            balance: 10,
+            account_id,
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_balance(self, balance: u64) -> Self {
+        Self { balance, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_balance = Balances::usable_balance(&self.account_id);
+        let old_stake = get_stake_balance(&self.account_id);
+        let actual_result = TestWorkingTeam::decrease_stake(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.balance,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            // new stake was set
+            assert_eq!(self.balance, get_stake_balance(&self.account_id));
+
+            let new_balance = Balances::usable_balance(&self.account_id);
+
+            // worker balance equilibrium
+            assert_eq!(old_balance + old_stake, new_balance + self.balance);
+        }
+    }
+}
+
+pub struct IncreaseWorkerStakeFixture {
+    origin: RawOrigin<u64>,
+    worker_id: u64,
+    balance: u64,
+    account_id: u64,
+}
+
+impl IncreaseWorkerStakeFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        let account_id = 1;
+        Self {
+            origin: RawOrigin::Signed(1),
+            worker_id,
+            balance: 10,
+            account_id,
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_balance(self, balance: u64) -> Self {
+        Self { balance, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_balance = Balances::usable_balance(&self.account_id);
+        let old_stake = get_stake_balance(&self.account_id);
+        let actual_result = TestWorkingTeam::increase_stake(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.balance,
+        );
+
+        assert_eq!(actual_result, expected_result);
+
+        if actual_result.is_ok() {
+            // new stake was set
+            assert_eq!(self.balance, get_stake_balance(&self.account_id));
+
+            let new_balance = Balances::usable_balance(&self.account_id);
+
+            // worker balance equilibrium
+            assert_eq!(old_balance + old_stake, new_balance + self.balance);
+        }
+    }
+}
+
+pub struct WithdrawApplicationFixture {
+    origin: RawOrigin<u64>,
+    application_id: u64,
+    stake: bool,
+    account_id: u64,
+}
+
+impl WithdrawApplicationFixture {
+    pub fn with_signer(self, account_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(account_id),
+            ..self
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_stake(self) -> Self {
+        Self {
+            stake: true,
+            ..self
+        }
+    }
+
+    pub fn default_for_application_id(application_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            application_id,
+            stake: false,
+            account_id: 1,
+        }
+    }
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_balance = Balances::usable_balance(&self.account_id);
+        let old_stake = get_stake_balance(&self.account_id);
+
+        let actual_result =
+            TestWorkingTeam::withdraw_application(self.origin.clone().into(), self.application_id);
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            if self.stake {
+                // the stake was removed
+                assert_eq!(0, get_stake_balance(&self.account_id));
+
+                let new_balance = Balances::usable_balance(&self.account_id);
+
+                // worker balance equilibrium
+                assert_eq!(old_balance + old_stake, new_balance);
+            }
+        }
+    }
+}
+
+pub struct CancelOpeningFixture {
+    origin: RawOrigin<u64>,
+    opening_id: u64,
+}
+
+impl CancelOpeningFixture {
+    pub fn default_for_opening_id(opening_id: u64) -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            opening_id,
+        }
+    }
+
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call(&self) -> DispatchResult {
+        TestWorkingTeam::cancel_opening(self.origin.clone().into(), self.opening_id)
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        if expected_result.is_ok() {
+            assert!(
+                <crate::OpeningById<Test, TestWorkingTeamInstance>>::contains_key(self.opening_id)
+            );
+        }
+
+        let actual_result = self.call().map(|_| ());
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            assert!(
+                !<crate::OpeningById<Test, TestWorkingTeamInstance>>::contains_key(self.opening_id)
+            );
         }
     }
 }

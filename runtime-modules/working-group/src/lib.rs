@@ -689,7 +689,7 @@ decl_module! {
             Self::deposit_event(RawEvent::AppliedOnOpening(opening_id, new_application_id));
         }
 
-        /// Withdraw the worker application. Can be done by the worker itself only.
+        /// Withdraw the worker application. Can be done by the worker only.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn withdraw_application(
             origin,
@@ -890,7 +890,7 @@ decl_module! {
         /// Require signed leader origin or the root (to slash the leader stake).
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn slash_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
-            // Ensure lead is set or it is the council terminating the leader.
+            // Ensure lead is set or it is the council slashing the leader.
             Self::ensure_origin_for_leader(origin, worker_id)?;
 
             // Ensuring worker actually exists.
@@ -921,7 +921,7 @@ decl_module! {
         /// Require signed leader origin or the root (to decrease the leader stake).
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn decrease_stake(origin, worker_id: WorkerId<T>, balance: BalanceOf<T>) {
-            // Ensure lead is set or it is the council terminating the leader.
+            // Ensure lead is set or it is the council decreasing the leader's stake.
             Self::ensure_origin_for_leader(origin, worker_id)?;
 
             let worker = Self::ensure_worker_exists(&worker_id)?;

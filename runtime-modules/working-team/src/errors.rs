@@ -12,9 +12,6 @@ decl_error! {
         /// Opening does not exist.
         OpeningDoesNotExist,
 
-        /// Origin must be controller or root account of member.
-        OriginIsNeitherMemberControllerOrRoot,
-
         /// Cannot fill opening with multiple applications.
         CannotHireMultipleLeaders,
 
@@ -44,5 +41,23 @@ decl_error! {
 
         /// Signer is not worker role account.
         SignerIsNotWorkerRoleAccount,
+
+        /// Cannot stake zero.
+        CannotStakeZero,
+
+        /// Insufficient balance to cover stake.
+        InsufficientBalanceToCoverStake,
+
+        /// Application stake is less than required opening stake.
+        ApplicationStakeDoesntMatchOpening,
+
+        /// Origin is not applicant.
+        OriginIsNotApplicant,
+
+        /// Staking account doesn't belong to a member.
+        InvalidStakingAccountForMember,
+
+        /// Staking account contains conflicting stakes.
+        ConflictStakesOnAccount,
     }
 }

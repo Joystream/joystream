@@ -1,14 +1,18 @@
-use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::traits::{
+    Currency, LockIdentifier, LockableCurrency, OnFinalize, OnInitialize, WithdrawReasons,
+};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
-    Perbill,
+    DispatchError, Perbill,
 };
 use system;
 
-use crate::{Module, Trait};
+use crate::{BalanceOfCurrency, Module, StakingHandler, Trait};
+use common::currency::GovernanceCurrency;
+use frame_support::dispatch::DispatchResult;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -105,6 +109,7 @@ pub type System = system::Module<Test>;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const LockId: [u8; 8] = [1; 8];
 }
 
 impl Trait<TestWorkingTeamInstance> for Test {
@@ -112,10 +117,122 @@ impl Trait<TestWorkingTeamInstance> for Test {
     type ApplicationId = u64;
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+    type StakingHandler = Test;
+    type MemberOriginValidator = ();
+}
+
+pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
+
+impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(origin: Origin, member_id: u64) -> Result<u64, &'static str> {
+        let signed_account_id = system::ensure_signed(origin)?;
+
+        if member_id > 10 {
+            return Err(ACTOR_ORIGIN_ERROR);
+        }
+
+        Ok(signed_account_id)
+    }
 }
 
 pub type TestWorkingTeamInstance = crate::Instance1;
 pub type TestWorkingTeam = Module<Test, TestWorkingTeamInstance>;
+
+pub const STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK: u64 = 111;
+pub const STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK: u64 = 222;
+pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;
+pub const LOCK_ID: LockIdentifier = [1; 8];
+
+impl StakingHandler<Test> for Test {
+    fn lock(account_id: &<Test as system::Trait>::AccountId, amount: BalanceOfCurrency<Test>) {
+        <Test as GovernanceCurrency>::Currency::set_lock(
+            LOCK_ID,
+            &account_id,
+            amount,
+            WithdrawReasons::all(),
+        )
+    }
+
+    fn unlock(account_id: &<Test as system::Trait>::AccountId) {
+        <Test as GovernanceCurrency>::Currency::remove_lock(LOCK_ID, &account_id);
+    }
+
+    fn slash(
+        account_id: &<Test as system::Trait>::AccountId,
+        amount: Option<BalanceOfCurrency<Test>>,
+    ) -> BalanceOfCurrency<Test> {
+        let locks = Balances::locks(&account_id);
+
+        let existing_lock = locks.iter().find(|lock| lock.id == LOCK_ID);
+
+        let mut actually_slashed_balance = Default::default();
+        if let Some(existing_lock) = existing_lock {
+            Self::unlock(&account_id);
+
+            let mut slashable_amount = existing_lock.amount;
+            if let Some(amount) = amount {
+                if existing_lock.amount > amount {
+                    let new_amount = existing_lock.amount - amount;
+                    Self::lock(&account_id, new_amount);
+
+                    slashable_amount = amount;
+                }
+            }
+
+            let _ = Balances::slash(&account_id, slashable_amount);
+
+            actually_slashed_balance = slashable_amount
+        }
+
+        actually_slashed_balance
+    }
+
+    fn decrease_stake(
+        account_id: &<Test as system::Trait>::AccountId,
+        amount: BalanceOfCurrency<Test>,
+    ) {
+        Self::unlock(account_id);
+        Self::lock(account_id, amount);
+    }
+
+    fn increase_stake(
+        account_id: &<Test as system::Trait>::AccountId,
+        amount: BalanceOfCurrency<Test>,
+    ) -> DispatchResult {
+        if !Self::is_enough_balance_for_stake(account_id, amount) {
+            return Err(DispatchError::Other("External check failed"));
+        }
+
+        Self::unlock(account_id);
+        Self::lock(account_id, amount);
+
+        Ok(())
+    }
+
+    fn is_member_staking_account(_member_id: &u64, account_id: &u64) -> bool {
+        if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK {
+            return false;
+        }
+
+        true
+    }
+
+    fn is_account_free_of_conflicting_stakes(account_id: &u64) -> bool {
+        if *account_id == STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES {
+            return false;
+        }
+
+        true
+    }
+
+    fn is_enough_balance_for_stake(account_id: &u64, amount: u64) -> bool {
+        if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK || amount > 1000 {
+            return false;
+        }
+
+        true
+    }
+}
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     let t = system::GenesisConfig::default()
