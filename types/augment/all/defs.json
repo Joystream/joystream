@@ -1,5 +1,4 @@
 {
-    "MemoText": "Text",
     "Credential": "u64",
     "CredentialSet": "BTreeSet<Credential>",
     "BlockAndTime": {
@@ -27,6 +26,9 @@
         "max_count": "u16",
         "max_percent_pts_per_time": "u16"
     },
+    "MemoText": "Text",
+    "Address": "AccountId",
+    "LookupSource": "AccountId",
     "EntryMethod": {
         "_enum": {
             "Paid": "u64",
@@ -204,8 +206,8 @@
         "created_at": "u32",
         "total_minted": "u128"
     },
-    "MintBalanceOf": "Balance",
-    "BalanceOfMint": "Balance",
+    "MintBalanceOf": "u128",
+    "BalanceOfMint": "u128",
     "NextAdjustment": {
         "adjustment": "AdjustOnInterval",
         "at_block": "u32"
@@ -228,8 +230,8 @@
         "total_reward_missed": "u128"
     },
     "RewardRelationship": {
-        "recipient": "u64",
-        "mint_id": "u64",
+        "recipient": "RecipientId",
+        "mint_id": "MintId",
         "account": "GenericAccountId",
         "amount_per_payout": "u128",
         "next_payment_at_block": "Option<u32>",
@@ -240,11 +242,11 @@
     "ApplicationId": "u64",
     "OpeningId": "u64",
     "Application": {
-        "opening_id": "u64",
+        "opening_id": "OpeningId",
         "application_index_in_opening": "u32",
         "add_to_opening_in_block": "u32",
-        "active_role_staking_id": "Option<u64>",
-        "active_application_staking_id": "Option<u64>",
+        "active_role_staking_id": "Option<StakeId>",
+        "active_application_staking_id": "Option<StakeId>",
         "stage": "ApplicationStage",
         "human_readable_text": "Text"
     },
@@ -290,7 +292,7 @@
     },
     "ActiveOpeningStageVariant": {
         "stage": "ActiveOpeningStage",
-        "applications_added": "Vec<HiringApplicationId>",
+        "applications_added": "Vec<ApplicationId>",
         "active_application_count": "u32",
         "unstaking_application_count": "u32",
         "deactivated_application_count": "u32"
@@ -399,7 +401,7 @@
     },
     "Curator": {
         "role_account": "GenericAccountId",
-        "reward_relationship": "Option<u64>",
+        "reward_relationship": "Option<RewardRelationshipId>",
         "role_stake_profile": "Option<CuratorRoleStakeProfile>",
         "stage": "CuratorRoleStage",
         "induction": "CuratorInduction",
@@ -409,17 +411,17 @@
         "role_account": "GenericAccountId",
         "curator_opening_id": "CuratorOpeningId",
         "member_id": "MemberId",
-        "application_id": "HiringApplicationId"
+        "application_id": "ApplicationId"
     },
     "CuratorOpening": {
-        "opening_id": "u64",
+        "opening_id": "OpeningId",
         "curator_applications": "Vec<CuratorApplicationId>",
         "policy_commitment": "OpeningPolicyCommitment"
     },
     "Lead": {
         "member_id": "MemberId",
         "role_account": "GenericAccountId",
-        "reward_relationship": "Option<u64>",
+        "reward_relationship": "Option<RewardRelationshipId>",
         "inducted": "u32",
         "stage": "LeadRoleState"
     },
@@ -453,7 +455,7 @@
     "CuratorApplicationIdToCuratorIdMap": "BTreeMap<HiringApplicationId,CuratorId>",
     "CuratorApplicationIdSet": "BTreeSet<CuratorApplicationId>",
     "CuratorRoleStakeProfile": {
-        "stake_id": "u64",
+        "stake_id": "StakeId",
         "termination_unstaking_period": "Option<u32>",
         "exit_unstaking_period": "Option<u32>"
     },
@@ -492,22 +494,22 @@
     "RationaleText": "Bytes",
     "ApplicationOf": {
         "role_account_id": "GenericAccountId",
-        "opening_id": "u64",
+        "opening_id": "OpeningId",
         "member_id": "MemberId",
-        "application_id": "HiringApplicationId"
+        "application_id": "ApplicationId"
     },
-    "ApplicationIdSet": "BTreeSet<HiringApplicationId>",
-    "ApplicationIdToWorkerIdMap": "BTreeMap<HiringApplicationId,WorkerId>",
+    "ApplicationIdSet": "BTreeSet<ApplicationId>",
+    "ApplicationIdToWorkerIdMap": "BTreeMap<ApplicationId,WorkerId>",
     "WorkerId": "u64",
     "WorkerOf": {
         "member_id": "MemberId",
         "role_account_id": "GenericAccountId",
-        "reward_relationship": "Option<u64>",
+        "reward_relationship": "Option<RewardRelationshipId>",
         "role_stake_profile": "Option<RoleStakeProfile>"
     },
     "OpeningOf": {
-        "hiring_opening_id": "u64",
-        "applications": "Vec<HiringApplicationId>",
+        "hiring_opening_id": "OpeningId",
+        "applications": "Vec<ApplicationId>",
         "policy_commitment": "WorkingGroupOpeningPolicyCommitment",
         "opening_type": "OpeningType"
     },
@@ -539,7 +541,7 @@
         "exit_role_stake_unstaking_period": "Option<u32>"
     },
     "RoleStakeProfile": {
-        "stake_id": "u64",
+        "stake_id": "StakeId",
         "termination_unstaking_period": "Option<u32>",
         "exit_unstaking_period": "Option<u32>"
     },
@@ -606,7 +608,7 @@
             "SetValidatorCount": "u32",
             "SetStorageRoleParameters": "RoleParameters",
             "AddWorkingGroupLeaderOpening": "AddOpeningParameters",
-            "BeginReviewWorkingGroupLeaderApplication": "(u64,WorkingGroup)",
+            "BeginReviewWorkingGroupLeaderApplication": "(OpeningId,WorkingGroup)",
             "FillWorkingGroupLeaderOpening": "FillOpeningParameters",
             "SetWorkingGroupMintCapacity": "(Balance,WorkingGroup)",
             "DecreaseWorkingGroupLeaderStake": "(WorkerId,Balance,WorkingGroup)",
@@ -627,7 +629,7 @@
             "SetValidatorCount": "u32",
             "SetStorageRoleParameters": "RoleParameters",
             "AddWorkingGroupLeaderOpening": "AddOpeningParameters",
-            "BeginReviewWorkingGroupLeaderApplication": "(u64,WorkingGroup)",
+            "BeginReviewWorkingGroupLeaderApplication": "(OpeningId,WorkingGroup)",
             "FillWorkingGroupLeaderOpening": "FillOpeningParameters",
             "SetWorkingGroupMintCapacity": "(Balance,WorkingGroup)",
             "DecreaseWorkingGroupLeaderStake": "(WorkerId,Balance,WorkingGroup)",
@@ -683,8 +685,8 @@
         "working_group": "WorkingGroup"
     },
     "FillOpeningParameters": {
-        "opening_id": "u64",
-        "successful_application_id": "HiringApplicationId",
+        "opening_id": "OpeningId",
+        "successful_application_id": "ApplicationId",
         "reward_policy": "Option<RewardPolicy>",
         "working_group": "WorkingGroup"
     },
@@ -695,7 +697,7 @@
         "working_group": "WorkingGroup"
     },
     "ActiveStake": {
-        "stake_id": "u64",
+        "stake_id": "StakeId",
         "source_account_id": "GenericAccountId"
     },
     "Finalized": {
@@ -949,7 +951,5 @@
     "ClassPermissionsType": "Null",
     "ClassPropertyValue": "Null",
     "Operation": "Null",
-    "ReferenceConstraint": "Null",
-    "Address": "AccountId",
-    "LookupSource": "AccountId"
+    "ReferenceConstraint": "Null"
 }

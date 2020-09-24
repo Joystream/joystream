@@ -1853,9 +1853,6 @@ declare module '@polkadot/types/types/registry' {
     StorageChangeSet: StorageChangeSet;
     'Option<StorageChangeSet>': Option<StorageChangeSet>;
     'Vec<StorageChangeSet>': Vec<StorageChangeSet>;
-    MemoText: MemoText;
-    'Option<MemoText>': Option<MemoText>;
-    'Vec<MemoText>': Vec<MemoText>;
     Credential: Credential;
     'Compact<Credential>': Compact<Credential>;
     'Option<Credential>': Option<Credential>;
@@ -1886,6 +1883,9 @@ declare module '@polkadot/types/types/registry' {
     SlashableTerms: SlashableTerms;
     'Option<SlashableTerms>': Option<SlashableTerms>;
     'Vec<SlashableTerms>': Vec<SlashableTerms>;
+    MemoText: MemoText;
+    'Option<MemoText>': Option<MemoText>;
+    'Vec<MemoText>': Vec<MemoText>;
     EntryMethod: EntryMethod;
     'Option<EntryMethod>': Option<EntryMethod>;
     'Vec<EntryMethod>': Vec<EntryMethod>;
@@ -2000,9 +2000,11 @@ declare module '@polkadot/types/types/registry' {
     'Option<Mint>': Option<Mint>;
     'Vec<Mint>': Vec<Mint>;
     MintBalanceOf: MintBalanceOf;
+    'Compact<MintBalanceOf>': Compact<MintBalanceOf>;
     'Option<MintBalanceOf>': Option<MintBalanceOf>;
     'Vec<MintBalanceOf>': Vec<MintBalanceOf>;
     BalanceOfMint: BalanceOfMint;
+    'Compact<BalanceOfMint>': Compact<BalanceOfMint>;
     'Option<BalanceOfMint>': Option<BalanceOfMint>;
     'Vec<BalanceOfMint>': Vec<BalanceOfMint>;
     NextAdjustment: NextAdjustment;

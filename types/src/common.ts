@@ -6,6 +6,7 @@ import { u8aConcat, u8aToHex } from '@polkadot/util'
 import moment from 'moment'
 import { JoyStructCustom, JoyStructDecorated } from './JoyStruct'
 import { JoyEnum } from './JoyEnum'
+import AccountId from '@polkadot/types/generic/AccountId'
 
 export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 
@@ -121,6 +122,12 @@ export class SlashingTerms extends JoyEnum({
   Slashable: SlashableTerms,
 } as const) {}
 
+export class MemoText extends Text {}
+// @polkadot/types overrides required since migration to Substrate 2.0,
+// see: https://polkadot.js.org/api/start/FAQ.html#the-node-returns-a-could-not-convert-error-on-send
+export class Address extends AccountId {}
+export class LookupSource extends AccountId {}
+
 export const commonTypes: RegistryTypes = {
   Credential,
   CredentialSet,
@@ -132,6 +139,9 @@ export const commonTypes: RegistryTypes = {
   // Expose in registry for api.createType purposes:
   SlashingTerms,
   SlashableTerms,
+  MemoText,
+  Address,
+  LookupSource,
 }
 
 export default commonTypes
