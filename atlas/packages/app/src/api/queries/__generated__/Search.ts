@@ -14,8 +14,7 @@ export interface Search_search_item_Video_category {
 
 export interface Search_search_item_Video_media_location_HTTPVideoMediaLocation {
   __typename: "HTTPVideoMediaLocation";
-  host: string;
-  port: number | null;
+  URL: string;
 }
 
 export interface Search_search_item_Video_media_location_JoystreamVideoMediaLocation {
@@ -27,6 +26,7 @@ export type Search_search_item_Video_media_location = Search_search_item_Video_m
 
 export interface Search_search_item_Video_media {
   __typename: "VideoMedia";
+  id: string;
   pixelHeight: number;
   pixelWidth: number;
   location: Search_search_item_Video_media_location;

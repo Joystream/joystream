@@ -14,8 +14,7 @@ export interface VideoFields_category {
 
 export interface VideoFields_media_location_HTTPVideoMediaLocation {
   __typename: "HTTPVideoMediaLocation";
-  host: string;
-  port: number | null;
+  URL: string;
 }
 
 export interface VideoFields_media_location_JoystreamVideoMediaLocation {
@@ -27,6 +26,7 @@ export type VideoFields_media_location = VideoFields_media_location_HTTPVideoMed
 
 export interface VideoFields_media {
   __typename: "VideoMedia";
+  id: string;
   pixelHeight: number;
   pixelWidth: number;
   location: VideoFields_media_location;

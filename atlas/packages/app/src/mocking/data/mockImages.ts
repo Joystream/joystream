@@ -1,4 +1,4 @@
-export const channelSources = [
+export const channelAvatarSources = [
   'https://eu-central-1.linodeobjects.com/atlas-assets/channel-avatars/1.jpg',
   'https://eu-central-1.linodeobjects.com/atlas-assets/channel-avatars/2.jpg',
   'https://eu-central-1.linodeobjects.com/atlas-assets/channel-avatars/3.jpg',
@@ -11,7 +11,7 @@ export const channelSources = [
   'https://eu-central-1.linodeobjects.com/atlas-assets/channel-avatars/10.jpg',
 ]
 
-export const posterSources = [
+export const channelPosterSources = [
   'https://eu-central-1.linodeobjects.com/atlas-assets/channel-posters/1.jpg',
   'https://eu-central-1.linodeobjects.com/atlas-assets/channel-posters/2.jpg',
   'https://eu-central-1.linodeobjects.com/atlas-assets/channel-posters/3.jpg',
@@ -24,7 +24,7 @@ export const posterSources = [
   'https://eu-central-1.linodeobjects.com/atlas-assets/channel-posters/10.jpg',
 ]
 
-export const coverSources = [
+export const thumbnailSources = [
   'https://eu-central-1.linodeobjects.com/atlas-assets/video-thumbnails/1.jpg',
   'https://eu-central-1.linodeobjects.com/atlas-assets/video-thumbnails/2.jpg',
   'https://eu-central-1.linodeobjects.com/atlas-assets/video-thumbnails/3.jpg',

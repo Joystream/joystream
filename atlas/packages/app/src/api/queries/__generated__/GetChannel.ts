@@ -14,8 +14,7 @@ export interface GetChannel_channel_videos_category {
 
 export interface GetChannel_channel_videos_media_location_HTTPVideoMediaLocation {
   __typename: "HTTPVideoMediaLocation";
-  host: string;
-  port: number | null;
+  URL: string;
 }
 
 export interface GetChannel_channel_videos_media_location_JoystreamVideoMediaLocation {
@@ -27,6 +26,7 @@ export type GetChannel_channel_videos_media_location = GetChannel_channel_videos
 
 export interface GetChannel_channel_videos_media {
   __typename: "VideoMedia";
+  id: string;
   pixelHeight: number;
   pixelWidth: number;
   location: GetChannel_channel_videos_media_location;

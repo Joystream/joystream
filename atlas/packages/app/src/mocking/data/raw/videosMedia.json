@@ -1,0 +1,83 @@
+[
+  {
+    "id": "344de92b-3505-4b76-bcbd-9c6c949ffdf2",
+    "codec": "H264_mpeg4",
+    "pixelWidth": 2560,
+    "pixelHeight": 1440,
+    "duration": 29,
+    "size": 44851016,
+    "location": { "URL": "https://eu-central-1.linodeobjects.com/atlas-assets/videos/1.mp4" }
+  },
+  {
+    "id": "acbfd83a-66d8-4275-9270-369b2cab8ee0",
+    "codec": "H264_mpeg4",
+    "pixelWidth": 1280,
+    "pixelHeight": 720,
+    "duration": 100,
+    "size": 71928640,
+    "location": { "URL": "https://eu-central-1.linodeobjects.com/atlas-assets/videos/2.m4v" }
+  },
+  {
+    "id": "137536b1-1965-416d-aecd-6356b536bc18",
+    "codec": "H264_mpeg4",
+    "pixelWidth": 1280,
+    "pixelHeight": 720,
+    "duration": 162,
+    "size": 48997777,
+    "location": { "URL": "https://eu-central-1.linodeobjects.com/atlas-assets/videos/3.mp4" }
+  },
+  {
+    "id": "0de1ac1a-d1bd-4a08-8115-a800cd5f1fc1",
+    "codec": "VP8_WEBM",
+    "pixelWidth": 1920,
+    "pixelHeight": 1080,
+    "duration": 103,
+    "size": 6959818,
+    "location": { "URL": "https://eu-central-1.linodeobjects.com/atlas-assets/videos/4.webm" }
+  },
+  {
+    "id": "a0a09887-7e1b-4a4f-b386-09f02bb59e2c",
+    "codec": "H264_mpeg4",
+    "pixelWidth": 1920,
+    "pixelHeight": 1080,
+    "duration": 47,
+    "size": 34452169,
+    "location": { "URL": "https://eu-central-1.linodeobjects.com/atlas-assets/videos/5.mp4" }
+  },
+  {
+    "id": "2c6e01be-52e3-469f-8e5e-ad4cac864fa9",
+    "codec": "H264_mpeg4",
+    "pixelWidth": 1920,
+    "pixelHeight": 1080,
+    "duration": 59,
+    "size": 37488451,
+    "location": { "URL": "https://eu-central-1.linodeobjects.com/atlas-assets/videos/6.mp4" }
+  },
+  {
+    "id": "ed247bbf-aa89-4377-bfce-b055e4b05cb9",
+    "codec": "H264_mpeg4",
+    "pixelWidth": 640,
+    "pixelHeight": 480,
+    "duration": 664,
+    "size": 68512128,
+    "location": { "URL": "https://eu-central-1.linodeobjects.com/atlas-assets/videos/7.mp4" }
+  },
+  {
+    "id": "46eda8d5-9a78-41c3-9ae7-72b5df936c69",
+    "codec": "H264_mpeg4",
+    "pixelWidth": 1920,
+    "pixelHeight": 1080,
+    "duration": 23,
+    "size": 15223013,
+    "location": { "URL": "https://eu-central-1.linodeobjects.com/atlas-assets/videos/8.mp4" }
+  },
+  {
+    "id": "2659dabe-928f-4789-ac92-13325acffa3c",
+    "codec": "H264_mpeg4",
+    "pixelWidth": 1280,
+    "pixelHeight": 720,
+    "duration": 403,
+    "size": 295780291,
+    "location": { "URL": "https://eu-central-1.linodeobjects.com/atlas-assets/videos/9.m4v" }
+  }
+]

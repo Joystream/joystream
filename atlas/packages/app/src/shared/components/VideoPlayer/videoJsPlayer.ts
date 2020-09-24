@@ -17,7 +17,7 @@ export const useVideoJsPlayer: VideoJsPlayerHook = ({ fill, fluid, height, src, 
   const playerRef = useRef<HTMLVideoElement>(null)
   const [player, setPlayer] = useState<VideoJsPlayer | null>(null)
 
-  const parsedSource = src.__typename === 'HTTPVideoMediaLocation' ? src.host : 'TODO'
+  const parsedSource = src.__typename === 'HTTPVideoMediaLocation' ? src.URL : 'TODO'
 
   useEffect(() => {
     const videoJsOptions: VideoJsPlayerOptions = {
@@ -41,7 +41,7 @@ export const useVideoJsPlayer: VideoJsPlayerHook = ({ fill, fluid, height, src, 
       src: parsedSource,
       type: 'video/mp4',
     })
-  }, [player, src])
+  }, [player, parsedSource])
 
   useEffect(() => {
     if (!player || !width) {
