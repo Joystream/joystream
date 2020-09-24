@@ -17,6 +17,7 @@
 //! - [increase_stake](./struct.Module.html#method.increase_stake) - Increases the regular worker/lead stake.
 //! - [cancel_opening](./struct.Module.html#method.cancel_opening) - Cancel opening for a regular worker/lead.
 //! - [withdraw_application](./struct.Module.html#method.withdraw_application) - Withdraw the regular worker/lead application.
+//! - [set_budget](./struct.Module.html#method.set_budget) - Sets the working team budget.
 //!
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -283,6 +284,7 @@ decl_module! {
             member_id: T::MemberId,
             opening_id: T::OpeningId,
             role_account_id: T::AccountId,
+            reward_account_id: T::AccountId,
             staking_account_id: T::AccountId,
             description: Vec<u8>,
             stake: Option<BalanceOfCurrency<T>>,
