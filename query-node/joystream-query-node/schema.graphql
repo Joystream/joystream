@@ -1,21 +1,489 @@
+"Stored information about a registered user"
 type Member @entity {
-  memberId: BigInt!
+	memberId: BigInt!
 
-  # The unique handle chosen by member
-  handle: String @fulltext(query: "handles")
+	"The unique handle chosen by member"
+	handle: String @unique @fulltext(query: "handles")
 
-  # A Url to member's Avatar image
-  avatarUri: String
+	"A Url to member's Avatar image"
+	avatarUri: String
 
-  # Short text chosen by member to share information about themselves
-  about: String
+	"Short text chosen by member to share information about themselves"
+	about: String
 
-  # Blocknumber when member was registered
-  registeredAtBlock: BigInt!
+	"Blocknumber when member was registered"
+	registeredAtBlock: BigInt!
 
-  # Member's controller account id.
-  controllerAccount: Bytes!
+	"Member's controller account id"
+	controllerAccount: Bytes!
 
-  # Member's root account id
-  rootAccount: Bytes!
+	"Member's root account id"
+	rootAccount: Bytes!
+
+	"When a member is worker"
+	worker: Worker @derivedFrom(field: "member")
+
+	"Virtual field required for 1:1 relationship"
+	entityController: EntityController @derivedFrom(field: "controllerWhenMember")
+}
+
+"""
+It represents a conceptual category, similar - but not identical,
+to tables in relational databases and classes in object-oriented programming
+Examples of classes in our example could be:
+- Person: represents the concept of a person.
+- Place: represents the concept of a place.
+- PersonLivedInPlace: represents the concept that a person lived in a place.
+"""
+type Class @entity {
+	"Runtime identifier for class"
+	classId: BigInt! @unique
+
+	"Name of class"
+	name: String!
+
+	"Description of class"
+	description: String!
+
+	"The maximum number of entities which can be created"
+	maximumEntitiesCount: BigInt!
+
+	"The current number of entities which exist"
+	currentNumberOfEntities: BigInt!
+
+	"How many entities a given controller may create at most"
+	defaultEntityCreationVoucherUpperBound: BigInt!
+
+	#### ClassPermissions ####
+
+	"For this permission, the individual member is allowed to create the entity and become controller"
+	anyMemberCanCreate: Boolean!
+
+	"Whether to prevent everyone from creating an entity"
+	entityCreationBlocked: Boolean!
+
+	"Whether to prevent everyone from updating entity properties"
+	allEntityPropertyValuesLocked: Boolean!
+
+	"Current class maintainer curator groups"
+	maintainers: [CuratorGroup!]
+
+	#### ClassPermissions ####
+
+	# Commenting out this line because the properties are accessible from the schemas
+	# query { classes { schemas {properties { ... } } } }
+	# "All properties that have been used on this class across different class schemas"
+	# properties: [Property!]
+
+	"All schemas that are available for this class, think v0.0 Person, v.1.0 Person, etc."
+	schemas: [Schema!] @derivedFrom(field: "class")
+
+	"All vouchers for this class"
+	vouchers: [EntityCreationVoucher!] @derivedFrom(field: "class")
+
+	"Entities associated with the clas"
+	entities: [Entity!] @derivedFrom(field: "class")
+}
+
+enum PropertyType {
+	BOOL
+	UINT16
+	UINT32
+	UINT64
+	INT16
+	INT32
+	INT64
+	TEXT
+	HASH
+	REFERENCE
+	VECBOOL
+	VECUINT16
+	VECUINT32
+	VECUINT64
+	VECINT16
+	VECINT32
+	VECINT64
+	VECTEXT
+	VECREFERENCE
+}
+
+"`Property` representation, related to a given `Class`"
+type Property @entity {
+	"Runtime identifier for property in class"
+	propertyId: BigInt! @unique
+
+	"Type of `Property`"
+	propertyType: PropertyType!
+
+	"If property value can be skipped, when adding entity schema support"
+	required: Boolean!
+
+	"Used to enforce uniqeness of a property across all entities that have this property"
+	unique: Boolean!
+
+	"Name of property"
+	name: String!
+
+	"Description of property"
+	description: String!
+
+	"Property is locked from maintainer"
+	isLockedFromMaintainer: Boolean!
+
+	"Property is locked from controller"
+	isLockedFromController: Boolean!
+
+	"Upper bound for vector length when property is a vector"
+	maximumLength: BigInt
+
+	"Optional field, it must reference a class then PropertyType is Reference"
+	referencedClass: Class
+
+	"Optional field, Only will be set when PropertyType is Reference"
+	sameControllerStatus: Boolean
+
+	"Schemas which involve this property"
+	schemas: [Schema!] @derivedFrom(field: "properties")
+}
+
+"Represents a standard for what information must be associated with any entity of a given class"
+type Schema @entity {
+	"Runtime identifier of schema in class"
+	schemaId: BigInt! @unique
+
+	"Class to which this schema corresponds"
+	class: Class!
+
+	"Properties of class that are in this schema"
+	properties: [Property!]
+
+	"If schema can be added to an entity"
+	isActive: Boolean!
+
+	"Virtual field, supported entities"
+	entities: [Entity!] @derivedFrom(field: "supportedSchemas")
+}
+
+"Working group participant: working-group/src/types.rs"
+type Worker @entity {
+	member: Member!
+
+	"Account used to authenticate in this role"
+	roleAccountId: Bytes!
+
+	"Worker curator relationship"
+	curator: Curator @derivedFrom(field: "worker")
+}
+
+type Curator @entity {
+	"Account used to authenticate"
+	worker: Worker!
+
+	groups: [CuratorGroup] @derivedFrom(field: "curators")
+}
+
+"A group, that consists of `curators` set"
+type CuratorGroup @entity {
+	"Runtime identifier for group"
+	groupId: BigInt! @unique
+
+	"Activity stats of group"
+	isActive: Boolean!
+
+	"All member curators of this group"
+	curators: [Curator!]
+
+	"All classes this group maintains"
+	maintainerOfClasses: [Class!] @derivedFrom(field: "maintainers")
+}
+
+"A voucher for `Entity` creation"
+type EntityCreationVoucher @entity {
+	"Class to which voucher applies"
+	class: Class!
+
+	"Controller to which this voucher applies"
+	controller: EntityController!
+
+	"How many are allowed in total"
+	maximumEntitiesCount: BigInt!
+
+	"How many have currently been created"
+	entitiesCreated: BigInt!
+}
+
+enum EntityControllerType {
+	LEAD
+	MEMBER
+	MAINTAINERS
+}
+
+"Owner of an `Entity`"
+type EntityController @entity {
+	"Current controller, which is initially set based on who created entity"
+	controllerType: EntityControllerType!
+
+	"Optional field, will be set when EntityControllerType is MEMBER"
+	controllerWhenMember: Member
+
+	"Virtual field for 1:1 relationship"
+	voucher: EntityCreationVoucher @derivedFrom(field: "controller")
+}
+
+"""
+Represents a particular instance of a class,
+hence each entity corresponds to exactly one class
+"""
+type Entity @entity {
+	"Runtime identifier for entity"
+	entityId: BigInt! @unique
+
+	"Current controller, which is initially set based on who created entity"
+	controller: EntityController!
+
+	"Forbid groups to mutate any property value"
+	isFrozen: Boolean!
+
+	"Prevent from being referenced by any entity (including self-references)"
+	isReferenceable: Boolean!
+
+	"The class of this entity"
+	class: Class!
+
+	"""
+	What schemas under which this entity of a class is available, think
+	v.2.0 Person schema for John, v3.0 Person schema for John
+	"""
+	supportedSchemas: [Schema!]
+
+	"Values for properties on class that are used by some schema used by this entity!"
+	values: [PropertyValue!]
+
+	"Total number of inbound references from another entities"
+	totalNumberOfInboundReferences: BigInt!
+
+	"Number of inbound references from another entities with 'SameOwner' flag set"
+	sameOwnerInboundReferences: BigInt!
+}
+
+"Fields encode a flattened representation of non-vector properties, only one will be non-null"
+type SingleValue @variant {
+	bool: Boolean
+
+	integer: BigInt
+
+	text: Bytes
+
+	hash: Bytes
+
+	reference: Entity
+}
+
+"""
+Fields encode a flattened representation of vector properties, only one will be non-null
+"""
+type VectorValue @variant {
+	boolVec: [Boolean!]
+
+	intVec: [BigInt!]
+
+	textVec: [Bytes!]
+
+	hashVec: [Bytes!]
+
+	referenceVec: [Entity!]
+
+	"Used to avoid vector data race update conditions"
+	nonce: BigInt!
+}
+
+union StoredValue = SingleValue | VectorValue
+
+type PropertyValue @entity {
+	"Runtime identifier of property value in entity"
+	propertyValueId: BigInt! @unique
+
+	"Property to which this value corresponds"
+	property: Property!
+
+	value: StoredValue!
+
+	"Virtual field for entity property values"
+	entities: [Entity!] @derivedFrom(field: "values")
+}
+
+"The lead when the actor type is 'ActorType.Lead'"
+type ActorTypeLead @variant {
+	lead: CurationLead
+}
+
+"The curator group and actual curator when the actor type is 'ActorType.CuratorGroup'"
+type ActorTypeCuratorGroup @variant {
+	groupWhenCuratorGroupMember: CuratorGroup
+
+	curatorWhenCuratorGroupMember: Curator
+}
+
+"The member when the actor type is 'ActorType.Member'"
+type ActorTypeMember @variant {
+	member: Member
+}
+
+union ActorInfo = ActorTypeLead | ActorTypeCuratorGroup | ActorTypeMember
+
+enum ActorType {
+	CURATORGROUPMEMBER
+	MEMBER
+	LEAD
+}
+
+type Actor @entity {
+	"The type of actor"
+	type: ActorType
+
+	actorInfo: ActorInfo
+}
+
+#### High Level Derivative Entities ####
+
+enum Language {
+	CHINESE
+	ENGLISH
+	ARABIC
+	PORTUGESE
+	FRENCH
+}
+
+type Channel @entity {
+	"Underlying entity"
+	entity: Entity!
+
+	owner: Member!
+
+	handle: String! @unique @fulltext(query: "handles")
+
+	description: String!
+
+	coverPhotoURL: String!
+
+	avatarPhotoURL: String!
+
+	isPublic: Boolean!
+
+	isCurated: Boolean!
+
+	language: Language
+
+	videos: [Video!] @derivedFrom(field: "channel")
+}
+
+type Category @entity {
+	"Underlying entity"
+	entity: Entity!
+
+	name: String! @unique @fulltext(query: "names")
+
+	videos: [Video!] @derivedFrom(field: "category")
+}
+
+"Encoding and containers"
+enum VideoMediaEncoding {
+	H264_MPEG4
+	VP8_WEBM
+	THEROA_VORBIS
+}
+
+enum CreativeCommonsVersion {
+	CC_BY
+	CC_BY_SA
+	CC_BY_ND
+	CC_BY_NC
+	CC_BY_NC_SA
+	CC_BY_NC_ND
+}
+
+type CreativeCommonsLicense @variant {
+	version: CreativeCommonsVersion!
+}
+
+type UserDefinedLicense @variant {
+	text: String!
+}
+
+union License = UserDefinedLicense | CreativeCommonsLicense
+
+type JoystreamMediaLocation @variant {
+	dataObjectID: BigInt!
+}
+
+type HTTPMediaLocation @variant {
+	host: String!
+	port: Int
+}
+
+union MediaLocation = JoystreamMediaLocation | HTTPMediaLocation
+
+type VideoMedia @entity {
+	"Underlying entity"
+	entity: Entity!
+
+	encoding: VideoMediaEncoding!
+
+	"Resolution width"
+	pixelWidth: Int!
+
+	"Resolution height"
+	pixelHeight: Int!
+
+	"Size in bytes"
+	size: BigInt!
+
+	"Where to find"
+	location: MediaLocation!
+}
+
+type Block @entity {
+	blockHeight: BigInt! @unique
+
+	timestamp: BigInt!
+}
+
+type Video @entity {
+	"Underlying entity"
+	entity: Entity!
+
+	channel: Channel!
+
+	category: Category!
+
+	title: String! @fulltext(query: "titles")
+
+	description: String!
+
+	"In seconds"
+	duration: Int!
+
+	"In intro"
+	skippableIntroDuration: Int
+
+	thumbnailURL: String!
+
+	Language: Language
+
+	media: VideoMedia!
+
+	hasMarketing: Boolean
+
+	atBlock: Block!
+
+	"Possible time when video was published before Joystream"
+	publishedBeforeJoystream: DateTime
+
+	isPublic: Boolean!
+
+	isCurated: Boolean!
+
+	isExplicit: Boolean!
+
+	license: License!
 }
