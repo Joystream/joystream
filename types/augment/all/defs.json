@@ -452,7 +452,7 @@
             "Curator": "CuratorId"
         }
     },
-    "CuratorApplicationIdToCuratorIdMap": "BTreeMap<HiringApplicationId,CuratorId>",
+    "CuratorApplicationIdToCuratorIdMap": "BTreeMap<ApplicationId,CuratorId>",
     "CuratorApplicationIdSet": "BTreeSet<CuratorApplicationId>",
     "CuratorRoleStakeProfile": {
         "stake_id": "StakeId",
