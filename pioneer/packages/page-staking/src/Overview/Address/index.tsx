@@ -131,6 +131,14 @@ function Address ({ address, className = '', filterName, hasQueries, isElected, 
         )}
       </td>
       <td className='number'>
+        {(stakeOwn && stakeOther)
+          ? <FormatBalance value={stakeOther.add(stakeOwn)} />
+          : stakeOwn ? <FormatBalance value={stakeOwn} />
+            : stakeOther ? <FormatBalance value={stakeOther} />
+              : null
+        }
+      </td>
+      <td className='number'>
         {commission}
       </td>
       {isMain && (
