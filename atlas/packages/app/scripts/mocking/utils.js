@@ -3,21 +3,18 @@
 const path = require('path')
 const fs = require('fs')
 const { promisify } = require('util')
-const mkdir = promisify(fs.mkdir)
 const writeFile = promisify(fs.writeFile)
 
-const OUTPUT_DIR = 'generated'
+const OUTPUT_DIR = path.join(__dirname, '..', '..', 'src', 'mocking', 'data', 'raw')
 
 const randomRange = (min, max) => {
   return Math.random() * (max - min) + min
 }
 
 const saveToFile = async (object, filename) => {
-  const jsonified = JSON.stringify(object)
+  const jsonified = JSON.stringify(object, null, 2)
 
-  const outputPath = path.join(__dirname, OUTPUT_DIR)
-  await mkdir(outputPath, { recursive: true })
-  const fileOutputPath = path.join(outputPath, filename)
+  const fileOutputPath = path.join(OUTPUT_DIR, filename)
   await writeFile(fileOutputPath, jsonified)
 }
 
