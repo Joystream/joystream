@@ -7,16 +7,13 @@ on:
 jobs:
   run_network_tests:
     name: Network Integration Tests
-    if: github.event.label.name == 'run-network-tests' || github.event.action == null
+    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests') || github.event.action == null
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [12.x]
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '12.x'
       - name: Install packages and dependencies
         run: yarn install --frozen-lockfile
       - name: Ensure tests are runnable
@@ -24,6 +21,6 @@ jobs:
       - name: Configure block production to 2000ms (fatser tests)
         run: ./scripts/alter-block-creation-time.sh
       - name: Build and start chain
-        run: cd devops/dockerfiles/node-and-runtime/ && ls -l && docker-compose up -d
+        run: docker-compose --file devops/dockerfiles/node-and-runtime/docker-compose.yml up -d
       - name: Execute network tests
         run: yarn workspace joystream-testing test

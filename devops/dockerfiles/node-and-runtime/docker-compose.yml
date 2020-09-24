@@ -2,12 +2,13 @@ version: "3"
 services:
   node:
     image: joystream/node
-    # Build image if not found
+    # Build image if not found. To prevent build run docker-compose with "--no-build" arg
     build:
       # context is relative to the compose file
       context: ../../../
-      # dockerfile is relative to working dir
-      dockerfile: ./Dockerfile
+      # dockerfile is relative to the context. thats retarted!
+      # ideally docker and compose file should be placed 
+      dockerfile: devops/dockerfiles/node-and-runtime/Dockerfile
     container_name: joystream-node
     command: --dev --alice --validator --unsafe-ws-external --rpc-cors=all
     ports:
