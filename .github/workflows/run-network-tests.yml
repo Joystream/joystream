@@ -1,7 +1,7 @@
 name: run-network-tests
 on:
   pull_request:
-    types: [labeled]
+    types: [labeled, synchronize]
   workflow_dispatch:
 
 jobs:
@@ -24,6 +24,6 @@ jobs:
       - name: Configure block production to 2000ms (fatser tests)
         run: ./scripts/alter-block-creation-time.sh
       - name: Build and start chain
-        run: cd devops/dockerfiles/node-and-runtime/ && docker-compose up -d
+        run: cd devops/dockerfiles/node-and-runtime/ && ls -l && docker-compose up -d
       - name: Execute network tests
         run: yarn workspace joystream-testing test
