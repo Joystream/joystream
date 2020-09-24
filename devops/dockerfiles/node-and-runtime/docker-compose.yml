@@ -1,0 +1,15 @@
+version: "3"
+services:
+  node:
+    image: joystream/node
+    # Build image if not found
+    build:
+      # context is relative to the compose file
+      context: ../../../
+      # dockerfile is relative to working dir
+      dockerfile: ./Dockerfile
+    container_name: joystream-node
+    command: --dev --alice --validator --unsafe-ws-external --rpc-cors=all
+    ports:
+      - "9944:9944"
+  

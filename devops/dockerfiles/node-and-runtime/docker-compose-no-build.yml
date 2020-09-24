@@ -1,0 +1,9 @@
+version: "3"
+services:
+  node:
+    image: joystream/node
+    container_name: joystream-node
+    command: --dev --alice --validator --unsafe-ws-external --rpc-cors=all
+    ports:
+      - "9944:9944"
+  

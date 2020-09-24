@@ -16,13 +16,14 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-      - name: build npm packages
-        run: |
-          yarn install --frozen-lockfile
-          yarn workspace joystream-testing install
-      - name: set block production to 2000ms for faster tests
+      - name: Install packages and dependencies
+        run: yarn install --frozen-lockfile
+      - name: Ensure tests are runnable
+        run: yarn workspace joystream-testing build
+      - name: Configure block production to 2000ms (fatser tests)
         run: ./scripts/alter-block-creation-time.sh
-      - name: start network
-        run: docker-compose -f devops/dockerfiles/node-and-runtime/build-and-run-single-node-dev.yml up -d
-      - name: execute tests
+      - name: Build and start chain
+        working-directory: devops/dockerfiles/node-and-runtime/
+        run: docker-compose up -d
+      - name: Execute network tests
         run: yarn workspace joystream-testing test
