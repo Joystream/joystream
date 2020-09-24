@@ -2196,8 +2196,22 @@
     "@types/yargs" "^15.0.0"
     chalk "^4.0.0"
 
+"@joystream/types@^0.13.0":
+  version "0.13.1"
+  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.13.1.tgz#d91773375a069663a3ec319f0929be8ddbb80210"
+  integrity sha512-Nz0zUzqS+gD0eaom+lzu595gm5XFG9uAK5L5ubwKceVDYgwVYC3rrZgfpKdPJJkGoGpVa8m0Gtl7YdOO1neMWw==
+  dependencies:
+    "@polkadot/api" "1.26.1"
+    "@polkadot/keyring" "^3.0.1"
+    "@polkadot/types" "1.26.1"
+    "@types/lodash" "^4.14.157"
+    "@types/vfile" "^4.0.0"
+    ajv "^6.11.0"
+    lodash "^4.17.15"
+    moment "^2.24.0"
+
 "@joystream/types@link:types":
-  version "0.13.0"
+  version "0.14.0"
   dependencies:
     "@polkadot/api" "1.26.1"
     "@polkadot/keyring" "^3.0.1"

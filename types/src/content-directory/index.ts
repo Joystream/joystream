@@ -23,7 +23,7 @@ export class ClassPermissions extends JoyStructDecorated({
 }) {}
 
 // Named just "Type" in the runtime, but this name conflicts with @polkadot/types/primitive/Type.ts
-export class SinglePropertyType extends JoyEnum({
+export class PropertyTypeSingle extends JoyEnum({
   Bool: Null,
   Uint16: Null,
   Uint32: Null,
@@ -36,14 +36,14 @@ export class SinglePropertyType extends JoyEnum({
   Reference: Tuple.with([ClassId, SameController]),
 }) {}
 
-export class VecPropertyType extends JoyStructDecorated({
-  vec_type: SinglePropertyType,
+export class PropertyTypeVector extends JoyStructDecorated({
+  vec_type: PropertyTypeSingle,
   max_length: VecMaxLength,
 }) {}
 
 export class PropertyType extends JoyEnum({
-  Single: SinglePropertyType,
-  Vector: VecPropertyType,
+  Single: PropertyTypeSingle,
+  Vector: PropertyTypeVector,
 }) {}
 
 export class PropertyLockingPolicy extends JoyStructDecorated({
@@ -254,8 +254,8 @@ export const contentDirectoryTypes = {
   SchemaId,
   SameController,
   ClassPermissions,
-  SinglePropertyType,
-  VecPropertyType,
+  PropertyTypeSingle,
+  PropertyTypeVector,
   PropertyType,
   PropertyLockingPolicy,
   Property,
