@@ -4,7 +4,7 @@
 import { AnyNumber, ITuple, Observable } from '@polkadot/types/types';
 import { Option, Vec } from '@polkadot/types/codec';
 import { Bytes, bool, u32, u64 } from '@polkadot/types/primitive';
-import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelId, Class, ClassId, ClassPermissionsType, ContentId, Credential, Curator, CuratorApplication, CuratorApplicationId, CuratorId, CuratorOpening, CuratorOpeningId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, Entity, EntityId, HiringApplicationId, InputValidationLengthConstraint, Lead, LeadId, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, Principal, PrincipalId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, VoteKind, WorkerId, WorkerOf, WorkingGroupUnstaker } from './all';
+import { Application, ApplicationId, ApplicationOf, Category, CategoryId, Channel, ChannelId, Class, ClassId, ClassPermissionsType, ContentId, Credential, Curator, CuratorApplication, CuratorApplicationId, CuratorGroup, CuratorGroupId, CuratorId, CuratorOpening, CuratorOpeningId, DataObject, DataObjectStorageRelationship, DataObjectStorageRelationshipId, DataObjectType, DataObjectTypeId, DiscussionPost, DiscussionThread, ElectionStage, ElectionStake, Entity, EntityController, EntityCreationVoucher, EntityId, HiringApplicationId, InputValidationLengthConstraint, Lead, LeadId, MemberId, Membership, MemoText, Mint, MintId, Opening, OpeningId, OpeningOf, PaidMembershipTerms, PaidTermId, Post, PostId, Principal, PrincipalId, PropertyId, ProposalDetailsOf, ProposalId, ProposalOf, Recipient, RecipientId, RewardRelationship, RewardRelationshipId, SealedVote, Seats, ServiceProviderRecord, Stake, StakeId, StorageProviderId, Thread, ThreadCounter, ThreadId, TransferableStake, Url, VoteKind, WorkerId, WorkerOf, WorkingGroupUnstaker } from './all';
 import { UncleEntryItem } from '@polkadot/types/interfaces/authorship';
 import { BabeAuthorityWeight, MaybeRandomness, NextConfigDescriptor, Randomness } from '@polkadot/types/interfaces/babe';
 import { AccountData, BalanceLock } from '@polkadot/types/interfaces/balances';
@@ -127,6 +127,86 @@ declare module '@polkadot/api/types/storage' {
        **/
       totalIssuance: AugmentedQuery<ApiType, () => Observable<Balance>>;
     };
+    contentDirectory: {
+      /**
+       * Map, representing ClassId -> Class relation
+       **/
+      classById: AugmentedQuery<ApiType, (arg: ClassId | AnyNumber | Uint8Array) => Observable<Class>>;
+      /**
+       * Map, representing  CuratorGroupId -> CuratorGroup relation
+       **/
+      curatorGroupById: AugmentedQuery<ApiType, (arg: CuratorGroupId | AnyNumber | Uint8Array) => Observable<CuratorGroup>>;
+      /**
+       * Map, representing EntityId -> Entity relation
+       **/
+      entityById: AugmentedQuery<ApiType, (arg: EntityId | AnyNumber | Uint8Array) => Observable<Entity>>;
+      entityCreationVouchers: AugmentedQueryDoubleMap<ApiType, (key1: ClassId | AnyNumber | Uint8Array, key2: EntityController | { Maintainers: any } | { Member: any } | { Lead: any } | string | Uint8Array) => Observable<EntityCreationVoucher>>;
+      /**
+       * Next runtime storage values used to maintain next id value, used on creation of respective curator groups, classes and entities
+       **/
+      nextClassId: AugmentedQuery<ApiType, () => Observable<ClassId>>;
+      nextCuratorGroupId: AugmentedQuery<ApiType, () => Observable<CuratorGroupId>>;
+      nextEntityId: AugmentedQuery<ApiType, () => Observable<EntityId>>;
+      /**
+       * Mapping of class id and its property id to the respective entity id and property value hash.
+       **/
+      uniquePropertyValueHashes: AugmentedQueryDoubleMap<ApiType, (key1: ITuple<[ClassId, PropertyId]> | [ClassId | AnyNumber | Uint8Array, PropertyId | AnyNumber | Uint8Array], key2: Hash | string | Uint8Array) => Observable<ITuple<[]>>>;
+    };
+    contentDirectoryWorkingGroup: {
+      /**
+       * Count of active workers.
+       **/
+      activeWorkerCount: AugmentedQuery<ApiType, () => Observable<u32>>;
+      /**
+       * Maps identifier to worker application on opening.
+       **/
+      applicationById: AugmentedQuery<ApiType, (arg: ApplicationId | AnyNumber | Uint8Array) => Observable<ApplicationOf>>;
+      /**
+       * The current lead.
+       **/
+      currentLead: AugmentedQuery<ApiType, () => Observable<Option<WorkerId>>>;
+      /**
+       * Map member id by hiring application id.
+       * Required by StakingEventsHandler callback call to refund the balance on unstaking.
+       **/
+      memberIdByHiringApplicationId: AugmentedQuery<ApiType, (arg: HiringApplicationId | AnyNumber | Uint8Array) => Observable<MemberId>>;
+      /**
+       * The mint currently funding the rewards for this module.
+       **/
+      mint: AugmentedQuery<ApiType, () => Observable<MintId>>;
+      /**
+       * Next identifier value for new worker application.
+       **/
+      nextApplicationId: AugmentedQuery<ApiType, () => Observable<ApplicationId>>;
+      /**
+       * Next identifier value for new worker opening.
+       **/
+      nextOpeningId: AugmentedQuery<ApiType, () => Observable<OpeningId>>;
+      /**
+       * Next identifier for new worker.
+       **/
+      nextWorkerId: AugmentedQuery<ApiType, () => Observable<WorkerId>>;
+      /**
+       * Maps identifier to worker opening.
+       **/
+      openingById: AugmentedQuery<ApiType, (arg: OpeningId | AnyNumber | Uint8Array) => Observable<OpeningOf>>;
+      /**
+       * Opening human readable text length limits
+       **/
+      openingHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+      /**
+       * Worker application human readable text length limits
+       **/
+      workerApplicationHumanReadableText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+      /**
+       * Maps identifier to corresponding worker.
+       **/
+      workerById: AugmentedQuery<ApiType, (arg: WorkerId | AnyNumber | Uint8Array) => Observable<WorkerOf>>;
+      /**
+       * Worker exit rationale text length limits.
+       **/
+      workerExitRationaleText: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
+    };
     contentWorkingGroup: {
       channelAvatarConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
       channelBannerConstraint: AugmentedQuery<ApiType, () => Observable<InputValidationLengthConstraint>>;
@@ -214,11 +294,9 @@ declare module '@polkadot/api/types/storage' {
        **/
       amountPerPayout: AugmentedQuery<ApiType, () => Observable<BalanceOf>>;
       /**
-       * The mint that funds council member rewards and spending proposals budget. It is an Option
-       * because it was introduced in a runtime upgrade. It will be automatically created when
-       * a successful call to set_council_mint_capacity() is made.
+       * The mint that funds council member rewards and spending proposals budget
        **/
-      councilMint: AugmentedQuery<ApiType, () => Observable<Option<MintId>>>;
+      councilMint: AugmentedQuery<ApiType, () => Observable<MintId>>;
       /**
        * How many blocks after the reward is created, the first payout will be made
        **/

@@ -31,6 +31,12 @@ declare module '@polkadot/metadata/Decorated/consts/types' {
        **/
       existentialDeposit: AugmentedConst<Balance>;
     };
+    contentDirectoryWorkingGroup: {
+      /**
+       * Exports const -  max simultaneous active worker number.
+       **/
+      maxWorkerNumberLimit: AugmentedConst<u32>;
+    };
     dataDirectory: {
       /**
        * Maximum objects allowed per inject_data_objects() transaction

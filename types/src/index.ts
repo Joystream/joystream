@@ -8,13 +8,12 @@ import stake from './stake'
 import mint from './mint'
 import recurringRewards from './recurring-rewards'
 import hiring from './hiring'
-import versionedStore from './versioned-store'
-import versionedStorePermissions from './versioned-store/permissions'
 import contentWorkingGroup from './content-working-group'
 import workingGroup from './working-group'
 import discovery from './discovery'
 import media from './media'
 import proposals from './proposals'
+import contentDirectory from './content-directory'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
 import { TypeRegistry } from '@polkadot/types'
 
@@ -28,13 +27,12 @@ export {
   mint,
   recurringRewards,
   hiring,
-  versionedStore,
-  versionedStorePermissions,
   contentWorkingGroup,
   workingGroup,
   discovery,
   media,
   proposals,
+  contentDirectory,
 }
 
 export const types: RegistryTypes = {
@@ -48,13 +46,12 @@ export const types: RegistryTypes = {
   ...mint,
   ...recurringRewards,
   ...hiring,
-  ...versionedStore,
-  ...versionedStorePermissions,
   ...contentWorkingGroup,
   ...workingGroup,
   ...discovery,
   ...media,
   ...proposals,
+  ...contentDirectory,
   // Required since migration to Substrate 2.0,
   // see: https://polkadot.js.org/api/start/FAQ.html#the-node-returns-a-could-not-convert-error-on-send
   Address: 'AccountId',
