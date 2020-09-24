@@ -23,7 +23,7 @@ export default class TokenomicsTransport extends BaseTransport {
     this.workingGroupT = workingGroups;
   }
 
-  async getCouncilMembers () {
+  async councilSizeAndStake () {
     let totalCouncilStake = 0;
     const activeCouncil = await this.council.activeCouncil() as Seats;
 
@@ -43,7 +43,7 @@ export default class TokenomicsTransport extends BaseTransport {
     };
   }
 
-  async calculateCouncilRewards (numberOfCouncilMembers: number) {
+  private async councilRewardsPerWeek (numberOfCouncilMembers: number) {
     const payoutInterval = Number((await this.api.query.council.payoutInterval() as Option<BlockNumber>).unwrapOr(0));
     const amountPerPayout = (await this.api.query.council.amountPerPayout() as BalanceOf).toNumber();
     const totalCouncilRewardsPerBlock = (amountPerPayout && payoutInterval)
@@ -65,8 +65,8 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async getCouncilData () {
-    const { numberOfCouncilMembers, totalCouncilStake } = await this.getCouncilMembers();
-    const totalCouncilRewardsInOneWeek = await this.calculateCouncilRewards(numberOfCouncilMembers);
+    const { numberOfCouncilMembers, totalCouncilStake } = await this.councilSizeAndStake();
+    const totalCouncilRewardsInOneWeek = await this.councilRewardsPerWeek(numberOfCouncilMembers);
 
     return {
       numberOfCouncilMembers,
@@ -75,7 +75,7 @@ export default class TokenomicsTransport extends BaseTransport {
     };
   }
 
-  async getStorageProviders () {
+  private async storageProviderSizeAndIds () {
     const stakeIds: StakeId[] = [];
     const rewardIds: RewardRelationshipId[] = [];
     let leadStakeId: StakeId | null = null;
@@ -116,7 +116,7 @@ export default class TokenomicsTransport extends BaseTransport {
     };
   }
 
-  async calcuateStorageProvider (
+  private async storageProviderStakeAndRewards (
     stakeIds: StakeId[],
     leadStakeId: StakeId | null,
     rewardIds: RewardRelationshipId[],
@@ -164,9 +164,9 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async getStorageProviderData () {
-    const { numberOfStorageProviders, leadNumber, stakeIds, rewardIds, leadRewardId, leadStakeId } = await this.getStorageProviders();
+    const { numberOfStorageProviders, leadNumber, stakeIds, rewardIds, leadRewardId, leadStakeId } = await this.storageProviderSizeAndIds();
     const { totalStorageProviderStake, leadStake, storageProviderRewardsPerWeek, storageProviderLeadRewardsPerWeek } =
-      await this.calcuateStorageProvider(stakeIds, leadStakeId, rewardIds, leadRewardId);
+      await this.storageProviderStakeAndRewards(stakeIds, leadStakeId, rewardIds, leadRewardId);
 
     return {
       numberOfStorageProviders,
@@ -178,7 +178,7 @@ export default class TokenomicsTransport extends BaseTransport {
     };
   }
 
-  async getContentCurators () {
+  private async contentCuratorSizeAndIds () {
     const stakeIds: StakeId[] = []; const rewardIds: RewardRelationshipId[] = []; let numberOfContentCurators = 0;
     const contentCurators = await this.entriesByIds<CuratorId, Curator>(this.api.query.contentWorkingGroup.curatorById);
     const currentLeadId = (await this.api.query.contentWorkingGroup.currentLeadId() as Option<LeadId>).unwrapOr(null)?.toNumber();
@@ -208,7 +208,7 @@ export default class TokenomicsTransport extends BaseTransport {
     };
   }
 
-  async calculateContentCurator (stakeIds: StakeId[], rewardIds: RewardRelationshipId[]) {
+  private async contentCuratorStakeAndRewards (stakeIds: StakeId[], rewardIds: RewardRelationshipId[]) {
     let totalContentCuratorStake = 0;
     let contentCuratorRewardsPerBlock = 0;
 
@@ -233,8 +233,8 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async getContentCuratorData () {
-    const { stakeIds, rewardIds, numberOfContentCurators, contentCuratorLeadNumber } = await this.getContentCurators();
-    const { totalContentCuratorStake, contentCuratorRewardsPerBlock } = await this.calculateContentCurator(stakeIds, rewardIds);
+    const { stakeIds, rewardIds, numberOfContentCurators, contentCuratorLeadNumber } = await this.contentCuratorSizeAndIds();
+    const { totalContentCuratorStake, contentCuratorRewardsPerBlock } = await this.contentCuratorStakeAndRewards(stakeIds, rewardIds);
 
     return {
       numberOfContentCurators,
@@ -244,7 +244,7 @@ export default class TokenomicsTransport extends BaseTransport {
     };
   }
 
-  async getValidators () {
+  async validatorSizeAndStake () {
     const validatorIds = await this.api.query.session.validators();
     const currentEra = (await this.api.query.staking.currentEra()).unwrapOr(null);
     let totalValidatorStake = 0; let numberOfNominators = 0;
@@ -272,11 +272,13 @@ export default class TokenomicsTransport extends BaseTransport {
     };
   }
 
-  async getValidatorData (totalIssuance: number) {
-    const { numberOfValidators, numberOfNominators, totalValidatorStake } = await this.getValidators();
+  async getValidatorData () {
+    const totalIssuance = (await this.api.query.balances.totalIssuance()).toNumber();
+    const { numberOfValidators, numberOfNominators, totalValidatorStake } = await this.validatorSizeAndStake();
     const validatorRewardsPerEra = calculateValidatorsRewardsPerEra(totalValidatorStake, totalIssuance);
 
     return {
+      totalIssuance,
       numberOfValidators,
       numberOfNominators,
       totalValidatorStake,
@@ -285,11 +287,10 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async getTokenomicsData (): Promise<TokenomicsData> {
-    const totalIssuance = (await this.api.query.balances.totalIssuance()).toNumber();
     const { numberOfCouncilMembers, totalCouncilRewardsInOneWeek, totalCouncilStake } = await this.getCouncilData();
     const { numberOfStorageProviders, storageProviderLeadNumber, totalStorageProviderStake, totalStorageProviderLeadStake, storageProviderLeadRewardsPerWeek, storageProviderRewardsPerWeek } = await this.getStorageProviderData();
     const { numberOfContentCurators, contentCuratorLeadNumber, totalContentCuratorStake, contentCuratorRewardsPerWeek } = await this.getContentCuratorData();
-    const { numberOfValidators, numberOfNominators, totalValidatorStake, validatorRewardsPerWeek } = await this.getValidatorData(totalIssuance);
+    const { numberOfValidators, numberOfNominators, totalValidatorStake, validatorRewardsPerWeek, totalIssuance } = await this.getValidatorData();
     const currentlyStakedTokens = totalCouncilStake + totalStorageProviderStake + totalStorageProviderLeadStake + totalContentCuratorStake + totalValidatorStake;
     const totalWeeklySpending = totalCouncilRewardsInOneWeek + storageProviderRewardsPerWeek + storageProviderLeadRewardsPerWeek + contentCuratorRewardsPerWeek + validatorRewardsPerWeek;
     const totalNumberOfActors = numberOfCouncilMembers + numberOfStorageProviders + storageProviderLeadNumber + numberOfContentCurators + contentCuratorLeadNumber + numberOfValidators;
