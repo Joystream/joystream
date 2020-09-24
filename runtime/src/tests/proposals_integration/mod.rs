@@ -1,6 +1,7 @@
 //! Proposals integration tests - with stake, membership, governance modules.
 
 #![cfg(test)]
+#[macro_use]
 
 mod working_group_proposals;
 

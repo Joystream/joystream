@@ -14,6 +14,7 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod constants;
+#[macro_use]
 mod integration;
 pub mod primitives;
 mod runtime_api;
@@ -508,8 +509,6 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type DataObjectStorageRelationshipId = u64;
     type ContentIdExists = DataDirectory;
 }
-
-pub type MemberId = u64;
 
 impl membership::Trait for Runtime {
     type Event = Event;

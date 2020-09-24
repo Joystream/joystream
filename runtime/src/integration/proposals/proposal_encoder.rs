@@ -15,6 +15,7 @@ use sp_std::vec::Vec;
 //Params:
 // - $working_group: expression returning the 'common::working_group::WorkingGroup' enum
 // - $working_group_instance_call: expression returning the exact working group instance extrinsic call
+#[macro_use]
 macro_rules! wrap_working_group_call {
     ($working_group:expr, $working_group_instance_call:expr) => {{
         match $working_group {

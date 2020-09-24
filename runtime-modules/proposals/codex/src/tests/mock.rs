@@ -157,11 +157,19 @@ impl governance::election::Trait for Test {
 // The content directory working group instance alias.
 pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
+// The storage working group instance alias.
+pub type StorageWorkingGroupInstance = working_group::Instance2;
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
 }
 
 impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Test {
+    type Event = ();
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl working_group::Trait<StorageWorkingGroupInstance> for Test {
     type Event = ();
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
