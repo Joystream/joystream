@@ -6,6 +6,7 @@ on:
 
 jobs:
   run_network_tests:
+    name: Network Integration Tests
     if: github.event.label.name == 'run-network-tests' || github.event.action == null
     runs-on: ubuntu-latest
     strategy:
@@ -23,7 +24,6 @@ jobs:
       - name: Configure block production to 2000ms (fatser tests)
         run: ./scripts/alter-block-creation-time.sh
       - name: Build and start chain
-        working-directory: devops/dockerfiles/node-and-runtime/
-        run: docker-compose up -d
+        run: cd devops/dockerfiles/node-and-runtime/ && docker-compose up -d
       - name: Execute network tests
         run: yarn workspace joystream-testing test
