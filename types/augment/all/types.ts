@@ -830,9 +830,32 @@ export interface PropertyLockingPolicy extends Struct {
 /** @name PropertyType */
 export interface PropertyType extends Enum {
   readonly isSingle: boolean;
-  readonly asSingle: SinglePropertyType;
+  readonly asSingle: PropertyTypeSingle;
   readonly isVector: boolean;
-  readonly asVector: VecPropertyType;
+  readonly asVector: PropertyTypeVector;
+}
+
+/** @name PropertyTypeSingle */
+export interface PropertyTypeSingle extends Enum {
+  readonly isBool: boolean;
+  readonly isUint16: boolean;
+  readonly isUint32: boolean;
+  readonly isUint64: boolean;
+  readonly isInt16: boolean;
+  readonly isInt32: boolean;
+  readonly isInt64: boolean;
+  readonly isText: boolean;
+  readonly asText: TextMaxLength;
+  readonly isHash: boolean;
+  readonly asHash: HashedTextMaxLength;
+  readonly isReference: boolean;
+  readonly asReference: ITuple<[ClassId, SameController]>;
+}
+
+/** @name PropertyTypeVector */
+export interface PropertyTypeVector extends Struct {
+  readonly vec_type: PropertyTypeSingle;
+  readonly max_length: VecMaxLength;
 }
 
 /** @name ProposalDecisionStatus */
@@ -1078,23 +1101,6 @@ export interface SideEffect extends Option<ITuple<[EntityId, EntityReferenceCoun
 /** @name SideEffects */
 export interface SideEffects extends Option<ReferenceCounterSideEffects> {}
 
-/** @name SinglePropertyType */
-export interface SinglePropertyType extends Enum {
-  readonly isBool: boolean;
-  readonly isUint16: boolean;
-  readonly isUint32: boolean;
-  readonly isUint64: boolean;
-  readonly isInt16: boolean;
-  readonly isInt32: boolean;
-  readonly isInt64: boolean;
-  readonly isText: boolean;
-  readonly asText: TextMaxLength;
-  readonly isHash: boolean;
-  readonly asHash: HashedTextMaxLength;
-  readonly isReference: boolean;
-  readonly asReference: ITuple<[ClassId, SameController]>;
-}
-
 /** @name Slash */
 export interface Slash extends Struct {
   readonly started_at_block: u32;
@@ -1289,12 +1295,6 @@ export interface VecInputValue extends Enum {
 
 /** @name VecMaxLength */
 export interface VecMaxLength extends u16 {}
-
-/** @name VecPropertyType */
-export interface VecPropertyType extends Struct {
-  readonly vec_type: SinglePropertyType;
-  readonly max_length: VecMaxLength;
-}
 
 /** @name VecStoredPropertyValue */
 export interface VecStoredPropertyValue extends Struct {

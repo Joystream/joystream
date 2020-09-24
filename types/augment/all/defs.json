@@ -743,7 +743,7 @@
         "all_entity_property_values_locked": "bool",
         "maintainers": "Vec<CuratorGroupId>"
     },
-    "SinglePropertyType": {
+    "PropertyTypeSingle": {
         "_enum": {
             "Bool": "Null",
             "Uint16": "Null",
@@ -757,14 +757,14 @@
             "Reference": "(ClassId,SameController)"
         }
     },
-    "VecPropertyType": {
-        "vec_type": "SinglePropertyType",
+    "PropertyTypeVector": {
+        "vec_type": "PropertyTypeSingle",
         "max_length": "VecMaxLength"
     },
     "PropertyType": {
         "_enum": {
-            "Single": "SinglePropertyType",
-            "Vector": "VecPropertyType"
+            "Single": "PropertyTypeSingle",
+            "Vector": "PropertyTypeVector"
         }
     },
     "PropertyLockingPolicy": {
