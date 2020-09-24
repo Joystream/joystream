@@ -131,7 +131,7 @@ async function loadOnReady (api: ApiPromise, store: KeyringStore | undefined, ty
 
   // finally load the keyring
   keyring.loadAll({
-    genesisHash: api.genesisHash,
+    // genesisHash: api.genesisHash, Joystream-specific - Don't care about genesis hash when loading accounts
     isDevelopment,
     ss58Format,
     store,
