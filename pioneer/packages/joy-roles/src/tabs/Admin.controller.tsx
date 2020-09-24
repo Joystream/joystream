@@ -790,7 +790,7 @@ const OpeningView = (props: OpeningViewProps) => {
     case OpeningState.InReview:
       CTAs = (
         <Container align='right'>
-          <Button onClick={() => { props.controller.acceptCuratorApplications(address, props.opening.curatorId, selected.sort()); }}>Accept curator applications</Button>
+          <Button onClick={() => { props.controller.acceptCuratorApplications(address, props.opening.curatorId, selected); }}>Accept curator applications</Button>
         </Container>
       );
   }
