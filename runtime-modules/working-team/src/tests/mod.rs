@@ -9,7 +9,10 @@ use crate::tests::fixtures::{
     SlashWorkerStakeFixture, WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
-use crate::tests::mock::STAKING_ACCOUNT_ID_FOR_FAILED_EXTERNAL_CHECK;
+use crate::tests::mock::{
+    STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES, STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK,
+    STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK,
+};
 use crate::{Error, JobOpeningType, RawEvent, StakePolicy, TeamWorker};
 use fixtures::{
     increase_total_balance_issuance_using_account_id, setup_members, AddOpeningFixture,
@@ -21,7 +24,7 @@ use frame_support::dispatch::DispatchError;
 use frame_support::traits::{LockableCurrency, WithdrawReason};
 use mock::{
     build_test_externalities, run_to_block, Balances, Test, TestWorkingTeam,
-    TestWorkingTeamInstance,
+    TestWorkingTeamInstance, ACTOR_ORIGIN_ERROR,
 };
 use sp_std::collections::btree_map::BTreeMap;
 
@@ -111,7 +114,7 @@ fn apply_on_opening_fails_with_bad_origin() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
 
-        let member_id = 10;
+        let member_id = 11;
 
         let add_opening_fixture = AddOpeningFixture::default();
 
@@ -120,7 +123,7 @@ fn apply_on_opening_fails_with_bad_origin() {
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
             .with_origin(RawOrigin::None, member_id);
 
-        apply_on_opening_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+        apply_on_opening_fixture.call_and_assert(Err(DispatchError::Other("Bad origin")));
     });
 }
 
@@ -138,9 +141,8 @@ fn apply_on_opening_fails_with_bad_member_id() {
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
             .with_origin(RawOrigin::Signed(1), member_id);
 
-        apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::OriginIsNeitherMemberControllerOrRoot.into(),
-        ));
+        apply_on_opening_fixture
+            .call_and_assert(Err(DispatchError::Other(ACTOR_ORIGIN_ERROR).into()));
     });
 }
 
@@ -682,7 +684,7 @@ fn apply_on_opening_fails_invalid_staking_check() {
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
         increase_total_balance_issuance_using_account_id(
-            STAKING_ACCOUNT_ID_FOR_FAILED_EXTERNAL_CHECK,
+            STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK,
             total_balance,
         );
 
@@ -695,10 +697,75 @@ fn apply_on_opening_fails_invalid_staking_check() {
 
         let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
             .with_stake(Some(stake))
-            .with_stake_account_id(STAKING_ACCOUNT_ID_FOR_FAILED_EXTERNAL_CHECK);
+            .with_stake_account_id(STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK);
 
-        apply_on_opening_fixture
-            .call_and_assert(Err(DispatchError::Other("External check failed")));
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::InvalidStakingAccountForMember.into(),
+        ));
+    });
+}
+
+#[test]
+fn apply_on_opening_fails_stake_amount_check() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        increase_total_balance_issuance_using_account_id(
+            STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK,
+            total_balance,
+        );
+
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
+                stake_amount: stake,
+                unstaking_period: 0,
+            }));
+        let opening_id = add_opening_fixture.call().unwrap();
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_stake(Some(stake))
+            .with_stake_account_id(STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK);
+
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::InsufficientBalanceToCoverStake.into(),
+        ));
+    });
+}
+
+#[test]
+fn apply_on_opening_fails_with_conflicting_stakes() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+        increase_total_balance_issuance_using_account_id(
+            STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES,
+            total_balance,
+        );
+
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
+                stake_amount: stake,
+                unstaking_period: 0,
+            }));
+        let opening_id = add_opening_fixture.call().unwrap();
+
+        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
+            .with_stake(Some(stake))
+            .with_stake_account_id(STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES);
+
+        apply_on_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::ConflictStakesOnAccount.into(),
+        ));
     });
 }
 
@@ -1001,25 +1068,6 @@ fn decrease_worker_stake_fails_with_invalid_worker_id() {
 }
 
 #[test]
-fn decrease_worker_stake_fails_external_check() {
-    build_test_externalities().execute_with(|| {
-        let account_id = 1;
-        let total_balance = 300;
-        let stake = 200;
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
-
-        let worker_id = HireRegularWorkerFixture::default().with_stake(stake).hire();
-
-        let invalid_new_stake = 2000;
-        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
-            .with_balance(invalid_new_stake);
-
-        decrease_stake_fixture.call_and_assert(Err(DispatchError::Other("External check failed")));
-    });
-}
-
-#[test]
 fn decrease_worker_stake_fails_with_not_set_lead() {
     build_test_externalities().execute_with(|| {
         let invalid_worker_id = 11;
@@ -1144,7 +1192,9 @@ fn increase_worker_stake_fails_external_check() {
         let decrease_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
             .with_balance(invalid_new_stake);
 
-        decrease_stake_fixture.call_and_assert(Err(DispatchError::Other("External check failed")));
+        decrease_stake_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::InsufficientBalanceToCoverStake.into(),
+        ));
     });
 }
 

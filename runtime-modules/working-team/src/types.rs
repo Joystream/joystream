@@ -3,7 +3,7 @@
 use codec::{Decode, Encode};
 
 use common::currency::GovernanceCurrency;
-use frame_support::traits::{Currency, LockIdentifier};
+use frame_support::traits::Currency;
 
 use frame_support::dispatch::DispatchResult;
 #[cfg(feature = "std")]
@@ -147,54 +147,38 @@ pub struct StakePolicy<BlockNumber, Balance> {
 /// Defines abstract staking handler to manage user stakes for different activities
 /// like adding a proposal. Implementation should use built-in LockableCurrency
 /// and LockIdentifier to lock balance consistently with pallet_staking.
-pub trait StakingHandler<T: system::Trait + GovernanceCurrency> {
+pub trait StakingHandler<T: system::Trait + membership::Trait + GovernanceCurrency> {
     /// Locks the specified balance on the account using specific lock identifier.
-    fn lock(lock_id: LockIdentifier, account_id: &T::AccountId, amount: BalanceOfCurrency<T>);
+    fn lock(account_id: &T::AccountId, amount: BalanceOfCurrency<T>);
 
     /// Removes the specified lock on the account.
-    fn unlock(lock_id: LockIdentifier, account_id: &T::AccountId);
-
-    /// Verifies that stake could be placed using given account.
-    fn ensure_can_make_stake(
-        account_id: &T::AccountId,
-        stake: BalanceOfCurrency<T>,
-    ) -> DispatchResult;
+    fn unlock(account_id: &T::AccountId);
 
     /// Slash the specified balance on the account using specific lock identifier.
     /// No limits, no actions on zero stake.
     /// If slashing balance greater than the existing stake - stake is slashed to zero.
     /// Returns actually slashed balance.
     fn slash(
-        lock_id: LockIdentifier,
         account_id: &T::AccountId,
         amount: Option<BalanceOfCurrency<T>>,
     ) -> BalanceOfCurrency<T>;
 
-    /// Verifies that the stake could be decreased to a given amount.
-    fn ensure_can_decrease_stake(
-        lock_id: LockIdentifier,
-        account_id: &T::AccountId,
-        new_stake: BalanceOfCurrency<T>,
-    ) -> DispatchResult;
-
     /// Decreases the stake for to a given amount.
-    fn decrease_stake(
-        lock_id: LockIdentifier,
-        account_id: &T::AccountId,
-        new_stake: BalanceOfCurrency<T>,
-    ) -> DispatchResult;
-
-    /// Verifies that the stake could be increased to a given amount.
-    fn ensure_can_increase_stake(
-        lock_id: LockIdentifier,
-        account_id: &T::AccountId,
-        new_stake: BalanceOfCurrency<T>,
-    ) -> DispatchResult;
+    fn decrease_stake(account_id: &T::AccountId, new_stake: BalanceOfCurrency<T>);
 
     /// Increases the stake for to a given amount.
-    fn increase_stake(
-        lock_id: LockIdentifier,
-        account_id: &T::AccountId,
-        new_stake: BalanceOfCurrency<T>,
-    ) -> DispatchResult;
+    fn increase_stake(account_id: &T::AccountId, new_stake: BalanceOfCurrency<T>)
+        -> DispatchResult;
+
+    /// Verifies that staking account bound to the member.
+    fn is_member_staking_account(member_id: &MemberId<T>, account_id: &T::AccountId) -> bool;
+
+    /// Verifies that there no conflicting stakes on the staking account.
+    fn is_account_free_of_conflicting_stakes(account_id: &T::AccountId) -> bool;
+
+    /// Verifies that staking account balance is sufficient for staking.
+    /// During the balance check we should consider already locked stake. Effective balance to check
+    /// is 'already locked funds' + 'usable funds'.
+    fn is_enough_balance_for_stake(account_id: &T::AccountId, amount: BalanceOfCurrency<T>)
+        -> bool;
 }

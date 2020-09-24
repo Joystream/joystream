@@ -118,59 +118,62 @@ impl Trait<TestWorkingTeamInstance> for Test {
     type Event = TestEvent;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = Test;
-    type LockId = LockId;
+    type MemberOriginValidator = ();
+}
+
+pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
+
+impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
+    fn ensure_actor_origin(origin: Origin, member_id: u64) -> Result<u64, &'static str> {
+        let signed_account_id = system::ensure_signed(origin)?;
+
+        if member_id > 10 {
+            return Err(ACTOR_ORIGIN_ERROR);
+        }
+
+        Ok(signed_account_id)
+    }
 }
 
 pub type TestWorkingTeamInstance = crate::Instance1;
 pub type TestWorkingTeam = Module<Test, TestWorkingTeamInstance>;
 
-pub const STAKING_ACCOUNT_ID_FOR_FAILED_EXTERNAL_CHECK: u64 = 111;
+pub const STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK: u64 = 111;
+pub const STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK: u64 = 222;
+pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;
+pub const LOCK_ID: LockIdentifier = [1; 8];
+
 impl StakingHandler<Test> for Test {
-    fn lock(
-        lock_id: LockIdentifier,
-        account_id: &<Test as system::Trait>::AccountId,
-        amount: BalanceOfCurrency<Test>,
-    ) {
+    fn lock(account_id: &<Test as system::Trait>::AccountId, amount: BalanceOfCurrency<Test>) {
         <Test as GovernanceCurrency>::Currency::set_lock(
-            lock_id,
+            LOCK_ID,
             &account_id,
             amount,
             WithdrawReasons::all(),
         )
     }
 
-    fn unlock(lock_id: LockIdentifier, account_id: &<Test as system::Trait>::AccountId) {
-        <Test as GovernanceCurrency>::Currency::remove_lock(lock_id, &account_id);
-    }
-
-    fn ensure_can_make_stake(
-        account_id: &<Test as system::Trait>::AccountId,
-        _stake: BalanceOfCurrency<Test>,
-    ) -> DispatchResult {
-        if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_EXTERNAL_CHECK {
-            return Err(DispatchError::Other("External check failed"));
-        }
-        Ok(())
+    fn unlock(account_id: &<Test as system::Trait>::AccountId) {
+        <Test as GovernanceCurrency>::Currency::remove_lock(LOCK_ID, &account_id);
     }
 
     fn slash(
-        lock_id: LockIdentifier,
         account_id: &<Test as system::Trait>::AccountId,
         amount: Option<BalanceOfCurrency<Test>>,
     ) -> BalanceOfCurrency<Test> {
         let locks = Balances::locks(&account_id);
 
-        let existing_lock = locks.iter().find(|lock| lock.id == lock_id);
+        let existing_lock = locks.iter().find(|lock| lock.id == LOCK_ID);
 
         let mut actually_slashed_balance = Default::default();
         if let Some(existing_lock) = existing_lock {
-            Self::unlock(lock_id, &account_id);
+            Self::unlock(&account_id);
 
             let mut slashable_amount = existing_lock.amount;
             if let Some(amount) = amount {
                 if existing_lock.amount > amount {
                     let new_amount = existing_lock.amount - amount;
-                    Self::lock(lock_id, &account_id, new_amount);
+                    Self::lock(&account_id, new_amount);
 
                     slashable_amount = amount;
                 }
@@ -184,52 +187,50 @@ impl StakingHandler<Test> for Test {
         actually_slashed_balance
     }
 
-    fn ensure_can_decrease_stake(
-        _lock_id: LockIdentifier,
-        _account_id: &<Test as system::Trait>::AccountId,
-        amount: BalanceOfCurrency<Test>,
-    ) -> DispatchResult {
-        if amount > 1000 {
-            return Err(DispatchError::Other("External check failed"));
-        }
-        Ok(())
-    }
-
     fn decrease_stake(
-        lock_id: LockIdentifier,
         account_id: &<Test as system::Trait>::AccountId,
         amount: BalanceOfCurrency<Test>,
-    ) -> DispatchResult {
-        Self::ensure_can_decrease_stake(lock_id, account_id, amount)?;
-
-        Self::unlock(lock_id, account_id);
-        Self::lock(lock_id, account_id, amount);
-
-        Ok(())
-    }
-
-    fn ensure_can_increase_stake(
-        _lock_id: LockIdentifier,
-        _account_id: &<Test as system::Trait>::AccountId,
-        amount: BalanceOfCurrency<Test>,
-    ) -> DispatchResult {
-        if amount > 1000 {
-            return Err(DispatchError::Other("External check failed"));
-        }
-        Ok(())
+    ) {
+        Self::unlock(account_id);
+        Self::lock(account_id, amount);
     }
 
     fn increase_stake(
-        lock_id: LockIdentifier,
         account_id: &<Test as system::Trait>::AccountId,
         amount: BalanceOfCurrency<Test>,
     ) -> DispatchResult {
-        Self::ensure_can_decrease_stake(lock_id, account_id, amount)?;
+        if !Self::is_enough_balance_for_stake(account_id, amount) {
+            return Err(DispatchError::Other("External check failed"));
+        }
 
-        Self::unlock(lock_id, account_id);
-        Self::lock(lock_id, account_id, amount);
+        Self::unlock(account_id);
+        Self::lock(account_id, amount);
 
         Ok(())
+    }
+
+    fn is_member_staking_account(_member_id: &u64, account_id: &u64) -> bool {
+        if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK {
+            return false;
+        }
+
+        true
+    }
+
+    fn is_account_free_of_conflicting_stakes(account_id: &u64) -> bool {
+        if *account_id == STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES {
+            return false;
+        }
+
+        true
+    }
+
+    fn is_enough_balance_for_stake(account_id: &u64, amount: u64) -> bool {
+        if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK || amount > 1000 {
+            return false;
+        }
+
+        true
     }
 }
 

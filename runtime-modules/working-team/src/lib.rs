@@ -31,7 +31,7 @@ mod tests;
 mod types;
 
 use codec::Codec;
-use frame_support::traits::{Get, LockIdentifier};
+use frame_support::traits::Get;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{Hash, MaybeSerialize, Member};
@@ -41,6 +41,8 @@ use system::ensure_signed;
 pub use errors::Error;
 use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId};
 pub use types::{JobApplication, JobOpening, JobOpeningType, StakePolicy, StakingHandler};
+
+use common::origin::ActorOriginValidator;
 
 /// The _Team_ main _Trait_
 pub trait Trait<I: Instance>:
@@ -75,8 +77,8 @@ pub trait Trait<I: Instance>:
     /// Stakes and balance locks handler.
     type StakingHandler: StakingHandler<Self>;
 
-    /// Defines work team ID for balance locking.
-    type LockId: Get<LockIdentifier>;
+    /// Validates member id and origin combination
+    type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 }
 
 decl_event!(
@@ -259,15 +261,8 @@ decl_module! {
             description: Vec<u8>,
             stake: Option<BalanceOfCurrency<T>>,
         ) {
-            // Ensure origin which will server as the source account for staked funds is signed.
-            let source_account = ensure_signed(origin)?;
-
-            // Ensure the source_account is either the controller or root account of member with given id.
-            ensure!(
-                membership::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
-                membership::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
-                Error::<T, I>::OriginIsNeitherMemberControllerOrRoot
-            );
+            // Ensure the origin of a member with given id.
+            T::MemberOriginValidator::ensure_actor_origin(origin, member_id)?;
 
             // Ensure job opening exists.
             let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
@@ -280,7 +275,20 @@ decl_module! {
 
             // Checks external conditions for staking.
             if let Some(amount) = stake {
-                T::StakingHandler::ensure_can_make_stake(&staking_account_id, amount)?;
+                ensure!(
+                    T::StakingHandler::is_member_staking_account(&member_id, &staking_account_id),
+                    Error::<T, I>::InvalidStakingAccountForMember
+                );
+
+                ensure!(
+                    T::StakingHandler::is_account_free_of_conflicting_stakes(&staking_account_id),
+                    Error::<T, I>::ConflictStakesOnAccount
+                );
+
+                ensure!(
+                    T::StakingHandler::is_enough_balance_for_stake(&staking_account_id, amount),
+                    Error::<T, I>::InsufficientBalanceToCoverStake
+                );
             }
 
             //
@@ -288,7 +296,7 @@ decl_module! {
             //
 
             if let Some(amount) = stake {
-                T::StakingHandler::lock(T::LockId::get(), &staking_account_id, amount);
+                T::StakingHandler::lock(&staking_account_id, amount);
             }
 
             let hashed_description = T::Hashing::hash(&description);
@@ -477,22 +485,15 @@ decl_module! {
                 Error::<T, I>::StakeBalanceCannotBeZero
             );
 
-            T::StakingHandler::ensure_can_decrease_stake(
-                T::LockId::get(),
-                &worker.staking_account_id,
-                new_stake_balance,
-            )?;
-
             //
             // == MUTATION SAFE ==
             //
 
             // This external module call both checks and mutates the state.
             T::StakingHandler::decrease_stake(
-                T::LockId::get(),
                 &worker.staking_account_id,
                 new_stake_balance,
-            )?;
+            );
 
             Self::deposit_event(RawEvent::StakeDecreased(worker_id, new_stake_balance));
         }
@@ -509,11 +510,10 @@ decl_module! {
                 Error::<T, I>::StakeBalanceCannotBeZero
             );
 
-            T::StakingHandler::ensure_can_increase_stake(
-                T::LockId::get(),
-                &worker.staking_account_id,
-                new_stake_balance,
-            )?;
+            ensure!(
+                T::StakingHandler::is_enough_balance_for_stake(&worker.staking_account_id, new_stake_balance),
+                Error::<T, I>::InsufficientBalanceToCoverStake
+            );
 
             //
             // == MUTATION SAFE ==
@@ -521,7 +521,6 @@ decl_module! {
 
             // This external module call both checks and mutates the state.
             T::StakingHandler::increase_stake(
-                T::LockId::get(),
                 &worker.staking_account_id,
                 new_stake_balance,
             )?;
@@ -551,7 +550,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            T::StakingHandler::unlock(T::LockId::get(), &application_info.application.staking_account_id);
+            T::StakingHandler::unlock(&application_info.application.staking_account_id);
 
             // Remove an application.
             <ApplicationById<T, I>>::remove(application_info.application_id);
@@ -684,7 +683,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         WorkerById::<T, I>::remove(worker_id);
         Self::decrease_active_worker_counter();
 
-        T::StakingHandler::unlock(T::LockId::get(), &worker.staking_account_id);
+        T::StakingHandler::unlock(&worker.staking_account_id);
     }
 
     // Slash the stake.
@@ -693,8 +692,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         staking_account_id: &T::AccountId,
         balance: Option<BalanceOfCurrency<T>>,
     ) {
-        let slashed_balance =
-            T::StakingHandler::slash(T::LockId::get(), staking_account_id, balance);
+        let slashed_balance = T::StakingHandler::slash(staking_account_id, balance);
         Self::deposit_event(RawEvent::StakeSlashed(worker_id, slashed_balance));
     }
 }
