@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://joystream.org/CreateClass.schema.json",
+  "title": "CreateClass",
+  "description": "JSON schema to describe a new class for Joystream network",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "description"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of this class. Required property."
+    },
+    "description": {
+      "type": "string",
+      "description": "Description of this class."
+    },
+    "class_permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "any_member": { "$ref": "#/definitions/DefaultBoolean" },
+        "entity_creation_blocked": { "$ref": "#/definitions/DefaultBoolean" },
+        "all_entity_property_values_locked": { "$ref": "#/definitions/DefaultBoolean" },
+        "maintainers": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "number"
+          },
+          "default": []
+        }
+      }
+    }
+  },
+  "definitions": {
+    "DefaultBoolean": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+}

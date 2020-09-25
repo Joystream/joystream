@@ -1,0 +1,4 @@
+{
+  "name": "JoystreamMediaLocation",
+  "description": "An object describing location of media object in a format specific to Joystream platform"
+}

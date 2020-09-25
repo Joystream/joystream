@@ -1,0 +1,12 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": ["*Schema.json"],
+      "url": "/schemas/AddClassSchema.schema.json"
+    },
+    {
+      "fileMatch": ["*Class.json"],
+      "url": "/schemas/CreateClass.schema.json"
+    }
+  ]
+}

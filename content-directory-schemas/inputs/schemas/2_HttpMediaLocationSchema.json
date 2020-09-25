@@ -1,0 +1,18 @@
+{
+  "classId": 2,
+  "newProperties": [
+    {
+      "name": "url",
+      "description": "The http url pointing to the media",
+      "required": true,
+      "unique": false,
+      "property_type": { "Single": { "Text": 256 } }
+    },
+    {
+      "name": "port",
+      "description": "The port to use when connecting to the http url (defaults to 80)",
+      "required": false,
+      "property_type": { "Single": "Uint16" }
+    }
+  ]
+}

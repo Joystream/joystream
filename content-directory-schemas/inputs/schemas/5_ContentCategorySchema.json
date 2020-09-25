@@ -1,0 +1,19 @@
+
+{
+  "classId": 5,
+  "newProperties": [
+    {
+      "name": "Name",
+      "description": "The name of the category",
+      "required": true,
+      "unique": true,
+      "property_type": { "Single": { "Text": 64 } }
+    },
+    {
+      "name": "Description",
+      "description": "The description of the category",
+      "required": false,
+      "property_type": { "Single": { "Text": 1024 } }
+    }
+  ]
+}

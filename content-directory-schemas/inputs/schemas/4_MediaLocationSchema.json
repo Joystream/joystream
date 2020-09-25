@@ -1,0 +1,18 @@
+
+{
+  "classId": 4,
+  "newProperties": [
+    {
+      "name": "httpMediaLocation",
+      "description": "A reference to HttpMediaLocation",
+      "required": false,
+      "property_type": { "Single": { "Reference": { "classId": 2, "sameOwner": true } } }
+    },
+    {
+      "name": "joystreamMediaLocation",
+      "description": "A reference to JoystreamMediaLocation",
+      "required": false,
+      "property_type": { "Single": { "Reference": { "classId": 3, "sameOwner": true } } }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "classId": 3,
+  "newProperties": [
+    {
+      "name": "dataObjectId",
+      "description": "Id of the data object in the Joystream runtime dataDirectory module",
+      "property_type": { "Single": "Uint64" },
+      "required": true,
+      "unique": true
+    }
+  ]
+}

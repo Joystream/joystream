@@ -1,0 +1,167 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://joystream.org/AddClassSchema.schema.json",
+  "title": "AddClassSchema",
+  "description": "JSON schema to describe a new schema for a certain class in Joystream network",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "classId"
+  ],
+  "anyOf": [
+    { "required": [ "newProperties" ] },
+    { "required": [ "existingProperties" ] }
+  ],
+  "properties": {
+    "classId": { "$ref": "#/definitions/ClassId" },
+    "existingProperties": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/PropertyInSchemIndex" }
+    },
+    "newProperties": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/definitions/Property" }
+    }
+  },
+  "definitions": {
+    "ClassId": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "PropertyInSchemIndex": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "DefaultBoolean": {
+      "type": "boolean",
+      "default": false
+    },
+    "Property": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "property_type"
+      ],
+      "properties": {
+        "property_type": {
+          "oneOf": [
+            { "$ref": "#/definitions/SinglePropertyVariant" },
+            { "$ref": "#/definitions/VecPropertyVariant" }
+          ]
+        },
+        "name": { "$ref": "#/definitions/PropertyName" },
+        "description": { "$ref": "#/definitions/PropertyDescription" },
+        "required": { "$ref": "#/definitions/DefaultBoolean" },
+        "unique": { "$ref": "#/definitions/DefaultBoolean" },
+        "locking_policy": { "$ref": "#/definitions/LockingPolicy" }
+      }
+    },
+    "PropertyName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "PropertyDescription": {
+      "type": "string",
+      "minLength": 0,
+      "default": ""
+    },
+    "SinglePropertyType": {
+      "oneOf": [
+        {"$ref": "#/definitions/PrimitiveProperty"},
+        {"$ref": "#/definitions/TextProperty"},
+        {"$ref": "#/definitions/HashProperty"},
+        {"$ref": "#/definitions/ReferenceProperty"}
+      ]
+    },
+    "SinglePropertyVariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Single"],
+      "properties": {
+        "Single": { "$ref": "#/definitions/SinglePropertyType" }
+      }
+    },
+    "VecPropertyType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "vec_type",
+        "max_length"
+      ],
+      "properties": {
+        "vec_type": { "$ref": "#/definitions/SinglePropertyType" },
+        "max_length": { "$ref": "#/definitions/MaxVecItems" }
+      }
+    },
+    "VecPropertyVariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Vector"],
+      "properties": {
+        "Vector": { "$ref": "#/definitions/VecPropertyType" }
+      }
+    },
+    "PrimitiveProperty": {
+      "type": "string",
+      "enum": ["Bool", "Uint16", "Uint32", "Uint64", "Int16", "Int32", "Int64"]
+    },
+    "TextProperty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Text"],
+      "properties": {
+        "Text": { "$ref": "#/definitions/MaxTextLength" }
+      }
+    },
+    "HashProperty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Hash"],
+      "properties": {
+        "Hash": { "$ref": "#/definitions/MaxTextLength" }
+      }
+    },
+    "MaxTextLength": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "MaxVecItems": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "ReferenceProperty": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["Reference"],
+      "properties": {
+        "Reference": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "classId"
+          ],
+          "properties": {
+            "sameOwner": { "$ref": "#/definitions/DefaultBoolean" },
+            "classId": { "$ref": "#/definitions/ClassId" }
+          }
+        }
+      }
+    },
+    "LockingPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "is_locked_from_maintainer": { "$ref": "#/definitions/DefaultBoolean" },
+        "is_locked_from_controller": { "$ref": "#/definitions/DefaultBoolean" }
+      }
+    }
+  }
+}
