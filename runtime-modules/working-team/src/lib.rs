@@ -32,7 +32,7 @@ mod tests;
 mod types;
 
 use codec::Codec;
-use frame_support::traits::{Currency, Get, LockIdentifier};
+use frame_support::traits::{Currency, Get};
 use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue};
@@ -44,8 +44,11 @@ use system::{ensure_root, ensure_signed};
 pub use errors::Error;
 use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId, WorkerInfo};
 pub use types::{
-    JobApplication, JobOpening, JobOpeningType, RewardPolicy, StakePolicy, StakingHandler,
+    ApplyOnOpeningParameters, JobApplication, JobOpening, JobOpeningType, RewardPolicy,
+    StakePolicy, StakingHandler,
 };
+
+use common::origin::ActorOriginValidator;
 
 /// The _Team_ main _Trait_
 pub trait Trait<I: Instance>:
@@ -80,8 +83,8 @@ pub trait Trait<I: Instance>:
     /// Stakes and balance locks handler.
     type StakingHandler: StakingHandler<Self>;
 
-    /// Defines work team ID for balance locking.
-    type LockId: Get<LockIdentifier>;
+    /// Validates member id and origin combination
+    type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 }
 
 decl_event!(
@@ -279,55 +282,52 @@ decl_module! {
 
         /// Apply on a worker opening.
         #[weight = 10_000_000] // TODO: adjust weight: it should also consider a description length
-        pub fn apply_on_opening(
-            origin,
-            member_id: T::MemberId,
-            opening_id: T::OpeningId,
-            role_account_id: T::AccountId,
-            reward_account_id: T::AccountId,
-            staking_account_id: T::AccountId,
-            description: Vec<u8>,
-            stake: Option<BalanceOfCurrency<T>>,
-        ) {
-            // Ensure origin which will server as the source account for staked funds is signed.
-            let source_account = ensure_signed(origin)?;
-
-            // Ensure the source_account is either the controller or root account of member with given id.
-            ensure!(
-                membership::Module::<T>::ensure_member_controller_account(&source_account, &member_id).is_ok() ||
-                membership::Module::<T>::ensure_member_root_account(&source_account, &member_id).is_ok(),
-                Error::<T, I>::OriginIsNeitherMemberControllerOrRoot
-            );
+        pub fn apply_on_opening(origin, p : ApplyOnOpeningParameters<T, I>) {
+            // Ensure the origin of a member with given id.
+            T::MemberOriginValidator::ensure_actor_origin(origin, p.member_id)?;
 
             // Ensure job opening exists.
-            let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
+            let opening = checks::ensure_opening_exists::<T, I>(&p.opening_id)?;
 
             // Ensure that there is sufficient balance to cover the proposed stake.
-            checks::ensure_enough_balance_for_staking::<T, I>(&staking_account_id, &stake)?;
+            checks::ensure_enough_balance_for_staking::<T, I>(&p.staking_account_id, &p.stake)?;
 
             // Ensure that proposed stake is enough for the opening.
-            checks::ensure_application_stake_match_opening::<T, I>(&opening, &stake)?;
+            checks::ensure_application_stake_match_opening::<T, I>(&opening, &p.stake)?;
 
             // Checks external conditions for staking.
-            if let Some(amount) = stake {
-                T::StakingHandler::ensure_can_make_stake(&staking_account_id, amount)?;
+            if let Some(amount) = p.stake {
+                ensure!(
+                    T::StakingHandler::is_member_staking_account(&p.member_id, &p.staking_account_id),
+                    Error::<T, I>::InvalidStakingAccountForMember
+                );
+
+                ensure!(
+                    T::StakingHandler::is_account_free_of_conflicting_stakes(&p.staking_account_id),
+                    Error::<T, I>::ConflictStakesOnAccount
+                );
+
+                ensure!(
+                    T::StakingHandler::is_enough_balance_for_stake(&p.staking_account_id, amount),
+                    Error::<T, I>::InsufficientBalanceToCoverStake
+                );
             }
 
             //
             // == MUTATION SAFE ==
             //
 
-            if let Some(amount) = stake {
-                T::StakingHandler::lock(T::LockId::get(), &staking_account_id, amount);
+            if let Some(amount) = p.stake {
+                T::StakingHandler::lock(&p.staking_account_id, amount);
             }
 
-            let hashed_description = T::Hashing::hash(&description);
+            let hashed_description = T::Hashing::hash(&p.description);
 
             // Make regular/lead application.
             let application = JobApplication::<T>::new(
-                &role_account_id,
-                &staking_account_id,
-                &member_id,
+                &p.role_account_id,
+                &p.staking_account_id,
+                &p.member_id,
                 hashed_description.as_ref().to_vec(),
             );
 
@@ -341,7 +341,7 @@ decl_module! {
             NextApplicationId::<T, I>::mutate(|id| *id += <T::ApplicationId as One>::one());
 
             // Trigger the event.
-            Self::deposit_event(RawEvent::AppliedOnOpening(opening_id, new_application_id));
+            Self::deposit_event(RawEvent::AppliedOnOpening(p.opening_id, new_application_id));
         }
 
         /// Fill opening for the regular/lead position.
@@ -518,22 +518,15 @@ decl_module! {
                 Error::<T, I>::StakeBalanceCannotBeZero
             );
 
-            T::StakingHandler::ensure_can_decrease_stake(
-                T::LockId::get(),
-                &worker.staking_account_id,
-                new_stake_balance,
-            )?;
-
             //
             // == MUTATION SAFE ==
             //
 
             // This external module call both checks and mutates the state.
             T::StakingHandler::decrease_stake(
-                T::LockId::get(),
                 &worker.staking_account_id,
                 new_stake_balance,
-            )?;
+            );
 
             Self::deposit_event(RawEvent::StakeDecreased(worker_id, new_stake_balance));
         }
@@ -553,11 +546,10 @@ decl_module! {
                 Error::<T, I>::StakeBalanceCannotBeZero
             );
 
-            T::StakingHandler::ensure_can_increase_stake(
-                T::LockId::get(),
-                &worker.staking_account_id,
-                new_stake_balance,
-            )?;
+            ensure!(
+                T::StakingHandler::is_enough_balance_for_stake(&worker.staking_account_id, new_stake_balance),
+                Error::<T, I>::InsufficientBalanceToCoverStake
+            );
 
             //
             // == MUTATION SAFE ==
@@ -565,7 +557,6 @@ decl_module! {
 
             // This external module call both checks and mutates the state.
             T::StakingHandler::increase_stake(
-                T::LockId::get(),
                 &worker.staking_account_id,
                 new_stake_balance,
             )?;
@@ -595,7 +586,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            T::StakingHandler::unlock(T::LockId::get(), &application_info.application.staking_account_id);
+            T::StakingHandler::unlock(&application_info.application.staking_account_id);
 
             // Remove an application.
             <ApplicationById<T, I>>::remove(application_info.application_id);
@@ -757,7 +748,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         WorkerById::<T, I>::remove(worker_id);
         Self::decrease_active_worker_counter();
 
-        T::StakingHandler::unlock(T::LockId::get(), &worker.staking_account_id);
+        T::StakingHandler::unlock(&worker.staking_account_id);
 
         Self::deposit_event(event);
     }
@@ -768,8 +759,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         staking_account_id: &T::AccountId,
         balance: Option<BalanceOfCurrency<T>>,
     ) {
-        let slashed_balance =
-            T::StakingHandler::slash(T::LockId::get(), staking_account_id, balance);
+        let slashed_balance = T::StakingHandler::slash(staking_account_id, balance);
         Self::deposit_event(RawEvent::StakeSlashed(worker_id, slashed_balance));
     }
 

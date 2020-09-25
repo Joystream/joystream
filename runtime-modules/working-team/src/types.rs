@@ -237,3 +237,37 @@ pub trait StakingHandler<T: system::Trait + membership::Trait + GovernanceCurren
     fn is_enough_balance_for_stake(account_id: &T::AccountId, amount: BalanceOfCurrency<T>)
         -> bool;
 }
+
+/// Parameters container for the apply_on_opening extrinsic.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
+pub struct ApplyOnOpeningParams<MemberId, OpeningId, AccountId, Balance> {
+    /// Applying member id.
+    pub member_id: MemberId,
+
+    /// Opening id to apply on.
+    pub opening_id: OpeningId,
+
+    /// Role account id.
+    pub role_account_id: AccountId,
+
+    /// Reward account id.
+    pub reward_account_id: AccountId,
+
+    /// Staking account id.
+    pub staking_account_id: AccountId,
+
+    /// Application description.
+    pub description: Vec<u8>,
+
+    /// Stake balance.
+    pub stake: Option<Balance>,
+}
+
+/// ApplyOnOpeningParams type alias.
+pub type ApplyOnOpeningParameters<T, I> = ApplyOnOpeningParams<
+    MemberId<T>,
+    <T as crate::Trait<I>>::OpeningId,
+    <T as system::Trait>::AccountId,
+    BalanceOfCurrency<T>,
+>;

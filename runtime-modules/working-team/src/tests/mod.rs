@@ -1303,32 +1303,6 @@ fn decrease_worker_stake_fails_with_invalid_worker_id() {
 }
 
 #[test]
-fn decrease_worker_stake_fails_external_check() {
-    build_test_externalities().execute_with(|| {
-        let account_id = 1;
-        let total_balance = 300;
-        let stake = 200;
-
-        let stake_policy = Some(StakePolicy {
-            stake_amount: stake,
-            unstaking_period: 10,
-        });
-
-        increase_total_balance_issuance_using_account_id(account_id, total_balance);
-
-        let worker_id = HireRegularWorkerFixture::default()
-            .with_stake_policy(stake_policy)
-            .hire();
-
-        let invalid_new_stake = 2000;
-        let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
-            .with_balance(invalid_new_stake);
-
-        decrease_stake_fixture.call_and_assert(Err(DispatchError::Other("External check failed")));
-    });
-}
-
-#[test]
 fn decrease_worker_stake_fails_with_not_set_lead() {
     build_test_externalities().execute_with(|| {
         let invalid_worker_id = 11;

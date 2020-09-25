@@ -9,7 +9,8 @@ use super::mock::{
     Balances, LockId, Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance,
 };
 use crate::{
-    JobApplication, JobOpening, JobOpeningType, RawEvent, RewardPolicy, StakePolicy, TeamWorker,
+    ApplyOnOpeningParameters, JobApplication, JobOpening, JobOpeningType, RawEvent, RewardPolicy,
+    StakePolicy, TeamWorker,
 };
 
 pub struct EventFixture;
@@ -145,6 +146,7 @@ pub struct ApplyOnOpeningFixture {
     member_id: u64,
     opening_id: u64,
     role_account_id: u64,
+    reward_account_id: u64,
     staking_account_id: u64,
     description: Vec<u8>,
     stake: Option<u64>,
@@ -183,6 +185,7 @@ impl ApplyOnOpeningFixture {
             member_id: 1,
             opening_id,
             role_account_id: 1,
+            reward_account_id: 1,
             staking_account_id: 1,
             description: b"human_text".to_vec(),
             stake: None,
@@ -193,12 +196,15 @@ impl ApplyOnOpeningFixture {
         let saved_application_next_id = TestWorkingTeam::next_application_id();
         TestWorkingTeam::apply_on_opening(
             self.origin.clone().into(),
-            self.member_id,
-            self.opening_id,
-            self.role_account_id,
-            self.staking_account_id,
-            self.description.clone(),
-            self.stake,
+            ApplyOnOpeningParameters::<Test, TestWorkingTeamInstance> {
+                member_id: self.member_id,
+                opening_id: self.opening_id,
+                role_account_id: self.role_account_id,
+                reward_account_id: self.reward_account_id,
+                staking_account_id: self.staking_account_id,
+                description: self.description.clone(),
+                stake: self.stake,
+            },
         )?;
 
         Ok(saved_application_next_id)
