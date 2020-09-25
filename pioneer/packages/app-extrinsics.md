@@ -1,2 +1,0 @@
-# @polkadot/app-extrinsics
-
