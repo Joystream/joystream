@@ -21,7 +21,8 @@
     "devops/prettier-config",
     "pioneer",
     "pioneer/packages/*",
-    "utils/api-examples"
+    "utils/api-examples",
+    "content-directory-schemas"
   ],
   "resolutions": {
     "@polkadot/api": "1.26.1",

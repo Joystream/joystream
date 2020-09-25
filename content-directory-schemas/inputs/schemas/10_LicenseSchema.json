@@ -1,0 +1,17 @@
+{
+  "classId": 10,
+  "newProperties": [
+    {
+      "name": "knownLicense",
+      "description": "Reference to a known license",
+      "required": false,
+      "property_type": { "Single": { "Reference": { "classId": 8 } } }
+    },
+    {
+      "name": "userDefinedLicense",
+      "description": "Reference to user-defined license",
+      "required": false,
+      "property_type": { "Single": { "Reference": { "classId": 9, "sameOwner": true } } }
+    }
+  ]
+}

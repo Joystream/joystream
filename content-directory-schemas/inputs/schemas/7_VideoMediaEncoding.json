@@ -1,0 +1,12 @@
+{
+  "classId": 7,
+  "newProperties": [
+    {
+      "name": "Name",
+      "description": "The name of the encoding format (ie. H264_mpeg4)",
+      "required": true,
+      "unique": true,
+      "property_type": { "Single": { "Text": 32 } }
+    }
+  ]
+}
