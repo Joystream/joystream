@@ -21,7 +21,7 @@ export { default as Sidenav, SIDENAV_WIDTH, EXPANDED_SIDENAV_WIDTH, NavItem } fr
 export { default as ChannelAvatar } from './ChannelAvatar'
 export { default as GlobalStyle } from './GlobalStyle'
 export { default as Placeholder } from './Placeholder'
-export { default as InfiniteVideoGrid, INITIAL_ROWS, INITIAL_VIDEOS_PER_ROW } from './InfiniteVideoGrid'
+export { default as InfiniteVideoGrid } from './InfiniteVideoGrid'
 export { default as ToggleButton } from './ToggleButton'
 export { default as Icon } from './Icon'
 export { default as Searchbar } from './Searchbar'

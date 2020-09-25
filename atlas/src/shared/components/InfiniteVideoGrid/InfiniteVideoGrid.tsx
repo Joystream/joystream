@@ -1,73 +1,119 @@
 import React, { useEffect, useState } from 'react'
 import styled from '@emotion/styled'
-import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 import { spacing, typography } from '../../theme'
 import { VideoPreview, VideoPreviewBase, Grid } from '..'
 import sizes from '@/shared/theme/sizes'
 import { debounce } from 'lodash'
+import { useLazyQuery } from '@apollo/client'
+import { GET_NEWEST_VIDEOS } from '@/api/queries'
+import { GetNewestVideos, GetNewestVideosVariables } from '@/api/queries/__generated__/GetNewestVideos'
 
 type InfiniteVideoGridProps = {
   title?: string
-  videos?: VideoFields[]
-  loadVideos: (offset: number, limit: number) => void
-  initialOffset?: number
-  initialLoading?: boolean
+  categoryId?: string
+  skipCount?: number
+  ready?: boolean
   className?: string
 }
 
-export const INITIAL_ROWS = 4
-export const INITIAL_VIDEOS_PER_ROW = 4
+const INITIAL_ROWS = 4
+const INITIAL_VIDEOS_PER_ROW = 4
 
 const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({
   title,
-  videos,
-  loadVideos,
-  initialOffset = 0,
-  initialLoading,
+  categoryId = '',
+  skipCount = 0,
+  ready = true,
   className,
 }) => {
   const [videosPerRow, setVideosPerRow] = useState(INITIAL_VIDEOS_PER_ROW)
 
-  const loadedVideosCount = videos?.length || 0
-  const videoRowsCount = Math.floor(loadedVideosCount / videosPerRow)
-  const initialRows = Math.max(videoRowsCount, INITIAL_ROWS)
+  const [targetRowsCountByCategory, setTargetRowsCountByCategory] = useState<Record<string, number>>({
+    [categoryId]: INITIAL_ROWS,
+  })
+  const [cachedCategoryId, setCachedCategoryId] = useState<string>(categoryId)
 
-  const [currentRowsCount, setCurrentRowsCount] = useState(initialRows)
+  const targetRowsCount = targetRowsCountByCategory[cachedCategoryId]
 
-  const targetVideosCount = currentRowsCount * videosPerRow
+  const targetDisplayedVideosCount = targetRowsCount * videosPerRow
+  const targetLoadedVideosCount = targetDisplayedVideosCount + skipCount
+
+  const [fetchVideos, { loading, data, fetchMore, called, refetch }] = useLazyQuery<
+    GetNewestVideos,
+    GetNewestVideosVariables
+  >(GET_NEWEST_VIDEOS, {
+    notifyOnNetworkStatusChange: true,
+  })
+
+  const loadedVideosCount = data?.videosConnection.edges.length || 0
+  const allVideosLoaded = data ? !data.videosConnection.pageInfo.hasNextPage : false
+
+  const endCursor = data?.videosConnection.pageInfo.endCursor
 
   useEffect(() => {
-    if (initialLoading) {
+    if (ready && !called) {
+      fetchVideos({ variables: { first: targetLoadedVideosCount, categoryId } })
+    }
+  }, [ready, called, categoryId, targetLoadedVideosCount, fetchVideos])
+
+  useEffect(() => {
+    if (categoryId === cachedCategoryId) {
       return
     }
 
-    if (targetVideosCount > loadedVideosCount) {
-      const offset = initialOffset + loadedVideosCount
-      const missingVideosCount = targetVideosCount - loadedVideosCount
-      loadVideos(offset, missingVideosCount)
-      // TODO: handle a situation when there are no more videos to fetch
-      // this will require query node to provide some pagination metadata (total items count at minimum)
+    setCachedCategoryId(categoryId)
+    const categoryRowsSet = !!targetRowsCountByCategory[categoryId]
+    const categoryRowsCount = categoryRowsSet ? targetRowsCountByCategory[categoryId] : INITIAL_ROWS
+    if (!categoryRowsSet) {
+      setTargetRowsCountByCategory((prevState) => ({
+        ...prevState,
+        [categoryId]: categoryRowsCount,
+      }))
     }
-  }, [initialOffset, initialLoading, loadedVideosCount, targetVideosCount, loadVideos])
 
-  const displayedVideos = videos?.slice(0, videoRowsCount * videosPerRow) || []
-  const placeholderRowsCount = currentRowsCount - videoRowsCount
-  const placeholdersCount = placeholderRowsCount * videosPerRow
+    if (!called || !refetch) {
+      return
+    }
+
+    refetch({ first: categoryRowsCount * videosPerRow + skipCount, categoryId })
+  }, [categoryId, cachedCategoryId, targetRowsCountByCategory, called, refetch, videosPerRow, skipCount])
+
+  useEffect(() => {
+    if (loading || !fetchMore || allVideosLoaded) {
+      return
+    }
+
+    if (targetLoadedVideosCount > loadedVideosCount) {
+      const videosToLoadCount = targetLoadedVideosCount - loadedVideosCount
+      fetchMore({ variables: { first: videosToLoadCount, after: endCursor, categoryId } })
+    }
+  }, [loading, loadedVideosCount, targetLoadedVideosCount, allVideosLoaded, fetchMore, endCursor, categoryId])
 
   useEffect(() => {
     const scrollHandler = debounce(() => {
       const scrolledToBottom =
         window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight
 
-      if (scrolledToBottom && placeholdersCount === 0) {
-        setCurrentRowsCount(currentRowsCount + 2)
+      if (scrolledToBottom && ready && !loading && !allVideosLoaded) {
+        setTargetRowsCountByCategory((prevState) => ({
+          ...prevState,
+          [cachedCategoryId]: targetRowsCount + 2,
+        }))
       }
     }, 100)
     window.addEventListener('scroll', scrollHandler)
     return () => {
       window.removeEventListener('scroll', scrollHandler)
     }
-  }, [currentRowsCount, placeholdersCount])
+  }, [targetRowsCount, ready, loading, allVideosLoaded, cachedCategoryId])
+
+  const displayedEdges = data?.videosConnection.edges.slice(skipCount, targetLoadedVideosCount) || []
+  const displayedVideos = displayedEdges.map((edge) => edge.node)
+
+  const targetDisplayedItemsCount = data
+    ? Math.min(targetDisplayedVideosCount, data.videosConnection.totalCount - skipCount)
+    : targetDisplayedVideosCount
+  const placeholdersCount = targetDisplayedItemsCount - displayedVideos.length
 
   const gridContent = (
     <>
