@@ -98,6 +98,9 @@ pub struct Application<AccountId, MemberId> {
     /// Account used to authenticate in this role.
     pub role_account_id: AccountId,
 
+    /// Reward account id.
+    pub reward_account_id: AccountId,
+
     /// Account used to stake in this role.
     pub staking_account_id: AccountId,
 
@@ -112,12 +115,14 @@ impl<AccountId: Clone, MemberId: Clone> Application<AccountId, MemberId> {
     /// Creates a new job application using parameters.
     pub fn new(
         role_account_id: &AccountId,
+        reward_account_id: &AccountId,
         staking_account_id: &AccountId,
         member_id: &MemberId,
         description_hash: Vec<u8>,
     ) -> Self {
         Application {
             role_account_id: role_account_id.clone(),
+            reward_account_id: reward_account_id.clone(),
             staking_account_id: staking_account_id.clone(),
             member_id: member_id.clone(),
             description_hash,
@@ -137,6 +142,9 @@ pub struct Worker<AccountId, MemberId, BlockNumber, Balance> {
 
     /// Account used to stake in this role.
     pub staking_account_id: AccountId,
+
+    /// Reward account id.
+    pub reward_account_id: AccountId,
 
     /// Specifies the block when the worker chose to leave.
     pub started_leaving_at: Option<BlockNumber>,
@@ -159,6 +167,7 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
     pub fn new(
         member_id: &MemberId,
         role_account_id: &AccountId,
+        reward_account_id: &AccountId,
         staking_account_id: &AccountId,
         job_unstaking_period: BlockNumber,
         reward_per_block: Option<Balance>,
@@ -166,6 +175,7 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
         Worker {
             member_id: member_id.clone(),
             role_account_id: role_account_id.clone(),
+            reward_account_id: reward_account_id.clone(),
             staking_account_id: staking_account_id.clone(),
             started_leaving_at: None,
             job_unstaking_period,

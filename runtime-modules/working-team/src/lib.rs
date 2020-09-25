@@ -326,6 +326,7 @@ decl_module! {
             // Make regular/lead application.
             let application = JobApplication::<T>::new(
                 &p.role_account_id,
+                &p.reward_account_id,
                 &p.staking_account_id,
                 &p.member_id,
                 hashed_description.as_ref().to_vec(),
@@ -693,6 +694,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         let worker = TeamWorker::<T>::new(
             &application_info.application.member_id,
             &application_info.application.role_account_id,
+            &application_info.application.reward_account_id,
             &application_info.application.staking_account_id,
             opening
                 .stake_policy

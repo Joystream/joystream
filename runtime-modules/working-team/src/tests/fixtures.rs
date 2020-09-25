@@ -227,6 +227,7 @@ impl ApplyOnOpeningFixture {
             let expected_hash = <Test as system::Trait>::Hashing::hash(&self.description);
             let expected_application = JobApplication::<Test> {
                 role_account_id: self.role_account_id,
+                reward_account_id: self.reward_account_id,
                 staking_account_id: self.staking_account_id,
                 member_id: self.member_id,
                 description_hash: expected_hash.as_ref().to_vec(),
@@ -262,6 +263,7 @@ pub struct FillOpeningFixture {
     opening_id: u64,
     successful_application_ids: BTreeSet<u64>,
     role_account_id: u64,
+    reward_account_id: u64,
     staking_account_id: u64,
     stake_policy: Option<StakePolicy<u64, u64>>,
     reward_policy: Option<RewardPolicy<u64>>,
@@ -276,6 +278,7 @@ impl FillOpeningFixture {
             opening_id,
             successful_application_ids: application_ids,
             role_account_id: 1,
+            reward_account_id: 1,
             staking_account_id: 1,
             stake_policy: None,
             reward_policy: None,
@@ -336,6 +339,7 @@ impl FillOpeningFixture {
             let expected_worker = TeamWorker::<Test> {
                 member_id: 1,
                 role_account_id: self.role_account_id,
+                reward_account_id: self.reward_account_id,
                 staking_account_id: self.staking_account_id,
                 started_leaving_at: None,
                 job_unstaking_period: self
