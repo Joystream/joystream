@@ -1,14 +1,14 @@
 {
-  "name": "joystream-testing",
+  "name": "network-tests",
   "version": "0.1.0",
   "license": "GPL-3.0-only",
   "scripts": {
     "build": "tsc --noEmit",
-    "test": "yarn remove-db && tap --files src/tests/unknown.unknown src/tests/councilSetup.ts src/tests/proposals/*Test.ts src/tests/leaderSetup.ts src/tests/workingGroup/*Test.ts -T",
+    "test": "yarn db-path-setup && tap --files src/tests/unknown.unknown src/tests/councilSetup.ts src/tests/proposals/*Test.ts src/tests/leaderSetup.ts src/tests/workingGroup/*Test.ts -T",
     "lint": "eslint . --quiet --ext .ts",
     "checks": "yarn lint && tsc --noEmit --pretty && prettier ./ --check",
     "format": "prettier ./ --write ",
-    "remove-db": "rm ../../.tmp/db.json || echo ''"
+    "db-path-setup": "mkdir .tmp/ || rm .tmp/db.json || echo ''"
   },
   "dependencies": {
     "@joystream/types": "link:../../types",

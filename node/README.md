@@ -76,7 +76,7 @@ cargo fmt --all
 
 ```bash
 ./scripts/run-dev-chain.sh
-yarn workspace joystream-testing test
+yarn workspace network-tests test
 ```
 
 To run the integration tests with a different chain, you can omit the step of running the local development chain and simply set the node URL using `NODE_URL` environment variable.
