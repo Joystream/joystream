@@ -36,7 +36,6 @@ export {
 }
 
 export const types: RegistryTypes = {
-  MemoText: 'Text', // for the memo module
   ...common,
   ...members,
   ...council,
@@ -52,10 +51,6 @@ export const types: RegistryTypes = {
   ...media,
   ...proposals,
   ...contentDirectory,
-  // Required since migration to Substrate 2.0,
-  // see: https://polkadot.js.org/api/start/FAQ.html#the-node-returns-a-could-not-convert-error-on-send
-  Address: 'AccountId',
-  LookupSource: 'AccountId',
 }
 
 // Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)

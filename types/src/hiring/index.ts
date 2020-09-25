@@ -334,8 +334,8 @@ export class Application
   implements IApplication {}
 
 export const hiringTypes: RegistryTypes = {
-  ApplicationId: 'u64',
-  OpeningId: 'u64',
+  ApplicationId,
+  OpeningId,
   Application,
   ApplicationStage,
   ActivateOpeningAt,
