@@ -57,7 +57,6 @@ pub trait Trait: system::Trait + stake::Trait + Sized {
         + Default
         + Copy
         + MaybeSerialize
-        + From<u64>
         + PartialEq;
 
     /// ApplicationId type

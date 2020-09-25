@@ -13,8 +13,9 @@ use crate::{
 };
 use sp_std::collections::btree_set::BTreeSet;
 
-use strum::IntoEnumIterator;
 use crate::primitives::{AccountId, ActorId, MemberId};
+use frame_support::traits;
+use strum::IntoEnumIterator;
 
 type WorkingGroupInstance<T, I> = working_group::Module<T, I>;
 
@@ -146,7 +147,7 @@ fn get_stake_balance(stake: stake::Stake<BlockNumber, Balance, u64>) -> Balance 
 }
 
 fn decrease_stake(
-    member_id: u8,
+    member_id: u64,
     account_id: [u8; 32],
     leader_worker_id: u64,
     stake_amount: Balance,
@@ -159,7 +160,7 @@ fn decrease_stake(
     let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
         ProposalCodex::create_decrease_working_group_leader_stake_proposal(
             RawOrigin::Signed(account_id.clone().into()).into(),
-            member_id as u64,
+            member_id,
             b"title".to_vec(),
             b"body".to_vec(),
             Some(<BalanceOf<Runtime>>::from(50_000_u32)),
@@ -176,7 +177,7 @@ fn decrease_stake(
 }
 
 fn slash_stake(
-    member_id: u64,
+    member_id: MemberId,
     account_id: [u8; 32],
     leader_worker_id: ActorId,
     stake_amount: Balance,
@@ -307,41 +308,58 @@ fn terminate_role(
 fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
     // This uses strum crate for enum iteration
     for group in WorkingGroup::iter() {
-        run_create_add_working_group_leader_opening_proposal_execution_succeeds(group);
+        match group {
+            WorkingGroup::Content => {
+                run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    ContentDirectoryWorkingGroupInstance,
+                >(group);
+            }
+            WorkingGroup::Storage => {
+                run_create_add_working_group_leader_opening_proposal_execution_succeeds::<
+                    Runtime,
+                    StorageWorkingGroupInstance,
+                >(group);
+            }
+        }
     }
 }
 
-fn run_create_add_working_group_leader_opening_proposal_execution_succeeds(
+fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
+    T: working_group::Trait<I> + system::Trait + stake::Trait,
+    I: working_group::Instance,
+>(
     working_group: WorkingGroup,
-) {
+) where
+    <T as system::Trait>::AccountId: From<[u8; 32]>,
+    <T as membership::Trait>::MemberId: From<u64>,
+    <T as hiring::Trait>::OpeningId: From<u64>,
+{
     initial_test_ext().execute_with(|| {
         let member_id: MemberId = 1;
-        let account_id: [u8; 32] = [0; 32];
+        let account_id: [u8; 32] = [member_id as u8; 32];
 
-        let next_opening_id = ContentDirectoryWorkingGroup::next_opening_id();
+        let next_opening_id = WorkingGroupInstance::<T, I>::next_opening_id();
 
-        assert!(!<working_group::OpeningById<
-            Runtime,
-            ContentDirectoryWorkingGroupInstance,
-        >>::contains_key(next_opening_id));
+        assert!(!<working_group::OpeningById<T, I>>::contains_key(
+            next_opening_id
+        ));
 
-        let opening_id = add_opening(
+        let opening_id: <T as hiring::Trait>::OpeningId = add_opening(
             member_id,
             account_id,
             ActivateOpeningAt::CurrentBlock,
             None,
             1,
             working_group,
-        );
+        )
+        .into();
 
         // Check for expected opening id.
         assert_eq!(opening_id, next_opening_id);
 
         // Check for the new opening creation.
-        assert!(<working_group::OpeningById<
-            Runtime,
-            ContentDirectoryWorkingGroupInstance,
-        >>::contains_key(opening_id));
+        assert!(<working_group::OpeningById<T, I>>::contains_key(opening_id));
     });
 }
 
@@ -349,18 +367,34 @@ fn run_create_add_working_group_leader_opening_proposal_execution_succeeds(
 fn create_begin_review_working_group_leader_applications_proposal_execution_succeeds() {
     // This uses strum crate for enum iteration
     for group in WorkingGroup::iter() {
-        run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds(
-            group,
-        );
+        match group {
+            WorkingGroup::Content => {
+                run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
+                Runtime,
+                ContentDirectoryWorkingGroupInstance,
+            >(group);
+            }
+            WorkingGroup::Storage => {
+                run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds::<
+                Runtime,
+                StorageWorkingGroupInstance,
+            >(group);
+            }
+        }
     }
 }
 
-fn run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds(
+fn run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds<
+    T: working_group::Trait<I> + system::Trait + stake::Trait,
+    I: working_group::Instance,
+>(
     working_group: WorkingGroup,
-) {
+) where
+    <T as hiring::Trait>::OpeningId: From<u64> + Into<u64>,
+{
     initial_test_ext().execute_with(|| {
         let member_id: MemberId = 1;
-        let account_id: [u8; 32] = [0; 32];
+        let account_id: [u8; 32] = [member_id as u8; 32];
 
         let opening_id = add_opening(
             member_id,
@@ -371,9 +405,11 @@ fn run_create_begin_review_working_group_leader_applications_proposal_execution_
             working_group,
         );
 
-        let opening = ContentDirectoryWorkingGroup::opening_by_id(opening_id);
+        let opening = WorkingGroupInstance::<T, I>::opening_by_id(
+            <T as hiring::Trait>::OpeningId::from(opening_id),
+        );
 
-        let hiring_opening = Hiring::opening_by_id(opening.hiring_opening_id);
+        let hiring_opening = Hiring::opening_by_id(opening.hiring_opening_id.into());
         assert_eq!(
             hiring_opening.stage,
             hiring::OpeningStage::Active {
@@ -389,7 +425,7 @@ fn run_create_begin_review_working_group_leader_applications_proposal_execution_
 
         begin_review_applications(member_id, account_id, opening_id, 2, working_group);
 
-        let hiring_opening = Hiring::opening_by_id(opening.hiring_opening_id);
+        let hiring_opening = Hiring::opening_by_id(opening.hiring_opening_id.into());
         assert_eq!(
             hiring_opening.stage,
             hiring::OpeningStage::Active {
@@ -410,576 +446,659 @@ fn run_create_begin_review_working_group_leader_applications_proposal_execution_
 fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
     // This uses strum crate for enum iteration
     for group in WorkingGroup::iter() {
-        run_create_fill_working_group_leader_opening_proposal_execution_succeeds(group);
-    }
-}
-
-fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds(
-    working_group: WorkingGroup,
-) {
-    initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
-        let account_id: [u8; 32] = [0; 32];
-
-        let opening_id = add_opening(
-            member_id,
-            account_id.clone(),
-            ActivateOpeningAt::CurrentBlock,
-            None,
-            1,
-            working_group,
-        );
-
-        let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
-            RawOrigin::Signed(account_id.clone().into()).into(),
-            member_id as u64,
-            opening_id,
-            account_id.clone().into(),
-            None,
-            None,
-            Vec::new(),
-        );
-
-        assert_eq!(apply_result, Ok(()));
-
-        let expected_application_id = 0;
-
-        begin_review_applications(member_id, account_id, opening_id, 2, working_group);
-
-        let lead = ContentDirectoryWorkingGroup::current_lead();
-        assert!(lead.is_none());
-
-        fill_opening(
-            member_id,
-            account_id,
-            opening_id,
-            expected_application_id,
-            None,
-            3,
-            working_group,
-        );
-
-        let lead = ContentDirectoryWorkingGroup::current_lead();
-        assert!(lead.is_some());
-    });
-}
-
-// #[test]
-// fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
-//     // This uses strum crate for enum iteration
-//     for group in WorkingGroup::iter() {
-//         run_create_decrease_group_leader_stake_proposal_execution_succeeds(group);
-//     }
-// }
-
-// fn run_create_decrease_group_leader_stake_proposal_execution_succeeds(working_group: WorkingGroup) {
-//     initial_test_ext().execute_with(|| {
-//         let member_id: MemberId = 1;
-//         let account_id: AccountId = AccountId::default();
-//         let stake_amount: Balance = 100;
-
-//         let opening_policy_commitment = OpeningPolicyCommitment {
-//             role_staking_policy: Some(hiring::StakingPolicy {
-//                 amount: 100,
-//                 amount_mode: hiring::StakingAmountLimitMode::AtLeast,
-//                 crowded_out_unstaking_period_length: None,
-//                 review_period_expired_unstaking_period_length: None,
-//             }),
-//             ..OpeningPolicyCommitment::default()
-//         };
-
-//         let opening_id = add_opening(
-//             member_id,
-//             account_id.clone(),
-//             ActivateOpeningAt::CurrentBlock,
-//             Some(opening_policy_commitment),
-//             1,
-//             working_group,
-//         );
-
-//         let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
-//             RawOrigin::Signed(account_id.clone().into()).into(),
-//             member_id as u64,
-//             opening_id,
-//             account_id.clone().into(),
-//             Some(stake_amount),
-//             None,
-//             Vec::new(),
-//         );
-
-//         assert_eq!(apply_result, Ok(()));
-
-//         let expected_application_id = 0;
-
-//         begin_review_applications(member_id, account_id, opening_id, 2, working_group);
-
-//         let lead = ContentDirectoryWorkingGroup::current_lead();
-//         assert!(lead.is_none());
-
-//         fill_opening(
-//             member_id,
-//             account_id,
-//             opening_id,
-//             expected_application_id,
-//             None,
-//             3,
-//             working_group,
-//         );
-
-//         let leader_worker_id = ContentDirectoryWorkingGroup::current_lead().unwrap();
-
-//         let stake_id = 1;
-//         let old_balance = Balances::free_balance(&account_id.into());
-//         let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
-
-//         assert_eq!(get_stake_balance(old_stake), stake_amount);
-
-//         let decreasing_stake_amount = 30;
-//         decrease_stake(
-//             member_id,
-//             account_id,
-//             leader_worker_id,
-//             decreasing_stake_amount,
-//             4,
-//             working_group,
-//         );
-
-//         let new_balance = Balances::free_balance(&account_id.into());
-//         let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
-
-//         assert_eq!(
-//             get_stake_balance(new_stake),
-//             stake_amount - decreasing_stake_amount
-//         );
-//         assert_eq!(new_balance, old_balance + decreasing_stake_amount);
-//     });
-// }
-
-#[test]
-fn create_slash_group_leader_stake_proposal_execution_succeeds() {
-    // This uses strum crate for enum iteration
-    for group in WorkingGroup::iter() {
         match group {
             WorkingGroup::Content => {
-                run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
                     Runtime,
                     ContentDirectoryWorkingGroupInstance,
-                >(group)
+                >(group);
             }
             WorkingGroup::Storage => {
-                run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                run_create_fill_working_group_leader_opening_proposal_execution_succeeds::<
                     Runtime,
                     StorageWorkingGroupInstance,
-                >(group)
+                >(group);
             }
         }
     }
-}
+
+    fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
+        T: working_group::Trait<I> + system::Trait + stake::Trait,
+        I: working_group::Instance,
+    >(
+        working_group: WorkingGroup,
+    ) where
+        <T as system::Trait>::AccountId: From<[u8; 32]>,
+        <T as membership::Trait>::MemberId: From<u64>,
+        <T as hiring::Trait>::OpeningId: From<u64>,
+    {
+        initial_test_ext().execute_with(|| {
+            let member_id: MemberId = 1;
+            let account_id: [u8; 32] = [member_id as u8; 32];
+
+            let opening_id = add_opening(
+                member_id,
+                account_id.clone(),
+                ActivateOpeningAt::CurrentBlock,
+                None,
+                1,
+                working_group,
+            );
+
+            let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
+                RawOrigin::Signed(account_id.clone().into()).into(),
+                member_id.into(),
+                opening_id.into(),
+                account_id.clone().into(),
+                None,
+                None,
+                Vec::new(),
+            );
+
+            assert_eq!(apply_result, Ok(()));
+
+            let expected_application_id = 0;
+
+            begin_review_applications(member_id, account_id, opening_id, 2, working_group);
+
+            let lead = WorkingGroupInstance::<T, I>::current_lead();
+            assert!(lead.is_none());
+
+            fill_opening(
+                member_id,
+                account_id,
+                opening_id,
+                expected_application_id,
+                None,
+                3,
+                working_group,
+            );
+
+            let lead = WorkingGroupInstance::<T, I>::current_lead();
+            assert!(lead.is_some());
+        });
+    }
+
+    #[test]
+    fn create_decrease_group_leader_stake_proposal_execution_succeeds() {
+        // This uses strum crate for enum iteration
+        for group in WorkingGroup::iter() {
+            match group {
+                WorkingGroup::Content => {
+                    run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        ContentDirectoryWorkingGroupInstance,
+                    >(group);
+                }
+                WorkingGroup::Storage => {
+                    run_create_decrease_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        StorageWorkingGroupInstance,
+                    >(group);
+                }
+            }
+        }
+    }
+
+fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
+    T: working_group::Trait<I> + system::Trait + stake::Trait,
+    I: working_group::Instance,
+>(
+    working_group: WorkingGroup,
+) where
+    <T as system::Trait>::AccountId: From<[u8; 32]>,
+    <T as hiring::Trait>::OpeningId: From<u64>,
+    <T as membership::Trait>::MemberId: From<u64>,
+    <T as membership::Trait>::ActorId: Into<u64>,
+    <<T as stake::Trait>::Currency as traits::Currency<<T as system::Trait>::AccountId>>::Balance:
+        From<u128>,
+{
+        initial_test_ext().execute_with(|| {
+            let member_id: MemberId = 1;
+            let account_id: [u8; 32] = [member_id as u8; 32];
+            let stake_amount: Balance = 100;
+
+            let opening_policy_commitment = OpeningPolicyCommitment {
+                role_staking_policy: Some(hiring::StakingPolicy {
+                    amount: 100,
+                    amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+                    crowded_out_unstaking_period_length: None,
+                    review_period_expired_unstaking_period_length: None,
+                }),
+                ..OpeningPolicyCommitment::default()
+            };
+
+            let opening_id = add_opening(
+                member_id,
+                account_id.clone(),
+                ActivateOpeningAt::CurrentBlock,
+                Some(opening_policy_commitment),
+                1,
+                working_group,
+            );
+
+            let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
+                RawOrigin::Signed(account_id.clone().into()).into(),
+                member_id.into(),
+                opening_id.into(),
+                account_id.clone().into(),
+                Some(stake_amount.into()),
+                None,
+                Vec::new(),
+            );
+
+            assert_eq!(apply_result, Ok(()));
+
+            let expected_application_id = 0;
+
+            begin_review_applications(member_id, account_id, opening_id, 2, working_group);
+
+            let lead = WorkingGroupInstance::<T, I>::current_lead();
+            assert!(lead.is_none());
+
+            fill_opening(
+                member_id,
+                account_id,
+                opening_id,
+                expected_application_id,
+                None,
+                3,
+                working_group,
+            );
+
+            let leader_worker_id = WorkingGroupInstance::<T, I>::current_lead().unwrap();
+
+            let stake_id = 1;
+            let old_balance = Balances::free_balance(&account_id.into());
+            let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+            assert_eq!(get_stake_balance(old_stake), stake_amount);
+
+            let decreasing_stake_amount = 30;
+            decrease_stake(
+                member_id,
+                account_id,
+                leader_worker_id.into(),
+                decreasing_stake_amount,
+                4,
+                working_group,
+            );
+
+            let new_balance = Balances::free_balance(&account_id.into());
+            let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+            assert_eq!(
+                get_stake_balance(new_stake),
+                stake_amount - decreasing_stake_amount
+            );
+            assert_eq!(new_balance, old_balance + decreasing_stake_amount);
+        });
+    }
+
+    #[test]
+    fn create_slash_group_leader_stake_proposal_execution_succeeds() {
+        // This uses strum crate for enum iteration
+        for group in WorkingGroup::iter() {
+            match group {
+                WorkingGroup::Content => {
+                    run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        ContentDirectoryWorkingGroupInstance,
+                    >(group)
+                }
+                WorkingGroup::Storage => {
+                    run_create_slash_group_leader_stake_proposal_execution_succeeds::<
+                        Runtime,
+                        StorageWorkingGroupInstance,
+                    >(group)
+                }
+            }
+        }
+    }
 
 fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
     T: working_group::Trait<I> + system::Trait + stake::Trait,
     I: working_group::Instance,
 >(
     working_group: WorkingGroup,
-) {
-    initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
-        let account_id: [u8; 32] = [0; 32];
-        let stake_amount = 100;
+) where
+    <T as system::Trait>::AccountId: From<[u8; 32]>,
+    <T as hiring::Trait>::OpeningId: From<u64>,
+    <T as membership::Trait>::MemberId: From<u64>,
+    <T as membership::Trait>::ActorId: Into<u64>,
+    <<T as stake::Trait>::Currency as traits::Currency<<T as system::Trait>::AccountId>>::Balance:
+        From<u128>,
+{
+        initial_test_ext().execute_with(|| {
+            let member_id: MemberId = 1;
+            let account_id: [u8; 32] = [member_id as u8; 32];
+            let stake_amount: Balance = 100;
 
-        let opening_policy_commitment = OpeningPolicyCommitment {
-            role_staking_policy: Some(hiring::StakingPolicy {
-                amount: 100,
-                amount_mode: hiring::StakingAmountLimitMode::AtLeast,
-                crowded_out_unstaking_period_length: None,
-                review_period_expired_unstaking_period_length: None,
-            }),
-            ..OpeningPolicyCommitment::default()
-        };
+            let opening_policy_commitment = OpeningPolicyCommitment {
+                role_staking_policy: Some(hiring::StakingPolicy {
+                    amount: 100,
+                    amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+                    crowded_out_unstaking_period_length: None,
+                    review_period_expired_unstaking_period_length: None,
+                }),
+                ..OpeningPolicyCommitment::default()
+            };
 
-        let opening_id = add_opening(
-            member_id,
-            account_id.clone(),
-            ActivateOpeningAt::CurrentBlock,
-            Some(opening_policy_commitment),
-            1,
-            working_group,
-        );
+            let opening_id = add_opening(
+                member_id,
+                account_id.clone(),
+                ActivateOpeningAt::CurrentBlock,
+                Some(opening_policy_commitment),
+                1,
+                working_group,
+            );
 
-        let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
-            RawOrigin::Signed(T::AccountId::default()).into(),
-            member_id.into(),
-            opening_id.into(),
-            T::AccountId::default(),
-            Some(stake_amount.into()),
-            None,
-            Vec::new(),
-        );
+            let apply_result = WorkingGroupInstance::<T, I>::apply_on_opening(
+                RawOrigin::Signed(account_id.into()).into(),
+                member_id.into(),
+                opening_id.into(),
+                account_id.into(),
+                Some(stake_amount.into()),
+                None,
+                Vec::new(),
+            );
 
-        assert_eq!(apply_result, Ok(()));
+            assert_eq!(apply_result, Ok(()));
 
-        let expected_application_id = 0;
+            let expected_application_id = 0;
 
-        begin_review_applications(member_id, account_id, opening_id, 2, working_group);
+            begin_review_applications(member_id, account_id, opening_id, 2, working_group);
 
-        let lead = WorkingGroupInstance::<T, I>::current_lead();
+            let lead = WorkingGroupInstance::<T, I>::current_lead();
 
-        assert!(lead.is_none());
+            assert!(lead.is_none());
 
-        fill_opening(
-            member_id,
-            account_id,
-            opening_id,
-            expected_application_id,
-            None,
-            3,
-            working_group,
-        );
+            fill_opening(
+                member_id,
+                account_id,
+                opening_id,
+                expected_application_id,
+                None,
+                3,
+                working_group,
+            );
 
-        let leader_worker_id = WorkingGroupInstance::<T, I>::current_lead().unwrap();
+            let leader_worker_id = WorkingGroupInstance::<T, I>::current_lead().unwrap();
 
-        let stake_id = 1;
-        let old_balance = Balances::free_balance(&account_id.into());
-        let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
+            let stake_id = 1;
+            let old_balance = Balances::free_balance(&account_id.into());
+            let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
 
-        assert_eq!(get_stake_balance(old_stake), stake_amount as Balance);
+            assert_eq!(get_stake_balance(old_stake), stake_amount);
 
-        let slashing_stake_amount = 30;
-        slash_stake(
-            member_id,
-            account_id,
-            leader_worker_id.into(),
-            slashing_stake_amount,
-            4,
-            working_group,
-        );
+            let slashing_stake_amount = 30;
+            slash_stake(
+                member_id,
+                account_id,
+                leader_worker_id.into(),
+                slashing_stake_amount,
+                4,
+                working_group,
+            );
 
-        let new_balance = Balances::free_balance(&account_id.into());
-        let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
+            let new_balance = Balances::free_balance(&account_id.into());
+            let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
 
-        assert_eq!(
-            get_stake_balance(new_stake),
-            stake_amount as u128 - slashing_stake_amount
-        );
-        assert_eq!(new_balance, old_balance);
-    });
-}
-
-#[test]
-fn create_set_working_group_mint_capacity_proposal_execution_succeeds() {
-    // This uses strum crate for enum iteration
-    for group in WorkingGroup::iter() {
-        run_create_set_working_group_mint_capacity_proposal_execution_succeeds(group);
-    }
-}
-
-fn run_create_set_working_group_mint_capacity_proposal_execution_succeeds(
-    working_group: WorkingGroup,
-) {
-    initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
-        let account_id: [u8; 32] = [0; 32];
-
-        assert_eq!(ContentDirectoryWorkingGroup::mint(), 0);
-
-        let mint_capacity = 999999;
-        set_mint_capacity(member_id, account_id, mint_capacity, 1, true, working_group);
-
-        let mint_id = ContentDirectoryWorkingGroup::mint();
-        let mint = <minting::Module<Runtime>>::mints(mint_id);
-
-        assert_eq!(mint.capacity(), mint_capacity);
-    });
-}
-
-#[test]
-fn create_set_group_leader_reward_proposal_execution_succeeds() {
-    // This uses strum crate for enum iteration
-    for group in WorkingGroup::iter() {
-        run_create_set_group_leader_reward_proposal_execution_succeeds(group);
-    }
-}
-
-fn run_create_set_group_leader_reward_proposal_execution_succeeds(working_group: WorkingGroup) {
-    initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
-        let account_id: [u8; 32] = [0; 32];
-        let stake_amount = 100;
-
-        let opening_policy_commitment = OpeningPolicyCommitment {
-            role_staking_policy: Some(hiring::StakingPolicy {
-                amount: 100,
-                amount_mode: hiring::StakingAmountLimitMode::AtLeast,
-                crowded_out_unstaking_period_length: None,
-                review_period_expired_unstaking_period_length: None,
-            }),
-            ..OpeningPolicyCommitment::default()
-        };
-
-        let opening_id = add_opening(
-            member_id,
-            account_id.clone(),
-            ActivateOpeningAt::CurrentBlock,
-            Some(opening_policy_commitment),
-            1,
-            working_group,
-        );
-
-        let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
-            RawOrigin::Signed(account_id.clone().into()).into(),
-            member_id as u64,
-            opening_id,
-            account_id.clone().into(),
-            Some(stake_amount),
-            None,
-            Vec::new(),
-        );
-
-        assert_eq!(apply_result, Ok(()));
-
-        let expected_application_id = 0;
-
-        begin_review_applications(member_id, account_id, opening_id, 2, working_group);
-
-        let lead = ContentDirectoryWorkingGroup::current_lead();
-        assert!(lead.is_none());
-
-        let old_reward_amount = 100;
-        let reward_policy = Some(RewardPolicy {
-            amount_per_payout: old_reward_amount,
-            next_payment_at_block: 9999,
-            payout_interval: None,
+            assert_eq!(
+                get_stake_balance(new_stake),
+                stake_amount as u128 - slashing_stake_amount
+            );
+            assert_eq!(new_balance, old_balance);
         });
-
-        set_mint_capacity(member_id, account_id, 999999, 3, false, working_group);
-
-        fill_opening(
-            member_id,
-            account_id,
-            opening_id,
-            expected_application_id,
-            reward_policy,
-            4,
-            working_group,
-        );
-
-        let leader_worker_id = ContentDirectoryWorkingGroup::current_lead().unwrap();
-
-        let worker = ContentDirectoryWorkingGroup::worker_by_id(leader_worker_id);
-        let relationship_id = worker.reward_relationship.unwrap();
-
-        let relationship = recurring_rewards::RewardRelationships::<Runtime>::get(relationship_id);
-        assert_eq!(relationship.amount_per_payout, old_reward_amount);
-
-        let new_reward_amount = 999;
-        set_reward(
-            member_id,
-            account_id,
-            leader_worker_id,
-            new_reward_amount,
-            5,
-            working_group,
-        );
-
-        let relationship = recurring_rewards::RewardRelationships::<Runtime>::get(relationship_id);
-        assert_eq!(relationship.amount_per_payout, new_reward_amount);
-    });
-}
-
-#[test]
-fn create_terminate_group_leader_role_proposal_execution_succeeds() {
-    // This uses strum crate for enum iteration
-    for group in WorkingGroup::iter() {
-        run_create_terminate_group_leader_role_proposal_execution_succeeds(group);
     }
-}
 
-fn run_create_terminate_group_leader_role_proposal_execution_succeeds(working_group: WorkingGroup) {
-    initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
-        let account_id: [u8; 32] = [0; 32];
-        let stake_amount = 100;
+    #[test]
+    fn create_set_working_group_mint_capacity_proposal_execution_succeeds() {
+        // This uses strum crate for enum iteration
+        for group in WorkingGroup::iter() {
+            match group {
+                WorkingGroup::Content => {
+                    run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                        Runtime,
+                        ContentDirectoryWorkingGroupInstance,
+                    >(group);
+                }
+                WorkingGroup::Storage => {
+                    run_create_set_working_group_mint_capacity_proposal_execution_succeeds::<
+                        Runtime,
+                        StorageWorkingGroupInstance,
+                    >(group);
+                }
+            }
+        }
 
-        let opening_policy_commitment = OpeningPolicyCommitment {
-            role_staking_policy: Some(hiring::StakingPolicy {
-                amount: 100,
-                amount_mode: hiring::StakingAmountLimitMode::AtLeast,
-                crowded_out_unstaking_period_length: None,
-                review_period_expired_unstaking_period_length: None,
-            }),
-            ..OpeningPolicyCommitment::default()
-        };
+        fn run_create_set_working_group_mint_capacity_proposal_execution_succeeds<
+            T: working_group::Trait<I> + system::Trait + minting::Trait,
+            I: working_group::Instance,
+        >(
+            working_group: WorkingGroup,
+        ) where
+            <T as system::Trait>::AccountId: From<[u8; 32]>,
+            <T as membership::Trait>::MemberId: From<u64>,
+            <T as minting::Trait>::MintId: From<u64>,
+            <<T as minting::Trait>::Currency as traits::Currency<
+                <T as system::Trait>::AccountId,
+            >>::Balance: From<u128>,
+        {
+            initial_test_ext().execute_with(|| {
+                let member_id: MemberId = 1;
+                let account_id: [u8; 32] = [member_id as u8; 32];
 
-        let opening_id = add_opening(
-            member_id,
-            account_id.clone(),
-            ActivateOpeningAt::CurrentBlock,
-            Some(opening_policy_commitment),
-            1,
-            working_group,
-        );
+                assert_eq!(WorkingGroupInstance::<T, I>::mint(), 0.into());
 
-        let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
-            RawOrigin::Signed(account_id.clone().into()).into(),
-            member_id as u64,
-            opening_id,
-            account_id.clone().into(),
-            Some(stake_amount),
-            None,
-            Vec::new(),
-        );
+                let mint_capacity = 999999;
+                set_mint_capacity(member_id, account_id, mint_capacity, 1, true, working_group);
 
-        assert_eq!(apply_result, Ok(()));
+                let mint_id = WorkingGroupInstance::<T, I>::mint();
+                let mint = <minting::Module<T>>::mints(mint_id);
 
-        let expected_application_id = 0;
+                assert_eq!(mint.capacity(), mint_capacity.into());
+            });
+        }
 
-        begin_review_applications(member_id, account_id, opening_id, 2, working_group);
+        #[test]
+        fn create_set_group_leader_reward_proposal_execution_succeeds() {
+            // This uses strum crate for enum iteration
+            for group in WorkingGroup::iter() {
+                run_create_set_group_leader_reward_proposal_execution_succeeds(group);
+            }
+        }
 
-        let lead = ContentDirectoryWorkingGroup::current_lead();
-        assert!(lead.is_none());
+        fn run_create_set_group_leader_reward_proposal_execution_succeeds(
+            working_group: WorkingGroup,
+        ) {
+            initial_test_ext().execute_with(|| {
+                let member_id: MemberId = 1;
+                let account_id: [u8; 32] = [member_id as u8; 32];
+                let stake_amount = 100;
 
-        let old_reward_amount = 100;
-        let reward_policy = Some(RewardPolicy {
-            amount_per_payout: old_reward_amount,
-            next_payment_at_block: 9999,
-            payout_interval: None,
-        });
+                let opening_policy_commitment = OpeningPolicyCommitment {
+                    role_staking_policy: Some(hiring::StakingPolicy {
+                        amount: 100,
+                        amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+                        crowded_out_unstaking_period_length: None,
+                        review_period_expired_unstaking_period_length: None,
+                    }),
+                    ..OpeningPolicyCommitment::default()
+                };
 
-        set_mint_capacity(member_id, account_id, 999999, 3, false, working_group);
+                let opening_id = add_opening(
+                    member_id,
+                    account_id.clone(),
+                    ActivateOpeningAt::CurrentBlock,
+                    Some(opening_policy_commitment),
+                    1,
+                    working_group,
+                );
 
-        fill_opening(
-            member_id,
-            account_id,
-            opening_id,
-            expected_application_id,
-            reward_policy,
-            4,
-            working_group,
-        );
+                let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
+                    RawOrigin::Signed(account_id.clone().into()).into(),
+                    member_id as u64,
+                    opening_id,
+                    account_id.clone().into(),
+                    Some(stake_amount),
+                    None,
+                    Vec::new(),
+                );
 
-        let stake_id = 1;
-        let old_balance = Balances::free_balance(&account_id.into());
-        let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
+                assert_eq!(apply_result, Ok(()));
 
-        assert_eq!(get_stake_balance(old_stake), stake_amount);
+                let expected_application_id = 0;
 
-        let leader_worker_id = ContentDirectoryWorkingGroup::current_lead().unwrap();
+                begin_review_applications(member_id, account_id, opening_id, 2, working_group);
 
-        terminate_role(
-            member_id,
-            account_id,
-            leader_worker_id,
-            false,
-            5,
-            working_group,
-        );
+                let lead = ContentDirectoryWorkingGroup::current_lead();
+                assert!(lead.is_none());
 
-        assert!(ContentDirectoryWorkingGroup::current_lead().is_none());
+                let old_reward_amount = 100;
+                let reward_policy = Some(RewardPolicy {
+                    amount_per_payout: old_reward_amount,
+                    next_payment_at_block: 9999,
+                    payout_interval: None,
+                });
 
-        let new_balance = Balances::free_balance(&account_id.into());
-        let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
+                set_mint_capacity(member_id, account_id, 999999, 3, false, working_group);
 
-        assert_eq!(new_stake.staking_status, stake::StakingStatus::NotStaked);
-        assert_eq!(new_balance, old_balance + stake_amount);
-    });
-}
+                fill_opening(
+                    member_id,
+                    account_id,
+                    opening_id,
+                    expected_application_id,
+                    reward_policy,
+                    4,
+                    working_group,
+                );
 
-#[test]
-fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds() {
-    // This uses strum crate for enum iteration
-    for group in WorkingGroup::iter() {
-        run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(group);
+                let leader_worker_id = ContentDirectoryWorkingGroup::current_lead().unwrap();
+
+                let worker = ContentDirectoryWorkingGroup::worker_by_id(leader_worker_id);
+                let relationship_id = worker.reward_relationship.unwrap();
+
+                let relationship =
+                    recurring_rewards::RewardRelationships::<Runtime>::get(relationship_id);
+                assert_eq!(relationship.amount_per_payout, old_reward_amount);
+
+                let new_reward_amount = 999;
+                set_reward(
+                    member_id,
+                    account_id,
+                    leader_worker_id,
+                    new_reward_amount,
+                    5,
+                    working_group,
+                );
+
+                let relationship =
+                    recurring_rewards::RewardRelationships::<Runtime>::get(relationship_id);
+                assert_eq!(relationship.amount_per_payout, new_reward_amount);
+            });
+        }
+
+        #[test]
+        fn create_terminate_group_leader_role_proposal_execution_succeeds() {
+            // This uses strum crate for enum iteration
+            for group in WorkingGroup::iter() {
+                run_create_terminate_group_leader_role_proposal_execution_succeeds(group);
+            }
+        }
+
+        fn run_create_terminate_group_leader_role_proposal_execution_succeeds(
+            working_group: WorkingGroup,
+        ) {
+            initial_test_ext().execute_with(|| {
+                let member_id: MemberId = 1;
+                let account_id: [u8; 32] = [0; 32];
+                let stake_amount = 100;
+
+                let opening_policy_commitment = OpeningPolicyCommitment {
+                    role_staking_policy: Some(hiring::StakingPolicy {
+                        amount: 100,
+                        amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+                        crowded_out_unstaking_period_length: None,
+                        review_period_expired_unstaking_period_length: None,
+                    }),
+                    ..OpeningPolicyCommitment::default()
+                };
+
+                let opening_id = add_opening(
+                    member_id,
+                    account_id.clone(),
+                    ActivateOpeningAt::CurrentBlock,
+                    Some(opening_policy_commitment),
+                    1,
+                    working_group,
+                );
+
+                let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
+                    RawOrigin::Signed(account_id.clone().into()).into(),
+                    member_id as u64,
+                    opening_id,
+                    account_id.clone().into(),
+                    Some(stake_amount),
+                    None,
+                    Vec::new(),
+                );
+
+                assert_eq!(apply_result, Ok(()));
+
+                let expected_application_id = 0;
+
+                begin_review_applications(member_id, account_id, opening_id, 2, working_group);
+
+                let lead = ContentDirectoryWorkingGroup::current_lead();
+                assert!(lead.is_none());
+
+                let old_reward_amount = 100;
+                let reward_policy = Some(RewardPolicy {
+                    amount_per_payout: old_reward_amount,
+                    next_payment_at_block: 9999,
+                    payout_interval: None,
+                });
+
+                set_mint_capacity(member_id, account_id, 999999, 3, false, working_group);
+
+                fill_opening(
+                    member_id,
+                    account_id,
+                    opening_id,
+                    expected_application_id,
+                    reward_policy,
+                    4,
+                    working_group,
+                );
+
+                let stake_id = 1;
+                let old_balance = Balances::free_balance(&account_id.into());
+                let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+                assert_eq!(get_stake_balance(old_stake), stake_amount);
+
+                let leader_worker_id = ContentDirectoryWorkingGroup::current_lead().unwrap();
+
+                terminate_role(
+                    member_id,
+                    account_id,
+                    leader_worker_id,
+                    false,
+                    5,
+                    working_group,
+                );
+
+                assert!(ContentDirectoryWorkingGroup::current_lead().is_none());
+
+                let new_balance = Balances::free_balance(&account_id.into());
+                let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+                assert_eq!(new_stake.staking_status, stake::StakingStatus::NotStaked);
+                assert_eq!(new_balance, old_balance + stake_amount);
+            });
+        }
+
+        #[test]
+        fn create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds() {
+            // This uses strum crate for enum iteration
+            for group in WorkingGroup::iter() {
+                run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
+                    group,
+                );
+            }
+        }
+
+        fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
+            working_group: WorkingGroup,
+        ) {
+            initial_test_ext().execute_with(|| {
+                let member_id: MemberId = 1;
+                let account_id: [u8; 32] = [0; 32];
+                let stake_amount = 100;
+
+                let opening_policy_commitment = OpeningPolicyCommitment {
+                    role_staking_policy: Some(hiring::StakingPolicy {
+                        amount: 100,
+                        amount_mode: hiring::StakingAmountLimitMode::AtLeast,
+                        crowded_out_unstaking_period_length: None,
+                        review_period_expired_unstaking_period_length: None,
+                    }),
+                    ..OpeningPolicyCommitment::default()
+                };
+
+                let opening_id = add_opening(
+                    member_id,
+                    account_id.clone(),
+                    ActivateOpeningAt::CurrentBlock,
+                    Some(opening_policy_commitment),
+                    1,
+                    working_group,
+                );
+
+                let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
+                    RawOrigin::Signed(account_id.clone().into()).into(),
+                    member_id,
+                    opening_id,
+                    account_id.clone().into(),
+                    Some(stake_amount),
+                    None,
+                    Vec::new(),
+                );
+
+                assert_eq!(apply_result, Ok(()));
+
+                let expected_application_id = 0;
+
+                begin_review_applications(member_id, account_id, opening_id, 2, working_group);
+
+                let lead = ContentDirectoryWorkingGroup::current_lead();
+                assert!(lead.is_none());
+
+                let old_reward_amount = 100;
+                let reward_policy = Some(RewardPolicy {
+                    amount_per_payout: old_reward_amount,
+                    next_payment_at_block: 9999,
+                    payout_interval: None,
+                });
+
+                set_mint_capacity(member_id, account_id, 999999, 3, false, working_group);
+
+                fill_opening(
+                    member_id,
+                    account_id,
+                    opening_id,
+                    expected_application_id,
+                    reward_policy,
+                    4,
+                    working_group,
+                );
+
+                let stake_id = 1;
+                let old_balance = Balances::free_balance(&account_id.into());
+                let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+                assert_eq!(get_stake_balance(old_stake), stake_amount);
+
+                let leader_worker_id = ContentDirectoryWorkingGroup::current_lead().unwrap();
+
+                terminate_role(
+                    member_id,
+                    account_id,
+                    leader_worker_id,
+                    true,
+                    5,
+                    working_group,
+                );
+
+                assert!(ContentDirectoryWorkingGroup::current_lead().is_none());
+
+                let new_balance = Balances::free_balance(&account_id.into());
+                let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
+
+                assert_eq!(new_stake.staking_status, stake::StakingStatus::NotStaked);
+                assert_eq!(new_balance, old_balance);
+            });
+        }
     }
-}
-
-fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds(
-    working_group: WorkingGroup,
-) {
-    initial_test_ext().execute_with(|| {
-        let member_id: MemberId = 1;
-        let account_id: [u8; 32] = [0; 32];
-        let stake_amount = 100;
-
-        let opening_policy_commitment = OpeningPolicyCommitment {
-            role_staking_policy: Some(hiring::StakingPolicy {
-                amount: 100,
-                amount_mode: hiring::StakingAmountLimitMode::AtLeast,
-                crowded_out_unstaking_period_length: None,
-                review_period_expired_unstaking_period_length: None,
-            }),
-            ..OpeningPolicyCommitment::default()
-        };
-
-        let opening_id = add_opening(
-            member_id,
-            account_id.clone(),
-            ActivateOpeningAt::CurrentBlock,
-            Some(opening_policy_commitment),
-            1,
-            working_group,
-        );
-
-        let apply_result = ContentDirectoryWorkingGroup::apply_on_opening(
-            RawOrigin::Signed(account_id.clone().into()).into(),
-            member_id,
-            opening_id,
-            account_id.clone().into(),
-            Some(stake_amount),
-            None,
-            Vec::new(),
-        );
-
-        assert_eq!(apply_result, Ok(()));
-
-        let expected_application_id = 0;
-
-        begin_review_applications(member_id, account_id, opening_id, 2, working_group);
-
-        let lead = ContentDirectoryWorkingGroup::current_lead();
-        assert!(lead.is_none());
-
-        let old_reward_amount = 100;
-        let reward_policy = Some(RewardPolicy {
-            amount_per_payout: old_reward_amount,
-            next_payment_at_block: 9999,
-            payout_interval: None,
-        });
-
-        set_mint_capacity(member_id, account_id, 999999, 3, false, working_group);
-
-        fill_opening(
-            member_id,
-            account_id,
-            opening_id,
-            expected_application_id,
-            reward_policy,
-            4,
-            working_group,
-        );
-
-        let stake_id = 1;
-        let old_balance = Balances::free_balance(&account_id.into());
-        let old_stake = <stake::Module<Runtime>>::stakes(stake_id);
-
-        assert_eq!(get_stake_balance(old_stake), stake_amount);
-
-        let leader_worker_id = ContentDirectoryWorkingGroup::current_lead().unwrap();
-
-        terminate_role(
-            member_id,
-            account_id,
-            leader_worker_id,
-            true,
-            5,
-            working_group,
-        );
-
-        assert!(ContentDirectoryWorkingGroup::current_lead().is_none());
-
-        let new_balance = Balances::free_balance(&account_id.into());
-        let new_stake = <stake::Module<Runtime>>::stakes(stake_id);
-
-        assert_eq!(new_stake.staking_status, stake::StakingStatus::NotStaked);
-        assert_eq!(new_balance, old_balance);
-    });
 }

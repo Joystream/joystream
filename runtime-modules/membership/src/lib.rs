@@ -35,8 +35,7 @@ pub trait Trait: system::Trait + GovernanceCurrency + pallet_timestamp::Trait {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq
-        + From<u64>;
+        + PartialEq;
 
     type PaidTermId: Parameter
         + Member
@@ -65,8 +64,7 @@ pub trait Trait: system::Trait + GovernanceCurrency + pallet_timestamp::Trait {
         + Copy
         + MaybeSerialize
         + PartialEq
-        + Ord
-        + Into<u64>;
+        + Ord;
 }
 
 const FIRST_PAID_TERMS_ID: u8 = 1;
