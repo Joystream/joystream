@@ -12,9 +12,6 @@ decl_error! {
         /// Opening does not exist.
         OpeningDoesNotExist,
 
-        /// Origin must be controller or root account of member.
-        OriginIsNeitherMemberControllerOrRoot,
-
         /// Cannot fill opening with multiple applications.
         CannotHireMultipleLeaders,
 
@@ -62,5 +59,11 @@ decl_error! {
 
         /// Reward could not be zero.
         CannotRewardWithZero,
+
+        /// Staking account doesn't belong to a member.
+        InvalidStakingAccountForMember,
+
+        /// Staking account contains conflicting stakes.
+        ConflictStakesOnAccount,
     }
 }
