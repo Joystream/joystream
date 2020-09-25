@@ -1,7 +1,9 @@
+# Run joystream local development chain
+# Will use an local image if found, otherwise image will be pulled from:
+# https://hub.docker.com/r/joystream/node
 version: "3"
 services:
   node:
-    # if image is missing it will be pulled from remote repo
     image: joystream/node
     container_name: joystream-node
     command: --dev --alice --validator --unsafe-ws-external --rpc-cors=all
