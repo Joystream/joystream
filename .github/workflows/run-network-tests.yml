@@ -17,10 +17,10 @@ jobs:
       - name: Install packages and dependencies
         run: yarn install --frozen-lockfile
       - name: Ensure tests are runnable
-        run: yarn workspace joystream-testing build
+        run: yarn workspace network-tests build
       - name: Configure block production to 2000ms (fatser tests)
         run: ./scripts/alter-block-creation-time.sh
       - name: Build and start chain
         run: docker-compose --file devops/dockerfiles/node-and-runtime/docker-compose.yml up -d
       - name: Execute network tests
-        run: yarn workspace joystream-testing test
+        run: yarn workspace network-tests test
