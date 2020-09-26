@@ -105,6 +105,14 @@ Learn more about [joystream-node](node/README.md).
 
 A step by step guide to setup a full node and validator on the Joystream testnet, can be found [here](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
 
+### Integration tests
+
+```bash
+docker-compose up -d
+yarn workspace network-tests test
+docker-compose down
+```
+
 ### Contributing
 
 We have lots of good first [issues](https://github.com/Joystream/joystream/issues?q=is%3Aopen+is%3Aissue+label%3A%22good+first+issue%22) open to help you get started on contributing code. If you are not a developer you can still make valuable contributions by testing our software and providing feedback and opening new issues.
