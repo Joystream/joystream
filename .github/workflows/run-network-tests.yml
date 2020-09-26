@@ -20,10 +20,12 @@ jobs:
         run: yarn workspace network-tests build
       # TODO: determin if we will build a new joystream/node image from source
       # our use a prebuilt image. Build if PR has joystream-node or runtime code changes
-      # For prebuilt image use `joytream/node:${base_branch}` tag would be the PR base branch 
-      # ie. the 'target' branch of the PR. For now we just use the pre-built image
-      - name: Configure block production to 2000ms (fatser tests)
-        run: ./scripts/alter-block-creation-time.sh
+      # For prebuilt image set NODE_TAG env var to select tag. Use the PR base branch, 
+      # ie. the 'target' branch of the PR. For now we just use hardcoded the pre-built image
+      # defined in the docker-compose file.
+      # When building from source tweak the block production setting for faster tests.
+      # - name: Configuring shorter block production time
+      #   run: ./scripts/alter-block-creation-time.sh
       - name: Build and start chain
         run: docker-compose --file docker-compose-no-build.yml up -d
       - name: Execute network tests
