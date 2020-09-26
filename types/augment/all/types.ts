@@ -32,7 +32,7 @@ export interface ActiveOpeningStage extends Enum {
 /** @name ActiveOpeningStageVariant */
 export interface ActiveOpeningStageVariant extends Struct {
   readonly stage: ActiveOpeningStage;
-  readonly applications_added: Vec<HiringApplicationId>;
+  readonly applications_added: Vec<ApplicationId>;
   readonly active_application_count: u32;
   readonly unstaking_application_count: u32;
   readonly deactivated_application_count: u32;
@@ -40,7 +40,7 @@ export interface ActiveOpeningStageVariant extends Struct {
 
 /** @name ActiveStake */
 export interface ActiveStake extends Struct {
-  readonly stake_id: u64;
+  readonly stake_id: StakeId;
   readonly source_account_id: GenericAccountId;
 }
 
@@ -92,11 +92,11 @@ export interface AdjustOnInterval extends Struct {
 
 /** @name Application */
 export interface Application extends Struct {
-  readonly opening_id: u64;
+  readonly opening_id: OpeningId;
   readonly application_index_in_opening: u32;
   readonly add_to_opening_in_block: u32;
-  readonly active_role_staking_id: Option<u64>;
-  readonly active_application_staking_id: Option<u64>;
+  readonly active_role_staking_id: Option<StakeId>;
+  readonly active_application_staking_id: Option<StakeId>;
   readonly stage: ApplicationStage;
   readonly human_readable_text: Text;
 }
@@ -116,17 +116,17 @@ export interface ApplicationDeactivationCause extends Enum {
 export interface ApplicationId extends u64 {}
 
 /** @name ApplicationIdSet */
-export interface ApplicationIdSet extends BTreeSet<HiringApplicationId> {}
+export interface ApplicationIdSet extends BTreeSet<ApplicationId> {}
 
 /** @name ApplicationIdToWorkerIdMap */
-export interface ApplicationIdToWorkerIdMap extends BTreeMap<HiringApplicationId, WorkerId> {}
+export interface ApplicationIdToWorkerIdMap extends BTreeMap<ApplicationId, WorkerId> {}
 
 /** @name ApplicationOf */
 export interface ApplicationOf extends Struct {
   readonly role_account_id: GenericAccountId;
-  readonly opening_id: u64;
+  readonly opening_id: OpeningId;
   readonly member_id: MemberId;
-  readonly application_id: HiringApplicationId;
+  readonly application_id: ApplicationId;
 }
 
 /** @name ApplicationRationingPolicy */
@@ -161,7 +161,7 @@ export interface Backer extends Struct {
 export interface Backers extends Vec<Backer> {}
 
 /** @name BalanceOfMint */
-export interface BalanceOfMint extends Balance {}
+export interface BalanceOfMint extends u128 {}
 
 /** @name BlockAndTime */
 export interface BlockAndTime extends Struct {
@@ -285,7 +285,7 @@ export interface CurationActor extends Enum {
 /** @name Curator */
 export interface Curator extends Struct {
   readonly role_account: GenericAccountId;
-  readonly reward_relationship: Option<u64>;
+  readonly reward_relationship: Option<RewardRelationshipId>;
   readonly role_stake_profile: Option<CuratorRoleStakeProfile>;
   readonly stage: CuratorRoleStage;
   readonly induction: CuratorInduction;
@@ -297,7 +297,7 @@ export interface CuratorApplication extends Struct {
   readonly role_account: GenericAccountId;
   readonly curator_opening_id: CuratorOpeningId;
   readonly member_id: MemberId;
-  readonly application_id: HiringApplicationId;
+  readonly application_id: ApplicationId;
 }
 
 /** @name CuratorApplicationId */
@@ -307,7 +307,7 @@ export interface CuratorApplicationId extends u64 {}
 export interface CuratorApplicationIdSet extends BTreeSet<CuratorApplicationId> {}
 
 /** @name CuratorApplicationIdToCuratorIdMap */
-export interface CuratorApplicationIdToCuratorIdMap extends BTreeMap<HiringApplicationId, CuratorId> {}
+export interface CuratorApplicationIdToCuratorIdMap extends BTreeMap<ApplicationId, CuratorId> {}
 
 /** @name CuratorExitInitiationOrigin */
 export interface CuratorExitInitiationOrigin extends Enum {
@@ -344,7 +344,7 @@ export interface CuratorInduction extends Struct {
 
 /** @name CuratorOpening */
 export interface CuratorOpening extends Struct {
-  readonly opening_id: u64;
+  readonly opening_id: OpeningId;
   readonly curator_applications: Vec<CuratorApplicationId>;
   readonly policy_commitment: OpeningPolicyCommitment;
 }
@@ -363,7 +363,7 @@ export interface CuratorRoleStage extends Enum {
 
 /** @name CuratorRoleStakeProfile */
 export interface CuratorRoleStakeProfile extends Struct {
-  readonly stake_id: u64;
+  readonly stake_id: StakeId;
   readonly termination_unstaking_period: Option<u32>;
   readonly exit_unstaking_period: Option<u32>;
 }
@@ -512,8 +512,8 @@ export interface ExitedLeadRole extends Struct {
 
 /** @name FillOpeningParameters */
 export interface FillOpeningParameters extends Struct {
-  readonly opening_id: u64;
-  readonly successful_application_id: HiringApplicationId;
+  readonly opening_id: OpeningId;
+  readonly successful_application_id: ApplicationId;
   readonly reward_policy: Option<RewardPolicy>;
   readonly working_group: WorkingGroup;
 }
@@ -590,7 +590,7 @@ export interface IPNSIdentity extends Text {}
 export interface Lead extends Struct {
   readonly member_id: MemberId;
   readonly role_account: GenericAccountId;
-  readonly reward_relationship: Option<u64>;
+  readonly reward_relationship: Option<RewardRelationshipId>;
   readonly inducted: u32;
   readonly stage: LeadRoleState;
 }
@@ -644,7 +644,7 @@ export interface Mint extends Struct {
 }
 
 /** @name MintBalanceOf */
-export interface MintBalanceOf extends Balance {}
+export interface MintBalanceOf extends u128 {}
 
 /** @name MintId */
 export interface MintId extends u64 {}
@@ -690,8 +690,8 @@ export interface OpeningId extends u64 {}
 
 /** @name OpeningOf */
 export interface OpeningOf extends Struct {
-  readonly hiring_opening_id: u64;
-  readonly applications: Vec<HiringApplicationId>;
+  readonly hiring_opening_id: OpeningId;
+  readonly applications: Vec<ApplicationId>;
   readonly policy_commitment: WorkingGroupOpeningPolicyCommitment;
   readonly opening_type: OpeningType;
 }
@@ -892,7 +892,7 @@ export interface ProposalDetails extends Enum {
   readonly isAddWorkingGroupLeaderOpening: boolean;
   readonly asAddWorkingGroupLeaderOpening: AddOpeningParameters;
   readonly isBeginReviewWorkingGroupLeaderApplication: boolean;
-  readonly asBeginReviewWorkingGroupLeaderApplication: ITuple<[u64, WorkingGroup]>;
+  readonly asBeginReviewWorkingGroupLeaderApplication: ITuple<[OpeningId, WorkingGroup]>;
   readonly isFillWorkingGroupLeaderOpening: boolean;
   readonly asFillWorkingGroupLeaderOpening: FillOpeningParameters;
   readonly isSetWorkingGroupMintCapacity: boolean;
@@ -930,7 +930,7 @@ export interface ProposalDetailsOf extends Enum {
   readonly isAddWorkingGroupLeaderOpening: boolean;
   readonly asAddWorkingGroupLeaderOpening: AddOpeningParameters;
   readonly isBeginReviewWorkingGroupLeaderApplication: boolean;
-  readonly asBeginReviewWorkingGroupLeaderApplication: ITuple<[u64, WorkingGroup]>;
+  readonly asBeginReviewWorkingGroupLeaderApplication: ITuple<[OpeningId, WorkingGroup]>;
   readonly isFillWorkingGroupLeaderOpening: boolean;
   readonly asFillWorkingGroupLeaderOpening: FillOpeningParameters;
   readonly isSetWorkingGroupMintCapacity: boolean;
@@ -1022,8 +1022,8 @@ export interface RewardPolicy extends Struct {
 
 /** @name RewardRelationship */
 export interface RewardRelationship extends Struct {
-  readonly recipient: u64;
-  readonly mint_id: u64;
+  readonly recipient: RecipientId;
+  readonly mint_id: MintId;
   readonly account: GenericAccountId;
   readonly amount_per_payout: u128;
   readonly next_payment_at_block: Option<u32>;
@@ -1051,7 +1051,7 @@ export interface RoleParameters extends Struct {
 
 /** @name RoleStakeProfile */
 export interface RoleStakeProfile extends Struct {
-  readonly stake_id: u64;
+  readonly stake_id: StakeId;
   readonly termination_unstaking_period: Option<u32>;
   readonly exit_unstaking_period: Option<u32>;
 }
@@ -1354,7 +1354,7 @@ export interface WorkerId extends u64 {}
 export interface WorkerOf extends Struct {
   readonly member_id: MemberId;
   readonly role_account_id: GenericAccountId;
-  readonly reward_relationship: Option<u64>;
+  readonly reward_relationship: Option<RewardRelationshipId>;
   readonly role_stake_profile: Option<RoleStakeProfile>;
 }
 
