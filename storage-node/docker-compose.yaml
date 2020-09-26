@@ -11,6 +11,7 @@ services:
     command: |
       /bin/sh -c "
         set -e
+        /usr/local/bin/start_ipfs config profile apply lowpower
         /usr/local/bin/start_ipfs config --json Gateway.PublicGateways '{\"localhost\": null }'
         /sbin/tini -- /usr/local/bin/start_ipfs daemon --migrate=true
       "
