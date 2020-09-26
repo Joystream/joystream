@@ -18,9 +18,13 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
+      # TODO: determin if we will build a new joystream/node image from source
+      # our use a prebuilt image. Build if PR has joystream-node or runtime code changes
+      # For prebuilt image use `joytream/node:${base_branch}` tag would be the PR base branch 
+      # ie. the 'target' branch of the PR. For now we just use the pre-built image
       - name: Configure block production to 2000ms (fatser tests)
         run: ./scripts/alter-block-creation-time.sh
       - name: Build and start chain
-        run: docker-compose up -d
+        run: docker-compose --file docker-compose-no-build.yml up -d
       - name: Execute network tests
         run: yarn workspace network-tests test
