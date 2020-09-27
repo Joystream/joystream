@@ -179,12 +179,17 @@ decl_event!(
         /// - new budget
         BudgetSet(Balance),
 
-
         /// Emits on updating the reward account of the worker.
         /// Params:
         /// - Id of the worker.
         /// - Reward account id of the worker.
         WorkerRewardAccountUpdated(TeamWorkerId, AccountId),
+
+        /// Emits on updating the reward amount of the worker.
+        /// Params:
+        /// - Id of the worker.
+        /// - Reward per block
+        WorkerRewardAmountUpdated(TeamWorkerId, Option<Balance>),
     }
 );
 
@@ -672,6 +677,33 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::WorkerRewardAccountUpdated(worker_id, new_reward_account_id));
+        }
+
+        /// Update the reward per block for the active worker.
+        /// Require signed leader origin or the root (to update leader's reward amount).
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_reward_amount(
+            origin,
+            worker_id: TeamWorkerId<T>,
+            reward_per_block: Option<BalanceOfCurrency<T>>
+        ) {
+            // Ensure lead is set or it is the council setting the leader's reward.
+            checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
+
+            // Ensuring worker actually exists
+            checks::ensure_worker_exists::<T,I>(&worker_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update worker reward amount.
+            WorkerById::<T, I>::mutate(worker_id, |worker| {
+                worker.reward_per_block = reward_per_block;
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerRewardAmountUpdated(worker_id, reward_per_block));
         }
     }
 }

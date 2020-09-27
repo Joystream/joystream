@@ -945,3 +945,47 @@ impl UpdateRewardAccountFixture {
         }
     }
 }
+
+pub struct UpdateRewardAmountFixture {
+    worker_id: u64,
+    reward_per_block: Option<u64>,
+    origin: RawOrigin<u64>,
+}
+
+impl UpdateRewardAmountFixture {
+    pub fn default_for_worker_id(worker_id: u64) -> Self {
+        let lead_account_id = get_current_lead_account_id();
+
+        Self {
+            worker_id,
+            reward_per_block: None,
+            origin: RawOrigin::Signed(lead_account_id),
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_reward_per_block(self, reward_per_block: Option<u64>) -> Self {
+        Self {
+            reward_per_block,
+            ..self
+        }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = TestWorkingTeam::update_reward_amount(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.reward_per_block,
+        );
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            let worker = TestWorkingTeam::worker_by_id(self.worker_id);
+
+            assert_eq!(worker.reward_per_block, self.reward_per_block);
+        }
+    }
+}
