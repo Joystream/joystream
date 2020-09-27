@@ -65,5 +65,8 @@ decl_error! {
 
         /// Staking account contains conflicting stakes.
         ConflictStakesOnAccount,
+
+        /// Worker has no recurring reward.
+        WorkerHasNoReward,
     }
 }

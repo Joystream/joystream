@@ -370,6 +370,7 @@ impl FillOpeningFixture {
 pub struct HireLeadFixture {
     setup_environment: bool,
     stake_policy: Option<StakePolicy<u64, u64>>,
+    reward_policy: Option<RewardPolicy<u64>>,
 }
 
 impl Default for HireLeadFixture {
@@ -377,6 +378,7 @@ impl Default for HireLeadFixture {
         Self {
             setup_environment: true,
             stake_policy: None,
+            reward_policy: None,
         }
     }
 }
@@ -395,11 +397,19 @@ impl HireLeadFixture {
         }
     }
 
+    pub fn with_reward_policy(self, reward_policy: Option<RewardPolicy<u64>>) -> Self {
+        Self {
+            reward_policy,
+            ..self
+        }
+    }
+
     pub fn hire_lead(self) -> u64 {
         HiringWorkflow::default()
             .with_setup_environment(self.setup_environment)
             .with_opening_type(JobOpeningType::Leader)
             .with_stake_policy(self.stake_policy)
+            .with_reward_policy(self.reward_policy)
             .add_application(b"leader".to_vec())
             .execute()
             .unwrap()
@@ -410,6 +420,7 @@ impl HireLeadFixture {
             .with_setup_environment(self.setup_environment)
             .with_opening_type(JobOpeningType::Leader)
             .with_stake_policy(self.stake_policy)
+            .with_reward_policy(self.reward_policy)
             .add_application(b"leader".to_vec())
             .expect(Err(error))
             .execute();
@@ -896,6 +907,41 @@ impl SetBudgetFixture {
             assert_eq!(new_budget, self.new_budget);
         } else {
             assert_eq!(new_budget, old_budget);
+        }
+    }
+}
+
+pub struct UpdateRewardAccountFixture {
+    worker_id: u64,
+    new_reward_account_id: u64,
+    origin: RawOrigin<u64>,
+}
+
+impl UpdateRewardAccountFixture {
+    pub fn default_with_ids(worker_id: u64, new_reward_account_id: u64) -> Self {
+        Self {
+            worker_id,
+            new_reward_account_id,
+            origin: RawOrigin::Signed(1),
+        }
+    }
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let actual_result = TestWorkingTeam::update_reward_account(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.new_reward_account_id,
+        );
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        if actual_result.is_ok() {
+            let worker = TestWorkingTeam::worker_by_id(self.worker_id);
+
+            assert_eq!(worker.reward_account_id, self.new_reward_account_id);
         }
     }
 }

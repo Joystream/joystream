@@ -260,3 +260,12 @@ pub(crate) fn ensure_application_stake_match_opening<T: Trait<I>, I: Instance>(
 
     Ok(())
 }
+
+// Check worker: verifies that worker has recurring rewards.
+pub(crate) fn ensure_worker_has_recurring_reward<T: Trait<I>, I: Instance>(
+    worker: &TeamWorker<T>,
+) -> DispatchResult {
+    worker
+        .reward_per_block
+        .map_or(Err(Error::<T, I>::WorkerHasNoReward.into()), |_| Ok(()))
+}

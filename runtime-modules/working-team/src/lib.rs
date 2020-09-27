@@ -18,6 +18,8 @@
 //! - [cancel_opening](./struct.Module.html#method.cancel_opening) - Cancel opening for a regular worker/lead.
 //! - [withdraw_application](./struct.Module.html#method.withdraw_application) - Withdraw the regular worker/lead application.
 //! - [set_budget](./struct.Module.html#method.set_budget) - Sets the working team budget.
+//! - [update_reward_account](./struct.Module.html#method.update_reward_account) -  Update the reward account of the regular worker/lead.
+//! - [update_reward_amount](./struct.Module.html#method.update_reward_amount) -  Update the reward amount of the regular worker/lead.
 //!
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -176,6 +178,13 @@ decl_event!(
         /// Params:
         /// - new budget
         BudgetSet(Balance),
+
+
+        /// Emits on updating the reward account of the worker.
+        /// Params:
+        /// - Id of the worker.
+        /// - Reward account id of the worker.
+        WorkerRewardAccountUpdated(TeamWorkerId, AccountId),
     }
 );
 
@@ -638,6 +647,32 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::BudgetSet(new_budget));
         }
+
+        /// Update the reward account associated with a set reward relationship for the active worker.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_reward_account(
+            origin,
+            worker_id: TeamWorkerId<T>,
+            new_reward_account_id: T::AccountId
+        ) {
+            // Ensure there is a signer which matches role account of worker corresponding to provided id.
+            let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
+
+            // Ensure the worker actually has a recurring reward.
+            checks::ensure_worker_has_recurring_reward::<T, I>(&worker)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update worker reward account.
+            WorkerById::<T, I>::mutate(worker_id, |worker| {
+                worker.reward_account_id = new_reward_account_id.clone();
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerRewardAccountUpdated(worker_id, new_reward_account_id));
+        }
     }
 }
 
@@ -774,7 +809,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 let new_budget = budget - reward_per_block;
                 <Budget<T, I>>::put(new_budget);
 
-                T::Currency::deposit_creating(&worker.role_account_id, reward_per_block);
+                T::Currency::deposit_creating(&worker.reward_account_id, reward_per_block);
             } else {
                 let missed_reward_so_far = worker.missed_reward.map_or(Zero::zero(), |val| val);
 

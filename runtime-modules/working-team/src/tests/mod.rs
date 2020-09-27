@@ -6,7 +6,7 @@ use system::RawOrigin;
 
 use crate::tests::fixtures::{
     CancelOpeningFixture, DecreaseWorkerStakeFixture, IncreaseWorkerStakeFixture, SetBudgetFixture,
-    SlashWorkerStakeFixture, WithdrawApplicationFixture,
+    SlashWorkerStakeFixture, UpdateRewardAccountFixture, WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
@@ -1790,5 +1790,122 @@ fn set_budget_fails_with_bad_origin() {
         SetBudgetFixture::default()
             .with_origin(RawOrigin::Signed(leader_account_id))
             .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_reward_account_succeeds() {
+    build_test_externalities().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+
+        let new_reward_account = 22;
+        let update_account_fixture =
+            UpdateRewardAccountFixture::default_with_ids(worker_id, new_reward_account);
+
+        update_account_fixture.call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::WorkerRewardAccountUpdated(
+            worker_id,
+            new_reward_account,
+        ));
+    });
+}
+
+#[test]
+fn update_reward_account_succeeds_for_leader() {
+    build_test_externalities().execute_with(|| {
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireLeadFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire_lead();
+
+        let new_reward_account = 22;
+        let update_account_fixture =
+            UpdateRewardAccountFixture::default_with_ids(worker_id, new_reward_account);
+
+        update_account_fixture.call_and_assert(Ok(()));
+    });
+}
+
+#[test]
+fn update_reward_account_fails_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        let update_account_fixture =
+            UpdateRewardAccountFixture::default_with_ids(1, 1).with_origin(RawOrigin::None);
+
+        update_account_fixture.call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn update_reward_account_fails_with_invalid_origin_signed_account() {
+    build_test_externalities().execute_with(|| {
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireLeadFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire_lead();
+
+        let invalid_role_account = 23333;
+        let new_reward_account = 22;
+        let update_account_fixture =
+            UpdateRewardAccountFixture::default_with_ids(worker_id, new_reward_account)
+                .with_origin(RawOrigin::Signed(invalid_role_account));
+
+        update_account_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::SignerIsNotWorkerRoleAccount.into(),
+        ));
+    });
+}
+
+#[test]
+fn update_reward_account_fails_with_invalid_worker_id() {
+    build_test_externalities().execute_with(|| {
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+
+        let invalid_worker_id = 11;
+        let new_reward_account = 2;
+        let update_account_fixture =
+            UpdateRewardAccountFixture::default_with_ids(invalid_worker_id, new_reward_account);
+
+        update_account_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::WorkerDoesNotExist.into(),
+        ));
+    });
+}
+
+#[test]
+fn update_reward_account_fails_with_no_recurring_reward() {
+    build_test_externalities().execute_with(|| {
+        let worker_id = HireRegularWorkerFixture::default().hire();
+
+        let new_reward_account = 343;
+
+        let update_account_fixture =
+            UpdateRewardAccountFixture::default_with_ids(worker_id, new_reward_account);
+
+        update_account_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::WorkerHasNoReward.into(),
+        ));
     });
 }
