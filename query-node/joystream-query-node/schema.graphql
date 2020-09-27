@@ -143,7 +143,7 @@ type Property @entity {
 "Represents a standard for what information must be associated with any entity of a given class"
 type Schema @entity {
 	"Runtime identifier of schema in class"
-	schemaId: BigInt! @unique
+	schemaId: Int!
 
 	"Class to which this schema corresponds"
 	class: Class!
