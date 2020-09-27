@@ -20,9 +20,6 @@ type Member @entity {
 	"Member's root account id"
 	rootAccount: Bytes!
 
-	"When a member is worker"
-	worker: Worker @derivedFrom(field: "member")
-
 	"Virtual field required for 1:1 relationship"
 	entityController: EntityController @derivedFrom(field: "controllerWhenMember")
 }
