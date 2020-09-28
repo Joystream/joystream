@@ -17,6 +17,8 @@ jobs:
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Start chain
-        run: docker-compose up -d
+        run: |
+          JOYSTREAM_NODE_TAG=latest docker-compose build
+          JOYSTREAM_NODE_TAG=latest docker-compose up -d
       - name: Execute network tests
         run: yarn workspace network-tests test
