@@ -159,19 +159,18 @@ type Schema @entity {
 }
 
 "Working group participant: working-group/src/types.rs"
-type Worker @entity {
+interface Worker @entity {
 	member: Member!
 
 	"Account used to authenticate in this role"
 	roleAccountId: Bytes!
-
-	"Worker curator relationship"
-	curator: Curator @derivedFrom(field: "worker")
 }
 
-type Curator @entity {
-	"Account used to authenticate"
-	worker: Worker!
+type Curator implements Worker @entity {
+	member: Member!
+
+	"Account used to authenticate in this role"
+	roleAccountId: Bytes!
 
 	groups: [CuratorGroup] @derivedFrom(field: "curators")
 }
