@@ -99,6 +99,30 @@ fn add_opening_fails_with_zero_reward() {
 }
 
 #[test]
+fn add_opening_fails_with_incorrect_unstaking_period() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        let account_id = 1;
+        let total_balance = 300;
+        let stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let invalid_unstaking_period = 3;
+        let add_opening_fixture =
+            AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
+                stake_amount: stake,
+                unstaking_period: invalid_unstaking_period,
+            }));
+
+        add_opening_fixture.call_and_assert(Err(
+            Error::<Test, TestWorkingTeamInstance>::UnstakingPeriodLessThanMinimum.into(),
+        ));
+    });
+}
+
+#[test]
 fn add_leader_opening_fails_with_incorrect_origin_for_opening_type() {
     build_test_externalities().execute_with(|| {
         let add_opening_fixture =
@@ -764,7 +788,7 @@ fn apply_on_opening_fails_with_stake_inconsistent_with_opening_stake() {
         let add_opening_fixture =
             AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
                 stake_amount: 200,
-                unstaking_period: 0,
+                unstaking_period: 10,
             }));
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -791,7 +815,7 @@ fn apply_on_opening_locks_the_stake() {
         let add_opening_fixture =
             AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
                 stake_amount: stake,
-                unstaking_period: 0,
+                unstaking_period: 10,
             }));
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -824,7 +848,7 @@ fn apply_on_opening_fails_invalid_staking_check() {
         let add_opening_fixture =
             AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
                 stake_amount: stake,
-                unstaking_period: 0,
+                unstaking_period: 10,
             }));
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -856,7 +880,7 @@ fn apply_on_opening_fails_stake_amount_check() {
         let add_opening_fixture =
             AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
                 stake_amount: stake,
-                unstaking_period: 0,
+                unstaking_period: 10,
             }));
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -888,7 +912,7 @@ fn apply_on_opening_fails_with_conflicting_stakes() {
         let add_opening_fixture =
             AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
                 stake_amount: stake,
-                unstaking_period: 0,
+                unstaking_period: 10,
             }));
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -938,9 +962,11 @@ fn leave_worker_unlocks_the_stake() {
         let total_balance = 300;
         let stake = 200;
 
+        let unstaking_period = 10;
+
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 0,
+            unstaking_period,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -955,6 +981,8 @@ fn leave_worker_unlocks_the_stake() {
             .with_stake_policy(stake_policy);
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        run_to_block(unstaking_period);
 
         assert_eq!(Balances::usable_balance(&account_id), total_balance);
     });

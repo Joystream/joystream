@@ -68,5 +68,8 @@ decl_error! {
 
         /// Worker has no recurring reward.
         WorkerHasNoReward,
+
+        /// Specified unstaking period is less then minimum set for the team.
+        UnstakingPeriodLessThanMinimum,
     }
 }

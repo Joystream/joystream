@@ -5,7 +5,7 @@ use crate::{
 
 use super::Error;
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, WithdrawReasons};
+use frame_support::traits::{Currency, Get, WithdrawReasons};
 use frame_support::{ensure, StorageMap, StorageValue};
 use sp_arithmetic::traits::Zero;
 use sp_std::collections::btree_set::BTreeSet;
@@ -195,7 +195,12 @@ pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
         ensure!(
             stake_policy.stake_amount != Zero::zero(),
             Error::<T, I>::CannotStakeZero
-        )
+        );
+
+        ensure!(
+            stake_policy.unstaking_period > T::MinUnstakingPeriodLimit::get(),
+            Error::<T, I>::UnstakingPeriodLessThanMinimum
+        );
     }
 
     Ok(())

@@ -87,6 +87,9 @@ pub trait Trait<I: Instance>:
 
     /// Validates member id and origin combination
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+
+    /// Defines min unstaking period in the team.
+    type MinUnstakingPeriodLimit: Get<Self::BlockNumber>;
 }
 
 decl_event!(
