@@ -73,6 +73,7 @@ impl versioned_store_permissions::CredentialChecker<Runtime> for ContentWorkingG
     }
 }
 
+#[allow(dead_code)]
 pub struct ContentWorkingGroupStakingEventHandler {}
 impl stake::StakingEventsHandler<Runtime> for ContentWorkingGroupStakingEventHandler {
     fn unstaked(

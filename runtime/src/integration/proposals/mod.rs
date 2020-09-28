@@ -3,7 +3,6 @@
 mod council_elected_handler;
 mod council_origin_validator;
 mod membership_origin_validator;
-#[macro_use]
 mod proposal_encoder;
 mod staking_events_handler;
 

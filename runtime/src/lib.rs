@@ -14,7 +14,6 @@
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 mod constants;
-#[macro_use]
 mod integration;
 pub mod primitives;
 mod runtime_api;
