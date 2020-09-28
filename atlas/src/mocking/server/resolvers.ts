@@ -34,12 +34,7 @@ export const videosResolver: QueryResolver<VideoQueryArgs> = (obj, args, context
   }
 
   const paginatedVideos = mirageGraphQLFieldResolver(obj, resolverArgs, context, info)
-  const allVideos = mirageGraphQLFieldResolver(obj, extraResolverArgs, context, info)
-
-  return {
-    ...paginatedVideos,
-    totalCount: allVideos.edges.length,
-  }
+  return paginatedVideos
 }
 
 export const featuredVideosResolver: QueryResolver = (...params) => {
@@ -48,12 +43,13 @@ export const featuredVideosResolver: QueryResolver = (...params) => {
 }
 
 export const channelsResolver: QueryResolver = (obj, args, context, info) => {
-  const paginatedChannels = mirageGraphQLFieldResolver(obj, args, context, info)
-  const allChannels = mirageGraphQLFieldResolver(obj, {}, context, info)
-  return {
-    ...paginatedChannels,
-    totalCount: allChannels.edges.length,
+  const resolverArgs = {
+    first: args.first,
+    after: args.after,
   }
+
+  const paginatedChannels = mirageGraphQLFieldResolver(obj, resolverArgs, context, info)
+  return paginatedChannels
 }
 
 // FIXME: This resolver is currently broken and returns the same result n times instead of the correct result.
