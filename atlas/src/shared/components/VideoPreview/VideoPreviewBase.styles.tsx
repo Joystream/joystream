@@ -1,4 +1,5 @@
 import styled from '@emotion/styled'
+import { keyframes } from '@emotion/core'
 import { colors, spacing } from '@/shared/theme'
 import { CoverHoverOverlay, CoverIcon, ProgressOverlay } from './VideoPreview.styles'
 
@@ -10,6 +11,14 @@ type ContainerProps = {
 
 export const MAX_VIDEO_PREVIEW_WIDTH = '320px'
 
+const fadeIn = keyframes`
+  0% {
+    opacity: 0
+  }
+  100% {
+    opacity: 1
+  }
+`
 export const CoverContainer = styled.div`
   width: 100%;
   height: 190px;
@@ -19,6 +28,7 @@ export const CoverContainer = styled.div`
   transition-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
 
   position: relative;
+  animation: ${fadeIn} 2s ease-in -0.5s;
 `
 
 export const Container = styled.article<ContainerProps>`
