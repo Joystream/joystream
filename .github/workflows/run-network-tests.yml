@@ -29,21 +29,22 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
-      - name: Maybe fetch pre-build joystream/node image 
-          run: |
-            # Always configure faster block production incase pull fails.
-            ./scripts/alter-block-creation-time.sh
-            export JOYSTREAM_NODE_TAG="${{ pull.base.ref }}""
-            echo "DEBUG: JOYSTREAM_NODE_TAG = ${JOYSTREAM_NODE_TAG}"
-            if [ "${{ env.GIT_DIFF }}" ]
-            then
-              echo "Will build joystream-node from source."
-            else
-              # Try to get image tagged with base branch name. If it fails we continue anyway,
-              # docker-compose will then bulid from srouce when it doesn't find the image.
-              echo "Trying to pull from docker hub..."
-              docker pull joystream/node:${JOYSTREAM_NODE_TAG}
-            fi
+      - name: Maybe fetch pre-built joystream/node Docker image
+        run: |
+          # Always configure faster block production incase pull fails
+          # and we will build from source.
+          ./scripts/alter-block-creation-time.sh
+          export JOYSTREAM_NODE_TAG="${{ pull.base.ref }}"
+          echo "DEBUG: JOYSTREAM_NODE_TAG = ${JOYSTREAM_NODE_TAG}"
+          if [ "${{ env.GIT_DIFF }}" ]
+          then
+            echo "joystream-node source modified. Will build from source."
+          else
+            # Try to get image tagged with base branch name. If it fails we continue anyway,
+            # docker-compose will then bulid from srouce when it doesn't find the image.
+            echo "joystream-node source not modified. Will try to use pre-built image"
+            docker pull joystream/node:${JOYSTREAM_NODE_TAG}
+          fi
       - name: Start chain
         run: JOYSTREAM_NODE_TAG=${{ pull.base.ref }} docker-compose up -d
       - name: Execute network tests
