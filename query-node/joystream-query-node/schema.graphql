@@ -104,7 +104,7 @@ enum PropertyType {
 "'Property' representation, related to a given 'Class'"
 type Property @entity {
 	"Runtime identifier for property in class"
-	propertyId: BigInt! @unique
+	propertyId: Int!
 
 	"Type of 'Property'"
 	propertyType: PropertyType!
@@ -251,7 +251,7 @@ type Entity @entity {
 	supportedSchemas: [Schema!]
 
 	"Values for properties on class that are used by some schema used by this entity!"
-	values: [PropertyValue!]
+	values: [PropertyValue!] @derivedFrom(field: "entity")
 
 	"Total number of inbound references from another entities"
 	totalNumberOfInboundReferences: BigInt!
@@ -260,50 +260,34 @@ type Entity @entity {
 	sameOwnerInboundReferences: BigInt!
 }
 
-"Fields encode a flattened representation of non-vector properties, only one will be non-null"
-type SingleValue @variant {
-	bool: Boolean
-
-	integer: BigInt
-
-	text: Bytes
-
-	hash: Bytes
-
-	reference: Entity
-}
-
-"""
-Fields encode a flattened representation of vector properties, only one will be non-null
-"""
-type VectorValue @variant {
-	boolVec: [Boolean!]
-
-	intVec: [BigInt!]
-
-	textVec: [Bytes!]
-
-	hashVec: [Bytes!]
-
-	referenceVec: [Entity!]
-
-	"Used to avoid vector data race update conditions"
-	nonce: BigInt!
-}
-
-union StoredValue = SingleValue | VectorValue
-
 type PropertyValue @entity {
-	"Runtime identifier of property value in entity"
-	propertyValueId: BigInt! @unique
+	entity: Entity!
 
 	"Property to which this value corresponds"
 	property: Property!
 
-	value: StoredValue!
+	# Fields encode a flattened representation of non-vector properties,
+	# only one will be non-null
+	##########################
+	bool: Boolean
+	integer: BigInt
+	text: Bytes
+	hash: Bytes
+	referenceEntityId: BigInt
+	##########################
 
-	"Virtual field for entity property values"
-	entities: [Entity!] @derivedFrom(field: "values")
+	# Fields encode a flattened representation of vector properties,
+	# only one will be non-null
+	##########################
+	boolVec: [Boolean!]
+	intVec: [BigInt!]
+	textVec: [Bytes!]
+	hashVec: [Bytes!]
+	referenceVec: [Entity!]
+
+	"Used to avoid vector data race update conditions"
+	nonce: BigInt!
+	##########################
 }
 
 "The stage of the involvement of a lead in the working group"
