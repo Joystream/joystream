@@ -526,6 +526,50 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         option_id: &u64,
         cast_vote: EzCastVote<T, I>,
     ) -> Result<(), Error<T, I>> {
+        // prepare new values
+        let vote_power = T::caclulate_vote_power(&account_id, &cast_vote.stake);
+        let option_result = OptionResult {
+            option_id: *option_id,
+            vote_power,
+        };
+        // try to insert option to winner list or update it's value when already present
+        let new_winners = Self::try_winner_insert(
+            option_result,
+            &stage_data.intermediate_winners,
+            stage_data.winning_target_count,
+        );
+        let new_stage_data = ReferendumStageRevealing {
+            intermediate_winners: new_winners,
+            ..stage_data
+        };
+
+        // let runtime update option's vote power
+        T::increase_option_power(option_id, &vote_power);
+
+        // store revealed vote
+        Stage::<T, I>::mutate(|stage| *stage = ReferendumStage::Revealing(new_stage_data));
+
+        // remove user commitment to prevent repeated revealing
+        Votes::<T, I>::mutate(account_id, |vote| (*vote).vote_for = Some(*option_id));
+
+        Ok(())
+    }
+
+    /// Release stake associated to the user's last vote.
+    fn release_stake(account_id: &<T as system::Trait>::AccountId) {
+        // lock stake amount
+        T::Currency::remove_lock(T::LockId::get(), account_id);
+
+        // remove vote record
+        Votes::<T, I>::remove(account_id);
+    }
+
+    /// Tries to insert option to the proper place in the winners list. Utility for reaveal_vote() function.
+    fn try_winner_insert(
+        option_result: OptionResult<T::VotePower>,
+        current_winners: &[OptionResult<T::VotePower>],
+        winning_target_count: u64,
+    ) -> Vec<OptionResult<T::VotePower>> {
         /// Tries to place record to temporary place in the winning list.
         fn place_record_to_winner_list<T: Trait<I>, I: Instance>(
             option_result: OptionResult<T::VotePower>,
@@ -580,73 +624,30 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             (new_winners, Some(current_winners_count))
         }
 
-        /// Tries to insert option to the proper place in the winners list.
-        fn try_winner_insert<T: Trait<I>, I: Instance>(
-            option_result: OptionResult<T::VotePower>,
-            current_winners: &[OptionResult<T::VotePower>],
-            winning_target_count: u64,
-        ) -> Vec<OptionResult<T::VotePower>> {
-            // if there are no winners right now return list with only current option
-            if current_winners.is_empty() {
-                return vec![option_result];
-            }
-
-            // get new possibly updated list and record's position in it
-            let (mut new_winners, current_record_index) = place_record_to_winner_list::<T, I>(
-                option_result,
-                current_winners,
-                winning_target_count,
-            );
-
-            // resort list in case it was updated
-            if let Some(index) = current_record_index {
-                for i in (1..=index).rev() {
-                    if new_winners[i].vote_power <= new_winners[i - 1].vote_power {
-                        break;
-                    }
-
-                    new_winners.swap(i, i - 1);
-                }
-            }
-
-            new_winners.to_vec()
+        // if there are no winners right now return list with only current option
+        if current_winners.is_empty() {
+            return vec![option_result];
         }
 
-        // prepare new values
-        let vote_power = T::caclulate_vote_power(&account_id, &cast_vote.stake);
-        let option_result = OptionResult {
-            option_id: *option_id,
-            vote_power,
-        };
-        let new_winners = try_winner_insert::<T, I>(
+        // get new possibly updated list and record's position in it
+        let (mut new_winners, current_record_index) = place_record_to_winner_list::<T, I>(
             option_result,
-            &stage_data.intermediate_winners,
-            stage_data.winning_target_count,
+            current_winners,
+            winning_target_count,
         );
-        let new_stage_data = ReferendumStageRevealing {
-            intermediate_winners: new_winners,
-            ..stage_data
-        };
 
-        // let runtime update option's vote power
-        T::increase_option_power(option_id, &vote_power);
+        // resort list in case it was updated
+        if let Some(index) = current_record_index {
+            for i in (1..=index).rev() {
+                if new_winners[i].vote_power <= new_winners[i - 1].vote_power {
+                    break;
+                }
 
-        // store revealed vote
-        Stage::<T, I>::mutate(|stage| *stage = ReferendumStage::Revealing(new_stage_data));
+                new_winners.swap(i, i - 1);
+            }
+        }
 
-        // remove user commitment to prevent repeated revealing
-        Votes::<T, I>::mutate(account_id, |vote| (*vote).vote_for = Some(*option_id));
-
-        Ok(())
-    }
-
-    /// Release stake associated to the user's last vote.
-    fn release_stake(account_id: &<T as system::Trait>::AccountId) {
-        // lock stake amount
-        T::Currency::remove_lock(T::LockId::get(), account_id);
-
-        // remove vote record
-        Votes::<T, I>::remove(account_id);
+        new_winners.to_vec()
     }
 }
 
