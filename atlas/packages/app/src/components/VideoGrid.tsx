@@ -3,7 +3,6 @@ import styled from '@emotion/styled'
 import { navigate } from '@reach/router'
 
 import routes from '@/config/routes'
-import { spacing } from '@/shared/theme'
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 import { VideoPreview, Grid } from '@/shared/components'
 
@@ -16,7 +15,7 @@ type VideoGridProps = {
 }
 const VideoGrid: React.FC<VideoGridProps> = ({ videos }) => {
   return (
-    <Grid gap={spacing.xl}>
+    <Grid>
       {videos.map((v, idx) => (
         <StyledVideoPreview
           key={idx}

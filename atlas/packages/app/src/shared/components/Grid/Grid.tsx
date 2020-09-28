@@ -1,6 +1,7 @@
 import React from 'react'
 import styled from '@emotion/styled'
 import useResizeObserver from 'use-resize-observer'
+import { spacing } from '../../theme'
 
 const Container = styled.div<GridProps>`
   display: grid;
@@ -14,7 +15,7 @@ type GridProps = {
   className?: string
   onResize?: (sizes: number[]) => void
 }
-const Grid: React.FC<GridProps> = ({ children, className, repeat = 'fit', onResize, ...props }) => {
+const Grid: React.FC<GridProps> = ({ children, className, gap = spacing.xl, repeat = 'fit', onResize, ...props }) => {
   const { ref: gridRef } = useResizeObserver<HTMLDivElement>({
     onResize: () => {
       if (onResize && gridRef.current) {
@@ -26,7 +27,7 @@ const Grid: React.FC<GridProps> = ({ children, className, repeat = 'fit', onResi
   })
 
   return (
-    <Container {...props} repeat={repeat} className={className} ref={gridRef}>
+    <Container {...props} repeat={repeat} className={className} ref={gridRef} gap={gap}>
       {children}
     </Container>
   )

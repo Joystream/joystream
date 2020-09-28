@@ -16,7 +16,7 @@ type InfiniteVideoGridProps = {
 }
 
 export const INITIAL_ROWS = 4
-export const VIDEOS_PER_ROW = 4
+export const INITIAL_VIDEOS_PER_ROW = 4
 
 const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({
   title,
@@ -26,7 +26,7 @@ const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({
   initialLoading,
   className,
 }) => {
-  const [videosPerRow, setVideosPerRow] = useState(VIDEOS_PER_ROW)
+  const [videosPerRow, setVideosPerRow] = useState(INITIAL_VIDEOS_PER_ROW)
 
   const loadedVideosCount = videos?.length || 0
   const videoRowsCount = Math.floor(loadedVideosCount / videosPerRow)
@@ -91,9 +91,7 @@ const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({
   return (
     <section className={className}>
       {title && <Title>{title}</Title>}
-      <Grid gap={spacing.xl} onResize={(sizes) => setVideosPerRow(sizes.length)}>
-        {gridContent}
-      </Grid>
+      <Grid onResize={(sizes) => setVideosPerRow(sizes.length)}>{gridContent}</Grid>
     </section>
   )
 }
