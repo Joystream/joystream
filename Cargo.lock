@@ -2117,6 +2117,7 @@ dependencies = [
  "sp-std",
  "sp-transaction-pool",
  "sp-version",
+ "strum 0.19.2",
  "substrate-wasm-builder-runner",
 ]
 
@@ -3301,6 +3302,8 @@ dependencies = [
  "parity-scale-codec",
  "serde",
  "sp-runtime",
+ "strum 0.19.2",
+ "strum_macros 0.19.2",
 ]
 
 [[package]]
@@ -3529,7 +3532,6 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-common",
- "pallet-content-working-group",
  "pallet-governance",
  "pallet-hiring",
  "pallet-membership",
@@ -3541,8 +3543,6 @@ dependencies = [
  "pallet-staking-reward-curve",
  "pallet-timestamp",
  "pallet-token-mint",
- "pallet-versioned-store",
- "pallet-versioned-store-permissions",
  "pallet-working-group",
  "parity-scale-codec",
  "serde",
@@ -3552,6 +3552,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "sp-std",
+ "strum 0.19.2",
 ]
 
 [[package]]
@@ -6459,7 +6460,7 @@ dependencies = [
  "lazy_static",
  "sp-core",
  "sp-runtime",
- "strum",
+ "strum 0.16.0",
 ]
 
 [[package]]
@@ -6802,14 +6803,32 @@ version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6138f8f88a16d90134763314e3fc76fa3ed6a7db4725d6acf9a3ef95a3188d22"
 dependencies = [
- "strum_macros",
+ "strum_macros 0.16.0",
 ]
+
+[[package]]
+name = "strum"
+version = "0.19.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3924a58d165da3b7b2922c667ab0673c7b5fd52b5c19ea3442747bcb3cd15abe"
 
 [[package]]
 name = "strum_macros"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0054a7df764039a6cd8592b9de84be4bec368ff081d203a7d5371cbfa8e65c81"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote 1.0.7",
+ "syn 1.0.17",
+]
+
+[[package]]
+name = "strum_macros"
+version = "0.19.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d2ab682ecdcae7f5f45ae85cd7c1e6c8e68ea42c8a612d47fedf831c037146a"
 dependencies = [
  "heck",
  "proc-macro2",

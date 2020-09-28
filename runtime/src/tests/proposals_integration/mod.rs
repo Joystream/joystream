@@ -31,7 +31,6 @@ pub type ProposalsEngine = proposals_engine::Module<Runtime>;
 pub type Council = governance::council::Module<Runtime>;
 pub type Election = governance::election::Module<Runtime>;
 pub type ProposalCodex = proposals_codex::Module<Runtime>;
-pub type Mint = minting::Module<Runtime>;
 
 fn setup_members(count: u8) {
     let authority_account_id = <Runtime as system::Trait>::AccountId::default();
@@ -568,32 +567,6 @@ fn text_proposal_execution_succeeds() {
 }
 
 #[test]
-fn set_lead_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = 10;
-        let account_id: [u8; 32] = [member_id; 32];
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_set_lead_proposal(
-                RawOrigin::Signed(account_id.clone().into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Runtime>>::from(50000u32)),
-                Some((member_id as u64, account_id.into())),
-            )
-        })
-        .with_member_id(member_id as u64);
-
-        assert!(content_working_group::Module::<Runtime>::ensure_lead_is_set().is_err());
-
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-
-        assert!(content_working_group::Module::<Runtime>::ensure_lead_is_set().is_ok());
-    });
-}
-
-#[test]
 fn spending_proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
         let member_id = 10;
@@ -623,36 +596,6 @@ fn spending_proposal_execution_succeeds() {
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
         assert_eq!(Balances::free_balance(converted_account_id), new_balance);
-    });
-}
-
-#[test]
-fn set_content_working_group_mint_capacity_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = 1;
-        let account_id: [u8; 32] = [member_id; 32];
-        let new_balance = <BalanceOf<Runtime>>::from(55u32);
-
-        let mint_id =
-            Mint::add_mint(0, None).expect("Failed to create a mint for the content working group");
-        <content_working_group::Mint<Runtime>>::put(mint_id);
-
-        assert_eq!(Mint::get_mint_capacity(mint_id), Ok(0));
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
-                RawOrigin::Signed(account_id.clone().into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Runtime>>::from(50000u32)),
-                new_balance,
-            )
-        });
-
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-
-        assert_eq!(Mint::get_mint_capacity(mint_id), Ok(new_balance));
     });
 }
 

@@ -453,10 +453,10 @@ impl stake::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = (
-        crate::integration::content_working_group::ContentWorkingGroupStakingEventHandler,
+        crate::integration::proposals::StakingEventsHandler<Self>,
         (
-            crate::integration::proposals::StakingEventsHandler<Self>,
-            crate::integration::working_group::StakingEventsHandler<Self>,
+            crate::integration::working_group::ContentDirectoryWGStakingEventsHandler<Self>,
+            crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
         ),
     );
     type StakeId = u64;
@@ -508,8 +508,6 @@ impl storage::data_object_storage_registry::Trait for Runtime {
     type DataObjectStorageRelationshipId = u64;
     type ContentIdExists = DataDirectory;
 }
-
-pub type MemberId = u64;
 
 impl membership::Trait for Runtime {
     type Event = Event;
