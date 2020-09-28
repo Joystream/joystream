@@ -34,7 +34,7 @@ jobs:
           # Always configure faster block production incase pull fails
           # and we will build from source.
           ./scripts/alter-block-creation-time.sh
-          export JOYSTREAM_NODE_TAG="${{ github.event.pull_request.base }}"
+          export JOYSTREAM_NODE_TAG="${{ github.event.pull_request.base.ref }}"
           echo "DEBUG: JOYSTREAM_NODE_TAG = ${JOYSTREAM_NODE_TAG}"
           if [ "${{ env.GIT_DIFF }}" ]
           then
@@ -46,6 +46,6 @@ jobs:
             docker pull joystream/node:${JOYSTREAM_NODE_TAG}
           fi
       - name: Start chain
-        run: JOYSTREAM_NODE_TAG=${{ github.event.pull_request.base }} docker-compose up -d
+        run: JOYSTREAM_NODE_TAG=${{ github.event.pull_request.base.ref }} docker-compose up -d
       - name: Execute network tests
         run: yarn workspace network-tests test
