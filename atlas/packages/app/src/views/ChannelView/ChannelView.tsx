@@ -1,21 +1,12 @@
 import React from 'react'
-import { RouteComponentProps, useParams, navigate } from '@reach/router'
+import { RouteComponentProps, useParams } from '@reach/router'
 import { useQuery } from '@apollo/client'
 
-import routes from '@/config/routes'
 import { GET_CHANNEL } from '@/api/queries/channels'
 import { GetChannel, GetChannelVariables } from '@/api/queries/__generated__/GetChannel'
-import { VideoPreview } from '@/shared/components'
+import { VideoGrid } from '@/components'
 
-import {
-  Header,
-  VideoSection,
-  VideoSectionHeader,
-  VideoSectionGrid,
-  Title,
-  TitleSection,
-  StyledAvatar,
-} from './ChannelView.style'
+import { Header, VideoSection, VideoSectionHeader, Title, TitleSection, StyledAvatar } from './ChannelView.style'
 
 const ChannelView: React.FC<RouteComponentProps> = () => {
   const { id } = useParams()
@@ -28,10 +19,6 @@ const ChannelView: React.FC<RouteComponentProps> = () => {
   }
   const videos = data?.channel?.videos || []
 
-  const handleVideoClick = (id: string) => {
-    navigate(routes.video(id))
-  }
-
   return (
     <div>
       <Header coverPhotoURL={data.channel.coverPhotoURL}>
@@ -43,21 +30,7 @@ const ChannelView: React.FC<RouteComponentProps> = () => {
       {videos.length > 0 && (
         <VideoSection>
           <VideoSectionHeader>Videos</VideoSectionHeader>
-          <VideoSectionGrid>
-            {videos.map((video, idx) => (
-              <VideoPreview
-                key={idx}
-                title={video.title}
-                channelName={video.channel.handle}
-                channelAvatarURL={video.channel.avatarPhotoURL}
-                createdAt={video.publishedOnJoystreamAt}
-                duration={video.duration}
-                views={video.views}
-                posterURL={video.thumbnailURL}
-                onClick={() => handleVideoClick(video.id)}
-              />
-            ))}
-          </VideoSectionGrid>
+          <VideoGrid videos={videos} />
         </VideoSection>
       )}
     </div>

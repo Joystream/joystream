@@ -35,12 +35,10 @@ export const VideoSectionHeader = styled.h5`
   font-size: ${theme.typography.sizes.h5};
 `
 
-export const VideoSectionGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  grid-gap: ${theme.spacing.xl};
-`
 export const StyledAvatar = styled(Avatar)`
   max-width: 136px;
+  max-height: 136px;
+  width: 136px;
+  height: 136px;
   margin-right: ${theme.sizes.b6}px;
 `

@@ -1,7 +1,13 @@
 import React, { useCallback, useState } from 'react'
 import styled from '@emotion/styled'
 import { RouteComponentProps } from '@reach/router'
-import { CategoryPicker, InfiniteVideoGrid, INITIAL_ROWS, Typography, VIDEOS_PER_ROW } from '@/shared/components'
+import {
+  CategoryPicker,
+  InfiniteVideoGrid,
+  INITIAL_ROWS,
+  Typography,
+  INITIAL_VIDEOS_PER_ROW,
+} from '@/shared/components'
 import { colors, sizes } from '@/shared/theme'
 import { useLazyQuery, useQuery } from '@apollo/client'
 import { GET_CATEGORIES, GET_VIDEOS } from '@/api/queries'
@@ -28,7 +34,7 @@ const BrowseView: React.FC<RouteComponentProps> = () => {
     // TODO: don't require this component to know the initial number of items
     // I didn't have an idea on how to achieve that for now
     // it will need to be reworked in some part anyway during switching to relay pagination
-    const variables = { offset: 0, limit: INITIAL_ROWS * VIDEOS_PER_ROW, categoryId: category.id }
+    const variables = { offset: 0, limit: INITIAL_ROWS * INITIAL_VIDEOS_PER_ROW, categoryId: category.id }
 
     if (!selectedCategoryId) {
       // first videos fetch
