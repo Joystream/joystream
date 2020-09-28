@@ -8,6 +8,8 @@ jobs:
     name: Network Integration Tests (pull request)
     if: contains(github.event.pull_request.labels.*.name, 'run-network-tests')
     runs-on: ubuntu-latest
+    env:
+      JOYSTREAM_NODE_TAG: ${{ github.event.pull_request.base.ref }}
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
@@ -29,9 +31,12 @@ jobs:
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Build joystream/node Docker image from source
-        run: JOYSTREAM_NODE_TAG=${{ github.event.pull_request.base.ref }} docker-compose build
+        run: docker-compose build
         if: env.GIT_DIFF
+      - name: Pull joystream/node image from Dockerhub
+        run: docker-compose pull
+        if: !env.GIT_DIFF
       - name: Start chain
-        run: JOYSTREAM_NODE_TAG=${{ github.event.pull_request.base.ref }} docker-compose up -d
+        run: docker-compose up -d
       - name: Execute network tests
         run: yarn workspace network-tests test
