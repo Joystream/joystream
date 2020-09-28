@@ -840,12 +840,29 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         if let Some(reward_per_block) = worker.reward_per_block {
             let budget = Self::budget();
 
+            // Pay the reward.
             if budget >= reward_per_block {
-                let new_budget = budget - reward_per_block;
+                let mut new_budget = budget - reward_per_block;
                 <Budget<T, I>>::put(new_budget);
 
                 T::Currency::deposit_creating(&worker.reward_account_id, reward_per_block);
+
+                // Try to pay missed reward.
+                if let Some(missed_reward) = worker.missed_reward {
+                    if new_budget >= missed_reward {
+                        new_budget = new_budget - missed_reward;
+                        <Budget<T, I>>::put(new_budget);
+
+                        T::Currency::deposit_creating(&worker.reward_account_id, missed_reward);
+
+                        // Update worker missed reward.
+                        WorkerById::<T, I>::mutate(worker_id, |worker| {
+                            worker.missed_reward = None;
+                        });
+                    }
+                }
             } else {
+                // Save unpaid reward.
                 let missed_reward_so_far = worker.missed_reward.map_or(Zero::zero(), |val| val);
 
                 let new_missed_reward = missed_reward_so_far + reward_per_block;

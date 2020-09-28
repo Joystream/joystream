@@ -1759,7 +1759,7 @@ fn rewards_payments_with_no_budget() {
 }
 
 #[test]
-fn rewards_payments_with_insufficient_budget() {
+fn rewards_payments_with_insufficient_budget_and_restored_budget() {
     build_test_externalities().execute_with(|| {
         let reward_per_block = 10;
         let reward_policy = Some(RewardPolicy { reward_per_block });
@@ -1770,7 +1770,7 @@ fn rewards_payments_with_insufficient_budget() {
 
         let worker = TestWorkingTeam::worker_by_id(worker_id);
 
-        let account_id = worker.role_account_id;
+        let account_id = worker.reward_account_id;
 
         assert_eq!(Balances::usable_balance(&account_id), 0);
 
@@ -1792,6 +1792,17 @@ fn rewards_payments_with_insufficient_budget() {
         assert_eq!(
             worker.missed_reward.unwrap(),
             (block_number - paid_blocks) * reward_per_block
+        );
+
+        SetBudgetFixture::default().with_budget(1000000).execute();
+
+        // Checkpoint with restored budget.
+        let block_number2 = 20;
+        run_to_block(block_number2);
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            block_number2 * reward_per_block
         );
     });
 }
