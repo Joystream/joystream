@@ -14,19 +14,37 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '12.x'
+      - uses: technote-space/get-diff-action@v3
+        with:
+          PREFIX_FILTER: |
+            node
+            runtime-modules
+            utils/chain-spec-builder
+          SUFFIX_FILTER: |
+            .rs
+          FILES: |
+            Cargo.lock
+            Cargo.toml
       - name: Install packages and dependencies
         run: yarn install --frozen-lockfile
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
-      # TODO: determin if we will build a new joystream/node image from source
-      # our use a prebuilt image. Build if PR has joystream-node or runtime code changes
-      # For prebuilt image set NODE_TAG env var to select tag. Use the PR base branch, 
-      # ie. the 'target' branch of the PR. For now we just use hardcoded the pre-built image
-      # defined in the docker-compose file.
-      # When building from source tweak the block production setting for faster tests.
-      # - name: Configuring shorter block production time
-      #   run: ./scripts/alter-block-creation-time.sh
-      - name: Build and start chain
-        run: docker-compose --file docker-compose-no-build.yml up -d
+      - name: Maybe fetch pre-build joystream/node image 
+          run: |
+            # Always configure faster block production incase pull fails.
+            ./scripts/alter-block-creation-time.sh
+            export JOYSTREAM_NODE_TAG="${{ pull.base.ref }}""
+            echo "DEBUG: JOYSTREAM_NODE_TAG = ${JOYSTREAM_NODE_TAG}"
+            if [ "${{ env.GIT_DIFF }}" ]
+            then
+              echo "Will build joystream-node from source."
+            else
+              # Try to get image tagged with base branch name. If it fails we continue anyway,
+              # docker-compose will then bulid from srouce when it doesn't find the image.
+              echo "Trying to pull from docker hub..."
+              docker pull joystream/node:${JOYSTREAM_NODE_TAG}
+            fi
+      - name: Start chain
+        run: JOYSTREAM_NODE_TAG=${{ pull.base.ref }} docker-compose up -d
       - name: Execute network tests
         run: yarn workspace network-tests test
