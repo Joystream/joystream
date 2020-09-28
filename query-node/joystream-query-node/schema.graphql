@@ -64,10 +64,8 @@ type Class @entity {
 
 	#### ClassPermissions ####
 
-	# Commenting out this line because the properties are accessible from the schemas
-	# query { classes { schemas {properties { ... } } } }
-	# "All properties that have been used on this class across different class schemas"
-	# properties: [Property!]
+	"All properties that have been used on this class across different class schemas"
+	properties: [Property!] @derivedFrom(field: "class")
 
 	"All schemas that are available for this class, think v0.0 Person, v.1.0 Person, etc."
 	schemas: [Schema!] @derivedFrom(field: "class")
@@ -130,8 +128,15 @@ type Property @entity {
 	"Upper bound for vector length when property is a vector"
 	maximumLength: BigInt
 
-	"Optional field, it must reference a class then PropertyType is Reference"
-	referencedClass: Class
+	"""
+	Optional field, it must reference a class then PropertyType is Reference
+	Currently we don't support multiple reference to the same type thats why
+	this field type is BigInt
+	"""
+	referencedClassId: BigInt
+
+	"The class that property belongs to"
+	class: Class!
 
 	"Optional field, Only will be set when PropertyType is Reference"
 	sameControllerStatus: Boolean
