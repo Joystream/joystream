@@ -281,3 +281,14 @@ pub type ApplyOnOpeningParameters<T, I> = ApplyOnOpeningParams<
     <T as system::Trait>::AccountId,
     BalanceOfCurrency<T>,
 >;
+
+/// Contains information for the slashing.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
+pub struct Penalty<Balance> {
+    /// Slashing rationale
+    pub slashing_text: Vec<u8>,
+
+    /// Slashing balance
+    pub slashing_amount: Balance,
+}

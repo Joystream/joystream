@@ -9,8 +9,8 @@ use super::mock::{
     Balances, LockId, Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance,
 };
 use crate::{
-    ApplyOnOpeningParameters, JobApplication, JobOpening, JobOpeningType, RawEvent, RewardPolicy,
-    StakePolicy, TeamWorker,
+    ApplyOnOpeningParameters, JobApplication, JobOpening, JobOpeningType, Penalty, RawEvent,
+    RewardPolicy, StakePolicy, TeamWorker,
 };
 
 pub struct EventFixture;
@@ -555,7 +555,7 @@ impl LeaveWorkerRoleFixture {
 pub struct TerminateWorkerRoleFixture {
     worker_id: u64,
     origin: RawOrigin<u64>,
-    slash: bool,
+    penalty: Option<Penalty<u64>>,
 }
 
 impl TerminateWorkerRoleFixture {
@@ -563,23 +563,23 @@ impl TerminateWorkerRoleFixture {
         Self {
             worker_id,
             origin: RawOrigin::Signed(1),
-            slash: false,
+            penalty: None,
         }
     }
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
     }
 
-    pub fn with_slash(self) -> Self {
-        Self {
-            slash: true,
-            ..self
-        }
+    pub fn with_penalty(self, penalty: Option<Penalty<u64>>) -> Self {
+        Self { penalty, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
-        let actual_result =
-            TestWorkingTeam::terminate_role(self.origin.clone().into(), self.worker_id, self.slash);
+        let actual_result = TestWorkingTeam::terminate_role(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.penalty.clone(),
+        );
         assert_eq!(actual_result, expected_result);
 
         if actual_result.is_ok() {
@@ -602,8 +602,8 @@ pub fn increase_total_balance_issuance_using_account_id(account_id: u64, balance
 pub struct SlashWorkerStakeFixture {
     origin: RawOrigin<u64>,
     worker_id: u64,
-    balance: u64,
     account_id: u64,
+    penalty: Penalty<u64>,
 }
 
 impl SlashWorkerStakeFixture {
@@ -615,7 +615,10 @@ impl SlashWorkerStakeFixture {
         Self {
             origin: RawOrigin::Signed(lead_account_id),
             worker_id,
-            balance: 10,
+            penalty: Penalty {
+                slashing_text: Vec::new(),
+                slashing_amount: 10,
+            },
             account_id,
         }
     }
@@ -623,15 +626,18 @@ impl SlashWorkerStakeFixture {
         Self { origin, ..self }
     }
 
-    pub fn with_balance(self, balance: u64) -> Self {
-        Self { balance, ..self }
+    pub fn with_penalty(self, penalty: Penalty<u64>) -> Self {
+        Self { penalty, ..self }
     }
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_balance = Balances::usable_balance(&self.account_id);
         let old_stake = get_stake_balance(&self.account_id);
-        let actual_result =
-            TestWorkingTeam::slash_stake(self.origin.clone().into(), self.worker_id, self.balance);
+        let actual_result = TestWorkingTeam::slash_stake(
+            self.origin.clone().into(),
+            self.worker_id,
+            self.penalty.clone(),
+        );
 
         assert_eq!(actual_result, expected_result);
 
@@ -639,7 +645,7 @@ impl SlashWorkerStakeFixture {
             // stake decreased
             assert_eq!(
                 old_stake,
-                get_stake_balance(&self.account_id) + self.balance
+                get_stake_balance(&self.account_id) + self.penalty.slashing_amount
             );
 
             let new_balance = Balances::usable_balance(&self.account_id);
@@ -986,6 +992,56 @@ impl UpdateRewardAmountFixture {
             let worker = TestWorkingTeam::worker_by_id(self.worker_id);
 
             assert_eq!(worker.reward_per_block, self.reward_per_block);
+        }
+    }
+}
+
+pub struct SetStatusTextFixture {
+    origin: RawOrigin<u64>,
+    new_status_text: Option<Vec<u8>>,
+}
+
+impl Default for SetStatusTextFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            new_status_text: None,
+        }
+    }
+}
+
+impl SetStatusTextFixture {
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_status_text(self, new_status_text: Option<Vec<u8>>) -> Self {
+        Self {
+            new_status_text,
+            ..self
+        }
+    }
+
+    pub fn call(&self) -> DispatchResult {
+        TestWorkingTeam::set_status_text(self.origin.clone().into(), self.new_status_text.clone())
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_text_hash = TestWorkingTeam::status_text_hash();
+
+        let actual_result = self.call().map(|_| ());
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        let new_text_hash = TestWorkingTeam::status_text_hash();
+
+        if actual_result.is_ok() {
+            let expected_hash =
+                <Test as system::Trait>::Hashing::hash(&self.new_status_text.clone().unwrap());
+
+            assert_eq!(new_text_hash, expected_hash.as_ref().to_vec());
+        } else {
+            assert_eq!(new_text_hash, old_text_hash);
         }
     }
 }

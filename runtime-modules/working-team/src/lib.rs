@@ -20,7 +20,8 @@
 //! - [set_budget](./struct.Module.html#method.set_budget) - Sets the working team budget.
 //! - [update_reward_account](./struct.Module.html#method.update_reward_account) -  Update the reward account of the regular worker/lead.
 //! - [update_reward_amount](./struct.Module.html#method.update_reward_amount) -  Update the reward amount of the regular worker/lead.
-//!
+//! - [set_status_text](./struct.Module.html#method.set_status_text) - Sets the working team status.
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -41,12 +42,13 @@ use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, St
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{Hash, MaybeSerialize, Member};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
+use sp_std::vec::Vec;
 use system::{ensure_root, ensure_signed};
 
 pub use errors::Error;
 use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId, WorkerInfo};
 pub use types::{
-    ApplyOnOpeningParameters, JobApplication, JobOpening, JobOpeningType, RewardPolicy,
+    ApplyOnOpeningParameters, JobApplication, JobOpening, JobOpeningType, Penalty, RewardPolicy,
     StakePolicy, StakingHandler,
 };
 
@@ -193,6 +195,11 @@ decl_event!(
         /// - Id of the worker.
         /// - Reward per block
         WorkerRewardAmountUpdated(TeamWorkerId, Option<Balance>),
+
+        /// Emits on updating the status text of the working team.
+        /// Params:
+        /// - status text hash
+        StatusTextChanged(Vec<u8>),
     }
 );
 
@@ -227,6 +234,9 @@ decl_storage! {
 
         /// Budget for the working team.
         pub Budget get(fn budget) : BalanceOfCurrency<T>;
+
+        /// Status text hash.
+        pub StatusTextHash get(fn status_text_hash) : Vec<u8>;
     }
 }
 
@@ -472,7 +482,7 @@ decl_module! {
         pub fn terminate_role(
             origin,
             worker_id: TeamWorkerId<T>,
-            slash_stake: bool,
+            penalty: Option<Penalty<BalanceOfCurrency<T>>>,
         ) {
             // Ensure lead is set or it is the council terminating the leader.
             let is_sudo = checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
@@ -484,8 +494,8 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if slash_stake {
-                Self::slash(worker_id, &worker.staking_account_id, None)
+            if let Some(penalty) = penalty {
+                Self::slash(worker_id, &worker.staking_account_id, Some(penalty.slashing_amount));
             }
 
             // Trigger the event
@@ -502,20 +512,23 @@ decl_module! {
         /// If slashing balance greater than the existing stake - stake is slashed to zero.
         /// Requires signed leader origin or the root (to slash the leader stake).
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn slash_stake(origin, worker_id: TeamWorkerId<T>, balance: BalanceOfCurrency<T>) {
+        pub fn slash_stake(origin, worker_id: TeamWorkerId<T>, penalty: Penalty<BalanceOfCurrency<T>>) {
             // Ensure lead is set or it is the council slashing the leader.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
 
             // Ensuring worker actually exists.
             let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
 
-            ensure!(balance != <BalanceOfCurrency<T>>::zero(), Error::<T, I>::StakeBalanceCannotBeZero);
+            ensure!(
+                penalty.slashing_amount != <BalanceOfCurrency<T>>::zero(),
+                Error::<T, I>::StakeBalanceCannotBeZero
+            );
 
             //
             // == MUTATION SAFE ==
             //
 
-            Self::slash(worker_id, &worker.staking_account_id, Some(balance))
+            Self::slash(worker_id, &worker.staking_account_id, Some(penalty.slashing_amount))
         }
 
         /// Decreases the regular worker/lead stake and returns the remainder to the
@@ -708,6 +721,35 @@ decl_module! {
             // Trigger event
             Self::deposit_event(RawEvent::WorkerRewardAmountUpdated(worker_id, reward_per_block));
         }
+
+        /// Sets a new status text for the working team.
+        /// Requires root origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_status_text(
+            origin,
+            status_text: Option<Vec<u8>>,
+        ) {
+            // Ensure team leader privilege.
+            checks::ensure_origin_is_active_leader::<T,I>(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let status_text_hash = status_text
+            .map(|status_text| {
+                    let hashed = T::Hashing::hash(&status_text);
+
+                    hashed.as_ref().to_vec()
+                })
+            .unwrap_or_default();
+
+            // Update the status text hash.
+            <StatusTextHash<I>>::put(status_text_hash.clone());
+
+            // Trigger event
+            Self::deposit_event(RawEvent::StatusTextChanged(status_text_hash));
+        }
     }
 }
 
@@ -850,7 +892,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 // Try to pay missed reward.
                 if let Some(missed_reward) = worker.missed_reward {
                     if new_budget >= missed_reward {
-                        new_budget = new_budget - missed_reward;
+                        new_budget -= missed_reward;
                         <Budget<T, I>>::put(new_budget);
 
                         T::Currency::deposit_creating(&worker.reward_account_id, missed_reward);

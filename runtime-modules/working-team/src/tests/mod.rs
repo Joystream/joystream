@@ -6,15 +6,15 @@ use system::RawOrigin;
 
 use crate::tests::fixtures::{
     CancelOpeningFixture, DecreaseWorkerStakeFixture, IncreaseWorkerStakeFixture, SetBudgetFixture,
-    SlashWorkerStakeFixture, UpdateRewardAccountFixture, UpdateRewardAmountFixture,
-    WithdrawApplicationFixture,
+    SetStatusTextFixture, SlashWorkerStakeFixture, UpdateRewardAccountFixture,
+    UpdateRewardAmountFixture, WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
     STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES, STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK,
     STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK,
 };
-use crate::{Error, JobOpeningType, RawEvent, RewardPolicy, StakePolicy, TeamWorker};
+use crate::{Error, JobOpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy, TeamWorker};
 use fixtures::{
     increase_total_balance_issuance_using_account_id, setup_members, AddOpeningFixture,
     ApplyOnOpeningFixture, EventFixture, FillOpeningFixture, HireLeadFixture,
@@ -28,6 +28,7 @@ use mock::{
     build_test_externalities, run_to_block, Balances, Test, TestWorkingTeam,
     TestWorkingTeamInstance, ACTOR_ORIGIN_ERROR,
 };
+use sp_runtime::traits::Hash;
 use sp_std::collections::btree_map::BTreeMap;
 
 #[test]
@@ -1035,6 +1036,11 @@ fn terminate_worker_with_slashing_works() {
             unstaking_period: 10,
         });
 
+        let penalty = Penalty {
+            slashing_amount: stake,
+            slashing_text: Vec::new(),
+        };
+
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
 
         let worker_id = HireRegularWorkerFixture::default()
@@ -1044,7 +1050,8 @@ fn terminate_worker_with_slashing_works() {
         assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
 
         let terminate_worker_role_fixture =
-            TerminateWorkerRoleFixture::default_for_worker_id(worker_id).with_slash();
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id)
+                .with_penalty(Some(penalty));
 
         terminate_worker_role_fixture.call_and_assert(Ok(()));
 
@@ -1072,6 +1079,11 @@ fn slash_worker_stake_succeeds() {
             unstaking_period: 10,
         });
 
+        let penalty = Penalty {
+            slashing_amount: slash_stake,
+            slashing_text: Vec::new(),
+        };
+
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
 
         let worker_id = HireRegularWorkerFixture::default()
@@ -1079,7 +1091,7 @@ fn slash_worker_stake_succeeds() {
             .hire();
 
         let slash_stake_fixture =
-            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(slash_stake);
+            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_penalty(penalty);
 
         slash_stake_fixture.call_and_assert(Ok(()));
 
@@ -1106,13 +1118,18 @@ fn slash_leader_stake_succeeds() {
             unstaking_period: 10,
         });
 
+        let penalty = Penalty {
+            slashing_amount: stake,
+            slashing_text: Vec::new(),
+        };
+
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
         let leader_worker_id = HireLeadFixture::default()
             .with_stake_policy(stake_policy)
             .hire_lead();
 
         let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(leader_worker_id)
-            .with_balance(stake)
+            .with_penalty(penalty)
             .with_origin(RawOrigin::Root);
 
         slash_stake_fixture.call_and_assert(Ok(()));
@@ -1158,6 +1175,11 @@ fn slash_worker_stake_fails_with_zero_balance() {
             unstaking_period: 10,
         });
 
+        let penalty = Penalty {
+            slashing_amount: 0,
+            slashing_text: Vec::new(),
+        };
+
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
 
         let worker_id = HireRegularWorkerFixture::default()
@@ -1165,7 +1187,7 @@ fn slash_worker_stake_fails_with_zero_balance() {
             .hire();
 
         let slash_stake_fixture =
-            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
+            SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_penalty(penalty);
 
         slash_stake_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingTeamInstance>::StakeBalanceCannotBeZero.into(),
@@ -2044,5 +2066,38 @@ fn update_reward_amount_fails_with_invalid_worker_id() {
         update_amount_fixture.call_and_assert(Err(
             Error::<Test, TestWorkingTeamInstance>::WorkerDoesNotExist.into(),
         ));
+    });
+}
+
+#[test]
+fn set_status_text_succeeded() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+
+        run_to_block(1);
+
+        let status_text = b"some".to_vec();
+        SetStatusTextFixture::default()
+            .with_status_text(Some(status_text.clone()))
+            .call_and_assert(Ok(()));
+
+        let expected_hash = <Test as system::Trait>::Hashing::hash(&status_text);
+        EventFixture::assert_last_crate_event(RawEvent::StatusTextChanged(
+            expected_hash.as_ref().to_vec(),
+        ));
+    });
+}
+
+#[test]
+fn set_status_text_fails_with_bad_origin() {
+    build_test_externalities().execute_with(|| {
+        HireLeadFixture::default().hire_lead();
+        let leader_account_id = 10;
+
+        SetStatusTextFixture::default()
+            .with_origin(RawOrigin::Signed(leader_account_id))
+            .call_and_assert(Err(
+                Error::<Test, TestWorkingTeamInstance>::IsNotLeadAccount.into(),
+            ));
     });
 }

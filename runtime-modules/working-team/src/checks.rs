@@ -117,7 +117,9 @@ fn ensure_is_lead_account<T: Trait<I>, I: Instance>(
 }
 
 // Check leader: ensures origin is signed by the leader.
-fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(origin: T::Origin) -> DispatchResult {
+pub(crate) fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(
+    origin: T::Origin,
+) -> DispatchResult {
     // Ensure is signed
     let signer = ensure_signed(origin)?;
 
