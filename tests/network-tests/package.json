@@ -8,8 +8,8 @@
     "test-migration-constantinople": "tap --files src/rome/tests/romeRuntimeUpgradeTest.ts --files src/constantinople/tests/electingCouncilTest.ts -T",
     "test-migration-nicaea": "tap --files src/constantinople/tests/proposals/updateRuntimeTest.ts --files src/nicaea/tests/electingCouncilTest.ts -T",
     "debug": "tap --files src/iznik/tests/workingGroup/workerPayoutTest.ts -T",
-    "lint": "eslint . --quiet --ext .ts",
-    "checks": "yarn lint && tsc --noEmit --pretty && prettier ./ --check",
+    "lint": "eslint . --ext .ts",
+    "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write "
   },
   "dependencies": {
