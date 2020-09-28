@@ -37,7 +37,7 @@ pub enum ReferendumStage<BlockNumber, VotePower> {
     Revealing(ReferendumStageRevealing<BlockNumber, VotePower>),
 }
 
-impl<BlockNumber, VotePower> Default for ReferendumStage<BlockNumber, VotePower> {
+impl<BlockNumber, VotePower: Encode + Decode> Default for ReferendumStage<BlockNumber, VotePower> {
     fn default() -> ReferendumStage<BlockNumber, VotePower> {
         ReferendumStage::Inactive
     }
@@ -46,15 +46,22 @@ impl<BlockNumber, VotePower> Default for ReferendumStage<BlockNumber, VotePower>
 /// Representation for voting stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageVoting<BlockNumber> {
-    started: BlockNumber,     // block in which referendum started
-    extra_options_count: u64, // number of options that exceeding the number of winners
+    started: BlockNumber,      // block in which referendum started
+    winning_target_count: u64, // target number of winners
 }
 
 /// Representation for revealing stage state.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
 pub struct ReferendumStageRevealing<BlockNumber, VotePower> {
-    started: BlockNumber,                 // block in which referendum started
-    intermediate_results: Vec<VotePower>, // votes that options have recieved at a given time
+    started: BlockNumber,      // block in which referendum started
+    winning_target_count: u64, // target number of winners
+    intermediate_winners: Vec<OptionResult<VotePower>>, // intermediate winning options
+}
+
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
+pub struct OptionResult<VotePower> {
+    option_id: u64,
+    vote_power: VotePower,
 }
 
 /// Vote cast in referendum. Vote target is concealed until user reveals commitment's proof.
@@ -92,23 +99,23 @@ type CanRevealResult<T, I> = (
 /// Trait enabling referendum start and vote commitment calculation.
 pub trait ReferendumManager<T: Trait<I>, I: Instance> {
     /// Start a new referendum.
-    fn start_referendum(origin: T::Origin, extra_options_count: u64) -> Result<(), Error<T, I>>;
+    fn start_referendum(
+        origin: T::Origin,
+        extra_winning_target_count: u64,
+    ) -> Result<(), Error<T, I>>;
 
     /// Calculate commitment for a vote.
     fn calculate_commitment(
         account_id: &<T as system::Trait>::AccountId,
         salt: &[u8],
         cycle_id: &u64,
-        vote_option_index: &u64,
+        vote_option_id: &u64,
     ) -> T::Hash;
 }
 
 pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
-
-    /// Maximum number of options in one referendum.
-    type MaxReferendumOptions: Get<u64>;
 
     /// Maximum length of vote commitment salt. Use length that ensures uniqueness for hashing e.g. std::u64::MAX.
     type MaxSaltLength: Get<u64>;
@@ -148,12 +155,19 @@ pub trait Trait<I: Instance>: system::Trait /* + ReferendumManager<Self, I>*/ {
 
     /// Checks if user can unlock his stake from the given vote.
     /// Gives runtime an ability to penalize user for not revealing stake, etc.
-    fn can_unstake(vote: &CastVote<Self::Hash, Balance<Self, I>>) -> bool;
+    fn can_release_voting_stake(vote: &CastVote<Self::Hash, Balance<Self, I>>) -> bool;
 
     /// Gives runtime an ability to react on referendum result.
-    fn process_results(
-        all_options_results: &[Self::VotePower], // list of votes each option recieved
-    );
+    fn process_results(winners: &[OptionResult<Self::VotePower>]);
+
+    /// Check if an option a user is voting for actually exists.
+    fn is_valid_option_id(option_id: &u64) -> bool;
+
+    // If the id is a valid alternative, the current total voting mass backing it is returned, otherwise nothing.
+    fn get_option_power(option_id: &u64) -> Self::VotePower;
+
+    // Increases voting mass behind given alternative by given amount, if present and return true, otherwise return false.
+    fn increase_option_power(option_id: &u64, amount: &Self::VotePower);
 }
 
 decl_storage! {
@@ -194,7 +208,7 @@ decl_event! {
         RevealingStageStarted(),
 
         /// Referendum ended and winning option was selected
-        ReferendumFinished(Vec<VotePower>),
+        ReferendumFinished(Vec<OptionResult<VotePower>>),
 
         /// User cast a vote in referendum
         VoteCast(AccountId, Hash, Balance),
@@ -215,9 +229,6 @@ decl_error! {
 
         /// Referendum cannot run twice at the same time
         ReferendumAlreadyRunning,
-
-        /// Number of referendum options exceeds the limit
-        TooManyReferendumOptions,
 
         /// Referendum is not running when expected to
         ReferendumNotRunning,
@@ -240,8 +251,11 @@ decl_error! {
         /// Trying to reveal vote that was not cast
         VoteNotExisting,
 
+        /// Trying to vote multiple time in the same cycle
+        AlreadyVotedThisCycle,
+
         /// Invalid time to release the locked stake
-        InvalidTimeToRelease,
+        UnstakingVoteInSameCycle,
 
         /// Salt is too long
         SaltTooLong,
@@ -303,18 +317,18 @@ decl_module! {
 
         /// Reveal a sealed vote in the referendum.
         #[weight = 10_000_000]
-        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_index: u64) -> Result<(), Error<T, I>> {
-            let (stage_data, account_id, cast_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_index)?;
+        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_id: u64) -> Result<(), Error<T, I>> {
+            let (stage_data, account_id, cast_vote) = EnsureChecks::<T, I>::can_reveal_vote::<Self>(origin, &salt, &vote_option_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // reveal the vote - it can return error when stake fails to unlock
-            Mutations::<T, I>::reveal_vote(stage_data, &account_id, &vote_option_index, cast_vote)?;
+            Mutations::<T, I>::reveal_vote(stage_data, &account_id, &vote_option_id, cast_vote)?;
 
             // emit event
-            Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_index));
+            Self::deposit_event(RawEvent::VoteRevealed(account_id, vote_option_id));
 
             Ok(())
         }
@@ -372,13 +386,13 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     /// Conclude the referendum.
     fn end_reveal_period(stage_data: EzReferendumStageRevealing<T, I>) {
         // conclude referendum
-        let all_options_results = Mutations::<T, I>::conclude_referendum(stage_data);
+        let winners = Mutations::<T, I>::conclude_referendum(stage_data);
 
         // let runtime know about referendum results
-        T::process_results(&all_options_results);
+        T::process_results(&winners);
 
         // emit event
-        Self::deposit_event(RawEvent::ReferendumFinished(all_options_results));
+        Self::deposit_event(RawEvent::ReferendumFinished(winners));
     }
 }
 
@@ -386,21 +400,24 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
 impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
     /// Start new referendum run.
-    fn start_referendum(origin: T::Origin, extra_options_count: u64) -> Result<(), Error<T, I>> {
-        let total_options = extra_options_count + 1;
+    fn start_referendum(
+        origin: T::Origin,
+        extra_winning_target_count: u64,
+    ) -> Result<(), Error<T, I>> {
+        let winning_target_count = extra_winning_target_count + 1;
 
         // ensure action can be started
-        EnsureChecks::<T, I>::can_start_referendum(origin, total_options)?;
+        EnsureChecks::<T, I>::can_start_referendum(origin)?;
 
         //
         // == MUTATION SAFE ==
         //
 
         // update state
-        Mutations::<T, I>::start_voting_period(&extra_options_count);
+        Mutations::<T, I>::start_voting_period(&winning_target_count);
 
         // emit event
-        Self::deposit_event(RawEvent::ReferendumStarted(total_options));
+        Self::deposit_event(RawEvent::ReferendumStarted(winning_target_count));
 
         Ok(())
     }
@@ -410,14 +427,14 @@ impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
         account_id: &<T as system::Trait>::AccountId,
         salt: &[u8],
         cycle_id: &u64,
-        vote_option_index: &u64,
+        vote_option_id: &u64,
     ) -> T::Hash {
         let mut payload = account_id.encode();
-        let mut mut_option_index = vote_option_index.encode();
+        let mut mut_option_id = vote_option_id.encode();
         let mut mut_salt = salt.encode(); //.to_vec();
         let mut mut_cycle_id = cycle_id.encode(); //.to_vec();
 
-        payload.append(&mut mut_option_index);
+        payload.append(&mut mut_option_id);
         payload.append(&mut mut_salt);
         payload.append(&mut mut_cycle_id);
 
@@ -433,37 +450,39 @@ struct Mutations<T: Trait<I>, I: Instance> {
 
 impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     /// Change the referendum stage from inactive to voting stage.
-    fn start_voting_period(extra_options_count: &u64) {
+    fn start_voting_period(winning_target_count: &u64) {
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Voting(ReferendumStageVoting::<
             T::BlockNumber,
         > {
             started: <system::Module<T>>::block_number(),
-            extra_options_count: *extra_options_count,
+            winning_target_count: *winning_target_count,
         }));
     }
 
     /// Change the referendum stage from inactive to the voting stage.
     fn start_revealing_period(old_stage: EzReferendumStageVoting<T>) {
-        let total_options = old_stage.extra_options_count + 1;
-
         // change referendum state
         Stage::<T, I>::put(ReferendumStage::Revealing(EzReferendumStageRevealing::<
             T,
             I,
         > {
             started: <system::Module<T>>::block_number(),
-            intermediate_results: (0..total_options).map(|_| 0.into()).collect(),
+            winning_target_count: old_stage.winning_target_count,
+            intermediate_winners: vec![],
         }));
     }
 
     /// Conclude referendum, count votes, and select the winners.
-    fn conclude_referendum(revealing_stage: EzReferendumStageRevealing<T, I>) -> Vec<T::VotePower> {
+    //fn conclude_referendum(revealing_stage: EzReferendumStageRevealing<T, I>) -> Vec<OptionResult<T::VotePower>> {
+    fn conclude_referendum(
+        revealing_stage: EzReferendumStageRevealing<T, I>,
+    ) -> Vec<OptionResult<<T as Trait<I>>::VotePower>> {
         // reset referendum state
         Self::reset_referendum();
 
         // return winning option
-        revealing_stage.intermediate_results
+        revealing_stage.intermediate_winners
     }
 
     /// Change the referendum stage from revealing to the inactive stage.
@@ -504,32 +523,34 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     fn reveal_vote(
         stage_data: EzReferendumStageRevealing<T, I>,
         account_id: &<T as system::Trait>::AccountId,
-        option_index: &u64,
+        option_id: &u64,
         cast_vote: EzCastVote<T, I>,
     ) -> Result<(), Error<T, I>> {
+        // prepare new values
         let vote_power = T::caclulate_vote_power(&account_id, &cast_vote.stake);
-
+        let option_result = OptionResult {
+            option_id: *option_id,
+            vote_power,
+        };
+        // try to insert option to winner list or update it's value when already present
+        let new_winners = Self::try_winner_insert(
+            option_result,
+            &stage_data.intermediate_winners,
+            stage_data.winning_target_count,
+        );
         let new_stage_data = ReferendumStageRevealing {
-            intermediate_results: stage_data
-                .intermediate_results
-                .iter()
-                .enumerate()
-                .map(|(i, current_vote_power)| {
-                    if i as u64 == *option_index {
-                        return *current_vote_power + vote_power;
-                    }
-
-                    *current_vote_power
-                })
-                .collect(),
+            intermediate_winners: new_winners,
             ..stage_data
         };
+
+        // let runtime update option's vote power
+        T::increase_option_power(option_id, &vote_power);
 
         // store revealed vote
         Stage::<T, I>::mutate(|stage| *stage = ReferendumStage::Revealing(new_stage_data));
 
         // remove user commitment to prevent repeated revealing
-        Votes::<T, I>::mutate(account_id, |vote| (*vote).vote_for = Some(*option_index));
+        Votes::<T, I>::mutate(account_id, |vote| (*vote).vote_for = Some(*option_id));
 
         Ok(())
     }
@@ -541,6 +562,92 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
         // remove vote record
         Votes::<T, I>::remove(account_id);
+    }
+
+    /// Tries to insert option to the proper place in the winners list. Utility for reaveal_vote() function.
+    fn try_winner_insert(
+        option_result: OptionResult<T::VotePower>,
+        current_winners: &[OptionResult<T::VotePower>],
+        winning_target_count: u64,
+    ) -> Vec<OptionResult<T::VotePower>> {
+        /// Tries to place record to temporary place in the winning list.
+        fn place_record_to_winner_list<T: Trait<I>, I: Instance>(
+            option_result: OptionResult<T::VotePower>,
+            current_winners: &[OptionResult<T::VotePower>],
+            winning_target_count: u64,
+        ) -> (Vec<OptionResult<T::VotePower>>, Option<usize>) {
+            let current_winners_count = current_winners.len();
+
+            // check if option is already somewhere in list
+            let current_winners_index_of_vote_recipient: Option<usize> = current_winners
+                .iter()
+                .enumerate()
+                .find(|(_, value)| option_result.option_id == value.option_id)
+                .map(|(index, _)| index);
+
+            // espace when item is currently not in winning list and still has not enough vote power to make it to already full list
+            if current_winners_index_of_vote_recipient.is_none()
+                && current_winners_count as u64 == winning_target_count
+                && option_result.vote_power <= current_winners[current_winners_count - 1].vote_power
+            {
+                return (current_winners.to_vec(), None);
+            }
+
+            let mut new_winners = current_winners.to_vec();
+
+            // update record in list when it is already present
+            if let Some(index) = current_winners_index_of_vote_recipient {
+                let old_option_total = T::get_option_power(&option_result.option_id);
+                let new_option_total = old_option_total + option_result.vote_power;
+
+                new_winners[index] = OptionResult {
+                    option_id: option_result.option_id,
+                    vote_power: new_option_total,
+                };
+
+                return (new_winners, Some(index));
+            }
+
+            // at this point record needs to be added to list
+
+            // replace last winner if list is already full
+            if current_winners_count as u64 == winning_target_count {
+                let last_index = current_winners_count - 1;
+                new_winners[last_index] = option_result;
+
+                return (new_winners, Some(last_index));
+            }
+
+            // append winner to incomplete list
+            new_winners.push(option_result);
+
+            (new_winners, Some(current_winners_count))
+        }
+
+        // if there are no winners right now return list with only current option
+        if current_winners.is_empty() {
+            return vec![option_result];
+        }
+
+        // get new possibly updated list and record's position in it
+        let (mut new_winners, current_record_index) = place_record_to_winner_list::<T, I>(
+            option_result,
+            current_winners,
+            winning_target_count,
+        );
+
+        // resort list in case it was updated
+        if let Some(index) = current_record_index {
+            for i in (1..=index).rev() {
+                if new_winners[i].vote_power <= new_winners[i - 1].vote_power {
+                    break;
+                }
+
+                new_winners.swap(i, i - 1);
+            }
+        }
+
+        new_winners.to_vec()
     }
 }
 
@@ -561,7 +668,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     /////////////////// Action checks //////////////////////////////////////////
 
-    fn can_start_referendum(origin: T::Origin, options_count: u64) -> Result<(), Error<T, I>> {
+    fn can_start_referendum(origin: T::Origin) -> Result<(), Error<T, I>> {
         T::ManagerOrigin::ensure_origin(origin)?;
 
         // ensure referendum is not already running
@@ -570,15 +677,27 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             _ => Err(Error::ReferendumAlreadyRunning),
         }?;
 
-        // ensure number of options doesn't exceed limit
-        if options_count > T::MaxReferendumOptions::get() {
-            return Err(Error::TooManyReferendumOptions);
-        }
-
         Ok(())
     }
 
     fn can_vote(origin: T::Origin, stake: &Balance<T, I>) -> Result<T::AccountId, Error<T, I>> {
+        fn prevent_repeated_vote<T: Trait<I>, I: Instance>(
+            account_id: &T::AccountId,
+        ) -> Result<(), Error<T, I>> {
+            if !Votes::<T, I>::contains_key(&account_id) {
+                return Ok(());
+            }
+
+            let existing_vote = Votes::<T, I>::get(&account_id);
+
+            // don't allow repeated vote
+            if existing_vote.cycle_id == CurrentCycleId::<I>::get() {
+                return Err(Error::<T, I>::AlreadyVotedThisCycle);
+            }
+
+            Ok(())
+        }
+
         // ensure superuser requested action
         let account_id = Self::ensure_regular_user(origin)?;
 
@@ -589,6 +708,9 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             ReferendumStage::Voting(_) => (),
             _ => return Err(Error::ReferendumNotRunning),
         };
+
+        // prevent repeated vote
+        prevent_repeated_vote::<T, I>(&account_id)?;
 
         // ensure stake is enough for voting
         if stake < &T::MinimumStake::get() {
@@ -606,7 +728,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
     fn can_reveal_vote<R: ReferendumManager<T, I>>(
         origin: T::Origin,
         salt: &[u8],
-        vote_option_index: &u64,
+        vote_option_id: &u64,
     ) -> Result<CanRevealResult<T, I>, Error<T, I>> {
         let cycle_id = CurrentCycleId::<I>::get();
 
@@ -623,7 +745,8 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         let cast_vote = Self::ensure_vote_exists(&account_id)?;
 
-        if vote_option_index >= &(stage_data.intermediate_results.len() as u64) {
+        // ask runtime if option is valid
+        if !T::is_valid_option_id(vote_option_id) {
             return Err(Error::InvalidVote);
         }
 
@@ -638,7 +761,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ensure commitment corresponds to salt and vote option
-        let commitment = R::calculate_commitment(&account_id, salt, &cycle_id, vote_option_index);
+        let commitment = R::calculate_commitment(&account_id, salt, &cycle_id, vote_option_id);
         if commitment != cast_vote.commitment {
             return Err(Error::InvalidReveal);
         }
@@ -654,21 +777,14 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
         let cast_vote = Self::ensure_vote_exists(&account_id)?;
 
-        if !T::can_unstake(&cast_vote) {
-            return Err(Error::UnstakingForbidden);
-        }
-
-        // enable stake release in current cycle only during voting stage
+        // allow release only for past cycles
         if cycle_id == cast_vote.cycle_id {
-            match Stage::<T, I>::get() {
-                ReferendumStage::Voting(_) => Ok(()),
-                _ => Err(Error::InvalidTimeToRelease),
-            }?;
+            return Err(Error::UnstakingVoteInSameCycle);
         }
 
-        // eliminate possibility of unexpected cycle_id
-        if cycle_id < cast_vote.cycle_id {
-            return Err(Error::InvalidTimeToRelease);
+        // ask runtime if stake can be released
+        if !T::can_release_voting_stake(&cast_vote) {
+            return Err(Error::UnstakingForbidden);
         }
 
         Ok(account_id)

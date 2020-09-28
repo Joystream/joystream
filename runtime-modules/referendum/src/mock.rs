@@ -2,8 +2,9 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    Balance, CastVote, CurrentCycleId, Error, Instance, Module, RawEvent, ReferendumManager,
-    ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage, Trait, Votes,
+    Balance, CastVote, CurrentCycleId, Error, Instance, Module, OptionResult, RawEvent,
+    ReferendumManager, ReferendumStage, ReferendumStageRevealing, ReferendumStageVoting, Stage,
+    Trait, Votes,
 };
 
 use frame_support::traits::{Currency, LockIdentifier, OnFinalize};
@@ -19,6 +20,8 @@ use sp_runtime::{
     Perbill,
 };
 use std::cell::RefCell;
+use std::collections::BTreeMap;
+use std::iter::FromIterator;
 use std::marker::PhantomData;
 use system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 
@@ -43,7 +46,6 @@ pub struct Runtime;
 pub struct Instance0;
 
 parameter_types! {
-    pub const MaxReferendumOptions: u64 = 10;
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const VoteStageDuration: u64 = 5;
     pub const RevealStageDuration: u64 = 5;
@@ -53,12 +55,15 @@ parameter_types! {
 
 thread_local! {
     pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
+    pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, )); // global switch used to test is_valid_option_id()
+
+    // complete intermediate results
+    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <Runtime as Trait<Instance0>>::VotePower>> = RefCell::new(BTreeMap::<u64, <Runtime as Trait<Instance0>>::VotePower>::new());
 }
 
 impl Trait<Instance0> for Runtime {
     type Event = TestEvent;
 
-    type MaxReferendumOptions = MaxReferendumOptions;
     type MaxSaltLength = MaxSaltLength;
 
     type Currency = pallet_balances::Module<Runtime>;
@@ -86,7 +91,7 @@ impl Trait<Instance0> for Runtime {
         stake
     }
 
-    fn can_unstake(_vote: &CastVote<Self::Hash, Balance<Self, Instance0>>) -> bool {
+    fn can_release_voting_stake(_vote: &CastVote<Self::Hash, Balance<Self, Instance0>>) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
             return false;
@@ -95,8 +100,31 @@ impl Trait<Instance0> for Runtime {
         true
     }
 
-    fn process_results(_all_options_results: &[Self::VotePower]) {
+    fn process_results(_winners: &[OptionResult<Self::VotePower>]) {
         // not used right now
+    }
+
+    fn is_valid_option_id(_option_index: &u64) -> bool {
+        if !IS_OPTION_ID_VALID.with(|value| value.borrow().0) {
+            return false;
+        }
+
+        true
+    }
+
+    fn get_option_power(option_id: &u64) -> Self::VotePower {
+        INTERMEDIATE_RESULTS.with(|value| match value.borrow().get(option_id) {
+            Some(vote_power) => *vote_power,
+            None => 0,
+        })
+    }
+
+    fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
+        INTERMEDIATE_RESULTS.with(|value| {
+            let current = Self::get_option_power(option_id);
+
+            value.borrow_mut().insert(*option_id, amount + current);
+        });
     }
 }
 
@@ -116,6 +144,12 @@ impl Runtime {
     pub fn feature_stack_lock(unstake_enabled: bool) -> () {
         IS_UNSTAKE_ENABLED.with(|value| {
             *value.borrow_mut() = (unstake_enabled,);
+        });
+    }
+
+    pub fn feature_option_id_valid(is_valid: bool) -> () {
+        IS_OPTION_ID_VALID.with(|value| {
+            *value.borrow_mut() = (is_valid,);
         });
     }
 }
@@ -327,6 +361,17 @@ where
             salt.to_vec(),
         )
     }
+
+    pub fn transform_results(input: Vec<T::VotePower>) -> BTreeMap<u64, T::VotePower> {
+        BTreeMap::from_iter(
+            input
+                .into_iter()
+                .enumerate()
+                .map(|(k, v)| (k as u64, v))
+                .filter(|(_, v)| v != &Into::<T::VotePower>::into(0))
+                .collect::<Vec<(u64, T::VotePower)>>(),
+        )
+    }
 }
 
 /////////////////// Mocks of Module's actions //////////////////////////////////
@@ -338,74 +383,75 @@ pub struct InstanceMocks<T: Trait<I>, I: Instance> {
 impl InstanceMocks<Runtime, Instance0> {
     pub fn start_referendum_extrinsic(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
-        options_count: u64,
+        winning_target_count: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
-        let extra_options_count = options_count - 1;
+        let extra_winning_target_count = winning_target_count - 1;
 
         // check method returns expected result
         assert_eq!(
             Module::<Runtime, Instance0>::start_referendum(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
-                extra_options_count,
+                extra_winning_target_count,
             ),
             expected_result,
         );
 
-        Self::start_referendum_inner(extra_options_count, expected_result)
+        Self::start_referendum_inner(extra_winning_target_count, expected_result)
     }
 
     pub fn start_referendum_manager(
-        options_count: u64,
+        winning_target_count: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
-        let extra_options_count = options_count - 1;
+        let extra_winning_target_count = winning_target_count - 1;
 
         // check method returns expected result
         assert_eq!(
             <Module::<Runtime, Instance0> as ReferendumManager<Runtime, Instance0>>::start_referendum(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(OriginType::Root),
-                extra_options_count,
+                extra_winning_target_count,
             ),
             expected_result,
         );
 
-        Self::start_referendum_inner(extra_options_count, expected_result)
+        Self::start_referendum_inner(extra_winning_target_count, expected_result)
     }
 
     fn start_referendum_inner(
-        extra_options_count: u64,
+        extra_winning_target_count: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) {
         if expected_result.is_err() {
             return;
         }
 
-        let total_options = extra_options_count + 1;
+        let winning_target_count = extra_winning_target_count + 1;
         let block_number = system::Module::<Runtime>::block_number();
 
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Voting(ReferendumStageVoting {
                 started: block_number,
-                extra_options_count,
+                winning_target_count,
             }),
         );
 
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::from(RawEvent::ReferendumStarted(total_options))
+            TestEvent::from(RawEvent::ReferendumStarted(winning_target_count))
         );
     }
 
-    pub fn check_voting_finished(options_count: u64) {
+    pub fn check_voting_finished(winning_target_count: u64) {
         let block_number = system::Module::<Runtime>::block_number();
 
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Revealing(ReferendumStageRevealing {
                 started: block_number - 1,
-                intermediate_results: (0..options_count).map(|_| 0).collect(),
+                winning_target_count,
+                intermediate_winners: vec![],
             }),
         );
 
@@ -417,7 +463,8 @@ impl InstanceMocks<Runtime, Instance0> {
     }
 
     pub fn check_revealing_finished(
-        expected_referendum_result: Vec<<Runtime as Trait<Instance0>>::VotePower>,
+        expected_winners: Vec<OptionResult<<Runtime as Trait<Instance0>>::VotePower>>,
+        expected_referendum_result: BTreeMap<u64, <Runtime as Trait<Instance0>>::VotePower>,
     ) {
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
@@ -427,10 +474,10 @@ impl InstanceMocks<Runtime, Instance0> {
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::event_mod_Instance0(RawEvent::ReferendumFinished(
-                expected_referendum_result.clone()
-            ))
+            TestEvent::event_mod_Instance0(RawEvent::ReferendumFinished(expected_winners,))
         );
+
+        INTERMEDIATE_RESULTS.with(|value| assert_eq!(*value.borrow(), expected_referendum_result,));
     }
 
     pub fn vote(
@@ -478,6 +525,7 @@ impl InstanceMocks<Runtime, Instance0> {
         vote_option_index: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
+        println!("{:?}", vote_option_index);
         // check method returns expected result
         assert_eq!(
             Module::<Runtime, Instance0>::reveal_vote(
