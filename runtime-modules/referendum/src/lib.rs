@@ -681,11 +681,11 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
     }
 
     fn can_vote(origin: T::Origin, stake: &Balance<T, I>) -> Result<T::AccountId, Error<T, I>> {
-        fn get_existing_stake<T: Trait<I>, I: Instance>(
+        fn prevent_repeated_vote<T: Trait<I>, I: Instance>(
             account_id: &T::AccountId,
-        ) -> Result<Balance<T, I>, Error<T, I>> {
+        ) -> Result<(), Error<T, I>> {
             if !Votes::<T, I>::contains_key(&account_id) {
-                return Ok(0.into());
+                return Ok(());
             }
 
             let existing_vote = Votes::<T, I>::get(&account_id);
@@ -695,7 +695,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
                 return Err(Error::<T, I>::AlreadyVotedThisCycle);
             }
 
-            Ok(existing_vote.stake)
+            Ok(())
         }
 
         // ensure superuser requested action
@@ -709,18 +709,16 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
             _ => return Err(Error::ReferendumNotRunning),
         };
 
-        // get current lock balance if still staking for some past cycle
-        let existing_stake: Balance<T, I> = get_existing_stake(&account_id)?;
+        // prevent repeated vote
+        prevent_repeated_vote::<T, I>(&account_id)?;
 
         // ensure stake is enough for voting
         if stake < &T::MinimumStake::get() {
             return Err(Error::InsufficientStake);
         }
 
-        let stake_diff = *stake - existing_stake;
-
         // ensure account can lock the stake
-        if T::Currency::total_balance(&account_id) < stake_diff {
+        if T::Currency::total_balance(&account_id) < *stake {
             return Err(Error::InsufficientBalanceToStakeCurrency);
         }
 
