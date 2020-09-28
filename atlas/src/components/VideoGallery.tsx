@@ -1,12 +1,11 @@
 import React, { useCallback, useMemo, useState } from 'react'
 import { css, SerializedStyles } from '@emotion/core'
 import styled from '@emotion/styled'
-import { navigate } from '@reach/router'
 
-import { Gallery, MAX_VIDEO_PREVIEW_WIDTH, VideoPreview, VideoPreviewBase } from '@/shared/components'
+import { Gallery, MAX_VIDEO_PREVIEW_WIDTH, VideoPreviewBase } from '@/shared/components'
+import VideoPreview from './VideoPreviewWithNavigation'
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 import { CAROUSEL_CONTROL_SIZE } from '@/shared/components/Carousel'
-import routes from '@/config/routes'
 
 type VideoGalleryProps = {
   title: string
@@ -40,13 +39,6 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, action, videos, load
     }
   }, [])
 
-  const handleVideoClick = (id: string) => {
-    navigate(routes.video(id))
-  }
-  const handleChannelClick = (id: string) => {
-    navigate(routes.channel(id))
-  }
-
   return (
     <Gallery
       title={title}
@@ -61,6 +53,8 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, action, videos, load
           ))
         : videos!.map((video, idx) => (
             <StyledVideoPreview
+              id={video.id}
+              channelId={video.channel.id}
               title={video.title}
               channelName={video.channel.handle}
               channelAvatarURL={video.channel.avatarPhotoURL}
@@ -68,8 +62,6 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, action, videos, load
               createdAt={video.publishedOnJoystreamAt}
               duration={video.duration}
               posterURL={video.thumbnailURL}
-              onClick={() => handleVideoClick(video.id)}
-              onChannelClick={() => handleChannelClick(video.channel.id)}
               imgRef={idx === 0 ? imgRef : null}
               key={video.id}
             />

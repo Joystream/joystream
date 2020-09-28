@@ -4,7 +4,8 @@ import { navigate } from '@reach/router'
 
 import routes from '@/config/routes'
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
-import { VideoPreview, Grid } from '@/shared/components'
+import { Grid } from '@/shared/components'
+import VideoPreview from './VideoPreviewWithNavigation'
 
 const StyledVideoPreview = styled(VideoPreview)`
   margin: 0 auto;
@@ -18,10 +19,13 @@ const VideoGrid: React.FC<VideoGridProps> = ({ videos }) => {
     <Grid>
       {videos.map((v, idx) => (
         <StyledVideoPreview
+          id={v.id}
+          channelId={v.channel.id}
           key={idx}
           title={v.title}
           channelName={v.channel.handle}
           channelAvatarURL={v.channel.avatarPhotoURL}
+          onChannelClick={() => navigate(routes.channel(v.channel.id))}
           createdAt={v.publishedOnJoystreamAt}
           duration={v.duration}
           views={v.views}

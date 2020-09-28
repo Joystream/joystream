@@ -1,5 +1,5 @@
 import React from 'react'
-import { RouteComponentProps, useParams } from '@reach/router'
+import { RouteComponentProps, useParams, navigate } from '@reach/router'
 import {
   Container,
   DescriptionContainer,
@@ -19,6 +19,7 @@ import { formatNumber } from '@/utils/number'
 import { useQuery } from '@apollo/client'
 import { GET_VIDEO } from '@/api/queries'
 import { GetVideo, GetVideoVariables } from '@/api/queries/__generated__/GetVideo'
+import routes from '@/config/routes'
 
 const VideoView: React.FC<RouteComponentProps> = () => {
   const { id } = useParams()
@@ -50,7 +51,11 @@ const VideoView: React.FC<RouteComponentProps> = () => {
         <Meta>
           {formatNumber(views)} views • {formatDateAgo(publishedOnJoystreamAt)}
         </Meta>
-        <StyledChannelAvatar name={channel.handle} avatarUrl={channel.avatarPhotoURL} />
+        <StyledChannelAvatar
+          name={channel.handle}
+          avatarUrl={channel.avatarPhotoURL}
+          onClick={() => navigate(routes.channel(channel.id))}
+        />
         <DescriptionContainer>
           {descriptionLines.map((line, idx) => (
             <p key={idx}>{line}</p>
