@@ -43,9 +43,9 @@ jobs:
             # Try to get image tagged with base branch name. If it fails we continue anyway,
             # docker-compose will then bulid from srouce when it doesn't find the image.
             echo "joystream-node source not modified. Will try to use pre-built image"
-            docker pull joystream/node:${JOYSTREAM_NODE_TAG}
+            docker pull joystream/node:${JOYSTREAM_NODE_TAG} || echo "pull done."
           fi
-      - name: Start chain
+      - name: Start chain (maybe build from source)
         run: JOYSTREAM_NODE_TAG=${{ github.event.pull_request.base.ref }} docker-compose up -d
       - name: Execute network tests
         run: yarn workspace network-tests test
