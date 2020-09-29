@@ -32,8 +32,10 @@ pub const USER_REGULAR_POWER_VOTES: u64 = 0;
 pub const POWER_VOTE_STRENGTH: u64 = 10;
 
 pub const VOTER_BASE_ID: u64 = 4000;
-pub const CANDIDATE_BASE_ID: u64 = 5000;
-pub const VOTER_CANDIDATE_OFFSET: u64 = CANDIDATE_BASE_ID - VOTER_BASE_ID;
+pub const CANDIDATE_BASE_ID: u64 = VOTER_BASE_ID + VOTER_CANDIDATE_OFFSET;
+pub const VOTER_CANDIDATE_OFFSET: u64 = 1000;
+
+pub const INVALID_USER_MEMBER: u64 = 9999;
 
 /////////////////// Runtime and Instances //////////////////////////////////////
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -52,12 +54,21 @@ parameter_types! {
 impl Trait for Runtime {
     type Event = TestEvent;
 
+    type CouncilUserId = u64;
     type LockId = CouncilLockId;
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
     type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
     type IdlePeriodDuration = IdlePeriodDuration;
     type MinCandidateStake = MinCandidateStake;
+
+    fn is_council_user(
+        account_id: &<Self as system::Trait>::AccountId,
+        council_user_id: &Self::CouncilUserId,
+    ) -> bool {
+        // all possible generated candidates
+        account_id == council_user_id && account_id >= &CANDIDATE_BASE_ID && account_id < &(CANDIDATE_BASE_ID + VOTER_CANDIDATE_OFFSET)
+    }
 }
 
 /////////////////// Module implementation //////////////////////////////////////
@@ -246,6 +257,7 @@ pub enum OriginType<AccountId> {
 #[derive(Clone)]
 pub struct CandidateInfo<T: Trait> {
     pub origin: OriginType<T::AccountId>,
+    pub account_id: T::CouncilUserId,
     pub candidate: CandidateOf<T>,
 }
 
@@ -354,6 +366,7 @@ pub struct InstanceMockUtils<T: Trait> {
 impl<T: Trait> InstanceMockUtils<T>
 where
     T::AccountId: From<u64>,
+    T::CouncilUserId: From<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
     BalanceReferendum<T>: From<u64> + Into<u64>,
 {
@@ -394,7 +407,11 @@ where
 
         Self::topup_account(account_id.into(), stake);
 
-        CandidateInfo { origin, candidate }
+        CandidateInfo {
+            origin,
+            candidate,
+            account_id: account_id.into(),
+        }
     }
 
     pub fn generate_voter(
@@ -449,6 +466,7 @@ pub struct InstanceMocks<T: Trait> {
 impl<T: Trait> InstanceMocks<T>
 where
     T::AccountId: From<u64>,
+    T::CouncilUserId: From<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
     BalanceReferendum<T>: From<u64> + Into<u64>,
 {
@@ -521,14 +539,15 @@ where
         */
     }
 
-    pub fn candidate(
+    pub fn announce_candidacy(
         origin: OriginType<T::AccountId>,
+        member_id: T::CouncilUserId,
         stake: BalanceReferendum<T>,
         expected_result: Result<(), Error<T>>,
     ) {
         // check method returns expected result
         assert_eq!(
-            Module::<T>::announce_candidacy(InstanceMockUtils::<T>::mock_origin(origin), stake),
+            Module::<T>::announce_candidacy(InstanceMockUtils::<T>::mock_origin(origin), member_id, stake),
             expected_result,
         );
     }
@@ -589,8 +608,9 @@ where
 
         // announce candidacy for each candidate
         params.candidates_announcing.iter().for_each(|candidate| {
-            Self::candidate(
+            Self::announce_candidacy(
                 candidate.origin.clone(),
+                candidate.account_id.clone(),
                 settings.min_candidate_stake,
                 Ok(()),
             );

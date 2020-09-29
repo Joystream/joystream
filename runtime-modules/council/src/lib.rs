@@ -5,14 +5,16 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 // used dependencies
-use codec::{Decode, Encode};
+use codec::{Codec, Decode, Encode};
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReason};
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, error::BadOrigin};
+use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter};
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 use system::{ensure_signed, RawOrigin};
+use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_arithmetic::traits::BaseArithmetic;
 
 use referendum::Instance as ReferendumInstanceGeneric;
 use referendum::Trait as ReferendumTrait;
@@ -70,6 +72,8 @@ pub struct Candidate<AccountId, Balance> {
     stake: Balance,
 }
 
+
+
 /////////////////// Type aliases ///////////////////////////////////////////////
 
 pub(crate) type ReferendumInstance = referendum::Instance0;
@@ -104,6 +108,15 @@ pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
+    type CouncilUserId: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
     /// Minimum number of extra candidates needed for the valid election.
     /// Number of total candidates is equal to council size plus extra candidates.
     type MinNumberOfExtraCandidates: Get<u64>;
@@ -119,6 +132,12 @@ pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
     /// Duration of idle period
     type IdlePeriodDuration: Get<Self::BlockNumber>;
+
+    /// Check user is allowed member
+    fn is_council_user(
+        account_id: &<Self as system::Trait>::AccountId,
+        council_user_id: &Self::CouncilUserId,
+    ) -> bool;
 }
 
 decl_storage! {
@@ -181,6 +200,9 @@ decl_error! {
 
         // TODO: try to get rid of this error if possible
         InvalidRuntimeImplementation,
+
+        /// Invalid membership
+        CouncilUserIdNotMatchAccount,
     }
 }
 
@@ -224,9 +246,9 @@ decl_module! {
 
         /// Subscribe candidate
         #[weight = 10_000_000]
-        pub fn announce_candidacy(origin, stake: Balance<T>) -> Result<(), Error<T>> {
+        pub fn announce_candidacy(origin, member_id: T::CouncilUserId, stake: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
-            let (stage_data, candidate) = EnsureChecks::<T>::can_candidate(origin, &stake)?;
+            let (stage_data, candidate) = EnsureChecks::<T>::can_candidate(origin, &member_id, &stake)?;
 
             //
             // == MUTATION SAFE ==
@@ -242,8 +264,8 @@ decl_module! {
         }
 
         #[weight = 10_000_000]
-        pub fn release_candidacy_stake(origin) -> Result<(), Error<T>> {
-            let account_id = EnsureChecks::<T>::can_release_candidacy_stake(origin)?;
+        pub fn release_candidacy_stake(origin, member_id: T::CouncilUserId) -> Result<(), Error<T>> {
+            let account_id = EnsureChecks::<T>::can_release_candidacy_stake(origin, &member_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -595,14 +617,26 @@ impl<T: Trait> EnsureChecks<T> {
         Ok(account_id)
     }
 
+    fn ensure_user_membership(origin: T::Origin, member_id: &T::CouncilUserId) -> Result<T::AccountId, Error<T>> {
+        let account_id = ensure_signed(origin)?;
+
+        ensure!(
+            T::is_council_user(&account_id, member_id),
+            Error::CouncilUserIdNotMatchAccount,
+        );
+
+        Ok(account_id)
+    }
+
     /////////////////// Action checks //////////////////////////////////////////
 
     fn can_candidate(
         origin: T::Origin,
+        member_id: &T::CouncilUserId,
         stake: &Balance<T>,
     ) -> Result<(CouncilStageAnnouncingOf<T>, CandidateOf<T>), Error<T>> {
-        // ensure regular user requested action
-        let account_id = Self::ensure_regular_user(origin)?;
+        // ensure user's membership
+        let account_id = Self::ensure_user_membership(origin, member_id)?;
 
         let stage_data = match Stage::<T>::get().stage {
             CouncilStage::Announcing(stage_data) => stage_data,
@@ -640,9 +674,9 @@ impl<T: Trait> EnsureChecks<T> {
         Ok(account_id)
     }
 
-    fn can_release_candidacy_stake(origin: T::Origin) -> Result<T::AccountId, Error<T>> {
-        // ensure regular user requested action
-        let account_id = Self::ensure_regular_user(origin)?;
+    fn can_release_candidacy_stake(origin: T::Origin, member_id: &T::CouncilUserId) -> Result<T::AccountId, Error<T>> {
+        // ensure user's membership
+        let account_id = Self::ensure_user_membership(origin, member_id)?;
 
         // ensure user is not current council member
         let members = CouncilMembers::<T>::get();

@@ -94,8 +94,9 @@ fn council_candidacy_invalid_time() {
 
         InstanceMocks::simulate_council_cycle(params);
 
-        Mocks::candidate(
+        Mocks::announce_candidacy(
             candidates[0].origin.clone(),
+            candidates[0].account_id.clone(),
             candidates[0].candidate.stake.clone(),
             Err(Error::CantCandidateNow),
         );
@@ -113,8 +114,9 @@ fn council_candidacy_stake_too_low() {
         let insufficient_stake = council_settings.min_candidate_stake - 1;
         let candidate = MockUtils::generate_candidate(0, insufficient_stake);
 
-        Mocks::candidate(
+        Mocks::announce_candidacy(
             candidate.origin.clone(),
+            candidate.account_id.clone(),
             candidate.candidate.stake.clone(),
             Err(Error::CandidacyStakeTooLow),
         );
@@ -179,6 +181,26 @@ fn council_cant_vote_for_yourself() {
             voter.salt.clone(),
             voter.vote_for,
             Err(Error::CantVoteForYourself),
+        );
+    });
+}
+
+// Test that only valid members can candidate.
+#[test]
+fn council_candidacy_invalid_member() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+
+        let stake = council_settings.min_candidate_stake;
+        let candidate = MockUtils::generate_candidate(INVALID_USER_MEMBER, stake);
+
+        Mocks::announce_candidacy(
+            candidate.origin.clone(),
+            candidate.account_id.clone(),
+            candidate.candidate.stake.clone(),
+            Err(Error::CouncilUserIdNotMatchAccount),
         );
     });
 }
