@@ -267,6 +267,7 @@ pub struct FillOpeningFixture {
     staking_account_id: Option<u64>,
     stake_policy: Option<StakePolicy<u64, u64>>,
     reward_policy: Option<RewardPolicy<u64>>,
+    created_at: u64,
 }
 
 impl FillOpeningFixture {
@@ -282,11 +283,16 @@ impl FillOpeningFixture {
             staking_account_id: None,
             stake_policy: None,
             reward_policy: None,
+            created_at: 0,
         }
     }
 
     pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
         Self { origin, ..self }
+    }
+
+    pub fn with_created_at(self, created_at: u64) -> Self {
+        Self { created_at, ..self }
     }
 
     pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
@@ -355,6 +361,7 @@ impl FillOpeningFixture {
                     .map_or(0, |sp| sp.unstaking_period),
                 reward_per_block: self.reward_policy.as_ref().map(|rp| rp.reward_per_block),
                 missed_reward: None,
+                created_at: self.created_at,
             };
 
             let actual_worker = TestWorkingTeam::worker_by_id(worker_id);

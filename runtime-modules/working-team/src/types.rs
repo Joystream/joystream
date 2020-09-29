@@ -158,6 +158,9 @@ pub struct Worker<AccountId, MemberId, BlockNumber, Balance> {
 
     /// Total missed reward amount.
     pub missed_reward: Option<Balance>,
+
+    /// Specifies the block when the worker was created.
+    pub created_at: BlockNumber,
 }
 
 impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
@@ -171,6 +174,7 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
         staking_account_id: &Option<AccountId>,
         job_unstaking_period: BlockNumber,
         reward_per_block: Option<Balance>,
+        created_at: BlockNumber,
     ) -> Self {
         Worker {
             member_id: member_id.clone(),
@@ -181,6 +185,7 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
             job_unstaking_period,
             reward_per_block,
             missed_reward: None,
+            created_at,
         }
     }
 

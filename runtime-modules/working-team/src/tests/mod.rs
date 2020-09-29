@@ -234,7 +234,8 @@ fn fill_opening_succeeded() {
 
         let fill_opening_fixture =
             FillOpeningFixture::default_for_ids(opening_id, vec![application_id])
-                .with_reward_policy(reward_policy);
+                .with_reward_policy(reward_policy)
+                .with_created_at(starting_block);
 
         let worker_id = fill_opening_fixture.call_and_assert(Ok(()));
 
@@ -282,7 +283,8 @@ fn fill_opening_succeeded_with_stake() {
         let fill_opening_fixture =
             FillOpeningFixture::default_for_ids(opening_id, vec![application_id])
                 .with_stake_policy(stake_policy)
-                .with_staking_account_id(Some(account_id));
+                .with_staking_account_id(Some(account_id))
+                .with_created_at(starting_block);
 
         let worker_id = fill_opening_fixture.call_and_assert(Ok(()));
 
@@ -2035,6 +2037,38 @@ fn rewards_payments_with_insufficient_budget_and_restored_budget() {
         assert_eq!(
             Balances::usable_balance(&account_id),
             block_number2 * reward_per_block
+        );
+    });
+}
+
+#[test]
+fn rewards_payments_with_starting_block() {
+    build_test_externalities().execute_with(|| {
+        let starting_block = 3;
+        run_to_block(starting_block);
+
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+        let reward_period: u64 = RewardPeriod::get().into();
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+
+        let worker = TestWorkingTeam::worker_by_id(worker_id);
+
+        let account_id = worker.reward_account_id;
+
+        SetBudgetFixture::default().with_budget(100000).execute();
+
+        let block_number = 11;
+        run_to_block(block_number);
+
+        let effective_paid_blocks =
+            (block_number - starting_block) - (block_number % reward_period);
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            effective_paid_blocks * reward_per_block
         );
     });
 }

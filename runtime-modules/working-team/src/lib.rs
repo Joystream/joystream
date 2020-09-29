@@ -40,7 +40,7 @@ use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{Hash, MaybeSerialize, Member};
+use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec::Vec;
 use system::{ensure_root, ensure_signed};
@@ -850,6 +850,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 .as_ref()
                 .map_or(Zero::zero(), |sp| sp.unstaking_period),
             opening.reward_policy.as_ref().map(|rp| rp.reward_per_block),
+            Self::current_block(),
         );
 
         // Store a worker.
@@ -920,9 +921,17 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Reward a worker using reward presets and working team budget.
     fn reward_worker(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
+        // If reward period is not set.
         let mut rewarding_period: u32 = T::RewardPeriod::get();
         if rewarding_period == Zero::zero() {
             rewarding_period = One::one();
+        }
+
+        // Modify rewarding period for new workers.
+        let block_from_worker_creation: u128 =
+            (Self::current_block() - worker.created_at).saturated_into();
+        if block_from_worker_creation < rewarding_period.into() {
+            rewarding_period = block_from_worker_creation.saturated_into();
         }
 
         if let Some(reward_per_block) = worker.reward_per_block {
