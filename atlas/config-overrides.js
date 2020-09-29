@@ -66,7 +66,7 @@ module.exports = {
     customEslintConfig(modifiedEslintConfig)
   ),
   paths: (paths) => {
-    paths.appBuild = path.resolve(__dirname, '..', '..', 'dist')
+    paths.appBuild = path.resolve(__dirname, 'dist')
     return paths
   },
   jest: function (config) {
