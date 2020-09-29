@@ -293,8 +293,6 @@ decl_module! {
 
         #[weight = 10_000_000]
         pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_index: u64) -> Result<(), Error<T>> {
-            EnsureChecks::<T>::can_reveal_vote(origin.clone(), vote_option_index)?;
-
             //
             // == MUTATION SAFE ==
             //
@@ -656,25 +654,6 @@ impl<T: Trait> EnsureChecks<T> {
         };
 
         Ok((stage_data, candidate))
-    }
-
-    fn can_reveal_vote(
-        origin: T::Origin,
-        vote_option_index: u64,
-    ) -> Result<T::AccountId, Error<T>> {
-        // ensure regular user requested action
-        let account_id = Self::ensure_regular_user(origin)?;
-
-        // eliminate candidate voting for himself
-        if let CouncilStage::Election(stage_data) = Stage::<T>::get().stage {
-            if vote_option_index < (stage_data.candidates.len() as u64)
-                && stage_data.candidates[vote_option_index as usize].account_id == account_id
-            {
-                return Err(Error::CantVoteForYourself);
-            }
-        }
-
-        Ok(account_id)
     }
 
     fn can_release_candidacy_stake(

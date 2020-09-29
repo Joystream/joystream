@@ -123,9 +123,9 @@ fn council_candidacy_stake_too_low() {
     });
 }
 
-// Test that candidate can't vote for himself.
+// Test that candidate can vote for himself.
 #[test]
-fn council_cant_vote_for_yourself() {
+fn council_can_vote_for_yourself() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
@@ -180,7 +180,7 @@ fn council_cant_vote_for_yourself() {
             voter.origin.clone(),
             voter.salt.clone(),
             voter.vote_for,
-            Err(Error::CantVoteForYourself),
+            Ok(()),
         );
     });
 }
