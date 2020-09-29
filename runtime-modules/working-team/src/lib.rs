@@ -890,6 +890,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             }
         }
 
+        Self::try_to_pay_missed_reward(worker_id, worker);
+
         // Remove the worker from the storage.
         WorkerById::<T, I>::remove(worker_id);
         Self::decrease_active_worker_counter();
@@ -918,25 +920,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
             // Pay the reward.
             if budget >= reward_per_block {
-                let mut new_budget = budget - reward_per_block;
+                let new_budget = budget - reward_per_block;
                 <Budget<T, I>>::put(new_budget);
 
                 T::Currency::deposit_creating(&worker.reward_account_id, reward_per_block);
 
-                // Try to pay missed reward.
-                if let Some(missed_reward) = worker.missed_reward {
-                    if new_budget >= missed_reward {
-                        new_budget -= missed_reward;
-                        <Budget<T, I>>::put(new_budget);
-
-                        T::Currency::deposit_creating(&worker.reward_account_id, missed_reward);
-
-                        // Update worker missed reward.
-                        WorkerById::<T, I>::mutate(worker_id, |worker| {
-                            worker.missed_reward = None;
-                        });
-                    }
-                }
+                Self::try_to_pay_missed_reward(worker_id, worker);
             } else {
                 // Save unpaid reward.
                 let missed_reward_so_far = worker.missed_reward.map_or(Zero::zero(), |val| val);
@@ -946,6 +935,25 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 // Update worker missed reward.
                 WorkerById::<T, I>::mutate(worker_id, |worker| {
                     worker.missed_reward = Some(new_missed_reward);
+                });
+            }
+        }
+    }
+
+    // Tries to pay missed reward if the reward is enabled for worker and there is enough of team budget.
+    fn try_to_pay_missed_reward(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
+        let budget = Self::budget();
+
+        if let Some(missed_reward) = worker.missed_reward {
+            if budget >= missed_reward {
+                let new_budget = budget - missed_reward;
+                <Budget<T, I>>::put(new_budget);
+
+                T::Currency::deposit_creating(&worker.reward_account_id, missed_reward);
+
+                // Update worker missed reward.
+                WorkerById::<T, I>::mutate(worker_id, |worker| {
+                    worker.missed_reward = None;
                 });
             }
         }

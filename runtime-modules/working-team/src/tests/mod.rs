@@ -522,6 +522,34 @@ fn leave_worker_role_succeeds() {
 }
 
 #[test]
+fn leave_worker_role_succeeds_with_paying_missed_reward() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+        let block_number = 3;
+
+        run_to_block(block_number);
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        SetBudgetFixture::default().with_budget(1000000).execute();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            block_number * reward_per_block
+        );
+    });
+}
+
+#[test]
 fn leave_worker_role_by_leader_succeeds() {
     build_test_externalities().execute_with(|| {
         // Ensure that lead is default
@@ -623,6 +651,36 @@ fn terminate_worker_role_succeeds() {
         terminate_worker_role_fixture.call_and_assert(Ok(()));
 
         EventFixture::assert_last_crate_event(RawEvent::TerminatedWorker(worker_id));
+    });
+}
+
+#[test]
+fn terminate_worker_role_succeeds_with_paying_missed_reward() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+        let block_number = 3;
+
+        run_to_block(block_number);
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        SetBudgetFixture::default().with_budget(1000000).execute();
+
+        let terminate_worker_role_fixture =
+            TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
+
+        terminate_worker_role_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            block_number * reward_per_block
+        );
     });
 }
 
