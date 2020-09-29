@@ -1,6 +1,5 @@
 import React from 'react'
 import { TextField } from '../components'
-import { faBan } from '@fortawesome/free-solid-svg-icons'
 
 export default {
   title: 'TextField',
@@ -34,18 +33,6 @@ export const Disabled = () => (
 export const DisabledWithValue = () => (
   <div style={{ backgroundColor: 'black', padding: '50px 20px' }}>
     <TextField label="Label" value="Disabled" disabled={true} />
-  </div>
-)
-
-export const PrimaryWithIconRight = () => (
-  <div style={{ backgroundColor: 'black', padding: '50px 20px' }}>
-    <TextField label="Label" icon={faBan} iconPosition="right" />
-  </div>
-)
-
-export const PrimaryWithIconLeft = () => (
-  <div style={{ backgroundColor: 'black', padding: '50px 20px' }}>
-    <TextField label="Label" icon={faBan} iconPosition="left" />
   </div>
 )
 

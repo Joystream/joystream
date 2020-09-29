@@ -1,25 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { useCSS, TextFieldStyleProps } from './TextField.style'
-import { IconProp } from '@fortawesome/fontawesome-svg-core'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import React, { useEffect, useRef, useState } from 'react'
+import { TextFieldStyleProps, useCSS } from './TextField.style'
 import { spacing } from './../../theme'
 
 type TextFieldProps = {
   label: string
   helper?: string
   value?: string
-  icon?: IconProp | undefined
   onChange?: (e: React.ChangeEvent) => void
 } & TextFieldStyleProps
 
-export default function TextField({
-  label,
-  helper = '',
-  value = '',
-  icon,
-  disabled = false,
-  ...styleProps
-}: TextFieldProps) {
+export default function TextField({ label, helper = '', value = '', disabled = false, ...styleProps }: TextFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isActive, setIsActive] = useState(!!value)
   const [inputTextValue, setInputTextValue] = useState(value)
@@ -78,7 +68,6 @@ export default function TextField({
             onBlur={onInputTextBlur}
             disabled={disabled}
           />
-          {!!icon && <FontAwesomeIcon icon={icon || 'check'} css={styles.icon} />}
         </div>
       </div>
       {!!helper && <p css={styles.helper}>{helper}</p>}
