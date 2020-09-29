@@ -102,7 +102,7 @@ pub struct Application<AccountId, MemberId> {
     pub reward_account_id: AccountId,
 
     /// Account used to stake in this role.
-    pub staking_account_id: AccountId,
+    pub staking_account_id: Option<AccountId>,
 
     /// Member applying.
     pub member_id: MemberId,
@@ -116,7 +116,7 @@ impl<AccountId: Clone, MemberId: Clone> Application<AccountId, MemberId> {
     pub fn new(
         role_account_id: &AccountId,
         reward_account_id: &AccountId,
-        staking_account_id: &AccountId,
+        staking_account_id: &Option<AccountId>,
         member_id: &MemberId,
         description_hash: Vec<u8>,
     ) -> Self {
@@ -141,7 +141,7 @@ pub struct Worker<AccountId, MemberId, BlockNumber, Balance> {
     pub role_account_id: AccountId,
 
     /// Account used to stake in this role.
-    pub staking_account_id: AccountId,
+    pub staking_account_id: Option<AccountId>,
 
     /// Reward account id.
     pub reward_account_id: AccountId,
@@ -168,7 +168,7 @@ impl<AccountId: Clone, MemberId: Clone, BlockNumber, Balance>
         member_id: &MemberId,
         role_account_id: &AccountId,
         reward_account_id: &AccountId,
-        staking_account_id: &AccountId,
+        staking_account_id: &Option<AccountId>,
         job_unstaking_period: BlockNumber,
         reward_per_block: Option<Balance>,
     ) -> Self {
@@ -264,14 +264,22 @@ pub struct ApplyOnOpeningParams<MemberId, OpeningId, AccountId, Balance> {
     /// Reward account id.
     pub reward_account_id: AccountId,
 
-    /// Staking account id.
-    pub staking_account_id: AccountId,
-
     /// Application description.
     pub description: Vec<u8>,
 
+    /// Stake information for the application.
+    pub stake_parameters: Option<StakeParameters<AccountId, Balance>>,
+}
+
+/// Contains information for the stakes when applying for opening.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Debug, Clone, Default, PartialEq, Eq)]
+pub struct StakeParameters<AccountId, Balance> {
     /// Stake balance.
-    pub stake: Option<Balance>,
+    pub stake: Balance,
+
+    /// Staking account id.
+    pub staking_account_id: AccountId,
 }
 
 /// ApplyOnOpeningParams type alias.

@@ -8,6 +8,7 @@ use super::hiring_workflow::HiringWorkflow;
 use super::mock::{
     Balances, LockId, Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance,
 };
+use crate::types::StakeParameters;
 use crate::{
     ApplyOnOpeningParameters, JobApplication, JobOpening, JobOpeningType, Penalty, RawEvent,
     RewardPolicy, StakePolicy, TeamWorker,
@@ -147,9 +148,8 @@ pub struct ApplyOnOpeningFixture {
     opening_id: u64,
     role_account_id: u64,
     reward_account_id: u64,
-    staking_account_id: u64,
     description: Vec<u8>,
-    stake: Option<u64>,
+    stake_parameters: Option<StakeParameters<u64, u64>>,
 }
 
 impl ApplyOnOpeningFixture {
@@ -168,13 +168,12 @@ impl ApplyOnOpeningFixture {
         }
     }
 
-    pub fn with_stake(self, stake: Option<u64>) -> Self {
-        Self { stake, ..self }
-    }
-
-    pub fn with_stake_account_id(self, staking_account_id: u64) -> Self {
+    pub fn with_stake_parameters(
+        self,
+        stake_parameters: Option<StakeParameters<u64, u64>>,
+    ) -> Self {
         Self {
-            staking_account_id,
+            stake_parameters,
             ..self
         }
     }
@@ -186,9 +185,8 @@ impl ApplyOnOpeningFixture {
             opening_id,
             role_account_id: 1,
             reward_account_id: 1,
-            staking_account_id: 1,
             description: b"human_text".to_vec(),
-            stake: None,
+            stake_parameters: None,
         }
     }
 
@@ -201,9 +199,8 @@ impl ApplyOnOpeningFixture {
                 opening_id: self.opening_id,
                 role_account_id: self.role_account_id,
                 reward_account_id: self.reward_account_id,
-                staking_account_id: self.staking_account_id,
                 description: self.description.clone(),
-                stake: self.stake,
+                stake_parameters: self.stake_parameters.clone(),
             },
         )?;
 
@@ -228,7 +225,10 @@ impl ApplyOnOpeningFixture {
             let expected_application = JobApplication::<Test> {
                 role_account_id: self.role_account_id,
                 reward_account_id: self.reward_account_id,
-                staking_account_id: self.staking_account_id,
+                staking_account_id: self
+                    .stake_parameters
+                    .clone()
+                    .map(|sp| sp.staking_account_id),
                 member_id: self.member_id,
                 description_hash: expected_hash.as_ref().to_vec(),
             };
@@ -264,7 +264,7 @@ pub struct FillOpeningFixture {
     successful_application_ids: BTreeSet<u64>,
     role_account_id: u64,
     reward_account_id: u64,
-    staking_account_id: u64,
+    staking_account_id: Option<u64>,
     stake_policy: Option<StakePolicy<u64, u64>>,
     reward_policy: Option<RewardPolicy<u64>>,
 }
@@ -279,7 +279,7 @@ impl FillOpeningFixture {
             successful_application_ids: application_ids,
             role_account_id: 1,
             reward_account_id: 1,
-            staking_account_id: 1,
+            staking_account_id: None,
             stake_policy: None,
             reward_policy: None,
         }
@@ -292,6 +292,13 @@ impl FillOpeningFixture {
     pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
         Self {
             stake_policy,
+            ..self
+        }
+    }
+
+    pub fn with_staking_account_id(self, staking_account_id: Option<u64>) -> Self {
+        Self {
+            staking_account_id,
             ..self
         }
     }

@@ -317,25 +317,25 @@ decl_module! {
             let opening = checks::ensure_opening_exists::<T, I>(&p.opening_id)?;
 
             // Ensure that there is sufficient balance to cover the proposed stake.
-            checks::ensure_enough_balance_for_staking::<T, I>(&p.staking_account_id, &p.stake)?;
+            checks::ensure_enough_balance_for_staking::<T, I>(p.stake_parameters.clone())?;
 
             // Ensure that proposed stake is enough for the opening.
-            checks::ensure_application_stake_match_opening::<T, I>(&opening, &p.stake)?;
+            checks::ensure_application_stake_match_opening::<T, I>(&opening, &p.stake_parameters)?;
 
             // Checks external conditions for staking.
-            if let Some(amount) = p.stake {
+            if let Some(sp) = p.stake_parameters.clone() {
                 ensure!(
-                    T::StakingHandler::is_member_staking_account(&p.member_id, &p.staking_account_id),
+                    T::StakingHandler::is_member_staking_account(&p.member_id, &sp.staking_account_id),
                     Error::<T, I>::InvalidStakingAccountForMember
                 );
 
                 ensure!(
-                    T::StakingHandler::is_account_free_of_conflicting_stakes(&p.staking_account_id),
+                    T::StakingHandler::is_account_free_of_conflicting_stakes(&sp.staking_account_id),
                     Error::<T, I>::ConflictStakesOnAccount
                 );
 
                 ensure!(
-                    T::StakingHandler::is_enough_balance_for_stake(&p.staking_account_id, amount),
+                    T::StakingHandler::is_enough_balance_for_stake(&sp.staking_account_id, sp.stake),
                     Error::<T, I>::InsufficientBalanceToCoverStake
                 );
             }
@@ -344,8 +344,8 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if let Some(amount) = p.stake {
-                T::StakingHandler::lock(&p.staking_account_id, amount);
+            if let Some(sp) = p.stake_parameters.clone() {
+                T::StakingHandler::lock(&sp.staking_account_id, sp.stake);
             }
 
             let hashed_description = T::Hashing::hash(&p.description);
@@ -354,7 +354,7 @@ decl_module! {
             let application = JobApplication::<T>::new(
                 &p.role_account_id,
                 &p.reward_account_id,
-                &p.staking_account_id,
+                &p.stake_parameters.map(|sp| sp.staking_account_id),
                 &p.member_id,
                 hashed_description.as_ref().to_vec(),
             );
@@ -490,12 +490,22 @@ decl_module! {
             // Ensuring worker actually exists.
             let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
 
+            if penalty.is_some() {
+                // Ensure worker has a stake.
+                ensure!(
+                    worker.staking_account_id.is_some(),
+                    Error::<T, I>::CannotChangeStakeWithoutStakingAccount
+                );
+            }
+
             //
             // == MUTATION SAFE ==
             //
 
             if let Some(penalty) = penalty {
-                Self::slash(worker_id, &worker.staking_account_id, Some(penalty.slashing_amount));
+                if let Some(staking_account_id) = worker.staking_account_id.clone() {
+                    Self::slash(worker_id, &staking_account_id, Some(penalty.slashing_amount));
+                }
             }
 
             // Trigger the event
@@ -519,6 +529,12 @@ decl_module! {
             // Ensuring worker actually exists.
             let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
 
+            // Ensure worker has a stake.
+            ensure!(
+                worker.staking_account_id.is_some(),
+                Error::<T, I>::CannotChangeStakeWithoutStakingAccount
+            );
+
             ensure!(
                 penalty.slashing_amount != <BalanceOfCurrency<T>>::zero(),
                 Error::<T, I>::StakeBalanceCannotBeZero
@@ -528,7 +544,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Self::slash(worker_id, &worker.staking_account_id, Some(penalty.slashing_amount))
+            if let Some(staking_account_id) = worker.staking_account_id {
+                Self::slash(worker_id, &staking_account_id, Some(penalty.slashing_amount))
+            }
         }
 
         /// Decreases the regular worker/lead stake and returns the remainder to the
@@ -541,6 +559,12 @@ decl_module! {
 
             let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
 
+            // Ensure worker has a stake.
+            ensure!(
+                worker.staking_account_id.is_some(),
+                Error::<T, I>::CannotChangeStakeWithoutStakingAccount
+            );
+
             // Ensure the worker is active.
             ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
 
@@ -553,13 +577,13 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // This external module call both checks and mutates the state.
-            T::StakingHandler::decrease_stake(
-                &worker.staking_account_id,
-                new_stake_balance,
-            );
+            if let Some(staking_account_id) = worker.staking_account_id {
+                // This external module call both checks and mutates the state.
+                T::StakingHandler::decrease_stake(&staking_account_id, new_stake_balance);
 
-            Self::deposit_event(RawEvent::StakeDecreased(worker_id, new_stake_balance));
+
+                Self::deposit_event(RawEvent::StakeDecreased(worker_id, new_stake_balance));
+            }
         }
 
         /// Increases the regular worker/lead stake, demands a worker origin.
@@ -572,27 +596,34 @@ decl_module! {
             // Ensure the worker is active.
             ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
 
+            // Ensure worker has a stake.
+            ensure!(
+                worker.staking_account_id.is_some(),
+                Error::<T, I>::CannotChangeStakeWithoutStakingAccount
+            );
+
             ensure!(
                 new_stake_balance != <BalanceOfCurrency<T>>::zero(),
                 Error::<T, I>::StakeBalanceCannotBeZero
             );
 
-            ensure!(
-                T::StakingHandler::is_enough_balance_for_stake(&worker.staking_account_id, new_stake_balance),
-                Error::<T, I>::InsufficientBalanceToCoverStake
-            );
+            if let Some(staking_account_id) = worker.staking_account_id.clone() {
+                ensure!(
+                    T::StakingHandler::is_enough_balance_for_stake(&staking_account_id, new_stake_balance),
+                    Error::<T, I>::InsufficientBalanceToCoverStake
+                );
+            }
 
             //
             // == MUTATION SAFE ==
             //
 
-            // This external module call both checks and mutates the state.
-            T::StakingHandler::increase_stake(
-                &worker.staking_account_id,
-                new_stake_balance,
-            )?;
+            if let Some(staking_account_id) = worker.staking_account_id {
+                // This external module call both checks and mutates the state.
+                T::StakingHandler::increase_stake(&staking_account_id, new_stake_balance)?;
 
-            Self::deposit_event(RawEvent::StakeIncreased(worker_id, new_stake_balance));
+                Self::deposit_event(RawEvent::StakeIncreased(worker_id, new_stake_balance));
+            }
         }
 
         /// Withdraw the worker application. Can be done by the worker only.
@@ -617,8 +648,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            T::StakingHandler::unlock(&application_info.application.staking_account_id);
-
+            if let Some(staking_account_id) = application_info.application.staking_account_id.clone() {
+                T::StakingHandler::unlock(&staking_account_id);
+            }
             // Remove an application.
             <ApplicationById<T, I>>::remove(application_info.application_id);
 
@@ -862,7 +894,9 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         WorkerById::<T, I>::remove(worker_id);
         Self::decrease_active_worker_counter();
 
-        T::StakingHandler::unlock(&worker.staking_account_id);
+        if let Some(staking_account_id) = worker.staking_account_id.clone() {
+            T::StakingHandler::unlock(&staking_account_id);
+        }
 
         Self::deposit_event(event);
     }

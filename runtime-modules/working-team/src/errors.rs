@@ -71,5 +71,8 @@ decl_error! {
 
         /// Specified unstaking period is less then minimum set for the team.
         UnstakingPeriodLessThanMinimum,
+
+        /// Requested operation with stake is impossible because of stake was not defined for the role.
+        CannotChangeStakeWithoutStakingAccount,
     }
 }

@@ -11,7 +11,7 @@ use sp_arithmetic::traits::Zero;
 use sp_std::collections::btree_set::BTreeSet;
 use system::{ensure_root, ensure_signed};
 
-use crate::types::ApplicationInfo;
+use crate::types::{ApplicationInfo, StakeParameters};
 
 // Check opening: verifies origin and opening type compatibility.
 pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
@@ -224,25 +224,24 @@ pub(crate) fn ensure_valid_reward_policy<T: Trait<I>, I: Instance>(
 
 // Check application: verifies free balance for a given account for staking.
 pub(crate) fn ensure_enough_balance_for_staking<T: Trait<I>, I: Instance>(
-    account: &T::AccountId,
-    stake: &Option<BalanceOfCurrency<T>>,
+    stake_parameters: Option<StakeParameters<T::AccountId, BalanceOfCurrency<T>>>,
 ) -> DispatchResult {
-    let stake_balance = stake.unwrap_or_default();
+    if let Some(sp) = stake_parameters {
+        if sp.stake > (Zero::zero()) {
+            let free_balance = T::Currency::free_balance(&sp.staking_account_id);
 
-    if stake_balance > (Zero::zero()) {
-        let free_balance = T::Currency::free_balance(account);
+            if free_balance < sp.stake {
+                return Err(Error::<T, I>::InsufficientBalanceToCoverStake.into());
+            } else {
+                let new_balance = free_balance - sp.stake;
 
-        if free_balance < stake_balance {
-            return Err(Error::<T, I>::InsufficientBalanceToCoverStake.into());
-        } else {
-            let new_balance = free_balance - stake_balance;
-
-            return T::Currency::ensure_can_withdraw(
-                account,
-                stake_balance,
-                WithdrawReasons::all(),
-                new_balance,
-            );
+                return T::Currency::ensure_can_withdraw(
+                    &sp.staking_account_id,
+                    sp.stake,
+                    WithdrawReasons::all(),
+                    new_balance,
+                );
+            }
         }
     }
 
@@ -252,14 +251,15 @@ pub(crate) fn ensure_enough_balance_for_staking<T: Trait<I>, I: Instance>(
 // Check application: verifies that proposed stake is enough for the opening.
 pub(crate) fn ensure_application_stake_match_opening<T: Trait<I>, I: Instance>(
     opening: &JobOpening<T::BlockNumber, BalanceOfCurrency<T>>,
-    stake: &Option<BalanceOfCurrency<T>>,
+    stake_parameters: &Option<StakeParameters<T::AccountId, BalanceOfCurrency<T>>>,
 ) -> DispatchResult {
     let opening_stake_balance = opening
         .stake_policy
         .clone()
         .unwrap_or_default()
         .stake_amount;
-    let application_stake_balance = stake.unwrap_or_default();
+
+    let application_stake_balance = stake_parameters.clone().unwrap_or_default().stake;
 
     if application_stake_balance < opening_stake_balance {
         return Err(Error::<T, I>::ApplicationStakeDoesntMatchOpening.into());
