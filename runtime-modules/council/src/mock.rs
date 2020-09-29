@@ -67,7 +67,9 @@ impl Trait for Runtime {
         council_user_id: &Self::CouncilUserId,
     ) -> bool {
         // all possible generated candidates
-        account_id == council_user_id && account_id >= &CANDIDATE_BASE_ID && account_id < &(CANDIDATE_BASE_ID + VOTER_CANDIDATE_OFFSET)
+        account_id == council_user_id
+            && account_id >= &CANDIDATE_BASE_ID
+            && account_id < &(CANDIDATE_BASE_ID + VOTER_CANDIDATE_OFFSET)
     }
 }
 
@@ -196,7 +198,6 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
     }
 
     fn process_results(winners: &[OptionResult<Self::VotePower>]) {
-        println!("{:?} fofoffofoff", winners);
         <Module<Self>>::recieve_referendum_results(winners).unwrap();
     }
 
@@ -547,7 +548,11 @@ where
     ) {
         // check method returns expected result
         assert_eq!(
-            Module::<T>::announce_candidacy(InstanceMockUtils::<T>::mock_origin(origin), member_id, stake),
+            Module::<T>::announce_candidacy(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                member_id,
+                stake
+            ),
             expected_result,
         );
     }

@@ -7,14 +7,16 @@
 // used dependencies
 use codec::{Codec, Decode, Encode};
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReason};
-use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter};
+use frame_support::{
+    decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter,
+};
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
+use sp_arithmetic::traits::BaseArithmetic;
+use sp_runtime::traits::{MaybeSerialize, Member};
 use std::marker::PhantomData;
 use system::{ensure_signed, RawOrigin};
-use sp_runtime::traits::{MaybeSerialize, Member};
-use sp_arithmetic::traits::BaseArithmetic;
 
 use referendum::Instance as ReferendumInstanceGeneric;
 use referendum::Trait as ReferendumTrait;
@@ -71,8 +73,6 @@ pub struct Candidate<AccountId, Balance> {
     account_id: AccountId,
     stake: Balance,
 }
-
-
 
 /////////////////// Type aliases ///////////////////////////////////////////////
 
@@ -617,7 +617,10 @@ impl<T: Trait> EnsureChecks<T> {
         Ok(account_id)
     }
 
-    fn ensure_user_membership(origin: T::Origin, member_id: &T::CouncilUserId) -> Result<T::AccountId, Error<T>> {
+    fn ensure_user_membership(
+        origin: T::Origin,
+        member_id: &T::CouncilUserId,
+    ) -> Result<T::AccountId, Error<T>> {
         let account_id = ensure_signed(origin)?;
 
         ensure!(
@@ -674,7 +677,10 @@ impl<T: Trait> EnsureChecks<T> {
         Ok(account_id)
     }
 
-    fn can_release_candidacy_stake(origin: T::Origin, member_id: &T::CouncilUserId) -> Result<T::AccountId, Error<T>> {
+    fn can_release_candidacy_stake(
+        origin: T::Origin,
+        member_id: &T::CouncilUserId,
+    ) -> Result<T::AccountId, Error<T>> {
         // ensure user's membership
         let account_id = Self::ensure_user_membership(origin, member_id)?;
 
