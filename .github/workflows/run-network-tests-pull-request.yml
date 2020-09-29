@@ -52,6 +52,9 @@ jobs:
           name: ${{ steps.compute_shasum.outputs.shasum }}-test
           path: shasum.txt
         if: env.GIT_DIFF && ${{ success() }}
+      
+      - name: Code not modified
+        run: echo "::set-output name=shasum::"
 
   network_tests_1:
     name: Network Integration Tests (pull request)
@@ -78,7 +81,7 @@ jobs:
             export JOYSTREAM_NODE_TAG=${{ github.event.pull_request.base.ref }}
             docker-compose pull
             docker image tag joystream/node:${JOYSTREAM_NODE_TAG} joystream/node:latest
-        if: ${{ needs.prepare_docker_images.outputs.runtime_code_shasum }} == ''
+        if: ${{ needs.prepare_docker_images.outputs.runtime_code_shasum }} == 0
 
       - name: Install packages and dependencies
         run: yarn install --frozen-lockfile
