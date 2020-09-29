@@ -4,12 +4,12 @@ on:
     types: [labeled, synchronize]
 
 jobs:
-  prepare_docker_images:
+  prepare_artifacts:
     name: Prepare joystream/node docker image
     if: contains(github.event.pull_request.labels.*.name, 'run-network-tests')
     runs-on: ubuntu-latest
     outputs:
-      runtime_code_shasum: ${{ steps.compute_shasum.outputs.shasum }}
+      use_artifact: ${{ steps.final.outputs.artifact_name }}
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
@@ -38,27 +38,34 @@ jobs:
         continue-on-error: true
         uses: actions/download-artifact@v2
         with:
-          name: ${{ steps.compute_shasum.outputs.shasum }}-test
+          name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
         if: env.GIT_DIFF
 
-      - name: Build new image (if fetching artifact failed)
+      - name: Build new joystream/node image
         run: |
-            echo "${{ steps.compute_shasum.outputs.shasum }}" > shasum.txt
+          docker-compose build
+          docker save --output joystream-node-docker-image.tar joystream/node
+          gzip joystream-node-docker-image.tar
+          echo "::set-env name=DO_UPLOAD::true"
         if: env.GIT_DIFF && ${{ failure() }}
 
-      - name: Upload new image
+      - name: Upload new joystream/node image
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ steps.compute_shasum.outputs.shasum }}-test
-          path: shasum.txt
-        if: env.GIT_DIFF && ${{ success() }}
-      
-      # - name: Code not modified
-      #   run: echo "::set-output name=shasum::"
+          name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
+          path: joystream-node-docker-image.tar.gz
+        if: env.DO_UPLOAD
+
+      # Only set the final output shasum in last step when we know we have an artifact
+      # which we will use.
+      - id: final
+        name: Set final output
+        run: echo "::set-output name=shasum::${{ steps.compute_shasum.outputs.shasum }}"
+        if: env.GIT_DIFF
 
   network_tests_1:
     name: Network Integration Tests (pull request)
-    needs: prepare_docker_images
+    needs: prepare_artifacts
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -69,18 +76,32 @@ jobs:
       - name: Download Pre-built artifact
         uses: actions/download-artifact@v2
         with:
-          name: ${{ needs.prepare_docker_images.outputs.runtime_code_shasum }}-test
-        if: ${{ needs.prepare_docker_images.outputs.runtime_code_shasum }}
+          name: ${{ needs.prepare_artifacts.outputs.artifact_name }}
+        if: ${{ needs.prepare_artifacts.outputs.artifact_name }}
 
       - name: Install artifact
-        run: cat shasum.txt
-        if: ${{ needs.prepare_docker_images.outputs.runtime_code_shasum }}
+        run: |
+          docker load --input joystream-node-docker-image.tar.gz
+          docker images
+        if: ${{ needs.prepare_artifacts.outputs.artifact_name }}
 
       - name: Pull joystream/node image for base branch from Dockerhub
+        continue-on-error: true
         run: |
             export JOYSTREAM_NODE_TAG=${{ github.event.pull_request.base.ref }}
             docker-compose pull
             docker image tag joystream/node:${JOYSTREAM_NODE_TAG} joystream/node:latest
+        if: needs.prepare_artifacts.outputs.artifact_name == null
+
+      # If not relying on a prebuilt artifact, (ie. no runtime code changed)
+      # but joystream/node image was not sucessfully pulled from dockerhub,
+      # fallback to building from source!
+      - name: Build joystream/node from source
+        run: |
+            if ! docker inspect joystream/node:latest > /dev/null 2>&1;
+            then
+              docker-compose build
+            fi
         if: needs.prepare_docker_images.outputs.runtime_code_shasum == null
 
       - name: Install packages and dependencies
@@ -90,7 +111,7 @@ jobs:
         run: yarn workspace network-tests build
 
       - name: Start chain
-        run: docker-compose up -d --no-build
+        run: docker-compose up -d
 
       - name: Execute network tests
         run: yarn workspace network-tests test
