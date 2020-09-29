@@ -1,0 +1,70 @@
+name: run-network-tests-privileged
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  prepare_docker_images:
+    name: Build new images
+    runs-on: ubuntu-latest
+    outputs:
+      joystream_node_tag: ${{ steps.select_image_tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - id: select_image_tag
+        name: Build docker images
+        run: |
+          export JOYSTREAM_NODE_TAG=$GITHUB_REF
+          echo "DEBUG: JOYSTREAM_NODE_TAG=${JOYSTREAM_NODE_TAG}"
+          docker-compose build
+          docker push joystream/node:${JOYSTREAM_NODE_TAG}
+          echo "::set-output name=tag::${JOYSTREAM_NODE_TAG}"
+
+  run_network_tests_1:
+    name: Network Integration Runtime Tests
+    needs: prepare_docker_images
+    runs-on: ubuntu-latest
+    env:
+      JOYSTREAM_NODE_TAG: ${{ needs.prepare_docker_images.outputs.joystream_node_tag }}
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - name: Install packages and dependencies
+        run: yarn install --frozen-lockfile
+      - name: Ensure tests are runnable
+        run: yarn workspace network-tests build
+      - name: Pull joystream/node image from Dockerhub
+        run: docker-compose pull
+      - name: Start chain
+        run: docker-compose up -d
+      - name: Execute network tests
+        run: yarn workspace network-tests test
+
+  run_network_tests_2:
+    name: Query Node Tests
+    needs: prepare_docker_images
+    runs-on: ubuntu-latest
+    env:
+      JOYSTREAM_NODE_TAG: ${{ needs.prepare_docker_images.outputs.joystream_node_tag }}
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - name: Install packages and dependencies
+        run: yarn install --frozen-lockfile
+      - name: Ensure tests are runnable
+        run: yarn workspace network-tests build
+      - name: Pull joystream/node image from Dockerhub
+        run: docker-compose pull
+      - name: Start chain
+        run: docker-compose up -d
+      - name: Execute network tests
+        run: yarn workspace network-tests test

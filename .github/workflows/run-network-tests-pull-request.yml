@@ -35,7 +35,7 @@ jobs:
         if: env.GIT_DIFF
       - name: Pull joystream/node image from Dockerhub
         run: docker-compose pull
-        if: !env.GIT_DIFF
+        if: env.GIT_DIFF == ''
       - name: Start chain
         run: docker-compose up -d
       - name: Execute network tests
