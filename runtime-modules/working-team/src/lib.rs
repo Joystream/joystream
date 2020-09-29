@@ -92,6 +92,9 @@ pub trait Trait<I: Instance>:
 
     /// Defines min unstaking period in the team.
     type MinUnstakingPeriodLimit: Get<Self::BlockNumber>;
+
+    /// Defines the period every worker gets paid in blocks.
+    type RewardPeriod: Get<u32>;
 }
 
 decl_event!(
@@ -259,9 +262,11 @@ decl_module! {
                 Self::deactivate_worker(&wi.worker_id, &wi.worker, RawEvent::WorkerExited(wi.worker_id));
             });
 
-            WorkerById::<T, I>::iter().for_each(|(worker_id, worker)| {
-                Self::reward_worker(&worker_id, &worker);
-            });
+            if Self::is_reward_block() {
+                WorkerById::<T, I>::iter().for_each(|(worker_id, worker)| {
+                    Self::reward_worker(&worker_id, &worker);
+                });
+            }
 
             10_000_000 //TODO: adjust weight
         }
@@ -915,22 +920,29 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Reward a worker using reward presets and working team budget.
     fn reward_worker(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
+        let mut rewarding_period: u32 = T::RewardPeriod::get();
+        if rewarding_period == Zero::zero() {
+            rewarding_period = One::one();
+        }
+
         if let Some(reward_per_block) = worker.reward_per_block {
+            let reward = reward_per_block * rewarding_period.into();
+
             let budget = Self::budget();
 
             // Pay the reward.
-            if budget >= reward_per_block {
-                let new_budget = budget - reward_per_block;
+            if budget >= reward {
+                let new_budget = budget - reward;
                 <Budget<T, I>>::put(new_budget);
 
-                T::Currency::deposit_creating(&worker.reward_account_id, reward_per_block);
+                T::Currency::deposit_creating(&worker.reward_account_id, reward);
 
                 Self::try_to_pay_missed_reward(worker_id, worker);
             } else {
                 // Save unpaid reward.
                 let missed_reward_so_far = worker.missed_reward.map_or(Zero::zero(), |val| val);
 
-                let new_missed_reward = missed_reward_so_far + reward_per_block;
+                let new_missed_reward = missed_reward_so_far + reward;
 
                 // Update worker missed reward.
                 WorkerById::<T, I>::mutate(worker_id, |worker| {
@@ -959,6 +971,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         }
     }
 
+    // Returns a collection of workers with active unstaking period.
     fn get_leaving_workers() -> Vec<WorkerInfo<T>> {
         WorkerById::<T, I>::iter()
             .filter_map(|(worker_id, worker)| {
@@ -971,5 +984,25 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
                 None
             })
             .collect::<Vec<_>>()
+    }
+
+    // Defines whether the current block is a reward block.
+    fn is_reward_block() -> bool {
+        let current_block = Self::current_block();
+
+        // Don't reward at genesis.
+        if current_block == Zero::zero() {
+            return false;
+        }
+
+        let reward_period = T::RewardPeriod::get();
+
+        // If reward period is not set or equals one - reward every block.
+        if reward_period <= One::one() {
+            return true;
+        }
+
+        // Check whether current block is a reward block.
+        current_block % reward_period.into() == Zero::zero()
     }
 }

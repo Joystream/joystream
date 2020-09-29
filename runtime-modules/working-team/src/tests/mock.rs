@@ -108,6 +108,7 @@ pub type Balances = balances::Module<Test>;
 pub type System = system::Module<Test>;
 
 parameter_types! {
+    pub const RewardPeriod: u32 = 2;
     pub const MaxWorkerNumberLimit: u32 = 3;
     pub const MinUnstakingPeriodLimit: u64 = 3;
     pub const LockId: [u8; 8] = [1; 8];
@@ -121,6 +122,7 @@ impl Trait<TestWorkingTeamInstance> for Test {
     type StakingHandler = Test;
     type MemberOriginValidator = ();
     type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = RewardPeriod;
 }
 
 pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";

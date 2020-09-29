@@ -26,7 +26,7 @@ use frame_support::dispatch::DispatchError;
 use frame_support::traits::{LockableCurrency, WithdrawReason};
 use frame_support::StorageMap;
 use mock::{
-    build_test_externalities, run_to_block, Balances, Test, TestWorkingTeam,
+    build_test_externalities, run_to_block, Balances, RewardPeriod, Test, TestWorkingTeam,
     TestWorkingTeamInstance, ACTOR_ORIGIN_ERROR,
 };
 use sp_runtime::traits::Hash;
@@ -531,7 +531,7 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
         let worker_id = HireRegularWorkerFixture::default()
             .with_reward_policy(reward_policy)
             .hire();
-        let block_number = 3;
+        let block_number = 4;
 
         run_to_block(block_number);
 
@@ -664,7 +664,7 @@ fn terminate_worker_role_succeeds_with_paying_missed_reward() {
         let worker_id = HireRegularWorkerFixture::default()
             .with_reward_policy(reward_policy)
             .hire();
-        let block_number = 3;
+        let block_number = 4;
 
         run_to_block(block_number);
 
@@ -2000,8 +2000,11 @@ fn rewards_payments_with_insufficient_budget_and_restored_budget() {
         assert_eq!(Balances::usable_balance(&account_id), 0);
 
         let paid_blocks = 3;
+        let reward_period: u64 = RewardPeriod::get().into();
+        let effective_paid_blocks: u64 = paid_blocks - (paid_blocks % reward_period);
+
         SetBudgetFixture::default()
-            .with_budget(reward_per_block * paid_blocks)
+            .with_budget(paid_blocks * reward_per_block)
             .execute();
 
         let block_number = 10;
@@ -2009,14 +2012,18 @@ fn rewards_payments_with_insufficient_budget_and_restored_budget() {
 
         assert_eq!(
             Balances::usable_balance(&account_id),
-            paid_blocks * reward_per_block
+            effective_paid_blocks * reward_per_block
         );
 
         let worker = TestWorkingTeam::worker_by_id(worker_id);
 
+        let missed_reward_blocks = block_number - paid_blocks;
+        let effective_missed_reward: u64 =
+            missed_reward_blocks + (missed_reward_blocks % reward_period);
+
         assert_eq!(
             worker.missed_reward.unwrap(),
-            (block_number - paid_blocks) * reward_per_block
+            effective_missed_reward * reward_per_block
         );
 
         SetBudgetFixture::default().with_budget(1000000).execute();
