@@ -345,7 +345,7 @@ impl<T: Trait> Module<T> {
 
         // prolong announcing period when not enough candidates registered
         if (stage_data.candidates.len() as u64) < candidate_count {
-            Mutations::<T>::prolong_announcing_period(stage_data);
+            Mutations::<T>::restart_announcing_period();
 
             // emit event
             Self::deposit_event(RawEvent::NotEnoughCandidates());
@@ -368,11 +368,8 @@ impl<T: Trait> Module<T> {
     ) {
         let council_size = T::CouncilSize::get();
         if winners.len() as u64 != council_size {
-            // this should be same as `winners.len() < council_size`, but let's use `!=` for code safety
-            // TODO: select new council from tied candidates or reset election
-
-            // update state
-            Mutations::<T>::finalize_election_period();
+            // reset candidacy announcement period
+            Mutations::<T>::restart_announcing_period();
 
             // emit event
             Self::deposit_event(RawEvent::NewCouncilNotElected());
@@ -449,6 +446,17 @@ impl<T: Trait> Mutations<T> {
         });
     }
 
+    fn restart_announcing_period() {
+        let block_number = <system::Module<T>>::block_number();
+
+        Stage::<T>::mutate(|value| {
+            *value = CouncilStageUpdate {
+                stage: CouncilStage::Announcing(CouncilStageAnnouncing { candidates: vec![] }),
+                changed_at: block_number,
+            }
+        });
+    }
+
     /// Change the council stage from the announcing to the election stage.
     fn finalize_announcing_period(
         stage_data: &CouncilStageAnnouncingOf<T>,
@@ -480,13 +488,6 @@ impl<T: Trait> Mutations<T> {
 
     /// Elect new council after successful election.
     fn elect_new_council(elected_members: &[CandidateOf<T>]) {
-        Self::finalize_election_period();
-
-        CouncilMembers::<T>::mutate(|value| *value = elected_members.to_vec());
-    }
-
-    /// Change the council stage from the election to the idle stage.
-    fn finalize_election_period() {
         let block_number = <system::Module<T>>::block_number();
 
         // change council state
@@ -496,6 +497,8 @@ impl<T: Trait> Mutations<T> {
                 changed_at: block_number,
             }
         });
+
+        CouncilMembers::<T>::mutate(|value| *value = elected_members.to_vec());
     }
 
     /// Announce user's candidacy.

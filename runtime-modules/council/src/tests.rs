@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::{CandidateOf, Error};
+use super::{CandidateOf, CouncilStageAnnouncingOf, Error};
 use crate::mock::*;
 
 type Mocks = InstanceMocks<Runtime>;
@@ -146,7 +146,7 @@ fn council_can_vote_for_yourself() {
             .collect();
 
         let params = CouncilCycleParams {
-            council_settings: CouncilSettings::<Runtime>::extract_settings(),
+            council_settings: council_settings.clone(),
             cycle_start_block_number: 0,
             expected_initial_council_members: vec![],
             expected_final_council_members: vec![], // not needed in this scenario
@@ -202,5 +202,47 @@ fn council_candidacy_invalid_member() {
             candidate.candidate.stake.clone(),
             Err(Error::CouncilUserIdNotMatchAccount),
         );
+    });
+}
+
+// Test that only valid members can candidate.
+#[test]
+fn council_announcement_reset_on_insufficient_candidates() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+
+        // generate candidates
+        let candidates: Vec<CandidateInfo<Runtime>> = (0
+            ..(council_settings.min_candidate_count - 2) as u64)
+            .map(|i| {
+                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
+            })
+            .collect();
+
+        let params = CouncilCycleParams {
+            council_settings: council_settings.clone(),
+            cycle_start_block_number: 0,
+            expected_initial_council_members: vec![],
+            expected_final_council_members: vec![], // not needed in this scenario
+            candidates_announcing: candidates.clone(),
+            expected_candidates: vec![], // not needed in this scenario
+            voters: vec![],              // not needed in this scenario
+
+            // escape before voting
+            interrupt_point: Some(CouncilCycleInterrupt::AfterCandidatesAnnounce),
+        };
+
+        InstanceMocks::simulate_council_cycle(params.clone());
+
+        // forward to election-voting period
+        MockUtils::increase_block_number(council_settings.announcing_stage_duration + 1);
+
+        // check announcements were reset
+        Mocks::check_announcing_period(
+            council_settings.announcing_stage_duration + 1,
+            CouncilStageAnnouncingOf::<Runtime> { candidates: vec![] },
+        )
     });
 }
