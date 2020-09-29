@@ -125,30 +125,31 @@ export const StyledIcon = styled(Icon)`
   }
 `
 export const StyledButton = styled.button<ButtonStyleProps>`
-	border-width: 1px;
-	border-style: solid;
-	font-family: ${typography.fonts.headers};
-	font-weight: ${typography.weights.medium};
-	display: inline-flex;
-	justify-content: center;
-	align-items: center;
-	&:hover {
-		cursor: ${(props) => (!props.disabled && props.clickable ? 'pointer' : '')}
-	} 
-	&::selected {
-		background: transparent;
-	}
-	${colorsFromProps}
-	${sizeFromProps}
+  border-width: 1px;
+  border-style: solid;
+  font-family: ${typography.fonts.headers};
+  font-weight: ${typography.weights.medium};
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  &:hover {
+    cursor: ${(props) => (!props.disabled && props.clickable ? 'pointer' : '')};
+  }
+  &::selected {
+    background: transparent;
+  }
+  ${colorsFromProps}
+  ${sizeFromProps}
 	${disabled}
 	& > ${StyledIcon} {
-		font-size: ${({ size }) =>
+    font-size: ${({ size }) =>
       size === 'regular'
         ? typography.sizes.icon.large
         : size === 'small'
         ? typography.sizes.icon.medium
         : typography.sizes.icon.small};
-		& + * {
-			margin-left: 10px
-		}
-	};`
+    & + * {
+      margin-left: 10px;
+    }
+  } ;
+`

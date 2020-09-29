@@ -8,7 +8,7 @@ const {
   disableEsLint,
   addWebpackModuleRule,
 } = require('customize-cra')
-const eslintConfig = require('../../.eslintrc.js')
+const eslintConfig = require('./.eslintrc.js')
 
 const modifiedEslintConfig = {
   ...eslintConfig,
