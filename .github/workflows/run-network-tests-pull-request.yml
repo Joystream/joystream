@@ -51,7 +51,7 @@ jobs:
         with:
           name: ${{ steps.compute_shasum.outputs.shasum }}-test
           path: shasum.txt
-        if: env.GIT_DIFF && ${{ success()) }}
+        if: env.GIT_DIFF && ${{ success() }}
 
   network_tests_1:
     name: Network Integration Tests (pull request)
