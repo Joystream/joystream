@@ -4,7 +4,11 @@
   "description": "JSON schemas, inputs and related tooling for Joystream content directory 2.0",
   "author": "Joystream contributors",
   "scripts": {
+    "lint": "eslint ./ --ext .ts",
+    "ts-check": "tsc --noEmit --pretty",
+    "pretty": "prettier ./ --write --ignore-path .gitignore",
     "validate": "ts-node ./scripts/validate.ts",
+    "checks": "yarn ts-check && prettier ./ --check --ignore-path .gitignore && yarn validate && yarn lint",
     "generate:types": "ts-node --files ./scripts/schemasToTS.ts",
     "generate:entity-schemas": "ts-node ./scripts/inputSchemasToEntitySchemas.ts",
     "generate:all": "yarn generate:entity-schemas && yarn generate:types",

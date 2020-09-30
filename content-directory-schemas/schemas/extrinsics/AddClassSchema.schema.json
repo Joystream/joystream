@@ -5,10 +5,7 @@
   "description": "JSON schema to describe a new schema for a certain class in Joystream network",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "classId",
-    "newProperties"
-  ],
+  "required": ["classId", "newProperties"],
   "properties": {
     "classId": { "$ref": "#/definitions/ClassId" },
     "existingProperties": {
@@ -40,16 +37,10 @@
     "Property": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "name",
-        "property_type"
-      ],
+      "required": ["name", "property_type"],
       "properties": {
         "property_type": {
-          "oneOf": [
-            { "$ref": "#/definitions/SinglePropertyVariant" },
-            { "$ref": "#/definitions/VecPropertyVariant" }
-          ]
+          "oneOf": [{ "$ref": "#/definitions/SinglePropertyVariant" }, { "$ref": "#/definitions/VecPropertyVariant" }]
         },
         "name": { "$ref": "#/definitions/PropertyName" },
         "description": { "$ref": "#/definitions/PropertyDescription" },
@@ -70,10 +61,10 @@
     },
     "SinglePropertyType": {
       "oneOf": [
-        {"$ref": "#/definitions/PrimitiveProperty"},
-        {"$ref": "#/definitions/TextProperty"},
-        {"$ref": "#/definitions/HashProperty"},
-        {"$ref": "#/definitions/ReferenceProperty"}
+        { "$ref": "#/definitions/PrimitiveProperty" },
+        { "$ref": "#/definitions/TextProperty" },
+        { "$ref": "#/definitions/HashProperty" },
+        { "$ref": "#/definitions/ReferenceProperty" }
       ]
     },
     "SinglePropertyVariant": {
@@ -87,10 +78,7 @@
     "VecPropertyType": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "vec_type",
-        "max_length"
-      ],
+      "required": ["vec_type", "max_length"],
       "properties": {
         "vec_type": { "$ref": "#/definitions/SinglePropertyType" },
         "max_length": { "$ref": "#/definitions/MaxVecItems" }

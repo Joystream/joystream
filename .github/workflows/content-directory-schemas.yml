@@ -17,4 +17,4 @@ jobs:
     - name: validate
       run: |
         yarn install --frozen-lockfile
-        yarn workspace cd-schemas validate
+        yarn workspace cd-schemas checks --quiet

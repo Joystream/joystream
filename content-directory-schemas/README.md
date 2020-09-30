@@ -18,6 +18,7 @@ yarn workspace cd-schemas initialize:dev
 ```
 
 This will handle:
+
 - Creating a membership for `ALICE` (if not already created)
 - Setting (hiring) `ALICE` as content curators lead (if not already set)
 - Creating classes in the runtime based on `inputs/classes` json inputs (if the content directory is currently empty)
@@ -25,6 +26,7 @@ This will handle:
 - Creating entities based on `inputs/entityBatches` based on json files that allow specifying entities and relationships between them in a simplified way. Those inpus are then converted to one huge `api.tx.contentDirectory.transaction` call
 
 ### Input files naming
+
 Currently the tooling has some limitations when it comes to naming files inside the `inputs` directory. There is a specific pattern that has to be respected:
 
 Each input file name should start with related class id (counting from `1`, since it's assumed that the classes will be created inside an initially empty content directory) followed by and userscore and a class name (for example: `1_Language`), followed by one of the following strings: `Class`, `Schema` or `Batch` (based on the input type, ie. `1_LanguageBatch`)
@@ -59,6 +61,7 @@ Instead, the script that initializes the content directory (`scripts/initializeC
 This input can be provided as a simple json array of objects matching `{ [propertyName]: propertyValue}` structure.
 
 For example, in order to describe creating entities as simple as `Language`, which only has `Code` and `Name` properties, we can just create an array of objects like:
+
 ```
 [
   { "Code": "EN", "Name": "English" },
@@ -66,6 +69,7 @@ For example, in order to describe creating entities as simple as `Language`, whi
   { "Code": "DE", "Name": "German" }
 ]
 ```
+
 _(This is the actual content of `inputs/entityBatches/1_LanguageBatch.json`)_
 
 #### Related entities
@@ -74,6 +78,7 @@ There also exists a specific syntax for defining relations between entities in b
 We can do it by either using `"new"` or `"existing"` keyword.
 
 - The `"new"` keyword allows describing a scenario where related entity should be created **along with** the main entity and then referenced by it. An example of this could be `Video` and `VideoMedia` which have a one-to-one relationship and it doesn't make much sense to specify them in separate batches. Instead, we can use a syntax like:
+
 ```
 {
   "title": "Awsome video",
@@ -85,7 +90,9 @@ We can do it by either using `"new"` or `"existing"` keyword.
   }
 }
 ```
+
 - The `"existing"` keyword allows referencing an entity created as part of some other (**previous!**) batch inside `inputs/entityBatches`. We can do it by specifying the value of **any unique property of the referenced entity**. So, for example to reference a `Language` entity from `VideoBatch.json` file, we use this syntax:
+
 ```
 {
   "title": "Awesome video",
@@ -99,6 +106,7 @@ We can do it by either using `"new"` or `"existing"` keyword.
 ### Entity `json-schemas`
 
 There is a script that provides an easy way of converting `runtime-schemas` (based on inputs from `inputs/schemas`) to `json-schemas` (`.schema.json` files) which allow validating the input (ie. json files) describing some specific entities. It can be run with:
+
 ```
 yarn workspace cd-schemas generate:entity-schemas
 ```
@@ -114,10 +122,13 @@ The generated `json-schemas` include:
 ### Typescript support
 
 Thanks to the `json-schema-to-typescript` library, we can very simply generate Typescript interfaces based on existing `json-schemas`. This can be done via:
+
 ```
 yarn workspace cd-schemas generate:types
 ```
+
 This command will generate:
+
 - `types/entities` based on `schemas/entities`, providing typescript interfaces for entities like `Video` etc. (note that this interface will include a peculiar way of describing entity relationships, further described in _**Entity batches**_ section)
 - `types/extrinsics` based on `schemas/extrinsics`, providing typescript interfaces for input to extrinsics like `AddClassSchema` and `CreateClass`
 
@@ -134,6 +145,7 @@ There are a lot of other potential use-cases, but for the purpose of this docume
 ## Current limitations
 
 Some limitations that should be dealt with in the nearest future:
+
 - Filename restrictions described in **_Input files naming_** section
 - The requirement of knowing the class id (ie. when defining the references in `inputs/schemas`)
 - Some of the code runs on the assumption that there is only one schema for each class, which is very limiting

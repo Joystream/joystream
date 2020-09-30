@@ -5,12 +5,7 @@
   "description": "JSON schema to describe a new class for Joystream network",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "name",
-    "description",
-    "maximum_entities_count",
-    "default_entity_creation_voucher_upper_bound"
-  ],
+  "required": ["name", "description", "maximum_entities_count", "default_entity_creation_voucher_upper_bound"],
   "properties": {
     "name": {
       "type": "string",
