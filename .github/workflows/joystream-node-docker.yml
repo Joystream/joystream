@@ -4,6 +4,7 @@ on: push
 jobs:
   build:
     name: Build joystream/node Docker image
+    if: github.repository == 'Joystream/joystream'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
