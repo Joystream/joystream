@@ -3,7 +3,6 @@ on:
   pull_request:
     types: [labeled, synchronize]
   push:
-  workflow_dispatch:
 
 jobs:
   build_images:
@@ -74,8 +73,7 @@ jobs:
       - name: Build new joystream/node image
         run: |
           if ! [ -f joystream-node-docker-image.tar.gz ]; then
-            export JOYSTREAM_NODE_TAG=latest
-            docker-compose build
+            docker build . --file joystream-node.Dockerfile --tag joystream/node
             docker save --output joystream-node-docker-image.tar joystream/node
             gzip joystream-node-docker-image.tar
             cp joystream-node-docker-image.tar.gz ~/docker-images/
@@ -104,7 +102,7 @@ jobs:
   
   network_tests_1:
     name: Network Integration Runtime Tests
-    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests') || github.event.push || github.event.dispatch
+    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests') || github.event.push != null
     needs: build_images
     runs-on: ubuntu-latest
     steps:
@@ -131,7 +129,7 @@ jobs:
 
   network_tests_2:
     name: Query Node Tests (Placeholder)
-    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests') || github.event.push || github.event.dispatch
+    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests') || github.event.push != null
     needs: build_images
     runs-on: ubuntu-latest
     steps:
@@ -158,7 +156,7 @@ jobs:
 
   network_tests_3:
     name: Storage Node Tests
-    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests') || github.event.push || github.event.dispatch
+    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests') || github.event.push != null
     needs: build_images
     runs-on: ubuntu-latest
     steps:
