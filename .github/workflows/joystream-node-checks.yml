@@ -27,7 +27,7 @@ jobs:
       # - name: Check version modified correctly
       #   if: env.GIT_DIFF
 
-      - name: Build fi runtime code modified
+      - name: Build if runtime was modified
         run: |
           ./setup.sh
           yarn cargo-checks
