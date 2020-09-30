@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use super::{CandidateOf, CouncilStageAnnouncingOf, Error};
+use super::{CouncilMemberOf, CouncilStageAnnouncing, Error};
 use crate::mock::*;
 
 type Mocks = InstanceMocks<Runtime>;
@@ -20,20 +20,32 @@ fn council_lifecycle() {
         let candidates: Vec<CandidateInfo<Runtime>> = (0
             ..(council_settings.min_candidate_count + 1) as u64)
             .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
+                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake, i)
             })
             .collect();
 
         // prepare candidates that are expected to get into candidacy list
-        let expected_candidates = candidates[0..council_settings.min_candidate_count as usize]
+        let expected_candidates = candidates
             .iter()
             .map(|item| item.candidate.clone())
             .collect();
 
-        let expected_final_council_members: Vec<CandidateOf<Runtime>> = vec![
-            candidates[3].candidate.clone(),
-            candidates[0].candidate.clone(),
-            candidates[1].candidate.clone(),
+        let expected_final_council_members: Vec<CouncilMemberOf<Runtime>> = vec![
+            (
+                candidates[3].candidate.clone(),
+                candidates[3].council_user_id,
+            )
+                .into(),
+            (
+                candidates[0].candidate.clone(),
+                candidates[0].council_user_id,
+            )
+                .into(),
+            (
+                candidates[1].candidate.clone(),
+                candidates[1].council_user_id,
+            )
+                .into(),
         ];
 
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
@@ -70,11 +82,11 @@ fn council_candidacy_invalid_time() {
         let candidates: Vec<CandidateInfo<Runtime>> = (0
             ..(council_settings.min_candidate_count + 1) as u64)
             .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
+                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake, i)
             })
             .collect();
 
-        let expected_candidates = candidates[0..council_settings.min_candidate_count as usize]
+        let expected_candidates = candidates
             .iter()
             .map(|item| item.candidate.clone())
             .collect();
@@ -112,7 +124,7 @@ fn council_candidacy_stake_too_low() {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
 
         let insufficient_stake = council_settings.min_candidate_stake - 1;
-        let candidate = MockUtils::generate_candidate(0, insufficient_stake);
+        let candidate = MockUtils::generate_candidate(0, insufficient_stake, 0);
 
         Mocks::announce_candidacy(
             candidate.origin.clone(),
@@ -136,11 +148,11 @@ fn council_can_vote_for_yourself() {
         let candidates: Vec<CandidateInfo<Runtime>> = (0
             ..(council_settings.min_candidate_count + 1) as u64)
             .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
+                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake, i)
             })
             .collect();
 
-        let expected_candidates = candidates[0..council_settings.min_candidate_count as usize]
+        let expected_candidates = candidates
             .iter()
             .map(|item| item.candidate.clone())
             .collect();
@@ -194,7 +206,7 @@ fn council_candidacy_invalid_member() {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
 
         let stake = council_settings.min_candidate_stake;
-        let candidate = MockUtils::generate_candidate(INVALID_USER_MEMBER, stake);
+        let candidate = MockUtils::generate_candidate(INVALID_USER_MEMBER, stake, 0);
 
         Mocks::announce_candidacy(
             candidate.origin.clone(),
@@ -217,7 +229,7 @@ fn council_announcement_reset_on_insufficient_candidates() {
         let candidates: Vec<CandidateInfo<Runtime>> = (0
             ..(council_settings.min_candidate_count - 2) as u64)
             .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake)
+                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake, i)
             })
             .collect();
 
@@ -242,7 +254,9 @@ fn council_announcement_reset_on_insufficient_candidates() {
         // check announcements were reset
         Mocks::check_announcing_period(
             council_settings.announcing_stage_duration + 1,
-            CouncilStageAnnouncingOf::<Runtime> { candidates: vec![] },
+            CouncilStageAnnouncing {
+                candidates_count: 0,
+            },
         )
     });
 }

@@ -2,9 +2,9 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    BalanceReferendum, CandidateOf, CouncilMembers, CouncilStage, CouncilStageAnnouncingOf,
-    CouncilStageElectionOf, CouncilStageUpdate, CouncilStageUpdateOf, Error, GenesisConfig, Module,
-    Stage, Trait,
+    BalanceReferendum, CandidateOf, CouncilMemberOf, CouncilMembers, CouncilStage,
+    CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate, CouncilStageUpdateOf,
+    CurrentAnnouncementCycleId, Error, GenesisConfig, Module, Stage, Trait,
 };
 
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
@@ -259,6 +259,7 @@ pub enum OriginType<AccountId> {
 pub struct CandidateInfo<T: Trait> {
     pub origin: OriginType<T::AccountId>,
     pub account_id: T::CouncilUserId,
+    pub council_user_id: T::CouncilUserId,
     pub candidate: CandidateOf<T>,
 }
 
@@ -282,7 +283,6 @@ pub struct CouncilSettings<T: Trait> {
 }
 
 impl<T: Trait> CouncilSettings<T> {
-    //impl<T: Trait + Trait<ReferendumTrait = T>> CouncilSettings<T> {
     pub fn extract_settings() -> CouncilSettings<T> {
         let council_size = T::CouncilSize::get();
 
@@ -313,8 +313,8 @@ pub enum CouncilCycleInterrupt {
 pub struct CouncilCycleParams<T: Trait> {
     pub council_settings: CouncilSettings<T>,
     pub cycle_start_block_number: T::BlockNumber,
-    pub expected_initial_council_members: Vec<CandidateOf<T>>, // council members
-    pub expected_final_council_members: Vec<CandidateOf<T>>, // council members after cycle finishes
+    pub expected_initial_council_members: Vec<CouncilMemberOf<T>>, // council members
+    pub expected_final_council_members: Vec<CouncilMemberOf<T>>, // council members after cycle finishes
     pub candidates_announcing: Vec<CandidateInfo<T>>, // candidates announcing their candidacy
     pub expected_candidates: Vec<CandidateOf<T>>, // expected list of candidates after announcement period is over
     pub voters: Vec<VoterInfo<T>>,                // voters that will participate in council voting
@@ -342,6 +342,9 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
     GenesisConfig::<Runtime> {
         stage: CouncilStageUpdate::default(),
         council_members: vec![],
+        candidates: vec![],
+        current_cycle_candidates_order: vec![],
+        current_cycle_id: 0,
     }
 }
 
@@ -398,11 +401,17 @@ where
         let _ = pallet_balances::Module::<Runtime>::deposit_creating(&account_id, amount.into());
     }
 
-    pub fn generate_candidate(index: u64, stake: BalanceReferendum<T>) -> CandidateInfo<T> {
+    pub fn generate_candidate(
+        index: u64,
+        stake: BalanceReferendum<T>,
+        order_index: u64,
+    ) -> CandidateInfo<T> {
         let account_id = CANDIDATE_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
         let candidate = CandidateOf::<T> {
             account_id: account_id.into(),
+            cycle_id: CurrentAnnouncementCycleId::get(),
+            order_index,
             stake,
         };
 
@@ -411,6 +420,7 @@ where
         CandidateInfo {
             origin,
             candidate,
+            council_user_id: account_id.into(),
             account_id: account_id.into(),
         }
     }
@@ -473,7 +483,7 @@ where
 {
     pub fn check_announcing_period(
         expected_update_block_number: T::BlockNumber,
-        expected_state: CouncilStageAnnouncingOf<T>,
+        expected_state: CouncilStageAnnouncing,
     ) -> () {
         // check stage is in proper state
         assert_eq!(
@@ -487,7 +497,7 @@ where
 
     pub fn check_election_period(
         expected_update_block_number: T::BlockNumber,
-        expected_state: CouncilStageElectionOf<T>,
+        expected_state: CouncilStageElection,
     ) -> () {
         // check stage is in proper state
         assert_eq!(
@@ -510,7 +520,7 @@ where
         );
     }
 
-    pub fn check_council_members(expect_members: Vec<CandidateOf<T>>) -> () {
+    pub fn check_council_members(expect_members: Vec<CouncilMemberOf<T>>) -> () {
         // check stage is in proper state
         assert_eq!(CouncilMembers::<T>::get(), expect_members,);
     }
@@ -601,8 +611,8 @@ where
         // start announcing
         Self::check_announcing_period(
             params.cycle_start_block_number,
-            CouncilStageAnnouncingOf::<T> {
-                candidates: params.expected_initial_council_members.clone(),
+            CouncilStageAnnouncing {
+                candidates_count: 0,
             },
         );
 
@@ -634,8 +644,8 @@ where
         // finish announcing period / start referendum -> will cause period prolongement
         Self::check_election_period(
             settings.announcing_stage_duration + 1.into(),
-            CouncilStageElectionOf::<T> {
-                candidates: params.expected_candidates.clone(),
+            CouncilStageElection {
+                candidates_count: params.expected_candidates.len() as u64,
             },
         );
 
