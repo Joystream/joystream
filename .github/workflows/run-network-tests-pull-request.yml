@@ -82,23 +82,23 @@ jobs:
             echo "::set-env name=UPLOAD_NEW_ARTIFACT::true"
           fi
 
-      - name: Build new joystream/node image
-        run: |
-          if ! [ -f joystream-node-docker-image.tar.gz ]; then
-            export JOYSTREAM_NODE_TAG=latest
-            docker-compose build
-            docker save --output joystream-node-docker-image.tar joystream/node
-            gzip joystream-node-docker-image.tar
-            cp joystream-node-docker-image.tar.gz ~/docker-images/
-            echo "::set-env name=UPLOAD_NEW_ARTIFACT::true"
-          fi
+      # - name: Build new joystream/node image
+      #   run: |
+      #     if ! [ -f joystream-node-docker-image.tar.gz ]; then
+      #       export JOYSTREAM_NODE_TAG=latest
+      #       docker-compose build
+      #       docker save --output joystream-node-docker-image.tar joystream/node
+      #       gzip joystream-node-docker-image.tar
+      #       cp joystream-node-docker-image.tar.gz ~/docker-images/
+      #       echo "::set-env name=UPLOAD_NEW_ARTIFACT::true"
+      #     fi
 
-      - name: Save joystream/node image to Artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
-          path: joystream-node-docker-image.tar.gz
-        if: env.UPLOAD_NEW_ARTIFACT
+      # - name: Save joystream/node image to Artifacts
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
+      #     path: joystream-node-docker-image.tar.gz
+      #   if: env.UPLOAD_NEW_ARTIFACT
 
       - name: Fail the Job to see if cache is commited
         run: exit -1
