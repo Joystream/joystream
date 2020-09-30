@@ -16,17 +16,22 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      # TODO: Try to not build a new image: compute a hash over rust code and use that as the docker
-      # image tag. (Normally this would be the git repo commit hash but the monorepo contains multiple projects
-      # that is why it is not effective.)
       - id: docker_build
         name: Build and publish docker images
         run: |
-          docker-compose build
-          export JOYSTREAM_NODE_TAG=`docker run joystream/node --version | sed -e 's/^joystream-node //' | tr -d '\n' | tr -d '\r'`
-          docker image tag joystream/node joystream/node:${JOYSTREAM_NODE_TAG}
-          docker push joystream/node:${JOYSTREAM_NODE_TAG}
-          echo "::set-output name=tag::${JOYSTREAM_NODE_TAG}"
+          export RUNTIME_CODE_SHASUM=`tar -c \
+            --sort=name --owner=root:0 --group=root:0 --mtime='UTC 2020-01-01' \
+            Cargo.lock Cargo.toml \
+            runtime runtime-modules utils/chain-spec-builder | shasum | cut -d " " -f 1`
+          function docker_tag_exists() {
+            curl --silent -f -lSL https://index.docker.io/v1/repositories/joystream/node/tags/$1 > /dev/null
+          }
+          if ! docker_tag_exists ${RUNTIME_CODE_SHASUM}; then
+              docker-compose build
+              docker image tag joystream/node joystream/node:${RUNTIME_CODE_SHASUM}
+              docker push joystream/node:${RUNTIME_CODE_SHASUM}
+          fi
+          echo "::set-output name=tag::${RUNTIME_CODE_SHASUM}"
 
   run_network_tests_1:
     name: Network Integration Runtime Tests
