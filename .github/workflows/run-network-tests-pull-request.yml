@@ -38,6 +38,7 @@ jobs:
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
 
       - name: Check if we have a pre-built image in Artifacts
+        continue-on-error: true
         uses: actions/download-artifact@v2
         with:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
@@ -67,7 +68,7 @@ jobs:
         with:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
-        if: env.UPLOAD_NEW_ARTIFACT == 'true'
+        if: env.UPLOAD_NEW_ARTIFACT
 
   network_tests_1:
     name: Network Integration Tests (pull request)
