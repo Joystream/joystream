@@ -19,10 +19,7 @@ jobs:
       - id: docker_build
         name: Build and publish docker images
         run: |
-          export RUNTIME_CODE_SHASUM=`tar -c \
-            --sort=name --owner=root:0 --group=root:0 --mtime='UTC 2020-01-01' \
-            Cargo.lock Cargo.toml \
-            runtime runtime-modules utils/chain-spec-builder | shasum | cut -d " " -f 1`
+          export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           function docker_tag_exists() {
             curl --silent -f -lSL https://index.docker.io/v1/repositories/joystream/node/tags/$1 > /dev/null
           }

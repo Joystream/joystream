@@ -34,10 +34,7 @@ jobs:
       - id: compute_shasum
         name: Compute runtime code shasum
         run: |
-          export RUNTIME_CODE_SHASUM=`tar -c \
-            --sort=name --owner=root:0 --group=root:0 --mtime='UTC 2020-01-01' \
-            Cargo.lock Cargo.toml \
-            runtime runtime-modules utils/chain-spec-builder | shasum | cut -d " " -f 1`
+          export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
 
       - name: Check if we have a pre-built image in Artifacts
