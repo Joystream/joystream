@@ -2,11 +2,12 @@ name: run-network-tests-pull-request
 on:
   pull_request:
     types: [labeled, synchronize]
+  push:
+  workflow_dispatch:
 
 jobs:
   build_images:
     name: Prepare joystream/node docker image
-    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests')
     runs-on: ubuntu-latest
     outputs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
@@ -27,7 +28,7 @@ jobs:
             Cargo.lock
             Cargo.toml
 
-      # TODO: Look for change in source code but no corresponding version bump of runtime or binaries
+      # TODO: For a pull request Look for change in source code but no corresponding version bump of runtime or binaries
       # - name: Check version modified correctly
       #   if: env.GIT_DIFF
 
@@ -36,18 +37,6 @@ jobs:
         run: |
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
-
-      # Theis step is pointeless!
-      # The intention here was to fetch an artifact from a previous workflow run.
-      # This can be done using GitHub REST API
-      # https://docs.github.com/en/free-pro-team@latest/rest/reference/actions#download-an-artifact
-      # Problem: It doesn't work anymore without authentication!
-      # https://github.com/actions/upload-artifact/issues/51
-      # - name: Check if we have a pre-built image in Artifacts
-      #   continue-on-error: true
-      #   uses: actions/download-artifact@v2
-      #   with:
-      #     name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
 
       - name: Setup cache directory
         run: mkdir ~/docker-images
@@ -100,8 +89,22 @@ jobs:
           path: joystream-node-docker-image.tar.gz
         if: env.UPLOAD_NEW_ARTIFACT
 
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+        if: github.event.push != null && secrets.DOCKERHUB_USERNAME != null && secrets.DOCKERHUB_PASSWORD != null
+
+      - name: Publish new image to DockerHub
+        run: |
+          docker image tag joystream/node joystream/node:${{ steps.compute_shasum.outputs.shasum }}
+          docker push joystream/node:${{ steps.compute_shasum.outputs.shasum }}
+        if: github.event.push != null && secrets.DOCKERHUB_USERNAME != null && secrets.DOCKERHUB_PASSWORD != null
+  
   network_tests_1:
     name: Network Integration Runtime Tests
+    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests') || github.event.push || github.event.dispatch
     needs: build_images
     runs-on: ubuntu-latest
     steps:
@@ -128,6 +131,7 @@ jobs:
 
   network_tests_2:
     name: Query Node Tests (Placeholder)
+    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests') || github.event.push || github.event.dispatch
     needs: build_images
     runs-on: ubuntu-latest
     steps:
@@ -154,6 +158,7 @@ jobs:
 
   network_tests_3:
     name: Storage Node Tests
+    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests') || github.event.push || github.event.dispatch
     needs: build_images
     runs-on: ubuntu-latest
     steps:
