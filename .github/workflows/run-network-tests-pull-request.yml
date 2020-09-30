@@ -35,7 +35,7 @@ jobs:
         name: Compute runtime code shasum
         run: |
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
-          echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
+          echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}-xxx"
 
       # Theis step is pointeless!
       # The intention here was to fetch an artifact from a previous workflow run.
@@ -99,6 +99,9 @@ jobs:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
         if: env.UPLOAD_NEW_ARTIFACT
+
+      - name: Fail the Job to see if cache is commited
+        run: exit -1
 
   network_tests_1:
     name: Network Integration Runtime Tests
