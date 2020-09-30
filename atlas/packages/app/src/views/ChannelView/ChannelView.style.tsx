@@ -13,6 +13,7 @@ export const Header = styled.section<ChannelHeaderProps>`
   background-repeat: no-repeat;
   height: 430px;
   padding: 0 ${theme.sizes.b8}px;
+  margin: 0 -${theme.sizes.b8}px;
 `
 export const TitleSection = styled.div`
   display: flex;
@@ -24,10 +25,10 @@ export const Title = styled.h1`
   font-weight: bold;
   max-width: 320px;
   display: inline-block;
+  margin: 0;
 `
 
 export const VideoSection = styled.section`
-  padding: 0 ${theme.sizes.b8}px;
   margin-top: -100px;
 `
 export const VideoSectionHeader = styled.h5`
