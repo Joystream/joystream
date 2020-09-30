@@ -111,7 +111,7 @@ inputFilenames.forEach((fileName) => {
 
     const EntitySchema = {
       '$schema': 'http://json-schema.org/draft-07/schema',
-      '$id': `https://joystream.org/${schemaName}Entity.schema.json`,
+      '$id': `https://joystream.org/entities/${schemaName}Entity.schema.json`,
       'title': `${schemaName}Entity`,
       'description': `JSON schema for entities based on ${schemaName} runtime schema`,
       ...strictObjectDef({
@@ -122,7 +122,7 @@ inputFilenames.forEach((fileName) => {
 
     const ReferenceSchema = {
       '$schema': 'http://json-schema.org/draft-07/schema',
-      '$id': `https://joystream.org/${schemaName}Reference.schema.json`,
+      '$id': `https://joystream.org/entityReferences/${schemaName}Ref.schema.json`,
       'title': `${schemaName}Reference`,
       'description': `JSON schema for reference to ${schemaName} entity based on runtime schema`,
       'anyOf': [
@@ -133,7 +133,7 @@ inputFilenames.forEach((fileName) => {
 
     const BatchSchema = {
       '$schema': 'http://json-schema.org/draft-07/schema',
-      '$id': `https://joystream.org/${schemaName}Batch.schema.json`,
+      '$id': `https://joystream.org/entityBatches/${schemaName}Batch.schema.json`,
       'title': `${schemaName}Batch`,
       'description': `JSON schema for batch of entities based on ${schemaName} runtime schema`,
       'type': 'array',

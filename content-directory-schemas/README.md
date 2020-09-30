@@ -46,13 +46,9 @@ Now all the json files matching `*Class.json`, `*Schema.json`, `*{EntityName}Bat
 
 For more context, see: https://code.visualstudio.com/docs/languages/json
 
-### Validate inputs via command
+### Validate inputs and `json-schemas` via a command
 
-Inpus inside `inputs/classes` and `inputs/schemas` can also be validated using `yarn workspace cd-schemas validate` command. _**NOTE:** Validation of inputs inside `inputs/entityBatches` via the command is not supported yet._
-
-The command also validates whether `json-schemas` inside `schemas/extrinsics` are actually valid `json-schemas`.
-
-In the future it is expected that this command will do a complete validation of the content and structure of all json files inside `content-directory-schemas`, which should facilitate checking the validity of `content-directory-schemas` through CI.
+All inputs inside `inputs` directory and `json-schemas` used to validate those inputs can also be validated using `yarn workspace cd-schemas validate` command. This is mainly to facilitate checking the validity of `.json` and `.schema.json` files inside `content-directory-schemas` through CI.
 
 ### Entity batches
 
