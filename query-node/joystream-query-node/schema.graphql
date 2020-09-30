@@ -1,6 +1,6 @@
 "Stored information about a registered user"
 type Member @entity {
-	memberId: BigInt!
+	memberId: BigInt! @unique
 
 	"The unique handle chosen by member"
 	handle: String @unique @fulltext(query: "handles")
@@ -168,14 +168,14 @@ interface Worker @entity {
 	member: Member!
 
 	"Account used to authenticate in this role"
-	roleAccountId: Bytes!
+	roleAccount: Bytes!
 }
 
 type Curator implements Worker @entity {
 	member: Member!
 
 	"Account used to authenticate in this role"
-	roleAccountId: Bytes!
+	roleAccount: Bytes!
 
 	groups: [CuratorGroup] @derivedFrom(field: "curators")
 }
@@ -301,14 +301,14 @@ enum LeadRoleState {
 }
 
 "Working group lead: curator lead content-working-group/src"
-type Lead @entity {
+type Lead implements Worker @entity {
 	leadId: BigInt! @unique
 
 	"Leader membership"
 	member: Member!
 
 	"Account used to authenticate in this role"
-	roleAccountId: Bytes!
+	roleAccount: Bytes!
 
 	# "Whether the role has recurring reward, and if so an identifier for this."
 	# rewardRelationship: RewardRelationshipId
