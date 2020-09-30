@@ -23,13 +23,13 @@ This will handle:
 - Setting (hiring) `ALICE` as content curators lead (if not already set)
 - Creating classes in the runtime based on `inputs/classes` json inputs (if the content directory is currently empty)
 - Creating schemas in the runtime based on `inputs/schemas` and adding them to the related classes
-- Creating entities based on `inputs/entityBatches` based on json files that allow specifying entities and relationships between them in a simplified way. Those inpus are then converted to one huge `api.tx.contentDirectory.transaction` call
+- Creating entities based on `inputs/entityBatches`. Those json inputs allow describing entities and relationships between them in a simplified way and are then converted into one huge `api.tx.contentDirectory.transaction` call (this is further described in _**Entity batches**_ section).
 
 ### Input files naming
 
 Currently the tooling has some limitations when it comes to naming files inside the `inputs` directory. There is a specific pattern that has to be respected:
 
-Each input file name should start with related class id (counting from `1`, since it's assumed that the classes will be created inside an initially empty content directory) followed by and userscore and a class name (for example: `1_Language`), followed by one of the following strings: `Class`, `Schema` or `Batch` (based on the input type, ie. `1_LanguageBatch`)
+Each input file name should start with related class id (counting from `1`, since it's assumed that the classes will be created inside an initially empty content directory) followed by and underscore and a class name (for example: `1_Language`), followed by one of the following strings: `Class`, `Schema` or `Batch` (based on the input type, ie. `1_LanguageBatch`)
 
 ### `json-schemas` support for json inputs in `VSCode`
 
@@ -81,7 +81,7 @@ We can do it by either using `"new"` or `"existing"` keyword.
 
 ```
 {
-  "title": "Awsome video",
+  "title": "Awesome video",
   /* other Video properties... */
   "media": { "new": {
     "pixelWidth": 1024,
@@ -115,7 +115,7 @@ Those `json-schemas` are currently mainly used for validating the inputs inside 
 
 The generated `json-schemas` include:
 
-- `schemas/entities` - `json-schemas` that provide validation for given entity (ie. `Video`) input. They can, for example, check if the `title` property in a json object is a string that is no longer than `64` characters. They are used to validate a single entity in `inputs/entityBatches`, but can also be re-used to provide "fontend" validtion of any entity input to the content directory (ie. input provided to/via `joystream-cli`).
+- `schemas/entities` - `json-schemas` that provide validation for given entity (ie. `Video`) input. They can, for example, check if the `title` property in a json object is a string that is no longer than `64` characters. They are used to validate a single entity in `inputs/entityBatches`, but can also be re-used to provide "frontend" validation of any entity input to the content directory (ie. input provided to/via `joystream-cli`).
 - `schemas/entityReferences` - `json-schemas` that describe how an entity of given class can be referenced. Currently they are used for providing an easy way of referencing entites between batches in `inputs/entityBatches`. For more details on how entities can be referenced in batches, read the _**Entity batches**_ section.
 - `schemas/entityBatches` - very simple `json-schemas` that basically just provide `array` wrappers over `schemas/entities`. Those are the actual `json-schemas` that can be linked to json input files inside `inputs/entityBatches` (ie. via `.vscode/settings.json`)
 
@@ -138,7 +138,7 @@ The most obvious use-case of those interfaces currently is that when we're parsi
 const createClassInput = JSON.parse(fs.readFileSync('/path/to/inputs/1_LanguageClass.json')) as CreateClass
 ```
 
-Besides that, a Typescript code can be written to generate some inputs (ie. using a loop) that can then can be used to initialize classess, schemas or insert entities into the content directory.
+Besides that, a Typescript code can be written to generate some inputs (ie. using a loop) that can then can be used to create classes/schemas or insert entities into the content directory.
 
 There are a lot of other potential use-cases, but for the purpose of this documentation it should be enough to mention there exists this very easy way of converting `.schema.json` files into Typescript interfaces.
 
@@ -148,6 +148,6 @@ Some limitations that should be dealt with in the nearest future:
 
 - Filename restrictions described in **_Input files naming_** section
 - The requirement of knowing the class id (ie. when defining the references in `inputs/schemas`)
-- Some of the code runs on the assumption that there is only one schema for each class, which is very limiting
+- Some code runs on the assumption that there is only one schema for each class, which is very limiting
 - Inside `input/entityBatches` we cannot reference entities that are part of a latter batch (batches are ordered by class id)
 - `Vector<Reference>` property type is not yet supported when parsing entity batches
