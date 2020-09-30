@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://joystream.org/HttpMediaLocationReference.schema.json",
+    "title": "HttpMediaLocationReference",
+    "description": "JSON schema for reference to HttpMediaLocation entity based on runtime schema",
+    "anyOf": [
+        {
+            "type": "integer",
+            "minimum": 0
+        }
+    ]
+}

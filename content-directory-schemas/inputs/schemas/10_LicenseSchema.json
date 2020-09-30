@@ -5,13 +5,13 @@
       "name": "knownLicense",
       "description": "Reference to a known license",
       "required": false,
-      "property_type": { "Single": { "Reference": { "classId": 8 } } }
+      "property_type": { "Single": { "Reference": [8, false] } }
     },
     {
       "name": "userDefinedLicense",
       "description": "Reference to user-defined license",
       "required": false,
-      "property_type": { "Single": { "Reference": { "classId": 9, "sameOwner": true } } }
+      "property_type": { "Single": { "Reference": [9, true] } }
     }
   ]
 }

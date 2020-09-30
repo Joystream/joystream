@@ -44,7 +44,7 @@
       "name": "language",
       "description": "The primary langauge of the channel's content",
       "required": false,
-      "property_type": { "Single": { "Reference": { "classId": 1, "sameOwner": false } } }
+      "property_type": { "Single": { "Reference": [1, false] } }
     }
   ]
 }

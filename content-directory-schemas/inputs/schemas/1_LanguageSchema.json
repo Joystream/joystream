@@ -5,13 +5,13 @@
       "name": "Name",
       "description": "The name of the language (ie. English)",
       "required": true,
-      "unique": true,
       "property_type": { "Single": { "Text": 64 } }
     },
     {
       "name": "Code",
       "description": "ISO 639-1 code of the language (ie. en)",
       "required": true,
+      "unique": true,
       "property_type": { "Single": { "Text": 2 } }
     }
   ]

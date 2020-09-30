@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://joystream.org/KnownLicenseReference.schema.json",
+    "title": "KnownLicenseReference",
+    "description": "JSON schema for reference to KnownLicense entity based on runtime schema",
+    "anyOf": [
+        {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "code"
+            ],
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "maxLength": 16,
+                    "description": "Short, commonly recognized code of the licence (ie. CC_BY_SA)"
+                }
+            }
+        },
+        {
+            "type": "integer",
+            "minimum": 0
+        }
+    ]
+}

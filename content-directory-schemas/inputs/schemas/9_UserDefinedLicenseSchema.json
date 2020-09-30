@@ -6,7 +6,7 @@
       "description": "Custom license content",
       "required": true,
       "property_type": {
-        "Single": { "Text": 65535 }
+        "Single": { "Text": 4096 }
       }
     }
   ]

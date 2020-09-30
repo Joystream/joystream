@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://joystream.org/ContentCategoryReference.schema.json",
+    "title": "ContentCategoryReference",
+    "description": "JSON schema for reference to ContentCategory entity based on runtime schema",
+    "anyOf": [
+        {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "Name"
+            ],
+            "properties": {
+                "Name": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "description": "The name of the category"
+                }
+            }
+        },
+        {
+            "type": "integer",
+            "minimum": 0
+        }
+    ]
+}

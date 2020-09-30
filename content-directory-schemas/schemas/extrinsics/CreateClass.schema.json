@@ -7,7 +7,9 @@
   "additionalProperties": false,
   "required": [
     "name",
-    "description"
+    "description",
+    "maximum_entities_count",
+    "default_entity_creation_voucher_upper_bound"
   ],
   "properties": {
     "name": {
@@ -29,12 +31,14 @@
           "type": "array",
           "uniqueItems": true,
           "items": {
-            "type": "number"
+            "type": "integer"
           },
           "default": []
         }
       }
-    }
+    },
+    "maximum_entities_count": { "type": "integer" },
+    "default_entity_creation_voucher_upper_bound": { "type": "integer" }
   },
   "definitions": {
     "DefaultBoolean": {

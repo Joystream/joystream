@@ -4,7 +4,7 @@
     {
       "name": "dataObjectId",
       "description": "Id of the data object in the Joystream runtime dataDirectory module",
-      "property_type": { "Single": "Uint64" },
+      "property_type": { "Single": { "Text": 48 } },
       "required": true,
       "unique": true
     }

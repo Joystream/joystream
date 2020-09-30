@@ -1,0 +1,35 @@
+{
+  "classId": 11,
+  "newProperties": [
+    {
+      "name": "encoding",
+      "description": "Encoding of the video media object",
+      "required": true,
+      "property_type": { "Single": { "Reference": [7, false] } }
+    },
+    {
+      "name": "pixelWidth",
+      "description": "Video media width in pixels",
+      "required": true,
+      "property_type": { "Single": "Uint16" }
+    },
+    {
+      "name": "pixelHeight",
+      "description": "Video media height in pixels",
+      "required": true,
+      "property_type": { "Single": "Uint16" }
+    },
+    {
+      "name": "size",
+      "description": "Video media size in bytes",
+      "required": false,
+      "property_type": { "Single": "Uint64" }
+    },
+    {
+      "name": "location",
+      "description": "Location of the video media object",
+      "required": true,
+      "property_type": { "Single": { "Reference": [4, true] } }
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://joystream.org/VideoMediaEntity.schema.json",
+    "title": "VideoMediaEntity",
+    "description": "JSON schema for entities based on VideoMedia runtime schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "encoding",
+        "pixelWidth",
+        "pixelHeight",
+        "location"
+    ],
+    "properties": {
+        "encoding": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "new"
+                    ],
+                    "properties": {
+                        "new": {
+                            "$ref": "./VideoMediaEncodingEntity.schema.json"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "existing"
+                    ],
+                    "properties": {
+                        "existing": {
+                            "$ref": "../entityReferences/VideoMediaEncodingRef.schema.json"
+                        }
+                    }
+                }
+            ],
+            "description": "Encoding of the video media object"
+        },
+        "pixelWidth": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535,
+            "description": "Video media width in pixels"
+        },
+        "pixelHeight": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535,
+            "description": "Video media height in pixels"
+        },
+        "size": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Video media size in bytes"
+        },
+        "location": {
+            "oneOf": [
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "new"
+                    ],
+                    "properties": {
+                        "new": {
+                            "$ref": "./MediaLocationEntity.schema.json"
+                        }
+                    }
+                },
+                {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                        "existing"
+                    ],
+                    "properties": {
+                        "existing": {
+                            "$ref": "../entityReferences/MediaLocationRef.schema.json"
+                        }
+                    }
+                }
+            ],
+            "description": "Location of the video media object"
+        }
+    }
+}

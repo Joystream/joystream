@@ -1,4 +1,6 @@
 {
   "name": "Channel",
-  "description": "A channel belonging to certain member. Members can publish certain type of content (ie. videos) through channels."
+  "description": "A channel belonging to certain member. Members can publish certain type of content (ie. videos) through channels.",
+  "maximum_entities_count": 400,
+  "default_entity_creation_voucher_upper_bound": 50
 }

@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://joystream.org/JoystreamMediaLocationEntity.schema.json",
+    "title": "JoystreamMediaLocationEntity",
+    "description": "JSON schema for entities based on JoystreamMediaLocation runtime schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "dataObjectId"
+    ],
+    "properties": {
+        "dataObjectId": {
+            "type": "string",
+            "maxLength": 48,
+            "description": "Id of the data object in the Joystream runtime dataDirectory module"
+        }
+    }
+}

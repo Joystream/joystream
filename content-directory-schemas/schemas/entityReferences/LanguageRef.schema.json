@@ -1,0 +1,26 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://joystream.org/LanguageReference.schema.json",
+    "title": "LanguageReference",
+    "description": "JSON schema for reference to Language entity based on runtime schema",
+    "anyOf": [
+        {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+                "Code"
+            ],
+            "properties": {
+                "Code": {
+                    "type": "string",
+                    "maxLength": 2,
+                    "description": "ISO 639-1 code of the language (ie. en)"
+                }
+            }
+        },
+        {
+            "type": "integer",
+            "minimum": 0
+        }
+    ]
+}

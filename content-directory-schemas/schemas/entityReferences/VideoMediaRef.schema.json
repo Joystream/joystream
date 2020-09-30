@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://joystream.org/VideoMediaReference.schema.json",
+    "title": "VideoMediaReference",
+    "description": "JSON schema for reference to VideoMedia entity based on runtime schema",
+    "anyOf": [
+        {
+            "type": "integer",
+            "minimum": 0
+        }
+    ]
+}

@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://joystream.org/VideoMediaEncodingEntity.schema.json",
+    "title": "VideoMediaEncodingEntity",
+    "description": "JSON schema for entities based on VideoMediaEncoding runtime schema",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "Name"
+    ],
+    "properties": {
+        "Name": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "The name of the encoding format (ie. H264_mpeg4)"
+        }
+    }
+}

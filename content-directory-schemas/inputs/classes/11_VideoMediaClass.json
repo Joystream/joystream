@@ -1,0 +1,6 @@
+{
+  "name": "VideoMedia",
+  "description": "Describes a video media object",
+  "maximum_entities_count": 400,
+  "default_entity_creation_voucher_upper_bound": 50
+}

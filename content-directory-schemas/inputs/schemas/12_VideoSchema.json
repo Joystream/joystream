@@ -1,0 +1,97 @@
+{
+  "classId": 12,
+  "newProperties": [
+    {
+      "name": "channel",
+      "description": "Reference to member's channel",
+      "required": true,
+      "property_type": { "Single": { "Reference": [6, true] } }
+    },
+    {
+      "name": "category",
+      "description": "Reference to a video category",
+      "required": true,
+      "property_type": { "Single": { "Reference": [5, false] } }
+    },
+    {
+      "name": "title",
+      "description": "The title of the video",
+      "required": true,
+      "property_type": { "Single": { "Text": 64 } }
+    },
+    {
+      "name": "description",
+      "description": "The description of the Video",
+      "required": true,
+      "property_type": { "Single": { "Text": 1024 } }
+    },
+    {
+      "name": "duration",
+      "description": "Video duration in seconds",
+      "required": true,
+      "property_type": { "Single": "Uint32" }
+    },
+    {
+      "name": "skippableIntroDuration",
+      "description": "Video's kippable intro duration in seconds",
+      "required": false,
+      "property_type": { "Single": "Uint16" }
+    },
+    {
+      "name": "thumbnailURL",
+      "description": "Video thumbnail url (recommended ratio: 16:9)",
+      "required": true,
+      "property_type": { "Single": { "Text": 256 } }
+    },
+    {
+      "name": "language",
+      "description": "Video's main langauge",
+      "required": false,
+      "property_type": { "Single": { "Reference": [1, false] } }
+    },
+    {
+      "name": "media",
+      "description": "Reference to VideoMedia",
+      "required": true,
+      "property_type": { "Single": { "Reference": [11, true] } }
+    },
+    {
+      "name": "hasMarketing",
+      "description": "Whether or not Video contains marketing",
+      "required": false,
+      "property_type": { "Single": "Bool" }
+    },
+    {
+      "name": "publishedBeforeJoystream",
+      "description": "If the Video was published on other platform before beeing published on Joystream - the original publication date",
+      "required": false,
+      "property_type": { "Single": "Uint32" }
+    },
+    {
+      "name": "isPublic",
+      "description": "Whether the Video is supposed to be publically displayed",
+      "required": true,
+      "property_type": { "Single": "Bool" }
+    },
+    {
+      "name": "isCurated",
+      "description": "Whether the Video has been curated (verified) by a Curator",
+      "required": true,
+      "property_type": { "Single": "Bool" },
+      "locking_policy": { "is_locked_from_controller": true }
+    },
+    {
+      "name": "isExplicit",
+      "description": "Whether the Video contains explicit material.",
+      "required": true,
+      "property_type": { "Single": "Bool" },
+      "locking_policy": { "is_locked_from_controller": true }
+    },
+    {
+      "name": "license",
+      "description": "A License the Video is published under",
+      "required": true,
+      "property_type": { "Single": { "Reference": [10, true] } }
+    }
+  ]
+}

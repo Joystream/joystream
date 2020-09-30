@@ -1,25 +1,23 @@
+// TODO: Add entity batches validation
 import Ajv from 'ajv'
-import fs from 'fs'
-import path from 'path'
-import CreateClassSchema from '../schemas/CreateClass.schema.json'
-import AddClassSchemaSchema from '../schemas/AddClassSchema.schema.json'
-
-const INPUTS_LOCATION = path.join(__dirname, '../inputs')
+import CreateClassSchema from '../schemas/extrinsics/CreateClass.schema.json'
+import AddClassSchemaSchema from '../schemas/extrinsics/AddClassSchema.schema.json'
+import { getInputs, InputType } from './helpers/inputs'
 
 type JsonSchema = {
   schemaName: string
   jsonSchema: Record<string, unknown>
-  relatedInputDirectory: string
+  relatedInputType: InputType
 }
 
 const schemas: JsonSchema[] = [
-  { schemaName: 'CreateClass', jsonSchema: CreateClassSchema, relatedInputDirectory: 'classes' },
-  { schemaName: 'AddClassSchema', jsonSchema: AddClassSchemaSchema, relatedInputDirectory: 'schemas' },
+  { schemaName: 'CreateClass', jsonSchema: CreateClassSchema, relatedInputType: 'classes' },
+  { schemaName: 'AddClassSchema', jsonSchema: AddClassSchemaSchema, relatedInputType: 'schemas' },
 ]
 
 const ajv = new Ajv({ allErrors: true })
 
-schemas.forEach(({ schemaName, jsonSchema, relatedInputDirectory }) => {
+schemas.forEach(({ schemaName, jsonSchema, relatedInputType }) => {
   // Validate the schema itself
   console.log(`Validating schema for ${schemaName}...`)
   if (!ajv.validateSchema(jsonSchema)) {
@@ -32,22 +30,9 @@ schemas.forEach(({ schemaName, jsonSchema, relatedInputDirectory }) => {
 
   // Validate inputs
   console.log('Validating inputs...')
-  fs.readdirSync(path.join(INPUTS_LOCATION, relatedInputDirectory)).forEach((fileName) => {
-    const inputRelativePath = path.join(relatedInputDirectory, fileName)
-    console.log(`Validating ${inputRelativePath}...`)
-    const inputJson = fs.readFileSync(path.join(INPUTS_LOCATION, inputRelativePath)).toString()
-    let inputData
-    try {
-      inputData = JSON.parse(inputJson)
-    } catch (e) {
-      console.log(`\nERROR: ${inputRelativePath} - cannot parse the json!`)
-      console.log('\n')
-      process.exitCode = 100
-      return
-    }
-
-    if (!ajv.validate(jsonSchema, inputData)) {
-      console.log(`\nERROR! ${inputRelativePath} - validation failed!`)
+  getInputs(relatedInputType).forEach(({ fileName, data }) => {
+    if (!ajv.validate(jsonSchema, data)) {
+      console.log(`\nERROR! ${relatedInputType}/${fileName} - validation failed!`)
       console.log(ajv.errorsText(undefined, { separator: '\n' }))
       console.log('\n')
       process.exitCode = 100

@@ -6,11 +6,8 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "classId"
-  ],
-  "anyOf": [
-    { "required": [ "newProperties" ] },
-    { "required": [ "existingProperties" ] }
+    "classId",
+    "newProperties"
   ],
   "properties": {
     "classId": { "$ref": "#/definitions/ClassId" },
@@ -143,15 +140,13 @@
       "required": ["Reference"],
       "properties": {
         "Reference": {
-          "type": "object",
-          "additionalProperties": false,
-          "required": [
-            "classId"
-          ],
-          "properties": {
-            "sameOwner": { "$ref": "#/definitions/DefaultBoolean" },
-            "classId": { "$ref": "#/definitions/ClassId" }
-          }
+          "type": "array",
+          "minItems": 2,
+          "additionalItems": false,
+          "items": [
+            { "$ref": "#/definitions/ClassId", "description": "Referenced class ID" },
+            { "$ref": "#/definitions/DefaultBoolean", "description": "Same owner required (flag)" }
+          ]
         }
       }
     },

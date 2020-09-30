@@ -1,4 +1,6 @@
 {
   "name": "VideoMediaEncoding",
-  "description": "Available encoding format for the video media"
+  "description": "Available encoding format for the video media",
+  "maximum_entities_count": 100,
+  "default_entity_creation_voucher_upper_bound": 50
 }
