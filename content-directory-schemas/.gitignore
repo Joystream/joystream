@@ -1,1 +1,7 @@
 operations.json
+
+# Auto-generated
+schemas/entities
+schemas/entityBatches
+schemas/entityReferences
+types/entities

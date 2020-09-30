@@ -82,6 +82,19 @@ const PropertyDef = ({ property_type: propertyType, description }: Property) => 
   description,
 })
 
+// Mkdir entity schemas directories if they do not exist
+const entitySchemasDirs = [
+  SINGLE_ENTITY_SCHEMAS_LOCATION,
+  BATCH_OF_ENITIES_SCHEMAS_LOCATION,
+  ENTITY_REFERENCE_SCHEMAS_LOCATION,
+]
+entitySchemasDirs.forEach((dir) => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir)
+  }
+})
+
+// Run schema conversion:
 inputFilenames.forEach((fileName) => {
   const inputFilePath = path.join(INPUTS_LOCATION, fileName)
   const inputJson = fs.readFileSync(inputFilePath).toString()

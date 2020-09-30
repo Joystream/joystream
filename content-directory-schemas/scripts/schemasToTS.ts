@@ -19,7 +19,11 @@ async function main() {
     for (const schemaFilename of fs.readdirSync(path.join(SCHEMAS_LOCATION, schemaSubdir))) {
       const schemaFilePath = path.join(SCHEMAS_LOCATION, schemaSubdir, schemaFilename)
       const outputFilename = schemaFilename.replace('.schema.json', '.d.ts')
-      const outputFilePath = path.join(OUTPUT_TYPES_LOCATION, schemaSubdir, outputFilename)
+      const outputDir = path.join(OUTPUT_TYPES_LOCATION, schemaSubdir)
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir)
+      }
+      const outputFilePath = path.join(outputDir, outputFilename)
       try {
         await compileFromFile(schemaFilePath, {
           cwd: path.join(SCHEMAS_LOCATION, schemaSubdir),
