@@ -17,9 +17,9 @@
     "url": "https://github.com/Joystream/joystream/issues"
   },
   "scripts": {
-    "dev": "ts-node-dev --respawn src/index.ts",
+    "dev": "ts-node-dev --respawn src/server.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/server.js",
     "lint": "eslint . --ext .ts"
   },
   "lint-staged": {
@@ -28,12 +28,20 @@
     ]
   },
   "dependencies": {
-    "apollo-server": "^2.18.1",
-    "graphql": "^15.3.0"
+    "@typegoose/typegoose": "^7.4.1",
+    "apollo-server-express": "^2.18.1",
+    "class-validator": "^0.12.2",
+    "express": "^4.17.1",
+    "graphql": "^15.3.0",
+    "mongoose": "^5.10.7",
+    "reflect-metadata": "^0.1.13",
+    "type-graphql": "^1.0.0"
   },
   "devDependencies": {
     "@joystream/eslint-config": "^1.0.0",
     "@joystream/prettier-config": "^1.0.0",
+    "@types/express": "^4.17.8",
+    "@types/mongoose": "^5.7.36",
     "@types/node": "^14.11.2",
     "@typescript-eslint/eslint-plugin": "^4.3.0",
     "@typescript-eslint/parser": "^4.3.0",
