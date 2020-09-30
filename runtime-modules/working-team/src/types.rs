@@ -251,6 +251,9 @@ pub trait StakingHandler<T: system::Trait + membership::Trait + GovernanceCurren
     /// is 'already locked funds' + 'usable funds'.
     fn is_enough_balance_for_stake(account_id: &T::AccountId, amount: BalanceOfCurrency<T>)
         -> bool;
+
+    /// Returns the current stake on the account.
+    fn current_stake(account_id: &T::AccountId) -> BalanceOfCurrency<T>;
 }
 
 /// Parameters container for the apply_on_opening extrinsic.

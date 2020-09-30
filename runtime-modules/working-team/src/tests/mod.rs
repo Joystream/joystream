@@ -12,7 +12,7 @@ use crate::tests::fixtures::{
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
     STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES, STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK,
-    STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK,
+    STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK, STAKING_ACCOUNT_ID_FOR_ZERO_STAKE,
 };
 use crate::types::StakeParameters;
 use crate::{Error, JobOpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy, TeamWorker};
@@ -1120,6 +1120,45 @@ fn leave_worker_unlocks_the_stake_with_unstaking_period() {
         assert_eq!(Balances::usable_balance(&account_id), total_balance);
 
         EventFixture::assert_last_crate_event(RawEvent::WorkerExited(worker_id));
+    });
+}
+
+#[test]
+fn leave_worker_works_immedietely_stake_is_zero() {
+    build_test_externalities().execute_with(|| {
+        let account_id = STAKING_ACCOUNT_ID_FOR_ZERO_STAKE;
+        let total_balance = 300;
+        let stake = 200;
+
+        let unstaking_period = 10;
+        let stake_policy = Some(StakePolicy {
+            stake_amount: stake,
+            unstaking_period,
+        });
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let worker_id = HiringWorkflow::default()
+            .with_setup_environment(true)
+            .with_opening_type(JobOpeningType::Regular)
+            .with_stake_policy(stake_policy.clone())
+            .add_application_full(
+                b"worker".to_vec(),
+                RawOrigin::Signed(1),
+                1,
+                Some(STAKING_ACCOUNT_ID_FOR_ZERO_STAKE),
+            )
+            .execute()
+            .unwrap();
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance - stake);
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id)
+            .with_stake_policy(stake_policy);
+
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        assert!(!<crate::WorkerById<Test, TestWorkingTeamInstance>>::contains_key(worker_id));
     });
 }
 

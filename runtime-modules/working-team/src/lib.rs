@@ -472,7 +472,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if worker.job_unstaking_period == Zero::zero(){
+            if Self::can_leave_immediately(&worker){
                 Self::deactivate_worker(&worker_id, &worker, RawEvent::WorkerExited(worker_id));
             } else{
                 WorkerById::<T, I>::mutate(worker_id, |worker| {
@@ -1013,5 +1013,20 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         // Check whether current block is a reward block.
         current_block % reward_period.into() == Zero::zero()
+    }
+
+    // Defines whether the worker staking parameters allow to leave without unstaking period.
+    fn can_leave_immediately(worker: &TeamWorker<T>) -> bool {
+        if worker.job_unstaking_period == Zero::zero() {
+            return true;
+        }
+
+        if let Some(staking_account_id) = worker.staking_account_id.clone() {
+            if T::StakingHandler::current_stake(&staking_account_id) == Zero::zero() {
+                return true;
+            }
+        }
+
+        false
     }
 }
