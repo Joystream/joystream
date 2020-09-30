@@ -1,0 +1,35 @@
+name: joystream-node-checks
+on:
+  pull_request:
+
+jobs:
+  checks:
+    name: joystream-node native build and checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - uses: technote-space/get-diff-action@v3
+        with:
+          PREFIX_FILTER: |
+            node
+            runtime-modules
+            utils/chain-spec-builder
+          SUFFIX_FILTER: |
+            .rs
+          FILES: |
+            Cargo.lock
+            Cargo.toml
+
+      # TODO: Look for change in source code but no corresponding version bump of runtime or binaries
+      # - name: Check version modified correctly
+      #   if: env.GIT_DIFF
+
+      - name: Build fi runtime code modified
+        run: |
+          ./setup.sh
+          yarn cargo-checks
+          yarn cargo-build
+        if: env.GIT_DIFF

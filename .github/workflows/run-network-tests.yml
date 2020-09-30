@@ -1,8 +1,8 @@
-name: run-network-tests-pull-request
+name: run-network-tests
 on:
   pull_request:
     types: [labeled, synchronize]
-  push:
+  workflow_dispatch:
 
 jobs:
   build_images:
@@ -15,21 +15,6 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '12.x'
-      - uses: technote-space/get-diff-action@v3
-        with:
-          PREFIX_FILTER: |
-            node
-            runtime-modules
-            utils/chain-spec-builder
-          SUFFIX_FILTER: |
-            .rs
-          FILES: |
-            Cargo.lock
-            Cargo.toml
-
-      # TODO: For a pull request Look for change in source code but no corresponding version bump of runtime or binaries
-      # - name: Check version modified correctly
-      #   if: env.GIT_DIFF
 
       - id: compute_shasum
         name: Compute runtime code shasum
@@ -54,7 +39,6 @@ jobs:
           if [ -f ~/docker-images/joystream-node-docker-image.tar.gz ]; then
             docker load --input ~/docker-images/joystream-node-docker-image.tar.gz
             cp ~/docker-images/joystream-node-docker-image.tar.gz .
-            echo "::set-env name=UPLOAD_NEW_ARTIFACT::true"
           fi
 
       - name: Check if we have pre-built image on Dockerhub
@@ -67,7 +51,6 @@ jobs:
             docker save --output joystream-node-docker-image.tar joystream/node:latest
             gzip joystream-node-docker-image.tar
             cp joystream-node-docker-image.tar.gz ~/docker-images/
-            echo "::set-env name=UPLOAD_NEW_ARTIFACT::true"
           fi
 
       - name: Build new joystream/node image
@@ -77,7 +60,6 @@ jobs:
             docker save --output joystream-node-docker-image.tar joystream/node
             gzip joystream-node-docker-image.tar
             cp joystream-node-docker-image.tar.gz ~/docker-images/
-            echo "::set-env name=UPLOAD_NEW_ARTIFACT::true"
           fi
 
       - name: Save joystream/node image to Artifacts
@@ -85,20 +67,6 @@ jobs:
         with:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
-        if: env.UPLOAD_NEW_ARTIFACT
-
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-        if: github.event.push != null && secrets.DOCKERHUB_USERNAME != null && secrets.DOCKERHUB_PASSWORD != null
-
-      - name: Publish new image to DockerHub
-        run: |
-          docker image tag joystream/node joystream/node:${{ steps.compute_shasum.outputs.shasum }}
-          docker push joystream/node:${{ steps.compute_shasum.outputs.shasum }}
-        if: github.event.push != null && secrets.DOCKERHUB_USERNAME != null && secrets.DOCKERHUB_PASSWORD != null
   
   network_tests_1:
     name: Network Integration Runtime Tests
