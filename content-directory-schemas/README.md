@@ -4,8 +4,8 @@
 
 In order to make this documentation as clear as possible it is important to make a strict distinction between two types of schemas:
 
-- `json-schemas` mean files with `.schema.json` extension. This is a common standard for describing how to validate other `json` files or objects (ie. a `package.json` file may be an example of a file that needs to support a specific `json-schema`). A documentation of this standard can be found here: https://json-schema.org/
-- `runtime-scheams` means schemas as they are "understood" by the `content-directory` runtime module, so schemas that can be added to classes via `api.tx.contentDirectory.addClassSchema` and supported by a given entity via `api.tx.contentDirectory.addSchemaSupportToEntity`
+- `json-schemas` mean files with `.schema.json` extension. This is a common standard for describing how to validate other `json` files or objects (ie. a `package.json` file may be an example of a file that can be supported by a `json-schema`). A documentation of this standard can be found here: https://json-schema.org/
+- `runtime-scheams` means schemas as they are "understood" by the `content-directory` runtime module, so schemas that can be added to classes via `api.tx.contentDirectory.addClassSchema` and linked to entities via `api.tx.contentDirectory.addSchemaSupportToEntity`
 
 ## Content directory input
 
