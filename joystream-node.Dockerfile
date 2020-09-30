@@ -4,8 +4,9 @@ WORKDIR /joystream
 COPY . /joystream
 
 # Build all cargo crates
-# Ensure our tests pass before actual build
-RUN WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo test --release --all && \
+# Ensure our tests and linter pass before actual build
+RUN WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 BUILD_DUMMY_WASM_BINARY=1 cargo clippy --release --all -- -D warnings \
+    WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo test --release --all && \
     WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release
 
 FROM debian:stretch
