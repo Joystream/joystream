@@ -16,19 +16,50 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - id: docker_build
-        name: Build and publish docker images
+
+      - id: compute_shasum
+        name: Compute runtime code shasum
         run: |
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
+          echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
+
+      - name: Setup cache directory
+        run: mkdir ~/docker-images
+
+      - name: Docker images cache
+        uses: actions/cache@v2
+        env:
+          cache-name: joystream-node-docker
+        with:
+          path: ~/docker-images
+          key: ${{ env.cache-name }}-${{ steps.compute_shasum.outputs.shasum }}
+
+      - id: docker_build
+        name: Build and publish docker images
+        env:
+          RUNTIME_CODE_SHASUM: ${{ steps.compute_shasum.outputs.shasum }}
+        run: |
           function docker_tag_exists() {
             curl --silent -f -lSL https://index.docker.io/v1/repositories/joystream/node/tags/$1 > /dev/null
           }
-          if ! docker_tag_exists ${RUNTIME_CODE_SHASUM}; then
-              docker-compose build
-              docker image tag joystream/node joystream/node:${RUNTIME_CODE_SHASUM}
-              docker push joystream/node:${RUNTIME_CODE_SHASUM}
+
+          if docker_tag_exists ${{ env.RUNTIME_CODE_SHASUM }}; then
+            export JOYSTREAM_NODE_TAG=${{ env.RUNTIME_CODE_SHASUM }}
+            docker pull joystream/node:${JOYSTREAM_NODE_TAG}
+            docker image tag joystream/node:${JOYSTREAM_NODE_TAG} joystream/node:latest
+          else
+            export JOYSTREAM_NODE_TAG=latest
+            docker-compose build
+            docker image tag joystream/node joystream/node:${{ env.RUNTIME_CODE_SHASUM }}
+            docker push joystream/node:${{ env.RUNTIME_CODE_SHASUM }}
           fi
-          echo "::set-output name=tag::${RUNTIME_CODE_SHASUM}"
+
+          # update cache
+          docker save --output joystream-node-docker-image.tar joystream/node:latest
+          gzip joystream-node-docker-image.tar
+          cp joystream-node-docker-image.tar.gz ~/docker-images/
+
+          echo "::set-output name=tag::${{ env.RUNTIME_CODE_SHASUM }}"
 
   run_network_tests_1:
     name: Network Integration Runtime Tests
