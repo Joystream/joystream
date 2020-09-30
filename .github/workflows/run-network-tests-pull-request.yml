@@ -44,14 +44,16 @@ jobs:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
 
       - name: Check if we have pre-built image on Dockerhub
+        continue-on-error: true
         run: |
-          export JOYSTREAM_NODE_TAG=${{ steps.compute_shasum.outputs.shasum }}
-          docker pull joystream/node:${JOYSTREAM_NODE_TAG}
-          docker image tag joystream/node:${JOYSTREAM_NODE_TAG} joystream/node:latest
-          docker save --output joystream-node-docker-image.tar joystream/node:latest
-          gzip joystream-node-docker-image.tar
-          echo "::set-env name=UPLOAD_NEW_ARTIFACT::true"
-        if: failure()
+          if ! [ -f joystream-node-docker-image.tar.gz ]; then
+            export JOYSTREAM_NODE_TAG=${{ steps.compute_shasum.outputs.shasum }}
+            docker pull joystream/node:${JOYSTREAM_NODE_TAG}
+            docker image tag joystream/node:${JOYSTREAM_NODE_TAG} joystream/node:latest
+            docker save --output joystream-node-docker-image.tar joystream/node:latest
+            gzip joystream-node-docker-image.tar
+            echo "::set-env name=UPLOAD_NEW_ARTIFACT::true"
+          fi
 
       - name: Build new joystream/node image
         run: |
