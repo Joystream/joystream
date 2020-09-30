@@ -73,7 +73,7 @@ jobs:
         if: env.UPLOAD_NEW_ARTIFACT
 
   network_tests_1:
-    name: Network Integration Tests (pull request)
+    name: Network Integration Runtime Tests
     needs: build_images
     runs-on: ubuntu-latest
     steps:

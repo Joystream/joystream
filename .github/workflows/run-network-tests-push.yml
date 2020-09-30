@@ -71,11 +71,9 @@ jobs:
         run: docker-compose pull
       - name: Start chain
         run: docker-compose up -d
-      - name: Execute network tests
-        run: yarn workspace network-tests test
+      # - name: Execute network tests
+      #   run: yarn workspace network-tests test
 
-  # These tests will fail because storage-node has not been updated for latest rutnime types
-  # for babylon
   run_network_tests_3:
     name: Storage Node Tests
     needs: prepare_docker_images
