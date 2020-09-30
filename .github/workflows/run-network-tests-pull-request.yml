@@ -67,7 +67,7 @@ jobs:
         with:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
-        if: env.UPLOAD_NEW_ARTIFACT
+        if: env.UPLOAD_NEW_ARTIFACT == 'true'
 
   network_tests_1:
     name: Network Integration Tests (pull request)
