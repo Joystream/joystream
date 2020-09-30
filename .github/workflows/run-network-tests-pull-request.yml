@@ -37,11 +37,37 @@ jobs:
           export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
           echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
 
-      - name: Check if we have a pre-built image in Artifacts
-        continue-on-error: true
-        uses: actions/download-artifact@v2
+      # Theis step is pointeless!
+      # The intention here was to fetch an artifact from a previous workflow run.
+      # This can be done using GitHub REST API
+      # https://docs.github.com/en/free-pro-team@latest/rest/reference/actions#download-an-artifact
+      # Problem: It doesn't work anymore without authentication!
+      # https://github.com/actions/upload-artifact/issues/51
+      # - name: Check if we have a pre-built image in Artifacts
+      #   continue-on-error: true
+      #   uses: actions/download-artifact@v2
+      #   with:
+      #     name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
+
+      - name: Setup cache directory
+        run: mkdir ~/docker-images
+
+      - name: Cache docker images
+        uses: actions/cache@v2
+        env:
+          cache-name: joystream-node-docker
         with:
-          name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
+          path: ~/docker-images
+          key: ${{ env.cache-name }}-${{ steps.compute_shasum.outputs.shasum }}
+
+      - name: Check if we have cached image
+        continue-on-error: true
+        run: |
+          if [ -f ~/docker-images/joystream-node-docker-image.tar.gz ]; then
+            docker load --input ~/docker-images/joystream-node-docker-image.tar.gz
+            cp ~/docker-images/joystream-node-docker-image.tar.gz .
+            echo "::set-env name=UPLOAD_NEW_ARTIFACT::true"
+          fi
 
       - name: Check if we have pre-built image on Dockerhub
         continue-on-error: true
@@ -52,6 +78,7 @@ jobs:
             docker image tag joystream/node:${JOYSTREAM_NODE_TAG} joystream/node:latest
             docker save --output joystream-node-docker-image.tar joystream/node:latest
             gzip joystream-node-docker-image.tar
+            cp joystream-node-docker-image.tar.gz ~/docker-images/
             echo "::set-env name=UPLOAD_NEW_ARTIFACT::true"
           fi
 
@@ -62,6 +89,7 @@ jobs:
             docker-compose build
             docker save --output joystream-node-docker-image.tar joystream/node
             gzip joystream-node-docker-image.tar
+            cp joystream-node-docker-image.tar.gz ~/docker-images/
             echo "::set-env name=UPLOAD_NEW_ARTIFACT::true"
           fi
 
