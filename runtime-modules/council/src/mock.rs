@@ -4,7 +4,8 @@
 use crate::{
     BalanceReferendum, CandidateOf, CouncilMemberOf, CouncilMembers, CouncilStage,
     CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate, CouncilStageUpdateOf,
-    CurrentAnnouncementCycleId, Error, GenesisConfig, Module, Stage, Trait,
+    CurrentAnnouncementCycleId, Error, GenesisConfig, Module, Referendum, ReferendumConnection,
+    Stage, Trait,
 };
 
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
@@ -194,11 +195,11 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
             return false;
         }
 
-        true
+        <Module<Self> as ReferendumConnection<Self>>::can_release_vote_stake().is_ok()
     }
 
     fn process_results(winners: &[OptionResult<Self::VotePower>]) {
-        <Module<Self>>::recieve_referendum_results(winners).unwrap();
+        <Module<Self> as ReferendumConnection<Self>>::recieve_referendum_results(winners).unwrap();
     }
 
     fn is_valid_option_id(_option_index: &u64) -> bool {
@@ -567,18 +568,19 @@ where
         );
     }
 
+    //pub fn vote_for_candidate<I: referendum::Instance>(
     pub fn vote_for_candidate(
         origin: OriginType<T::AccountId>,
         commitment: T::Hash,
         stake: BalanceReferendum<T>,
-        expected_result: Result<(), Error<T>>,
+        expected_result: Result<(), referendum::Error<T, ReferendumInstance>>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<T>::vote(
+            Referendum::<T>::vote(
                 InstanceMockUtils::<T>::mock_origin(origin),
                 commitment,
-                stake
+                stake,
             ),
             expected_result,
         );
@@ -588,11 +590,11 @@ where
         origin: OriginType<T::AccountId>,
         salt: Vec<u8>,
         vote_option: u64,
-        expected_result: Result<(), Error<T>>,
+        expected_result: Result<(), referendum::Error<T, ReferendumInstance>>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Module::<T>::reveal_vote(
+            Referendum::<T>::reveal_vote(
                 InstanceMockUtils::<T>::mock_origin(origin),
                 salt,
                 vote_option,

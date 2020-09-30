@@ -1,5 +1,6 @@
 // TODO: module documentation
 // TODO: adjust all extrinsic weights
+// NOTE: When implementing runtime for this module, don't forget to call all ReferendumConnection trait functions at proper places.
 
 /////////////////// Configuration //////////////////////////////////////////////
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -157,6 +158,16 @@ pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
     ) -> bool;
 }
 
+/// Trait with functions that MUST be called by the runtime with values received from the referendum module.
+pub trait ReferendumConnection<T: Trait> {
+    /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `process_results()`.
+    fn recieve_referendum_results(winners: &[OptionResult<VotePowerOf<T>>])
+        -> Result<(), Error<T>>;
+
+    /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `process_results()`.
+    fn can_release_vote_stake() -> Result<(), Error<T>>;
+}
+
 decl_storage! {
     trait Store for Module<T: Trait> as Council {
         /// Current council voting stage
@@ -302,46 +313,6 @@ decl_module! {
 
             Ok(())
         }
-
-        /////////////////// Referendum Wrap ////////////////////////////////////
-        // start voting period
-        #[weight = 10_000_000]
-        pub fn vote(origin, commitment: T::Hash, balance: Balance<T>) -> Result<(), Error<T>> {
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // call referendum vote extrinsic
-            <Referendum<T>>::vote(origin, commitment, balance)?;
-
-            Ok(())
-        }
-
-        #[weight = 10_000_000]
-        pub fn reveal_vote(origin, salt: Vec<u8>, vote_option_index: u64) -> Result<(), Error<T>> {
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // call referendum reveal vote extrinsic
-            <Referendum<T>>::reveal_vote(origin, salt, vote_option_index)?;
-
-            Ok(())
-        }
-
-        #[weight = 10_000_000]
-        pub fn release_vote_stake(origin) -> Result<(), Error<T>> {
-            EnsureChecks::<T>::can_release_vote_stake(origin.clone())?;
-
-            //
-            // == MUTATION SAFE ==
-            //
-
-            // call referendum reveal vote extrinsic
-            <Referendum<T>>::release_stake(origin)?;
-
-            Ok(())
-        }
     }
 }
 
@@ -426,9 +397,11 @@ impl<T: Trait> Module<T> {
         // emit event
         Self::deposit_event(RawEvent::AnnouncingPeriodStarted());
     }
+}
 
+impl<T: Trait> ReferendumConnection<T> for Module<T> {
     /// Process candidates' results recieved from the referendum.
-    pub fn recieve_referendum_results(
+    fn recieve_referendum_results(
         winners: &[OptionResult<VotePowerOf<T>>],
     ) -> Result<(), Error<T>> {
         //
@@ -437,6 +410,16 @@ impl<T: Trait> Module<T> {
 
         // conclude election
         Self::end_election_period(winners);
+
+        Ok(())
+    }
+
+    fn can_release_vote_stake() -> Result<(), Error<T>> {
+        // ensure it's proper time to release stake
+        match Stage::<T>::get().stage {
+            CouncilStage::Idle => (),
+            _ => return Err(Error::CantReleaseStakeNow),
+        };
 
         Ok(())
     }
@@ -581,12 +564,6 @@ struct EnsureChecks<T: Trait> {
 impl<T: Trait> EnsureChecks<T> {
     /////////////////// Common checks //////////////////////////////////////////
 
-    fn ensure_regular_user(origin: T::Origin) -> Result<T::AccountId, Error<T>> {
-        let account_id = ensure_signed(origin)?;
-
-        Ok(account_id)
-    }
-
     fn ensure_user_membership(
         origin: T::Origin,
         council_user_id: &T::CouncilUserId,
@@ -650,19 +627,6 @@ impl<T: Trait> EnsureChecks<T> {
         {
             return Err(Error::StakeStillNeeded);
         }
-
-        Ok(account_id)
-    }
-
-    fn can_release_vote_stake(origin: T::Origin) -> Result<T::AccountId, Error<T>> {
-        // ensure regular user requested action
-        let account_id = Self::ensure_regular_user(origin)?;
-
-        // ensure it's proper time to release stake
-        match Stage::<T>::get().stage {
-            CouncilStage::Idle => (),
-            _ => return Err(Error::CantReleaseStakeNow),
-        };
 
         Ok(account_id)
     }
