@@ -95,23 +95,17 @@ pub type CanRevealResult<T, I> = (
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
-// TODO: get rid of dependency on Error<T, I> - create some nongeneric error
-/// Trait enabling referendum start and vote commitment calculation.
-
-pub trait ReferendumManager<T: Trait<I>, I: Instance> {
+pub trait ReferendumManager<Origin, AccountId, Hash> {
     /// Start a new referendum.
-    fn start_referendum(
-        origin: T::Origin,
-        extra_winning_target_count: u64,
-    ) -> Result<(), Error<T, I>>;
+    fn start_referendum(origin: Origin, extra_winning_target_count: u64) -> Result<(), ()>;
 
     /// Calculate commitment for a vote.
     fn calculate_commitment(
-        account_id: &<T as system::Trait>::AccountId,
+        account_id: &AccountId,
         salt: &[u8],
         cycle_id: &u64,
         vote_option_id: &u64,
-    ) -> T::Hash;
+    ) -> Hash;
 }
 
 pub trait Trait<I: Instance>: system::Trait {
@@ -227,9 +221,6 @@ decl_error! {
     pub enum Error for Module<T: Trait<I>, I: Instance> {
         /// Origin is invalid
         BadOrigin,
-
-        /// Referendum cannot run twice at the same time
-        ReferendumAlreadyRunning,
 
         /// Referendum is not running when expected to
         ReferendumNotRunning,
@@ -399,12 +390,11 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
 /////////////////// ReferendumManager //////////////////////////////////////////
 
-impl<T: Trait<I>, I: Instance> ReferendumManager<T, I> for Module<T, I> {
+impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Hash>
+    for Module<T, I>
+{
     /// Start new referendum run.
-    fn start_referendum(
-        origin: T::Origin,
-        extra_winning_target_count: u64,
-    ) -> Result<(), Error<T, I>> {
+    fn start_referendum(origin: T::Origin, extra_winning_target_count: u64) -> Result<(), ()> {
         let winning_target_count = extra_winning_target_count + 1;
 
         // ensure action can be started
@@ -669,13 +659,13 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
 
     /////////////////// Action checks //////////////////////////////////////////
 
-    fn can_start_referendum(origin: T::Origin) -> Result<(), Error<T, I>> {
-        T::ManagerOrigin::ensure_origin(origin)?;
+    fn can_start_referendum(origin: T::Origin) -> Result<(), ()> {
+        T::ManagerOrigin::ensure_origin(origin).map_err(|_| ())?;
 
         // ensure referendum is not already running
         match Stage::<T, I>::get() {
             ReferendumStage::Inactive => Ok(()),
-            _ => Err(Error::ReferendumAlreadyRunning),
+            _ => Err(()),
         }?;
 
         Ok(())
@@ -726,7 +716,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(account_id)
     }
 
-    fn can_reveal_vote<R: ReferendumManager<T, I>>(
+    fn can_reveal_vote<R: ReferendumManager<T::Origin, T::AccountId, T::Hash>>(
         origin: T::Origin,
         salt: &[u8],
         vote_option_id: &u64,

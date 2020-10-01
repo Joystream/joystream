@@ -105,9 +105,6 @@ pub(crate) type ReferendumInstance = referendum::Instance0;
 // `Ez` prefix in some of the following type aliases means *easy* and is meant to create unique short names
 // aliasing existing structs and enums
 
-// Alias for referendum's storage.
-pub(crate) type Referendum<T> = referendum::Module<T, ReferendumInstance>;
-
 pub type CurrencyOf<T> = <T as referendum::Trait<ReferendumInstance>>::Currency;
 pub type Balance<T> = <<T as referendum::Trait<ReferendumInstance>>::Currency as Currency<
     <T as system::Trait>::AccountId,
@@ -126,6 +123,7 @@ pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
+    /// Representation for council membership.
     type CouncilUserId: Parameter
         + Member
         + BaseArithmetic
@@ -134,6 +132,9 @@ pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
         + Copy
         + MaybeSerialize
         + PartialEq;
+
+    /// Referendum used for council elections.
+    type Referendum: ReferendumManager<Self::Origin, Self::AccountId, Self::Hash>;
 
     /// Minimum number of extra candidates needed for the valid election.
     /// Number of total candidates is equal to council size plus extra candidates.
@@ -215,7 +216,7 @@ decl_event! {
 }
 
 decl_error! {
-    /// Referendum errors
+    /// Council errors
     pub enum Error for Module<T: Trait> {
         /// Origin is invalid
         BadOrigin,
@@ -235,7 +236,8 @@ decl_error! {
         /// Candidate can't vote for himself
         CantVoteForYourself,
 
-        // TODO: try to get rid of this error if possible
+        /// Invalid runtime implementation broke the council. This error shouldn't happen
+        /// and in case of bad implementation should be discovered in the first block when referendum start will fail.
         InvalidRuntimeImplementation,
 
         /// Invalid membership
@@ -459,10 +461,8 @@ impl<T: Trait> Mutations<T> {
 
         // IMPORTANT - because starting referendum can fail it has to be the first mutation!
         // start referendum
-        <Referendum<T> as ReferendumManager<T, ReferendumInstance>>::start_referendum(
-            origin.into(),
-            extra_winning_target_count,
-        )?;
+        T::Referendum::start_referendum(origin.into(), extra_winning_target_count)
+            .map_err(|_| Error::<T>::InvalidRuntimeImplementation)?;
 
         let block_number = <system::Module<T>>::block_number();
 

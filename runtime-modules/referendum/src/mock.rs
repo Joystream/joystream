@@ -352,7 +352,7 @@ where
         };
 
         (
-            <Module<T, I> as ReferendumManager<T, I>>::calculate_commitment(
+            <Module<T, I> as ReferendumManager<T::Origin, T::AccountId, T::Hash>>::calculate_commitment(
                 account_id,
                 &salt,
                 cycle_id,
@@ -384,7 +384,7 @@ impl InstanceMocks<Runtime, Instance0> {
     pub fn start_referendum_extrinsic(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         winning_target_count: u64,
-        expected_result: Result<(), Error<Runtime, Instance0>>,
+        expected_result: Result<(), ()>,
     ) -> () {
         let extra_winning_target_count = winning_target_count - 1;
 
@@ -402,26 +402,28 @@ impl InstanceMocks<Runtime, Instance0> {
 
     pub fn start_referendum_manager(
         winning_target_count: u64,
-        expected_result: Result<(), Error<Runtime, Instance0>>,
+        expected_result: Result<(), ()>,
     ) -> () {
         let extra_winning_target_count = winning_target_count - 1;
 
         // check method returns expected result
         assert_eq!(
-            <Module::<Runtime, Instance0> as ReferendumManager<Runtime, Instance0>>::start_referendum(
+            <Module::<Runtime, Instance0> as ReferendumManager<
+                <Runtime as system::Trait>::Origin,
+                <Runtime as system::Trait>::AccountId,
+                <Runtime as system::Trait>::Hash,
+            >>::start_referendum(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(OriginType::Root),
                 extra_winning_target_count,
-            ),
-            expected_result,
+            )
+            .is_ok(),
+            expected_result.is_ok(),
         );
 
         Self::start_referendum_inner(extra_winning_target_count, expected_result)
     }
 
-    fn start_referendum_inner(
-        extra_winning_target_count: u64,
-        expected_result: Result<(), Error<Runtime, Instance0>>,
-    ) {
+    fn start_referendum_inner(extra_winning_target_count: u64, expected_result: Result<(), ()>) {
         if expected_result.is_err() {
             return;
         }

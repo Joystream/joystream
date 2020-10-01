@@ -4,8 +4,7 @@
 use crate::{
     BalanceReferendum, CandidateOf, CouncilMemberOf, CouncilMembers, CouncilStage,
     CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate, CouncilStageUpdateOf,
-    CurrentAnnouncementCycleId, Error, GenesisConfig, Module, Referendum, ReferendumConnection,
-    Stage, Trait,
+    CurrentAnnouncementCycleId, Error, GenesisConfig, Module, ReferendumConnection, Stage, Trait,
 };
 
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
@@ -54,6 +53,8 @@ parameter_types! {
 
 impl Trait for Runtime {
     type Event = TestEvent;
+
+    type Referendum = referendum::Module<Tmp<Self>, ReferendumInstance>;
 
     type CouncilUserId = u64;
     type LockId = CouncilLockId;
@@ -140,6 +141,7 @@ impl system::Trait for Runtime {
 /////////////////// Election module ////////////////////////////////////////////
 
 pub type ReferendumInstance = referendum::Instance0;
+type Referendum<T> = referendum::Module<T, ReferendumInstance>;
 
 thread_local! {
     pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
@@ -224,6 +226,128 @@ impl referendum::Trait<ReferendumInstance> for Runtime {
             value.borrow_mut().insert(*option_id, amount + current);
         });
     }
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Tmp<T: Trait> {
+    _dummy: PhantomData<T>,
+}
+
+impl<ReferendumTrait: Trait> referendum::Trait<ReferendumInstance> for Tmp<ReferendumTrait>
+where
+    ReferendumTrait::VotePower: From<u64>,
+{
+    type Event = TestEvent;
+
+    type MaxSaltLength = MaxSaltLength;
+
+    type Currency = pallet_balances::Module<Self>;
+    type LockId = ReferendumLockId;
+
+    type ManagerOrigin =
+        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
+
+    type VotePower = u64;
+
+    type VoteStageDuration = VoteStageDuration;
+    type RevealStageDuration = RevealStageDuration;
+
+    type MinimumStake = MinimumStake;
+
+    fn caclulate_vote_power(
+        account_id: &<Self as system::Trait>::AccountId,
+        stake: &Balance<Self, ReferendumInstance>,
+    ) -> <Self as referendum::Trait<ReferendumInstance>>::VotePower {
+        let stake: u64 = u64::from(*stake);
+        if *account_id == USER_REGULAR_POWER_VOTES {
+            return stake * POWER_VOTE_STRENGTH;
+        }
+
+        stake
+    }
+
+    fn can_release_voting_stake(
+        _vote: &CastVote<Self::Hash, Balance<Self, ReferendumInstance>>,
+    ) -> bool {
+        // trigger fail when requested to do so
+        if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
+            return false;
+        }
+
+        <Module<ReferendumTrait> as ReferendumConnection<ReferendumTrait>>::can_release_vote_stake()
+            .is_ok()
+    }
+
+    fn process_results(winners: &[OptionResult<Self::VotePower>]) {
+        //<Module<T> as ReferendumConnection<T>>::recieve_referendum_results(winners).unwrap();
+
+        let tmp_winners: Vec<OptionResult<ReferendumTrait::VotePower>> = winners
+            .iter()
+            .map(|item| OptionResult {
+                option_id: item.option_id,
+                vote_power: item.vote_power.into(),
+            })
+            .collect();
+        <Module<ReferendumTrait> as ReferendumConnection<ReferendumTrait>>::recieve_referendum_results(tmp_winners.as_slice()).unwrap();
+    }
+
+    fn is_valid_option_id(_option_index: &u64) -> bool {
+        if !IS_OPTION_ID_VALID.with(|value| value.borrow().0) {
+            return false;
+        }
+
+        true
+    }
+
+    fn get_option_power(option_id: &u64) -> Self::VotePower {
+        INTERMEDIATE_RESULTS.with(|value| match value.borrow().get(option_id) {
+            Some(vote_power) => *vote_power,
+            None => 0,
+        })
+    }
+
+    fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
+        INTERMEDIATE_RESULTS.with(|value| {
+            let current = Self::get_option_power(option_id);
+
+            value.borrow_mut().insert(*option_id, amount + current);
+        });
+    }
+}
+
+impl<T: Trait> system::Trait for Tmp<T> {
+    type BaseCallFilter = ();
+    type Origin = Origin;
+    type Index = u64;
+    type BlockNumber = u64;
+    type Call = ();
+    type Hash = H256;
+    type Hashing = BlakeTwo256;
+    type AccountId = u64;
+    type Lookup = IdentityLookup<Self::AccountId>;
+    type Header = Header;
+    type Event = TestEvent;
+    type BlockHashCount = BlockHashCount;
+    type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
+    type MaximumBlockLength = MaximumBlockLength;
+    type AvailableBlockRatio = AvailableBlockRatio;
+    type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = pallet_balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
+}
+
+impl<T: Trait> pallet_balances::Trait for Tmp<T> {
+    type Balance = u64;
+    type Event = TestEvent;
+    type DustRemoval = ();
+    type ExistentialDeposit = ExistentialDeposit;
+    type AccountStore = system::Module<Self>;
 }
 
 impl Runtime {
@@ -460,10 +584,7 @@ where
         let salt = Self::generate_salt();
 
         (
-            <referendum::Module<T, ReferendumInstance> as ReferendumManager<
-                T,
-                ReferendumInstance,
-            >>::calculate_commitment(account_id, &salt, &cycle_id, vote_option_index),
+            T::Referendum::calculate_commitment(account_id, &salt, &cycle_id, vote_option_index),
             salt.to_vec(),
         )
     }

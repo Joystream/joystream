@@ -26,11 +26,7 @@ fn referendum_start_access_restricted() {
     build_test_externalities(config).execute_with(|| {
         let winning_target_count = 1;
 
-        Mocks::start_referendum_extrinsic(
-            OriginType::None,
-            winning_target_count,
-            Err(Error::BadOrigin),
-        );
+        Mocks::start_referendum_extrinsic(OriginType::None, winning_target_count, Err(()));
     });
 }
 
@@ -45,11 +41,7 @@ fn referendum_start_forbidden_after_start() {
         let winning_target_count = 1;
 
         Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count.clone(), Ok(()));
-        Mocks::start_referendum_extrinsic(
-            origin.clone(),
-            options.clone(),
-            Err(Error::ReferendumAlreadyRunning),
-        );
+        Mocks::start_referendum_extrinsic(origin.clone(), options.clone(), Err(()));
     });
 }
 
