@@ -423,12 +423,11 @@ type UserDefinedLicense @variant {
 union License = UserDefinedLicense | CreativeCommonsLicense
 
 type JoystreamMediaLocation @variant {
-	dataObjectID: BigInt!
+	dataObjectId: BigInt!
 }
 
 type HTTPMediaLocation @variant {
-	host: String!
-	port: Int
+	url: String!
 }
 
 union MediaLocation = JoystreamMediaLocation | HTTPMediaLocation
@@ -450,12 +449,6 @@ type VideoMedia @entity {
 
 	"Where to find"
 	location: MediaLocation!
-}
-
-type Block @entity {
-	blockHeight: BigInt! @unique
-
-	timestamp: BigInt!
 }
 
 type Video @entity {
@@ -484,7 +477,7 @@ type Video @entity {
 
 	hasMarketing: Boolean
 
-	atBlock: Block!
+	atBlock: BigInt!
 
 	"Possible time when video was published before Joystream"
 	publishedBeforeJoystream: DateTime
