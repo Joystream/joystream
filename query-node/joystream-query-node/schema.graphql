@@ -170,7 +170,7 @@ interface Worker @entity {
 	"Account used to authenticate in this role"
 	roleAccount: Bytes!
 }
-
+"Working group participant: content-working-group/src/lib.rs"
 type Curator implements Worker @entity {
 	member: Member!
 
@@ -328,36 +328,28 @@ type CurationLead @entity {
 	workingGroupLead: Lead!
 }
 
-"The lead when the actor type is 'ActorType.Lead'"
-type ActorTypeLead @variant {
-	lead: CurationLead
-}
-
-"The curator group and actual curator when the actor type is 'ActorType.CuratorGroup'"
-type ActorTypeCuratorGroup @variant {
-	groupWhenCuratorGroupMember: CuratorGroup
-
-	curatorWhenCuratorGroupMember: Curator
-}
-
-"The member when the actor type is 'ActorType.Member'"
-type ActorTypeMember @variant {
-	member: Member
-}
-
-union ActorInfo = ActorTypeLead | ActorTypeCuratorGroup | ActorTypeMember
-
 enum ActorType {
 	CURATORGROUPMEMBER
 	MEMBER
 	LEAD
 }
 
+# content-directory/permissions.rs
 type Actor @entity {
 	"The type of actor"
 	type: ActorType
 
-	actorInfo: ActorInfo
+	"The curator group and actual curator when the actor type is 'ActorType.CuratorGroup'"
+	groupWhenCuratorGroupMember: CuratorGroup
+
+	"The curator group and actual curator when the actor type is 'ActorType.CuratorGroup'"
+	curatorWhenCuratorGroupMember: Curator
+
+	"The member when the actor type is 'ActorType.Member'"
+	member: Member
+
+	"The lead when the actor type is 'ActorType.Lead'"
+	lead: CurationLead
 }
 
 #### High Level Derivative Entities ####
