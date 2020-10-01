@@ -1,12 +1,21 @@
 name: run-network-tests
 on:
   pull_request:
-    types: [labeled, synchronize]
   workflow_dispatch:
+    # TODO: add an input so dispatcher can specify a list of tests to run,
+    # composed of the job ids separated by `:`
+    # for eg.
+    #   'network_tests_1:network_tests_3'
+    #   'network_tests_2'
+    # inputs:
+    #   test_to_run:
+    #     description: 'Tests to run'
+    #     required: false
+    #     default: 'all'
 
 jobs:
   build_images:
-    name: Prepare joystream/node docker image
+    name: Build joystream/node
     runs-on: ubuntu-latest
     outputs:
       use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz

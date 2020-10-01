@@ -4,7 +4,7 @@ on:
 
 jobs:
   checks:
-    name: joystream-node native build and checks
+    name: joystream-node checks
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -27,9 +27,11 @@ jobs:
       # - name: Check version modified correctly
       #   if: env.GIT_DIFF
 
-      - name: Build if runtime was modified
-        run: |
-          ./setup.sh
-          yarn cargo-checks
-          yarn cargo-build
-        if: env.GIT_DIFF
+      # This Building natively is not really necessary because we have the docker build which
+      # hapens in the run-network-tests workflow which is sufficient!
+      # - name: Build if runtime was modified
+      #   run: |
+      #     ./setup.sh
+      #     yarn cargo-checks
+      #     yarn cargo-build
+      #   if: env.GIT_DIFF

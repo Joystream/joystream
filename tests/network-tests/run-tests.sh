@@ -49,4 +49,5 @@ docker run -v ${DATA_PATH}:/data -d -p 9944:9944 joystream/node \
   --validator --alice --unsafe-ws-external --rpc-cors=all --log runtime \
   --chain /data/chain-spec-raw.json
 
+# Execute the tests
 yarn workspace network-tests test
