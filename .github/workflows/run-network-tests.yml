@@ -90,10 +90,8 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
-      - name: Start chain
-        run: docker-compose up -d
       - name: Execute network tests
-        run: yarn workspace network-tests test
+        run: tests/network-tests/run-tests.sh
 
   network_tests_2:
     name: Query Node Tests (Placeholder)
