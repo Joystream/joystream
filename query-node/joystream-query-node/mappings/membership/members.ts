@@ -1,82 +1,58 @@
 import * as assert from "assert";
-import * as BN from "bn.js";
 
 import { Member } from "../../generated/graphql-server/src/modules/member/member.model";
 import { DB, SubstrateEvent } from "../../generated/indexer";
-
-import { getMemberById } from "./helper";
+import { decode } from "./decode";
 
 async function members_MemberRegistered(db: DB, event: SubstrateEvent) {
-	const { 0: memberId, 1: accountId } = event.params;
-
-	assert(event.extrinsic, "No extrinsic data found");
-
-	const extrinsicArgs = event.extrinsic.args;
-
-	let member = new Member({
-		registeredAtBlock: event.blockNumber,
-		memberId: new BN(memberId.value.toString()),
-		rootAccount: Buffer.from(accountId.value.toString()),
-		controllerAccount: Buffer.from(accountId.value.toString()),
-		handle: extrinsicArgs[1].value.toString(),
-		avatarUri: extrinsicArgs[2].value.toString(),
-		about: extrinsicArgs[3].value.toString(),
-	});
-
-	db.save<Member>(member);
+	const joystreamMember = decode._members_MemberRegistered(event);
+	let member = new Member({ ...joystreamMember });
+	await db.save<Member>(member);
 }
 
 async function members_MemberUpdatedAboutText(db: DB, event: SubstrateEvent) {
-	const member = await getMemberById(db, event.params[0].value.toString());
-	// const member = await db.get(Member, { where: { memberId: new BN(event.params[0].value.toString()) } });
+	const { memberId, about } = decode._members_MemberUpdatedAboutText(event);
+	const member = await db.get(Member, { where: { memberId } });
+	assert(member, "Member not found");
 
-	assert(member);
-	assert(event.extrinsic, "No extrinsic data found");
-
-	member.about = event.extrinsic?.args[1].value.toString();
-	db.save<Member>(member);
+	member.about = about;
+	await db.save<Member>(member);
 }
 
 async function members_MemberUpdatedAvatar(db: DB, event: SubstrateEvent) {
-	const member = await getMemberById(db, event.params[0].value.toString());
+	const { memberId, avatarUri } = decode._members_MemberUpdatedAvatar(event);
+	const member = await db.get(Member, { where: { memberId } });
+	assert(member, "Member not found");
 
-	assert(member);
-	assert(event.extrinsic, "No extrinsic data found");
-
-	member.avatarUri = event.extrinsic?.args[1].value.toString();
-	db.save<Member>(member);
+	member.avatarUri = avatarUri;
+	await db.save<Member>(member);
 }
 
 async function members_MemberUpdatedHandle(db: DB, event: SubstrateEvent) {
-	const member = await getMemberById(db, event.params[0].value.toString());
+	const { memberId, handle } = decode._members_MemberUpdatedHandle(event);
+	const member = await db.get(Member, { where: { memberId } });
+	assert(member, "Member not found");
 
-	assert(member);
-	assert(event.extrinsic, "No extrinsic data found");
-
-	member.handle = event.extrinsic?.args[1].value.toString();
-	db.save<Member>(member);
+	member.handle = handle;
+	await db.save<Member>(member);
 }
 
 async function members_MemberSetRootAccount(db: DB, event: SubstrateEvent) {
-	const { 0: memberId, 1: newRootAccountId } = event.params;
-	const member = await getMemberById(db, memberId.value.toString());
+	const { memberId, rootAccount } = decode._members_MemberSetRootAccount(event);
+	const member = await db.get(Member, { where: { memberId } });
+	assert(member, "Member not found");
 
-	assert(member);
-	assert(event.extrinsic, "No extrinsic data found");
-
-	member.rootAccount = Buffer.from(newRootAccountId.value.toString());
-	db.save<Member>(member);
+	member.rootAccount = rootAccount;
+	await db.save<Member>(member);
 }
 
 async function members_MemberSetControllerAccount(db: DB, event: SubstrateEvent) {
-	const { 0: memberId, 1: newControllerAccount } = event.params;
-	const member = await getMemberById(db, memberId.value.toString());
+	const { memberId, controllerAccount } = decode._members_MemberSetControllerAccount(event);
+	const member = await db.get(Member, { where: { memberId } });
+	assert(member, "Member not found");
 
-	assert(member);
-	assert(event.extrinsic, "No extrinsic data found");
-
-	member.controllerAccount = Buffer.from(newControllerAccount.value.toString());
-	db.save<Member>(member);
+	member.controllerAccount = controllerAccount;
+	await db.save<Member>(member);
 }
 
 export {
