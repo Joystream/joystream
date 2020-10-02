@@ -21,6 +21,7 @@ mod balance_manager;
 pub(crate) mod proposals;
 mod stakes;
 
+use crate::ProposalObserver;
 use balance_manager::*;
 pub use proposals::*;
 pub use stakes::*;
@@ -105,6 +106,11 @@ impl crate::Trait for Test {
     type DescriptionMaxLength = DescriptionMaxLength;
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
     type DispatchableCallCode = proposals::Call<Test>;
+    type ProposalObserver = ();
+}
+
+impl ProposalObserver<Test> for () {
+    fn proposal_removed(_proposal_id: &u32) {}
 }
 
 impl Default for proposals::Call<Test> {

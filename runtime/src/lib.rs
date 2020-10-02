@@ -514,7 +514,9 @@ impl proposals_engine::Trait for Runtime {
     type DescriptionMaxLength = ProposalDescriptionMaxLength;
     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
     type DispatchableCallCode = Call;
+    type ProposalObserver = ProposalsCodex;
 }
+
 impl Default for Call {
     fn default() -> Self {
         panic!("shouldn't call default for Call");

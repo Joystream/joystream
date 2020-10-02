@@ -185,6 +185,20 @@ pub trait Trait:
 
     /// Proposals executable code. Can be instantiated by external module Call enum members.
     type DispatchableCallCode: Parameter + UnfilteredDispatchable<Origin = Self::Origin> + Default;
+
+    type ProposalObserver: ProposalObserver<Self>;
+}
+
+pub trait ProposalObserver<T: Trait> {
+    fn proposal_removed(proposal_id: &T::ProposalId);
+}
+
+/// Nesting implementation.
+impl<T: Trait, X: ProposalObserver<T>, Y: ProposalObserver<T>> ProposalObserver<T> for (X, Y) {
+    fn proposal_removed(proposal_id: &<T as Trait>::ProposalId) {
+        X::proposal_removed(proposal_id);
+        Y::proposal_removed(proposal_id);
+    }
 }
 
 decl_event!(
@@ -411,8 +425,8 @@ decl_module! {
                 Self::get_approved_proposal_with_expired_grace_period();
 
             // Execute approved proposals with expired grace period
-            for approved_proosal in executable_proposals {
-                Self::execute_proposal(approved_proosal);
+            for approved_proposal in executable_proposals {
+                Self::execute_proposal(approved_proposal);
             }
         }
     }
@@ -666,16 +680,12 @@ impl<T: Trait> Module<T> {
             .finalisation_status_data
             .create_approved_proposal_status(approved_proposal_status);
 
-        let mut proposal = approved_proposal.proposal;
-        proposal.status = proposal_execution_status.clone();
-        <Proposals<T>>::insert(approved_proposal.proposal_id, proposal);
-
         Self::deposit_event(RawEvent::ProposalStatusUpdated(
             approved_proposal.proposal_id,
             proposal_execution_status,
         ));
 
-        <PendingExecutionProposalIds<T>>::remove(&approved_proposal.proposal_id);
+        Self::remove_proposal_data(&approved_proposal.proposal_id);
     }
 
     // Performs all actions on proposal finalization:
@@ -693,8 +703,11 @@ impl<T: Trait> Module<T> {
         let mut proposal = Self::proposals(proposal_id);
 
         if let ProposalStatus::Active(active_stake) = proposal.status.clone() {
+            let mut clean_finilized_proposal = true;
             if let ProposalDecisionStatus::Approved { .. } = decision_status {
                 <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
+
+                clean_finilized_proposal = false; // keep pending execution proposal
             }
 
             // deal with stakes if necessary
@@ -711,8 +724,12 @@ impl<T: Trait> Module<T> {
                 Self::current_block(),
             );
 
-            proposal.status = new_proposal_status.clone();
-            <Proposals<T>>::insert(proposal_id, proposal);
+            if clean_finilized_proposal {
+                Self::remove_proposal_data(&proposal_id);
+            } else {
+                proposal.status = new_proposal_status.clone();
+                <Proposals<T>>::insert(proposal_id, proposal);
+            }
 
             Self::deposit_event(RawEvent::ProposalStatusUpdated(
                 proposal_id,
@@ -813,6 +830,16 @@ impl<T: Trait> Module<T> {
                 message: msg,
             } => msg.unwrap_or("Dispatch error."),
         }
+    }
+
+    // Clean proposal data. Remove proposal, votes from the storage.
+    fn remove_proposal_data(proposal_id: &T::ProposalId) {
+        <Proposals<T>>::remove(proposal_id);
+        <DispatchableCallCode<T>>::remove(proposal_id);
+        <PendingExecutionProposalIds<T>>::remove(proposal_id);
+        <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+
+        T::ProposalObserver::proposal_removed(proposal_id);
     }
 }
 

@@ -77,7 +77,7 @@ use system::ensure_root;
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
 use governance::election_params::ElectionParameters;
-use proposals_engine::ProposalParameters;
+use proposals_engine::{ProposalObserver, ProposalParameters};
 
 pub use crate::proposal_types::{
     AddOpeningParameters, FillOpeningParameters, ProposalsConfigParameters, TerminateRoleParameters,
@@ -1133,5 +1133,17 @@ impl<T: Trait> Module<T> {
         <TerminateWorkingGroupLeaderRoleProposalGracePeriod<T>>::put(T::BlockNumber::from(
             p.terminate_working_group_leader_role_proposal_grace_period,
         ));
+    }
+}
+
+impl<T: Trait> ProposalObserver<T> for Module<T> {
+    fn proposal_removed(proposal_id: &<T as proposals_engine::Trait>::ProposalId) {
+        <ThreadIdByProposalId<T>>::remove(proposal_id);
+        <ProposalDetailsByProposalId<T>>::remove(proposal_id);
+
+        let thread_id = Self::thread_id_by_proposal_id(proposal_id);
+
+        proposals_discussion::ThreadById::<T>::remove(thread_id);
+        proposals_discussion::PostThreadIdByPostId::<T>::remove_prefix(thread_id);
     }
 }

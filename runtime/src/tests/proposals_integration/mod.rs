@@ -9,9 +9,8 @@ use codec::Encode;
 use governance::election_params::ElectionParameters;
 use membership;
 use proposals_engine::{
-    ActiveStake, ApprovedProposalStatus, BalanceOf, FinalizationData, Proposal,
-    ProposalDecisionStatus, ProposalParameters, ProposalStatus, VoteKind, VotersParameters,
-    VotingResults,
+    ActiveStake, BalanceOf, Proposal, ProposalParameters, ProposalStatus, VoteKind,
+    VotersParameters, VotingResults,
 };
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
@@ -304,9 +303,9 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             account_balance - stake_amount
         );
 
-        let mut proposal = ProposalsEngine::proposals(proposal_id);
+        let proposal = ProposalsEngine::proposals(proposal_id);
 
-        let mut expected_proposal = Proposal {
+        let expected_proposal = Proposal {
             parameters,
             proposer_id: member_id,
             created_at: 0,
@@ -325,17 +324,6 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             CancelProposalFixture::new(proposal_id).with_proposer(member_id);
 
         cancel_proposal_fixture.cancel_and_assert(Ok(()));
-
-        proposal = ProposalsEngine::proposals(proposal_id);
-
-        expected_proposal.status = ProposalStatus::Finalized(FinalizationData {
-            proposal_status: ProposalDecisionStatus::Canceled,
-            finalized_at: 0,
-            encoded_unstaking_error_due_to_broken_runtime: None,
-            stake_data_after_unstaking_error: None,
-        });
-
-        assert_eq!(proposal, expected_proposal);
 
         let cancellation_fee = ProposalCancellationFee::get() as u128;
         assert_eq!(
@@ -521,27 +509,6 @@ where
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
         run_to_block(self.run_to_block);
-
-        let proposal = ProposalsEngine::proposals(self.proposal_id);
-
-        assert_eq!(
-            proposal,
-            Proposal {
-                status: ProposalStatus::approved(
-                    ApprovedProposalStatus::Executed,
-                    self.run_to_block - 2
-                ),
-                title: b"title".to_vec(),
-                description: b"body".to_vec(),
-                voting_results: VotingResults {
-                    abstentions: 0,
-                    approvals: 5,
-                    rejections: 0,
-                    slashes: 0,
-                },
-                ..proposal
-            }
-        );
     }
 }
 
