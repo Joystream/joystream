@@ -7,10 +7,10 @@
   "scripts": {
     "prepublish": "npm run build",
     "build": "tsc --build tsconfig.json",
-    "lint": "eslint ./ --quiet --ext .ts",
+    "lint": "eslint ./ --ext .ts",
     "format": "prettier ./ --write",
     "check:augment": "tsc --build tsconfig-augment.json && tsc --build tsconfig-augment-codec.json",
-    "checks": "yarn build && madge --circular ./ && yarn lint && prettier ./ --check && yarn check:augment",
+    "checks": "yarn build && madge --circular ./ && prettier ./ --check && yarn check:augment && yarn lint",
     "generate:defs": "ts-node node_modules/.bin/polkadot-types-from-defs --package . --input ./augment",
     "generate:meta": "ts-node node_modules/.bin/polkadot-types-from-chain --package . --endpoint ws://127.0.0.1:9944 --output ./augment --strict",
     "generate:augment-codec": "ts-node ./src/scripts/generateAugmentCodec.ts",

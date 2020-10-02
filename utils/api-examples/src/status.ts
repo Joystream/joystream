@@ -3,7 +3,6 @@
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { types } from '@joystream/types'
 import { Seat } from '@joystream/types/council'
-import { ValidatorId } from '@polkadot/types/interfaces'
 
 import BN from 'bn.js'
 
@@ -24,13 +23,10 @@ async function main() {
   console.log(`Chain ${chain} using ${nodeName} v${nodeVersion}`)
 
   const council = ((await api.query.council.activeCouncil()) as unknown) as Seat[]
-  const validators = ((await api.query.session.validators()) as unknown) as ValidatorId[]
-  const version = (await api.rpc.state.getRuntimeVersion()) as any
+  const validators = await api.query.session.validators()
+  const version = await api.rpc.state.getRuntimeVersion()
 
   console.log(`Runtime Version: ${version.authoringVersion}.${version.specVersion}.${version.implVersion}`)
-
-  // let council: QueryableStorageFunction<Seat[], SubscriptionResult> = (await api.query.council.activeCouncil()) as unknown as Seat[]
-  // let council = (await api.query.council.activeCouncil()) as unknown as Seat[];
 
   // number of council members
   console.log('Council size:', council.length)
@@ -38,16 +34,13 @@ async function main() {
   console.log('Validator count:', validators.length)
 
   if (validators && validators.length > 0) {
-    // Retrieve the free balances for all validators
-    const validatorBalances = await Promise.all(
-      validators.map((authorityId) => api.query.balances.account(authorityId))
-    )
+    // Retrieve the balances of validators' stash accounts
+    // for more detailed staking information we can use api.derive.staking.*
+    const validatorBalances = await Promise.all(validators.map((authorityId) => api.derive.balances.all(authorityId)))
 
-    const totalValidatorBalances = validatorBalances.reduce((total, value) => total.add(value.free), new BN(0))
+    const totalValidatorBalances = validatorBalances.reduce((total, value) => total.add(value.lockedBalance), new BN(0))
 
-    // TODO: to get the staked amounts we need to read the account lock information.
-
-    console.log('Total Validator Free Balance:', totalValidatorBalances.toString())
+    console.log('Total Validator Locked Balances:', totalValidatorBalances.toString())
   }
 
   api.disconnect()
