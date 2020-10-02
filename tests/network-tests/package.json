@@ -6,7 +6,7 @@
     "build": "tsc --noEmit",
     "test": "yarn db-path-setup && tap --files src/tests/unknown.unknown src/tests/councilSetup.ts src/tests/proposals/*Test.ts src/tests/leaderSetup.ts src/tests/workingGroup/*Test.ts -T",
     "lint": "eslint . --quiet --ext .ts",
-    "checks": "yarn lint && tsc --noEmit --pretty && prettier ./ --check",
+    "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write ",
     "db-path-setup": "mkdir .tmp/ || rm .tmp/db.json || echo ''"
   },
