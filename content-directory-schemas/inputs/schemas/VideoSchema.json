@@ -53,7 +53,9 @@
       "name": "media",
       "description": "Reference to VideoMedia",
       "required": true,
-      "property_type": { "Single": { "Reference": { "className": "VideoMedia", "sameOwner": true } } }
+      "unique": true,
+      "property_type": { "Single": { "Reference": { "className": "VideoMedia", "sameOwner": true } } },
+      "locking_policy": { "is_locked_from_controller": true }
     },
     {
       "name": "hasMarketing",
@@ -74,13 +76,6 @@
       "property_type": { "Single": "Bool" }
     },
     {
-      "name": "isCurated",
-      "description": "Whether the Video has been curated (verified) by a Curator",
-      "required": true,
-      "property_type": { "Single": "Bool" },
-      "locking_policy": { "is_locked_from_controller": true }
-    },
-    {
       "name": "isExplicit",
       "description": "Whether the Video contains explicit material.",
       "required": true,
@@ -91,7 +86,16 @@
       "name": "license",
       "description": "A License the Video is published under",
       "required": true,
+      "unique": true,
       "property_type": { "Single": { "Reference": { "className": "License", "sameOwner": true } } }
+    },
+    {
+      "name": "curationStatus",
+      "description": "Video curation status set by the Curator",
+      "required": false,
+      "unique": true,
+      "property_type": { "Single": { "Reference": { "className": "CurationStatus" } } },
+      "locking_policy": { "is_locked_from_controller": true }
     }
   ]
 }

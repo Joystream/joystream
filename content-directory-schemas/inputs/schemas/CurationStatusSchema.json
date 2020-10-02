@@ -1,0 +1,19 @@
+{
+  "className": "CurationStatus",
+  "newProperties": [
+    {
+      "name": "approved",
+      "description": "Indicates whether the content was approved by the Curator",
+      "required": false,
+      "property_type": { "Single": "Bool" },
+      "locking_policy": { "is_locked_from_controller": true }
+    },
+    {
+      "name": "comment",
+      "description": "Short, optional comment from the Curator",
+      "required": false,
+      "property_type": { "Single": { "Text": 256 } },
+      "locking_policy": { "is_locked_from_controller": true }
+    }
+  ]
+}

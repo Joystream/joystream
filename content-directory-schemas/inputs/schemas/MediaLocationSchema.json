@@ -5,13 +5,15 @@
       "name": "httpMediaLocation",
       "description": "A reference to HttpMediaLocation",
       "required": false,
-      "property_type": { "Single": { "Reference": { "className": "HttpMediaLocation", "sameOwner": true } } }
+      "property_type": { "Single": { "Reference": { "className": "HttpMediaLocation", "sameOwner": true } } },
+      "locking_policy": { "is_locked_from_controller": true }
     },
     {
       "name": "joystreamMediaLocation",
       "description": "A reference to JoystreamMediaLocation",
       "required": false,
-      "property_type": { "Single": { "Reference": { "className": "JoystreamMediaLocation", "sameOwner": true } } }
+      "property_type": { "Single": { "Reference": { "className": "JoystreamMediaLocation", "sameOwner": true } } },
+      "locking_policy": { "is_locked_from_controller": true }
     }
   ]
 }

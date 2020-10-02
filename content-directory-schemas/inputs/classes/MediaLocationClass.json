@@ -2,5 +2,6 @@
   "name": "MediaLocation",
   "description": "An object describing how the related media object can be accessed",
   "maximum_entities_count": 400,
-  "default_entity_creation_voucher_upper_bound": 50
+  "default_entity_creation_voucher_upper_bound": 50,
+  "class_permissions": { "any_member": true }
 }

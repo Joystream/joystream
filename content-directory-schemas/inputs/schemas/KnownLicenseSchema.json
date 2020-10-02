@@ -8,7 +8,8 @@
       "unique": true,
       "property_type": {
         "Single": { "Text": 16 }
-      }
+      },
+      "locking_policy": { "is_locked_from_controller": true }
     },
     {
       "name": "name",
@@ -17,7 +18,8 @@
       "unique": true,
       "property_type": {
         "Single": { "Text": 64 }
-      }
+      },
+      "locking_policy": { "is_locked_from_controller": true }
     },
     {
       "name": "description",
@@ -25,7 +27,8 @@
       "required": false,
       "property_type": {
         "Single": { "Text": 1024 }
-      }
+      },
+      "locking_policy": { "is_locked_from_controller": true }
     },
     {
       "name": "url",
@@ -33,7 +36,8 @@
       "required": false,
       "property_type": {
         "Single": { "Text": 256 }
-      }
+      },
+      "locking_policy": { "is_locked_from_controller": true }
     }
   ]
 }
