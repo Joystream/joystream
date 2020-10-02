@@ -294,4 +294,191 @@ export default class TokenomicsTransport extends BaseTransport {
       contentCurators: resolveGroupData(workingGroupsData.curators)
     };
   }
+
+  async networkStatistics () {
+    const blockHeight = (await this.api.derive.chain.bestNumber()).toNumber();
+    const numberOfMembers = (await this.api.query.members.nextMemberId() as MemberId).toNumber();
+    const content = (await this.api.query.versionedStore.classById(7) as Class).properties;
+    const numberOfChannels = (await this.api.query.contentWorkingGroup.nextChannelId() as ChannelId).toNumber();
+    const proposalCount = Number(await this.api.query.proposalsEngine.proposalCount());
+    const numberOfForumCategories = (await this.api.query.forum.nextCategoryId() as CategoryId).toNumber();
+    const numberOfForumPosts = (await this.api.query.forum.nextPostId() as PostId).toNumber();
+    const [councilMintId, contentCuratorMintId, storageMintId] = await Promise.all([await this.api.query.council.councilMint() as MintId, await this.api.query.contentWorkingGroup.mint() as MintId, await this.api.query.storageWorkingGroup.mint() as MintId]);
+    const [councilMint, contentMint, storageMint] = (await this.api.query.minting.mints.multi<Mint>([councilMintId, contentCuratorMintId, storageMintId]));
+
+    return {
+      blockHeight,
+      numberOfMembers,
+      content: content.length,
+      numberOfChannels,
+      proposalCount,
+      historicalProposals: HISTORICAL_PROPOSALS.length,
+      numberOfForumCategories,
+      numberOfForumPosts,
+      councilMintCapacity: councilMint.capacity.toNumber(),
+      councilMintSpent: councilMint.total_minted.toNumber(),
+      contentCuratorMintCapacity: contentMint.capacity.toNumber(),
+      contentCuratorMintSpent: contentMint.total_minted.toNumber(),
+      storageProviderMintCapacity: storageMint.capacity.toNumber(),
+      storageProviderMintSpent: storageMint.total_minted.toNumber()
+    };
+  }
+
+  private textProposalData (proposals:[ProposalId, ProposalDetails][], proposalData: Proposal[]) {
+    const textProposals = { all: 0, Active: 0, Approved: 0, Rejected: 0, Expired: 0, Slashed: 0, Canceled: 0, Vetoed: 0, tokensBurned: 0 };
+
+    proposalData.forEach((proposal, index) => {
+      const proposalDetails = proposals[index][1];
+
+      if (proposalDetails.isOfType('Text')) {
+        textProposals.all++;
+
+        if (proposal.status.isOfType('Active')) {
+          textProposals.Active++;
+        } else if (proposal.status.isOfType('Finalized')) {
+          const proposalStatusIfFinalized = proposal.status.asType('Finalized').proposalStatus;
+
+          textProposals[proposalStatusIfFinalized.type]++;
+
+          if (proposalStatusIfFinalized.isOfType('Slashed')) {
+            textProposals.tokensBurned += proposal.parameters.requiredStake.unwrap().toNumber();
+          } else if (proposalStatusIfFinalized.isOfType('Canceled')) {
+            textProposals.tokensBurned += 10000;
+          } else {
+            textProposals.tokensBurned += 5000;
+          }
+        }
+      }
+    });
+
+    return textProposals;
+  }
+
+  private spendingProposalData (proposals:[ProposalId, ProposalDetails][], proposalData: Proposal[]) {
+    const spendingProposals = { all: 0, Active: 0, Approved: 0, Rejected: 0, Expired: 0, Slashed: 0, Canceled: 0, Vetoed: 0, tokensBurned: 0 };
+
+    proposalData.forEach((proposal, index) => {
+      const proposalDetails = proposals[index][1];
+
+      if (proposalDetails.isOfType('Spending')) {
+        spendingProposals.all++;
+
+        if (proposal.status.isOfType('Active')) {
+          spendingProposals.Active++;
+        } else if (proposal.status.isOfType('Finalized')) {
+          const proposalStatusIfFinalized = proposal.status.asType('Finalized').proposalStatus;
+
+          spendingProposals[proposalStatusIfFinalized.type]++;
+
+          if (proposalStatusIfFinalized.isOfType('Approved') && proposalStatusIfFinalized.asType('Approved').isOfType('Executed')) {
+            spendingProposals.tokensBurned += Number(proposalDetails.asType('Spending')[0]);
+          } else if (proposalStatusIfFinalized.isOfType('Approved') && !proposalStatusIfFinalized.asType('Approved').isOfType('Executed')) {
+            spendingProposals.tokensBurned += 0;
+          } else if (proposalStatusIfFinalized.isOfType('Slashed')) {
+            spendingProposals.tokensBurned += proposal.parameters.requiredStake.unwrap().toNumber();
+          } else if (proposalStatusIfFinalized.isOfType('Canceled')) {
+            spendingProposals.tokensBurned += 10000;
+          } else {
+            spendingProposals.tokensBurned += 5000;
+          }
+        }
+      }
+    });
+
+    return spendingProposals;
+  }
+
+  private workingGroupsProposalData (proposals:[ProposalId, ProposalDetails][], proposalData: Proposal[]) {
+    const workingGroupsProposals = { all: 0, Active: 0, Approved: 0, Rejected: 0, Expired: 0, Slashed: 0, Canceled: 0, Vetoed: 0, tokensBurned: 0 };
+
+    proposalData.forEach((proposal, index) => {
+      const proposalDetails = proposals[index][1];
+
+      if (!proposalDetails.isOfType('Text') &&
+        !proposalDetails.isOfType('Spending') &&
+        !proposalDetails.isOfType('RuntimeUpgrade') &&
+        !proposalDetails.isOfType('SetElectionParameters') &&
+        !proposalDetails.isOfType('SetValidatorCount')
+      ) {
+        workingGroupsProposals.all++;
+
+        if (proposal.status.isOfType('Active')) {
+          workingGroupsProposals.Active++;
+        } else if (proposal.status.isOfType('Finalized')) {
+          const proposalStatusIfFinalized = proposal.status.asType('Finalized').proposalStatus;
+
+          workingGroupsProposals[proposalStatusIfFinalized.type]++;
+
+          if (proposalDetails.isOfType('SlashWorkingGroupLeaderStake') && proposalStatusIfFinalized.isOfType('Approved') && proposalStatusIfFinalized.asType('Approved').isOfType('Executed')) {
+            workingGroupsProposals.tokensBurned += Number(proposalDetails.asType('SlashWorkingGroupLeaderStake')[1]);
+          } else if (proposalStatusIfFinalized.isOfType('Slashed')) {
+            workingGroupsProposals.tokensBurned += proposal.parameters.requiredStake.unwrap().toNumber();
+          } else if (proposalStatusIfFinalized.isOfType('Canceled')) {
+            workingGroupsProposals.tokensBurned += 10000;
+          } else {
+            workingGroupsProposals.tokensBurned += 5000;
+          }
+        }
+      }
+    });
+
+    return workingGroupsProposals;
+  }
+
+  private networkChangesProposalData (proposals:[ProposalId, ProposalDetails][], proposalData: Proposal[]) {
+    const networkChangesProposals = { all: 0, Active: 0, Approved: 0, Rejected: 0, Expired: 0, Slashed: 0, Canceled: 0, Vetoed: 0, tokensBurned: 0 };
+
+    proposalData.forEach((proposal, index) => {
+      const proposalDetails = proposals[index][1];
+
+      if (proposalDetails.isOfType('RuntimeUpgrade') || proposalDetails.isOfType('SetElectionParameters') || proposalDetails.isOfType('SetValidatorCount')) {
+        networkChangesProposals.all++;
+
+        if (proposal.status.isOfType('Active')) {
+          networkChangesProposals.Active++;
+        } else if (proposal.status.isOfType('Finalized')) {
+          const proposalStatusIfFinalized = proposal.status.asType('Finalized').proposalStatus;
+
+          networkChangesProposals[proposalStatusIfFinalized.type]++;
+
+          if (proposalStatusIfFinalized.isOfType('Slashed')) {
+            networkChangesProposals.tokensBurned += proposal.parameters.requiredStake.unwrap().toNumber();
+          } else if (proposalStatusIfFinalized.isOfType('Canceled')) {
+            networkChangesProposals.tokensBurned += 10000;
+          } else {
+            networkChangesProposals.tokensBurned += 5000;
+          }
+        }
+      }
+    });
+
+    return networkChangesProposals;
+  }
+
+  async proposalStatistics () {
+    const proposals = await this.entriesByIds<ProposalId, ProposalDetails>(this.api.query.proposalsCodex.proposalDetailsByProposalId);
+    const proposalData = await this.api.query.proposalsEngine.proposals.multi<Proposal>(proposals.map(([id, _]) => id));
+    const textProposals = this.textProposalData(proposals, proposalData);
+    const spendingProposals = this.spendingProposalData(proposals, proposalData);
+    const workingGroupsProposals = this.workingGroupsProposalData(proposals, proposalData);
+    const networkChangesProposals = this.networkChangesProposalData(proposals, proposalData);
+
+    return {
+      textProposals,
+      spendingProposals,
+      workingGroupsProposals,
+      networkChangesProposals,
+      allProposals: {
+        all: textProposals.all + spendingProposals.all + workingGroupsProposals.all + networkChangesProposals.all,
+        Active: textProposals.Active + spendingProposals.Active + workingGroupsProposals.Active + networkChangesProposals.Active,
+        Approved: textProposals.Approved + spendingProposals.Approved + workingGroupsProposals.Approved + networkChangesProposals.Approved,
+        Rejected: textProposals.Rejected + spendingProposals.Rejected + workingGroupsProposals.Rejected + networkChangesProposals.Rejected,
+        Expired: textProposals.Expired + spendingProposals.Expired + workingGroupsProposals.Expired + networkChangesProposals.Expired,
+        Slashed: textProposals.Slashed + spendingProposals.Slashed + workingGroupsProposals.Slashed + networkChangesProposals.Slashed,
+        Canceled: textProposals.Canceled + spendingProposals.Canceled + workingGroupsProposals.Canceled + networkChangesProposals.Canceled,
+        Vetoed: textProposals.Vetoed + spendingProposals.Vetoed + workingGroupsProposals.Vetoed + networkChangesProposals.Vetoed,
+        tokensBurned: textProposals.tokensBurned + spendingProposals.tokensBurned + workingGroupsProposals.tokensBurned + networkChangesProposals.tokensBurned
+      }
+    };
+  }
 }
