@@ -87,6 +87,7 @@ export type NameValueObj = { name: string; value: string }
 // Working groups related types
 export enum WorkingGroups {
   StorageProviders = 'storageProviders',
+  Curators = 'curators',
 }
 
 // In contrast to Pioneer, currently only StorageProviders group is available in CLI

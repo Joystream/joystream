@@ -47,6 +47,7 @@ import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recur
 import { Stake, StakeId } from '@joystream/types/stake'
 
 import { InputValidationLengthConstraint } from '@joystream/types/common'
+import { Class, ClassId, CuratorGroup, CuratorGroupId } from '@joystream/types/content-directory'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 const DEFAULT_DECIMALS = new BN(12)
@@ -54,6 +55,7 @@ const DEFAULT_DECIMALS = new BN(12)
 // Mapping of working group to api module
 export const apiModuleByGroup: { [key in WorkingGroups]: string } = {
   [WorkingGroups.StorageProviders]: 'storageWorkingGroup',
+  [WorkingGroups.Curators]: 'contentDirectoryWorkingGroup',
 }
 
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
@@ -472,5 +474,14 @@ export default class Api {
 
   async workerExitRationaleConstraint(group: WorkingGroups): Promise<InputValidationLengthConstraint> {
     return await this.workingGroupApiQuery(group).workerExitRationaleText<InputValidationLengthConstraint>()
+  }
+
+  // Content directory
+  availableClasses(): Promise<[ClassId, Class][]> {
+    return this.entriesByIds<ClassId, Class>(this._api.query.contentDirectory.classById)
+  }
+
+  availableGroups(): Promise<[CuratorGroupId, CuratorGroup][]> {
+    return this.entriesByIds<CuratorGroupId, CuratorGroup>(this._api.query.contentDirectory.curatorGroupById)
   }
 }

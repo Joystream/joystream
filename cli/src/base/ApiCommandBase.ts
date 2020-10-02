@@ -313,6 +313,11 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
   }
 
+  // More typesafe version
+  async promptForType(type: keyof InterfaceTypes) {
+    return await this.promptForParam(type)
+  }
+
   async promptForJsonBytes(
     jsonStruct: Constructor<Struct>,
     argName?: string,
@@ -438,7 +443,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     account: KeyringPair,
     module: string,
     method: string,
-    paramsOptions: ApiParamsOptions,
+    paramsOptions?: ApiParamsOptions,
     warnOnly = false // If specified - only warning will be displayed (instead of error beeing thrown)
   ): Promise<ApiMethodArg[]> {
     const params = await this.promptForExtrinsicParams(module, method, paramsOptions)
