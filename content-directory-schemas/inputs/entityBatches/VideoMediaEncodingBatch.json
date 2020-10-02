@@ -1,4 +1,4 @@
 {
   "className": "VideoMediaEncoding",
-  "entries": [{ "Name": "MPEG4" }]
+  "entries": [{ "name": "MPEG4" }]
 }

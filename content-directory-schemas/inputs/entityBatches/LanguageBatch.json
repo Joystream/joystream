@@ -1,8 +1,8 @@
 {
   "className": "Language",
   "entries": [
-    { "Code": "EN", "Name": "English" },
-    { "Code": "RU", "Name": "Russian" },
-    { "Code": "DE", "Name": "German" }
+    { "code": "EN", "name": "English" },
+    { "code": "RU", "name": "Russian" },
+    { "code": "DE", "name": "German" }
   ]
 }

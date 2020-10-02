@@ -4,16 +4,15 @@
     {
       "title": "Caminades 2",
       "description": "Caminandes 2: Gran Dillama",
-      "language": { "existing": { "Code": "EN" } },
-      "category": { "existing": { "Name": "Cartoon" } },
+      "language": { "existing": { "code": "EN" } },
+      "category": { "existing": { "name": "Cartoon" } },
       "channel": { "existing": { "title": "Joystream Cartoons" } },
       "duration": 146,
       "hasMarketing": false,
-      "isCurated": false,
       "isPublic": true,
       "media": {
         "new": {
-          "encoding": { "existing": { "Name": "MPEG4" } },
+          "encoding": { "existing": { "name": "MPEG4" } },
           "location": {
             "new": {
               "httpMediaLocation": {
@@ -34,16 +33,15 @@
     {
       "title": "Caminades 3",
       "description": "Caminandes 3: Llamigos",
-      "language": { "existing": { "Code": "EN" } },
-      "category": { "existing": { "Name": "Cartoon" } },
+      "language": { "existing": { "code": "EN" } },
+      "category": { "existing": { "name": "Cartoon" } },
       "channel": { "existing": { "title": "Joystream Cartoons" } },
       "duration": 150,
       "hasMarketing": false,
-      "isCurated": false,
       "isPublic": true,
       "media": {
         "new": {
-          "encoding": { "existing": { "Name": "MPEG4" } },
+          "encoding": { "existing": { "name": "MPEG4" } },
           "location": {
             "new": {
               "httpMediaLocation": {
