@@ -205,11 +205,11 @@ function Overview ({ className = '', onStatusChange }: Props): React.ReactElemen
           label={t<string>('Restore JSON')}
           onClick={toggleImport}
         />
-        <Button
+        {/* <Button
           icon='qrcode'
           label={t<string>('Add via Qr')}
           onClick={toggleQr}
-        />
+        /> */}
         {isLedger() && (
           <>
             <Button
@@ -219,18 +219,18 @@ function Overview ({ className = '', onStatusChange }: Props): React.ReactElemen
             />
           </>
         )}
-        <Button
+        {/* <Button
           icon='plus'
           isDisabled={!(api.tx.multisig || api.tx.utility)}
           label={t<string>('Multisig')}
           onClick={toggleMultisig}
-        />
-        <Button
+        /> */}
+        {/* <Button
           icon='plus'
           isDisabled={!api.tx.proxy}
           label={t<string>('Proxied')}
           onClick={toggleProxy}
-        />
+        /> */}
       </Button.Group>
       <Table
         empty={t<string>("You don't have any accounts. Some features are currently hidden and will only become available once you have accounts.")}
