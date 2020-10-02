@@ -46,3 +46,40 @@ export type StatusServerData = {
   };
   price: string;
 };
+
+export type NetworkStatisticsData = {
+  blockHeight: number;
+  numberOfMembers: number;
+  content: number;
+  numberOfChannels: number;
+  proposalCount: number;
+  historicalProposals: number;
+  numberOfForumCategories: number;
+  numberOfForumPosts: number;
+  councilMintCapacity: number;
+  councilMintSpent: number;
+  contentCuratorMintCapacity: number;
+  contentCuratorMintSpent: number;
+  storageProviderMintCapacity: number;
+  storageProviderMintSpent: number;
+};
+
+export type ProposalStatistics = {
+  all: number;
+  Active: number;
+  Approved: number;
+  Rejected: number;
+  Expired: number;
+  Slashed: number;
+  Canceled: number;
+  Vetoed: number;
+  tokensBurned: number;
+}
+
+export type ProposalStatisticsData = {
+  textProposals: ProposalStatistics;
+  spendingProposals: ProposalStatistics;
+  workingGroupsProposals: ProposalStatistics;
+  networkChangesProposals: ProposalStatistics;
+  allProposals: ProposalStatistics
+}
