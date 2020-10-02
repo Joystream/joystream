@@ -1,5 +1,5 @@
 {
-  "classId": 7,
+  "className": "VideoMediaEncoding",
   "newProperties": [
     {
       "name": "Name",

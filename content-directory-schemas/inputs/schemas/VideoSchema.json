@@ -1,17 +1,17 @@
 {
-  "classId": 12,
+  "className": "Video",
   "newProperties": [
     {
       "name": "channel",
       "description": "Reference to member's channel",
       "required": true,
-      "property_type": { "Single": { "Reference": [6, true] } }
+      "property_type": { "Single": { "Reference": { "className": "Channel", "sameOwner": true } } }
     },
     {
       "name": "category",
       "description": "Reference to a video category",
       "required": true,
-      "property_type": { "Single": { "Reference": [5, false] } }
+      "property_type": { "Single": { "Reference": { "className": "ContentCategory" } } }
     },
     {
       "name": "title",
@@ -47,13 +47,13 @@
       "name": "language",
       "description": "Video's main langauge",
       "required": false,
-      "property_type": { "Single": { "Reference": [1, false] } }
+      "property_type": { "Single": { "Reference": { "className": "Language" } } }
     },
     {
       "name": "media",
       "description": "Reference to VideoMedia",
       "required": true,
-      "property_type": { "Single": { "Reference": [11, true] } }
+      "property_type": { "Single": { "Reference": { "className": "VideoMedia", "sameOwner": true } } }
     },
     {
       "name": "hasMarketing",
@@ -91,7 +91,7 @@
       "name": "license",
       "description": "A License the Video is published under",
       "required": true,
-      "property_type": { "Single": { "Reference": [10, true] } }
+      "property_type": { "Single": { "Reference": { "className": "License", "sameOwner": true } } }
     }
   ]
 }

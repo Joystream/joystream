@@ -1,5 +1,5 @@
 {
-  "classId": 1,
+  "className": "Language",
   "newProperties": [
     {
       "name": "Name",

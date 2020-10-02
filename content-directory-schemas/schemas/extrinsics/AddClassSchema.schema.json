@@ -5,18 +5,16 @@
   "description": "JSON schema to describe a new schema for a certain class in Joystream network",
   "type": "object",
   "additionalProperties": false,
-  "required": ["classId", "newProperties"],
+  "required": ["className", "newProperties"],
   "properties": {
-    "classId": { "$ref": "#/definitions/ClassId" },
+    "className": { "type": "string" },
     "existingProperties": {
       "type": "array",
-      "minItems": 1,
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/PropertyInSchemIndex" }
     },
     "newProperties": {
       "type": "array",
-      "minItems": 1,
       "uniqueItems": true,
       "items": { "$ref": "#/definitions/Property" }
     }
@@ -61,7 +59,7 @@
     },
     "SinglePropertyType": {
       "oneOf": [
-        { "$ref": "#/definitions/PrimitiveProperty" },
+        { "$ref": "#/definitions/PrimitiveProperty", "description": "Primitive property (bool/integer)" },
         { "$ref": "#/definitions/TextProperty" },
         { "$ref": "#/definitions/HashProperty" },
         { "$ref": "#/definitions/ReferenceProperty" }
@@ -128,13 +126,19 @@
       "required": ["Reference"],
       "properties": {
         "Reference": {
-          "type": "array",
-          "minItems": 2,
-          "additionalItems": false,
-          "items": [
-            { "$ref": "#/definitions/ClassId", "description": "Referenced class ID" },
-            { "$ref": "#/definitions/DefaultBoolean", "description": "Same owner required (flag)" }
-          ]
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["className"],
+          "properties": {
+            "className": {
+              "type": "string",
+              "description": "Referenced class name"
+            },
+            "sameOwner": {
+              "$ref": "#/definitions/DefaultBoolean",
+              "description": "Whether same owner (controller) is required"
+            }
+          }
         }
       }
     },

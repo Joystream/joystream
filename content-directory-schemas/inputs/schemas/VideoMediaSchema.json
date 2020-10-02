@@ -1,11 +1,11 @@
 {
-  "classId": 11,
+  "className": "VideoMedia",
   "newProperties": [
     {
       "name": "encoding",
       "description": "Encoding of the video media object",
       "required": true,
-      "property_type": { "Single": { "Reference": [7, false] } }
+      "property_type": { "Single": { "Reference": { "className": "VideoMediaEncoding" } } }
     },
     {
       "name": "pixelWidth",
@@ -29,7 +29,7 @@
       "name": "location",
       "description": "Location of the video media object",
       "required": true,
-      "property_type": { "Single": { "Reference": [4, true] } }
+      "property_type": { "Single": { "Reference": { "className": "MediaLocation", "sameOwner": true } } }
     }
   ]
 }

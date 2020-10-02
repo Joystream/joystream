@@ -1,5 +1,5 @@
 {
-  "classId": 5,
+  "className": "ContentCategory",
   "newProperties": [
     {
       "name": "Name",

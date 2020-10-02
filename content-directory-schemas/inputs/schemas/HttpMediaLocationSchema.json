@@ -1,5 +1,5 @@
 {
-  "classId": 2,
+  "className": "HttpMediaLocation",
   "newProperties": [
     {
       "name": "url",

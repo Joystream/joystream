@@ -1,17 +1,17 @@
 {
-  "classId": 10,
+  "className": "License",
   "newProperties": [
     {
       "name": "knownLicense",
       "description": "Reference to a known license",
       "required": false,
-      "property_type": { "Single": { "Reference": [8, false] } }
+      "property_type": { "Single": { "Reference": { "className": "KnownLicense" } } }
     },
     {
       "name": "userDefinedLicense",
       "description": "Reference to user-defined license",
       "required": false,
-      "property_type": { "Single": { "Reference": [9, true] } }
+      "property_type": { "Single": { "Reference": { "className": "UserDefinedLicense", "sameOwner": true } } }
     }
   ]
 }

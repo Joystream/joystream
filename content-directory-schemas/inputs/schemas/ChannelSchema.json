@@ -1,5 +1,5 @@
 {
-  "classId": 6,
+  "className": "Channel",
   "newProperties": [
     {
       "name": "title",
@@ -43,7 +43,7 @@
       "name": "language",
       "description": "The primary langauge of the channel's content",
       "required": false,
-      "property_type": { "Single": { "Reference": [1, false] } }
+      "property_type": { "Single": { "Reference": { "className": "Language" } } }
     }
   ]
 }

@@ -1,25 +1,20 @@
 import { CreateClass } from '../types/extrinsics/CreateClass'
 import { AddClassSchema } from '../types/extrinsics/AddClassSchema'
 import { types } from '@joystream/types'
-import { ApiPromise, Keyring, WsProvider } from '@polkadot/api'
-import { JoyBTreeSet } from '@joystream/types/common'
-import { PropertyId } from '@joystream/types/content-directory'
+import { ApiPromise, WsProvider } from '@polkadot/api'
 import { getInputs } from './helpers/inputs'
-import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { EntityBatchesParser } from './helpers/EntityBatchParser'
 import fs from 'fs'
 import path from 'path'
+import { EntityBatch } from 'types/EntityBatch'
+import { InputParser } from './helpers/InputParser'
+import { ExtrinsicsHelper, getAlicePair } from './helpers/extrinsics'
 
-type DescribedExtrinsic = {
-  type: string
-  inputFilename: string
-  tx: SubmittableExtrinsic<'promise'>
-}
+// Save entity operations output here for easier debugging
+const ENTITY_OPERATIONS_OUTPUT_PATH = path.join(__dirname, '../operations.json')
 
-// Classes
 const classInputs = getInputs<CreateClass>('classes')
 const schemaInputs = getInputs<AddClassSchema>('schemas')
-const entityBatchInputs = getInputs('entityBatches')
+const entityBatchInputs = getInputs<EntityBatch>('entityBatches')
 
 async function main() {
   // Init api
@@ -27,10 +22,8 @@ async function main() {
   console.log(`Initializing the api (${WS_URI})...`)
   const provider = new WsProvider(WS_URI)
   const api = await ApiPromise.create({ provider, types })
-  // Init ALICE keypair
-  const keyring = new Keyring({ type: 'sr25519' })
-  keyring.addFromUri('//Alice', { name: 'Alice' })
-  const ALICE = keyring.getPairs()[0]
+
+  const ALICE = getAlicePair()
 
   // Emptiness check
   if ((await api.query.contentDirectory.nextClassId()).toNumber() > 1) {
@@ -38,54 +31,35 @@ async function main() {
     process.exit()
   }
 
-  const classExtrinsics = classInputs.map(({ data, fileName }) => ({
-    type: 'CreateClass',
-    inputFilename: fileName,
-    tx: api.tx.contentDirectory.createClass(
-      data.name,
-      data.description,
-      data.class_permissions || {},
-      data.maximum_entities_count,
-      data.default_entity_creation_voucher_upper_bound
-    ),
-  }))
-  // Schemas
-  const schemaExtrinsics = schemaInputs.map(({ data, fileName }) => ({
-    type: 'AddClassSchema',
-    inputFilename: fileName,
-    tx: api.tx.contentDirectory.addClassSchema(
-      data.classId,
-      new (JoyBTreeSet(PropertyId))(api.registry, data.existingProperties),
-      data.newProperties || []
-    ),
-  }))
+  const txHelper = new ExtrinsicsHelper(api)
+  const parser = new InputParser(api, classInputs, schemaInputs, entityBatchInputs)
 
-  let nonce = (await api.query.system.account(ALICE.address)).nonce.toNumber()
-  console.log('Initializing classes and schemas...\n')
-  const extrinsics: DescribedExtrinsic[] = [...classExtrinsics, ...schemaExtrinsics]
-  for (const { type, inputFilename, tx } of extrinsics) {
-    console.log(`Sending ${type} extrinsic based on input file: ${inputFilename}`)
-    await tx.signAndSend(ALICE, { nonce: nonce++ })
-  }
+  console.log(`Initializing classes (${classInputs.length} input files found)...\n`)
+  const classExtrinsics = parser.getCreateClassExntrinsics()
+  await txHelper.sendAndCheck(ALICE, classExtrinsics, 'Class initialization failed!')
 
-  console.log('Initializing entities...\n')
-  // Entity batches
-  const entityBatchParser = new EntityBatchesParser(schemaInputs, entityBatchInputs)
-  console.log('Parsing input into operations...')
-  const operations = entityBatchParser.getOperations()
+  console.log(`Initializing schemas (${schemaInputs.length} input files found)...\n`)
+  const schemaExtrinsics = await parser.getAddSchemaExtrinsics()
+  await txHelper.sendAndCheck(ALICE, schemaExtrinsics, 'Schemas initialization failed!')
+
+  console.log(`Initializing entities (${entityBatchInputs.length} input files found)`)
+  const entityOperations = await parser.getEntityBatchOperations()
   // Save operations in operations.json (for reference in case of errors)
-  const outputPath = path.join(__dirname, '../operations.json')
-  console.log(`Saving entity batch operations in ${outputPath}...`)
+  console.log(`Saving entity batch operations in ${ENTITY_OPERATIONS_OUTPUT_PATH}...`)
   fs.writeFileSync(
-    outputPath,
+    ENTITY_OPERATIONS_OUTPUT_PATH,
     JSON.stringify(
-      operations.map((o) => o.toJSON()),
+      entityOperations.map((o) => o.toJSON()),
       null,
       4
     )
   )
   console.log('Sending Transaction extrinsic...')
-  await api.tx.contentDirectory.transaction({ Lead: null }, operations).signAndSend(ALICE, { nonce: nonce++ })
+  await txHelper.sendAndCheck(
+    ALICE,
+    [api.tx.contentDirectory.transaction({ Lead: null }, entityOperations)],
+    'Entity initialization failed!'
+  )
 }
 
 main()

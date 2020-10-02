@@ -1,5 +1,5 @@
 {
-  "classId": 9,
+  "className": "UserDefinedLicense",
   "newProperties": [
     {
       "name": "content",

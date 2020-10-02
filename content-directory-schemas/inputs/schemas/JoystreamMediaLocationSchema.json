@@ -1,5 +1,5 @@
 {
-  "classId": 3,
+  "className": "JoystreamMediaLocation",
   "newProperties": [
     {
       "name": "dataObjectId",

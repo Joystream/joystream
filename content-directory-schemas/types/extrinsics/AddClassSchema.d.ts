@@ -5,10 +5,12 @@
  * and run json-schema-to-typescript to regenerate this file.
  */
 
-export type ClassId = number
 export type PropertyInSchemIndex = number
-export type SinglePropertyType = PrimitiveProperty | TextProperty | HashProperty | ReferenceProperty
-export type PrimitiveProperty = 'Bool' | 'Uint16' | 'Uint32' | 'Uint64' | 'Int16' | 'Int32' | 'Int64'
+export type SinglePropertyType =
+  | ('Bool' | 'Uint16' | 'Uint32' | 'Uint64' | 'Int16' | 'Int32' | 'Int64')
+  | TextProperty
+  | HashProperty
+  | ReferenceProperty
 export type MaxTextLength = number
 export type MaxVecItems = number
 export type PropertyName = string
@@ -19,9 +21,9 @@ export type DefaultBoolean = boolean
  * JSON schema to describe a new schema for a certain class in Joystream network
  */
 export interface AddClassSchema {
-  classId: ClassId
-  existingProperties?: [PropertyInSchemIndex, ...PropertyInSchemIndex[]]
-  newProperties: [Property, ...Property[]]
+  className: string
+  existingProperties?: PropertyInSchemIndex[]
+  newProperties: Property[]
 }
 export interface Property {
   property_type: SinglePropertyVariant | VecPropertyVariant
@@ -41,7 +43,16 @@ export interface HashProperty {
   Hash: MaxTextLength
 }
 export interface ReferenceProperty {
-  Reference: [number, boolean]
+  Reference: {
+    /**
+     * Referenced class name
+     */
+    className: string
+    /**
+     * Whether same owner (controller) is required
+     */
+    sameOwner?: boolean
+  }
 }
 export interface VecPropertyVariant {
   Vector: VecPropertyType

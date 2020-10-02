@@ -27,9 +27,10 @@ This will handle:
 
 ### Input files naming
 
-Currently the tooling has some limitations when it comes to naming files inside the `inputs` directory. There is a specific pattern that has to be respected:
+In order to get the full benefit of the tooling, in some cases you may need to respect a specific pattern of file naming:
 
-Each input file name should start with related class id (counting from `1`, since it's assumed that the classes will be created inside an initially empty content directory) followed by and underscore and a class name (for example: `1_Language`), followed by one of the following strings: `Class`, `Schema` or `Batch` (based on the input type, ie. `1_LanguageBatch`)
+Each input file name should end with `Class`, `Schema` or `Batch` (depending on the input type, ie. `LanguageBatch`).
+It is also recommended that each of those file names starts with a class name (currently in `entityBatches` there's no distinction between schemas and classes, as it is assumed there will be a one-to-one relationship between them)
 
 ### `json-schemas` support for json inputs in `VSCode`
 
@@ -70,7 +71,7 @@ For example, in order to describe creating entities as simple as `Language`, whi
 ]
 ```
 
-_(This is the actual content of `inputs/entityBatches/1_LanguageBatch.json`)_
+_(This is the actual content of `inputs/entityBatches/LanguageBatch.json`)_
 
 #### Related entities
 
@@ -91,7 +92,7 @@ We can do it by either using `"new"` or `"existing"` keyword.
 }
 ```
 
-- The `"existing"` keyword allows referencing an entity created as part of some other (**previous!**) batch inside `inputs/entityBatches`. We can do it by specifying the value of **any unique property of the referenced entity**. So, for example to reference a `Language` entity from `VideoBatch.json` file, we use this syntax:
+- The `"existing"` keyword allows referencing an entity created as part of any other batch inside `inputs/entityBatches`. We can do it by specifying the value of **any unique property of the referenced entity**. So, for example to reference a `Language` entity from `VideoBatch.json` file, we use this syntax:
 
 ```
 {
@@ -135,7 +136,7 @@ This command will generate:
 The most obvious use-case of those interfaces currently is that when we're parsing any json files inside `inputs` using a Typescript code, we can assert that the resulting object will be of given type, ie.:
 
 ```
-const createClassInput = JSON.parse(fs.readFileSync('/path/to/inputs/1_LanguageClass.json')) as CreateClass
+const createClassInput = JSON.parse(fs.readFileSync('/path/to/inputs/LanguageClass.json')) as CreateClass
 ```
 
 Besides that, a Typescript code can be written to generate some inputs (ie. using a loop) that can then can be used to create classes/schemas or insert entities into the content directory.
@@ -147,7 +148,5 @@ There are a lot of other potential use-cases, but for the purpose of this docume
 Some limitations that should be dealt with in the nearest future:
 
 - Filename restrictions described in **_Input files naming_** section
-- The requirement of knowing the class id (ie. when defining the references in `inputs/schemas`)
 - Some code runs on the assumption that there is only one schema for each class, which is very limiting
-- Inside `input/entityBatches` we cannot reference entities that are part of a latter batch (batches are ordered by class id)
 - `Vector<Reference>` property type is not yet supported when parsing entity batches

@@ -9,26 +9,23 @@ import {
   TextProperty,
   VecPropertyVariant,
 } from '../types/extrinsics/AddClassSchema'
-import _ from 'lodash'
-import { schemaFilenameToEntitySchemaName, classIdToEntitySchemaName } from './helpers/entitySchemas'
-
 import PRIMITIVE_PROPERTY_DEFS from '../schemas/propertyValidationDefs.schema.json'
-import { getInputsLocation } from './helpers/inputs'
+import { getInputs } from './helpers/inputs'
+import { JSONSchema7 } from 'json-schema'
 
-const INPUTS_LOCATION = getInputsLocation('schemas')
 const SINGLE_ENTITY_SCHEMAS_LOCATION = path.join(__dirname, '../schemas/entities')
 const BATCH_OF_ENITIES_SCHEMAS_LOCATION = path.join(__dirname, '../schemas/entityBatches')
 const ENTITY_REFERENCE_SCHEMAS_LOCATION = path.join(__dirname, '../schemas/entityReferences')
 
-const inputFilenames = fs.readdirSync(INPUTS_LOCATION)
+const schemaInputs = getInputs<AddClassSchema>('schemas')
 
-const strictObjectDef = (def: Record<string, any>) => ({
+const strictObjectDef = (def: Record<string, any>): JSONSchema7 => ({
   type: 'object',
   additionalProperties: false,
   ...def,
 })
 
-const onePropertyObjectDef = (propertyName: string, propertyDef: Record<string, any>) =>
+const onePropertyObjectDef = (propertyName: string, propertyDef: Record<string, any>): JSONSchema7 =>
   strictObjectDef({
     required: [propertyName],
     properties: {
@@ -36,28 +33,26 @@ const onePropertyObjectDef = (propertyName: string, propertyDef: Record<string, 
     },
   })
 
-const TextPropertyDef = ({ Text: maxLength }: TextProperty) => ({
+const TextPropertyDef = ({ Text: maxLength }: TextProperty): JSONSchema7 => ({
   type: 'string',
   maxLength,
 })
 
-const HashPropertyDef = ({ Hash: maxLength }: HashProperty) => ({
+const HashPropertyDef = ({ Hash: maxLength }: HashProperty): JSONSchema7 => ({
   type: 'string',
   maxLength,
 })
 
-const ReferencePropertyDef = ({ Reference: ref }: ReferenceProperty) => ({
+const ReferencePropertyDef = ({ Reference: ref }: ReferenceProperty): JSONSchema7 => ({
   'oneOf': [
-    onePropertyObjectDef('new', { '$ref': `./${classIdToEntitySchemaName(ref[0], 'Entity')}.schema.json` }),
-    onePropertyObjectDef('existing', {
-      '$ref': `../entityReferences/${classIdToEntitySchemaName(ref[0], 'Ref')}.schema.json`,
-    }),
+    onePropertyObjectDef('new', { '$ref': `./${ref.className}Entity.schema.json` }),
+    onePropertyObjectDef('existing', { '$ref': `../entityReferences/${ref.className}Ref.schema.json` }),
   ],
 })
 
-const SinglePropertyDef = ({ Single: singlePropType }: SinglePropertyVariant) => {
+const SinglePropertyDef = ({ Single: singlePropType }: SinglePropertyVariant): JSONSchema7 => {
   if (typeof singlePropType === 'string') {
-    return PRIMITIVE_PROPERTY_DEFS.definitions[singlePropType]
+    return PRIMITIVE_PROPERTY_DEFS.definitions[singlePropType] as JSONSchema7
   } else if ((singlePropType as TextProperty).Text) {
     return TextPropertyDef(singlePropType as TextProperty)
   } else if ((singlePropType as HashProperty).Hash) {
@@ -69,13 +64,13 @@ const SinglePropertyDef = ({ Single: singlePropType }: SinglePropertyVariant) =>
   throw new Error(`Unknown single proprty type: ${JSON.stringify(singlePropType)}`)
 }
 
-const VecPropertyDef = ({ Vector: vec }: VecPropertyVariant) => ({
+const VecPropertyDef = ({ Vector: vec }: VecPropertyVariant): JSONSchema7 => ({
   type: 'array',
   maxItems: vec.max_length,
   'items': SinglePropertyDef({ Single: vec.vec_type }),
 })
 
-const PropertyDef = ({ property_type: propertyType, description }: Property) => ({
+const PropertyDef = ({ property_type: propertyType, description }: Property): JSONSchema7 => ({
   ...((propertyType as SinglePropertyVariant).Single
     ? SinglePropertyDef(propertyType as SinglePropertyVariant)
     : VecPropertyDef(propertyType as VecPropertyVariant)),
@@ -95,12 +90,8 @@ entitySchemasDirs.forEach((dir) => {
 })
 
 // Run schema conversion:
-inputFilenames.forEach((fileName) => {
-  const inputFilePath = path.join(INPUTS_LOCATION, fileName)
-  const inputJson = fs.readFileSync(inputFilePath).toString()
-  const inputData = JSON.parse(inputJson) as AddClassSchema
-
-  const schemaName = schemaFilenameToEntitySchemaName(fileName)
+schemaInputs.forEach(({ fileName, data: inputData }) => {
+  const schemaName = fileName.replace('Schema.json', '')
 
   if (inputData.newProperties && !inputData.existingProperties) {
     const properites = inputData.newProperties
@@ -109,35 +100,43 @@ inputFilenames.forEach((fileName) => {
       return pObj
     }, {} as Record<string, ReturnType<typeof PropertyDef>>)
 
-    const EntitySchema = {
-      '$schema': 'http://json-schema.org/draft-07/schema',
-      '$id': `https://joystream.org/entities/${schemaName}Entity.schema.json`,
-      'title': `${schemaName}Entity`,
-      'description': `JSON schema for entities based on ${schemaName} runtime schema`,
+    const EntitySchema: JSONSchema7 = {
+      $schema: 'http://json-schema.org/draft-07/schema',
+      $id: `https://joystream.org/entities/${schemaName}Entity.schema.json`,
+      title: `${schemaName}Entity`,
+      description: `JSON schema for entities based on ${schemaName} runtime schema`,
       ...strictObjectDef({
         required: properites.filter((p) => p.required).map((p) => p.name),
         properties: propertiesObj,
       }),
     }
 
-    const ReferenceSchema = {
-      '$schema': 'http://json-schema.org/draft-07/schema',
-      '$id': `https://joystream.org/entityReferences/${schemaName}Ref.schema.json`,
-      'title': `${schemaName}Reference`,
-      'description': `JSON schema for reference to ${schemaName} entity based on runtime schema`,
-      'anyOf': [
+    const ReferenceSchema: JSONSchema7 = {
+      $schema: 'http://json-schema.org/draft-07/schema',
+      $id: `https://joystream.org/entityReferences/${schemaName}Ref.schema.json`,
+      title: `${schemaName}Reference`,
+      description: `JSON schema for reference to ${schemaName} entity based on runtime schema`,
+      anyOf: [
         ...properites.filter((p) => p.required && p.unique).map((p) => onePropertyObjectDef(p.name, PropertyDef(p))),
-        PRIMITIVE_PROPERTY_DEFS.definitions.Uint64,
+        PRIMITIVE_PROPERTY_DEFS.definitions.Uint64 as JSONSchema7,
       ],
     }
 
-    const BatchSchema = {
-      '$schema': 'http://json-schema.org/draft-07/schema',
-      '$id': `https://joystream.org/entityBatches/${schemaName}Batch.schema.json`,
-      'title': `${schemaName}Batch`,
-      'description': `JSON schema for batch of entities based on ${schemaName} runtime schema`,
-      'type': 'array',
-      'items': { '$ref': `../entities/${schemaName}Entity.schema.json` },
+    const BatchSchema: JSONSchema7 = {
+      $schema: 'http://json-schema.org/draft-07/schema',
+      $id: `https://joystream.org/entityBatches/${schemaName}Batch.schema.json`,
+      title: `${schemaName}Batch`,
+      description: `JSON schema for batch of entities based on ${schemaName} runtime schema`,
+      ...strictObjectDef({
+        required: ['className', 'entries'],
+        properties: {
+          className: { type: 'string' },
+          entries: {
+            type: 'array',
+            items: { '$ref': `../entities/${schemaName}Entity.schema.json` },
+          },
+        },
+      }),
     }
 
     const entitySchemaPath = path.join(SINGLE_ENTITY_SCHEMAS_LOCATION, `${schemaName}Entity.schema.json`)

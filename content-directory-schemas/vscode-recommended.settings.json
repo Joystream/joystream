@@ -9,51 +9,51 @@
       "url": "/content-directory-schemas/schemas/extrinsics/CreateClass.schema.json"
     },
     {
-      "fileMatch": ["*_LanguageBatch.json"],
+      "fileMatch": ["*/LanguageBatch.json"],
       "url": "/content-directory-schemas/schemas/entityBatches/LanguageBatch.schema.json"
     },
     {
-      "fileMatch": ["*_MediaLocationBatch.json"],
+      "fileMatch": ["*/MediaLocationBatch.json"],
       "url": "/content-directory-schemas/schemas/entityBatches/MediaLocationBatch.schema.json"
     },
     {
-      "fileMatch": ["*_HttpMediaLocationBatch.json"],
+      "fileMatch": ["*/HttpMediaLocationBatch.json"],
       "url": "/content-directory-schemas/schemas/entityBatches/HttpMediaLocationBatch.schema.json"
     },
     {
-      "fileMatch": ["*_JoystreamMediaLocationBatch.json"],
+      "fileMatch": ["*/JoystreamMediaLocationBatch.json"],
       "url": "/content-directory-schemas/schemas/entityBatches/JoystreamMediaLocationBatch.schema.json"
     },
     {
-      "fileMatch": ["*_ContentCategoryBatch.json"],
+      "fileMatch": ["*/ContentCategoryBatch.json"],
       "url": "/content-directory-schemas/schemas/entityBatches/ContentCategoryBatch.schema.json"
     },
     {
-      "fileMatch": ["*_ChannelBatch.json"],
+      "fileMatch": ["*/ChannelBatch.json"],
       "url": "/content-directory-schemas/schemas/entityBatches/ChannelBatch.schema.json"
     },
     {
-      "fileMatch": ["*_VideoMediaEncodingBatch.json"],
+      "fileMatch": ["*/VideoMediaEncodingBatch.json"],
       "url": "/content-directory-schemas/schemas/entityBatches/VideoMediaEncodingBatch.schema.json"
     },
     {
-      "fileMatch": ["*_KnownLicenseBatch.json"],
+      "fileMatch": ["*/KnownLicenseBatch.json"],
       "url": "/content-directory-schemas/schemas/entityBatches/KnownLicenseBatch.schema.json"
     },
     {
-      "fileMatch": ["*_UserDefinedLicenseBatch.json"],
+      "fileMatch": ["*/UserDefinedLicenseBatch.json"],
       "url": "/content-directory-schemas/schemas/entityBatches/UserDefinedLicenseBatch.schema.json"
     },
     {
-      "fileMatch": ["*_LicenseBatch.json"],
+      "fileMatch": ["*/LicenseBatch.json"],
       "url": "/content-directory-schemas/schemas/entityBatches/LicenseBatch.schema.json"
     },
     {
-      "fileMatch": ["*_VideoMediaBatch.json"],
+      "fileMatch": ["*/VideoMediaBatch.json"],
       "url": "/content-directory-schemas/schemas/entityBatches/VideoMediaBatch.schema.json"
     },
     {
-      "fileMatch": ["*_VideoBatch.json"],
+      "fileMatch": ["*/VideoBatch.json"],
       "url": "/content-directory-schemas/schemas/entityBatches/VideoBatch.schema.json"
     }
   ]
