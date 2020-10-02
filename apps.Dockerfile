@@ -7,8 +7,6 @@ COPY . /joystream
 # RUN echo "prefix=${HOME}/npm" > ${HOME}/.npmrc 
 # ENV PATH=$PATH:$HOME/npm/bin/
 
-RUN npm -g install yarn
-
 ENV NODE_ENV=production
 RUN yarn
 RUN yarn workspace pioneer build
