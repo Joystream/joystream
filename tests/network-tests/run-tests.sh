@@ -58,4 +58,4 @@ CONTAINER_ID=`docker run -d -v ${DATA_PATH}:/data -p 9944:9944 joystream/node \
   --chain /data/chain-spec-raw.json`
 
 # Execute the tests then stop the container
-yarn workspace network-tests test || echo "Failed Running Tests" && cleanup
+(yarn workspace network-tests test || echo "Failed Running Tests") && cleanup
