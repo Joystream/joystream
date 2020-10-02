@@ -16,7 +16,7 @@ services:
         /sbin/tini -- /usr/local/bin/start_ipfs daemon --migrate=true
       "
   chain:
-    image: "joystream/node:${JOYSTREAM_NODE_TAG}"
+    image: joystream/node
     build:
       context: .
       dockerfile: joystream-node.Dockerfile

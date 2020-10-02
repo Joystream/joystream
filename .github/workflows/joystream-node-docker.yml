@@ -41,9 +41,8 @@ jobs:
         continue-on-error: true
         run: |
           if ! [ -f joystream-node-docker-image.tar.gz ]; then
-            export JOYSTREAM_NODE_TAG=${{ steps.compute_shasum.outputs.shasum }}
-            docker pull joystream/node:${JOYSTREAM_NODE_TAG}
-            docker image tag joystream/node:${JOYSTREAM_NODE_TAG} joystream/node:latest
+            docker pull joystream/node:${{ steps.compute_shasum.outputs.shasum }}
+            docker image tag joystream/node:${{ steps.compute_shasum.outputs.shasum }} joystream/node:latest
             docker save --output joystream-node-docker-image.tar joystream/node:latest
             gzip joystream-node-docker-image.tar
             cp joystream-node-docker-image.tar.gz ~/docker-images/
