@@ -1,14 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-function cleanup()
-{
-    docker stop ${CONTAINER_ID}
-    docker rm ${CONTAINER_ID}
-}
-
-trap cleanup EXIT
-
 # Location that will be mounted as the /data volume in containers
 # This is how we access the initial members and balances files from
 # the containers and where generated chainspec files will be located.
@@ -57,5 +49,12 @@ CONTAINER_ID=`docker run -d -v ${DATA_PATH}:/data -p 9944:9944 joystream/node \
   --validator --alice --unsafe-ws-external --rpc-cors=all --log runtime \
   --chain /data/chain-spec-raw.json`
 
-# Execute the tests then stop the container
-(yarn workspace network-tests test || echo "Failed Running Tests") && cleanup
+function cleanup() {
+    docker stop ${CONTAINER_ID}
+    docker rm ${CONTAINER_ID}
+}
+
+trap cleanup EXIT
+
+# Execute the tests
+yarn workspace network-tests test
