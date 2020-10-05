@@ -14,10 +14,6 @@
   dependencies:
     "@open-web3/orml-type-definitions" "^0.5.1"
 
-"@alexandria/types@link:types":
-  version "0.0.0"
-  uid ""
-
 "@apidevtools/json-schema-ref-parser@9.0.6":
   version "9.0.6"
   resolved "https://registry.yarnpkg.com/@apidevtools/json-schema-ref-parser/-/json-schema-ref-parser-9.0.6.tgz#5d9000a3ac1fd25404da886da6b266adcd99cf1c"
@@ -1555,16 +1551,6 @@
     exec-sh "^0.3.2"
     minimist "^1.2.0"
 
-"@constantinople/types@npm:@joystream/types@^0.10.0":
-  version "0.10.0"
-  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.10.0.tgz#7e98ef221410b26a7d952cfc3d1c03d28395ad69"
-  integrity sha512-RDZizqGKWGYpLR5PnUWM4aGa7InpWNh2Txlr7Al3ROFYOHoyQf62/omPfEz29F6scwlFxysOdmEfQaLeVRaUxA==
-  dependencies:
-    "@polkadot/types" "^0.96.1"
-    "@types/vfile" "^4.0.0"
-    ajv "^6.11.0"
-    lodash "^4.17.15"
-
 "@develar/schema-utils@~2.6.5":
   version "2.6.5"
   resolved "https://registry.yarnpkg.com/@develar/schema-utils/-/schema-utils-2.6.5.tgz#3ece22c5838402419a6e0425f85742b961d9b6c6"
@@ -2983,19 +2969,6 @@
     call-me-maybe "^1.0.1"
     glob-to-regexp "^0.3.0"
 
-"@nicaea/types@npm:@joystream/types@^0.12.0":
-  version "0.12.0"
-  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.12.0.tgz#4033967ae2ac111f894fb4100e414f7cdbe95611"
-  integrity sha512-pHHYTbIa6V1C4k9aj+M6Fkwa2I2Br+4x7cuvREmrVh21GHjGuzoIwB74MfqFajdSTDQDZbjdixcYDES6uo3sUg==
-  dependencies:
-    "@polkadot/keyring" "^1.7.0-beta.5"
-    "@polkadot/types" "^0.96.1"
-    "@types/lodash" "^4.14.157"
-    "@types/vfile" "^4.0.0"
-    ajv "^6.11.0"
-    lodash "^4.17.15"
-    moment "^2.24.0"
-
 "@nodelib/fs.scandir@2.1.3":
   version "2.1.3"
   resolved "https://registry.yarnpkg.com/@nodelib/fs.scandir/-/fs.scandir-2.1.3.tgz#3a582bdb53804c6ba6d146579c46e52130cf4a3b"
@@ -3478,7 +3451,7 @@
   dependencies:
     "@babel/runtime" "^7.10.5"
 
-"@polkadot/keyring@3.0.1", "@polkadot/keyring@^1.7.0-beta.5", "@polkadot/keyring@^3.0.1":
+"@polkadot/keyring@3.0.1", "@polkadot/keyring@^3.0.1":
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/@polkadot/keyring/-/keyring-3.0.1.tgz#3944079697c15b2af81e1f57b1c4aeab703a4fef"
   integrity sha512-vAHSBnisiDYHsBbEzAgIpuwQp3vIDN2uWQ/1wAE2BrKzXCBQM7RrF3LRcLFySk0xzQoDs7AP1TlPoakxJ/C/Qw==
@@ -3596,7 +3569,7 @@
     "@polkadot/util" "^3.0.1"
     bn.js "^5.1.2"
 
-"@polkadot/types@1.26.1", "@polkadot/types@^0.96.1", "@polkadot/types@^1.26.1":
+"@polkadot/types@1.26.1", "@polkadot/types@^1.26.1":
   version "1.26.1"
   resolved "https://registry.yarnpkg.com/@polkadot/types/-/types-1.26.1.tgz#e58a823da22bd526b298f7d42384bf59b8994fad"
   integrity sha512-mrA3+qYyDvfOIOMkY8lg2ziCYpwOl3N1LUxKdiyBDtKM7Dl8ZWQ0nLUCDW5MhbzDlThmYjE4feBRA+2eBShfyA==
@@ -3698,15 +3671,6 @@
     invariant "^2.2.3"
     prop-types "^15.6.1"
     react-lifecycles-compat "^3.0.4"
-
-"@rome/types@npm:@joystream/types@^0.7.0":
-  version "0.7.0"
-  resolved "https://registry.yarnpkg.com/@joystream/types/-/types-0.7.0.tgz#381f73f5d805911be68a54c878b6c10423fc4eef"
-  integrity sha512-Fgi2ps6+AvIqP+6RXzen9lkPnMI42oOsj/ZjGZj4891deR6azWwSxqJYPdntsgKtn+eKIaqYLtn5MIpJt0UkYw==
-  dependencies:
-    "@polkadot/types" "^0.96.1"
-    "@types/vfile" "^4.0.0"
-    ajv "^6.11.0"
 
 "@semantic-ui-react/event-stack@^3.1.0":
   version "3.1.1"
