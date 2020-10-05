@@ -29,7 +29,7 @@ export default class WorkingGroupsStartAcceptingApplications extends WorkingGrou
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'acceptApplications', [openingId])
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'acceptApplications', [openingId])
 
     this.log(
       chalk.green(`Opening ${chalk.white(openingId)} status changed to: ${chalk.white('Accepting Applications')}`)

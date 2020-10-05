@@ -194,32 +194,36 @@ export class InputParser {
     return operations
   }
 
+  public async parseAddClassSchemaExtrinsic(inputData: AddClassSchema) {
+    await this.initializeClassMap() // Initialize if not yet initialized
+    const classId = this.getClassIdByName(inputData.className)
+    const newProperties = inputData.newProperties.map((p) => ({
+      ...p,
+      // Parse different format for Reference (and potentially other propTypes in the future)
+      property_type: this.parsePropertyType(p.property_type).toJSON(),
+    }))
+    return this.api.tx.contentDirectory.addClassSchema(
+      classId,
+      new (JoyBTreeSet(PropertyId))(this.api.registry, inputData.existingProperties),
+      newProperties
+    )
+  }
+
+  public parseCreateClassExtrinsic(inputData: CreateClass) {
+    return this.api.tx.contentDirectory.createClass(
+      inputData.name,
+      inputData.description,
+      inputData.class_permissions || {},
+      inputData.maximum_entities_count,
+      inputData.default_entity_creation_voucher_upper_bound
+    )
+  }
+
   public async getAddSchemaExtrinsics() {
-    await this.initializeClassMap()
-    return this.schemaInputs.map(({ data: schema }) => {
-      const classId = this.getClassIdByName(schema.className)
-      const newProperties = schema.newProperties.map((p) => ({
-        ...p,
-        // Parse different format for Reference (and potentially other propTypes in the future)
-        property_type: this.parsePropertyType(p.property_type).toJSON(),
-      }))
-      return this.api.tx.contentDirectory.addClassSchema(
-        classId,
-        new (JoyBTreeSet(PropertyId))(this.api.registry, schema.existingProperties),
-        newProperties
-      )
-    })
+    return await Promise.all(this.schemaInputs.map(({ data }) => this.parseAddClassSchemaExtrinsic(data)))
   }
 
   public getCreateClassExntrinsics() {
-    return this.classInputs.map(({ data: aClass }) =>
-      this.api.tx.contentDirectory.createClass(
-        aClass.name,
-        aClass.description,
-        aClass.class_permissions || {},
-        aClass.maximum_entities_count,
-        aClass.default_entity_creation_voucher_upper_bound
-      )
-    )
+    return this.classInputs.map(({ data }) => this.parseCreateClassExtrinsic(data))
   }
 }

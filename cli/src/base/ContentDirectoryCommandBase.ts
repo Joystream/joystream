@@ -18,16 +18,13 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     }
   }
 
-  async promptForClass(message = 'Select a class'): Promise<number> {
+  async promptForClassName(message = 'Select a class'): Promise<string> {
     const classes = await this.getApi().availableClasses()
-    const choices = classes.map(([id, aClass]) => ({
-      name: aClass.name.toString(),
-      value: id.toNumber(),
-    }))
+    const choices = classes.map(([, c]) => ({ name: c.name.toString(), value: c.name.toString() }))
 
-    const selectedId = await this.simplePrompt({ message, type: 'list', choices })
+    const selected = await this.simplePrompt({ message, type: 'list', choices })
 
-    return selectedId
+    return selected
   }
 
   async promptForCuratorGroups(message = 'Select a curator group'): Promise<number> {
@@ -43,8 +40,8 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
   }
 
   async promptForClassReference(): Promise<ReferenceProperty['Reference']> {
-    const classId = await this.promptForClass()
+    const className = await this.promptForClassName()
     const sameOwner = await this.simplePrompt({ message: 'Same owner required?', ...BOOL_PROMPT_OPTIONS })
-    return [classId, sameOwner]
+    return { className, sameOwner }
   }
 }
