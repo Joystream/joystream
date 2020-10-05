@@ -11,6 +11,7 @@ const meow = require('meow')
 const chalk = require('chalk')
 const figlet = require('figlet')
 const _ = require('lodash')
+const sleep = require('@joystream/storage-utils/sleep')
 
 const debug = require('debug')('joystream:colossus')
 
@@ -60,6 +61,10 @@ const FLAG_DEFINITIONS = {
       return !flags.dev && serverCmd
     },
   },
+  ipfsHost: {
+    type: 'string',
+    default: 'localhost',
+  },
 }
 
 const cli = meow(
@@ -82,6 +87,7 @@ const cli = meow(
     --passphrase            Optional passphrase to use to decrypt the key-file.
     --port=PORT, -p PORT    Port number to listen on, defaults to 3000.
     --ws-provider WS_URL    Joystream-node websocket provider, defaults to ws://localhost:9944
+    --ipfs-host   hostname  ipfs host to use, default to 'localhost'. Default port 5001 is always used
   `,
   { flags: FLAG_DEFINITIONS }
 )
@@ -122,7 +128,7 @@ function startDiscoveryService({ api, port }) {
 }
 
 // Get an initialized storage instance
-function getStorage(runtimeApi) {
+function getStorage(runtimeApi, { ipfsHost }) {
   // TODO at some point, we can figure out what backend-specific connection
   // options make sense. For now, just don't use any configuration.
   const { Storage } = require('@joystream/storage-node-backend')
@@ -137,6 +143,7 @@ function getStorage(runtimeApi) {
       // if obj.liaison_judgement !== Accepted .. throw ?
       return obj.unwrap().ipfs_content_id.toString()
     },
+    ipfsHost,
   }
 
   return Storage.create(options)
@@ -145,14 +152,6 @@ function getStorage(runtimeApi) {
 async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }) {
   // Load key information
   const { RuntimeApi } = require('@joystream/storage-runtime-api')
-
-  if (!keyFile) {
-    throw new Error('Must specify a --key-file argument for running a storage node.')
-  }
-
-  if (providerId === undefined) {
-    throw new Error('Must specify a --provider-id argument for running a storage node')
-  }
 
   const api = await RuntimeApi.create({
     account_file: keyFile,
@@ -167,18 +166,18 @@ async function initApiProduction({ wsProvider, providerId, keyFile, passphrase }
 
   await api.untilChainIsSynced()
 
-  if (!(await api.workers.isRoleAccountOfStorageProvider(api.storageProviderId, api.identities.key.address))) {
-    throw new Error('storage provider role account and storageProviderId are not associated with a worker')
+  // We allow the node to startup without correct provider id and account, but syncing and
+  // publishing of identity will be skipped.
+  if (!(await api.providerIsActiveWorker())) {
+    debug('storage provider role account and storageProviderId are not associated with a worker')
   }
 
   return api
 }
 
-async function initApiDevelopment() {
+async function initApiDevelopment({ wsProvider }) {
   // Load key information
   const { RuntimeApi } = require('@joystream/storage-runtime-api')
-
-  const wsProvider = 'ws://localhost:9944'
 
   const api = await RuntimeApi.create({
     provider_url: wsProvider,
@@ -188,7 +187,17 @@ async function initApiDevelopment() {
 
   api.identities.useKeyPair(dev.roleKeyPair(api))
 
-  api.storageProviderId = await dev.check(api)
+  // Wait until dev provider is added to role
+  while (true) {
+    try {
+      api.storageProviderId = await dev.check(api)
+      break
+    } catch (err) {
+      debug(err)
+    }
+
+    await sleep(10000)
+  }
 
   return api
 }
@@ -218,6 +227,12 @@ async function announcePublicUrl(api, publicUrl) {
   const chainIsSyncing = await api.chainIsSyncing()
   if (chainIsSyncing) {
     debug('Chain is syncing. Postponing announcing public url.')
+    return reannounce(10 * 60 * 1000)
+  }
+
+  // postpone if provider not active
+  if (!(await api.providerIsActiveWorker())) {
+    debug('storage provider role account and storageProviderId are not associated with a worker')
     return reannounce(10 * 60 * 1000)
   }
 
@@ -262,7 +277,7 @@ if (!command) {
 
 async function startColossus({ api, publicUrl, port }) {
   // TODO: check valid url, and valid port number
-  const store = getStorage(api)
+  const store = getStorage(api, cli.flags)
   banner()
   const { startSyncing } = require('../lib/sync')
   startSyncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
@@ -276,7 +291,7 @@ const commands = {
 
     if (cli.flags.dev) {
       const dev = require('../../cli/dist/commands/dev')
-      api = await initApiDevelopment()
+      api = await initApiDevelopment(cli.flags)
       port = dev.developmentPort()
       publicUrl = `http://localhost:${port}/`
     } else {

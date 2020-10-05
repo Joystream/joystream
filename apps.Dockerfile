@@ -1,29 +1,38 @@
-# FROM node:12
-FROM ubuntu:18.04 as builder
-
-# Install any needed packages
-RUN apt-get update && apt-get install -y curl git gnupg
-
-# install nodejs
-RUN curl -sL https://deb.nodesource.com/setup_12.x | bash -
-RUN apt-get install -y nodejs
+FROM node:12 as builder
 
 WORKDIR /joystream
-RUN npm install -g yarn
-
 COPY . /joystream
 
-RUN NODE_ENV=production yarn install --frozen-lockfile
+# Do not set NODE_ENV=production until after running yarn install
+# to ensure dev dependencies are installed.
+RUN yarn install --frozen-lockfile
 
-# install globally - used to build translations in pioneer but for some reason
-# insn't installed into node_modules/.bin or pioneer/node_modules/.bin after running
-# yarn install
-RUN npm install -g i18next-scanner
-
-# RUN yarn workspace pioneer build:code
+# ENV NODE_ENV=production
 RUN yarn workspace pioneer build
 RUN yarn workspace @joystream/cli build
 RUN yarn workspace storage-node build
 
-ENV PATH="${PATH}:/joystream/node_modules/.bin"
+# The image is huge ~ 3GB!
+# npm package Pruning.. getting rid of all devDependencies.
+# ... to significantly reduce image size (by multiple GBs): It may  cause problems in case:
+# 1. There are package dependencies which were added (incorrectly) as dev dependencies..
+# 2. 'ts-node' is used and added as a non-dev dep -> ends up pulling in dependencies which
+# would normally just be dev dependencies?
+# some packages that are big: @types, babel, electron, prettier, eslint, test frameworks
+# RUN npm prune --production
+# I think it works for a simple pacakge but npm prune doesn't recognize yarn workspaces
+# so it ends up removing too much and things break
+
+# "yarn pruning"
+# RUN cp -R node_modules/.bin somewhere.. ?
+# But don't yarn workspace packages also go into node_modules/ ?
+# How to keep those?
+# RUN rm -fr node_modules/
+# RUN yarn install --production  // should not have post install build steps that depend on devDependencies
+# // RUN yarn cache clean
+# Drops to 1.6GB but still too big!
+# FROM node:12
+# COPY --from=builder /joystream /joystream
+# WORKDIR /joystream
+
 ENTRYPOINT [ "yarn" ]

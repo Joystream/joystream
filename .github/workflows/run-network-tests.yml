@@ -154,7 +154,10 @@ jobs:
           yarn workspace storage-node build
       - name: Build storage node
         run: yarn workspace storage-node build
-      - name: Start chain
-        run: docker-compose up -d
-      - name: Execute tests
+      - name: Start Services
+        run: docker-compose --file docker-compose-with-storage.yml up -d
+      - name: Add development storage node and initialize content directory
         run: DEBUG=* yarn storage-cli dev-init
+      # - name: Execute tests
+      #   run: Upload/Download assets to/from storage node
+      #        Test querying discovery
