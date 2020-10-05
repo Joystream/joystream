@@ -32,6 +32,29 @@ export interface MemberControllerAccount extends BaseJoystreamMember {
 	controllerAccount: Buffer;
 }
 
+export enum Language {
+	CHINESE = "CHINESE",
+	ENGLISH = "ENGLISH",
+	ARABIC = "ARABIC",
+	PORTUGESE = "PORTUGESE",
+	FRENCH = "FRENCH",
+}
+
+export interface IChannelProperties {
+	title: string;
+	description: string;
+	coverPhotoURL: string;
+	avatarPhotoURL: string;
+	isPublic: boolean;
+	isCurated: boolean;
+	language: Language;
+}
+
+export interface IChannel {
+	id: string;
+	accountId: Buffer;
+	properties: IChannelProperties;
+}
 
 export type ClassName =
 	| "Channel"
