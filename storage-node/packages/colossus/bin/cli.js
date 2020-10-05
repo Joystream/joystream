@@ -11,7 +11,7 @@ const meow = require('meow')
 const chalk = require('chalk')
 const figlet = require('figlet')
 const _ = require('lodash')
-const sleep = require('@joystream/storage-utils/sleep')
+const { sleep } = require('@joystream/storage-utils/sleep')
 
 const debug = require('debug')('joystream:colossus')
 
