@@ -31,3 +31,19 @@ export interface MemberRootAccount extends BaseJoystreamMember {
 export interface MemberControllerAccount extends BaseJoystreamMember {
 	controllerAccount: Buffer;
 }
+
+
+export type ClassName =
+	| "Channel"
+	| "Category"
+	| "KnownLicense"
+	| "UserDefinedLicense"
+	| "JoystreamMediaLocation"
+	| "HttpMediaLocation"
+	| "VideoMedia"
+	| "Video";
+
+export interface IContentDirectoryClass {
+	classId: number;
+	name: ClassName;
+}
