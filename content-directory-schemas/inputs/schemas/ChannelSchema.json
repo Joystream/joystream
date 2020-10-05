@@ -33,10 +33,11 @@
       "property_type": { "Single": "Bool" }
     },
     {
-      "name": "isCurated",
-      "description": "Flag signaling whether a channel is curated/verified.",
-      "required": true,
-      "property_type": { "Single": "Bool" },
+      "name": "curationStatus",
+      "description": "Channel curation status set by the Curator",
+      "required": false,
+      "unique": true,
+      "property_type": { "Single": { "Reference": { "className": "CurationStatus" } } },
       "locking_policy": { "is_locked_from_controller": true }
     },
     {

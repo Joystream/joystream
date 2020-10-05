@@ -14,6 +14,14 @@
       "required": false,
       "property_type": { "Single": { "Text": 256 } },
       "locking_policy": { "is_locked_from_controller": true }
+    },
+    {
+      "name": "entityId",
+      "description": "ID of the curated entity. It's not a relation to prevent removal lock and allow different types of entities. Used to confirm the validity of Content => CurationStatus relation.",
+      "required": true,
+      "unique": true,
+      "property_type": { "Single": "Uint64" },
+      "locking_policy": { "is_locked_from_controller": true }
     }
   ]
 }
