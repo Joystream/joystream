@@ -35,11 +35,8 @@ enum Language {
 }
 
 type Channel @entity {
-	"Randomly generated string id"
+	"Runtime entity identifier (EntityId)"
 	id: ID!
-
-	"Underlying entity id"
-	entityId: BigInt! @unique
 
 	"Owner of the channel"
 	owner: Member!
@@ -69,11 +66,8 @@ type Channel @entity {
 }
 
 type Category @entity {
-	"Randomly generated string id"
+	"Runtime entity identifier (EntityId)"
 	id: ID!
-
-	"Underlying entity id"
-	entityId: BigInt! @unique
 
 	"The name of the category"
 	name: String! @unique @fulltext(query: "names")
@@ -92,7 +86,7 @@ enum VideoMediaEncoding {
 }
 
 type KnownLicense @entity {
-	"Randomly generated string id"
+	"Runtime entity identifier (EntityId)"
 	id: ID!
 
 	"Short, commonly recognized code of the licence (ie. CC_BY_SA)"
@@ -109,7 +103,7 @@ type KnownLicense @entity {
 }
 
 type UserDefinedLicense @entity {
-	"Randomly generated string id"
+	"Runtime entity identifier (EntityId)"
 	id: ID!
 
 	"Custom license content"
@@ -117,7 +111,7 @@ type UserDefinedLicense @entity {
 }
 
 type JoystreamMediaLocation @entity {
-	"Randomly generated string id"
+	"Runtime entity identifier (EntityId)"
 	id: ID!
 
 	"Id of the data object in the Joystream runtime dataDirectory module"
@@ -125,7 +119,7 @@ type JoystreamMediaLocation @entity {
 }
 
 type HttpMediaLocation @entity {
-	"Randomly generated string id"
+	"Runtime entity identifier (EntityId)"
 	id: ID!
 
 	"The http url pointing to the media"
@@ -136,11 +130,8 @@ type HttpMediaLocation @entity {
 }
 
 type VideoMedia @entity {
-	"Randomly generated string id"
+	"Runtime entity identifier (EntityId)"
 	id: ID!
-
-	"Underlying entity id"
-	entityId: BigInt! @unique
 
 	"Encoding of the video media object"
 	encoding: VideoMediaEncoding!
@@ -161,11 +152,8 @@ type VideoMedia @entity {
 }
 
 type Video @entity {
-	"Randomly generated string id"
+	"Runtime entity identifier (EntityId)"
 	id: ID!
-
-	"Underlying entity id"
-	entityId: BigInt! @unique
 
 	"Reference to member's channel"
 	channel: Channel!
