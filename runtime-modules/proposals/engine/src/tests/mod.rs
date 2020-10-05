@@ -602,6 +602,23 @@ fn cancel_proposal_fails_with_not_active_proposal() {
 }
 
 #[test]
+fn cancel_proposal_fails_with_some_votes() {
+    initial_test_ext().execute_with(|| {
+        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(30);
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Reject);
+
+        let cancel_proposal = CancelProposalFixture::new(proposal_id);
+        cancel_proposal.cancel_and_assert(Err(Error::<Test>::ProposalHasVotes.into()));
+    });
+}
+
+#[test]
 fn cancel_proposal_fails_with_not_existing_proposal() {
     initial_test_ext().execute_with(|| {
         let cancel_proposal = CancelProposalFixture::new(2);

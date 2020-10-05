@@ -112,6 +112,11 @@ impl VotingResults {
     pub fn votes_number(&self) -> u32 {
         self.abstentions + self.approvals + self.rejections + self.slashes
     }
+
+    /// Returns True if there were no votes. False otherwise.
+    pub fn no_votes_yet(&self) -> bool {
+        self.votes_number() == 0
+    }
 }
 
 /// Contains created stake id and source account for the stake balance

@@ -279,6 +279,9 @@ decl_error! {
 
         /// Require root origin in extrinsics
         RequireRootOrigin,
+
+        /// Disallow to cancel the proposal if there are any votes on it.
+        ProposalHasVotes,
     }
 }
 
@@ -383,6 +386,7 @@ decl_module! {
 
             ensure!(proposer_id == proposal.proposer_id, Error::<T>::NotAuthor);
             ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::<T>::ProposalFinalized);
+            ensure!(proposal.voting_results.no_votes_yet(), Error::<T>::ProposalHasVotes);
 
             // mutation
 
