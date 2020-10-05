@@ -91,7 +91,10 @@ export enum WorkingGroups {
 }
 
 // In contrast to Pioneer, currently only StorageProviders group is available in CLI
-export const AvailableGroups: readonly WorkingGroups[] = [WorkingGroups.StorageProviders] as const
+export const AvailableGroups: readonly WorkingGroups[] = [
+  WorkingGroups.StorageProviders,
+  WorkingGroups.Curators,
+] as const
 
 export type Reward = {
   totalRecieved: Balance
