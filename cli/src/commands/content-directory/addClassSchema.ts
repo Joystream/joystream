@@ -5,6 +5,7 @@ import { InputParser } from 'cd-schemas/scripts/helpers/InputParser'
 import { JsonSchemaPrompter, JsonSchemaCustomPrompts } from '../../helpers/JsonSchemaPrompt'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
+import { Class } from '@joystream/types/content-directory'
 
 export default class AddClassSchemaCommand extends ContentDirectoryCommandBase {
   static description = 'Add a new schema to a class inside content directory. Requires lead access.'
@@ -21,8 +22,24 @@ export default class AddClassSchemaCommand extends ContentDirectoryCommandBase {
 
     let inputJson = getInputJson<AddClassSchema>(input)
     if (!inputJson) {
+      let selectedClass: Class | undefined
       const customPrompts: JsonSchemaCustomPrompts = [
-        ['className', async () => this.promptForClassName('Select a class to add schema to')],
+        [
+          'className',
+          async () => {
+            selectedClass = await this.promptForClass('Select a class to add schema to')
+            return selectedClass.name.toString()
+          },
+        ],
+        [
+          'existingProperties',
+          async () =>
+            this.simplePrompt({
+              type: 'checkbox',
+              message: 'Choose existing properties to keep',
+              choices: selectedClass!.properties.map((p, i) => ({ name: `${i}: ${p.name.toString()}`, value: i })),
+            }),
+        ],
         [/^newProperties\[\d+\]\.property_type\.Single\.Reference/, async () => this.promptForClassReference()],
       ]
 

@@ -3,6 +3,7 @@ import AccountsCommandBase from './AccountsCommandBase'
 import { WorkingGroups, NamedKeyringPair } from '../Types'
 import { ReferenceProperty } from 'cd-schemas/types/extrinsics/AddClassSchema'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/JsonSchemaPrompt'
+import { Class } from '@joystream/types/content-directory'
 
 /**
  * Abstract base class for commands related to working groups
@@ -18,13 +19,13 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     }
   }
 
-  async promptForClassName(message = 'Select a class'): Promise<string> {
+  async promptForClass(message = 'Select a class'): Promise<Class> {
     const classes = await this.getApi().availableClasses()
-    const choices = classes.map(([, c]) => ({ name: c.name.toString(), value: c.name.toString() }))
+    const choices = classes.map(([, c]) => ({ name: c.name.toString(), value: c }))
 
-    const selected = await this.simplePrompt({ message, type: 'list', choices })
+    const selectedClass = await this.simplePrompt({ message, type: 'list', choices })
 
-    return selected
+    return selectedClass
   }
 
   async promptForCuratorGroups(message = 'Select a curator group'): Promise<number> {
@@ -40,8 +41,8 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
   }
 
   async promptForClassReference(): Promise<ReferenceProperty['Reference']> {
-    const className = await this.promptForClassName()
+    const selectedClass = await this.promptForClass()
     const sameOwner = await this.simplePrompt({ message: 'Same owner required?', ...BOOL_PROMPT_OPTIONS })
-    return { className, sameOwner }
+    return { className: selectedClass.name.toString(), sameOwner }
   }
 }
