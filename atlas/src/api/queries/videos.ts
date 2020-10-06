@@ -40,10 +40,25 @@ export const videoFieldsFragment = gql`
   ${videoMediaFieldsFragment}
 `
 
-export const GET_VIDEOS = gql`
-  query GetVideos($offset: Int, $limit: Int, $categoryId: ID) {
-    videos(offset: $offset, limit: $limit, where: { categoryId_eq: $categoryId }) {
-      ...VideoFields
+export const GET_NEWEST_VIDEOS = gql`
+  query GetNewestVideos($first: Int, $after: String, $categoryId: ID) {
+    videosConnection(
+      first: $first
+      after: $after
+      where: { categoryId_eq: $categoryId }
+      orderBy: [publishedOnJoystreamAt_DESC]
+    ) {
+      edges {
+        cursor
+        node {
+          ...VideoFields
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      totalCount
     }
   }
   ${videoFieldsFragment}

@@ -7,7 +7,7 @@
 // GraphQL query operation: GetNewestChannels
 // ====================================================
 
-export interface GetNewestChannels_channels {
+export interface GetNewestChannels_channelsConnection_edges_node {
   __typename: "Channel";
   id: string;
   handle: string;
@@ -16,6 +16,30 @@ export interface GetNewestChannels_channels {
   totalViews: number;
 }
 
+export interface GetNewestChannels_channelsConnection_edges {
+  __typename: "ChannelEdge";
+  cursor: string;
+  node: GetNewestChannels_channelsConnection_edges_node;
+}
+
+export interface GetNewestChannels_channelsConnection_pageInfo {
+  __typename: "PageInfo";
+  hasNextPage: boolean;
+  endCursor: string | null;
+}
+
+export interface GetNewestChannels_channelsConnection {
+  __typename: "ChannelConnection";
+  edges: GetNewestChannels_channelsConnection_edges[];
+  pageInfo: GetNewestChannels_channelsConnection_pageInfo;
+  totalCount: number;
+}
+
 export interface GetNewestChannels {
-  channels: GetNewestChannels_channels[];
+  channelsConnection: GetNewestChannels_channelsConnection;
+}
+
+export interface GetNewestChannelsVariables {
+  first?: number | null;
+  after?: string | null;
 }

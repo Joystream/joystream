@@ -11,11 +11,20 @@ export const channelFieldsFragment = gql`
   }
 `
 
-// TODO: Add proper query params (order, limit, etc.)
 export const GET_NEWEST_CHANNELS = gql`
-  query GetNewestChannels {
-    channels {
-      ...ChannelFields
+  query GetNewestChannels($first: Int, $after: String) {
+    channelsConnection(first: $first, after: $after, orderBy: [publishedOnJoystreamAt_DESC]) {
+      edges {
+        cursor
+        node {
+          ...ChannelFields
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      totalCount
     }
   }
   ${channelFieldsFragment}

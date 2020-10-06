@@ -153,9 +153,33 @@ type FreeTextSearchResult {
   rank: Int!
 }
 
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+
+  startCursor: String
+  endCursor: String
+}
+
 input ChannelWhereInput {
   isCurated_eq: Boolean
   isPublic_eq: Boolean
+}
+
+enum ChannelOrderByInput {
+  publishedOnJoystreamAt_ASC
+  publishedOnJoystreamAt_DESC
+}
+
+type ChannelEdge {
+  node: Channel!
+  cursor: String!
+}
+
+type ChannelConnection {
+  edges: [ChannelEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
 }
 
 input VideoWhereInput {
@@ -164,12 +188,33 @@ input VideoWhereInput {
   isPublic_eq: Boolean
 }
 
+enum VideoOrderByInput {
+  publishedOnJoystreamAt_ASC
+  publishedOnJoystreamAt_DESC
+}
+
+type VideoEdge {
+  node: Video!
+  cursor: String!
+}
+
+type VideoConnection {
+  edges: [VideoEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
 type Query {
   # Lookup a channel by its ID
   channel(id: ID!): Channel
 
   # List all channel by given constraints
-  channels(order_by_creation_date: Boolean, where: ChannelWhereInput, offset: Int, limit: Int): [Channel!]!
+  channelsConnection(
+    first: Int
+    after: String
+    where: ChannelWhereInput
+    orderBy: [ChannelOrderByInput!]
+  ): ChannelConnection!
 
   # Lookup a channel by its ID
   category(id: ID!): Category
@@ -181,7 +226,7 @@ type Query {
   video(id: ID!): Video
 
   # List all videos by given constraints
-  videos(order_by_publication_date: Boolean, where: VideoWhereInput, offset: Int, limit: Int): [Video!]!
+  videosConnection(first: Int, after: String, where: VideoWhereInput, orderBy: [VideoOrderByInput!]): VideoConnection!
 
   # List all top trending videos
   featured_videos: [Video!]!
