@@ -119,6 +119,13 @@ impl DummyProposalFixture {
         DummyProposalFixture { account_id, ..self }
     }
 
+    fn with_exact_execution_block(self, exact_execution_block: Option<u64>) -> Self {
+        DummyProposalFixture {
+            exact_execution_block,
+            ..self
+        }
+    }
+
     fn with_stake(self, stake_balance: BalanceOf<Test>) -> Self {
         DummyProposalFixture {
             stake_balance: Some(stake_balance),
@@ -1553,5 +1560,86 @@ fn slash_balance_is_calculated_correctly() {
         );
 
         assert_eq!(slash_balance_with_stake, stake);
+    });
+}
+
+#[test]
+fn create_proposal_failed_with_zero_exact_execution_block() {
+    initial_test_ext().execute_with(|| {
+        let dummy_proposal = DummyProposalFixture::default().with_exact_execution_block(Some(0));
+        dummy_proposal
+            .create_proposal_and_assert(Err(Error::<Test>::ZeroExactExecutionBlock.into()));
+    });
+}
+
+#[test]
+fn create_proposal_failed_with_invalid_exact_execution_block() {
+    initial_test_ext().execute_with(|| {
+        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(20);
+
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters_fixture.parameters)
+            .with_exact_execution_block(Some(10));
+        dummy_proposal
+            .create_proposal_and_assert(Err(Error::<Test>::InvalidExactExecutionBlock.into()));
+    });
+}
+
+#[test]
+fn proposal_execution_with_exact_execution_works() {
+    initial_test_ext().execute_with(|| {
+        let exact_block = 10;
+        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(3);
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters_fixture.params())
+            .with_exact_execution_block(Some(exact_block));
+
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        // Proposal exists after the grace period
+        run_to_block_and_finalize(5);
+
+        let proposal = <crate::Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                parameters: parameters_fixture.params(),
+                proposer_id: 1,
+                created_at: 0,
+                status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
+                title: b"title".to_vec(),
+                description: b"description".to_vec(),
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                    slashes: 0,
+                },
+                exact_execution_block: Some(exact_block),
+            }
+        );
+
+        // Exact execution block time.
+        run_to_block_and_finalize(exact_block);
+
+        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+            proposal_id,
+            ProposalStatus::approved(ApprovedProposalStatus::Executed, 0),
+        ));
+
+        // Proposal is removed.
+        assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
+
+        // check internal cache for proposal_id absence
+        assert!(!<PendingExecutionProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
     });
 }

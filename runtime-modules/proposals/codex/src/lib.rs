@@ -104,6 +104,7 @@ struct CreateProposalParameters<T: Trait> {
     pub proposal_code: Vec<u8>,
     pub proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>,
     pub proposal_details: ProposalDetailsOf<T>,
+    pub exact_execution_block: Option<T::BlockNumber>,
 }
 
 /// 'Proposals codex' substrate module Trait
@@ -248,14 +249,6 @@ decl_storage! {
         pub RuntimeUpgradeProposalGracePeriod get(fn runtime_upgrade_proposal_grace_period)
             config(): T::BlockNumber;
 
-        /// Voting period for the 'set election parameters' proposal
-        pub SetElectionParametersProposalVotingPeriod get(fn set_election_parameters_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'set election parameters' proposal
-        pub SetElectionParametersProposalGracePeriod get(fn set_election_parameters_proposal_grace_period)
-            config(): T::BlockNumber;
-
         /// Voting period for the 'text' proposal
         pub TextProposalVotingPeriod get(fn text_proposal_voting_period) config(): T::BlockNumber;
 
@@ -365,6 +358,7 @@ decl_module! {
             description: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
             text: Vec<u8>,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             ensure!(!text.is_empty(), Error::<T>::TextProposalIsEmpty);
             ensure!(text.len() as u32 <=  T::TextProposalMaxLength::get(),
@@ -379,7 +373,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::text_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block
             };
 
             Self::create_proposal(params)?;
@@ -395,6 +390,7 @@ decl_module! {
             description: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
             wasm: Vec<u8>,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             ensure!(!wasm.is_empty(), Error::<T>::RuntimeProposalIsEmpty);
             ensure!(wasm.len() as u32 <= T::RuntimeUpgradeWasmProposalMaxLength::get(),
@@ -409,7 +405,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::runtime_upgrade_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block,
             };
 
             Self::create_proposal(params)?;
@@ -425,6 +422,7 @@ decl_module! {
             description: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
             mint_balance: BalanceOfMint<T>,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             ensure!(
                 mint_balance <= <BalanceOfMint<T>>::from(CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE),
@@ -440,7 +438,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block,
             };
 
             Self::create_proposal(params)?;
@@ -457,6 +456,7 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             balance: BalanceOfMint<T>,
             destination: T::AccountId,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             ensure!(balance != BalanceOfMint::<T>::zero(), Error::<T>::InvalidSpendingProposalBalance);
             ensure!(
@@ -473,7 +473,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::spending_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block,
             };
 
             Self::create_proposal(params)?;
@@ -488,7 +489,8 @@ decl_module! {
             title: Vec<u8>,
             description: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
-            new_lead: Option<(T::MemberId, T::AccountId)>
+            new_lead: Option<(T::MemberId, T::AccountId)>,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             if let Some(lead) = new_lead.clone() {
                 let account_id = lead.1;
@@ -506,7 +508,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::set_lead_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block,
             };
 
             Self::create_proposal(params)?;
@@ -522,6 +525,7 @@ decl_module! {
             description: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
             new_validator_count: u32,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             ensure!(
                 new_validator_count >= <staking::Module<T>>::minimum_validator_count(),
@@ -542,7 +546,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::set_validator_count_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block,
             };
 
             Self::create_proposal(params)?;
@@ -558,6 +563,7 @@ decl_module! {
             description: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
             add_opening_parameters: AddOpeningParameters<T::BlockNumber, BalanceOfGovernanceCurrency<T>>,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             let proposal_details = ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_parameters);
             let params = CreateProposalParameters{
@@ -568,7 +574,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::add_working_group_leader_opening_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block,
             };
 
             Self::create_proposal(params)?;
@@ -585,6 +592,7 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             opening_id: working_group::OpeningId<T>,
             working_group: WorkingGroup,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             let proposal_details = ProposalDetails::BeginReviewWorkingGroupLeaderApplications(opening_id, working_group);
             let params = CreateProposalParameters{
@@ -595,7 +603,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::begin_review_working_group_leader_applications_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block,
             };
 
             Self::create_proposal(params)?;
@@ -615,7 +624,8 @@ decl_module! {
                 BalanceOfMint<T>,
                 working_group::OpeningId<T>,
                 working_group::ApplicationId<T>
-            >
+            >,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             let proposal_details = ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_parameters);
             let params = CreateProposalParameters{
@@ -626,7 +636,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::fill_working_group_leader_opening_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block,
             };
 
             Self::create_proposal(params)?;
@@ -643,6 +654,7 @@ decl_module! {
             stake_balance: Option<BalanceOf<T>>,
             mint_balance: BalanceOfMint<T>,
             working_group: WorkingGroup,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             ensure!(
                 mint_balance <= <BalanceOfMint<T>>::from(WORKING_GROUP_MINT_CAPACITY_MAX_VALUE),
@@ -658,7 +670,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::set_working_group_mint_capacity_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block,
             };
 
             Self::create_proposal(params)?;
@@ -676,6 +689,7 @@ decl_module! {
             worker_id: working_group::WorkerId<T>,
             decreasing_stake: BalanceOf<T>,
             working_group: WorkingGroup,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             ensure!(decreasing_stake != Zero::zero(), Error::<T>::DecreasingStakeIsZero);
 
@@ -693,7 +707,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::decrease_working_group_leader_stake_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block,
             };
 
             Self::create_proposal(params)?;
@@ -711,6 +726,7 @@ decl_module! {
             worker_id: working_group::WorkerId<T>,
             slashing_stake: BalanceOf<T>,
             working_group: WorkingGroup,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             ensure!(slashing_stake != Zero::zero(), Error::<T>::SlashingStakeIsZero);
 
@@ -728,7 +744,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::slash_working_group_leader_stake_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block,
             };
 
             Self::create_proposal(params)?;
@@ -746,6 +763,7 @@ decl_module! {
             worker_id: working_group::WorkerId<T>,
             reward_amount: BalanceOfMint<T>,
             working_group: WorkingGroup,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             let proposal_details = ProposalDetails::SetWorkingGroupLeaderReward(
                 worker_id,
@@ -761,7 +779,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::set_working_group_leader_reward_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block,
             };
 
             Self::create_proposal(params)?;
@@ -777,6 +796,7 @@ decl_module! {
             description: Vec<u8>,
             stake_balance: Option<BalanceOf<T>>,
             terminate_role_parameters: TerminateRoleParameters<working_group::WorkerId<T>>,
+            exact_execution_block: Option<T::BlockNumber>,
         ) {
             let proposal_details = ProposalDetails::TerminateWorkingGroupLeaderRole(terminate_role_parameters);
 
@@ -788,7 +808,8 @@ decl_module! {
                 stake_balance,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::terminate_working_group_leader_role_proposal::<T>(),
-                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details)
+                proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
+                exact_execution_block,
             };
 
             Self::create_proposal(params)?;
@@ -890,12 +911,6 @@ impl<T: Trait> Module<T> {
         ));
         <TextProposalVotingPeriod<T>>::put(T::BlockNumber::from(p.text_proposal_voting_period));
         <TextProposalGracePeriod<T>>::put(T::BlockNumber::from(p.text_proposal_grace_period));
-        <SetElectionParametersProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.set_election_parameters_proposal_voting_period,
-        ));
-        <SetElectionParametersProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.set_election_parameters_proposal_grace_period,
-        ));
         <SetContentWorkingGroupMintCapacityProposalVotingPeriod<T>>::put(T::BlockNumber::from(
             p.set_content_working_group_mint_capacity_proposal_voting_period,
         ));

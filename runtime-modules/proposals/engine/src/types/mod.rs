@@ -189,7 +189,7 @@ where
     /// Returns False otherwise.
     pub fn is_execution_block_reached(&self, now: BlockNumber) -> bool {
         self.exact_execution_block
-            .map(|block_number| block_number >= now)
+            .map(|block_number| block_number <= now)
             .unwrap_or(true)
     }
 

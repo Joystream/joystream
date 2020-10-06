@@ -531,6 +531,7 @@ fn text_proposal_execution_succeeds() {
                 b"body".to_vec(),
                 Some(<BalanceOf<Runtime>>::from(25000u32)),
                 b"text".to_vec(),
+                None,
             )
         })
         .with_member_id(member_id as u64);
@@ -553,6 +554,7 @@ fn set_lead_proposal_execution_succeeds() {
                 b"body".to_vec(),
                 Some(<BalanceOf<Runtime>>::from(50000u32)),
                 Some((member_id as u64, account_id.into())),
+                None,
             )
         })
         .with_member_id(member_id as u64);
@@ -585,6 +587,7 @@ fn spending_proposal_execution_succeeds() {
                 Some(<BalanceOf<Runtime>>::from(25_000_u32)),
                 new_balance,
                 target_account_id.clone().into(),
+                None,
             )
         })
         .with_member_id(member_id as u64);
@@ -619,6 +622,7 @@ fn set_content_working_group_mint_capacity_execution_succeeds() {
                 b"body".to_vec(),
                 Some(<BalanceOf<Runtime>>::from(50000u32)),
                 new_balance,
+                None,
             )
         });
 
@@ -645,6 +649,7 @@ fn set_validator_count_proposal_execution_succeeds() {
                 b"body".to_vec(),
                 Some(<BalanceOf<Runtime>>::from(100_000_u32)),
                 new_validator_count,
+                None,
             )
         });
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
