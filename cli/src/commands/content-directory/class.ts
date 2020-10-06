@@ -24,6 +24,9 @@ export default class ClassCommand extends ContentDirectoryCommandBase {
       'Any member': permissions.any_member.toString(),
       'Entity creation blocked': permissions.entity_creation_blocked.toString(),
       'All property values locked': permissions.all_entity_property_values_locked.toString(),
+      'Number of entities': aClass.current_number_of_entities.toNumber(),
+      'Max. number of entities': aClass.maximum_entities_count.toNumber(),
+      'Default entity creation voucher max.': aClass.default_entity_creation_voucher_upper_bound.toNumber(),
     })
 
     displayHeader(`Maintainers`)
@@ -32,16 +35,20 @@ export default class ClassCommand extends ContentDirectoryCommandBase {
     )
 
     displayHeader(`Properties`)
-    displayTable(
-      aClass.properties.map((p) => ({
-        'Name': p.name.toString(),
-        'Type': JSON.stringify(p.property_type.toJSON()),
-        'Required': p.required.toString(),
-        'Unique': p.unique.toString(),
-        'Controller lock': p.locking_policy.is_locked_from_controller.toString(),
-        'Maintainer lock': p.locking_policy.is_locked_from_maintainer.toString(),
-      })),
-      3
-    )
+    if (aClass.properties.length) {
+      displayTable(
+        aClass.properties.map((p) => ({
+          'Name': p.name.toString(),
+          'Type': JSON.stringify(p.property_type.toJSON()),
+          'Required': p.required.toString(),
+          'Unique': p.unique.toString(),
+          'Controller lock': p.locking_policy.is_locked_from_controller.toString(),
+          'Maintainer lock': p.locking_policy.is_locked_from_maintainer.toString(),
+        })),
+        3
+      )
+    } else {
+      this.log('NONE')
+    }
   }
 }
