@@ -1,7 +1,7 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import CreateClassSchema from 'cd-schemas/schemas/extrinsics/CreateClass.schema.json'
 import { CreateClass } from 'cd-schemas/types/extrinsics/CreateClass'
-import { InputParser } from 'cd-schemas/scripts/helpers/InputParser'
+import { InputParser } from 'cd-schemas'
 import { JsonSchemaPrompter, JsonSchemaCustomPrompts } from '../../helpers/JsonSchemaPrompt'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
