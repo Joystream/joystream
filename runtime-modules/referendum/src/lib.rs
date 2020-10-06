@@ -96,6 +96,19 @@ pub type CanRevealResult<T, I> = (
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
 pub trait ReferendumManager<Origin, AccountId, Hash> {
+    /// Power of vote(s) used to determine the referendum winner(s).
+    type VotePower: Parameter
+        + Member
+        + BaseArithmetic
+        + Codec
+        + Default
+        + Copy
+        + MaybeSerialize
+        + PartialEq;
+
+    /// Currency for referendum staking.
+    type Currency: LockableCurrency<AccountId>;
+
     /// Start a new referendum.
     fn start_referendum(origin: Origin, extra_winning_target_count: u64) -> Result<(), ()>;
 
@@ -393,6 +406,9 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 impl<T: Trait<I>, I: Instance> ReferendumManager<T::Origin, T::AccountId, T::Hash>
     for Module<T, I>
 {
+    type VotePower = T::VotePower;
+    type Currency = T::Currency;
+
     /// Start new referendum run.
     fn start_referendum(origin: T::Origin, extra_winning_target_count: u64) -> Result<(), ()> {
         let winning_target_count = extra_winning_target_count + 1;

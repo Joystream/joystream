@@ -14,7 +14,8 @@ fn council_lifecycle() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake =
+            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
@@ -142,7 +143,8 @@ fn council_can_vote_for_yourself() {
 
     build_test_externalities(config).execute_with(|| {
         let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake = <Runtime as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let vote_stake =
+            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
 
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0

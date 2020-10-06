@@ -100,17 +100,22 @@ impl<AccountId, CouncilUserId, Balance> From<(Candidate<AccountId, Balance>, Cou
 
 /////////////////// Type aliases ///////////////////////////////////////////////
 
-pub(crate) type ReferendumInstance = referendum::Instance0;
-
-// `Ez` prefix in some of the following type aliases means *easy* and is meant to create unique short names
-// aliasing existing structs and enums
-
-pub type CurrencyOf<T> = <T as referendum::Trait<ReferendumInstance>>::Currency;
-pub type Balance<T> = <<T as referendum::Trait<ReferendumInstance>>::Currency as Currency<
+pub type CurrencyOf<T> = <<T as Trait>::Referendum as ReferendumManager<
+    <T as system::Trait>::Origin,
     <T as system::Trait>::AccountId,
->>::Balance;
+    <T as system::Trait>::Hash,
+>>::Currency;
+pub type Balance<T> = <<<T as Trait>::Referendum as ReferendumManager<
+    <T as system::Trait>::Origin,
+    <T as system::Trait>::AccountId,
+    <T as system::Trait>::Hash,
+>>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 pub type BalanceReferendum<T> = Balance<T>;
-pub type VotePowerOf<T> = <T as referendum::Trait<ReferendumInstance>>::VotePower;
+pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
+    <T as system::Trait>::Origin,
+    <T as system::Trait>::AccountId,
+    <T as system::Trait>::Hash,
+>>::VotePower;
 
 pub type CouncilMemberOf<T> =
     CouncilMember<<T as system::Trait>::AccountId, <T as Trait>::CouncilUserId, Balance<T>>;
@@ -119,7 +124,7 @@ pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as system::Trait>::Bloc
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
-pub trait Trait: system::Trait + referendum::Trait<ReferendumInstance> {
+pub trait Trait: system::Trait {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 

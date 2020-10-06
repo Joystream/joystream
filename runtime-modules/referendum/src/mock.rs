@@ -352,12 +352,11 @@ where
         };
 
         (
-            <Module<T, I> as ReferendumManager<T::Origin, T::AccountId, T::Hash>>::calculate_commitment(
-                account_id,
-                &salt,
-                cycle_id,
-                vote_option_index,
-            ),
+            <Module<T, I> as ReferendumManager<
+                <T as system::Trait>::Origin,
+                <T as system::Trait>::AccountId,
+                <T as system::Trait>::Hash,
+            >>::calculate_commitment(account_id, &salt, cycle_id, vote_option_index),
             salt.to_vec(),
         )
     }

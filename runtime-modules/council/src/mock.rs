@@ -54,7 +54,7 @@ parameter_types! {
 impl Trait for Runtime {
     type Event = TestEvent;
 
-    type Referendum = referendum::Module<Tmp<Self>, ReferendumInstance>;
+    type Referendum = referendum::Module<RuntimeReferendum, ReferendumInstance>;
 
     type CouncilUserId = u64;
     type LockId = CouncilLockId;
@@ -90,15 +90,9 @@ mod referendum_mod {
     pub use referendum::Instance0;
 }
 
-mod balances_mod {
-    pub use pallet_balances::Event;
-}
-
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         event_mod<T>,
-        referendum_mod Instance0 <T>,
-        balances_mod<T>,
         system<T>,
     }
 }
@@ -141,14 +135,13 @@ impl system::Trait for Runtime {
 /////////////////// Election module ////////////////////////////////////////////
 
 pub type ReferendumInstance = referendum::Instance0;
-type Referendum<T> = referendum::Module<T, ReferendumInstance>;
 
 thread_local! {
     pub static IS_UNSTAKE_ENABLED: RefCell<(bool, )> = RefCell::new((true, )); // global switch for stake locking features; use it to simulate lock fails
     pub static IS_OPTION_ID_VALID: RefCell<(bool, )> = RefCell::new((true, )); // global switch used to test is_valid_option_id()
 
-    // complete intermediate results
-    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <Runtime as referendum::Trait<ReferendumInstance>>::VotePower>> = RefCell::new(BTreeMap::<u64, <Runtime as referendum::Trait<ReferendumInstance>>::VotePower>::new());
+    pub static INTERMEDIATE_RESULTS: RefCell<BTreeMap<u64, <<Runtime as Trait>::Referendum as ReferendumManager<<RuntimeReferendum as system::Trait>::Origin, <RuntimeReferendum as system::Trait>::AccountId, <RuntimeReferendum as system::Trait>::Hash>>::VotePower>> = RefCell::new(BTreeMap::<u64,
+        <<Runtime as Trait>::Referendum as ReferendumManager<<RuntimeReferendum as system::Trait>::Origin, <RuntimeReferendum as system::Trait>::AccountId, <RuntimeReferendum as system::Trait>::Hash>>::VotePower>::new());
 }
 
 parameter_types! {
@@ -159,85 +152,23 @@ parameter_types! {
     pub const ReferendumLockId: LockIdentifier = *b"referend";
 }
 
-impl referendum::Trait<ReferendumInstance> for Runtime {
-    type Event = TestEvent;
+mod balances_mod {
+    pub use pallet_balances::Event;
+}
 
-    type MaxSaltLength = MaxSaltLength;
-
-    type Currency = pallet_balances::Module<Runtime>;
-    type LockId = ReferendumLockId;
-
-    type ManagerOrigin =
-        EnsureOneOf<Self::AccountId, EnsureSigned<Self::AccountId>, EnsureRoot<Self::AccountId>>;
-
-    type VotePower = u64;
-
-    type VoteStageDuration = VoteStageDuration;
-    type RevealStageDuration = RevealStageDuration;
-
-    type MinimumStake = MinimumStake;
-
-    fn caclulate_vote_power(
-        account_id: &<Self as system::Trait>::AccountId,
-        stake: &Balance<Self, ReferendumInstance>,
-    ) -> <Self as referendum::Trait<ReferendumInstance>>::VotePower {
-        let stake: u64 = u64::from(*stake);
-        if *account_id == USER_REGULAR_POWER_VOTES {
-            return stake * POWER_VOTE_STRENGTH;
-        }
-
-        stake
-    }
-
-    fn can_release_voting_stake(
-        _vote: &CastVote<Self::Hash, Balance<Self, ReferendumInstance>>,
-    ) -> bool {
-        // trigger fail when requested to do so
-        if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
-            return false;
-        }
-
-        <Module<Self> as ReferendumConnection<Self>>::can_release_vote_stake().is_ok()
-    }
-
-    fn process_results(winners: &[OptionResult<Self::VotePower>]) {
-        <Module<Self> as ReferendumConnection<Self>>::recieve_referendum_results(winners).unwrap();
-    }
-
-    fn is_valid_option_id(_option_index: &u64) -> bool {
-        if !IS_OPTION_ID_VALID.with(|value| value.borrow().0) {
-            return false;
-        }
-
-        true
-    }
-
-    fn get_option_power(option_id: &u64) -> Self::VotePower {
-        INTERMEDIATE_RESULTS.with(|value| match value.borrow().get(option_id) {
-            Some(vote_power) => *vote_power,
-            None => 0,
-        })
-    }
-
-    fn increase_option_power(option_id: &u64, amount: &Self::VotePower) {
-        INTERMEDIATE_RESULTS.with(|value| {
-            let current = Self::get_option_power(option_id);
-
-            value.borrow_mut().insert(*option_id, amount + current);
-        });
+impl_outer_event! {
+    pub enum TestReferendumEvent for RuntimeReferendum {
+        referendum_mod Instance0 <T>,
+        balances_mod<T>,
+        system<T>,
     }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Tmp<T: Trait> {
-    _dummy: PhantomData<T>,
-}
+pub struct RuntimeReferendum;
 
-impl<ReferendumTrait: Trait> referendum::Trait<ReferendumInstance> for Tmp<ReferendumTrait>
-where
-    ReferendumTrait::VotePower: From<u64>,
-{
-    type Event = TestEvent;
+impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
+    type Event = TestReferendumEvent;
 
     type MaxSaltLength = MaxSaltLength;
 
@@ -257,7 +188,7 @@ where
     fn caclulate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
         stake: &Balance<Self, ReferendumInstance>,
-    ) -> <Self as referendum::Trait<ReferendumInstance>>::VotePower {
+    ) -> Self::VotePower {
         let stake: u64 = u64::from(*stake);
         if *account_id == USER_REGULAR_POWER_VOTES {
             return stake * POWER_VOTE_STRENGTH;
@@ -274,21 +205,21 @@ where
             return false;
         }
 
-        <Module<ReferendumTrait> as ReferendumConnection<ReferendumTrait>>::can_release_vote_stake()
-            .is_ok()
+        <Module<Runtime> as ReferendumConnection<Runtime>>::can_release_vote_stake().is_ok()
     }
 
     fn process_results(winners: &[OptionResult<Self::VotePower>]) {
-        //<Module<T> as ReferendumConnection<T>>::recieve_referendum_results(winners).unwrap();
-
-        let tmp_winners: Vec<OptionResult<ReferendumTrait::VotePower>> = winners
+        let tmp_winners: Vec<OptionResult<Self::VotePower>> = winners
             .iter()
             .map(|item| OptionResult {
                 option_id: item.option_id,
                 vote_power: item.vote_power.into(),
             })
             .collect();
-        <Module<ReferendumTrait> as ReferendumConnection<ReferendumTrait>>::recieve_referendum_results(tmp_winners.as_slice()).unwrap();
+        <Module<Runtime> as ReferendumConnection<Runtime>>::recieve_referendum_results(
+            tmp_winners.as_slice(),
+        )
+        .unwrap();
     }
 
     fn is_valid_option_id(_option_index: &u64) -> bool {
@@ -315,7 +246,7 @@ where
     }
 }
 
-impl<T: Trait> system::Trait for Tmp<T> {
+impl system::Trait for RuntimeReferendum {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Index = u64;
@@ -326,7 +257,7 @@ impl<T: Trait> system::Trait for Tmp<T> {
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    type Event = TestEvent;
+    type Event = TestReferendumEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
     type DbWeight = ();
@@ -342,9 +273,9 @@ impl<T: Trait> system::Trait for Tmp<T> {
     type OnKilledAccount = ();
 }
 
-impl<T: Trait> pallet_balances::Trait for Tmp<T> {
+impl pallet_balances::Trait for RuntimeReferendum {
     type Balance = u64;
-    type Event = TestEvent;
+    type Event = TestReferendumEvent;
     type DustRemoval = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = system::Module<Self>;
@@ -360,14 +291,6 @@ impl Runtime {
 
 parameter_types! {
     pub const ExistentialDeposit: u64 = 0;
-}
-
-impl pallet_balances::Trait for Runtime {
-    type Balance = u64;
-    type Event = TestEvent;
-    type DustRemoval = ();
-    type ExistentialDeposit = ExistentialDeposit;
-    type AccountStore = system::Module<Self>;
 }
 
 /////////////////// Data structures ////////////////////////////////////////////
@@ -407,7 +330,10 @@ pub struct CouncilSettings<T: Trait> {
     pub reveal_stage_duration: T::BlockNumber,
 }
 
-impl<T: Trait> CouncilSettings<T> {
+impl<T: Trait> CouncilSettings<T>
+where
+    T::BlockNumber: From<u64>,
+{
     pub fn extract_settings() -> CouncilSettings<T> {
         let council_size = T::CouncilSize::get();
 
@@ -417,9 +343,9 @@ impl<T: Trait> CouncilSettings<T> {
             min_candidate_stake: T::MinCandidateStake::get(),
             announcing_stage_duration: <T as Trait>::AnnouncingPeriodDuration::get(),
             voting_stage_duration:
-                <T as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get(),
+                <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get().into(),
             reveal_stage_duration:
-                <T as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get(),
+                <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get().into(),
         }
     }
 }
@@ -514,16 +440,19 @@ where
             let tmp_index: T::BlockNumber = block_number + i.into();
 
             <Module<T> as OnFinalize<T::BlockNumber>>::on_finalize(tmp_index);
-            <referendum::Module<T, ReferendumInstance> as OnFinalize<T::BlockNumber>>::on_finalize(
-                tmp_index,
-            );
+            <referendum::Module<RuntimeReferendum, ReferendumInstance> as OnFinalize<
+                <RuntimeReferendum as system::Trait>::BlockNumber,
+            >>::on_finalize(tmp_index.into());
             system::Module::<T>::set_block_number(tmp_index + 1.into());
         }
     }
 
     // topup currency to the account
     fn topup_account(account_id: u64, amount: BalanceReferendum<T>) {
-        let _ = pallet_balances::Module::<Runtime>::deposit_creating(&account_id, amount.into());
+        let _ = pallet_balances::Module::<RuntimeReferendum>::deposit_creating(
+            &account_id,
+            amount.into(),
+        );
     }
 
     pub fn generate_candidate(
@@ -602,6 +531,14 @@ where
     T::CouncilUserId: From<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
     BalanceReferendum<T>: From<u64> + Into<u64>,
+
+    T::Hash: From<<RuntimeReferendum as system::Trait>::Hash>
+        + Into<<RuntimeReferendum as system::Trait>::Hash>,
+    //T::VotePower: From<u64>,
+    T::Origin: From<<RuntimeReferendum as system::Trait>::Origin>
+        + Into<<RuntimeReferendum as system::Trait>::Origin>,
+    <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::Hash>>::VotePower:
+        From<u64> + Into<u64>,
 {
     pub fn check_announcing_period(
         expected_update_block_number: T::BlockNumber,
@@ -650,26 +587,42 @@ where
     pub fn check_referendum_revealing(
         //        candidate_count: u64,
         winning_target_count: u64,
-        intermediate_winners: Vec<OptionResult<T::VotePower>>,
-        _intermediate_results: BTreeMap<u64, T::VotePower>,
+        intermediate_winners: Vec<
+            OptionResult<
+                <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::Hash>>::VotePower,
+            >,
+        >,
+        intermediate_results: BTreeMap<
+            u64,
+            <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::Hash>>::VotePower,
+        >,
         expected_update_block_number: T::BlockNumber,
     ) {
         // check stage is in proper state
         assert_eq!(
-            referendum::Stage::<T, ReferendumInstance>::get(),
+            referendum::Stage::<RuntimeReferendum, ReferendumInstance>::get(),
             ReferendumStage::Revealing(ReferendumStageRevealing {
                 winning_target_count,
-                started: expected_update_block_number,
-                intermediate_winners,
+                started: expected_update_block_number.into(),
+                intermediate_winners: intermediate_winners
+                    .iter()
+                    .map(|item| OptionResult {
+                        option_id: item.option_id,
+                        vote_power: item.vote_power.into(),
+                    })
+                    .collect(),
             }),
         );
 
-        /*
-        INTERMEDIATE_RESULTS.with(|value| assert_eq!(
-            *value.borrow(),
-            intermediate_results,
-        ));
-        */
+        INTERMEDIATE_RESULTS.with(|value| {
+            assert_eq!(
+                *value.borrow(),
+                intermediate_results
+                    .iter()
+                    .map(|(key, value)| (*key, value.clone().into()))
+                    .collect(),
+            )
+        });
     }
 
     pub fn announce_candidacy(
@@ -694,16 +647,17 @@ where
         origin: OriginType<T::AccountId>,
         commitment: T::Hash,
         stake: BalanceReferendum<T>,
-        expected_result: Result<(), referendum::Error<T, ReferendumInstance>>,
+        expected_result: Result<(), ()>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Referendum::<T>::vote(
-                InstanceMockUtils::<T>::mock_origin(origin),
-                commitment,
-                stake,
-            ),
-            expected_result,
+            referendum::Module::<RuntimeReferendum, ReferendumInstance>::vote(
+                InstanceMockUtils::<T>::mock_origin(origin).into(),
+                commitment.into(),
+                stake.into(),
+            )
+            .is_ok(),
+            expected_result.is_ok(),
         );
     }
 
@@ -711,16 +665,18 @@ where
         origin: OriginType<T::AccountId>,
         salt: Vec<u8>,
         vote_option: u64,
-        expected_result: Result<(), referendum::Error<T, ReferendumInstance>>,
+        //expected_result: Result<(), referendum::Error<T, ReferendumInstance>>,
+        expected_result: Result<(), ()>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
-            Referendum::<T>::reveal_vote(
-                InstanceMockUtils::<T>::mock_origin(origin),
+            referendum::Module::<RuntimeReferendum, ReferendumInstance>::reveal_vote(
+                InstanceMockUtils::<T>::mock_origin(origin).into(),
                 salt,
                 vote_option,
-            ),
-            expected_result,
+            )
+            .is_ok(),
+            expected_result.is_ok(),
         );
     }
 
