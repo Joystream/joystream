@@ -29,7 +29,7 @@ export class VideoInfosResolver {
   @Query(() => [VideoInfo])
   async batchedVideoViews(@Args() { videoIDList }: BatchedVideoViewsArgs) {
     return VideoInfoModel.find({
-      'videoID': {
+      videoID: {
         $in: videoIDList,
       },
     })
@@ -37,6 +37,6 @@ export class VideoInfosResolver {
 
   @Mutation(() => VideoInfo)
   async addVideoView(@Args() { videoID }: AddVideoViewArgs) {
-    return VideoInfoModel.findOneAndUpdate({ videoID: videoID }, { $inc: { views: 1 } }, { new: true, upsert: true })
+    return VideoInfoModel.findOneAndUpdate({ videoID }, { $inc: { views: 1 } }, { new: true, upsert: true })
   }
 }
