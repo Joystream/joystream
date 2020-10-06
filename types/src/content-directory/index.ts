@@ -45,9 +45,13 @@ export class PropertyType extends JoyEnum({
   Single: PropertyTypeSingle,
   Vector: PropertyTypeVector,
 }) {
+  get subtype() {
+    return this.isOfType('Single') ? this.asType('Single').type : this.asType('Vector').vec_type.type
+  }
+
   toInputPropertyValue(value: any): InputPropertyValue {
     const inputPwType: keyof typeof InputPropertyValue['typeDefinitions'] = this.type
-    const subtype = this.isOfType('Single') ? this.asType('Single').type : this.asType('Vector').vec_type.type
+    const subtype = this.subtype
 
     if (inputPwType === 'Single') {
       const inputPwSubtype: keyof typeof InputValue['typeDefinitions'] = subtype === 'Hash' ? 'TextToHash' : subtype
@@ -137,7 +141,15 @@ export class VecStoredPropertyValue extends JoyStructDecorated({
 export class StoredPropertyValue extends JoyEnum({
   Single: StoredValue,
   Vector: VecStoredPropertyValue,
-}) {}
+}) {
+  get subtype() {
+    return this.isOfType('Single') ? this.asType('Single').type : this.asType('Vector').vec_value.type
+  }
+
+  public getValue() {
+    return this.isOfType('Single') ? this.asType('Single').value : this.asType('Vector').vec_value.value
+  }
+}
 
 export class InboundReferenceCounter extends JoyStructDecorated({
   total: u32,

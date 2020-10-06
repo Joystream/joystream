@@ -14,6 +14,8 @@ import ajv from 'ajv'
 import { ApiMethodArg, ApiMethodNamedArgs, ApiParamsOptions, ApiParamOptions } from '../Types'
 import { createParamOptions } from '../helpers/promptOptions'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { DistinctQuestion } from 'inquirer'
+import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 
 class ExtrinsicFailedError extends Error {}
 
@@ -132,9 +134,15 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     // If no default provided - get default value resulting from providing empty string
     const defaultValueString =
       paramOptions?.value?.default?.toString() || this.createType(typeDef.type as any, '').toString()
+
+    let typeSpecificOptions: DistinctQuestion = { type: 'input' }
+    if (typeDef.type === 'bool') {
+      typeSpecificOptions = BOOL_PROMPT_OPTIONS
+    }
+
     const providedValue = await this.simplePrompt({
       message: `Provide value for ${this.paramName(typeDef)}`,
-      type: 'input',
+      ...typeSpecificOptions,
       // We want to avoid showing default value like '0x', because it falsely suggests
       // that user needs to provide the value as hex
       default: (defaultValueString === '0x' ? '' : defaultValueString) || undefined,
@@ -315,8 +323,8 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   }
 
   // More typesafe version
-  async promptForType(type: keyof InterfaceTypes) {
-    return await this.promptForParam(type)
+  async promptForType(type: keyof InterfaceTypes, options?: ApiParamOptions) {
+    return await this.promptForParam(type, options)
   }
 
   async promptForJsonBytes(

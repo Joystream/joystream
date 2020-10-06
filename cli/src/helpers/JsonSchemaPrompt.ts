@@ -3,19 +3,12 @@ import inquirer, { DistinctQuestion } from 'inquirer'
 import _ from 'lodash'
 import RefParser, { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import chalk from 'chalk'
+import { BOOL_PROMPT_OPTIONS } from './prompting'
 
 type CustomPromptMethod = () => Promise<any>
 type CustomPrompt = DistinctQuestion | CustomPromptMethod | { $item: CustomPrompt }
 
 export type JsonSchemaCustomPrompts = [string | RegExp, CustomPrompt][]
-
-export const BOOL_PROMPT_OPTIONS: DistinctQuestion = {
-  type: 'list',
-  choices: [
-    { name: 'Yes', value: true },
-    { name: 'No', value: false },
-  ],
-}
 
 export class JsonSchemaPrompter<JsonResult> {
   schema: JSONSchema
@@ -23,7 +16,7 @@ export class JsonSchemaPrompter<JsonResult> {
   ajv: Ajv.Ajv
   filledObject: Partial<JsonResult>
 
-  constructor(schema: JSONSchema, defaults?: JsonResult, customPrompts?: JsonSchemaCustomPrompts) {
+  constructor(schema: JSONSchema, defaults?: Partial<JsonResult>, customPrompts?: JsonSchemaCustomPrompts) {
     this.customPropmpts = customPrompts
     this.schema = schema
     this.ajv = new Ajv()
@@ -58,7 +51,7 @@ export class JsonSchemaPrompter<JsonResult> {
     return chalk.green(propertyPath)
   }
 
-  private async promptRecursive(schema: JSONSchema, propertyPath = ''): Promise<any> {
+  private async prompt(schema: JSONSchema, propertyPath = ''): Promise<any> {
     const customPrompt: CustomPrompt | undefined = this.getCustomPrompt(propertyPath)
     const propDisplayName = this.propertyDisplayName(propertyPath)
 
@@ -72,14 +65,14 @@ export class JsonSchemaPrompter<JsonResult> {
       const oneOf = schema.oneOf as JSONSchema[]
       const choices = this.oneOfToChoices(oneOf)
       const { choosen } = await inquirer.prompt({ name: 'choosen', message: propDisplayName, type: 'list', choices })
-      return await this.promptRecursive(oneOf[choosen], propertyPath)
+      return await this.prompt(oneOf[choosen], propertyPath)
     }
 
     // object
     if (schema.type === 'object' && schema.properties) {
       const value: Record<string, any> = {}
       for (const [pName, pSchema] of Object.entries(schema.properties)) {
-        value[pName] = await this.promptRecursive(pSchema, propertyPath ? `${propertyPath}.${pName}` : pName)
+        value[pName] = await this.prompt(pSchema, propertyPath ? `${propertyPath}.${pName}` : pName)
       }
       return value
     }
@@ -152,9 +145,7 @@ export class JsonSchemaPrompter<JsonResult> {
         break
       }
       const itemSchema = Array.isArray(schema.items) ? schema.items[schema.items.length % currItem] : schema.items
-      result.push(
-        await this.promptRecursive(typeof itemSchema === 'boolean' ? {} : itemSchema, `${propertyPath}[${currItem}]`)
-      )
+      result.push(await this.prompt(typeof itemSchema === 'boolean' ? {} : itemSchema, `${propertyPath}[${currItem}]`))
 
       ++currItem
     }
@@ -203,7 +194,13 @@ export class JsonSchemaPrompter<JsonResult> {
   }
 
   async promptAll() {
-    await this.promptRecursive(await RefParser.dereference(this.schema))
+    await this.prompt(await RefParser.dereference(this.schema))
     return this.filledObject as JsonResult
+  }
+
+  async promptSingleProp<P extends keyof JsonResult & string>(p: P): Promise<Exclude<JsonResult[P], undefined>> {
+    const dereferenced = await RefParser.dereference(this.schema)
+    await this.prompt(dereferenced.properties![p] as JSONSchema, p)
+    return this.filledObject[p] as Exclude<JsonResult[P], undefined>
   }
 }

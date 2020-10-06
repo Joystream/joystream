@@ -13,8 +13,15 @@ export { JoyEnum, JoyStructCustom, JoyStructDecorated }
 // Adds sorting during BTreeSet toU8a encoding (required by the runtime)
 // Currently only supports values that extend UInt
 // FIXME: Will not cover cases where BTreeSet is part of extrinsic args metadata
-export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructor<BTreeSet<V>> {
+export interface ExtendedBTreeSet<V extends UInt> extends BTreeSet<V> {
+  toArray(): V[]
+}
+export function JoyBTreeSet<V extends UInt>(valType: Constructor<V>): Constructor<ExtendedBTreeSet<V>> {
   return class extends BTreeSet.with(valType) {
+    public toArray(): V[] {
+      return Array.from(this)
+    }
+
     public toU8a(isBare?: boolean): Uint8Array {
       const encoded = new Array<Uint8Array>()
 
@@ -98,6 +105,7 @@ export class InputValidationLengthConstraint extends JoyStructDecorated({ min: u
 
 export const WorkingGroupDef = {
   Storage: Null,
+  Content: Null,
 } as const
 export type WorkingGroupKey = keyof typeof WorkingGroupDef
 export class WorkingGroup extends JoyEnum(WorkingGroupDef) {}
