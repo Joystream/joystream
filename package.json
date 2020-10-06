@@ -4,12 +4,9 @@
   "version": "1.0.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "test": "yarn && yarn workspaces run test",
-    "test-migration": "yarn && yarn workspaces run test-migration",
     "postinstall": "yarn workspace @joystream/types build && yarn workspace cd-schemas generate:all",
     "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
-    "cargo-build": "scripts/cargo-build.sh",
-    "lint": "yarn workspaces run lint"
+    "cargo-build": "scripts/cargo-build.sh"
   },
   "workspaces": [
     "tests/network-tests",

@@ -1,4 +1,4 @@
-/* global api, hashing, keyring, types, util */
+/* global api, hashing, keyring, types, util, joy */
 
 // run this script with:
 // yarn script exportDataDirectory
@@ -42,7 +42,7 @@ const script = async ({ api }) => {
 
 if (typeof module === 'undefined') {
   // Pioneer js-toolbox
-  script({ api, hashing, keyring, types, util })
+  script({ api, hashing, keyring, types, util, joy })
 } else {
   // Node
   module.exports = script

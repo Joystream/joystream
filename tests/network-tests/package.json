@@ -1,24 +1,19 @@
 {
-  "name": "joystream-testing",
+  "name": "network-tests",
   "version": "0.1.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "build": "tsc --build tsconfig.json",
-    "test": "rm -f ../../.tmp/db.json && tap --files src/iznik/tests/unknown.unknown src/iznik/tests/councilSetup.ts src/iznik/tests/proposals/*Test.ts src/iznik/tests/leaderSetup.ts src/iznik/tests/workingGroup/*Test.ts -T",
-    "test-migration-constantinople": "tap --files src/rome/tests/romeRuntimeUpgradeTest.ts --files src/constantinople/tests/electingCouncilTest.ts -T",
-    "test-migration-nicaea": "tap --files src/constantinople/tests/proposals/updateRuntimeTest.ts --files src/nicaea/tests/electingCouncilTest.ts -T",
-    "debug": "tap --files src/iznik/tests/workingGroup/workerPayoutTest.ts -T",
+    "build": "tsc --noEmit",
+    "test": "yarn db-path-setup && tap --files src/tests/unknown.unknown src/tests/councilSetup.ts src/tests/proposals/*Test.ts src/tests/leaderSetup.ts src/tests/workingGroup/*Test.ts -T",
     "lint": "eslint . --quiet --ext .ts",
-    "checks": "yarn lint && tsc --noEmit --pretty && prettier ./ --check",
-    "format": "prettier ./ --write "
+    "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
+    "format": "prettier ./ --write ",
+    "db-path-setup": "mkdir .tmp/ || rm .tmp/db.json || echo ''"
   },
   "dependencies": {
-    "@constantinople/types@npm:@joystream/types": "^0.10.0",
-    "@nicaea/types@npm:@joystream/types": "^0.12.0",
-    "@alexandria/types": "link:../../types",
+    "@joystream/types": "link:../../types",
     "@polkadot/api": "1.26.1",
     "@polkadot/keyring": "3.0.1",
-    "@rome/types@npm:@joystream/types": "^0.7.0",
     "@types/bn.js": "^4.11.5",
     "@types/lowdb": "^1.0.9",
     "bn.js": "^4.11.8",
