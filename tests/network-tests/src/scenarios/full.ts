@@ -20,7 +20,7 @@ import workerApplicationRejectionCase from '../flows/workingGroup/workerApplicat
 import workerPayout from '../flows/workingGroup/workerPayout'
 
 import createDebug from 'debug'
-const debug = createDebug('network-tests')
+const debug = createDebug('scenario:full')
 
 const scenario = async () => {
   // Load env variables
