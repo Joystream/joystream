@@ -10,12 +10,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Route, Switch } from 'react-router';
 import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import { HelpOverlay } from '@polkadot/react-components';
+// import { HelpOverlay } from '@polkadot/react-components';
 import Tabs from '@polkadot/react-components/Tabs';
 import { useAccounts, useApi, useCall, useFavorites, useOwnStashInfos, useStashIds } from '@polkadot/react-hooks';
 import { isFunction } from '@polkadot/util';
 
-import basicMd from './md/basic.md';
+// import basicMd from './md/basic.md';
 import Actions from './Actions';
 import Overview from './Overview';
 import Payouts from './Payouts';
@@ -99,7 +99,7 @@ function StakingApp ({ basePath, className = '' }: Props): React.ReactElement<Pr
 
   return (
     <main className={`staking--App ${className}`}>
-      <HelpOverlay md={basicMd as string} />
+      {/* <HelpOverlay md={basicMd as string} /> */}
       <header>
         <Tabs
           basePath={basePath}

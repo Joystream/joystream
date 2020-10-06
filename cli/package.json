@@ -105,8 +105,8 @@
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
     "build": "tsc --build tsconfig.json",
     "version": "oclif-dev readme && git add README.md",
-    "lint": "eslint ./ --quiet --ext .ts",
-    "checks": "yarn lint && tsc --noEmit --pretty && prettier ./ --check",
+    "lint": "eslint ./ --ext .ts",
+    "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write"
   },
   "types": "lib/index.d.ts"

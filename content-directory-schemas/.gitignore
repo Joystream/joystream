@@ -5,3 +5,6 @@ schemas/entities
 schemas/entityBatches
 schemas/entityReferences
 types/entities
+
+# Build
+lib

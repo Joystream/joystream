@@ -7,7 +7,7 @@
 // https://testnet.joystream.org/#/js
 // requires nicaea release+
 
-const script = async ({ api, joy }) => {
+const script = async ({ api }) => {
   const ids = await api.query.dataDirectory.knownContentIds()
 
   await Promise.all(
