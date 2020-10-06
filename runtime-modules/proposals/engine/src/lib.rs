@@ -60,7 +60,7 @@
 //! use frame_support::{decl_module, print};
 //! use system::ensure_signed;
 //! use codec::Encode;
-//! use pallet_proposals_engine::{self as engine, ProposalParameters};
+//! use pallet_proposals_engine::{self as engine, ProposalParameters, ProposalCreationParameters};
 //!
 //! pub trait Trait: engine::Trait + membership::Trait {}
 //!
@@ -87,17 +87,22 @@
 //!                 &parameters,
 //!                 &title,
 //!                 &description,
-//!                 None
+//!                 None,
+//!                 None,
 //!             )?;
-//!             <engine::Module<T>>::create_proposal(
+//!
+//!             let creation_parameters = ProposalCreationParameters {
 //!                 account_id,
 //!                 proposer_id,
-//!                 parameters,
+//!                 proposal_parameters : parameters,
 //!                 title,
 //!                 description,
-//!                 None,
-//!                 encoded_proposal_code
-//!             )?;
+//!                 stake_balance: None,
+//!                 encoded_dispatchable_call_code: encoded_proposal_code,
+//!                 exact_execution_block: None,
+//!             };
+//!
+//!             <engine::Module<T>>::create_proposal(creation_parameters)?;
 //!         }
 //!     }
 //! }
@@ -110,17 +115,14 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-use crate::types::ApprovedProposalData;
-use types::FinalizedProposalData;
-use types::ProposalStakeManager;
+use types::{ApprovedProposalData, FinalizedProposalData, ProposalStakeManager};
+
 pub use types::{
-    ActiveStake, ApprovedProposalStatus, FinalizationData, Proposal, ProposalDecisionStatus,
-    ProposalParameters, ProposalStatus, VotingResults,
+    ActiveStake, ApprovedProposalStatus, BalanceOf, CurrencyOf, DefaultStakeHandlerProvider,
+    FinalizationData, NegativeImbalance, Proposal, ProposalCodeDecoder, ProposalCreationParameters,
+    ProposalDecisionStatus, ProposalExecutable, ProposalParameters, ProposalStatus, StakeHandler,
+    StakeHandlerProvider, VoteKind, VotersParameters, VotingResults,
 };
-pub use types::{BalanceOf, CurrencyOf, NegativeImbalance};
-pub use types::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
-pub use types::{ProposalCodeDecoder, ProposalExecutable};
-pub use types::{VoteKind, VotersParameters};
 
 pub(crate) mod types;
 
@@ -282,6 +284,12 @@ decl_error! {
 
         /// Disallow to cancel the proposal if there are any votes on it.
         ProposalHasVotes,
+
+        /// Exact execution block cannot be zero.
+        ZeroExactExecutionBlock,
+
+        /// Exact execution block cannot be less than current_block + grace_period.
+        InvalidExactExecutionBlock,
     }
 }
 
@@ -426,7 +434,7 @@ decl_module! {
             }
 
             let executable_proposals =
-                Self::get_approved_proposal_with_expired_grace_period();
+                Self::get_approved_proposal_ready_for_execution();
 
             // Execute approved proposals with expired grace period
             for approved_proposal in executable_proposals {
@@ -439,19 +447,19 @@ decl_module! {
 impl<T: Trait> Module<T> {
     /// Create proposal. Requires 'proposal origin' membership.
     pub fn create_proposal(
-        account_id: T::AccountId,
-        proposer_id: MemberId<T>,
-        parameters: ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
-        title: Vec<u8>,
-        description: Vec<u8>,
-        stake_balance: Option<types::BalanceOf<T>>,
-        encoded_dispatchable_call_code: Vec<u8>,
+        creation_params: ProposalCreationParameters<
+            T::BlockNumber,
+            types::BalanceOf<T>,
+            MemberId<T>,
+            T::AccountId,
+        >,
     ) -> Result<T::ProposalId, DispatchError> {
         Self::ensure_create_proposal_parameters_are_valid(
-            &parameters,
-            &title,
-            &description,
-            stake_balance,
+            &creation_params.proposal_parameters,
+            &creation_params.title,
+            &creation_params.description,
+            creation_params.stake_balance,
+            creation_params.exact_execution_block,
         )?;
 
         // checks passed
@@ -463,9 +471,13 @@ impl<T: Trait> Module<T> {
 
         // Check stake_balance for value and create stake if value exists, else take None
         // If create_stake() returns error - return error from extrinsic
-        let stake_id_result = stake_balance
+        let stake_id_result = creation_params
+            .stake_balance
             .map(|stake_amount| {
-                ProposalStakeManager::<T>::create_stake(stake_amount, account_id.clone())
+                ProposalStakeManager::<T>::create_stake(
+                    stake_amount,
+                    creation_params.account_id.clone(),
+                )
             })
             .transpose()?;
 
@@ -473,7 +485,7 @@ impl<T: Trait> Module<T> {
         if let Some(stake_id) = stake_id_result {
             stake_data = Some(ActiveStake {
                 stake_id,
-                source_account_id: account_id,
+                source_account_id: creation_params.account_id,
             });
 
             <StakesProposals<T>>::insert(stake_id, proposal_id);
@@ -481,21 +493,28 @@ impl<T: Trait> Module<T> {
 
         let new_proposal = Proposal {
             created_at: Self::current_block(),
-            parameters,
-            title,
-            description,
-            proposer_id,
+            parameters: creation_params.proposal_parameters,
+            title: creation_params.title,
+            description: creation_params.description,
+            proposer_id: creation_params.proposer_id,
             status: ProposalStatus::Active(stake_data),
             voting_results: VotingResults::default(),
+            exact_execution_block: creation_params.exact_execution_block,
         };
 
         <Proposals<T>>::insert(proposal_id, new_proposal);
-        <DispatchableCallCode<T>>::insert(proposal_id, encoded_dispatchable_call_code);
+        <DispatchableCallCode<T>>::insert(
+            proposal_id,
+            creation_params.encoded_dispatchable_call_code,
+        );
         <ActiveProposalIds<T>>::insert(proposal_id, ());
         ProposalCount::put(next_proposal_count_value);
         Self::increase_active_proposal_counter();
 
-        Self::deposit_event(RawEvent::ProposalCreated(proposer_id, proposal_id));
+        Self::deposit_event(RawEvent::ProposalCreated(
+            creation_params.proposer_id,
+            proposal_id,
+        ));
 
         Ok(proposal_id)
     }
@@ -510,6 +529,7 @@ impl<T: Trait> Module<T> {
         title: &[u8],
         description: &[u8],
         stake_balance: Option<types::BalanceOf<T>>,
+        exact_execution_block: Option<T::BlockNumber>,
     ) -> DispatchResult {
         ensure!(!title.is_empty(), Error::<T>::EmptyTitleProvided);
         ensure!(
@@ -555,6 +575,17 @@ impl<T: Trait> Module<T> {
 
         if stake_balance.is_some() && parameters.required_stake.is_none() {
             return Err(Error::<T>::StakeShouldBeEmpty.into());
+        }
+
+        if let Some(execution_block) = exact_execution_block {
+            if execution_block == Zero::zero() {
+                return Err(Error::<T>::ZeroExactExecutionBlock.into());
+            }
+
+            let now = Self::current_block();
+            if execution_block <= now + parameters.grace_period {
+                return Err(Error::<T>::InvalidExactExecutionBlock.into());
+            }
         }
 
         Ok(())
@@ -782,13 +813,17 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // Enumerates approved proposals and checks their grace period expiration
-    fn get_approved_proposal_with_expired_grace_period() -> Vec<ApprovedProposal<T>> {
+    // Enumerates approved proposals and checks their grace period expiration and
+    // exact execution block.
+    fn get_approved_proposal_ready_for_execution() -> Vec<ApprovedProposal<T>> {
         <PendingExecutionProposalIds<T>>::iter()
             .filter_map(|(proposal_id, _)| {
                 let proposal = Self::proposals(proposal_id);
 
-                if proposal.is_grace_period_expired(Self::current_block()) {
+                let now = Self::current_block();
+
+                if proposal.is_grace_period_expired(now) && proposal.is_execution_block_reached(now)
+                {
                     // this should be true, because it was tested inside is_grace_period_expired()
                     if let ProposalStatus::Finalized(finalisation_data) = proposal.status.clone() {
                         Some(ApprovedProposalData {

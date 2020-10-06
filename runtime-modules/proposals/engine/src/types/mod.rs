@@ -154,6 +154,9 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId> {
 
     /// Curring voting result for the proposal
     pub voting_results: VotingResults,
+
+    /// Optional exact block height which triggers the execution.
+    pub exact_execution_block: Option<BlockNumber>,
 }
 
 impl<BlockNumber, ProposerId, Balance, StakeId, AccountId>
@@ -179,6 +182,15 @@ where
         }
 
         false
+    }
+
+    /// Returns whether exact execution block reached by now.
+    /// If not set returns True.
+    /// Returns False otherwise.
+    pub fn is_execution_block_reached(&self, now: BlockNumber) -> bool {
+        self.exact_execution_block
+            .map(|block_number| block_number >= now)
+            .unwrap_or(true)
     }
 
     /// Determines the finalized proposal status using voting results tally for current proposal.
@@ -363,14 +375,42 @@ pub(crate) struct ApprovedProposalData<
     StakeId,
     AccountId,
 > {
-    /// Proposal id
+    /// Proposal id.
     pub proposal_id: ProposalId,
 
-    /// Proposal to be finalized
+    /// Proposal to be finalized.
     pub proposal: Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId>,
 
-    /// Proposal finalisation status data
+    /// Proposal finalisation status data.
     pub finalisation_status_data: FinalizationData<BlockNumber, StakeId, AccountId>,
+}
+
+/// Containter-type for a proposal creation method.
+pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId> {
+    /// Account id of the proposer.
+    pub account_id: AccountId,
+
+    /// Proposer member id.
+    pub proposer_id: MemberId,
+
+    /// Risk management proposal parameters.
+    pub proposal_parameters: ProposalParameters<BlockNumber, Balance>,
+
+    /// Proposal title.
+    pub title: Vec<u8>,
+
+    /// Proposal description.
+    pub description: Vec<u8>,
+
+    /// Stake balance for the proposal.
+    pub stake_balance: Option<Balance>,
+
+    /// Encoded executable proposal code.
+    pub encoded_dispatchable_call_code: Vec<u8>,
+
+    /// Exact block for the proposal execution.
+    /// Should be greater than starting block + grace_period if set.
+    pub exact_execution_block: Option<BlockNumber>,
 }
 
 #[cfg(test)]

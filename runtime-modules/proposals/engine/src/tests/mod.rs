@@ -71,6 +71,7 @@ struct DummyProposalFixture {
     title: Vec<u8>,
     description: Vec<u8>,
     stake_balance: Option<BalanceOf<Test>>,
+    exact_execution_block: Option<u64>,
 }
 
 impl Default for DummyProposalFixture {
@@ -96,6 +97,7 @@ impl Default for DummyProposalFixture {
             title,
             description,
             stake_balance: None,
+            exact_execution_block: None,
         }
     }
 }
@@ -132,15 +134,16 @@ impl DummyProposalFixture {
     }
 
     fn create_proposal_and_assert(self, result: Result<u32, DispatchError>) -> Option<u32> {
-        let proposal_id_result = ProposalsEngine::create_proposal(
-            self.account_id,
-            self.proposer_id,
-            self.parameters,
-            self.title,
-            self.description,
-            self.stake_balance,
-            self.proposal_code,
-        );
+        let proposal_id_result = ProposalsEngine::create_proposal(ProposalCreationParameters {
+            account_id: self.account_id,
+            proposer_id: self.proposer_id,
+            proposal_parameters: self.parameters,
+            title: self.title,
+            description: self.description,
+            stake_balance: self.stake_balance,
+            encoded_dispatchable_call_code: self.proposal_code,
+            exact_execution_block: self.exact_execution_block,
+        });
         assert_eq!(proposal_id_result, result);
 
         proposal_id_result.ok()
@@ -837,6 +840,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
                     rejections: 0,
                     slashes: 0,
                 },
+                exact_execution_block: None,
             }
         );
     });
@@ -882,6 +886,7 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
                     rejections: 0,
                     slashes: 0,
                 },
+                exact_execution_block: None,
             }
         );
 
@@ -905,6 +910,7 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
                     rejections: 0,
                     slashes: 0,
                 },
+                exact_execution_block: None,
             }
         );
 
@@ -957,6 +963,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
                 rejections: 0,
                 slashes: 0,
             },
+            exact_execution_block: None,
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -1027,6 +1034,7 @@ fn create_dummy_proposal_succeeds_with_stake() {
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
+                exact_execution_block: None,
             }
         )
     });
@@ -1128,6 +1136,7 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
             title: b"title".to_vec(),
             description: b"description".to_vec(),
             voting_results: VotingResults::default(),
+            exact_execution_block: None,
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -1203,6 +1212,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             title: b"title".to_vec(),
             description: b"description".to_vec(),
             voting_results: VotingResults::default(),
+            exact_execution_block: None,
         };
 
         assert_eq!(proposal, expected_proposal);

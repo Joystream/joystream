@@ -9,8 +9,8 @@ use codec::Encode;
 use governance::election_params::ElectionParameters;
 use membership;
 use proposals_engine::{
-    ActiveStake, BalanceOf, Proposal, ProposalParameters, ProposalStatus, VoteKind,
-    VotersParameters, VotingResults,
+    ActiveStake, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,
+    ProposalStatus, VoteKind, VotersParameters, VotingResults,
 };
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
@@ -149,6 +149,7 @@ struct DummyProposalFixture {
     title: Vec<u8>,
     description: Vec<u8>,
     stake_balance: Option<BalanceOf<Runtime>>,
+    exact_execution_block: Option<u32>,
 }
 
 impl Default for DummyProposalFixture {
@@ -174,6 +175,7 @@ impl Default for DummyProposalFixture {
             title,
             description,
             stake_balance: None,
+            exact_execution_block: None,
         }
     }
 }
@@ -212,15 +214,17 @@ impl DummyProposalFixture {
     }
 
     fn create_proposal_and_assert(self, result: Result<u32, DispatchError>) -> Option<u32> {
-        let proposal_id_result = ProposalsEngine::create_proposal(
-            self.account_id,
-            self.proposer_id,
-            self.parameters,
-            self.title,
-            self.description,
-            self.stake_balance,
-            self.proposal_code,
-        );
+        let proposal_id_result = ProposalsEngine::create_proposal(ProposalCreationParameters {
+            account_id: self.account_id,
+            proposer_id: self.proposer_id,
+            proposal_parameters: self.parameters,
+            title: self.title,
+            description: self.description,
+            stake_balance: self.stake_balance,
+            encoded_dispatchable_call_code: self.proposal_code,
+            exact_execution_block: self.exact_execution_block,
+        });
+
         assert_eq!(proposal_id_result, result);
 
         proposal_id_result.ok()
@@ -316,6 +320,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             title: b"title".to_vec(),
             description: b"description".to_vec(),
             voting_results: VotingResults::default(),
+            exact_execution_block: None,
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -620,40 +625,6 @@ fn set_content_working_group_mint_capacity_execution_succeeds() {
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
         assert_eq!(Mint::get_mint_capacity(mint_id), Ok(new_balance));
-    });
-}
-
-#[test]
-fn set_election_parameters_proposal_execution_succeeds() {
-    initial_test_ext().execute_with(|| {
-        let member_id = 1;
-        let account_id: [u8; 32] = [member_id; 32];
-
-        let election_parameters = ElectionParameters {
-            announcing_period: 14400,
-            voting_period: 14400,
-            revealing_period: 14400,
-            council_size: 4,
-            candidacy_limit: 25,
-            new_term_duration: 14400,
-            min_council_stake: 1,
-            min_voting_stake: 1,
-        };
-        assert_eq!(Election::announcing_period(), 0);
-
-        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
-            ProposalCodex::create_set_election_parameters_proposal(
-                RawOrigin::Signed(account_id.clone().into()).into(),
-                member_id as u64,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Runtime>>::from(200_000_u32)),
-                election_parameters,
-            )
-        });
-        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
-
-        assert_eq!(Election::announcing_period(), 14400);
     });
 }
 
