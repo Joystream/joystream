@@ -14,10 +14,6 @@
   dependencies:
     "@open-web3/orml-type-definitions" "^0.5.1"
 
-"@alexandria/types@link:types":
-  version "0.0.0"
-  uid ""
-
 "@apidevtools/json-schema-ref-parser@9.0.6", "@apidevtools/json-schema-ref-parser@^9.0.6":
   version "9.0.6"
   resolved "https://registry.yarnpkg.com/@apidevtools/json-schema-ref-parser/-/json-schema-ref-parser-9.0.6.tgz#5d9000a3ac1fd25404da886da6b266adcd99cf1c"
