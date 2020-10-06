@@ -22,7 +22,6 @@ pub type ProposalDetailsOf<T> = ProposalDetails<
     crate::BalanceOfGovernanceCurrency<T>,
     <T as system::Trait>::BlockNumber,
     <T as system::Trait>::AccountId,
-    crate::MemberId<T>,
     working_group::OpeningId<T>,
     working_group::ApplicationId<T>,
     crate::BalanceOf<T>,
@@ -37,7 +36,6 @@ pub enum ProposalDetails<
     CurrencyBalance,
     BlockNumber,
     AccountId,
-    MemberId,
     OpeningId,
     ApplicationId,
     StakeBalance,
@@ -54,12 +52,6 @@ pub enum ProposalDetails<
 
     /// Balance and destination account for the `spending` proposal
     Spending(MintedBalance, AccountId),
-
-    /// New leader memberId and account_id for the `set lead` proposal
-    SetLead(Option<(MemberId, AccountId)>),
-
-    /// Balance for the `set content working group mint capacity` proposal
-    SetContentWorkingGroupMintCapacity(MintedBalance),
 
     /// ********** Deprecated during the Nicaea release.
     /// It is kept only for backward compatibility in the Pioneer. **********
@@ -106,7 +98,6 @@ impl<
         CurrencyBalance,
         BlockNumber,
         AccountId,
-        MemberId,
         OpeningId,
         ApplicationId,
         StakeBalance,
@@ -117,7 +108,6 @@ impl<
         CurrencyBalance,
         BlockNumber,
         AccountId,
-        MemberId,
         OpeningId,
         ApplicationId,
         StakeBalance,
@@ -246,12 +236,6 @@ pub struct ProposalsConfigParameters {
     /// 'Set election parameters' proposal grace period
     pub set_election_parameters_proposal_grace_period: u32,
 
-    /// 'Set content working group mint capacity' proposal voting period
-    pub set_content_working_group_mint_capacity_proposal_voting_period: u32,
-
-    /// 'Set content working group mint capacity' proposal grace period
-    pub set_content_working_group_mint_capacity_proposal_grace_period: u32,
-
     /// 'Set lead' proposal voting period
     pub set_lead_proposal_voting_period: u32,
 
@@ -324,8 +308,6 @@ impl Default for ProposalsConfigParameters {
             text_proposal_grace_period: 0u32,
             set_election_parameters_proposal_voting_period: 72000u32,
             set_election_parameters_proposal_grace_period: 201_601_u32,
-            set_content_working_group_mint_capacity_proposal_voting_period: 43200u32,
-            set_content_working_group_mint_capacity_proposal_grace_period: 0u32,
             set_lead_proposal_voting_period: 43200u32,
             set_lead_proposal_grace_period: 0u32,
             spending_proposal_voting_period: 72000u32,
@@ -364,8 +346,6 @@ impl ProposalsConfigParameters {
             text_proposal_grace_period: 0,
             set_election_parameters_proposal_voting_period: voting_period,
             set_election_parameters_proposal_grace_period: grace_period,
-            set_content_working_group_mint_capacity_proposal_voting_period: voting_period,
-            set_content_working_group_mint_capacity_proposal_grace_period: 0,
             set_lead_proposal_voting_period: voting_period,
             set_lead_proposal_grace_period: 0,
             spending_proposal_voting_period: voting_period,

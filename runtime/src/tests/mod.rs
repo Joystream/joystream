@@ -1,6 +1,7 @@
 //! The Joystream Substrate Node runtime integration tests.
 
 #![cfg(test)]
+#[macro_use]
 
 mod proposals_integration;
 mod storage_integration;
