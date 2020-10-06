@@ -72,15 +72,6 @@ Always format your rust code with `cargo fmt` before committing:
 cargo fmt --all
 ```
 
-### Integration tests
-
-```bash
-./scripts/run-dev-chain.sh
-yarn workspace joystream-testing test
-```
-
-To run the integration tests with a different chain, you can omit the step of running the local development chain and simply set the node URL using `NODE_URL` environment variable.
-
 ### Installing a release build
 
 If you are building a tagged release from `master` branch and want to install the executable to your path follow the step below.

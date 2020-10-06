@@ -26,10 +26,12 @@ import election from './joy-election';
 import proposals from './joy-proposals';
 import roles from './joy-roles';
 import forum from './joy-forum';
+import tokenomics from './joy-tokenomics';
 
 export default function create (t: <T = string> (key: string, text: string, options: { ns: string }) => T): Routes {
   return appSettings.uiMode === 'light'
     ? [
+      tokenomics(t),
       members(t),
       roles(t),
       election(t),
@@ -45,6 +47,7 @@ export default function create (t: <T = string> (key: string, text: string, opti
       privacyPolicy(t)
     ]
     : [
+      tokenomics(t),
       members(t),
       roles(t),
       election(t),

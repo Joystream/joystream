@@ -15,6 +15,8 @@ use crate::*;
 use crate::{BalanceOf, Error, ProposalDetails};
 pub use mock::*;
 
+use strum::IntoEnumIterator;
+
 pub(crate) fn increase_total_balance_issuance(balance: u64) {
     increase_total_balance_issuance_using_account_id(999, balance);
 }
@@ -39,7 +41,7 @@ where
     invalid_stake_call: InvalidStakeCall,
     successful_call: SuccessfulCall,
     proposal_parameters: ProposalParameters<u64, u64>,
-    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64, u64, u64, u64>,
+    proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64, u64, u64>,
 }
 
 impl<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
@@ -279,83 +281,6 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
 }
 
 #[test]
-fn create_content_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-
-        assert_eq!(
-            ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
-                RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(50000u32)),
-                (crate::CONTENT_WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
-                None,
-            ),
-            Err(Error::<Test>::InvalidContentWorkingGroupMintCapacity.into())
-        );
-    });
-}
-
-#[test]
-fn create_set_content_working_group_mint_capacity_proposal_common_checks_succeed() {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
-
-        let proposal_fixture = ProposalTestFixture {
-            insufficient_rights_call: || {
-                ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
-                    RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    0,
-                    None,
-                )
-            },
-            empty_stake_call: || {
-                ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    0,
-                    None,
-                )
-            },
-            invalid_stake_call: || {
-                ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
-                    0,
-                    None,
-                )
-            },
-            successful_call: || {
-                ProposalCodex::create_set_content_working_group_mint_capacity_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(50000u32)),
-                    10,
-                    None,
-                )
-            },
-            proposal_parameters: crate::proposal_types::parameters::set_content_working_group_mint_capacity_proposal::<Test>(),
-            proposal_details: ProposalDetails::SetContentWorkingGroupMintCapacity(10),
-        };
-        proposal_fixture.check_all();
-    });
-}
-
-#[test]
 fn create_spending_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
@@ -448,90 +373,6 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
             ),
             Err(Error::<Test>::InvalidSpendingProposalBalance.into())
         );
-    });
-}
-
-#[test]
-fn create_set_lead_proposal_fails_with_proposed_councilor() {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-
-        let lead_account_id = 20;
-        <governance::council::Module<Test>>::set_council(
-            RawOrigin::Root.into(),
-            vec![lead_account_id],
-        )
-        .unwrap();
-
-        assert_eq!(
-            ProposalCodex::create_set_lead_proposal(
-                RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(1250u32)),
-                Some((20, lead_account_id)),
-                None,
-            ),
-            Err(Error::<Test>::InvalidSetLeadParameterCannotBeCouncilor.into())
-        );
-    });
-}
-
-#[test]
-fn create_set_lead_proposal_common_checks_succeed() {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
-
-        let proposal_fixture = ProposalTestFixture {
-            insufficient_rights_call: || {
-                ProposalCodex::create_set_lead_proposal(
-                    RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    Some((20, 10)),
-                    None,
-                )
-            },
-            empty_stake_call: || {
-                ProposalCodex::create_set_lead_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    Some((20, 10)),
-                    None,
-                )
-            },
-            invalid_stake_call: || {
-                ProposalCodex::create_set_lead_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
-                    Some((20, 10)),
-                    None,
-                )
-            },
-            successful_call: || {
-                ProposalCodex::create_set_lead_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(50000u32)),
-                    Some((20, 10)),
-                    None,
-                )
-            },
-            proposal_parameters: crate::proposal_types::parameters::set_lead_proposal::<Test>(),
-            proposal_details: ProposalDetails::SetLead(Some((20, 10))),
-        };
-        proposal_fixture.check_all();
     });
 }
 
@@ -660,22 +501,6 @@ fn set_default_proposal_parameters_succeeded() {
             p.text_proposal_grace_period as u64
         );
         assert_eq!(
-            <SetContentWorkingGroupMintCapacityProposalVotingPeriod<Test>>::get(),
-            p.set_content_working_group_mint_capacity_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <SetContentWorkingGroupMintCapacityProposalGracePeriod<Test>>::get(),
-            p.set_content_working_group_mint_capacity_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <SetLeadProposalVotingPeriod<Test>>::get(),
-            p.set_lead_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <SetLeadProposalGracePeriod<Test>>::get(),
-            p.set_lead_proposal_grace_period as u64
-        );
-        assert_eq!(
             <SpendingProposalVotingPeriod<Test>>::get(),
             p.spending_proposal_voting_period as u64
         );
@@ -752,12 +577,21 @@ fn set_default_proposal_parameters_succeeded() {
 
 #[test]
 fn create_add_working_group_leader_opening_proposal_common_checks_succeed() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_add_working_group_leader_opening_proposal_common_checks_succeed(group);
+    }
+}
+
+fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
+    working_group: WorkingGroup,
+) {
     initial_test_ext().execute_with(|| {
         let add_opening_parameters = AddOpeningParameters {
             activate_at: ActivateOpeningAt::CurrentBlock,
             commitment: OpeningPolicyCommitment::default(),
             human_readable_text: b"some text".to_vec(),
-            working_group: WorkingGroup::Storage,
+            working_group,
         };
 
         increase_total_balance_issuance_using_account_id(1, 500000);
@@ -818,6 +652,17 @@ fn create_add_working_group_leader_opening_proposal_common_checks_succeed() {
 
 #[test]
 fn create_begin_review_working_group_leader_applications_proposal_common_checks_succeed() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_begin_review_working_group_leader_applications_proposal_common_checks_succeed(
+            group,
+        );
+    }
+}
+
+fn run_create_begin_review_working_group_leader_applications_proposal_common_checks_succeed(
+    working_group: WorkingGroup,
+) {
     initial_test_ext().execute_with(|| {
         let opening_id = 1; // random opening id.
 
@@ -832,8 +677,8 @@ fn create_begin_review_working_group_leader_applications_proposal_common_checks_
                     b"body".to_vec(),
                     None,
                     opening_id,
-                    WorkingGroup::Storage,
-                    None,
+                    working_group,
+ 					None,
                 )
             },
             empty_stake_call: || {
@@ -844,8 +689,8 @@ fn create_begin_review_working_group_leader_applications_proposal_common_checks_
                     b"body".to_vec(),
                     None,
                     opening_id,
-                    WorkingGroup::Storage,
-                    None,
+                    working_group,
+ 					None,
                 )
             },
             invalid_stake_call: || {
@@ -856,8 +701,8 @@ fn create_begin_review_working_group_leader_applications_proposal_common_checks_
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     opening_id,
-                    WorkingGroup::Storage,
-                    None,
+                    working_group,
+ 					None,
                 )
             },
             successful_call: || {
@@ -868,15 +713,15 @@ fn create_begin_review_working_group_leader_applications_proposal_common_checks_
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(25000u32)),
                     opening_id,
-                    WorkingGroup::Storage,
-                    None,
+                    working_group,
+ 					None,
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::begin_review_working_group_leader_applications_proposal::<
                 Test,
             >(),
             proposal_details: ProposalDetails::BeginReviewWorkingGroupLeaderApplications(opening_id,
-                WorkingGroup::Storage),
+                working_group),
         };
         proposal_fixture.check_all();
     });
@@ -884,6 +729,15 @@ fn create_begin_review_working_group_leader_applications_proposal_common_checks_
 
 #[test]
 fn create_fill_working_group_leader_opening_proposal_common_checks_succeed() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(group);
+    }
+}
+
+fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
+    working_group: WorkingGroup,
+) {
     initial_test_ext().execute_with(|| {
         let opening_id = 1; // random opening id.
 
@@ -891,7 +745,7 @@ fn create_fill_working_group_leader_opening_proposal_common_checks_succeed() {
             opening_id,
             successful_application_id: 1,
             reward_policy: None,
-            working_group: WorkingGroup::Storage,
+            working_group,
         };
 
         increase_total_balance_issuance_using_account_id(1, 500000);
@@ -952,6 +806,15 @@ fn create_fill_working_group_leader_opening_proposal_common_checks_succeed() {
 
 #[test]
 fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_working_group_mint_capacity_proposal_fails_with_invalid_parameters(group);
+    }
+}
+
+fn run_create_working_group_mint_capacity_proposal_fails_with_invalid_parameters(
+    working_group: WorkingGroup,
+) {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
 
@@ -963,7 +826,7 @@ fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
                 b"body".to_vec(),
                 Some(<BalanceOf<Test>>::from(50000u32)),
                 (crate::WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
-                WorkingGroup::Storage,
+                working_group,
                 None,
             ),
             Err(Error::<Test>::InvalidWorkingGroupMintCapacity.into())
@@ -973,6 +836,15 @@ fn create_working_group_mint_capacity_proposal_fails_with_invalid_parameters() {
 
 #[test]
 fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(group);
+    }
+}
+
+fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
+    working_group: WorkingGroup,
+) {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
 
@@ -985,7 +857,7 @@ fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     None,
                     0,
-                    WorkingGroup::Storage,
+                    working_group,
                     None,
                 )
             },
@@ -997,7 +869,7 @@ fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     None,
                     0,
-                    WorkingGroup::Storage,
+                    working_group,
                     None,
                 )
             },
@@ -1009,7 +881,7 @@ fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     0,
-                    WorkingGroup::Storage,
+                    working_group,
                     None,
                 )
             },
@@ -1021,17 +893,14 @@ fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(50000u32)),
                     10,
-                    WorkingGroup::Storage,
+                    working_group,
                     None,
                 )
             },
             proposal_parameters:
                 crate::proposal_types::parameters::set_working_group_mint_capacity_proposal::<Test>(
                 ),
-            proposal_details: ProposalDetails::SetWorkingGroupMintCapacity(
-                10,
-                WorkingGroup::Storage,
-            ),
+            proposal_details: ProposalDetails::SetWorkingGroupMintCapacity(10, working_group),
         };
         proposal_fixture.check_all();
     });
@@ -1039,6 +908,15 @@ fn create_set_working_group_mint_capacity_proposal_common_checks_succeed() {
 
 #[test]
 fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed(group);
+    }
+}
+
+fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed(
+    working_group: WorkingGroup,
+) {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
 
@@ -1052,7 +930,7 @@ fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
                     None,
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    working_group,
                     None,
                 )
             },
@@ -1065,7 +943,7 @@ fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
                     None,
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    working_group,
                     None,
                 )
             },
@@ -1078,7 +956,7 @@ fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    working_group,
                     None,
                 )
             },
@@ -1091,7 +969,7 @@ fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(50000u32)),
                     10,
                     10,
-                    WorkingGroup::Storage,
+                    working_group,
                     None,
                 )
             },
@@ -1102,7 +980,7 @@ fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
             proposal_details: ProposalDetails::DecreaseWorkingGroupLeaderStake(
                 10,
                 10,
-                WorkingGroup::Storage,
+                working_group,
             ),
         };
         proposal_fixture.check_all();
@@ -1111,6 +989,15 @@ fn create_decrease_working_group_leader_stake_proposal_common_checks_succeed() {
 
 #[test]
 fn create_slash_working_group_leader_stake_proposal_common_checks_succeed() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(group);
+    }
+}
+
+fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
+    working_group: WorkingGroup,
+) {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
 
@@ -1123,9 +1010,8 @@ fn create_slash_working_group_leader_stake_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     None,
                     0,
-                    10,
-                    WorkingGroup::Storage,
-                    None,
+                    10,                    working_group,
+ 					None,
                 )
             },
             empty_stake_call: || {
@@ -1137,8 +1023,8 @@ fn create_slash_working_group_leader_stake_proposal_common_checks_succeed() {
                     None,
                     0,
                     10,
-                    WorkingGroup::Storage,
-                    None,
+                    working_group,
+ 					None,
                 )
             },
             invalid_stake_call: || {
@@ -1150,8 +1036,8 @@ fn create_slash_working_group_leader_stake_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     0,
                     10,
-                    WorkingGroup::Storage,
-                    None,
+                    working_group,
+ 					None,
                 )
             },
             successful_call: || {
@@ -1163,8 +1049,8 @@ fn create_slash_working_group_leader_stake_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(50000u32)),
                     10,
                     10,
-                    WorkingGroup::Storage,
-                    None,
+                    working_group,
+ 					None,
                 )
             },
             proposal_parameters:
@@ -1174,7 +1060,7 @@ fn create_slash_working_group_leader_stake_proposal_common_checks_succeed() {
             proposal_details: ProposalDetails::SlashWorkingGroupLeaderStake(
                 10,
                 10,
-                WorkingGroup::Storage,
+                working_group,
             ),
         };
         proposal_fixture.check_all();
@@ -1183,6 +1069,13 @@ fn create_slash_working_group_leader_stake_proposal_common_checks_succeed() {
 
 #[test]
 fn slash_stake_with_zero_staking_balance_fails() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_slash_stake_with_zero_staking_balance_fails(group);
+    }
+}
+
+fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
 
@@ -1202,7 +1095,7 @@ fn slash_stake_with_zero_staking_balance_fails() {
                 Some(<BalanceOf<Test>>::from(50000u32)),
                 10,
                 0,
-                WorkingGroup::Storage,
+                working_group,
                 None,
             ),
             Err(Error::<Test>::SlashingStakeIsZero.into())
@@ -1212,6 +1105,13 @@ fn slash_stake_with_zero_staking_balance_fails() {
 
 #[test]
 fn decrease_stake_with_zero_staking_balance_fails() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_decrease_stake_with_zero_staking_balance_fails(group);
+    }
+}
+
+fn run_decrease_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance_using_account_id(1, 500000);
 
@@ -1231,7 +1131,7 @@ fn decrease_stake_with_zero_staking_balance_fails() {
                 Some(<BalanceOf<Test>>::from(50000u32)),
                 10,
                 0,
-                WorkingGroup::Storage,
+                working_group,
                 None,
             ),
             Err(Error::<Test>::DecreasingStakeIsZero.into())
@@ -1241,6 +1141,15 @@ fn decrease_stake_with_zero_staking_balance_fails() {
 
 #[test]
 fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_set_working_group_leader_reward_proposal_common_checks_succeed(group);
+    }
+}
+
+fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
+    working_group: WorkingGroup,
+) {
     initial_test_ext().execute_with(|| {
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {
@@ -1252,7 +1161,7 @@ fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
                     None,
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    working_group,
                     None,
                 )
             },
@@ -1265,7 +1174,7 @@ fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
                     None,
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    working_group,
                     None,
                 )
             },
@@ -1278,7 +1187,7 @@ fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     0,
                     10,
-                    WorkingGroup::Storage,
+                    working_group,
                     None,
                 )
             },
@@ -1291,18 +1200,14 @@ fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(50000u32)),
                     10,
                     10,
-                    WorkingGroup::Storage,
+                    working_group,
                     None,
                 )
             },
             proposal_parameters:
                 crate::proposal_types::parameters::set_working_group_leader_reward_proposal::<Test>(
                 ),
-            proposal_details: ProposalDetails::SetWorkingGroupLeaderReward(
-                10,
-                10,
-                WorkingGroup::Storage,
-            ),
+            proposal_details: ProposalDetails::SetWorkingGroupLeaderReward(10, 10, working_group),
         };
         proposal_fixture.check_all();
     });
@@ -1310,6 +1215,15 @@ fn create_set_working_group_leader_reward_proposal_common_checks_succeed() {
 
 #[test]
 fn create_terminate_working_group_leader_role_proposal_common_checks_succeed() {
+    // This uses strum crate for enum iteration
+    for group in WorkingGroup::iter() {
+        run_create_terminate_working_group_leader_role_proposal_common_checks_succeed(group);
+    }
+}
+
+fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed(
+    working_group: WorkingGroup,
+) {
     initial_test_ext().execute_with(|| {
         increase_total_balance_issuance(500000);
 
@@ -1317,7 +1231,7 @@ fn create_terminate_working_group_leader_role_proposal_common_checks_succeed() {
             worker_id: 10,
             rationale: Vec::new(),
             slash: false,
-            working_group: WorkingGroup::Storage,
+            working_group,
         };
 
         let proposal_fixture = ProposalTestFixture {

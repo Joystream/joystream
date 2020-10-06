@@ -41,21 +41,6 @@ pub(crate) fn text_proposal<T: crate::Trait>() -> ProposalParameters<T::BlockNum
     }
 }
 
-// Proposal parameters for the 'Set content working group mint capacity' proposal
-pub(crate) fn set_content_working_group_mint_capacity_proposal<T: crate::Trait>(
-) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
-    ProposalParameters {
-        voting_period: <Module<T>>::set_content_working_group_mint_capacity_proposal_voting_period(
-        ),
-        grace_period: <Module<T>>::set_content_working_group_mint_capacity_proposal_grace_period(),
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 75,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(<BalanceOf<T>>::from(50000u32)),
-    }
-}
-
 // Proposal parameters for the 'Spending' proposal
 pub(crate) fn spending_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
@@ -67,20 +52,6 @@ pub(crate) fn spending_proposal<T: crate::Trait>(
         slashing_quorum_percentage: 60,
         slashing_threshold_percentage: 80,
         required_stake: Some(<BalanceOf<T>>::from(25000u32)),
-    }
-}
-
-// Proposal parameters for the 'Set lead' proposal
-pub(crate) fn set_lead_proposal<T: crate::Trait>(
-) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
-    ProposalParameters {
-        voting_period: <Module<T>>::set_lead_proposal_voting_period(),
-        grace_period: <Module<T>>::set_lead_proposal_grace_period(),
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 75,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(<BalanceOf<T>>::from(50000u32)),
     }
 }
 

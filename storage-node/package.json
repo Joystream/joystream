@@ -34,7 +34,7 @@
     "test": "wsrun --serial test",
     "lint": "eslint --ext .js,.ts --ignore-path .gitignore .",
     "build": "yarn workspace @joystream/storage-cli run build",
-    "checks": "yarn lint && prettier . --check",
+    "checks": "prettier . --check && yarn lint",
     "format": "prettier . --write"
   },
   "devDependencies": {

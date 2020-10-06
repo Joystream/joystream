@@ -65,13 +65,18 @@ pub use versioned_store;
 pub use versioned_store_permissions;
 pub use working_group;
 
+pub use content_directory;
+pub use content_directory::{
+    HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
+};
+
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
     impl_name: create_runtime_str!("joystream-node"),
     authoring_version: 7,
     spec_version: 5,
-    impl_version: 1,
+    impl_version: 2,
     apis: crate::runtime_api::EXPORTED_RUNTIME_API_VERSIONS,
     transaction_version: 1,
 };
@@ -380,6 +385,48 @@ impl versioned_store_permissions::Trait for Runtime {
         integration::versioned_store_permissions::ContentLeadOrSudoKeyCanCreateClasses;
 }
 
+type EntityId = <Runtime as content_directory::Trait>::EntityId;
+
+parameter_types! {
+    pub const PropertyNameLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 49);
+    pub const PropertyDescriptionLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 500);
+    pub const ClassNameLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 49);
+    pub const ClassDescriptionLengthConstraint: InputValidationLengthConstraint = InputValidationLengthConstraint::new(1, 500);
+    pub const MaxNumberOfClasses: MaxNumber = 100;
+    pub const MaxNumberOfMaintainersPerClass: MaxNumber = 10;
+    pub const MaxNumberOfSchemasPerClass: MaxNumber = 20;
+    pub const MaxNumberOfPropertiesPerSchema: MaxNumber = 40;
+    pub const MaxNumberOfEntitiesPerClass: MaxNumber = 400;
+    pub const MaxNumberOfCuratorsPerGroup: MaxNumber = 50;
+    pub const MaxNumberOfOperationsDuringAtomicBatching: MaxNumber = 500;
+    pub const VecMaxLengthConstraint: VecMaxLength = 200;
+    pub const TextMaxLengthConstraint: TextMaxLength = 5000;
+    pub const HashedTextMaxLengthConstraint: HashedTextMaxLength = Some(25000);
+    pub const IndividualEntitiesCreationLimit: EntityId = 50;
+}
+
+impl content_directory::Trait for Runtime {
+    type Event = Event;
+    type Nonce = u64;
+    type ClassId = u64;
+    type EntityId = u64;
+    type PropertyNameLengthConstraint = PropertyNameLengthConstraint;
+    type PropertyDescriptionLengthConstraint = PropertyDescriptionLengthConstraint;
+    type ClassNameLengthConstraint = ClassNameLengthConstraint;
+    type ClassDescriptionLengthConstraint = ClassDescriptionLengthConstraint;
+    type MaxNumberOfClasses = MaxNumberOfClasses;
+    type MaxNumberOfMaintainersPerClass = MaxNumberOfMaintainersPerClass;
+    type MaxNumberOfSchemasPerClass = MaxNumberOfSchemasPerClass;
+    type MaxNumberOfPropertiesPerSchema = MaxNumberOfPropertiesPerSchema;
+    type MaxNumberOfEntitiesPerClass = MaxNumberOfEntitiesPerClass;
+    type MaxNumberOfCuratorsPerGroup = MaxNumberOfCuratorsPerGroup;
+    type MaxNumberOfOperationsDuringAtomicBatching = MaxNumberOfOperationsDuringAtomicBatching;
+    type VecMaxLengthConstraint = VecMaxLengthConstraint;
+    type TextMaxLengthConstraint = TextMaxLengthConstraint;
+    type HashedTextMaxLengthConstraint = HashedTextMaxLengthConstraint;
+    type IndividualEntitiesCreationLimit = IndividualEntitiesCreationLimit;
+}
+
 impl hiring::Trait for Runtime {
     type OpeningId = u64;
     type ApplicationId = u64;
@@ -406,10 +453,10 @@ impl stake::Trait for Runtime {
     type Currency = <Self as common::currency::GovernanceCurrency>::Currency;
     type StakePoolId = StakePoolId;
     type StakingEventsHandler = (
-        crate::integration::content_working_group::ContentWorkingGroupStakingEventHandler,
+        crate::integration::proposals::StakingEventsHandler<Self>,
         (
-            crate::integration::proposals::StakingEventsHandler<Self>,
-            crate::integration::working_group::StakingEventsHandler<Self>,
+            crate::integration::working_group::ContentDirectoryWGStakingEventsHandler<Self>,
+            crate::integration::working_group::StorageWgStakingEventsHandler<Self>,
         ),
     );
     type StakeId = u64;
@@ -464,7 +511,7 @@ impl storage::data_object_storage_registry::Trait for Runtime {
 
 impl membership::Trait for Runtime {
     type Event = Event;
-    type MemberId = u64;
+    type MemberId = MemberId;
     type PaidTermId = u64;
     type SubscriptionId = u64;
     type ActorId = ActorId;
@@ -480,11 +527,19 @@ impl forum::Trait for Runtime {
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
+// The content directory working group instance alias.
+pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
+
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
+}
+
+impl working_group::Trait<ContentDirectoryWorkingGroupInstance> for Runtime {
     type Event = Event;
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
@@ -614,6 +669,7 @@ construct_runtime!(
         RecurringRewards: recurring_rewards::{Module, Call, Storage},
         Hiring: hiring::{Module, Call, Storage},
         ContentWorkingGroup: content_wg::{Module, Call, Storage, Event<T>, Config<T>},
+        ContentDirectory: content_directory::{Module, Call, Storage, Event<T>, Config<T>},
         // --- Storage
         DataObjectTypeRegistry: data_object_type_registry::{Module, Call, Storage, Event<T>, Config<T>},
         DataDirectory: data_directory::{Module, Call, Storage, Event<T>, Config<T>},
@@ -626,5 +682,6 @@ construct_runtime!(
         // --- Working groups
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
+        ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
     }
 );
