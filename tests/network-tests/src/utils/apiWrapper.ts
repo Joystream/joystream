@@ -989,12 +989,6 @@ export class ApiWrapper {
     })
   }
 
-  public async getContentWorkingGroupMintCapacity(): Promise<BN> {
-    const mintId: MintId = await this.api.query.contentWorkingGroup.mint<MintId>()
-    const mint: Mint = await this.api.query.minting.mints<Mint>(mintId)
-    return mint.capacity
-  }
-
   public async getWorkingGroupMintCapacity(module: WorkingGroups): Promise<BN> {
     const mintId: MintId = await this.api.query[module].mint<MintId>()
     const mint: Mint = await this.api.query.minting.mints<Mint>(mintId)
@@ -1003,12 +997,6 @@ export class ApiWrapper {
 
   public getValidatorCount(): Promise<BN> {
     return this.api.query.staking.validatorCount<u32>()
-  }
-
-  public async getCurrentLeadAddress(): Promise<string> {
-    const leadId: Option<LeadId> = await this.api.query.contentWorkingGroup.currentLeadId<Option<LeadId>>()
-    const lead = await this.api.query.contentWorkingGroup.leadById<Lead>(leadId.unwrap())
-    return lead.role_account.toString()
   }
 
   public async isStorageProvider(address: string): Promise<boolean> {

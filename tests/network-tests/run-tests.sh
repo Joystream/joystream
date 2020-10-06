@@ -57,4 +57,4 @@ function cleanup() {
 trap cleanup EXIT
 
 # Execute the tests
-yarn workspace network-tests test
+time DEBUG=* yarn workspace network-tests scenario-full

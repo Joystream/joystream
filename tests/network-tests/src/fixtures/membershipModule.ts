@@ -1,4 +1,4 @@
-import { ApiWrapper } from '../../utils/apiWrapper'
+import { ApiWrapper } from '../utils/apiWrapper'
 import { KeyringPair } from '@polkadot/keyring/types'
 import BN from 'bn.js'
 import { assert } from 'chai'

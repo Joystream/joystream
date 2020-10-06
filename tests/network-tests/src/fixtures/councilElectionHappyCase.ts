@@ -1,8 +1,7 @@
 import { Fixture } from './interfaces/fixture'
 import { BuyMembershipHappyCaseFixture } from './membershipModule'
-import tap from 'tap'
 import { ElectCouncilFixture } from './councilElectionModule'
-import { ApiWrapper } from '../../utils/apiWrapper'
+import { ApiWrapper } from '../utils/apiWrapper'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { PaidTermId } from '@joystream/types/members'
 import BN from 'bn.js'
@@ -44,7 +43,7 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
       this.membersKeyPairs,
       this.paidTerms
     )
-    tap.test('Creating first set of members', async () => firstMemberSetFixture.runner(false))
+    await firstMemberSetFixture.runner(false)
 
     const secondMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
       this.apiWrapper,
@@ -52,7 +51,7 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
       this.councilKeyPairs,
       this.paidTerms
     )
-    tap.test('Creating second set of members', async () => secondMemberSetFixture.runner(false))
+    await secondMemberSetFixture.runner(false)
 
     const electCouncilFixture: ElectCouncilFixture = new ElectCouncilFixture(
       this.apiWrapper,
@@ -63,6 +62,6 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
       this.greaterStake,
       this.lesserStake
     )
-    tap.test('Elect council', async () => electCouncilFixture.runner(false))
+    await electCouncilFixture.runner(false)
   }
 }

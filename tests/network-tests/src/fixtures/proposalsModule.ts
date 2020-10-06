@@ -1,5 +1,5 @@
 import { KeyringPair } from '@polkadot/keyring/types'
-import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
+import { ApiWrapper, WorkingGroups } from '../utils/apiWrapper'
 import { v4 as uuid } from 'uuid'
 import BN from 'bn.js'
 import { ProposalId } from '@joystream/types/proposals'
@@ -7,7 +7,7 @@ import { Fixture } from './interfaces/fixture'
 import { assert } from 'chai'
 import { ApplicationId, OpeningId } from '@joystream/types/hiring'
 import { WorkerId } from '@joystream/types/working-group'
-import { Utils } from '../../utils/utils'
+import { Utils } from '../utils/utils'
 
 export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
   private apiWrapper: ApiWrapper
@@ -669,71 +669,6 @@ export class ElectionParametersProposalFixture implements Fixture {
   }
 }
 
-export class SetLeadProposalFixture implements Fixture {
-  private apiWrapper: ApiWrapper
-  private membersKeyPairs: KeyringPair[]
-  private councilKeyPairs: KeyringPair[]
-  private treasury: KeyringPair
-
-  constructor(
-    apiWrapper: ApiWrapper,
-    membersKeyPairs: KeyringPair[],
-    councilKeyPairs: KeyringPair[],
-    treasury: KeyringPair
-  ) {
-    this.apiWrapper = apiWrapper
-    this.membersKeyPairs = membersKeyPairs
-    this.councilKeyPairs = councilKeyPairs
-    this.treasury = treasury
-  }
-
-  public async runner(expectFailure: boolean): Promise<void> {
-    // Setup
-    const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
-    const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8)
-    const runtimeVoteFee: BN = this.apiWrapper.estimateVoteForProposalFee()
-    await this.apiWrapper.transferBalanceToAccounts(this.treasury, this.councilKeyPairs, runtimeVoteFee)
-
-    // Proposal stake calculation
-    const proposalStake: BN = new BN(50000)
-    const proposalFee: BN = this.apiWrapper.estimateProposeLeadFee(
-      description,
-      description,
-      proposalStake,
-      this.treasury.address
-    )
-    await this.apiWrapper.transferBalance(
-      this.treasury,
-      this.membersKeyPairs[0].address,
-      proposalFee.add(proposalStake)
-    )
-
-    // Proposal creation
-    const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
-    await this.apiWrapper.proposeLead(
-      this.membersKeyPairs[0],
-      proposalTitle,
-      description,
-      proposalStake,
-      this.membersKeyPairs[1]
-    )
-    const proposalNumber: ProposalId = await proposalPromise
-
-    // Approving the proposal
-    const proposalExecutionPromise: Promise<void> = this.apiWrapper.expectProposalFinalized()
-    await this.apiWrapper.batchApproveProposal(this.councilKeyPairs, proposalNumber)
-    await proposalExecutionPromise
-    const newLead: string = await this.apiWrapper.getCurrentLeadAddress()
-    assert(
-      newLead === this.membersKeyPairs[1].address,
-      `New lead has unexpected value ${newLead}, expected ${this.membersKeyPairs[1].address}`
-    )
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
-  }
-}
-
 export class SpendingProposalFixture implements Fixture {
   private apiWrapper: ApiWrapper
   private membersKeyPairs: KeyringPair[]
@@ -923,75 +858,6 @@ export class ValidatorCountProposalFixture implements Fixture {
     assert(
       proposedValidatorCount.eq(newValidatorCount),
       `Validator count has unexpeccted value ${newValidatorCount}, expected ${proposedValidatorCount}`
-    )
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    }
-  }
-}
-
-export class ContentWorkingGroupMintCapacityProposalFixture implements Fixture {
-  private apiWrapper: ApiWrapper
-  private membersKeyPairs: KeyringPair[]
-  private councilKeyPairs: KeyringPair[]
-  private treasury: KeyringPair
-  private mintingCapacityIncrement: BN
-
-  constructor(
-    apiWrapper: ApiWrapper,
-    membersKeyPairs: KeyringPair[],
-    councilKeyPairs: KeyringPair[],
-    treasury: KeyringPair,
-    mintingCapacityIncrement: BN
-  ) {
-    this.apiWrapper = apiWrapper
-    this.membersKeyPairs = membersKeyPairs
-    this.councilKeyPairs = councilKeyPairs
-    this.treasury = treasury
-    this.mintingCapacityIncrement = mintingCapacityIncrement
-  }
-
-  public async runner(expectFailure: boolean): Promise<void> {
-    // Setup
-    const description = 'Mint capacity proposal which is used for API network testing'
-    const runtimeVoteFee: BN = this.apiWrapper.estimateVoteForProposalFee()
-    const initialMintingCapacity: BN = await this.apiWrapper.getContentWorkingGroupMintCapacity()
-
-    // Topping the balances
-    const proposalStake: BN = new BN(50000)
-    const runtimeProposalFee: BN = this.apiWrapper.estimateProposeContentWorkingGroupMintCapacityFee(
-      description,
-      description,
-      proposalStake,
-      initialMintingCapacity.add(this.mintingCapacityIncrement)
-    )
-    await this.apiWrapper.transferBalance(
-      this.treasury,
-      this.membersKeyPairs[0].address,
-      runtimeProposalFee.add(proposalStake)
-    )
-    await this.apiWrapper.transferBalanceToAccounts(this.treasury, this.councilKeyPairs, runtimeVoteFee)
-
-    // Proposal creation
-    const proposedMintingCapacity: BN = initialMintingCapacity.add(this.mintingCapacityIncrement)
-    const proposalPromise: Promise<ProposalId> = this.apiWrapper.expectProposalCreated()
-    await this.apiWrapper.proposeContentWorkingGroupMintCapacity(
-      this.membersKeyPairs[0],
-      'testing mint capacity' + uuid().substring(0, 8),
-      'mint capacity to test proposal functionality' + uuid().substring(0, 8),
-      proposalStake,
-      proposedMintingCapacity
-    )
-    const proposalNumber: ProposalId = await proposalPromise
-
-    // Approving mint capacity proposal
-    const mintCapacityPromise: Promise<void> = this.apiWrapper.expectProposalFinalized()
-    await this.apiWrapper.batchApproveProposal(this.councilKeyPairs, proposalNumber)
-    await mintCapacityPromise
-    const newMintingCapacity: BN = await this.apiWrapper.getContentWorkingGroupMintCapacity()
-    assert(
-      proposedMintingCapacity.eq(newMintingCapacity),
-      `Content working group has unexpected minting capacity ${newMintingCapacity}, expected ${proposedMintingCapacity}`
     )
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')

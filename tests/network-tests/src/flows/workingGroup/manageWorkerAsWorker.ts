@@ -1,9 +1,6 @@
-import { initConfig } from '../../utils/config'
-import { closeApi } from '../../utils/closeApi'
 import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
-import { WsProvider, Keyring } from '@polkadot/api'
+import { Keyring } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { setTestTimeout } from '../../utils/setTestTimeout'
 import {
   AddWorkerOpeningFixture,
   ApplyForOpeningFixture,
@@ -12,42 +9,35 @@ import {
   IncreaseStakeFixture,
   LeaveRoleFixture,
   UpdateRewardAccountFixture,
-} from '../fixtures/workingGroupModule'
+} from '../../fixtures/workingGroupModule'
 import { Utils } from '../../utils/utils'
 import BN from 'bn.js'
-import tap from 'tap'
 import { PaidTermId } from '@joystream/types/members'
 import { OpeningId } from '@joystream/types/hiring'
 import { DbService } from '../../services/dbService'
-import { LeaderHiringHappyCaseFixture } from '../fixtures/leaderHiringHappyCase'
+import { LeaderHiringHappyCaseFixture } from '../../fixtures/leaderHiringHappyCase'
 
-tap.mocha.describe('Manage worker as worker scenario', async () => {
-  initConfig()
-
-  const nodeUrl: string = process.env.NODE_URL!
-  const sudoUri: string = process.env.SUDO_ACCOUNT_URI!
+// Manage worker as worker
+export default async function manageWorkerAsWorker(apiWrapper: ApiWrapper, env: NodeJS.ProcessEnv, db: DbService) {
+  const sudoUri: string = env.SUDO_ACCOUNT_URI!
   const keyring = new Keyring({ type: 'sr25519' })
-  const db: DbService = DbService.getInstance()
-
-  const provider = new WsProvider(nodeUrl)
-  const apiWrapper: ApiWrapper = await ApiWrapper.create(provider)
   const sudo: KeyringPair = keyring.addFromUri(sudoUri)
 
-  const N: number = +process.env.WORKING_GROUP_N!
+  const N: number = +env.WORKING_GROUP_N!
   let nKeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const leadKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
 
-  const paidTerms: PaidTermId = apiWrapper.createPaidTermId(new BN(+process.env.MEMBERSHIP_PAID_TERMS!))
-  const applicationStake: BN = new BN(process.env.WORKING_GROUP_APPLICATION_STAKE!)
-  const roleStake: BN = new BN(process.env.WORKING_GROUP_ROLE_STAKE!)
-  const firstRewardInterval: BN = new BN(process.env.LONG_REWARD_INTERVAL!)
-  const rewardInterval: BN = new BN(process.env.LONG_REWARD_INTERVAL!)
-  const payoutAmount: BN = new BN(process.env.PAYOUT_AMOUNT!)
-  const unstakingPeriod: BN = new BN(process.env.STORAGE_WORKING_GROUP_UNSTAKING_PERIOD!)
-  const durationInBlocks = 38
+  const paidTerms: PaidTermId = apiWrapper.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
+  const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
+  const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
+  const firstRewardInterval: BN = new BN(env.LONG_REWARD_INTERVAL!)
+  const rewardInterval: BN = new BN(env.LONG_REWARD_INTERVAL!)
+  const payoutAmount: BN = new BN(env.PAYOUT_AMOUNT!)
+  const unstakingPeriod: BN = new BN(env.STORAGE_WORKING_GROUP_UNSTAKING_PERIOD!)
   const openingActivationDelay: BN = new BN(0)
 
-  setTestTimeout(apiWrapper, durationInBlocks)
+  // const durationInBlocks = 38
+  // setTestTimeout(apiWrapper, durationInBlocks)
 
   if (db.hasLeader(apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
     nKeyPairs = db.getMembers()
@@ -81,10 +71,12 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
     unstakingPeriod,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Add worker opening', async () => await addWorkerOpeningFixture.runner(false))
+  // Add worker opening
+  await addWorkerOpeningFixture.runner(false)
 
   let applyForWorkerOpeningFixture: ApplyForOpeningFixture
-  tap.test('First apply for worker opening', async () => {
+  // First apply for worker opening
+  await (async () => {
     applyForWorkerOpeningFixture = new ApplyForOpeningFixture(
       apiWrapper,
       nKeyPairs,
@@ -95,10 +87,11 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       WorkingGroups.StorageWorkingGroup
     )
     await applyForWorkerOpeningFixture.runner(false)
-  })
+  })()
 
   let beginApplicationReviewFixture: BeginApplicationReviewFixture
-  tap.test('Begin application review', async () => {
+  // Begin application review
+  await (async () => {
     beginApplicationReviewFixture = new BeginApplicationReviewFixture(
       apiWrapper,
       leadKeyPair[0],
@@ -107,10 +100,11 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       WorkingGroups.StorageWorkingGroup
     )
     await beginApplicationReviewFixture.runner(false)
-  })
+  })()
 
   let fillOpeningFixture: FillOpeningFixture
-  tap.test('Fill worker opening', async () => {
+  // Fill worker opening
+  await (async () => {
     fillOpeningFixture = new FillOpeningFixture(
       apiWrapper,
       nKeyPairs,
@@ -123,7 +117,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       WorkingGroups.StorageWorkingGroup
     )
     await fillOpeningFixture.runner(false)
-  })
+  })()
 
   const increaseStakeFixture: IncreaseStakeFixture = new IncreaseStakeFixture(
     apiWrapper,
@@ -131,7 +125,8 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
     sudo,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Increase worker stake', async () => await increaseStakeFixture.runner(false))
+  // Increase worker stake
+  await increaseStakeFixture.runner(false)
 
   const updateRewardAccountFixture: UpdateRewardAccountFixture = new UpdateRewardAccountFixture(
     apiWrapper,
@@ -140,7 +135,8 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
     sudo,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Update reward account', async () => await updateRewardAccountFixture.runner(false))
+  // Update reward account
+  await updateRewardAccountFixture.runner(false)
 
   const updateRoleAccountFixture: UpdateRewardAccountFixture = new UpdateRewardAccountFixture(
     apiWrapper,
@@ -149,7 +145,8 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
     sudo,
     WorkingGroups.StorageWorkingGroup
   )
-  tap.test('Update role account', async () => await updateRoleAccountFixture.runner(false))
+  // Update role account
+  await updateRoleAccountFixture.runner(false)
 
   if (!db.hasLeader(apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
     const leaveRoleFixture: LeaveRoleFixture = new LeaveRoleFixture(
@@ -158,8 +155,7 @@ tap.mocha.describe('Manage worker as worker scenario', async () => {
       sudo,
       WorkingGroups.StorageWorkingGroup
     )
-    tap.test('Leaving lead role', async () => await leaveRoleFixture.runner(false))
+    // Leaving lead role
+    await leaveRoleFixture.runner(false)
   }
-
-  closeApi(apiWrapper)
-})
+}

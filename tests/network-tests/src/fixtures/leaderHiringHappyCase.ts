@@ -1,5 +1,4 @@
 import { Fixture } from './interfaces/fixture'
-import tap from 'tap'
 import {
   AddLeaderOpeningFixture,
   ApplyForOpeningFixture,
@@ -7,7 +6,7 @@ import {
   FillLeaderOpeningFixture,
 } from './workingGroupModule'
 import { BuyMembershipHappyCaseFixture } from './membershipModule'
-import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
+import { ApiWrapper, WorkingGroups } from '../utils/apiWrapper'
 import { OpeningId } from '@joystream/types/hiring'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { PaidTermId } from '@joystream/types/members'
@@ -62,7 +61,8 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
       this.nKeyPairs,
       this.paidTerms
     )
-    tap.test('Creating a set of members', async () => happyCaseFixture.runner(false))
+    // Creating a set of members
+    await happyCaseFixture.runner(false)
 
     const leaderHappyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
       this.apiWrapper,
@@ -70,7 +70,8 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
       this.leadKeyPair,
       this.paidTerms
     )
-    tap.test('Buying membership for leader account', async () => leaderHappyCaseFixture.runner(false))
+    // Buying membership for leader account
+    await leaderHappyCaseFixture.runner(false)
 
     const addLeaderOpeningFixture: AddLeaderOpeningFixture = new AddLeaderOpeningFixture(
       this.apiWrapper,
@@ -81,10 +82,12 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
       this.openingActivationDelay,
       this.workingGroup
     )
-    tap.test('Add lead opening', async () => await addLeaderOpeningFixture.runner(false))
+    // Add lead opening
+    await addLeaderOpeningFixture.runner(false)
 
     let applyForLeaderOpeningFixture: ApplyForOpeningFixture
-    tap.test('Apply for lead opening', async () => {
+    // Apply for lead opening
+    await (async () => {
       applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
         this.apiWrapper,
         this.leadKeyPair,
@@ -95,10 +98,11 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
         this.workingGroup
       )
       await applyForLeaderOpeningFixture.runner(false)
-    })
+    })()
 
     let beginLeaderApplicationReviewFixture: BeginLeaderApplicationReviewFixture
-    tap.test('Begin lead application review', async () => {
+    // Begin lead application review
+    await (async () => {
       beginLeaderApplicationReviewFixture = new BeginLeaderApplicationReviewFixture(
         this.apiWrapper,
         this.sudo,
@@ -106,10 +110,11 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
         this.workingGroup
       )
       await beginLeaderApplicationReviewFixture.runner(false)
-    })
+    })()
 
     let fillLeaderOpeningFixture: FillLeaderOpeningFixture
-    tap.test('Fill lead opening', async () => {
+    // Fill lead opening
+    await (async () => {
       fillLeaderOpeningFixture = new FillLeaderOpeningFixture(
         this.apiWrapper,
         this.leadKeyPair,
@@ -121,6 +126,6 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
         this.workingGroup
       )
       await fillLeaderOpeningFixture.runner(false)
-    })
+    })()
   }
 }

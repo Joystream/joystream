@@ -1,10 +1,10 @@
-import { ApiWrapper } from '../../utils/apiWrapper'
+import { ApiWrapper } from '../utils/apiWrapper'
 import { KeyringPair } from '@polkadot/keyring/types'
 import BN from 'bn.js'
 import { assert } from 'chai'
 import { Seat } from '@joystream/types/council'
 import { v4 as uuid } from 'uuid'
-import { Utils } from '../../utils/utils'
+import { Utils } from '../utils/utils'
 import { Fixture } from './interfaces/fixture'
 
 export class ElectCouncilFixture implements Fixture {

@@ -4,7 +4,8 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "build": "tsc --noEmit",
-    "test": "yarn db-path-setup && tap --files src/tests/unknown.unknown src/tests/councilSetup.ts src/tests/proposals/*Test.ts src/tests/leaderSetup.ts src/tests/workingGroup/*Test.ts -T",
+    "run-tests": "./run-tests.sh",
+    "scenario-full": "yarn db-path-setup && ts-node src/scenarios/full.ts",
     "lint": "eslint . --quiet --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write ",
@@ -25,11 +26,9 @@
   "devDependencies": {
     "@polkadot/ts": "^0.3.14",
     "@types/chai": "^4.2.11",
-    "@types/tap": "^14.10.0",
     "@types/uuid": "^7.0.2",
     "chai": "^4.2.0",
     "prettier": "2.0.2",
-    "tap": "^14.10.7",
     "ts-node": "^8.8.1",
     "typescript": "^3.8.3"
   }
