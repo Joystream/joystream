@@ -1,4 +1,4 @@
-import { Fixture } from './interfaces/fixture'
+import { Fixture } from '../IFixture'
 import {
   AddLeaderOpeningFixture,
   ApplyForOpeningFixture,
@@ -6,14 +6,14 @@ import {
   FillLeaderOpeningFixture,
 } from './workingGroupModule'
 import { BuyMembershipHappyCaseFixture } from './membershipModule'
-import { ApiWrapper, WorkingGroups } from '../utils/apiWrapper'
+import { Api, WorkingGroups } from '../Api'
 import { OpeningId } from '@joystream/types/hiring'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { PaidTermId } from '@joystream/types/members'
 import BN from 'bn.js'
 
 export class LeaderHiringHappyCaseFixture implements Fixture {
-  private apiWrapper: ApiWrapper
+  private api: Api
   private sudo: KeyringPair
   private nKeyPairs: KeyringPair[]
   private leadKeyPair: KeyringPair[]
@@ -27,7 +27,7 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
   private workingGroup: WorkingGroups
 
   constructor(
-    apiWrapper: ApiWrapper,
+    api: Api,
     sudo: KeyringPair,
     nKeyPairs: KeyringPair[],
     leadKeyPair: KeyringPair[],
@@ -40,7 +40,7 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
     payoutAmount: BN,
     workingGroup: WorkingGroups
   ) {
-    this.apiWrapper = apiWrapper
+    this.api = api
     this.sudo = sudo
     this.nKeyPairs = nKeyPairs
     this.leadKeyPair = leadKeyPair
@@ -56,7 +56,7 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     const happyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
-      this.apiWrapper,
+      this.api,
       this.sudo,
       this.nKeyPairs,
       this.paidTerms
@@ -65,7 +65,7 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
     await happyCaseFixture.runner(false)
 
     const leaderHappyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
-      this.apiWrapper,
+      this.api,
       this.sudo,
       this.leadKeyPair,
       this.paidTerms
@@ -74,7 +74,7 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
     await leaderHappyCaseFixture.runner(false)
 
     const addLeaderOpeningFixture: AddLeaderOpeningFixture = new AddLeaderOpeningFixture(
-      this.apiWrapper,
+      this.api,
       this.nKeyPairs,
       this.sudo,
       this.applicationStake,
@@ -89,7 +89,7 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
     // Apply for lead opening
     await (async () => {
       applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
-        this.apiWrapper,
+        this.api,
         this.leadKeyPair,
         this.sudo,
         this.applicationStake,
@@ -104,7 +104,7 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
     // Begin lead application review
     await (async () => {
       beginLeaderApplicationReviewFixture = new BeginLeaderApplicationReviewFixture(
-        this.apiWrapper,
+        this.api,
         this.sudo,
         addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
         this.workingGroup
@@ -116,7 +116,7 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
     // Fill lead opening
     await (async () => {
       fillLeaderOpeningFixture = new FillLeaderOpeningFixture(
-        this.apiWrapper,
+        this.api,
         this.leadKeyPair,
         this.sudo,
         addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,

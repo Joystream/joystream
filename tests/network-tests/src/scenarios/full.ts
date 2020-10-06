@@ -1,7 +1,8 @@
 import { WsProvider } from '@polkadot/api'
-import { ApiWrapper } from '../utils/apiWrapper'
-import { initConfig } from '../utils/config'
-import { DbService } from '../services/dbService'
+import { Api } from '../Api'
+import { DbService } from '../DbService'
+import { config } from 'dotenv'
+import Debugger from 'debug'
 
 import creatingMemberships from '../flows/membership/creatingMemberships'
 import councilSetup from '../flows/councilSetup'
@@ -19,18 +20,17 @@ import workerApplicaionHappyCase from '../flows/workingGroup/workerApplicationHa
 import workerApplicationRejectionCase from '../flows/workingGroup/workerApplicationRejectionCase'
 import workerPayout from '../flows/workingGroup/workerPayout'
 
-import createDebug from 'debug'
-const debug = createDebug('scenario:full')
-
 const scenario = async () => {
+  const debug = Debugger('scenario:full')
+
   // Load env variables
-  initConfig()
+  config()
   const env = process.env
 
   // Connect api to the chain
   const nodeUrl: string = process.env.NODE_URL!
   const provider = new WsProvider(nodeUrl)
-  const api: ApiWrapper = await ApiWrapper.create(provider)
+  const api: Api = await Api.create(provider)
 
   // Create shared state instance
   const db: DbService = DbService.getInstance()

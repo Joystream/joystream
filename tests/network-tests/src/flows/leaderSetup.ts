@@ -1,17 +1,17 @@
-import { ApiWrapper, WorkingGroups } from '../utils/apiWrapper'
+import { Api, WorkingGroups } from '../Api'
 import { Keyring } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import BN from 'bn.js'
-import { Utils } from '../utils/utils'
+import { Utils } from '../utils'
 import { PaidTermId } from '@joystream/types/members'
-import { DbService } from '../services/dbService'
+import { DbService } from '../DbService'
 import { LeaderHiringHappyCaseFixture } from '../fixtures/leaderHiringHappyCase'
 
 // Worker application happy case scenario
-export default async function leaderSetup(apiWrapper: ApiWrapper, env: NodeJS.ProcessEnv, db: DbService) {
+export default async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, db: DbService) {
   const sudoUri: string = env.SUDO_ACCOUNT_URI!
   const keyring = new Keyring({ type: 'sr25519' })
-  if (db.hasLeader(apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
+  if (db.hasLeader(api.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
     return
   }
 
@@ -20,7 +20,7 @@ export default async function leaderSetup(apiWrapper: ApiWrapper, env: NodeJS.Pr
   const nKeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const leadKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
 
-  const paidTerms: PaidTermId = apiWrapper.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
+  const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
   const firstRewardInterval: BN = new BN(env.LONG_REWARD_INTERVAL!)
@@ -29,10 +29,10 @@ export default async function leaderSetup(apiWrapper: ApiWrapper, env: NodeJS.Pr
   const openingActivationDelay: BN = new BN(0)
 
   // const durationInBlocks = 48
-  // setTestTimeout(apiWrapper, durationInBlocks)
+  // setTestTimeout(api, durationInBlocks)
 
   const leaderHiringHappyCaseFixture: LeaderHiringHappyCaseFixture = new LeaderHiringHappyCaseFixture(
-    apiWrapper,
+    api,
     sudo,
     nKeyPairs,
     leadKeyPair,
@@ -48,5 +48,5 @@ export default async function leaderSetup(apiWrapper: ApiWrapper, env: NodeJS.Pr
   await leaderHiringHappyCaseFixture.runner(false)
 
   db.setMembers(nKeyPairs)
-  db.setLeader(leadKeyPair[0], apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))
+  db.setLeader(leadKeyPair[0], api.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))
 }

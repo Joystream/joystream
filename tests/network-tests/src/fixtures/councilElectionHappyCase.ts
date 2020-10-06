@@ -1,13 +1,13 @@
-import { Fixture } from './interfaces/fixture'
+import { Fixture } from '../IFixture'
 import { BuyMembershipHappyCaseFixture } from './membershipModule'
 import { ElectCouncilFixture } from './councilElectionModule'
-import { ApiWrapper } from '../utils/apiWrapper'
+import { Api } from '../Api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { PaidTermId } from '@joystream/types/members'
 import BN from 'bn.js'
 
 export class CouncilElectionHappyCaseFixture implements Fixture {
-  private apiWrapper: ApiWrapper
+  private api: Api
   private sudo: KeyringPair
   private membersKeyPairs: KeyringPair[]
   private councilKeyPairs: KeyringPair[]
@@ -17,7 +17,7 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
   private lesserStake: BN
 
   constructor(
-    apiWrapper: ApiWrapper,
+    api: Api,
     sudo: KeyringPair,
     membersKeyPairs: KeyringPair[],
     councilKeyPairs: KeyringPair[],
@@ -26,7 +26,7 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
     greaterStake: BN,
     lesserStake: BN
   ) {
-    this.apiWrapper = apiWrapper
+    this.api = api
     this.sudo = sudo
     this.membersKeyPairs = membersKeyPairs
     this.councilKeyPairs = councilKeyPairs
@@ -38,7 +38,7 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     const firstMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
-      this.apiWrapper,
+      this.api,
       this.sudo,
       this.membersKeyPairs,
       this.paidTerms
@@ -46,7 +46,7 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
     await firstMemberSetFixture.runner(false)
 
     const secondMemberSetFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
-      this.apiWrapper,
+      this.api,
       this.sudo,
       this.councilKeyPairs,
       this.paidTerms
@@ -54,7 +54,7 @@ export class CouncilElectionHappyCaseFixture implements Fixture {
     await secondMemberSetFixture.runner(false)
 
     const electCouncilFixture: ElectCouncilFixture = new ElectCouncilFixture(
-      this.apiWrapper,
+      this.api,
       this.membersKeyPairs,
       this.councilKeyPairs,
       this.k,

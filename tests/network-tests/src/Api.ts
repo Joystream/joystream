@@ -4,7 +4,6 @@ import { Codec } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { MemberId, PaidMembershipTerms, PaidTermId } from '@joystream/types/members'
 import { Mint, MintId } from '@joystream/types/mint'
-import { Lead, LeadId } from '@joystream/types/content-working-group'
 import {
   Application,
   ApplicationIdToWorkerIdMap,
@@ -34,11 +33,11 @@ export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
 }
 
-export class ApiWrapper {
+export class Api {
   private readonly api: ApiPromise
   private readonly sender: Sender
 
-  public static async create(provider: WsProvider): Promise<ApiWrapper> {
+  public static async create(provider: WsProvider): Promise<Api> {
     const api = await ApiPromise.create({ provider, types })
 
     // Wait for api to be connected and ready
@@ -50,7 +49,7 @@ export class ApiWrapper {
       setTimeout(resolve, 5000)
     })
 
-    return new ApiWrapper(api)
+    return new Api(api)
   }
 
   constructor(api: ApiPromise) {
@@ -177,23 +176,6 @@ export class ApiWrapper {
   ): BN {
     return this.estimateTxFee(
       this.api.tx.proposalsCodex.createSpendingProposal(stake, title, description, stake, balance, destination)
-    )
-  }
-
-  public estimateProposeContentWorkingGroupMintCapacityFee(
-    title: string,
-    description: string,
-    stake: BN,
-    balance: BN
-  ): BN {
-    return this.estimateTxFee(
-      this.api.tx.proposalsCodex.createSetContentWorkingGroupMintCapacityProposal(
-        stake,
-        title,
-        description,
-        stake,
-        balance
-      )
     )
   }
 
@@ -659,7 +641,7 @@ export class ApiWrapper {
   }
 
   // TODO consider using configurable genesis instead
-  public sudoStartAnnouncingPerion(sudo: KeyringPair, endsAtBlock: BN): Promise<void> {
+  public sudoStartAnnouncingPeriod(sudo: KeyringPair, endsAtBlock: BN): Promise<void> {
     return this.sender.signAndSend(
       this.api.tx.sudo.sudo(this.api.tx.councilElection.setStageAnnouncing(endsAtBlock)),
       sudo,
@@ -667,7 +649,7 @@ export class ApiWrapper {
     )
   }
 
-  public sudoStartVotingPerion(sudo: KeyringPair, endsAtBlock: BN): Promise<void> {
+  public sudoStartVotingPeriod(sudo: KeyringPair, endsAtBlock: BN): Promise<void> {
     return this.sender.signAndSend(
       this.api.tx.sudo.sudo(this.api.tx.councilElection.setStageVoting(endsAtBlock)),
       sudo,
@@ -675,7 +657,7 @@ export class ApiWrapper {
     )
   }
 
-  public sudoStartRevealingPerion(sudo: KeyringPair, endsAtBlock: BN): Promise<void> {
+  public sudoStartRevealingPeriod(sudo: KeyringPair, endsAtBlock: BN): Promise<void> {
     return this.sender.signAndSend(
       this.api.tx.sudo.sudo(this.api.tx.councilElection.setStageRevealing(endsAtBlock)),
       sudo,
@@ -764,27 +746,6 @@ export class ApiWrapper {
         stake,
         balance,
         destination
-      ) as unknown) as SubmittableExtrinsic<'promise'>,
-      account,
-      false
-    )
-  }
-
-  public async proposeContentWorkingGroupMintCapacity(
-    account: KeyringPair,
-    title: string,
-    description: string,
-    stake: BN,
-    balance: BN
-  ): Promise<void> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
-    return this.sender.signAndSend(
-      (this.api.tx.proposalsCodex.createSetContentWorkingGroupMintCapacityProposal(
-        memberId,
-        title,
-        description,
-        stake,
-        balance
       ) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
@@ -905,6 +866,10 @@ export class ApiWrapper {
 
   public getBlockDuration(): BN {
     return this.api.createType('Moment', this.api.consts.babe.expectedBlockTime)
+  }
+
+  public durationInMsFromBlocks(durationInBlocks: number) {
+    return this.getBlockDuration().muln(durationInBlocks).toNumber()
   }
 
   public expectProposalCreated(): Promise<ProposalId> {

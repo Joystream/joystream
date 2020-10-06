@@ -1,18 +1,18 @@
-import { ApiWrapper } from '../utils/apiWrapper'
+import { Api } from '../Api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import BN from 'bn.js'
 import { assert } from 'chai'
-import { Fixture } from './interfaces/fixture'
+import { Fixture } from '../IFixture'
 import { PaidTermId } from '@joystream/types/members'
 
 export class BuyMembershipHappyCaseFixture implements Fixture {
-  private apiWrapper: ApiWrapper
+  private api: Api
   private treasury: KeyringPair
   private keyPairs: KeyringPair[]
   private paidTerms: PaidTermId
 
-  public constructor(apiWrapper: ApiWrapper, treasury: KeyringPair, keyPairs: KeyringPair[], paidTerms: PaidTermId) {
-    this.apiWrapper = apiWrapper
+  public constructor(api: Api, treasury: KeyringPair, keyPairs: KeyringPair[], paidTerms: PaidTermId) {
+    this.api = api
     this.treasury = treasury
     this.keyPairs = keyPairs
     this.paidTerms = paidTerms
@@ -20,13 +20,13 @@ export class BuyMembershipHappyCaseFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
-    const membershipFee: BN = await this.apiWrapper.getMembershipFee(this.paidTerms)
-    const membershipTransactionFee: BN = this.apiWrapper.estimateBuyMembershipFee(
+    const membershipFee: BN = await this.api.getMembershipFee(this.paidTerms)
+    const membershipTransactionFee: BN = this.api.estimateBuyMembershipFee(
       this.treasury,
       this.paidTerms,
       'member_name_which_is_longer_than_expected'
     )
-    await this.apiWrapper.transferBalanceToAccounts(
+    await this.api.transferBalanceToAccounts(
       this.treasury,
       this.keyPairs,
       membershipTransactionFee.add(new BN(membershipFee))
@@ -35,17 +35,13 @@ export class BuyMembershipHappyCaseFixture implements Fixture {
     // Buying membership
     await Promise.all(
       this.keyPairs.map(async (keyPair, index) => {
-        await this.apiWrapper.buyMembership(
-          keyPair,
-          this.paidTerms,
-          `new_member_${index}${keyPair.address.substring(0, 8)}`
-        )
+        await this.api.buyMembership(keyPair, this.paidTerms, `new_member_${index}${keyPair.address.substring(0, 8)}`)
       })
     )
 
     // Assertions
     this.keyPairs.forEach((keyPair) =>
-      this.apiWrapper
+      this.api
         .getMemberIds(keyPair.address)
         .then((membership) => assert(membership.length > 0, `Account ${keyPair.address} is not a member`))
     )
@@ -56,13 +52,13 @@ export class BuyMembershipHappyCaseFixture implements Fixture {
 }
 
 export class BuyMembershipWithInsufficienFundsFixture implements Fixture {
-  private apiWrapper: ApiWrapper
+  private api: Api
   private treasury: KeyringPair
   private aKeyPair: KeyringPair
   private paidTerms: PaidTermId
 
-  public constructor(apiWrapper: ApiWrapper, treasury: KeyringPair, aKeyPair: KeyringPair, paidTerms: PaidTermId) {
-    this.apiWrapper = apiWrapper
+  public constructor(api: Api, treasury: KeyringPair, aKeyPair: KeyringPair, paidTerms: PaidTermId) {
+    this.api = api
     this.treasury = treasury
     this.aKeyPair = aKeyPair
     this.paidTerms = paidTerms
@@ -70,21 +66,21 @@ export class BuyMembershipWithInsufficienFundsFixture implements Fixture {
 
   public async runner(expectFailure: boolean) {
     // Assertions
-    this.apiWrapper
+    this.api
       .getMemberIds(this.aKeyPair.address)
       .then((membership) => assert(membership.length === 0, 'Account A is a member'))
 
     // Fee estimation and transfer
-    const membershipFee: BN = await this.apiWrapper.getMembershipFee(this.paidTerms)
-    const membershipTransactionFee: BN = this.apiWrapper.estimateBuyMembershipFee(
+    const membershipFee: BN = await this.api.getMembershipFee(this.paidTerms)
+    const membershipTransactionFee: BN = this.api.estimateBuyMembershipFee(
       this.treasury,
       this.paidTerms,
       'member_name_which_is_longer_than_expected'
     )
-    await this.apiWrapper.transferBalance(this.treasury, this.aKeyPair.address, membershipTransactionFee)
+    await this.api.transferBalance(this.treasury, this.aKeyPair.address, membershipTransactionFee)
 
     // Balance assertion
-    await this.apiWrapper
+    await this.api
       .getBalance(this.aKeyPair.address)
       .then((balance) =>
         assert(
@@ -94,7 +90,7 @@ export class BuyMembershipWithInsufficienFundsFixture implements Fixture {
       )
 
     // Buying memebership
-    await this.apiWrapper.buyMembership(
+    await this.api.buyMembership(
       this.aKeyPair,
       this.paidTerms,
       `late_member_${this.aKeyPair.address.substring(0, 8)}`,
@@ -102,7 +98,7 @@ export class BuyMembershipWithInsufficienFundsFixture implements Fixture {
     )
 
     // Assertions
-    this.apiWrapper
+    this.api
       .getMemberIds(this.aKeyPair.address)
       .then((membership) => assert(membership.length === 0, 'Account A is a member'))
     if (expectFailure) {

@@ -3,7 +3,7 @@ import { ApiPromise } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { AccountInfo } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { DbService } from '../services/dbService'
+import { DbService } from './DbService'
 
 export class Sender {
   private readonly api: ApiPromise

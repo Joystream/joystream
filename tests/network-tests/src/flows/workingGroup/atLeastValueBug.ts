@@ -1,15 +1,15 @@
-import { ApiWrapper, WorkingGroups } from '../../utils/apiWrapper'
+import { Api, WorkingGroups } from '../../Api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Keyring } from '@polkadot/api'
 import { AddWorkerOpeningFixture, LeaveRoleFixture } from '../../fixtures/workingGroupModule'
 import BN from 'bn.js'
-import { Utils } from '../../utils/utils'
+import { Utils } from '../../utils'
 import { PaidTermId } from '@joystream/types/members'
-import { DbService } from '../../services/dbService'
+import { DbService } from '../../DbService'
 import { LeaderHiringHappyCaseFixture } from '../../fixtures/leaderHiringHappyCase'
 
 // Zero at least value bug scenario
-export default async function zeroAtLeastValueBug(apiWrapper: ApiWrapper, env: NodeJS.ProcessEnv, db: DbService) {
+export default async function zeroAtLeastValueBug(api: Api, env: NodeJS.ProcessEnv, db: DbService) {
   const sudoUri: string = env.SUDO_ACCOUNT_URI!
   const keyring = new Keyring({ type: 'sr25519' })
   const sudo: KeyringPair = keyring.addFromUri(sudoUri)
@@ -18,7 +18,7 @@ export default async function zeroAtLeastValueBug(apiWrapper: ApiWrapper, env: N
   let nKeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const leadKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
 
-  const paidTerms: PaidTermId = apiWrapper.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
+  const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
   const firstRewardInterval: BN = new BN(env.LONG_REWARD_INTERVAL!)
@@ -28,14 +28,14 @@ export default async function zeroAtLeastValueBug(apiWrapper: ApiWrapper, env: N
   const openingActivationDelay: BN = new BN(0)
 
   // const durationInBlocks = 48
-  // setTestTimeout(apiWrapper, durationInBlocks)
+  // setTestTimeout(api, durationInBlocks)
 
-  if (db.hasLeader(apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
+  if (db.hasLeader(api.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
     nKeyPairs = db.getMembers()
-    leadKeyPair[0] = db.getLeader(apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))
+    leadKeyPair[0] = db.getLeader(api.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))
   } else {
     const leaderHiringHappyCaseFixture: LeaderHiringHappyCaseFixture = new LeaderHiringHappyCaseFixture(
-      apiWrapper,
+      api,
       sudo,
       nKeyPairs,
       leadKeyPair,
@@ -52,7 +52,7 @@ export default async function zeroAtLeastValueBug(apiWrapper: ApiWrapper, env: N
   }
 
   const addWorkerOpeningWithoutStakeFixture: AddWorkerOpeningFixture = new AddWorkerOpeningFixture(
-    apiWrapper,
+    api,
     nKeyPairs,
     leadKeyPair[0],
     sudo,
@@ -66,7 +66,7 @@ export default async function zeroAtLeastValueBug(apiWrapper: ApiWrapper, env: N
   await addWorkerOpeningWithoutStakeFixture.runner(true)
 
   const addWorkerOpeningWithoutUnstakingPeriodFixture: AddWorkerOpeningFixture = new AddWorkerOpeningFixture(
-    apiWrapper,
+    api,
     nKeyPairs,
     leadKeyPair[0],
     sudo,
@@ -79,9 +79,9 @@ export default async function zeroAtLeastValueBug(apiWrapper: ApiWrapper, env: N
   // Add worker opening with 0 unstaking period, expect failure
   await addWorkerOpeningWithoutUnstakingPeriodFixture.runner(true)
 
-  if (!db.hasLeader(apiWrapper.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
+  if (!db.hasLeader(api.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
     const leaveRoleFixture: LeaveRoleFixture = new LeaveRoleFixture(
-      apiWrapper,
+      api,
       leadKeyPair,
       sudo,
       WorkingGroups.StorageWorkingGroup
