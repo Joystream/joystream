@@ -13,7 +13,8 @@
     },
     "WorkingGroup": {
         "_enum": [
-            "Storage"
+            "Storage",
+            "Content"
         ]
     },
     "SlashingTerms": {
@@ -602,8 +603,6 @@
             "RuntimeUpgrade": "Bytes",
             "SetElectionParameters": "ElectionParameters",
             "Spending": "(Balance,AccountId)",
-            "SetLead": "Option<SetLeadParams>",
-            "SetContentWorkingGroupMintCapacity": "u128",
             "EvictStorageProvider": "GenericAccountId",
             "SetValidatorCount": "u32",
             "SetStorageRoleParameters": "RoleParameters",
@@ -623,8 +622,6 @@
             "RuntimeUpgrade": "Bytes",
             "SetElectionParameters": "ElectionParameters",
             "Spending": "(Balance,AccountId)",
-            "SetLead": "Option<SetLeadParams>",
-            "SetContentWorkingGroupMintCapacity": "u128",
             "EvictStorageProvider": "GenericAccountId",
             "SetValidatorCount": "u32",
             "SetStorageRoleParameters": "RoleParameters",
@@ -726,7 +723,6 @@
             "ExecutionFailed": "ExecutionFailed"
         }
     },
-    "SetLeadParams": "(MemberId,GenericAccountId)",
     "Nonce": "u64",
     "EntityId": "u64",
     "ClassId": "u64",
