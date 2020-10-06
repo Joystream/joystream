@@ -1,4 +1,9 @@
-import { Property, ReferenceProperty, SinglePropertyType, SinglePropertyVariant } from 'types/extrinsics/AddClassSchema'
+import {
+  Property,
+  ReferenceProperty,
+  SinglePropertyType,
+  SinglePropertyVariant,
+} from '../../types/extrinsics/AddClassSchema'
 
 type PropertyType = Property['property_type']
 

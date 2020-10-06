@@ -10,7 +10,7 @@ import {
   VecPropertyVariant,
 } from '../types/extrinsics/AddClassSchema'
 import PRIMITIVE_PROPERTY_DEFS from '../schemas/propertyValidationDefs.schema.json'
-import { getInputs } from './helpers/inputs'
+import { getInputs } from '../src/helpers/inputs'
 import { JSONSchema7 } from 'json-schema'
 
 const SINGLE_ENTITY_SCHEMAS_LOCATION = path.join(__dirname, '../schemas/entities')

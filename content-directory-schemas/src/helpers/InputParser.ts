@@ -12,8 +12,8 @@ import {
 import { isSingle, isReference } from './propertyType'
 import { ApiPromise } from '@polkadot/api'
 import { JoyBTreeSet } from '@joystream/types/common'
-import { CreateClass } from 'types/extrinsics/CreateClass'
-import { EntityBatch } from 'types/EntityBatch'
+import { CreateClass } from '../../types/extrinsics/CreateClass'
+import { EntityBatch } from '../../types/EntityBatch'
 
 export class InputParser {
   private api: ApiPromise

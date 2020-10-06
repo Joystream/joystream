@@ -1,7 +1,7 @@
 import { types } from '@joystream/types'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { ExtrinsicsHelper, getAlicePair } from './helpers/extrinsics'
+import { ExtrinsicsHelper, getAlicePair } from '../src/helpers/extrinsics'
 
 async function main() {
   // Init api

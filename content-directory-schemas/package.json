@@ -3,8 +3,10 @@
   "version": "0.1.0",
   "description": "JSON schemas, inputs and related tooling for Joystream content directory 2.0",
   "author": "Joystream contributors",
+  "main": "lib/index.js",
   "scripts": {
-    "lint": "eslint ./ --ext .ts",
+    "build": "tsc --build tsconfig.lib.json",
+    "lint": "eslint ./ --ext .ts --ignore-path .gitignore",
     "ts-check": "tsc --noEmit --pretty",
     "pretty": "prettier ./ --write --ignore-path .gitignore",
     "validate": "ts-node ./scripts/validate.ts",

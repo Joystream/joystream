@@ -1,6 +1,6 @@
 // TODO: Add entity batches validation
 import Ajv from 'ajv'
-import { FetchedInput, getInputs, InputType, INPUT_TYPES } from './helpers/inputs'
+import { FetchedInput, getInputs, InputType, INPUT_TYPES } from '../src/helpers/inputs'
 import path from 'path'
 import fs from 'fs'
 import $RefParser from '@apidevtools/json-schema-ref-parser'
