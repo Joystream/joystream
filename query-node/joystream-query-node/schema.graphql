@@ -53,11 +53,12 @@ type Channel @entity {
 	"Runtime entity identifier (EntityId)"
 	id: ID!
 
-	"Owner of the channel"
-	owner: Member!
+	# "Owner of the channel" Commenting out this field: 'owner' can be curator_group, lead
+	# or a member. We are not handling events related to curator group so we will not set this field
+	# owner: Member!
 
 	"The title of the Channel"
-	title: String! @unique @fulltext(query: "titles")
+	title: String! @fulltext(query: "titles")
 
 	"The description of a Channel"
 	description: String!
