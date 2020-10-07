@@ -109,7 +109,7 @@ A step by step guide to setup a full node and validator on the Joystream testnet
 
 ```bash
 docker-compose up -d
-DEBUG=* yarn workspace network-tests scenario-full
+DEBUG=* yarn workspace network-tests test-run src/scenarios/full.ts
 docker-compose down
 ```
 

@@ -73,13 +73,18 @@ const scenario = async () => {
 
   debug('Lead Setup (Storage)')
   await leaderSetup(api, env, db, WorkingGroups.StorageWorkingGroup)
+  await atLeastValueBug(api, env, db)
+  debug('Storage Worker Tests')
+  await manageWorkerAsLead(api, env, db, WorkingGroups.StorageWorkingGroup)
+  await manageWorkerAsWorker(api, env, db)
+  await workerApplicaionHappyCase(api, env, db)
+  await workerApplicationRejectionCase(api, env, db)
+  await workerPayout(api, env, db)
 
   debug('Lead Setup (Content)')
   await leaderSetup(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
-
-  debug('Worker Tests')
-  await atLeastValueBug(api, env, db)
-  await manageWorkerAsLead(api, env, db)
+  debug('Content Worker Tests')
+  await manageWorkerAsLead(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
   await manageWorkerAsWorker(api, env, db)
   await workerApplicaionHappyCase(api, env, db)
   await workerApplicationRejectionCase(api, env, db)

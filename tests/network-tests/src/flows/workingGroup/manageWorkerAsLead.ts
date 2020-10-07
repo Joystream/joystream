@@ -22,7 +22,7 @@ import { DbService } from '../../DbService'
 import { LeaderHiringHappyCaseFixture } from '../../fixtures/leaderHiringHappyCase'
 
 // Manage worker as lead scenario
-export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db: DbService) {
+export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db: DbService, group: WorkingGroups) {
   const sudoUri: string = env.SUDO_ACCOUNT_URI!
   const keyring = new Keyring({ type: 'sr25519' })
   const sudo: KeyringPair = keyring.addFromUri(sudoUri)
@@ -43,9 +43,9 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
   // const durationInBlocks = 60
   // setTestTimeout(api, durationInBlocks)
 
-  if (db.hasLeader(api.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
+  if (db.hasLeader(api.getWorkingGroupString(group))) {
     nKeyPairs = db.getMembers()
-    leadKeyPair[0] = db.getLeader(api.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))
+    leadKeyPair[0] = db.getLeader(api.getWorkingGroupString(group))
   } else {
     const leaderHiringHappyCaseFixture: LeaderHiringHappyCaseFixture = new LeaderHiringHappyCaseFixture(
       api,
@@ -59,7 +59,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
       rewardInterval,
       firstRewardInterval,
       payoutAmount,
-      WorkingGroups.StorageWorkingGroup
+      group
     )
     await leaderHiringHappyCaseFixture.runner(false)
   }
@@ -73,7 +73,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
     roleStake,
     openingActivationDelay,
     unstakingPeriod,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
   // Add worker opening
   await addWorkerOpeningFixture.runner(false)
@@ -88,7 +88,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
       applicationStake,
       roleStake,
       addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
-      WorkingGroups.StorageWorkingGroup
+      group
     )
     await applyForWorkerOpeningFixture.runner(false)
   })()
@@ -101,7 +101,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
       leadKeyPair[0],
       sudo,
       addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
-      WorkingGroups.StorageWorkingGroup
+      group
     )
     await beginApplicationReviewFixture.runner(false)
   })()
@@ -118,17 +118,12 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
       firstRewardInterval,
       rewardInterval,
       payoutAmount,
-      WorkingGroups.StorageWorkingGroup
+      group
     )
     await fillOpeningFixture.runner(false)
   })()
 
-  const leaveRoleFixture: LeaveRoleFixture = new LeaveRoleFixture(
-    api,
-    leadKeyPair,
-    sudo,
-    WorkingGroups.StorageWorkingGroup
-  )
+  const leaveRoleFixture: LeaveRoleFixture = new LeaveRoleFixture(api, leadKeyPair, sudo, group)
   // Leaving lead role
   await leaveRoleFixture.runner(false)
 
@@ -137,7 +132,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
     nKeyPairs,
     leadKeyPair[0],
     sudo,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
   // Decrease worker stake, expect failure
   await decreaseStakeFailureFixture.runner(true)
@@ -149,7 +144,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
     applicationStake,
     roleStake,
     openingActivationDelay,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
   // Add lead opening
   await addNewLeaderOpeningFixture.runner(false)
@@ -164,7 +159,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
       applicationStake,
       roleStake,
       addNewLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
-      WorkingGroups.StorageWorkingGroup
+      group
     )
     await applyForNewLeaderOpeningFixture.runner(false)
   })()
@@ -176,7 +171,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
       api,
       sudo,
       addNewLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
-      WorkingGroups.StorageWorkingGroup
+      group
     )
     await beginNewLeaderApplicationReviewFixture.runner(false)
   })()
@@ -192,7 +187,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
       firstRewardInterval,
       rewardInterval,
       payoutAmount,
-      WorkingGroups.StorageWorkingGroup
+      group
     )
     await fillNewLeaderOpeningFixture.runner(false)
   })()
@@ -202,18 +197,12 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
     nKeyPairs,
     leadKeyPair[0],
     sudo,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
   // Decrease worker stake
   await decreaseStakeFixture.runner(false)
 
-  const slashFixture: SlashFixture = new SlashFixture(
-    api,
-    nKeyPairs,
-    leadKeyPair[0],
-    sudo,
-    WorkingGroups.StorageWorkingGroup
-  )
+  const slashFixture: SlashFixture = new SlashFixture(api, nKeyPairs, leadKeyPair[0], sudo, group)
   // Slash worker
   await slashFixture.runner(false)
 
@@ -222,18 +211,13 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
     nKeyPairs,
     leadKeyPair[0],
     sudo,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
   // Terminate worker role
   await terminateRoleFixture.runner(false)
 
-  if (!db.hasLeader(api.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
-    const leaveRoleFixture: LeaveRoleFixture = new LeaveRoleFixture(
-      api,
-      leadKeyPair,
-      sudo,
-      WorkingGroups.StorageWorkingGroup
-    )
+  if (!db.hasLeader(api.getWorkingGroupString(group))) {
+    const leaveRoleFixture: LeaveRoleFixture = new LeaveRoleFixture(api, leadKeyPair, sudo, group)
     // Leaving lead role
     await leaveRoleFixture.runner(false)
   }
