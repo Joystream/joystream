@@ -10,7 +10,12 @@ import { ProposalId } from '@joystream/types/proposals'
 import { CouncilElectionHappyCaseFixture } from '../../fixtures/councilElectionHappyCase'
 import { DbService } from '../../DbService'
 
-export default async function workingGroupMintCapactiy(api: Api, env: NodeJS.ProcessEnv, db: DbService) {
+export default async function workingGroupMintCapactiy(
+  api: Api,
+  env: NodeJS.ProcessEnv,
+  db: DbService,
+  group: WorkingGroups
+) {
   const sudoUri: string = env.SUDO_ACCOUNT_URI!
   const keyring = new Keyring({ type: 'sr25519' })
   const sudo: KeyringPair = keyring.addFromUri(sudoUri)
@@ -45,15 +50,13 @@ export default async function workingGroupMintCapactiy(api: Api, env: NodeJS.Pro
     await councilElectionHappyCaseFixture.runner(false)
   }
 
-  const newMintCapacity: BN = (await api.getWorkingGroupMintCapacity(WorkingGroups.StorageWorkingGroup)).add(
-    mintCapacityIncrement
-  )
+  const newMintCapacity: BN = (await api.getWorkingGroupMintCapacity(group)).add(mintCapacityIncrement)
   const workingGroupMintCapacityProposalFixture: WorkingGroupMintCapacityProposalFixture = new WorkingGroupMintCapacityProposalFixture(
     api,
     m1KeyPairs,
     sudo,
     newMintCapacity,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
   // Propose mint capacity
   await workingGroupMintCapacityProposalFixture.runner(false)

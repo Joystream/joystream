@@ -28,9 +28,12 @@ import {
   OpeningId,
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
+import Debugger from 'debug'
+const debug = Debugger('api')
 
 export enum WorkingGroups {
   StorageWorkingGroup = 'storageWorkingGroup',
+  ContentDirectoryWorkingGroup = 'contentDirectoryWorkingGroup',
 }
 
 export class Api {
@@ -38,18 +41,29 @@ export class Api {
   private readonly sender: Sender
 
   public static async create(provider: WsProvider): Promise<Api> {
-    const api = await ApiPromise.create({ provider, types })
+    let connectAttempts = 0
+    while (true) {
+      connectAttempts++
+      debug(`Connecting to chain attempt ${connectAttempts}..`)
+      try {
+        const api = await ApiPromise.create({ provider, types })
 
-    // Wait for api to be connected and ready
-    await api.isReady
+        // Wait for api to be connected and ready
+        await api.isReady
 
-    // If a node was just started up it might take a few seconds to start producing blocks
-    // Give it a few seconds to be ready.
-    await new Promise((resolve) => {
-      setTimeout(resolve, 5000)
-    })
+        // If a node was just started up it might take a few seconds to start producing blocks
+        // Give it a few seconds to be ready.
+        await Utils.wait(5000)
 
-    return new Api(api)
+        return new Api(api)
+      } catch (err) {
+        if (connectAttempts === 3) {
+          throw new Error('Unable to connect to chain')
+        }
+      }
+
+      await Utils.wait(5000)
+    }
   }
 
   constructor(api: ApiPromise) {
@@ -61,10 +75,13 @@ export class Api {
     this.api.disconnect()
   }
 
+  // Well known WorkingGroup enum defined in runtime
   public getWorkingGroupString(workingGroup: WorkingGroups): string {
     switch (workingGroup) {
       case WorkingGroups.StorageWorkingGroup:
         return 'Storage'
+      case WorkingGroups.ContentDirectoryWorkingGroup:
+        return 'Content'
       default:
         throw new Error(`Invalid working group string representation: ${workingGroup}`)
     }

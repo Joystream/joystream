@@ -1,5 +1,5 @@
 import { WsProvider } from '@polkadot/api'
-import { Api } from '../Api'
+import { Api, WorkingGroups } from '../Api'
 import { DbService } from '../DbService'
 import { config } from 'dotenv'
 import Debugger from 'debug'
@@ -56,18 +56,26 @@ const scenario = async () => {
   debug('Validator Count Proposal')
   await validatorCountProposal(api, env, db)
 
-  debug('Working Group Mint Capacity Proposal')
-  await workingGroupMintCapacityProposal(api, env, db)
+  debug('Working Group (Storage) Mint Capacity Proposal')
+  await workingGroupMintCapacityProposal(api, env, db, WorkingGroups.StorageWorkingGroup)
+
+  debug('Working Group (Content) Mint Capacity Proposal')
+  await workingGroupMintCapacityProposal(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
 
   // Leads are fired at the end of the scenarios
-  debug('Lead Role Proposals')
-  await manageLeaderRole(api, env, db /*, storage group */)
-  // await manageLeaderRole(api, env, db /*, content group */)
+  debug('Lead Role (Storage) Proposals')
+  await manageLeaderRole(api, env, db, WorkingGroups.StorageWorkingGroup)
+
+  debug('Lead Role (Content) Proposals')
+  await manageLeaderRole(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
 
   /* workers tests */
 
-  debug('Lead Setup')
-  await leaderSetup(api, env, db) /* storage */
+  debug('Lead Setup (Storage)')
+  await leaderSetup(api, env, db, WorkingGroups.StorageWorkingGroup)
+
+  debug('Lead Setup (Content)')
+  await leaderSetup(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
 
   debug('Worker Tests')
   await atLeastValueBug(api, env, db)

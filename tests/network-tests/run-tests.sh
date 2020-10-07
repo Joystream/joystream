@@ -50,6 +50,7 @@ CONTAINER_ID=`docker run -d -v ${DATA_PATH}:/data -p 9944:9944 joystream/node \
   --chain /data/chain-spec-raw.json`
 
 function cleanup() {
+    docker logs ${CONTAINER_ID} --tail 30
     docker stop ${CONTAINER_ID}
     docker rm ${CONTAINER_ID}
 }

@@ -8,7 +8,7 @@ import { DbService } from '../DbService'
 import { LeaderHiringHappyCaseFixture } from '../fixtures/leaderHiringHappyCase'
 
 // Worker application happy case scenario
-export default async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, db: DbService) {
+export default async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, db: DbService, group: WorkingGroups) {
   const sudoUri: string = env.SUDO_ACCOUNT_URI!
   const keyring = new Keyring({ type: 'sr25519' })
   if (db.hasLeader(api.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
@@ -43,10 +43,10 @@ export default async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, db: 
     rewardInterval,
     firstRewardInterval,
     payoutAmount,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
   await leaderHiringHappyCaseFixture.runner(false)
 
   db.setMembers(nKeyPairs)
-  db.setLeader(leadKeyPair[0], api.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))
+  db.setLeader(leadKeyPair[0], api.getWorkingGroupString(group))
 }

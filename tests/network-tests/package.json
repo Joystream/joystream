@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc --noEmit",
     "run-tests": "./run-tests.sh",
-    "scenario-full": "yarn db-path-setup && ts-node src/scenarios/full.ts",
+    "scenario-full": "yarn db-path-setup && node -r ts-node/register --unhandled-rejections=strict src/scenarios/full.ts",
     "lint": "eslint . --quiet --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write ",

@@ -30,7 +30,7 @@ import { ProposalId } from '@joystream/types/proposals'
 import { DbService } from '../../DbService'
 import { CouncilElectionHappyCaseFixture } from '../../fixtures/councilElectionHappyCase'
 
-export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, db: DbService) {
+export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, db: DbService, group: WorkingGroups) {
   const sudoUri: string = env.SUDO_ACCOUNT_URI!
   const keyring = new Keyring({ type: 'sr25519' })
   const sudo: KeyringPair = keyring.addFromUri(sudoUri)
@@ -117,7 +117,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
       applicationStake,
       roleStake,
       expectLeadOpeningAddedFixture.getCreatedOpeningId() as OpeningId,
-      WorkingGroups.StorageWorkingGroup
+      group
     )
     await applyForLeaderOpeningFixture.runner(false)
   })()
@@ -158,7 +158,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     rewardInterval,
     payoutAmount,
     expectLeadOpeningAddedFixture.getCreatedOpeningId() as OpeningId,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
   // Propose fill leader opening
   await fillLeaderOpeningProposalFixture.runner(false)
@@ -169,11 +169,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     sudo,
     fillLeaderOpeningProposalFixture.getCreatedProposalId() as ProposalId
   )
-  const expectLeaderSetFixture: ExpectLeaderSetFixture = new ExpectLeaderSetFixture(
-    api,
-    leadKeyPair[0].address,
-    WorkingGroups.StorageWorkingGroup
-  )
+  const expectLeaderSetFixture: ExpectLeaderSetFixture = new ExpectLeaderSetFixture(api, leadKeyPair[0].address, group)
   // Approve fill leader opening
   voteForFillLeaderProposalFixture.runner(false)
   await expectLeaderSetFixture.runner(false)
@@ -183,7 +179,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     m1KeyPairs,
     sudo,
     alteredPayoutAmount,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
   // Propose leader reward
   await setLeaderRewardProposalFixture.runner(false)
@@ -197,7 +193,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
   const expectLeaderRewardAmountUpdatedFixture: ExpectLeaderRewardAmountUpdatedFixture = new ExpectLeaderRewardAmountUpdatedFixture(
     api,
     alteredPayoutAmount,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
   // Approve new leader reward
   voteForeLeaderRewardFixture.runner(false)
@@ -208,7 +204,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     m1KeyPairs,
     sudo,
     stakeDecrement,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
 
   // Propose decrease stake
@@ -226,11 +222,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
       decreaseLeaderStakeProposalFixture.getCreatedProposalId() as ProposalId
     )
     voteForDecreaseStakeProposal.runner(false)
-    expectLeaderStakeDecreasedFixture = new ExpectLeaderStakeDecreasedFixture(
-      api,
-      newStake,
-      WorkingGroups.StorageWorkingGroup
-    )
+    expectLeaderStakeDecreasedFixture = new ExpectLeaderStakeDecreasedFixture(api, newStake, group)
     await expectLeaderStakeDecreasedFixture.runner(false)
   })()
 
@@ -239,7 +231,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     m1KeyPairs,
     sudo,
     slashAmount,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
   // Propose leader slash
   await slashLeaderProposalFixture.runner(false)
@@ -256,7 +248,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
       slashLeaderProposalFixture.getCreatedProposalId() as ProposalId
     )
     voteForSlashProposalFixture.runner(false)
-    expectLeaderSlashedFixture = new ExpectLeaderSlashedFixture(api, newStake, WorkingGroups.StorageWorkingGroup)
+    expectLeaderSlashedFixture = new ExpectLeaderSlashedFixture(api, newStake, group)
     await expectLeaderSlashedFixture.runner(false)
   })()
 
@@ -266,7 +258,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     leadKeyPair[0].address,
     sudo,
     false,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
   // Propose terminate leader role
   await terminateLeaderRoleProposalFixture.runner(false)
@@ -274,7 +266,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
   let voteForLeaderRoleTerminationFixture: VoteForProposalFixture
   const expectLeaderRoleTerminatedFixture: ExpectLeaderRoleTerminatedFixture = new ExpectLeaderRoleTerminatedFixture(
     api,
-    WorkingGroups.StorageWorkingGroup
+    group
   )
   // Approve leader role termination
   await (async () => {
