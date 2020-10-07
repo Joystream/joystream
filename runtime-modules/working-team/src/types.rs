@@ -211,7 +211,7 @@ pub struct StakePolicy<BlockNumber, Balance> {
     pub stake_amount: Balance,
 
     /// Unstaking period for the stake. Zero means no unstaking period.
-    pub unstaking_period: BlockNumber,
+    pub leaving_unstaking_period: BlockNumber,
 }
 
 /// Defines abstract staking handler to manage user stakes for different activities

@@ -74,5 +74,11 @@ decl_error! {
 
         /// Requested operation with stake is impossible because of stake was not defined for the role.
         CannotChangeStakeWithoutStakingAccount,
+
+        /// Invalid spending amount.
+        CannotSpendZero,
+
+        /// It's not enough budget for this spending.
+        InsufficientBudgetForSpending,
     }
 }

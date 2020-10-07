@@ -358,7 +358,7 @@ impl FillOpeningFixture {
                 job_unstaking_period: self
                     .stake_policy
                     .as_ref()
-                    .map_or(0, |sp| sp.unstaking_period),
+                    .map_or(0, |sp| sp.leaving_unstaking_period),
                 reward_per_block: self.reward_policy.as_ref().map(|rp| rp.reward_per_block),
                 missed_reward: None,
                 created_at: self.created_at,
@@ -1056,6 +1056,67 @@ impl SetStatusTextFixture {
             assert_eq!(new_text_hash, expected_hash.as_ref().to_vec());
         } else {
             assert_eq!(new_text_hash, old_text_hash);
+        }
+    }
+}
+
+pub struct SpendFromBudgetFixture {
+    origin: RawOrigin<u64>,
+    account_id: u64,
+    amount: u64,
+    rationale: Option<Vec<u8>>,
+}
+
+impl Default for SpendFromBudgetFixture {
+    fn default() -> Self {
+        Self {
+            origin: RawOrigin::Signed(1),
+            account_id: 1,
+            amount: 100,
+            rationale: None,
+        }
+    }
+}
+
+impl SpendFromBudgetFixture {
+    pub fn with_origin(self, origin: RawOrigin<u64>) -> Self {
+        Self { origin, ..self }
+    }
+
+    pub fn with_account_id(self, account_id: u64) -> Self {
+        Self { account_id, ..self }
+    }
+
+    pub fn with_amount(self, amount: u64) -> Self {
+        Self { amount, ..self }
+    }
+
+    pub fn call(&self) -> DispatchResult {
+        TestWorkingTeam::spend_from_budget(
+            self.origin.clone().into(),
+            self.account_id,
+            self.amount,
+            self.rationale.clone(),
+        )
+    }
+
+    pub fn call_and_assert(&self, expected_result: DispatchResult) {
+        let old_budget = TestWorkingTeam::budget();
+        let old_balance = Balances::usable_balance(&self.account_id);
+
+        let actual_result = self.call().map(|_| ());
+
+        assert_eq!(actual_result.clone(), expected_result);
+
+        let new_budget = TestWorkingTeam::budget();
+        let new_balance = Balances::usable_balance(&self.account_id);
+
+        if actual_result.is_ok() {
+            assert_eq!(new_budget, old_budget - self.amount);
+            assert_eq!(new_balance, old_balance + self.amount);
+        } else {
+            assert_eq!(old_budget, new_budget);
+            assert_eq!(old_balance, new_balance);
         }
     }
 }

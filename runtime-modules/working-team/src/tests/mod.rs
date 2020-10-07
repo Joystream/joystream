@@ -6,8 +6,8 @@ use system::RawOrigin;
 
 use crate::tests::fixtures::{
     CancelOpeningFixture, DecreaseWorkerStakeFixture, IncreaseWorkerStakeFixture, SetBudgetFixture,
-    SetStatusTextFixture, SlashWorkerStakeFixture, UpdateRewardAccountFixture,
-    UpdateRewardAmountFixture, WithdrawApplicationFixture,
+    SetStatusTextFixture, SlashWorkerStakeFixture, SpendFromBudgetFixture,
+    UpdateRewardAccountFixture, UpdateRewardAmountFixture, WithdrawApplicationFixture,
 };
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::tests::mock::{
@@ -23,7 +23,6 @@ use fixtures::{
     UpdateWorkerRoleAccountFixture,
 };
 use frame_support::dispatch::DispatchError;
-use frame_support::traits::{LockableCurrency, WithdrawReason};
 use frame_support::StorageMap;
 use mock::{
     build_test_externalities, run_to_block, Balances, RewardPeriod, Test, TestWorkingTeam,
@@ -44,7 +43,7 @@ fn add_opening_succeeded() {
             .with_starting_block(starting_block)
             .with_stake_policy(Some(StakePolicy {
                 stake_amount: 10,
-                unstaking_period: 100,
+                leaving_unstaking_period: 100,
             }))
             .with_reward_policy(Some(RewardPolicy {
                 reward_per_block: 10,
@@ -75,7 +74,7 @@ fn add_opening_fails_with_zero_stake() {
         let add_opening_fixture =
             AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
                 stake_amount: 0,
-                unstaking_period: 0,
+                leaving_unstaking_period: 0,
             }));
 
         add_opening_fixture.call_and_assert(Err(
@@ -115,7 +114,7 @@ fn add_opening_fails_with_incorrect_unstaking_period() {
         let add_opening_fixture =
             AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
                 stake_amount: stake,
-                unstaking_period: invalid_unstaking_period,
+                leaving_unstaking_period: invalid_unstaking_period,
             }));
 
         add_opening_fixture.call_and_assert(Err(
@@ -267,7 +266,7 @@ fn fill_opening_succeeded_with_stake() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
         let add_opening_fixture = AddOpeningFixture::default()
             .with_starting_block(starting_block)
@@ -460,11 +459,11 @@ fn update_worker_role_fails_with_leaving_worker() {
         let account_id = 1;
         let total_balance = 300;
         let stake = 200;
-        let unstaking_period = 10;
+        let leaving_unstaking_period = 10;
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period,
+            leaving_unstaking_period,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -603,7 +602,7 @@ fn leave_worker_role_fails_already_leaving_worker() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         let worker_id = HireRegularWorkerFixture::default()
@@ -798,64 +797,6 @@ fn set_lead_event_emitted() {
 }
 
 #[test]
-fn apply_on_opening_fails_with_insufficient_balance() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let add_opening_fixture = AddOpeningFixture::default();
-
-        let opening_id = add_opening_fixture.call().unwrap();
-
-        let stake_parameters = StakeParameters {
-            stake: 100,
-            staking_account_id: 1,
-        };
-
-        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_stake_parameters(Some(stake_parameters));
-
-        apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::InsufficientBalanceToCoverStake.into(),
-        ));
-    });
-}
-
-#[test]
-fn apply_on_opening_fails_with_locked_balance() {
-    build_test_externalities().execute_with(|| {
-        HireLeadFixture::default().hire_lead();
-
-        let account_id = 1;
-        increase_total_balance_issuance_using_account_id(account_id, 300);
-
-        let stake_parameters = StakeParameters {
-            stake: 100,
-            staking_account_id: account_id,
-        };
-
-        let lock_id: [u8; 8] = [0; 8];
-        <Test as common::currency::GovernanceCurrency>::Currency::set_lock(
-            lock_id,
-            &account_id,
-            250,
-            WithdrawReason::TransactionPayment.into(),
-        );
-
-        let add_opening_fixture = AddOpeningFixture::default();
-        let opening_id = add_opening_fixture.call().unwrap();
-
-        let apply_on_opening_fixture = ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-            .with_stake_parameters(Some(stake_parameters));
-
-        apply_on_opening_fixture.call_and_assert(Err(balances::Error::<
-            Test,
-            balances::DefaultInstance,
-        >::LiquidityRestrictions
-            .into()));
-    });
-}
-
-#[test]
 fn apply_on_opening_fails_with_stake_inconsistent_with_opening_stake() {
     build_test_externalities().execute_with(|| {
         HireLeadFixture::default().hire_lead();
@@ -871,7 +812,7 @@ fn apply_on_opening_fails_with_stake_inconsistent_with_opening_stake() {
         let add_opening_fixture =
             AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
                 stake_amount: 200,
-                unstaking_period: 10,
+                leaving_unstaking_period: 10,
             }));
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -903,7 +844,7 @@ fn apply_on_opening_locks_the_stake() {
         let add_opening_fixture =
             AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
                 stake_amount: stake,
-                unstaking_period: 10,
+                leaving_unstaking_period: 10,
             }));
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -941,7 +882,7 @@ fn apply_on_opening_fails_invalid_staking_check() {
         let add_opening_fixture =
             AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
                 stake_amount: stake,
-                unstaking_period: 10,
+                leaving_unstaking_period: 10,
             }));
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -977,7 +918,7 @@ fn apply_on_opening_fails_stake_amount_check() {
         let add_opening_fixture =
             AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
                 stake_amount: stake,
-                unstaking_period: 10,
+                leaving_unstaking_period: 10,
             }));
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -1013,7 +954,7 @@ fn apply_on_opening_fails_with_conflicting_stakes() {
         let add_opening_fixture =
             AddOpeningFixture::default().with_stake_policy(Some(StakePolicy {
                 stake_amount: stake,
-                unstaking_period: 10,
+                leaving_unstaking_period: 10,
             }));
         let opening_id = add_opening_fixture.call().unwrap();
 
@@ -1037,7 +978,7 @@ fn terminate_worker_unlocks_the_stake() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         let worker_id = HireRegularWorkerFixture::default()
@@ -1062,11 +1003,11 @@ fn leave_worker_unlocks_the_stake() {
         let total_balance = 300;
         let stake = 200;
 
-        let unstaking_period = 10;
+        let leaving_unstaking_period = 10;
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period,
+            leaving_unstaking_period,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -1082,7 +1023,7 @@ fn leave_worker_unlocks_the_stake() {
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        run_to_block(unstaking_period);
+        run_to_block(leaving_unstaking_period);
 
         assert_eq!(Balances::usable_balance(&account_id), total_balance);
     });
@@ -1095,10 +1036,10 @@ fn leave_worker_unlocks_the_stake_with_unstaking_period() {
         let total_balance = 300;
         let stake = 200;
 
-        let unstaking_period = 10;
+        let leaving_unstaking_period = 10;
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period,
+            leaving_unstaking_period,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -1114,7 +1055,7 @@ fn leave_worker_unlocks_the_stake_with_unstaking_period() {
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        run_to_block(unstaking_period);
+        run_to_block(leaving_unstaking_period);
 
         assert!(!<crate::WorkerById<Test, TestWorkingTeamInstance>>::contains_key(worker_id));
         assert_eq!(Balances::usable_balance(&account_id), total_balance);
@@ -1130,10 +1071,10 @@ fn leave_worker_works_immedietely_stake_is_zero() {
         let total_balance = 300;
         let stake = 200;
 
-        let unstaking_period = 10;
+        let leaving_unstaking_period = 10;
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period,
+            leaving_unstaking_period,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -1171,7 +1112,7 @@ fn terminate_worker_with_slashing_succeeds() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         let penalty = Penalty {
@@ -1243,7 +1184,7 @@ fn slash_worker_stake_succeeds() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         let penalty = Penalty {
@@ -1310,7 +1251,7 @@ fn slash_leader_stake_succeeds() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         let penalty = Penalty {
@@ -1367,7 +1308,7 @@ fn slash_worker_stake_fails_with_zero_balance() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         let penalty = Penalty {
@@ -1434,7 +1375,7 @@ fn decrease_worker_stake_succeeds() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -1487,7 +1428,7 @@ fn decrease_worker_stake_succeeds_for_leader() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -1538,7 +1479,7 @@ fn decrease_worker_stake_fails_with_zero_balance() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -1602,7 +1543,7 @@ fn increase_worker_stake_succeeds() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -1632,7 +1573,7 @@ fn increase_worker_stake_succeeds_for_leader() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -1670,7 +1611,7 @@ fn increase_worker_stake_fails_with_zero_balance() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -1734,7 +1675,7 @@ fn increase_worker_stake_fails_external_check() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -1781,7 +1722,7 @@ fn withdraw_application_succeeds() {
             .with_starting_block(starting_block)
             .with_stake_policy(Some(StakePolicy {
                 stake_amount: stake,
-                unstaking_period: 10,
+                leaving_unstaking_period: 10,
             }));
         let opening_id = add_opening_fixture.call_and_assert(Ok(()));
 
@@ -1910,7 +1851,7 @@ fn decrease_worker_stake_fails_with_leaving_worker() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -1943,7 +1884,7 @@ fn increase_worker_stake_fails_with_leaving_worker() {
 
         let stake_policy = Some(StakePolicy {
             stake_amount: stake,
-            unstaking_period: 10,
+            leaving_unstaking_period: 10,
         });
 
         increase_total_balance_issuance_using_account_id(account_id, total_balance);
@@ -2381,6 +2322,68 @@ fn set_status_text_fails_with_bad_origin() {
             .with_origin(RawOrigin::Signed(leader_account_id))
             .call_and_assert(Err(
                 Error::<Test, TestWorkingTeamInstance>::IsNotLeadAccount.into(),
+            ));
+    });
+}
+
+#[test]
+fn spend_from_budget_succeeded() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 2;
+        let amount = 100;
+        HireLeadFixture::default().hire_lead();
+
+        run_to_block(1);
+
+        let set_budget_fixture = SetBudgetFixture::default().with_budget(1000);
+        assert_eq!(set_budget_fixture.call(), Ok(()));
+
+        SpendFromBudgetFixture::default()
+            .with_account_id(account_id)
+            .with_amount(amount)
+            .call_and_assert(Ok(()));
+
+        EventFixture::assert_last_crate_event(RawEvent::BudgetSpending(account_id, amount));
+    });
+}
+
+#[test]
+fn spend_from_budget_failed_with_invalid_origin() {
+    build_test_externalities().execute_with(|| {
+        SpendFromBudgetFixture::default()
+            .with_origin(RawOrigin::None.into())
+            .call_and_assert(Err(DispatchError::BadOrigin));
+    });
+}
+
+#[test]
+fn spend_from_budget_fails_with_empty_budget() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 2;
+        let amount = 100;
+        HireLeadFixture::default().hire_lead();
+
+        SpendFromBudgetFixture::default()
+            .with_account_id(account_id)
+            .with_amount(amount)
+            .call_and_assert(Err(
+                Error::<Test, TestWorkingTeamInstance>::InsufficientBudgetForSpending.into(),
+            ));
+    });
+}
+
+#[test]
+fn spend_from_budget_fails_with_zero_amount() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 2;
+        let amount = 0;
+        HireLeadFixture::default().hire_lead();
+
+        SpendFromBudgetFixture::default()
+            .with_account_id(account_id)
+            .with_amount(amount)
+            .call_and_assert(Err(
+                Error::<Test, TestWorkingTeamInstance>::CannotSpendZero.into()
             ));
     });
 }

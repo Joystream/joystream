@@ -21,6 +21,7 @@
 //! - [update_reward_account](./struct.Module.html#method.update_reward_account) -  Update the reward account of the regular worker/lead.
 //! - [update_reward_amount](./struct.Module.html#method.update_reward_amount) -  Update the reward amount of the regular worker/lead.
 //! - [set_status_text](./struct.Module.html#method.set_status_text) - Sets the working team status.
+//! - [spend_from_budget](./struct.Module.html#method.spend_from_budget) - Spend tokens from the team budget.
 
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -203,6 +204,11 @@ decl_event!(
         /// Params:
         /// - status text hash
         StatusTextChanged(Vec<u8>),
+
+        /// Emits on updating the status text of the working team.
+        /// Params:
+        /// - status text hash
+        BudgetSpending(AccountId, Balance),
     }
 );
 
@@ -256,10 +262,10 @@ decl_module! {
         const MaxWorkerNumberLimit: u32 = T::MaxWorkerNumberLimit::get();
 
         fn on_initialize() -> Weight{
-            let leaving_workers = Self::get_leaving_workers();
+            let leaving_workers = Self::get_workers_with_finished_unstaking_period();
 
             leaving_workers.iter().for_each(|wi| {
-                Self::deactivate_worker(&wi.worker_id, &wi.worker, RawEvent::WorkerExited(wi.worker_id));
+                Self::remove_worker(&wi.worker_id, &wi.worker, RawEvent::WorkerExited(wi.worker_id));
             });
 
             if Self::is_reward_block() {
@@ -320,9 +326,6 @@ decl_module! {
 
             // Ensure job opening exists.
             let opening = checks::ensure_opening_exists::<T, I>(&p.opening_id)?;
-
-            // Ensure that there is sufficient balance to cover the proposed stake.
-            checks::ensure_enough_balance_for_staking::<T, I>(p.stake_parameters.clone())?;
 
             // Ensure that proposed stake is enough for the opening.
             checks::ensure_application_stake_match_opening::<T, I>(&opening, &p.stake_parameters)?;
@@ -473,7 +476,7 @@ decl_module! {
             //
 
             if Self::can_leave_immediately(&worker){
-                Self::deactivate_worker(&worker_id, &worker, RawEvent::WorkerExited(worker_id));
+                Self::remove_worker(&worker_id, &worker, RawEvent::WorkerExited(worker_id));
             } else{
                 WorkerById::<T, I>::mutate(worker_id, |worker| {
                     worker.started_leaving_at = Some(Self::current_block())
@@ -520,7 +523,7 @@ decl_module! {
                 RawEvent::TerminatedWorker(worker_id)
             };
 
-            Self::deactivate_worker(&worker_id, &worker, event);
+            Self::remove_worker(&worker_id, &worker, event);
         }
 
         /// Slashes the regular worker stake, demands a leader origin. No limits, no actions on zero stake.
@@ -774,18 +777,42 @@ decl_module! {
             //
 
             let status_text_hash = status_text
-            .map(|status_text| {
-                    let hashed = T::Hashing::hash(&status_text);
+                .map(|status_text| {
+                        let hashed = T::Hashing::hash(&status_text);
 
-                    hashed.as_ref().to_vec()
-                })
-            .unwrap_or_default();
+                        hashed.as_ref().to_vec()
+                    })
+                .unwrap_or_default();
 
             // Update the status text hash.
             <StatusTextHash<I>>::put(status_text_hash.clone());
 
             // Trigger event
             Self::deposit_event(RawEvent::StatusTextChanged(status_text_hash));
+        }
+
+        /// Transfers specified amount to any account.
+        /// Requires leader origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn spend_from_budget(
+            origin,
+            account_id: T::AccountId,
+            amount: BalanceOfCurrency<T>,
+            rationale: Option<Vec<u8>>,
+        ) {
+            // Ensure team leader privilege.
+            checks::ensure_origin_is_active_leader::<T,I>(origin)?;
+
+            ensure!(amount > Zero::zero(), Error::<T, I>::CannotSpendZero);
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::try_to_pay_from_budget(&account_id, amount)?;
+
+            // Trigger event
+            Self::deposit_event(RawEvent::BudgetSpending(account_id, amount));
         }
     }
 }
@@ -848,7 +875,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             opening
                 .stake_policy
                 .as_ref()
-                .map_or(Zero::zero(), |sp| sp.unstaking_period),
+                .map_or(Zero::zero(), |sp| sp.leaving_unstaking_period),
             opening.reward_policy.as_ref().map(|rp| rp.reward_per_block),
             Self::current_block(),
         );
@@ -887,7 +914,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
     // Fires the worker. Unsets the leader if necessary. Decreases active worker counter.
     // Deposits an event.
-    fn deactivate_worker(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>, event: Event<T, I>) {
+    fn remove_worker(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>, event: Event<T, I>) {
         // Unset lead if the leader is leaving.
         let leader_worker_id = <CurrentLead<T, I>>::get();
         if let Some(leader_worker_id) = leader_worker_id {
@@ -937,42 +964,43 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         if let Some(reward_per_block) = worker.reward_per_block {
             let reward = reward_per_block * rewarding_period.into();
 
-            let budget = Self::budget();
+            let result = Self::try_to_pay_from_budget(&worker.reward_account_id, reward);
 
             // Pay the reward.
-            if budget >= reward {
-                let new_budget = budget - reward;
-                <Budget<T, I>>::put(new_budget);
-
-                T::Currency::deposit_creating(&worker.reward_account_id, reward);
-
+            if result.is_ok() {
                 Self::try_to_pay_missed_reward(worker_id, worker);
             } else {
-                // Save unpaid reward.
-                let missed_reward_so_far = worker.missed_reward.map_or(Zero::zero(), |val| val);
-
-                let new_missed_reward = missed_reward_so_far + reward;
-
-                // Update worker missed reward.
-                WorkerById::<T, I>::mutate(worker_id, |worker| {
-                    worker.missed_reward = Some(new_missed_reward);
-                });
+                Self::save_missed_reward(worker_id, worker, reward);
             }
         }
     }
 
-    // Tries to pay missed reward if the reward is enabled for worker and there is enough of team budget.
-    fn try_to_pay_missed_reward(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
+    // Transfers the tokens if budget is sufficient.
+    fn try_to_pay_from_budget(
+        account_id: &T::AccountId,
+        amount: BalanceOfCurrency<T>,
+    ) -> Result<(), Error<T, I>> {
         let budget = Self::budget();
 
+        if budget >= amount {
+            let new_budget = budget - amount;
+            <Budget<T, I>>::put(new_budget);
+
+            T::Currency::deposit_creating(account_id, amount);
+
+            return Ok(());
+        }
+
+        Err(Error::<T, I>::InsufficientBudgetForSpending)
+    }
+
+    // Tries to pay missed reward if the reward is enabled for worker and there is enough of team budget.
+    fn try_to_pay_missed_reward(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
         if let Some(missed_reward) = worker.missed_reward {
-            if budget >= missed_reward {
-                let new_budget = budget - missed_reward;
-                <Budget<T, I>>::put(new_budget);
+            let result = Self::try_to_pay_from_budget(&worker.reward_account_id, missed_reward);
 
-                T::Currency::deposit_creating(&worker.reward_account_id, missed_reward);
-
-                // Update worker missed reward.
+            // Update worker missed reward on successful payment.
+            if result.is_ok() {
                 WorkerById::<T, I>::mutate(worker_id, |worker| {
                     worker.missed_reward = None;
                 });
@@ -980,12 +1008,29 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         }
     }
 
-    // Returns a collection of workers with active unstaking period.
-    fn get_leaving_workers() -> Vec<WorkerInfo<T>> {
+    // Saves missed reward for a worker.
+    fn save_missed_reward(
+        worker_id: &TeamWorkerId<T>,
+        worker: &TeamWorker<T>,
+        reward: BalanceOfCurrency<T>,
+    ) {
+        // Save unpaid reward.
+        let missed_reward_so_far = worker.missed_reward.map_or(Zero::zero(), |val| val);
+
+        let new_missed_reward = missed_reward_so_far + reward;
+
+        // Update worker missed reward.
+        WorkerById::<T, I>::mutate(worker_id, |worker| {
+            worker.missed_reward = Some(new_missed_reward);
+        });
+    }
+
+    // Returns a collection of workers with finished unstaking period.
+    fn get_workers_with_finished_unstaking_period() -> Vec<WorkerInfo<T>> {
         WorkerById::<T, I>::iter()
             .filter_map(|(worker_id, worker)| {
                 if let Some(started_leaving_at) = worker.started_leaving_at {
-                    if started_leaving_at + worker.job_unstaking_period == Self::current_block() {
+                    if started_leaving_at + worker.job_unstaking_period >= Self::current_block() {
                         return Some((worker_id, worker).into());
                     }
                 }
@@ -1006,8 +1051,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
 
         let reward_period = T::RewardPeriod::get();
 
-        // If reward period is not set or equals one - reward every block.
-        if reward_period <= One::one() {
+        // Special case for not set reward_period. Treats as reward_period == 1.
+        if reward_period == Zero::zero() {
             return true;
         }
 

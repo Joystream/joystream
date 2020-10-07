@@ -5,7 +5,7 @@ use crate::{
 
 use super::Error;
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, Get, WithdrawReasons};
+use frame_support::traits::Get;
 use frame_support::{ensure, StorageMap, StorageValue};
 use sp_arithmetic::traits::Zero;
 use sp_std::collections::btree_set::BTreeSet;
@@ -200,7 +200,7 @@ pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
         );
 
         ensure!(
-            stake_policy.unstaking_period > T::MinUnstakingPeriodLimit::get(),
+            stake_policy.leaving_unstaking_period > T::MinUnstakingPeriodLimit::get(),
             Error::<T, I>::UnstakingPeriodLessThanMinimum
         );
     }
@@ -217,32 +217,6 @@ pub(crate) fn ensure_valid_reward_policy<T: Trait<I>, I: Instance>(
             reward_policy.reward_per_block != Zero::zero(),
             Error::<T, I>::CannotRewardWithZero
         )
-    }
-
-    Ok(())
-}
-
-// Check application: verifies free balance for a given account for staking.
-pub(crate) fn ensure_enough_balance_for_staking<T: Trait<I>, I: Instance>(
-    stake_parameters: Option<StakeParameters<T::AccountId, BalanceOfCurrency<T>>>,
-) -> DispatchResult {
-    if let Some(sp) = stake_parameters {
-        if sp.stake > (Zero::zero()) {
-            let free_balance = T::Currency::free_balance(&sp.staking_account_id);
-
-            if free_balance < sp.stake {
-                return Err(Error::<T, I>::InsufficientBalanceToCoverStake.into());
-            } else {
-                let new_balance = free_balance - sp.stake;
-
-                return T::Currency::ensure_can_withdraw(
-                    &sp.staking_account_id,
-                    sp.stake,
-                    WithdrawReasons::all(),
-                    new_balance,
-                );
-            }
-        }
     }
 
     Ok(())
