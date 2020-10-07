@@ -24,6 +24,21 @@ type Member @entity {
 	rootAccount: Bytes!
 }
 
+"""
+This type is to keep which entity belongs to which class. This type will be used
+by EntityCreated event. When a new schema support added to an Entity we will get the
+class name from this table.
+We need this because we can't create a database row (Channel, Video etc) without
+with empty fields.
+"""
+type ClassEntity @entity {
+	"Runtime entity identifier (EntityId)"
+	id: ID!
+
+	"The class id of this entity"
+	classId: BigInt!
+}
+
 #### High Level Derivative Entities ####
 
 enum Language {
