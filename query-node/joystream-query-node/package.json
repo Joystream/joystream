@@ -1,16 +1,19 @@
 {
-  "name": "query-node",
+  "name": "content_dir",
   "version": "1.0.0",
-  "description": "GraphQL server and Substrate indexer. Generated with ♥ by Hydra-CLI",
+  "description": "GraphQL server and Substrate indexer. Generated with \u2665 by Hydra-CLI",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "clean": "yarn db:drop && rm -rf ./generated",
-    "indexer:start": "(cd ./generated/indexer && yarn && DEBUG=index-builder:* yarn start)",
+    "processor:start": "(cd ./generated/indexer && yarn && DEBUG=index-builder:* yarn start:processor)",
+    "indexer:start": "(cd ./generated/indexer && yarn && DEBUG=index-builder:* yarn start:indexer)",
     "server:start:dev": "(cd ./generated/graphql-server && yarn start:dev)",
     "server:start:prod": "(cd ./generated/graphql-server && yarn start:prod)",
-    "db:start": "docker-compose up -d db",
+    "db:up": "docker-compose up -d db",
     "db:drop": "(cd ./generated/graphql-server && yarn db:drop)",
-    "db:bootstrap": "(cd ./generated/graphql-server && yarn db:create && yarn db:sync && yarn db:migrate)",
+    "db:schema:migrate": "(cd ./generated/graphql-server && yarn db:create && yarn db:sync && yarn db:migrate)",
+    "db:indexer:migrate": "(cd ./generated/indexer && yarn db:migrate)",
+    "db:migrate": "yarn db:schema:migrate && yarn db:indexer:migrate",
     "codegen:all": "hydra-cli codegen",
     "codegen:indexer": "hydra-cli codegen --no-graphql",
     "codegen:server": "hydra-cli codegen --no-indexer",
@@ -21,10 +24,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@joystream/types": "^0.13.1",
-    "@types/bn.js": "^4.11.6",
-    "bn.js": "^5.1.2",
     "tslib": "^2.0.0",
-    "typeorm": "^0.2.26"
+    "@types/bn.js": "^4.11.6",
+    "bn.js": "^5.1.2"
   }
 }

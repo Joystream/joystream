@@ -1,21 +1,218 @@
+"Stored information about a registered user"
 type Member @entity {
-  memberId: BigInt!
+	"Randomly generated string id"
+	id: ID!
 
-  # The unique handle chosen by member
-  handle: String @fulltext(query: "handles")
+	memberId: BigInt! @unique
 
-  # A Url to member's Avatar image
-  avatarUri: String
+	"The unique handle chosen by member"
+	handle: String @unique @fulltext(query: "handles")
 
-  # Short text chosen by member to share information about themselves
-  about: String
+	"A Url to member's Avatar image"
+	avatarUri: String
 
-  # Blocknumber when member was registered
-  registeredAtBlock: BigInt!
+	"Short text chosen by member to share information about themselves"
+	about: String
 
-  # Member's controller account id.
-  controllerAccount: Bytes!
+	"Blocknumber when member was registered"
+	registeredAtBlock: BigInt!
 
-  # Member's root account id
-  rootAccount: Bytes!
+	"Member's controller account id"
+	controllerAccount: Bytes!
+
+	"Member's root account id"
+	rootAccount: Bytes!
+}
+
+"""
+This type is to keep which entity belongs to which class. This type will be used
+by EntityCreated event. When a new schema support added to an Entity we will get the
+class name from this table.
+We need this because we can't create a database row (Channel, Video etc) without
+with empty fields.
+"""
+type ClassEntity @entity {
+	"Runtime entity identifier (EntityId)"
+	id: ID!
+
+	"The class id of this entity"
+	classId: BigInt!
+}
+
+#### High Level Derivative Entities ####
+
+enum Language {
+	CHINESE
+	ENGLISH
+	ARABIC
+	PORTUGESE
+	FRENCH
+}
+
+type Channel @entity {
+	"Runtime entity identifier (EntityId)"
+	id: ID!
+
+	"Owner of the channel"
+	owner: Member!
+
+	"The title of the Channel"
+	title: String! @unique @fulltext(query: "titles")
+
+	"The description of a Channel"
+	description: String!
+
+	"Url for Channel's cover (background) photo. Recommended ratio: 16:9."
+	coverPhotoURL: String!
+
+	"Channel's avatar photo."
+	avatarPhotoURL: String!
+
+	"Flag signaling whether a channel is public."
+	isPublic: Boolean!
+
+	"Flag signaling whether a channel is curated/verified."
+	isCurated: Boolean!
+
+	"The primary langauge of the channel's content"
+	language: Language
+
+	videos: [Video!] @derivedFrom(field: "channel")
+}
+
+type Category @entity {
+	"Runtime entity identifier (EntityId)"
+	id: ID!
+
+	"The name of the category"
+	name: String! @unique @fulltext(query: "names")
+
+	"The description of the category"
+	description: String
+
+	videos: [Video!] @derivedFrom(field: "category")
+}
+
+"Encoding and containers"
+enum VideoMediaEncoding {
+	H264_MPEG4
+	VP8_WEBM
+	THEROA_VORBIS
+}
+
+type KnownLicense @entity {
+	"Runtime entity identifier (EntityId)"
+	id: ID!
+
+	"Short, commonly recognized code of the licence (ie. CC_BY_SA)"
+	code: String! @unique
+
+	"Full, descriptive name of the license (ie. Creative Commons - Attribution-NonCommercial-NoDerivs)"
+	name: String
+
+	"Short description of the license conditions"
+	description: String
+
+	"An url pointing to full license content"
+	url: String
+}
+
+type UserDefinedLicense @entity {
+	"Runtime entity identifier (EntityId)"
+	id: ID!
+
+	"Custom license content"
+	content: String!
+}
+
+type JoystreamMediaLocation @entity {
+	"Runtime entity identifier (EntityId)"
+	id: ID!
+
+	"Id of the data object in the Joystream runtime dataDirectory module"
+	dataObjectId: String! @unique
+}
+
+type HttpMediaLocation @entity {
+	"Runtime entity identifier (EntityId)"
+	id: ID!
+
+	"The http url pointing to the media"
+	url: String!
+
+	"The port to use when connecting to the http url (defaults to 80)"
+	port: Int
+}
+
+type VideoMedia @entity {
+	"Runtime entity identifier (EntityId)"
+	id: ID!
+
+	"Encoding of the video media object"
+	encoding: VideoMediaEncoding!
+
+	"Video media width in pixels"
+	pixelWidth: Int!
+
+	"Video media height in pixels"
+	pixelHeight: Int!
+
+	"Video media size in bytes"
+	size: BigInt
+
+	# One of the location field will be non-null
+
+	httpMediaLocation: HttpMediaLocation
+	joystreamMediaLocation: JoystreamMediaLocation
+}
+
+type Video @entity {
+	"Runtime entity identifier (EntityId)"
+	id: ID!
+
+	"Reference to member's channel"
+	channel: Channel!
+
+	"Reference to a video category"
+	category: Category!
+
+	"The title of the video"
+	title: String! @fulltext(query: "titles")
+
+	"The description of the Video"
+	description: String!
+
+	"Video duration in seconds"
+	duration: Int!
+
+	"Video's skippable intro duration in seconds"
+	skippableIntroDuration: BigInt
+
+	"Video thumbnail url (recommended ratio: 16:9)"
+	thumbnailURL: String!
+
+	"Video's main langauge"
+	language: Language
+
+	"Reference to VideoMedia"
+	media: VideoMedia!
+
+	"Whether or not Video contains marketing"
+	hasMarketing: Boolean
+
+	"If the Video was published on other platform before beeing published on Joystream - the original publication date"
+	publishedBeforeJoystream: BigInt
+
+	"Whether the Video is supposed to be publically displayed"
+	isPublic: Boolean!
+
+	"Video curation status set by the Curator"
+	isCurated: Boolean!
+
+	"Whether the Video contains explicit material."
+	isExplicit: Boolean!
+
+	# One of the license field will be non-null
+	knownLicence: KnownLicense
+	userDefinedLicense: UserDefinedLicense
 }

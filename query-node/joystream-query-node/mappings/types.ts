@@ -52,7 +52,6 @@ export interface IChannelProperties {
 
 export interface IChannel {
 	id: string;
-	accountId: Buffer;
 	properties: IChannelProperties;
 }
 
