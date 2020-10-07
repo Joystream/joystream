@@ -48,7 +48,8 @@ parameter_types! {
     pub const IdlePeriodDuration: u64 = 15;
     pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 10;
-    pub const CouncilLockId: LockIdentifier = *b"council_";
+    pub const CandidacyLockId: LockIdentifier = *b"council1";
+    pub const ElectedMemberLockId: LockIdentifier = *b"council2";
 }
 
 impl Trait for Runtime {
@@ -57,7 +58,8 @@ impl Trait for Runtime {
     type Referendum = referendum::Module<RuntimeReferendum, ReferendumInstance>;
 
     type CouncilUserId = u64;
-    type LockId = CouncilLockId;
+    type CandidacyLockId = CandidacyLockId;
+    type ElectedMemberLockId = ElectedMemberLockId;
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
     type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
@@ -395,7 +397,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         council_members: vec![],
         candidates: vec![],
         current_cycle_candidates_order: vec![],
-        current_cycle_id: 0,
+        current_announcement_cycle_id: 0,
     }
 }
 

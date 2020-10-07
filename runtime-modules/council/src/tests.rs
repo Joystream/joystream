@@ -262,3 +262,28 @@ fn council_announcement_reset_on_insufficient_candidates() {
         )
     });
 }
+
+// Test that candidate's stake is truly locked.
+#[ignore]
+#[test]
+fn council_candidate_stake_is_locked() {}
+
+// Test that candidate can unstake after not being elected.
+#[ignore]
+#[test]
+fn council_candidate_stake_can_be_unlocked() {}
+
+// Test that elected candidate's stake lock is automaticly converted from candidate lock to elected member lock.
+#[ignore]
+#[test]
+fn council_candidate_stake_automaticly_converted() {}
+
+// Test that council member stake is locked during council governance.
+#[ignore]
+#[test]
+fn council_member_stake_is_locked() {}
+
+// Test that council member's stake is automaticly released after next council is elected.
+#[ignore]
+#[test]
+fn council_member_stake_automaticly_unlocked() {}

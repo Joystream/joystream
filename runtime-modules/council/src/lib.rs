@@ -149,8 +149,10 @@ pub trait Trait: system::Trait {
     /// Minimum stake candidate has to lock
     type MinCandidateStake: Get<Balance<Self>>;
 
-    /// Identifier for currency locks used for staking.
-    type LockId: Get<LockIdentifier>;
+    /// Identifier for currency lock used for candidacy staking.
+    type CandidacyLockId: Get<LockIdentifier>;
+    /// Identifier for currency lock used for candidacy staking.
+    type ElectedMemberLockId: Get<LockIdentifier>;
 
     /// Duration of annoncing period
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
@@ -189,7 +191,7 @@ decl_storage! {
         pub CurrentCycleCandidatesOrder get(fn current_cycle_candidates_order) config(): map hasher(blake2_128_concat) u64 => T::CouncilUserId;
 
         /// Index of the current candidacy period. It is incremented everytime announcement period is.
-        pub CurrentAnnouncementCycleId get(fn current_cycle_id) config(): u64;
+        pub CurrentAnnouncementCycleId get(fn current_announcement_cycle_id) config(): u64;
     }
 }
 
@@ -496,7 +498,41 @@ impl<T: Trait> Mutations<T> {
             }
         });
 
+        // release stakes for previous council members
+        CouncilMembers::<T>::get()
+            .iter()
+            .for_each(|council_member| {
+                CurrencyOf::<T>::set_lock(
+                    <T as Trait>::CandidacyLockId::get(),
+                    &council_member.account_id,
+                    0.into(),
+                    WithdrawReason::Transfer.into(),
+                )
+            });
+
+        // set new council
         CouncilMembers::<T>::mutate(|value| *value = elected_members.to_vec());
+
+        // setup elected member lock to new council's members
+        CouncilMembers::<T>::get()
+            .iter()
+            .for_each(|council_member| {
+                // unlock candidacy stake
+                CurrencyOf::<T>::set_lock(
+                    <T as Trait>::CandidacyLockId::get(),
+                    &council_member.account_id,
+                    0.into(),
+                    WithdrawReason::Transfer.into(),
+                );
+
+                // lock council member stake
+                CurrencyOf::<T>::set_lock(
+                    <T as Trait>::ElectedMemberLockId::get(),
+                    &council_member.account_id,
+                    council_member.stake,
+                    WithdrawReason::Transfer.into(),
+                );
+            });
     }
 
     /// Announce user's candidacy.
@@ -521,7 +557,7 @@ impl<T: Trait> Mutations<T> {
 
         // lock candidacy stake
         CurrencyOf::<T>::set_lock(
-            <T as Trait>::LockId::get(),
+            <T as Trait>::CandidacyLockId::get(),
             &candidate.account_id,
             *stake,
             WithdrawReason::Transfer.into(),
@@ -541,7 +577,7 @@ impl<T: Trait> Mutations<T> {
     /// Release user's stake that was used for candidacy.
     fn release_candidacy_stake(account_id: &T::AccountId, council_user_id: &T::CouncilUserId) {
         // release stake amount
-        CurrencyOf::<T>::remove_lock(<T as Trait>::LockId::get(), account_id);
+        CurrencyOf::<T>::remove_lock(<T as Trait>::CandidacyLockId::get(), account_id);
 
         let candidate = Candidates::<T>::get(council_user_id);
 
