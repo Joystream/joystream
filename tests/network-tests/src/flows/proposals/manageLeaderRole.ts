@@ -88,7 +88,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     sudo,
     applicationStake,
     roleStake,
-    'Storage'
+    api.getWorkingGroupString(group)
   )
   // Propose create leader opening
   await createWorkingGroupLeaderOpeningFixture.runner(false)
@@ -127,7 +127,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     m1KeyPairs,
     sudo,
     expectLeadOpeningAddedFixture.getCreatedOpeningId() as OpeningId,
-    'Storage'
+    api.getWorkingGroupString(group)
   )
 
   // Propose begin leader application review
