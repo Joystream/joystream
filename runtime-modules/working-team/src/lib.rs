@@ -964,13 +964,19 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         if let Some(reward_per_block) = worker.reward_per_block {
             let reward = reward_per_block * rewarding_period.into();
 
-            let result = Self::try_to_pay_from_budget(&worker.reward_account_id, reward);
+            let (actual_reward, mut missed_reward) = Self::calculate_possible_payment(reward);
+
+            let result = Self::try_to_pay_from_budget(&worker.reward_account_id, actual_reward);
 
             // Pay the reward.
             if result.is_ok() {
                 Self::try_to_pay_missed_reward(worker_id, worker);
             } else {
-                Self::save_missed_reward(worker_id, worker, reward);
+                missed_reward += actual_reward;
+            }
+
+            if missed_reward > Zero::zero() {
+                Self::save_missed_reward(worker_id, worker, missed_reward);
             }
         }
     }
@@ -997,14 +1003,27 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     // Tries to pay missed reward if the reward is enabled for worker and there is enough of team budget.
     fn try_to_pay_missed_reward(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
         if let Some(missed_reward) = worker.missed_reward {
-            let result = Self::try_to_pay_from_budget(&worker.reward_account_id, missed_reward);
+            let (could_be_paid_reward, mut insufficient_amount) =
+                Self::calculate_possible_payment(missed_reward);
 
-            // Update worker missed reward on successful payment.
-            if result.is_ok() {
-                WorkerById::<T, I>::mutate(worker_id, |worker| {
-                    worker.missed_reward = None;
-                });
+            let result =
+                Self::try_to_pay_from_budget(&worker.reward_account_id, could_be_paid_reward);
+
+            // Pay the reward.
+            if result.is_err() {
+                insufficient_amount += could_be_paid_reward;
             }
+
+            let new_missed_reward = if insufficient_amount > Zero::zero() {
+                Some(insufficient_amount)
+            } else {
+                None
+            };
+
+            // Update worker missed reward.
+            WorkerById::<T, I>::mutate(worker_id, |worker| {
+                worker.missed_reward = new_missed_reward;
+            });
         }
     }
 
@@ -1023,6 +1042,19 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         WorkerById::<T, I>::mutate(worker_id, |worker| {
             worker.missed_reward = Some(new_missed_reward);
         });
+    }
+
+    // Returns allowed payment by the team budget and possible missed payment
+    fn calculate_possible_payment(
+        amount: BalanceOfCurrency<T>,
+    ) -> (BalanceOfCurrency<T>, BalanceOfCurrency<T>) {
+        let budget = Self::budget();
+
+        if budget >= amount {
+            (amount, Zero::zero())
+        } else {
+            (budget, amount - budget)
+        }
     }
 
     // Returns a collection of workers with finished unstaking period.

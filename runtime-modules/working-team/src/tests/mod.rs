@@ -551,6 +551,32 @@ fn leave_worker_role_succeeds_with_paying_missed_reward() {
 }
 
 #[test]
+fn leave_worker_role_succeeds_with_partial_payment_of_missed_reward() {
+    build_test_externalities().execute_with(|| {
+        let account_id = 1;
+        let reward_per_block = 10;
+        let reward_policy = Some(RewardPolicy { reward_per_block });
+
+        let worker_id = HireRegularWorkerFixture::default()
+            .with_reward_policy(reward_policy)
+            .hire();
+        let block_number = 4;
+
+        run_to_block(block_number);
+
+        assert_eq!(Balances::usable_balance(&account_id), 0);
+
+        let budget = 30;
+        SetBudgetFixture::default().with_budget(budget).execute();
+
+        let leave_worker_role_fixture = LeaveWorkerRoleFixture::default_for_worker_id(worker_id);
+        leave_worker_role_fixture.call_and_assert(Ok(()));
+
+        assert_eq!(Balances::usable_balance(&account_id), budget);
+    });
+}
+
+#[test]
 fn leave_worker_role_by_leader_succeeds() {
     build_test_externalities().execute_with(|| {
         // Ensure that lead is default
@@ -1982,31 +2008,22 @@ fn rewards_payments_with_insufficient_budget_and_restored_budget() {
         assert_eq!(Balances::usable_balance(&account_id), 0);
 
         let paid_blocks = 3;
-        let reward_period: u64 = RewardPeriod::get().into();
-        let effective_paid_blocks: u64 = paid_blocks - (paid_blocks % reward_period);
 
+        let first_budget = paid_blocks * reward_per_block;
         SetBudgetFixture::default()
-            .with_budget(paid_blocks * reward_per_block)
+            .with_budget(first_budget)
             .execute();
 
         let block_number = 10;
         run_to_block(block_number);
 
-        assert_eq!(
-            Balances::usable_balance(&account_id),
-            effective_paid_blocks * reward_per_block
-        );
+        assert_eq!(Balances::usable_balance(&account_id), first_budget);
 
         let worker = TestWorkingTeam::worker_by_id(worker_id);
 
-        let missed_reward_blocks = block_number - paid_blocks;
-        let effective_missed_reward: u64 =
-            missed_reward_blocks + (missed_reward_blocks % reward_period);
+        let effective_missed_reward: u64 = block_number * reward_per_block - first_budget;
 
-        assert_eq!(
-            worker.missed_reward.unwrap(),
-            effective_missed_reward * reward_per_block
-        );
+        assert_eq!(worker.missed_reward.unwrap(), effective_missed_reward);
 
         SetBudgetFixture::default().with_budget(1000000).execute();
 
