@@ -1575,7 +1575,9 @@ fn create_proposal_failed_with_zero_exact_execution_block() {
 #[test]
 fn create_proposal_failed_with_invalid_exact_execution_block() {
     initial_test_ext().execute_with(|| {
-        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(20);
+        run_to_block_and_finalize(20);
+
+        let parameters_fixture = ProposalParametersFixture::default();
 
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture.parameters)
@@ -1625,6 +1627,41 @@ fn proposal_execution_with_exact_execution_works() {
                 exact_execution_block: Some(exact_block),
             }
         );
+
+        // Exact execution block time.
+        run_to_block_and_finalize(exact_block);
+
+        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+            proposal_id,
+            ProposalStatus::approved(ApprovedProposalStatus::Executed, 0),
+        ));
+
+        // Proposal is removed.
+        assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
+
+        // check internal cache for proposal_id absence
+        assert!(!<PendingExecutionProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
+    });
+}
+
+#[test]
+fn proposal_execution_with_exact_execution_cancels_the_grace_period() {
+    initial_test_ext().execute_with(|| {
+        let exact_block = 10;
+        let parameters_fixture = ProposalParametersFixture::default().with_grace_period(300);
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters_fixture.params())
+            .with_exact_execution_block(Some(exact_block));
+
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
         // Exact execution block time.
         run_to_block_and_finalize(exact_block);

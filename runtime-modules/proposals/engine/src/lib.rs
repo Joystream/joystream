@@ -288,7 +288,7 @@ decl_error! {
         /// Exact execution block cannot be zero.
         ZeroExactExecutionBlock,
 
-        /// Exact execution block cannot be less than current_block + grace_period.
+        /// Exact execution block cannot be less than current_block.
         InvalidExactExecutionBlock,
     }
 }
@@ -583,7 +583,7 @@ impl<T: Trait> Module<T> {
             }
 
             let now = Self::current_block();
-            if execution_block <= now + parameters.grace_period {
+            if execution_block < now {
                 return Err(Error::<T>::InvalidExactExecutionBlock.into());
             }
         }
@@ -822,8 +822,14 @@ impl<T: Trait> Module<T> {
 
                 let now = Self::current_block();
 
-                if proposal.is_grace_period_expired(now) && proposal.is_execution_block_reached(now)
-                {
+                // If exact block is set - cancel the grace period.
+                let ready_for_execution = if proposal.exact_execution_block.is_none() {
+                    proposal.is_grace_period_expired(now)
+                } else {
+                    proposal.is_execution_block_reached(now)
+                };
+
+                if ready_for_execution {
                     // this should be true, because it was tested inside is_grace_period_expired()
                     if let ProposalStatus::Finalized(finalisation_data) = proposal.status.clone() {
                         Some(ApprovedProposalData {

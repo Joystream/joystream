@@ -772,7 +772,7 @@ impl<T: Trait> Module<T> {
             &params.title,
             &params.description,
             params.stake_balance,
-            None, //params.exact_execution_block
+            params.exact_execution_block,
         )?;
 
         <proposals_discussion::Module<T>>::ensure_can_create_thread(
@@ -793,7 +793,7 @@ impl<T: Trait> Module<T> {
             description: params.description,
             stake_balance: params.stake_balance,
             encoded_dispatchable_call_code: params.proposal_code,
-            exact_execution_block: None,
+            exact_execution_block: params.exact_execution_block,
         };
 
         let proposal_id = <proposals_engine::Module<T>>::create_proposal(proposal_creation_params)?;
