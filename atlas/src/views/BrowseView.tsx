@@ -41,8 +41,8 @@ const StyledCategoryPicker = styled(CategoryPicker)`
   z-index: 10;
   position: sticky;
   top: 0;
-  padding-top: ${sizes.b5}px;
-  padding-bottom: ${sizes.b2}px;
+  padding: ${sizes.b5}px ${sizes.b8}px ${sizes.b2}px;
+  margin: 0 -${sizes.b8}px;
   background-color: ${colors.black};
 `
 const StyledInfiniteVideoGrid = styled(InfiniteVideoGrid)`
