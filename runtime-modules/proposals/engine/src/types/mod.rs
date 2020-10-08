@@ -835,4 +835,23 @@ mod tests {
 
         assert!(slashing_threshold_proposal_status_resolution.is_slashing_threshold_reached());
     }
+
+    #[test]
+    fn proposal_exact_execution_block_reached() {
+        let mut proposal = ProposalObject::default();
+
+        proposal.exact_execution_block = None;
+        assert!(proposal.is_execution_block_reached(3));
+
+        proposal.exact_execution_block = Some(3);
+        assert!(proposal.is_execution_block_reached(3));
+    }
+
+    #[test]
+    fn proposal_exact_execution_block_not_reached() {
+        let mut proposal = ProposalObject::default();
+
+        proposal.exact_execution_block = Some(3);
+        assert!(!proposal.is_execution_block_reached(2));
+    }
 }

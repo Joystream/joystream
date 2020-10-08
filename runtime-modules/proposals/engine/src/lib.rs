@@ -583,7 +583,7 @@ impl<T: Trait> Module<T> {
             }
 
             let now = Self::current_block();
-            if execution_block < now {
+            if execution_block < now + parameters.grace_period + parameters.voting_period {
                 return Err(Error::<T>::InvalidExactExecutionBlock.into());
             }
         }
@@ -822,12 +822,8 @@ impl<T: Trait> Module<T> {
 
                 let now = Self::current_block();
 
-                // If exact block is set - cancel the grace period.
-                let ready_for_execution = if proposal.exact_execution_block.is_none() {
-                    proposal.is_grace_period_expired(now)
-                } else {
-                    proposal.is_execution_block_reached(now)
-                };
+                let ready_for_execution = proposal.is_grace_period_expired(now)
+                    && proposal.is_execution_block_reached(now);
 
                 if ready_for_execution {
                     // this should be true, because it was tested inside is_grace_period_expired()
