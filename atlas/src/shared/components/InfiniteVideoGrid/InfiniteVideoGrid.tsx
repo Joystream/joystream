@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import styled from '@emotion/styled'
-import { spacing, typography } from '../../theme'
-import { VideoPreview, VideoPreviewBase, Grid } from '..'
-import sizes from '@/shared/theme/sizes'
 import { debounce } from 'lodash'
 import { useLazyQuery } from '@apollo/client'
+
+import { typography, sizes } from '../../theme'
+import { VideoPreviewBase } from '../VideoPreview'
+import Grid from '../Grid'
+import VideoPreview from '@/components/VideoPreviewWithNavigation'
 import { GET_NEWEST_VIDEOS } from '@/api/queries'
 import { GetNewestVideos, GetNewestVideosVariables } from '@/api/queries/__generated__/GetNewestVideos'
 
@@ -119,6 +121,8 @@ const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({
     <>
       {displayedVideos.map((v) => (
         <StyledVideoPreview
+          id={v.id}
+          channelId={v.channel.id}
           title={v.title}
           channelName={v.channel.handle}
           channelAvatarURL={v.channel.avatarPhotoURL}

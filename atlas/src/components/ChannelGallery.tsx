@@ -1,10 +1,9 @@
 import React from 'react'
 import styled from '@emotion/styled'
-import { navigate } from '@reach/router'
 
-import { ChannelPreview, ChannelPreviewBase, Gallery } from '@/shared/components'
+import { ChannelPreviewBase, Gallery } from '@/shared/components'
+import ChannelPreview from './ChannelPreviewWithNavigation'
 import { ChannelFields } from '@/api/queries/__generated__/ChannelFields'
-import routes from '@/config/routes'
 
 type ChannelGalleryProps = {
   title: string
@@ -26,11 +25,11 @@ const ChannelGallery: React.FC<ChannelGalleryProps> = ({ title, action, channels
           ))
         : channels!.map((channel) => (
             <StyledChannelPreview
+              id={channel.id}
               name={channel.handle}
               avatarURL={channel.avatarPhotoURL}
               views={channel.totalViews}
               key={channel.id}
-              onClick={() => navigate(routes.channel(channel.id))}
               animated
             />
           ))}

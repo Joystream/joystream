@@ -34,6 +34,9 @@ export const Meta = styled.span`
 
 export const StyledChannelAvatar = styled(ChannelAvatar)`
   margin-top: ${theme.spacing.m};
+  :hover {
+    cursor: pointer;
+  }
 `
 
 export const DescriptionContainer = styled.div`

@@ -1,10 +1,9 @@
 import React from 'react'
 import styled from '@emotion/styled'
-import { navigate } from '@reach/router'
 
-import routes from '@/config/routes'
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
-import { VideoPreview, Grid } from '@/shared/components'
+import { Grid } from '@/shared/components'
+import VideoPreview from './VideoPreviewWithNavigation'
 
 const StyledVideoPreview = styled(VideoPreview)`
   margin: 0 auto;
@@ -18,6 +17,8 @@ const VideoGrid: React.FC<VideoGridProps> = ({ videos }) => {
     <Grid>
       {videos.map((v, idx) => (
         <StyledVideoPreview
+          id={v.id}
+          channelId={v.channel.id}
           key={idx}
           title={v.title}
           channelName={v.channel.handle}
@@ -26,7 +27,6 @@ const VideoGrid: React.FC<VideoGridProps> = ({ videos }) => {
           duration={v.duration}
           views={v.views}
           posterURL={v.thumbnailURL}
-          onClick={() => navigate(routes.video(v.id))}
         />
       ))}
     </Grid>
