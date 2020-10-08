@@ -21,21 +21,28 @@ class AddVideoViewArgs {
 
 @Resolver()
 export class VideoInfosResolver {
-  @Query(() => VideoInfo, { nullable: true })
+  @Query(() => VideoInfo, { nullable: true, description: 'Get views count for a single video' })
   async videoViews(@Args() { videoID }: VideoViewsArgs) {
     return VideoInfoModel.findOne({ videoID: videoID })
   }
 
-  @Query(() => [VideoInfo])
+  @Query(() => [VideoInfo], { description: 'Get views counts for a list of videos', nullable: 'items' })
   async batchedVideoViews(@Args() { videoIDList }: BatchedVideoViewsArgs) {
-    return VideoInfoModel.find({
+    const results = await VideoInfoModel.find({
       videoID: {
         $in: videoIDList,
       },
     })
+
+    const resultsLookup = results.reduce((acc, result) => {
+      acc[result.videoID] = result
+      return acc
+    }, {} as Record<string, VideoInfo>)
+
+    return videoIDList.map((id) => resultsLookup[id] || null)
   }
 
-  @Mutation(() => VideoInfo)
+  @Mutation(() => VideoInfo, { description: "Add a single view to the target video's count" })
   async addVideoView(@Args() { videoID }: AddVideoViewArgs) {
     return VideoInfoModel.findOneAndUpdate({ videoID }, { $inc: { views: 1 } }, { new: true, upsert: true })
   }

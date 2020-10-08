@@ -12,8 +12,20 @@ const main = async () => {
     validate: true,
   })
 
-  const mongoose = await connect('mongodb://localhost:27017/orion', { useUnifiedTopology: true, useNewUrlParser: true })
-  await mongoose.connection
+  process.stdout.write('Connecting to MongoDB...')
+  try {
+    const mongoose = await connect('mongodb://localhost:27017/orion', {
+      useUnifiedTopology: true,
+      useNewUrlParser: true,
+      useCreateIndex: true,
+    })
+    await mongoose.connection
+  } catch {
+    process.stdout.write(' Failed! \n')
+    process.exit()
+    return
+  }
+  process.stdout.write(' Done.\n')
 
   const server = new ApolloServer({ schema })
   const app = Express()

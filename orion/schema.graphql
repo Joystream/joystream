@@ -4,11 +4,15 @@
 # -----------------------------------------------
 
 type Mutation {
+  """Add a single view to the target video's count"""
   addVideoView(videoID: ID!): VideoInfo!
 }
 
 type Query {
-  batchedVideoViews(videoIDList: [ID!]!): [VideoInfo!]!
+  """Get views counts for a list of videos"""
+  batchedVideoViews(videoIDList: [ID!]!): [VideoInfo]!
+
+  """Get views count for a single video"""
   videoViews(videoID: ID!): VideoInfo
 }
 
