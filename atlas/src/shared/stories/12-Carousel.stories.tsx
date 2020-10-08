@@ -21,13 +21,10 @@ export const Default = () => (
   </Carousel>
 )
 
-export const LongerScroll = () => (
-  <Carousel scrollAmount={500}>
-    <CarouselItem>CarouselItem 1</CarouselItem>
-    <CarouselItem>CarouselItem 2</CarouselItem>
-    <CarouselItem>CarouselItem 3</CarouselItem>
-    <CarouselItem>CarouselItem 4</CarouselItem>
-    <CarouselItem>CarouselItem 5</CarouselItem>
-    <CarouselItem>CarouselItem 6</CarouselItem>
+export const Draggable = () => (
+  <Carousel draggable>
+    {Array.from({ length: 10 }, (_, i) => (
+      <CarouselItem> Carousel Item {i}</CarouselItem>
+    ))}
   </Carousel>
 )

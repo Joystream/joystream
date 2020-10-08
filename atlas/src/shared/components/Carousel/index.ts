@@ -1,5 +1,5 @@
-import Carousel, { CarouselProps } from './Carousel'
-import { CAROUSEL_CONTROL_SIZE } from './Carousel.style'
+import type { CarouselProps } from './Carousel'
+import Carousel from './Carousel'
 
-export { Carousel as default, CAROUSEL_CONTROL_SIZE }
+export default Carousel
 export type { CarouselProps }

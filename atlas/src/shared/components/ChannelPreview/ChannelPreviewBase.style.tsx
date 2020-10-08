@@ -5,6 +5,7 @@ import { colors, sizes, spacing } from '../../theme'
 const imageTopOverflow = '2rem'
 
 export const OuterContainer = styled.article`
+  max-width: 200px;
   width: 200px;
   height: ${`calc(166px + ${imageTopOverflow})`};
   padding-top: ${imageTopOverflow};
