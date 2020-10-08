@@ -62,7 +62,8 @@ const scenario = async () => {
   debug('Working Group (Content) Mint Capacity Proposal')
   await workingGroupMintCapacityProposal(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
 
-  // Leads are fired at the end of the scenarios
+  // Test hiring and firing leads by the council throuh proposals
+  // Leads are fired at the end of the flows
   debug('Lead Role (Storage) Proposals')
   await manageLeaderRole(api, env, db, WorkingGroups.StorageWorkingGroup)
   debug('Lead Role (Content) Proposals')
@@ -70,7 +71,7 @@ const scenario = async () => {
 
   /* workers tests */
 
-  debug('Lead Setup (Storage)')
+  debug('Sudo Hiring Lead (Storage)')
   await leaderSetup(api, env, db, WorkingGroups.StorageWorkingGroup)
   await atLeastValueBug(api, env, db)
 
@@ -81,7 +82,7 @@ const scenario = async () => {
   await workerApplicationRejectionCase(api, env, db, WorkingGroups.StorageWorkingGroup)
   await workerPayout(api, env, db, WorkingGroups.StorageWorkingGroup)
 
-  debug('Lead Setup (Content)')
+  debug('Sudo Hiring Lead (Content)')
   await leaderSetup(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
 
   debug('Content Worker Tests')

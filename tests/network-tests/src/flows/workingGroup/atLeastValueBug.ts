@@ -24,7 +24,7 @@ export default async function zeroAtLeastValueBug(api: Api, env: NodeJS.ProcessE
 
   // Pre-conditions
   // some members and a hired lead
-  assert(db.hasLeader(WorkingGroups.StorageWorkingGroup))
+  assert(db.hasLeader(api.getWorkingGroupString(WorkingGroups.StorageWorkingGroup)))
   const nKeyPairs = db.getMembers()
   leadKeyPair[0] = db.getLeader(api.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))
 

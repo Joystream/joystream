@@ -5,19 +5,18 @@ import BN from 'bn.js'
 import { Utils } from '../utils'
 import { PaidTermId } from '@joystream/types/members'
 import { DbService } from '../DbService'
-import { LeaderHiringHappyCaseFixture } from '../fixtures/leaderHiringHappyCase'
+import { SudoHireLeadFixture } from '../fixtures/sudoHireLead'
 
 // Worker application happy case scenario
 export default async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, db: DbService, group: WorkingGroups) {
-  const sudoUri: string = env.SUDO_ACCOUNT_URI!
-  const keyring = new Keyring({ type: 'sr25519' })
-  if (db.hasLeader(api.getWorkingGroupString(WorkingGroups.StorageWorkingGroup))) {
+  if (db.hasLeader(api.getWorkingGroupString(group))) {
     return
   }
 
+  const sudoUri: string = env.SUDO_ACCOUNT_URI!
+  const keyring = new Keyring({ type: 'sr25519' })
   const sudo: KeyringPair = keyring.addFromUri(sudoUri)
-  const leadKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
-
+  const leadKeyPair = Utils.createKeyPairs(keyring, 1)[0]
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
@@ -26,13 +25,9 @@ export default async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, db: 
   const payoutAmount: BN = new BN(env.PAYOUT_AMOUNT!)
   const openingActivationDelay: BN = new BN(0)
 
-  // Pre-conditions: some members, why? Will be hired by sudo
-  const nKeyPairs = db.getMembers()
-
-  const leaderHiringHappyCaseFixture: LeaderHiringHappyCaseFixture = new LeaderHiringHappyCaseFixture(
+  const leaderHiringHappyCaseFixture = new SudoHireLeadFixture(
     api,
     sudo,
-    nKeyPairs,
     leadKeyPair,
     paidTerms,
     applicationStake,
@@ -45,7 +40,7 @@ export default async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, db: 
   )
   await leaderHiringHappyCaseFixture.runner(false)
 
-  db.setLeader(leadKeyPair[0], api.getWorkingGroupString(group))
+  db.setLeader(leadKeyPair, api.getWorkingGroupString(group))
 }
 
 /* 

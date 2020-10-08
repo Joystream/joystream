@@ -34,8 +34,8 @@ export class BuyMembershipHappyCaseFixture implements Fixture {
 
     // Buying membership
     await Promise.all(
-      this.keyPairs.map(async (keyPair, index) => {
-        await this.api.buyMembership(keyPair, this.paidTerms, `new_member_${index}${keyPair.address.substring(0, 8)}`)
+      this.keyPairs.map(async (keyPair) => {
+        await this.api.buyMembership(keyPair, this.paidTerms, `member${keyPair.address.substring(0, 14)}`)
       })
     )
 

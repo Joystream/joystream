@@ -12,11 +12,10 @@ import { KeyringPair } from '@polkadot/keyring/types'
 import { PaidTermId } from '@joystream/types/members'
 import BN from 'bn.js'
 
-export class LeaderHiringHappyCaseFixture implements Fixture {
+export class SudoHireLeadFixture implements Fixture {
   private api: Api
   private sudo: KeyringPair
-  private nKeyPairs: KeyringPair[]
-  private leadKeyPair: KeyringPair[]
+  private leadKeyPair: KeyringPair
   private paidTerms: PaidTermId
   private applicationStake: BN
   private roleStake: BN
@@ -29,8 +28,7 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
   constructor(
     api: Api,
     sudo: KeyringPair,
-    nKeyPairs: KeyringPair[],
-    leadKeyPair: KeyringPair[],
+    leadKeyPair: KeyringPair,
     paidTerms: PaidTermId,
     applicationStake: BN,
     roleStake: BN,
@@ -42,7 +40,6 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
   ) {
     this.api = api
     this.sudo = sudo
-    this.nKeyPairs = nKeyPairs
     this.leadKeyPair = leadKeyPair
     this.paidTerms = paidTerms
     this.applicationStake = applicationStake
@@ -55,19 +52,10 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
-    const happyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
-      this.api,
-      this.sudo,
-      this.nKeyPairs,
-      this.paidTerms
-    )
-    // Creating a set of members
-    await happyCaseFixture.runner(false)
-
     const leaderHappyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
       this.api,
       this.sudo,
-      this.leadKeyPair,
+      [this.leadKeyPair],
       this.paidTerms
     )
     // Buying membership for leader account
@@ -75,7 +63,7 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
 
     const addLeaderOpeningFixture: AddLeaderOpeningFixture = new AddLeaderOpeningFixture(
       this.api,
-      this.nKeyPairs,
+      [this.leadKeyPair],
       this.sudo,
       this.applicationStake,
       this.roleStake,
@@ -85,47 +73,35 @@ export class LeaderHiringHappyCaseFixture implements Fixture {
     // Add lead opening
     await addLeaderOpeningFixture.runner(false)
 
-    let applyForLeaderOpeningFixture: ApplyForOpeningFixture
-    // Apply for lead opening
-    await (async () => {
-      applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
-        this.api,
-        this.leadKeyPair,
-        this.sudo,
-        this.applicationStake,
-        this.roleStake,
-        addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
-        this.workingGroup
-      )
-      await applyForLeaderOpeningFixture.runner(false)
-    })()
+    const applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
+      this.api,
+      [this.leadKeyPair],
+      this.sudo,
+      this.applicationStake,
+      this.roleStake,
+      addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
+      this.workingGroup
+    )
+    await applyForLeaderOpeningFixture.runner(false)
 
-    let beginLeaderApplicationReviewFixture: BeginLeaderApplicationReviewFixture
-    // Begin lead application review
-    await (async () => {
-      beginLeaderApplicationReviewFixture = new BeginLeaderApplicationReviewFixture(
-        this.api,
-        this.sudo,
-        addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
-        this.workingGroup
-      )
-      await beginLeaderApplicationReviewFixture.runner(false)
-    })()
+    const beginLeaderApplicationReviewFixture = new BeginLeaderApplicationReviewFixture(
+      this.api,
+      this.sudo,
+      addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
+      this.workingGroup
+    )
+    await beginLeaderApplicationReviewFixture.runner(false)
 
-    let fillLeaderOpeningFixture: FillLeaderOpeningFixture
-    // Fill lead opening
-    await (async () => {
-      fillLeaderOpeningFixture = new FillLeaderOpeningFixture(
-        this.api,
-        this.leadKeyPair,
-        this.sudo,
-        addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
-        this.firstRewardInterval,
-        this.rewardInterval,
-        this.payoutAmount,
-        this.workingGroup
-      )
-      await fillLeaderOpeningFixture.runner(false)
-    })()
+    const fillLeaderOpeningFixture = new FillLeaderOpeningFixture(
+      this.api,
+      [this.leadKeyPair],
+      this.sudo,
+      addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
+      this.firstRewardInterval,
+      this.rewardInterval,
+      this.payoutAmount,
+      this.workingGroup
+    )
+    await fillLeaderOpeningFixture.runner(false)
   }
 }
