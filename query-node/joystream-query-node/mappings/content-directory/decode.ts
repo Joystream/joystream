@@ -11,7 +11,7 @@ function _getClassEntity(event: SubstrateEvent): IClassEntity {
 	const { 0: classId } = event.extrinsic.args;
 	const { 1: entityId } = event.event_params;
 	return  {
-		id: entityId.toString(),
+		id: (entityId as unknown) as string,
 		classId: (classId.value as unknown) as BN,
 	};
 }
