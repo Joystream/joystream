@@ -40,7 +40,11 @@ export enum Language {
 	FRENCH = "FRENCH",
 }
 
-export interface IChannelProperties {
+interface Version {
+	version: number;
+}
+
+export interface IChannelProperties extends Version {
 	title: string;
 	description: string;
 	coverPhotoURL: string;
@@ -51,22 +55,72 @@ export interface IChannelProperties {
 }
 
 export interface IChannel {
-	id: string;
 	accountId: Buffer;
 	properties: IChannelProperties;
 }
 
-export type ClassName =
-	| "Channel"
-	| "Category"
-	| "KnownLicense"
-	| "UserDefinedLicense"
-	| "JoystreamMediaLocation"
-	| "HttpMediaLocation"
-	| "VideoMedia"
-	| "Video";
+export interface ICategory extends Version {
+	name: string;
+	description: string;
+}
 
-export interface IContentDirectoryClass {
-	classId: number;
-	name: ClassName;
+export interface IKnownLicense {
+	code: string;
+	name?: string;
+	description?: string;
+	url?: string;
+}
+
+export interface IUserDefinedLicense {
+	content: string;
+}
+
+export interface IJoystreamMediaLocation {
+	dataObjectId: string;
+}
+
+export interface IHttpMediaLocation {
+	url: string;
+	port?: number;
+}
+
+export enum VideoMediaEncoding {
+	H264_MPEG4 = "H264_MPEG4",
+	VP8_WEBM = "VP8_WEBM",
+	THEROA_VORBIS = "THEROA_VORBIS",
+}
+
+export interface IVideoMedia {
+	encoding: VideoMediaEncoding;
+	pixelWidth: number;
+	pixelHeight: number;
+	size: BN;
+	// referenced entity's id
+	httpMediaLoc?: number;
+	// referenced entity's id
+	joystreamMediaLoc?: number;
+}
+
+export interface IVideo {
+	// referenced entity's id
+	channelId: number;
+	// referenced entity's id
+	categoryId: number;
+	title: string;
+	description: string;
+	duration: number;
+	skippableIntroDuration?: BN;
+	thumbnailURL: string;
+	language: Language;
+	// referenced entity's id
+	videoMediaId: number;
+	hasMarketing?: boolean;
+	publishedBeforeJoystream?: BN;
+	isPublic: boolean;
+	isCurated: boolean;
+	isExplicit: boolean;
+	// referenced entity's id
+	knownLicenceId?: number;
+	// referenced entity's id
+	userDefinedLicenseId?: number;
 }
