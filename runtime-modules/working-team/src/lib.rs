@@ -41,7 +41,7 @@ use frame_support::weights::Weight;
 use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion};
+use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion, Saturating};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec::Vec;
 use system::{ensure_root, ensure_signed};
@@ -805,11 +805,18 @@ decl_module! {
 
             ensure!(amount > Zero::zero(), Error::<T, I>::CannotSpendZero);
 
+            // Ensures that the budget is sufficient for the spending of specified amount
+            let (_, potential_missed_payment) = Self::calculate_possible_payment(amount);
+            ensure!(
+                potential_missed_payment == Zero::zero(),
+                Error::<T, I>::InsufficientBudgetForSpending
+            );
+
             //
             // == MUTATION SAFE ==
             //
 
-            Self::try_to_pay_from_budget(&account_id, amount)?;
+            Self::pay_from_budget(&account_id, amount);
 
             // Trigger event
             Self::deposit_event(RawEvent::BudgetSpending(account_id, amount));
@@ -964,66 +971,54 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         if let Some(reward_per_block) = worker.reward_per_block {
             let reward = reward_per_block * rewarding_period.into();
 
-            let (actual_reward, mut missed_reward) = Self::calculate_possible_payment(reward);
+            let (actual_reward, missed_reward) = Self::calculate_possible_payment(reward);
 
-            let result = Self::try_to_pay_from_budget(&worker.reward_account_id, actual_reward);
-
-            // Pay the reward.
-            if result.is_ok() {
-                Self::try_to_pay_missed_reward(worker_id, worker);
-            } else {
-                missed_reward += actual_reward;
+            // Check whether the budget is not zero.
+            if actual_reward > Zero::zero() {
+                Self::pay_from_budget(&worker.reward_account_id, actual_reward);
             }
 
+            // Check whether the budget is insufficient.
             if missed_reward > Zero::zero() {
                 Self::save_missed_reward(worker_id, worker, missed_reward);
+            } else {
+                Self::try_to_pay_missed_reward(worker_id, worker);
             }
         }
     }
 
-    // Transfers the tokens if budget is sufficient.
-    fn try_to_pay_from_budget(
-        account_id: &T::AccountId,
-        amount: BalanceOfCurrency<T>,
-    ) -> Result<(), Error<T, I>> {
+    // Transfers the tokens if budget is sufficient. Infallible!
+    // Should be accompanied with previous budget check.
+    fn pay_from_budget(account_id: &T::AccountId, amount: BalanceOfCurrency<T>) {
         let budget = Self::budget();
 
-        if budget >= amount {
-            let new_budget = budget - amount;
-            <Budget<T, I>>::put(new_budget);
+        let new_budget = budget.saturating_sub(amount);
+        <Budget<T, I>>::put(new_budget);
 
-            T::Currency::deposit_creating(account_id, amount);
-
-            return Ok(());
-        }
-
-        Err(Error::<T, I>::InsufficientBudgetForSpending)
+        T::Currency::deposit_creating(account_id, amount);
     }
 
     // Tries to pay missed reward if the reward is enabled for worker and there is enough of team budget.
     fn try_to_pay_missed_reward(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
         if let Some(missed_reward) = worker.missed_reward {
-            let (could_be_paid_reward, mut insufficient_amount) =
+            let (could_be_paid_reward, insufficient_amount) =
                 Self::calculate_possible_payment(missed_reward);
 
-            let result =
-                Self::try_to_pay_from_budget(&worker.reward_account_id, could_be_paid_reward);
+            // Checks if the budget allows any payment.
+            if could_be_paid_reward > Zero::zero() {
+                Self::pay_from_budget(&worker.reward_account_id, could_be_paid_reward);
 
-            // Pay the reward.
-            if result.is_err() {
-                insufficient_amount += could_be_paid_reward;
+                let new_missed_reward = if insufficient_amount > Zero::zero() {
+                    Some(insufficient_amount)
+                } else {
+                    None
+                };
+
+                // Update worker missed reward.
+                WorkerById::<T, I>::mutate(worker_id, |worker| {
+                    worker.missed_reward = new_missed_reward;
+                });
             }
-
-            let new_missed_reward = if insufficient_amount > Zero::zero() {
-                Some(insufficient_amount)
-            } else {
-                None
-            };
-
-            // Update worker missed reward.
-            WorkerById::<T, I>::mutate(worker_id, |worker| {
-                worker.missed_reward = new_missed_reward;
-            });
         }
     }
 
