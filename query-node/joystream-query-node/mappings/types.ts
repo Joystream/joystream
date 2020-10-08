@@ -4,6 +4,11 @@ export interface BaseJoystreamMember {
 	memberId: BN;
 }
 
+export interface IClassEntity {
+	id: string,
+	classId: BN
+}
+
 export interface JoystreamMember extends BaseJoystreamMember {
 	handle: string;
 	avatarUri: string;

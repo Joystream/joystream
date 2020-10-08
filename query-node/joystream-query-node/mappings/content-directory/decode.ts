@@ -2,19 +2,18 @@ import Debug from "debug";
 import * as BN from "bn.js";
 
 import { SubstrateEvent } from "../../generated/indexer";
-import { ClassEntity } from "../../generated/graphql-server/src/modules/class-entity/class-entity.model";
-import { IChannel, IChannelProperties, IContentDirectoryClass } from "../types";
+import { IChannel, IClassEntity, IChannelProperties, IContentDirectoryClass } from "../types";
 import { contentDirClasses } from "./constants";
 
 const debug = Debug("mappings:content-directory");
 
-function _getClassEntity(event: SubstrateEvent): ClassEntity {
+function _getClassEntity(event: SubstrateEvent): IClassEntity {
 	const { 0: classId } = event.extrinsic.args;
 	const { 1: entityId } = event.event_params;
-	return new ClassEntity({
+	return  {
 		id: entityId.toString(),
 		classId: (classId.value as unknown) as BN,
-	});
+	};
 }
 
 function _getClassById(classId: BN): IContentDirectoryClass {

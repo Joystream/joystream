@@ -5,11 +5,11 @@ import { DB, SubstrateEvent } from "../../generated/indexer";
 import { decode } from "./decode";
 
 import { Channel } from "../../generated/graphql-server/src/modules/channel/channel.model";
-import { Member } from "../../generated/graphql-server/src/modules/member/member.model";
 import { ClassEntity } from "../../generated/graphql-server/src/modules/class-entity/class-entity.model";
 
 async function contentDirectory_EntityCreated(db: DB, event: SubstrateEvent) {
-	const class_entity = decode._getClassEntity(event);
+	const classEntity = decode._getClassEntity(event);
+	let class_entity = new ClassEntity ({ ...classEntity });
 	await db.save<ClassEntity>(class_entity);
 }
 
