@@ -28,7 +28,7 @@ const BrowseView: React.FC<RouteComponentProps> = () => {
         selectedCategoryId={selectedCategoryId}
         onChange={handleCategoryChange}
       />
-      <InfiniteVideoGrid categoryId={selectedCategoryId || undefined} ready={!!selectedCategoryId} />
+      <StyledInfiniteVideoGrid categoryId={selectedCategoryId || undefined} ready={!!selectedCategoryId} />
     </div>
   )
 }
@@ -45,5 +45,7 @@ const StyledCategoryPicker = styled(CategoryPicker)`
   padding-bottom: ${sizes.b2}px;
   background-color: ${colors.black};
 `
-
+const StyledInfiniteVideoGrid = styled(InfiniteVideoGrid)`
+  padding-top: ${sizes.b2}px;
+`
 export default BrowseView

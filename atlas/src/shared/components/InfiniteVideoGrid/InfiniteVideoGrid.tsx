@@ -17,7 +17,6 @@ type InfiniteVideoGridProps = {
   ready?: boolean
   className?: string
 }
-console.log(Grid)
 
 const INITIAL_ROWS = 4
 const INITIAL_VIDEOS_PER_ROW = 4
@@ -142,7 +141,7 @@ const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({
   return (
     <section className={className}>
       {title && <Title>{title}</Title>}
-      <StyledGrid onResize={(sizes) => setVideosPerRow(sizes.length)}>{gridContent}</StyledGrid>
+      <Grid onResize={(sizes) => setVideosPerRow(sizes.length)}>{gridContent}</Grid>
     </section>
   )
 }
@@ -160,9 +159,6 @@ const StyledVideoPreview = styled(VideoPreview)`
 const StyledVideoPreviewBase = styled(VideoPreviewBase)`
   margin: 0 auto;
   width: 100%;
-`
-const StyledGrid = styled(Grid)`
-  padding-top: ${sizes.b2}px;
 `
 
 export default InfiniteVideoGrid
