@@ -28,22 +28,16 @@ import { PaidTermId } from '@joystream/types/members'
 import { OpeningId } from '@joystream/types/hiring'
 import { ProposalId } from '@joystream/types/proposals'
 import { DbService } from '../../DbService'
-import { CouncilElectionHappyCaseFixture } from '../../fixtures/councilElectionHappyCase'
+import { assert } from 'chai'
 
 export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv, db: DbService, group: WorkingGroups) {
   const sudoUri: string = env.SUDO_ACCOUNT_URI!
   const keyring = new Keyring({ type: 'sr25519' })
   const sudo: KeyringPair = keyring.addFromUri(sudoUri)
 
-  const N: number = +env.MEMBERSHIP_CREATION_N!
-  let m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
-  let m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   const leadKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
 
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
-  const K: number = +env.COUNCIL_ELECTION_K!
-  const greaterStake: BN = new BN(+env.COUNCIL_STAKE_GREATER_AMOUNT!)
-  const lesserStake: BN = new BN(+env.COUNCIL_STAKE_LESSER_AMOUNT!)
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
   const firstRewardInterval: BN = new BN(env.LONG_REWARD_INTERVAL!)
@@ -53,25 +47,11 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
   const stakeDecrement: BN = new BN(env.STAKE_DECREMENT!)
   const slashAmount: BN = new BN(env.SLASH_AMOUNT!)
 
-  // const durationInBlocks = 70
-  // setTestTimeout(api, durationInBlocks)
-
-  if (db.hasCouncil()) {
-    m1KeyPairs = db.getMembers()
-    m2KeyPairs = db.getCouncil()
-  } else {
-    const councilElectionHappyCaseFixture = new CouncilElectionHappyCaseFixture(
-      api,
-      sudo,
-      m1KeyPairs,
-      m2KeyPairs,
-      paidTerms,
-      K,
-      greaterStake,
-      lesserStake
-    )
-    await councilElectionHappyCaseFixture.runner(false)
-  }
+  // Pre-conditions - members and council
+  // No Hired Lead
+  assert(!db.hasLeader(group))
+  const m1KeyPairs = db.getMembers()
+  const m2KeyPairs = db.getCouncil()
 
   const leaderMembershipFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
     api,

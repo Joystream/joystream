@@ -65,7 +65,6 @@ const scenario = async () => {
   // Leads are fired at the end of the scenarios
   debug('Lead Role (Storage) Proposals')
   await manageLeaderRole(api, env, db, WorkingGroups.StorageWorkingGroup)
-
   debug('Lead Role (Content) Proposals')
   await manageLeaderRole(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
 
@@ -74,21 +73,23 @@ const scenario = async () => {
   debug('Lead Setup (Storage)')
   await leaderSetup(api, env, db, WorkingGroups.StorageWorkingGroup)
   await atLeastValueBug(api, env, db)
+
   debug('Storage Worker Tests')
   await manageWorkerAsLead(api, env, db, WorkingGroups.StorageWorkingGroup)
-  await manageWorkerAsWorker(api, env, db)
-  await workerApplicaionHappyCase(api, env, db)
-  await workerApplicationRejectionCase(api, env, db)
-  await workerPayout(api, env, db)
+  await manageWorkerAsWorker(api, env, db, WorkingGroups.StorageWorkingGroup)
+  await workerApplicaionHappyCase(api, env, db, WorkingGroups.StorageWorkingGroup)
+  await workerApplicationRejectionCase(api, env, db, WorkingGroups.StorageWorkingGroup)
+  await workerPayout(api, env, db, WorkingGroups.StorageWorkingGroup)
 
   debug('Lead Setup (Content)')
   await leaderSetup(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
+
   debug('Content Worker Tests')
   await manageWorkerAsLead(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
-  await manageWorkerAsWorker(api, env, db)
-  await workerApplicaionHappyCase(api, env, db)
-  await workerApplicationRejectionCase(api, env, db)
-  await workerPayout(api, env, db)
+  await manageWorkerAsWorker(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
+  await workerApplicaionHappyCase(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
+  await workerApplicationRejectionCase(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
+  await workerPayout(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
 
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!

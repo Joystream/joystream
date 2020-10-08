@@ -1,11 +1,8 @@
 import { KeyringPair } from '@polkadot/keyring/types'
 import { Keyring } from '@polkadot/api'
-import BN from 'bn.js'
 import { Api } from '../../Api'
 import { Utils } from '../../utils'
 import { ElectionParametersProposalFixture } from '../../fixtures/proposalsModule'
-import { PaidTermId } from '@joystream/types/members'
-import { CouncilElectionHappyCaseFixture } from '../../fixtures/councilElectionHappyCase'
 import { DbService } from '../../DbService'
 
 // Election parameters proposal scenario
@@ -18,30 +15,10 @@ export default async function electionParametersProposal(api: Api, env: NodeJS.P
   let m1KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
   let m2KeyPairs: KeyringPair[] = Utils.createKeyPairs(keyring, N)
 
-  const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
-  const K: number = +env.COUNCIL_ELECTION_K!
-  const greaterStake: BN = new BN(+env.COUNCIL_STAKE_GREATER_AMOUNT!)
-  const lesserStake: BN = new BN(+env.COUNCIL_STAKE_LESSER_AMOUNT!)
-
-  // const durationInBlocks = 29
-  // setTestTimeout(api, durationInBlocks)
-
-  if (db.hasCouncil()) {
-    m1KeyPairs = db.getMembers()
-    m2KeyPairs = db.getCouncil()
-  } else {
-    const councilElectionHappyCaseFixture = new CouncilElectionHappyCaseFixture(
-      api,
-      sudo,
-      m1KeyPairs,
-      m2KeyPairs,
-      paidTerms,
-      K,
-      greaterStake,
-      lesserStake
-    )
-    await councilElectionHappyCaseFixture.runner(false)
-  }
+  // Pre-Conditions: some members and an elected council
+  // if (!db.hasCouncil() { }
+  m1KeyPairs = db.getMembers()
+  m2KeyPairs = db.getCouncil()
 
   const electionParametersProposalFixture: ElectionParametersProposalFixture = new ElectionParametersProposalFixture(
     api,
