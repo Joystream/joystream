@@ -1,60 +1,67 @@
 import React, { useState } from 'react'
-import { navigate, Link, RouteComponentProps } from '@reach/router'
+import { RouteComponentProps, Link, navigate } from '@reach/router'
 
 import routes from '@/config/routes'
-import { Icon } from '@/shared/components'
-import { Header, NavigationContainer, StyledIcon, StyledSearchbar, CancelButton, Logo } from './Navbar.style'
+import { Header, NavigationContainer, StyledIcon, StyledSearchbar, SearchbarContainer, Logo } from './Navbar.style'
 
-const Navbar: React.FC<RouteComponentProps> = () => {
+type NavbarProps = RouteComponentProps
+
+const Navbar: React.FC<NavbarProps> = () => {
   const [search, setSearch] = useState('')
-  const [isSearching, setIsSearching] = useState(false)
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearch(e.currentTarget.value)
-  }
+  const [isFocused, setIsFocused] = useState(false)
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || (e.key === 'NumpadEnter' && search.trim() !== '')) {
+    if ((e.key === 'Enter' || e.key === 'NumpadEnter') && search.trim()) {
       navigate(routes.search(search))
+    }
+    if (e.key === 'Escape' || e.key === 'Esc') {
+      setIsFocused(false)
+      setSearch('')
+      e.currentTarget.blur()
     }
   }
 
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsFocused(true)
+    setSearch(e.currentTarget.value)
+  }
+
   const handleFocus = () => {
-    setIsSearching(true)
+    setIsFocused(true)
   }
 
   const handleCancel = () => {
     setSearch('')
-    setIsSearching(false)
+    setIsFocused(false)
   }
   return (
-    <Header isSearching={isSearching}>
-      {!isSearching && (
-        <NavigationContainer>
-          <Link to="/">
-            <Logo />
-          </Link>
-          <Link to="/">
-            <StyledIcon name="home" />
-          </Link>
-          <Link to={routes.browse()}>
-            <StyledIcon name="binocular" />
-          </Link>
-        </NavigationContainer>
-      )}
-
-      <StyledSearchbar
-        placeholder="Search..."
-        onChange={handleChange}
-        value={search}
-        onKeyPress={handleKeyPress}
-        onFocus={handleFocus}
-      />
-      {isSearching && (
-        <CancelButton onClick={handleCancel}>
-          <Icon name="times" />
-        </CancelButton>
-      )}
+    <Header hasFocus={isFocused}>
+      <div>
+        {!isFocused && (
+          <NavigationContainer>
+            <Link to="/">
+              <Logo />
+            </Link>
+            <Link to="/">
+              <StyledIcon name="home" />
+            </Link>
+            <Link to={routes.browse()}>
+              <StyledIcon name="binocular" />
+            </Link>
+          </NavigationContainer>
+        )}
+      </div>
+      <SearchbarContainer>
+        <StyledSearchbar
+          placeholder="Search..."
+          onChange={handleChange}
+          value={search}
+          onKeyDown={handleKeyPress}
+          onFocus={handleFocus}
+          onCancel={handleCancel}
+          controlled
+        />
+      </SearchbarContainer>
     </Header>
   )
 }

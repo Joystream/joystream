@@ -9,19 +9,21 @@ import routes from '@/config/routes'
 import { sizes } from '@/shared/theme'
 
 const LayoutWithRouting: React.FC = () => (
-  <MainContainer>
+  <>
     <GlobalStyle />
     <Router primary>
       <Navbar default />
     </Router>
-    <Router primary={false}>
-      <HomeView default />
-      <VideoView path={routes.video()} />
-      <SearchView path={routes.search()} />
-      <BrowseView path={routes.browse()} />
-      <ChannelView path={routes.channel()} />
-    </Router>
-  </MainContainer>
+    <MainContainer>
+      <Router primary={false}>
+        <HomeView default />
+        <VideoView path={routes.video()} />
+        <SearchView path={routes.search()} />
+        <BrowseView path={routes.browse()} />
+        <ChannelView path={routes.channel()} />
+      </Router>
+    </MainContainer>
+  </>
 )
 
 const MainContainer = styled.main`
