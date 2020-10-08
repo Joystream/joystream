@@ -73,6 +73,7 @@ use system::ensure_root;
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
 use governance::election_params::ElectionParameters;
+use proposals_engine::BalanceOfCurrency;
 use proposals_engine::{ProposalCreationParameters, ProposalObserver, ProposalParameters};
 
 pub use crate::proposal_types::{
@@ -94,9 +95,9 @@ struct CreateProposalParameters<T: Trait> {
     pub member_id: MemberId<T>,
     pub title: Vec<u8>,
     pub description: Vec<u8>,
-    pub stake_balance: Option<BalanceOf<T>>,
+    pub stake_balance: Option<BalanceOfCurrency<T>>,
     pub proposal_code: Vec<u8>,
-    pub proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>,
+    pub proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOfCurrency<T>>,
     pub proposal_details: ProposalDetailsOf<T>,
     pub exact_execution_block: Option<T::BlockNumber>,
 }
@@ -334,7 +335,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            stake_balance: Option<BalanceOfCurrency<T>>,
             text: Vec<u8>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -366,7 +367,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            stake_balance: Option<BalanceOfCurrency<T>>,
             wasm: Vec<u8>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -398,7 +399,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            stake_balance: Option<BalanceOfCurrency<T>>,
             balance: BalanceOfMint<T>,
             destination: T::AccountId,
             exact_execution_block: Option<T::BlockNumber>,
@@ -433,7 +434,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            stake_balance: Option<BalanceOfCurrency<T>>,
             new_validator_count: u32,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -471,7 +472,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            stake_balance: Option<BalanceOfCurrency<T>>,
             add_opening_parameters: AddOpeningParameters<T::BlockNumber, BalanceOfGovernanceCurrency<T>>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -499,7 +500,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            stake_balance: Option<BalanceOfCurrency<T>>,
             opening_id: working_group::OpeningId<T>,
             working_group: WorkingGroup,
             exact_execution_block: Option<T::BlockNumber>,
@@ -528,7 +529,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            stake_balance: Option<BalanceOfCurrency<T>>,
             fill_opening_parameters: FillOpeningParameters<
                 T::BlockNumber,
                 BalanceOfMint<T>,
@@ -561,7 +562,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            stake_balance: Option<BalanceOfCurrency<T>>,
             mint_balance: BalanceOfMint<T>,
             working_group: WorkingGroup,
             exact_execution_block: Option<T::BlockNumber>,
@@ -595,7 +596,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            stake_balance: Option<BalanceOfCurrency<T>>,
             worker_id: working_group::WorkerId<T>,
             decreasing_stake: BalanceOf<T>,
             working_group: WorkingGroup,
@@ -632,7 +633,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            stake_balance: Option<BalanceOfCurrency<T>>,
             worker_id: working_group::WorkerId<T>,
             slashing_stake: BalanceOf<T>,
             working_group: WorkingGroup,
@@ -669,7 +670,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            stake_balance: Option<BalanceOfCurrency<T>>,
             worker_id: working_group::WorkerId<T>,
             reward_amount: BalanceOfMint<T>,
             working_group: WorkingGroup,
@@ -704,7 +705,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            stake_balance: Option<BalanceOfCurrency<T>>,
             terminate_role_parameters: TerminateRoleParameters<working_group::WorkerId<T>>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {

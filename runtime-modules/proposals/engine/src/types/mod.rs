@@ -15,19 +15,11 @@ use sp_std::ops::Add;
 use sp_std::vec::Vec;
 
 mod proposal_statuses;
-mod stakes;
 
+use common::currency::GovernanceCurrency;
 pub use proposal_statuses::{
     ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus, ProposalStatus,
 };
-pub(crate) use stakes::ProposalStakeManager;
-pub use stakes::{DefaultStakeHandlerProvider, StakeHandler, StakeHandlerProvider};
-
-#[cfg(test)]
-pub(crate) use stakes::DefaultStakeHandler;
-
-#[cfg(test)]
-pub(crate) use stakes::MockStakeHandler;
 
 /// Vote kind for the proposal. Sum of all votes defines proposal status.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
@@ -122,10 +114,7 @@ impl VotingResults {
 /// Contains created stake id and source account for the stake balance
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug)]
-pub struct ActiveStake<StakeId, AccountId> {
-    /// Created stake id for the proposal
-    pub stake_id: StakeId,
-
+pub struct ActiveStake<AccountId> {
     /// Source account of the stake balance. Refund if any will be provided using this account
     pub source_account_id: AccountId,
 }
@@ -133,7 +122,7 @@ pub struct ActiveStake<StakeId, AccountId> {
 /// 'Proposal' contains information necessary for the proposal system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
-pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId> {
+pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {
     /// Proposals parameter, characterize different proposal types.
     pub parameters: ProposalParameters<BlockNumber, Balance>,
 
@@ -150,7 +139,7 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId> {
     pub created_at: BlockNumber,
 
     /// Current proposal status
-    pub status: ProposalStatus<BlockNumber, StakeId, AccountId>,
+    pub status: ProposalStatus<BlockNumber, AccountId>,
 
     /// Curring voting result for the proposal
     pub voting_results: VotingResults,
@@ -159,11 +148,10 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId> {
     pub exact_execution_block: Option<BlockNumber>,
 }
 
-impl<BlockNumber, ProposerId, Balance, StakeId, AccountId>
-    Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId>
+impl<BlockNumber, ProposerId, Balance, AccountId>
+    Proposal<BlockNumber, ProposerId, Balance, AccountId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
-    StakeId: Clone,
     AccountId: Clone,
 {
     /// Returns whether voting period expired by now
@@ -253,8 +241,8 @@ pub trait VotersParameters {
 }
 
 // Calculates quorum, votes threshold, expiration status
-struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId, AccountId> {
-    proposal: &'a Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId>,
+struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, AccountId> {
+    proposal: &'a Proposal<BlockNumber, ProposerId, Balance, AccountId>,
     now: BlockNumber,
     votes_count: u32,
     total_voters_count: u32,
@@ -262,11 +250,10 @@ struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId, A
     slashes: u32,
 }
 
-impl<'a, BlockNumber, ProposerId, Balance, StakeId, AccountId>
-    ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, StakeId, AccountId>
+impl<'a, BlockNumber, ProposerId, Balance, AccountId>
+    ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, AccountId>
 where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
-    StakeId: Clone,
     AccountId: Clone,
 {
     // Proposal has been expired and quorum not reached.
@@ -351,19 +338,12 @@ pub type NegativeImbalance<T> =
 pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
 
 /// Data container for the finalized proposal results
-pub(crate) struct FinalizedProposalData<
-    ProposalId,
-    BlockNumber,
-    ProposerId,
-    Balance,
-    StakeId,
-    AccountId,
-> {
+pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, ProposerId, Balance, AccountId> {
     /// Proposal id
     pub proposal_id: ProposalId,
 
     /// Proposal to be finalized
-    pub proposal: Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId>,
+    pub proposal: Proposal<BlockNumber, ProposerId, Balance, AccountId>,
 
     /// Proposal finalization status
     pub status: ProposalDecisionStatus,
@@ -373,22 +353,15 @@ pub(crate) struct FinalizedProposalData<
 }
 
 /// Data container for the approved proposal results
-pub(crate) struct ApprovedProposalData<
-    ProposalId,
-    BlockNumber,
-    ProposerId,
-    Balance,
-    StakeId,
-    AccountId,
-> {
+pub(crate) struct ApprovedProposalData<ProposalId, BlockNumber, ProposerId, Balance, AccountId> {
     /// Proposal id.
     pub proposal_id: ProposalId,
 
     /// Proposal to be finalized.
-    pub proposal: Proposal<BlockNumber, ProposerId, Balance, StakeId, AccountId>,
+    pub proposal: Proposal<BlockNumber, ProposerId, Balance, AccountId>,
 
     /// Proposal finalisation status data.
-    pub finalisation_status_data: FinalizationData<BlockNumber, StakeId, AccountId>,
+    pub finalisation_status_data: FinalizationData<BlockNumber>,
 }
 
 /// Containter-type for a proposal creation method.
@@ -417,6 +390,57 @@ pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId>
     /// Exact block for the proposal execution.
     /// Should be greater than starting block + grace_period if set.
     pub exact_execution_block: Option<BlockNumber>,
+}
+
+// Type alias for member id.
+pub(crate) type MemberId<T> = <T as membership::Trait>::MemberId;
+
+/// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
+pub type BalanceOfCurrency<T> =
+    <<T as common::currency::GovernanceCurrency>::Currency as Currency<
+        <T as system::Trait>::AccountId,
+    >>::Balance;
+
+/// Defines abstract staking handler to manage user stakes for different activities
+/// like adding a proposal. Implementation should use built-in LockableCurrency
+/// and LockIdentifier to lock balance consistently with pallet_staking.
+pub trait StakingHandler<T: system::Trait + membership::Trait + GovernanceCurrency> {
+    /// Locks the specified balance on the account using specific lock identifier.
+    fn lock(account_id: &T::AccountId, amount: BalanceOfCurrency<T>);
+
+    /// Removes the specified lock on the account.
+    fn unlock(account_id: &T::AccountId);
+
+    /// Slash the specified balance on the account using specific lock identifier.
+    /// No limits, no actions on zero stake.
+    /// If slashing balance greater than the existing stake - stake is slashed to zero.
+    /// Returns actually slashed balance.
+    fn slash(
+        account_id: &T::AccountId,
+        amount: Option<BalanceOfCurrency<T>>,
+    ) -> BalanceOfCurrency<T>;
+
+    /// Decreases the stake for to a given amount.
+    fn decrease_stake(account_id: &T::AccountId, new_stake: BalanceOfCurrency<T>);
+
+    /// Increases the stake for to a given amount.
+    fn increase_stake(account_id: &T::AccountId, new_stake: BalanceOfCurrency<T>)
+        -> DispatchResult;
+
+    /// Verifies that staking account bound to the member.
+    fn is_member_staking_account(member_id: &MemberId<T>, account_id: &T::AccountId) -> bool;
+
+    /// Verifies that there no conflicting stakes on the staking account.
+    fn is_account_free_of_conflicting_stakes(account_id: &T::AccountId) -> bool;
+
+    /// Verifies that staking account balance is sufficient for staking.
+    /// During the balance check we should consider already locked stake. Effective balance to check
+    /// is 'already locked funds' + 'usable funds'.
+    fn is_enough_balance_for_stake(account_id: &T::AccountId, amount: BalanceOfCurrency<T>)
+        -> bool;
+
+    /// Returns the current stake on the account.
+    fn current_stake(account_id: &T::AccountId) -> BalanceOfCurrency<T>;
 }
 
 #[cfg(test)]
