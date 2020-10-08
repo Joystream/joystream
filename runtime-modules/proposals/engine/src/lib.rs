@@ -143,9 +143,7 @@ use system::{ensure_root, RawOrigin};
 use common::origin::ActorOriginValidator;
 
 /// Proposals engine trait.
-pub trait Trait:
-    system::Trait + pallet_timestamp::Trait + stake::Trait + membership::Trait
-{
+pub trait Trait: system::Trait + pallet_timestamp::Trait + membership::Trait {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 

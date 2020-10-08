@@ -12,6 +12,7 @@ use sp_staking::SessionIndex;
 pub use system;
 
 use crate::{ProposalDetailsOf, ProposalEncoder};
+use frame_support::dispatch::DispatchResult;
 use proposals_engine::VotersParameters;
 use sp_runtime::testing::TestXt;
 
@@ -86,7 +87,7 @@ impl proposals_engine::Trait for Test {
     type VoterOriginValidator = ();
     type TotalVotersCounter = MockVotersParameters;
     type ProposalId = u32;
-    type StakeHandlerProvider = proposals_engine::DefaultStakeHandlerProvider;
+    type StakingHandler = ();
     type CancellationFee = CancellationFee;
     type RejectionFee = RejectionFee;
     type TitleMaxLength = TitleMaxLength;
@@ -94,6 +95,44 @@ impl proposals_engine::Trait for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
     type DispatchableCallCode = crate::Call<Test>;
     type ProposalObserver = crate::Module<Test>;
+}
+
+impl proposals_engine::StakingHandler<Test> for () {
+    fn lock(_account_id: &u64, _amount: u64) {
+        unimplemented!()
+    }
+
+    fn unlock(_account_id: &u64) {
+        unimplemented!()
+    }
+
+    fn slash(_account_id: &u64, _amount: Option<u64>) -> u64 {
+        unimplemented!()
+    }
+
+    fn decrease_stake(_account_id: &u64, _new_stake: u64) {
+        unimplemented!()
+    }
+
+    fn increase_stake(_account_id: &u64, _new_stake: u64) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn is_member_staking_account(_member_id: &u64, _account_id: &u64) -> bool {
+        unimplemented!()
+    }
+
+    fn is_account_free_of_conflicting_stakes(_account_id: &u64) -> bool {
+        unimplemented!()
+    }
+
+    fn is_enough_balance_for_stake(_account_id: &u64, _amount: u64) -> bool {
+        unimplemented!()
+    }
+
+    fn current_stake(_account_id: &u64) -> u64 {
+        unimplemented!()
+    }
 }
 
 impl Default for crate::Call<Test> {

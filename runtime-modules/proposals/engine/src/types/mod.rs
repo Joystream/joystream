@@ -449,7 +449,7 @@ mod tests {
     use crate::*;
 
     // Alias introduced for simplicity of changing Proposal exact types.
-    type ProposalObject = Proposal<u64, u64, u64, u64, u64>;
+    type ProposalObject = Proposal<u64, u64, u64, u64>;
 
     #[test]
     fn proposal_voting_period_expired() {
@@ -476,7 +476,7 @@ mod tests {
         let mut proposal = ProposalObject::default();
 
         proposal.parameters.grace_period = 3;
-        proposal.status = ProposalStatus::finalized_successfully(
+        proposal.status = ProposalStatus::finalized(
             ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingExecution),
             0,
         );
@@ -489,7 +489,7 @@ mod tests {
         let mut proposal = ProposalObject::default();
 
         proposal.parameters.grace_period = 0;
-        proposal.status = ProposalStatus::finalized_successfully(
+        proposal.status = ProposalStatus::finalized(
             ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingExecution),
             0,
         );
@@ -752,7 +752,7 @@ mod tests {
 
     #[test]
     fn proposal_status_resolution_approval_quorum_works_correctly() {
-        let no_approval_quorum_proposal: Proposal<u64, u64, u64, u64, u64> = Proposal {
+        let no_approval_quorum_proposal: Proposal<u64, u64, u64, u64> = Proposal {
             parameters: ProposalParameters {
                 approval_quorum_percentage: 63,
                 slashing_threshold_percentage: 63,
@@ -781,7 +781,7 @@ mod tests {
 
     #[test]
     fn proposal_status_resolution_slashing_quorum_works_correctly() {
-        let no_slashing_quorum_proposal: Proposal<u64, u64, u64, u64, u64> = Proposal {
+        let no_slashing_quorum_proposal: Proposal<u64, u64, u64, u64> = Proposal {
             parameters: ProposalParameters {
                 approval_quorum_percentage: 63,
                 slashing_quorum_percentage: 63,
@@ -810,7 +810,7 @@ mod tests {
 
     #[test]
     fn proposal_status_resolution_approval_threshold_works_correctly() {
-        let no_approval_threshold_proposal: Proposal<u64, u64, u64, u64, u64> = Proposal {
+        let no_approval_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
             parameters: ProposalParameters {
                 slashing_threshold_percentage: 63,
                 approval_threshold_percentage: 63,
@@ -839,7 +839,7 @@ mod tests {
 
     #[test]
     fn proposal_status_resolution_slashing_threshold_works_correctly() {
-        let no_slashing_threshold_proposal: Proposal<u64, u64, u64, u64, u64> = Proposal {
+        let no_slashing_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
             parameters: ProposalParameters {
                 slashing_threshold_percentage: 63,
                 approval_threshold_percentage: 63,

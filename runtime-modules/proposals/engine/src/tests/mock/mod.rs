@@ -1,8 +1,6 @@
 //! Mock runtime for the module testing.
 //!
 //! Submodules:
-//! - stakes: contains support for mocking external 'stake' module
-//! - balance_restorator: restores balances after unstaking
 //! - proposals: provides types for proposal execution tests
 //!
 
@@ -17,14 +15,11 @@ use sp_runtime::{
 };
 pub use system;
 
-mod balance_manager;
 pub(crate) mod proposals;
-mod stakes;
 
 use crate::ProposalObserver;
-use balance_manager::*;
+use frame_support::dispatch::DispatchResult;
 pub use proposals::*;
-pub use stakes::*;
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -69,14 +64,6 @@ impl common::currency::GovernanceCurrency for Test {
 
 impl proposals::Trait for Test {}
 
-impl stake::Trait for Test {
-    type Currency = Balances;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = BalanceManagerStakingEventsHandler;
-    type StakeId = u64;
-    type SlashId = u64;
-}
-
 parameter_types! {
     pub const CancellationFee: u64 = 5;
     pub const RejectionFee: u64 = 3;
@@ -99,7 +86,7 @@ impl crate::Trait for Test {
     type VoterOriginValidator = ();
     type TotalVotersCounter = ();
     type ProposalId = u32;
-    type StakeHandlerProvider = stakes::TestStakeHandlerProvider;
+    type StakingHandler = ();
     type CancellationFee = CancellationFee;
     type RejectionFee = RejectionFee;
     type TitleMaxLength = TitleMaxLength;
@@ -107,6 +94,44 @@ impl crate::Trait for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
     type DispatchableCallCode = proposals::Call<Test>;
     type ProposalObserver = ();
+}
+
+impl crate::StakingHandler<Test> for () {
+    fn lock(_account_id: &u64, _amount: u64) {
+        unimplemented!()
+    }
+
+    fn unlock(_account_id: &u64) {
+        unimplemented!()
+    }
+
+    fn slash(_account_id: &u64, _amount: Option<u64>) -> u64 {
+        unimplemented!()
+    }
+
+    fn decrease_stake(_account_id: &u64, _new_stake: u64) {
+        unimplemented!()
+    }
+
+    fn increase_stake(_account_id: &u64, _new_stake: u64) -> DispatchResult {
+        unimplemented!()
+    }
+
+    fn is_member_staking_account(_member_id: &crate::MemberId<Test>, _account_id: &u64) -> bool {
+        unimplemented!()
+    }
+
+    fn is_account_free_of_conflicting_stakes(_account_id: &u64) -> bool {
+        unimplemented!()
+    }
+
+    fn is_enough_balance_for_stake(_account_id: &u64, _amount: u64) -> bool {
+        unimplemented!()
+    }
+
+    fn current_stake(_account_id: &u64) -> u64 {
+        unimplemented!()
+    }
 }
 
 impl ProposalObserver<Test> for () {

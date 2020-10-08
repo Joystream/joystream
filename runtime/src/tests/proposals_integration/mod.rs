@@ -313,7 +313,6 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             proposer_id: member_id,
             created_at: 0,
             status: ProposalStatus::Active(Some(ActiveStake {
-                stake_id: 0,
                 source_account_id: account_id.clone(),
             })),
             title: b"title".to_vec(),

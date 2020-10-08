@@ -112,7 +112,7 @@ pub enum ProposalDecisionStatus {
 #[cfg(test)]
 mod tests {
     use crate::{
-        ActiveStake, ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus,
+         ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus,
         ProposalStatus,
     };
 
@@ -130,25 +130,15 @@ mod tests {
 
     #[test]
     fn finalized_proposal_status_helper_succeeds() {
-        let msg = "error";
         let block_number = 20;
-        let stake = ActiveStake {
-            source_account_id: 2,
-        };
 
-        let proposal_status = ProposalStatus::finalized(
-            ProposalDecisionStatus::Slashed,
-            Some(msg),
-            Some(stake),
-            block_number,
-        );
+        let proposal_status =
+            ProposalStatus::<u64, u64>::finalized(ProposalDecisionStatus::Slashed, block_number);
 
         assert_eq!(
             ProposalStatus::Finalized(FinalizationData {
                 proposal_status: ProposalDecisionStatus::Slashed,
                 finalized_at: block_number,
-                encoded_unstaking_error_due_to_broken_runtime: Some(msg.as_bytes().to_vec()),
-                stake_data_after_unstaking_error: Some(stake)
             }),
             proposal_status
         );
