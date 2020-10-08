@@ -184,10 +184,16 @@ where
         false
     }
 
+    /// Returns whether the proposal is ready for execution by now.
+    /// It compares grace period and exact execution block with the current block.
+    pub fn is_ready_for_execution(&self, now: BlockNumber) -> bool {
+        self.is_grace_period_expired(now) && self.is_execution_block_reached_or_not_set(now)
+    }
+
     /// Returns whether exact execution block reached by now.
     /// If not set returns True.
     /// Returns False otherwise.
-    pub fn is_execution_block_reached(&self, now: BlockNumber) -> bool {
+    pub fn is_execution_block_reached_or_not_set(&self, now: BlockNumber) -> bool {
         self.exact_execution_block
             .map(|block_number| block_number <= now)
             .unwrap_or(true)
@@ -841,10 +847,10 @@ mod tests {
         let mut proposal = ProposalObject::default();
 
         proposal.exact_execution_block = None;
-        assert!(proposal.is_execution_block_reached(3));
+        assert!(proposal.is_execution_block_reached_or_not_set(3));
 
         proposal.exact_execution_block = Some(3);
-        assert!(proposal.is_execution_block_reached(3));
+        assert!(proposal.is_execution_block_reached_or_not_set(3));
     }
 
     #[test]
@@ -852,6 +858,6 @@ mod tests {
         let mut proposal = ProposalObject::default();
 
         proposal.exact_execution_block = Some(3);
-        assert!(!proposal.is_execution_block_reached(2));
+        assert!(!proposal.is_execution_block_reached_or_not_set(2));
     }
 }

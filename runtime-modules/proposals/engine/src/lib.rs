@@ -188,10 +188,13 @@ pub trait Trait:
     /// Proposals executable code. Can be instantiated by external module Call enum members.
     type DispatchableCallCode: Parameter + UnfilteredDispatchable<Origin = Self::Origin> + Default;
 
+    /// Proposal state change observer.
     type ProposalObserver: ProposalObserver<Self>;
 }
 
+/// Proposal state change observer.
 pub trait ProposalObserver<T: Trait> {
+    /// Should be called on proposal removing.
     fn proposal_removed(proposal_id: &T::ProposalId);
 }
 
@@ -821,11 +824,7 @@ impl<T: Trait> Module<T> {
                 let proposal = Self::proposals(proposal_id);
 
                 let now = Self::current_block();
-
-                let ready_for_execution = proposal.is_grace_period_expired(now)
-                    && proposal.is_execution_block_reached(now);
-
-                if ready_for_execution {
+                if proposal.is_ready_for_execution(now) {
                     // this should be true, because it was tested inside is_grace_period_expired()
                     if let ProposalStatus::Finalized(finalisation_data) = proposal.status.clone() {
                         Some(ApprovedProposalData {
