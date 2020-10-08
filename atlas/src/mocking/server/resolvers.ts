@@ -1,14 +1,21 @@
 import { mirageGraphQLFieldResolver } from '@miragejs/graphql'
-import { FEATURED_VIDEOS_INDEXES, mockChannels, mockVideos } from '@/mocking/data'
-import { SearchVariables } from '@/api/queries/__generated__/Search'
+import { getRecords } from '@miragejs/graphql/lib/orm/records'
+import { FEATURED_VIDEOS_INDEXES } from '@/mocking/data'
+import { Search_search, SearchVariables } from '@/api/queries/__generated__/Search'
+import { VideoFields } from '@/api/queries/__generated__/VideoFields'
+import {
+  GetNewestChannels_channelsConnection,
+  GetNewestChannelsVariables,
+} from '@/api/queries/__generated__/GetNewestChannels'
+import { GetNewestVideos_videosConnection } from '@/api/queries/__generated__/GetNewestVideos'
+import { ChannelFields } from '@/api/queries/__generated__/ChannelFields'
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-type QueryResolver<T extends object = Record<string, unknown>> = (
+type QueryResolver<ArgsType extends object = Record<string, unknown>, ReturnType = unknown> = (
   obj: unknown,
-  args: T,
-  context: unknown,
+  args: ArgsType,
+  context: any,
   info: unknown
-) => unknown
+) => ReturnType
 
 type VideoQueryArgs = {
   first: number | null
@@ -18,7 +25,12 @@ type VideoQueryArgs = {
   } | null
 }
 
-export const videosResolver: QueryResolver<VideoQueryArgs> = (obj, args, context, info) => {
+export const videosResolver: QueryResolver<VideoQueryArgs, GetNewestVideos_videosConnection> = (
+  obj,
+  args,
+  context,
+  info
+) => {
   const baseResolverArgs = {
     first: args.first,
     after: args.after,
@@ -37,12 +49,17 @@ export const videosResolver: QueryResolver<VideoQueryArgs> = (obj, args, context
   return paginatedVideos
 }
 
-export const featuredVideosResolver: QueryResolver = (...params) => {
-  const videos = mirageGraphQLFieldResolver(...params) as unknown[]
+export const featuredVideosResolver: QueryResolver<object, VideoFields[]> = (...params) => {
+  const videos = mirageGraphQLFieldResolver(...params) as VideoFields[]
   return videos.filter((_, idx) => FEATURED_VIDEOS_INDEXES.includes(idx))
 }
 
-export const channelsResolver: QueryResolver = (obj, args, context, info) => {
+export const channelsResolver: QueryResolver<GetNewestChannelsVariables, GetNewestChannels_channelsConnection> = (
+  obj,
+  args,
+  context,
+  info
+) => {
   const resolverArgs = {
     first: args.first,
     after: args.after,
@@ -53,28 +70,33 @@ export const channelsResolver: QueryResolver = (obj, args, context, info) => {
 }
 
 // FIXME: This resolver is currently broken and returns the same result n times instead of the correct result.
-export const searchResolver: QueryResolver<SearchVariables> = (_, { query_string }) => {
-  const items = [...mockVideos, ...mockChannels]
+export const searchResolver: QueryResolver<SearchVariables, Search_search[]> = (_, { query_string }, context) => {
+  const { mirageSchema: schema } = context
+  const videos = getRecords({ name: 'Video' }, {}, schema) as VideoFields[]
+  const channels = getRecords({ name: 'Channel' }, {}, schema) as ChannelFields[]
+
+  const items = [...videos, ...channels]
 
   let rankCount = 0
   const matchQueryStr = (str: string) => str.includes(query_string) || query_string.includes(str)
 
-  const relevantItems = items.reduce((acc: any, item) => {
+  const relevantItems = items.reduce((acc, item) => {
     const matched =
       item.__typename === 'Channel'
         ? matchQueryStr(item.handle)
         : matchQueryStr(item.description) || matchQueryStr(item.title)
 
-    return matched
-      ? [
-          ...acc,
-          {
-            __typename: 'FreeTextSearchResult',
-            item,
-            rank: rankCount++,
-          },
-        ]
-      : acc
-  }, [])
+    if (!matched) {
+      return acc
+    }
+
+    const result: Search_search = {
+      __typename: 'FreeTextSearchResult',
+      item,
+      rank: rankCount++,
+    }
+
+    return [...acc, result]
+  }, [] as Search_search[])
   return relevantItems
 }

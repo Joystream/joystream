@@ -15,6 +15,13 @@ createServer({
           channelsConnection: channelsResolver,
           search: searchResolver,
         },
+        // TODO: remove these once the MirageJS bug gets resolved: https://github.com/miragejs/graphql/issues/16
+        FreeTextSearchResult: {
+          item: ({ item }: any) => item,
+        },
+        VideoMedia: {
+          location: ({ location }: any) => location,
+        },
       },
     })
 

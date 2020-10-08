@@ -17,5 +17,13 @@ module.exports = {
         'ts-ignore': 'allow-with-description',
       },
     ],
+    '@typescript-eslint/ban-types': [
+      'error',
+      {
+        types: {
+          object: false,
+        },
+      },
+    ],
   },
 }
