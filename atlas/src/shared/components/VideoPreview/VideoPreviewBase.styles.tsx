@@ -28,7 +28,7 @@ export const CoverContainer = styled.div`
   transition-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
 
   position: relative;
-  animation: ${fadeIn} 2s ease-in -0.5s;
+  animation: ${fadeIn} 0.5s ease-in;
 `
 
 export const Container = styled.article<ContainerProps>`
