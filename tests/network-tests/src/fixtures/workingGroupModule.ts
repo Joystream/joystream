@@ -177,9 +177,10 @@ export class AcceptApplicationsFixture implements Fixture {
 
     // Begin accepting applications
     await this.api.acceptApplications(this.lead, this.openingId, this.module)
-
-    const opening: HiringOpening = await this.api.getHiringOpening(this.openingId)
-    assert(opening.is_active, `Opening ${this.openingId} is not active`)
+    // opening id in working group module is not the same as opening id in hiring module!
+    const wgOpening = await this.api.getWorkingGroupOpening(this.openingId, this.module)
+    const opening: HiringOpening = await this.api.getHiringOpening(wgOpening.hiring_opening_id)
+    assert(opening.is_active, `${this.module} Opening ${this.openingId} is not active`)
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -830,7 +831,6 @@ export class AwaitPayoutFixture implements Fixture {
     )
 
     const secondPayoutWaitingPeriod: BN = payoutInterval.addn(1)
-    console.log('waiting period ' + secondPayoutWaitingPeriod)
     await Utils.wait(this.api.getBlockDuration().mul(secondPayoutWaitingPeriod).toNumber())
 
     const balanceAfterSecondPayout: BN = await this.api.getBalance(this.membersKeyPairs[0].address)

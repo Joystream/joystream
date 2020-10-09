@@ -10,9 +10,10 @@ import {
   Worker,
   WorkerId,
   WorkingGroupOpeningPolicyCommitment,
+  Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
-import { AccountId, AccountInfo, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
+import { AccountInfo, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender } from './sender'
@@ -982,9 +983,6 @@ export class Api {
   }
 
   public async isStorageProvider(address: string): Promise<boolean> {
-    const storageProviders: Vec<AccountId> = await this.api.query.actors.accountIdsByRole<Vec<AccountId>>(
-      'StorageProvider'
-    )
     const accountWorkers: WorkerId = await this.getWorkerIdByRoleAccount(address, WorkingGroups.StorageWorkingGroup)
     return accountWorkers !== undefined
   }
@@ -1773,6 +1771,10 @@ export class Api {
 
   public async getHiringOpening(id: OpeningId): Promise<HiringOpening> {
     return await this.api.query.hiring.openingById<HiringOpening>(id)
+  }
+
+  public async getWorkingGroupOpening(id: OpeningId, group: WorkingGroups): Promise<WorkingGroupOpening> {
+    return await this.api.query[group].openingById<WorkingGroupOpening>(id)
   }
 
   public async getWorkers(module: WorkingGroups): Promise<Worker[]> {
