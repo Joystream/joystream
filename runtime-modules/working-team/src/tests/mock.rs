@@ -108,7 +108,9 @@ pub type Balances = balances::Module<Test>;
 pub type System = system::Module<Test>;
 
 parameter_types! {
+    pub const RewardPeriod: u32 = 2;
     pub const MaxWorkerNumberLimit: u32 = 3;
+    pub const MinUnstakingPeriodLimit: u64 = 3;
     pub const LockId: [u8; 8] = [1; 8];
 }
 
@@ -119,6 +121,8 @@ impl Trait<TestWorkingTeamInstance> for Test {
     type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
     type StakingHandler = Test;
     type MemberOriginValidator = ();
+    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
+    type RewardPeriod = RewardPeriod;
 }
 
 pub const ACTOR_ORIGIN_ERROR: &'static str = "Invalid membership";
@@ -141,6 +145,7 @@ pub type TestWorkingTeam = Module<Test, TestWorkingTeamInstance>;
 pub const STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK: u64 = 111;
 pub const STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK: u64 = 222;
 pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;
+pub const STAKING_ACCOUNT_ID_FOR_ZERO_STAKE: u64 = 444;
 pub const LOCK_ID: LockIdentifier = [1; 8];
 
 impl StakingHandler<Test> for Test {
@@ -231,6 +236,14 @@ impl StakingHandler<Test> for Test {
         }
 
         true
+    }
+
+    fn current_stake(account_id: &u64) -> u64 {
+        if *account_id == STAKING_ACCOUNT_ID_FOR_ZERO_STAKE {
+            return 0;
+        }
+
+        100 // random non-zero value
     }
 }
 

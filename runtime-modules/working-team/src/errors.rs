@@ -54,10 +54,31 @@ decl_error! {
         /// Origin is not applicant.
         OriginIsNotApplicant,
 
+        /// Invalid operation - worker is leaving.
+        WorkerIsLeaving,
+
+        /// Reward could not be zero.
+        CannotRewardWithZero,
+
         /// Staking account doesn't belong to a member.
         InvalidStakingAccountForMember,
 
         /// Staking account contains conflicting stakes.
         ConflictStakesOnAccount,
+
+        /// Worker has no recurring reward.
+        WorkerHasNoReward,
+
+        /// Specified unstaking period is less then minimum set for the team.
+        UnstakingPeriodLessThanMinimum,
+
+        /// Requested operation with stake is impossible because of stake was not defined for the role.
+        CannotChangeStakeWithoutStakingAccount,
+
+        /// Invalid spending amount.
+        CannotSpendZero,
+
+        /// It's not enough budget for this spending.
+        InsufficientBudgetForSpending,
     }
 }

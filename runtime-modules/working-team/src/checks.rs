@@ -1,17 +1,17 @@
 use crate::{
-    BalanceOfCurrency, Instance, JobOpening, JobOpeningType, MemberId, StakePolicy, TeamWorker,
-    TeamWorkerId, Trait,
+    BalanceOfCurrency, Instance, JobOpening, JobOpeningType, MemberId, RewardPolicy, StakePolicy,
+    TeamWorker, TeamWorkerId, Trait,
 };
 
 use super::Error;
 use frame_support::dispatch::{DispatchError, DispatchResult};
-use frame_support::traits::{Currency, WithdrawReasons};
+use frame_support::traits::Get;
 use frame_support::{ensure, StorageMap, StorageValue};
 use sp_arithmetic::traits::Zero;
 use sp_std::collections::btree_set::BTreeSet;
 use system::{ensure_root, ensure_signed};
 
-use crate::types::ApplicationInfo;
+use crate::types::{ApplicationInfo, StakeParameters};
 
 // Check opening: verifies origin and opening type compatibility.
 pub(crate) fn ensure_origin_for_opening_type<T: Trait<I>, I: Instance>(
@@ -117,7 +117,9 @@ fn ensure_is_lead_account<T: Trait<I>, I: Instance>(
 }
 
 // Check leader: ensures origin is signed by the leader.
-fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(origin: T::Origin) -> DispatchResult {
+pub(crate) fn ensure_origin_is_active_leader<T: Trait<I>, I: Instance>(
+    origin: T::Origin,
+) -> DispatchResult {
     // Ensure is signed
     let signer = ensure_signed(origin)?;
 
@@ -195,34 +197,26 @@ pub(crate) fn ensure_valid_stake_policy<T: Trait<I>, I: Instance>(
         ensure!(
             stake_policy.stake_amount != Zero::zero(),
             Error::<T, I>::CannotStakeZero
-        )
+        );
+
+        ensure!(
+            stake_policy.leaving_unstaking_period > T::MinUnstakingPeriodLimit::get(),
+            Error::<T, I>::UnstakingPeriodLessThanMinimum
+        );
     }
 
     Ok(())
 }
 
-// Check application: verifies free balance for a given account for staking.
-pub(crate) fn ensure_enough_balance_for_staking<T: Trait<I>, I: Instance>(
-    account: &T::AccountId,
-    stake: &Option<BalanceOfCurrency<T>>,
-) -> DispatchResult {
-    let stake_balance = stake.unwrap_or_default();
-
-    if stake_balance > (Zero::zero()) {
-        let free_balance = T::Currency::free_balance(account);
-
-        if free_balance < stake_balance {
-            return Err(Error::<T, I>::InsufficientBalanceToCoverStake.into());
-        } else {
-            let new_balance = free_balance - stake_balance;
-
-            return T::Currency::ensure_can_withdraw(
-                account,
-                stake_balance,
-                WithdrawReasons::all(),
-                new_balance,
-            );
-        }
+// Check opening: verifies reward policy for the opening.
+pub(crate) fn ensure_valid_reward_policy<T: Trait<I>, I: Instance>(
+    reward_policy: &Option<RewardPolicy<BalanceOfCurrency<T>>>,
+) -> Result<(), DispatchError> {
+    if let Some(reward_policy) = reward_policy {
+        ensure!(
+            reward_policy.reward_per_block != Zero::zero(),
+            Error::<T, I>::CannotRewardWithZero
+        )
     }
 
     Ok(())
@@ -231,18 +225,28 @@ pub(crate) fn ensure_enough_balance_for_staking<T: Trait<I>, I: Instance>(
 // Check application: verifies that proposed stake is enough for the opening.
 pub(crate) fn ensure_application_stake_match_opening<T: Trait<I>, I: Instance>(
     opening: &JobOpening<T::BlockNumber, BalanceOfCurrency<T>>,
-    stake: &Option<BalanceOfCurrency<T>>,
+    stake_parameters: &Option<StakeParameters<T::AccountId, BalanceOfCurrency<T>>>,
 ) -> DispatchResult {
     let opening_stake_balance = opening
         .stake_policy
         .clone()
         .unwrap_or_default()
         .stake_amount;
-    let application_stake_balance = stake.unwrap_or_default();
+
+    let application_stake_balance = stake_parameters.clone().unwrap_or_default().stake;
 
     if application_stake_balance < opening_stake_balance {
         return Err(Error::<T, I>::ApplicationStakeDoesntMatchOpening.into());
     }
 
     Ok(())
+}
+
+// Check worker: verifies that worker has recurring rewards.
+pub(crate) fn ensure_worker_has_recurring_reward<T: Trait<I>, I: Instance>(
+    worker: &TeamWorker<T>,
+) -> DispatchResult {
+    worker
+        .reward_per_block
+        .map_or(Err(Error::<T, I>::WorkerHasNoReward.into()), |_| Ok(()))
 }

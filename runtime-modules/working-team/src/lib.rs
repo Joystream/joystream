@@ -17,7 +17,12 @@
 //! - [increase_stake](./struct.Module.html#method.increase_stake) - Increases the regular worker/lead stake.
 //! - [cancel_opening](./struct.Module.html#method.cancel_opening) - Cancel opening for a regular worker/lead.
 //! - [withdraw_application](./struct.Module.html#method.withdraw_application) - Withdraw the regular worker/lead application.
-//!
+//! - [set_budget](./struct.Module.html#method.set_budget) - Sets the working team budget.
+//! - [update_reward_account](./struct.Module.html#method.update_reward_account) -  Update the reward account of the regular worker/lead.
+//! - [update_reward_amount](./struct.Module.html#method.update_reward_amount) -  Update the reward amount of the regular worker/lead.
+//! - [set_status_text](./struct.Module.html#method.set_status_text) - Sets the working team status.
+//! - [spend_from_budget](./struct.Module.html#method.spend_from_budget) - Spend tokens from the team budget.
+
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -31,16 +36,22 @@ mod tests;
 mod types;
 
 use codec::Codec;
-use frame_support::traits::Get;
+use frame_support::traits::{Currency, Get};
+use frame_support::weights::Weight;
+use frame_support::IterableStorageMap;
 use frame_support::{decl_event, decl_module, decl_storage, ensure, Parameter, StorageValue};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
-use sp_runtime::traits::{Hash, MaybeSerialize, Member};
+use sp_runtime::traits::{Hash, MaybeSerialize, Member, SaturatedConversion, Saturating};
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
-use system::ensure_signed;
+use sp_std::vec::Vec;
+use system::{ensure_root, ensure_signed};
 
 pub use errors::Error;
-use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId};
-pub use types::{JobApplication, JobOpening, JobOpeningType, StakePolicy, StakingHandler};
+use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId, WorkerInfo};
+pub use types::{
+    ApplyOnOpeningParameters, JobApplication, JobOpening, JobOpeningType, Penalty, RewardPolicy,
+    StakePolicy, StakingHandler,
+};
 
 use common::origin::ActorOriginValidator;
 
@@ -79,6 +90,12 @@ pub trait Trait<I: Instance>:
 
     /// Validates member id and origin combination
     type MemberOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
+
+    /// Defines min unstaking period in the team.
+    type MinUnstakingPeriodLimit: Get<Self::BlockNumber>;
+
+    /// Defines the period every worker gets paid in blocks.
+    type RewardPeriod: Get<u32>;
 }
 
 decl_event!(
@@ -165,6 +182,33 @@ decl_event!(
         /// Params:
         /// - Opening id
         OpeningCanceled(OpeningId),
+
+        /// Emits on setting the budget for the working team.
+        /// Params:
+        /// - new budget
+        BudgetSet(Balance),
+
+        /// Emits on updating the reward account of the worker.
+        /// Params:
+        /// - Id of the worker.
+        /// - Reward account id of the worker.
+        WorkerRewardAccountUpdated(TeamWorkerId, AccountId),
+
+        /// Emits on updating the reward amount of the worker.
+        /// Params:
+        /// - Id of the worker.
+        /// - Reward per block
+        WorkerRewardAmountUpdated(TeamWorkerId, Option<Balance>),
+
+        /// Emits on updating the status text of the working team.
+        /// Params:
+        /// - status text hash
+        StatusTextChanged(Vec<u8>),
+
+        /// Emits on updating the status text of the working team.
+        /// Params:
+        /// - status text hash
+        BudgetSpending(AccountId, Balance),
     }
 );
 
@@ -196,6 +240,12 @@ decl_storage! {
 
         /// Current team lead.
         pub CurrentLead get(fn current_lead) : Option<TeamWorkerId<T>>;
+
+        /// Budget for the working team.
+        pub Budget get(fn budget) : BalanceOfCurrency<T>;
+
+        /// Status text hash.
+        pub StatusTextHash get(fn status_text_hash) : Vec<u8>;
     }
 }
 
@@ -211,7 +261,21 @@ decl_module! {
         /// Exports const -  max simultaneous active worker number.
         const MaxWorkerNumberLimit: u32 = T::MaxWorkerNumberLimit::get();
 
-        // ****************** Hiring flow **********************
+        fn on_initialize() -> Weight{
+            let leaving_workers = Self::get_workers_with_finished_unstaking_period();
+
+            leaving_workers.iter().for_each(|wi| {
+                Self::remove_worker(&wi.worker_id, &wi.worker, RawEvent::WorkerExited(wi.worker_id));
+            });
+
+            if Self::is_reward_block() {
+                WorkerById::<T, I>::iter().for_each(|(worker_id, worker)| {
+                    Self::reward_worker(&worker_id, &worker);
+                });
+            }
+
+            10_000_000 //TODO: adjust weight
+        }
 
         /// Add a job opening for a regular worker/lead role.
         /// Require signed leader origin or the root (to add opening for the leader position).
@@ -220,11 +284,14 @@ decl_module! {
             origin,
             description: Vec<u8>,
             opening_type: JobOpeningType,
-            stake_policy: Option<StakePolicy<T::BlockNumber, BalanceOfCurrency<T>>>
+            stake_policy: Option<StakePolicy<T::BlockNumber, BalanceOfCurrency<T>>>,
+            reward_policy: Option<RewardPolicy<BalanceOfCurrency<T>>>
         ){
             checks::ensure_origin_for_opening_type::<T, I>(origin, opening_type)?;
 
             checks::ensure_valid_stake_policy::<T, I>(&stake_policy)?;
+
+            checks::ensure_valid_reward_policy::<T, I>(&reward_policy)?;
 
             //
             // == MUTATION SAFE ==
@@ -237,7 +304,8 @@ decl_module! {
                 opening_type,
                 created: Self::current_block(),
                 description_hash: hashed_description.as_ref().to_vec(),
-                stake_policy
+                stake_policy,
+                reward_policy,
             };
 
             let new_opening_id = NextOpeningId::<T, I>::get();
@@ -252,41 +320,30 @@ decl_module! {
 
         /// Apply on a worker opening.
         #[weight = 10_000_000] // TODO: adjust weight: it should also consider a description length
-        pub fn apply_on_opening(
-            origin,
-            member_id: T::MemberId,
-            opening_id: T::OpeningId,
-            role_account_id: T::AccountId,
-            staking_account_id: T::AccountId,
-            description: Vec<u8>,
-            stake: Option<BalanceOfCurrency<T>>,
-        ) {
+        pub fn apply_on_opening(origin, p : ApplyOnOpeningParameters<T, I>) {
             // Ensure the origin of a member with given id.
-            T::MemberOriginValidator::ensure_actor_origin(origin, member_id)?;
+            T::MemberOriginValidator::ensure_actor_origin(origin, p.member_id)?;
 
             // Ensure job opening exists.
-            let opening = checks::ensure_opening_exists::<T, I>(&opening_id)?;
-
-            // Ensure that there is sufficient balance to cover the proposed stake.
-            checks::ensure_enough_balance_for_staking::<T, I>(&staking_account_id, &stake)?;
+            let opening = checks::ensure_opening_exists::<T, I>(&p.opening_id)?;
 
             // Ensure that proposed stake is enough for the opening.
-            checks::ensure_application_stake_match_opening::<T, I>(&opening, &stake)?;
+            checks::ensure_application_stake_match_opening::<T, I>(&opening, &p.stake_parameters)?;
 
             // Checks external conditions for staking.
-            if let Some(amount) = stake {
+            if let Some(sp) = p.stake_parameters.clone() {
                 ensure!(
-                    T::StakingHandler::is_member_staking_account(&member_id, &staking_account_id),
+                    T::StakingHandler::is_member_staking_account(&p.member_id, &sp.staking_account_id),
                     Error::<T, I>::InvalidStakingAccountForMember
                 );
 
                 ensure!(
-                    T::StakingHandler::is_account_free_of_conflicting_stakes(&staking_account_id),
+                    T::StakingHandler::is_account_free_of_conflicting_stakes(&sp.staking_account_id),
                     Error::<T, I>::ConflictStakesOnAccount
                 );
 
                 ensure!(
-                    T::StakingHandler::is_enough_balance_for_stake(&staking_account_id, amount),
+                    T::StakingHandler::is_enough_balance_for_stake(&sp.staking_account_id, sp.stake),
                     Error::<T, I>::InsufficientBalanceToCoverStake
                 );
             }
@@ -295,17 +352,18 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            if let Some(amount) = stake {
-                T::StakingHandler::lock(&staking_account_id, amount);
+            if let Some(sp) = p.stake_parameters.clone() {
+                T::StakingHandler::lock(&sp.staking_account_id, sp.stake);
             }
 
-            let hashed_description = T::Hashing::hash(&description);
+            let hashed_description = T::Hashing::hash(&p.description);
 
             // Make regular/lead application.
             let application = JobApplication::<T>::new(
-                &role_account_id,
-                &staking_account_id,
-                &member_id,
+                &p.role_account_id,
+                &p.reward_account_id,
+                &p.stake_parameters.map(|sp| sp.staking_account_id),
+                &p.member_id,
                 hashed_description.as_ref().to_vec(),
             );
 
@@ -319,7 +377,7 @@ decl_module! {
             NextApplicationId::<T, I>::mutate(|id| *id += <T::ApplicationId as One>::one());
 
             // Trigger the event.
-            Self::deposit_event(RawEvent::AppliedOnOpening(opening_id, new_application_id));
+            Self::deposit_event(RawEvent::AppliedOnOpening(p.opening_id, new_application_id));
         }
 
         /// Fill opening for the regular/lead position.
@@ -385,6 +443,9 @@ decl_module! {
             // Ensure that origin is signed by member with given id.
             checks::ensure_origin_signed_by_member::<T, I>(origin, &worker.member_id)?;
 
+            // Ensure the worker is active.
+            ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
+
             //
             // == MUTATION SAFE ==
             //
@@ -407,13 +468,20 @@ decl_module! {
             // Ensure there is a signer which matches role account of worker corresponding to provided id.
             let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
 
+            // Ensure the worker is active.
+            ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
+
             //
             // == MUTATION SAFE ==
             //
 
-            Self::deactivate_worker(&worker_id, &worker);
-
-            Self::deposit_event(RawEvent::WorkerExited(worker_id));
+            if Self::can_leave_immediately(&worker){
+                Self::remove_worker(&worker_id, &worker, RawEvent::WorkerExited(worker_id));
+            } else{
+                WorkerById::<T, I>::mutate(worker_id, |worker| {
+                    worker.started_leaving_at = Some(Self::current_block())
+                });
+            }
         }
 
         /// Terminate the active worker by the lead.
@@ -422,7 +490,7 @@ decl_module! {
         pub fn terminate_role(
             origin,
             worker_id: TeamWorkerId<T>,
-            slash_stake: bool,
+            penalty: Option<Penalty<BalanceOfCurrency<T>>>,
         ) {
             // Ensure lead is set or it is the council terminating the leader.
             let is_sudo = checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
@@ -430,15 +498,23 @@ decl_module! {
             // Ensuring worker actually exists.
             let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
 
+            if penalty.is_some() {
+                // Ensure worker has a stake.
+                ensure!(
+                    worker.staking_account_id.is_some(),
+                    Error::<T, I>::CannotChangeStakeWithoutStakingAccount
+                );
+            }
+
             //
             // == MUTATION SAFE ==
             //
 
-            if slash_stake {
-                Self::slash(worker_id, &worker.staking_account_id, None)
+            if let Some(penalty) = penalty {
+                if let Some(staking_account_id) = worker.staking_account_id.clone() {
+                    Self::slash(worker_id, &staking_account_id, Some(penalty.slashing_amount));
+                }
             }
-
-            Self::deactivate_worker(&worker_id, &worker);
 
             // Trigger the event
             let event = if is_sudo {
@@ -447,27 +523,38 @@ decl_module! {
                 RawEvent::TerminatedWorker(worker_id)
             };
 
-            Self::deposit_event(event);
+            Self::remove_worker(&worker_id, &worker, event);
         }
 
         /// Slashes the regular worker stake, demands a leader origin. No limits, no actions on zero stake.
         /// If slashing balance greater than the existing stake - stake is slashed to zero.
         /// Requires signed leader origin or the root (to slash the leader stake).
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn slash_stake(origin, worker_id: TeamWorkerId<T>, balance: BalanceOfCurrency<T>) {
+        pub fn slash_stake(origin, worker_id: TeamWorkerId<T>, penalty: Penalty<BalanceOfCurrency<T>>) {
             // Ensure lead is set or it is the council slashing the leader.
             checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
 
             // Ensuring worker actually exists.
             let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
 
-            ensure!(balance != <BalanceOfCurrency<T>>::zero(), Error::<T, I>::StakeBalanceCannotBeZero);
+            // Ensure worker has a stake.
+            ensure!(
+                worker.staking_account_id.is_some(),
+                Error::<T, I>::CannotChangeStakeWithoutStakingAccount
+            );
+
+            ensure!(
+                penalty.slashing_amount != <BalanceOfCurrency<T>>::zero(),
+                Error::<T, I>::StakeBalanceCannotBeZero
+            );
 
             //
             // == MUTATION SAFE ==
             //
 
-            Self::slash(worker_id, &worker.staking_account_id, Some(balance))
+            if let Some(staking_account_id) = worker.staking_account_id {
+                Self::slash(worker_id, &staking_account_id, Some(penalty.slashing_amount))
+            }
         }
 
         /// Decreases the regular worker/lead stake and returns the remainder to the
@@ -480,6 +567,15 @@ decl_module! {
 
             let worker = checks::ensure_worker_exists::<T,I>(&worker_id)?;
 
+            // Ensure worker has a stake.
+            ensure!(
+                worker.staking_account_id.is_some(),
+                Error::<T, I>::CannotChangeStakeWithoutStakingAccount
+            );
+
+            // Ensure the worker is active.
+            ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
+
             ensure!(
                 new_stake_balance != <BalanceOfCurrency<T>>::zero(),
                 Error::<T, I>::StakeBalanceCannotBeZero
@@ -489,13 +585,13 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            // This external module call both checks and mutates the state.
-            T::StakingHandler::decrease_stake(
-                &worker.staking_account_id,
-                new_stake_balance,
-            );
+            if let Some(staking_account_id) = worker.staking_account_id {
+                // This external module call both checks and mutates the state.
+                T::StakingHandler::decrease_stake(&staking_account_id, new_stake_balance);
 
-            Self::deposit_event(RawEvent::StakeDecreased(worker_id, new_stake_balance));
+
+                Self::deposit_event(RawEvent::StakeDecreased(worker_id, new_stake_balance));
+            }
         }
 
         /// Increases the regular worker/lead stake, demands a worker origin.
@@ -505,27 +601,37 @@ decl_module! {
             // Checks worker origin and worker existence.
             let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
 
+            // Ensure the worker is active.
+            ensure!(!worker.is_leaving(), Error::<T, I>::WorkerIsLeaving);
+
+            // Ensure worker has a stake.
+            ensure!(
+                worker.staking_account_id.is_some(),
+                Error::<T, I>::CannotChangeStakeWithoutStakingAccount
+            );
+
             ensure!(
                 new_stake_balance != <BalanceOfCurrency<T>>::zero(),
                 Error::<T, I>::StakeBalanceCannotBeZero
             );
 
-            ensure!(
-                T::StakingHandler::is_enough_balance_for_stake(&worker.staking_account_id, new_stake_balance),
-                Error::<T, I>::InsufficientBalanceToCoverStake
-            );
+            if let Some(staking_account_id) = worker.staking_account_id.clone() {
+                ensure!(
+                    T::StakingHandler::is_enough_balance_for_stake(&staking_account_id, new_stake_balance),
+                    Error::<T, I>::InsufficientBalanceToCoverStake
+                );
+            }
 
             //
             // == MUTATION SAFE ==
             //
 
-            // This external module call both checks and mutates the state.
-            T::StakingHandler::increase_stake(
-                &worker.staking_account_id,
-                new_stake_balance,
-            )?;
+            if let Some(staking_account_id) = worker.staking_account_id {
+                // This external module call both checks and mutates the state.
+                T::StakingHandler::increase_stake(&staking_account_id, new_stake_balance)?;
 
-            Self::deposit_event(RawEvent::StakeIncreased(worker_id, new_stake_balance));
+                Self::deposit_event(RawEvent::StakeIncreased(worker_id, new_stake_balance));
+            }
         }
 
         /// Withdraw the worker application. Can be done by the worker only.
@@ -550,8 +656,9 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            T::StakingHandler::unlock(&application_info.application.staking_account_id);
-
+            if let Some(staking_account_id) = application_info.application.staking_account_id.clone() {
+                T::StakingHandler::unlock(&staking_account_id);
+            }
             // Remove an application.
             <ApplicationById<T, I>>::remove(application_info.application_id);
 
@@ -580,6 +687,139 @@ decl_module! {
 
             // Trigger event
             Self::deposit_event(RawEvent::OpeningCanceled(opening_id));
+        }
+
+        /// Sets a new budget for the working team.
+        /// Requires root origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_budget(
+            origin,
+            new_budget: BalanceOfCurrency<T>,
+        ) {
+            ensure_root(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update the budget.
+            <Budget::<T, I>>::put(new_budget);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::BudgetSet(new_budget));
+        }
+
+        /// Update the reward account associated with a set reward relationship for the active worker.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_reward_account(
+            origin,
+            worker_id: TeamWorkerId<T>,
+            new_reward_account_id: T::AccountId
+        ) {
+            // Ensure there is a signer which matches role account of worker corresponding to provided id.
+            let worker = checks::ensure_worker_signed::<T, I>(origin, &worker_id)?;
+
+            // Ensure the worker actually has a recurring reward.
+            checks::ensure_worker_has_recurring_reward::<T, I>(&worker)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update worker reward account.
+            WorkerById::<T, I>::mutate(worker_id, |worker| {
+                worker.reward_account_id = new_reward_account_id.clone();
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerRewardAccountUpdated(worker_id, new_reward_account_id));
+        }
+
+        /// Update the reward per block for the active worker.
+        /// Require signed leader origin or the root (to update leader's reward amount).
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn update_reward_amount(
+            origin,
+            worker_id: TeamWorkerId<T>,
+            reward_per_block: Option<BalanceOfCurrency<T>>
+        ) {
+            // Ensure lead is set or it is the council setting the leader's reward.
+            checks::ensure_origin_for_worker_operation::<T,I>(origin, worker_id)?;
+
+            // Ensuring worker actually exists
+            checks::ensure_worker_exists::<T,I>(&worker_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // Update worker reward amount.
+            WorkerById::<T, I>::mutate(worker_id, |worker| {
+                worker.reward_per_block = reward_per_block;
+            });
+
+            // Trigger event
+            Self::deposit_event(RawEvent::WorkerRewardAmountUpdated(worker_id, reward_per_block));
+        }
+
+        /// Sets a new status text for the working team.
+        /// Requires root origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn set_status_text(
+            origin,
+            status_text: Option<Vec<u8>>,
+        ) {
+            // Ensure team leader privilege.
+            checks::ensure_origin_is_active_leader::<T,I>(origin)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            let status_text_hash = status_text
+                .map(|status_text| {
+                        let hashed = T::Hashing::hash(&status_text);
+
+                        hashed.as_ref().to_vec()
+                    })
+                .unwrap_or_default();
+
+            // Update the status text hash.
+            <StatusTextHash<I>>::put(status_text_hash.clone());
+
+            // Trigger event
+            Self::deposit_event(RawEvent::StatusTextChanged(status_text_hash));
+        }
+
+        /// Transfers specified amount to any account.
+        /// Requires leader origin.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn spend_from_budget(
+            origin,
+            account_id: T::AccountId,
+            amount: BalanceOfCurrency<T>,
+            rationale: Option<Vec<u8>>,
+        ) {
+            // Ensure team leader privilege.
+            checks::ensure_origin_is_active_leader::<T,I>(origin)?;
+
+            ensure!(amount > Zero::zero(), Error::<T, I>::CannotSpendZero);
+
+            // Ensures that the budget is sufficient for the spending of specified amount
+            let (_, potential_missed_payment) = Self::calculate_possible_payment(amount);
+            ensure!(
+                potential_missed_payment == Zero::zero(),
+                Error::<T, I>::InsufficientBudgetForSpending
+            );
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            Self::pay_from_budget(&account_id, amount);
+
+            // Trigger event
+            Self::deposit_event(RawEvent::BudgetSpending(account_id, amount));
         }
     }
 }
@@ -612,7 +852,7 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         successful_applications_info
             .iter()
             .for_each(|application_info| {
-                let new_worker_id = Self::create_worker_by_application(&application_info);
+                let new_worker_id = Self::create_worker_by_application(&opening, &application_info);
 
                 application_id_to_worker_id.insert(application_info.application_id, new_worker_id);
 
@@ -626,22 +866,32 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Creates worker by the application. Deletes application from the storage.
-    fn create_worker_by_application(application_info: &ApplicationInfo<T, I>) -> TeamWorkerId<T> {
-        // Get worker id
+    fn create_worker_by_application(
+        opening: &JobOpening<T::BlockNumber, BalanceOfCurrency<T>>,
+        application_info: &ApplicationInfo<T, I>,
+    ) -> TeamWorkerId<T> {
+        // Get worker id.
         let new_worker_id = <NextWorkerId<T, I>>::get();
 
-        // Construct worker
+        // Construct a worker.
         let worker = TeamWorker::<T>::new(
             &application_info.application.member_id,
             &application_info.application.role_account_id,
+            &application_info.application.reward_account_id,
             &application_info.application.staking_account_id,
+            opening
+                .stake_policy
+                .as_ref()
+                .map_or(Zero::zero(), |sp| sp.leaving_unstaking_period),
+            opening.reward_policy.as_ref().map(|rp| rp.reward_per_block),
+            Self::current_block(),
         );
 
-        // Store a worker
+        // Store a worker.
         <WorkerById<T, I>>::insert(new_worker_id, worker);
         Self::increase_active_worker_counter();
 
-        // Update next worker id
+        // Update the next worker id.
         <NextWorkerId<T, I>>::mutate(|id| *id += <TeamWorkerId<T> as One>::one());
 
         // Remove an application.
@@ -670,7 +920,8 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     }
 
     // Fires the worker. Unsets the leader if necessary. Decreases active worker counter.
-    fn deactivate_worker(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
+    // Deposits an event.
+    fn remove_worker(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>, event: Event<T, I>) {
         // Unset lead if the leader is leaving.
         let leader_worker_id = <CurrentLead<T, I>>::get();
         if let Some(leader_worker_id) = leader_worker_id {
@@ -679,11 +930,17 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
             }
         }
 
+        Self::try_to_pay_missed_reward(worker_id, worker);
+
         // Remove the worker from the storage.
         WorkerById::<T, I>::remove(worker_id);
         Self::decrease_active_worker_counter();
 
-        T::StakingHandler::unlock(&worker.staking_account_id);
+        if let Some(staking_account_id) = worker.staking_account_id.clone() {
+            T::StakingHandler::unlock(&staking_account_id);
+        }
+
+        Self::deposit_event(event);
     }
 
     // Slash the stake.
@@ -694,5 +951,154 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
     ) {
         let slashed_balance = T::StakingHandler::slash(staking_account_id, balance);
         Self::deposit_event(RawEvent::StakeSlashed(worker_id, slashed_balance));
+    }
+
+    // Reward a worker using reward presets and working team budget.
+    fn reward_worker(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
+        // If reward period is not set.
+        let mut rewarding_period: u32 = T::RewardPeriod::get();
+        if rewarding_period == Zero::zero() {
+            rewarding_period = One::one();
+        }
+
+        // Modify rewarding period for new workers.
+        let block_from_worker_creation: u128 =
+            (Self::current_block() - worker.created_at).saturated_into();
+        if block_from_worker_creation < rewarding_period.into() {
+            rewarding_period = block_from_worker_creation.saturated_into();
+        }
+
+        if let Some(reward_per_block) = worker.reward_per_block {
+            let reward = reward_per_block * rewarding_period.into();
+
+            let (actual_reward, missed_reward) = Self::calculate_possible_payment(reward);
+
+            // Check whether the budget is not zero.
+            if actual_reward > Zero::zero() {
+                Self::pay_from_budget(&worker.reward_account_id, actual_reward);
+            }
+
+            // Check whether the budget is insufficient.
+            if missed_reward > Zero::zero() {
+                Self::save_missed_reward(worker_id, worker, missed_reward);
+            } else {
+                Self::try_to_pay_missed_reward(worker_id, worker);
+            }
+        }
+    }
+
+    // Transfers the tokens if budget is sufficient. Infallible!
+    // Should be accompanied with previous budget check.
+    fn pay_from_budget(account_id: &T::AccountId, amount: BalanceOfCurrency<T>) {
+        let budget = Self::budget();
+
+        let new_budget = budget.saturating_sub(amount);
+        <Budget<T, I>>::put(new_budget);
+
+        T::Currency::deposit_creating(account_id, amount);
+    }
+
+    // Tries to pay missed reward if the reward is enabled for worker and there is enough of team budget.
+    fn try_to_pay_missed_reward(worker_id: &TeamWorkerId<T>, worker: &TeamWorker<T>) {
+        if let Some(missed_reward) = worker.missed_reward {
+            let (could_be_paid_reward, insufficient_amount) =
+                Self::calculate_possible_payment(missed_reward);
+
+            // Checks if the budget allows any payment.
+            if could_be_paid_reward > Zero::zero() {
+                Self::pay_from_budget(&worker.reward_account_id, could_be_paid_reward);
+
+                let new_missed_reward = if insufficient_amount > Zero::zero() {
+                    Some(insufficient_amount)
+                } else {
+                    None
+                };
+
+                // Update worker missed reward.
+                WorkerById::<T, I>::mutate(worker_id, |worker| {
+                    worker.missed_reward = new_missed_reward;
+                });
+            }
+        }
+    }
+
+    // Saves missed reward for a worker.
+    fn save_missed_reward(
+        worker_id: &TeamWorkerId<T>,
+        worker: &TeamWorker<T>,
+        reward: BalanceOfCurrency<T>,
+    ) {
+        // Save unpaid reward.
+        let missed_reward_so_far = worker.missed_reward.map_or(Zero::zero(), |val| val);
+
+        let new_missed_reward = missed_reward_so_far + reward;
+
+        // Update worker missed reward.
+        WorkerById::<T, I>::mutate(worker_id, |worker| {
+            worker.missed_reward = Some(new_missed_reward);
+        });
+    }
+
+    // Returns allowed payment by the team budget and possible missed payment
+    fn calculate_possible_payment(
+        amount: BalanceOfCurrency<T>,
+    ) -> (BalanceOfCurrency<T>, BalanceOfCurrency<T>) {
+        let budget = Self::budget();
+
+        if budget >= amount {
+            (amount, Zero::zero())
+        } else {
+            (budget, amount - budget)
+        }
+    }
+
+    // Returns a collection of workers with finished unstaking period.
+    fn get_workers_with_finished_unstaking_period() -> Vec<WorkerInfo<T>> {
+        WorkerById::<T, I>::iter()
+            .filter_map(|(worker_id, worker)| {
+                if let Some(started_leaving_at) = worker.started_leaving_at {
+                    if started_leaving_at + worker.job_unstaking_period >= Self::current_block() {
+                        return Some((worker_id, worker).into());
+                    }
+                }
+
+                None
+            })
+            .collect::<Vec<_>>()
+    }
+
+    // Defines whether the current block is a reward block.
+    fn is_reward_block() -> bool {
+        let current_block = Self::current_block();
+
+        // Don't reward at genesis.
+        if current_block == Zero::zero() {
+            return false;
+        }
+
+        let reward_period = T::RewardPeriod::get();
+
+        // Special case for not set reward_period. Treats as reward_period == 1.
+        if reward_period == Zero::zero() {
+            return true;
+        }
+
+        // Check whether current block is a reward block.
+        current_block % reward_period.into() == Zero::zero()
+    }
+
+    // Defines whether the worker staking parameters allow to leave without unstaking period.
+    fn can_leave_immediately(worker: &TeamWorker<T>) -> bool {
+        if worker.job_unstaking_period == Zero::zero() {
+            return true;
+        }
+
+        if let Some(staking_account_id) = worker.staking_account_id.clone() {
+            if T::StakingHandler::current_stake(&staking_account_id) == Zero::zero() {
+                return true;
+            }
+        }
+
+        false
     }
 }

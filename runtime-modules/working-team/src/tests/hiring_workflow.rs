@@ -5,21 +5,22 @@ use crate::tests::fixtures::{
     setup_members, AddOpeningFixture, ApplyOnOpeningFixture, FillOpeningFixture, HireLeadFixture,
 };
 use crate::tests::mock::TestWorkingTeam;
-use crate::{JobOpeningType, StakePolicy};
+use crate::types::StakeParameters;
+use crate::{JobOpeningType, RewardPolicy, StakePolicy};
 
 #[derive(Clone)]
 struct HiringWorkflowApplication {
-    stake: Option<u64>,
+    stake_parameters: Option<StakeParameters<u64, u64>>,
     worker_handle: Vec<u8>,
     origin: RawOrigin<u64>,
     member_id: u64,
-    staking_account_id: u64,
 }
 
 pub struct HiringWorkflow {
     opening_type: JobOpeningType,
     expected_result: DispatchResult,
     stake_policy: Option<StakePolicy<u64, u64>>,
+    reward_policy: Option<RewardPolicy<u64>>,
     applications: Vec<HiringWorkflowApplication>,
     setup_environment: bool,
 }
@@ -30,6 +31,7 @@ impl Default for HiringWorkflow {
             opening_type: JobOpeningType::Regular,
             expected_result: Ok(()),
             stake_policy: None,
+            reward_policy: None,
             applications: Vec::new(),
             setup_environment: true,
         }
@@ -40,6 +42,13 @@ impl HiringWorkflow {
     pub fn with_stake_policy(self, stake_policy: Option<StakePolicy<u64, u64>>) -> Self {
         Self {
             stake_policy,
+            ..self
+        }
+    }
+
+    pub fn with_reward_policy(self, reward_policy: Option<RewardPolicy<u64>>) -> Self {
+        Self {
+            reward_policy,
             ..self
         }
     }
@@ -72,7 +81,7 @@ impl HiringWorkflow {
     }
 
     pub fn add_application(self, worker_handle: Vec<u8>) -> Self {
-        self.add_application_full(worker_handle, RawOrigin::Signed(1), 1, 1)
+        self.add_application_full(worker_handle, RawOrigin::Signed(1), 1, Some(1))
     }
 
     pub fn add_application_full(
@@ -80,15 +89,23 @@ impl HiringWorkflow {
         worker_handle: Vec<u8>,
         origin: RawOrigin<u64>,
         member_id: u64,
-        staking_account_id: u64,
+        staking_account_id: Option<u64>,
     ) -> Self {
+        let stake_parameters = staking_account_id.map(|staking_account_id| StakeParameters {
+            stake: self
+                .stake_policy
+                .clone()
+                .map(|policy| policy.stake_amount)
+                .unwrap_or_default(),
+            staking_account_id,
+        });
+
         let mut applications = self.applications;
         applications.push(HiringWorkflowApplication {
             worker_handle,
-            stake: self.stake_policy.clone().map(|policy| policy.stake_amount),
             origin,
             member_id,
-            staking_account_id,
+            stake_parameters,
         });
 
         Self {
@@ -134,6 +151,7 @@ impl HiringWorkflow {
         // create the opening
         let add_worker_opening_fixture = AddOpeningFixture::default()
             .with_stake_policy(self.stake_policy.clone())
+            .with_reward_policy(self.reward_policy.clone())
             .with_opening_type(self.opening_type)
             .with_origin(origin.clone());
 
@@ -144,8 +162,7 @@ impl HiringWorkflow {
         for application in self.applications.clone() {
             let apply_on_worker_opening_fixture =
                 ApplyOnOpeningFixture::default_for_opening_id(opening_id)
-                    .with_stake(application.stake)
-                    .with_stake_account_id(application.staking_account_id)
+                    .with_stake_parameters(application.stake_parameters)
                     .with_text(application.worker_handle)
                     .with_origin(application.origin, application.member_id);
 
