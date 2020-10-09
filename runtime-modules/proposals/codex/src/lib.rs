@@ -255,8 +255,7 @@ decl_storage! {
             map hasher(blake2_128_concat) T::ProposalId => T::ThreadId;
 
         /// Map proposal id to proposal details
-        pub ProposalDetailsByProposalId get(fn proposal_details_by_proposal_id):
-            map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
+        pub ProposalDetailsByProposalId: map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
 
         /// Voting period for the 'set validator count' proposal
         pub SetValidatorCountProposalVotingPeriod get(fn set_validator_count_proposal_voting_period)
