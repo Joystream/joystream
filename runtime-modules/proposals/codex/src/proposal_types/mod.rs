@@ -47,6 +47,8 @@ pub enum ProposalDetails<
     /// The wasm code for the `runtime upgrade` proposal
     RuntimeUpgrade(Vec<u8>),
 
+    /// ********** Deprecated.
+    /// It is kept only for backward compatibility in the Pioneer. **********
     /// Election parameters for the `set election parameters` proposal
     SetElectionParameters(ElectionParameters<CurrencyBalance, BlockNumber>),
 

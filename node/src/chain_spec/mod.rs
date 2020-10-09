@@ -348,10 +348,6 @@ pub fn testnet_genesis(
             runtime_upgrade_proposal_grace_period: cpcp.runtime_upgrade_proposal_grace_period,
             text_proposal_voting_period: cpcp.text_proposal_voting_period,
             text_proposal_grace_period: cpcp.text_proposal_grace_period,
-            set_election_parameters_proposal_voting_period: cpcp
-                .set_election_parameters_proposal_voting_period,
-            set_election_parameters_proposal_grace_period: cpcp
-                .set_election_parameters_proposal_grace_period,
             spending_proposal_voting_period: cpcp.spending_proposal_voting_period,
             spending_proposal_grace_period: cpcp.spending_proposal_grace_period,
             add_working_group_opening_proposal_voting_period: cpcp

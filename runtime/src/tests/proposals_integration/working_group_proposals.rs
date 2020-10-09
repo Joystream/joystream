@@ -69,6 +69,7 @@ fn add_opening(
                 human_readable_text: Vec::new(),
                 working_group,
             },
+            None,
         )
     })
     .with_expected_proposal_id(expected_proposal_id)
@@ -98,6 +99,7 @@ fn begin_review_applications(
             Some(<BalanceOf<Runtime>>::from(25_000_u32)),
             opening_id,
             working_group,
+            None,
         )
     })
     .disable_setup_enviroment()
@@ -132,6 +134,7 @@ fn fill_opening(
                 reward_policy: reward_policy.clone(),
                 working_group,
             },
+            None,
         )
     })
     .disable_setup_enviroment()
@@ -170,6 +173,7 @@ fn decrease_stake(
             leader_worker_id,
             stake_amount,
             working_group,
+            None,
         )
     })
     .disable_setup_enviroment()
@@ -200,6 +204,7 @@ fn slash_stake(
             leader_worker_id,
             stake_amount,
             working_group,
+            None,
         )
     })
     .disable_setup_enviroment()
@@ -230,6 +235,7 @@ fn set_reward(
             leader_worker_id,
             reward_amount,
             working_group,
+            None,
         )
     })
     .disable_setup_enviroment()
@@ -271,6 +277,7 @@ fn set_mint_capacity<
             Some(<BalanceOf<Runtime>>::from(50_000_u32)),
             mint_capacity,
             working_group,
+            None,
         )
     })
     .with_setup_enviroment(setup_environment)
@@ -304,6 +311,7 @@ fn terminate_role(
                 slash,
                 working_group,
             },
+            None,
         )
     })
     .disable_setup_enviroment()

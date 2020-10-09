@@ -6,7 +6,6 @@ use frame_support::traits::Currency;
 use system::RawOrigin;
 
 use common::working_group::WorkingGroup;
-use governance::election_params::ElectionParameters;
 use hiring::ActivateOpeningAt;
 use proposals_engine::ProposalParameters;
 use working_group::OpeningPolicyCommitment;
@@ -113,6 +112,7 @@ fn create_text_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     None,
                     b"text".to_vec(),
+                    None,
                 )
             },
             empty_stake_call: || {
@@ -123,6 +123,7 @@ fn create_text_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     None,
                     b"text".to_vec(),
+                    None,
                 )
             },
             invalid_stake_call: || {
@@ -133,6 +134,7 @@ fn create_text_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     b"text".to_vec(),
+                    None,
                 )
             },
             successful_call: || {
@@ -143,6 +145,7 @@ fn create_text_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(25000u32)),
                     b"text".to_vec(),
+                    None,
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::text_proposal::<Test>(),
@@ -166,6 +169,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
                 b"body".to_vec(),
                 None,
                 long_text,
+                None,
             ),
             Err(Error::<Test>::TextProposalSizeExceeded.into())
         );
@@ -178,6 +182,7 @@ fn create_text_proposal_codex_call_fails_with_incorrect_text_size() {
                 b"body".to_vec(),
                 None,
                 Vec::new(),
+                None,
             ),
             Err(Error::<Test>::TextProposalIsEmpty.into())
         );
@@ -198,6 +203,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
                     b"body".to_vec(),
                     None,
                     b"wasm".to_vec(),
+                    None,
                 )
             },
             empty_stake_call: || {
@@ -208,6 +214,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
                     b"body".to_vec(),
                     None,
                     b"wasm".to_vec(),
+                    None,
                 )
             },
             invalid_stake_call: || {
@@ -218,6 +225,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(500u32)),
                     b"wasm".to_vec(),
+                    None,
                 )
             },
             successful_call: || {
@@ -228,6 +236,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(1_000_000_u32)),
                     b"wasm".to_vec(),
+                    None,
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::runtime_upgrade_proposal::<Test>(),
@@ -251,6 +260,7 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
                 b"body".to_vec(),
                 None,
                 long_wasm,
+                None,
             ),
             Err(Error::<Test>::RuntimeProposalSizeExceeded.into())
         );
@@ -263,212 +273,9 @@ fn create_upgrade_runtime_proposal_codex_call_fails_with_incorrect_wasm_size() {
                 b"body".to_vec(),
                 None,
                 Vec::new(),
+                None,
             ),
             Err(Error::<Test>::RuntimeProposalIsEmpty.into())
-        );
-    });
-}
-
-#[test]
-fn create_set_election_parameters_proposal_common_checks_succeed() {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-
-        let proposal_fixture = ProposalTestFixture {
-            insufficient_rights_call: || {
-                ProposalCodex::create_set_election_parameters_proposal(
-                    RawOrigin::None.into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    get_valid_election_parameters(),
-                )
-            },
-            empty_stake_call: || {
-                ProposalCodex::create_set_election_parameters_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    None,
-                    get_valid_election_parameters(),
-                )
-            },
-            invalid_stake_call: || {
-                ProposalCodex::create_set_election_parameters_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(50000u32)),
-                    get_valid_election_parameters(),
-                )
-            },
-            successful_call: || {
-                ProposalCodex::create_set_election_parameters_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(200_000_u32)),
-                    get_valid_election_parameters(),
-                )
-            },
-            proposal_parameters:
-                crate::proposal_types::parameters::set_election_parameters_proposal::<Test>(),
-            proposal_details: ProposalDetails::SetElectionParameters(
-                get_valid_election_parameters(),
-            ),
-        };
-        proposal_fixture.check_all();
-    });
-}
-
-fn assert_failed_election_parameters_call(
-    election_parameters: ElectionParameters<u64, u64>,
-    error: DispatchError,
-) {
-    assert_eq!(
-        ProposalCodex::create_set_election_parameters_proposal(
-            RawOrigin::Signed(1).into(),
-            1,
-            b"title".to_vec(),
-            b"body".to_vec(),
-            Some(<BalanceOf<Test>>::from(3750u32)),
-            election_parameters,
-        ),
-        Err(error)
-    );
-}
-
-fn get_valid_election_parameters() -> ElectionParameters<u64, u64> {
-    ElectionParameters {
-        announcing_period: 14400,
-        voting_period: 14400,
-        revealing_period: 14400,
-        council_size: 4,
-        candidacy_limit: 25,
-        new_term_duration: 14400,
-        min_council_stake: 1,
-        min_voting_stake: 1,
-    }
-}
-
-#[test]
-fn create_set_election_parameters_call_fails_with_incorrect_parameters() {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 500000);
-
-        let mut election_parameters = get_valid_election_parameters();
-        election_parameters.council_size = 2;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterCouncilSize.into(),
-        );
-
-        election_parameters.council_size = 21;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterCouncilSize.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.candidacy_limit = 22;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterCandidacyLimit.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.candidacy_limit = 122;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterCandidacyLimit.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.min_voting_stake = 0;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterMinVotingStake.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.min_voting_stake = 200000;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterMinVotingStake.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.new_term_duration = 10000;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterNewTermDuration.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.new_term_duration = 500000;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterNewTermDuration.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.min_council_stake = 0;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterMinCouncilStake.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.min_council_stake = 200000;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterMinCouncilStake.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.voting_period = 10000;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterVotingPeriod.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.voting_period = 50000;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterVotingPeriod.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.revealing_period = 10000;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterRevealingPeriod.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.revealing_period = 50000;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterRevealingPeriod.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.announcing_period = 10000;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterAnnouncingPeriod.into(),
-        );
-
-        election_parameters = get_valid_election_parameters();
-        election_parameters.announcing_period = 50000;
-        assert_failed_election_parameters_call(
-            election_parameters,
-            Error::<Test>::InvalidCouncilElectionParameterAnnouncingPeriod.into(),
         );
     });
 }
@@ -488,6 +295,7 @@ fn create_spending_proposal_common_checks_succeed() {
                     None,
                     20,
                     10,
+                    None,
                 )
             },
             empty_stake_call: || {
@@ -499,6 +307,7 @@ fn create_spending_proposal_common_checks_succeed() {
                     None,
                     20,
                     10,
+                    None,
                 )
             },
             invalid_stake_call: || {
@@ -510,6 +319,7 @@ fn create_spending_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     20,
                     10,
+                    None,
                 )
             },
             successful_call: || {
@@ -521,6 +331,7 @@ fn create_spending_proposal_common_checks_succeed() {
                     Some(<BalanceOf<Test>>::from(25000u32)),
                     100,
                     2,
+                    None,
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::spending_proposal::<Test>(),
@@ -544,6 +355,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
                 Some(<BalanceOf<Test>>::from(1250u32)),
                 0,
                 2,
+                None,
             ),
             Err(Error::<Test>::InvalidSpendingProposalBalance.into())
         );
@@ -557,6 +369,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
                 Some(<BalanceOf<Test>>::from(1250u32)),
                 5000001,
                 2,
+                None,
             ),
             Err(Error::<Test>::InvalidSpendingProposalBalance.into())
         );
@@ -577,6 +390,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     None,
                     4,
+                    None,
                 )
             },
             empty_stake_call: || {
@@ -587,6 +401,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     None,
                     4,
+                    None,
                 )
             },
             invalid_stake_call: || {
@@ -597,6 +412,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     4,
+                    None,
                 )
             },
             successful_call: || {
@@ -607,6 +423,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(100_000_u32)),
                     4,
+                    None,
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::set_validator_count_proposal::<
@@ -629,6 +446,7 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 b"body".to_vec(),
                 Some(<BalanceOf<Test>>::from(500u32)),
                 3,
+                None,
             ),
             Err(Error::<Test>::InvalidValidatorCount.into())
         );
@@ -641,6 +459,7 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 b"body".to_vec(),
                 Some(<BalanceOf<Test>>::from(1001u32)),
                 3,
+                None,
             ),
             Err(Error::<Test>::InvalidValidatorCount.into())
         );
@@ -680,14 +499,6 @@ fn set_default_proposal_parameters_succeeded() {
         assert_eq!(
             <TextProposalGracePeriod<Test>>::get(),
             p.text_proposal_grace_period as u64
-        );
-        assert_eq!(
-            <SetElectionParametersProposalVotingPeriod<Test>>::get(),
-            p.set_election_parameters_proposal_voting_period as u64
-        );
-        assert_eq!(
-            <SetElectionParametersProposalGracePeriod<Test>>::get(),
-            p.set_election_parameters_proposal_grace_period as u64
         );
         assert_eq!(
             <SpendingProposalVotingPeriod<Test>>::get(),
@@ -794,6 +605,7 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
                     b"body".to_vec(),
                     None,
                     add_opening_parameters.clone(),
+                    None,
                 )
             },
             empty_stake_call: || {
@@ -804,6 +616,7 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
                     b"body".to_vec(),
                     None,
                     add_opening_parameters.clone(),
+                    None,
                 )
             },
             invalid_stake_call: || {
@@ -814,6 +627,7 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     add_opening_parameters.clone(),
+                    None,
                 )
             },
             successful_call: || {
@@ -824,6 +638,7 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(100_000_u32)),
                     add_opening_parameters.clone(),
+                    None,
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::add_working_group_leader_opening_proposal::<
@@ -862,7 +677,8 @@ fn run_create_begin_review_working_group_leader_applications_proposal_common_che
                     b"body".to_vec(),
                     None,
                     opening_id,
-                    working_group
+                    working_group,
+ 					None,
                 )
             },
             empty_stake_call: || {
@@ -873,7 +689,8 @@ fn run_create_begin_review_working_group_leader_applications_proposal_common_che
                     b"body".to_vec(),
                     None,
                     opening_id,
-                    working_group
+                    working_group,
+ 					None,
                 )
             },
             invalid_stake_call: || {
@@ -884,7 +701,8 @@ fn run_create_begin_review_working_group_leader_applications_proposal_common_che
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     opening_id,
-                    working_group
+                    working_group,
+ 					None,
                 )
             },
             successful_call: || {
@@ -895,7 +713,8 @@ fn run_create_begin_review_working_group_leader_applications_proposal_common_che
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(25000u32)),
                     opening_id,
-                    working_group
+                    working_group,
+ 					None,
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::begin_review_working_group_leader_applications_proposal::<
@@ -939,7 +758,8 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
                     b"title".to_vec(),
                     b"body".to_vec(),
                     None,
-                    fill_opening_parameters.clone()
+                    fill_opening_parameters.clone(),
+                    None,
                 )
             },
             empty_stake_call: || {
@@ -949,7 +769,8 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
                     b"title".to_vec(),
                     b"body".to_vec(),
                     None,
-                    fill_opening_parameters.clone()
+                    fill_opening_parameters.clone(),
+                    None,
                 )
             },
             invalid_stake_call: || {
@@ -959,7 +780,8 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
                     b"title".to_vec(),
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(5000u32)),
-                    fill_opening_parameters.clone()
+                    fill_opening_parameters.clone(),
+                    None,
                 )
             },
             successful_call: || {
@@ -969,7 +791,8 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
                     b"title".to_vec(),
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(50000u32)),
-                    fill_opening_parameters.clone()
+                    fill_opening_parameters.clone(),
+                    None,
                 )
             },
             proposal_parameters: crate::proposal_types::parameters::fill_working_group_leader_opening_proposal::<
@@ -1004,6 +827,7 @@ fn run_create_working_group_mint_capacity_proposal_fails_with_invalid_parameters
                 Some(<BalanceOf<Test>>::from(50000u32)),
                 (crate::WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
                 working_group,
+                None,
             ),
             Err(Error::<Test>::InvalidWorkingGroupMintCapacity.into())
         );
@@ -1034,6 +858,7 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                     None,
                     0,
                     working_group,
+                    None,
                 )
             },
             empty_stake_call: || {
@@ -1045,6 +870,7 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                     None,
                     0,
                     working_group,
+                    None,
                 )
             },
             invalid_stake_call: || {
@@ -1056,6 +882,7 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     0,
                     working_group,
+                    None,
                 )
             },
             successful_call: || {
@@ -1067,6 +894,7 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                     Some(<BalanceOf<Test>>::from(50000u32)),
                     10,
                     working_group,
+                    None,
                 )
             },
             proposal_parameters:
@@ -1103,6 +931,7 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
                     0,
                     10,
                     working_group,
+                    None,
                 )
             },
             empty_stake_call: || {
@@ -1115,6 +944,7 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
                     0,
                     10,
                     working_group,
+                    None,
                 )
             },
             invalid_stake_call: || {
@@ -1127,6 +957,7 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
                     0,
                     10,
                     working_group,
+                    None,
                 )
             },
             successful_call: || {
@@ -1139,6 +970,7 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
                     10,
                     10,
                     working_group,
+                    None,
                 )
             },
             proposal_parameters:
@@ -1178,8 +1010,8 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     b"body".to_vec(),
                     None,
                     0,
-                    10,
-                    working_group,
+                    10,                    working_group,
+ 					None,
                 )
             },
             empty_stake_call: || {
@@ -1192,6 +1024,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     0,
                     10,
                     working_group,
+ 					None,
                 )
             },
             invalid_stake_call: || {
@@ -1204,6 +1037,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     0,
                     10,
                     working_group,
+ 					None,
                 )
             },
             successful_call: || {
@@ -1216,6 +1050,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     10,
                     10,
                     working_group,
+ 					None,
                 )
             },
             proposal_parameters:
@@ -1261,6 +1096,7 @@ fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) 
                 10,
                 0,
                 working_group,
+                None,
             ),
             Err(Error::<Test>::SlashingStakeIsZero.into())
         );
@@ -1296,6 +1132,7 @@ fn run_decrease_stake_with_zero_staking_balance_fails(working_group: WorkingGrou
                 10,
                 0,
                 working_group,
+                None,
             ),
             Err(Error::<Test>::DecreasingStakeIsZero.into())
         );
@@ -1325,6 +1162,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                     0,
                     10,
                     working_group,
+                    None,
                 )
             },
             empty_stake_call: || {
@@ -1337,6 +1175,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                     0,
                     10,
                     working_group,
+                    None,
                 )
             },
             invalid_stake_call: || {
@@ -1349,6 +1188,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                     0,
                     10,
                     working_group,
+                    None,
                 )
             },
             successful_call: || {
@@ -1361,6 +1201,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                     10,
                     10,
                     working_group,
+                    None,
                 )
             },
             proposal_parameters:
@@ -1402,6 +1243,7 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
                     b"body".to_vec(),
                     None,
                     terminate_role_parameters.clone(),
+                    None,
                 )
             },
             empty_stake_call: || {
@@ -1412,6 +1254,7 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
                     b"body".to_vec(),
                     None,
                     terminate_role_parameters.clone(),
+                    None,
                 )
             },
             invalid_stake_call: || {
@@ -1422,6 +1265,7 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(5000u32)),
                     terminate_role_parameters.clone(),
+                    None,
                 )
             },
             successful_call: || {
@@ -1432,6 +1276,7 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
                     b"body".to_vec(),
                     Some(<BalanceOf<Test>>::from(100_000_u32)),
                     terminate_role_parameters.clone(),
+                    None,
                 )
             },
             proposal_parameters:
