@@ -4,21 +4,36 @@ import _ from 'lodash'
 import RefParser, { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import chalk from 'chalk'
 import { BOOL_PROMPT_OPTIONS } from './prompting'
+import { getSchemasLocation } from 'cd-schemas'
+import path from 'path'
 
 type CustomPromptMethod = () => Promise<any>
 type CustomPrompt = DistinctQuestion | CustomPromptMethod | { $item: CustomPrompt }
 
-export type JsonSchemaCustomPrompts = [string | RegExp, CustomPrompt][]
+// For the explaination of "string & { x: never }", see: https://github.com/microsoft/TypeScript/issues/29729
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type JsonSchemaCustomPrompts<T = Record<string, unknown>> = [keyof T | (string & {}) | RegExp, CustomPrompt][]
+
+// Default schema path for resolving refs
+// TODO: Would be nice to skip the filename part (but without it it doesn't work)
+const DEFAULT_SCHEMA_PATH = getSchemasLocation('entities') + path.sep
 
 export class JsonSchemaPrompter<JsonResult> {
   schema: JSONSchema
+  schemaPath: string
   customPropmpts?: JsonSchemaCustomPrompts
   ajv: Ajv.Ajv
   filledObject: Partial<JsonResult>
 
-  constructor(schema: JSONSchema, defaults?: Partial<JsonResult>, customPrompts?: JsonSchemaCustomPrompts) {
+  constructor(
+    schema: JSONSchema,
+    defaults?: Partial<JsonResult>,
+    customPrompts?: JsonSchemaCustomPrompts,
+    schemaPath: string = DEFAULT_SCHEMA_PATH
+  ) {
     this.customPropmpts = customPrompts
     this.schema = schema
+    this.schemaPath = schemaPath
     this.ajv = new Ajv()
     this.filledObject = defaults || {}
   }
@@ -41,7 +56,7 @@ export class JsonSchemaPrompter<JsonResult> {
 
   private getCustomPrompt(propertyPath: string): CustomPrompt | undefined {
     const found = this.customPropmpts?.find(([pathToMatch]) =>
-      typeof pathToMatch === 'string' ? propertyPath === pathToMatch : pathToMatch.test(propertyPath)
+      pathToMatch instanceof RegExp ? pathToMatch.test(propertyPath) : propertyPath === pathToMatch
     )
 
     return found ? found[1] : undefined
@@ -51,8 +66,8 @@ export class JsonSchemaPrompter<JsonResult> {
     return chalk.green(propertyPath)
   }
 
-  private async prompt(schema: JSONSchema, propertyPath = ''): Promise<any> {
-    const customPrompt: CustomPrompt | undefined = this.getCustomPrompt(propertyPath)
+  private async prompt(schema: JSONSchema, propertyPath = '', custom?: CustomPrompt): Promise<any> {
+    const customPrompt: CustomPrompt | undefined = custom || this.getCustomPrompt(propertyPath)
     const propDisplayName = this.propertyDisplayName(propertyPath)
 
     // Custom prompt
@@ -83,9 +98,10 @@ export class JsonSchemaPrompter<JsonResult> {
     }
 
     // "primitive" values:
+    const currentValue = _.get(this.filledObject, propertyPath)
     const basicPromptOptions: DistinctQuestion = {
       message: propDisplayName,
-      default: _.get(this.filledObject, propertyPath) || schema.default,
+      default: currentValue !== undefined ? currentValue : schema.default,
     }
 
     let additionalPromptOptions: DistinctQuestion | undefined
@@ -110,7 +126,7 @@ export class JsonSchemaPrompter<JsonResult> {
     const promptOptions = { ...basicPromptOptions, ...additionalPromptOptions, ...customPrompt }
     // Need to wrap in retry, because "validate" will not get called if "type" is "list" etc.
     return await this.promptWithRetry(
-      async () => normalizer(await this.promptSimple(promptOptions, propertyPath, schema, normalizer)),
+      async () => normalizer(await this.promptSimple(promptOptions, propertyPath, normalizer)),
       propertyPath
     )
   }
@@ -153,12 +169,7 @@ export class JsonSchemaPrompter<JsonResult> {
     return result
   }
 
-  private async promptSimple(
-    promptOptions: DistinctQuestion,
-    propertyPath: string,
-    schema: JSONSchema,
-    normalize?: (v: any) => any
-  ) {
+  private async promptSimple(promptOptions: DistinctQuestion, propertyPath: string, normalize?: (v: any) => any) {
     const { result } = await inquirer.prompt([
       {
         ...promptOptions,
@@ -185,7 +196,8 @@ export class JsonSchemaPrompter<JsonResult> {
       error = this.setValueAndGetError(propertyPath, value, nestedErrors)
       if (error) {
         console.log('\n')
-        console.warn(error)
+        console.log('Provided value:', value)
+        console.warn(`ERROR: ${error}`)
         console.warn(`Try providing the input for ${propertyPath} again...`)
       }
     } while (error)
@@ -193,14 +205,32 @@ export class JsonSchemaPrompter<JsonResult> {
     return value
   }
 
+  async getMainSchema() {
+    return await RefParser.dereference(this.schemaPath, this.schema, {})
+  }
+
   async promptAll() {
-    await this.prompt(await RefParser.dereference(this.schema))
+    await this.prompt(await this.getMainSchema())
     return this.filledObject as JsonResult
   }
 
-  async promptSingleProp<P extends keyof JsonResult & string>(p: P): Promise<Exclude<JsonResult[P], undefined>> {
-    const dereferenced = await RefParser.dereference(this.schema)
-    await this.prompt(dereferenced.properties![p] as JSONSchema, p)
+  async promptMultipleProps<P extends keyof JsonResult & string, PA extends readonly P[]>(
+    props: PA
+  ): Promise<{ [K in PA[number]]: Exclude<JsonResult[K], undefined> }> {
+    const result: Partial<{ [K in PA[number]]: Exclude<JsonResult[K], undefined> }> = {}
+    for (const prop of props) {
+      result[prop] = await this.promptSingleProp(prop)
+    }
+
+    return result as { [K in PA[number]]: Exclude<JsonResult[K], undefined> }
+  }
+
+  async promptSingleProp<P extends keyof JsonResult & string>(
+    p: P,
+    customPrompt?: CustomPrompt
+  ): Promise<Exclude<JsonResult[P], undefined>> {
+    const mainSchema = await this.getMainSchema()
+    await this.prompt(mainSchema.properties![p] as JSONSchema, p, customPrompt)
     return this.filledObject[p] as Exclude<JsonResult[P], undefined>
   }
 }

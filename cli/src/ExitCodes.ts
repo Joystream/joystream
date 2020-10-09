@@ -11,5 +11,6 @@ enum ExitCodes {
   UnexpectedException = 500,
   FsOperationFailed = 501,
   ApiError = 502,
+  ExternalInfrastructureError = 503,
 }
 export = ExitCodes

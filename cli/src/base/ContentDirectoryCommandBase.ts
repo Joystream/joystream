@@ -2,11 +2,13 @@ import ExitCodes from '../ExitCodes'
 import AccountsCommandBase from './AccountsCommandBase'
 import { WorkingGroups, NamedKeyringPair } from '../Types'
 import { ReferenceProperty } from 'cd-schemas/types/extrinsics/AddClassSchema'
+import { FlattenRelations } from 'cd-schemas/types/utility'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
-import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity } from '@joystream/types/content-directory'
+import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity, EntityId } from '@joystream/types/content-directory'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import { Codec } from '@polkadot/types/types'
+import _ from 'lodash'
 
 /**
  * Abstract base class for commands related to working groups
@@ -137,10 +139,61 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     const entity = await this.getApi().entityById(id)
 
     if (!entity) {
-      this.error('Invalid entity id!', { exit: ExitCodes.InvalidInput })
+      this.error(`Entity not found by id: ${id}`, { exit: ExitCodes.InvalidInput })
     }
 
     return entity
+  }
+
+  async getAndParseKnownEntity<T>(id: string | number): Promise<FlattenRelations<T>> {
+    const entity = await this.getEntity(id)
+    return this.parseToKnownEntityJson<T>(entity)
+  }
+
+  async promptForEntityEntry(
+    message: string,
+    className: string,
+    propName?: string,
+    ownerMemberId?: number,
+    defaultId?: number
+  ): Promise<[EntityId, Entity]> {
+    const [classId, entityClass] = await this.classEntryByNameOrId(className)
+    const entityEntries = (await this.getApi().entitiesByClassId(classId.toNumber())).filter(([, entity]) => {
+      const controller = entity.entity_permissions.controller
+      return ownerMemberId !== undefined
+        ? controller.isOfType('Member') && controller.asType('Member').toNumber() === ownerMemberId
+        : true
+    })
+
+    if (!entityEntries.length) {
+      this.log(`${message}:`)
+      this.error(`No choices available! Exiting...`, { exit: ExitCodes.UnexpectedException })
+    }
+
+    const choosenEntityId = await this.simplePrompt({
+      message,
+      type: 'list',
+      choices: entityEntries.map(([id, entity]) => {
+        const parsedEntityPropertyValues = this.parseEntityPropertyValues(entity, entityClass)
+        return {
+          name: (propName && parsedEntityPropertyValues[propName]?.value.toString()) || `ID:${id.toString()}`,
+          value: id.toString(), // With numbers there are issues with "default"
+        }
+      }),
+      default: defaultId?.toString(),
+    })
+
+    return entityEntries.find(([id]) => choosenEntityId === id.toString())!
+  }
+
+  async promptForEntityId(
+    message: string,
+    className: string,
+    propName?: string,
+    ownerMemberId?: number,
+    defaultId?: number
+  ): Promise<number> {
+    return (await this.promptForEntityEntry(message, className, propName, ownerMemberId, defaultId))[0].toNumber()
   }
 
   parseEntityPropertyValues(
@@ -162,5 +215,14 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
       }
       return columns
     }, {} as Record<string, { value: Codec; type: string }>)
+  }
+
+  async parseToKnownEntityJson<T>(entity: Entity, entityClass?: Class): Promise<FlattenRelations<T>> {
+    if (!entityClass) {
+      entityClass = (await this.classEntryByNameOrId(entity.class_id.toString()))[1]
+    }
+    return (_.mapValues(this.parseEntityPropertyValues(entity, entityClass), (v) =>
+      v.value.toJSON()
+    ) as unknown) as FlattenRelations<T>
   }
 }

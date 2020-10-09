@@ -48,6 +48,9 @@ import { Stake, StakeId } from '@joystream/types/stake'
 
 import { InputValidationLengthConstraint } from '@joystream/types/common'
 import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity, EntityId } from '@joystream/types/content-directory'
+import { ContentId, DataObject } from '@joystream/types/media'
+import { ServiceProviderRecord, Url } from '@joystream/types/discovery'
+import _ from 'lodash'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 const DEFAULT_DECIMALS = new BN(12)
@@ -511,5 +514,23 @@ export default class Api {
   async entityById(id: number): Promise<Entity | null> {
     const exists = !!(await this._api.query.contentDirectory.curatorGroupById.size(id))
     return exists ? await this._api.query.contentDirectory.entityById<Entity>(id) : null
+  }
+
+  async dataObjectByContentId(contentId: ContentId): Promise<DataObject | null> {
+    const dataObject = await this._api.query.dataDirectory.dataObjectByContentId<Option<DataObject>>(contentId)
+    return dataObject.unwrapOr(null)
+  }
+
+  async ipnsIdentity(storageProviderId: number): Promise<string | null> {
+    const accountInfo = await this._api.query.discovery.accountInfoByStorageProviderId<ServiceProviderRecord>(
+      storageProviderId
+    )
+    return accountInfo.isEmpty ? null : accountInfo.identity.toString()
+  }
+
+  async getRandomBootstrapEndpoint(): Promise<string | null> {
+    const endpoints = await this._api.query.discovery.bootstrapEndpoints<Vec<Url>>()
+    const randomEndpoint = _.sample(endpoints.toArray())
+    return randomEndpoint ? randomEndpoint.toString() : null
   }
 }

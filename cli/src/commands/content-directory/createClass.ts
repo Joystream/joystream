@@ -18,7 +18,7 @@ export default class CreateClassCommand extends ContentDirectoryCommandBase {
 
     const { input, output } = this.parse(CreateClassCommand).flags
 
-    let inputJson = getInputJson<CreateClass>(input)
+    let inputJson = await getInputJson<CreateClass>(input, CreateClassSchema as JSONSchema)
     if (!inputJson) {
       const customPrompts: JsonSchemaCustomPrompts = [
         ['class_permissions.maintainers', () => this.promptForCuratorGroups('Select class maintainers')],
@@ -36,7 +36,7 @@ export default class CreateClassCommand extends ContentDirectoryCommandBase {
       await this.requestAccountDecoding(account)
       this.log('Sending the extrinsic...')
       const inputParser = new InputParser(this.getOriginalApi())
-      await this.sendAndFollowTx(account, inputParser.parseCreateClassExtrinsic(inputJson))
+      await this.sendAndFollowTx(account, inputParser.parseCreateClassExtrinsic(inputJson), true)
 
       saveOutputJson(output, `${inputJson.name}Class.json`, inputJson)
     }

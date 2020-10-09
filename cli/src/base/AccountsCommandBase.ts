@@ -224,6 +224,16 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
     }
   }
 
+  async getRequiredMemberId(): Promise<number> {
+    const account = await this.getRequiredSelectedAccount()
+    const memberIds = await this.getApi().getMemberIdsByControllerAccount(account.address)
+    if (!memberIds.length) {
+      this.error('Membership required to access this command!', { exit: ExitCodes.AccessDenied })
+    }
+
+    return memberIds[0].toNumber() // FIXME: Temporary solution (just using the first one)
+  }
+
   async init() {
     await super.init()
     try {

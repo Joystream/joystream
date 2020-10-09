@@ -20,7 +20,7 @@ export default class AddClassSchemaCommand extends ContentDirectoryCommandBase {
 
     const { input, output } = this.parse(AddClassSchemaCommand).flags
 
-    let inputJson = getInputJson<AddClassSchema>(input)
+    let inputJson = await getInputJson<AddClassSchema>(input)
     if (!inputJson) {
       let selectedClass: Class | undefined
       const customPrompts: JsonSchemaCustomPrompts = [
