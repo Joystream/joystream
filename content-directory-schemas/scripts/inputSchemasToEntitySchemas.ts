@@ -11,11 +11,8 @@ import {
 } from '../types/extrinsics/AddClassSchema'
 import PRIMITIVE_PROPERTY_DEFS from '../schemas/propertyValidationDefs.schema.json'
 import { getInputs } from '../src/helpers/inputs'
+import { getSchemasLocation, SCHEMA_TYPES } from '../src/helpers/schemas'
 import { JSONSchema7 } from 'json-schema'
-
-const SINGLE_ENTITY_SCHEMAS_LOCATION = path.join(__dirname, '../schemas/entities')
-const BATCH_OF_ENITIES_SCHEMAS_LOCATION = path.join(__dirname, '../schemas/entityBatches')
-const ENTITY_REFERENCE_SCHEMAS_LOCATION = path.join(__dirname, '../schemas/entityReferences')
 
 const schemaInputs = getInputs<AddClassSchema>('schemas')
 
@@ -47,6 +44,7 @@ const ReferencePropertyDef = ({ Reference: ref }: ReferenceProperty): JSONSchema
   'oneOf': [
     onePropertyObjectDef('new', { '$ref': `./${ref.className}Entity.schema.json` }),
     onePropertyObjectDef('existing', { '$ref': `../entityReferences/${ref.className}Ref.schema.json` }),
+    PRIMITIVE_PROPERTY_DEFS.definitions.Uint64 as JSONSchema7,
   ],
 })
 
@@ -78,14 +76,9 @@ const PropertyDef = ({ property_type: propertyType, description }: Property): JS
 })
 
 // Mkdir entity schemas directories if they do not exist
-const entitySchemasDirs = [
-  SINGLE_ENTITY_SCHEMAS_LOCATION,
-  BATCH_OF_ENITIES_SCHEMAS_LOCATION,
-  ENTITY_REFERENCE_SCHEMAS_LOCATION,
-]
-entitySchemasDirs.forEach((dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir)
+SCHEMA_TYPES.forEach((type) => {
+  if (!fs.existsSync(getSchemasLocation(type))) {
+    fs.mkdirSync(getSchemasLocation(type))
   }
 })
 
@@ -139,15 +132,15 @@ schemaInputs.forEach(({ fileName, data: inputData }) => {
       }),
     }
 
-    const entitySchemaPath = path.join(SINGLE_ENTITY_SCHEMAS_LOCATION, `${schemaName}Entity.schema.json`)
+    const entitySchemaPath = path.join(getSchemasLocation('entities'), `${schemaName}Entity.schema.json`)
     fs.writeFileSync(entitySchemaPath, JSON.stringify(EntitySchema, undefined, 4))
     console.log(`${entitySchemaPath} succesfully generated!`)
 
-    const entityReferenceSchemaPath = path.join(ENTITY_REFERENCE_SCHEMAS_LOCATION, `${schemaName}Ref.schema.json`)
+    const entityReferenceSchemaPath = path.join(getSchemasLocation('entityReferences'), `${schemaName}Ref.schema.json`)
     fs.writeFileSync(entityReferenceSchemaPath, JSON.stringify(ReferenceSchema, undefined, 4))
     console.log(`${entityReferenceSchemaPath} succesfully generated!`)
 
-    const batchOfEntitiesSchemaPath = path.join(BATCH_OF_ENITIES_SCHEMAS_LOCATION, `${schemaName}Batch.schema.json`)
+    const batchOfEntitiesSchemaPath = path.join(getSchemasLocation('entityBatches'), `${schemaName}Batch.schema.json`)
     fs.writeFileSync(batchOfEntitiesSchemaPath, JSON.stringify(BatchSchema, undefined, 4))
     console.log(`${batchOfEntitiesSchemaPath} succesfully generated!`)
   } else {

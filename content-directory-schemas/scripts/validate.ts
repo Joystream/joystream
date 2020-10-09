@@ -60,7 +60,7 @@ async function main() {
     console.log(`Validating inputs/${inputType} and related json-schemas...\n`)
     for (const input of getInputs(inputType)) {
       let { jsonSchemaPath, jsonSchema } = getJsonSchemaForInput(inputType, input)
-      jsonSchema = await $RefParser.dereference(jsonSchemaPath.replace(/\/(^\/)+\.schema\.json$/, ''), jsonSchema)
+      jsonSchema = await $RefParser.dereference(jsonSchemaPath, jsonSchema)
       const jsonSchemaShortPath = path.relative(path.join(SCHEMAS_LOCATION, '..'), jsonSchemaPath)
       // Validate the schema itself
       let isJsonSchemaValid = alreadyValidatedJsonSchemas.get(jsonSchemaShortPath)
