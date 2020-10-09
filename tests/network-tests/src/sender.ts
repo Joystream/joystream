@@ -1,69 +1,67 @@
-import BN from 'bn.js'
 import { ApiPromise } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
-import { AccountInfo } from '@polkadot/types/interfaces'
+import { ISubmittableResult } from '@polkadot/types/types/'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { DbService } from './DbService'
+import Debugger from 'debug'
+import AsyncLock from 'async-lock'
+
+const debug = Debugger('sender')
 
 export class Sender {
   private readonly api: ApiPromise
-  private db: DbService = DbService.getInstance()
+  private readonly asyncLock: AsyncLock
+
+  // TODO: add a keyring that is shared here so no need to pass around keys
 
   constructor(api: ApiPromise) {
     this.api = api
+    this.asyncLock = new AsyncLock()
   }
 
-  private async getNonce(address: string): Promise<BN> {
-    const oncahinNonce: BN = (await this.api.query.system.account<AccountInfo>(address)).nonce
-    let nonce: BN
-    if (!this.db.hasNonce(address)) {
-      nonce = oncahinNonce
-    } else {
-      nonce = this.db.getNonce(address)
-    }
-    if (oncahinNonce.gt(nonce)) {
-      nonce = oncahinNonce
-    }
-    const nextNonce: BN = nonce.addn(1)
-    this.db.setNonce(address, nextNonce)
-    return nonce
-  }
-
-  private clearNonce(address: string): void {
-    this.db.removeNonce(address)
-  }
-
+  // Synchronize all sending of transactions into mempool, so we can always safely read
+  // the next account nonce taking mempool into account. This is safe as long as all sending of transactions
+  // from same account occurs in the same process.
+  // Returns a promise that resolves or rejects only after the extrinsic is finalized into a block.
   public async signAndSend(
     tx: SubmittableExtrinsic<'promise'>,
     account: KeyringPair,
-    expectFailure = false
-  ): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      const nonce: BN = await this.getNonce(account.address)
-      const signedTx = tx.sign(account, { nonce })
-      await signedTx
-        .send(async (result) => {
-          if (result.status.isInBlock && result.events !== undefined) {
-            result.events.forEach((event) => {
-              if (event.event.method === 'ExtrinsicFailed') {
-                if (expectFailure) {
-                  resolve()
-                } else {
-                  reject(new Error('Extrinsic failed unexpectedly'))
-                }
-              }
-            })
-            resolve()
-          }
-          if (result.status.isFuture) {
-            console.log('nonce ' + nonce + ' for account ' + account.address + ' is in future')
-            this.clearNonce(account.address)
-            reject(new Error('Extrinsic nonce is in future'))
-          }
-        })
-        .catch((error) => {
-          reject(error)
-        })
+    shouldFail = false
+  ): Promise<any> {
+    let finalizedResolve: { (): void; (value?: any): void }
+    let finalizedReject: { (arg0: Error): void; (reason?: any): void }
+    const finalized = new Promise(async (resolve, reject) => {
+      finalizedResolve = resolve
+      finalizedReject = reject
     })
+
+    const handleEvents = (result: ISubmittableResult) => {
+      if (result.status.isInBlock && result.events !== undefined) {
+        result.events.forEach((event) => {
+          if (event.event.method === 'ExtrinsicFailed') {
+            if (shouldFail) {
+              finalizedResolve()
+            } else {
+              finalizedReject(new Error('Extrinsic failed unexpectedly'))
+            }
+          }
+        })
+        finalizedResolve()
+      }
+
+      if (result.status.isFuture) {
+        // Its virtually impossible for use to continue with tests
+        // when this occurs and we don't expect the tests to handle this correctly
+        // so just abort!
+        process.exit(-1)
+      }
+    }
+
+    await this.asyncLock.acquire(`${account.address}`, async () => {
+      const nonce = await this.api.rpc.system.accountNextIndex(account.address)
+      const signedTx = tx.sign(account, { nonce })
+      await signedTx.send(handleEvents)
+    })
+
+    return finalized
   }
 }
