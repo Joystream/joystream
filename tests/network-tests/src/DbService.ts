@@ -15,7 +15,6 @@ export class DbService {
   private static MEMBERS_KEY = 'members'
   private static COUNCIL_KEY = 'council'
   private static LEADER_KEY = 'leader'
-  private static NONCE_KEY = 'nonce'
 
   private constructor() {
     this.keyring = new Keyring({ type: 'sr25519' })
@@ -86,21 +85,5 @@ export class DbService {
 
   public hasLeader(workingGroup: string): boolean {
     return this.db.has(`${workingGroup}.${DbService.LEADER_KEY}`).value()
-  }
-
-  public setNonce(address: string, nonce: BN): void {
-    this.db.set(`${DbService.NONCE_KEY}.${address}`, nonce.toString()).write()
-  }
-
-  public getNonce(address: string): BN {
-    return new BN(this.db.get(`${DbService.NONCE_KEY}.${address}`).value() as string)
-  }
-
-  public hasNonce(address: string): boolean {
-    return this.db.has(`${DbService.NONCE_KEY}.${address}`).value()
-  }
-
-  public removeNonce(address: string): void {
-    this.db.unset(`${DbService.NONCE_KEY}.${address}`).write()
   }
 }
