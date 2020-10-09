@@ -551,7 +551,7 @@ parameter_types! {
     pub const ProposalTitleMaxLength: u32 = 40;
     pub const ProposalDescriptionMaxLength: u32 = 3000;
     pub const ProposalMaxActiveProposalLimit: u32 = 5;
-    pub const LockId: LockIdentifier = [1; 8];
+    pub const ProposalsLockId: LockIdentifier = [5; 8];
 }
 
 impl proposals_engine::Trait for Runtime {
@@ -560,7 +560,7 @@ impl proposals_engine::Trait for Runtime {
     type VoterOriginValidator = CouncilManager<Self>;
     type TotalVotersCounter = CouncilManager<Self>;
     type ProposalId = u32;
-    type StakingHandler = proposals_engine::StakingManager<Self, LockId>;
+    type StakingHandler = proposals_engine::StakingManager<Self, ProposalsLockId>;
     type CancellationFee = ProposalCancellationFee;
     type RejectionFee = ProposalRejectionFee;
     type TitleMaxLength = ProposalTitleMaxLength;

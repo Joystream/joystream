@@ -132,7 +132,10 @@ fn create_text_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(5000u32),
+                    }),
                     b"text".to_vec(),
                     None,
                 )
@@ -143,7 +146,10 @@ fn create_text_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(25000u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(25000u32),
+                    }),
                     b"text".to_vec(),
                     None,
                 )
@@ -223,7 +229,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(500u32)),
+                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(500u32)}),
                     b"wasm".to_vec(),
                     None,
                 )
@@ -234,7 +240,7 @@ fn create_runtime_upgrade_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(1_000_000_u32)),
+                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(1_000_000_u32)}),
                     b"wasm".to_vec(),
                     None,
                 )
@@ -316,7 +322,10 @@ fn create_spending_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(5000u32),
+                    }),
                     20,
                     10,
                     None,
@@ -328,7 +337,10 @@ fn create_spending_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(25000u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(25000u32),
+                    }),
                     100,
                     2,
                     None,
@@ -352,7 +364,10 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(1250u32)),
+                Some(Stake {
+                    account_id: 1,
+                    balance: <BalanceOf<Test>>::from(1250u32)
+                }),
                 0,
                 2,
                 None,
@@ -366,7 +381,10 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(1250u32)),
+                Some(Stake {
+                    account_id: 1,
+                    balance: <BalanceOf<Test>>::from(1250u32)
+                }),
                 5000001,
                 2,
                 None,
@@ -410,7 +428,10 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(5000u32),
+                    }),
                     4,
                     None,
                 )
@@ -421,7 +442,10 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(100_000_u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(100_000_u32),
+                    }),
                     4,
                     None,
                 )
@@ -444,7 +468,10 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(500u32)),
+                Some(Stake {
+                    account_id: 1,
+                    balance: <BalanceOf<Test>>::from(500u32)
+                }),
                 3,
                 None,
             ),
@@ -457,7 +484,10 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(1001u32)),
+                Some(Stake {
+                    account_id: 1,
+                    balance: <BalanceOf<Test>>::from(1001u32)
+                }),
                 3,
                 None,
             ),
@@ -625,7 +655,7 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(5000u32)}),
                     add_opening_parameters.clone(),
                     None,
                 )
@@ -636,7 +666,7 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(100_000_u32)),
+                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(100_000_u32)}),
                     add_opening_parameters.clone(),
                     None,
                 )
@@ -699,7 +729,7 @@ fn run_create_begin_review_working_group_leader_applications_proposal_common_che
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(5000u32)}),
                     opening_id,
                     working_group,
  					None,
@@ -711,7 +741,7 @@ fn run_create_begin_review_working_group_leader_applications_proposal_common_che
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(25000u32)),
+                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(25000u32)}),
                     opening_id,
                     working_group,
  					None,
@@ -779,7 +809,7 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(5000u32)}),
                     fill_opening_parameters.clone(),
                     None,
                 )
@@ -790,7 +820,7 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(50000u32)}),
                     fill_opening_parameters.clone(),
                     None,
                 )
@@ -824,7 +854,10 @@ fn run_create_working_group_mint_capacity_proposal_fails_with_invalid_parameters
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(50000u32)),
+                Some(Stake {
+                    account_id: 1,
+                    balance: <BalanceOf<Test>>::from(50000u32)
+                }),
                 (crate::WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
                 working_group,
                 None,
@@ -879,7 +912,10 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(5000u32),
+                    }),
                     0,
                     working_group,
                     None,
@@ -891,7 +927,10 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(50000u32),
+                    }),
                     10,
                     working_group,
                     None,
@@ -953,7 +992,10 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(5000u32),
+                    }),
                     0,
                     10,
                     working_group,
@@ -966,7 +1008,10 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(50000u32),
+                    }),
                     10,
                     10,
                     working_group,
@@ -1033,7 +1078,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(5000u32)}),
                     0,
                     10,
                     working_group,
@@ -1046,7 +1091,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(50000u32)}),
                     10,
                     10,
                     working_group,
@@ -1092,7 +1137,10 @@ fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) 
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(50000u32)),
+                Some(Stake {
+                    account_id: 1,
+                    balance: <BalanceOf<Test>>::from(50000u32)
+                }),
                 10,
                 0,
                 working_group,
@@ -1128,7 +1176,10 @@ fn run_decrease_stake_with_zero_staking_balance_fails(working_group: WorkingGrou
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(50000u32)),
+                Some(Stake {
+                    account_id: 1,
+                    balance: <BalanceOf<Test>>::from(50000u32)
+                }),
                 10,
                 0,
                 working_group,
@@ -1184,7 +1235,10 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(5000u32),
+                    }),
                     0,
                     10,
                     working_group,
@@ -1197,7 +1251,10 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(50000u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(50000u32),
+                    }),
                     10,
                     10,
                     working_group,
@@ -1263,7 +1320,10 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(5000u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(5000u32),
+                    }),
                     terminate_role_parameters.clone(),
                     None,
                 )
@@ -1274,7 +1334,10 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(<BalanceOf<Test>>::from(100_000_u32)),
+                    Some(Stake {
+                        account_id: 1,
+                        balance: <BalanceOf<Test>>::from(100_000_u32),
+                    }),
                     terminate_role_parameters.clone(),
                     None,
                 )

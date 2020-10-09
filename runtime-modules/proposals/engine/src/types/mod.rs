@@ -380,8 +380,8 @@ pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId>
     /// Proposal description.
     pub description: Vec<u8>,
 
-    /// Stake balance for the proposal.
-    pub stake_balance: Option<Balance>,
+    /// Stake account and balance for the proposal.
+    pub stake: Option<Stake<AccountId, Balance>>,
 
     /// Encoded executable proposal code.
     pub encoded_dispatchable_call_code: Vec<u8>,
@@ -389,6 +389,17 @@ pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId>
     /// Exact block for the proposal execution.
     /// Should be greater than starting block + grace_period if set.
     pub exact_execution_block: Option<BlockNumber>,
+}
+
+/// Contains staking balance and account id.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Stake<AccountId, Balance> {
+    /// Staking account id.
+    pub account_id: AccountId,
+
+    /// Staking balance.
+    pub balance: Balance,
 }
 
 // Type alias for member id.
