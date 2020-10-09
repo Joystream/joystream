@@ -1,0 +1,11 @@
+FROM node:12-alpine 
+
+RUN mkdir -p /home/node/generated/graphql-server && chown -R node:node /home/node/generated/graphql-server
+COPY --chown=node:node ./generated/graphql-server /home/node/generated/graphql-server/
+
+WORKDIR /home/node/generated/graphql-server
+RUN yarn install
+
+ENTRYPOINT []
+# options: bootstrap, bootstrap:dev, start:dev
+CMD ["yarn", "start"]
