@@ -93,6 +93,10 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli content-directory:updateClassPermissions [CLASSNAME]`](#joystream-cli-content-directoryupdateclasspermissions-classname)
 * [`joystream-cli council:info`](#joystream-cli-councilinfo)
 * [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
+* [`joystream-cli media:createChannel`](#joystream-cli-mediacreatechannel)
+* [`joystream-cli media:updateChannel`](#joystream-cli-mediaupdatechannel)
+* [`joystream-cli media:updateVideo`](#joystream-cli-mediaupdatevideo)
+* [`joystream-cli media:uploadVideo`](#joystream-cli-mediauploadvideo)
 * [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
 * [`joystream-cli working-groups:createOpening`](#joystream-cli-working-groupscreateopening)
 * [`joystream-cli working-groups:decreaseWorkerStake WORKERID`](#joystream-cli-working-groupsdecreaseworkerstake-workerid)
@@ -543,6 +547,61 @@ OPTIONS
 ```
 
 _See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/v2.2.3/src/commands/help.ts)_
+
+## `joystream-cli media:createChannel`
+
+Create a new channel on Joystream (requires a membership).
+
+```
+USAGE
+  $ joystream-cli media:createChannel
+
+OPTIONS
+  -i, --input=input    Path to JSON file to use as input (if not specified - the input can be provided interactively)
+  -o, --output=output  Path where the output JSON file should be placed (can be then reused as input)
+```
+
+_See code: [src/commands/media/createChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/media/createChannel.ts)_
+
+## `joystream-cli media:updateChannel`
+
+Update one of the owned channels on Joystream (requires a membership).
+
+```
+USAGE
+  $ joystream-cli media:updateChannel
+
+OPTIONS
+  -i, --input=input    Path to JSON file to use as input (if not specified - the input can be provided interactively)
+  -o, --output=output  Path where the output JSON file should be placed (can be then reused as input)
+```
+
+_See code: [src/commands/media/updateChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/media/updateChannel.ts)_
+
+## `joystream-cli media:updateVideo`
+
+Update existing video information (requires a membership).
+
+```
+USAGE
+  $ joystream-cli media:updateVideo
+```
+
+_See code: [src/commands/media/updateVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/media/updateVideo.ts)_
+
+## `joystream-cli media:uploadVideo`
+
+Upload a new Video to a channel (requires a membership).
+
+```
+USAGE
+  $ joystream-cli media:uploadVideo
+
+OPTIONS
+  -f, --filePath=filePath  (required) Path to the media file to upload
+```
+
+_See code: [src/commands/media/uploadVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/media/uploadVideo.ts)_
 
 ## `joystream-cli working-groups:application WGAPPLICATIONID`
 
