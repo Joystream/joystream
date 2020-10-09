@@ -97,7 +97,7 @@
 //!                 proposal_parameters : parameters,
 //!                 title,
 //!                 description,
-//!                 stake_balance: None,
+//!                 stake: None,
 //!                 encoded_dispatchable_call_code: encoded_proposal_code,
 //!                 exact_execution_block: None,
 //!             };
