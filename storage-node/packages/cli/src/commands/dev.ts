@@ -171,7 +171,7 @@ const init = async (api: RuntimeApi): Promise<any> => {
   await api.signAndSend(alice, api.api.tx.sudo.sudo(api.api.tx.contentWorkingGroup.replaceLead([aliceMemberId, alice])))
 
   // Initialize classes and entities in the versioned store
-  await vstoreInit(api, alice)
+  // await vstoreInit(api, alice)
 
   // set localhost colossus as discovery provider
   // assuming pioneer dev server is running on port 3000 we should run
