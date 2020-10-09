@@ -387,6 +387,9 @@ impl<T: Trait> Module<T> {
                 let council_user_id = CurrentCycleCandidatesOrder::<T>::get(item.option_id);
                 let candidate = Candidates::<T>::get(council_user_id);
 
+                // clear order item
+                CurrentCycleCandidatesOrder::<T>::remove(item.option_id);
+
                 (candidate, council_user_id).into()
             })
             .collect();
