@@ -389,6 +389,8 @@ impl<T: Trait> Module<T> {
 
                 // clear order item
                 CurrentCycleCandidatesOrder::<T>::remove(item.option_id);
+                // clear candidate record
+                Candidates::<T>::remove(council_user_id);
 
                 (candidate, council_user_id).into()
             })
