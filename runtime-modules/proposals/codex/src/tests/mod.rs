@@ -24,7 +24,7 @@ pub(crate) fn increase_total_balance_issuance(balance: u64) {
 pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
     let initial_balance = Balances::total_issuance();
     {
-        let _ = <Test as stake::Trait>::Currency::deposit_creating(&account_id, balance);
+        let _ = Balances::deposit_creating(&account_id, balance);
     }
     assert_eq!(Balances::total_issuance(), initial_balance + balance);
 }
@@ -73,7 +73,7 @@ where
 
     fn check_for_successful_call(&self) {
         let account_id = 1;
-        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 150000);
+        let _imbalance = Balances::deposit_creating(&account_id, 150000);
 
         assert_eq!((self.successful_call)(), Ok(()));
 

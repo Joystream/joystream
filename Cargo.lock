@@ -3582,7 +3582,6 @@ dependencies = [
  "pallet-balances",
  "pallet-common",
  "pallet-membership",
- "pallet-stake",
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",

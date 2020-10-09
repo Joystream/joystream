@@ -26,7 +26,7 @@ struct ProposalParametersFixture {
 }
 
 impl ProposalParametersFixture {
-    fn with_required_stake(&self, required_stake: BalanceOfCurrency<Test>) -> Self {
+    fn with_required_stake(&self, required_stake: BalanceOf<Test>) -> Self {
         ProposalParametersFixture {
             parameters: ProposalParameters {
                 required_stake: Some(required_stake),
@@ -72,7 +72,7 @@ struct DummyProposalFixture {
     proposal_code: Vec<u8>,
     title: Vec<u8>,
     description: Vec<u8>,
-    stake: Option<Stake<u64, BalanceOfCurrency<Test>>>,
+    stake: Option<Stake<u64, BalanceOf<Test>>>,
     exact_execution_block: Option<u64>,
 }
 
@@ -128,7 +128,7 @@ impl DummyProposalFixture {
         }
     }
 
-    fn with_stake(self, account_id: u64, balance: BalanceOfCurrency<Test>) -> Self {
+    fn with_stake(self, account_id: u64, balance: BalanceOf<Test>) -> Self {
         DummyProposalFixture {
             stake: Some(Stake {
                 account_id,

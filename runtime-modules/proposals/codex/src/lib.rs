@@ -1,5 +1,5 @@
 //! # Proposals codex module
-//! Proposals `codex` module for the Joystream platform. Version 2.
+//! Proposals `codex` module for the Joystream platform. Version 3.
 //! Component of the proposals system. It contains preset proposal types.
 //!
 //! ## Overview
@@ -73,8 +73,9 @@ use system::ensure_root;
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
 use governance::election_params::ElectionParameters;
-use proposals_engine::BalanceOfCurrency;
-use proposals_engine::{ProposalCreationParameters, ProposalObserver, ProposalParameters, Stake};
+use proposals_engine::{
+    BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters, Stake,
+};
 
 pub use crate::proposal_types::{
     AddOpeningParameters, FillOpeningParameters, ProposalsConfigParameters, TerminateRoleParameters,
@@ -95,9 +96,9 @@ struct CreateProposalParameters<T: Trait> {
     pub member_id: MemberId<T>,
     pub title: Vec<u8>,
     pub description: Vec<u8>,
-    pub stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+    pub stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
     pub proposal_code: Vec<u8>,
-    pub proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOfCurrency<T>>,
+    pub proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>,
     pub proposal_details: ProposalDetailsOf<T>,
     pub exact_execution_block: Option<T::BlockNumber>,
 }
@@ -129,12 +130,6 @@ pub trait Trait:
     type ProposalEncoder: ProposalEncoder<Self>;
 }
 
-/// Balance alias for staking.
-pub type BalanceOf<T> = <T as balances::Trait>::Balance;
-
-/// Currency alias for `stake` module
-pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
-
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
 pub type BalanceOfGovernanceCurrency<T> =
     <<T as common::currency::GovernanceCurrency>::Currency as Currency<
@@ -144,10 +139,6 @@ pub type BalanceOfGovernanceCurrency<T> =
 /// Balance alias for token mint balance from `token mint` module. TODO: replace with BalanceOf
 pub type BalanceOfMint<T> =
     <<T as minting::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-
-/// Negative imbalance alias for staking
-pub type NegativeImbalance<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
 type MemberId<T> = <T as membership::Trait>::MemberId;
 
@@ -334,7 +325,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+            stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
             text: Vec<u8>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -366,7 +357,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+            stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
             wasm: Vec<u8>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -398,7 +389,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+            stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
             balance: BalanceOfMint<T>,
             destination: T::AccountId,
             exact_execution_block: Option<T::BlockNumber>,
@@ -433,7 +424,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+            stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
             new_validator_count: u32,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -471,7 +462,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+            stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
             add_opening_parameters: AddOpeningParameters<T::BlockNumber, BalanceOfGovernanceCurrency<T>>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -499,7 +490,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+            stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
             opening_id: working_group::OpeningId<T>,
             working_group: WorkingGroup,
             exact_execution_block: Option<T::BlockNumber>,
@@ -528,7 +519,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+            stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
             fill_opening_parameters: FillOpeningParameters<
                 T::BlockNumber,
                 BalanceOfMint<T>,
@@ -561,7 +552,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+            stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
             mint_balance: BalanceOfMint<T>,
             working_group: WorkingGroup,
             exact_execution_block: Option<T::BlockNumber>,
@@ -595,7 +586,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+            stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
             worker_id: working_group::WorkerId<T>,
             decreasing_stake: BalanceOf<T>,
             working_group: WorkingGroup,
@@ -632,7 +623,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+            stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
             worker_id: working_group::WorkerId<T>,
             slashing_stake: BalanceOf<T>,
             working_group: WorkingGroup,
@@ -669,7 +660,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+            stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
             worker_id: working_group::WorkerId<T>,
             reward_amount: BalanceOfMint<T>,
             working_group: WorkingGroup,
@@ -704,7 +695,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+            stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
             terminate_role_parameters: TerminateRoleParameters<working_group::WorkerId<T>>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {

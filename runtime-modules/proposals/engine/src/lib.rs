@@ -1,5 +1,5 @@
 //! # Proposals engine module
-//! Proposals `engine` module for the Joystream platform. Version 2.
+//! Proposals `engine` module for the Joystream platform. Version 3.
 //! The main component of the proposals system. Provides methods and extrinsics to create and
 //! vote for proposals, inspired by Parity **Democracy module**.
 //!
@@ -118,10 +118,10 @@
 use types::{ApprovedProposalData, FinalizedProposalData, MemberId};
 
 pub use types::{
-    ActiveStake, ApprovedProposalStatus, BalanceOf, BalanceOfCurrency, CurrencyOf,
-    FinalizationData, NegativeImbalance, Proposal, ProposalCodeDecoder, ProposalCreationParameters,
-    ProposalDecisionStatus, ProposalExecutable, ProposalParameters, ProposalStatus, Stake,
-    StakingHandler, VoteKind, VotersParameters, VotingResults,
+    ActiveStake, ApprovedProposalStatus, BalanceOf, FinalizationData, Proposal,
+    ProposalCodeDecoder, ProposalCreationParameters, ProposalDecisionStatus, ProposalExecutable,
+    ProposalParameters, ProposalStatus, Stake, StakingHandler, VoteKind, VotersParameters,
+    VotingResults,
 };
 
 pub(crate) mod types;
@@ -170,10 +170,10 @@ pub trait Trait:
     type StakingHandler: StakingHandler<Self>;
 
     /// The fee is applied when cancel the proposal. A fee would be slashed (burned).
-    type CancellationFee: Get<BalanceOfCurrency<Self>>;
+    type CancellationFee: Get<BalanceOf<Self>>;
 
     /// The fee is applied when the proposal gets rejected. A fee would be slashed (burned).
-    type RejectionFee: Get<BalanceOfCurrency<Self>>;
+    type RejectionFee: Get<BalanceOf<Self>>;
 
     /// Defines max allowed proposal title length.
     type TitleMaxLength: Get<u32>;
@@ -338,10 +338,10 @@ decl_module! {
         fn deposit_event() = default;
 
         /// Exports const - the fee is applied when cancel the proposal. A fee would be slashed (burned).
-        const CancellationFee: BalanceOfCurrency<T> = T::CancellationFee::get();
+        const CancellationFee: BalanceOf<T> = T::CancellationFee::get();
 
         /// Exports const -  the fee is applied when the proposal gets rejected. A fee would be slashed (burned).
-        const RejectionFee: BalanceOfCurrency<T> = T::RejectionFee::get();
+        const RejectionFee: BalanceOf<T> = T::RejectionFee::get();
 
         /// Exports const -  max allowed proposal title length.
         const TitleMaxLength: u32 = T::TitleMaxLength::get();
@@ -449,7 +449,7 @@ impl<T: Trait> Module<T> {
     pub fn create_proposal(
         creation_params: ProposalCreationParameters<
             T::BlockNumber,
-            BalanceOfCurrency<T>,
+            BalanceOf<T>,
             MemberId<T>,
             T::AccountId,
         >,
@@ -518,10 +518,10 @@ impl<T: Trait> Module<T> {
     /// - provided parameters: approval_threshold_percentage and slashing_threshold_percentage > 0
     /// - provided stake balance and parameters.required_stake are valid
     pub fn ensure_create_proposal_parameters_are_valid(
-        parameters: &ProposalParameters<T::BlockNumber, BalanceOfCurrency<T>>,
+        parameters: &ProposalParameters<T::BlockNumber, BalanceOf<T>>,
         title: &[u8],
         description: &[u8],
-        stake: Option<Stake<T::AccountId, BalanceOfCurrency<T>>>,
+        stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
         exact_execution_block: Option<T::BlockNumber>,
     ) -> DispatchResult {
         ensure!(!title.is_empty(), Error::<T>::EmptyTitleProvided);
@@ -731,7 +731,7 @@ impl<T: Trait> Module<T> {
     // Slashes the stake and perform unstake only in case of existing stake
     fn slash_and_unstake(
         current_stake_data: Option<ActiveStake<T::AccountId>>,
-        slash_balance: BalanceOfCurrency<T>,
+        slash_balance: BalanceOf<T>,
     ) {
         // only if stake exists
         if let Some(stake_data) = current_stake_data {
@@ -747,20 +747,20 @@ impl<T: Trait> Module<T> {
     // Method visibility allows testing.
     pub(crate) fn calculate_slash_balance(
         decision_status: &ProposalDecisionStatus,
-        proposal_parameters: &ProposalParameters<T::BlockNumber, BalanceOfCurrency<T>>,
-    ) -> BalanceOfCurrency<T> {
+        proposal_parameters: &ProposalParameters<T::BlockNumber, BalanceOf<T>>,
+    ) -> BalanceOf<T> {
         match decision_status {
             ProposalDecisionStatus::Rejected | ProposalDecisionStatus::Expired => {
                 T::RejectionFee::get()
             }
             ProposalDecisionStatus::Approved { .. } | ProposalDecisionStatus::Vetoed => {
-                BalanceOfCurrency::<T>::zero()
+                BalanceOf::<T>::zero()
             }
             ProposalDecisionStatus::Canceled => T::CancellationFee::get(),
             ProposalDecisionStatus::Slashed => proposal_parameters
                 .required_stake
                 .clone()
-                .unwrap_or_else(BalanceOfCurrency::<T>::zero), // stake if set or zero
+                .unwrap_or_else(BalanceOf::<T>::zero), // stake if set or zero
         }
     }
 
@@ -836,7 +836,7 @@ type FinalizedProposal<T> = FinalizedProposalData<
     <T as Trait>::ProposalId,
     <T as system::Trait>::BlockNumber,
     MemberId<T>,
-    BalanceOfCurrency<T>,
+    BalanceOf<T>,
     <T as system::Trait>::AccountId,
 >;
 
@@ -845,7 +845,7 @@ type ApprovedProposal<T> = ApprovedProposalData<
     <T as Trait>::ProposalId,
     <T as system::Trait>::BlockNumber,
     MemberId<T>,
-    BalanceOfCurrency<T>,
+    BalanceOf<T>,
     <T as system::Trait>::AccountId,
 >;
 
@@ -853,7 +853,7 @@ type ApprovedProposal<T> = ApprovedProposalData<
 type ProposalOf<T> = Proposal<
     <T as system::Trait>::BlockNumber,
     MemberId<T>,
-    BalanceOfCurrency<T>,
+    BalanceOf<T>,
     <T as system::Trait>::AccountId,
 >;
 
@@ -863,7 +863,7 @@ pub struct StakingManager<T: Trait, LockId: Get<LockIdentifier>> {
 }
 
 impl<T: Trait, LockId: Get<LockIdentifier>> StakingHandler<T> for StakingManager<T, LockId> {
-    fn lock(account_id: &T::AccountId, amount: BalanceOfCurrency<T>) {
+    fn lock(account_id: &T::AccountId, amount: BalanceOf<T>) {
         <balances::Module<T>>::set_lock(LockId::get(), &account_id, amount, WithdrawReasons::all())
     }
 
@@ -871,10 +871,7 @@ impl<T: Trait, LockId: Get<LockIdentifier>> StakingHandler<T> for StakingManager
         T::Currency::remove_lock(LockId::get(), &account_id);
     }
 
-    fn slash(
-        account_id: &T::AccountId,
-        amount: Option<BalanceOfCurrency<T>>,
-    ) -> BalanceOfCurrency<T> {
+    fn slash(account_id: &T::AccountId, amount: Option<BalanceOf<T>>) -> BalanceOf<T> {
         let locks = <balances::Module<T>>::locks(&account_id);
 
         let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
@@ -901,7 +898,7 @@ impl<T: Trait, LockId: Get<LockIdentifier>> StakingHandler<T> for StakingManager
         actually_slashed_balance
     }
 
-    fn set_stake(account_id: &T::AccountId, new_stake: BalanceOfCurrency<T>) -> DispatchResult {
+    fn set_stake(account_id: &T::AccountId, new_stake: BalanceOf<T>) -> DispatchResult {
         let current_stake = Self::current_stake(account_id);
 
         //Unlock previous stake if its not zero.
@@ -934,14 +931,11 @@ impl<T: Trait, LockId: Get<LockIdentifier>> StakingHandler<T> for StakingManager
         existing_lock.is_none()
     }
 
-    fn is_enough_balance_for_stake(
-        account_id: &T::AccountId,
-        amount: BalanceOfCurrency<T>,
-    ) -> bool {
+    fn is_enough_balance_for_stake(account_id: &T::AccountId, amount: BalanceOf<T>) -> bool {
         <balances::Module<T>>::usable_balance(account_id) >= amount
     }
 
-    fn current_stake(account_id: &T::AccountId) -> BalanceOfCurrency<T> {
+    fn current_stake(account_id: &T::AccountId) -> BalanceOf<T> {
         let locks = <balances::Module<T>>::locks(&account_id);
 
         let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());

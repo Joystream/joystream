@@ -15,7 +15,6 @@ sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'ht
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
-stake = { package = 'pallet-stake', default-features = false, path = '../../stake'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
 
 [dev-dependencies]
@@ -35,6 +34,5 @@ std = [
 	'sp-runtime/std',
 	'balances/std',
     'membership/std',
-    'stake/std',
     'common/std',
 ]

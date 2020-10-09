@@ -5,7 +5,6 @@
 
 use codec::{Decode, Encode};
 use frame_support::dispatch::DispatchResult;
-use frame_support::traits::Currency;
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_runtime::Perbill;
@@ -325,17 +324,6 @@ pub trait ProposalCodeDecoder<T: system::Trait> {
     ) -> Result<Box<dyn ProposalExecutable>, &'static str>;
 }
 
-/// Balance alias
-pub type BalanceOf<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-
-/// Balance alias for staking
-pub type NegativeImbalance<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
-
-/// Balance type of runtime
-pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
-
 /// Data container for the finalized proposal results
 pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, ProposerId, Balance, AccountId> {
     /// Proposal id
@@ -406,14 +394,14 @@ pub struct Stake<AccountId, Balance> {
 pub(crate) type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
-pub type BalanceOfCurrency<T> = <T as balances::Trait>::Balance;
+pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 /// Defines abstract staking handler to manage user stakes for different activities
 /// like adding a proposal. Implementation should use built-in LockableCurrency
 /// and LockIdentifier to lock balance consistently with pallet_staking.
 pub trait StakingHandler<T: system::Trait + membership::Trait + balances::Trait> {
     /// Locks the specified balance on the account using specific lock identifier.
-    fn lock(account_id: &T::AccountId, amount: BalanceOfCurrency<T>);
+    fn lock(account_id: &T::AccountId, amount: BalanceOf<T>);
 
     /// Removes the specified lock on the account.
     fn unlock(account_id: &T::AccountId);
@@ -422,13 +410,10 @@ pub trait StakingHandler<T: system::Trait + membership::Trait + balances::Trait>
     /// No limits, no actions on zero stake.
     /// If slashing balance greater than the existing stake - stake is slashed to zero.
     /// Returns actually slashed balance.
-    fn slash(
-        account_id: &T::AccountId,
-        amount: Option<BalanceOfCurrency<T>>,
-    ) -> BalanceOfCurrency<T>;
+    fn slash(account_id: &T::AccountId, amount: Option<BalanceOf<T>>) -> BalanceOf<T>;
 
     /// Sets the new stake to a given amount.
-    fn set_stake(account_id: &T::AccountId, new_stake: BalanceOfCurrency<T>) -> DispatchResult;
+    fn set_stake(account_id: &T::AccountId, new_stake: BalanceOf<T>) -> DispatchResult;
 
     /// Verifies that staking account bound to the member.
     fn is_member_staking_account(member_id: &MemberId<T>, account_id: &T::AccountId) -> bool;
@@ -439,11 +424,10 @@ pub trait StakingHandler<T: system::Trait + membership::Trait + balances::Trait>
     /// Verifies that staking account balance is sufficient for staking.
     /// During the balance check we should consider already locked stake. Effective balance to check
     /// is 'already locked funds' + 'usable funds'.
-    fn is_enough_balance_for_stake(account_id: &T::AccountId, amount: BalanceOfCurrency<T>)
-        -> bool;
+    fn is_enough_balance_for_stake(account_id: &T::AccountId, amount: BalanceOf<T>) -> bool;
 
     /// Returns the current stake on the account.
-    fn current_stake(account_id: &T::AccountId) -> BalanceOfCurrency<T>;
+    fn current_stake(account_id: &T::AccountId) -> BalanceOf<T>;
 }
 
 #[cfg(test)]
