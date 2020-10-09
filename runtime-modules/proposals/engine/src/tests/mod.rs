@@ -1056,7 +1056,8 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
             .with_account_id(account_id)
             .with_stake(required_stake);
 
-        dummy_proposal.create_proposal_and_assert(Err(DispatchError::Other("InsufficientBalance")));
+        dummy_proposal
+            .create_proposal_and_assert(Err(Error::<Test>::InsufficientBalanceForStake.into()));
     });
 }
 
@@ -1118,13 +1119,13 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
         );
 
         assert_eq!(
-            <Test as common::currency::GovernanceCurrency>::Currency::total_balance(&account_id),
+            <Test as common::currency::GovernanceCurrency>::Currency::usable_balance(&account_id),
             account_balance
         );
 
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
         assert_eq!(
-            <Test as common::currency::GovernanceCurrency>::Currency::total_balance(&account_id),
+            <Test as common::currency::GovernanceCurrency>::Currency::usable_balance(&account_id),
             account_balance - stake_amount
         );
 
@@ -1155,7 +1156,7 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
 
         let rejection_fee = RejectionFee::get();
         assert_eq!(
-            <Test as common::currency::GovernanceCurrency>::Currency::total_balance(&account_id),
+            <Test as common::currency::GovernanceCurrency>::Currency::usable_balance(&account_id),
             account_balance - rejection_fee
         );
     });
@@ -1192,13 +1193,13 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         );
 
         assert_eq!(
-            <Test as common::currency::GovernanceCurrency>::Currency::total_balance(&account_id),
+            <Test as common::currency::GovernanceCurrency>::Currency::usable_balance(&account_id),
             account_balance
         );
 
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
         assert_eq!(
-            <Test as common::currency::GovernanceCurrency>::Currency::total_balance(&account_id),
+            <Test as common::currency::GovernanceCurrency>::Currency::usable_balance(&account_id),
             account_balance - stake_amount
         );
 
@@ -1241,11 +1242,46 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 #[test]
 fn proposal_slashing_succeeds() {
     initial_test_ext().execute_with(|| {
+        // to enable events
         let starting_block = 1;
         run_to_block_and_finalize(starting_block);
 
-        let dummy_proposal = DummyProposalFixture::default();
+        let account_id = 1;
+
+        let initial_balance = 100000;
+        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
+
+        let stake_amount = 200;
+        let parameters = ProposalParameters {
+            voting_period: 3,
+            approval_quorum_percentage: 50,
+            approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
+            grace_period: 5,
+            required_stake: Some(stake_amount),
+        };
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters)
+            .with_account_id(account_id.clone())
+            .with_stake(stake_amount);
+
+        assert_eq!(
+            <Test as common::currency::GovernanceCurrency>::Currency::total_balance(&account_id),
+            initial_balance
+        );
+
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        assert_eq!(
+            <Test as common::currency::GovernanceCurrency>::Currency::total_balance(&account_id),
+            initial_balance
+        );
+
+        assert_eq!(
+            <Test as common::currency::GovernanceCurrency>::Currency::usable_balance(&account_id),
+            initial_balance - stake_amount
+        );
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Reject);
@@ -1259,6 +1295,11 @@ fn proposal_slashing_succeeds() {
 
         assert!(!<ActiveProposalIds<Test>>::contains_key(proposal_id));
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
+
+        assert_eq!(
+            <Test as common::currency::GovernanceCurrency>::Currency::total_balance(&account_id),
+            initial_balance - stake_amount
+        );
 
         EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
             proposal_id,

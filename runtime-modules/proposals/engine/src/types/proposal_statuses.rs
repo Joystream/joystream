@@ -111,10 +111,7 @@ pub enum ProposalDecisionStatus {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-         ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus,
-        ProposalStatus,
-    };
+    use crate::{ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus, ProposalStatus};
 
     #[test]
     fn approved_proposal_status_helper_succeeds() {

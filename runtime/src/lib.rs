@@ -20,7 +20,7 @@ mod runtime_api;
 #[cfg(test)]
 mod tests; // Runtime integration tests
 
-use frame_support::traits::KeyOwnerProofSystem;
+use frame_support::traits::{KeyOwnerProofSystem, LockIdentifier};
 use frame_support::weights::{
     constants::{BlockExecutionWeight, ExtrinsicBaseWeight, RocksDbWeight},
     Weight,
@@ -69,7 +69,6 @@ pub use content_directory;
 pub use content_directory::{
     HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
 };
-use frame_support::dispatch::DispatchResult;
 
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
@@ -552,6 +551,7 @@ parameter_types! {
     pub const ProposalTitleMaxLength: u32 = 40;
     pub const ProposalDescriptionMaxLength: u32 = 3000;
     pub const ProposalMaxActiveProposalLimit: u32 = 5;
+    pub const LockId: LockIdentifier = [1; 8];
 }
 
 impl proposals_engine::Trait for Runtime {
@@ -560,7 +560,7 @@ impl proposals_engine::Trait for Runtime {
     type VoterOriginValidator = CouncilManager<Self>;
     type TotalVotersCounter = CouncilManager<Self>;
     type ProposalId = u32;
-    type StakingHandler = (); // !!!!!! REMOVE STUB
+    type StakingHandler = proposals_engine::StakingManager<Self, LockId>;
     type CancellationFee = ProposalCancellationFee;
     type RejectionFee = ProposalRejectionFee;
     type TitleMaxLength = ProposalTitleMaxLength;
@@ -568,44 +568,6 @@ impl proposals_engine::Trait for Runtime {
     type MaxActiveProposalLimit = ProposalMaxActiveProposalLimit;
     type DispatchableCallCode = Call;
     type ProposalObserver = ProposalsCodex;
-}
-
-impl proposals_engine::StakingHandler<Runtime> for () {
-    fn lock(_account_id: &AccountId, _amount: Balance) {
-        unimplemented!()
-    }
-
-    fn unlock(_account_id: &AccountId) {
-        unimplemented!()
-    }
-
-    fn slash(_account_id: &AccountId, _amount: Option<Balance>) -> Balance {
-        unimplemented!()
-    }
-
-    fn decrease_stake(_account_id: &AccountId, _new_stake: Balance) {
-        unimplemented!()
-    }
-
-    fn increase_stake(_account_id: &AccountId, _new_stake: Balance) -> DispatchResult {
-        unimplemented!()
-    }
-
-    fn is_member_staking_account(_member_id: &MemberId, _account_id: &AccountId) -> bool {
-        unimplemented!()
-    }
-
-    fn is_account_free_of_conflicting_stakes(_account_id: &AccountId) -> bool {
-        unimplemented!()
-    }
-
-    fn is_enough_balance_for_stake(_account_id: &AccountId, _amount: Balance) -> bool {
-        unimplemented!()
-    }
-
-    fn current_stake(_account_id: &AccountId) -> Balance {
-        unimplemented!()
-    }
 }
 
 impl Default for Call {

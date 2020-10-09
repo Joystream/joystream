@@ -16,7 +16,6 @@ use sp_std::vec::Vec;
 
 mod proposal_statuses;
 
-use common::currency::GovernanceCurrency;
 pub use proposal_statuses::{
     ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus, ProposalStatus,
 };
@@ -396,15 +395,12 @@ pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId>
 pub(crate) type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
-pub type BalanceOfCurrency<T> =
-    <<T as common::currency::GovernanceCurrency>::Currency as Currency<
-        <T as system::Trait>::AccountId,
-    >>::Balance;
+pub type BalanceOfCurrency<T> = <T as balances::Trait>::Balance;
 
 /// Defines abstract staking handler to manage user stakes for different activities
 /// like adding a proposal. Implementation should use built-in LockableCurrency
 /// and LockIdentifier to lock balance consistently with pallet_staking.
-pub trait StakingHandler<T: system::Trait + membership::Trait + GovernanceCurrency> {
+pub trait StakingHandler<T: system::Trait + membership::Trait + balances::Trait> {
     /// Locks the specified balance on the account using specific lock identifier.
     fn lock(account_id: &T::AccountId, amount: BalanceOfCurrency<T>);
 
@@ -420,12 +416,8 @@ pub trait StakingHandler<T: system::Trait + membership::Trait + GovernanceCurren
         amount: Option<BalanceOfCurrency<T>>,
     ) -> BalanceOfCurrency<T>;
 
-    /// Decreases the stake for to a given amount.
-    fn decrease_stake(account_id: &T::AccountId, new_stake: BalanceOfCurrency<T>);
-
-    /// Increases the stake for to a given amount.
-    fn increase_stake(account_id: &T::AccountId, new_stake: BalanceOfCurrency<T>)
-        -> DispatchResult;
+    /// Sets the new stake to a given amount.
+    fn set_stake(account_id: &T::AccountId, new_stake: BalanceOfCurrency<T>) -> DispatchResult;
 
     /// Verifies that staking account bound to the member.
     fn is_member_staking_account(member_id: &MemberId<T>, account_id: &T::AccountId) -> bool;

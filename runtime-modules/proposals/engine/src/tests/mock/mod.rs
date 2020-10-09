@@ -6,6 +6,7 @@
 
 #![cfg(test)]
 
+use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -70,6 +71,7 @@ parameter_types! {
     pub const TitleMaxLength: u32 = 100;
     pub const DescriptionMaxLength: u32 = 10000;
     pub const MaxActiveProposalLimit: u32 = 100;
+    pub const LockId: LockIdentifier = [1; 8];
 }
 
 impl membership::Trait for Test {
@@ -86,7 +88,7 @@ impl crate::Trait for Test {
     type VoterOriginValidator = ();
     type TotalVotersCounter = ();
     type ProposalId = u32;
-    type StakingHandler = ();
+    type StakingHandler = crate::StakingManager<Test, LockId>;
     type CancellationFee = CancellationFee;
     type RejectionFee = RejectionFee;
     type TitleMaxLength = TitleMaxLength;
@@ -109,11 +111,7 @@ impl crate::StakingHandler<Test> for () {
         unimplemented!()
     }
 
-    fn decrease_stake(_account_id: &u64, _new_stake: u64) {
-        unimplemented!()
-    }
-
-    fn increase_stake(_account_id: &u64, _new_stake: u64) -> DispatchResult {
+    fn set_stake(_account_id: &u64, _new_stake: u64) -> DispatchResult {
         unimplemented!()
     }
 
