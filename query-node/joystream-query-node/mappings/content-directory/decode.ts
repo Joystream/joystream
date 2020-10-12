@@ -9,9 +9,9 @@ const debug = Debug("mappings:content-directory");
 
 function _getClassEntity(event: SubstrateEvent): IClassEntity {
 	const { 0: classId } = event.extrinsic.args;
-	const { 1: entityId } = event.event_params;
+	const { 1: entityId } = event.params;
 	return  {
-		id: (entityId as unknown) as string,
+		id: (entityId.value as unknown) as string,
 		classId: (classId.value as unknown) as BN,
 	};
 }
@@ -25,7 +25,7 @@ function _getClassById(classId: BN): IContentDirectoryClass {
 // Get entity id for from entity related substrate event.
 function _getEntityId(event: SubstrateEvent): string {
 	const { 1: entityId } = event.extrinsic.args;
-	return entityId.toString();
+	return entityId.value as string;
 }
 
 function _channelEntity(event: SubstrateEvent): IChannel {
