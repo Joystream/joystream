@@ -7,6 +7,9 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(test)]
+mod tests;
+
 use codec::{Decode, Encode};
 use frame_support::{decl_event, decl_module, decl_storage};
 #[cfg(feature = "std")]
@@ -54,7 +57,7 @@ decl_module! {
         /// Sets the current constitution hash.It also sets the amendment number for the
         /// constitution and increment it for the next amendment. Requires root origin.
         #[weight = 10_000_000] // TODO: adjust weight
-        fn amend_contitution(origin, constitution_text: Vec<u8>) {
+        fn amend_constitution(origin, constitution_text: Vec<u8>) {
             ensure_root(origin)?;
 
             //
