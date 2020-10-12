@@ -259,6 +259,7 @@ impl VoteGenerator {
             self.current_voter_id,
             self.proposal_id,
             vote_kind,
+            Vec::new(),
         )
     }
 }
@@ -336,7 +337,13 @@ fn vote_succeeds() {
 fn vote_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         assert_eq!(
-            ProposalsEngine::vote(system::RawOrigin::None.into(), 1, 1, VoteKind::Approve),
+            ProposalsEngine::vote(
+                system::RawOrigin::None.into(),
+                1,
+                1,
+                VoteKind::Approve,
+                Vec::new()
+            ),
             Err(DispatchError::Other("Bad origin"))
         );
     });

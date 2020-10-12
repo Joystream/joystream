@@ -135,6 +135,7 @@ impl VoteGenerator {
             self.current_voter_id,
             self.proposal_id,
             vote_kind,
+            Vec::new(),
         )
     }
 }

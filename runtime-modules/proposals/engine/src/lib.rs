@@ -139,9 +139,9 @@ use frame_support::{
 use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
 use system::{ensure_root, RawOrigin};
+use frame_support::sp_std::marker::PhantomData;
 
 use common::origin::ActorOriginValidator;
-use frame_support::sp_std::marker::PhantomData;
 
 /// Proposals engine trait.
 pub trait Trait:
@@ -354,7 +354,13 @@ decl_module! {
 
         /// Vote extrinsic. Conditions:  origin must allow votes.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn vote(origin, voter_id: MemberId<T>, proposal_id: T::ProposalId, vote: VoteKind)  {
+        pub fn vote(
+            origin,
+            voter_id: MemberId<T>,
+            proposal_id: T::ProposalId,
+            vote: VoteKind,
+            _rationale: Vec<u8>, // we use it on the query node side.
+        )  {
             T::VoterOriginValidator::ensure_actor_origin(
                 origin,
                 voter_id,
