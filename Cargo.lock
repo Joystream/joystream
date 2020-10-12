@@ -3307,6 +3307,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-constitution"
+version = "1.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-content-directory"
 version = "3.0.0"
 dependencies = [
