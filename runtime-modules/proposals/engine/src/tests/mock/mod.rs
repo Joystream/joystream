@@ -19,7 +19,6 @@ pub use system;
 pub(crate) mod proposals;
 
 use crate::ProposalObserver;
-use frame_support::dispatch::DispatchResult;
 pub use proposals::*;
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -96,40 +95,6 @@ impl crate::Trait for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
     type DispatchableCallCode = proposals::Call<Test>;
     type ProposalObserver = ();
-}
-
-impl crate::StakingHandler<Test> for () {
-    fn lock(_account_id: &u64, _amount: u64) {
-        unimplemented!()
-    }
-
-    fn unlock(_account_id: &u64) {
-        unimplemented!()
-    }
-
-    fn slash(_account_id: &u64, _amount: Option<u64>) -> u64 {
-        unimplemented!()
-    }
-
-    fn set_stake(_account_id: &u64, _new_stake: u64) -> DispatchResult {
-        unimplemented!()
-    }
-
-    fn is_member_staking_account(_member_id: &crate::MemberId<Test>, _account_id: &u64) -> bool {
-        unimplemented!()
-    }
-
-    fn is_account_free_of_conflicting_stakes(_account_id: &u64) -> bool {
-        unimplemented!()
-    }
-
-    fn is_enough_balance_for_stake(_account_id: &u64, _amount: u64) -> bool {
-        unimplemented!()
-    }
-
-    fn current_stake(_account_id: &u64) -> u64 {
-        unimplemented!()
-    }
 }
 
 impl ProposalObserver<Test> for () {

@@ -1,6 +1,5 @@
 #![cfg(test)]
 
-use frame_support::dispatch::DispatchResult;
 use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_dispatch, impl_outer_origin, parameter_types};
 use sp_core::H256;
@@ -97,40 +96,6 @@ impl proposals_engine::Trait for Test {
     type MaxActiveProposalLimit = MaxActiveProposalLimit;
     type DispatchableCallCode = crate::Call<Test>;
     type ProposalObserver = crate::Module<Test>;
-}
-
-impl proposals_engine::StakingHandler<Test> for () {
-    fn lock(_account_id: &u64, _amount: u64) {
-        unimplemented!()
-    }
-
-    fn unlock(_account_id: &u64) {
-        unimplemented!()
-    }
-
-    fn slash(_account_id: &u64, _amount: Option<u64>) -> u64 {
-        unimplemented!()
-    }
-
-    fn set_stake(_account_id: &u64, _new_stake: u64) -> DispatchResult {
-        unimplemented!()
-    }
-
-    fn is_member_staking_account(_member_id: &u64, _account_id: &u64) -> bool {
-        unimplemented!()
-    }
-
-    fn is_account_free_of_conflicting_stakes(_account_id: &u64) -> bool {
-        unimplemented!()
-    }
-
-    fn is_enough_balance_for_stake(_account_id: &u64, _amount: u64) -> bool {
-        unimplemented!()
-    }
-
-    fn current_stake(_account_id: &u64) -> u64 {
-        unimplemented!()
-    }
 }
 
 impl Default for crate::Call<Test> {
