@@ -38,11 +38,6 @@ export default class UploadVideoCommand extends ContentDirectoryCommandBase {
   static description = 'Upload a new Video to a channel (requires a membership).'
   static flags = {
     // TODO: ...IOFlags, - providing input as json
-    filePath: flags.string({
-      char: 'f',
-      required: true,
-      description: 'Path to the media file to upload',
-    }),
     channel: flags.integer({
       char: 'c',
       required: false,
@@ -50,6 +45,14 @@ export default class UploadVideoCommand extends ContentDirectoryCommandBase {
         'ID of the channel to assign the video to (if omitted - one of the owned channels can be selected from the list)',
     }),
   }
+
+  static args = [
+    {
+      name: 'filePath',
+      required: true,
+      description: 'Path to the media file to upload',
+    },
+  ]
 
   private createReadStreamWithProgressBar(filePath: string, barTitle: string, fileSize?: number) {
     // Progress CLI UX:
@@ -221,7 +224,10 @@ export default class UploadVideoCommand extends ContentDirectoryCommandBase {
 
     await this.requestAccountDecoding(account)
 
-    const { filePath, channel: inputChannelId } = this.parse(UploadVideoCommand).flags
+    const {
+      args: { filePath },
+      flags: { channel: inputChannelId },
+    } = this.parse(UploadVideoCommand)
 
     // Basic file validation
     if (!fs.existsSync(filePath)) {
