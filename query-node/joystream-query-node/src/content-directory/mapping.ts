@@ -15,6 +15,43 @@ import { Video } from "../../generated/graphql-server/src/modules/video/video.mo
 import { decode } from "./decode";
 import { contentDirClasses, Classes } from "./constants";
 
+async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent) {
+	const entity_id = decode.stringIfyEntityId(event);
+	const classEntity = await db.get(ClassEntity, { where: { id: entity_id } });
+   
+	assert(classEntity, `Class not found for the EntityId: ${entity_id}`);
+   
+	const _class = contentDirClasses.find((c) => c.classId === classEntity.classId);
+   
+	if (_class.name === Classes.CHANNEL) {
+	 await db.remove<Channel>({ id: entity_id });
+	} else if (_class.name === Classes.CATEGORY) {
+	 await db.remove<Category>({ id: entity_id });
+	} else if (_class.name === Classes.KNOWNLICENSE) {
+	 await db.remove<KnownLicense>({ id: entity_id });
+	} else if (_class.name === Classes.USERDEFINEDLICENSE) {
+	 await db.remove<UserDefinedLicense>({ id: entity_id });
+	} else if (_class.name === Classes.JOYSTREAMMEDIALOCATION) {
+	 await db.remove<JoystreamMediaLocation>({ id: entity_id });
+	} else if (_class.name === Classes.HTTPMEDIALOCATION) {
+	 await db.remove<HttpMediaLocation>({ id: entity_id });;
+	} else if (_class.name === Classes.VIDEOMEDIA) {
+	 await db.remove<VideoMedia>({ id: entity_id });
+	} else if (_class.name === Classes.VIDEO) {
+	 await db.remove<Video>({ id: entity_id });
+	} else {
+	 throw new Error(`Unknown class name: ${_class.name}`);
+	}
+   
+	await db.remove<ClassEntity>({ id: entity_id });
+}
+
+async function contentDirectory_EntityCreated(db: DB, event: SubstrateEvent) {
+	const classEntity = decode.getClassEntity(event);
+	let class_entity = new ClassEntity ({ ...classEntity });
+	await db.save<ClassEntity>(class_entity);
+   }
+
 async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: SubstrateEvent) {
 	const id = decode.stringIfyEntityId(event);
 	const classEntity = await db.get(ClassEntity, { where: { id } });
@@ -161,4 +198,4 @@ async function createVideo(db: DB, event: SubstrateEvent) {
 	await db.save(video);
 }
 
-export { contentDirectory_EntitySchemaSupportAdded };
+export { contentDirectory_EntitySchemaSupportAdded, contentDirectory_EntityRemoved, contentDirectory_EntityCreated };

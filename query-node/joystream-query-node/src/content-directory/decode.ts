@@ -1,8 +1,10 @@
 import Debug from "debug";
+import * as BN from "bn.js";
 
 import { SubstrateEvent } from "../../generated/indexer";
 import {
 	IChannel,
+	IClassEntity,
 	IChannelProperties,
 	ICategory,
 	IKnownLicense,
@@ -28,6 +30,15 @@ function channelEntity(event: SubstrateEvent): IChannel {
 	return {
 		accountId: Buffer.from(actor.value as string),
 		properties,
+	};
+}
+
+function getClassEntity(event: SubstrateEvent): IClassEntity {
+	const { 0: classId } = event.extrinsic.args;
+	const { 1: entityId } = event.params;
+	return  {
+	 id: (entityId.value as unknown) as string,
+	 classId: (classId.value as unknown) as BN,
 	};
 }
 
@@ -70,4 +81,5 @@ export const decode = {
 	httpMediaLocationEntity,
 	videoMediaEntity,
 	videoEntity,
+	getClassEntity
 };
