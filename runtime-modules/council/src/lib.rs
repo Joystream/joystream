@@ -1,6 +1,37 @@
-// TODO: module documentation
 // TODO: adjust all extrinsic weights
-// NOTE: When implementing runtime for this module, don't forget to call all ReferendumConnection trait functions at proper places.
+
+//! # Council module
+//! Council module for the the Joystream platform.
+//!
+//! ## Overview
+//!
+//! The Council module let's privileged network users elect their voted representation.
+//!
+//! Each council cycle is composed of three phases. The default phase is the candidacy announcement phase,
+//! during which users can announce their candidacy to the next council. After a fixed amount of time
+//! (network blocks) candidacy announcement phase concludes, and the next phase starts if a minimum
+//! number of candidates is announced; restarts the announcement phase otherwise. The next phase
+//! is the Election phase, during which users can vote for their selected candidate. The election
+//! itself is handled by the Referendum module. After elections end and a minimum amount of candidates
+//! received votes, a new council is appointed, and the Council module enters an Idle phase for the fixed
+//! amount of time before another round's candidacy announcements begin.
+//!
+//! The module supports requiring staking currency for the both candidacy and voting.
+//!
+//! ## Supported extrinsics
+//! - [announce_candidacy](./struct.Module.html#method.announce_candidacy)
+//! - [release_candidacy_stake](./struct.Module.html#method.release_candidacy_stake)
+//!
+//! ## Important functions
+//! These functions have to be called by the runtime for the council to work properly.
+//! - [recieve_referendum_results](./trait.ReferendumConnection.html#method.recieve_referendum_results)
+//! - [can_release_vote_stake](./trait.ReferendumConnection.html#method.can_release_vote_stake)
+//!
+//! ## Dependencies:
+//! - [proposals engine](../referendum/index.html)
+//!
+//! NOTE: When implementing runtime for this module, don't forget to call all ReferendumConnection
+//!       trait functions at proper places.
 
 /////////////////// Configuration //////////////////////////////////////////////
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -124,6 +155,7 @@ pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as system::Trait>::Bloc
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
+/// The main council trait.
 pub trait Trait: system::Trait {
     /// The overarching event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
