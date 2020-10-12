@@ -94,9 +94,11 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli council:info`](#joystream-cli-councilinfo)
 * [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
 * [`joystream-cli media:createChannel`](#joystream-cli-mediacreatechannel)
-* [`joystream-cli media:updateChannel`](#joystream-cli-mediaupdatechannel)
-* [`joystream-cli media:updateVideo`](#joystream-cli-mediaupdatevideo)
-* [`joystream-cli media:uploadVideo`](#joystream-cli-mediauploadvideo)
+* [`joystream-cli media:myChannels`](#joystream-cli-mediamychannels)
+* [`joystream-cli media:myVideos`](#joystream-cli-mediamyvideos)
+* [`joystream-cli media:updateChannel [ID]`](#joystream-cli-mediaupdatechannel-id)
+* [`joystream-cli media:updateVideo [ID]`](#joystream-cli-mediaupdatevideo-id)
+* [`joystream-cli media:uploadVideo FILEPATH`](#joystream-cli-mediauploadvideo-filepath)
 * [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
 * [`joystream-cli working-groups:createOpening`](#joystream-cli-working-groupscreateopening)
 * [`joystream-cli working-groups:decreaseWorkerStake WORKERID`](#joystream-cli-working-groupsdecreaseworkerstake-workerid)
@@ -444,6 +446,11 @@ ARGUMENTS
 
   PROPERTIES  Comma-separated properties to include in the results table (ie. code,name). By default all property values
               will be included.
+
+OPTIONS
+  --filters=filters  Comma-separated filters, ie. title="Some video",channelId=3.Currently only the = operator is
+                     supported.When multiple filters are provided, only the entities that match all of them together
+                     will be displayed.
 ```
 
 _See code: [src/commands/content-directory/entities.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/entities.ts)_
@@ -563,13 +570,41 @@ OPTIONS
 
 _See code: [src/commands/media/createChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/media/createChannel.ts)_
 
-## `joystream-cli media:updateChannel`
+## `joystream-cli media:myChannels`
+
+Show the list of channels associated with current account's membership.
+
+```
+USAGE
+  $ joystream-cli media:myChannels
+```
+
+_See code: [src/commands/media/myChannels.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/media/myChannels.ts)_
+
+## `joystream-cli media:myVideos`
+
+Show the list of videos associated with current account's membership.
+
+```
+USAGE
+  $ joystream-cli media:myVideos
+
+OPTIONS
+  -c, --channel=channel  Channel id to filter the videos by
+```
+
+_See code: [src/commands/media/myVideos.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/media/myVideos.ts)_
+
+## `joystream-cli media:updateChannel [ID]`
 
 Update one of the owned channels on Joystream (requires a membership).
 
 ```
 USAGE
-  $ joystream-cli media:updateChannel
+  $ joystream-cli media:updateChannel [ID]
+
+ARGUMENTS
+  ID  ID of the channel to update
 
 OPTIONS
   -i, --input=input    Path to JSON file to use as input (if not specified - the input can be provided interactively)
@@ -578,27 +613,34 @@ OPTIONS
 
 _See code: [src/commands/media/updateChannel.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/media/updateChannel.ts)_
 
-## `joystream-cli media:updateVideo`
+## `joystream-cli media:updateVideo [ID]`
 
 Update existing video information (requires a membership).
 
 ```
 USAGE
-  $ joystream-cli media:updateVideo
+  $ joystream-cli media:updateVideo [ID]
+
+ARGUMENTS
+  ID  ID of the Video to update
 ```
 
 _See code: [src/commands/media/updateVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/media/updateVideo.ts)_
 
-## `joystream-cli media:uploadVideo`
+## `joystream-cli media:uploadVideo FILEPATH`
 
 Upload a new Video to a channel (requires a membership).
 
 ```
 USAGE
-  $ joystream-cli media:uploadVideo
+  $ joystream-cli media:uploadVideo FILEPATH
+
+ARGUMENTS
+  FILEPATH  Path to the media file to upload
 
 OPTIONS
-  -f, --filePath=filePath  (required) Path to the media file to upload
+  -c, --channel=channel  ID of the channel to assign the video to (if omitted - one of the owned channels can be
+                         selected from the list)
 ```
 
 _See code: [src/commands/media/uploadVideo.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/media/uploadVideo.ts)_
