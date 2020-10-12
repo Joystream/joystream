@@ -634,14 +634,6 @@ declare module '@polkadot/api/types/storage' {
        **/
       runtimeUpgradeProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
       /**
-       * Grace period for the 'set content working group mint capacity' proposal
-       **/
-      setContentWorkingGroupMintCapacityProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'set content working group mint capacity' proposal
-       **/
-      setContentWorkingGroupMintCapacityProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
        * Grace period for the 'set election parameters' proposal
        **/
       setElectionParametersProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
@@ -649,14 +641,6 @@ declare module '@polkadot/api/types/storage' {
        * Voting period for the 'set election parameters' proposal
        **/
       setElectionParametersProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Grace period for the 'set lead' proposal
-       **/
-      setLeadProposalGracePeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
-      /**
-       * Voting period for the 'set lead' proposal
-       **/
-      setLeadProposalVotingPeriod: AugmentedQuery<ApiType, () => Observable<BlockNumber>>;
       /**
        * Grace period for the 'set validator count' proposal
        **/
