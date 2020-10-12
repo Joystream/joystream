@@ -12,9 +12,9 @@ import { ExtrinsicsHelper, getAlicePair } from '../src/helpers/extrinsics'
 // Save entity operations output here for easier debugging
 const ENTITY_OPERATIONS_OUTPUT_PATH = path.join(__dirname, '../operations.json')
 
-const classInputs = getInputs<CreateClass>('classes')
-const schemaInputs = getInputs<AddClassSchema>('schemas')
-const entityBatchInputs = getInputs<EntityBatch>('entityBatches')
+const classInputs = getInputs<CreateClass>('classes').map(({ data }) => data)
+const schemaInputs = getInputs<AddClassSchema>('schemas').map(({ data }) => data)
+const entityBatchInputs = getInputs<EntityBatch>('entityBatches').map(({ data }) => data)
 
 async function main() {
   // Init api
