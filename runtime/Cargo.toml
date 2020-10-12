@@ -4,7 +4,7 @@ edition = '2018'
 name = 'joystream-node-runtime'
 # Follow convention: https://github.com/Joystream/substrate-runtime-joystream/issues/1
 # {Authoring}.{Spec}.{Impl} of the RuntimeVersion
-version = '7.5.2'
+version = '7.6.0'
 
 [dependencies]
 # Third-party dependencies
@@ -79,6 +79,7 @@ proposals-engine = { package = 'pallet-proposals-engine', default-features = fal
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../runtime-modules/proposals/discussion'}
 proposals-codex = { package = 'pallet-proposals-codex', default-features = false, path = '../runtime-modules/proposals/codex'}
 content-directory = { package = 'pallet-content-directory', default-features = false, path = '../runtime-modules/content-directory' }
+constitution = { package = 'pallet-constitution', default-features = false, path = '../runtime-modules/constitution' }
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
@@ -156,6 +157,7 @@ std = [
     'proposals-discussion/std',
     'proposals-codex/std',
     'content-directory/std',
+    'constitution/std',
 ]
 runtime-benchmarks = [
     "system/runtime-benchmarks",

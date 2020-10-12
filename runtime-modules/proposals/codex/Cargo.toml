@@ -24,6 +24,7 @@ working-group = { package = 'pallet-working-group', default-features = false, pa
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
 proposals-engine = { package = 'pallet-proposals-engine', default-features = false, path = '../engine'}
 proposals-discussion = { package = 'pallet-proposals-discussion', default-features = false, path = '../discussion'}
+constitution = { package = 'pallet-constitution', default-features = false, path = '../../constitution'}
 
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
@@ -55,4 +56,5 @@ std = [
     'common/std',
     'proposals-engine/std',
     'proposals-discussion/std',
+    'constitution/std',
 ]

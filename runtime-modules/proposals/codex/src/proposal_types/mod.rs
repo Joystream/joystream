@@ -93,6 +93,9 @@ pub enum ProposalDetails<
 
     /// Fire the working group leader with possible slashing.
     TerminateWorkingGroupLeaderRole(TerminateRoleParameters<WorkerId>),
+
+    /// Amend constitution.
+    AmendConstitution(Vec<u8>),
 }
 
 impl<
@@ -297,6 +300,12 @@ pub struct ProposalsConfigParameters {
 
     /// 'Terminate working group leader role' proposal grace period
     pub terminate_working_group_leader_role_proposal_grace_period: u32,
+
+    /// 'Amend constitution' proposal voting period
+    pub amend_constitution_proposal_voting_period: u32,
+
+    /// 'Amend constitution' proposal grace period
+    pub amend_constitution_proposal_grace_period: u32,
 }
 
 impl Default for ProposalsConfigParameters {
@@ -330,6 +339,8 @@ impl Default for ProposalsConfigParameters {
             set_working_group_leader_reward_proposal_grace_period: 0u32,
             terminate_working_group_leader_role_proposal_voting_period: 72200u32,
             terminate_working_group_leader_role_proposal_grace_period: 0u32,
+            amend_constitution_proposal_voting_period: 72200u32,
+            amend_constitution_proposal_grace_period: 0u32,
         }
     }
 }
@@ -368,6 +379,8 @@ impl ProposalsConfigParameters {
             set_working_group_leader_reward_proposal_grace_period: 0,
             terminate_working_group_leader_role_proposal_voting_period: voting_period,
             terminate_working_group_leader_role_proposal_grace_period: 0,
+            amend_constitution_proposal_voting_period: voting_period,
+            amend_constitution_proposal_grace_period: 0,
         }
     }
 }

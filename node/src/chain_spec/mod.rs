@@ -382,6 +382,9 @@ pub fn testnet_genesis(
                 .terminate_working_group_leader_role_proposal_voting_period,
             terminate_working_group_leader_role_proposal_grace_period: cpcp
                 .terminate_working_group_leader_role_proposal_grace_period,
+            amend_constitution_proposal_voting_period: cpcp
+                .amend_constitution_proposal_voting_period,
+            amend_constitution_proposal_grace_period: cpcp.amend_constitution_proposal_grace_period,
         }),
     }
 }
