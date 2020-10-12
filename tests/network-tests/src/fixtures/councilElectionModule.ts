@@ -52,12 +52,8 @@ export class ElectCouncilFixture implements Fixture {
     const revealVoteFee: BN = this.api.estimateRevealVoteFee(this.sudo.address, salt[0])
 
     // Topping the balances
-    await this.api.transferBalanceToAccounts(
-      this.sudo,
-      this.applicantKeyPairs,
-      applyForCouncilFee.add(this.greaterStake)
-    )
-    await this.api.transferBalanceToAccounts(
+    this.api.transferBalanceToAccounts(this.sudo, this.applicantKeyPairs, applyForCouncilFee.add(this.greaterStake))
+    this.api.transferBalanceToAccounts(
       this.sudo,
       this.voterKeyPairs,
       voteForCouncilFee.add(revealVoteFee).add(this.greaterStake)

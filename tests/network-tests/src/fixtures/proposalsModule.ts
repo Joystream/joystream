@@ -50,8 +50,7 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
     await this.api.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
 
     // Proposal creation
-    const proposalPromise: Promise<ProposalId> = this.api.expectProposalCreated()
-    await this.api.proposeCreateWorkingGroupLeaderOpening({
+    const result = await this.api.proposeCreateWorkingGroupLeaderOpening({
       account: this.membersKeyPairs[0],
       title: proposalTitle,
       description: description,
@@ -77,7 +76,9 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
       text: uuid().substring(0, 8),
       workingGroup: this.workingGroup,
     })
-    this.result = await proposalPromise
+
+    this.result = this.api.expectProposalCreatedEvent(result.events)
+
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -122,8 +123,7 @@ export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture 
     await this.api.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
 
     // Proposal creation
-    const proposalPromise: Promise<ProposalId> = this.api.expectProposalCreated()
-    await this.api.proposeBeginWorkingGroupLeaderApplicationReview(
+    const result = await this.api.proposeBeginWorkingGroupLeaderApplicationReview(
       this.membersKeyPairs[0],
       proposalTitle,
       description,
@@ -131,7 +131,8 @@ export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture 
       this.openingId,
       this.workingGroup
     )
-    this.result = await proposalPromise
+    this.result = this.api.expectProposalCreatedEvent(result.events)
+
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -141,7 +142,7 @@ export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture 
 export class FillLeaderOpeningProposalFixture implements Fixture {
   private api: Api
   private membersKeyPairs: KeyringPair[]
-  private applicantRoleAccountAddress: string
+  private applicationId: ApplicationId
   private treasury: KeyringPair
   private firstRewardInterval: BN
   private rewardInterval: BN
@@ -154,7 +155,7 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
   constructor(
     api: Api,
     membersKeyPairs: KeyringPair[],
-    applicantRoleAccountAddress: string,
+    applicationId: ApplicationId,
     treasury: KeyringPair,
     firstRewardInterval: BN,
     rewardInterval: BN,
@@ -164,7 +165,7 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
   ) {
     this.api = api
     this.membersKeyPairs = membersKeyPairs
-    this.applicantRoleAccountAddress = applicantRoleAccountAddress
+    this.applicationId = applicationId
     this.treasury = treasury
     this.firstRewardInterval = firstRewardInterval
     this.rewardInterval = rewardInterval
@@ -188,26 +189,24 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
     const proposalFee: BN = this.api.estimateProposeFillLeaderOpeningFee()
     await this.api.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
 
-    // Proposal creation
-    const applicationId: ApplicationId = (
-      await this.api.getActiveApplicationsIdsByRoleAccount(this.applicantRoleAccountAddress, this.workingGroup)
-    )[0]
     const now: BN = await this.api.getBestBlock()
 
-    const proposalPromise: Promise<ProposalId> = this.api.expectProposalCreated()
-    await this.api.proposeFillLeaderOpening({
+    // Proposal creation
+    const result = await this.api.proposeFillLeaderOpening({
       account: this.membersKeyPairs[0],
       title: proposalTitle,
       description: description,
       proposalStake: proposalStake,
       openingId: this.openingId,
-      successfulApplicationId: applicationId,
+      successfulApplicationId: this.applicationId,
       amountPerPayout: this.payoutAmount,
       nextPaymentAtBlock: now.add(this.firstRewardInterval),
       payoutInterval: this.rewardInterval,
       workingGroup: workingGroupString,
     })
-    this.result = await proposalPromise
+
+    this.result = this.api.expectProposalCreatedEvent(result.events)
+
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -250,7 +249,8 @@ export class TerminateLeaderRoleProposalFixture implements Fixture {
     const description: string = 'Testing begin working group lead application review proposal ' + uuid().substring(0, 8)
     const rationale: string = 'Testing leader termination ' + uuid().substring(0, 8)
     const workingGroupString: string = this.api.getWorkingGroupString(this.workingGroup)
-    const workerId: WorkerId = await this.api.getWorkerIdByRoleAccount(this.leaderRoleAccountAddress, this.workingGroup)
+    // assert worker exists
+    const workerId: WorkerId = (await this.api.getLeadWorkerId(this.workingGroup))!
 
     // Proposal stake calculation
     const proposalStake: BN = new BN(100000)
@@ -258,8 +258,7 @@ export class TerminateLeaderRoleProposalFixture implements Fixture {
     await this.api.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
 
     // Proposal creation
-    const proposalPromise: Promise<ProposalId> = this.api.expectProposalCreated()
-    await this.api.proposeTerminateLeaderRole(
+    const result = await this.api.proposeTerminateLeaderRole(
       this.membersKeyPairs[0],
       proposalTitle,
       description,
@@ -269,7 +268,8 @@ export class TerminateLeaderRoleProposalFixture implements Fixture {
       this.slash,
       workingGroupString
     )
-    this.result = await proposalPromise
+    this.result = this.api.expectProposalCreatedEvent(result.events)
+
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -308,6 +308,7 @@ export class SetLeaderRewardProposalFixture implements Fixture {
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing set leader reward proposal ' + uuid().substring(0, 8)
     const workingGroupString: string = this.api.getWorkingGroupString(this.workingGroup)
+    // assert worker exists?
     const workerId: WorkerId = (await this.api.getLeadWorkerId(this.workingGroup))!
 
     // Proposal stake calculation
@@ -316,8 +317,7 @@ export class SetLeaderRewardProposalFixture implements Fixture {
     await this.api.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
 
     // Proposal creation
-    const proposalPromise: Promise<ProposalId> = this.api.expectProposalCreated()
-    await this.api.proposeLeaderReward(
+    const result = await this.api.proposeLeaderReward(
       this.membersKeyPairs[0],
       proposalTitle,
       description,
@@ -326,7 +326,9 @@ export class SetLeaderRewardProposalFixture implements Fixture {
       this.payoutAmount,
       workingGroupString
     )
-    this.result = await proposalPromise
+
+    this.result = this.api.expectProposalCreatedEvent(result.events)
+
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -365,6 +367,7 @@ export class DecreaseLeaderStakeProposalFixture implements Fixture {
     const proposalTitle: string = 'Testing proposal ' + uuid().substring(0, 8)
     const description: string = 'Testing decrease leader stake proposal ' + uuid().substring(0, 8)
     const workingGroupString: string = this.api.getWorkingGroupString(this.workingGroup)
+    // assert worker exists ?
     const workerId: WorkerId = (await this.api.getLeadWorkerId(this.workingGroup))!
 
     // Proposal stake calculation
@@ -373,8 +376,7 @@ export class DecreaseLeaderStakeProposalFixture implements Fixture {
     await this.api.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
 
     // Proposal creation
-    const proposalPromise: Promise<ProposalId> = this.api.expectProposalCreated()
-    await this.api.proposeDecreaseLeaderStake(
+    const result = await this.api.proposeDecreaseLeaderStake(
       this.membersKeyPairs[0],
       proposalTitle,
       description,
@@ -383,7 +385,9 @@ export class DecreaseLeaderStakeProposalFixture implements Fixture {
       this.stakeDecrement,
       workingGroupString
     )
-    this.result = await proposalPromise
+
+    this.result = this.api.expectProposalCreatedEvent(result.events)
+
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -430,8 +434,7 @@ export class SlashLeaderProposalFixture implements Fixture {
     await this.api.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
 
     // Proposal creation
-    const proposalPromise: Promise<ProposalId> = this.api.expectProposalCreated()
-    await this.api.proposeSlashLeaderStake(
+    const result = await this.api.proposeSlashLeaderStake(
       this.membersKeyPairs[0],
       proposalTitle,
       description,
@@ -440,7 +443,7 @@ export class SlashLeaderProposalFixture implements Fixture {
       this.slashAmount,
       workingGroupString
     )
-    this.result = await proposalPromise
+    this.result = this.api.expectProposalCreatedEvent(result.events)
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -486,8 +489,7 @@ export class WorkingGroupMintCapacityProposalFixture implements Fixture {
     await this.api.transferBalance(this.treasury, this.membersKeyPairs[0].address, proposalFee.add(proposalStake))
 
     // Proposal creation
-    const proposalPromise: Promise<ProposalId> = this.api.expectProposalCreated()
-    await this.api.proposeWorkingGroupMintCapacity(
+    const result = await this.api.proposeWorkingGroupMintCapacity(
       this.membersKeyPairs[0],
       proposalTitle,
       description,
@@ -495,7 +497,7 @@ export class WorkingGroupMintCapacityProposalFixture implements Fixture {
       this.mintCapacity,
       workingGroupString
     )
-    this.result = await proposalPromise
+    this.result = this.api.expectProposalCreatedEvent(result.events)
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -556,8 +558,8 @@ export class ElectionParametersProposalFixture implements Fixture {
     const proposedNewTermDuration: BN = newTermDuration.addn(1)
     const proposedMinCouncilStake: BN = minCouncilStake.addn(1)
     const proposedMinVotingStake: BN = minVotingStake.addn(1)
-    const proposalPromise: Promise<ProposalId> = this.api.expectProposalCreated()
-    await this.api.proposeElectionParameters(
+
+    const proposalCreationResult = await this.api.proposeElectionParameters(
       this.membersKeyPairs[0],
       proposalTitle,
       description,
@@ -571,12 +573,11 @@ export class ElectionParametersProposalFixture implements Fixture {
       proposedMinCouncilStake,
       proposedMinVotingStake
     )
-    const proposalNumber: ProposalId = await proposalPromise
+    const proposalNumber = this.api.expectProposalCreatedEvent(proposalCreationResult.events)
 
     // Approving the proposal
-    const proposalExecutionPromise: Promise<void> = this.api.expectProposalFinalized()
-    await this.api.batchApproveProposal(this.councilKeyPairs, proposalNumber)
-    await proposalExecutionPromise
+    this.api.batchApproveProposal(this.councilKeyPairs, proposalNumber)
+    await this.api.waitForProposalToFinalize(proposalNumber)
 
     // Assertions
     const newAnnouncingPeriod: BN = await this.api.getAnnouncingPeriod()
@@ -668,8 +669,7 @@ export class SpendingProposalFixture implements Fixture {
     await this.api.sudoSetCouncilMintCapacity(this.sudo, this.mintCapacity)
 
     // Proposal creation
-    const proposalPromise: Promise<ProposalId> = this.api.expectProposalCreated()
-    await this.api.proposeSpending(
+    const result = await this.api.proposeSpending(
       this.membersKeyPairs[0],
       'testing spending' + uuid().substring(0, 8),
       'spending to test proposal functionality' + uuid().substring(0, 8),
@@ -677,13 +677,13 @@ export class SpendingProposalFixture implements Fixture {
       this.spendingBalance,
       this.sudo.address
     )
-    const proposalNumber: ProposalId = await proposalPromise
+    const proposalNumber: ProposalId = this.api.expectProposalCreatedEvent(result.events)
 
     // Approving spending proposal
     const balanceBeforeMinting: BN = await this.api.getBalance(this.sudo.address)
-    const spendingPromise: Promise<void> = this.api.expectProposalFinalized()
-    await this.api.batchApproveProposal(this.councilKeyPairs, proposalNumber)
-    await spendingPromise
+    this.api.batchApproveProposal(this.councilKeyPairs, proposalNumber)
+    await this.api.waitForProposalToFinalize(proposalNumber)
+
     const balanceAfterMinting: BN = await this.api.getBalance(this.sudo.address)
     assert(
       balanceAfterMinting.sub(balanceBeforeMinting).eq(this.spendingBalance),
@@ -733,14 +733,20 @@ export class TextProposalFixture implements Fixture {
     )
 
     // Proposal creation
-    const proposalPromise: Promise<ProposalId> = this.api.expectProposalCreated()
-    await this.api.proposeText(this.membersKeyPairs[0], proposalStake, proposalTitle, description, proposalText)
-    const proposalNumber: ProposalId = await proposalPromise
+
+    const result = await this.api.proposeText(
+      this.membersKeyPairs[0],
+      proposalStake,
+      proposalTitle,
+      description,
+      proposalText
+    )
+    const proposalNumber: ProposalId = this.api.expectProposalCreatedEvent(result.events)
 
     // Approving text proposal
-    const textProposalPromise: Promise<void> = this.api.expectProposalFinalized()
-    await this.api.batchApproveProposal(this.councilKeyPairs, proposalNumber)
-    await textProposalPromise
+    this.api.batchApproveProposal(this.councilKeyPairs, proposalNumber)
+    await this.api.waitForProposalToFinalize(proposalNumber)
+
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -783,20 +789,19 @@ export class ValidatorCountProposalFixture implements Fixture {
 
     // Proposal creation
     const proposedValidatorCount: BN = validatorCount.add(this.validatorCountIncrement)
-    const proposalPromise: Promise<ProposalId> = this.api.expectProposalCreated()
-    await this.api.proposeValidatorCount(
+    const result = await this.api.proposeValidatorCount(
       this.membersKeyPairs[0],
       proposalTitle,
       description,
       proposalStake,
       proposedValidatorCount
     )
-    const proposalNumber: ProposalId = await proposalPromise
+    const proposalNumber: ProposalId = this.api.expectProposalCreatedEvent(result.events)
 
     // Approving the proposal
-    const proposalExecutionPromise: Promise<void> = this.api.expectProposalFinalized()
-    await this.api.batchApproveProposal(this.councilKeyPairs, proposalNumber)
-    await proposalExecutionPromise
+    this.api.batchApproveProposal(this.councilKeyPairs, proposalNumber)
+    await this.api.waitForProposalToFinalize(proposalNumber)
+
     const newValidatorCount: BN = await this.api.getValidatorCount()
     assert(
       proposedValidatorCount.eq(newValidatorCount),
@@ -851,20 +856,19 @@ export class UpdateRuntimeFixture implements Fixture {
     await this.api.transferBalanceToAccounts(this.treasury, this.councilKeyPairs, runtimeVoteFee)
 
     // Proposal creation
-    const proposalPromise: Promise<ProposalId> = this.api.expectProposalCreated()
-    await this.api.proposeRuntime(
+    const result = await this.api.proposeRuntime(
       this.membersKeyPairs[0],
       proposalStake,
       'testing runtime' + uuid().substring(0, 8),
       'runtime to test proposal functionality' + uuid().substring(0, 8),
       runtime
     )
-    const proposalNumber: ProposalId = await proposalPromise
+    const proposalNumber: ProposalId = this.api.expectProposalCreatedEvent(result.events)
 
     // Approving runtime update proposal
-    const runtimePromise: Promise<void> = this.api.expectProposalFinalized()
-    await this.api.batchApproveProposal(this.councilKeyPairs, proposalNumber)
-    await runtimePromise
+    this.api.batchApproveProposal(this.councilKeyPairs, proposalNumber)
+    await this.api.waitForProposalToFinalize(proposalNumber)
+
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -889,9 +893,9 @@ export class VoteForProposalFixture implements Fixture {
     await this.api.transferBalanceToAccounts(this.treasury, this.councilKeyPairs, proposalVoteFee)
 
     // Approving the proposal
-    const proposalExecutionPromise: Promise<void> = this.api.expectProposalFinalized()
-    await this.api.batchApproveProposal(this.councilKeyPairs, this.proposalNumber)
-    await proposalExecutionPromise
+    this.api.batchApproveProposal(this.councilKeyPairs, this.proposalNumber)
+    await this.api.waitForProposalToFinalize(this.proposalNumber)
+
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }

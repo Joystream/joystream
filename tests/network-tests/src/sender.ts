@@ -1,6 +1,7 @@
-import { ApiPromise } from '@polkadot/api'
+import { ApiPromise, Keyring } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { ISubmittableResult } from '@polkadot/types/types/'
+import { AccountId } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
 import Debugger from 'debug'
 import AsyncLock from 'async-lock'
@@ -10,12 +11,12 @@ const debug = Debugger('sender')
 export class Sender {
   private readonly api: ApiPromise
   private readonly asyncLock: AsyncLock
+  private readonly keyring: Keyring
 
-  // TODO: add a keyring that is shared here so no need to pass around keys
-
-  constructor(api: ApiPromise) {
+  constructor(api: ApiPromise, keyring: Keyring) {
     this.api = api
     this.asyncLock = new AsyncLock()
+    this.keyring = keyring
   }
 
   // Synchronize all sending of transactions into mempool, so we can always safely read
@@ -24,12 +25,14 @@ export class Sender {
   // Returns a promise that resolves or rejects only after the extrinsic is finalized into a block.
   public async signAndSend(
     tx: SubmittableExtrinsic<'promise'>,
-    account: KeyringPair,
+    account: AccountId | string,
     shouldFail = false
-  ): Promise<any> {
-    let finalizedResolve: { (): void; (value?: any): void }
-    let finalizedReject: { (arg0: Error): void; (reason?: any): void }
-    const finalized = new Promise(async (resolve, reject) => {
+  ): Promise<ISubmittableResult> {
+    const senderKeyPair = this.keyring.getPair(account)
+
+    let finalizedResolve: { (result: ISubmittableResult): void }
+    let finalizedReject: { (err: Error): void }
+    const finalized: Promise<ISubmittableResult> = new Promise(async (resolve, reject) => {
       finalizedResolve = resolve
       finalizedReject = reject
     })
@@ -39,13 +42,13 @@ export class Sender {
         result.events.forEach((event) => {
           if (event.event.method === 'ExtrinsicFailed') {
             if (shouldFail) {
-              finalizedResolve()
+              finalizedResolve(result)
             } else {
               finalizedReject(new Error('Extrinsic failed unexpectedly'))
             }
           }
         })
-        finalizedResolve()
+        finalizedResolve(result)
       }
 
       if (result.status.isFuture) {
@@ -56,9 +59,9 @@ export class Sender {
       }
     }
 
-    await this.asyncLock.acquire(`${account.address}`, async () => {
-      const nonce = await this.api.rpc.system.accountNextIndex(account.address)
-      const signedTx = tx.sign(account, { nonce })
+    await this.asyncLock.acquire(`${senderKeyPair.address}`, async () => {
+      const nonce = await this.api.rpc.system.accountNextIndex(senderKeyPair.address)
+      const signedTx = tx.sign(senderKeyPair, { nonce })
       await signedTx.send(handleEvents)
     })
 
