@@ -131,7 +131,7 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     return group
   }
 
-  async getEntity(id: string | number): Promise<Entity> {
+  async getEntity(id: string | number, requiredClass?: string, ownerMemberId?: number): Promise<Entity> {
     if (typeof id === 'string') {
       id = parseInt(id)
     }
@@ -142,12 +142,41 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
       this.error(`Entity not found by id: ${id}`, { exit: ExitCodes.InvalidInput })
     }
 
+    if (requiredClass) {
+      const [classId] = await this.classEntryByNameOrId(requiredClass)
+      if (entity.class_id.toNumber() !== classId.toNumber()) {
+        this.error(`Entity of id ${id} is not of class ${requiredClass}!`, { exit: ExitCodes.InvalidInput })
+      }
+    }
+
+    const { controller } = entity.entity_permissions
+    if (
+      ownerMemberId !== undefined &&
+      (!controller.isOfType('Member') || controller.asType('Member').toNumber() !== ownerMemberId)
+    ) {
+      this.error('Cannot execute this action for specified entity - invalid ownership.', {
+        exit: ExitCodes.AccessDenied,
+      })
+    }
+
     return entity
   }
 
   async getAndParseKnownEntity<T>(id: string | number): Promise<FlattenRelations<T>> {
     const entity = await this.getEntity(id)
     return this.parseToKnownEntityJson<T>(entity)
+  }
+
+  async entitiesByClassAndOwner(classNameOrId: number | string, ownerMemberId?: number): Promise<[EntityId, Entity][]> {
+    const classId =
+      typeof classNameOrId === 'number' ? classNameOrId : (await this.classEntryByNameOrId(classNameOrId))[0].toNumber()
+
+    return (await this.getApi().entitiesByClassId(classId)).filter(([, entity]) => {
+      const controller = entity.entity_permissions.controller
+      return ownerMemberId !== undefined
+        ? controller.isOfType('Member') && controller.asType('Member').toNumber() === ownerMemberId
+        : true
+    })
   }
 
   async promptForEntityEntry(
@@ -158,12 +187,7 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     defaultId?: number
   ): Promise<[EntityId, Entity]> {
     const [classId, entityClass] = await this.classEntryByNameOrId(className)
-    const entityEntries = (await this.getApi().entitiesByClassId(classId.toNumber())).filter(([, entity]) => {
-      const controller = entity.entity_permissions.controller
-      return ownerMemberId !== undefined
-        ? controller.isOfType('Member') && controller.asType('Member').toNumber() === ownerMemberId
-        : true
-    })
+    const entityEntries = await this.entitiesByClassAndOwner(classId.toNumber(), ownerMemberId)
 
     if (!entityEntries.length) {
       this.log(`${message}:`)
@@ -224,5 +248,23 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     return (_.mapValues(this.parseEntityPropertyValues(entity, entityClass), (v) =>
       v.value.toJSON()
     ) as unknown) as FlattenRelations<T>
+  }
+
+  async createEntityList(
+    className: string,
+    includedProps?: string[],
+    filters: [string, string][] = [],
+    ownerMemberId?: number
+  ): Promise<Record<string, string>[]> {
+    const [classId, entityClass] = await this.classEntryByNameOrId(className)
+    const entityEntries = await this.entitiesByClassAndOwner(classId.toNumber(), ownerMemberId)
+    const parsedEntities = (await Promise.all(
+      entityEntries.map(([id, entity]) => ({
+        'ID': id.toString(),
+        ..._.mapValues(this.parseEntityPropertyValues(entity, entityClass, includedProps), (v) => v.value.toString()),
+      }))
+    )) as Record<string, string>[]
+
+    return parsedEntities.filter((entity) => filters.every(([pName, pValue]) => entity[pName] === pValue))
   }
 }

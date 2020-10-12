@@ -12,5 +12,6 @@ enum ExitCodes {
   FsOperationFailed = 501,
   ApiError = 502,
   ExternalInfrastructureError = 503,
+  ActionCurrentlyUnavailable = 504,
 }
 export = ExitCodes

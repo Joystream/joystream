@@ -5,13 +5,21 @@ import { LicenseEntity } from 'cd-schemas/types/entities/LicenseEntity'
 import { InputParser } from 'cd-schemas'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import { JsonSchemaCustomPrompts, JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
+import { Entity } from '@joystream/types/content-directory'
 
 export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
   static description = 'Update existing video information (requires a membership).'
-  // TODO: Id as arg
   static flags = {
     // TODO: ...IOFlags, - providing input as json
   }
+
+  static args = [
+    {
+      name: 'id',
+      description: 'ID of the Video to update',
+      required: false,
+    },
+  ]
 
   async run() {
     const account = await this.getRequiredSelectedAccount()
@@ -20,9 +28,19 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
 
     await this.requestAccountDecoding(account)
 
-    const [videoId, video] = await this.promptForEntityEntry('Select a video to update', 'Video', 'title', memberId)
+    const { id } = this.parse(UpdateVideoCommand).args
 
-    const currentValues = await this.parseToKnownEntityJson<VideoEntity>(video)
+    let videoEntity: Entity, videoId: number
+    if (id) {
+      videoId = parseInt(id)
+      videoEntity = await this.getEntity(videoId, 'Video', memberId)
+    } else {
+      const [id, video] = await this.promptForEntityEntry('Select a video to update', 'Video', 'title', memberId)
+      videoId = id.toNumber()
+      videoEntity = video
+    }
+
+    const currentValues = await this.parseToKnownEntityJson<VideoEntity>(videoEntity)
     const videoJsonSchema = (VideoEntitySchema as unknown) as JSONSchema
 
     const { language: currLanguageId, category: currCategoryId, license: currLicenseId } = currentValues
@@ -66,11 +84,7 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
 
     // Parse inputs into operations and send final extrinsic
     const inputParser = InputParser.createWithKnownSchemas(this.getOriginalApi())
-    const videoUpdateOperation = await inputParser.createEntityUpdateOperation(
-      updatedProps,
-      'Video',
-      videoId.toNumber()
-    )
+    const videoUpdateOperation = await inputParser.createEntityUpdateOperation(updatedProps, 'Video', videoId)
     const licenseUpdateOperation = await inputParser.createEntityUpdateOperation(
       updatedLicense,
       'License',

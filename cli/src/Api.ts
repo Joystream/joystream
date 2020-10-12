@@ -32,6 +32,7 @@ import {
   RoleStakeProfile,
   Opening as WGOpening,
   Application as WGApplication,
+  StorageProviderId,
 } from '@joystream/types/working-group'
 import {
   Opening,
@@ -64,6 +65,7 @@ export const apiModuleByGroup: { [key in WorkingGroups]: string } = {
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
 export default class Api {
   private _api: ApiPromise
+  private _cdClassesCache: [ClassId, Class][] | null = null
 
   private constructor(originalApi: ApiPromise) {
     this._api = originalApi
@@ -112,6 +114,10 @@ export default class Api {
         .then((unsubscribe) => (unsub = unsubscribe))
         .catch((e) => reject(e))
     })
+  }
+
+  async bestNumber(): Promise<number> {
+    return (await this._api.derive.chain.bestNumber()).toNumber()
   }
 
   async getAccountsBalancesInfo(accountAddresses: string[]): Promise<DeriveBalancesAll[]> {
@@ -484,8 +490,10 @@ export default class Api {
   }
 
   // Content directory
-  availableClasses(): Promise<[ClassId, Class][]> {
-    return this.entriesByIds<ClassId, Class>(this._api.query.contentDirectory.classById)
+  async availableClasses(useCache = true): Promise<[ClassId, Class][]> {
+    return useCache && this._cdClassesCache
+      ? this._cdClassesCache
+      : await this.entriesByIds<ClassId, Class>(this._api.query.contentDirectory.classById)
   }
 
   availableCuratorGroups(): Promise<[CuratorGroupId, CuratorGroup][]> {
@@ -525,12 +533,23 @@ export default class Api {
     const accountInfo = await this._api.query.discovery.accountInfoByStorageProviderId<ServiceProviderRecord>(
       storageProviderId
     )
-    return accountInfo.isEmpty ? null : accountInfo.identity.toString()
+    return accountInfo.isEmpty || accountInfo.expires_at.toNumber() <= (await this.bestNumber())
+      ? null
+      : accountInfo.identity.toString()
   }
 
   async getRandomBootstrapEndpoint(): Promise<string | null> {
     const endpoints = await this._api.query.discovery.bootstrapEndpoints<Vec<Url>>()
     const randomEndpoint = _.sample(endpoints.toArray())
     return randomEndpoint ? randomEndpoint.toString() : null
+  }
+
+  async isAnyProviderAvailable(): Promise<boolean> {
+    const accounInfoEntries = await this.entriesByIds<StorageProviderId, ServiceProviderRecord>(
+      this._api.query.discovery.accountInfoByStorageProviderId
+    )
+
+    const bestNumber = await this.bestNumber()
+    return !!accounInfoEntries.filter(([, info]) => info.expires_at.toNumber() > bestNumber)
   }
 }

@@ -43,6 +43,12 @@ export default class UploadVideoCommand extends ContentDirectoryCommandBase {
       required: true,
       description: 'Path to the media file to upload',
     }),
+    channel: flags.integer({
+      char: 'c',
+      required: false,
+      description:
+        'ID of the channel to assign the video to (if omitted - one of the owned channels can be selected from the list)',
+    }),
   }
 
   private createReadStreamWithProgressBar(filePath: string, barTitle: string, fileSize?: number) {
@@ -215,7 +221,7 @@ export default class UploadVideoCommand extends ContentDirectoryCommandBase {
 
     await this.requestAccountDecoding(account)
 
-    const { filePath } = this.parse(UploadVideoCommand).flags
+    const { filePath, channel: inputChannelId } = this.parse(UploadVideoCommand).flags
 
     // Basic file validation
     if (!fs.existsSync(filePath)) {
@@ -230,13 +236,26 @@ export default class UploadVideoCommand extends ContentDirectoryCommandBase {
     const videoMetadata = await this.getVideoMetadata(filePath)
     this.log('Video media file parameters established:', { ...(videoMetadata || {}), size: fileSize })
 
+    // Check if any providers are available
+    if (!(await this.getApi().isAnyProviderAvailable())) {
+      this.error('No active storage providers available! Try again later...', {
+        exit: ExitCodes.ActionCurrentlyUnavailable,
+      })
+    }
+
     // Start by prompting for a channel to make sure user has one available
-    const channelId = await this.promptForEntityId(
-      'Select a channel to publish the video under',
-      'Channel',
-      'title',
-      memberId
-    )
+    let channelId: number
+    if (inputChannelId === undefined) {
+      channelId = await this.promptForEntityId(
+        'Select a channel to publish the video under',
+        'Channel',
+        'title',
+        memberId
+      )
+    } else {
+      await this.getEntity(inputChannelId, 'Channel', memberId) // Validates if exists and belongs to member
+      channelId = inputChannelId
+    }
 
     // Calculate hash and create content id
     const contentId = ContentId.generate(this.getTypesRegistry())

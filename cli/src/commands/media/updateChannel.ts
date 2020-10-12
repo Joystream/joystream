@@ -5,26 +5,42 @@ import { InputParser } from 'cd-schemas'
 import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import { JsonSchemaCustomPrompts, JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
+import { Entity } from '@joystream/types/content-directory'
 
 export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Update one of the owned channels on Joystream (requires a membership).'
   static flags = {
     ...IOFlags,
   }
-  // TODO: ChannelId as arg?
+
+  static args = [
+    {
+      name: 'id',
+      description: 'ID of the channel to update',
+      required: false,
+    },
+  ]
 
   async run() {
     const account = await this.getRequiredSelectedAccount()
     const memberId = await this.getRequiredMemberId()
     const actor = { Member: memberId }
 
-    const [channelId, channel] = await this.promptForEntityEntry(
-      'Select a channel to update',
-      'Channel',
-      'title',
-      memberId
-    )
-    const currentValues = await this.parseToKnownEntityJson<ChannelEntity>(channel)
+    await this.requestAccountDecoding(account)
+
+    const { id } = this.parse(UpdateChannelCommand).args
+
+    let channelEntity: Entity, channelId: number
+    if (id) {
+      channelId = parseInt(id)
+      channelEntity = await this.getEntity(channelId, 'Channel', memberId)
+    } else {
+      const [id, channel] = await this.promptForEntityEntry('Select a channel to update', 'Channel', 'title', memberId)
+      channelId = id.toNumber()
+      channelEntity = channel
+    }
+
+    const currentValues = await this.parseToKnownEntityJson<ChannelEntity>(channelEntity)
     this.jsonPrettyPrint(JSON.stringify(currentValues))
 
     const channelJsonSchema = (ChannelEntitySchema as unknown) as JSONSchema
@@ -36,7 +52,8 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
       const customPrompts: JsonSchemaCustomPrompts = [
         [
           'language',
-          () => this.promptForEntityId('Choose channel language', 'Language', 'name', currentValues.language),
+          () =>
+            this.promptForEntityId('Choose channel language', 'Language', 'name', undefined, currentValues.language),
         ],
         ['curationStatus', async () => undefined],
       ]
@@ -51,8 +68,7 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
 
     if (confirmed) {
       const inputParser = InputParser.createWithKnownSchemas(this.getOriginalApi())
-      const updateOperation = await inputParser.createEntityUpdateOperation(inputJson, 'Channel', channelId.toNumber())
-      await this.requestAccountDecoding(account)
+      const updateOperation = await inputParser.createEntityUpdateOperation(inputJson, 'Channel', channelId)
       this.log('Sending the extrinsic...')
       await this.sendAndFollowNamedTx(account, 'contentDirectory', 'transaction', [actor, [updateOperation]], true)
       saveOutputJson(output, `${inputJson.title}Channel.json`, inputJson)
