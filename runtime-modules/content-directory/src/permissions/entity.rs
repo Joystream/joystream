@@ -139,7 +139,7 @@ impl EntityAccessLevel {
     pub fn derive<T: Trait>(
         account_id: &T::AccountId,
         entity_permissions: &EntityPermissions<T>,
-        class_permissions: &ClassPermissions<T>,
+        class_permissions: &ClassPermissions<T::CuratorGroupId>,
         actor: &Actor<T>,
     ) -> Result<Self, Error<T>> {
         let controller = EntityController::<T>::from_actor(actor);

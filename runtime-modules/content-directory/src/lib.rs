@@ -260,7 +260,7 @@ decl_storage! {
     trait Store for Module<T: Trait> as ContentDirectory {
 
         /// Map, representing ClassId -> Class relation
-        pub ClassById get(fn class_by_id): map hasher(blake2_128_concat) T::ClassId => Class<T>;
+        pub ClassById get(fn class_by_id): map hasher(blake2_128_concat) T::ClassId => Class<T::EntityId, T::ClassId, T::CuratorGroupId>;
 
         /// Map, representing EntityId -> Entity relation
         pub EntityById get(fn entity_by_id): map hasher(blake2_128_concat) T::EntityId => Entity<T>;
@@ -499,7 +499,7 @@ decl_module! {
             origin,
             name: Vec<u8>,
             description: Vec<u8>,
-            class_permissions: ClassPermissions<T>,
+            class_permissions: ClassPermissions<T::CuratorGroupId>,
             maximum_entities_count: T::EntityId,
             default_entity_creation_voucher_upper_bound: T::EntityId
         ) -> DispatchResult {
@@ -569,7 +569,7 @@ decl_module! {
             Self::ensure_maintainers_limit_not_reached(class_permissions.get_maintainers())?;
 
             // Ensure maintainer under provided curator_group_id is not added to the Class maintainers set yet
-            class_permissions.ensure_maintainer_does_not_exist(&curator_group_id)?;
+            class_permissions.ensure_maintainer_does_not_exist::<T>(&curator_group_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -606,7 +606,7 @@ decl_module! {
 
             // Ensure maintainer under provided curator_group_id was previously added
             // to the maintainers set, associated with corresponding Class
-            class.get_permissions_ref().ensure_maintainer_exists(&curator_group_id)?;
+            class.get_permissions_ref().ensure_maintainer_exists::<T>(&curator_group_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -682,7 +682,7 @@ decl_module! {
             origin,
             class_id: T::ClassId,
             existing_properties: BTreeSet<PropertyId>,
-            new_properties: Vec<Property<T>>
+            new_properties: Vec<Property<T::ClassId>>
         ) -> DispatchResult {
 
             // Ensure given origin is lead
@@ -692,13 +692,13 @@ decl_module! {
             let class = Self::ensure_known_class_id(class_id)?;
 
             // Ensure Schemas limit per Class not reached
-            class.ensure_schemas_limit_not_reached()?;
+            class.ensure_schemas_limit_not_reached::<T>()?;
 
             // Ensure both existing and new properties for future Schema are not empty
             Self::ensure_non_empty_schema(&existing_properties, &new_properties)?;
 
             // Ensure max number of properties per Schema limit not reached
-            class.ensure_properties_limit_not_reached(&new_properties)?;
+            class.ensure_properties_limit_not_reached::<T>(&new_properties)?;
 
             // Complete all checks to ensure all provided new_properties are valid
             Self::ensure_all_properties_are_valid(&new_properties)?;
@@ -752,7 +752,7 @@ decl_module! {
             let class = Self::ensure_known_class_id(class_id)?;
 
             // Ensure Class already contains schema under provided schema_id
-            class.ensure_schema_id_exists(schema_id)?;
+            class.ensure_schema_id_exists::<T>(schema_id)?;
 
             //
             // == MUTATION SAFE ==
@@ -966,12 +966,12 @@ decl_module! {
             let class = Self::ensure_class_exists(class_id)?;
 
             // Ensure maximum entities limit per class not reached
-            class.ensure_maximum_entities_count_limit_not_reached()?;
+            class.ensure_maximum_entities_count_limit_not_reached::<T>()?;
 
             let class_permissions = class.get_permissions_ref();
 
             // Ensure entities creation is not blocked on Class level
-            class_permissions.ensure_entity_creation_not_blocked()?;
+            class_permissions.ensure_entity_creation_not_blocked::<T>()?;
 
             // Ensure actor can create entities
             class_permissions.ensure_can_create_entities(&account_id, &actor)?;
@@ -1111,7 +1111,7 @@ decl_module! {
             let (class, entity, _) = Self::ensure_class_entity_and_access_level(account_id, entity_id, &actor)?;
 
             // Ensure Class Schema under given index exists, return corresponding Schema
-            let schema = class.ensure_schema_exists(schema_id)?.to_owned();
+            let schema = class.ensure_schema_exists::<T>(schema_id)?.to_owned();
 
             let class_properties = class.get_properties();
 
@@ -1210,7 +1210,7 @@ decl_module! {
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(account_id, entity_id, &actor)?;
 
             // Ensure property values were not locked on Class level
-            class.ensure_property_values_unlocked()?;
+            class.ensure_property_values_unlocked::<T>()?;
 
             let entity_values_ref = entity.get_values_ref();
 
@@ -1310,7 +1310,7 @@ decl_module! {
 
             // Ensure Property under given PropertyId is unlocked from actor with given EntityAccessLevel
             // Retrieve corresponding Property by value
-            let property = class.ensure_class_property_type_unlocked_from(
+            let property = class.ensure_class_property_type_unlocked_from::<T>(
                 in_class_schema_property_id,
                 access_level,
             )?;
@@ -1392,7 +1392,7 @@ decl_module! {
 
             // Ensure Property under given PropertyId is unlocked from actor with given EntityAccessLevel
             // Retrieve corresponding Property by value
-            let property = class.ensure_class_property_type_unlocked_from(
+            let property = class.ensure_class_property_type_unlocked_from::<T>(
                 in_class_schema_property_id,
                 access_level,
             )?;
@@ -1497,7 +1497,7 @@ decl_module! {
 
             // Ensure Property under given PropertyId is unlocked from actor with given EntityAccessLevel
             // Retrieve corresponding Property by value
-            let property = class.ensure_class_property_type_unlocked_from(
+            let property = class.ensure_class_property_type_unlocked_from::<T>(
                 in_class_schema_property_id,
                 access_level,
             )?;
@@ -1750,7 +1750,7 @@ impl<T: Trait> Module<T> {
     /// Returns calculated `ReferenceCounterSideEffects`
     pub fn make_side_effects_for_clear_property_vector_operation(
         property_value_vector: &VecStoredPropertyValue<T>,
-        property: &Property<T>,
+        property: &Property<T::ClassId>,
     ) -> Option<ReferenceCounterSideEffects<T>> {
         let entity_ids_to_decrease_rc = property_value_vector
             .get_vec_value_ref()
@@ -1862,7 +1862,7 @@ impl<T: Trait> Module<T> {
     /// Returns updated `ReferenceCounterSideEffects`
     pub fn get_updated_inbound_rcs_delta(
         current_entity_id: T::EntityId,
-        class_properties: Vec<Property<T>>,
+        class_properties: Vec<Property<T::ClassId>>,
         entity_property_values: BTreeMap<PropertyId, StoredPropertyValue<T>>,
         new_output_property_values: BTreeMap<PropertyId, StoredPropertyValue<T>>,
     ) -> Result<Option<ReferenceCounterSideEffects<T>>, Error<T>> {
@@ -1948,12 +1948,12 @@ impl<T: Trait> Module<T> {
     /// Used to update `class_permissions` with parameters provided.
     /// Returns updated `class_permissions` if update performed
     pub fn make_updated_class_permissions(
-        class_permissions: ClassPermissions<T>,
+        class_permissions: ClassPermissions<T::CuratorGroupId>,
         updated_any_member: Option<bool>,
         updated_entity_creation_blocked: Option<bool>,
         updated_all_entity_property_values_locked: Option<bool>,
         updated_maintainers: Option<BTreeSet<T::CuratorGroupId>>,
-    ) -> Option<ClassPermissions<T>> {
+    ) -> Option<ClassPermissions<T::CuratorGroupId>> {
         // Used to check if update performed
         let mut updated_class_permissions = class_permissions.clone();
 
@@ -2084,7 +2084,9 @@ impl<T: Trait> Module<T> {
     }
 
     /// Returns the stored `Class` if exist, error otherwise.
-    fn ensure_class_exists(class_id: T::ClassId) -> Result<Class<T>, Error<T>> {
+    fn ensure_class_exists(
+        class_id: T::ClassId,
+    ) -> Result<Class<T::EntityId, T::ClassId, T::CuratorGroupId>, Error<T>> {
         ensure!(
             <ClassById<T>>::contains_key(class_id),
             Error::<T>::ClassNotFound
@@ -2097,7 +2099,14 @@ impl<T: Trait> Module<T> {
         account_id: T::AccountId,
         entity_id: T::EntityId,
         actor: &Actor<T>,
-    ) -> Result<(Class<T>, Entity<T>, EntityAccessLevel), Error<T>> {
+    ) -> Result<
+        (
+            Class<T::EntityId, T::ClassId, T::CuratorGroupId>,
+            Entity<T>,
+            EntityAccessLevel,
+        ),
+        Error<T>,
+    > {
         // Ensure Entity under given id exists, retrieve corresponding one
         let entity = Self::ensure_known_entity_id(entity_id)?;
 
@@ -2118,7 +2127,7 @@ impl<T: Trait> Module<T> {
     /// Ensure `Entity` under given `entity_id` exists, retrieve corresponding `Entity` & `Class`
     pub fn ensure_known_entity_and_class(
         entity_id: T::EntityId,
-    ) -> Result<(Entity<T>, Class<T>), Error<T>> {
+    ) -> Result<(Entity<T>, Class<T::EntityId, T::ClassId, T::CuratorGroupId>), Error<T>> {
         // Ensure Entity under given id exists, retrieve corresponding one
         let entity = Self::ensure_known_entity_id(entity_id)?;
 
@@ -2270,7 +2279,7 @@ impl<T: Trait> Module<T> {
 
     /// Perform checks to ensure all required `property_values` under provided `unused_schema_property_ids` provided
     pub fn ensure_all_required_properties_provided(
-        class_properties: &[Property<T>],
+        class_properties: &[Property<T::ClassId>],
         unused_schema_property_ids: &BTreeSet<PropertyId>,
     ) -> Result<(), Error<T>> {
         for &unused_schema_property_id in unused_schema_property_ids {
@@ -2326,7 +2335,7 @@ impl<T: Trait> Module<T> {
             // Ensure Property is unlocked from Actor with given EntityAccessLevel
             value_for_new_property
                 .get_property()
-                .ensure_unlocked_from(access_level)?;
+                .ensure_unlocked_from::<T>(access_level)?;
         }
         Ok(())
     }
@@ -2416,7 +2425,9 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure `Class` under given id exists, return corresponding one
-    pub fn ensure_known_class_id(class_id: T::ClassId) -> Result<Class<T>, Error<T>> {
+    pub fn ensure_known_class_id(
+        class_id: T::ClassId,
+    ) -> Result<Class<T::EntityId, T::ClassId, T::CuratorGroupId>, Error<T>> {
         ensure!(
             <ClassById<T>>::contains_key(class_id),
             Error::<T>::ClassNotFound
@@ -2492,7 +2503,7 @@ impl<T: Trait> Module<T> {
     /// Ensure new `Schema` is not empty
     pub fn ensure_non_empty_schema(
         existing_properties: &BTreeSet<PropertyId>,
-        new_properties: &[Property<T>],
+        new_properties: &[Property<T::ClassId>],
     ) -> Result<(), Error<T>> {
         // Schema is empty if both existing_properties and new_properties are empty
         let non_empty_schema = !existing_properties.is_empty() || !new_properties.is_empty();
@@ -2581,7 +2592,9 @@ impl<T: Trait> Module<T> {
     }
 
     /// Complete all checks to ensure each `Property` is valid
-    pub fn ensure_all_properties_are_valid(new_properties: &[Property<T>]) -> Result<(), Error<T>> {
+    pub fn ensure_all_properties_are_valid(
+        new_properties: &[Property<T::ClassId>],
+    ) -> Result<(), Error<T>> {
         for new_property in new_properties.iter() {
             // Ensure PropertyNameLengthConstraint satisfied
             new_property.ensure_name_is_valid()?;
@@ -2593,15 +2606,34 @@ impl<T: Trait> Module<T> {
             new_property.ensure_property_type_size_is_valid()?;
 
             // Ensure refers to existing class_id, if If Property Type is Reference,
-            new_property.ensure_property_type_reference_is_valid()?;
+            Self::ensure_property_type_reference_is_valid(new_property)?;
         }
+        Ok(())
+    }
+
+    /// Ensure refers to existing `class_id`, if If `Property` `Type` is `Reference`,
+    pub fn ensure_property_type_reference_is_valid(
+        property: &Property<T::ClassId>,
+    ) -> Result<(), Error<T>> {
+        let has_unknown_reference =
+            if let Type::Reference(other_class_id, _) = property.property_type.get_inner_type() {
+                !<ClassById<T>>::contains_key(other_class_id)
+            } else {
+                false
+            };
+
+        ensure!(
+            !has_unknown_reference,
+            Error::<T>::ClassSchemaRefersUnknownClass
+        );
+
         Ok(())
     }
 
     /// Ensure all `Property` names are  unique within `Class`
     pub fn ensure_all_property_names_are_unique(
-        class_properties: &[Property<T>],
-        new_properties: &[Property<T>],
+        class_properties: &[Property<T::ClassId>],
+        new_properties: &[Property<T::ClassId>],
     ) -> Result<(), Error<T>> {
         // Used to ensure all property names are unique within class
         let mut unique_prop_names = BTreeSet::new();
@@ -2626,7 +2658,7 @@ impl<T: Trait> Module<T> {
     /// Ensure provided indices of `existing_properties`  are valid indices of `Class` properties
     pub fn ensure_schema_properties_are_valid_indices(
         existing_properties: &BTreeSet<PropertyId>,
-        class_properties: &[Property<T>],
+        class_properties: &[Property<T::ClassId>],
     ) -> Result<(), Error<T>> {
         let has_unknown_properties = existing_properties
             .iter()
@@ -2641,8 +2673,8 @@ impl<T: Trait> Module<T> {
     /// Create new `Schema` from existing and new property ids
     pub fn create_class_schema(
         existing_properties: BTreeSet<PropertyId>,
-        class_properties: &[Property<T>],
-        new_properties: &[Property<T>],
+        class_properties: &[Property<T::ClassId>],
+        new_properties: &[Property<T::ClassId>],
     ) -> Schema {
         // Calcualate new property ids
         let properties = new_properties
@@ -2658,9 +2690,9 @@ impl<T: Trait> Module<T> {
 
     /// Update existing `Class` properties with new ones provided, return updated ones
     pub fn make_updated_class_properties(
-        class_properties: Vec<Property<T>>,
-        new_properties: Vec<Property<T>>,
-    ) -> Vec<Property<T>> {
+        class_properties: Vec<Property<T::ClassId>>,
+        new_properties: Vec<Property<T::ClassId>>,
+    ) -> Vec<Property<T::ClassId>> {
         class_properties
             .into_iter()
             .chain(new_properties.into_iter())

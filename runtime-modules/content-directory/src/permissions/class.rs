@@ -2,8 +2,8 @@ use super::*;
 
 /// Permissions for an instance of a `Class` in the versioned store.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Eq, PartialEq, Clone)]
-pub struct ClassPermissions<T: Trait> {
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Debug, Default)]
+pub struct ClassPermissions<CuratorGroupId: Ord + Default> {
     /// For this permission, the individual member is allowed to create the entity and become controller.
     any_member: bool,
 
@@ -20,27 +20,21 @@ pub struct ClassPermissions<T: Trait> {
     all_entity_property_values_locked: bool,
 
     /// Current class maintainer curator groups
-    maintainers: BTreeSet<T::CuratorGroupId>,
+    maintainers: BTreeSet<CuratorGroupId>,
 }
 
-impl<T: Trait> core::fmt::Debug for ClassPermissions<T> {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "ClassPermissions {:?}", self)
-    }
-}
+// impl<CuratorGroupId: Ord> Default for ClassPermissions<T> {
+//     fn default() -> Self {
+//         Self {
+//             any_member: false,
+//             entity_creation_blocked: false,
+//             all_entity_property_values_locked: false,
+//             maintainers: BTreeSet::new(),
+//         }
+//     }
+// }
 
-impl<T: Trait> Default for ClassPermissions<T> {
-    fn default() -> Self {
-        Self {
-            any_member: false,
-            entity_creation_blocked: false,
-            all_entity_property_values_locked: false,
-            maintainers: BTreeSet::new(),
-        }
-    }
-}
-
-impl<T: Trait> ClassPermissions<T> {
+impl<CuratorGroupId: Ord + Default> ClassPermissions<CuratorGroupId> {
     /// Retieve `all_entity_property_values_locked` status
     pub fn all_entity_property_values_locked(&self) -> bool {
         self.all_entity_property_values_locked
@@ -52,17 +46,17 @@ impl<T: Trait> ClassPermissions<T> {
     }
 
     /// Check if given `curator_group_id` is maintainer of current `Class`
-    pub fn is_maintainer(&self, curator_group_id: &T::CuratorGroupId) -> bool {
+    pub fn is_maintainer(&self, curator_group_id: &CuratorGroupId) -> bool {
         self.maintainers.contains(curator_group_id)
     }
 
     /// Get `Class` maintainers by reference
-    pub fn get_maintainers(&self) -> &BTreeSet<T::CuratorGroupId> {
+    pub fn get_maintainers(&self) -> &BTreeSet<CuratorGroupId> {
         &self.maintainers
     }
 
     /// Get `Class` maintainers by mutable reference
-    pub fn get_maintainers_mut(&mut self) -> &mut BTreeSet<T::CuratorGroupId> {
+    pub fn get_maintainers_mut(&mut self) -> &mut BTreeSet<CuratorGroupId> {
         &mut self.maintainers
     }
 
@@ -85,12 +79,12 @@ impl<T: Trait> ClassPermissions<T> {
     }
 
     /// Update `maintainers` set with provided one
-    pub fn set_maintainers(&mut self, maintainers: BTreeSet<T::CuratorGroupId>) {
+    pub fn set_maintainers(&mut self, maintainers: BTreeSet<CuratorGroupId>) {
         self.maintainers = maintainers
     }
 
     /// Ensure provided actor can create entities of current `Class`
-    pub fn ensure_can_create_entities(
+    pub fn ensure_can_create_entities<T: Trait>(
         &self,
         account_id: &T::AccountId,
         actor: &Actor<T>,
@@ -124,7 +118,7 @@ impl<T: Trait> ClassPermissions<T> {
     }
 
     /// Ensure entities creation is not blocked on `Class` level
-    pub fn ensure_entity_creation_not_blocked(&self) -> Result<(), Error<T>> {
+    pub fn ensure_entity_creation_not_blocked<T: Trait>(&self) -> Result<(), Error<T>> {
         ensure!(
             !self.entity_creation_blocked,
             Error::<T>::EntitiesCreationBlocked
@@ -133,9 +127,9 @@ impl<T: Trait> ClassPermissions<T> {
     }
 
     /// Ensure maintainer, associated with given `curator_group_id` is already added to `maintainers` set
-    pub fn ensure_maintainer_exists(
+    pub fn ensure_maintainer_exists<T: Trait>(
         &self,
-        curator_group_id: &T::CuratorGroupId,
+        curator_group_id: &CuratorGroupId,
     ) -> Result<(), Error<T>> {
         ensure!(
             self.maintainers.contains(curator_group_id),
@@ -145,9 +139,9 @@ impl<T: Trait> ClassPermissions<T> {
     }
 
     /// Ensure maintainer, associated with given `curator_group_id` is not yet added to `maintainers` set
-    pub fn ensure_maintainer_does_not_exist(
+    pub fn ensure_maintainer_does_not_exist<T: Trait>(
         &self,
-        curator_group_id: &T::CuratorGroupId,
+        curator_group_id: &CuratorGroupId,
     ) -> Result<(), Error<T>> {
         ensure!(
             !self.maintainers.contains(curator_group_id),
