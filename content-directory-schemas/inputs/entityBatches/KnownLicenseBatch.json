@@ -1,0 +1,11 @@
+{
+  "className": "KnownLicense",
+  "entries": [
+    { "code": "CC_BY" },
+    { "code": "CC_BY_SA" },
+    { "code": "CC_BY_ND" },
+    { "code": "CC_BY_NC" },
+    { "code": "CC_BY_NC_SA" },
+    { "code": "CC_BY_NC_ND" }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "name": "CurationStatus",
+  "description": "Curation status of a related entity (ie. Video or Channel)",
+  "maximum_entities_count": 400,
+  "default_entity_creation_voucher_upper_bound": 50,
+  "class_permissions": { "any_member": false }
+}

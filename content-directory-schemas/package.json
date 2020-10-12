@@ -1,0 +1,43 @@
+{
+  "name": "cd-schemas",
+  "version": "0.1.0",
+  "description": "JSON schemas, inputs and related tooling for Joystream content directory 2.0",
+  "author": "Joystream contributors",
+  "main": "lib/index.js",
+  "scripts": {
+    "build": "tsc --build tsconfig.lib.json",
+    "lint": "eslint ./ --ext .ts --ignore-path .gitignore",
+    "ts-check": "tsc --noEmit --pretty",
+    "pretty": "prettier ./ --write --ignore-path .gitignore",
+    "validate": "ts-node ./scripts/validate.ts",
+    "checks": "yarn ts-check && prettier ./ --check --ignore-path .gitignore && yarn validate && yarn lint",
+    "generate:types": "ts-node --files ./scripts/schemasToTS.ts",
+    "generate:entity-schemas": "ts-node ./scripts/inputSchemasToEntitySchemas.ts",
+    "generate:all": "yarn generate:entity-schemas && yarn generate:types",
+    "initialize:alice-as-lead": "ts-node ./scripts/devInitAliceLead.ts",
+    "initialize:content-dir": "ts-node ./scripts/initializeContentDir.ts",
+    "initialize:dev": "yarn initialize:alice-as-lead && yarn initialize:content-dir"
+  },
+  "dependencies": {
+    "ajv": "6.12.5",
+    "@joystream/prettier-config": "*",
+    "@polkadot/api": "1.26.1",
+    "@polkadot/keyring": "^3.0.1",
+    "@joystream/types": "^0.14.0",
+    "@apidevtools/json-schema-ref-parser": "^9.0.6"
+  },
+  "devDependencies": {
+    "ts-node": "^8.8.2",
+    "typescript": "^3.9.7",
+    "json-schema-to-typescript": "^9.1.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Joystream/joystream.git"
+  },
+  "license": "GPL-3.0-only",
+  "bugs": {
+    "url": "https://github.com/Joystream/joystream/issues"
+  },
+  "homepage": "https://github.com/Joystream/joystream"
+}

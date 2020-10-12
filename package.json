@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "license": "GPL-3.0-only",
   "scripts": {
-    "postinstall": "yarn workspace @joystream/types build",
+    "postinstall": "yarn workspace @joystream/types build && yarn workspace cd-schemas generate:all && yarn workspace cd-schemas build",
     "cargo-checks": "devops/git-hooks/pre-commit && devops/git-hooks/pre-push",
     "cargo-build": "scripts/cargo-build.sh"
   },
@@ -18,7 +18,8 @@
     "devops/prettier-config",
     "pioneer",
     "pioneer/packages/*",
-    "utils/api-examples"
+    "utils/api-examples",
+    "content-directory-schemas"
   ],
   "resolutions": {
     "@polkadot/api": "1.26.1",
