@@ -131,6 +131,7 @@ mod tests;
 
 use codec::Decode;
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
+use frame_support::sp_std::marker::PhantomData;
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{
@@ -139,7 +140,6 @@ use frame_support::{
 use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
 use system::{ensure_root, RawOrigin};
-use frame_support::sp_std::marker::PhantomData;
 
 use common::origin::ActorOriginValidator;
 
