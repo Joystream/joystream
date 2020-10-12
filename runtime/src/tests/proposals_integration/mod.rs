@@ -610,3 +610,29 @@ fn set_validator_count_proposal_execution_succeeds() {
         assert_eq!(<pallet_staking::ValidatorCount>::get(), new_validator_count);
     });
 }
+
+#[test]
+fn amend_constitution_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            ProposalCodex::create_amend_constitution_proposal(
+                RawOrigin::Signed(account_id.into()).into(),
+                member_id as u64,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(Stake {
+                    account_id: account_id.into(),
+                    balance: <BalanceOf<Runtime>>::from(25000u32),
+                }),
+                b"Constitution text".to_vec(),
+                None,
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+    });
+}
