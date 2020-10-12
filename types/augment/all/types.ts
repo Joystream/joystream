@@ -879,6 +879,10 @@ export interface ProposalDetails extends Enum {
   readonly asSetElectionParameters: ElectionParameters;
   readonly isSpending: boolean;
   readonly asSpending: ITuple<[Balance, AccountId]>;
+  readonly isSetLead: boolean;
+  readonly asSetLead: Option<SetLeadParams>;
+  readonly isSetContentWorkingGroupMintCapacity: boolean;
+  readonly asSetContentWorkingGroupMintCapacity: u128;
   readonly isEvictStorageProvider: boolean;
   readonly asEvictStorageProvider: GenericAccountId;
   readonly isSetValidatorCount: boolean;
@@ -913,6 +917,10 @@ export interface ProposalDetailsOf extends Enum {
   readonly asSetElectionParameters: ElectionParameters;
   readonly isSpending: boolean;
   readonly asSpending: ITuple<[Balance, AccountId]>;
+  readonly isSetLead: boolean;
+  readonly asSetLead: Option<SetLeadParams>;
+  readonly isSetContentWorkingGroupMintCapacity: boolean;
+  readonly asSetContentWorkingGroupMintCapacity: u128;
   readonly isEvictStorageProvider: boolean;
   readonly asEvictStorageProvider: GenericAccountId;
   readonly isSetValidatorCount: boolean;
@@ -1083,6 +1091,9 @@ export interface ServiceProviderRecord extends Struct {
   readonly identity: IPNSIdentity;
   readonly expires_at: u32;
 }
+
+/** @name SetLeadParams */
+export interface SetLeadParams extends ITuple<[MemberId, GenericAccountId]> {}
 
 /** @name SideEffect */
 export interface SideEffect extends Option<ITuple<[EntityId, EntityReferenceCounterSideEffect]>> {}

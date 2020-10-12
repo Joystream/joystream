@@ -153,6 +153,10 @@ export class ProposalId extends u32 {}
 
 export class SpendingParams extends Tuple.with(['Balance', 'AccountId']) {}
 
+export class SetLeadParams extends Tuple.with([MemberId, AccountId]) {}
+
+export class SetLead extends Option.with(SetLeadParams) {}
+
 export class Proposal
   // FIXME: Snake case for consistency?
   extends JoyStructDecorated({
@@ -250,6 +254,8 @@ export class ProposalDetails extends JoyEnum({
   RuntimeUpgrade: Bytes,
   SetElectionParameters: ElectionParameters,
   Spending: SpendingParams,
+  SetLead: SetLead,
+  SetContentWorkingGroupMintCapacity: u128,
   EvictStorageProvider: AccountId,
   SetValidatorCount: u32,
   SetStorageRoleParameters: RoleParameters,
@@ -285,6 +291,7 @@ export const proposalsTypes = {
   ProposalDecisionStatus,
   ExecutionFailed,
   Approved,
+  SetLeadParams,
 }
 
 export default proposalsTypes
