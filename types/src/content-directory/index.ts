@@ -44,7 +44,22 @@ export class PropertyTypeVector extends JoyStructDecorated({
 export class PropertyType extends JoyEnum({
   Single: PropertyTypeSingle,
   Vector: PropertyTypeVector,
-}) {}
+}) {
+  toInputPropertyValue(value: any): InputPropertyValue {
+    const inputPwType: keyof typeof InputPropertyValue['typeDefinitions'] = this.type
+    const subtype = this.isOfType('Single') ? this.asType('Single').type : this.asType('Vector').vec_type.type
+
+    if (inputPwType === 'Single') {
+      const inputPwSubtype: keyof typeof InputValue['typeDefinitions'] = subtype === 'Hash' ? 'TextToHash' : subtype
+
+      return new InputPropertyValue(this.registry, { [inputPwType]: { [inputPwSubtype]: value } })
+    } else {
+      const inputPwSubtype: keyof typeof VecInputValue['typeDefinitions'] = subtype === 'Hash' ? 'TextToHash' : subtype
+
+      return new InputPropertyValue(this.registry, { [inputPwType]: { [inputPwSubtype]: value } })
+    }
+  }
+}
 
 export class PropertyLockingPolicy extends JoyStructDecorated({
   is_locked_from_maintainer: bool,
