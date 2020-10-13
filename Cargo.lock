@@ -3579,11 +3579,9 @@ version = "3.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
- "mockall",
  "pallet-balances",
  "pallet-common",
  "pallet-membership",
- "pallet-stake",
  "pallet-timestamp",
  "parity-scale-codec",
  "serde",

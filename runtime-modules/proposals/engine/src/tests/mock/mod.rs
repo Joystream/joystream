@@ -1,13 +1,12 @@
 //! Mock runtime for the module testing.
 //!
 //! Submodules:
-//! - stakes: contains support for mocking external 'stake' module
-//! - balance_restorator: restores balances after unstaking
 //! - proposals: provides types for proposal execution tests
 //!
 
 #![cfg(test)]
 
+use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::{
@@ -17,14 +16,10 @@ use sp_runtime::{
 };
 pub use system;
 
-mod balance_manager;
 pub(crate) mod proposals;
-mod stakes;
 
 use crate::ProposalObserver;
-use balance_manager::*;
 pub use proposals::*;
-pub use stakes::*;
 
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -69,20 +64,13 @@ impl common::currency::GovernanceCurrency for Test {
 
 impl proposals::Trait for Test {}
 
-impl stake::Trait for Test {
-    type Currency = Balances;
-    type StakePoolId = StakePoolId;
-    type StakingEventsHandler = BalanceManagerStakingEventsHandler;
-    type StakeId = u64;
-    type SlashId = u64;
-}
-
 parameter_types! {
     pub const CancellationFee: u64 = 5;
     pub const RejectionFee: u64 = 3;
     pub const TitleMaxLength: u32 = 100;
     pub const DescriptionMaxLength: u32 = 10000;
     pub const MaxActiveProposalLimit: u32 = 100;
+    pub const LockId: LockIdentifier = [1; 8];
 }
 
 impl membership::Trait for Test {
@@ -99,7 +87,7 @@ impl crate::Trait for Test {
     type VoterOriginValidator = ();
     type TotalVotersCounter = ();
     type ProposalId = u32;
-    type StakeHandlerProvider = stakes::TestStakeHandlerProvider;
+    type StakingHandler = crate::StakingManager<Test, LockId>;
     type CancellationFee = CancellationFee;
     type RejectionFee = RejectionFee;
     type TitleMaxLength = TitleMaxLength;

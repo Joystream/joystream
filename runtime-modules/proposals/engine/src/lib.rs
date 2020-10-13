@@ -1,5 +1,5 @@
 //! # Proposals engine module
-//! Proposals `engine` module for the Joystream platform. Version 2.
+//! Proposals `engine` module for the Joystream platform. Version 3.
 //! The main component of the proposals system. Provides methods and extrinsics to create and
 //! vote for proposals, inspired by Parity **Democracy module**.
 //!
@@ -97,7 +97,7 @@
 //!                 proposal_parameters : parameters,
 //!                 title,
 //!                 description,
-//!                 stake_balance: None,
+//!                 staking_account_id: None,
 //!                 encoded_dispatchable_call_code: encoded_proposal_code,
 //!                 exact_execution_block: None,
 //!             };
@@ -115,13 +115,12 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-use types::{ApprovedProposalData, FinalizedProposalData, ProposalStakeManager};
+use types::{ApprovedProposalData, FinalizedProposalData, MemberId};
 
 pub use types::{
-    ActiveStake, ApprovedProposalStatus, BalanceOf, CurrencyOf, DefaultStakeHandlerProvider,
-    FinalizationData, NegativeImbalance, Proposal, ProposalCodeDecoder, ProposalCreationParameters,
-    ProposalDecisionStatus, ProposalExecutable, ProposalParameters, ProposalStatus, StakeHandler,
-    StakeHandlerProvider, VoteKind, VotersParameters, VotingResults,
+    ActiveStake, ApprovedProposalStatus, BalanceOf, FinalizationData, Proposal,
+    ProposalCodeDecoder, ProposalCreationParameters, ProposalDecisionStatus, ProposalExecutable,
+    ProposalParameters, ProposalStatus, StakingHandler, VoteKind, VotersParameters, VotingResults,
 };
 
 pub(crate) mod types;
@@ -132,7 +131,7 @@ mod tests;
 use codec::Decode;
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
 use frame_support::storage::IterableStorageMap;
-use frame_support::traits::{Currency, Get};
+use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, print, Parameter, StorageDoubleMap,
 };
@@ -141,12 +140,11 @@ use sp_std::vec::Vec;
 use system::{ensure_root, RawOrigin};
 
 use common::origin::ActorOriginValidator;
-
-type MemberId<T> = <T as membership::Trait>::MemberId;
+use frame_support::sp_std::marker::PhantomData;
 
 /// Proposals engine trait.
 pub trait Trait:
-    system::Trait + pallet_timestamp::Trait + stake::Trait + membership::Trait
+    system::Trait + pallet_timestamp::Trait + membership::Trait + balances::Trait
 {
     /// Engine event type.
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
@@ -167,8 +165,8 @@ pub trait Trait:
     /// Proposal Id type
     type ProposalId: From<u32> + Parameter + Default + Copy;
 
-    /// Provides stake logic implementation. Can be used to mock stake logic.
-    type StakeHandlerProvider: StakeHandlerProvider<Self>;
+    /// Provides stake logic implementation.
+    type StakingHandler: StakingHandler<Self>;
 
     /// The fee is applied when cancel the proposal. A fee would be slashed (burned).
     type CancellationFee: Get<BalanceOf<Self>>;
@@ -214,7 +212,6 @@ decl_event!(
         MemberId = MemberId<T>,
         <T as system::Trait>::BlockNumber,
         <T as system::Trait>::AccountId,
-        <T as stake::Trait>::StakeId,
     {
         /// Emits on proposal creation.
         /// Params:
@@ -226,7 +223,7 @@ decl_event!(
         /// Params:
         /// - Id of a updated proposal.
         /// - New proposal status
-        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber, StakeId, AccountId>),
+        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber, AccountId>),
 
         /// Emits on voting for the proposal
         /// Params:
@@ -293,6 +290,9 @@ decl_error! {
 
         /// Exact execution block cannot be less than current_block.
         InvalidExactExecutionBlock,
+
+        /// There is not enough balance for a stake.
+        InsufficientBalanceForStake,
     }
 }
 
@@ -324,10 +324,6 @@ decl_storage! {
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
         pub VoteExistsByProposalByVoter get(fn vote_by_proposal_by_voter):
             double_map hasher(blake2_128_concat)  T::ProposalId, hasher(blake2_128_concat) MemberId<T> => VoteKind;
-
-        /// Map proposal id by stake id. Required by StakingEventsHandler callback call
-        pub StakesProposals get(fn stakes_proposals): map hasher(blake2_128_concat)
-            T::StakeId =>  T::ProposalId;
     }
 }
 
@@ -452,7 +448,7 @@ impl<T: Trait> Module<T> {
     pub fn create_proposal(
         creation_params: ProposalCreationParameters<
             T::BlockNumber,
-            types::BalanceOf<T>,
+            BalanceOf<T>,
             MemberId<T>,
             T::AccountId,
         >,
@@ -461,7 +457,7 @@ impl<T: Trait> Module<T> {
             &creation_params.proposal_parameters,
             &creation_params.title,
             &creation_params.description,
-            creation_params.stake_balance,
+            creation_params.staking_account_id.clone(),
             creation_params.exact_execution_block,
         )?;
 
@@ -472,27 +468,20 @@ impl<T: Trait> Module<T> {
         let new_proposal_id = next_proposal_count_value;
         let proposal_id = T::ProposalId::from(new_proposal_id);
 
-        // Check stake_balance for value and create stake if value exists, else take None
-        // If create_stake() returns error - return error from extrinsic
-        let stake_id_result = creation_params
-            .stake_balance
-            .map(|stake_amount| {
-                ProposalStakeManager::<T>::create_stake(
-                    stake_amount,
-                    creation_params.account_id.clone(),
-                )
-            })
-            .transpose()?;
+        let stake_data =
+            if let Some(stake_balance) = creation_params.proposal_parameters.required_stake {
+                if let Some(staking_account_id) = creation_params.staking_account_id {
+                    T::StakingHandler::lock(&staking_account_id, stake_balance);
 
-        let mut stake_data = None;
-        if let Some(stake_id) = stake_id_result {
-            stake_data = Some(ActiveStake {
-                stake_id,
-                source_account_id: creation_params.account_id,
-            });
-
-            <StakesProposals<T>>::insert(stake_id, proposal_id);
-        }
+                    Some(ActiveStake {
+                        source_account_id: staking_account_id,
+                    })
+                } else {
+                    return Err(Error::<T>::EmptyStake.into());
+                }
+            } else {
+                None
+            };
 
         let new_proposal = Proposal {
             created_at: Self::current_block(),
@@ -528,10 +517,10 @@ impl<T: Trait> Module<T> {
     /// - provided parameters: approval_threshold_percentage and slashing_threshold_percentage > 0
     /// - provided stake balance and parameters.required_stake are valid
     pub fn ensure_create_proposal_parameters_are_valid(
-        parameters: &ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
+        parameters: &ProposalParameters<T::BlockNumber, BalanceOf<T>>,
         title: &[u8],
         description: &[u8],
-        stake_balance: Option<types::BalanceOf<T>>,
+        staking_account_id: Option<T::AccountId>,
         exact_execution_block: Option<T::BlockNumber>,
     ) -> DispatchResult {
         ensure!(!title.is_empty(), Error::<T>::EmptyTitleProvided);
@@ -564,22 +553,26 @@ impl<T: Trait> Module<T> {
             Error::<T>::InvalidParameterSlashingThreshold
         );
 
-        // check stake parameters
-        if let Some(required_stake) = parameters.required_stake {
-            if let Some(staked_balance) = stake_balance {
+        // Check stake parameters.
+        if staking_account_id.is_some() && parameters.required_stake.is_none() {
+            return Err(Error::<T>::StakeShouldBeEmpty.into());
+        }
+
+        if let Some(stake_balance) = parameters.required_stake {
+            if let Some(staking_account_id) = staking_account_id {
                 ensure!(
-                    required_stake == staked_balance,
-                    Error::<T>::StakeDiffersFromRequired
+                    T::StakingHandler::is_enough_balance_for_stake(
+                        &staking_account_id,
+                        stake_balance
+                    ),
+                    Error::<T>::InsufficientBalanceForStake
                 );
             } else {
                 return Err(Error::<T>::EmptyStake.into());
             }
         }
 
-        if stake_balance.is_some() && parameters.required_stake.is_none() {
-            return Err(Error::<T>::StakeShouldBeEmpty.into());
-        }
-
+        // Check execution block.
         if let Some(execution_block) = exact_execution_block {
             if execution_block == Zero::zero() {
                 return Err(Error::<T>::ZeroExactExecutionBlock.into());
@@ -592,38 +585,6 @@ impl<T: Trait> Module<T> {
         }
 
         Ok(())
-    }
-
-    /// Callback from StakingEventsHandler. Refunds unstaked imbalance back to the source account.
-    /// There can be a lot of invariant breaks in the scope of this proposal.
-    /// Such situations are handled by adding error messages to the log.
-    pub fn refund_proposal_stake(stake_id: T::StakeId, imbalance: NegativeImbalance<T>) {
-        if <StakesProposals<T>>::contains_key(stake_id) {
-            let proposal_id = Self::stakes_proposals(stake_id);
-
-            if <Proposals<T>>::contains_key(proposal_id) {
-                let proposal = Self::proposals(proposal_id);
-
-                if let ProposalStatus::Active(active_stake_result) = proposal.status {
-                    if let Some(active_stake) = active_stake_result {
-                        let refunding_result = CurrencyOf::<T>::resolve_into_existing(
-                            &active_stake.source_account_id,
-                            imbalance,
-                        );
-
-                        if refunding_result.is_err() {
-                            print("Broken invariant: cannot refund");
-                        }
-                    }
-                } else {
-                    print("Broken invariant: proposal status is not Active");
-                }
-            } else {
-                print("Broken invariant: proposal doesn't exist");
-            }
-        } else {
-            print("Broken invariant: stake doesn't exist");
-        }
     }
 
     /// Resets voting results for active proposals.
@@ -677,12 +638,8 @@ impl<T: Trait> Module<T> {
     fn veto_pending_execution_proposal(proposal_id: T::ProposalId, proposal: ProposalOf<T>) {
         <PendingExecutionProposalIds<T>>::remove(proposal_id);
 
-        let vetoed_proposal_status = ProposalStatus::finalized(
-            ProposalDecisionStatus::Vetoed,
-            None,
-            None,
-            Self::current_block(),
-        );
+        let vetoed_proposal_status =
+            ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, Self::current_block());
 
         <Proposals<T>>::insert(
             proposal_id,
@@ -714,9 +671,10 @@ impl<T: Trait> Module<T> {
             Err(error) => ApprovedProposalStatus::failed_execution(error.what()),
         };
 
-        let proposal_execution_status = approved_proposal
-            .finalisation_status_data
-            .create_approved_proposal_status(approved_proposal_status);
+        let proposal_execution_status = ProposalStatus::Finalized(FinalizationData {
+            proposal_status: ProposalDecisionStatus::Approved(approved_proposal_status),
+            finalized_at: approved_proposal.finalisation_status_data.finalized_at,
+        });
 
         Self::deposit_event(RawEvent::ProposalStatusUpdated(
             approved_proposal.proposal_id,
@@ -751,16 +709,11 @@ impl<T: Trait> Module<T> {
             // deal with stakes if necessary
             let slash_balance =
                 Self::calculate_slash_balance(&decision_status, &proposal.parameters);
-            let slash_and_unstake_result =
-                Self::slash_and_unstake(active_stake.clone(), slash_balance);
+            Self::slash_and_unstake(active_stake, slash_balance);
 
             // create finalized proposal status with error if any
-            let new_proposal_status = ProposalStatus::finalized(
-                decision_status,
-                slash_and_unstake_result.err(),
-                active_stake,
-                Self::current_block(),
-            );
+            let new_proposal_status =
+                ProposalStatus::finalized(decision_status, Self::current_block());
 
             if clean_finilized_proposal {
                 Self::remove_proposal_data(&proposal_id);
@@ -780,27 +733,25 @@ impl<T: Trait> Module<T> {
 
     // Slashes the stake and perform unstake only in case of existing stake
     fn slash_and_unstake(
-        current_stake_data: Option<ActiveStake<T::StakeId, T::AccountId>>,
+        current_stake_data: Option<ActiveStake<T::AccountId>>,
         slash_balance: BalanceOf<T>,
-    ) -> Result<(), &'static str> {
+    ) {
         // only if stake exists
         if let Some(stake_data) = current_stake_data {
             if !slash_balance.is_zero() {
-                ProposalStakeManager::<T>::slash(stake_data.stake_id, slash_balance)?;
+                T::StakingHandler::slash(&stake_data.source_account_id, Some(slash_balance));
             }
 
-            ProposalStakeManager::<T>::remove_stake(stake_data.stake_id)?;
+            T::StakingHandler::unlock(&stake_data.source_account_id);
         }
-
-        Ok(())
     }
 
     // Calculates required slash based on finalization ProposalDecisionStatus and proposal parameters.
     // Method visibility allows testing.
     pub(crate) fn calculate_slash_balance(
         decision_status: &ProposalDecisionStatus,
-        proposal_parameters: &ProposalParameters<T::BlockNumber, types::BalanceOf<T>>,
-    ) -> types::BalanceOf<T> {
+        proposal_parameters: &ProposalParameters<T::BlockNumber, BalanceOf<T>>,
+    ) -> BalanceOf<T> {
         match decision_status {
             ProposalDecisionStatus::Rejected | ProposalDecisionStatus::Expired => {
                 T::RejectionFee::get()
@@ -888,8 +839,7 @@ type FinalizedProposal<T> = FinalizedProposalData<
     <T as Trait>::ProposalId,
     <T as system::Trait>::BlockNumber,
     MemberId<T>,
-    types::BalanceOf<T>,
-    <T as stake::Trait>::StakeId,
+    BalanceOf<T>,
     <T as system::Trait>::AccountId,
 >;
 
@@ -898,8 +848,7 @@ type ApprovedProposal<T> = ApprovedProposalData<
     <T as Trait>::ProposalId,
     <T as system::Trait>::BlockNumber,
     MemberId<T>,
-    types::BalanceOf<T>,
-    <T as stake::Trait>::StakeId,
+    BalanceOf<T>,
     <T as system::Trait>::AccountId,
 >;
 
@@ -907,7 +856,93 @@ type ApprovedProposal<T> = ApprovedProposalData<
 type ProposalOf<T> = Proposal<
     <T as system::Trait>::BlockNumber,
     MemberId<T>,
-    types::BalanceOf<T>,
-    <T as stake::Trait>::StakeId,
+    BalanceOf<T>,
     <T as system::Trait>::AccountId,
 >;
+
+pub struct StakingManager<T: Trait, LockId: Get<LockIdentifier>> {
+    trait_marker: PhantomData<T>,
+    lock_id_marker: PhantomData<LockId>,
+}
+
+impl<T: Trait, LockId: Get<LockIdentifier>> StakingHandler<T> for StakingManager<T, LockId> {
+    fn lock(account_id: &T::AccountId, amount: BalanceOf<T>) {
+        <balances::Module<T>>::set_lock(LockId::get(), &account_id, amount, WithdrawReasons::all())
+    }
+
+    fn unlock(account_id: &T::AccountId) {
+        T::Currency::remove_lock(LockId::get(), &account_id);
+    }
+
+    fn slash(account_id: &T::AccountId, amount: Option<BalanceOf<T>>) -> BalanceOf<T> {
+        let locks = <balances::Module<T>>::locks(&account_id);
+
+        let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
+
+        let mut actually_slashed_balance = Default::default();
+        if let Some(existing_lock) = existing_lock {
+            Self::unlock(&account_id);
+
+            let mut slashable_amount = existing_lock.amount;
+            if let Some(amount) = amount {
+                if existing_lock.amount > amount {
+                    let new_amount = existing_lock.amount - amount;
+                    Self::lock(&account_id, new_amount);
+
+                    slashable_amount = amount;
+                }
+            }
+
+            let _ = <balances::Module<T>>::slash(&account_id, slashable_amount);
+
+            actually_slashed_balance = slashable_amount
+        }
+
+        actually_slashed_balance
+    }
+
+    fn set_stake(account_id: &T::AccountId, new_stake: BalanceOf<T>) -> DispatchResult {
+        let current_stake = Self::current_stake(account_id);
+
+        //Unlock previous stake if its not zero.
+        if current_stake > Zero::zero() {
+            Self::unlock(account_id);
+        }
+
+        if !Self::is_enough_balance_for_stake(account_id, new_stake) {
+            //Restore previous stake if its not zero.
+            if current_stake > Zero::zero() {
+                Self::lock(account_id, current_stake);
+            }
+            return Err(DispatchError::Other("Not enough balance for a new stake."));
+        }
+
+        Self::lock(account_id, new_stake);
+
+        Ok(())
+    }
+
+    fn is_member_staking_account(_member_id: &MemberId<T>, _account_id: &T::AccountId) -> bool {
+        true
+    }
+
+    fn is_account_free_of_conflicting_stakes(account_id: &T::AccountId) -> bool {
+        let locks = <balances::Module<T>>::locks(&account_id);
+
+        let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
+
+        existing_lock.is_none()
+    }
+
+    fn is_enough_balance_for_stake(account_id: &T::AccountId, amount: BalanceOf<T>) -> bool {
+        <balances::Module<T>>::usable_balance(account_id) >= amount
+    }
+
+    fn current_stake(account_id: &T::AccountId) -> BalanceOf<T> {
+        let locks = <balances::Module<T>>::locks(&account_id);
+
+        let existing_lock = locks.iter().find(|lock| lock.id == LockId::get());
+
+        existing_lock.map_or(Zero::zero(), |lock| lock.amount)
+    }
+}

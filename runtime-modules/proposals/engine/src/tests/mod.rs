@@ -7,14 +7,16 @@ use codec::Encode;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, OnFinalize, OnInitialize};
 use frame_support::{StorageDoubleMap, StorageMap, StorageValue};
-use sp_std::rc::Rc;
 use system::RawOrigin;
 use system::{EventRecord, Phase};
 
 pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, balance: u64) {
     let initial_balance = Balances::total_issuance();
     {
-        let _ = <Test as stake::Trait>::Currency::deposit_creating(&account_id, balance);
+        let _ = <Test as common::currency::GovernanceCurrency>::Currency::deposit_creating(
+            &account_id,
+            balance,
+        );
     }
     assert_eq!(Balances::total_issuance(), initial_balance + balance);
 }
@@ -70,7 +72,7 @@ struct DummyProposalFixture {
     proposal_code: Vec<u8>,
     title: Vec<u8>,
     description: Vec<u8>,
-    stake_balance: Option<BalanceOf<Test>>,
+    staking_account_id: Option<u64>,
     exact_execution_block: Option<u64>,
 }
 
@@ -96,7 +98,7 @@ impl Default for DummyProposalFixture {
             proposal_code: dummy_proposal.encode(),
             title,
             description,
-            stake_balance: None,
+            staking_account_id: None,
             exact_execution_block: None,
         }
     }
@@ -126,9 +128,9 @@ impl DummyProposalFixture {
         }
     }
 
-    fn with_stake(self, stake_balance: BalanceOf<Test>) -> Self {
+    fn with_stake(self, account_id: u64) -> Self {
         DummyProposalFixture {
-            stake_balance: Some(stake_balance),
+            staking_account_id: Some(account_id),
             ..self
         }
     }
@@ -147,7 +149,7 @@ impl DummyProposalFixture {
             proposal_parameters: self.parameters,
             title: self.title,
             description: self.description,
-            stake_balance: self.stake_balance,
+            staking_account_id: self.staking_account_id,
             encoded_dispatchable_call_code: self.proposal_code,
             exact_execution_block: self.exact_execution_block,
         });
@@ -260,7 +262,7 @@ impl VoteGenerator {
 
 struct EventFixture;
 impl EventFixture {
-    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64, u64, u64>>) {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64, u64>>) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
@@ -273,7 +275,7 @@ impl EventFixture {
         assert_eq!(System::events(), expected_events);
     }
 
-    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u32, u64, u64, u64, u64>) {
+    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u32, u64, u64, u64>) {
         let converted_event = TestEvent::engine(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
@@ -474,10 +476,7 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
 
         EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
             proposal_id,
-            ProposalStatus::finalized_successfully(
-                ProposalDecisionStatus::Rejected,
-                starting_block,
-            ),
+            ProposalStatus::finalized(ProposalDecisionStatus::Rejected, starting_block),
         ));
 
         assert!(!<ActiveProposalIds<Test>>::contains_key(proposal_id));
@@ -584,7 +583,7 @@ fn cancel_proposal_succeeds() {
 
         EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
             proposal_id,
-            ProposalStatus::finalized(ProposalDecisionStatus::Canceled, None, None, starting_block),
+            ProposalStatus::finalized(ProposalDecisionStatus::Canceled, starting_block),
         ));
     });
 }
@@ -671,7 +670,7 @@ fn veto_proposal_succeeds() {
 
         EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
             proposal_id,
-            ProposalStatus::finalized_successfully(ProposalDecisionStatus::Vetoed, starting_block),
+            ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, starting_block),
         ));
 
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
@@ -728,7 +727,7 @@ fn veto_proposal_event_emitted() {
             RawEvent::ProposalCreated(1, 1),
             RawEvent::ProposalStatusUpdated(
                 1,
-                ProposalStatus::finalized_successfully(ProposalDecisionStatus::Vetoed, 1),
+                ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, 1),
             ),
         ]);
     });
@@ -752,8 +751,6 @@ fn cancel_proposal_event_emitted() {
                 1,
                 ProposalStatus::Finalized(FinalizationData {
                     proposal_status: ProposalDecisionStatus::Canceled,
-                    encoded_unstaking_error_due_to_broken_runtime: None,
-                    stake_data_after_unstaking_error: None,
                     finalized_at: 1,
                 }),
             ),
@@ -799,10 +796,7 @@ fn create_proposal_and_expire_it() {
 
         EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
             proposal_id,
-            ProposalStatus::finalized_successfully(
-                ProposalDecisionStatus::Expired,
-                expected_expriration_block,
-            ),
+            ProposalStatus::finalized(ProposalDecisionStatus::Expired, expected_expriration_block),
         ));
     });
 }
@@ -908,7 +902,7 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 created_at: 0,
-                status: ProposalStatus::finalized_successfully(ProposalDecisionStatus::Vetoed, 2),
+                status: ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, 2),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults {
@@ -1020,9 +1014,12 @@ fn create_dummy_proposal_succeeds_with_stake() {
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture.params())
             .with_account_id(account_id)
-            .with_stake(200);
+            .with_stake(account_id);
 
-        let _imbalance = <Test as stake::Trait>::Currency::deposit_creating(&account_id, 500);
+        let _imbalance = <Test as common::currency::GovernanceCurrency>::Currency::deposit_creating(
+            &account_id,
+            500,
+        );
 
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
@@ -1035,7 +1032,6 @@ fn create_dummy_proposal_succeeds_with_stake() {
                 proposer_id: 1,
                 created_at: 0,
                 status: ProposalStatus::Active(Some(ActiveStake {
-                    stake_id: 0, // valid stake_id
                     source_account_id: 1
                 })),
                 title: b"title".to_vec(),
@@ -1058,36 +1054,31 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture.params())
             .with_account_id(account_id)
-            .with_stake(required_stake);
+            .with_stake(account_id);
 
-        dummy_proposal.create_proposal_and_assert(Err(DispatchError::Other("InsufficientBalance")));
+        dummy_proposal
+            .create_proposal_and_assert(Err(Error::<Test>::InsufficientBalanceForStake.into()));
     });
 }
 
 #[test]
-fn create_proposal_fais_with_invalid_stake_parameters() {
+fn create_proposal_fais_with_insufficient_stake_parameters() {
     initial_test_ext().execute_with(|| {
         let parameters_fixture = ProposalParametersFixture::default();
 
         let mut dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture.params())
-            .with_stake(200);
+            .with_stake(1);
 
         dummy_proposal.create_proposal_and_assert(Err(Error::<Test>::StakeShouldBeEmpty.into()));
-
-        let parameters_fixture_stake_200 = parameters_fixture.with_required_stake(200);
-        dummy_proposal =
-            DummyProposalFixture::default().with_parameters(parameters_fixture_stake_200.params());
-
-        dummy_proposal.create_proposal_and_assert(Err(Error::<Test>::EmptyStake.into()));
 
         let parameters_fixture_stake_300 = parameters_fixture.with_required_stake(300);
         dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture_stake_300.params())
-            .with_stake(200);
+            .with_stake(1);
 
         dummy_proposal
-            .create_proposal_and_assert(Err(Error::<Test>::StakeDiffersFromRequired.into()));
+            .create_proposal_and_assert(Err(Error::<Test>::InsufficientBalanceForStake.into()));
     });
 }
 
@@ -1113,20 +1104,22 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
             .with_account_id(account_id)
-            .with_stake(stake_amount);
+            .with_stake(1);
 
         let account_balance = 500;
-        let _imbalance =
-            <Test as stake::Trait>::Currency::deposit_creating(&account_id, account_balance);
+        let _imbalance = <Test as common::currency::GovernanceCurrency>::Currency::deposit_creating(
+            &account_id,
+            account_balance,
+        );
 
         assert_eq!(
-            <Test as stake::Trait>::Currency::total_balance(&account_id),
+            <Test as common::currency::GovernanceCurrency>::Currency::usable_balance(&account_id),
             account_balance
         );
 
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
         assert_eq!(
-            <Test as stake::Trait>::Currency::total_balance(&account_id),
+            <Test as common::currency::GovernanceCurrency>::Currency::usable_balance(&account_id),
             account_balance - stake_amount
         );
 
@@ -1137,7 +1130,6 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
             proposer_id: 1,
             created_at: starting_block,
             status: ProposalStatus::Active(Some(ActiveStake {
-                stake_id: 0,
                 source_account_id: 1,
             })),
             title: b"title".to_vec(),
@@ -1153,15 +1145,12 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
         let finalization_block = starting_block + parameters.voting_period;
         EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
             proposal_id,
-            ProposalStatus::finalized_successfully(
-                ProposalDecisionStatus::Expired,
-                finalization_block,
-            ),
+            ProposalStatus::finalized(ProposalDecisionStatus::Expired, finalization_block),
         ));
 
         let rejection_fee = RejectionFee::get();
         assert_eq!(
-            <Test as stake::Trait>::Currency::total_balance(&account_id),
+            <Test as common::currency::GovernanceCurrency>::Currency::usable_balance(&account_id),
             account_balance - rejection_fee
         );
     });
@@ -1189,20 +1178,22 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
             .with_account_id(account_id.clone())
-            .with_stake(stake_amount);
+            .with_stake(1);
 
         let account_balance = 500;
-        let _imbalance =
-            <Test as stake::Trait>::Currency::deposit_creating(&account_id, account_balance);
+        let _imbalance = <Test as common::currency::GovernanceCurrency>::Currency::deposit_creating(
+            &account_id,
+            account_balance,
+        );
 
         assert_eq!(
-            <Test as stake::Trait>::Currency::total_balance(&account_id),
+            <Test as common::currency::GovernanceCurrency>::Currency::usable_balance(&account_id),
             account_balance
         );
 
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
         assert_eq!(
-            <Test as stake::Trait>::Currency::total_balance(&account_id),
+            <Test as common::currency::GovernanceCurrency>::Currency::usable_balance(&account_id),
             account_balance - stake_amount
         );
 
@@ -1213,7 +1204,6 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             proposer_id: 1,
             created_at: starting_block,
             status: ProposalStatus::Active(Some(ActiveStake {
-                stake_id: 0,
                 source_account_id: 1,
             })),
             title: b"title".to_vec(),
@@ -1232,69 +1222,60 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 
         EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
             proposal_id,
-            ProposalStatus::finalized_successfully(
-                ProposalDecisionStatus::Canceled,
-                starting_block,
-            ),
+            ProposalStatus::finalized(ProposalDecisionStatus::Canceled, starting_block),
         ));
 
         let cancellation_fee = CancellationFee::get();
         assert_eq!(
-            <Test as stake::Trait>::Currency::total_balance(&account_id),
+            <Test as common::currency::GovernanceCurrency>::Currency::total_balance(&account_id),
             account_balance - cancellation_fee
         );
     });
 }
 
 #[test]
-fn finalize_proposal_using_stake_mocks_succeeds() {
-    handle_mock(|| {
-        initial_test_ext().execute_with(|| {
-            let mock = {
-                let mut mock = crate::types::MockStakeHandler::<Test>::new();
-                mock.expect_create_stake().times(1).returning(|| Ok(1));
-
-                mock.expect_make_stake_imbalance()
-                    .times(1)
-                    .returning(|_, _| Ok(crate::types::NegativeImbalance::<Test>::new(200)));
-
-                mock.expect_stake().times(1).returning(|_, _| Ok(()));
-
-                mock.expect_remove_stake().times(1).returning(|_| Ok(()));
-
-                mock.expect_unstake().times(1).returning(|_| Ok(()));
-
-                mock.expect_slash().times(1).returning(|_, _| Ok(()));
-
-                Rc::new(mock)
-            };
-            set_stake_handler_impl(mock.clone());
-
-            let account_id = 1;
-
-            let stake_amount = 200;
-            let parameters_fixture =
-                ProposalParametersFixture::default().with_required_stake(stake_amount);
-            let dummy_proposal = DummyProposalFixture::default()
-                .with_parameters(parameters_fixture.params())
-                .with_account_id(account_id)
-                .with_stake(stake_amount);
-
-            let _proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
-
-            run_to_block_and_finalize(5);
-        });
-    });
-}
-
-#[test]
 fn proposal_slashing_succeeds() {
     initial_test_ext().execute_with(|| {
+        // to enable events
         let starting_block = 1;
         run_to_block_and_finalize(starting_block);
 
-        let dummy_proposal = DummyProposalFixture::default();
+        let account_id = 1;
+
+        let initial_balance = 100000;
+        increase_total_balance_issuance_using_account_id(account_id, initial_balance);
+
+        let stake_amount = 200;
+        let parameters = ProposalParameters {
+            voting_period: 3,
+            approval_quorum_percentage: 50,
+            approval_threshold_percentage: 60,
+            slashing_quorum_percentage: 60,
+            slashing_threshold_percentage: 60,
+            grace_period: 5,
+            required_stake: Some(stake_amount),
+        };
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters)
+            .with_account_id(account_id.clone())
+            .with_stake(account_id);
+
+        assert_eq!(
+            <Test as common::currency::GovernanceCurrency>::Currency::total_balance(&account_id),
+            initial_balance
+        );
+
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        assert_eq!(
+            <Test as common::currency::GovernanceCurrency>::Currency::total_balance(&account_id),
+            initial_balance
+        );
+
+        assert_eq!(
+            <Test as common::currency::GovernanceCurrency>::Currency::usable_balance(&account_id),
+            initial_balance - stake_amount
+        );
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
         vote_generator.vote_and_assert_ok(VoteKind::Reject);
@@ -1309,71 +1290,15 @@ fn proposal_slashing_succeeds() {
         assert!(!<ActiveProposalIds<Test>>::contains_key(proposal_id));
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
 
+        assert_eq!(
+            <Test as common::currency::GovernanceCurrency>::Currency::total_balance(&account_id),
+            initial_balance - stake_amount
+        );
+
         EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
             proposal_id,
-            ProposalStatus::finalized_successfully(ProposalDecisionStatus::Slashed, starting_block),
+            ProposalStatus::finalized(ProposalDecisionStatus::Slashed, starting_block),
         ));
-    });
-}
-
-#[test]
-fn finalize_proposal_using_stake_mocks_failed() {
-    handle_mock(|| {
-        initial_test_ext().execute_with(|| {
-            // to enable events
-            let starting_block = 1;
-            run_to_block_and_finalize(starting_block);
-
-            let mock = {
-                let mut mock = crate::types::MockStakeHandler::<Test>::new();
-                mock.expect_create_stake().times(1).returning(|| Ok(1));
-
-                mock.expect_remove_stake()
-                    .times(1)
-                    .returning(|_| Err("Cannot remove stake"));
-
-                mock.expect_make_stake_imbalance()
-                    .times(1)
-                    .returning(|_, _| Ok(crate::types::NegativeImbalance::<Test>::new(200)));
-
-                mock.expect_stake().times(1).returning(|_, _| Ok(()));
-
-                mock.expect_unstake().times(1).returning(|_| Ok(()));
-
-                mock.expect_slash().times(1).returning(|_, _| Ok(()));
-
-                Rc::new(mock)
-            };
-            set_stake_handler_impl(mock.clone());
-
-            let account_id = 1;
-
-            let stake_amount = 200;
-            let parameters_fixture =
-                ProposalParametersFixture::default().with_required_stake(stake_amount);
-            let dummy_proposal = DummyProposalFixture::default()
-                .with_parameters(parameters_fixture.params())
-                .with_account_id(account_id)
-                .with_stake(stake_amount);
-
-            let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
-
-            run_to_block_and_finalize(5);
-
-            let finalization_block = starting_block + parameters_fixture.parameters.voting_period;
-            EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
-                proposal_id,
-                ProposalStatus::finalized(
-                    ProposalDecisionStatus::Expired,
-                    Some("Cannot remove stake"),
-                    Some(ActiveStake {
-                        stake_id: 1,
-                        source_account_id: 1,
-                    }),
-                    finalization_block,
-                ),
-            ));
-        });
     });
 }
 
@@ -1479,26 +1404,6 @@ fn proposal_counters_are_valid() {
 
         assert_eq!(ActiveProposalCount::get(), 2);
         assert_eq!(ProposalCount::get(), 3);
-    });
-}
-
-#[test]
-fn proposal_stake_cache_is_valid() {
-    initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance_using_account_id(1, 50000);
-
-        let stake = 250u32;
-        let parameters = ProposalParametersFixture::default().with_required_stake(stake.into());
-        let dummy_proposal = DummyProposalFixture::default()
-            .with_parameters(parameters.params())
-            .with_stake(stake as u64);
-
-        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
-        let expected_stake_id = 0;
-        assert_eq!(
-            <StakesProposals<Test>>::get(&expected_stake_id),
-            proposal_id
-        );
     });
 }
 

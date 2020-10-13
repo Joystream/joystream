@@ -1,5 +1,6 @@
 #![cfg(test)]
 
+use frame_support::traits::LockIdentifier;
 use frame_support::{impl_outer_dispatch, impl_outer_origin, parameter_types};
 use sp_core::H256;
 use sp_runtime::curve::PiecewiseLinear;
@@ -78,6 +79,7 @@ parameter_types! {
     pub const TitleMaxLength: u32 = 100;
     pub const DescriptionMaxLength: u32 = 10000;
     pub const MaxActiveProposalLimit: u32 = 100;
+    pub const LockId: LockIdentifier = [2; 8];
 }
 
 impl proposals_engine::Trait for Test {
@@ -86,7 +88,7 @@ impl proposals_engine::Trait for Test {
     type VoterOriginValidator = ();
     type TotalVotersCounter = MockVotersParameters;
     type ProposalId = u32;
-    type StakeHandlerProvider = proposals_engine::DefaultStakeHandlerProvider;
+    type StakingHandler = proposals_engine::StakingManager<Test, LockId>;
     type CancellationFee = CancellationFee;
     type RejectionFee = RejectionFee;
     type TitleMaxLength = TitleMaxLength;

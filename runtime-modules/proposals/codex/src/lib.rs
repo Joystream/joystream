@@ -1,5 +1,5 @@
 //! # Proposals codex module
-//! Proposals `codex` module for the Joystream platform. Version 2.
+//! Proposals `codex` module for the Joystream platform. Version 3.
 //! Component of the proposals system. It contains preset proposal types.
 //!
 //! ## Overview
@@ -73,7 +73,9 @@ use system::ensure_root;
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
 use governance::election_params::ElectionParameters;
-use proposals_engine::{ProposalCreationParameters, ProposalObserver, ProposalParameters};
+use proposals_engine::{
+    BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
+};
 
 pub use crate::proposal_types::{
     AddOpeningParameters, FillOpeningParameters, ProposalsConfigParameters, TerminateRoleParameters,
@@ -94,7 +96,7 @@ struct CreateProposalParameters<T: Trait> {
     pub member_id: MemberId<T>,
     pub title: Vec<u8>,
     pub description: Vec<u8>,
-    pub stake_balance: Option<BalanceOf<T>>,
+    pub staking_account_id: Option<T::AccountId>,
     pub proposal_code: Vec<u8>,
     pub proposal_parameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>,
     pub proposal_details: ProposalDetailsOf<T>,
@@ -128,13 +130,6 @@ pub trait Trait:
     type ProposalEncoder: ProposalEncoder<Self>;
 }
 
-/// Balance alias for `stake` module
-pub type BalanceOf<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-
-/// Currency alias for `stake` module
-pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
-
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
 pub type BalanceOfGovernanceCurrency<T> =
     <<T as common::currency::GovernanceCurrency>::Currency as Currency<
@@ -144,10 +139,6 @@ pub type BalanceOfGovernanceCurrency<T> =
 /// Balance alias for token mint balance from `token mint` module. TODO: replace with BalanceOf
 pub type BalanceOfMint<T> =
     <<T as minting::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
-
-/// Negative imbalance alias for staking
-pub type NegativeImbalance<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
 
 type MemberId<T> = <T as membership::Trait>::MemberId;
 
@@ -334,7 +325,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            staking_account_id: Option<T::AccountId>,
             text: Vec<u8>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -348,7 +339,7 @@ decl_module! {
                 member_id,
                 title,
                 description,
-                stake_balance,
+                staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::text_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -366,7 +357,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            staking_account_id: Option<T::AccountId>,
             wasm: Vec<u8>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -380,7 +371,7 @@ decl_module! {
                 member_id,
                 title,
                 description,
-                stake_balance,
+                staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::runtime_upgrade_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -398,7 +389,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            staking_account_id: Option<T::AccountId>,
             balance: BalanceOfMint<T>,
             destination: T::AccountId,
             exact_execution_block: Option<T::BlockNumber>,
@@ -415,7 +406,7 @@ decl_module! {
                 member_id,
                 title,
                 description,
-                stake_balance,
+                staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::spending_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -433,7 +424,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            staking_account_id: Option<T::AccountId>,
             new_validator_count: u32,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -453,7 +444,7 @@ decl_module! {
                 member_id,
                 title,
                 description,
-                stake_balance,
+                staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::set_validator_count_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -471,7 +462,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            staking_account_id: Option<T::AccountId>,
             add_opening_parameters: AddOpeningParameters<T::BlockNumber, BalanceOfGovernanceCurrency<T>>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -481,7 +472,7 @@ decl_module! {
                 member_id,
                 title,
                 description,
-                stake_balance,
+                staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::add_working_group_leader_opening_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -499,7 +490,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            staking_account_id: Option<T::AccountId>,
             opening_id: working_group::OpeningId<T>,
             working_group: WorkingGroup,
             exact_execution_block: Option<T::BlockNumber>,
@@ -510,7 +501,7 @@ decl_module! {
                 member_id,
                 title,
                 description,
-                stake_balance,
+                staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::begin_review_working_group_leader_applications_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -528,7 +519,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            staking_account_id: Option<T::AccountId>,
             fill_opening_parameters: FillOpeningParameters<
                 T::BlockNumber,
                 BalanceOfMint<T>,
@@ -543,7 +534,7 @@ decl_module! {
                 member_id,
                 title,
                 description,
-                stake_balance,
+                staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::fill_working_group_leader_opening_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -561,7 +552,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            staking_account_id: Option<T::AccountId>,
             mint_balance: BalanceOfMint<T>,
             working_group: WorkingGroup,
             exact_execution_block: Option<T::BlockNumber>,
@@ -577,7 +568,7 @@ decl_module! {
                 member_id,
                 title,
                 description,
-                stake_balance,
+                staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::set_working_group_mint_capacity_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -595,7 +586,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            staking_account_id: Option<T::AccountId>,
             worker_id: working_group::WorkerId<T>,
             decreasing_stake: BalanceOf<T>,
             working_group: WorkingGroup,
@@ -614,7 +605,7 @@ decl_module! {
                 member_id,
                 title,
                 description,
-                stake_balance,
+                staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::decrease_working_group_leader_stake_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -632,7 +623,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            staking_account_id: Option<T::AccountId>,
             worker_id: working_group::WorkerId<T>,
             slashing_stake: BalanceOf<T>,
             working_group: WorkingGroup,
@@ -651,7 +642,7 @@ decl_module! {
                 member_id,
                 title,
                 description,
-                stake_balance,
+                staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::slash_working_group_leader_stake_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -669,7 +660,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            staking_account_id: Option<T::AccountId>,
             worker_id: working_group::WorkerId<T>,
             reward_amount: BalanceOfMint<T>,
             working_group: WorkingGroup,
@@ -686,7 +677,7 @@ decl_module! {
                 member_id,
                 title,
                 description,
-                stake_balance,
+                staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::set_working_group_leader_reward_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -704,7 +695,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake_balance: Option<BalanceOf<T>>,
+            staking_account_id: Option<T::AccountId>,
             terminate_role_parameters: TerminateRoleParameters<working_group::WorkerId<T>>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -715,7 +706,7 @@ decl_module! {
                 member_id,
                 title,
                 description,
-                stake_balance,
+                staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::terminate_working_group_leader_role_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
@@ -771,7 +762,7 @@ impl<T: Trait> Module<T> {
             &params.proposal_parameters,
             &params.title,
             &params.description,
-            params.stake_balance,
+            params.staking_account_id.clone(),
             params.exact_execution_block,
         )?;
 
@@ -791,7 +782,7 @@ impl<T: Trait> Module<T> {
             proposal_parameters: params.proposal_parameters,
             title: params.title,
             description: params.description,
-            stake_balance: params.stake_balance,
+            staking_account_id: params.staking_account_id,
             encoded_dispatchable_call_code: params.proposal_code,
             exact_execution_block: params.exact_execution_block,
         };
