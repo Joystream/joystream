@@ -54,7 +54,7 @@ async function main() {
       4
     )
   )
-  console.log('Sending Transaction extrinsic...')
+  console.log(`Sending Transaction extrinsic (${entityOperations.length} operations)...`)
   await txHelper.sendAndCheck(
     ALICE,
     [api.tx.contentDirectory.transaction({ Lead: null }, entityOperations)],
