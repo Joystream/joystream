@@ -974,7 +974,7 @@ decl_module! {
             class_permissions.ensure_entity_creation_not_blocked::<T>()?;
 
             // Ensure actor can create entities
-            class_permissions.ensure_can_create_entities(&account_id, &actor)?;
+            Self::ensure_can_create_entities(&class_permissions, &account_id, &actor)?;
 
             let entity_controller = EntityController::from_actor(&actor);
 
@@ -2131,7 +2131,7 @@ impl<T: Trait> Module<T> {
         // Ensure Entity under given id exists, retrieve corresponding one
         let entity = Self::ensure_known_entity_id(entity_id)?;
 
-        let class = ClassById::get(entity.get_class_id());
+        let class = ClassById::<T>::get(entity.get_class_id());
         Ok((entity, class))
     }
 
@@ -2180,6 +2180,40 @@ impl<T: Trait> Module<T> {
                 .is_subset(entity_property_id_references_with_same_owner_flag_set),
             Error::<T>::AllProvidedPropertyValueIdsMustBeReferencesWithSameOwnerFlagSet
         );
+        Ok(())
+    }
+
+    /// Ensure provided actor can create entities of current `Class`
+    pub fn ensure_can_create_entities(
+        class_permissions: &ClassPermissions<T::CuratorGroupId>,
+        account_id: &T::AccountId,
+        actor: &Actor<T>,
+    ) -> Result<(), Error<T>> {
+        let can_create = match &actor {
+            Actor::Lead => {
+                // Ensure lead authorization performed succesfully
+                ensure_lead_auth_success::<T>(account_id)?;
+                true
+            }
+            Actor::Member(member_id) if class_permissions.any_member_status() => {
+                // Ensure member authorization performed succesfully
+                ensure_member_auth_success::<T>(member_id, account_id)?;
+                true
+            }
+            Actor::Curator(curator_group_id, curator_id)
+                if class_permissions.is_maintainer(curator_group_id) =>
+            {
+                // Authorize curator, performing all checks to ensure curator can act
+                CuratorGroup::<T>::perform_curator_in_group_auth(
+                    curator_id,
+                    curator_group_id,
+                    account_id,
+                )?;
+                true
+            }
+            _ => false,
+        };
+        ensure!(can_create, Error::<T>::ActorCanNotCreateEntities);
         Ok(())
     }
 

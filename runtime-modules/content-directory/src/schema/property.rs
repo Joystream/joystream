@@ -253,7 +253,7 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
     }
 
     /// Ensure property vector length after value inserted is valid
-    fn validate_property_vector_length_after_value_insert<V>(
+    fn validate_property_vector_length_after_value_insert<T: Trait, V>(
         vec: &[V],
         max_len: VecMaxLength,
     ) -> Result<(), Error<T>> {
@@ -290,29 +290,35 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
         ) {
             // Single values
             (InputValue::Bool(_), VecStoredValue::Bool(vec), Type::Bool) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, bool>(
+                    vec,
+                    max_vec_len,
+                )
             }
             (InputValue::Uint16(_), VecStoredValue::Uint16(vec), Type::Uint16) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, u16>(vec, max_vec_len)
             }
             (InputValue::Uint32(_), VecStoredValue::Uint32(vec), Type::Uint32) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, u32>(vec, max_vec_len)
             }
             (InputValue::Uint64(_), VecStoredValue::Uint64(vec), Type::Uint64) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, u64>(vec, max_vec_len)
             }
             (InputValue::Int16(_), VecStoredValue::Int16(vec), Type::Int16) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, i16>(vec, max_vec_len)
             }
             (InputValue::Int32(_), VecStoredValue::Int32(vec), Type::Int32) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, i32>(vec, max_vec_len)
             }
             (InputValue::Int64(_), VecStoredValue::Int64(vec), Type::Int64) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, i64>(vec, max_vec_len)
             }
             (InputValue::Text(text_item), VecStoredValue::Text(vec), Type::Text(text_max_len)) => {
                 Self::validate_max_len_of_text(text_item, *text_max_len)?;
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, Vec<u8>>(
+                    vec,
+                    max_vec_len,
+                )
             }
             (
                 InputValue::TextToHash(text_item),
@@ -322,7 +328,10 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
                 if let Some(text_max_len) = text_max_len {
                     Self::validate_max_len_of_text_to_be_hashed(text_item, *text_max_len)?;
                 }
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, T::Hash>(
+                    vec,
+                    max_vec_len,
+                )
             }
             (
                 InputValue::Reference(entity_id),
@@ -339,7 +348,10 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
                     *same_controller_status,
                     current_entity_controller,
                 )?;
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, T::EntityId>(
+                    vec,
+                    max_vec_len,
+                )
             }
             _ => Err(Error::<T>::PropertyValueTypeDoesNotMatchInternalVectorType),
         }
@@ -568,9 +580,8 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
         class_id: ClassId,
     ) -> Result<Entity<T>, Error<T>> {
         // Ensure Entity under given id exists
-        Module::<T>::ensure_known_entity_id(entity_id)?;
+        let entity = Module::<T>::ensure_known_entity_id(entity_id)?;
 
-        let entity = Module::<T>::entity_by_id(entity_id);
         ensure!(
             entity.get_class_id() == class_id,
             Error::<T>::ReferencedEntityDoesNotMatchItsClass

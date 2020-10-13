@@ -83,40 +83,6 @@ impl<CuratorGroupId: Ord + Default> ClassPermissions<CuratorGroupId> {
         self.maintainers = maintainers
     }
 
-    /// Ensure provided actor can create entities of current `Class`
-    pub fn ensure_can_create_entities<T: Trait>(
-        &self,
-        account_id: &T::AccountId,
-        actor: &Actor<T>,
-    ) -> Result<(), Error<T>> {
-        let can_create = match &actor {
-            Actor::Lead => {
-                // Ensure lead authorization performed succesfully
-                ensure_lead_auth_success::<T>(account_id)?;
-                true
-            }
-            Actor::Member(member_id) if self.any_member => {
-                // Ensure member authorization performed succesfully
-                ensure_member_auth_success::<T>(member_id, account_id)?;
-                true
-            }
-            Actor::Curator(curator_group_id, curator_id)
-                if self.maintainers.contains(curator_group_id) =>
-            {
-                // Authorize curator, performing all checks to ensure curator can act
-                CuratorGroup::<T>::perform_curator_in_group_auth(
-                    curator_id,
-                    curator_group_id,
-                    account_id,
-                )?;
-                true
-            }
-            _ => false,
-        };
-        ensure!(can_create, Error::<T>::ActorCanNotCreateEntities);
-        Ok(())
-    }
-
     /// Ensure entities creation is not blocked on `Class` level
     pub fn ensure_entity_creation_not_blocked<T: Trait>(&self) -> Result<(), Error<T>> {
         ensure!(

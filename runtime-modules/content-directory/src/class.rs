@@ -4,7 +4,7 @@ use super::*;
 #[derive(Encode, Decode, Eq, PartialEq, Default, Clone)]
 pub struct Class<
     EntityId: Default + BaseArithmetic,
-    ClassId: Default + BaseArithmetic,
+    ClassId: Default + BaseArithmetic + Clone,
     CuratorGroupId: Ord + Default,
 > {
     /// Permissions for an instance of a Class.
@@ -48,7 +48,7 @@ pub struct Class<
 
 impl<
         EntityId: Default + BaseArithmetic,
-        ClassId: Default + BaseArithmetic,
+        ClassId: Default + BaseArithmetic + Clone,
         CuratorGroupId: Ord + Default,
     > Class<EntityId, ClassId, CuratorGroupId>
 {
@@ -224,7 +224,7 @@ impl<
     /// Ensure `Property` under given `PropertyId` is unlocked from actor with given `EntityAccessLevel`
     /// return corresponding `Property` by value
     pub fn ensure_class_property_type_unlocked_from<T: Trait>(
-        &self,
+        self,
         in_class_schema_property_id: PropertyId,
         entity_access_level: EntityAccessLevel,
     ) -> Result<Property<ClassId>, Error<T>> {
@@ -242,7 +242,7 @@ impl<
         // Ensure Property is unlocked from Actor with given EntityAccessLevel
         class_property.ensure_unlocked_from::<T>(entity_access_level)?;
 
-        Ok(class_property.to_owned())
+        Ok(class_property.clone())
     }
 
     /// Ensure property values were not locked on `Class` level
