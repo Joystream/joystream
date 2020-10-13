@@ -72,7 +72,7 @@ struct DummyProposalFixture {
     proposal_code: Vec<u8>,
     title: Vec<u8>,
     description: Vec<u8>,
-    stake: Option<Stake<u64>>,
+    staking_account_id: Option<u64>,
     exact_execution_block: Option<u64>,
 }
 
@@ -98,7 +98,7 @@ impl Default for DummyProposalFixture {
             proposal_code: dummy_proposal.encode(),
             title,
             description,
-            stake: None,
+            staking_account_id: None,
             exact_execution_block: None,
         }
     }
@@ -130,7 +130,7 @@ impl DummyProposalFixture {
 
     fn with_stake(self, account_id: u64) -> Self {
         DummyProposalFixture {
-            stake: Some(Stake { account_id }),
+            staking_account_id: Some(account_id),
             ..self
         }
     }
@@ -149,7 +149,7 @@ impl DummyProposalFixture {
             proposal_parameters: self.parameters,
             title: self.title,
             description: self.description,
-            stake: self.stake,
+            staking_account_id: self.staking_account_id,
             encoded_dispatchable_call_code: self.proposal_code,
             exact_execution_block: self.exact_execution_block,
         });

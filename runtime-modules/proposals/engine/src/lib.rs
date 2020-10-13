@@ -97,7 +97,7 @@
 //!                 proposal_parameters : parameters,
 //!                 title,
 //!                 description,
-//!                 stake: None,
+//!                 staking_account_id: None,
 //!                 encoded_dispatchable_call_code: encoded_proposal_code,
 //!                 exact_execution_block: None,
 //!             };
@@ -120,8 +120,7 @@ use types::{ApprovedProposalData, FinalizedProposalData, MemberId};
 pub use types::{
     ActiveStake, ApprovedProposalStatus, BalanceOf, FinalizationData, Proposal,
     ProposalCodeDecoder, ProposalCreationParameters, ProposalDecisionStatus, ProposalExecutable,
-    ProposalParameters, ProposalStatus, Stake, StakingHandler, VoteKind, VotersParameters,
-    VotingResults,
+    ProposalParameters, ProposalStatus, StakingHandler, VoteKind, VotersParameters, VotingResults,
 };
 
 pub(crate) mod types;
@@ -458,7 +457,7 @@ impl<T: Trait> Module<T> {
             &creation_params.proposal_parameters,
             &creation_params.title,
             &creation_params.description,
-            creation_params.stake.clone(),
+            creation_params.staking_account_id.clone(),
             creation_params.exact_execution_block,
         )?;
 
@@ -471,11 +470,11 @@ impl<T: Trait> Module<T> {
 
         let stake_data =
             if let Some(stake_balance) = creation_params.proposal_parameters.required_stake {
-                if let Some(stake) = creation_params.stake {
-                    T::StakingHandler::lock(&stake.account_id, stake_balance);
+                if let Some(staking_account_id) = creation_params.staking_account_id {
+                    T::StakingHandler::lock(&staking_account_id, stake_balance);
 
                     Some(ActiveStake {
-                        source_account_id: stake.account_id,
+                        source_account_id: staking_account_id,
                     })
                 } else {
                     return Err(Error::<T>::EmptyStake.into());
@@ -521,7 +520,7 @@ impl<T: Trait> Module<T> {
         parameters: &ProposalParameters<T::BlockNumber, BalanceOf<T>>,
         title: &[u8],
         description: &[u8],
-        stake: Option<Stake<T::AccountId>>,
+        staking_account_id: Option<T::AccountId>,
         exact_execution_block: Option<T::BlockNumber>,
     ) -> DispatchResult {
         ensure!(!title.is_empty(), Error::<T>::EmptyTitleProvided);
@@ -555,15 +554,15 @@ impl<T: Trait> Module<T> {
         );
 
         // Check stake parameters.
-        if stake.is_some() && parameters.required_stake.is_none() {
+        if staking_account_id.is_some() && parameters.required_stake.is_none() {
             return Err(Error::<T>::StakeShouldBeEmpty.into());
         }
 
         if let Some(stake_balance) = parameters.required_stake {
-            if let Some(stake) = stake {
+            if let Some(staking_account_id) = staking_account_id {
                 ensure!(
                     T::StakingHandler::is_enough_balance_for_stake(
-                        &stake.account_id,
+                        &staking_account_id,
                         stake_balance
                     ),
                     Error::<T>::InsufficientBalanceForStake

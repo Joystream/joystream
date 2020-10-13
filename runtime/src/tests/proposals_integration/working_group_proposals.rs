@@ -60,9 +60,7 @@ fn add_opening(
             member_id as u64,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(Stake {
-                account_id: account_id.into(),
-            }),
+            Some(account_id.into()),
             AddOpeningParameters {
                 activate_at: activate_at.clone(),
                 commitment: opening_policy_commitment
@@ -98,9 +96,7 @@ fn begin_review_applications(
             member_id,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(Stake {
-                account_id: account_id.into(),
-            }),
+            Some(account_id.into()),
             opening_id,
             working_group,
             None,
@@ -131,9 +127,7 @@ fn fill_opening(
             member_id,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(Stake {
-                account_id: account_id.into(),
-            }),
+            Some(account_id.into()),
             proposals_codex::FillOpeningParameters {
                 opening_id,
                 successful_application_id,
@@ -175,9 +169,7 @@ fn decrease_stake(
             member_id,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(Stake {
-                account_id: account_id.into(),
-            }),
+            Some(account_id.into()),
             leader_worker_id,
             stake_amount,
             working_group,
@@ -208,9 +200,7 @@ fn slash_stake(
             member_id,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(Stake {
-                account_id: account_id.into(),
-            }),
+            Some(account_id.into()),
             leader_worker_id,
             stake_amount,
             working_group,
@@ -241,9 +231,7 @@ fn set_reward(
             member_id as u64,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(Stake {
-                account_id: account_id.into(),
-            }),
+            Some(account_id.into()),
             leader_worker_id,
             reward_amount,
             working_group,
@@ -286,9 +274,7 @@ fn set_mint_capacity<
             member_id,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(Stake {
-                account_id: account_id.into(),
-            }),
+            Some(account_id.into()),
             mint_capacity,
             working_group,
             None,
@@ -318,9 +304,7 @@ fn terminate_role(
             member_id,
             b"title".to_vec(),
             b"body".to_vec(),
-            Some(Stake {
-                account_id: account_id.into(),
-            }),
+            Some(account_id.into()),
             proposals_codex::TerminateRoleParameters {
                 worker_id: leader_worker_id,
                 rationale: Vec::new(),
