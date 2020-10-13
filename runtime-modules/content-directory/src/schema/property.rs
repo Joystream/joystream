@@ -236,7 +236,7 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
     pub fn ensure_property_value_to_update_is_valid<T: Trait>(
         &self,
         value: &InputPropertyValue<T>,
-        current_entity_controller: &EntityController<T>,
+        current_entity_controller: &EntityController<T::MemberId>,
     ) -> Result<(), Error<T>> {
         // Ensure provided InputPropertyValue matches its Type
         self.ensure_property_value_matches_its_type(value)?;
@@ -269,9 +269,9 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
     pub fn ensure_property_value_can_be_inserted_at_property_vector<T: Trait>(
         &self,
         single_value: &InputValue<T>,
-        vec_value: &VecStoredPropertyValue<T>,
+        vec_value: &VecStoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
         index_in_property_vec: VecMaxLength,
-        current_entity_controller: &EntityController<T>,
+        current_entity_controller: &EntityController<T::MemberId>,
     ) -> Result<(), Error<T>> {
         // Ensure, provided index_in_property_vec is valid index of VecInputValue
         vec_value.ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
@@ -519,7 +519,7 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
     pub fn ensure_property_value_is_valid_reference<T: Trait>(
         &self,
         value: &InputPropertyValue<T>,
-        current_entity_controller: &EntityController<T>,
+        current_entity_controller: &EntityController<T::MemberId>,
     ) -> Result<(), Error<T>> {
         match (value, &self.property_type) {
             (
@@ -578,7 +578,7 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
     pub fn ensure_referenced_entity_match_its_class<T: Trait>(
         entity_id: T::EntityId,
         class_id: ClassId,
-    ) -> Result<Entity<T>, Error<T>> {
+    ) -> Result<Entity<T::ClassId, T::MemberId, T::Hash, T::EntityId, T::Nonce>, Error<T>> {
         // Ensure Entity under given id exists
         let entity = Module::<T>::ensure_known_entity_id(entity_id)?;
 
@@ -591,9 +591,9 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
 
     /// Ensure `Entity` can be referenced.
     pub fn ensure_entity_can_be_referenced<T: Trait>(
-        entity: Entity<T>,
+        entity: Entity<T::ClassId, T::MemberId, T::Hash, T::EntityId, T::Nonce>,
         same_controller_status: bool,
-        current_entity_controller: &EntityController<T>,
+        current_entity_controller: &EntityController<T::MemberId>,
     ) -> Result<(), Error<T>> {
         let entity_permissions = entity.get_permissions();
 

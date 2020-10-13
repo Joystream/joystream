@@ -78,12 +78,15 @@ impl<'a, T: Trait> InputValuesForExistingProperties<'a, T> {
 /// Wrapper for existing `StoredPropertyValue` and its respective `Class` `Property`
 pub struct StoredValueForExistingProperty<'a, T: Trait>(
     &'a Property<T::ClassId>,
-    &'a StoredPropertyValue<T>,
+    &'a StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
 );
 
 impl<'a, T: Trait> StoredValueForExistingProperty<'a, T> {
     /// Create single instance of `StoredValueForExistingProperty` from provided `property` and `value`
-    pub fn new(property: &'a Property<T::ClassId>, value: &'a StoredPropertyValue<T>) -> Self {
+    pub fn new(
+        property: &'a Property<T::ClassId>,
+        value: &'a StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
+    ) -> Self {
         Self(property, value)
     }
 
@@ -93,12 +96,17 @@ impl<'a, T: Trait> StoredValueForExistingProperty<'a, T> {
     }
 
     /// Retrieve `StoredPropertyValue` reference
-    pub fn get_value(&self) -> &StoredPropertyValue<T> {
+    pub fn get_value(&self) -> &StoredPropertyValue<T::Hash, T::EntityId, T::Nonce> {
         self.1
     }
 
     /// Retrieve `Property` and `StoredPropertyValue` references
-    pub fn unzip(&self) -> (&Property<T::ClassId>, &StoredPropertyValue<T>) {
+    pub fn unzip(
+        &self,
+    ) -> (
+        &Property<T::ClassId>,
+        &StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
+    ) {
         (self.0, self.1)
     }
 
@@ -138,7 +146,10 @@ impl<'a, T: Trait> StoredValuesForExistingProperties<'a, T> {
     /// Create `StoredValuesForExistingProperties` helper structure from provided `property_values` and their corresponding `Class` properties.
     pub fn from(
         properties: &'a [Property<T::ClassId>],
-        property_values: &'a BTreeMap<PropertyId, StoredPropertyValue<T>>,
+        property_values: &'a BTreeMap<
+            PropertyId,
+            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
+        >,
     ) -> Result<Self, Error<T>> {
         let mut values_for_existing_properties = StoredValuesForExistingProperties::<T>::default();
 
@@ -165,7 +176,9 @@ impl<'a, T: Trait> StoredValuesForExistingProperties<'a, T> {
             .map(|(&property_id, property_value)| {
                 (
                     property_id,
-                    property_value.get_value().compute_unique_hash(property_id),
+                    property_value
+                        .get_value()
+                        .compute_unique_hash::<T>(property_id),
                 )
             })
             .collect()

@@ -2,16 +2,16 @@ use super::*;
 
 /// Owner of an `Entity`.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
-pub enum EntityController<T: Trait> {
+#[derive()]
+pub enum EntityController<MemberId> {
     Maintainers,
-    Member(T::MemberId),
+    Member(MemberId),
     Lead,
 }
 
-impl<T: Trait> EntityController<T> {
+impl<MemberId> EntityController<MemberId> {
     /// Create `EntityController` enum representation, using provided `Actor`
-    pub fn from_actor(actor: &Actor<T>) -> Self {
+    pub fn from_actor<T: Trait>(actor: &Actor<T>) -> Self {
         match &actor {
             Actor::Lead => Self::Lead,
             Actor::Member(member_id) => Self::Member(*member_id),
@@ -20,24 +20,24 @@ impl<T: Trait> EntityController<T> {
     }
 }
 
-impl<T: Trait> Default for EntityController<T> {
+impl<MemberId> Default for EntityController<MemberId> {
     fn default() -> Self {
         Self::Lead
     }
 }
 
-impl<T: Trait> core::fmt::Debug for EntityController<T> {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "EntityController {:?}", self)
-    }
-}
+// impl<T: Trait> core::fmt::Debug for EntityController<MemberId> {
+//     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+//         write!(formatter, "EntityController {:?}", self)
+//     }
+// }
 
 /// Permissions for a given entity.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
-pub struct EntityPermissions<T: Trait> {
+#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
+pub struct EntityPermissions<MemberId: Default> {
     /// Current controller, which is initially set based on who created entity
-    pub controller: EntityController<T>,
+    pub controller: EntityController<MemberId>,
 
     /// Forbid groups to mutate any property value.
     /// Can be useful to use in concert with some curation censorship policy
@@ -49,19 +49,19 @@ pub struct EntityPermissions<T: Trait> {
     pub referenceable: bool,
 }
 
-impl<T: Trait> Default for EntityPermissions<T> {
-    fn default() -> Self {
-        Self {
-            controller: EntityController::<T>::default(),
-            frozen: false,
-            referenceable: true,
-        }
-    }
-}
+// impl<T: Trait> Default for EntityPermissions<T> {
+//     fn default() -> Self {
+//         Self {
+//             controller: EntityController::<T>::default(),
+//             frozen: false,
+//             referenceable: true,
+//         }
+//     }
+// }
 
-impl<T: Trait> EntityPermissions<T> {
+impl<MemberId: Default> EntityPermissions<MemberId> {
     /// Create an instance of `EntityPermissions` with `EntityController` equal to provided one
-    pub fn default_with_controller(controller: EntityController<T>) -> Self {
+    pub fn default_with_controller(controller: EntityController<MemberId>) -> Self {
         Self {
             controller,
             ..EntityPermissions::default()
@@ -69,12 +69,15 @@ impl<T: Trait> EntityPermissions<T> {
     }
 
     /// Set current `controller` as provided
-    pub fn set_conroller(&mut self, controller: EntityController<T>) {
+    pub fn set_conroller(&mut self, controller: EntityController<MemberId>) {
         self.controller = controller
     }
 
     /// Check if inner `controller` is equal to the provided one
-    pub fn controller_is_equal_to(&self, new_entity_controller: &EntityController<T>) -> bool {
+    pub fn controller_is_equal_to(
+        &self,
+        new_entity_controller: &EntityController<MemberId>,
+    ) -> bool {
         self.controller == *new_entity_controller
     }
 
@@ -94,12 +97,14 @@ impl<T: Trait> EntityPermissions<T> {
     }
 
     /// Get current `controller` by reference
-    pub fn get_controller(&self) -> &EntityController<T> {
+    pub fn get_controller(&self) -> &EntityController<MemberId> {
         &self.controller
     }
 
     /// Ensure actor with given `EntityAccessLevel` can remove entity
-    pub fn ensure_group_can_remove_entity(access_level: EntityAccessLevel) -> Result<(), Error<T>> {
+    pub fn ensure_group_can_remove_entity<T: Trait>(
+        access_level: EntityAccessLevel,
+    ) -> Result<(), Error<T>> {
         match access_level {
             EntityAccessLevel::EntityController => Ok(()),
             EntityAccessLevel::EntityControllerAndMaintainer => Ok(()),
@@ -108,9 +113,9 @@ impl<T: Trait> EntityPermissions<T> {
     }
 
     /// Ensure provided new_entity_controller is not equal to current one
-    pub fn ensure_controllers_are_not_equal(
+    pub fn ensure_controllers_are_not_equal<T: Trait>(
         &self,
-        new_entity_controller: &EntityController<T>,
+        new_entity_controller: &EntityController<MemberId>,
     ) -> Result<(), Error<T>> {
         ensure!(
             !self.controller_is_equal_to(new_entity_controller),
@@ -138,7 +143,7 @@ impl EntityAccessLevel {
     /// Derives the `EntityAccessLevel` for the actor, attempting to act.
     pub fn derive<T: Trait>(
         account_id: &T::AccountId,
-        entity_permissions: &EntityPermissions<T>,
+        entity_permissions: &EntityPermissions<T::MemberId>,
         class_permissions: &ClassPermissions<T::CuratorGroupId>,
         actor: &Actor<T>,
     ) -> Result<Self, Error<T>> {
