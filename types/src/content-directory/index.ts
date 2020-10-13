@@ -137,7 +137,15 @@ export class VecStoredPropertyValue extends JoyStructDecorated({
 export class StoredPropertyValue extends JoyEnum({
   Single: StoredValue,
   Vector: VecStoredPropertyValue,
-}) {}
+}) {
+  get subtype() {
+    return this.isOfType('Single') ? this.asType('Single').type : this.asType('Vector').vec_value.type
+  }
+
+  public getValue() {
+    return this.isOfType('Single') ? this.asType('Single').value : this.asType('Vector').vec_value.value
+  }
+}
 
 export class InboundReferenceCounter extends JoyStructDecorated({
   total: u32,
