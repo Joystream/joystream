@@ -233,7 +233,10 @@ async main() {
     },
   ])
 
-  // Get and send operations just like in 1st example...
+  const operations = await parser.getEntityBatchOperations()
+  await api.tx.contentDirectory
+    .transaction({ Member: SENDER_MEMBER_ID }, operations)
+    .signAndSend(SENDER_KEYPAIR)
 }
 ```
 __Full example with comments can be found in `content-directory-schemas/examples/createVideo.ts` and ran with `yarn workspace cd-schemas example:createChannel`__
