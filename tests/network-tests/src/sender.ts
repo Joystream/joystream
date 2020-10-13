@@ -28,7 +28,8 @@ export class Sender {
     account: AccountId | string,
     shouldFail = false
   ): Promise<ISubmittableResult> {
-    const senderKeyPair = this.keyring.getPair(account)
+    const addr = this.keyring.encodeAddress(account)
+    const senderKeyPair: KeyringPair = this.keyring.getPair(addr)
 
     let finalizedResolve: { (result: ISubmittableResult): void }
     let finalizedReject: { (err: Error): void }

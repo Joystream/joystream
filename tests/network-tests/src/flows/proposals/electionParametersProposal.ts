@@ -1,26 +1,15 @@
-import { KeyringPair } from '@polkadot/keyring/types'
-import { Keyring } from '@polkadot/api'
 import { Api } from '../../Api'
 import { ElectionParametersProposalFixture } from '../../fixtures/proposalsModule'
-import { DbService } from '../../DbService'
 import { assert } from 'chai'
 
 // Election parameters proposal scenario
-export default async function electionParametersProposal(api: Api, env: NodeJS.ProcessEnv, db: DbService) {
-  const sudoUri: string = env.SUDO_ACCOUNT_URI!
-  const keyring = new Keyring({ type: 'sr25519' })
-  const sudo: KeyringPair = keyring.addFromUri(sudoUri)
-
+export default async function electionParametersProposal(api: Api, env: NodeJS.ProcessEnv) {
   // Pre-Conditions: some members and an elected council
-  assert(db.hasCouncil())
-  const m1KeyPairs = db.getMembers()
-  const m2KeyPairs = db.getCouncil()
+  const council = await api.getCouncil()
+  assert(council.length)
 
-  const electionParametersProposalFixture: ElectionParametersProposalFixture = new ElectionParametersProposalFixture(
-    api,
-    m1KeyPairs,
-    m2KeyPairs,
-    sudo
-  )
+  const proposer = council[0].member.toString()
+
+  const electionParametersProposalFixture = new ElectionParametersProposalFixture(api, proposer)
   await electionParametersProposalFixture.runner(false)
 }

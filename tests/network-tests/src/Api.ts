@@ -1,4 +1,4 @@
-import { ApiPromise, WsProvider } from '@polkadot/api'
+import { ApiPromise, WsProvider, Keyring } from '@polkadot/api'
 import { Bytes, Option, u32, Vec, StorageKey } from '@polkadot/types'
 import { Codec, ISubmittableResult } from '@polkadot/types/types'
 import { KeyringPair } from '@polkadot/keyring/types'
@@ -11,6 +11,7 @@ import {
   WorkerId,
   WorkingGroupOpeningPolicyCommitment,
   Opening as WorkingGroupOpening,
+  ApplicationIdSet,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
 import { AccountInfo, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
@@ -29,8 +30,8 @@ import {
   OpeningId,
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
+import { v4 as uuid } from 'uuid'
 import Debugger from 'debug'
-import { assert } from 'chai'
 const debug = Debugger('api')
 
 export enum WorkingGroups {
@@ -41,12 +42,15 @@ export enum WorkingGroups {
 export class Api {
   private readonly api: ApiPromise
   private readonly sender: Sender
+  private readonly keyring: Keyring
+  // source of funds for all new accounts
+  private readonly treasuryAccount: string
 
-  public static async create(provider: WsProvider): Promise<Api> {
+  public static async create(provider: WsProvider, treasuryAccountUri: string, sudoAccountUri: string): Promise<Api> {
     let connectAttempts = 0
     while (true) {
       connectAttempts++
-      debug(`Connecting to chain attempt ${connectAttempts}..`)
+      debug('Connecting to chain..')
       try {
         const api = await ApiPromise.create({ provider, types })
 
@@ -57,24 +61,36 @@ export class Api {
         // Give it a few seconds to be ready.
         await Utils.wait(5000)
 
-        return new Api(api)
+        return new Api(api, treasuryAccountUri, sudoAccountUri)
       } catch (err) {
         if (connectAttempts === 3) {
           throw new Error('Unable to connect to chain')
         }
       }
-
+      debug(`Retrying to connecting to chain, attempt ${connectAttempts}..`)
       await Utils.wait(5000)
     }
   }
 
-  constructor(api: ApiPromise) {
+  constructor(api: ApiPromise, treasuryAccountUri: string, sudoAccountUri: string) {
     this.api = api
-    this.sender = new Sender(api)
+    this.keyring = new Keyring({ type: 'sr25519' })
+    const treasuryKey = this.keyring.addFromUri(treasuryAccountUri)
+    this.treasuryAccount = treasuryKey.address
+    this.keyring.addFromUri(sudoAccountUri)
+    this.sender = new Sender(api, this.keyring)
   }
 
   public close() {
     this.api.disconnect()
+  }
+
+  public createKeyPairs(n: number): KeyringPair[] {
+    const nKeyPairs: KeyringPair[] = []
+    for (let i = 0; i < n; i++) {
+      nKeyPairs.push(this.keyring.addFromUri(i + uuid().substring(0, 8)))
+    }
+    return nKeyPairs
   }
 
   // Well known WorkingGroup enum defined in runtime
@@ -89,12 +105,17 @@ export class Api {
     }
   }
 
+  public async makeSudoCall(tx: SubmittableExtrinsic<'promise'>, expectFailure = false): Promise<ISubmittableResult> {
+    const sudo = await this.api.query.sudo.key()
+    return this.sender.signAndSend(this.api.tx.sudo.sudo(tx), sudo, expectFailure)
+  }
+
   public createPaidTermId(value: BN): PaidTermId {
     return this.api.createType('PaidTermId', value)
   }
 
   public async buyMembership(
-    account: KeyringPair,
+    account: string,
     paidTermsId: PaidTermId,
     name: string,
     expectFailure = false
@@ -117,11 +138,19 @@ export class Api {
 
   public async getBalance(address: string): Promise<Balance> {
     const accountData: AccountInfo = await this.api.query.system.account<AccountInfo>(address)
-    return (await this.api.query.system.account<AccountInfo>(address)).data.free
+    return accountData.data.free
   }
 
-  public async transferBalance(from: KeyringPair, to: string, amount: BN): Promise<ISubmittableResult> {
+  public async transferBalance(from: string, to: string, amount: BN): Promise<ISubmittableResult> {
     return this.sender.signAndSend(this.api.tx.balances.transfer(to, amount), from)
+  }
+
+  public async treasuryTransferBalance(to: string, amount: BN): Promise<ISubmittableResult> {
+    return this.transferBalance(this.treasuryAccount, to, amount)
+  }
+
+  public treasuryTransferBalanceToAccounts(to: string[], amount: BN): void {
+    to.map((account) => this.transferBalance(this.treasuryAccount, account, amount))
   }
 
   public getPaidMembershipTerms(paidTermsId: PaidTermId): Promise<PaidMembershipTerms> {
@@ -131,14 +160,6 @@ export class Api {
   public async getMembershipFee(paidTermsId: PaidTermId): Promise<BN> {
     const terms: PaidMembershipTerms = await this.getPaidMembershipTerms(paidTermsId)
     return terms.fee
-  }
-
-  public async transferBalanceToAccounts(from: KeyringPair, to: KeyringPair[], amount: BN): Promise<void[]> {
-    return Promise.all(
-      to.map(async (keyPair) => {
-        await this.transferBalance(from, keyPair.address, amount)
-      })
-    )
   }
 
   private getBaseTxFee(): BN {
@@ -151,7 +172,7 @@ export class Api {
     return Utils.calcTxLength(tx).mul(byteFee).add(baseFee)
   }
 
-  public estimateBuyMembershipFee(account: KeyringPair, paidTermsId: PaidTermId, name: string): BN {
+  public estimateBuyMembershipFee(account: string, paidTermsId: PaidTermId, name: string): BN {
     return this.estimateTxFee(
       (this.api.tx.members.buyMembership(
         paidTermsId,
@@ -304,12 +325,12 @@ export class Api {
     )
   }
 
-  public estimateApplyOnOpeningFee(account: KeyringPair, module: WorkingGroups): BN {
+  public estimateApplyOnOpeningFee(account: string, module: WorkingGroups): BN {
     return this.estimateTxFee(
       (this.api.tx[module].applyOnOpening(
         this.api.createType('MemberId', 0),
         this.api.createType('OpeningId', 0),
-        account.address,
+        account,
         0,
         0,
         'Some testing text used for estimation purposes which is longer than text expected during the test'
@@ -575,14 +596,14 @@ export class Api {
     )
   }
 
-  private applyForCouncilElection(account: KeyringPair, amount: BN): Promise<ISubmittableResult> {
+  private applyForCouncilElection(account: string, amount: BN): Promise<ISubmittableResult> {
     return this.sender.signAndSend(this.api.tx.councilElection.apply(amount), account, false)
   }
 
-  public batchApplyForCouncilElection(accounts: KeyringPair[], amount: BN): Promise<void[]> {
+  public batchApplyForCouncilElection(accounts: string[], amount: BN): Promise<void[]> {
     return Promise.all(
-      accounts.map(async (keyPair) => {
-        await this.applyForCouncilElection(keyPair, amount)
+      accounts.map(async (account) => {
+        await this.applyForCouncilElection(account, amount)
       })
     )
   }
@@ -591,78 +612,46 @@ export class Api {
     return (((await this.api.query.councilElection.applicantStakes(address)) as unknown) as ElectionStake).new
   }
 
-  private voteForCouncilMember(
-    account: KeyringPair,
-    nominee: string,
-    salt: string,
-    stake: BN
-  ): Promise<ISubmittableResult> {
+  private voteForCouncilMember(account: string, nominee: string, salt: string, stake: BN): Promise<ISubmittableResult> {
     const hashedVote: string = Utils.hashVote(nominee, salt)
     return this.sender.signAndSend(this.api.tx.councilElection.vote(hashedVote, stake), account, false)
   }
 
-  public batchVoteForCouncilMember(
-    accounts: KeyringPair[],
-    nominees: KeyringPair[],
-    salt: string[],
-    stake: BN
-  ): Promise<void[]> {
+  public batchVoteForCouncilMember(accounts: string[], nominees: string[], salt: string[], stake: BN): Promise<void[]> {
     return Promise.all(
-      accounts.map(async (keyPair, index) => {
-        await this.voteForCouncilMember(keyPair, nominees[index].address, salt[index], stake)
+      accounts.map(async (account, index) => {
+        await this.voteForCouncilMember(account, nominees[index], salt[index], stake)
       })
     )
   }
 
-  private revealVote(
-    account: KeyringPair,
-    commitment: string,
-    nominee: string,
-    salt: string
-  ): Promise<ISubmittableResult> {
+  private revealVote(account: string, commitment: string, nominee: string, salt: string): Promise<ISubmittableResult> {
     return this.sender.signAndSend(this.api.tx.councilElection.reveal(commitment, nominee, salt), account, false)
   }
 
-  public batchRevealVote(accounts: KeyringPair[], nominees: KeyringPair[], salt: string[]): Promise<void[]> {
+  public batchRevealVote(accounts: string[], nominees: string[], salt: string[]): Promise<void[]> {
     return Promise.all(
-      accounts.map(async (keyPair, index) => {
-        const commitment = Utils.hashVote(nominees[index].address, salt[index])
-        await this.revealVote(keyPair, commitment, nominees[index].address, salt[index])
+      accounts.map(async (account, index) => {
+        const commitment = Utils.hashVote(nominees[index], salt[index])
+        await this.revealVote(account, commitment, nominees[index], salt[index])
       })
     )
   }
 
-  // TODO consider using configurable genesis instead
-  public sudoStartAnnouncingPeriod(sudo: KeyringPair, endsAtBlock: BN): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      this.api.tx.sudo.sudo(this.api.tx.councilElection.setStageAnnouncing(endsAtBlock)),
-      sudo,
-      false
-    )
+  public sudoStartAnnouncingPeriod(endsAtBlock: BN): Promise<ISubmittableResult> {
+    return this.makeSudoCall(this.api.tx.councilElection.setStageAnnouncing(endsAtBlock), false)
   }
 
-  public sudoStartVotingPeriod(sudo: KeyringPair, endsAtBlock: BN): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      this.api.tx.sudo.sudo(this.api.tx.councilElection.setStageVoting(endsAtBlock)),
-      sudo,
-      false
-    )
+  public sudoStartVotingPeriod(endsAtBlock: BN): Promise<ISubmittableResult> {
+    return this.makeSudoCall(this.api.tx.councilElection.setStageVoting(endsAtBlock), false)
   }
 
-  public sudoStartRevealingPeriod(sudo: KeyringPair, endsAtBlock: BN): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      this.api.tx.sudo.sudo(this.api.tx.councilElection.setStageRevealing(endsAtBlock)),
-      sudo,
-      false
-    )
+  public sudoStartRevealingPeriod(endsAtBlock: BN): Promise<ISubmittableResult> {
+    return this.makeSudoCall(this.api.tx.councilElection.setStageRevealing(endsAtBlock), false)
   }
 
-  public sudoSetCouncilMintCapacity(sudo: KeyringPair, capacity: BN): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      this.api.tx.sudo.sudo(this.api.tx.council.setCouncilMintCapacity(capacity)),
-      sudo,
-      false
-    )
+  public sudoSetCouncilMintCapacity(capacity: BN): Promise<ISubmittableResult> {
+    return this.makeSudoCall(this.api.tx.council.setCouncilMintCapacity(capacity), false)
   }
 
   public getBestBlock(): Promise<BN> {
@@ -675,18 +664,23 @@ export class Api {
     })
   }
 
+  public async getCouncilAccounts(): Promise<string[]> {
+    const council = await this.getCouncil()
+    return council.map((seat) => seat.member.toString())
+  }
+
   public getRuntime(): Promise<Bytes> {
     return this.api.query.substrate.code<Bytes>()
   }
 
   public async proposeRuntime(
-    account: KeyringPair,
+    account: string,
     stake: BN,
     name: string,
     description: string,
     runtime: Bytes | string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       (this.api.tx.proposalsCodex.createRuntimeUpgradeProposal(
         memberId,
@@ -701,13 +695,13 @@ export class Api {
   }
 
   public async proposeText(
-    account: KeyringPair,
+    account: string,
     stake: BN,
     name: string,
     description: string,
     text: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       (this.api.tx.proposalsCodex.createTextProposal(
         memberId,
@@ -722,14 +716,14 @@ export class Api {
   }
 
   public async proposeSpending(
-    account: KeyringPair,
+    account: string,
     title: string,
     description: string,
     stake: BN,
     balance: BN,
     destination: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       (this.api.tx.proposalsCodex.createSpendingProposal(
         memberId,
@@ -745,13 +739,13 @@ export class Api {
   }
 
   public async proposeValidatorCount(
-    account: KeyringPair,
+    account: string,
     title: string,
     description: string,
     stake: BN,
     validatorCount: BN
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       (this.api.tx.proposalsCodex.createSetValidatorCountProposal(
         memberId,
@@ -766,19 +760,18 @@ export class Api {
   }
 
   public async proposeLead(
-    account: KeyringPair,
+    account: string,
     title: string,
     description: string,
     stake: BN,
-    leadAccount: KeyringPair
+    leadAccount: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
-    const leadMemberId: MemberId = (await this.getMemberIds(leadAccount.address))[0]
-    const addressString: string = leadAccount.address
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
+    const leadMemberId: MemberId = (await this.getMemberIds(leadAccount))[0]
     return this.sender.signAndSend(
       (this.api.tx.proposalsCodex.createSetLeadProposal(memberId, title, description, stake, [
         leadMemberId,
-        addressString,
+        leadAccount,
       ]) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
       false
@@ -786,7 +779,7 @@ export class Api {
   }
 
   public async proposeElectionParameters(
-    account: KeyringPair,
+    account: string,
     title: string,
     description: string,
     stake: BN,
@@ -799,7 +792,7 @@ export class Api {
     minCouncilStake: BN,
     minVotingStake: BN
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       (this.api.tx.proposalsCodex.createSetElectionParametersProposal(memberId, title, description, stake, [
         announcingPeriod,
@@ -817,14 +810,14 @@ export class Api {
   }
 
   public async proposeBeginWorkingGroupLeaderApplicationReview(
-    account: KeyringPair,
+    account: string,
     title: string,
     description: string,
     stake: BN,
     openingId: OpeningId,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       (this.api.tx.proposalsCodex.createBeginReviewWorkingGroupLeaderApplicationsProposal(
         memberId,
@@ -839,7 +832,7 @@ export class Api {
     )
   }
 
-  public approveProposal(account: KeyringPair, memberId: MemberId, proposal: ProposalId): Promise<ISubmittableResult> {
+  public approveProposal(account: string, memberId: MemberId, proposal: ProposalId): Promise<ISubmittableResult> {
     return this.sender.signAndSend(
       (this.api.tx.proposalsEngine.vote(memberId, proposal, 'Approve') as unknown) as SubmittableExtrinsic<'promise'>,
       account,
@@ -847,11 +840,12 @@ export class Api {
     )
   }
 
-  public batchApproveProposal(council: KeyringPair[], proposal: ProposalId): Promise<void[]> {
+  public async batchApproveProposal(proposal: ProposalId): Promise<void[]> {
+    const councilAccounts = await this.getCouncilAccounts()
     return Promise.all(
-      council.map(async (keyPair) => {
-        const memberId: MemberId = (await this.getMemberIds(keyPair.address))[0]
-        await this.approveProposal(keyPair, memberId, proposal)
+      councilAccounts.map(async (account) => {
+        const memberId: MemberId = (await this.getMemberIds(account))[0]
+        await this.approveProposal(account, memberId, proposal)
       })
     )
   }
@@ -878,6 +872,64 @@ export class Api {
       throw new Error('Expected Event Not Found')
     }
     return record.event.data[0] as OpeningId
+  }
+
+  public expectLeaderSetEvent(events: EventRecord[]): WorkerId {
+    const record = events.find((record) => record.event.method && record.event.method.toString() === 'LeaderSet')
+    if (!record) {
+      throw new Error('Expected Event Not Found')
+    }
+    return (record.event.data as unknown) as WorkerId
+  }
+
+  public expectBeganApplicationReviewEvent(events: EventRecord[]): ApplicationId {
+    const record = events.find(
+      (record) => record.event.method && record.event.method.toString() === 'BeganApplicationReview'
+    )
+    if (!record) {
+      throw new Error('Expected Event Not Found')
+    }
+    return (record.event.data as unknown) as ApplicationId
+  }
+
+  public expectTerminatedLeaderEvent(events: EventRecord[]): void {
+    const record = events.find((record) => record.event.method && record.event.method.toString() === 'TerminatedLeader')
+    if (!record) {
+      throw new Error('Expected Event Not Found')
+    }
+  }
+
+  public expectWorkerRewardAmountUpdatedEvent(events: EventRecord[]): void {
+    const record = events.find(
+      (record) => record.event.method && record.event.method.toString() === 'WorkerRewardAmountUpdated'
+    )
+    if (!record) {
+      throw new Error('Expected Event Not Found')
+    }
+  }
+
+  public expectStakeDecreasedEvent(events: EventRecord[]): void {
+    const record = events.find((record) => record.event.method && record.event.method.toString() === 'StakeDecreased')
+    if (!record) {
+      throw new Error('Expected Event Not Found')
+    }
+  }
+
+  public expectStakeSlashedEvent(events: EventRecord[]): void {
+    const record = events.find((record) => record.event.method && record.event.method.toString() === 'StakeSlashed')
+    if (!record) {
+      throw new Error('Expected Event Not Found')
+    }
+  }
+
+  public expectMintCapacityChangedEvent(events: EventRecord[]): BN {
+    const record = events.find(
+      (record) => record.event.method && record.event.method.toString() === 'MintCapacityChanged'
+    )
+    if (!record) {
+      throw new Error('Expected Event Not Found')
+    }
+    return (record.event.data[1] as unknown) as BN
   }
 
   public async expectRuntimeUpgraded(): Promise<void> {
@@ -953,31 +1005,33 @@ export class Api {
     return this.api.query.staking.validatorCount<u32>()
   }
 
-  public async addOpening(openingParameters: {
-    leader: KeyringPair
-    activationDelay: BN
-    maxActiveApplicants: BN
-    maxReviewPeriodLength: BN
-    applicationStakingPolicyAmount: BN
-    applicationCrowdedOutUnstakingPeriodLength: BN
-    applicationReviewPeriodExpiredUnstakingPeriodLength: BN
-    roleStakingPolicyAmount: BN
-    roleCrowdedOutUnstakingPeriodLength: BN
-    roleReviewPeriodExpiredUnstakingPeriodLength: BN
-    slashableMaxCount: BN
-    slashableMaxPercentPtsPerTime: BN
-    fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BN
-    fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BN
-    fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BN
-    terminateApplicationStakeUnstakingPeriod: BN
-    terminateRoleStakeUnstakingPeriod: BN
-    exitRoleApplicationStakeUnstakingPeriod: BN
-    exitRoleStakeUnstakingPeriod: BN
-    text: string
-    type: string
-    module: WorkingGroups
+  public async addOpening(
+    lead: string,
+    openingParameters: {
+      activationDelay: BN
+      maxActiveApplicants: BN
+      maxReviewPeriodLength: BN
+      applicationStakingPolicyAmount: BN
+      applicationCrowdedOutUnstakingPeriodLength: BN
+      applicationReviewPeriodExpiredUnstakingPeriodLength: BN
+      roleStakingPolicyAmount: BN
+      roleCrowdedOutUnstakingPeriodLength: BN
+      roleReviewPeriodExpiredUnstakingPeriodLength: BN
+      slashableMaxCount: BN
+      slashableMaxPercentPtsPerTime: BN
+      fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BN
+      fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BN
+      fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BN
+      terminateApplicationStakeUnstakingPeriod: BN
+      terminateRoleStakeUnstakingPeriod: BN
+      exitRoleApplicationStakeUnstakingPeriod: BN
+      exitRoleStakeUnstakingPeriod: BN
+      text: string
+      type: string
+    },
+    module: WorkingGroups,
     expectFailure: boolean
-  }): Promise<ISubmittableResult> {
+  ): Promise<ISubmittableResult> {
     const activateAt: ActivateOpeningAt = this.api.createType(
       'ActivateOpeningAt',
       openingParameters.activationDelay.eqn(0)
@@ -1040,42 +1094,37 @@ export class Api {
     })
 
     return this.sender.signAndSend(
-      this.createAddOpeningTransaction(
-        activateAt,
-        commitment,
-        openingParameters.text,
-        openingParameters.type,
-        openingParameters.module
-      ),
-      openingParameters.leader,
-      openingParameters.expectFailure
+      this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, module),
+      lead,
+      expectFailure
     )
   }
 
-  public async sudoAddOpening(openingParameters: {
-    sudo: KeyringPair
-    activationDelay: BN
-    maxActiveApplicants: BN
-    maxReviewPeriodLength: BN
-    applicationStakingPolicyAmount: BN
-    applicationCrowdedOutUnstakingPeriodLength: BN
-    applicationReviewPeriodExpiredUnstakingPeriodLength: BN
-    roleStakingPolicyAmount: BN
-    roleCrowdedOutUnstakingPeriodLength: BN
-    roleReviewPeriodExpiredUnstakingPeriodLength: BN
-    slashableMaxCount: BN
-    slashableMaxPercentPtsPerTime: BN
-    fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BN
-    fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BN
-    fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BN
-    terminateApplicationStakeUnstakingPeriod: BN
-    terminateRoleStakeUnstakingPeriod: BN
-    exitRoleApplicationStakeUnstakingPeriod: BN
-    exitRoleStakeUnstakingPeriod: BN
-    text: string
-    type: string
+  public async sudoAddOpening(
+    openingParameters: {
+      activationDelay: BN
+      maxActiveApplicants: BN
+      maxReviewPeriodLength: BN
+      applicationStakingPolicyAmount: BN
+      applicationCrowdedOutUnstakingPeriodLength: BN
+      applicationReviewPeriodExpiredUnstakingPeriodLength: BN
+      roleStakingPolicyAmount: BN
+      roleCrowdedOutUnstakingPeriodLength: BN
+      roleReviewPeriodExpiredUnstakingPeriodLength: BN
+      slashableMaxCount: BN
+      slashableMaxPercentPtsPerTime: BN
+      fillOpeningSuccessfulApplicantApplicationStakeUnstakingPeriod: BN
+      fillOpeningFailedApplicantApplicationStakeUnstakingPeriod: BN
+      fillOpeningFailedApplicantRoleStakeUnstakingPeriod: BN
+      terminateApplicationStakeUnstakingPeriod: BN
+      terminateRoleStakeUnstakingPeriod: BN
+      exitRoleApplicationStakeUnstakingPeriod: BN
+      exitRoleStakeUnstakingPeriod: BN
+      text: string
+      type: string
+    },
     module: WorkingGroups
-  }): Promise<ISubmittableResult> {
+  ): Promise<ISubmittableResult> {
     const activateAt: ActivateOpeningAt = this.api.createType(
       'ActivateOpeningAt',
       openingParameters.activationDelay.eqn(0)
@@ -1137,23 +1186,14 @@ export class Api {
       ),
     })
 
-    return this.sender.signAndSend(
-      this.api.tx.sudo.sudo(
-        this.createAddOpeningTransaction(
-          activateAt,
-          commitment,
-          openingParameters.text,
-          openingParameters.type,
-          openingParameters.module
-        )
-      ),
-      openingParameters.sudo,
+    return this.makeSudoCall(
+      this.createAddOpeningTransaction(activateAt, commitment, openingParameters.text, openingParameters.type, module),
       false
     )
   }
 
   public async proposeCreateWorkingGroupLeaderOpening(leaderOpening: {
-    account: KeyringPair
+    account: string
     title: string
     description: string
     proposalStake: BN
@@ -1232,7 +1272,7 @@ export class Api {
       ),
     })
 
-    const memberId: MemberId = (await this.getMemberIds(leaderOpening.account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(leaderOpening.account))[0]
     return this.sender.signAndSend(
       (this.api.tx.proposalsCodex.createAddWorkingGroupLeaderOpeningProposal(
         memberId,
@@ -1252,7 +1292,7 @@ export class Api {
   }
 
   public async proposeFillLeaderOpening(fillOpening: {
-    account: KeyringPair
+    account: string
     title: string
     description: string
     proposalStake: BN
@@ -1263,7 +1303,7 @@ export class Api {
     payoutInterval: BN
     workingGroup: string
   }): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(fillOpening.account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(fillOpening.account))[0]
 
     const fillOpeningParameters: FillOpeningParameters = this.api.createType('FillOpeningParameters', {
       opening_id: fillOpening.openingId,
@@ -1290,7 +1330,7 @@ export class Api {
   }
 
   public async proposeTerminateLeaderRole(
-    account: KeyringPair,
+    account: string,
     title: string,
     description: string,
     proposalStake: BN,
@@ -1299,7 +1339,7 @@ export class Api {
     slash: boolean,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       (this.api.tx.proposalsCodex.createTerminateWorkingGroupLeaderRoleProposal(
         memberId,
@@ -1319,7 +1359,7 @@ export class Api {
   }
 
   public async proposeLeaderReward(
-    account: KeyringPair,
+    account: string,
     title: string,
     description: string,
     proposalStake: BN,
@@ -1327,7 +1367,7 @@ export class Api {
     rewardAmount: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       (this.api.tx.proposalsCodex.createSetWorkingGroupLeaderRewardProposal(
         memberId,
@@ -1344,7 +1384,7 @@ export class Api {
   }
 
   public async proposeDecreaseLeaderStake(
-    account: KeyringPair,
+    account: string,
     title: string,
     description: string,
     proposalStake: BN,
@@ -1352,7 +1392,7 @@ export class Api {
     rewardAmount: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       (this.api.tx.proposalsCodex.createDecreaseWorkingGroupLeaderStakeProposal(
         memberId,
@@ -1369,7 +1409,7 @@ export class Api {
   }
 
   public async proposeSlashLeaderStake(
-    account: KeyringPair,
+    account: string,
     title: string,
     description: string,
     proposalStake: BN,
@@ -1377,7 +1417,7 @@ export class Api {
     rewardAmount: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       (this.api.tx.proposalsCodex.createSlashWorkingGroupLeaderStakeProposal(
         memberId,
@@ -1394,14 +1434,14 @@ export class Api {
   }
 
   public async proposeWorkingGroupMintCapacity(
-    account: KeyringPair,
+    account: string,
     title: string,
     description: string,
     proposalStake: BN,
     mintCapacity: BN,
     workingGroup: string
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       (this.api.tx.proposalsCodex.createSetWorkingGroupMintCapacityProposal(
         memberId,
@@ -1429,7 +1469,7 @@ export class Api {
   }
 
   public async acceptApplications(
-    leader: KeyringPair,
+    leader: string,
     openingId: OpeningId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
@@ -1441,7 +1481,7 @@ export class Api {
   }
 
   public async beginApplicantReview(
-    leader: KeyringPair,
+    leader: string,
     openingId: OpeningId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
@@ -1452,22 +1492,15 @@ export class Api {
     )
   }
 
-  public async sudoBeginApplicantReview(
-    sudo: KeyringPair,
-    openingId: OpeningId,
-    module: WorkingGroups
-  ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      (this.api.tx.sudo.sudo(this.api.tx[module].beginApplicantReview(openingId)) as unknown) as SubmittableExtrinsic<
-        'promise'
-      >,
-      sudo,
+  public async sudoBeginApplicantReview(openingId: OpeningId, module: WorkingGroups): Promise<ISubmittableResult> {
+    return this.makeSudoCall(
+      (this.api.tx[module].beginApplicantReview(openingId) as unknown) as SubmittableExtrinsic<'promise'>,
       false
     )
   }
 
   public async applyOnOpening(
-    account: KeyringPair,
+    account: string,
     roleAccountAddress: string,
     openingId: OpeningId,
     roleStake: BN,
@@ -1476,7 +1509,7 @@ export class Api {
     expectFailure: boolean,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    const memberId: MemberId = (await this.getMemberIds(account.address))[0]
+    const memberId: MemberId = (await this.getMemberIds(account))[0]
     return this.sender.signAndSend(
       (this.api.tx[module].applyOnOpening(
         memberId,
@@ -1492,7 +1525,7 @@ export class Api {
   }
 
   public async batchApplyOnOpening(
-    accounts: KeyringPair[],
+    accounts: string[],
     openingId: OpeningId,
     roleStake: BN,
     applicantStake: BN,
@@ -1501,23 +1534,14 @@ export class Api {
     expectFailure: boolean
   ): Promise<void[]> {
     return Promise.all(
-      accounts.map(async (keyPair) => {
-        await this.applyOnOpening(
-          keyPair,
-          keyPair.address,
-          openingId,
-          roleStake,
-          applicantStake,
-          text,
-          expectFailure,
-          module
-        )
+      accounts.map(async (account) => {
+        await this.applyOnOpening(account, account, openingId, roleStake, applicantStake, text, expectFailure, module)
       })
     )
   }
 
   public async fillOpening(
-    leader: KeyringPair,
+    leader: string,
     openingId: OpeningId,
     applicationId: ApplicationId[],
     amountPerPayout: BN,
@@ -1537,7 +1561,6 @@ export class Api {
   }
 
   public async sudoFillOpening(
-    sudo: KeyringPair,
     openingId: OpeningId,
     applicationId: ApplicationId[],
     amountPerPayout: BN,
@@ -1545,21 +1568,18 @@ export class Api {
     payoutInterval: BN,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    return this.sender.signAndSend(
-      this.api.tx.sudo.sudo(
-        this.api.tx[module].fillOpening(openingId, applicationId, {
-          'amount_per_payout': amountPerPayout,
-          'next_payment_at_block': nextPaymentBlock,
-          'payout_interval': payoutInterval,
-        })
-      ),
-      sudo,
+    return this.makeSudoCall(
+      this.api.tx[module].fillOpening(openingId, applicationId, {
+        'amount_per_payout': amountPerPayout,
+        'next_payment_at_block': nextPaymentBlock,
+        'payout_interval': payoutInterval,
+      }),
       false
     )
   }
 
   public async increaseStake(
-    worker: KeyringPair,
+    worker: string,
     workerId: WorkerId,
     stake: BN,
     module: WorkingGroups
@@ -1572,7 +1592,7 @@ export class Api {
   }
 
   public async decreaseStake(
-    leader: KeyringPair,
+    leader: string,
     workerId: WorkerId,
     stake: BN,
     module: WorkingGroups,
@@ -1586,7 +1606,7 @@ export class Api {
   }
 
   public async slashStake(
-    leader: KeyringPair,
+    leader: string,
     workerId: WorkerId,
     stake: BN,
     module: WorkingGroups,
@@ -1600,7 +1620,7 @@ export class Api {
   }
 
   public async updateRoleAccount(
-    worker: KeyringPair,
+    worker: string,
     workerId: WorkerId,
     newRoleAccount: string,
     module: WorkingGroups
@@ -1613,7 +1633,7 @@ export class Api {
   }
 
   public async updateRewardAccount(
-    worker: KeyringPair,
+    worker: string,
     workerId: WorkerId,
     newRewardAccount: string,
     module: WorkingGroups
@@ -1628,7 +1648,7 @@ export class Api {
   }
 
   public async withdrawApplication(
-    account: KeyringPair,
+    account: string,
     applicationId: ApplicationId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
@@ -1639,20 +1659,47 @@ export class Api {
     )
   }
 
-  // public async batchWithdrawApplication(accounts: KeyringPair[], module: WorkingGroups): Promise<void[]> {
-  //   return Promise.all(
-  //     accounts.map(async (keyPair) => {
-  //       const applicationIds: ApplicationId[] = await this.getActiveApplicationsIdsByRoleAccount(
-  //         keyPair.address,
-  //         module
-  //       )
-  //       await this.withdrawApplication(keyPair, applicationIds[0], module)
-  //     })
-  //   )
-  // }
+  public async batchWithdrawActiveApplications(
+    applicationIds: ApplicationId[],
+    module: WorkingGroups
+  ): Promise<ISubmittableResult[]> {
+    const entries: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<Application>()
 
+    return Promise.all(
+      entries
+        .filter(([idKey]) => {
+          return applicationIds.includes(idKey.args[0] as ApplicationId)
+        })
+        .map(([idKey, application]) => ({
+          id: idKey.args[0] as ApplicationId,
+          account: application.role_account_id.toString(),
+        }))
+        .map(({ id, account }) => this.withdrawApplication(account, id, module))
+    )
+  }
+
+  /*
+    public async getApplicantRoleAccounts(filterActiveIds: ApplicationId[], module: WorkingGroups): Promise<string[]> {
+    const entries: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<Application>()
+
+    const applications = entries
+      .filter(([idKey]) => {
+        return filterActiveIds.includes(idKey.args[0] as ApplicationId)
+      })
+      .map(([, application]) => application)
+
+    return (
+      await Promise.all(
+        applications.map(async (application) => {
+          const active = (await this.getHiringApplicationById(application.application_id)).stage.type === 'Active'
+          return active ? application.role_account_id.toString() : ''
+        })
+      )
+    ).filter((addr) => addr !== '')
+  }
+  */
   public async terminateApplication(
-    leader: KeyringPair,
+    leader: string,
     applicationId: ApplicationId,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
@@ -1664,7 +1711,7 @@ export class Api {
   }
 
   public async batchTerminateApplication(
-    leader: KeyringPair,
+    leader: string,
     applicationIds: ApplicationId[],
     module: WorkingGroups
   ): Promise<ISubmittableResult[]> {
@@ -1672,26 +1719,26 @@ export class Api {
   }
 
   public async terminateRole(
-    leader: KeyringPair,
-    applicationId: ApplicationId,
+    leader: string,
+    workerId: WorkerId,
     text: string,
     module: WorkingGroups,
     expectFailure: boolean
   ): Promise<ISubmittableResult> {
     return this.sender.signAndSend(
-      (this.api.tx[module].terminateRole(applicationId, text, false) as unknown) as SubmittableExtrinsic<'promise'>,
+      (this.api.tx[module].terminateRole(workerId, text, false) as unknown) as SubmittableExtrinsic<'promise'>,
       leader,
       expectFailure
     )
   }
 
   public async leaveRole(
-    account: KeyringPair,
+    account: string,
+    workerId: WorkerId,
     text: string,
     expectFailure: boolean,
     module: WorkingGroups
   ): Promise<ISubmittableResult> {
-    const workerId: WorkerId = await this.getWorkerIdByRoleAccount(account.address, module)
     return this.sender.signAndSend(
       (this.api.tx[module].leaveRole(workerId, text) as unknown) as SubmittableExtrinsic<'promise'>,
       account,
@@ -1700,14 +1747,16 @@ export class Api {
   }
 
   public async batchLeaveRole(
-    roleAccounts: KeyringPair[],
+    workerIds: WorkerId[],
     text: string,
     expectFailure: boolean,
     module: WorkingGroups
   ): Promise<void[]> {
     return Promise.all(
-      roleAccounts.map(async (keyPair) => {
-        await this.leaveRole(keyPair, text, expectFailure, module)
+      workerIds.map(async (workerId) => {
+        // get role_account of worker
+        const worker = await this.getWorkerById(workerId, module)
+        await this.leaveRole(worker.role_account_id.toString(), workerId, text, expectFailure, module)
       })
     )
   }
@@ -1760,19 +1809,9 @@ export class Api {
     return await this.api.query[module].workerById<Worker>(id)
   }
 
-  // public async getWorkerIdByRoleAccount(address: string, module: WorkingGroups): Promise<WorkerId> {
-  //   const workersAndIds: [StorageKey, Worker][] = await this.api.query[module].workerById.entries<Worker>()
-  //   const index: number = workersAndIds.findIndex(
-  //     (workersAndId) => workersAndId[1].role_account_id.toString() === address
-  //   )
-  //   return workersAndIds[index][0].args[0] as WorkerId
-  // }
-
-  public async isWorker(address: string, module: WorkingGroups): Promise<boolean> {
+  public async isWorker(workerId: WorkerId, module: WorkingGroups): Promise<boolean> {
     const workersAndIds: [StorageKey, Worker][] = await this.api.query[module].workerById.entries<Worker>()
-    const index: number = workersAndIds.findIndex(
-      (workersAndId) => workersAndId[1].role_account_id.toString() === address
-    )
+    const index: number = workersAndIds.findIndex((workersAndId) => workersAndId[0].args[0].eq(workerId))
     return index !== -1
   }
 
@@ -1798,26 +1837,34 @@ export class Api {
     return this.api.query[module].applicationById<Application>(id)
   }
 
-  // public async getActiveApplicationsIdsByRoleAccount(address: string, module: WorkingGroups): Promise<ApplicationId[]> {
-  //   const applicationsAndIds: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<
-  //     Application
-  //   >()
-  //   return (
-  //     await Promise.all(
-  //       applicationsAndIds.map(async (applicationWithId) => {
-  //         const application: Application = applicationWithId[1]
-  //         if (
-  //           application.role_account_id.toString() === address &&
-  //           (await this.getHiringApplicationById(application.application_id)).stage.type === 'Active'
-  //         ) {
-  //           return applicationWithId[0].args[0] as ApplicationId
-  //         } else {
-  //           return undefined
-  //         }
-  //       })
-  //     )
-  //   ).filter((index) => index !== undefined) as ApplicationId[]
-  // }
+  public async getApplicantRoleAccounts(filterActiveIds: ApplicationId[], module: WorkingGroups): Promise<string[]> {
+    const entries: [StorageKey, Application][] = await this.api.query[module].applicationById.entries<Application>()
+
+    const applications = entries
+      .filter(([idKey]) => {
+        return filterActiveIds.includes(idKey.args[0] as ApplicationId)
+      })
+      .map(([, application]) => application)
+
+    return (
+      await Promise.all(
+        applications.map(async (application) => {
+          const active = (await this.getHiringApplicationById(application.application_id)).stage.type === 'Active'
+          return active ? application.role_account_id.toString() : ''
+        })
+      )
+    ).filter((addr) => addr !== '')
+  }
+
+  public async getWorkerRoleAccounts(workerIds: WorkerId[], module: WorkingGroups): Promise<string[]> {
+    const entries: [StorageKey, Worker][] = await this.api.query[module].workerById.entries<Worker>()
+
+    return entries
+      .filter(([idKey]) => {
+        return workerIds.includes(idKey.args[0] as WorkerId)
+      })
+      .map(([, worker]) => worker.role_account_id.toString())
+  }
 
   public async getStake(id: StakeId): Promise<Stake> {
     return this.api.query.stake.stakes<Stake>(id)
@@ -1841,6 +1888,11 @@ export class Api {
 
   public async getLeadWorkerId(module: WorkingGroups): Promise<WorkerId | undefined> {
     return (await this.api.query[module].currentLead<Option<WorkerId>>()).unwrapOr(undefined)
+  }
+
+  public async getGroupLead(module: WorkingGroups): Promise<Worker | undefined> {
+    const leadId = await this.getLeadWorkerId(module)
+    return leadId ? this.getWorkerById(leadId, module) : undefined
   }
 
   public async getActiveWorkersCount(module: WorkingGroups): Promise<BN> {

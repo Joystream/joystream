@@ -1,6 +1,5 @@
 import { WsProvider } from '@polkadot/api'
 import { Api, WorkingGroups } from '../Api'
-import { DbService } from '../DbService'
 import { config } from 'dotenv'
 import Debugger from 'debug'
 
@@ -28,12 +27,10 @@ const scenario = async () => {
   const env = process.env
 
   // Connect api to the chain
-  const nodeUrl: string = process.env.NODE_URL!
+  const nodeUrl: string = env.NODE_URL || 'ws://127.0.0.1:9944'
+  const treasuryAccountUri = env.TREASURY_ACCOUNT_URI
   const provider = new WsProvider(nodeUrl)
-  const api: Api = await Api.create(provider)
-
-  // Create shared state instance
-  const db: DbService = DbService.getInstance()
+  const api: Api = await Api.create(provider, treasuryAccountUri || '//Alice', '//Alice')
 
   // Run flows serially passing them a 'context'
 
@@ -41,14 +38,14 @@ const scenario = async () => {
   await creatingMemberships(api, env)
 
   debug('Council')
-  await councilSetup(api, env, db)
+  await councilSetup(api, env)
 
   debug('Basic Proposals')
   await Promise.all([
-    electionParametersProposal(api, env, db),
-    spendingProposal(api, env, db),
-    textProposal(api, env, db),
-    validatorCountProposal(api, env, db),
+    electionParametersProposal(api, env),
+    // spendingProposal(api, env, db),
+    // textProposal(api, env, db),
+    // validatorCountProposal(api, env, db),
     // workingGroupMintCapacityProposal(api, env, db, WorkingGroups.StorageWorkingGroup),
     // workingGroupMintCapacityProposal(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup),
   ])

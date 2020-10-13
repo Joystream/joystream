@@ -1,5 +1,4 @@
 import { Api } from '../Api'
-import { KeyringPair } from '@polkadot/keyring/types'
 import BN from 'bn.js'
 import { assert } from 'chai'
 import { Seat } from '@joystream/types/council'
@@ -9,27 +8,17 @@ import { Fixture } from '../IFixture'
 
 export class ElectCouncilFixture implements Fixture {
   private api: Api
-  private voterKeyPairs: KeyringPair[]
-  private applicantKeyPairs: KeyringPair[]
+  private voters: string[]
+  private applicants: string[]
   private k: number
-  private sudo: KeyringPair
   private greaterStake: BN
   private lesserStake: BN
 
-  public constructor(
-    api: Api,
-    voterKeyPairs: KeyringPair[],
-    applicantKeyPairs: KeyringPair[],
-    k: number,
-    sudo: KeyringPair,
-    greaterStake: BN,
-    lesserStake: BN
-  ) {
+  public constructor(api: Api, voters: string[], applicants: string[], k: number, greaterStake: BN, lesserStake: BN) {
     this.api = api
-    this.voterKeyPairs = voterKeyPairs
-    this.applicantKeyPairs = applicantKeyPairs
+    this.voters = voters
+    this.applicants = applicants
     this.k = k
-    this.sudo = sudo
     this.greaterStake = greaterStake
     this.lesserStake = lesserStake
   }
@@ -41,79 +30,70 @@ export class ElectCouncilFixture implements Fixture {
     let now = await this.api.getBestBlock()
     const applyForCouncilFee: BN = this.api.estimateApplyForCouncilFee(this.greaterStake)
     const voteForCouncilFee: BN = this.api.estimateVoteForCouncilFee(
-      this.sudo.address,
-      this.sudo.address,
+      this.applicants[0],
+      this.applicants[0],
       this.greaterStake
     )
-    const salt: string[] = []
-    this.voterKeyPairs.forEach(() => {
-      salt.push(''.concat(uuid().replace(/-/g, '')))
+    const salt: string[] = this.voters.map(() => {
+      return ''.concat(uuid().replace(/-/g, ''))
     })
-    const revealVoteFee: BN = this.api.estimateRevealVoteFee(this.sudo.address, salt[0])
+    const revealVoteFee: BN = this.api.estimateRevealVoteFee(this.applicants[0], salt[0])
 
     // Topping the balances
-    this.api.transferBalanceToAccounts(this.sudo, this.applicantKeyPairs, applyForCouncilFee.add(this.greaterStake))
-    this.api.transferBalanceToAccounts(
-      this.sudo,
-      this.voterKeyPairs,
-      voteForCouncilFee.add(revealVoteFee).add(this.greaterStake)
-    )
+    this.api.treasuryTransferBalanceToAccounts(this.applicants, applyForCouncilFee.add(this.greaterStake))
+    this.api.treasuryTransferBalanceToAccounts(this.voters, voteForCouncilFee.add(revealVoteFee).add(this.greaterStake))
 
     // First K members stake more
-    await this.api.sudoStartAnnouncingPeriod(this.sudo, now.addn(100))
-    await this.api.batchApplyForCouncilElection(this.applicantKeyPairs.slice(0, this.k), this.greaterStake)
-    this.applicantKeyPairs.slice(0, this.k).forEach((keyPair) =>
-      this.api.getCouncilElectionStake(keyPair.address).then((stake) => {
+    await this.api.sudoStartAnnouncingPeriod(now.addn(100))
+    await this.api.batchApplyForCouncilElection(this.applicants.slice(0, this.k), this.greaterStake)
+    this.applicants.slice(0, this.k).forEach((account) =>
+      this.api.getCouncilElectionStake(account).then((stake) => {
         assert(
           stake.eq(this.greaterStake),
-          `${keyPair.address} not applied correctly for council election with stake ${stake} versus expected ${this.greaterStake}`
+          `${account} not applied correctly for council election with stake ${stake} versus expected ${this.greaterStake}`
         )
       })
     )
 
     // Last members stake less
-    await this.api.batchApplyForCouncilElection(this.applicantKeyPairs.slice(this.k), this.lesserStake)
-    this.applicantKeyPairs.slice(this.k).forEach((keyPair) =>
-      this.api.getCouncilElectionStake(keyPair.address).then((stake) => {
+    await this.api.batchApplyForCouncilElection(this.applicants.slice(this.k), this.lesserStake)
+    this.applicants.slice(this.k).forEach((account) =>
+      this.api.getCouncilElectionStake(account).then((stake) => {
         assert(
           stake.eq(this.lesserStake),
-          `${keyPair.address} not applied correctrly for council election with stake ${stake} versus expected ${this.lesserStake}`
+          `${account} not applied correctrly for council election with stake ${stake} versus expected ${this.lesserStake}`
         )
       })
     )
 
     // Voting
-    await this.api.sudoStartVotingPeriod(this.sudo, now.addn(100))
+    await this.api.sudoStartVotingPeriod(now.addn(100))
     await this.api.batchVoteForCouncilMember(
-      this.voterKeyPairs.slice(0, this.k),
-      this.applicantKeyPairs.slice(0, this.k),
+      this.voters.slice(0, this.k),
+      this.applicants.slice(0, this.k),
       salt.slice(0, this.k),
       this.lesserStake
     )
     await this.api.batchVoteForCouncilMember(
-      this.voterKeyPairs.slice(this.k),
-      this.applicantKeyPairs.slice(this.k),
+      this.voters.slice(this.k),
+      this.applicants.slice(this.k),
       salt.slice(this.k),
       this.greaterStake
     )
 
     // Revealing
-    await this.api.sudoStartRevealingPeriod(this.sudo, now.addn(100))
+    await this.api.sudoStartRevealingPeriod(now.addn(100))
     await this.api.batchRevealVote(
-      this.voterKeyPairs.slice(0, this.k),
-      this.applicantKeyPairs.slice(0, this.k),
+      this.voters.slice(0, this.k),
+      this.applicants.slice(0, this.k),
       salt.slice(0, this.k)
     )
-    await this.api.batchRevealVote(
-      this.voterKeyPairs.slice(this.k),
-      this.applicantKeyPairs.slice(this.k),
-      salt.slice(this.k)
-    )
+    await this.api.batchRevealVote(this.voters.slice(this.k), this.applicants.slice(this.k), salt.slice(this.k))
     now = await this.api.getBestBlock()
 
     // Resolving election
     // 3 is to ensure the revealing block is in future
-    await this.api.sudoStartRevealingPeriod(this.sudo, now.addn(3))
+    await this.api.sudoStartRevealingPeriod(now.addn(3))
     await Utils.wait(this.api.getBlockDuration().muln(2.5).toNumber())
     const seats: Seat[] = await this.api.getCouncil()
 

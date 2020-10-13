@@ -8,14 +8,12 @@ import {
 import { BuyMembershipHappyCaseFixture } from './membershipModule'
 import { Api, WorkingGroups } from '../Api'
 import { OpeningId } from '@joystream/types/hiring'
-import { KeyringPair } from '@polkadot/keyring/types'
 import { PaidTermId } from '@joystream/types/members'
 import BN from 'bn.js'
 
 export class SudoHireLeadFixture implements Fixture {
   private api: Api
-  private sudo: KeyringPair
-  private leadKeyPair: KeyringPair
+  private leadAccount: string
   private paidTerms: PaidTermId
   private applicationStake: BN
   private roleStake: BN
@@ -27,8 +25,7 @@ export class SudoHireLeadFixture implements Fixture {
 
   constructor(
     api: Api,
-    sudo: KeyringPair,
-    leadKeyPair: KeyringPair,
+    leadAccount: string,
     paidTerms: PaidTermId,
     applicationStake: BN,
     roleStake: BN,
@@ -39,8 +36,7 @@ export class SudoHireLeadFixture implements Fixture {
     workingGroup: WorkingGroups
   ) {
     this.api = api
-    this.sudo = sudo
-    this.leadKeyPair = leadKeyPair
+    this.leadAccount = leadAccount
     this.paidTerms = paidTerms
     this.applicationStake = applicationStake
     this.roleStake = roleStake
@@ -54,8 +50,7 @@ export class SudoHireLeadFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     const leaderHappyCaseFixture: BuyMembershipHappyCaseFixture = new BuyMembershipHappyCaseFixture(
       this.api,
-      this.sudo,
-      [this.leadKeyPair],
+      [this.leadAccount],
       this.paidTerms
     )
     // Buying membership for leader account
@@ -63,8 +58,7 @@ export class SudoHireLeadFixture implements Fixture {
 
     const addLeaderOpeningFixture: AddLeaderOpeningFixture = new AddLeaderOpeningFixture(
       this.api,
-      [this.leadKeyPair],
-      this.sudo,
+      [this.leadAccount],
       this.applicationStake,
       this.roleStake,
       this.openingActivationDelay,
@@ -75,8 +69,7 @@ export class SudoHireLeadFixture implements Fixture {
 
     const applyForLeaderOpeningFixture = new ApplyForOpeningFixture(
       this.api,
-      [this.leadKeyPair],
-      this.sudo,
+      [this.leadAccount],
       this.applicationStake,
       this.roleStake,
       addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
@@ -86,7 +79,6 @@ export class SudoHireLeadFixture implements Fixture {
 
     const beginLeaderApplicationReviewFixture = new BeginLeaderApplicationReviewFixture(
       this.api,
-      this.sudo,
       addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
       this.workingGroup
     )
@@ -94,8 +86,7 @@ export class SudoHireLeadFixture implements Fixture {
 
     const fillLeaderOpeningFixture = new FillLeaderOpeningFixture(
       this.api,
-      [this.leadKeyPair],
-      this.sudo,
+      [this.leadAccount],
       addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
       this.firstRewardInterval,
       this.rewardInterval,
