@@ -25,7 +25,7 @@ async function main() {
 
   // We can reuse InputParser's `findEntityIdByUniqueQuery` method to find entityId of the channel we
   // created in ./createChannel.ts example (normally we would probably use some other way to do it, ie.: query node)
-  const CHANNEL_ID = await parser.finidEntityIdByUniqueQuery({ title: 'Example channel' }, 'Channel')
+  const CHANNEL_ID = await parser.findEntityIdByUniqueQuery({ title: 'Example channel' }, 'Channel')
 
   // Use createEntityUpdateOperation to parse the input
   const updateOperation = await parser.createEntityUpdateOperation(

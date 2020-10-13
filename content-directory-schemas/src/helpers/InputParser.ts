@@ -140,7 +140,7 @@ export class InputParser {
   }
 
   // Seatch for entity by { [uniquePropName]: [uniquePropVal] } on chain
-  async finidEntityIdByUniqueQuery(uniquePropVal: Record<string, any>, className: string): Promise<number> {
+  async findEntityIdByUniqueQuery(uniquePropVal: Record<string, any>, className: string): Promise<number> {
     await this.initializeEntityIdByUniqueQueryMap()
     const hash = this.getUniqueQueryHash(uniquePropVal, className)
     const foundId = this.entityIdByUniqueQueryMap.get(hash)
@@ -248,7 +248,7 @@ export class InputParser {
               return createType('ParametrizedPropertyValue', { InternalEntityJustAdded: entityIndex })
             } catch (e) {
               // Fallback to chain search
-              const entityId = await this.finidEntityIdByUniqueQuery(value.existing, refEntitySchema.className)
+              const entityId = await this.findEntityIdByUniqueQuery(value.existing, refEntitySchema.className)
               return createType('ParametrizedPropertyValue', {
                 InputPropertyValue: { Single: { Reference: entityId } },
               })

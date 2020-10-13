@@ -259,7 +259,7 @@ async function main() {
 
   const parser = InputParser.createWithKnownSchemas(api)
 
-  const CHANNEL_ID = await parser.finidEntityIdByUniqueQuery({ title: 'Example channel' }, 'Channel')
+  const CHANNEL_ID = await parser.findEntityIdByUniqueQuery({ title: 'Example channel' }, 'Channel')
 
   const updateOperation = await parser.createEntityUpdateOperation(channelUpdateInput, 'Channel', CHANNEL_ID)
 
