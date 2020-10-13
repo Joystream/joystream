@@ -10,7 +10,7 @@ use governance::election_params::ElectionParameters;
 use membership;
 use proposals_engine::{
     ActiveStake, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,
-    ProposalStatus, Stake, VoteKind, VotersParameters, VotingResults,
+    ProposalStatus, VoteKind, VotersParameters, VotingResults,
 };
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
@@ -148,7 +148,7 @@ struct DummyProposalFixture {
     proposal_code: Vec<u8>,
     title: Vec<u8>,
     description: Vec<u8>,
-    stake: Option<Stake<AccountId32, BalanceOf<Runtime>>>,
+    staking_account_id: Option<AccountId32>,
     exact_execution_block: Option<u32>,
 }
 
@@ -175,7 +175,7 @@ impl Default for DummyProposalFixture {
             proposal_code: dummy_proposal.encode(),
             title,
             description,
-            stake: None,
+            staking_account_id: None,
             exact_execution_block: None,
         }
     }
@@ -200,12 +200,9 @@ impl DummyProposalFixture {
         }
     }
 
-    fn with_stake(self, account_id: AccountId32, balance: BalanceOf<Runtime>) -> Self {
+    fn with_stake(self, account_id: AccountId32) -> Self {
         DummyProposalFixture {
-            stake: Some(Stake {
-                account_id,
-                balance,
-            }),
+            staking_account_id: Some(account_id),
             ..self
         }
     }
@@ -224,7 +221,7 @@ impl DummyProposalFixture {
             proposal_parameters: self.parameters,
             title: self.title,
             description: self.description,
-            stake: self.stake,
+            staking_account_id: self.staking_account_id,
             encoded_dispatchable_call_code: self.proposal_code,
             exact_execution_block: self.exact_execution_block,
         });
@@ -294,7 +291,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
             .with_account_id(account_id.clone())
-            .with_stake(account_id.clone(), stake_amount)
+            .with_stake(account_id.clone())
             .with_proposer(member_id);
 
         let account_balance = 500000;
@@ -533,10 +530,7 @@ fn text_proposal_execution_succeeds() {
                 member_id as u64,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(Stake {
-                    account_id: account_id.into(),
-                    balance: <BalanceOf<Runtime>>::from(25000u32),
-                }),
+                Some(account_id.into()),
                 b"text".to_vec(),
                 None,
             )
@@ -564,10 +558,7 @@ fn spending_proposal_execution_succeeds() {
                 member_id as u64,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(Stake {
-                    account_id: account_id.into(),
-                    balance: <BalanceOf<Runtime>>::from(25_000_u32),
-                }),
+                Some(account_id.into()),
                 new_balance,
                 target_account_id.clone().into(),
                 None,
@@ -599,10 +590,7 @@ fn set_validator_count_proposal_execution_succeeds() {
                 member_id as u64,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(Stake {
-                    account_id: account_id.into(),
-                    balance: <BalanceOf<Runtime>>::from(100_000_u32),
-                }),
+                Some(account_id.into()),
                 new_validator_count,
                 None,
             )

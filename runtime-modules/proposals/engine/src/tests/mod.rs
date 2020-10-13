@@ -73,7 +73,7 @@ struct DummyProposalFixture {
     proposal_code: Vec<u8>,
     title: Vec<u8>,
     description: Vec<u8>,
-    stake: Option<Stake<u64, BalanceOf<Test>>>,
+    staking_account_id: Option<u64>,
     exact_execution_block: Option<u64>,
 }
 
@@ -100,7 +100,7 @@ impl Default for DummyProposalFixture {
             proposal_code: dummy_proposal.encode(),
             title,
             description,
-            stake: None,
+            staking_account_id: None,
             exact_execution_block: None,
         }
     }
@@ -130,12 +130,9 @@ impl DummyProposalFixture {
         }
     }
 
-    fn with_stake(self, account_id: u64, balance: BalanceOf<Test>) -> Self {
+    fn with_stake(self, account_id: u64) -> Self {
         DummyProposalFixture {
-            stake: Some(Stake {
-                account_id,
-                balance,
-            }),
+            staking_account_id: Some(account_id),
             ..self
         }
     }
@@ -154,7 +151,7 @@ impl DummyProposalFixture {
             proposal_parameters: self.parameters,
             title: self.title,
             description: self.description,
-            stake: self.stake,
+            staking_account_id: self.staking_account_id,
             encoded_dispatchable_call_code: self.proposal_code,
             exact_execution_block: self.exact_execution_block,
         });
@@ -1027,7 +1024,7 @@ fn create_dummy_proposal_succeeds_with_stake() {
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture.params())
             .with_account_id(account_id)
-            .with_stake(account_id, 200);
+            .with_stake(account_id);
 
         let _imbalance = <Test as common::currency::GovernanceCurrency>::Currency::deposit_creating(
             &account_id,
@@ -1067,7 +1064,7 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture.params())
             .with_account_id(account_id)
-            .with_stake(account_id, required_stake);
+            .with_stake(account_id);
 
         dummy_proposal
             .create_proposal_and_assert(Err(Error::<Test>::InsufficientBalanceForStake.into()));
@@ -1075,29 +1072,23 @@ fn create_dummy_proposal_fail_with_stake_on_empty_account() {
 }
 
 #[test]
-fn create_proposal_fais_with_invalid_stake_parameters() {
+fn create_proposal_fais_with_insufficient_stake_parameters() {
     initial_test_ext().execute_with(|| {
         let parameters_fixture = ProposalParametersFixture::default();
 
         let mut dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture.params())
-            .with_stake(1, 200);
+            .with_stake(1);
 
         dummy_proposal.create_proposal_and_assert(Err(Error::<Test>::StakeShouldBeEmpty.into()));
-
-        let parameters_fixture_stake_200 = parameters_fixture.with_required_stake(200);
-        dummy_proposal =
-            DummyProposalFixture::default().with_parameters(parameters_fixture_stake_200.params());
-
-        dummy_proposal.create_proposal_and_assert(Err(Error::<Test>::EmptyStake.into()));
 
         let parameters_fixture_stake_300 = parameters_fixture.with_required_stake(300);
         dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters_fixture_stake_300.params())
-            .with_stake(1, 200);
+            .with_stake(1);
 
         dummy_proposal
-            .create_proposal_and_assert(Err(Error::<Test>::StakeDiffersFromRequired.into()));
+            .create_proposal_and_assert(Err(Error::<Test>::InsufficientBalanceForStake.into()));
     });
 }
 
@@ -1124,7 +1115,7 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
             .with_account_id(account_id)
-            .with_stake(1, stake_amount);
+            .with_stake(1);
 
         let account_balance = 500;
         let _imbalance = <Test as common::currency::GovernanceCurrency>::Currency::deposit_creating(
@@ -1199,7 +1190,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
             .with_account_id(account_id.clone())
-            .with_stake(1, stake_amount);
+            .with_stake(1);
 
         let account_balance = 500;
         let _imbalance = <Test as common::currency::GovernanceCurrency>::Currency::deposit_creating(
@@ -1280,7 +1271,7 @@ fn proposal_slashing_succeeds() {
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
             .with_account_id(account_id.clone())
-            .with_stake(account_id, stake_amount);
+            .with_stake(account_id);
 
         assert_eq!(
             <Test as common::currency::GovernanceCurrency>::Currency::total_balance(&account_id),
