@@ -168,6 +168,7 @@ impl Default for DummyProposalFixture {
                 slashing_threshold_percentage: 60,
                 grace_period: 0,
                 required_stake: None,
+                constitutionality: 1,
             },
             account_id: <Runtime as system::Trait>::AccountId::default(),
             proposer_id: 0,
@@ -288,6 +289,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             slashing_threshold_percentage: 60,
             grace_period: 5,
             required_stake: Some(stake_amount),
+            constitutionality: 1,
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)

@@ -59,6 +59,7 @@ impl Default for ProposalParametersFixture {
                 slashing_threshold_percentage: 60,
                 grace_period: 0,
                 required_stake: None,
+                constitutionality: 1,
             },
         }
     }
@@ -92,6 +93,7 @@ impl Default for DummyProposalFixture {
                 slashing_threshold_percentage: 60,
                 grace_period: 0,
                 required_stake: None,
+                constitutionality: 1,
             },
             account_id: 1,
             proposer_id: 1,
@@ -436,6 +438,7 @@ fn voting_results_calculation_succeeds() {
             slashing_threshold_percentage: 60,
             grace_period: 0,
             required_stake: None,
+            constitutionality: 1,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
@@ -1116,6 +1119,7 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
             slashing_threshold_percentage: 60,
             grace_period: 5,
             required_stake: Some(stake_amount),
+            constitutionality: 1,
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
@@ -1190,6 +1194,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             slashing_threshold_percentage: 60,
             grace_period: 5,
             required_stake: Some(stake_amount),
+            constitutionality: 1,
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
@@ -1270,6 +1275,7 @@ fn proposal_slashing_succeeds() {
             slashing_threshold_percentage: 60,
             grace_period: 5,
             required_stake: Some(stake_amount),
+            constitutionality: 1,
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
@@ -1329,6 +1335,7 @@ fn create_proposal_fails_with_invalid_threshold_parameters() {
             slashing_threshold_percentage: 60,
             grace_period: 5,
             required_stake: None,
+            constitutionality: 1,
         };
 
         let mut dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);

@@ -68,6 +68,10 @@ pub struct ProposalParameters<BlockNumber, Balance> {
 
     /// Proposal stake
     pub required_stake: Option<Balance>,
+
+    /// The number of councils in that must approve the proposal in a row before it has its
+    /// intended effect. Integer no less than 1.
+    pub constitutionality: u32,
 }
 
 /// Contains current voting results
