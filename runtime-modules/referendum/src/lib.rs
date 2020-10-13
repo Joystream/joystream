@@ -1,8 +1,33 @@
-// TODO: module documentation
 // TODO: adjust all extrinsic weights
 
-// NOTE: This module is instantiable pallet as described here https://substrate.dev/recipes/3-entrees/instantiable.html
-// No default instance is provided.
+//! # Referendum module
+//! General voting engine module for the the Joystream platform. Component of the council system.
+//!
+//! ## Overview
+//!
+//! Referendum is an abstract module that enables priviliged network participants to vote on the given topic.
+//! The module has no notion on the topic that is actually voted on focuses and rather focuses on enabling
+//! users to cast their votes and selecting the winning option after voting concludes.
+//!
+//! The voting itself is divided into three phases. In the default Idle phase, the module waits
+//! for the new voting round initiation by the runtime. In the Voting phase, users can submit sealed commitment
+//! of their vote that they can later reveal in the Revealing phase. After the Revealing phase ends,
+//! the Referendum becomes Idle again and waits for the new cycle start.
+//!
+//! The module supports an unlimited number of options for voting and one or multiple winners of the referendum.
+//! Depending on the runtime implementation, users can be required to stake at least a minimum amount of currency,
+//! and the winning options can be decided by the total number of votes received or the total amount staked
+//! behind them.
+//!
+//! ## Supported extrinsics
+//!
+//! - [vote](./struct.Module.html#method.vote)
+//! - [reveal_vote](./struct.Module.html#method.reveal_vote)
+//! - [release_stake](./struct.Module.html#method.release_stake)
+//!
+//! ## Notes
+//! This module is instantiable pallet as described here https://substrate.dev/recipes/3-entrees/instantiable.html
+//! No default instance is provided.
 
 /////////////////// Configuration //////////////////////////////////////////////
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -95,6 +120,7 @@ pub type CanRevealResult<T, I> = (
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
+/// Trait that should be used by other modules to start the referendum, etc.
 pub trait ReferendumManager<Origin, AccountId, Hash> {
     /// Power of vote(s) used to determine the referendum winner(s).
     type VotePower: Parameter
@@ -121,6 +147,7 @@ pub trait ReferendumManager<Origin, AccountId, Hash> {
     ) -> Hash;
 }
 
+/// The main Referendum module's trait.
 pub trait Trait<I: Instance>: system::Trait {
     /// The overarching event type.
     type Event: From<Event<Self, I>> + Into<<Self as system::Trait>::Event>;
@@ -192,13 +219,6 @@ decl_storage! {
         /// Index of the current referendum cycle. It is incremented everytime referendum ends.
         pub CurrentCycleId get(fn current_cycle_id) config(): u64;
     }
-
-    /* This might be needed in some cases
-    // add_extra_genesis has to be present in Instantiable Modules - see https://github.com/paritytech/substrate/blob/master/frame/support/procedural/src/lib.rs#L217
-    add_extra_genesis {
-        config(phantom): PhantomData<I>;
-    }
-    */
 }
 
 decl_event! {
@@ -481,7 +501,6 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     }
 
     /// Conclude referendum, count votes, and select the winners.
-    //fn conclude_referendum(revealing_stage: ReferendumStageRevealingOf<T, I>) -> Vec<OptionResult<T::VotePower>> {
     fn conclude_referendum(
         revealing_stage: ReferendumStageRevealingOf<T, I>,
     ) -> Vec<OptionResult<<T as Trait<I>>::VotePower>> {
