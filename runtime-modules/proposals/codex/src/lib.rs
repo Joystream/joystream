@@ -63,7 +63,7 @@ mod tests;
 
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get};
-use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
+use frame_support::{decl_error, decl_module, decl_storage, ensure, print, StorageValue};
 use sp_arithmetic::traits::Zero;
 use sp_std::clone::Clone;
 use sp_std::str::from_utf8;
@@ -325,6 +325,15 @@ decl_module! {
 
         /// Exports max wasm code length of the runtime upgrade proposal const.
         const RuntimeUpgradeWasmProposalMaxLength: u32 = T::RuntimeUpgradeWasmProposalMaxLength::get();
+
+        // Runtime upgrade summary:
+        //  - add values for the new 'amend constitution' proposal.
+        fn on_runtime_upgrade() -> frame_support::weights::Weight {
+            <AmendConstitutionProposalVotingPeriod<T>>::put::<T::BlockNumber>(72_000u32.into());
+            <AmendConstitutionProposalGracePeriod<T>>::put::<T::BlockNumber>(0u32.into());
+
+            10_000_000u64 // TODO: adjust weight
+        }
 
         /// Create 'Text (signal)' proposal type.
         #[weight = 10_000_000] // TODO: adjust weight
