@@ -469,20 +469,20 @@ impl<T: Trait> Module<T> {
         let new_proposal_id = next_proposal_count_value;
         let proposal_id = T::ProposalId::from(new_proposal_id);
 
-        let stake_data = if let Some(stake) = creation_params.stake {
-            ensure!(
-                T::StakingHandler::is_enough_balance_for_stake(&stake.account_id, stake.balance),
-                Error::<T>::InsufficientBalanceForStake
-            );
+        let stake_data =
+            if let Some(stake_balance) = creation_params.proposal_parameters.required_stake {
+                if let Some(stake) = creation_params.stake {
+                    T::StakingHandler::lock(&stake.account_id, stake_balance);
 
-            T::StakingHandler::lock(&stake.account_id, stake.balance);
-
-            Some(ActiveStake {
-                source_account_id: stake.account_id,
-            })
-        } else {
-            None
-        };
+                    Some(ActiveStake {
+                        source_account_id: stake.account_id,
+                    })
+                } else {
+                    return Err(Error::<T>::EmptyStake.into());
+                }
+            } else {
+                None
+            };
 
         let new_proposal = Proposal {
             created_at: Self::current_block(),
@@ -521,7 +521,7 @@ impl<T: Trait> Module<T> {
         parameters: &ProposalParameters<T::BlockNumber, BalanceOf<T>>,
         title: &[u8],
         description: &[u8],
-        stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
+        stake: Option<Stake<T::AccountId>>,
         exact_execution_block: Option<T::BlockNumber>,
     ) -> DispatchResult {
         ensure!(!title.is_empty(), Error::<T>::EmptyTitleProvided);
@@ -554,22 +554,26 @@ impl<T: Trait> Module<T> {
             Error::<T>::InvalidParameterSlashingThreshold
         );
 
-        // check stake parameters
-        if let Some(required_stake) = parameters.required_stake {
-            if let Some(stake) = stake.clone() {
+        // Check stake parameters.
+        if stake.is_some() && parameters.required_stake.is_none() {
+            return Err(Error::<T>::StakeShouldBeEmpty.into());
+        }
+
+        if let Some(stake_balance) = parameters.required_stake {
+            if let Some(stake) = stake {
                 ensure!(
-                    required_stake == stake.balance,
-                    Error::<T>::StakeDiffersFromRequired
+                    T::StakingHandler::is_enough_balance_for_stake(
+                        &stake.account_id,
+                        stake_balance
+                    ),
+                    Error::<T>::InsufficientBalanceForStake
                 );
             } else {
                 return Err(Error::<T>::EmptyStake.into());
             }
         }
 
-        if stake.is_some() && parameters.required_stake.is_none() {
-            return Err(Error::<T>::StakeShouldBeEmpty.into());
-        }
-
+        // Check execution block.
         if let Some(execution_block) = exact_execution_block {
             if execution_block == Zero::zero() {
                 return Err(Error::<T>::ZeroExactExecutionBlock.into());

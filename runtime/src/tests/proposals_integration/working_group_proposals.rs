@@ -62,7 +62,6 @@ fn add_opening(
             b"body".to_vec(),
             Some(Stake {
                 account_id: account_id.into(),
-                balance: <BalanceOf<Runtime>>::from(100_000_u32),
             }),
             AddOpeningParameters {
                 activate_at: activate_at.clone(),
@@ -101,7 +100,6 @@ fn begin_review_applications(
             b"body".to_vec(),
             Some(Stake {
                 account_id: account_id.into(),
-                balance: <BalanceOf<Runtime>>::from(25_000_u32),
             }),
             opening_id,
             working_group,
@@ -135,7 +133,6 @@ fn fill_opening(
             b"body".to_vec(),
             Some(Stake {
                 account_id: account_id.into(),
-                balance: <BalanceOf<Runtime>>::from(50_000_u32),
             }),
             proposals_codex::FillOpeningParameters {
                 opening_id,
@@ -180,7 +177,6 @@ fn decrease_stake(
             b"body".to_vec(),
             Some(Stake {
                 account_id: account_id.into(),
-                balance: <BalanceOf<Runtime>>::from(50_000_u32),
             }),
             leader_worker_id,
             stake_amount,
@@ -214,7 +210,6 @@ fn slash_stake(
             b"body".to_vec(),
             Some(Stake {
                 account_id: account_id.into(),
-                balance: <BalanceOf<Runtime>>::from(50_000_u32),
             }),
             leader_worker_id,
             stake_amount,
@@ -248,7 +243,6 @@ fn set_reward(
             b"body".to_vec(),
             Some(Stake {
                 account_id: account_id.into(),
-                balance: <BalanceOf<Runtime>>::from(50_000_u32),
             }),
             leader_worker_id,
             reward_amount,
@@ -294,7 +288,6 @@ fn set_mint_capacity<
             b"body".to_vec(),
             Some(Stake {
                 account_id: account_id.into(),
-                balance: <BalanceOf<Runtime>>::from(50_000_u32),
             }),
             mint_capacity,
             working_group,
@@ -327,7 +320,6 @@ fn terminate_role(
             b"body".to_vec(),
             Some(Stake {
                 account_id: account_id.into(),
-                balance: <BalanceOf<Runtime>>::from(100_000_u32),
             }),
             proposals_codex::TerminateRoleParameters {
                 worker_id: leader_worker_id,

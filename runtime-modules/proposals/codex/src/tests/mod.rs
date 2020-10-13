@@ -12,7 +12,7 @@ use working_group::OpeningPolicyCommitment;
 
 use crate::proposal_types::ProposalsConfigParameters;
 use crate::*;
-use crate::{BalanceOf, Error, ProposalDetails};
+use crate::{Error, ProposalDetails};
 pub use mock::*;
 
 use strum::IntoEnumIterator;
@@ -29,38 +29,30 @@ pub(crate) fn increase_total_balance_issuance_using_account_id(account_id: u64, 
     assert_eq!(Balances::total_issuance(), initial_balance + balance);
 }
 
-struct ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
+struct ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, SuccessfulCall>
 where
     InsufficientRightsCall: Fn() -> DispatchResult,
     EmptyStakeCall: Fn() -> DispatchResult,
-    InvalidStakeCall: Fn() -> DispatchResult,
     SuccessfulCall: Fn() -> DispatchResult,
 {
     insufficient_rights_call: InsufficientRightsCall,
     empty_stake_call: EmptyStakeCall,
-    invalid_stake_call: InvalidStakeCall,
     successful_call: SuccessfulCall,
     proposal_parameters: ProposalParameters<u64, u64>,
     proposal_details: ProposalDetails<u64, u64, u64, u64, u64, u64, u64, u64>,
 }
 
-impl<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
-    ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, InvalidStakeCall, SuccessfulCall>
+impl<InsufficientRightsCall, EmptyStakeCall, SuccessfulCall>
+    ProposalTestFixture<InsufficientRightsCall, EmptyStakeCall, SuccessfulCall>
 where
     InsufficientRightsCall: Fn() -> DispatchResult,
     EmptyStakeCall: Fn() -> DispatchResult,
-    InvalidStakeCall: Fn() -> DispatchResult,
     SuccessfulCall: Fn() -> DispatchResult,
 {
     fn check_for_invalid_stakes(&self) {
         assert_eq!(
             (self.empty_stake_call)(),
             Err(proposals_engine::Error::<Test>::EmptyStake.into())
-        );
-
-        assert_eq!(
-            (self.invalid_stake_call)(),
-            Err(proposals_engine::Error::<Test>::StakeDiffersFromRequired.into())
         );
     }
 
@@ -126,30 +118,13 @@ fn create_text_proposal_common_checks_succeed() {
                     None,
                 )
             },
-            invalid_stake_call: || {
-                ProposalCodex::create_text_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(5000u32),
-                    }),
-                    b"text".to_vec(),
-                    None,
-                )
-            },
             successful_call: || {
                 ProposalCodex::create_text_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(25000u32),
-                    }),
+                    Some(Stake { account_id: 1 }),
                     b"text".to_vec(),
                     None,
                 )
@@ -223,24 +198,13 @@ fn create_runtime_upgrade_common_checks_succeed() {
                     None,
                 )
             },
-            invalid_stake_call: || {
-                ProposalCodex::create_runtime_upgrade_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(500u32)}),
-                    b"wasm".to_vec(),
-                    None,
-                )
-            },
             successful_call: || {
                 ProposalCodex::create_runtime_upgrade_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(1_000_000_u32)}),
+                    Some(Stake{account_id: 1}),
                     b"wasm".to_vec(),
                     None,
                 )
@@ -316,31 +280,13 @@ fn create_spending_proposal_common_checks_succeed() {
                     None,
                 )
             },
-            invalid_stake_call: || {
-                ProposalCodex::create_spending_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(5000u32),
-                    }),
-                    20,
-                    10,
-                    None,
-                )
-            },
             successful_call: || {
                 ProposalCodex::create_spending_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(25000u32),
-                    }),
+                    Some(Stake { account_id: 1 }),
                     100,
                     2,
                     None,
@@ -364,10 +310,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(Stake {
-                    account_id: 1,
-                    balance: <BalanceOf<Test>>::from(1250u32)
-                }),
+                Some(Stake { account_id: 1 }),
                 0,
                 2,
                 None,
@@ -381,10 +324,7 @@ fn create_spending_proposal_call_fails_with_incorrect_balance() {
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(Stake {
-                    account_id: 1,
-                    balance: <BalanceOf<Test>>::from(1250u32)
-                }),
+                Some(Stake { account_id: 1 }),
                 5000001,
                 2,
                 None,
@@ -422,30 +362,13 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
                     None,
                 )
             },
-            invalid_stake_call: || {
-                ProposalCodex::create_set_validator_count_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(5000u32),
-                    }),
-                    4,
-                    None,
-                )
-            },
             successful_call: || {
                 ProposalCodex::create_set_validator_count_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(100_000_u32),
-                    }),
+                    Some(Stake { account_id: 1 }),
                     4,
                     None,
                 )
@@ -468,10 +391,7 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(Stake {
-                    account_id: 1,
-                    balance: <BalanceOf<Test>>::from(500u32)
-                }),
+                Some(Stake { account_id: 1 }),
                 3,
                 None,
             ),
@@ -484,10 +404,7 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(Stake {
-                    account_id: 1,
-                    balance: <BalanceOf<Test>>::from(1001u32)
-                }),
+                Some(Stake { account_id: 1 }),
                 3,
                 None,
             ),
@@ -649,24 +566,13 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
                     None,
                 )
             },
-            invalid_stake_call: || {
-                ProposalCodex::create_add_working_group_leader_opening_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(5000u32)}),
-                    add_opening_parameters.clone(),
-                    None,
-                )
-            },
             successful_call: || {
                 ProposalCodex::create_add_working_group_leader_opening_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(100_000_u32)}),
+                    Some(Stake{account_id: 1}),
                     add_opening_parameters.clone(),
                     None,
                 )
@@ -723,25 +629,13 @@ fn run_create_begin_review_working_group_leader_applications_proposal_common_che
  					None,
                 )
             },
-            invalid_stake_call: || {
-                ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(5000u32)}),
-                    opening_id,
-                    working_group,
- 					None,
-                )
-            },
             successful_call: || {
                 ProposalCodex::create_begin_review_working_group_leader_applications_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(25000u32)}),
+                    Some(Stake{account_id: 1}),
                     opening_id,
                     working_group,
  					None,
@@ -803,24 +697,13 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
                     None,
                 )
             },
-            invalid_stake_call: || {
-                ProposalCodex::create_fill_working_group_leader_opening_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(5000u32)}),
-                    fill_opening_parameters.clone(),
-                    None,
-                )
-            },
             successful_call: || {
                 ProposalCodex::create_fill_working_group_leader_opening_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(50000u32)}),
+                    Some(Stake{account_id: 1}),
                     fill_opening_parameters.clone(),
                     None,
                 )
@@ -854,10 +737,7 @@ fn run_create_working_group_mint_capacity_proposal_fails_with_invalid_parameters
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(Stake {
-                    account_id: 1,
-                    balance: <BalanceOf<Test>>::from(50000u32)
-                }),
+                Some(Stake { account_id: 1 }),
                 (crate::WORKING_GROUP_MINT_CAPACITY_MAX_VALUE + 1) as u64,
                 working_group,
                 None,
@@ -906,31 +786,13 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                     None,
                 )
             },
-            invalid_stake_call: || {
-                ProposalCodex::create_set_working_group_mint_capacity_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(5000u32),
-                    }),
-                    0,
-                    working_group,
-                    None,
-                )
-            },
             successful_call: || {
                 ProposalCodex::create_set_working_group_mint_capacity_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(50000u32),
-                    }),
+                    Some(Stake { account_id: 1 }),
                     10,
                     working_group,
                     None,
@@ -986,32 +848,13 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
                     None,
                 )
             },
-            invalid_stake_call: || {
-                ProposalCodex::create_decrease_working_group_leader_stake_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(5000u32),
-                    }),
-                    0,
-                    10,
-                    working_group,
-                    None,
-                )
-            },
             successful_call: || {
                 ProposalCodex::create_decrease_working_group_leader_stake_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(50000u32),
-                    }),
+                    Some(Stake { account_id: 1 }),
                     10,
                     10,
                     working_group,
@@ -1055,7 +898,8 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     b"body".to_vec(),
                     None,
                     0,
-                    10,                    working_group,
+                    10,
+                    working_group,
  					None,
                 )
             },
@@ -1072,26 +916,13 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
  					None,
                 )
             },
-            invalid_stake_call: || {
-                ProposalCodex::create_slash_working_group_leader_stake_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(5000u32)}),
-                    0,
-                    10,
-                    working_group,
- 					None,
-                )
-            },
             successful_call: || {
                 ProposalCodex::create_slash_working_group_leader_stake_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(Stake{account_id: 1, balance: <BalanceOf<Test>>::from(50000u32)}),
+                    Some(Stake{account_id: 1}),
                     10,
                     10,
                     working_group,
@@ -1137,10 +968,7 @@ fn run_slash_stake_with_zero_staking_balance_fails(working_group: WorkingGroup) 
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(Stake {
-                    account_id: 1,
-                    balance: <BalanceOf<Test>>::from(50000u32)
-                }),
+                Some(Stake { account_id: 1 }),
                 10,
                 0,
                 working_group,
@@ -1176,10 +1004,7 @@ fn run_decrease_stake_with_zero_staking_balance_fails(working_group: WorkingGrou
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(Stake {
-                    account_id: 1,
-                    balance: <BalanceOf<Test>>::from(50000u32)
-                }),
+                Some(Stake { account_id: 1 }),
                 10,
                 0,
                 working_group,
@@ -1229,32 +1054,13 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                     None,
                 )
             },
-            invalid_stake_call: || {
-                ProposalCodex::create_set_working_group_leader_reward_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(5000u32),
-                    }),
-                    0,
-                    10,
-                    working_group,
-                    None,
-                )
-            },
             successful_call: || {
                 ProposalCodex::create_set_working_group_leader_reward_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(50000u32),
-                    }),
+                    Some(Stake { account_id: 1 }),
                     10,
                     10,
                     working_group,
@@ -1314,30 +1120,13 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
                     None,
                 )
             },
-            invalid_stake_call: || {
-                ProposalCodex::create_terminate_working_group_leader_role_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(5000u32),
-                    }),
-                    terminate_role_parameters.clone(),
-                    None,
-                )
-            },
             successful_call: || {
                 ProposalCodex::create_terminate_working_group_leader_role_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(100_000_u32),
-                    }),
+                    Some(Stake { account_id: 1 }),
                     terminate_role_parameters.clone(),
                     None,
                 )
