@@ -11,7 +11,6 @@ import {
   WorkerId,
   WorkingGroupOpeningPolicyCommitment,
   Opening as WorkingGroupOpening,
-  ApplicationIdSet,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
 import { AccountInfo, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
@@ -936,7 +935,9 @@ export class Api {
     await this.expectSystemEvent('RuntimeUpdated')
   }
 
-  public waitForProposalToFinalize(id: ProposalId): Promise<void> {
+  // Resolves with events that were emitted at the same time that the proposal
+  // was finalized (I think!)
+  public waitForProposalToFinalize(id: ProposalId): Promise<EventRecord[]> {
     return new Promise(async (resolve) => {
       const unsubscribe = await this.api.query.system.events<Vec<EventRecord>>((events) => {
         events.forEach((record) => {
@@ -947,7 +948,7 @@ export class Api {
             record.event.data[1].toString().includes('Executed')
           ) {
             unsubscribe()
-            resolve()
+            resolve(events)
           } else if (
             record.event.method &&
             record.event.method.toString() === 'ProposalStatusUpdated' &&
@@ -955,7 +956,7 @@ export class Api {
             record.event.data[1].toString().includes('ExecutionFailed')
           ) {
             unsubscribe()
-            resolve()
+            resolve(events)
           }
         })
       })
@@ -1532,11 +1533,11 @@ export class Api {
     text: string,
     module: WorkingGroups,
     expectFailure: boolean
-  ): Promise<void[]> {
+  ): Promise<ISubmittableResult[]> {
     return Promise.all(
-      accounts.map(async (account) => {
-        await this.applyOnOpening(account, account, openingId, roleStake, applicantStake, text, expectFailure, module)
-      })
+      accounts.map(async (account) =>
+        this.applyOnOpening(account, account, openingId, roleStake, applicantStake, text, expectFailure, module)
+      )
     )
   }
 

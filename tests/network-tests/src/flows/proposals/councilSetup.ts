@@ -1,14 +1,18 @@
 import BN from 'bn.js'
 import { PaidTermId } from '@joystream/types/members'
+import { Api } from '../../Api'
+import { CouncilElectionHappyCaseFixture } from '../../fixtures/councilElectionHappyCase'
+import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
+import Debugger from 'debug'
+import { assert } from 'chai'
 
-import { Api } from '../Api'
-import { CouncilElectionHappyCaseFixture } from '../fixtures/councilElectionHappyCase'
-import { BuyMembershipHappyCaseFixture } from '../fixtures/membershipModule'
+const debug = Debugger('flow:councilSetup')
 
 // Electing council scenario
 export default async function councilSetup(api: Api, env: NodeJS.ProcessEnv) {
   // Skip creating council if already elected
   if ((await api.getCouncil()).length) {
+    debug('Skipping Council Setup, Council already elected')
     return
   }
 
@@ -38,6 +42,6 @@ export default async function councilSetup(api: Api, env: NodeJS.ProcessEnv) {
 
   await councilElectionHappyCaseFixture.runner(false)
 
-  // Elected council: AccountId[]
-  // const accountIds = (await api.getCouncil()).map((seat) => seat.member)
+  // Elected council
+  assert((await api.getCouncil()).length)
 }

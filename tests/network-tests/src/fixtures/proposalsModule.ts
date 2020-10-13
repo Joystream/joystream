@@ -7,6 +7,7 @@ import { assert } from 'chai'
 import { ApplicationId, OpeningId } from '@joystream/types/hiring'
 import { WorkerId } from '@joystream/types/working-group'
 import { Utils } from '../utils'
+import { EventRecord } from '@polkadot/types/interfaces'
 
 export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
   private api: Api
@@ -37,7 +38,7 @@ export class CreateWorkingGroupLeaderOpeningFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(100000)
     const proposalFee: BN = this.api.estimateProposeCreateWorkingGroupLeaderOpeningFee()
-    await this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
+    this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
 
     // Proposal creation
     const result = await this.api.proposeCreateWorkingGroupLeaderOpening({
@@ -102,7 +103,7 @@ export class BeginWorkingGroupLeaderApplicationReviewFixture implements Fixture 
     // Proposal stake calculation
     const proposalStake: BN = new BN(25000)
     const proposalFee: BN = this.api.estimateProposeBeginWorkingGroupLeaderApplicationReviewFee()
-    await this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
+    this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
 
     // Proposal creation
     const result = await this.api.proposeBeginWorkingGroupLeaderApplicationReview(
@@ -166,7 +167,7 @@ export class FillLeaderOpeningProposalFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(50000)
     const proposalFee: BN = this.api.estimateProposeFillLeaderOpeningFee()
-    await this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
+    this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
 
     const now: BN = await this.api.getBestBlock()
 
@@ -223,7 +224,7 @@ export class TerminateLeaderRoleProposalFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(100000)
     const proposalFee: BN = this.api.estimateProposeTerminateLeaderRoleFee()
-    await this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
+    this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
 
     // Proposal creation
     const result = await this.api.proposeTerminateLeaderRole(
@@ -274,7 +275,7 @@ export class SetLeaderRewardProposalFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(50000)
     const proposalFee: BN = this.api.estimateProposeLeaderRewardFee()
-    await this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
+    this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
 
     // Proposal creation
     const result = await this.api.proposeLeaderReward(
@@ -325,7 +326,7 @@ export class DecreaseLeaderStakeProposalFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(50000)
     const proposalFee: BN = this.api.estimateProposeDecreaseLeaderStakeFee()
-    await this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
+    this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
 
     // Proposal creation
     const result = await this.api.proposeDecreaseLeaderStake(
@@ -375,7 +376,7 @@ export class SlashLeaderProposalFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(50000)
     const proposalFee: BN = this.api.estimateProposeSlashLeaderStakeFee()
-    await this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
+    this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
 
     // Proposal creation
     const result = await this.api.proposeSlashLeaderStake(
@@ -422,7 +423,7 @@ export class WorkingGroupMintCapacityProposalFixture implements Fixture {
     // Proposal stake calculation
     const proposalStake: BN = new BN(50000)
     const proposalFee: BN = this.api.estimateProposeWorkingGroupMintCapacityFee()
-    await this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
+    this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
 
     // Proposal creation
     const result = await this.api.proposeWorkingGroupMintCapacity(
@@ -485,7 +486,7 @@ export class ElectionParametersProposalFixture implements Fixture {
       minVotingStake
     )
 
-    await this.api.treasuryTransferBalance(this.proposerAccount, proposalFee.add(proposalStake))
+    this.api.treasuryTransferBalance(this.proposerAccount, proposalFee.add(proposalStake))
 
     // Proposal creation
     const proposedAnnouncingPeriod: BN = announcingPeriod.subn(1)
@@ -591,7 +592,7 @@ export class SpendingProposalFixture implements Fixture {
       this.spendingBalance,
       this.proposer
     )
-    await this.api.treasuryTransferBalance(this.proposer, runtimeProposalFee.add(proposalStake))
+    this.api.treasuryTransferBalance(this.proposer, runtimeProposalFee.add(proposalStake))
     const councilAccounts = await this.api.getCouncilAccounts()
     this.api.treasuryTransferBalanceToAccounts(councilAccounts, runtimeVoteFee)
     await this.api.sudoSetCouncilMintCapacity(this.mintCapacity)
@@ -643,7 +644,7 @@ export class TextProposalFixture implements Fixture {
     const proposalText: string = 'Text of the testing proposal ' + uuid().substring(0, 8)
     const runtimeVoteFee: BN = this.api.estimateVoteForProposalFee()
     const councilAccounts = await this.api.getCouncilAccounts()
-    await this.api.treasuryTransferBalanceToAccounts(councilAccounts, runtimeVoteFee)
+    this.api.treasuryTransferBalanceToAccounts(councilAccounts, runtimeVoteFee)
 
     // Proposal stake calculation
     const proposalStake: BN = new BN(25000)
@@ -653,7 +654,7 @@ export class TextProposalFixture implements Fixture {
       description,
       proposalText
     )
-    await this.api.treasuryTransferBalance(this.proposer, runtimeProposalFee.add(proposalStake))
+    this.api.treasuryTransferBalance(this.proposer, runtimeProposalFee.add(proposalStake))
 
     // Proposal creation
 
@@ -687,12 +688,12 @@ export class ValidatorCountProposalFixture implements Fixture {
     const description: string = 'Testing validator count proposal ' + uuid().substring(0, 8)
     const runtimeVoteFee: BN = this.api.estimateVoteForProposalFee()
     const councilAccounts = await this.api.getCouncilAccounts()
-    await this.api.treasuryTransferBalanceToAccounts(councilAccounts, runtimeVoteFee)
+    this.api.treasuryTransferBalanceToAccounts(councilAccounts, runtimeVoteFee)
 
     // Proposal stake calculation
     const proposalStake: BN = new BN(100000)
     const proposalFee: BN = this.api.estimateProposeValidatorCountFee(description, description, proposalStake)
-    await this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
+    this.api.treasuryTransferBalance(this.proposer, proposalFee.add(proposalStake))
     const validatorCount: BN = await this.api.getValidatorCount()
 
     // Proposal creation
@@ -773,10 +774,15 @@ export class UpdateRuntimeFixture implements Fixture {
 export class VoteForProposalFixture implements Fixture {
   private api: Api
   private proposalNumber: ProposalId
+  private events: EventRecord[] = []
 
   constructor(api: Api, proposalNumber: ProposalId) {
     this.api = api
     this.proposalNumber = proposalNumber
+  }
+
+  public getEvents(): EventRecord[] {
+    return this.events
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
@@ -786,7 +792,7 @@ export class VoteForProposalFixture implements Fixture {
 
     // Approving the proposal
     this.api.batchApproveProposal(this.proposalNumber)
-    await this.api.waitForProposalToFinalize(this.proposalNumber)
+    this.events = await this.api.waitForProposalToFinalize(this.proposalNumber)
 
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')

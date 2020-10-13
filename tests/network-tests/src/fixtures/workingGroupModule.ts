@@ -46,7 +46,7 @@ export class AddWorkerOpeningFixture implements Fixture {
     }
     // Fee estimation and transfer
     const addOpeningFee: BN = this.api.estimateAddOpeningFee(this.module)
-    await this.api.treasuryTransferBalance(lead.role_account_id.toString(), addOpeningFee)
+    this.api.treasuryTransferBalance(lead.role_account_id.toString(), addOpeningFee)
 
     // Worker opening creation
     const result = await this.api.addOpening(
@@ -77,9 +77,7 @@ export class AddWorkerOpeningFixture implements Fixture {
       expectFailure
     )
 
-    if (expectFailure) {
-      throw new Error('Successful fixture run while expecting failure')
-    } else {
+    if (!expectFailure) {
       this.result = this.api.expectOpeningAddedEvent(result.events)
     }
   }
@@ -160,7 +158,7 @@ export class AcceptApplicationsFixture implements Fixture {
     const leadAccount = lead.role_account_id.toString()
     // Fee estimation and transfer
     const acceptApplicationsFee: BN = this.api.estimateAcceptApplicationsFee(this.module)
-    await this.api.treasuryTransferBalance(leadAccount, acceptApplicationsFee)
+    this.api.treasuryTransferBalance(leadAccount, acceptApplicationsFee)
 
     // Begin accepting applications
     await this.api.acceptApplications(leadAccount, this.openingId, this.module)
@@ -180,6 +178,7 @@ export class ApplyForOpeningFixture implements Fixture {
   private roleStake: BN
   private openingId: OpeningId
   private module: WorkingGroups
+  private result: ApplicationId[] = []
 
   public constructor(
     api: Api,
@@ -197,6 +196,10 @@ export class ApplyForOpeningFixture implements Fixture {
     this.module = module
   }
 
+  public getApplicationIds(): ApplicationId[] {
+    return this.result
+  }
+
   public async runner(expectFailure: boolean): Promise<void> {
     // Fee estimation and transfer
     const applyOnOpeningFee: BN = this.api
@@ -206,7 +209,7 @@ export class ApplyForOpeningFixture implements Fixture {
     this.api.treasuryTransferBalanceToAccounts(this.applicants, applyOnOpeningFee)
 
     // Applying for created worker opening
-    await this.api.batchApplyOnOpening(
+    const results = await this.api.batchApplyOnOpening(
       this.applicants,
       this.openingId,
       this.roleStake,
@@ -215,6 +218,18 @@ export class ApplyForOpeningFixture implements Fixture {
       this.module,
       expectFailure
     )
+
+    const applicationIds = results.map(({ events }) => {
+      const record = events.find(
+        (record) => record.event.method && record.event.method.toString() === 'AppliedOnOpening'
+      )
+      if (record) {
+        return (record.event.data[1] as unknown) as ApplicationId
+      }
+      throw new Error('Application on opening failed')
+    })
+
+    this.result = applicationIds
   }
 }
 
@@ -265,7 +280,7 @@ export class BeginApplicationReviewFixture implements Fixture {
     const leadAccount = lead.role_account_id.toString()
     // Fee estimation and transfer
     const beginReviewFee: BN = this.api.estimateBeginApplicantReviewFee(this.module)
-    await this.api.treasuryTransferBalance(leadAccount, beginReviewFee)
+    this.api.treasuryTransferBalance(leadAccount, beginReviewFee)
 
     // Begin application review
     // const beginApplicantReviewPromise: Promise<ApplicationId> = this.api.expectApplicationReviewBegan()
@@ -284,7 +299,7 @@ export class SudoBeginLeaderApplicationReviewFixture implements Fixture {
   private openingId: OpeningId
   private module: WorkingGroups
 
-  constructor(api: Api, sudo: KeyringPair, openingId: OpeningId, module: WorkingGroups) {
+  constructor(api: Api, openingId: OpeningId, module: WorkingGroups) {
     this.api = api
     this.openingId = openingId
     this.module = module
@@ -334,7 +349,7 @@ export class FillOpeningFixture implements Fixture {
     const leadAccount = lead.role_account_id.toString()
     // Fee estimation and transfer
     const beginReviewFee: BN = this.api.estimateFillOpeningFee(this.module)
-    await this.api.treasuryTransferBalance(leadAccount, beginReviewFee)
+    this.api.treasuryTransferBalance(leadAccount, beginReviewFee)
 
     // Assert max number of workers is not exceeded
     const activeWorkersCount: BN = await this.api.getActiveWorkersCount(this.module)
@@ -376,7 +391,7 @@ export class FillOpeningFixture implements Fixture {
   }
 }
 
-export class FillLeaderOpeningFixture implements Fixture {
+export class SudoFillLeaderOpeningFixture implements Fixture {
   private api: Api
   private applicationId: ApplicationId
   private openingId: OpeningId
@@ -455,7 +470,7 @@ export class IncreaseStakeFixture implements Fixture {
     const stakeIncrement: BN = new BN(1)
     const worker = await this.api.getWorkerById(this.workerId, this.module)
     const workerRoleAccount = worker.role_account_id.toString()
-    await this.api.treasuryTransferBalance(workerRoleAccount, increaseStakeFee.add(stakeIncrement))
+    this.api.treasuryTransferBalance(workerRoleAccount, increaseStakeFee.add(stakeIncrement))
 
     // Increase worker stake
     const increasedWorkerStake: BN = (await this.api.getWorkerStakeAmount(this.workerId, this.module)).add(
@@ -489,7 +504,7 @@ export class UpdateRewardAccountFixture implements Fixture {
     const workerRoleAccount = worker.role_account_id.toString()
     // Fee estimation and transfer
     const updateRewardAccountFee: BN = this.api.estimateUpdateRewardAccountFee(workerRoleAccount, this.module)
-    await this.api.treasuryTransferBalance(workerRoleAccount, updateRewardAccountFee)
+    this.api.treasuryTransferBalance(workerRoleAccount, updateRewardAccountFee)
 
     // Update reward account
     const createdAccount: KeyringPair = this.api.createKeyPairs(1)[0]
@@ -522,7 +537,7 @@ export class UpdateRoleAccountFixture implements Fixture {
     // Fee estimation and transfer
     const updateRoleAccountFee: BN = this.api.estimateUpdateRoleAccountFee(workerRoleAccount, this.module)
 
-    await this.api.treasuryTransferBalance(workerRoleAccount, updateRoleAccountFee)
+    this.api.treasuryTransferBalance(workerRoleAccount, updateRoleAccountFee)
 
     // Update role account
     const createdAccount: KeyringPair = this.api.createKeyPairs(1)[0]
@@ -559,7 +574,7 @@ export class TerminateApplicationsFixture implements Fixture {
 
     // Fee estimation and transfer
     const terminateApplicationFee: BN = this.api.estimateTerminateApplicationFee(this.module)
-    await this.api.treasuryTransferBalance(leadAccount, terminateApplicationFee.muln(this.applicationIds.length))
+    this.api.treasuryTransferBalance(leadAccount, terminateApplicationFee.muln(this.applicationIds.length))
 
     // Terminate worker applications
     await this.api.batchTerminateApplication(leadAccount, this.applicationIds, this.module)
@@ -590,7 +605,7 @@ export class DecreaseStakeFixture implements Fixture {
 
     // Fee estimation and transfer
     const decreaseStakeFee: BN = this.api.estimateDecreaseStakeFee(this.module)
-    await this.api.treasuryTransferBalance(leadAccount, decreaseStakeFee)
+    this.api.treasuryTransferBalance(leadAccount, decreaseStakeFee)
     const workerStakeDecrement: BN = new BN(1)
 
     // Worker stake decrement
@@ -630,7 +645,7 @@ export class SlashFixture implements Fixture {
 
     // Fee estimation and transfer
     const slashStakeFee: BN = this.api.estimateSlashStakeFee(this.module)
-    await this.api.treasuryTransferBalance(leadAccount, slashStakeFee)
+    this.api.treasuryTransferBalance(leadAccount, slashStakeFee)
     const slashAmount: BN = new BN(1)
 
     // Slash worker
@@ -663,7 +678,7 @@ export class TerminateRoleFixture implements Fixture {
 
     // Fee estimation and transfer
     const terminateRoleFee: BN = this.api.estimateTerminateRoleFee(this.module)
-    await this.api.treasuryTransferBalance(leadAccount, terminateRoleFee)
+    this.api.treasuryTransferBalance(leadAccount, terminateRoleFee)
 
     // Terminate worker role
     await this.api.terminateRole(leadAccount, this.workerId, uuid().substring(0, 8), this.module, expectFailure)

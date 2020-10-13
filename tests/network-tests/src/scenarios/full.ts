@@ -4,15 +4,15 @@ import { config } from 'dotenv'
 import Debugger from 'debug'
 
 import creatingMemberships from '../flows/membership/creatingMemberships'
-import councilSetup from '../flows/councilSetup'
-// import leaderSetup from '../flows/leaderSetup'
+import councilSetup from '../flows/proposals/councilSetup'
+import leaderSetup from '../flows/workingGroup/leaderSetup'
 import electionParametersProposal from '../flows/proposals/electionParametersProposal'
-// import manageLeaderRole from '../flows/proposals/manageLeaderRole'
+import manageLeaderRole from '../flows/proposals/manageLeaderRole'
 import spendingProposal from '../flows/proposals/spendingProposal'
 import textProposal from '../flows/proposals/textProposal'
 import validatorCountProposal from '../flows/proposals/validatorCountProposal'
-// import workingGroupMintCapacityProposal from '../flows/proposals/workingGroupMintCapacityProposal'
-// import atLeastValueBug from '../flows/workingGroup/atLeastValueBug'
+import workingGroupMintCapacityProposal from '../flows/proposals/workingGroupMintCapacityProposal'
+import atLeastValueBug from '../flows/workingGroup/atLeastValueBug'
 // import manageWorkerAsLead from '../flows/workingGroup/manageWorkerAsLead'
 // import manageWorkerAsWorker from '../flows/workingGroup/manageWorkerAsWorker'
 // import workerApplicaionHappyCase from '../flows/workingGroup/workerApplicationHappyCase'
@@ -40,34 +40,38 @@ const scenario = async () => {
   debug('Council')
   await councilSetup(api, env)
 
+  // MaxActiveProposalLimit = 5
   debug('Basic Proposals')
   await Promise.all([
     electionParametersProposal(api, env),
-    // spendingProposal(api, env, db),
-    // textProposal(api, env, db),
-    // validatorCountProposal(api, env, db),
-    // workingGroupMintCapacityProposal(api, env, db, WorkingGroups.StorageWorkingGroup),
-    // workingGroupMintCapacityProposal(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup),
+    spendingProposal(api, env),
+    textProposal(api, env),
+    validatorCountProposal(api, env),
+  ])
+
+  await Promise.all([
+    workingGroupMintCapacityProposal(api, env, WorkingGroups.StorageWorkingGroup),
+    workingGroupMintCapacityProposal(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
   ])
 
   // Test hiring and firing leads by the council throuh proposals
   // Leads are fired at the end of the flows
   debug('Lead Hiring through council proposals')
   await Promise.all([
-    // manageLeaderRole(api, env, db, WorkingGroups.StorageWorkingGroup),
-    // manageLeaderRole(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup),
+    manageLeaderRole(api, env, WorkingGroups.StorageWorkingGroup),
+    manageLeaderRole(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
   ])
 
   /* workers tests */
 
   debug('Sudo Hiring Leads')
   await Promise.all([
-    // leaderSetup(api, env, db, WorkingGroups.StorageWorkingGroup),
-    // leaderSetup(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup),
+    leaderSetup(api, env, WorkingGroups.StorageWorkingGroup),
+    leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
   ])
 
   // Test bug only on one instance of working group is sufficient
-  // await atLeastValueBug(api, env, db)
+  await atLeastValueBug(api, env)
 
   // debug('Worker Tests')
   // Promise.all([

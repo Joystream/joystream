@@ -23,7 +23,7 @@ export class BuyMembershipHappyCaseFixture implements Fixture {
       this.paidTerms,
       'member_name_which_is_longer_than_expected'
     )
-    await this.api.treasuryTransferBalanceToAccounts(this.accounts, membershipTransactionFee.add(new BN(membershipFee)))
+    this.api.treasuryTransferBalanceToAccounts(this.accounts, membershipTransactionFee.add(new BN(membershipFee)))
 
     // Buying membership
     await Promise.all(
@@ -67,7 +67,7 @@ export class BuyMembershipWithInsufficienFundsFixture implements Fixture {
       this.paidTerms,
       'member_name_which_is_longer_than_expected'
     )
-    await this.api.treasuryTransferBalance(this.account, membershipTransactionFee)
+    this.api.treasuryTransferBalance(this.account, membershipTransactionFee)
 
     // Balance assertion
     await this.api

@@ -1,7 +1,6 @@
 import BN from 'bn.js'
 import { Api, WorkingGroups } from '../../Api'
 import { VoteForProposalFixture, WorkingGroupMintCapacityProposalFixture } from '../../fixtures/proposalsModule'
-import { ExpectMintCapacityChangedFixture } from '../../fixtures/workingGroupModule'
 import { ProposalId } from '@joystream/types/proposals'
 import { assert } from 'chai'
 
@@ -27,8 +26,7 @@ export default async function workingGroupMintCapactiy(api: Api, env: NodeJS.Pro
     api,
     workingGroupMintCapacityProposalFixture.getCreatedProposalId() as ProposalId
   )
-  const expectMintCapacityChanged = new ExpectMintCapacityChangedFixture(api, newMintCapacity)
+
   // Approve mint capacity
-  voteForProposalFixture.runner(false)
-  await expectMintCapacityChanged.runner(false)
+  await voteForProposalFixture.runner(false)
 }

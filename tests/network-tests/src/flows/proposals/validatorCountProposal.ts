@@ -1,10 +1,9 @@
 import BN from 'bn.js'
 import { Api } from '../../Api'
 import { ValidatorCountProposalFixture } from '../../fixtures/proposalsModule'
-import { DbService } from '../../DbService'
 import { assert } from 'chai'
 
-export default async function validatorCount(api: Api, env: NodeJS.ProcessEnv, db: DbService) {
+export default async function validatorCount(api: Api, env: NodeJS.ProcessEnv) {
   // Pre-conditions: members and council
   const council = await api.getCouncil()
   assert(council.length)

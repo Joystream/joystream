@@ -1,15 +1,16 @@
 import { Fixture } from '../IFixture'
 import {
-  AddLeaderOpeningFixture,
+  SudoAddLeaderOpeningFixture,
   ApplyForOpeningFixture,
-  BeginLeaderApplicationReviewFixture,
-  FillLeaderOpeningFixture,
+  SudoBeginLeaderApplicationReviewFixture,
+  SudoFillLeaderOpeningFixture,
 } from './workingGroupModule'
 import { BuyMembershipHappyCaseFixture } from './membershipModule'
 import { Api, WorkingGroups } from '../Api'
 import { OpeningId } from '@joystream/types/hiring'
 import { PaidTermId } from '@joystream/types/members'
 import BN from 'bn.js'
+import { assert } from 'chai'
 
 export class SudoHireLeadFixture implements Fixture {
   private api: Api
@@ -56,9 +57,8 @@ export class SudoHireLeadFixture implements Fixture {
     // Buying membership for leader account
     await leaderHappyCaseFixture.runner(false)
 
-    const addLeaderOpeningFixture: AddLeaderOpeningFixture = new AddLeaderOpeningFixture(
+    const addLeaderOpeningFixture: SudoAddLeaderOpeningFixture = new SudoAddLeaderOpeningFixture(
       this.api,
-      [this.leadAccount],
       this.applicationStake,
       this.roleStake,
       this.openingActivationDelay,
@@ -77,16 +77,18 @@ export class SudoHireLeadFixture implements Fixture {
     )
     await applyForLeaderOpeningFixture.runner(false)
 
-    const beginLeaderApplicationReviewFixture = new BeginLeaderApplicationReviewFixture(
+    assert(applyForLeaderOpeningFixture.getApplicationIds().length === 1)
+
+    const beginLeaderApplicationReviewFixture = new SudoBeginLeaderApplicationReviewFixture(
       this.api,
       addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
       this.workingGroup
     )
     await beginLeaderApplicationReviewFixture.runner(false)
 
-    const fillLeaderOpeningFixture = new FillLeaderOpeningFixture(
+    const fillLeaderOpeningFixture = new SudoFillLeaderOpeningFixture(
       this.api,
-      [this.leadAccount],
+      applyForLeaderOpeningFixture.getApplicationIds()[0],
       addLeaderOpeningFixture.getCreatedOpeningId() as OpeningId,
       this.firstRewardInterval,
       this.rewardInterval,

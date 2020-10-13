@@ -1,10 +1,9 @@
 import BN from 'bn.js'
 import { Api } from '../../Api'
 import { SpendingProposalFixture } from '../../fixtures/proposalsModule'
-import { DbService } from '../../DbService'
 import { assert } from 'chai'
 
-export default async function spendingProposal(api: Api, env: NodeJS.ProcessEnv, db: DbService) {
+export default async function spendingProposal(api: Api, env: NodeJS.ProcessEnv) {
   const spendingBalance: BN = new BN(+env.SPENDING_BALANCE!)
   const mintCapacity: BN = new BN(+env.COUNCIL_MINTING_CAPACITY!)
 
