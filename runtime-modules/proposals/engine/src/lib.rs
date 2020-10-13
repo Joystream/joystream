@@ -23,10 +23,6 @@
 //!
 //! - The proposal can be [vetoed](./struct.Module.html#method.veto_proposal)
 //! anytime before the proposal execution by the _sudo_.
-//! - When the proposal is created with some stake - refunding on proposal finalization with
-//! different statuses should be accomplished from the external handler from the _stake module_
-//! (_StakingEventsHandler_). Such a handler should call
-//! [refund_proposal_stake](./struct.Module.html#method.refund_proposal_stake) callback function.
 //! - If the _council_ got reelected during the proposal _voting period_ the external handler calls
 //! [reset_active_proposals](./trait.Module.html#method.reset_active_proposals) function and
 //! all voting results get cleared.
@@ -39,7 +35,7 @@
 //! the council size
 //! - _ProposerOriginValidator_ - ensure valid proposer identity. Proposers should have permissions
 //! to create a proposal: they should be members of the Joystream.
-//! - [StakeHandlerProvider](./trait.StakeHandlerProvider.html) - defines an interface for the staking.
+//! - [StakingHandler](./trait.StakingHandler.html) - defines an interface for the staking.
 //!
 //! A full list of the abstractions can be found [here](./trait.Trait.html).
 //!
@@ -51,7 +47,6 @@
 //! ### Public API
 //! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal using provided parameters
 //! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid) - ensures that we can create the proposal
-//! - [refund_proposal_stake](./struct.Module.html#method.refund_proposal_stake) - a callback for _StakingHandlerEvents_
 //! - [reset_active_proposals](./trait.Module.html#method.reset_active_proposals) - resets voting results for active proposals
 //!
 //! ## Usage
