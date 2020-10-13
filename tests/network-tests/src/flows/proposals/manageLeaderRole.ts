@@ -1,5 +1,3 @@
-import { KeyringPair } from '@polkadot/keyring/types'
-import { Keyring } from '@polkadot/api'
 import BN from 'bn.js'
 import { Api, WorkingGroups } from '../../Api'
 import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
@@ -114,23 +112,27 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
   // Approve fill leader opening
   await voteForFillLeaderProposalFixture.runner(false)
 
+  const hiredLead = await api.getGroupLead(group)
+  assert(hiredLead)
+
   const setLeaderRewardProposalFixture = new SetLeaderRewardProposalFixture(api, proposer, alteredPayoutAmount, group)
   // Propose leader reward
   await setLeaderRewardProposalFixture.runner(false)
 
-  const voteForeLeaderRewardFixture: VoteForProposalFixture = new VoteForProposalFixture(
+  const voteForeLeaderRewardFixture = new VoteForProposalFixture(
     api,
     setLeaderRewardProposalFixture.getCreatedProposalId() as ProposalId
   )
 
-  // const expectLeaderRewardAmountUpdatedFixture = new ExpectLeaderRewardAmountUpdatedFixture(
-  //   api,
-  //   alteredPayoutAmount,
-  //   group
-  // )
-
   // Approve new leader reward
   await voteForeLeaderRewardFixture.runner(false)
+
+  const leadId = await api.getLeadWorkerId(group)
+  // This check is prone to failure if more than one worker's reward amount was updated
+  const workerId = api.expectWorkerRewardAmountUpdatedEvent(voteForeLeaderRewardFixture.getEvents())
+  assert(leadId!.eq(workerId))
+  const rewardRelationship = await api.getWorkerRewardRelationship(leadId!, group)
+  assert(rewardRelationship.amount_per_payout.eq(alteredPayoutAmount))
 
   const decreaseLeaderStakeProposalFixture = new DecreaseLeaderStakeProposalFixture(
     api,
@@ -171,4 +173,7 @@ export default async function manageLeaderRole(api: Api, env: NodeJS.ProcessEnv,
     terminateLeaderRoleProposalFixture.getCreatedProposalId() as ProposalId
   )
   await voteForLeaderRoleTerminationFixture.runner(false)
+
+  const maybeLead = await api.getGroupLead(group)
+  assert(!maybeLead)
 }

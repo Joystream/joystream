@@ -1,6 +1,4 @@
 import { Api, WorkingGroups } from '../../Api'
-import { Keyring } from '@polkadot/api'
-import { KeyringPair } from '@polkadot/keyring/types'
 import {
   ApplyForOpeningFixture,
   AddWorkerOpeningFixture,
@@ -10,21 +8,15 @@ import {
   SlashFixture,
   TerminateRoleFixture,
 } from '../../fixtures/workingGroupModule'
-import { Utils } from '../../utils'
+import { BuyMembershipHappyCaseFixture } from '../../fixtures/membershipModule'
 import BN from 'bn.js'
 import { OpeningId } from '@joystream/types/hiring'
-import { DbService } from '../../DbService'
 import { assert } from 'chai'
+import Debugger from 'debug'
 
 // Manage worker as lead scenario
-export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db: DbService, group: WorkingGroups) {
-  const sudoUri: string = env.SUDO_ACCOUNT_URI!
-  const keyring = new Keyring({ type: 'sr25519' })
-  const sudo: KeyringPair = keyring.addFromUri(sudoUri)
-
-  // const N: number = +env.WORKING_GROUP_N!
-  const leadKeyPair: KeyringPair[] = Utils.createKeyPairs(keyring, 1)
-
+export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
+  const debug = Debugger(`manageWorker:${group}`)
   const applicationStake: BN = new BN(env.WORKING_GROUP_APPLICATION_STAKE!)
   const roleStake: BN = new BN(env.WORKING_GROUP_ROLE_STAKE!)
   const firstRewardInterval: BN = new BN(env.LONG_REWARD_INTERVAL!)
@@ -32,16 +24,17 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
   const payoutAmount: BN = new BN(env.PAYOUT_AMOUNT!)
   const unstakingPeriod: BN = new BN(env.STORAGE_WORKING_GROUP_UNSTAKING_PERIOD!)
   const openingActivationDelay: BN = new BN(0)
+  const paidTerms = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
 
-  assert(db.hasLeader(api.getWorkingGroupString(group)))
-  const nKeyPairs = db.getMembers()
-  leadKeyPair[0] = db.getLeader(api.getWorkingGroupString(group))
+  const lead = await api.getGroupLead(group)
+  assert(lead)
+
+  const applicants = api.createKeyPairs(5).map((key) => key.address)
+  const memberSetFixture = new BuyMembershipHappyCaseFixture(api, applicants, paidTerms)
+  await memberSetFixture.runner(false)
 
   const addWorkerOpeningFixture: AddWorkerOpeningFixture = new AddWorkerOpeningFixture(
     api,
-    nKeyPairs,
-    leadKeyPair[0],
-    sudo,
     applicationStake,
     roleStake,
     openingActivationDelay,
@@ -51,72 +44,51 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, db:
   // Add worker opening
   await addWorkerOpeningFixture.runner(false)
 
-  let applyForWorkerOpeningFixture: ApplyForOpeningFixture
   // First apply for worker opening
-  await (async () => {
-    applyForWorkerOpeningFixture = new ApplyForOpeningFixture(
-      api,
-      nKeyPairs,
-      sudo,
-      applicationStake,
-      roleStake,
-      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
-      group
-    )
-    await applyForWorkerOpeningFixture.runner(false)
-  })()
-
-  let beginApplicationReviewFixture: BeginApplicationReviewFixture
-  // Begin application review
-  await (async () => {
-    beginApplicationReviewFixture = new BeginApplicationReviewFixture(
-      api,
-      leadKeyPair[0],
-      sudo,
-      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
-      group
-    )
-    await beginApplicationReviewFixture.runner(false)
-  })()
-
-  let fillOpeningFixture: FillOpeningFixture
-  // Fill worker opening
-  await (async () => {
-    fillOpeningFixture = new FillOpeningFixture(
-      api,
-      nKeyPairs,
-      leadKeyPair[0],
-      sudo,
-      addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
-      firstRewardInterval,
-      rewardInterval,
-      payoutAmount,
-      group
-    )
-    await fillOpeningFixture.runner(false)
-  })()
-
-  const decreaseStakeFixture: DecreaseStakeFixture = new DecreaseStakeFixture(
+  const applyForWorkerOpeningFixture = new ApplyForOpeningFixture(
     api,
-    nKeyPairs,
-    leadKeyPair[0],
-    sudo,
+    applicants,
+    applicationStake,
+    roleStake,
+    addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
     group
   )
+  await applyForWorkerOpeningFixture.runner(false)
+  debug('Applications:', applyForWorkerOpeningFixture.getApplicationIds())
+  const applicationIdsToHire = applyForWorkerOpeningFixture.getApplicationIds().slice(0, 2)
+
+  // Begin application review
+  const beginApplicationReviewFixture = new BeginApplicationReviewFixture(
+    api,
+    addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
+    group
+  )
+  await beginApplicationReviewFixture.runner(false)
+
+  debug('Filling with ids:', applicationIdsToHire)
+  // Fill worker opening
+  const fillOpeningFixture = new FillOpeningFixture(
+    api,
+    applicationIdsToHire,
+    addWorkerOpeningFixture.getCreatedOpeningId() as OpeningId,
+    firstRewardInterval,
+    rewardInterval,
+    payoutAmount,
+    group
+  )
+  await fillOpeningFixture.runner(false)
+  debug('Hired worker ids', fillOpeningFixture.getWorkerIds())
+  const firstWorkerId = fillOpeningFixture.getWorkerIds()[0]
+
+  const decreaseStakeFixture = new DecreaseStakeFixture(api, firstWorkerId, group)
   // Decrease worker stake
   await decreaseStakeFixture.runner(false)
 
-  const slashFixture: SlashFixture = new SlashFixture(api, nKeyPairs, leadKeyPair[0], sudo, group)
+  const slashFixture: SlashFixture = new SlashFixture(api, firstWorkerId, group)
   // Slash worker
   await slashFixture.runner(false)
 
-  const terminateRoleFixture: TerminateRoleFixture = new TerminateRoleFixture(
-    api,
-    nKeyPairs,
-    leadKeyPair[0],
-    sudo,
-    group
-  )
+  const terminateRoleFixture = new TerminateRoleFixture(api, firstWorkerId, group)
 
   // Terminate workers
   await terminateRoleFixture.runner(false)

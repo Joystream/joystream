@@ -49,7 +49,7 @@ export class Api {
     let connectAttempts = 0
     while (true) {
       connectAttempts++
-      debug('Connecting to chain..')
+      debug(`Connecting to chain, attempt ${connectAttempts}..`)
       try {
         const api = await ApiPromise.create({ provider, types })
 
@@ -66,7 +66,6 @@ export class Api {
           throw new Error('Unable to connect to chain')
         }
       }
-      debug(`Retrying to connecting to chain, attempt ${connectAttempts}..`)
       await Utils.wait(5000)
     }
   }
@@ -898,13 +897,14 @@ export class Api {
     }
   }
 
-  public expectWorkerRewardAmountUpdatedEvent(events: EventRecord[]): void {
+  public expectWorkerRewardAmountUpdatedEvent(events: EventRecord[]): WorkerId {
     const record = events.find(
       (record) => record.event.method && record.event.method.toString() === 'WorkerRewardAmountUpdated'
     )
     if (!record) {
       throw new Error('Expected Event Not Found')
     }
+    return (record.event.data[0] as unknown) as WorkerId
   }
 
   public expectStakeDecreasedEvent(events: EventRecord[]): void {
@@ -1878,6 +1878,13 @@ export class Api {
 
   public async getRewardRelationship(id: RewardRelationshipId): Promise<RewardRelationship> {
     return this.api.query.recurringRewards.rewardRelationships<RewardRelationship>(id)
+  }
+
+  public async getWorkerRewardRelationship(workerId: WorkerId, module: WorkingGroups): Promise<RewardRelationship> {
+    const rewardRelationshipId: RewardRelationshipId = (
+      await this.getWorkerById(workerId, module)
+    ).reward_relationship.unwrap()
+    return this.getRewardRelationship(rewardRelationshipId)
   }
 
   public async getWorkerRewardAccount(workerId: WorkerId, module: WorkingGroups): Promise<string> {

@@ -13,11 +13,9 @@ import textProposal from '../flows/proposals/textProposal'
 import validatorCountProposal from '../flows/proposals/validatorCountProposal'
 import workingGroupMintCapacityProposal from '../flows/proposals/workingGroupMintCapacityProposal'
 import atLeastValueBug from '../flows/workingGroup/atLeastValueBug'
-// import manageWorkerAsLead from '../flows/workingGroup/manageWorkerAsLead'
-// import manageWorkerAsWorker from '../flows/workingGroup/manageWorkerAsWorker'
-// import workerApplicaionHappyCase from '../flows/workingGroup/workerApplicationHappyCase'
-// import workerApplicationRejectionCase from '../flows/workingGroup/workerApplicationRejectionCase'
-// import workerPayout from '../flows/workingGroup/workerPayout'
+import manageWorkerAsLead from '../flows/workingGroup/manageWorkerAsLead'
+import manageWorkerAsWorker from '../flows/workingGroup/manageWorkerAsWorker'
+import workerPayout from '../flows/workingGroup/workerPayout'
 
 const scenario = async () => {
   const debug = Debugger('scenario:full')
@@ -28,20 +26,12 @@ const scenario = async () => {
 
   // Connect api to the chain
   const nodeUrl: string = env.NODE_URL || 'ws://127.0.0.1:9944'
-  const treasuryAccountUri = env.TREASURY_ACCOUNT_URI
   const provider = new WsProvider(nodeUrl)
-  const api: Api = await Api.create(provider, treasuryAccountUri || '//Alice', '//Alice')
+  const api: Api = await Api.create(provider, env.TREASURY_ACCOUNT_URI || '//Alice', '//Alice')
 
-  // Run flows serially passing them a 'context'
-
-  debug('Memberships')
-  await creatingMemberships(api, env)
-
-  debug('Council')
-  await councilSetup(api, env)
+  await Promise.all([creatingMemberships(api, env), councilSetup(api, env)])
 
   // MaxActiveProposalLimit = 5
-  debug('Basic Proposals')
   await Promise.all([
     electionParametersProposal(api, env),
     spendingProposal(api, env),
@@ -52,19 +42,10 @@ const scenario = async () => {
   await Promise.all([
     workingGroupMintCapacityProposal(api, env, WorkingGroups.StorageWorkingGroup),
     workingGroupMintCapacityProposal(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
-  ])
-
-  // Test hiring and firing leads by the council throuh proposals
-  // Leads are fired at the end of the flows
-  debug('Lead Hiring through council proposals')
-  await Promise.all([
     manageLeaderRole(api, env, WorkingGroups.StorageWorkingGroup),
     manageLeaderRole(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
   ])
 
-  /* workers tests */
-
-  debug('Sudo Hiring Leads')
   await Promise.all([
     leaderSetup(api, env, WorkingGroups.StorageWorkingGroup),
     leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
@@ -73,23 +54,14 @@ const scenario = async () => {
   // Test bug only on one instance of working group is sufficient
   await atLeastValueBug(api, env)
 
-  // debug('Worker Tests')
-  // Promise.all([
-  //   async () => {
-  //     await manageWorkerAsLead(api, env, db, WorkingGroups.StorageWorkingGroup)
-  //     await manageWorkerAsWorker(api, env, db, WorkingGroups.StorageWorkingGroup)
-  //     await workerApplicaionHappyCase(api, env, db, WorkingGroups.StorageWorkingGroup)
-  //     await workerApplicationRejectionCase(api, env, db, WorkingGroups.StorageWorkingGroup)
-  //     await workerPayout(api, env, db, WorkingGroups.StorageWorkingGroup)
-  //   },
-  //   async () => {
-  //     await manageWorkerAsLead(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
-  //     await manageWorkerAsWorker(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
-  //     await workerApplicaionHappyCase(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
-  //     await workerApplicationRejectionCase(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
-  //     await workerPayout(api, env, db, WorkingGroups.ContentDirectoryWorkingGroup)
-  //   },
-  // ])
+  await Promise.all([
+    manageWorkerAsLead(api, env, WorkingGroups.StorageWorkingGroup),
+    manageWorkerAsWorker(api, env, WorkingGroups.StorageWorkingGroup),
+    workerPayout(api, env, WorkingGroups.StorageWorkingGroup),
+    manageWorkerAsLead(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
+    manageWorkerAsWorker(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
+    workerPayout(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
+  ])
 
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!

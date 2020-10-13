@@ -322,6 +322,7 @@ export class FillOpeningFixture implements Fixture {
   private payoutInterval: BN
   private amountPerPayout: BN
   private module: WorkingGroups
+  private workerIds: WorkerId[] = []
 
   constructor(
     api: Api,
@@ -339,6 +340,10 @@ export class FillOpeningFixture implements Fixture {
     this.payoutInterval = payoutInterval
     this.amountPerPayout = amountPerPayout
     this.module = module
+  }
+
+  public getWorkerIds(): WorkerId[] {
+    return this.workerIds
   }
 
   public async runner(expectFailure: boolean): Promise<void> {
@@ -363,7 +368,6 @@ export class FillOpeningFixture implements Fixture {
 
     // Fill worker opening
     const now: BN = await this.api.getBestBlock()
-
     const result = await this.api.fillOpening(
       leadAccount,
       this.openingId,
@@ -374,6 +378,8 @@ export class FillOpeningFixture implements Fixture {
       this.module
     )
     const applicationIdToWorkerIdMap: ApplicationIdToWorkerIdMap = this.api.expectOpeningFilledEvent(result.events)
+    this.workerIds = []
+    applicationIdToWorkerIdMap.forEach((workerId) => this.workerIds.push(workerId))
 
     // Assertions
     applicationIdToWorkerIdMap.forEach(async (workerId, applicationId) => {
