@@ -741,7 +741,7 @@ decl_module! {
             member_id: MemberId<T>,
             title: Vec<u8>,
             description: Vec<u8>,
-            stake: Option<Stake<T::AccountId, BalanceOf<T>>>,
+            staking_account_id: Option<T::AccountId>,
             constitution_text: Vec<u8>,
             exact_execution_block: Option<T::BlockNumber>,
         ) {
@@ -752,7 +752,7 @@ decl_module! {
                 member_id,
                 title,
                 description,
-                stake,
+                staking_account_id,
                 proposal_details: proposal_details.clone(),
                 proposal_parameters: proposal_types::parameters::amend_constitution_proposal::<T>(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),

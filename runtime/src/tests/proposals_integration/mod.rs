@@ -613,10 +613,7 @@ fn amend_constitution_proposal_execution_succeeds() {
                 member_id as u64,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(Stake {
-                    account_id: account_id.into(),
-                    balance: <BalanceOf<Runtime>>::from(25000u32),
-                }),
+                Some(account_id.into()),
                 b"Constitution text".to_vec(),
                 None,
             )

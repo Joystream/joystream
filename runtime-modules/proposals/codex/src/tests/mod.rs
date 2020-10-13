@@ -1171,30 +1171,13 @@ fn create_amend_constitution_proposal_common_checks_succeed() {
                     None,
                 )
             },
-            invalid_stake_call: || {
-                ProposalCodex::create_amend_constitution_proposal(
-                    RawOrigin::Signed(1).into(),
-                    1,
-                    b"title".to_vec(),
-                    b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(5000u32),
-                    }),
-                    b"constitution text".to_vec(),
-                    None,
-                )
-            },
             successful_call: || {
                 ProposalCodex::create_amend_constitution_proposal(
                     RawOrigin::Signed(1).into(),
                     1,
                     b"title".to_vec(),
                     b"body".to_vec(),
-                    Some(Stake {
-                        account_id: 1,
-                        balance: <BalanceOf<Test>>::from(25000u32),
-                    }),
+                    Some(1),
                     b"constitution text".to_vec(),
                     None,
                 )
