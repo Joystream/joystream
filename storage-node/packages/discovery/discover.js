@@ -33,12 +33,14 @@ class DiscoveryClient {
   accountInfoCache = {}
 
   /*
-   * @param {IpfsClient} ipfs - instance of an ipfs-http-client
-   * @param {RuntimeApi} runtimeApi - api instance to query the chain
+   * @param {RuntimeApi} api - api instance to query the chain
+   * @param {string} ipfsHttpGatewayUrl - optional ipfs http gateway
+   * @param {IpfsClient} ipfs - optinoal instance of an ipfs-http-client
    */
-  constructor(ipfs, runtimeApi) {
-    this.ipfs = ipfs || require('ipfs-http-client')('localhost', '5001', { protocol: 'http' })
-    this.runtimeApi = runtimeApi
+  constructor({ api, ipfs, ipfsHttpGatewayUrl }) {
+    this.runtimeApi = api
+    this.ipfs = ipfs
+    this.ipfsHttpGatewayUrl = ipfsHttpGatewayUrl
   }
 
   /**
@@ -65,10 +67,11 @@ class DiscoveryClient {
    * the local ipfs node will be used.
    * If the storage provider is not registered it will throw an error
    * @param {number | BN | u64} storageProviderId - the provider id to lookup
-   * @param {string} gateway - optional ipfs http gateway url to perform ipfs queries
+   * @param {string} ipfsHttpGatewayUrl - optional ipfs http gateway url to perform ipfs queries
    * @returns { Promise<object> } - the published service information
    */
-  async discoverOverIpfsHttpGateway(storageProviderId, gateway = 'http://localhost:8080') {
+  async discoverOverIpfsHttpGateway(storageProviderId, ipfsHttpGatewayUrl) {
+    let gateway = ipfsHttpGatewayUrl || this.ipfsHttpGatewayUrl || 'http://localhost:8080'
     storageProviderId = new BN(storageProviderId)
     const isProvider = await this.runtimeApi.workers.isStorageProvider(storageProviderId)
 
@@ -178,8 +181,8 @@ class DiscoveryClient {
 
   /**
    * Internal method that handles concurrent discoveries and caching of results. Will
-   * select the appropriate discovery protocol based on whether we are in a browser environment or not.
-   * If not in a browser it expects a local ipfs node to be running.
+   * select the appropriate discovery protocol based on browser environment or not,
+   * and if an ipfs client was passed in the constructor.
    * @param {number | BN | u64} storageProviderId - ID of the storage provider
    * @returns { Promise<object | null> } - the published service information
    */
@@ -199,7 +202,7 @@ class DiscoveryClient {
 
     let result
     try {
-      if (inBrowser()) {
+      if (inBrowser() || !this.ipfs) {
         result = await this.discoverOverJoystreamDiscoveryService(storageProviderId)
       } else {
         result = await this.discoverOverLocalIpfsNode(storageProviderId)

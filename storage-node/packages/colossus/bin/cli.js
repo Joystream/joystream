@@ -297,7 +297,7 @@ const commands = {
     const ipfs = require('ipfs-http-client')(ipfsHost, '5001', { protocol: 'http' })
     const { PublisherClient, DiscoveryClient } = require('@joystream/service-discovery')
     const publisherClient = new PublisherClient(ipfs)
-    const discoveryClient = new DiscoveryClient(ipfs, api)
+    const discoveryClient = new DiscoveryClient({ ipfs, api })
     const ipfsHttpGatewayUrl = `http://${ipfsHost}:8080/`
 
     const { startSyncing } = require('../lib/sync')
@@ -317,7 +317,7 @@ const commands = {
     const ipfsHost = cli.flags.ipfsHost
     const ipfs = require('ipfs-http-client')(ipfsHost, '5001', { protocol: 'http' })
     const { DiscoveryClient } = require('@joystream/service-discovery')
-    const discoveryClient = new DiscoveryClient(ipfs, api)
+    const discoveryClient = new DiscoveryClient({ ipfs, api })
     await api.untilChainIsSynced()
     await startDiscoveryService({ api, port, discoveryClient })
   },

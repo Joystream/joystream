@@ -44,6 +44,12 @@ module.exports = function (discoveryClient) {
 
       try {
         debug(`resolving ${id}`)
+        // Storage providers discoveryClient must use ipfs client and not rely
+        // on joystream http discovery to avoid potentially an infinite request loop
+        // back to our own api endpoint.
+        if (!discoveryClient.ipfs) {
+          return res.status(500)
+        }
         const info = await discoveryClient.discover(id, USE_CACHE, cacheMaxAge)
         if (info === null) {
           debug('info not found')

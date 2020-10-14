@@ -45,7 +45,7 @@ export class UploadCommand extends BaseCommand {
     super()
 
     this.api = api
-    this.discoveryClient = new DiscoveryClient(undefined, api)
+    this.discoveryClient = new DiscoveryClient({ api })
     this.mediaSourceFilePath = mediaSourceFilePath
     this.dataObjectTypeId = dataObjectTypeId
     this.memberId = memberId
@@ -155,7 +155,7 @@ export class UploadCommand extends BaseCommand {
   // Requests the runtime and obtains the storage node endpoint URL.
   private async discoverStorageProviderEndpoint(storageProviderId: string): Promise<string> {
     try {
-      const serviceInfo = await this.discoveryClient.discover(storageProviderId, this.api)
+      const serviceInfo = await this.discoveryClient.discover(storageProviderId)
 
       if (serviceInfo === null) {
         this.fail('Storage node discovery failed.')
