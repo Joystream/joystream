@@ -16,7 +16,10 @@
     "generate:all": "yarn generate:entity-schemas && yarn generate:types",
     "initialize:alice-as-lead": "ts-node ./scripts/devInitAliceLead.ts",
     "initialize:content-dir": "ts-node ./scripts/initializeContentDir.ts",
-    "initialize:dev": "yarn initialize:alice-as-lead && yarn initialize:content-dir"
+    "initialize:dev": "yarn initialize:alice-as-lead && yarn initialize:content-dir",
+    "example:createChannel": "ts-node ./examples/createChannel.ts",
+    "example:createVideo": "ts-node ./examples/createVideo.ts",
+    "example:updateChannelTitle": "ts-node ./examples/updateChannelTitle.ts"
   },
   "dependencies": {
     "ajv": "6.12.5",

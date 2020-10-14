@@ -1,4 +1,4 @@
-# Content directory json schemas and inputs
+# Content directory tooling
 
 ## Definitions
 
@@ -142,6 +142,133 @@ const createClassInput = JSON.parse(fs.readFileSync('/path/to/inputs/LanguageCla
 Besides that, a Typescript code can be written to generate some inputs (ie. using a loop) that can then can be used to create classes/schemas or insert entities into the content directory.
 
 There are a lot of other potential use-cases, but for the purpose of this documentation it should be enough to mention there exists this very easy way of converting `.schema.json` files into Typescript interfaces.
+
+## Using as library
+
+The `content-directory-schemas` directory of the monorepo is constructed in such a way, that it should be possible to use it as library and import from it json schemas, types (mentioned in `Typescript support` section) and tools to, for example, convert entity input like this described in the `Entity batches` section into `CreateEntity`, `AddSchemaSupportToEntity` and/or `UpdateEntityPropertyValues` operations.
+
+### Examples
+
+The best way to ilustrate this would be by providing some examples:
+
+#### Creating a channel
+```
+  import { InputParser } from 'cd-schemas'
+  import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
+  // Other imports...
+
+  async main() {
+    // Initialize the api, SENDER_KEYPAIR and SENDER_MEMBER_ID...
+
+    const channel: ChannelEntity = {
+      title: 'Example channel',
+      description: 'This is an example channel',
+      language: { existing: { code: 'EN' } },
+      coverPhotoUrl: '',
+      avatarPhotoURL: '',
+      isPublic: true,
+    }
+
+    const parser = InputParser.createWithKnownSchemas(api, [
+      {
+        className: 'Channel',
+        entries: [channel],
+      },
+    ])
+
+    const operations = await parser.getEntityBatchOperations()
+    await api.tx.contentDirectory
+      .transaction({ Member: SENDER_MEMBER_ID }, operations)
+      .signAndSend(SENDER_KEYPAIR)
+  }
+```
+__Full example with comments can be found in `content-directory-schemas/examples/createChannel.ts` and ran with `yarn workspace cd-schemas example:createChannel`__
+
+#### Creating a video
+```
+import { InputParser } from 'cd-schemas'
+import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
+// ...
+
+async main() {
+  // ...
+
+  const video: VideoEntity = {
+    title: 'Example video',
+    description: 'This is an example video',
+    language: { existing: { code: 'EN' } },
+    category: { existing: { name: 'Education' } },
+    channel: { existing: { title: 'Example channel' } },
+    media: {
+      new: {
+        encoding: { existing: { name: 'H.263_MP4' } },
+        pixelHeight: 600,
+        pixelWidth: 800,
+        location: {
+          new: {
+            httpMediaLocation: {
+              new: { url: 'https://testnet.joystream.org/' },
+            },
+          },
+        },
+      },
+    },
+    license: {
+      new: {
+        knownLicense: {
+          existing: { code: 'CC_BY' },
+        },
+      },
+    },
+    duration: 3600,
+    thumbnailURL: '',
+    isExplicit: false,
+    isPublic: true,
+  }
+
+  const parser = InputParser.createWithKnownSchemas(api, [
+    {
+      className: 'Video',
+      entries: [video],
+    },
+  ])
+
+  const operations = await parser.getEntityBatchOperations()
+  await api.tx.contentDirectory
+    .transaction({ Member: SENDER_MEMBER_ID }, operations)
+    .signAndSend(SENDER_KEYPAIR)
+}
+```
+__Full example with comments can be found in `content-directory-schemas/examples/createVideo.ts` and ran with `yarn workspace cd-schemas example:createChannel`__
+
+#### Update channel title
+
+Note that updates are currently very limitied (ie. the `new` and `existing` keywords are not supported for references etc.)
+
+```
+import { InputParser } from 'cd-schemas'
+import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
+// ...
+
+async function main() {
+  // ...
+
+  const channelUpdateInput: Partial<ChannelEntity> = {
+    title: 'Updated channel title',
+  }
+
+  const parser = InputParser.createWithKnownSchemas(api)
+
+  const CHANNEL_ID = await parser.findEntityIdByUniqueQuery({ title: 'Example channel' }, 'Channel')
+
+  const updateOperation = await parser.createEntityUpdateOperation(channelUpdateInput, 'Channel', CHANNEL_ID)
+
+  await api.tx.contentDirectory
+    .transaction({ Member: SENDER_MEMBER_ID }, [updateOperation])
+    .signAndSend(SENDER_KEYPAIR)
+}
+```
+__Full example with comments can be found in `content-directory-schemas/examples/updateChannelTitle.ts` and ran with `yarn workspace cd-schemas example:updateChannelTitle`__
 
 ## Current limitations
 
