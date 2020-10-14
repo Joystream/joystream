@@ -48,7 +48,7 @@ pub struct Instance0;
 parameter_types! {
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const VoteStageDuration: u64 = 5;
-    pub const RevealStageDuration: u64 = 5;
+    pub const RevealStageDuration: u64 = 7;
     pub const MinimumStake: u64 = 10000;
     pub const LockId: LockIdentifier = *b"referend";
 }
@@ -249,7 +249,7 @@ pub fn build_test_externalities(
 
     let mut result = Into::<sp_io::TestExternalities>::into(t.clone());
 
-    // Make sure we are not in block 1 where no events are emitted - see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
+    // Make sure we are not in block 0 where no events are emitted - see https://substrate.dev/recipes/2-appetizers/4-events.html#emitting-events
     result.execute_with(|| {
         // topup significant accounts
         let amount = 40000; // some high enough number to pass all test checks
@@ -433,7 +433,7 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Voting(ReferendumStageVoting {
-                started: block_number,
+                started: block_number + 1, // actual voting starts in the next block (thats why +1)
                 winning_target_count,
             }),
         );
@@ -450,7 +450,7 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(
             Stage::<Runtime, Instance0>::get(),
             ReferendumStage::Revealing(ReferendumStageRevealing {
-                started: block_number - 1,
+                started: block_number,
                 winning_target_count,
                 intermediate_winners: vec![],
             }),

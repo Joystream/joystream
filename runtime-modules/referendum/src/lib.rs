@@ -482,7 +482,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
         Stage::<T, I>::put(ReferendumStage::Voting(ReferendumStageVoting::<
             T::BlockNumber,
         > {
-            started: <system::Module<T>>::block_number(),
+            started: <system::Module<T>>::block_number() + 1.into(),
             winning_target_count: *winning_target_count,
         }));
     }
@@ -494,7 +494,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
             T,
             I,
         > {
-            started: <system::Module<T>>::block_number(),
+            started: <system::Module<T>>::block_number() + 1.into(),
             winning_target_count: old_stage.winning_target_count,
             intermediate_winners: vec![],
         }));
