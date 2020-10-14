@@ -40,7 +40,7 @@ services:
       dockerfile: apps.Dockerfile
     ports:
       - '127.0.0.1:3001:3001'
-    command: colossus --dev --ws-provider ws://chain:9944 --ipfs-host chain
+    command: colossus --dev --ws-provider ws://chain:9944 --ipfs-host ipfs
     environment:
       - DEBUG=*
 
