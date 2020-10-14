@@ -711,11 +711,14 @@ impl<T: Trait> Module<T> {
     // - clean active proposal cache
     // - update proposal status fields (status, finalized_at)
     // - add to pending execution proposal cache if approved
+    // - add to pending constitutionality proposal cache if approved but constitutionality level is not reached
     // - slash and unstake proposal stake if stake exists
     // - decrease active proposal counter
     // - fire an event
     // It prints an error message in case of an attempt to finalize the non-active proposal.
     fn finalize_proposal(proposal_id: T::ProposalId, decision_status: ProposalDecisionStatus) {
+        let now = Self::current_block();
+
         Self::decrease_active_proposal_counter();
         <ActiveProposalIds<T>>::remove(&proposal_id.clone());
 
@@ -733,13 +736,18 @@ impl<T: Trait> Module<T> {
             }
 
             // deal with stakes if necessary
-            let slash_balance =
-                Self::calculate_slash_balance(&decision_status, &proposal.parameters);
-            Self::slash_and_unstake(proposal.staking_account_id.clone(), slash_balance);
+            if decision_status
+                != ProposalDecisionStatus::Approved(
+                    ApprovedProposalStatus::PendingConstitutionality,
+                )
+            {
+                let slash_balance =
+                    Self::calculate_slash_balance(&decision_status, &proposal.parameters);
+                Self::slash_and_unstake(proposal.staking_account_id.clone(), slash_balance);
+            }
 
             // create finalized proposal status with error if any
-            let new_proposal_status =
-                ProposalStatus::finalized(decision_status.clone(), Self::current_block());
+            let new_proposal_status = ProposalStatus::finalized(decision_status.clone(), now);
 
             // update approved proposal or remove otherwise
             if !matches!(decision_status, ProposalDecisionStatus::Approved(..)) {
@@ -802,17 +810,15 @@ impl<T: Trait> Module<T> {
                 if proposal.is_ready_for_execution(now) {
                     // this should be true, because it was tested inside is_grace_period_expired()
                     if let ProposalStatus::Finalized(finalisation_data) = proposal.status.clone() {
-                        Some(ApprovedProposalData {
+                        return Some(ApprovedProposalData {
                             proposal_id,
                             proposal,
                             finalisation_status_data: finalisation_data,
-                        })
-                    } else {
-                        None
+                        });
                     }
-                } else {
-                    None
                 }
+
+                None
             })
             .collect()
     }

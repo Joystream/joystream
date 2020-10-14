@@ -1741,10 +1741,24 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
         let starting_block = 1;
         run_to_block_and_finalize(1);
 
-        let parameters_fixture = ProposalParametersFixture::default().with_constitutionality(2);
-        let dummy_proposal =
-            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+        let account_id = 1;
+        let total_balance = 1000;
+        let required_stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let parameters_fixture = ProposalParametersFixture::default()
+            .with_constitutionality(2)
+            .with_required_stake(required_stake);
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters_fixture.params())
+            .with_stake(account_id);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            total_balance - required_stake
+        );
 
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 1);
@@ -1787,8 +1801,13 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
                 },
                 exact_execution_block: None,
                 current_constitutionality_level: 1,
-                staking_account_id: None,
+                staking_account_id: Some(account_id),
             }
+        );
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            total_balance - required_stake
         );
 
         let reactivation_block = 5;
@@ -1825,6 +1844,8 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
         assert!(!<PendingConstitutionalityProposalIds<Test>>::contains_key(
             proposal_id
         ));
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance);
 
         EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
             proposal_id,
