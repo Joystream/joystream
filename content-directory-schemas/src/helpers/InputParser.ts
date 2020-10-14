@@ -310,10 +310,15 @@ export class InputParser {
 
   private reset() {
     this.entityIndexByUniqueQueryMap = new Map<string, number>()
+    this.entityIdByUniqueQueryMapInitialized = false
+
     this.classIdByNameMap = new Map<string, number>()
+    this.classMapInitialized = false
+
     this.createEntityOperations = []
     this.addSchemaToEntityOprations = []
     this.updateEntityPropertyValuesOperations = []
+
     this.entityByUniqueQueryCurrentIndex = 0
   }
 
