@@ -161,5 +161,5 @@ jobs:
       - name: Wait for storage-node to publish identity
         run: sleep 90
         # Better would be poll `http://localhost:3001/discover/v0/1` until we get 200 Response
-      - name: Execute tests
+      - name: Upload a file
         run: DEBUG=joystream:* yarn storage-cli upload ./pioneer/packages/apps/public/images/default-thumbnail.png 1 0
