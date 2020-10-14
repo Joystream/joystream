@@ -57,7 +57,10 @@ export default class CurateContentCommand extends ContentDirectoryCommandBase {
 
     if (existingStatusId) {
       const current = await this.getAndParseKnownEntity<CurationStatusEntity>(existingStatusId)
-      const statusUpdate: Partial<CurationStatusEntity> = { approved: status === 'Accepted', comment: rationale }
+      const statusUpdate: Partial<CurationStatusEntity> = { approved: status === 'Accepted' }
+      if (rationale !== undefined) {
+        statusUpdate.comment = rationale
+      }
 
       this.log(`Existing curation status found!`)
       this.jsonPrettyPrint(JSON.stringify(current))
