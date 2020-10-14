@@ -5,31 +5,29 @@ use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use sp_std::vec::Vec;
 
-use crate::ActiveStake;
-
 /// Current status of the proposal
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum ProposalStatus<BlockNumber, AccountId> {
-    /// A new proposal status that is available for voting (with optional stake data).
-    Active(Option<ActiveStake<AccountId>>),
+pub enum ProposalStatus<BlockNumber> {
+    /// A new proposal status that is available for voting.
+    Active,
 
     /// The proposal decision was made.
     Finalized(FinalizationData<BlockNumber>),
 }
 
-impl<BlockNumber, AccountId> Default for ProposalStatus<BlockNumber, AccountId> {
+impl<BlockNumber> Default for ProposalStatus<BlockNumber> {
     fn default() -> Self {
-        ProposalStatus::Active(None)
+        ProposalStatus::Active
     }
 }
 
-impl<BlockNumber, AccountId> ProposalStatus<BlockNumber, AccountId> {
+impl<BlockNumber> ProposalStatus<BlockNumber> {
     /// Creates finalized proposal status with provided ProposalDecisionStatus.
     pub fn finalized(
         decision_status: ProposalDecisionStatus,
         now: BlockNumber,
-    ) -> ProposalStatus<BlockNumber, AccountId> {
+    ) -> ProposalStatus<BlockNumber> {
         ProposalStatus::Finalized(FinalizationData {
             proposal_status: decision_status,
             finalized_at: now,
@@ -40,7 +38,7 @@ impl<BlockNumber, AccountId> ProposalStatus<BlockNumber, AccountId> {
     pub fn approved(
         approved_status: ApprovedProposalStatus,
         now: BlockNumber,
-    ) -> ProposalStatus<BlockNumber, AccountId> {
+    ) -> ProposalStatus<BlockNumber> {
         ProposalStatus::Finalized(FinalizationData {
             proposal_status: ProposalDecisionStatus::Approved(approved_status),
             finalized_at: now,
@@ -110,9 +108,6 @@ pub enum ProposalDecisionStatus {
     /// To clear the quorum requirement, the percentage of council members with revealed votes
     /// must be no less than the quorum value for the given proposal type.
     Approved(ApprovedProposalStatus),
-
-    /// The proposal needs more than one council approval.
-    PendingConstitutionality,
 }
 
 #[cfg(test)]
@@ -136,7 +131,7 @@ mod tests {
         let block_number = 20;
 
         let proposal_status =
-            ProposalStatus::<u64, u64>::finalized(ProposalDecisionStatus::Slashed, block_number);
+            ProposalStatus::<u64>::finalized(ProposalDecisionStatus::Slashed, block_number);
 
         assert_eq!(
             ProposalStatus::Finalized(FinalizationData {

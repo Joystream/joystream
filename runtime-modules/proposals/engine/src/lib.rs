@@ -113,9 +113,9 @@
 use types::{ApprovedProposalData, FinalizedProposalData, MemberId};
 
 pub use types::{
-    ActiveStake, ApprovedProposalStatus, BalanceOf, FinalizationData, Proposal,
-    ProposalCodeDecoder, ProposalCreationParameters, ProposalDecisionStatus, ProposalExecutable,
-    ProposalParameters, ProposalStatus, StakingHandler, VoteKind, VotersParameters, VotingResults,
+    ApprovedProposalStatus, BalanceOf, FinalizationData, Proposal, ProposalCodeDecoder,
+    ProposalCreationParameters, ProposalDecisionStatus, ProposalExecutable, ProposalParameters,
+    ProposalStatus, StakingHandler, VoteKind, VotersParameters, VotingResults,
 };
 
 pub(crate) mod types;
@@ -206,7 +206,6 @@ decl_event!(
         <T as Trait>::ProposalId,
         MemberId = MemberId<T>,
         <T as system::Trait>::BlockNumber,
-        <T as system::Trait>::AccountId,
     {
         /// Emits on proposal creation.
         /// Params:
@@ -218,7 +217,7 @@ decl_event!(
         /// Params:
         /// - Id of a updated proposal.
         /// - New proposal status
-        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber, AccountId>),
+        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber>),
 
         /// Emits on voting for the proposal
         /// Params:
@@ -473,20 +472,13 @@ impl<T: Trait> Module<T> {
         let new_proposal_id = next_proposal_count_value;
         let proposal_id = T::ProposalId::from(new_proposal_id);
 
-        let stake_data =
-            if let Some(stake_balance) = creation_params.proposal_parameters.required_stake {
-                if let Some(staking_account_id) = creation_params.staking_account_id {
-                    T::StakingHandler::lock(&staking_account_id, stake_balance);
-
-                    Some(ActiveStake {
-                        source_account_id: staking_account_id,
-                    })
-                } else {
-                    return Err(Error::<T>::EmptyStake.into());
-                }
+        if let Some(stake_balance) = creation_params.proposal_parameters.required_stake {
+            if let Some(staking_account_id) = creation_params.staking_account_id.clone() {
+                T::StakingHandler::lock(&staking_account_id, stake_balance);
             } else {
-                None
-            };
+                return Err(Error::<T>::EmptyStake.into());
+            }
+        };
 
         let new_proposal = Proposal {
             activated_at: Self::current_block(),
@@ -494,10 +486,11 @@ impl<T: Trait> Module<T> {
             title: creation_params.title,
             description: creation_params.description,
             proposer_id: creation_params.proposer_id,
-            status: ProposalStatus::Active(stake_data),
+            status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
             exact_execution_block: creation_params.exact_execution_block,
             current_constitutionality_level: 0,
+            staking_account_id: creation_params.staking_account_id,
         };
 
         <Proposals<T>>::insert(proposal_id, new_proposal);
@@ -597,11 +590,33 @@ impl<T: Trait> Module<T> {
     /// Possible application includes new council elections.
     pub fn reset_active_proposals() {
         <ActiveProposalIds<T>>::iter().for_each(|(proposal_id, _)| {
-            <Proposals<T>>::mutate(proposal_id, |proposal| {
-                proposal.reset_proposal();
-                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
-            });
+            Self::reset_proposal_votes(proposal_id);
         });
+    }
+
+    // Resets votes for a single proposal.
+    fn reset_proposal_votes(proposal_id: T::ProposalId) {
+        <Proposals<T>>::mutate(proposal_id, |proposal| {
+            proposal.reset_proposal_votes();
+            <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+        });
+    }
+
+    /// Reactivate proposals with pending constitutionality.
+    /// Possible application includes new council elections.
+    pub fn reactivate_pending_constitutionality_proposal() {
+        <PendingConstitutionalityProposalIds<T>>::iter().for_each(|(proposal_id, _)| {
+            <Proposals<T>>::mutate(proposal_id, |proposal| {
+                proposal.activated_at = Self::current_block();
+                proposal.status = ProposalStatus::Active;
+            });
+            Self::reset_proposal_votes(proposal_id);
+
+            Self::increase_active_proposal_counter();
+            <ActiveProposalIds<T>>::insert(proposal_id, ());
+        });
+
+        <PendingConstitutionalityProposalIds<T>>::remove_all();
     }
 }
 
@@ -704,7 +719,7 @@ impl<T: Trait> Module<T> {
 
         let mut proposal = Self::proposals(proposal_id);
 
-        if let ProposalStatus::Active(active_stake) = proposal.status.clone() {
+        if proposal.status == ProposalStatus::Active {
             if let ProposalDecisionStatus::Approved(approved_status) = decision_status.clone() {
                 proposal.current_constitutionality_level += 1;
 
@@ -718,7 +733,7 @@ impl<T: Trait> Module<T> {
             // deal with stakes if necessary
             let slash_balance =
                 Self::calculate_slash_balance(&decision_status, &proposal.parameters);
-            Self::slash_and_unstake(active_stake, slash_balance);
+            Self::slash_and_unstake(proposal.staking_account_id.clone(), slash_balance);
 
             // create finalized proposal status with error if any
             let new_proposal_status =
@@ -741,18 +756,15 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // Slashes the stake and perform unstake only in case of existing stake
-    fn slash_and_unstake(
-        current_stake_data: Option<ActiveStake<T::AccountId>>,
-        slash_balance: BalanceOf<T>,
-    ) {
+    // Slashes the stake and perform unstake only in case of existing stake.
+    fn slash_and_unstake(staking_account_id: Option<T::AccountId>, slash_balance: BalanceOf<T>) {
         // only if stake exists
-        if let Some(stake_data) = current_stake_data {
+        if let Some(staking_account_id) = staking_account_id {
             if !slash_balance.is_zero() {
-                T::StakingHandler::slash(&stake_data.source_account_id, Some(slash_balance));
+                T::StakingHandler::slash(&staking_account_id, Some(slash_balance));
             }
 
-            T::StakingHandler::unlock(&stake_data.source_account_id);
+            T::StakingHandler::unlock(&staking_account_id);
         }
     }
 
@@ -774,7 +786,6 @@ impl<T: Trait> Module<T> {
                 .required_stake
                 .clone()
                 .unwrap_or_else(BalanceOf::<T>::zero), // stake if set or zero
-            ProposalDecisionStatus::PendingConstitutionality => BalanceOf::<T>::zero(),
         }
     }
 

@@ -9,8 +9,8 @@ use codec::Encode;
 use governance::election_params::ElectionParameters;
 use membership;
 use proposals_engine::{
-    ActiveStake, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,
-    ProposalStatus, VoteKind, VotersParameters, VotingResults,
+    BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters, ProposalStatus, VoteKind,
+    VotersParameters, VotingResults,
 };
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
@@ -315,14 +315,13 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             parameters,
             proposer_id: member_id,
             activated_at: 0,
-            status: ProposalStatus::Active(Some(ActiveStake {
-                source_account_id: account_id.clone(),
-            })),
+            status: ProposalStatus::Active,
             title: b"title".to_vec(),
             description: b"description".to_vec(),
             voting_results: VotingResults::default(),
             exact_execution_block: None,
             current_constitutionality_level: 0,
+            staking_account_id: Some(account_id.clone()),
         };
 
         assert_eq!(proposal, expected_proposal);

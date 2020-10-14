@@ -113,14 +113,6 @@ impl VotingResults {
     }
 }
 
-/// Contains source staking account for the stake.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug)]
-pub struct ActiveStake<AccountId> {
-    /// Source account of the stake balance. Refund if any will be provided using this account
-    pub source_account_id: AccountId,
-}
-
 /// 'Proposal' contains information necessary for the proposal system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -141,7 +133,7 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {
     pub activated_at: BlockNumber,
 
     /// Current proposal status
-    pub status: ProposalStatus<BlockNumber, AccountId>,
+    pub status: ProposalStatus<BlockNumber>,
 
     /// Curring voting result for the proposal
     pub voting_results: VotingResults,
@@ -152,6 +144,9 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {
     /// The number of councils in that must approve the proposal in a row before it has its
     /// intended effect.
     pub current_constitutionality_level: u32,
+
+    /// Optional account id for staking.
+    pub staking_account_id: Option<AccountId>,
 }
 
 impl<BlockNumber, ProposerId, Balance, AccountId>
@@ -215,11 +210,12 @@ where
         if proposal_status_resolution.is_approval_quorum_reached()
             && proposal_status_resolution.is_approval_threshold_reached()
         {
-            let approved_status = if proposal_status_resolution.is_constitutionality_reached() {
-                ApprovedProposalStatus::PendingExecution
-            } else {
-                ApprovedProposalStatus::PendingConstitutionality
-            };
+            let approved_status =
+                if proposal_status_resolution.is_constitutionality_reached_on_approval() {
+                    ApprovedProposalStatus::PendingExecution
+                } else {
+                    ApprovedProposalStatus::PendingConstitutionality
+                };
 
             Some(ProposalDecisionStatus::Approved(approved_status))
         } else if proposal_status_resolution.is_slashing_quorum_reached()
@@ -237,8 +233,8 @@ where
 
     /// Reset the proposal in Active status. Proposal with other status won't be changed.
     /// Reset proposal operation clears voting results.
-    pub fn reset_proposal(&mut self) {
-        if let ProposalStatus::Active(_) = self.status.clone() {
+    pub fn reset_proposal_votes(&mut self) {
+        if self.status == ProposalStatus::Active {
             self.voting_results = VotingResults::default();
         }
     }
@@ -321,7 +317,7 @@ where
     }
 
     // Council approved the proposal enough times.
-    pub fn is_constitutionality_reached(&self) -> bool {
+    pub fn is_constitutionality_reached_on_approval(&self) -> bool {
         self.proposal.current_constitutionality_level + 1
             >= self.proposal.parameters.constitutionality
     }
