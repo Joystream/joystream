@@ -4,11 +4,11 @@ use super::*;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct Entity<
-    ClassId: Default + BaseArithmetic,
-    MemberId: Default,
-    Hash: Default,
-    EntityId: Default,
-    Nonce: Default + BaseArithmetic,
+    ClassId: Default + BaseArithmetic + Clone + Copy,
+    MemberId: Default + PartialEq + Clone + Copy,
+    Hashed: Default + Clone + Codec,
+    EntityId: Default + Clone + Copy + Codec,
+    Nonce: Default + BaseArithmetic + Clone + Copy,
 > {
     /// Permissions for an instance of an Entity.
     entity_permissions: EntityPermissions<MemberId>,
@@ -24,38 +24,26 @@ pub struct Entity<
 
     /// Values for properties on class that are used by some schema used by this entity
     /// Length is no more than Class.properties.
-    values: BTreeMap<PropertyId, StoredPropertyValue<Hash, EntityId, Nonce>>,
+    values: BTreeMap<PropertyId, StoredPropertyValue<Hashed, EntityId, Nonce>>,
 
     /// Number of property values referencing current entity
     reference_counter: InboundReferenceCounter,
 }
 
-// impl<T: Trait> Default for Entity<T> {
-//     fn default() -> Self {
-//         Self {
-//             entity_permissions: EntityPermissions::<T>::default(),
-//             class_id: T::ClassId::default(),
-//             supported_schemas: BTreeSet::new(),
-//             values: BTreeMap::new(),
-//             reference_counter: InboundReferenceCounter::default(),
-//         }
-//     }
-// }
-
 impl<
-        ClassId: Default + BaseArithmetic,
-        MemberId: Default,
-        Hash: Default,
-        EntityId: Default,
-        Nonce: Default + BaseArithmetic,
-    > Entity<ClassId, MemberId, Hash, EntityId, Nonce>
+        ClassId: Default + BaseArithmetic + Clone + Copy,
+        MemberId: Default + PartialEq + Clone + Copy,
+        Hashed: Default + Clone + Codec,
+        EntityId: Default + Clone + Copy + Codec,
+        Nonce: Default + BaseArithmetic + Clone + Copy,
+    > Entity<ClassId, MemberId, Hashed, EntityId, Nonce>
 {
     /// Create new `Entity` instance, related to a given `class_id` with provided parameters,  
     pub fn new(
         controller: EntityController<MemberId>,
         class_id: ClassId,
         supported_schemas: BTreeSet<SchemaId>,
-        values: BTreeMap<PropertyId, StoredPropertyValue<Hash, EntityId, Nonce>>,
+        values: BTreeMap<PropertyId, StoredPropertyValue<Hashed, EntityId, Nonce>>,
     ) -> Self {
         Self {
             entity_permissions: EntityPermissions::<MemberId>::default_with_controller(controller),
@@ -77,28 +65,28 @@ impl<
     }
 
     /// Get `Entity` values by value
-    pub fn get_values(self) -> BTreeMap<PropertyId, StoredPropertyValue<Hash, EntityId, Nonce>> {
+    pub fn get_values(self) -> BTreeMap<PropertyId, StoredPropertyValue<Hashed, EntityId, Nonce>> {
         self.values
     }
 
     /// Get `Entity` values by reference
     pub fn get_values_ref(
         &self,
-    ) -> &BTreeMap<PropertyId, StoredPropertyValue<Hash, EntityId, Nonce>> {
+    ) -> &BTreeMap<PropertyId, StoredPropertyValue<Hashed, EntityId, Nonce>> {
         &self.values
     }
 
     /// Get `Entity` values by mutable reference
     pub fn get_values_mut(
         &mut self,
-    ) -> &mut BTreeMap<PropertyId, StoredPropertyValue<Hash, EntityId, Nonce>> {
+    ) -> &mut BTreeMap<PropertyId, StoredPropertyValue<Hashed, EntityId, Nonce>> {
         &mut self.values
     }
 
     /// Get mutable reference to `Entity` values
     pub fn set_values(
         &mut self,
-        new_values: BTreeMap<PropertyId, StoredPropertyValue<Hash, EntityId, Nonce>>,
+        new_values: BTreeMap<PropertyId, StoredPropertyValue<Hashed, EntityId, Nonce>>,
     ) {
         self.values = new_values;
     }
@@ -151,14 +139,14 @@ impl<
     pub fn ensure_property_value_is_vec<T: Trait>(
         &self,
         in_class_schema_property_id: PropertyId,
-    ) -> Result<VecStoredPropertyValue<Hash, EntityId, Nonce>, Error<T>> {
+    ) -> Result<VecStoredPropertyValue<Hashed, EntityId, Nonce>, Error<T>> {
         self.values
             .get(&in_class_schema_property_id)
             // Throw an error if a property was not found on entity
             // by an in-class index of a property.
             .ok_or(Error::<T>::UnknownEntityPropertyId)?
             .as_vec_property_value()
-            .map(|property_value_vec| property_value_vec.to_owned())
+            .map(|property_value_vec| property_value_vec.clone())
             // Ensure prop value under given class schema property id is vector
             .ok_or(Error::<T>::PropertyValueUnderGivenIndexIsNotAVector)
     }

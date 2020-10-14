@@ -823,10 +823,10 @@ decl_module! {
             let (entity, class) = Self::ensure_known_entity_and_class(entity_id)?;
 
             // Ensure provided new_entity_controller is not equal to current one
-            entity.get_permissions_ref().ensure_controllers_are_not_equal(&new_controller)?;
+            entity.get_permissions_ref().ensure_controllers_are_not_equal::<T>(&new_controller)?;
 
             // Ensure any inbound InputPropertyValue::Reference with same_owner flag set points to the given Entity
-            entity.ensure_inbound_same_owner_rc_is_zero()?;
+            entity.ensure_inbound_same_owner_rc_is_zero::<T>()?;
 
             let class_properties = class.get_properties();
 
@@ -947,7 +947,7 @@ decl_module! {
         }
 
         // ======
-        // The next set of extrinsics can be invoked by anyone who can properly sign for provided value of `Actor<T>`.
+        // The next set of extrinsics can be invoked by anyone who can properly sign for provided value of `Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>`.
         // ======
 
         /// Create entity.
@@ -957,7 +957,7 @@ decl_module! {
         pub fn create_entity(
             origin,
             class_id: T::ClassId,
-            actor: Actor<T>,
+            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
         ) -> DispatchResult {
 
             let account_id = ensure_signed(origin)?;
@@ -976,7 +976,7 @@ decl_module! {
             // Ensure actor can create entities
             Self::ensure_can_create_entities(&class_permissions, &account_id, &actor)?;
 
-            let entity_controller = EntityController::from_actor(&actor);
+            let entity_controller = EntityController::<T::MemberId>::from_actor::<T>(&actor);
 
             // Check if entity creation voucher exists
             let voucher_exists = if <EntityCreationVouchers<T>>::contains_key(class_id, &entity_controller) {
@@ -1014,7 +1014,7 @@ decl_module! {
 
             let entity_id = Self::next_entity_id();
 
-            let new_entity = Entity::<T>::new(
+            let new_entity = Entity::<T::ClassId, T::MemberId, T::Hash, T::EntityId, T::Nonce>::new(
                 entity_controller,
                 class_id,
                 BTreeSet::new(),
@@ -1022,7 +1022,7 @@ decl_module! {
             );
 
             // Save newly created entity:
-            EntityById::insert(entity_id, new_entity);
+            <EntityById<T>>::insert(entity_id, new_entity);
 
             // Increment the next entity id:
             <NextEntityId<T>>::mutate(|n| *n += T::EntityId::one());
@@ -1041,7 +1041,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_entity(
             origin,
-            actor: Actor<T>,
+            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             entity_id: T::EntityId,
         ) -> DispatchResult {
 
@@ -1051,10 +1051,10 @@ decl_module! {
             let (class, entity, access_level) = Self::ensure_class_entity_and_access_level(account_id, entity_id, &actor)?;
 
             // Ensure actor with given EntityAccessLevel can remove entity
-            EntityPermissions::<T>::ensure_group_can_remove_entity(access_level)?;
+            EntityPermissions::<T::MemberId>::ensure_group_can_remove_entity::<T>(access_level)?;
 
             // Ensure any inbound InputPropertyValue::Reference points to the given Entity
-            entity.ensure_rc_is_zero()?;
+            entity.ensure_rc_is_zero::<T>()?;
 
             let class_properties = class.get_properties();
 
@@ -1062,7 +1062,7 @@ decl_module! {
 
             let entity_values = entity.get_values();
 
-            let unique_property_value_hashes = match StoredValuesForExistingProperties::from(&class_properties, &entity_values) {
+            let unique_property_value_hashes = match StoredValuesForExistingProperties::<T>::from(&class_properties, &entity_values) {
                 Ok(values_for_existing_properties) => values_for_existing_properties.compute_unique_hashes(),
                 Err(e) => {
                     debug_assert!(false, "Should not fail! {:?}", e);
@@ -1083,7 +1083,7 @@ decl_module! {
             // Decrement class entities counter
             <ClassById<T>>::mutate(class_id, |class| class.decrement_entities_count());
 
-            let entity_controller = EntityController::<T>::from_actor(&actor);
+            let entity_controller = EntityController::<T::MemberId>::from_actor::<T>(&actor);
 
             // Decrement entity_creation_voucher after entity removal perfomed
             <EntityCreationVouchers<T>>::mutate(class_id, entity_controller, |entity_creation_voucher| {
@@ -1099,7 +1099,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn add_schema_support_to_entity(
             origin,
-            actor: Actor<T>,
+            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             entity_id: T::EntityId,
             schema_id: SchemaId,
             new_property_values: BTreeMap<PropertyId, InputPropertyValue<T>>
@@ -1119,7 +1119,7 @@ decl_module! {
             let new_values_for_existing_properties = InputValuesForExistingProperties::from(&class_properties, &new_property_values)?;
 
             // Ensure Schema under given id is not added to given Entity yet
-            entity.ensure_schema_id_is_not_added(schema_id)?;
+            entity.ensure_schema_id_is_not_added::<T>(schema_id)?;
 
             // Ensure provided new_property_values are not added to the Entity values map yet
             entity.ensure_property_values_are_not_added(&new_property_values)?;
@@ -1199,7 +1199,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn update_entity_property_values(
             origin,
-            actor: Actor<T>,
+            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             entity_id: T::EntityId,
             new_property_values: BTreeMap<PropertyId, InputPropertyValue<T>>
         ) -> DispatchResult {
@@ -1298,7 +1298,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn clear_entity_property_vector(
             origin,
-            actor: Actor<T>,
+            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId
         ) -> DispatchResult {
@@ -1317,7 +1317,7 @@ decl_module! {
 
             // Ensure InputPropertyValue under given in_class_schema_property_id is Vector
             let property_value_vector =
-                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
+                entity.ensure_property_value_is_vec::<T>(in_class_schema_property_id)?;
 
             // Calculate side effects for clear_property_vector operation, based on property_value_vector provided and its respective property.
             let entities_inbound_rcs_delta = Self::make_side_effects_for_clear_property_vector_operation(&property_value_vector, &property);
@@ -1378,7 +1378,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn remove_at_entity_property_vector(
             origin,
-            actor: Actor<T>,
+            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
             index_in_property_vector: VecMaxLength,
@@ -1399,15 +1399,15 @@ decl_module! {
 
             // Ensure InputPropertyValue under given in_class_schema_property_id is Vector
             let property_value_vector =
-                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
+                entity.ensure_property_value_is_vec::<T>(in_class_schema_property_id)?;
 
             // Ensure `VecInputPropertyValue` nonce is equal to the provided one.
             // Used to to avoid possible data races, when performing vector specific operations
-            property_value_vector.ensure_nonce_equality(nonce)?;
+            property_value_vector.ensure_nonce_equality::<T>(nonce)?;
 
             // Ensure, provided index_in_property_vec is valid index of VecInputValue
             property_value_vector
-                .ensure_index_in_property_vector_is_valid(index_in_property_vector)?;
+                .ensure_index_in_property_vector_is_valid::<T>(index_in_property_vector)?;
 
             let involved_entity_id = property_value_vector
                 .get_vec_value_ref()
@@ -1482,7 +1482,7 @@ decl_module! {
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn insert_at_entity_property_vector(
             origin,
-            actor: Actor<T>,
+            actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
             entity_id: T::EntityId,
             in_class_schema_property_id: PropertyId,
             index_in_property_vector: VecMaxLength,
@@ -1504,16 +1504,17 @@ decl_module! {
 
             // Ensure InputPropertyValue under given in_class_schema_property_id is Vector
             let property_value_vector =
-                entity.ensure_property_value_is_vec(in_class_schema_property_id)?;
+                entity.ensure_property_value_is_vec::<T>(in_class_schema_property_id)?;
 
             // Ensure `VecInputPropertyValue` nonce is equal to the provided one.
             // Used to to avoid possible data races, when performing vector specific operations
-            property_value_vector.ensure_nonce_equality(nonce)?;
+            property_value_vector.ensure_nonce_equality::<T>(nonce)?;
 
             let entity_controller = entity.get_permissions_ref().get_controller();
 
             // Ensure property_value type is equal to the property_value_vector type and check all constraints
-            property.ensure_property_value_can_be_inserted_at_property_vector(
+            Property::<T::ClassId>::ensure_property_value_can_be_inserted_at_property_vector(
+                &property,
                 &value,
                 &property_value_vector,
                 index_in_property_vector,
@@ -1588,7 +1589,7 @@ decl_module! {
 
         /// Batch transaction
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn transaction(origin, actor: Actor<T>, operations: Vec<OperationType<T>>) -> DispatchResult {
+        pub fn transaction(origin, actor: Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>, operations: Vec<OperationType<T>>) -> DispatchResult {
 
             // Ensure maximum number of operations during atomic batching limit not reached
             Self::ensure_number_of_operations_during_atomic_batching_limit_not_reached(&operations)?;
@@ -2117,7 +2118,7 @@ impl<T: Trait> Module<T> {
     fn ensure_class_entity_and_access_level(
         account_id: T::AccountId,
         entity_id: T::EntityId,
-        actor: &Actor<T>,
+        actor: &Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     ) -> Result<
         (
             Class<T::EntityId, T::ClassId, T::CuratorGroupId>,
@@ -2212,7 +2213,7 @@ impl<T: Trait> Module<T> {
     pub fn ensure_can_create_entities(
         class_permissions: &ClassPermissions<T::CuratorGroupId>,
         account_id: &T::AccountId,
-        actor: &Actor<T>,
+        actor: &Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     ) -> Result<(), Error<T>> {
         let can_create = match &actor {
             Actor::Lead => {
@@ -2253,7 +2254,11 @@ impl<T: Trait> Module<T> {
             let (property, value) = updated_value_for_existing_property.unzip();
 
             // Perform all required checks to ensure provided property values are valid references
-            property.ensure_property_value_is_valid_reference(value, new_controller)?;
+            Property::<T::ClassId>::ensure_property_value_is_valid_reference(
+                &property,
+                value,
+                new_controller,
+            )?;
         }
         Ok(())
     }
@@ -2374,7 +2379,11 @@ impl<T: Trait> Module<T> {
             let (property, value) = value_for_existing_property.unzip();
 
             // Validate new InputPropertyValue against the type of this Property and check any additional constraints
-            property.ensure_property_value_to_update_is_valid(value, entity_controller)?;
+            Property::<T::ClassId>::ensure_property_value_to_update_is_valid(
+                property,
+                value,
+                entity_controller,
+            )?;
         }
 
         Ok(())
@@ -2424,8 +2433,9 @@ impl<T: Trait> Module<T> {
             .into_iter()
             .filter(|(id, new_property_value)| {
                 if let Some(entity_property_value) = entity_property_values.get(id) {
-                    StoredPropertyValue::<T>::from(new_property_value.to_owned())
-                        != *entity_property_value
+                    StoredPropertyValue::<T::Hash, T::EntityId, T::Nonce>::from(
+                        new_property_value.to_owned(),
+                    ) != *entity_property_value
                 } else {
                     true
                 }
@@ -2795,7 +2805,11 @@ decl_event!(
         EntityController = EntityController<<T as ActorAuthenticator>::MemberId>,
         EntityCreationVoucher = EntityCreationVoucher<T>,
         Status = bool,
-        Actor = Actor<T>,
+        Actor = Actor<
+            <T as ActorAuthenticator>::CuratorGroupId,
+            <T as ActorAuthenticator>::CuratorId,
+            <T as ActorAuthenticator>::MemberId,
+        >,
         Nonce = <T as Trait>::Nonce,
         SideEffects = Option<ReferenceCounterSideEffects<T>>,
         SideEffect = Option<(<T as Trait>::EntityId, EntityReferenceCounterSideEffect)>,

@@ -23,17 +23,6 @@ pub struct ClassPermissions<CuratorGroupId: Ord + Default> {
     maintainers: BTreeSet<CuratorGroupId>,
 }
 
-// impl<CuratorGroupId: Ord> Default for ClassPermissions<T> {
-//     fn default() -> Self {
-//         Self {
-//             any_member: false,
-//             entity_creation_blocked: false,
-//             all_entity_property_values_locked: false,
-//             maintainers: BTreeSet::new(),
-//         }
-//     }
-// }
-
 impl<CuratorGroupId: Ord + Default> ClassPermissions<CuratorGroupId> {
     /// Retieve `all_entity_property_values_locked` status
     pub fn all_entity_property_values_locked(&self) -> bool {

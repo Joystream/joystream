@@ -3,8 +3,8 @@ use super::*;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Eq, PartialEq, Default, Clone)]
 pub struct Class<
-    EntityId: Default + BaseArithmetic,
-    ClassId: Default + BaseArithmetic + Clone,
+    EntityId: Default + BaseArithmetic + Clone + Copy,
+    ClassId: Default + BaseArithmetic + Clone + Copy,
     CuratorGroupId: Ord + Default,
 > {
     /// Permissions for an instance of a Class.
@@ -31,24 +31,9 @@ pub struct Class<
     default_entity_creation_voucher_upper_bound: EntityId,
 }
 
-// impl<T: Trait> Default for Class<T> {
-//     fn default() -> Self {
-//         Self {
-//             class_permissions: ClassPermissions::<T>::default(),
-//             properties: vec![],
-//             schemas: vec![],
-//             name: vec![],
-//             description: vec![],
-//             maximum_entities_count: T::EntityId::default(),
-//             current_number_of_entities: T::EntityId::default(),
-//             default_entity_creation_voucher_upper_bound: T::EntityId::default(),
-//         }
-//     }
-// }
-
 impl<
-        EntityId: Default + BaseArithmetic,
-        ClassId: Default + BaseArithmetic + Clone,
+        EntityId: Default + BaseArithmetic + Clone + Copy,
+        ClassId: Default + BaseArithmetic + Clone + Copy,
         CuratorGroupId: Ord + Default,
     > Class<EntityId, ClassId, CuratorGroupId>
 {

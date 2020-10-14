@@ -28,7 +28,7 @@ pub struct PropertyLockingPolicy {
 /// Enum, used for `PropertyType` representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
-pub enum Type<ClassId: Default + BaseArithmetic> {
+pub enum Type<ClassId: Default + BaseArithmetic + Clone + Copy> {
     Bool,
     Uint16,
     Uint32,
@@ -43,13 +43,13 @@ pub enum Type<ClassId: Default + BaseArithmetic> {
     Reference(ClassId, SameController),
 }
 
-impl<ClassId: Default + BaseArithmetic> Default for Type<ClassId> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> Default for Type<ClassId> {
     fn default() -> Self {
         Self::Bool
     }
 }
 
-impl<ClassId: Default + BaseArithmetic> Type<ClassId> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> Type<ClassId> {
     /// Ensure `Type` specific `TextMaxLengthConstraint` or `HashedTextMaxLengthConstraint` satisfied
     pub fn ensure_property_type_size_is_valid<T: Trait>(&self) -> Result<(), Error<T>> {
         if let Type::Text(text_max_len) = self {
@@ -73,22 +73,13 @@ impl<ClassId: Default + BaseArithmetic> Type<ClassId> {
 /// Vector property type representation
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, Default, Copy, PartialEq, Eq)]
-pub struct VecPropertyType<ClassId: Default + BaseArithmetic> {
+pub struct VecPropertyType<ClassId: Default + BaseArithmetic + Clone + Copy> {
     vec_type: Type<ClassId>,
     /// Max length of vector, corresponding to a given type
     max_length: VecMaxLength,
 }
 
-// impl<T: Trait> Default for VecPropertyType<T> {
-//     fn default() -> Self {
-//         Self {
-//             vec_type: Type::default(),
-//             max_length: 0,
-//         }
-//     }
-// }
-
-impl<ClassId: Default + BaseArithmetic> VecPropertyType<ClassId> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> VecPropertyType<ClassId> {
     /// Create new `VecPropertyType` from provided `type` and `max_length`
     pub fn new(vec_type: Type<ClassId>, max_length: VecMaxLength) -> Self {
         Self {
@@ -121,18 +112,18 @@ impl<ClassId: Default + BaseArithmetic> VecPropertyType<ClassId> {
 /// Enum, representing either `Type` or `VecPropertyType`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
-pub enum PropertyType<ClassId: Default + BaseArithmetic> {
+pub enum PropertyType<ClassId: Default + BaseArithmetic + Clone + Copy> {
     Single(Type<ClassId>),
     Vector(VecPropertyType<ClassId>),
 }
 
-impl<ClassId: Default + BaseArithmetic> Default for PropertyType<ClassId> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> Default for PropertyType<ClassId> {
     fn default() -> Self {
         Self::Single(Type::default())
     }
 }
 
-impl<ClassId: Default + BaseArithmetic> PropertyType<ClassId> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> PropertyType<ClassId> {
     fn as_single_value_type(&self) -> Option<&Type<ClassId>> {
         if let PropertyType::Single(single_value_property_type) = self {
             Some(single_value_property_type)
@@ -171,7 +162,7 @@ impl<ClassId: Default + BaseArithmetic> PropertyType<ClassId> {
 /// `Property` representation, related to a given `Class`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, Debug, PartialEq, Eq)]
-pub struct Property<ClassId: Default + BaseArithmetic> {
+pub struct Property<ClassId: Default + BaseArithmetic + Clone + Copy> {
     /// The type of `Property`
     pub property_type: PropertyType<ClassId>,
     /// If property value can be skipped, when adding entity schema support
@@ -186,7 +177,7 @@ pub struct Property<ClassId: Default + BaseArithmetic> {
     pub locking_policy: PropertyLockingPolicy,
 }
 
-impl<ClassId: Default + BaseArithmetic> Default for Property<ClassId> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> Default for Property<ClassId> {
     fn default() -> Self {
         Self {
             property_type: PropertyType::<ClassId>::default(),
@@ -205,7 +196,7 @@ impl<ClassId: Default + BaseArithmetic> Default for Property<ClassId> {
 //     }
 // }
 
-impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     /// Check if property is locked from actor with provided `EntityAccessLevel`
     pub fn is_locked_from(&self, access_level: EntityAccessLevel) -> bool {
         let is_locked_from_controller = self.locking_policy.is_locked_from_controller;
@@ -234,21 +225,25 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
     /// Validate new `InputPropertyValue` against the type of this `Property`
     /// and check any additional constraints
     pub fn ensure_property_value_to_update_is_valid<T: Trait>(
-        &self,
+        property: &Property<T::ClassId>,
         value: &InputPropertyValue<T>,
         current_entity_controller: &EntityController<T::MemberId>,
     ) -> Result<(), Error<T>> {
         // Ensure provided InputPropertyValue matches its Type
-        self.ensure_property_value_matches_its_type(value)?;
+        property.ensure_property_value_matches_its_type(value)?;
 
         // Perform all required checks to ensure provided InputPropertyValue is valid, when current PropertyType is Reference
-        self.ensure_property_value_is_valid_reference(value, current_entity_controller)?;
+        Self::ensure_property_value_is_valid_reference(
+            &property,
+            value,
+            current_entity_controller,
+        )?;
 
         // Ensure text property does not exceed its max length
-        self.validate_max_len_if_text_property(value)?;
+        property.validate_max_len_if_text_property(value)?;
 
         // Ensure vector property does not exceed its max length
-        self.validate_max_len_if_vec_property(value)?;
+        property.validate_max_len_if_vec_property(value)?;
         Ok(())
     }
 
@@ -267,7 +262,7 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
     /// Ensure `SingleInputPropertyValue` type is equal to the `VecInputPropertyValue` type
     /// and check all constraints
     pub fn ensure_property_value_can_be_inserted_at_property_vector<T: Trait>(
-        &self,
+        property: &Property<T::ClassId>,
         single_value: &InputValue<T>,
         vec_value: &VecStoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
         index_in_property_vec: VecMaxLength,
@@ -276,7 +271,7 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
         // Ensure, provided index_in_property_vec is valid index of VecInputValue
         vec_value.ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
 
-        let property_type_vec = self
+        let property_type_vec = property
             .property_type
             .as_vec_type()
             .ok_or(Error::<T>::PropertyValueTypeDoesNotMatchInternalVectorType)?;
@@ -341,7 +336,8 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
                 // Ensure class_id of Entity under provided entity_id references Entity,
                 // which class_id is equal to class_id, declared in corresponding PropertyType
                 // Retrieve corresponding Entity
-                let entity = Self::ensure_referenced_entity_match_its_class(*entity_id, *class_id)?;
+                let entity =
+                    Self::ensure_referenced_entity_match_its_class::<T>(*entity_id, *class_id)?;
                 // Ensure Entity can be referenced.
                 Self::ensure_entity_can_be_referenced(
                     entity,
@@ -517,11 +513,11 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
     /// Perform all required checks to ensure provided `InputPropertyValue` is valid,
     /// when current `PropertyType` is `Reference`
     pub fn ensure_property_value_is_valid_reference<T: Trait>(
-        &self,
+        property: &Property<T::ClassId>,
         value: &InputPropertyValue<T>,
         current_entity_controller: &EntityController<T::MemberId>,
     ) -> Result<(), Error<T>> {
-        match (value, &self.property_type) {
+        match (value, &property.property_type) {
             (
                 InputPropertyValue::Single(single_property_value),
                 PropertyType::Single(single_property_type),
@@ -535,7 +531,7 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
                     // which class_id is equal to class_id, declared in corresponding PropertyType
                     // Retrieve corresponding Entity
                     let entity =
-                        Self::ensure_referenced_entity_match_its_class(*entity_id, *class_id)?;
+                        Self::ensure_referenced_entity_match_its_class::<T>(*entity_id, *class_id)?;
 
                     // Ensure Entity can be referenced.
                     Self::ensure_entity_can_be_referenced(
@@ -555,8 +551,9 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
                         // Ensure class_id of Entity under provided entity_id references Entity,
                         // which class_id is equal to class_id, declared in corresponding PropertyType
                         // Retrieve corresponding Entity
-                        let entity =
-                            Self::ensure_referenced_entity_match_its_class(*entity_id, *class_id)?;
+                        let entity = Self::ensure_referenced_entity_match_its_class::<T>(
+                            *entity_id, *class_id,
+                        )?;
 
                         // Ensure Entity can be referenced.
                         Self::ensure_entity_can_be_referenced(
@@ -577,13 +574,13 @@ impl<ClassId: Default + BaseArithmetic> Property<ClassId> {
     /// Returns  corresponding `Entity` instance
     pub fn ensure_referenced_entity_match_its_class<T: Trait>(
         entity_id: T::EntityId,
-        class_id: ClassId,
+        class_id: T::ClassId,
     ) -> Result<Entity<T::ClassId, T::MemberId, T::Hash, T::EntityId, T::Nonce>, Error<T>> {
         // Ensure Entity under given id exists
         let entity = Module::<T>::ensure_known_entity_id(entity_id)?;
 
         ensure!(
-            entity.get_class_id() == class_id,
+            class_id == entity.get_class_id(),
             Error::<T>::ReferencedEntityDoesNotMatchItsClass
         );
         Ok(entity)

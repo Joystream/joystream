@@ -1,17 +1,17 @@
 use super::*;
 
 /// Owner of an `Entity`.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive()]
-pub enum EntityController<MemberId> {
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub enum EntityController<MemberId: Default + PartialEq + Clone + Copy> {
     Maintainers,
     Member(MemberId),
     Lead,
 }
 
-impl<MemberId> EntityController<MemberId> {
+impl<MemberId: Default + PartialEq + Clone + Copy> EntityController<MemberId> {
     /// Create `EntityController` enum representation, using provided `Actor`
-    pub fn from_actor<T: Trait>(actor: &Actor<T>) -> Self {
+    pub fn from_actor<T: Trait>(actor: &Actor<T::CuratorGroupId, T::CuratorId, MemberId>) -> Self {
         match &actor {
             Actor::Lead => Self::Lead,
             Actor::Member(member_id) => Self::Member(*member_id),
@@ -20,7 +20,7 @@ impl<MemberId> EntityController<MemberId> {
     }
 }
 
-impl<MemberId> Default for EntityController<MemberId> {
+impl<MemberId: Default + PartialEq + Clone + Copy> Default for EntityController<MemberId> {
     fn default() -> Self {
         Self::Lead
     }
@@ -34,8 +34,8 @@ impl<MemberId> Default for EntityController<MemberId> {
 
 /// Permissions for a given entity.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct EntityPermissions<MemberId: Default> {
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub struct EntityPermissions<MemberId: Default + PartialEq + Clone + Copy> {
     /// Current controller, which is initially set based on who created entity
     pub controller: EntityController<MemberId>,
 
@@ -49,17 +49,17 @@ pub struct EntityPermissions<MemberId: Default> {
     pub referenceable: bool,
 }
 
-// impl<T: Trait> Default for EntityPermissions<T> {
-//     fn default() -> Self {
-//         Self {
-//             controller: EntityController::<T>::default(),
-//             frozen: false,
-//             referenceable: true,
-//         }
-//     }
-// }
+impl<MemberId: Default + PartialEq + Clone + Copy> Default for EntityPermissions<MemberId> {
+    fn default() -> Self {
+        Self {
+            controller: EntityController::<MemberId>::default(),
+            frozen: false,
+            referenceable: true,
+        }
+    }
+}
 
-impl<MemberId: Default> EntityPermissions<MemberId> {
+impl<MemberId: Default + PartialEq + Clone + Copy> EntityPermissions<MemberId> {
     /// Create an instance of `EntityPermissions` with `EntityController` equal to provided one
     pub fn default_with_controller(controller: EntityController<MemberId>) -> Self {
         Self {
@@ -145,9 +145,9 @@ impl EntityAccessLevel {
         account_id: &T::AccountId,
         entity_permissions: &EntityPermissions<T::MemberId>,
         class_permissions: &ClassPermissions<T::CuratorGroupId>,
-        actor: &Actor<T>,
+        actor: &Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
     ) -> Result<Self, Error<T>> {
-        let controller = EntityController::<T>::from_actor(actor);
+        let controller = EntityController::<T::MemberId>::from_actor::<T>(actor);
         match actor {
             Actor::Lead if entity_permissions.controller_is_equal_to(&controller) => {
                 // Ensure lead authorization performed succesfully

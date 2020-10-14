@@ -4,16 +4,23 @@ use sp_runtime::traits::Hash;
 /// Enum, representing either `StoredValue` or `VecStoredPropertyValue`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq)]
-pub enum StoredPropertyValue<Hash: Default, EntityId: Default, Nonce: Default + BaseArithmetic> {
-    Single(StoredValue<Hash, EntityId>),
-    Vector(VecStoredPropertyValue<Hash, EntityId, Nonce>),
+pub enum StoredPropertyValue<
+    Hashed: Default + Clone + Codec,
+    EntityId: Default + Clone + Copy + Codec,
+    Nonce: Default + BaseArithmetic + Clone + Copy,
+> {
+    Single(StoredValue<Hashed, EntityId>),
+    Vector(VecStoredPropertyValue<Hashed, EntityId, Nonce>),
 }
 
-impl<Hash: Default, EntityId: Default, Nonce: Default + BaseArithmetic>
-    StoredPropertyValue<Hash, EntityId, Nonce>
+impl<
+        Hashed: Default + Clone + Codec,
+        EntityId: Default + Clone + Copy + Codec,
+        Nonce: Default + BaseArithmetic + Clone + Copy,
+    > StoredPropertyValue<Hashed, EntityId, Nonce>
 {
     /// Returns single property value by reference if `StoredPropertyValue` is Single
-    pub fn as_single_value(&self) -> Option<&StoredValue<Hash, EntityId>> {
+    pub fn as_single_value(&self) -> Option<&StoredValue<Hashed, EntityId>> {
         if let StoredPropertyValue::Single(single_value) = self {
             Some(single_value)
         } else {
@@ -22,7 +29,9 @@ impl<Hash: Default, EntityId: Default, Nonce: Default + BaseArithmetic>
     }
 
     /// Returns vector property value by reference if `StoredPropertyValue` is Single
-    pub fn as_vec_property_value(&self) -> Option<&VecStoredPropertyValue<Hash, EntityId, Nonce>> {
+    pub fn as_vec_property_value(
+        &self,
+    ) -> Option<&VecStoredPropertyValue<Hashed, EntityId, Nonce>> {
         if let StoredPropertyValue::Vector(vec_property_value) = self {
             Some(vec_property_value)
         } else {
@@ -33,7 +42,7 @@ impl<Hash: Default, EntityId: Default, Nonce: Default + BaseArithmetic>
     /// Returns vector property value by mutable reference if `StoredPropertyValue` is Single
     pub fn as_vec_property_value_mut(
         &mut self,
-    ) -> Option<&mut VecStoredPropertyValue<Hash, EntityId, Nonce>> {
+    ) -> Option<&mut VecStoredPropertyValue<Hashed, EntityId, Nonce>> {
         if let StoredPropertyValue::Vector(vec_property_value) = self {
             Some(vec_property_value)
         } else {
@@ -69,7 +78,7 @@ impl<Hash: Default, EntityId: Default, Nonce: Default + BaseArithmetic>
     }
 
     /// Compute hash from unique property value and its respective property_id
-    pub fn compute_unique_hash<T: Trait>(&self, property_id: PropertyId) -> Hash {
+    pub fn compute_unique_hash<T: Trait>(&self, property_id: PropertyId) -> T::Hash {
         match self {
             StoredPropertyValue::Single(output_value) => {
                 (property_id, output_value).using_encoded(<T as system::Trait>::Hashing::hash)
@@ -81,8 +90,11 @@ impl<Hash: Default, EntityId: Default, Nonce: Default + BaseArithmetic>
     }
 }
 
-impl<Hash: Default, EntityId: Default, Nonce: Default + BaseArithmetic> Default
-    for StoredPropertyValue<Hash, EntityId, Nonce>
+impl<
+        Hashed: Default + Clone + Codec,
+        EntityId: Default + Clone + Copy + Codec,
+        Nonce: Default + BaseArithmetic + Clone + Copy,
+    > Default for StoredPropertyValue<Hashed, EntityId, Nonce>
 {
     fn default() -> Self {
         StoredPropertyValue::Single(StoredValue::default())
@@ -91,8 +103,8 @@ impl<Hash: Default, EntityId: Default, Nonce: Default + BaseArithmetic> Default
 
 /// StoredValue enum representation, related to corresponding `SingleStoredPropertyValue` structure
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Hash, Clone, PartialEq, PartialOrd, Ord, Eq)]
-pub enum StoredValue<Hash: Default, EntityId: Default> {
+#[derive(Encode, Decode, Clone, PartialEq, PartialOrd, Ord, Eq)]
+pub enum StoredValue<Hashed: Default + Clone + Codec, EntityId: Default + Clone + Copy + Codec> {
     Bool(bool),
     Uint16(u16),
     Uint32(u32),
@@ -101,17 +113,21 @@ pub enum StoredValue<Hash: Default, EntityId: Default> {
     Int32(i32),
     Int64(i64),
     Text(Vec<u8>),
-    Hash(Hash),
+    Hash(Hashed),
     Reference(EntityId),
 }
 
-impl<Hash: Default, EntityId: Default> Default for StoredValue<Hash, EntityId> {
-    fn default() -> StoredValue<Hash, EntityId> {
+impl<Hashed: Default + Clone + Codec, EntityId: Default + Clone + Copy + Codec> Default
+    for StoredValue<Hashed, EntityId>
+{
+    fn default() -> StoredValue<Hashed, EntityId> {
         Self::Bool(false)
     }
 }
 
-impl<Hash: Default, EntityId: Default> StoredValue<Hash, EntityId> {
+impl<Hashed: Default + Clone + Codec, EntityId: Default + Clone + Copy + Codec>
+    StoredValue<Hashed, EntityId>
+{
     /// Retrieve involved `entity_id`, if current `StoredValue` is reference
     pub fn get_involved_entity(&self) -> Option<EntityId> {
         if let StoredValue::Reference(entity_id) = self {
@@ -125,17 +141,23 @@ impl<Hash: Default, EntityId: Default> StoredValue<Hash, EntityId> {
 /// Consists of `VecStoredPropertyValue` enum representation and `nonce`, used to avoid vector data race update conditions
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct VecStoredPropertyValue<Hash: Default, EntityId: Default, Nonce: Default + BaseArithmetic>
-{
-    vec_value: VecStoredValue<Hash, EntityId>,
+pub struct VecStoredPropertyValue<
+    Hashed: Default + Clone + Codec,
+    EntityId: Default + Clone + Copy + Codec,
+    Nonce: Default + BaseArithmetic + Clone + Copy,
+> {
+    vec_value: VecStoredValue<Hashed, EntityId>,
     nonce: Nonce,
 }
 
-impl<Hash: Default, EntityId: Default, Nonce: Default + BaseArithmetic>
-    VecStoredPropertyValue<Hash, EntityId, Nonce>
+impl<
+        Hashed: Default + Clone + Codec,
+        EntityId: Default + Clone + Copy + Codec,
+        Nonce: Default + BaseArithmetic + Clone + Copy,
+    > VecStoredPropertyValue<Hashed, EntityId, Nonce>
 {
     /// Compute hash from unique vec property value and its respective property_id
-    pub fn compute_unique_hash<T: Trait>(&self, property_id: PropertyId) -> Hash {
+    pub fn compute_unique_hash<T: Trait>(&self, property_id: PropertyId) -> T::Hash {
         // Do not hash nonce
         (property_id, &self.vec_value).using_encoded(<T as system::Trait>::Hashing::hash)
     }
@@ -147,17 +169,17 @@ impl<Hash: Default, EntityId: Default, Nonce: Default + BaseArithmetic>
     }
 
     /// Create new `VecStoredPropertyValue` from `vec value` provided and `nonce`
-    pub fn new(vec_value: VecStoredValue<Hash, EntityId>, nonce: Nonce) -> Self {
+    pub fn new(vec_value: VecStoredValue<Hashed, EntityId>, nonce: Nonce) -> Self {
         Self { vec_value, nonce }
     }
 
     /// Retrieve `VecStoredValue`
-    pub fn get_vec_value(self) -> VecStoredValue<Hash, EntityId> {
+    pub fn get_vec_value(self) -> VecStoredValue<Hashed, EntityId> {
         self.vec_value
     }
 
     /// Retrieve `VecStoredValue` by reference
-    pub fn get_vec_value_ref(&self) -> &VecStoredValue<Hash, EntityId> {
+    pub fn get_vec_value_ref(&self) -> &VecStoredValue<Hashed, EntityId> {
         &self.vec_value
     }
 
@@ -220,7 +242,7 @@ impl<Hash: Default, EntityId: Default, Nonce: Default + BaseArithmetic>
     pub fn insert_at(
         &mut self,
         index_in_property_vec: VecMaxLength,
-        single_value: StoredValue<Hash, EntityId>,
+        single_value: StoredValue<Hashed, EntityId>,
     ) {
         fn insert_at<T>(vec: &mut Vec<T>, index_in_property_vec: VecMaxLength, value: T) {
             if (index_in_property_vec as usize) < vec.len() {
@@ -290,8 +312,8 @@ impl<Hash: Default, EntityId: Default, Nonce: Default + BaseArithmetic>
 
 /// Vector value enum representation, related to corresponding `VecStoredPropertyValue` structure
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub enum VecStoredValue<Hash: Default, EntityId: Default> {
+#[derive(Encode, Decode, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum VecStoredValue<Hashed: Default + Clone + Codec, EntityId: Default + Clone + Copy + Codec> {
     Bool(Vec<bool>),
     Uint16(Vec<u16>),
     Uint32(Vec<u32>),
@@ -299,18 +321,22 @@ pub enum VecStoredValue<Hash: Default, EntityId: Default> {
     Int16(Vec<i16>),
     Int32(Vec<i32>),
     Int64(Vec<i64>),
-    Hash(Vec<Hash>),
+    Hash(Vec<Hashed>),
     Text(Vec<Vec<u8>>),
     Reference(Vec<EntityId>),
 }
 
-impl<Hash: Default, EntityId: Default> Default for VecStoredValue<Hash, EntityId> {
+impl<Hashed: Default + Clone + Codec, EntityId: Default + Clone + Copy + Codec> Default
+    for VecStoredValue<Hashed, EntityId>
+{
     fn default() -> Self {
         Self::Bool(vec![])
     }
 }
 
-impl<Hash: Default, EntityId: Default> VecStoredValue<Hash, EntityId> {
+impl<Hashed: Default + Clone + Codec, EntityId: Default + Clone + Copy + Codec>
+    VecStoredValue<Hashed, EntityId>
+{
     /// Retrieve all involved `entity_id`'s, if current `VecStoredValue` is reference
     pub fn get_involved_entities(&self) -> Option<Vec<EntityId>> {
         if let Self::Reference(entity_ids) = self {

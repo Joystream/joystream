@@ -113,7 +113,8 @@ impl<'a, T: Trait> StoredValueForExistingProperty<'a, T> {
     /// Check if Property is default and non `required`
     pub fn is_default(&self) -> bool {
         let (property, property_value) = self.unzip();
-        !property.required && *property_value == StoredPropertyValue::<T>::default()
+        !property.required
+            && *property_value == StoredPropertyValue::<T::Hash, T::EntityId, T::Nonce>::default()
     }
 }
 
