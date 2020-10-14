@@ -66,17 +66,11 @@ function showUsageAndExit(message: string) {
 const commands = {
   // add Alice well known account as storage provider
   'dev-init': async (api) => {
-    // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
     return dev.init(api)
   },
   // Checks that the setup done by dev-init command was successful
   'dev-check': async (api) => {
-    // dev accounts are automatically loaded, no need to add explicitly to keyring using loadIdentity(api)
     return dev.check(api)
-  },
-  // Runs the versioned store initialization with given SURI of content working group lead
-  'vstore-init': async (api, suri: string) => {
-    return dev.vstoreInit(api, suri)
   },
   // Uploads the file to the system. Registers new data object in the runtime, obtains proper colossus instance URL.
   upload: async (

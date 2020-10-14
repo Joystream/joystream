@@ -13,7 +13,8 @@
     },
     "WorkingGroup": {
         "_enum": [
-            "Storage"
+            "Storage",
+            "Content"
         ]
     },
     "SlashingTerms": {

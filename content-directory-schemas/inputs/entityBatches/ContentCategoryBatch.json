@@ -1,0 +1,7 @@
+{
+  "className": "ContentCategory",
+  "entries": [
+    { "name": "Cartoon", "description": "Content which is a cartoon or related to cartoons" },
+    { "name": "Sports", "description": "Content related to sports" }
+  ]
+}
