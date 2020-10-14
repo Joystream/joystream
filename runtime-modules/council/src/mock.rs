@@ -45,7 +45,7 @@ pub struct Runtime;
 parameter_types! {
     pub const MinNumberOfExtraCandidates: u64 = 1;
     pub const AnnouncingPeriodDuration: u64 = 15;
-    pub const IdlePeriodDuration: u64 = 15;
+    pub const IdlePeriodDuration: u64 = 17;
     pub const CouncilSize: u64 = 3;
     pub const MinCandidateStake: u64 = 10;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
@@ -147,8 +147,8 @@ thread_local! {
 }
 
 parameter_types! {
-    pub const VoteStageDuration: u64 = 15;
-    pub const RevealStageDuration: u64 = 15;
+    pub const VoteStageDuration: u64 = 19;
+    pub const RevealStageDuration: u64 = 23;
     pub const MinimumStake: u64 = 10000;
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const ReferendumLockId: LockIdentifier = *b"referend";
@@ -222,6 +222,8 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
             tmp_winners.as_slice(),
         )
         .unwrap();
+
+        INTERMEDIATE_RESULTS.with(|value| value.replace(BTreeMap::new()));
     }
 
     fn is_valid_option_id(_option_index: &u64) -> bool {
@@ -330,6 +332,7 @@ pub struct CouncilSettings<T: Trait> {
     pub announcing_stage_duration: T::BlockNumber,
     pub voting_stage_duration: T::BlockNumber,
     pub reveal_stage_duration: T::BlockNumber,
+    pub idle_stage_duration: T::BlockNumber,
 }
 
 impl<T: Trait> CouncilSettings<T>
@@ -348,6 +351,7 @@ where
                 <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::VoteStageDuration::get().into(),
             reveal_stage_duration:
                 <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::RevealStageDuration::get().into(),
+            idle_stage_duration: <T as Trait>::IdlePeriodDuration::get(),
         }
     }
 }
@@ -445,6 +449,7 @@ where
             <referendum::Module<RuntimeReferendum, ReferendumInstance> as OnFinalize<
                 <RuntimeReferendum as system::Trait>::BlockNumber,
             >>::on_finalize(tmp_index.into());
+
             system::Module::<T>::set_block_number(tmp_index + 1.into());
         }
     }
@@ -536,7 +541,6 @@ where
 
     T::Hash: From<<RuntimeReferendum as system::Trait>::Hash>
         + Into<<RuntimeReferendum as system::Trait>::Hash>,
-    //T::VotePower: From<u64>,
     T::Origin: From<<RuntimeReferendum as system::Trait>::Origin>
         + Into<<RuntimeReferendum as system::Trait>::Origin>,
     <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::Hash>>::VotePower:
@@ -644,7 +648,6 @@ where
         );
     }
 
-    //pub fn vote_for_candidate<I: referendum::Instance>(
     pub fn vote_for_candidate(
         origin: OriginType<T::AccountId>,
         commitment: T::Hash,
@@ -724,7 +727,7 @@ where
 
         // finish announcing period / start referendum -> will cause period prolongement
         Self::check_election_period(
-            settings.announcing_stage_duration + 1.into(),
+            params.cycle_start_block_number + settings.announcing_stage_duration,
             CouncilStageElection {
                 candidates_count: params.expected_candidates.len() as u64,
             },
@@ -758,7 +761,9 @@ where
             settings.council_size,
             vec![],
             BTreeMap::new(), //<u64, T::VotePower>,
-            settings.announcing_stage_duration + settings.voting_stage_duration + 1.into(),
+            params.cycle_start_block_number
+                + settings.announcing_stage_duration
+                + settings.voting_stage_duration,
         );
 
         escape_checkpoint!(
@@ -784,10 +789,10 @@ where
         // finish election / start idle period
         InstanceMockUtils::<T>::increase_block_number(settings.reveal_stage_duration.into() + 1);
         Self::check_idle_period(
-            settings.reveal_stage_duration
+            params.cycle_start_block_number
+                + settings.reveal_stage_duration
                 + settings.announcing_stage_duration
-                + settings.voting_stage_duration
-                + 1.into(),
+                + settings.voting_stage_duration,
         );
         Self::check_council_members(params.expected_final_council_members.clone());
     }

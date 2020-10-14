@@ -263,11 +263,14 @@ decl_error! {
         /// User tried to candidate outside of the announcement period
         CantCandidateNow,
 
-        /// User tried to candidate outside of the announcement period
+        /// User tried to release stake before reveal period
         CantReleaseStakeNow,
 
         /// Candidate haven't provide sufficient stake
         CandidacyStakeTooLow,
+
+        /// User tried to candidate twice in the same elections.
+        CantCandidateTwice,
 
         /// Council member and candidates can't withdraw stake
         StakeStillNeeded,
@@ -364,12 +367,14 @@ impl<T: Trait> Module<T> {
     fn try_progress_stage(now: T::BlockNumber) {
         match Stage::<T>::get().stage {
             CouncilStage::Announcing(stage_data) => {
-                if now == Stage::<T>::get().changed_at + T::AnnouncingPeriodDuration::get() {
+                if now
+                    == Stage::<T>::get().changed_at + T::AnnouncingPeriodDuration::get() - 1.into()
+                {
                     Self::end_announcement_period(stage_data);
                 }
             }
             CouncilStage::Idle => {
-                if now == Stage::<T>::get().changed_at + T::IdlePeriodDuration::get() {
+                if now == Stage::<T>::get().changed_at + T::IdlePeriodDuration::get() - 1.into() {
                     Self::end_idle_period();
                 }
             }
@@ -493,7 +498,7 @@ impl<T: Trait> Mutations<T> {
         Stage::<T>::mutate(|value| {
             *value = CouncilStageUpdate {
                 stage: CouncilStage::Announcing(stage_data),
-                changed_at: block_number,
+                changed_at: block_number + 1.into(), // set next block as the start of next phase (this function is invoke on block finalization)
             }
         });
     }
@@ -516,7 +521,7 @@ impl<T: Trait> Mutations<T> {
                 stage: CouncilStage::Election(CouncilStageElection {
                     candidates_count: stage_data.candidates_count,
                 }),
-                changed_at: block_number,
+                changed_at: block_number + 1.into(), // set next block as the start of next phase (this function is invoke on block finalization)
             }
         });
 
@@ -531,7 +536,7 @@ impl<T: Trait> Mutations<T> {
         Stage::<T>::mutate(|value| {
             *value = CouncilStageUpdate {
                 stage: CouncilStage::Idle,
-                changed_at: block_number,
+                changed_at: block_number + 1.into(), // set next block as the start of next phase
             }
         });
 
@@ -600,13 +605,11 @@ impl<T: Trait> Mutations<T> {
             WithdrawReason::Transfer.into(),
         );
 
-        let block_number = <system::Module<T>>::block_number();
-
         // store new candidacy list
         Stage::<T>::mutate(|value| {
             *value = CouncilStageUpdate {
                 stage: CouncilStage::Announcing(new_stage_data),
-                changed_at: block_number,
+                changed_at: value.changed_at, // keep changed_at - stage phase haven't changed
             }
         });
     }
@@ -670,6 +673,14 @@ impl<T: Trait> EnsureChecks<T> {
             CouncilStage::Announcing(stage_data) => stage_data,
             _ => return Err(Error::CantCandidateNow),
         };
+
+        // prevent user from candidating twice in the same election
+        if Candidates::<T>::contains_key(council_user_id)
+            && Candidates::<T>::get(council_user_id).order_index
+                == CurrentAnnouncementCycleId::get()
+        {
+            return Err(Error::CantCandidateTwice);
+        }
 
         if stake < &T::MinCandidateStake::get() {
             return Err(Error::CandidacyStakeTooLow);

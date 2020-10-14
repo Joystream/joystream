@@ -387,12 +387,12 @@ impl<T: Trait<I>, I: Instance> Module<T, I> {
         match Stage::<T, I>::get() {
             ReferendumStage::Inactive => (),
             ReferendumStage::Voting(stage_data) => {
-                if now == stage_data.started + T::VoteStageDuration::get() {
+                if now == stage_data.started + T::VoteStageDuration::get() - 1.into() {
                     Self::end_voting_period(stage_data);
                 }
             }
             ReferendumStage::Revealing(stage_data) => {
-                if now == stage_data.started + T::RevealStageDuration::get() {
+                if now == stage_data.started + T::RevealStageDuration::get() - 1.into() {
                     Self::end_reveal_period(stage_data);
                 }
             }

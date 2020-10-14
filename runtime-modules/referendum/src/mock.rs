@@ -438,6 +438,8 @@ impl InstanceMocks<Runtime, Instance0> {
             }),
         );
 
+        InstanceMockUtils::<Runtime, Instance0>::increase_block_number(1);
+
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
             TestEvent::from(RawEvent::ReferendumStarted(winning_target_count))

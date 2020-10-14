@@ -177,7 +177,7 @@ fn finish_voting() {
 
         let voting_stage_duration = <Runtime as Trait<Instance0>>::VoteStageDuration::get();
 
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
 
         Mocks::check_voting_finished(winning_target_count);
     });
@@ -202,7 +202,7 @@ fn reveal() {
 
         Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count.clone(), Ok(()));
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
 
         Mocks::check_voting_finished(winning_target_count);
         Mocks::reveal_vote(
@@ -242,10 +242,10 @@ fn reveal_reveal_stage_not_running() {
         );
 
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
 
         Mocks::check_voting_finished(winning_target_count);
-        MockUtils::increase_block_number(reveal_stage_duration + 1);
+        MockUtils::increase_block_number(reveal_stage_duration);
         Mocks::check_revealing_finished(vec![], MockUtils::transform_results(vec![]));
 
         Mocks::reveal_vote(
@@ -271,10 +271,10 @@ fn reveal_no_vote() {
         let winning_target_count = 1;
 
         Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count.clone(), Ok(()));
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
 
         Mocks::check_voting_finished(winning_target_count);
-        MockUtils::increase_block_number(reveal_stage_duration + 1);
+        MockUtils::increase_block_number(reveal_stage_duration);
 
         Mocks::check_revealing_finished(vec![], MockUtils::transform_results(vec![]));
     });
@@ -304,7 +304,7 @@ fn reveal_salt_too_long() {
 
         Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count.clone(), Ok(()));
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
 
         Mocks::check_voting_finished(winning_target_count);
         Mocks::reveal_vote(
@@ -335,7 +335,7 @@ fn reveal_invalid_vote() {
 
         Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count.clone(), Ok(()));
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
 
         Runtime::feature_option_id_valid(false);
 
@@ -368,7 +368,7 @@ fn reveal_invalid_commitment_proof() {
 
         Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count.clone(), Ok(()));
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
 
         Mocks::check_voting_finished(winning_target_count);
         Mocks::reveal_vote(
@@ -401,7 +401,7 @@ fn finish_revealing_period() {
 
         Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count.clone(), Ok(()));
         Mocks::vote(origin.clone(), account_id, commitment, stake, Ok(()));
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
 
         Mocks::check_voting_finished(winning_target_count);
         Mocks::reveal_vote(
@@ -411,7 +411,7 @@ fn finish_revealing_period() {
             option_to_vote_for.clone(),
             Ok(()),
         );
-        MockUtils::increase_block_number(reveal_stage_duration + 1);
+        MockUtils::increase_block_number(reveal_stage_duration);
 
         Mocks::check_revealing_finished(
             vec![OptionResult {
@@ -463,7 +463,7 @@ fn finish_revealing_period_vote_power() {
             stake_smaller,
             Ok(()),
         ); // vote for second option by prominent user
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
 
         Mocks::check_voting_finished(winning_target_count);
         Mocks::reveal_vote(
@@ -480,7 +480,7 @@ fn finish_revealing_period_vote_power() {
             option_to_vote_for2,
             Ok(()),
         );
-        MockUtils::increase_block_number(reveal_stage_duration + 1);
+        MockUtils::increase_block_number(reveal_stage_duration);
 
         // option 2 should win because prominent user has more powerfull vote with the same stake
         Mocks::check_revealing_finished(
@@ -511,9 +511,9 @@ fn winners_no_vote_revealed() {
         let winning_target_count = 1;
 
         Mocks::start_referendum_extrinsic(origin.clone(), winning_target_count, Ok(()));
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
         Mocks::check_voting_finished(winning_target_count);
-        MockUtils::increase_block_number(reveal_stage_duration + 1);
+        MockUtils::increase_block_number(reveal_stage_duration);
         Mocks::check_revealing_finished(vec![], MockUtils::transform_results(vec![]));
     });
 }
@@ -568,7 +568,7 @@ fn winners_multiple_winners() {
             stake,
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
 
         Mocks::check_voting_finished(winning_target_count);
 
@@ -593,7 +593,7 @@ fn winners_multiple_winners() {
             option_to_vote_for2,
             Ok(()),
         );
-        MockUtils::increase_block_number(reveal_stage_duration + 1);
+        MockUtils::increase_block_number(reveal_stage_duration);
 
         Mocks::check_revealing_finished(
             vec![
@@ -651,7 +651,7 @@ fn winners_multiple_winners_extra() {
             stake,
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
 
         Mocks::check_voting_finished(winning_target_count);
         Mocks::reveal_vote(
@@ -668,7 +668,7 @@ fn winners_multiple_winners_extra() {
             option_to_vote_for2,
             Ok(()),
         );
-        MockUtils::increase_block_number(reveal_stage_duration + 1);
+        MockUtils::increase_block_number(reveal_stage_duration);
 
         let expected_winners = vec![OptionResult {
             option_id: option_to_vote_for1,
@@ -709,7 +709,7 @@ fn winners_multiple_not_enough() {
             stake,
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
 
         Mocks::check_voting_finished(winning_target_count);
         Mocks::reveal_vote(
@@ -719,7 +719,7 @@ fn winners_multiple_not_enough() {
             option_to_vote_for,
             Ok(()),
         );
-        MockUtils::increase_block_number(reveal_stage_duration + 1);
+        MockUtils::increase_block_number(reveal_stage_duration);
 
         let expected_winners = vec![OptionResult {
             option_id: option_to_vote_for,
@@ -759,7 +759,7 @@ fn referendum_release_stake() {
             stake.clone(),
             Ok(()),
         );
-        MockUtils::increase_block_number(voting_stage_duration + 1);
+        MockUtils::increase_block_number(voting_stage_duration);
 
         Mocks::check_voting_finished(winning_target_count);
         Mocks::reveal_vote(
@@ -769,7 +769,7 @@ fn referendum_release_stake() {
             option_to_vote_for.clone(),
             Ok(()),
         );
-        MockUtils::increase_block_number(reveal_stage_duration + 1);
+        MockUtils::increase_block_number(reveal_stage_duration);
 
         Mocks::check_revealing_finished(
             vec![OptionResult {
