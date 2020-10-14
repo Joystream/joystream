@@ -1,8 +1,8 @@
 use super::*;
 
 /// Owner of an `Entity`.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum EntityController<MemberId: Default + PartialEq + Clone + Copy> {
     Maintainers,
     Member(MemberId),
@@ -25,12 +25,6 @@ impl<MemberId: Default + PartialEq + Clone + Copy> Default for EntityController<
         Self::Lead
     }
 }
-
-// impl<T: Trait> core::fmt::Debug for EntityController<MemberId> {
-//     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-//         write!(formatter, "EntityController {:?}", self)
-//     }
-// }
 
 /// Permissions for a given entity.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]

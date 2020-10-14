@@ -260,10 +260,10 @@ decl_storage! {
     trait Store for Module<T: Trait> as ContentDirectory {
 
         /// Map, representing ClassId -> Class relation
-        pub ClassById get(fn class_by_id): map hasher(blake2_128_concat) T::ClassId => Class<T::EntityId, T::ClassId, T::CuratorGroupId>;
+        pub ClassById get(fn class_by_id) config(): map hasher(blake2_128_concat) T::ClassId => Class<T::EntityId, T::ClassId, T::CuratorGroupId>;
 
         /// Map, representing EntityId -> Entity relation
-        pub EntityById get(fn entity_by_id): map hasher(blake2_128_concat) T::EntityId => Entity<T::ClassId, T::MemberId, T::Hash, T::EntityId, T::Nonce>;
+        pub EntityById get(fn entity_by_id) config(): map hasher(blake2_128_concat) T::EntityId => Entity<T::ClassId, T::MemberId, T::Hash, T::EntityId, T::Nonce>;
 
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id) config(): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;

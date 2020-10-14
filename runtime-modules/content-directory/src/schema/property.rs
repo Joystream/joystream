@@ -16,8 +16,8 @@ pub type HashedTextMaxLength = Option<u16>;
 type SameController = bool;
 
 /// Locking policy, representing `Property` locking status for both controller and maintainer
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Default, Decode, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Default, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct PropertyLockingPolicy {
     /// If property is locked from maintainer
     pub is_locked_from_maintainer: bool,
@@ -26,8 +26,8 @@ pub struct PropertyLockingPolicy {
 }
 
 /// Enum, used for `PropertyType` representation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Type<ClassId: Default + BaseArithmetic + Clone + Copy> {
     Bool,
     Uint16,
@@ -71,8 +71,8 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Type<ClassId> {
 }
 
 /// Vector property type representation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, Default, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, Default, Copy, PartialEq, Eq, Debug)]
 pub struct VecPropertyType<ClassId: Default + BaseArithmetic + Clone + Copy> {
     vec_type: Type<ClassId>,
     /// Max length of vector, corresponding to a given type
@@ -110,8 +110,8 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> VecPropertyType<ClassId> 
 }
 
 /// Enum, representing either `Type` or `VecPropertyType`
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PropertyType<ClassId: Default + BaseArithmetic + Clone + Copy> {
     Single(Type<ClassId>),
     Vector(VecPropertyType<ClassId>),
@@ -189,12 +189,6 @@ impl<ClassId: Default + BaseArithmetic + Clone + Copy> Default for Property<Clas
         }
     }
 }
-
-// impl<ClassId: Default + BaseArithmetic> core::fmt::Debug for Property<ClassId> {
-//     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-//         write!(formatter, "Property {:?}", self)
-//     }
-// }
 
 impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     /// Check if property is locked from actor with provided `EntityAccessLevel`
