@@ -1380,7 +1380,7 @@ fn proposal_reset_succeeds() {
             }
         );
 
-        ProposalsEngine::reset_active_proposals();
+        ProposalsEngine::reset_votes_for_active_proposals();
 
         let updated_proposal = <Proposals<Test>>::get(proposal_id);
 
@@ -1710,7 +1710,7 @@ fn proposal_with_pending_constitutionality_reactivation_succeeds() {
         let reactivation_block = 5;
         run_to_block_and_finalize(reactivation_block);
 
-        ProposalsEngine::reactivate_pending_constitutionality_proposal();
+        ProposalsEngine::reactivate_pending_constitutionality_proposals();
 
         let proposal = <Proposals<Test>>::get(proposal_id);
 
@@ -1731,6 +1731,104 @@ fn proposal_with_pending_constitutionality_reactivation_succeeds() {
 
         assert!(!<PendingConstitutionalityProposalIds<Test>>::contains_key(
             proposal_id
+        ));
+    });
+}
+
+#[test]
+fn proposal_with_pending_constitutionality_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let starting_block = 1;
+        run_to_block_and_finalize(1);
+
+        let parameters_fixture = ProposalParametersFixture::default().with_constitutionality(2);
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block_and_finalize(2);
+
+        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+            proposal_id,
+            ProposalStatus::approved(
+                ApprovedProposalStatus::PendingConstitutionality,
+                starting_block,
+            ),
+        ));
+
+        let initial_proposal = <Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            initial_proposal,
+            Proposal {
+                parameters: parameters_fixture.params(),
+                proposer_id: 1,
+                activated_at: starting_block,
+                status: ProposalStatus::approved(
+                    ApprovedProposalStatus::PendingConstitutionality,
+                    starting_block
+                ),
+                title: b"title".to_vec(),
+                description: b"description".to_vec(),
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                    slashes: 0,
+                },
+                exact_execution_block: None,
+                current_constitutionality_level: 1,
+                staking_account_id: None,
+            }
+        );
+
+        let reactivation_block = 5;
+        run_to_block_and_finalize(reactivation_block);
+
+        ProposalsEngine::reactivate_pending_constitutionality_proposals();
+
+        let proposal = <Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                activated_at: reactivation_block,
+                status: ProposalStatus::Active,
+                voting_results: VotingResults::default(),
+                ..initial_proposal
+            }
+        );
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        let approval_block = 6;
+        run_to_block_and_finalize(approval_block);
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+
+        assert!(!<ActiveProposalIds<Test>>::contains_key(proposal_id));
+
+        assert!(!<PendingConstitutionalityProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
+
+        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+            proposal_id,
+            ProposalStatus::approved(ApprovedProposalStatus::Executed, reactivation_block),
         ));
     });
 }

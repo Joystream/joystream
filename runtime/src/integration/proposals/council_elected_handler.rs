@@ -9,6 +9,7 @@ pub struct CouncilElectedHandler;
 
 impl<Elected, Term> CouncilElected<Elected, Term> for CouncilElectedHandler {
     fn council_elected(_new_council: Elected, _term: Term) {
-        <proposals_engine::Module<Runtime>>::reset_active_proposals();
+        <proposals_engine::Module<Runtime>>::reset_votes_for_active_proposals();
+        <proposals_engine::Module<Runtime>>::reactivate_pending_constitutionality_proposals();
     }
 }

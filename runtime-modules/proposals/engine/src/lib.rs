@@ -24,8 +24,9 @@
 //! - The proposal can be [vetoed](./struct.Module.html#method.veto_proposal)
 //! anytime before the proposal execution by the _sudo_.
 //! - If the _council_ got reelected during the proposal _voting period_ the external handler calls
-//! [reset_active_proposals](./trait.Module.html#method.reset_active_proposals) function and
-//! all voting results get cleared.
+//! [reset_votes_for_active_proposals](./trait.Module.html#method.reset_votes_for_active_proposals) function and
+//! all voting results get cleared and it also calls [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
+//! and proposals with pending constitutionality become active again.
 //!
 //! ### Important abstract types to be implemented
 //! Proposals `engine` module has several abstractions to be implemented in order to work correctly.
@@ -47,7 +48,8 @@
 //! ### Public API
 //! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal using provided parameters
 //! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid) - ensures that we can create the proposal
-//! - [reset_active_proposals](./trait.Module.html#method.reset_active_proposals) - resets voting results for active proposals
+//! - [reset_votes_for_active_proposals](./trait.Module.html#method.reset_votes_for_active_proposals) - resets voting results for active proposals
+//! - [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reset_votes_for_active_proposals) - reactivate proposals with pending constitutionality.
 //!
 //! ## Usage
 //!
@@ -588,7 +590,7 @@ impl<T: Trait> Module<T> {
 
     /// Resets voting results for active proposals.
     /// Possible application includes new council elections.
-    pub fn reset_active_proposals() {
+    pub fn reset_votes_for_active_proposals() {
         <ActiveProposalIds<T>>::iter().for_each(|(proposal_id, _)| {
             Self::reset_proposal_votes(proposal_id);
         });
@@ -604,7 +606,7 @@ impl<T: Trait> Module<T> {
 
     /// Reactivate proposals with pending constitutionality.
     /// Possible application includes new council elections.
-    pub fn reactivate_pending_constitutionality_proposal() {
+    pub fn reactivate_pending_constitutionality_proposals() {
         <PendingConstitutionalityProposalIds<T>>::iter().for_each(|(proposal_id, _)| {
             <Proposals<T>>::mutate(proposal_id, |proposal| {
                 proposal.activated_at = Self::current_block();
