@@ -158,6 +158,8 @@ jobs:
         run: docker-compose --file docker-compose-with-storage.yml up -d
       - name: Add development storage node and initialize content directory
         run: DEBUG=* yarn storage-cli dev-init
-      # - name: Execute tests
-      #   run: Upload/Download assets to/from storage node
-      #        Test querying discovery
+      - name: Wait for storage-node to publish identity
+        run: sleep 90
+        # Better would be poll `http://localhost:3001/discover/v0/1` until we get 200 Response
+      - name: Execute tests
+        run: DEBUG=joystream:* yarn storage-cli upload ./pioneer/packages/apps/public/images/default-thumbnail.png 1 0
