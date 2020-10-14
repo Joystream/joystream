@@ -26,9 +26,6 @@ services:
       - chain-data:/data
     command: --dev --ws-external --base-path /data
 
-  # colossus exits immediately if it cannot connect to joystream node
-  # some workarounds... https://docs.docker.com/compose/startup-order/
-  # Better option is to have colossus retry when starting up
   colossus:
     image: joystream/apps
     restart: on-failure

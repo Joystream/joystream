@@ -1,10 +1,9 @@
-const { discover } = require('@joystream/service-discovery')
 const debug = require('debug')('joystream:colossus:api:discovery')
 
 const MAX_CACHE_AGE = 30 * 60 * 1000
 const USE_CACHE = true
 
-module.exports = function (runtime) {
+module.exports = function (discoveryClient) {
   const doc = {
     // parameters for all operations in this path
     parameters: [
@@ -45,7 +44,7 @@ module.exports = function (runtime) {
 
       try {
         debug(`resolving ${id}`)
-        const info = await discover.discover(id, runtime, USE_CACHE, cacheMaxAge)
+        const info = await discoveryClient.discover(id, USE_CACHE, cacheMaxAge)
         if (info === null) {
           debug('info not found')
           res.status(404).end()

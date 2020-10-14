@@ -116,14 +116,14 @@ function startExpressApp(app, port) {
 }
 
 // Start app
-function startAllServices({ store, api, port }) {
-  const app = require('../lib/app')(PROJECT_ROOT, store, api)
+function startAllServices({ store, api, port, discoveryClient, ipfsHttpGatewayUrl }) {
+  const app = require('../lib/app')(PROJECT_ROOT, store, api, discoveryClient, ipfsHttpGatewayUrl)
   return startExpressApp(app, port)
 }
 
 // Start discovery service app only
-function startDiscoveryService({ api, port }) {
-  const app = require('../lib/discovery')(PROJECT_ROOT, api)
+function startDiscoveryService({ port, discoveryClient }) {
+  const app = require('../lib/discovery')(PROJECT_ROOT, discoveryClient)
   return startExpressApp(app, port)
 }
 
@@ -218,10 +218,10 @@ function getServiceInformation(publicUrl) {
 
 // TODO: instead of recursion use while/async-await and use promise/setTimout based sleep
 // or cleaner code with generators?
-async function announcePublicUrl(api, publicUrl) {
+async function announcePublicUrl(api, publicUrl, publisherClient) {
   // re-announce in future
   const reannounce = function (timeoutMs) {
-    setTimeout(announcePublicUrl, timeoutMs, api, publicUrl)
+    setTimeout(announcePublicUrl, timeoutMs, api, publicUrl, publisherClient)
   }
 
   const chainIsSyncing = await api.chainIsSyncing()
@@ -243,12 +243,11 @@ async function announcePublicUrl(api, publicUrl) {
   }
 
   debug('announcing public url')
-  const { publish } = require('@joystream/service-discovery')
 
   try {
     const serviceInformation = getServiceInformation(publicUrl)
 
-    const keyId = await publish.publish(serviceInformation)
+    const keyId = await publisherClient.publish(serviceInformation)
 
     await api.discovery.setAccountInfo(keyId)
 
@@ -275,18 +274,9 @@ if (!command) {
   command = 'server'
 }
 
-async function startColossus({ api, publicUrl, port }) {
-  // TODO: check valid url, and valid port number
-  const store = getStorage(api, cli.flags)
-  banner()
-  const { startSyncing } = require('../lib/sync')
-  startSyncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
-  announcePublicUrl(api, publicUrl)
-  return startAllServices({ store, api, port })
-}
-
 const commands = {
   server: async () => {
+    banner()
     let publicUrl, port, api
 
     if (cli.flags.dev) {
@@ -300,7 +290,22 @@ const commands = {
       port = cli.flags.port
     }
 
-    return startColossus({ api, publicUrl, port })
+    // TODO: check valid url, and valid port number
+    const store = getStorage(api, cli.flags)
+
+    const ipfsHost = cli.flags.ipfsHost
+    const ipfs = require('ipfs-http-client')(ipfsHost, '5001', { protocol: 'http' })
+    const { PublisherClient, DiscoveryClient } = require('@joystream/service-discovery')
+    const publisherClient = new PublisherClient(ipfs)
+    const discoveryClient = new DiscoveryClient(ipfs, api)
+    const ipfsHttpGatewayUrl = `http://${ipfsHost}:8080/`
+
+    const { startSyncing } = require('../lib/sync')
+    startSyncing(api, { syncPeriod: SYNC_PERIOD_MS }, store)
+
+    announcePublicUrl(api, publicUrl, publisherClient)
+
+    return startAllServices({ store, api, port, discoveryClient, ipfsHttpGatewayUrl })
   },
   discovery: async () => {
     banner()
@@ -309,8 +314,12 @@ const commands = {
     const wsProvider = cli.flags.wsProvider
     const api = await RuntimeApi.create({ provider_url: wsProvider })
     const port = cli.flags.port
+    const ipfsHost = cli.flags.ipfsHost
+    const ipfs = require('ipfs-http-client')(ipfsHost, '5001', { protocol: 'http' })
+    const { DiscoveryClient } = require('@joystream/service-discovery')
+    const discoveryClient = new DiscoveryClient(ipfs, api)
     await api.untilChainIsSynced()
-    await startDiscoveryService({ api, port })
+    await startDiscoveryService({ api, port, discoveryClient })
   },
 }
 
