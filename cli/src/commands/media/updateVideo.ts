@@ -5,12 +5,18 @@ import { LicenseEntity } from 'cd-schemas/types/entities/LicenseEntity'
 import { InputParser } from 'cd-schemas'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import { JsonSchemaCustomPrompts, JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
-import { Entity } from '@joystream/types/content-directory'
+import { Actor, Entity } from '@joystream/types/content-directory'
+import { createType } from '@joystream/types'
+import { flags } from '@oclif/command'
 
 export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
   static description = 'Update existing video information (requires a membership).'
   static flags = {
     // TODO: ...IOFlags, - providing input as json
+    asCurator: flags.boolean({
+      description: 'Specify in order to update the video as curator',
+      required: false,
+    }),
   }
 
   static args = [
@@ -22,13 +28,23 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
   ]
 
   async run() {
+    const {
+      args: { id },
+      flags: { asCurator },
+    } = this.parse(UpdateVideoCommand)
+
     const account = await this.getRequiredSelectedAccount()
-    const memberId = await this.getRequiredMemberId()
-    const actor = { Member: memberId }
+
+    let memberId: number | undefined, actor: Actor
+
+    if (asCurator) {
+      actor = await this.getCuratorContext(['Video', 'License'])
+    } else {
+      memberId = await this.getRequiredMemberId()
+      actor = createType('Actor', { Member: memberId })
+    }
 
     await this.requestAccountDecoding(account)
-
-    const { id } = this.parse(UpdateVideoCommand).args
 
     let videoEntity: Entity, videoId: number
     if (id) {
