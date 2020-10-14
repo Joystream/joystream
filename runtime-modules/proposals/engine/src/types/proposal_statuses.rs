@@ -66,6 +66,9 @@ pub enum ApprovedProposalStatus {
     /// A proposal was approved and grace period is in effect
     PendingExecution,
 
+    /// The proposal needs more than one council approval.
+    PendingConstitutionality,
+
     /// Proposal was successfully executed
     Executed,
 
@@ -107,6 +110,9 @@ pub enum ProposalDecisionStatus {
     /// To clear the quorum requirement, the percentage of council members with revealed votes
     /// must be no less than the quorum value for the given proposal type.
     Approved(ApprovedProposalStatus),
+
+    /// The proposal needs more than one council approval.
+    PendingConstitutionality,
 }
 
 #[cfg(test)]

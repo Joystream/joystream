@@ -313,7 +313,11 @@ decl_storage! {
             T::ProposalId=> ();
 
         /// Ids of proposals that were approved and theirs grace period was not expired.
-        pub PendingExecutionProposalIds get(fn pending_proposal_ids): map hasher(blake2_128_concat)
+        pub PendingExecutionProposalIds get(fn pending_execution_proposal_ids): map hasher(blake2_128_concat)
+            T::ProposalId=> ();
+
+        /// Ids of proposals that were approved and needed more councils approvals to be executed.
+        pub PendingConstitutionalityProposalIds get(fn pending_consitutionality_proposal_ids): map hasher(blake2_128_concat)
             T::ProposalId=> ();
 
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
@@ -485,7 +489,7 @@ impl<T: Trait> Module<T> {
             };
 
         let new_proposal = Proposal {
-            created_at: Self::current_block(),
+            activated_at: Self::current_block(),
             parameters: creation_params.proposal_parameters,
             title: creation_params.title,
             description: creation_params.description,
@@ -493,6 +497,7 @@ impl<T: Trait> Module<T> {
             status: ProposalStatus::Active(stake_data),
             voting_results: VotingResults::default(),
             exact_execution_block: creation_params.exact_execution_block,
+            current_constitutionality_level: 0,
         };
 
         <Proposals<T>>::insert(proposal_id, new_proposal);
@@ -700,11 +705,14 @@ impl<T: Trait> Module<T> {
         let mut proposal = Self::proposals(proposal_id);
 
         if let ProposalStatus::Active(active_stake) = proposal.status.clone() {
-            let mut clean_finilized_proposal = true;
-            if let ProposalDecisionStatus::Approved { .. } = decision_status {
-                <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
+            if let ProposalDecisionStatus::Approved(approved_status) = decision_status.clone() {
+                proposal.current_constitutionality_level += 1;
 
-                clean_finilized_proposal = false; // keep pending execution proposal
+                if approved_status == ApprovedProposalStatus::PendingConstitutionality {
+                    <PendingConstitutionalityProposalIds<T>>::insert(proposal_id, ());
+                } else {
+                    <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
+                }
             }
 
             // deal with stakes if necessary
@@ -714,9 +722,10 @@ impl<T: Trait> Module<T> {
 
             // create finalized proposal status with error if any
             let new_proposal_status =
-                ProposalStatus::finalized(decision_status, Self::current_block());
+                ProposalStatus::finalized(decision_status.clone(), Self::current_block());
 
-            if clean_finilized_proposal {
+            // update approved proposal or remove otherwise
+            if !matches!(decision_status, ProposalDecisionStatus::Approved(..)) {
                 Self::remove_proposal_data(&proposal_id);
             } else {
                 proposal.status = new_proposal_status.clone();
@@ -765,6 +774,7 @@ impl<T: Trait> Module<T> {
                 .required_stake
                 .clone()
                 .unwrap_or_else(BalanceOf::<T>::zero), // stake if set or zero
+            ProposalDecisionStatus::PendingConstitutionality => BalanceOf::<T>::zero(),
         }
     }
 

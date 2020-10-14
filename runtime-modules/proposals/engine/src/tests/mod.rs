@@ -42,6 +42,14 @@ impl ProposalParametersFixture {
             },
         }
     }
+    fn with_constitutionality(&self, constitutionality: u32) -> Self {
+        ProposalParametersFixture {
+            parameters: ProposalParameters {
+                constitutionality,
+                ..self.parameters
+            },
+        }
+    }
 
     fn params(&self) -> ProposalParameters<u64, u64> {
         self.parameters.clone()
@@ -841,7 +849,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 0,
+                activated_at: 0,
                 status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
@@ -852,6 +860,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
                     slashes: 0,
                 },
                 exact_execution_block: None,
+                current_constitutionality_level: 1,
             }
         );
     });
@@ -880,14 +889,14 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
             proposal_id
         ));
 
-        let proposal = <crate::Proposals<Test>>::get(proposal_id);
+        let pre_veto_proposal = <crate::Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
-            proposal,
+            pre_veto_proposal,
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 0,
+                activated_at: 0,
                 status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
@@ -898,6 +907,7 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
                     slashes: 0,
                 },
                 exact_execution_block: None,
+                current_constitutionality_level: 1,
             }
         );
 
@@ -909,19 +919,8 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
         assert_eq!(
             proposal,
             Proposal {
-                parameters: parameters_fixture.params(),
-                proposer_id: 1,
-                created_at: 0,
                 status: ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, 2),
-                title: b"title".to_vec(),
-                description: b"description".to_vec(),
-                voting_results: VotingResults {
-                    abstentions: 0,
-                    approvals: 4,
-                    rejections: 0,
-                    slashes: 0,
-                },
-                exact_execution_block: None,
+                ..pre_veto_proposal.clone()
             }
         );
 
@@ -961,7 +960,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
         let expected_proposal = Proposal {
             parameters: parameters_fixture.params(),
             proposer_id: 1,
-            created_at: starting_block,
+            activated_at: starting_block,
             status: ProposalStatus::approved(
                 ApprovedProposalStatus::PendingExecution,
                 starting_block,
@@ -975,6 +974,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
                 slashes: 0,
             },
             exact_execution_block: None,
+            current_constitutionality_level: 1,
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -1040,7 +1040,7 @@ fn create_dummy_proposal_succeeds_with_stake() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 0,
+                activated_at: 0,
                 status: ProposalStatus::Active(Some(ActiveStake {
                     source_account_id: 1
                 })),
@@ -1048,6 +1048,7 @@ fn create_dummy_proposal_succeeds_with_stake() {
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
                 exact_execution_block: None,
+                current_constitutionality_level: 0,
             }
         )
     });
@@ -1139,7 +1140,7 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
         let expected_proposal = Proposal {
             parameters,
             proposer_id: 1,
-            created_at: starting_block,
+            activated_at: starting_block,
             status: ProposalStatus::Active(Some(ActiveStake {
                 source_account_id: 1,
             })),
@@ -1147,6 +1148,7 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
             description: b"description".to_vec(),
             voting_results: VotingResults::default(),
             exact_execution_block: None,
+            current_constitutionality_level: 0,
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -1214,7 +1216,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         let expected_proposal = Proposal {
             parameters,
             proposer_id: 1,
-            created_at: starting_block,
+            activated_at: starting_block,
             status: ProposalStatus::Active(Some(ActiveStake {
                 source_account_id: 1,
             })),
@@ -1222,6 +1224,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             description: b"description".to_vec(),
             voting_results: VotingResults::default(),
             exact_execution_block: None,
+            current_constitutionality_level: 0,
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -1546,7 +1549,7 @@ fn proposal_execution_with_exact_execution_works() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 0,
+                activated_at: 0,
                 status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
@@ -1557,6 +1560,7 @@ fn proposal_execution_with_exact_execution_works() {
                     slashes: 0,
                 },
                 exact_execution_block: Some(exact_block),
+                current_constitutionality_level: 1,
             }
         );
 
@@ -1573,6 +1577,72 @@ fn proposal_execution_with_exact_execution_works() {
 
         // check internal cache for proposal_id absence
         assert!(!<PendingExecutionProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
+    });
+}
+
+#[test]
+fn proposal_with_pending_constitutionality_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let starting_block = 1;
+        run_to_block_and_finalize(1);
+
+        let parameters_fixture = ProposalParametersFixture::default().with_constitutionality(2);
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block_and_finalize(2);
+
+        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+            proposal_id,
+            ProposalStatus::approved(
+                ApprovedProposalStatus::PendingConstitutionality,
+                starting_block,
+            ),
+        ));
+
+        let proposal = <Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                parameters: parameters_fixture.params(),
+                proposer_id: 1,
+                activated_at: starting_block,
+                status: ProposalStatus::approved(
+                    ApprovedProposalStatus::PendingConstitutionality,
+                    starting_block
+                ),
+                title: b"title".to_vec(),
+                description: b"description".to_vec(),
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                    slashes: 0,
+                },
+                exact_execution_block: None,
+                current_constitutionality_level: 1,
+            }
+        );
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+        assert!(!<PendingExecutionProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
+
+        assert!(<PendingConstitutionalityProposalIds<Test>>::contains_key(
             proposal_id
         ));
     });
