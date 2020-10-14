@@ -39,6 +39,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     const availableGroupIds = groups
       .filter(
         ([groupId, group]) =>
+          group.active.valueOf() &&
           classMaintainers.every((maintainers) => maintainers.some((m) => m.eq(groupId))) &&
           group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))
       )
