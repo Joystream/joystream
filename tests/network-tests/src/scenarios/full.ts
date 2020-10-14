@@ -27,11 +27,13 @@ const scenario = async () => {
   // Connect api to the chain
   const nodeUrl: string = env.NODE_URL || 'ws://127.0.0.1:9944'
   const provider = new WsProvider(nodeUrl)
-  const api: Api = await Api.create(provider, env.TREASURY_ACCOUNT_URI || '//Alice', '//Alice')
+  const api: Api = await Api.create(provider, env.TREASURY_ACCOUNT_URI || '//Alice', env.SUDO_ACCOUNT_URI || '//Alice')
 
   await Promise.all([creatingMemberships(api, env), councilSetup(api, env)])
 
-  // MaxActiveProposalLimit = 5
+  // Runtime is configured for MaxActiveProposalLimit = 5
+  // So we should ensure we don't exceed that number of active proposals
+  // which limits the number of concurrent tests that create proposals
   await Promise.all([
     electionParametersProposal(api, env),
     spendingProposal(api, env),
@@ -51,6 +53,7 @@ const scenario = async () => {
     leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup),
   ])
 
+  // All tests below require an active Lead for each group
   // Test bug only on one instance of working group is sufficient
   await atLeastValueBug(api, env)
 

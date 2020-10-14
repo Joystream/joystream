@@ -1,4 +1,4 @@
-import { Fixture } from '../IFixture'
+import { Fixture } from '../Fixture'
 import { ElectCouncilFixture } from './councilElectionModule'
 import { Api } from '../Api'
 import BN from 'bn.js'

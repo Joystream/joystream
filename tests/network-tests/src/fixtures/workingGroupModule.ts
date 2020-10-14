@@ -7,7 +7,7 @@ import { RewardRelationship } from '@joystream/types/recurring-rewards'
 import { Application, ApplicationIdToWorkerIdMap, Worker, WorkerId } from '@joystream/types/working-group'
 import { Utils } from '../utils'
 import { ApplicationId, Opening as HiringOpening, OpeningId } from '@joystream/types/hiring'
-import { Fixture } from '../IFixture'
+import { Fixture } from '../Fixture'
 
 export class AddWorkerOpeningFixture implements Fixture {
   private api: Api

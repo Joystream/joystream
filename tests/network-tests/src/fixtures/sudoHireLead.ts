@@ -1,4 +1,4 @@
-import { Fixture } from '../IFixture'
+import { Fixture } from '../Fixture'
 import {
   SudoAddLeaderOpeningFixture,
   ApplyForOpeningFixture,

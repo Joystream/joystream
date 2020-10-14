@@ -8,7 +8,6 @@ import { assert } from 'chai'
 
 const debug = Debugger('flow:councilSetup')
 
-// Electing council scenario
 export default async function councilSetup(api: Api, env: NodeJS.ProcessEnv) {
   // Skip creating council if already elected
   if ((await api.getCouncil()).length) {
@@ -17,8 +16,8 @@ export default async function councilSetup(api: Api, env: NodeJS.ProcessEnv) {
   }
 
   const numberOfApplicants = (await api.getCouncilSize()).toNumber() * 2
-  const voters = api.createKeyPairs(5).map((key) => key.address)
   const applicants = api.createKeyPairs(numberOfApplicants).map((key) => key.address)
+  const voters = api.createKeyPairs(5).map((key) => key.address)
 
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
   const K: number = +env.COUNCIL_ELECTION_K!
@@ -33,8 +32,8 @@ export default async function councilSetup(api: Api, env: NodeJS.ProcessEnv) {
   // that is smaller than the council size if not enough members apply.
   const councilElectionHappyCaseFixture = new CouncilElectionHappyCaseFixture(
     api,
-    voters,
-    applicants,
+    voters, // should be member ids
+    applicants, // should be member ids
     K,
     greaterStake,
     lesserStake

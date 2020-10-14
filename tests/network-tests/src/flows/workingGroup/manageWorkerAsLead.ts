@@ -54,7 +54,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
     group
   )
   await applyForWorkerOpeningFixture.runner(false)
-  debug('Applications:', applyForWorkerOpeningFixture.getApplicationIds())
+
   const applicationIdsToHire = applyForWorkerOpeningFixture.getApplicationIds().slice(0, 2)
 
   // Begin application review
@@ -65,7 +65,6 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
   )
   await beginApplicationReviewFixture.runner(false)
 
-  debug('Filling with ids:', applicationIdsToHire)
   // Fill worker opening
   const fillOpeningFixture = new FillOpeningFixture(
     api,
@@ -77,7 +76,7 @@ export default async function manageWorker(api: Api, env: NodeJS.ProcessEnv, gro
     group
   )
   await fillOpeningFixture.runner(false)
-  debug('Hired worker ids', fillOpeningFixture.getWorkerIds())
+
   const firstWorkerId = fillOpeningFixture.getWorkerIds()[0]
 
   const decreaseStakeFixture = new DecreaseStakeFixture(api, firstWorkerId, group)

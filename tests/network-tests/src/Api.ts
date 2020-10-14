@@ -856,6 +856,14 @@ export class Api {
     return this.getBlockDuration().muln(durationInBlocks).toNumber()
   }
 
+  public expectMemberRegisteredEvent(events: EventRecord[]): MemberId {
+    const record = events.find((record) => record.event.method && record.event.method.toString() === 'MemberRegistered')
+    if (!record) {
+      throw new Error('Expected Event Not Found')
+    }
+    return record.event.data[0] as MemberId
+  }
+
   public expectProposalCreatedEvent(events: EventRecord[]): ProposalId {
     const record = events.find((record) => record.event.method && record.event.method.toString() === 'ProposalCreated')
     if (!record) {

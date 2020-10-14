@@ -4,7 +4,7 @@ import { assert } from 'chai'
 import { Seat } from '@joystream/types/council'
 import { v4 as uuid } from 'uuid'
 import { Utils } from '../utils'
-import { Fixture } from '../IFixture'
+import { Fixture } from '../Fixture'
 
 export class ElectCouncilFixture implements Fixture {
   private api: Api
