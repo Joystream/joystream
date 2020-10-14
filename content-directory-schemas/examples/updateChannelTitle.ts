@@ -27,8 +27,8 @@ async function main() {
   // created in ./createChannel.ts example (normally we would probably use some other way to do it, ie.: query node)
   const CHANNEL_ID = await parser.findEntityIdByUniqueQuery({ title: 'Example channel' }, 'Channel')
 
-  // Use createEntityUpdateOperation to parse the input
-  const updateOperation = await parser.createEntityUpdateOperation(
+  // Use getEntityUpdateOperations to parse the update input
+  const updateOperations = await parser.getEntityUpdateOperations(
     channelUpdateInput,
     'Channel', // Class name
     CHANNEL_ID // Id of the entity we want to update
@@ -37,7 +37,7 @@ async function main() {
   await api.tx.contentDirectory
     .transaction(
       { Member: 0 }, // We use member with id 0 as actor (in this case we assume this is Alice)
-      [updateOperation] // The only operation we execute in this transaction is a single updateOperation
+      updateOperations // In this case this will be just a single UpdateEntityPropertyValues operation
     )
     .signAndSend(ALICE)
 }
