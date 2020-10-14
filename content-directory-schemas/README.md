@@ -182,7 +182,7 @@ The best way to ilustrate this would be by providing some examples:
       .signAndSend(SENDER_KEYPAIR)
   }
 ```
-__Full example with comments can be found in `content-directory-schemas/examples/createChannel.ts` and ran with `yarn workspace cd-schemas example:createChannel`__
+_Full example with comments can be found in `content-directory-schemas/examples/createChannel.ts` and ran with `yarn workspace cd-schemas example:createChannel`_
 
 #### Creating a video
 ```
@@ -239,11 +239,9 @@ async main() {
     .signAndSend(SENDER_KEYPAIR)
 }
 ```
-__Full example with comments can be found in `content-directory-schemas/examples/createVideo.ts` and ran with `yarn workspace cd-schemas example:createChannel`__
+_Full example with comments can be found in `content-directory-schemas/examples/createVideo.ts` and ran with `yarn workspace cd-schemas example:createChannel`_
 
 #### Update channel title
-
-Note that updates are currently very limitied (ie. the `new` and `existing` keywords are not supported for references etc.)
 
 ```
 import { InputParser } from 'cd-schemas'
@@ -261,14 +259,16 @@ async function main() {
 
   const CHANNEL_ID = await parser.findEntityIdByUniqueQuery({ title: 'Example channel' }, 'Channel')
 
-  const updateOperation = await parser.createEntityUpdateOperation(channelUpdateInput, 'Channel', CHANNEL_ID)
+  const updateOperations = await parser.getEntityUpdateOperations(channelUpdateInput, 'Channel', CHANNEL_ID)
 
   await api.tx.contentDirectory
     .transaction({ Member: SENDER_MEMBER_ID }, [updateOperation])
     .signAndSend(SENDER_KEYPAIR)
 }
 ```
-__Full example with comments can be found in `content-directory-schemas/examples/updateChannelTitle.ts` and ran with `yarn workspace cd-schemas example:updateChannelTitle`__
+_Full example with comments can be found in `content-directory-schemas/examples/updateChannelTitle.ts` and ran with `yarn workspace cd-schemas example:updateChannelTitle`_
+
+Note: Updates can also inlucde `new` and `existing` keywords. In case `new` is specified inside the update - `CreateEntity` and `AddSchemaSupportToEntity` operations will be included as part of the operations returned by `InputParser.getEntityUpdateOperations`.
 
 ## Current limitations
 

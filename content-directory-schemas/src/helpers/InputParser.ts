@@ -25,6 +25,7 @@ export class InputParser {
   private batchInputs: EntityBatch[]
   private createEntityOperations: OperationType[] = []
   private addSchemaToEntityOprations: OperationType[] = []
+  private updateEntityPropertyValuesOperations: OperationType[] = []
   private entityIndexByUniqueQueryMap = new Map<string, number>()
   private entityIdByUniqueQueryMap = new Map<string, number>()
   private entityByUniqueQueryCurrentIndex = 0
@@ -32,7 +33,7 @@ export class InputParser {
   private classMapInitialized = false
   private entityIdByUniqueQueryMapInitialized = false
 
-  static createWithKnownSchemas(api: ApiPromise, entityBatches?: EntityBatch[]) {
+  static createWithKnownSchemas(api: ApiPromise, entityBatches?: EntityBatch[]): InputParser {
     return new InputParser(
       api,
       [],
@@ -230,7 +231,34 @@ export class InputParser {
     return parametrizedClassPropValues
   }
 
-  private async parseEntityInput(entityInput: Record<string, any>, schema: AddClassSchema) {
+  private async existingEntityQueryToParametrizedPropertyValue(className: string, uniquePropVal: Record<string, any>) {
+    try {
+      // First - try to find in existing batches
+      const entityIndex = this.findEntityIndexByUniqueQuery(uniquePropVal, className)
+      return createType('ParametrizedPropertyValue', { InternalEntityJustAdded: entityIndex })
+    } catch (e) {
+      // If not found - fallback to chain search
+      const entityId = await this.findEntityIdByUniqueQuery(uniquePropVal, className)
+      return createType('ParametrizedPropertyValue', {
+        InputPropertyValue: { Single: { Reference: entityId } },
+      })
+    }
+  }
+
+  // parseEntityInput Overloads
+  private parseEntityInput(entityInput: Record<string, any>, schema: AddClassSchema): Promise<number>
+  private parseEntityInput(
+    entityInput: Record<string, any>,
+    schema: AddClassSchema,
+    updatedEntityId: number
+  ): Promise<void>
+
+  // Parse entity input. Speficy "updatedEntityId" only if want to parse into update operation!
+  private async parseEntityInput(
+    entityInput: Record<string, any>,
+    schema: AddClassSchema,
+    updatedEntityId?: number
+  ): Promise<void | number> {
     const parametrizedPropertyValues = await this.createParametrizedPropertyValues(
       entityInput,
       schema,
@@ -243,38 +271,41 @@ export class InputParser {
             const entityIndex = await this.parseEntityInput(value.new, refEntitySchema)
             return createType('ParametrizedPropertyValue', { InternalEntityJustAdded: entityIndex })
           } else if (Object.keys(value).includes('existing')) {
-            try {
-              const entityIndex = this.findEntityIndexByUniqueQuery(value.existing, refEntitySchema.className)
-              return createType('ParametrizedPropertyValue', { InternalEntityJustAdded: entityIndex })
-            } catch (e) {
-              // Fallback to chain search
-              const entityId = await this.findEntityIdByUniqueQuery(value.existing, refEntitySchema.className)
-              return createType('ParametrizedPropertyValue', {
-                InputPropertyValue: { Single: { Reference: entityId } },
-              })
-            }
+            return this.existingEntityQueryToParametrizedPropertyValue(refEntitySchema.className, value.existing)
           }
         }
         return undefined
       }
     )
 
-    // Add operations
-    const createEntityOperationIndex = this.createEntityOperations.length
-    const classId = this.classIdByNameMap.get(schema.className)
-    this.createEntityOperations.push(createType('OperationType', { CreateEntity: { class_id: classId } }))
-    this.addSchemaToEntityOprations.push(
-      createType('OperationType', {
-        AddSchemaSupportToEntity: {
-          schema_id: 0,
-          entity_id: { InternalEntityJustAdded: createEntityOperationIndex },
-          parametrized_property_values: parametrizedPropertyValues,
-        },
-      })
-    )
+    if (updatedEntityId) {
+      // Update operation
+      this.updateEntityPropertyValuesOperations.push(
+        createType('OperationType', {
+          UpdatePropertyValues: {
+            entity_id: { ExistingEntity: updatedEntityId },
+            new_parametrized_property_values: parametrizedPropertyValues,
+          },
+        })
+      )
+    } else {
+      // Add operations (createEntity, AddSchemaSupportToEntity)
+      const createEntityOperationIndex = this.createEntityOperations.length
+      const classId = this.getClassIdByName(schema.className)
+      this.createEntityOperations.push(createType('OperationType', { CreateEntity: { class_id: classId } }))
+      this.addSchemaToEntityOprations.push(
+        createType('OperationType', {
+          AddSchemaSupportToEntity: {
+            schema_id: 0,
+            entity_id: { InternalEntityJustAdded: createEntityOperationIndex },
+            parametrized_property_values: parametrizedPropertyValues,
+          },
+        })
+      )
 
-    // Return CreateEntity operation index
-    return createEntityOperationIndex
+      // Return CreateEntity operation index
+      return createEntityOperationIndex
+    }
   }
 
   private reset() {
@@ -282,6 +313,7 @@ export class InputParser {
     this.classIdByNameMap = new Map<string, number>()
     this.createEntityOperations = []
     this.addSchemaToEntityOprations = []
+    this.updateEntityPropertyValuesOperations = []
     this.entityByUniqueQueryCurrentIndex = 0
   }
 
@@ -306,21 +338,22 @@ export class InputParser {
     return operations
   }
 
-  public async createEntityUpdateOperation(
-    entityInput: Record<string, any>,
+  public async getEntityUpdateOperations(
+    input: Record<string, any>,
     className: string,
     entityId: number
-  ): Promise<OperationType> {
+  ): Promise<OperationType[]> {
     await this.initializeClassMap()
     const schema = this.schemaByClassName(className)
-    const parametrizedPropertyValues = await this.createParametrizedPropertyValues(entityInput, schema)
+    await this.parseEntityInput(input, schema, entityId)
+    const operations = [
+      ...this.createEntityOperations,
+      ...this.addSchemaToEntityOprations,
+      ...this.updateEntityPropertyValuesOperations,
+    ]
+    this.reset()
 
-    return createType('OperationType', {
-      UpdatePropertyValues: {
-        entity_id: { ExistingEntity: entityId },
-        new_parametrized_property_values: parametrizedPropertyValues,
-      },
-    })
+    return operations
   }
 
   public async parseAddClassSchemaExtrinsic(inputData: AddClassSchema) {
