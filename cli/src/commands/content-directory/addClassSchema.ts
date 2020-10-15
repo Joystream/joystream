@@ -17,6 +17,7 @@ export default class AddClassSchemaCommand extends ContentDirectoryCommandBase {
   async run() {
     const account = await this.getRequiredSelectedAccount()
     await this.requireLead()
+    await this.requestAccountDecoding(account)
 
     const { input, output } = this.parse(AddClassSchemaCommand).flags
 
@@ -69,12 +70,10 @@ export default class AddClassSchemaCommand extends ContentDirectoryCommandBase {
     const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
     if (confirmed) {
-      await this.requestAccountDecoding(account)
+      saveOutputJson(output, `${inputJson.className}Schema.json`, inputJson)
       const inputParser = new InputParser(this.getOriginalApi())
       this.log('Sending the extrinsic...')
-      await this.sendAndFollowTx(account, await inputParser.parseAddClassSchemaExtrinsic(inputJson), true)
-
-      saveOutputJson(output, `${inputJson.className}Schema.json`, inputJson)
+      await this.sendAndFollowTx(account, await inputParser.parseAddClassSchemaExtrinsic(inputJson))
     }
   }
 }

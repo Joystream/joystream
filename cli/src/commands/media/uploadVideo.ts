@@ -367,6 +367,6 @@ export default class UploadVideoCommand extends ContentDirectoryCommandBase {
       },
     ])
     const operations = await inputParser.getEntityBatchOperations()
-    await this.sendAndFollowNamedTx(account, 'contentDirectory', 'transaction', [actor, operations], true)
+    await this.sendAndFollowNamedTx(account, 'contentDirectory', 'transaction', [actor, operations])
   }
 }

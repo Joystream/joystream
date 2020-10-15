@@ -443,7 +443,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   async sendAndFollowTx(
     account: KeyringPair,
     tx: SubmittableExtrinsic<'promise'>,
-    warnOnly = true // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
+    warnOnly = false // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
   ): Promise<void> {
     try {
       await this.sendExtrinsic(account, tx)
