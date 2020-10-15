@@ -45,7 +45,7 @@ export interface GetChannel_channel_videos {
   title: string;
   description: string;
   category: GetChannel_channel_videos_category;
-  views: number;
+  views: number | null;
   duration: number;
   thumbnailURL: string;
   publishedOnJoystreamAt: GQLDate;

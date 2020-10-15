@@ -11,9 +11,9 @@ import {
   StyledAvatar,
   TitleHeader,
 } from './VideoPreview.styles'
-import { formatDateAgo, formatDurationShort } from '@/utils/time'
-import { formatNumberShort } from '@/utils/number'
+import { formatDurationShort } from '@/utils/time'
 import VideoPreviewBase from './VideoPreviewBase'
+import { formatVideoViewsAndDate } from '@/utils/video'
 
 type VideoPreviewProps = {
   title: string
@@ -23,7 +23,7 @@ type VideoPreviewProps = {
   duration?: number
   // video watch progress in percent (0-100)
   progress?: number
-  views: number
+  views: number | null
   posterURL: string
 
   showChannel?: boolean
@@ -101,11 +101,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
     </ChannelName>
   )
 
-  const metaNode = (
-    <MetaText>
-      {formatDateAgo(createdAt)}・{formatNumberShort(views)} views
-    </MetaText>
-  )
+  const metaNode = <MetaText>{formatVideoViewsAndDate(views, createdAt)}</MetaText>
 
   return (
     <VideoPreviewBase

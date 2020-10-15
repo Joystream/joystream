@@ -1,3 +1,4 @@
-import apolloClient from '@/api/client'
+import '@/mocking/server'
 
-export { apolloClient }
+export { default as client } from './client'
+export * from './queries'

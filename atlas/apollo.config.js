@@ -2,8 +2,8 @@ module.exports = {
   client: {
     service: {
       name: 'atlas-graphql',
-      localSchemaFile: 'src/schema.graphql',
+      localSchemaFile: 'src/api/schemas/extendedQueryNode.graphql',
     },
-    excludes: ['src/schema.graphql'],
+    excludes: ['src/api/schemas/extendedQueryNode.graphql', 'src/api/schemas/orion.graphql'],
   },
 }

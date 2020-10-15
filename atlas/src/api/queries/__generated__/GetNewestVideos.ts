@@ -45,7 +45,7 @@ export interface GetNewestVideos_videosConnection_edges_node {
   title: string;
   description: string;
   category: GetNewestVideos_videosConnection_edges_node_category;
-  views: number;
+  views: number | null;
   duration: number;
   thumbnailURL: string;
   publishedOnJoystreamAt: GQLDate;
