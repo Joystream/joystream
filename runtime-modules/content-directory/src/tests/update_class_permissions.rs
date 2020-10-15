@@ -17,9 +17,22 @@ fn update_class_permissions_success() {
         let mut class_permissions = ClassPermissions::default();
 
         // Ensure class permissions of newly created Class are equal to default ones
+
         assert_eq!(
             class_by_id(FIRST_CLASS_ID).get_permissions(),
             class_permissions
+        );
+
+        // Ensure curator groups maintain no classes.
+
+        assert_eq!(
+            curator_group_by_id(FIRST_CURATOR_GROUP_ID).get_number_of_classes_maintained(),
+            0
+        );
+
+        assert_eq!(
+            curator_group_by_id(SECOND_CURATOR_GROUP_ID).get_number_of_classes_maintained(),
+            0
         );
 
         // Events number before tested call
@@ -52,6 +65,18 @@ fn update_class_permissions_success() {
 
         let class_permissions_updated_event =
             get_test_event(RawEvent::ClassPermissionsUpdated(FIRST_CLASS_ID));
+
+        // Ensure number of classes maintained by curator groups updated succesfully.
+
+        assert_eq!(
+            curator_group_by_id(FIRST_CURATOR_GROUP_ID).get_number_of_classes_maintained(),
+            1
+        );
+
+        assert_eq!(
+            curator_group_by_id(SECOND_CURATOR_GROUP_ID).get_number_of_classes_maintained(),
+            1
+        );
 
         // Event checked
         assert_event_success(

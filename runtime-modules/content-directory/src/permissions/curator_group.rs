@@ -36,6 +36,10 @@ impl<T: Trait> CuratorGroup<T> {
         self.active
     }
 
+    pub fn get_number_of_classes_maintained(&self) -> u32 {
+        self.number_of_classes_maintained
+    }
+
     /// Set `CuratorGroup` status as provided
     pub fn set_status(&mut self, is_active: bool) {
         self.active = is_active
