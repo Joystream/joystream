@@ -4,6 +4,7 @@ import Express from 'express'
 import { connect } from 'mongoose'
 import { buildSchema } from 'type-graphql'
 import { VideoInfosResolver } from './resolvers/videoInfos'
+import config from './config'
 
 const main = async () => {
   const schema = await buildSchema({
@@ -12,16 +13,16 @@ const main = async () => {
     validate: true,
   })
 
-  process.stdout.write('Connecting to MongoDB...')
+  process.stdout.write(`Connecting to MongoDB at "${config.mongoDBUri}"...`)
   try {
-    const mongoose = await connect('mongodb://localhost:27017/orion', {
+    const mongoose = await connect(config.mongoDBUri, {
       useUnifiedTopology: true,
       useNewUrlParser: true,
       useCreateIndex: true,
     })
     await mongoose.connection
   } catch {
-    process.stdout.write(' Failed! \n')
+    process.stdout.write(' Failed!\n')
     process.exit()
     return
   }
@@ -30,8 +31,8 @@ const main = async () => {
   const server = new ApolloServer({ schema })
   const app = Express()
   server.applyMiddleware({ app })
-  app.listen({ port: 3333 }, () =>
-    console.log(`🚀 Server ready and listening at ==> http://localhost:3333${server.graphqlPath}`)
+  app.listen({ port: config.port }, () =>
+    console.log(`🚀 Server listening at ==> http://localhost:${config.port}${server.graphqlPath}`)
   )
 }
 
