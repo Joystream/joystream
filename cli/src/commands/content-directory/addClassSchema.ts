@@ -33,14 +33,27 @@ export default class AddClassSchemaCommand extends ContentDirectoryCommandBase {
         ],
         [
           'existingProperties',
-          async () =>
-            this.simplePrompt({
+          async () => {
+            const choices = selectedClass!.properties.map((p, i) => ({ name: `${i}: ${p.name.toString()}`, value: i }))
+            if (!choices.length) {
+              return []
+            }
+            return await this.simplePrompt({
               type: 'checkbox',
               message: 'Choose existing properties to keep',
-              choices: selectedClass!.properties.map((p, i) => ({ name: `${i}: ${p.name.toString()}`, value: i })),
-            }),
+              choices,
+            })
+          },
         ],
-        [/^newProperties\[\d+\]\.property_type\.Single\.Reference/, async () => this.promptForClassReference()],
+        [
+          /^newProperties\[\d+\]\.property_type\.(Single|Vector\.vec_type)\.Reference/,
+          async () => this.promptForClassReference(),
+        ],
+        [/^newProperties\[\d+\]\.property_type\.(Single|Vector\.vec_type)\.Text/, { message: 'Provide TextMaxLength' }],
+        [
+          /^newProperties\[\d+\]\.property_type\.(Single|Vector\.vec_type)\.Hash/,
+          { message: 'Provide HashedTextMaxLength' },
+        ],
       ]
 
       const prompter = new JsonSchemaPrompter<AddClassSchema>(

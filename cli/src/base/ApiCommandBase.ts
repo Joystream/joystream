@@ -2,7 +2,7 @@ import ExitCodes from '../ExitCodes'
 import { CLIError } from '@oclif/errors'
 import StateAwareCommandBase from './StateAwareCommandBase'
 import Api from '../Api'
-import { getTypeDef, Option, Tuple, Bytes } from '@polkadot/types'
+import { getTypeDef, Option, Tuple, Bytes, TypeRegistry } from '@polkadot/types'
 import { Registry, Codec, CodecArg, TypeDef, TypeDefInfo, Constructor } from '@polkadot/types/types'
 
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
@@ -16,6 +16,7 @@ import { createParamOptions } from '../helpers/promptOptions'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { DistinctQuestion } from 'inquirer'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
+import { DispatchError } from '@polkadot/types/interfaces/system'
 
 class ExtrinsicFailedError extends Error {}
 
@@ -405,11 +406,26 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         if (result.status.isInBlock) {
           unsubscribe()
           result.events
-            .filter(({ event: { section } }): boolean => section === 'system')
-            .forEach(({ event: { method } }): void => {
-              if (method === 'ExtrinsicFailed') {
-                reject(new ExtrinsicFailedError('Extrinsic execution error!'))
-              } else if (method === 'ExtrinsicSuccess') {
+            .filter(({ event }) => event.section === 'system')
+            .forEach(({ event }) => {
+              if (event.method === 'ExtrinsicFailed') {
+                const dispatchError = event.data[0] as DispatchError
+                let errorMsg = dispatchError.toString()
+                if (dispatchError.isModule) {
+                  try {
+                    // Need to assert that registry is of TypeRegistry type, since Registry intefrace
+                    // seems outdated and doesn't include DispatchErrorModule as possible argument for "findMetaError"
+                    const { name, documentation } = (this.getOriginalApi().registry as TypeRegistry).findMetaError(
+                      dispatchError.asModule
+                    )
+                    errorMsg = `${name} (${documentation})`
+                  } catch (e) {
+                    // This probably means we don't have this error in the metadata
+                    // In this case - continue (we'll just display dispatchError.toString())
+                  }
+                }
+                reject(new ExtrinsicFailedError(`Extrinsic execution error: ${errorMsg}`))
+              } else if (event.method === 'ExtrinsicSuccess') {
                 resolve()
               }
             })

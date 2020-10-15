@@ -501,7 +501,7 @@ export default class Api {
   }
 
   async curatorGroupById(id: number): Promise<CuratorGroup | null> {
-    const exists = !!(await this._api.query.contentDirectory.curatorGroupById.size(id))
+    const exists = !!(await this._api.query.contentDirectory.curatorGroupById.size(id)).toNumber()
     return exists ? await this._api.query.contentDirectory.curatorGroupById<CuratorGroup>(id) : null
   }
 

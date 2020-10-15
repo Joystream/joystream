@@ -17,10 +17,17 @@ export default class CreateClassCommand extends ContentDirectoryCommandBase {
     await this.requireLead()
 
     const { input, output } = this.parse(CreateClassCommand).flags
+    const existingClassnames = (await this.getApi().availableClasses()).map(([, aClass]) => aClass.name.toString())
 
     let inputJson = await getInputJson<CreateClass>(input, CreateClassSchema as JSONSchema)
     if (!inputJson) {
-      const customPrompts: JsonSchemaCustomPrompts = [
+      const customPrompts: JsonSchemaCustomPrompts<CreateClass> = [
+        [
+          'name',
+          {
+            validate: (className) => existingClassnames.includes(className) && 'A class with this name already exists!',
+          },
+        ],
         ['class_permissions.maintainers', () => this.promptForCuratorGroups('Select class maintainers')],
       ]
 

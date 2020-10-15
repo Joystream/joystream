@@ -11,7 +11,7 @@ import { Codec } from '@polkadot/types/types'
 import _ from 'lodash'
 
 /**
- * Abstract base class for commands related to working groups
+ * Abstract base class for commands related to content directory
  */
 export default abstract class ContentDirectoryCommandBase extends AccountsCommandBase {
   // Use when lead access is required in given command
@@ -74,6 +74,9 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
 
   async promptForCuratorGroups(message = 'Select Curator Groups'): Promise<number[]> {
     const choices = await this.curatorGroupChoices()
+    if (!choices.length) {
+      return []
+    }
     const selectedIds = await this.simplePrompt({ message, type: 'checkbox', choices })
 
     return selectedIds
