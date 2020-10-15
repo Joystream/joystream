@@ -27,7 +27,12 @@ const loadEnvVar = (name: string, { defaultValue, devDefaultValue }: LoadEnvVarO
 
 const rawPort = loadEnvVar('ORION_PORT', { defaultValue: '6116' })
 const port = parseInt(rawPort)
-const mongoDBUri = loadEnvVar('ORION_MONGO_URI', { devDefaultValue: 'mongodb://localhost:27017/orion' })
+
+const mongoHostname = loadEnvVar('ORION_MONGO_HOSTNAME', { devDefaultValue: 'localhost' })
+const rawMongoPort = loadEnvVar('ORION_MONGO_PORT', { defaultValue: '27017' })
+const mongoDatabase = loadEnvVar('ORION_MONGO_DATABASE', { defaultValue: 'orion' })
+
+const mongoDBUri = `mongodb://${mongoHostname}:${rawMongoPort}/${mongoDatabase}`
 
 export default {
   port,

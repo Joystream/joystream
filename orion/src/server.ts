@@ -21,8 +21,9 @@ const main = async () => {
       useCreateIndex: true,
     })
     await mongoose.connection
-  } catch {
+  } catch (error) {
     process.stdout.write(' Failed!\n')
+    console.error(error)
     process.exit()
     return
   }
