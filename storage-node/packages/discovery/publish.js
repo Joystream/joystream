@@ -1,6 +1,3 @@
-// const ipfsClient = require('ipfs-http-client')
-// const ipfs = ipfsClient('localhost', '5001', { protocol: 'http' })
-
 const debug = require('debug')('joystream:discovery:publish')
 
 /**
@@ -31,8 +28,16 @@ function encodeServiceInfo(info) {
     serialized: JSON.stringify(info),
   })
 }
-
+/**
+ * A PublisherClient is used to store a JSON serializable piece of "service information" in the ipfs network
+ * using the `self` key of the ipfs node. This makes looking up that information available through IPNS.
+ */
 class PublisherClient {
+  /**
+   * Create an instance of a PublisherClient, taking an optional ipfs client instance. If not provided
+   * a default client using default localhost node will be used.
+   * @param {IpfsClient} ipfs - optional instance of an ipfs-http-client.
+   */
   constructor(ipfs) {
     this.ipfs = ipfs || require('ipfs-http-client')('localhost', '5001', { protocol: 'http' })
   }
@@ -42,7 +47,7 @@ class PublisherClient {
    * to ipfs, using the local ipfs node's PUBLISH_KEY, and returns the key id used to publish.
    * What we refer to as the ipns id.
    * @param {object} serviceInfo - the service information to publish
-   * @returns {string} - the ipns id
+   * @return {string} - the ipns id
    */
   async publish(serviceInfo) {
     const keys = await this.ipfs.key.list()
@@ -67,23 +72,18 @@ class PublisherClient {
     const files = await this.ipfs.add(encodeServiceInfo(serviceInfo))
 
     debug('publishing...')
-    const published = await this.ipfs.name.publish(files[0].hash, {
+    const { name, value } = await this.ipfs.name.publish(files[0].hash, {
       key: PUBLISH_KEY,
       resolve: false,
       // lifetime: // string - Time duration of the record. Default: 24h
       // ttl:      // string - Time duration this record should be cached
     })
 
-    // The name and ipfs hash of the published service information file, eg.
-    // {
-    //   name: 'QmUNQCkaU1TRnc1WGixqEP3Q3fazM8guSdFRsdnSJTN36A',
-    //   value: '/ipfs/QmcSjtVMfDSSNYCxNAb9PxNpEigCw7h1UZ77gip3ghfbnA'
-    // }
-    // .. The name is equivalent to the key id that was used.
-    debug(published)
+    debug(`published ipns name: ${name} -> ${value}`)
 
     // Return the key id under which the content was published. Which is used
     // to lookup the actual ipfs content id of the published service information
+    // Note: name === servicesKey.id
     return servicesKey.id
   }
 }

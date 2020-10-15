@@ -100,11 +100,6 @@ const init = async (api: RuntimeApi): Promise<any> => {
     debug('Alice is already a member.')
   }
 
-  // debug('Setting Alice as content working group lead.')
-  // await api.signAndSend(alice, api.api.tx.sudo.sudo(api.api.tx.contentWorkingGroup.replaceLead([aliceMemberId, alice])))
-  // Initialize classes and entities in the content-directory
-  // TODO: when cli tools are ready re-use here
-
   // set localhost colossus as discovery provider
   // assuming pioneer dev server is running on port 3000 we should run
   // the storage dev server on a different port than the default for colossus which is also
