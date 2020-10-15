@@ -583,9 +583,7 @@ decl_module! {
             );
 
             // Increment the number of classes, curator group under given `curator_group_id` maintains
-            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-                curator_group.increment_number_of_classes_maintained_count();
-            });
+            Self::increment_number_of_classes_maintained_by_curator_group(curator_group_id);
 
             // Trigger event
             Self::deposit_event(RawEvent::MaintainerAdded(class_id, curator_group_id));
@@ -620,9 +618,7 @@ decl_module! {
             );
 
             // Decrement the number of classes, curator group under given `curator_group_id` maintains
-            <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
-                curator_group.decrement_number_of_classes_maintained_count();
-            });
+            Self::decrement_number_of_classes_maintained_by_curator_group(curator_group_id);
 
             // Trigger event
             Self::deposit_event(RawEvent::MaintainerRemoved(class_id, curator_group_id));
@@ -659,12 +655,24 @@ decl_module! {
 
             // Make updated class_permissions from parameters provided
             let updated_class_permissions = Self::make_updated_class_permissions(
-                class_permissions, updated_any_member, updated_entity_creation_blocked,
+                &class_permissions, updated_any_member, updated_entity_creation_blocked,
                 updated_all_entity_property_values_locked, updated_maintainers
             );
 
             // If class_permissions update has been performed
             if let Some(updated_class_permissions) = updated_class_permissions  {
+
+                // Decrement number of classes, maintained by each curator group removed from maintainers set.
+                let curator_group_ids_to_decrement_number_of_classes: BTreeSet<_> =
+                    class_permissions.get_maintainers().difference(updated_class_permissions.get_maintainers()).cloned().collect();
+
+                Self::decrement_number_of_classes_maintained_by_curator_groups(curator_group_ids_to_decrement_number_of_classes);
+
+                // Increment number of classes, maintained by each curator group added to maintainers set.
+                let curator_group_ids_to_increment_number_of_classes: BTreeSet<_> =
+                    updated_class_permissions.get_maintainers().difference(class_permissions.get_maintainers()).cloned().collect();
+
+                Self::increment_number_of_classes_maintained_by_curator_groups(curator_group_ids_to_increment_number_of_classes);
 
                 // Update `class_permissions` under given class id
                 <ClassById<T>>::mutate(class_id, |class| {
@@ -1663,6 +1671,42 @@ impl<T: Trait> Module<T> {
         })
     }
 
+    /// Increment number of classes, maintained by each curator group
+    fn increment_number_of_classes_maintained_by_curator_groups(
+        curator_group_ids: BTreeSet<T::CuratorGroupId>,
+    ) {
+        curator_group_ids.into_iter().for_each(|curator_group_id| {
+            Self::increment_number_of_classes_maintained_by_curator_group(curator_group_id);
+        });
+    }
+
+    /// Decrement number of classes, maintained by each curator group
+    fn decrement_number_of_classes_maintained_by_curator_groups(
+        curator_group_ids: BTreeSet<T::CuratorGroupId>,
+    ) {
+        curator_group_ids.into_iter().for_each(|curator_group_id| {
+            Self::decrement_number_of_classes_maintained_by_curator_group(curator_group_id);
+        });
+    }
+
+    /// Increment number of classes, maintained by curator group
+    fn increment_number_of_classes_maintained_by_curator_group(
+        curator_group_id: T::CuratorGroupId,
+    ) {
+        <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
+            curator_group.increment_number_of_classes_maintained_count();
+        });
+    }
+
+    /// Decrement number of classes, maintained by curator group
+    fn decrement_number_of_classes_maintained_by_curator_group(
+        curator_group_id: T::CuratorGroupId,
+    ) {
+        <CuratorGroupById<T>>::mutate(curator_group_id, |curator_group| {
+            curator_group.decrement_number_of_classes_maintained_count();
+        });
+    }
+
     /// Add property value hash, that should be unique on `Class` level
     pub fn add_unique_property_value_hash(
         class_id: T::ClassId,
@@ -1970,7 +2014,7 @@ impl<T: Trait> Module<T> {
     /// Used to update `class_permissions` with parameters provided.
     /// Returns updated `class_permissions` if update performed
     pub fn make_updated_class_permissions(
-        class_permissions: ClassPermissions<T::CuratorGroupId>,
+        class_permissions: &ClassPermissions<T::CuratorGroupId>,
         updated_any_member: Option<bool>,
         updated_entity_creation_blocked: Option<bool>,
         updated_all_entity_property_values_locked: Option<bool>,
@@ -1998,7 +2042,7 @@ impl<T: Trait> Module<T> {
             updated_class_permissions.set_maintainers(updated_maintainers);
         }
 
-        if updated_class_permissions != class_permissions {
+        if updated_class_permissions != *class_permissions {
             Some(updated_class_permissions)
         } else {
             None
