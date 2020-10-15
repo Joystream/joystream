@@ -289,13 +289,15 @@ decl_storage! {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
+        /// Predefined errors
+        type Error = Error<T>;
+
+        /// Initializing events
+        fn deposit_event() = default;
 
         // ======
         // Next set of extrinsics can only be invoked by lead.
         // ======
-
-        /// Initializing events
-        fn deposit_event() = default;
 
         /// Add new curator group to runtime storage
         #[weight = 10_000_000] // TODO: adjust weight
