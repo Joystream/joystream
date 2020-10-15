@@ -9,6 +9,7 @@ import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import { Codec } from '@polkadot/types/types'
 import _ from 'lodash'
+import chalk from 'chalk'
 
 /**
  * Abstract base class for commands related to content directory
@@ -264,7 +265,9 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     const parsedEntities = (await Promise.all(
       entityEntries.map(([id, entity]) => ({
         'ID': id.toString(),
-        ..._.mapValues(this.parseEntityPropertyValues(entity, entityClass, includedProps), (v) => v.value.toString()),
+        ..._.mapValues(this.parseEntityPropertyValues(entity, entityClass, includedProps), (v) =>
+          v.value.toJSON() === false && v.type !== 'Single<Bool>' ? chalk.grey('[not set]') : v.value.toString()
+        ),
       }))
     )) as Record<string, string>[]
 

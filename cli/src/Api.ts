@@ -550,6 +550,6 @@ export default class Api {
     )
 
     const bestNumber = await this.bestNumber()
-    return !!accounInfoEntries.filter(([, info]) => info.expires_at.toNumber() > bestNumber)
+    return !!accounInfoEntries.filter(([, info]) => info.expires_at.toNumber() > bestNumber).length
   }
 }

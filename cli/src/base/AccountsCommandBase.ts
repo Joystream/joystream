@@ -216,11 +216,23 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   }
 
   async requestAccountDecoding(account: NamedKeyringPair): Promise<void> {
-    const password: string = await this.promptForPassword()
+    // First - try decoding using empty string
     try {
-      account.decodePkcs8(password)
+      account.decodePkcs8('')
+      return
     } catch (e) {
-      this.error('Invalid password!', { exit: ExitCodes.InvalidInput })
+      // Continue...
+    }
+
+    let isPassValid = false
+    while (!isPassValid) {
+      try {
+        const password = await this.promptForPassword()
+        account.decodePkcs8(password)
+        isPassValid = true
+      } catch (e) {
+        this.warn('Invalid password... Try again.')
+      }
     }
   }
 
