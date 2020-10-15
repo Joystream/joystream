@@ -104,7 +104,7 @@ jobs:
         run: tests/network-tests/run-tests.sh
 
   network_tests_2:
-    name: Query Node Tests (Placeholder)
+    name: Content Directory Initialization
     if: contains(github.event.pull_request.labels.*.name, 'run-network-tests')
     needs: build_images
     runs-on: ubuntu-latest
@@ -124,11 +124,11 @@ jobs:
       - name: Install packages and dependencies
         run: yarn install --frozen-lockfile
       - name: Ensure tests are runnable
-        run: yarn workspace network-tests build
+        run: yarn workspace cd-schemas checks --quiet
       - name: Start chain
         run: docker-compose up -d
-      # - name: Execute network tests
-      #   run: yarn workspace network-tests test
+      - name: Initialize the content directory
+        run: yarn workspace cd-schemas initialize:dev
 
   network_tests_3:
     name: Storage Node Tests

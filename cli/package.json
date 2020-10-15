@@ -8,6 +8,7 @@
   },
   "bugs": "https://github.com/Joystream/joystream/issues",
   "dependencies": {
+    "@apidevtools/json-schema-ref-parser": "^9.0.6",
     "@joystream/types": "^0.14.0",
     "@oclif/command": "^1.5.19",
     "@oclif/config": "^1.14.0",
@@ -86,6 +87,9 @@
       },
       "working-groups": {
         "description": "Working group lead and worker actions"
+      },
+      "content-directory": {
+        "description": "Interactions with content directory module - managing classes, schemas, entities and permissions"
       }
     }
   },
@@ -101,7 +105,7 @@
     "test": "nyc --extension .ts mocha --forbid-only \"test/**/*.test.ts\"",
     "build": "tsc --build tsconfig.json",
     "version": "oclif-dev readme && git add README.md",
-    "lint": "eslint ./ --ext .ts",
+    "lint": "eslint ./src --ext .ts",
     "checks": "tsc --noEmit --pretty && prettier ./ --check && yarn lint",
     "format": "prettier ./ --write"
   },

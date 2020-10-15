@@ -5,8 +5,6 @@ services:
     ports:
       - '127.0.0.1:5001:5001'
       - '127.0.0.1:8080:8080'
-    volumes:
-      - ipfs-data:/data/ipfs
     entrypoint: ''
     command: |
       /bin/sh -c "
@@ -22,9 +20,7 @@ services:
       dockerfile: joystream-node.Dockerfile
     ports:
       - '127.0.0.1:9944:9944'
-    volumes:
-      - chain-data:/data
-    command: --dev --ws-external --base-path /data
+    command: --dev --ws-external --base-path /data --log runtime
 
   colossus:
     image: joystream/apps
@@ -41,8 +37,3 @@ services:
     environment:
       - DEBUG=*
 
-volumes:
-  ipfs-data:
-    driver: local
-  chain-data:
-    driver: local

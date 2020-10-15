@@ -13,6 +13,9 @@ import { InterfaceTypes } from '@polkadot/types/types/registry'
 import ajv from 'ajv'
 import { ApiMethodArg, ApiMethodNamedArgs, ApiParamsOptions, ApiParamOptions } from '../Types'
 import { createParamOptions } from '../helpers/promptOptions'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { DistinctQuestion } from 'inquirer'
+import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 
 class ExtrinsicFailedError extends Error {}
 
@@ -131,9 +134,15 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     // If no default provided - get default value resulting from providing empty string
     const defaultValueString =
       paramOptions?.value?.default?.toString() || this.createType(typeDef.type as any, '').toString()
+
+    let typeSpecificOptions: DistinctQuestion = { type: 'input' }
+    if (typeDef.type === 'bool') {
+      typeSpecificOptions = BOOL_PROMPT_OPTIONS
+    }
+
     const providedValue = await this.simplePrompt({
       message: `Provide value for ${this.paramName(typeDef)}`,
-      type: 'input',
+      ...typeSpecificOptions,
       // We want to avoid showing default value like '0x', because it falsely suggests
       // that user needs to provide the value as hex
       default: (defaultValueString === '0x' ? '' : defaultValueString) || undefined,
@@ -313,6 +322,11 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     }
   }
 
+  // More typesafe version
+  async promptForType(type: keyof InterfaceTypes, options?: ApiParamOptions) {
+    return await this.promptForParam(type, options)
+  }
+
   async promptForJsonBytes(
     jsonStruct: Constructor<Struct>,
     argName?: string,
@@ -379,32 +393,30 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     return values
   }
 
-  sendExtrinsic(account: KeyringPair, module: string, method: string, params: CodecArg[]) {
+  sendExtrinsic(account: KeyringPair, tx: SubmittableExtrinsic<'promise'>) {
     return new Promise((resolve, reject) => {
-      const extrinsicMethod = this.getOriginalApi().tx[module][method]
       let unsubscribe: () => void
-      extrinsicMethod(...params)
-        .signAndSend(account, {}, (result) => {
-          // Implementation loosely based on /pioneer/packages/react-signer/src/Modal.tsx
-          if (!result || !result.status) {
-            return
-          }
+      tx.signAndSend(account, {}, (result) => {
+        // Implementation loosely based on /pioneer/packages/react-signer/src/Modal.tsx
+        if (!result || !result.status) {
+          return
+        }
 
-          if (result.status.isInBlock) {
-            unsubscribe()
-            result.events
-              .filter(({ event: { section } }): boolean => section === 'system')
-              .forEach(({ event: { method } }): void => {
-                if (method === 'ExtrinsicFailed') {
-                  reject(new ExtrinsicFailedError('Extrinsic execution error!'))
-                } else if (method === 'ExtrinsicSuccess') {
-                  resolve()
-                }
-              })
-          } else if (result.isError) {
-            reject(new ExtrinsicFailedError('Extrinsic execution error!'))
-          }
-        })
+        if (result.status.isInBlock) {
+          unsubscribe()
+          result.events
+            .filter(({ event: { section } }): boolean => section === 'system')
+            .forEach(({ event: { method } }): void => {
+              if (method === 'ExtrinsicFailed') {
+                reject(new ExtrinsicFailedError('Extrinsic execution error!'))
+              } else if (method === 'ExtrinsicSuccess') {
+                resolve()
+              }
+            })
+        } else if (result.isError) {
+          reject(new ExtrinsicFailedError('Extrinsic execution error!'))
+        }
+      })
         .then((unsubFunc) => (unsubscribe = unsubFunc))
         .catch((e) =>
           reject(new ExtrinsicFailedError(`Cannot send the extrinsic: ${e.message ? e.message : JSON.stringify(e)}`))
@@ -412,37 +424,46 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     })
   }
 
-  async sendAndFollowExtrinsic(
+  async sendAndFollowTx(
     account: KeyringPair,
-    module: string,
-    method: string,
-    params: CodecArg[],
-    warnOnly = false // If specified - only warning will be displayed (instead of error beeing thrown)
-  ) {
+    tx: SubmittableExtrinsic<'promise'>,
+    warnOnly = true // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
+  ): Promise<void> {
     try {
-      this.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
-      await this.sendExtrinsic(account, module, method, params)
+      await this.sendExtrinsic(account, tx)
       this.log(chalk.green(`Extrinsic successful!`))
     } catch (e) {
       if (e instanceof ExtrinsicFailedError && warnOnly) {
-        this.warn(`${module}.${method} extrinsic failed! ${e.message}`)
+        this.warn(`Extrinsic failed! ${e.message}`)
       } else if (e instanceof ExtrinsicFailedError) {
-        throw new CLIError(`${module}.${method} extrinsic failed! ${e.message}`, { exit: ExitCodes.ApiError })
+        throw new CLIError(`Extrinsic failed! ${e.message}`, { exit: ExitCodes.ApiError })
       } else {
         throw e
       }
     }
   }
 
+  async sendAndFollowNamedTx(
+    account: KeyringPair,
+    module: string,
+    method: string,
+    params: CodecArg[],
+    warnOnly = false
+  ): Promise<void> {
+    this.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
+    const tx = await this.getOriginalApi().tx[module][method](...params)
+    await this.sendAndFollowTx(account, tx, warnOnly)
+  }
+
   async buildAndSendExtrinsic(
     account: KeyringPair,
     module: string,
     method: string,
-    paramsOptions: ApiParamsOptions,
+    paramsOptions?: ApiParamsOptions,
     warnOnly = false // If specified - only warning will be displayed (instead of error beeing thrown)
   ): Promise<ApiMethodArg[]> {
     const params = await this.promptForExtrinsicParams(module, method, paramsOptions)
-    await this.sendAndFollowExtrinsic(account, module, method, params, warnOnly)
+    await this.sendAndFollowNamedTx(account, module, method, params, warnOnly)
 
     return params
   }
