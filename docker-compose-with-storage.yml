@@ -24,7 +24,7 @@ services:
       - '127.0.0.1:9944:9944'
     volumes:
       - chain-data:/data
-    command: --dev --ws-external --base-path /data
+    command: --dev --ws-external --base-path /data --log runtime
 volumes:
   ipfs-data:
     driver: local
