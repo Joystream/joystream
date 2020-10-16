@@ -1,7 +1,7 @@
 name: run-network-tests
 on:
   pull_request:
-    types: [opened, labeled, synchronize]
+    types: [opened, synchronize]
 
   workflow_dispatch:
     # TODO: add an input so dispatcher can specify a list of tests to run,
@@ -80,7 +80,6 @@ jobs:
   
   network_tests_1:
     name: Network Integration Runtime Tests
-    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests')
     needs: build_images
     runs-on: ubuntu-latest
     steps:
@@ -105,7 +104,6 @@ jobs:
 
   network_tests_2:
     name: Content Directory Initialization
-    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests')
     needs: build_images
     runs-on: ubuntu-latest
     steps:
@@ -132,7 +130,6 @@ jobs:
 
   network_tests_3:
     name: Storage Node Tests
-    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests')
     needs: build_images
     runs-on: ubuntu-latest
     steps:
