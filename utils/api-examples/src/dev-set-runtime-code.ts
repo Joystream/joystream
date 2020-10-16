@@ -3,8 +3,10 @@ import { types } from '@joystream/types'
 import { Keyring } from '@polkadot/keyring'
 import { ISubmittableResult } from '@polkadot/types/types/'
 import { DispatchError, DispatchResult } from '@polkadot/types/interfaces/system'
-import { TypeRegistry } from '@polkadot/types'
+import { TypeRegistry, Bytes } from '@polkadot/types'
 import fs from 'fs'
+import Call from '@polkadot/types/generic/Call'
+import { compactAddLength } from '@polkadot/util'
 
 function onApiDisconnected() {
   process.exit(2)
@@ -22,9 +24,8 @@ async function main() {
     process.exit(1)
   }
 
-  // const wasm = '0x' + fs.readFileSync(file).toString('hex')
-  const wasm = fs.readFileSync(file)
-  console.log('WASM file size:', wasm.byteLength)
+  const wasm = Uint8Array.from(fs.readFileSync(file))
+  console.log('WASM bytes:', wasm.byteLength)
 
   const provider = new WsProvider('ws://127.0.0.1:9944')
 
@@ -59,10 +60,13 @@ async function main() {
   // DO SET UNCHECKED!
   // const tx = api.tx.system.setCodeWithoutChecks(wasm)
 
-  const setCodeTx = api.tx.system.setCode(wasm)
+  const setCodeTx = api.tx.system.setCode(compactAddLength(wasm))
 
   const sudoTx = api.tx.sudo.sudoUncheckedWeight(setCodeTx, 1)
   const signedTx = sudoTx.sign(sudo, { nonce })
+  console.log('Tx size:', signedTx.length)
+  const wasmCodeInTxArg = (signedTx.method.args[0] as Call).args[0]
+  console.log('WASM code arg byte length:', (wasmCodeInTxArg as Bytes).byteLength)
 
   signedTx.send((result: ISubmittableResult) => {
     if (result.status.isInBlock && result.events !== undefined) {
