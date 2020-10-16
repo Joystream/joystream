@@ -2,7 +2,7 @@
 
 use super::{CouncilMemberOf, CouncilStageAnnouncing, Error, Module, Trait};
 use crate::mock::*;
-use crate::staking_handler::mocks::VOTER_CANDIDATE_OFFSET;
+use crate::staking_handler::mocks::{CANDIDATE_BASE_ID, VOTER_CANDIDATE_OFFSET};
 use crate::staking_handler::StakingHandler2;
 
 type Mocks = InstanceMocks<Runtime>;
@@ -57,7 +57,13 @@ fn council_lifecycle() {
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
         let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
         let voters = (0..votes_map.len())
-            .map(|index| MockUtils::generate_voter(index as u64, vote_stake, votes_map[index]))
+            .map(|index| {
+                MockUtils::generate_voter(
+                    index as u64,
+                    vote_stake,
+                    CANDIDATE_BASE_ID + votes_map[index],
+                )
+            })
             .collect();
 
         let params = CouncilCycleParams {
@@ -295,7 +301,13 @@ fn council_announcement_reset_on_not_enough_winners() {
         // generate voters that vote only for one particular candidate
         let votes_map: Vec<u64> = vec![3, 3, 3];
         let voters = (0..votes_map.len())
-            .map(|index| MockUtils::generate_voter(index as u64, vote_stake, votes_map[index]))
+            .map(|index| {
+                MockUtils::generate_voter(
+                    index as u64,
+                    vote_stake,
+                    CANDIDATE_BASE_ID + votes_map[index],
+                )
+            })
             .collect();
 
         let params = CouncilCycleParams {
@@ -374,7 +386,13 @@ fn council_two_consecutive_rounds() {
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
         let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
         let voters = (0..votes_map.len())
-            .map(|index| MockUtils::generate_voter(index as u64, vote_stake, votes_map[index]))
+            .map(|index| {
+                MockUtils::generate_voter(
+                    index as u64,
+                    vote_stake,
+                    CANDIDATE_BASE_ID + votes_map[index],
+                )
+            })
             .collect();
 
         let params = CouncilCycleParams {
@@ -396,7 +414,13 @@ fn council_two_consecutive_rounds() {
 
         let votes_map2: Vec<u64> = vec![3, 3, 3, 3, 1, 1, 2];
         let voters2 = (0..votes_map2.len())
-            .map(|index| MockUtils::generate_voter(index as u64, vote_stake, votes_map2[index]))
+            .map(|index| {
+                MockUtils::generate_voter(
+                    index as u64,
+                    vote_stake,
+                    CANDIDATE_BASE_ID + votes_map2[index],
+                )
+            })
             .collect();
 
         let expected_final_council_members2: Vec<CouncilMemberOf<Runtime>> = vec![
@@ -544,7 +568,13 @@ fn council_candidate_stake_can_be_unlocked() {
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
         let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
         let voters = (0..votes_map.len())
-            .map(|index| MockUtils::generate_voter(index as u64, vote_stake, votes_map[index]))
+            .map(|index| {
+                MockUtils::generate_voter(
+                    index as u64,
+                    vote_stake,
+                    CANDIDATE_BASE_ID + votes_map[index],
+                )
+            })
             .collect();
 
         let params = CouncilCycleParams {
@@ -632,7 +662,13 @@ fn council_candidate_stake_automaticly_converted() {
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
         let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
         let voters = (0..votes_map.len())
-            .map(|index| MockUtils::generate_voter(index as u64, vote_stake, votes_map[index]))
+            .map(|index| {
+                MockUtils::generate_voter(
+                    index as u64,
+                    vote_stake,
+                    CANDIDATE_BASE_ID + votes_map[index],
+                )
+            })
             .collect();
 
         let params = CouncilCycleParams {
@@ -707,7 +743,13 @@ fn council_member_stake_is_locked() {
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
         let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
         let voters = (0..votes_map.len())
-            .map(|index| MockUtils::generate_voter(index as u64, vote_stake, votes_map[index]))
+            .map(|index| {
+                MockUtils::generate_voter(
+                    index as u64,
+                    vote_stake,
+                    CANDIDATE_BASE_ID + votes_map[index],
+                )
+            })
             .collect();
 
         let params = CouncilCycleParams {
@@ -781,7 +823,13 @@ fn council_member_stake_automaticly_unlocked() {
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
         let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
         let voters = (0..votes_map.len())
-            .map(|index| MockUtils::generate_voter(index as u64, vote_stake, votes_map[index]))
+            .map(|index| {
+                MockUtils::generate_voter(
+                    index as u64,
+                    vote_stake,
+                    CANDIDATE_BASE_ID + votes_map[index],
+                )
+            })
             .collect();
 
         let params = CouncilCycleParams {
@@ -809,7 +857,13 @@ fn council_member_stake_automaticly_unlocked() {
 
         let votes_map2: Vec<u64> = vec![3, 3, 3, 3, 1, 1, 2];
         let voters2 = (0..votes_map2.len())
-            .map(|index| MockUtils::generate_voter(index as u64, vote_stake, votes_map2[index]))
+            .map(|index| {
+                MockUtils::generate_voter(
+                    index as u64,
+                    vote_stake,
+                    CANDIDATE_BASE_ID + votes_map2[index],
+                )
+            })
             .collect();
 
         let expected_final_council_members2: Vec<CouncilMemberOf<Runtime>> = vec![

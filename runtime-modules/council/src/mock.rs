@@ -393,7 +393,6 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         stage: CouncilStageUpdate::default(),
         council_members: vec![],
         candidates: vec![],
-        current_cycle_candidates_order: vec![],
         current_announcement_cycle_id: 0,
     }
 }

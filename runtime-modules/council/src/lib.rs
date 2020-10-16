@@ -166,7 +166,8 @@ pub trait Trait: system::Trait {
         + Default
         + Copy
         + MaybeSerialize
-        + PartialEq;
+        + PartialEq
+        + From<u64>;
 
     /// Referendum used for council elections.
     type Referendum: ReferendumManager<Self::Origin, Self::AccountId, Self::Hash>;
@@ -198,6 +199,8 @@ pub trait ReferendumConnection<T: Trait> {
 
     /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `process_results()`.
     fn can_release_vote_stake() -> Result<(), Error<T>>;
+
+    fn is_valid_candidate_id(council_user_id: &T::CouncilUserId) -> bool;
 }
 
 decl_storage! {
@@ -210,9 +213,6 @@ decl_storage! {
 
         /// Map of all candidates that ever candidated and haven't unstake yet.
         pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat) T::CouncilUserId => Candidate<T::AccountId, Balance::<T>>;
-
-        /// Order of candidates in current announcement period.
-        pub CurrentCycleCandidatesOrder get(fn current_cycle_candidates_order) config(): map hasher(blake2_128_concat) u64 => T::CouncilUserId;
 
         /// Index of the current candidacy period. It is incremented everytime announcement period is.
         pub CurrentAnnouncementCycleId get(fn current_announcement_cycle_id) config(): u64;
@@ -415,11 +415,10 @@ impl<T: Trait> Module<T> {
         let elected_members: Vec<CouncilMemberOf<T>> = winners
             .iter()
             .map(|item| {
-                let council_user_id = CurrentCycleCandidatesOrder::<T>::get(item.option_id);
+                println!("{:?}", item.option_id);
+                let council_user_id = item.option_id.into();
                 let candidate = Candidates::<T>::get(council_user_id);
 
-                // clear order item
-                CurrentCycleCandidatesOrder::<T>::remove(item.option_id);
                 // clear candidate record
                 Candidates::<T>::remove(council_user_id);
 
@@ -467,6 +466,16 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
         };
 
         Ok(())
+    }
+
+    fn is_valid_candidate_id(council_user_id: &T::CouncilUserId) -> bool {
+        if !Candidates::<T>::contains_key(council_user_id) {
+            return false;
+        }
+
+        let candidate = Candidates::<T>::get(council_user_id);
+
+        candidate.cycle_id == CurrentAnnouncementCycleId::get()
     }
 }
 
@@ -570,11 +579,6 @@ impl<T: Trait> Mutations<T> {
         candidate: &CandidateOf<T>,
         stake: &Balance<T>,
     ) {
-        // insert candidate to current cycle order list
-        CurrentCycleCandidatesOrder::<T>::mutate(stage_data.candidates_count, |value| {
-            *value = *council_user_id
-        });
-
         // insert candidate to candidate registery
         Candidates::<T>::mutate(council_user_id, |value| *value = candidate.clone());
 
@@ -611,9 +615,6 @@ impl<T: Trait> Mutations<T> {
                 return;
             }
         }
-
-        // remove (unused) order index
-        CurrentCycleCandidatesOrder::<T>::remove(candidate.order_index);
     }
 }
 
