@@ -4,6 +4,7 @@ import { Input, CancelButton, Container } from './Searchbar.style'
 type SearchbarProps = {
   value: string
   onCancel?: () => void
+  showCancelButton?: boolean
   controlled?: boolean
 } & React.DetailedHTMLProps<React.HTMLAttributes<HTMLInputElement>, HTMLInputElement>
 const Searchbar: React.FC<SearchbarProps> = ({
@@ -11,10 +12,12 @@ const Searchbar: React.FC<SearchbarProps> = ({
   onChange,
   onFocus,
   onCancel,
+  showCancelButton = false,
   controlled = false,
   value: externalValue,
   onBlur,
   onSubmit,
+  className,
   ...htmlProps
 }) => {
   const [value, setValue] = useState('')
@@ -36,9 +39,8 @@ const Searchbar: React.FC<SearchbarProps> = ({
     }
   }
 
-  const hasValue = value !== '' || externalValue !== ''
   return (
-    <Container>
+    <Container className={className}>
       <Input
         value={controlled ? externalValue : value}
         placeholder={placeholder}
@@ -50,7 +52,7 @@ const Searchbar: React.FC<SearchbarProps> = ({
         onSubmit={onSubmit}
         {...htmlProps}
       />
-      {hasValue && <CancelButton onClick={handleCancel} variant="tertiary" icon="times" size="smaller" />}
+      {showCancelButton && <CancelButton onClick={handleCancel} variant="tertiary" icon="times" size="smaller" />}
     </Container>
   )
 }
