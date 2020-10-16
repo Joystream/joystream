@@ -79,9 +79,8 @@ docker rm $id
 yarn workspace api-examples tsnode-strict src/status.ts
 
 echo "Performing runtime upgrade."
-# DEBUG=* yarn workspace api-examples tsnode-strict \
-#   src/dev-set-runtime-code.ts -- `pwd`/.tmp/runtime.compact.wasm
-DEBUG=* yarn workspace api-examples dev-set-runtime-code `pwd`/.tmp/runtime.compact.wasm
+DEBUG=* yarn workspace api-examples tsnode-strict \
+  src/dev-set-runtime-code.ts -- `pwd`/.tmp/runtime.compact.wasm
 
 # Display runtime version
 yarn workspace api-examples tsnode-strict src/status.ts
