@@ -185,7 +185,7 @@ export function GroupMemberView (props: GroupMember) {
         <Card.Meta>{props.title}</Card.Meta>
         <Card.Meta>
           <Label>
-            { (props.group === WorkingGroups.ContentCurators ? 'Curator' : 'Worker') + ` ID: ${props.workerId.toString()}` }
+            { `Worker ID: ${props.workerId.toString()}` }
           </Label>
         </Card.Meta>
       </Card.Content>
