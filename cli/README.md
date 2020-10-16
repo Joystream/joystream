@@ -44,7 +44,7 @@ $ npm install -g @joystream/cli
 $ joystream-cli COMMAND
 running command...
 $ joystream-cli (-v|--version|version)
-@joystream/cli/0.1.0 linux-x64 node-v13.12.0
+@joystream/cli/0.2.0 linux-x64 node-v13.12.0
 $ joystream-cli --help [COMMAND]
 USAGE
   $ joystream-cli COMMAND
@@ -76,6 +76,21 @@ When using the CLI for the first time there are a few common steps you might wan
 * [`joystream-cli api:inspect`](#joystream-cli-apiinspect)
 * [`joystream-cli api:setUri [URI]`](#joystream-cli-apiseturi-uri)
 * [`joystream-cli autocomplete [SHELL]`](#joystream-cli-autocomplete-shell)
+* [`joystream-cli content-directory:addClassSchema`](#joystream-cli-content-directoryaddclassschema)
+* [`joystream-cli content-directory:addCuratorToGroup [GROUPID] [CURATORID]`](#joystream-cli-content-directoryaddcuratortogroup-groupid-curatorid)
+* [`joystream-cli content-directory:addMaintainerToClass [CLASSNAME] [GROUPID]`](#joystream-cli-content-directoryaddmaintainertoclass-classname-groupid)
+* [`joystream-cli content-directory:class CLASSNAME`](#joystream-cli-content-directoryclass-classname)
+* [`joystream-cli content-directory:classes`](#joystream-cli-content-directoryclasses)
+* [`joystream-cli content-directory:createClass`](#joystream-cli-content-directorycreateclass)
+* [`joystream-cli content-directory:createCuratorGroup`](#joystream-cli-content-directorycreatecuratorgroup)
+* [`joystream-cli content-directory:curatorGroup ID`](#joystream-cli-content-directorycuratorgroup-id)
+* [`joystream-cli content-directory:curatorGroups`](#joystream-cli-content-directorycuratorgroups)
+* [`joystream-cli content-directory:entities CLASSNAME [PROPERTIES]`](#joystream-cli-content-directoryentities-classname-properties)
+* [`joystream-cli content-directory:entity ID`](#joystream-cli-content-directoryentity-id)
+* [`joystream-cli content-directory:removeCuratorGroup [ID]`](#joystream-cli-content-directoryremovecuratorgroup-id)
+* [`joystream-cli content-directory:removeMaintainerFromClass [CLASSNAME] [GROUPID]`](#joystream-cli-content-directoryremovemaintainerfromclass-classname-groupid)
+* [`joystream-cli content-directory:setCuratorGroupStatus [ID] [STATUS]`](#joystream-cli-content-directorysetcuratorgroupstatus-id-status)
+* [`joystream-cli content-directory:updateClassPermissions [CLASSNAME]`](#joystream-cli-content-directoryupdateclasspermissions-classname)
 * [`joystream-cli council:info`](#joystream-cli-councilinfo)
 * [`joystream-cli help [COMMAND]`](#joystream-cli-help-command)
 * [`joystream-cli working-groups:application WGAPPLICATIONID`](#joystream-cli-working-groupsapplication-wgapplicationid)
@@ -288,6 +303,219 @@ EXAMPLES
 
 _See code: [@oclif/plugin-autocomplete](https://github.com/oclif/plugin-autocomplete/blob/v0.2.0/src/commands/autocomplete/index.ts)_
 
+## `joystream-cli content-directory:addClassSchema`
+
+Add a new schema to a class inside content directory. Requires lead access.
+
+```
+USAGE
+  $ joystream-cli content-directory:addClassSchema
+
+OPTIONS
+  -i, --input=input    Path to JSON file to use as input (if not specified - the input can be provided interactively)
+  -o, --output=output  Path where the output JSON file should be placed (can be then reused as input)
+```
+
+_See code: [src/commands/content-directory/addClassSchema.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/addClassSchema.ts)_
+
+## `joystream-cli content-directory:addCuratorToGroup [GROUPID] [CURATORID]`
+
+Add Curator to existing Curator Group.
+
+```
+USAGE
+  $ joystream-cli content-directory:addCuratorToGroup [GROUPID] [CURATORID]
+
+ARGUMENTS
+  GROUPID    ID of the Curator Group
+  CURATORID  ID of the curator
+```
+
+_See code: [src/commands/content-directory/addCuratorToGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/addCuratorToGroup.ts)_
+
+## `joystream-cli content-directory:addMaintainerToClass [CLASSNAME] [GROUPID]`
+
+Add maintainer (Curator Group) to a class.
+
+```
+USAGE
+  $ joystream-cli content-directory:addMaintainerToClass [CLASSNAME] [GROUPID]
+
+ARGUMENTS
+  CLASSNAME  Name or ID of the class (ie. Video)
+  GROUPID    ID of the Curator Group to add as class maintainer
+```
+
+_See code: [src/commands/content-directory/addMaintainerToClass.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/addMaintainerToClass.ts)_
+
+## `joystream-cli content-directory:class CLASSNAME`
+
+Show Class details by id or name.
+
+```
+USAGE
+  $ joystream-cli content-directory:class CLASSNAME
+
+ARGUMENTS
+  CLASSNAME  Name or ID of the Class
+```
+
+_See code: [src/commands/content-directory/class.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/class.ts)_
+
+## `joystream-cli content-directory:classes`
+
+List existing content directory classes.
+
+```
+USAGE
+  $ joystream-cli content-directory:classes
+```
+
+_See code: [src/commands/content-directory/classes.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/classes.ts)_
+
+## `joystream-cli content-directory:createClass`
+
+Create class inside content directory. Requires lead access.
+
+```
+USAGE
+  $ joystream-cli content-directory:createClass
+
+OPTIONS
+  -i, --input=input    Path to JSON file to use as input (if not specified - the input can be provided interactively)
+  -o, --output=output  Path where the output JSON file should be placed (can be then reused as input)
+```
+
+_See code: [src/commands/content-directory/createClass.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/createClass.ts)_
+
+## `joystream-cli content-directory:createCuratorGroup`
+
+Create new Curator Group.
+
+```
+USAGE
+  $ joystream-cli content-directory:createCuratorGroup
+
+ALIASES
+  $ joystream-cli addCuratorGroup
+```
+
+_See code: [src/commands/content-directory/createCuratorGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/createCuratorGroup.ts)_
+
+## `joystream-cli content-directory:curatorGroup ID`
+
+Show Curator Group details by ID.
+
+```
+USAGE
+  $ joystream-cli content-directory:curatorGroup ID
+
+ARGUMENTS
+  ID  ID of the Curator Group
+```
+
+_See code: [src/commands/content-directory/curatorGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/curatorGroup.ts)_
+
+## `joystream-cli content-directory:curatorGroups`
+
+List existing Curator Groups.
+
+```
+USAGE
+  $ joystream-cli content-directory:curatorGroups
+```
+
+_See code: [src/commands/content-directory/curatorGroups.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/curatorGroups.ts)_
+
+## `joystream-cli content-directory:entities CLASSNAME [PROPERTIES]`
+
+Show entities list by class id or name.
+
+```
+USAGE
+  $ joystream-cli content-directory:entities CLASSNAME [PROPERTIES]
+
+ARGUMENTS
+  CLASSNAME   Name or ID of the Class
+
+  PROPERTIES  Comma-separated properties to include in the results table (ie. code,name). By default all property values
+              will be included.
+```
+
+_See code: [src/commands/content-directory/entities.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/entities.ts)_
+
+## `joystream-cli content-directory:entity ID`
+
+Show Entity details by id.
+
+```
+USAGE
+  $ joystream-cli content-directory:entity ID
+
+ARGUMENTS
+  ID  ID of the Entity
+```
+
+_See code: [src/commands/content-directory/entity.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/entity.ts)_
+
+## `joystream-cli content-directory:removeCuratorGroup [ID]`
+
+Remove existing Curator Group.
+
+```
+USAGE
+  $ joystream-cli content-directory:removeCuratorGroup [ID]
+
+ARGUMENTS
+  ID  ID of the Curator Group to remove
+```
+
+_See code: [src/commands/content-directory/removeCuratorGroup.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/removeCuratorGroup.ts)_
+
+## `joystream-cli content-directory:removeMaintainerFromClass [CLASSNAME] [GROUPID]`
+
+Remove maintainer (Curator Group) from class.
+
+```
+USAGE
+  $ joystream-cli content-directory:removeMaintainerFromClass [CLASSNAME] [GROUPID]
+
+ARGUMENTS
+  CLASSNAME  Name or ID of the class (ie. Video)
+  GROUPID    ID of the Curator Group to remove from maintainers
+```
+
+_See code: [src/commands/content-directory/removeMaintainerFromClass.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/removeMaintainerFromClass.ts)_
+
+## `joystream-cli content-directory:setCuratorGroupStatus [ID] [STATUS]`
+
+Set Curator Group status (Active/Inactive).
+
+```
+USAGE
+  $ joystream-cli content-directory:setCuratorGroupStatus [ID] [STATUS]
+
+ARGUMENTS
+  ID      ID of the Curator Group
+  STATUS  New status of the group (1 - active, 0 - inactive)
+```
+
+_See code: [src/commands/content-directory/setCuratorGroupStatus.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/setCuratorGroupStatus.ts)_
+
+## `joystream-cli content-directory:updateClassPermissions [CLASSNAME]`
+
+Update permissions in given class.
+
+```
+USAGE
+  $ joystream-cli content-directory:updateClassPermissions [CLASSNAME]
+
+ARGUMENTS
+  CLASSNAME  Name or ID of the class (ie. Video)
+```
+
+_See code: [src/commands/content-directory/updateClassPermissions.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/content-directory/updateClassPermissions.ts)_
+
 ## `joystream-cli council:info`
 
 Get current council and council elections information
@@ -330,7 +558,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/application.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/application.ts)_
@@ -352,7 +580,7 @@ OPTIONS
 
   -g, --group=group          (required) [default: storageProviders] The working group context in which the command
                              should be executed
-                             Available values are: storageProviders.
+                             Available values are: storageProviders, curators.
 
   -n, --draftName=draftName  Name of the draft to create the opening from.
 
@@ -375,7 +603,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/decreaseWorkerStake.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/decreaseWorkerStake.ts)_
@@ -394,7 +622,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/evictWorker.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/evictWorker.ts)_
@@ -413,7 +641,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/fillOpening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/fillOpening.ts)_
@@ -429,7 +657,7 @@ USAGE
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/increaseStake.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/increaseStake.ts)_
@@ -445,7 +673,7 @@ USAGE
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/leaveRole.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/leaveRole.ts)_
@@ -464,7 +692,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/opening.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/opening.ts)_
@@ -480,7 +708,7 @@ USAGE
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/openings.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/openings.ts)_
@@ -496,7 +724,7 @@ USAGE
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/overview.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/overview.ts)_
@@ -515,7 +743,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/slashWorker.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/slashWorker.ts)_
@@ -534,7 +762,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/startAcceptingApplications.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/startAcceptingApplications.ts)_
@@ -553,7 +781,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/startReviewPeriod.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/startReviewPeriod.ts)_
@@ -572,7 +800,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/terminateApplication.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/terminateApplication.ts)_
@@ -591,7 +819,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/updateRewardAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRewardAccount.ts)_
@@ -610,7 +838,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/updateRoleAccount.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateRoleAccount.ts)_
@@ -629,7 +857,7 @@ ARGUMENTS
 OPTIONS
   -g, --group=group  (required) [default: storageProviders] The working group context in which the command should be
                      executed
-                     Available values are: storageProviders.
+                     Available values are: storageProviders, curators.
 ```
 
 _See code: [src/commands/working-groups/updateWorkerReward.ts](https://github.com/Joystream/joystream/blob/master/cli/src/commands/working-groups/updateWorkerReward.ts)_

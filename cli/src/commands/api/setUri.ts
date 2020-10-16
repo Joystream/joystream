@@ -16,7 +16,7 @@ export default class ApiSetUri extends ApiCommandBase {
 
   async init() {
     this.forceSkipApiUriPrompt = true
-    super.init()
+    await super.init()
   }
 
   async run() {

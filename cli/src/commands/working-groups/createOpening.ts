@@ -79,9 +79,7 @@ export default class WorkingGroupsCreateOpening extends WorkingGroupsCommandBase
       this.log(chalk.white('Sending the extrinsic...'))
       await this.sendExtrinsic(
         account,
-        apiModuleByGroup[this.group],
-        'addOpening',
-        defaultValues!.map((v) => v.value)
+        this.getOriginalApi().tx[apiModuleByGroup[this.group]].addOpening(...defaultValues!.map((v) => v.value))
       )
       this.log(chalk.green('Opening succesfully created!'))
     }
