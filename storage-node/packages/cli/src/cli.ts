@@ -77,11 +77,11 @@ const commands = {
     api: any,
     filePath: string,
     dataObjectTypeId: string,
+    memberId: string,
     keyFile: string,
-    passPhrase: string,
-    memberId: string
+    passPhrase: string
   ) => {
-    const uploadCmd = new UploadCommand(api, filePath, dataObjectTypeId, keyFile, passPhrase, memberId)
+    const uploadCmd = new UploadCommand(api, filePath, dataObjectTypeId, memberId, keyFile, passPhrase)
 
     await uploadCmd.run()
   },
