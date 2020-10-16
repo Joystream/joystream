@@ -215,7 +215,7 @@ class Storage {
     this._timeout = this.options.timeout || DEFAULT_TIMEOUT
     this._resolve_content_id = this.options.resolve_content_id || DEFAULT_RESOLVE_CONTENT_ID
 
-    this.ipfs = ipfsClient(this.options.ipfs.connect_options)
+    this.ipfs = ipfsClient(this.options.ipfsHost || 'localhost', '5001', { protocol: 'http' })
 
     this.pinned = {}
     this.pinning = {}

@@ -132,6 +132,14 @@ async function syncPeriodic({ api, flags, storage, contentBeingSynced, contentCo
       return retry()
     }
 
+    // Retry later if provider is not active
+    if (!(await api.providerIsActiveWorker())) {
+      debug(
+        'storage provider role account and storageProviderId are not associated with a worker. Postponing sync run.'
+      )
+      return retry()
+    }
+
     const recommendedBalance = await api.providerHasMinimumBalance(300)
     if (!recommendedBalance) {
       debug('Warning: Provider role account is running low on balance.')
