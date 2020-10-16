@@ -614,7 +614,6 @@ impl<T: Trait> Module<T> {
             });
             Self::reset_proposal_votes(proposal_id);
 
-            Self::increase_active_proposal_counter();
             <ActiveProposalIds<T>>::insert(proposal_id, ());
         });
 
@@ -704,6 +703,7 @@ impl<T: Trait> Module<T> {
             proposal_execution_status,
         ));
 
+        Self::decrease_active_proposal_counter();
         Self::remove_proposal_data(&approved_proposal.proposal_id);
     }
 
@@ -719,7 +719,6 @@ impl<T: Trait> Module<T> {
     fn finalize_proposal(proposal_id: T::ProposalId, decision_status: ProposalDecisionStatus) {
         let now = Self::current_block();
 
-        Self::decrease_active_proposal_counter();
         <ActiveProposalIds<T>>::remove(&proposal_id.clone());
 
         let mut proposal = Self::proposals(proposal_id);
@@ -752,6 +751,7 @@ impl<T: Trait> Module<T> {
             // update approved proposal or remove otherwise
             if !matches!(decision_status, ProposalDecisionStatus::Approved(..)) {
                 Self::remove_proposal_data(&proposal_id);
+                Self::decrease_active_proposal_counter();
             } else {
                 proposal.status = new_proposal_status.clone();
                 <Proposals<T>>::insert(proposal_id, proposal);

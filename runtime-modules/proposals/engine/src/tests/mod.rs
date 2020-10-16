@@ -1640,7 +1640,7 @@ fn proposal_with_pending_constitutionality_succeeds() {
             }
         );
         // internal active proposal counter check
-        assert_eq!(<ActiveProposalCount>::get(), 0);
+        assert_eq!(<ActiveProposalCount>::get(), 1);
         assert!(!<PendingExecutionProposalIds<Test>>::contains_key(
             proposal_id
         ));
