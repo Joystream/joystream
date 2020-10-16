@@ -1,15 +1,14 @@
 // TODO: content of this file should be replaced by separate crate with StakingHandler
-
 use frame_support::dispatch::DispatchResult;
-use membership;
-use balances;
 
 /////////////////// Trait definition ///////////////////////////////////////////
 
 /// Member identifier in membership::member module.
+#[allow(dead_code)] // following line throws dead code warning even when it is used (and removal causes error)
 pub type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
+#[allow(dead_code)] // following line throws dead code warning even when it is used (and removal causes error)
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 // NOTE: this is copy of StakingHandler definition from `proposals_update` development branch
@@ -87,29 +86,30 @@ pub trait StakingHandler2<AccountId, Balance, MemberId> {
 
 #[cfg(test)]
 pub mod mocks {
+    use super::{BalanceOf, StakingHandler, StakingHandler2};
     use common::currency::GovernanceCurrency;
-    use frame_support::traits::{WithdrawReasons, LockIdentifier, LockableCurrency, Currency};
+    use frame_support::dispatch::DispatchResult;
+    use frame_support::traits::{Currency, LockIdentifier, LockableCurrency, WithdrawReasons};
     use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
-    use frame_support::dispatch::{DispatchResult};
-    use super::{StakingHandler, StakingHandler2, BalanceOf};
+    use sp_core::H256;
     use sp_runtime::{
         testing::Header,
         traits::{BlakeTwo256, IdentityLookup},
         Perbill,
     };
-    use sp_core::H256;
+    use std::cell::RefCell;
+    use std::collections::HashMap;
 
     pub type BalanceOfCurrency<T> =
         <<T as common::currency::GovernanceCurrency>::Currency as Currency<
             <T as system::Trait>::AccountId,
         >>::Balance;
 
-
     pub const STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK: u64 = 111;
     pub const STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK: u64 = 222;
     pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;
     pub const STAKING_ACCOUNT_ID_FOR_ZERO_STAKE: u64 = 444;
-    pub const LOCK_ID_1: LockIdentifier = [1; 8];
+    pub const LOCK_ID_1: LockIdentifier = [0; 8];
     pub const LOCK_ID_2: LockIdentifier = [1; 8];
 
     // Workaround for https://github.com/rust-lang/rust/issues/26925 - remove when sorted.
@@ -125,11 +125,13 @@ pub mod mocks {
     pub type Balances = balances::Module<Lock1>;
     pub type System = system::Module<Lock1>;
 
-
     /////////////////// Lock1 //////////////////////////////////////////////////
 
     impl StakingHandler<Lock1> for Lock1 {
-        fn lock(account_id: &<Lock1 as system::Trait>::AccountId, amount: BalanceOfCurrency<Lock1>) {
+        fn lock(
+            account_id: &<Lock1 as system::Trait>::AccountId,
+            amount: BalanceOfCurrency<Lock1>,
+        ) {
             <Lock1 as GovernanceCurrency>::Currency::set_lock(
                 LOCK_ID_1,
                 &account_id,
@@ -172,7 +174,10 @@ pub mod mocks {
             actually_slashed_balance
         }
 
-        fn set_stake(account_id: &<Lock2 as system::Trait>::AccountId, new_stake: BalanceOf<Lock2>) -> DispatchResult {
+        fn set_stake(
+            account_id: &<Lock2 as system::Trait>::AccountId,
+            new_stake: BalanceOf<Lock2>,
+        ) -> DispatchResult {
             <Self as StakingHandler<Self>>::unlock(account_id);
             <Self as StakingHandler<Self>>::lock(account_id, new_stake);
 
@@ -212,10 +217,24 @@ pub mod mocks {
         }
     }
 
-    /////////////////// Tmp ////////////////////////////////////////////////////
+    /////////////////// StakingHandler2 impl ///////////////////////////////////
 
-    impl StakingHandler2<<Lock1 as system::Trait>::AccountId, BalanceOf<Lock1>, <Lock1 as membership::Trait>::MemberId> for Lock1 {
-        fn lock(account_id: &<Lock1 as system::Trait>::AccountId, amount: BalanceOfCurrency<Lock1>) {
+    thread_local! {
+        pub static LOCKED_VALUES_LOCK1: RefCell<HashMap<u64, BalanceOfCurrency<Lock1>>> = RefCell::new(HashMap::new());
+        pub static LOCKED_VALUES_LOCK2: RefCell<HashMap<u64, BalanceOfCurrency<Lock2>>> = RefCell::new(HashMap::new());
+    }
+
+    impl
+        StakingHandler2<
+            <Lock1 as system::Trait>::AccountId,
+            BalanceOf<Lock1>,
+            <Lock1 as membership::Trait>::MemberId,
+        > for Lock1
+    {
+        fn lock(
+            account_id: &<Lock1 as system::Trait>::AccountId,
+            amount: BalanceOfCurrency<Lock1>,
+        ) {
             <Lock1 as GovernanceCurrency>::Currency::set_lock(
                 LOCK_ID_1,
                 &account_id,
@@ -238,13 +257,21 @@ pub mod mocks {
 
             let mut actually_slashed_balance = Default::default();
             if let Some(existing_lock) = existing_lock {
-                <Self as StakingHandler2<<Lock1 as system::Trait>::AccountId, BalanceOf<Lock1>, <Lock1 as membership::Trait>::MemberId>>::unlock(&account_id);
+                <Self as StakingHandler2<
+                    <Lock1 as system::Trait>::AccountId,
+                    BalanceOf<Lock1>,
+                    <Lock1 as membership::Trait>::MemberId,
+                >>::unlock(&account_id);
 
                 let mut slashable_amount = existing_lock.amount;
                 if let Some(amount) = amount {
                     if existing_lock.amount > amount {
                         let new_amount = existing_lock.amount - amount;
-                        <Self as StakingHandler2<<Lock1 as system::Trait>::AccountId, BalanceOf<Lock1>, <Lock1 as membership::Trait>::MemberId>>::lock(&account_id, new_amount);
+                        <Self as StakingHandler2<
+                            <Lock1 as system::Trait>::AccountId,
+                            BalanceOf<Lock1>,
+                            <Lock1 as membership::Trait>::MemberId,
+                        >>::lock(&account_id, new_amount);
 
                         slashable_amount = amount;
                     }
@@ -259,16 +286,29 @@ pub mod mocks {
         }
 
         /*
-        fn set_stake(account_id: &<Lock2 as system::Trait>::AccountId, new_stake: BalanceOf<Lock2>) -> DispatchResult {
+        fn set_stake(account_id: &<Lock1 as system::Trait>::AccountId, new_stake: BalanceOf<Lock1>) -> DispatchResult {
             <Self as StakingHandler2<<Lock1 as system::Trait>::AccountId, BalanceOf<Lock1>, <Lock1 as membership::Trait>::MemberId>>::unlock(account_id);
             <Self as StakingHandler2<<Lock1 as system::Trait>::AccountId, BalanceOf<Lock1>, <Lock1 as membership::Trait>::MemberId>>::lock(account_id, new_stake);
 
             Ok(())
         }
         */
-        fn set_stake(account_id: &<Lock2 as system::Trait>::AccountId, new_stake: BalanceOf<Lock2>) {
-            <Self as StakingHandler2<<Lock1 as system::Trait>::AccountId, BalanceOf<Lock1>, <Lock1 as membership::Trait>::MemberId>>::unlock(account_id);
-            <Self as StakingHandler2<<Lock1 as system::Trait>::AccountId, BalanceOf<Lock1>, <Lock1 as membership::Trait>::MemberId>>::lock(account_id, new_stake);
+        fn set_stake(
+            account_id: &<Lock1 as system::Trait>::AccountId,
+            new_stake: BalanceOf<Lock1>,
+        ) {
+            <Self as StakingHandler2<
+                <Lock1 as system::Trait>::AccountId,
+                BalanceOf<Lock1>,
+                <Lock1 as membership::Trait>::MemberId,
+            >>::unlock(account_id);
+            <Self as StakingHandler2<
+                <Lock1 as system::Trait>::AccountId,
+                BalanceOf<Lock1>,
+                <Lock1 as membership::Trait>::MemberId,
+            >>::lock(account_id, new_stake);
+
+            LOCKED_VALUES_LOCK1.with(|value| value.borrow_mut().insert(*account_id, new_stake));
         }
 
         fn is_member_staking_account(_member_id: &u64, account_id: &u64) -> bool {
@@ -296,16 +336,24 @@ pub mod mocks {
         }
 
         fn current_stake(account_id: &u64) -> u64 {
-            if *account_id == STAKING_ACCOUNT_ID_FOR_ZERO_STAKE {
-                return 0;
-            }
-
-            100 // random non-zero value
+            LOCKED_VALUES_LOCK1.with(|value| match value.borrow().get(account_id) {
+                Some(current_stake) => *current_stake,
+                None => 0,
+            })
         }
     }
 
-    impl StakingHandler2<<Lock2 as system::Trait>::AccountId, BalanceOf<Lock2>, <Lock2 as membership::Trait>::MemberId> for Lock2 {
-        fn lock(account_id: &<Lock2 as system::Trait>::AccountId, amount: BalanceOfCurrency<Lock2>) {
+    impl
+        StakingHandler2<
+            <Lock2 as system::Trait>::AccountId,
+            BalanceOf<Lock2>,
+            <Lock2 as membership::Trait>::MemberId,
+        > for Lock2
+    {
+        fn lock(
+            account_id: &<Lock2 as system::Trait>::AccountId,
+            amount: BalanceOfCurrency<Lock2>,
+        ) {
             <Lock2 as GovernanceCurrency>::Currency::set_lock(
                 LOCK_ID_2,
                 &account_id,
@@ -328,13 +376,21 @@ pub mod mocks {
 
             let mut actually_slashed_balance = Default::default();
             if let Some(existing_lock) = existing_lock {
-                <Self as StakingHandler2<<Lock2 as system::Trait>::AccountId, BalanceOf<Lock2>, <Lock2 as membership::Trait>::MemberId>>::unlock(&account_id);
+                <Self as StakingHandler2<
+                    <Lock2 as system::Trait>::AccountId,
+                    BalanceOf<Lock2>,
+                    <Lock2 as membership::Trait>::MemberId,
+                >>::unlock(&account_id);
 
                 let mut slashable_amount = existing_lock.amount;
                 if let Some(amount) = amount {
                     if existing_lock.amount > amount {
                         let new_amount = existing_lock.amount - amount;
-                        <Self as StakingHandler2<<Lock2 as system::Trait>::AccountId, BalanceOf<Lock2>, <Lock2 as membership::Trait>::MemberId>>::lock(&account_id, new_amount);
+                        <Self as StakingHandler2<
+                            <Lock2 as system::Trait>::AccountId,
+                            BalanceOf<Lock2>,
+                            <Lock2 as membership::Trait>::MemberId,
+                        >>::lock(&account_id, new_amount);
 
                         slashable_amount = amount;
                     }
@@ -356,9 +412,22 @@ pub mod mocks {
             Ok(())
         }
         */
-        fn set_stake(account_id: &<Lock2 as system::Trait>::AccountId, new_stake: BalanceOf<Lock2>) {
-            <Self as StakingHandler2<<Lock2 as system::Trait>::AccountId, BalanceOf<Lock2>, <Lock2 as membership::Trait>::MemberId>>::unlock(account_id);
-            <Self as StakingHandler2<<Lock2 as system::Trait>::AccountId, BalanceOf<Lock2>, <Lock2 as membership::Trait>::MemberId>>::lock(account_id, new_stake);
+        fn set_stake(
+            account_id: &<Lock2 as system::Trait>::AccountId,
+            new_stake: BalanceOf<Lock2>,
+        ) {
+            <Self as StakingHandler2<
+                <Lock2 as system::Trait>::AccountId,
+                BalanceOf<Lock2>,
+                <Lock2 as membership::Trait>::MemberId,
+            >>::unlock(account_id);
+            <Self as StakingHandler2<
+                <Lock2 as system::Trait>::AccountId,
+                BalanceOf<Lock2>,
+                <Lock2 as membership::Trait>::MemberId,
+            >>::lock(account_id, new_stake);
+
+            LOCKED_VALUES_LOCK2.with(|value| value.borrow_mut().insert(*account_id, new_stake));
         }
 
         fn is_member_staking_account(_member_id: &u64, account_id: &u64) -> bool {
@@ -386,11 +455,10 @@ pub mod mocks {
         }
 
         fn current_stake(account_id: &u64) -> u64 {
-            if *account_id == STAKING_ACCOUNT_ID_FOR_ZERO_STAKE {
-                return 0;
-            }
-
-            100 // random non-zero value
+            LOCKED_VALUES_LOCK2.with(|value| match value.borrow().get(account_id) {
+                Some(current_stake) => *current_stake,
+                None => 0,
+            })
         }
     }
 
@@ -475,9 +543,12 @@ pub mod mocks {
     /////////////////// Lock2 //////////////////////////////////////////////////
 
     impl StakingHandler<Lock2> for Lock2 {
-        fn lock(account_id: &<Lock2 as system::Trait>::AccountId, amount: BalanceOfCurrency<Lock2>) {
+        fn lock(
+            account_id: &<Lock2 as system::Trait>::AccountId,
+            amount: BalanceOfCurrency<Lock2>,
+        ) {
             <Lock2 as GovernanceCurrency>::Currency::set_lock(
-                LOCK_ID_1,
+                LOCK_ID_2,
                 &account_id,
                 amount,
                 WithdrawReasons::all(),
@@ -485,7 +556,7 @@ pub mod mocks {
         }
 
         fn unlock(account_id: &<Lock2 as system::Trait>::AccountId) {
-            <Lock2 as GovernanceCurrency>::Currency::remove_lock(LOCK_ID_1, &account_id);
+            <Lock2 as GovernanceCurrency>::Currency::remove_lock(LOCK_ID_2, &account_id);
         }
 
         fn slash(
@@ -494,7 +565,7 @@ pub mod mocks {
         ) -> BalanceOfCurrency<Lock2> {
             let locks = Balances::locks(&account_id);
 
-            let existing_lock = locks.iter().find(|lock| lock.id == LOCK_ID_1);
+            let existing_lock = locks.iter().find(|lock| lock.id == LOCK_ID_2);
 
             let mut actually_slashed_balance = Default::default();
             if let Some(existing_lock) = existing_lock {
@@ -518,7 +589,10 @@ pub mod mocks {
             actually_slashed_balance
         }
 
-        fn set_stake(account_id: &<Lock2 as system::Trait>::AccountId, new_stake: BalanceOf<Lock2>) -> DispatchResult {
+        fn set_stake(
+            account_id: &<Lock2 as system::Trait>::AccountId,
+            new_stake: BalanceOf<Lock2>,
+        ) -> DispatchResult {
             <Self as StakingHandler<Self>>::unlock(account_id);
             <Self as StakingHandler<Self>>::lock(account_id, new_stake);
 
@@ -610,5 +684,4 @@ pub mod mocks {
         type OnNewAccount = ();
         type OnKilledAccount = ();
     }
-
 }

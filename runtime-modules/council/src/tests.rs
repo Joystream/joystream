@@ -1,10 +1,14 @@
 #![cfg(test)]
 
-use super::{CouncilMemberOf, CouncilStageAnnouncing, Error, Trait};
+use super::{CouncilMemberOf, CouncilStageAnnouncing, Error, Module, Trait};
 use crate::mock::*;
+use crate::staking_handler::StakingHandler2;
 
 type Mocks = InstanceMocks<Runtime>;
 type MockUtils = InstanceMockUtils<Runtime>;
+
+type CandidacyLock = <Runtime as Trait>::CandidacyLock;
+type ElectedMemberLock = <Runtime as Trait>::ElectedMemberLock;
 
 /////////////////// Lifetime - election cycle start ////////////////////////////
 /// Test one referendum cycle with succesfull council election
@@ -454,7 +458,6 @@ fn council_cant_candidate_repeatedly() {
 }
 
 // Test that candidate's stake is truly locked.
-#[ignore]
 #[test]
 fn council_candidate_stake_is_locked() {
     let config = default_genesis_config();
@@ -484,20 +487,16 @@ fn council_candidate_stake_is_locked() {
 
         InstanceMocks::simulate_council_cycle(params.clone());
 
-        // TODO - properly check locked balance
-        /*
-        CurrencyOf::<Runtime>::set_lock(
-            <Runtime as Trait>::CandidacyLockId::get(),
-            &candidates[0].council_user_id,
-            100000,
-            WithdrawReason::Transfer.into(),
-        )
-        */
+        candidates.iter().for_each(|council_member| {
+            assert_eq!(
+                CandidacyLock::current_stake(&council_member.account_id),
+                council_settings.min_candidate_stake,
+            );
+        });
     });
 }
 
 // Test that candidate can unstake after not being elected.
-#[ignore]
 #[test]
 fn council_candidate_stake_can_be_unlocked() {
     let config = default_genesis_config();
@@ -507,6 +506,8 @@ fn council_candidate_stake_can_be_unlocked() {
         let vote_stake =
             <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
 
+        let not_elected_candidate_index = 2;
+
         // generate candidates
         let candidates: Vec<CandidateInfo<Runtime>> = (0
             ..(council_settings.min_candidate_count + 1) as u64)
@@ -559,157 +560,35 @@ fn council_candidate_stake_can_be_unlocked() {
 
         InstanceMocks::simulate_council_cycle(params);
 
-        // TODO - properly check candidacy stake still locked
+        // check that not-elected-member has still his candidacy stake locked
+        assert_eq!(
+            CandidacyLock::current_stake(
+                &candidates[not_elected_candidate_index].candidate.account_id
+            ),
+            council_settings.min_candidate_stake,
+        );
 
         assert_eq!(
-            <Runtime as Trait>::Referendum::release_stake(MockUtils::mock_origin(
-                candidates[2].origin.clone()
-            )),
+            Module::<Runtime>::release_candidacy_stake(
+                MockUtils::mock_origin(candidates[not_elected_candidate_index].origin.clone()),
+                candidates[not_elected_candidate_index].candidate.account_id
+            ),
             Ok(()),
         );
 
-        // TODO - properly check candidacy stake is unlocked
+        // check that candidacy stake is unlocked
+        assert_eq!(
+            CandidacyLock::current_stake(
+                &candidates[not_elected_candidate_index].candidate.account_id
+            ),
+            0,
+        );
     });
 }
 
 // Test that elected candidate's stake lock is automaticly converted from candidate lock to elected member lock.
-#[ignore]
 #[test]
 fn council_candidate_stake_automaticly_converted() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake =
-            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
-
-        // generate candidates
-        let candidates: Vec<CandidateInfo<Runtime>> = (0
-            ..(council_settings.min_candidate_count + 1) as u64)
-            .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake, i)
-            })
-            .collect();
-
-        // prepare candidates that are expected to get into candidacy list
-        let expected_candidates = candidates
-            .iter()
-            .map(|item| item.candidate.clone())
-            .collect();
-
-        let expected_final_council_members: Vec<CouncilMemberOf<Runtime>> = vec![
-            (
-                candidates[3].candidate.clone(),
-                candidates[3].council_user_id,
-            )
-                .into(),
-            (
-                candidates[0].candidate.clone(),
-                candidates[0].council_user_id,
-            )
-                .into(),
-            (
-                candidates[1].candidate.clone(),
-                candidates[1].council_user_id,
-            )
-                .into(),
-        ];
-
-        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
-        let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
-        let voters = (0..votes_map.len())
-            .map(|index| MockUtils::generate_voter(index as u64, vote_stake, votes_map[index]))
-            .collect();
-
-        let params = CouncilCycleParams {
-            council_settings: CouncilSettings::<Runtime>::extract_settings(),
-            cycle_start_block_number: 0,
-            expected_initial_council_members: vec![],
-            expected_final_council_members,
-            candidates_announcing: candidates.clone(),
-            expected_candidates,
-            voters,
-
-            interrupt_point: None,
-        };
-
-        InstanceMocks::simulate_council_cycle(params);
-
-        // TODO - properly check candidacy stake of council member is already unlocked
-    });
-}
-
-// Test that council member stake is locked during council governance.
-#[ignore]
-#[test]
-fn council_member_stake_is_locked() {
-    let config = default_genesis_config();
-
-    build_test_externalities(config).execute_with(|| {
-        let council_settings = CouncilSettings::<Runtime>::extract_settings();
-        let vote_stake =
-            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
-
-        // generate candidates
-        let candidates: Vec<CandidateInfo<Runtime>> = (0
-            ..(council_settings.min_candidate_count + 1) as u64)
-            .map(|i| {
-                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake, i)
-            })
-            .collect();
-
-        // prepare candidates that are expected to get into candidacy list
-        let expected_candidates = candidates
-            .iter()
-            .map(|item| item.candidate.clone())
-            .collect();
-
-        let expected_final_council_members: Vec<CouncilMemberOf<Runtime>> = vec![
-            (
-                candidates[3].candidate.clone(),
-                candidates[3].council_user_id,
-            )
-                .into(),
-            (
-                candidates[0].candidate.clone(),
-                candidates[0].council_user_id,
-            )
-                .into(),
-            (
-                candidates[1].candidate.clone(),
-                candidates[1].council_user_id,
-            )
-                .into(),
-        ];
-
-        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
-        let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
-        let voters = (0..votes_map.len())
-            .map(|index| MockUtils::generate_voter(index as u64, vote_stake, votes_map[index]))
-            .collect();
-
-        let params = CouncilCycleParams {
-            council_settings: CouncilSettings::<Runtime>::extract_settings(),
-            cycle_start_block_number: 0,
-            expected_initial_council_members: vec![],
-            expected_final_council_members,
-            candidates_announcing: candidates.clone(),
-            expected_candidates,
-            voters,
-
-            interrupt_point: None,
-        };
-
-        InstanceMocks::simulate_council_cycle(params);
-
-        // TODO - properly check council member lock is still locked
-    });
-}
-
-// Test that council member's stake is automaticly released after next council is elected.
-#[ignore]
-#[test]
-fn council_member_stake_automaticly_unlocked() {
     let config = default_genesis_config();
 
     build_test_externalities(config).execute_with(|| {
@@ -767,7 +646,162 @@ fn council_member_stake_automaticly_unlocked() {
             interrupt_point: None,
         };
 
+        InstanceMocks::simulate_council_cycle(params);
+
+        expected_final_council_members
+            .iter()
+            .for_each(|council_member| {
+                assert_eq!(CandidacyLock::current_stake(&council_member.account_id), 0);
+
+                assert_eq!(
+                    ElectedMemberLock::current_stake(&council_member.account_id),
+                    council_settings.min_candidate_stake
+                );
+            });
+    });
+}
+
+// Test that council member stake is locked during council governance.
+#[test]
+fn council_member_stake_is_locked() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+        let vote_stake =
+            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+
+        // generate candidates
+        let candidates: Vec<CandidateInfo<Runtime>> = (0
+            ..(council_settings.min_candidate_count + 1) as u64)
+            .map(|i| {
+                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake, i)
+            })
+            .collect();
+
+        // prepare candidates that are expected to get into candidacy list
+        let expected_candidates = candidates
+            .iter()
+            .map(|item| item.candidate.clone())
+            .collect();
+
+        let expected_final_council_members: Vec<CouncilMemberOf<Runtime>> = vec![
+            (
+                candidates[3].candidate.clone(),
+                candidates[3].council_user_id,
+            )
+                .into(),
+            (
+                candidates[0].candidate.clone(),
+                candidates[0].council_user_id,
+            )
+                .into(),
+            (
+                candidates[1].candidate.clone(),
+                candidates[1].council_user_id,
+            )
+                .into(),
+        ];
+
+        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
+        let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
+        let voters = (0..votes_map.len())
+            .map(|index| MockUtils::generate_voter(index as u64, vote_stake, votes_map[index]))
+            .collect();
+
+        let params = CouncilCycleParams {
+            council_settings: CouncilSettings::<Runtime>::extract_settings(),
+            cycle_start_block_number: 0,
+            expected_initial_council_members: vec![],
+            expected_final_council_members: expected_final_council_members.clone(),
+            candidates_announcing: candidates.clone(),
+            expected_candidates,
+            voters,
+
+            interrupt_point: None,
+        };
+
+        InstanceMocks::simulate_council_cycle(params);
+
+        expected_final_council_members
+            .iter()
+            .for_each(|council_member| {
+                assert_eq!(
+                    ElectedMemberLock::current_stake(&council_member.account_id),
+                    council_settings.min_candidate_stake
+                );
+            });
+    });
+}
+
+// Test that council member's stake is automaticly released after next council is elected.
+#[test]
+fn council_member_stake_automaticly_unlocked() {
+    let config = default_genesis_config();
+
+    build_test_externalities(config).execute_with(|| {
+        let council_settings = CouncilSettings::<Runtime>::extract_settings();
+        let vote_stake =
+            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+        let not_reelected_candidate_index = 0;
+
+        // generate candidates
+        let candidates: Vec<CandidateInfo<Runtime>> = (0
+            ..(council_settings.min_candidate_count + 1) as u64)
+            .map(|i| {
+                MockUtils::generate_candidate(u64::from(i), council_settings.min_candidate_stake, i)
+            })
+            .collect();
+
+        // prepare candidates that are expected to get into candidacy list
+        let expected_candidates = candidates
+            .iter()
+            .map(|item| item.candidate.clone())
+            .collect();
+
+        let expected_final_council_members: Vec<CouncilMemberOf<Runtime>> = vec![
+            (
+                candidates[3].candidate.clone(),
+                candidates[3].council_user_id,
+            )
+                .into(),
+            (
+                candidates[0].candidate.clone(),
+                candidates[0].council_user_id,
+            )
+                .into(),
+            (
+                candidates[1].candidate.clone(),
+                candidates[1].council_user_id,
+            )
+                .into(),
+        ];
+
+        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
+        let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
+        let voters = (0..votes_map.len())
+            .map(|index| MockUtils::generate_voter(index as u64, vote_stake, votes_map[index]))
+            .collect();
+
+        let params = CouncilCycleParams {
+            council_settings: CouncilSettings::<Runtime>::extract_settings(),
+            cycle_start_block_number: 0,
+            expected_initial_council_members: vec![],
+            expected_final_council_members: expected_final_council_members.clone(),
+            candidates_announcing: candidates.clone(),
+            expected_candidates,
+            voters,
+
+            interrupt_point: None,
+        };
+
         InstanceMocks::simulate_council_cycle(params.clone());
+
+        // 'not reelected member' should have it's stake locked now (he is currently elected member)
+        assert_eq!(
+            ElectedMemberLock::current_stake(&candidates[not_reelected_candidate_index].account_id),
+            council_settings.min_candidate_stake,
+        );
 
         // forward to idle period
         MockUtils::increase_block_number(council_settings.idle_stage_duration + 1);
@@ -802,12 +836,16 @@ fn council_member_stake_automaticly_unlocked() {
                 + council_settings.reveal_stage_duration
                 + council_settings.idle_stage_duration,
             voters: voters2,
-            expected_final_council_members: expected_final_council_members2,
+            expected_final_council_members: expected_final_council_members2.clone(),
             ..params.clone()
         };
 
         InstanceMocks::simulate_council_cycle(params2);
 
-        // TODO - properly check candidacy stake of council member is already unlocked
+        // not reelected member should have it's stake unlocked
+        assert_eq!(
+            ElectedMemberLock::current_stake(&candidates[not_reelected_candidate_index].account_id),
+            0
+        );
     });
 }

@@ -7,9 +7,9 @@ use crate::{
     CurrentAnnouncementCycleId, Error, GenesisConfig, Module, ReferendumConnection, Stage, Trait,
 };
 
+use balances;
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageValue};
-use balances;
 use rand::Rng;
 use referendum::{
     Balance, CastVote, CurrentCycleId, OptionResult, ReferendumManager, ReferendumStage,
@@ -49,7 +49,7 @@ parameter_types! {
     pub const AnnouncingPeriodDuration: u64 = 15;
     pub const IdlePeriodDuration: u64 = 17;
     pub const CouncilSize: u64 = 3;
-    pub const MinCandidateStake: u64 = 10;
+    pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const ElectedMemberLockId: LockIdentifier = *b"council2";
 }
@@ -151,7 +151,7 @@ thread_local! {
 parameter_types! {
     pub const VoteStageDuration: u64 = 19;
     pub const RevealStageDuration: u64 = 23;
-    pub const MinimumStake: u64 = 10000;
+    pub const MinimumVotingStake: u64 = 10000;
     pub const MaxSaltLength: u64 = 32; // use some multiple of 8 for ez testing
     pub const ReferendumLockId: LockIdentifier = *b"referend";
 }
@@ -187,7 +187,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
     type VoteStageDuration = VoteStageDuration;
     type RevealStageDuration = RevealStageDuration;
 
-    type MinimumStake = MinimumStake;
+    type MinimumStake = MinimumVotingStake;
 
     fn caclulate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
@@ -458,10 +458,7 @@ where
 
     // topup currency to the account
     fn topup_account(account_id: u64, amount: BalanceReferendum<T>) {
-        let _ = balances::Module::<RuntimeReferendum>::deposit_creating(
-            &account_id,
-            amount.into(),
-        );
+        let _ = balances::Module::<RuntimeReferendum>::deposit_creating(&account_id, amount.into());
     }
 
     pub fn generate_candidate(

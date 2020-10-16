@@ -528,7 +528,6 @@ impl InstanceMocks<Runtime, Instance0> {
         vote_option_index: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
-        println!("{:?}", vote_option_index);
         // check method returns expected result
         assert_eq!(
             Module::<Runtime, Instance0>::reveal_vote(

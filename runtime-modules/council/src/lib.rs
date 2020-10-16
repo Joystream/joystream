@@ -56,10 +56,10 @@ use referendum::{OptionResult, ReferendumManager};
 
 // declared modules
 mod mock;
-mod tests;
 mod staking_handler;
+mod tests;
 
-use staking_handler::{StakingHandler2};
+use staking_handler::StakingHandler2;
 
 /////////////////// Data Structures ////////////////////////////////////////////
 
@@ -386,6 +386,7 @@ impl<T: Trait> Module<T> {
 
         // reset announcing period when not enough candidates registered
         if stage_data.candidates_count < candidate_count {
+            Mutations::<T>::next_announcing_cycle();
             Mutations::<T>::start_announcing_period();
 
             // emit event
@@ -407,6 +408,7 @@ impl<T: Trait> Module<T> {
         let council_size = T::CouncilSize::get();
         if winners.len() as u64 != council_size {
             // reset candidacy announcement period
+            Mutations::<T>::next_announcing_cycle();
             Mutations::<T>::start_announcing_period();
 
             // emit event
@@ -489,8 +491,8 @@ impl<T: Trait> Mutations<T> {
 
         let block_number = <system::Module<T>>::block_number();
 
-        // increase anouncement cycle id
-        CurrentAnnouncementCycleId::mutate(|value| *value += 1);
+        //// increase anouncement cycle id
+        //CurrentAnnouncementCycleId::mutate(|value| *value += 1);
 
         // set stage
         Stage::<T>::mutate(|value| {
@@ -499,6 +501,12 @@ impl<T: Trait> Mutations<T> {
                 changed_at: block_number + 1.into(), // set next block as the start of next phase (this function is invoke on block finalization)
             }
         });
+    }
+
+    /// Increases announcing cycle index. It should be called after election phase ends or before announcing period is reset.
+    fn next_announcing_cycle() {
+        // increase anouncement cycle id
+        CurrentAnnouncementCycleId::mutate(|value| *value += 1);
     }
 
     /// Change the council stage from the announcing to the election stage.
@@ -531,6 +539,7 @@ impl<T: Trait> Mutations<T> {
         let block_number = <system::Module<T>>::block_number();
 
         // change council state
+        Mutations::<T>::next_announcing_cycle();
         Stage::<T>::mutate(|value| {
             *value = CouncilStageUpdate {
                 stage: CouncilStage::Idle,
@@ -542,7 +551,7 @@ impl<T: Trait> Mutations<T> {
         CouncilMembers::<T>::get()
             .iter()
             .for_each(|council_member| {
-                T::CandidacyLock::set_stake(&council_member.account_id, 0.into());
+                T::ElectedMemberLock::set_stake(&council_member.account_id, 0.into());
             });
 
         // set new council
@@ -558,7 +567,6 @@ impl<T: Trait> Mutations<T> {
                 // lock council member stake
                 T::ElectedMemberLock::set_stake(&council_member.account_id, council_member.stake);
             });
-
     }
 
     /// Announce user's candidacy.
@@ -582,7 +590,7 @@ impl<T: Trait> Mutations<T> {
         };
 
         // lock candidacy stake
-        T::CandidacyLock::set_stake(&candidate.account_id, stake.clone());
+        T::CandidacyLock::set_stake(&candidate.account_id, *stake);
 
         // store new candidacy list
         Stage::<T>::mutate(|value| {
