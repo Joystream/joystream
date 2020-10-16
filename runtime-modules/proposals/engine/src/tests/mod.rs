@@ -1356,9 +1356,8 @@ fn proposal_reset_succeeds() {
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
         let mut vote_generator = VoteGenerator::new(proposal_id);
-        vote_generator.vote_and_assert_ok(VoteKind::Reject);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
-        vote_generator.vote_and_assert_ok(VoteKind::Slash);
 
         assert!(<ActiveProposalIds<Test>>::contains_key(proposal_id));
         assert_eq!(
@@ -1366,7 +1365,7 @@ fn proposal_reset_succeeds() {
             VoteKind::Abstain
         );
 
-        run_to_block_and_finalize(2);
+        run_to_block_and_finalize(1);
 
         let proposal = <Proposals<Test>>::get(proposal_id);
 
@@ -1374,9 +1373,9 @@ fn proposal_reset_succeeds() {
             proposal.voting_results,
             VotingResults {
                 abstentions: 1,
-                approvals: 0,
-                rejections: 1,
-                slashes: 1,
+                approvals: 1,
+                rejections: 0,
+                slashes: 0,
             }
         );
 
@@ -1851,5 +1850,27 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
             proposal_id,
             ProposalStatus::approved(ApprovedProposalStatus::Executed, reactivation_block),
         ));
+    });
+}
+
+#[test]
+fn proposal_early_rejection_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let dummy_proposal = DummyProposalFixture::default();
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
+        vote_generator.vote_and_assert_ok(VoteKind::Abstain);
+
+        assert!(<ActiveProposalIds<Test>>::contains_key(proposal_id));
+        assert_eq!(
+            <VoteExistsByProposalByVoter<Test>>::get(&proposal_id, &2),
+            VoteKind::Abstain
+        );
+
+        run_to_block_and_finalize(1);
+
+        assert!(!<Proposals<Test>>::contains_key(proposal_id));
     });
 }

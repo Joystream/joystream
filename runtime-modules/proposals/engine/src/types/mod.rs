@@ -223,6 +223,8 @@ where
             && proposal_status_resolution.is_slashing_threshold_reached()
         {
             Some(ProposalDecisionStatus::Slashed)
+        } else if proposal_status_resolution.is_rejection_imminent() {
+            Some(ProposalDecisionStatus::Rejected)
         } else if proposal_status_resolution.is_expired() {
             Some(ProposalDecisionStatus::Expired)
         } else if proposal_status_resolution.is_voting_completed() {
@@ -269,8 +271,8 @@ where
     }
 
     // Approval quorum reached for the proposal. Compares predefined parameter with actual
-    // votes sum divided by total possible votes count.
-    pub fn is_approval_quorum_reached(&self) -> bool {
+    // votes sum divided by total possible votes number.
+    fn is_approval_quorum_reached(&self) -> bool {
         let actual_votes_fraction =
             Perbill::from_rational_approximation(self.votes_count, self.total_voters_count);
         let approval_quorum_fraction =
@@ -279,8 +281,43 @@ where
         actual_votes_fraction.deconstruct() >= approval_quorum_fraction.deconstruct()
     }
 
+    // Verifies that approval threshold is still achievable for the proposal.
+    // Compares actual approval votes sum with remaining possible votes number.
+    fn is_approval_threshold_achievable(&self) -> bool {
+        let remaining_votes_count = self.total_voters_count - self.votes_count;
+        let possible_approval_votes_fraction = Perbill::from_rational_approximation(
+            self.approvals + remaining_votes_count,
+            self.votes_count + remaining_votes_count,
+        );
+
+        let required_threshold_fraction =
+            Perbill::from_percent(self.proposal.parameters.approval_threshold_percentage);
+
+        possible_approval_votes_fraction.deconstruct() >= required_threshold_fraction.deconstruct()
+    }
+
+    // Verifies that both approval and slashing thresholds cannot be achieved.
+    pub fn is_rejection_imminent(&self) -> bool {
+        !self.is_approval_threshold_achievable() && !self.is_slashing_threshold_achievable()
+    }
+
+    // Verifies that slashing threshold is still achievable for the proposal.
+    // Compares actual slashing votes sum with remaining possible votes number.
+    fn is_slashing_threshold_achievable(&self) -> bool {
+        let remaining_votes_count = self.total_voters_count - self.votes_count;
+        let possible_slashing_votes_fraction = Perbill::from_rational_approximation(
+            self.slashes + remaining_votes_count,
+            self.votes_count + remaining_votes_count,
+        );
+
+        let required_threshold_fraction =
+            Perbill::from_percent(self.proposal.parameters.slashing_threshold_percentage);
+
+        possible_slashing_votes_fraction.deconstruct() >= required_threshold_fraction.deconstruct()
+    }
+
     // Slashing quorum reached for the proposal. Compares predefined parameter with actual
-    // votes sum divided by total possible votes count.
+    // votes sum divided by total possible votes number.
     pub fn is_slashing_quorum_reached(&self) -> bool {
         let actual_votes_fraction =
             Perbill::from_rational_approximation(self.votes_count, self.total_voters_count);
@@ -291,7 +328,7 @@ where
     }
 
     // Approval threshold reached for the proposal. Compares predefined parameter with 'approve'
-    // votes sum divided by actual votes count.
+    // votes sum divided by actual votes number.
     pub fn is_approval_threshold_reached(&self) -> bool {
         let approval_votes_fraction =
             Perbill::from_rational_approximation(self.approvals, self.votes_count);
@@ -874,5 +911,67 @@ mod tests {
 
         proposal.exact_execution_block = Some(3);
         assert!(!proposal.is_execution_block_reached_or_not_set(2));
+    }
+
+    #[test]
+    fn proposal_status_resolution_is_approval_achievable_works_correctly() {
+        let approval_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+            parameters: ProposalParameters {
+                slashing_threshold_percentage: 50,
+                approval_threshold_percentage: 50,
+                ..ProposalParameters::default()
+            },
+            ..Proposal::default()
+        };
+        let not_achievable_proposal_status_resolution = ProposalStatusResolution {
+            proposal: &approval_threshold_proposal,
+            now: 20,
+            votes_count: 302,
+            total_voters_count: 600,
+            approvals: 1,
+            slashes: 0,
+        };
+
+        assert!(!not_achievable_proposal_status_resolution.is_approval_threshold_achievable());
+        assert!(not_achievable_proposal_status_resolution.is_rejection_imminent());
+
+        let approval_threshold_achievable_resolution = ProposalStatusResolution {
+            approvals: 2,
+            ..not_achievable_proposal_status_resolution
+        };
+
+        assert!(approval_threshold_achievable_resolution.is_approval_threshold_achievable());
+        assert!(!approval_threshold_achievable_resolution.is_rejection_imminent());
+    }
+
+    #[test]
+    fn proposal_status_resolution_is_slashing_achievable_works_correctly() {
+        let slashing_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+            parameters: ProposalParameters {
+                slashing_threshold_percentage: 50,
+                approval_threshold_percentage: 50,
+                ..ProposalParameters::default()
+            },
+            ..Proposal::default()
+        };
+        let not_achievable_proposal_status_resolution = ProposalStatusResolution {
+            proposal: &slashing_threshold_proposal,
+            now: 20,
+            votes_count: 302,
+            total_voters_count: 600,
+            approvals: 0,
+            slashes: 1,
+        };
+
+        assert!(!not_achievable_proposal_status_resolution.is_approval_threshold_achievable());
+        assert!(not_achievable_proposal_status_resolution.is_rejection_imminent());
+
+        let slashing_threshold_achievable_resolution = ProposalStatusResolution {
+            slashes: 2,
+            ..not_achievable_proposal_status_resolution
+        };
+
+        assert!(slashing_threshold_achievable_resolution.is_slashing_threshold_achievable());
+        assert!(!slashing_threshold_achievable_resolution.is_rejection_imminent());
     }
 }
