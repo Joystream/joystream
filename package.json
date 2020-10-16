@@ -18,7 +18,7 @@
     "devops/prettier-config",
     "pioneer",
     "pioneer/packages/*",
-    "utils/api-examples",
+    "utils/api-scripts",
     "content-directory-schemas"
   ],
   "resolutions": {
