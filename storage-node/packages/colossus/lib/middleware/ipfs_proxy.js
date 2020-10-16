@@ -41,12 +41,12 @@ const createResolver = (storage) => {
   return async (id) => await storage.resolveContentIdWithTimeout(5000, id)
 }
 
-const createProxy = (storage) => {
+const createProxy = (storage, ipfsHttpGatewayUrl) => {
   const pathRewrite = createPathRewriter(createResolver(storage))
 
   return createProxyMiddleware(pathFilter, {
     // Default path to local IPFS HTTP GATEWAY
-    target: 'http://localhost:8080/',
+    target: ipfsHttpGatewayUrl || 'http://localhost:8080/',
     pathRewrite,
     onProxyRes: function (proxRes, req, res) {
       /*
