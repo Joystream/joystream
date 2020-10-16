@@ -27,15 +27,16 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 
-use crate::staking_handler::mocks::{Lock1, Lock2};
+use crate::staking_handler::mocks::{Lock1, Lock2, CANDIDATE_BASE_ID, VOTER_BASE_ID};
 
 pub const USER_REGULAR_POWER_VOTES: u64 = 0;
 
 pub const POWER_VOTE_STRENGTH: u64 = 10;
 
-pub const VOTER_BASE_ID: u64 = 4000;
-pub const CANDIDATE_BASE_ID: u64 = VOTER_BASE_ID + VOTER_CANDIDATE_OFFSET;
-pub const VOTER_CANDIDATE_OFFSET: u64 = 1000;
+// uncomment this when this is moved back here from staking_handler.rs temporary file
+//pub const VOTER_BASE_ID: u64 = 4000;
+//pub const CANDIDATE_BASE_ID: u64 = VOTER_BASE_ID + VOTER_CANDIDATE_OFFSET;
+//pub const VOTER_CANDIDATE_OFFSET: u64 = 1000;
 
 pub const INVALID_USER_MEMBER: u64 = 9999;
 
@@ -68,16 +69,6 @@ impl Trait for Runtime {
 
     type CandidacyLock = Lock1;
     type ElectedMemberLock = Lock2;
-
-    fn is_council_user(
-        account_id: &<Self as system::Trait>::AccountId,
-        council_user_id: &Self::CouncilUserId,
-    ) -> bool {
-        // all possible generated candidates
-        account_id == council_user_id
-            && account_id >= &CANDIDATE_BASE_ID
-            && account_id < &(CANDIDATE_BASE_ID + VOTER_CANDIDATE_OFFSET)
-    }
 }
 
 /////////////////// Module implementation //////////////////////////////////////

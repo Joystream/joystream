@@ -105,6 +105,11 @@ pub mod mocks {
             <T as system::Trait>::AccountId,
         >>::Balance;
 
+    // these lines are originally from mock.rs -> after this file is removed, move it back
+    pub const VOTER_BASE_ID: u64 = 4000;
+    pub const CANDIDATE_BASE_ID: u64 = VOTER_BASE_ID + VOTER_CANDIDATE_OFFSET;
+    pub const VOTER_CANDIDATE_OFFSET: u64 = 1000;
+
     pub const STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK: u64 = 111;
     pub const STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK: u64 = 222;
     pub const STAKING_ACCOUNT_ID_FOR_CONFLICTING_STAKES: u64 = 333;
@@ -311,12 +316,11 @@ pub mod mocks {
             LOCKED_VALUES_LOCK1.with(|value| value.borrow_mut().insert(*account_id, new_stake));
         }
 
-        fn is_member_staking_account(_member_id: &u64, account_id: &u64) -> bool {
-            if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK {
-                return false;
-            }
-
-            true
+        fn is_member_staking_account(member_id: &u64, account_id: &u64) -> bool {
+            // all possible generated candidates
+            account_id == member_id
+                && account_id >= &CANDIDATE_BASE_ID
+                && account_id < &(CANDIDATE_BASE_ID + VOTER_CANDIDATE_OFFSET)
         }
 
         fn is_account_free_of_conflicting_stakes(account_id: &u64) -> bool {
@@ -430,12 +434,11 @@ pub mod mocks {
             LOCKED_VALUES_LOCK2.with(|value| value.borrow_mut().insert(*account_id, new_stake));
         }
 
-        fn is_member_staking_account(_member_id: &u64, account_id: &u64) -> bool {
-            if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK {
-                return false;
-            }
-
-            true
+        fn is_member_staking_account(member_id: &u64, account_id: &u64) -> bool {
+            // all possible generated candidates
+            account_id == member_id
+                && account_id >= &CANDIDATE_BASE_ID
+                && account_id < &(CANDIDATE_BASE_ID + VOTER_CANDIDATE_OFFSET)
         }
 
         fn is_account_free_of_conflicting_stakes(account_id: &u64) -> bool {

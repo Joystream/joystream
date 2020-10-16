@@ -188,12 +188,6 @@ pub trait Trait: system::Trait {
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
     /// Duration of idle period
     type IdlePeriodDuration: Get<Self::BlockNumber>;
-
-    /// Check user is allowed member
-    fn is_council_user(
-        account_id: &<Self as system::Trait>::AccountId,
-        council_user_id: &Self::CouncilUserId,
-    ) -> bool;
 }
 
 /// Trait with functions that MUST be called by the runtime with values received from the referendum module.
@@ -639,7 +633,7 @@ impl<T: Trait> EnsureChecks<T> {
         let account_id = ensure_signed(origin)?;
 
         ensure!(
-            T::is_council_user(&account_id, council_user_id),
+            T::CandidacyLock::is_member_staking_account(&council_user_id, &account_id),
             Error::CouncilUserIdNotMatchAccount,
         );
 

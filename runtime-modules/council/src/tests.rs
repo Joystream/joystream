@@ -2,6 +2,7 @@
 
 use super::{CouncilMemberOf, CouncilStageAnnouncing, Error, Module, Trait};
 use crate::mock::*;
+use crate::staking_handler::mocks::VOTER_CANDIDATE_OFFSET;
 use crate::staking_handler::StakingHandler2;
 
 type Mocks = InstanceMocks<Runtime>;
