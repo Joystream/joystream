@@ -89,15 +89,24 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     return { className: selectedClass.name.toString(), sameOwner }
   }
 
-  async promptForCurator(message = 'Choose a Curator'): Promise<number> {
+  async promptForCurator(message = 'Choose a Curator', ids?: number[]): Promise<number> {
     const curators = await this.getApi().groupMembers(WorkingGroups.Curators)
+    const choices = curators
+      .filter((c) => (ids ? ids.includes(c.workerId.toNumber()) : true))
+      .map((c) => ({
+        name: `${c.profile.handle.toString()} (Worker ID: ${c.workerId})`,
+        value: c.workerId.toNumber(),
+      }))
+
+    if (!choices.length) {
+      this.warn('No Curators to choose from!')
+      this.exit(ExitCodes.InvalidInput)
+    }
+
     const selectedCuratorId = await this.simplePrompt({
       message,
       type: 'list',
-      choices: curators.map((c) => ({
-        name: `${c.profile.handle.toString()} (Worker ID: ${c.workerId})`,
-        value: c.workerId,
-      })),
+      choices,
     })
 
     return selectedCuratorId
