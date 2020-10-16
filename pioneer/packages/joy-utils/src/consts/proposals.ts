@@ -41,21 +41,23 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
   },
   SetLead: {
     description: 'Set Lead Proposal',
-    category: 'Content Working Group',
+    category: 'Other',
     stake: 50000,
     approvalQuorum: 60,
     approvalThreshold: 75,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
+    outdated: true
   },
   SetContentWorkingGroupMintCapacity: {
     description: 'Set WG Mint Capacity Proposal',
-    category: 'Content Working Group',
+    category: 'Other',
     stake: 50000,
     approvalQuorum: 60,
     approvalThreshold: 75,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
+    outdated: true
   },
   Spending: {
     description: 'Spending Proposal',
@@ -170,14 +172,6 @@ export const apiMethods: { [k in ProposalType]?: ProposalsApiMethodNames } = {
   SetValidatorCount: {
     votingPeriod: 'setValidatorCountProposalVotingPeriod',
     gracePeriod: 'setValidatorCountProposalGracePeriod'
-  },
-  SetLead: {
-    votingPeriod: 'setLeadProposalVotingPeriod',
-    gracePeriod: 'setLeadProposalGracePeriod'
-  },
-  SetContentWorkingGroupMintCapacity: {
-    votingPeriod: 'setContentWorkingGroupMintCapacityProposalVotingPeriod',
-    gracePeriod: 'setContentWorkingGroupMintCapacityProposalGracePeriod'
   },
   Spending: {
     votingPeriod: 'spendingProposalVotingPeriod',
