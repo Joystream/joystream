@@ -268,11 +268,6 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
     }
     const { flags } = this.parse(this.constructor as typeof WorkingGroupsCommandBase)
     if (flags.group) {
-      if (!AvailableGroups.includes(flags.group as any)) {
-        throw new CLIError(`Invalid group! Available values are: ${AvailableGroups.join(', ')}`, {
-          exit: ExitCodes.InvalidInput,
-        })
-      }
       this.group = flags.group
     }
     this.log(chalk.white('Current Group: ' + this.group))
