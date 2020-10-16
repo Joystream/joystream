@@ -216,6 +216,11 @@ export default abstract class AccountsCommandBase extends ApiCommandBase {
   }
 
   async requestAccountDecoding(account: NamedKeyringPair): Promise<void> {
+    // Skip if account already unlocked
+    if (!account.isLocked) {
+      return
+    }
+
     // First - try decoding using empty string
     try {
       account.decodePkcs8('')

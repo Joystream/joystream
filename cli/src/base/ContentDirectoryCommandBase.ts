@@ -245,10 +245,8 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     }, {} as Record<string, { value: Codec; type: string }>)
   }
 
-  async parseToKnownEntityJson<T>(entity: Entity, entityClass?: Class): Promise<FlattenRelations<T>> {
-    if (!entityClass) {
-      entityClass = (await this.classEntryByNameOrId(entity.class_id.toString()))[1]
-    }
+  async parseToKnownEntityJson<T>(entity: Entity): Promise<FlattenRelations<T>> {
+    const entityClass = (await this.classEntryByNameOrId(entity.class_id.toString()))[1]
     return (_.mapValues(this.parseEntityPropertyValues(entity, entityClass), (v) =>
       v.value.toJSON()
     ) as unknown) as FlattenRelations<T>

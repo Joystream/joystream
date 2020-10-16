@@ -493,7 +493,7 @@ export default class Api {
   async availableClasses(useCache = true): Promise<[ClassId, Class][]> {
     return useCache && this._cdClassesCache
       ? this._cdClassesCache
-      : await this.entriesByIds<ClassId, Class>(this._api.query.contentDirectory.classById)
+      : (this._cdClassesCache = await this.entriesByIds<ClassId, Class>(this._api.query.contentDirectory.classById))
   }
 
   availableCuratorGroups(): Promise<[CuratorGroupId, CuratorGroup][]> {
