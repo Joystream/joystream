@@ -9,7 +9,7 @@ use crate::{
 
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageValue};
-use pallet_balances;
+use balances;
 use rand::Rng;
 use referendum::{
     Balance, CastVote, CurrentCycleId, OptionResult, ReferendumManager, ReferendumStage,
@@ -26,6 +26,8 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
+
+use crate::staking_handler::mocks::{Lock1, Lock2};
 
 pub const USER_REGULAR_POWER_VOTES: u64 = 0;
 
@@ -57,14 +59,15 @@ impl Trait for Runtime {
 
     type Referendum = referendum::Module<RuntimeReferendum, ReferendumInstance>;
 
-    type CouncilUserId = u64;
-    type CandidacyLockId = CandidacyLockId;
-    type ElectedMemberLockId = ElectedMemberLockId;
+    type CouncilUserId = <Lock1 as membership::Trait>::MemberId;
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
     type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
     type IdlePeriodDuration = IdlePeriodDuration;
     type MinCandidateStake = MinCandidateStake;
+
+    type CandidacyLock = Lock1;
+    type ElectedMemberLock = Lock2;
 
     fn is_council_user(
         account_id: &<Self as system::Trait>::AccountId,
@@ -104,7 +107,6 @@ parameter_types! {
     pub const MaximumBlockWeight: u32 = 1024;
     pub const MaximumBlockLength: u32 = 2 * 1024;
     pub const AvailableBlockRatio: Perbill = Perbill::one();
-    pub const MinimumPeriod: u64 = 5;
 }
 
 impl system::Trait for Runtime {
@@ -129,7 +131,7 @@ impl system::Trait for Runtime {
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
     type ModuleToIndex = ();
-    type AccountData = pallet_balances::AccountData<u64>;
+    type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
 }
@@ -155,7 +157,7 @@ parameter_types! {
 }
 
 mod balances_mod {
-    pub use pallet_balances::Event;
+    pub use balances::Event;
 }
 
 impl_outer_event! {
@@ -174,7 +176,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
 
     type MaxSaltLength = MaxSaltLength;
 
-    type Currency = pallet_balances::Module<Self>;
+    type Currency = balances::Module<Self>;
     type LockId = ReferendumLockId;
 
     type ManagerOrigin =
@@ -272,12 +274,12 @@ impl system::Trait for RuntimeReferendum {
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
     type ModuleToIndex = ();
-    type AccountData = pallet_balances::AccountData<u64>;
+    type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
 }
 
-impl pallet_balances::Trait for RuntimeReferendum {
+impl balances::Trait for RuntimeReferendum {
     type Balance = u64;
     type Event = TestReferendumEvent;
     type DustRemoval = ();
@@ -456,7 +458,7 @@ where
 
     // topup currency to the account
     fn topup_account(account_id: u64, amount: BalanceReferendum<T>) {
-        let _ = pallet_balances::Module::<RuntimeReferendum>::deposit_creating(
+        let _ = balances::Module::<RuntimeReferendum>::deposit_creating(
             &account_id,
             amount.into(),
         );

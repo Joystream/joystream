@@ -174,9 +174,9 @@ pub trait Trait<I: Instance>: system::Trait {
         + MaybeSerialize
         + PartialEq;
 
-    /// Duration of voting stage (in blocks)
+    /// Duration of voting stage (number of blocks)
     type VoteStageDuration: Get<Self::BlockNumber>;
-    /// Duration of revealing stage (in blocks)
+    /// Duration of revealing stage (number of blocks)
     type RevealStageDuration: Get<Self::BlockNumber>;
 
     /// Minimum stake needed for voting

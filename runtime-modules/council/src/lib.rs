@@ -38,7 +38,7 @@
 
 // used dependencies
 use codec::{Codec, Decode, Encode};
-use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReason};
+use frame_support::traits::{Currency, Get};
 use frame_support::{
     decl_error, decl_event, decl_module, decl_storage, ensure, error::BadOrigin, Parameter,
 };
@@ -57,6 +57,9 @@ use referendum::{OptionResult, ReferendumManager};
 // declared modules
 mod mock;
 mod tests;
+mod staking_handler;
+
+use staking_handler::{StakingHandler2};
 
 /////////////////// Data Structures ////////////////////////////////////////////
 
@@ -131,11 +134,6 @@ impl<AccountId, CouncilUserId, Balance> From<(Candidate<AccountId, Balance>, Cou
 
 /////////////////// Type aliases ///////////////////////////////////////////////
 
-pub type CurrencyOf<T> = <<T as Trait>::Referendum as ReferendumManager<
-    <T as system::Trait>::Origin,
-    <T as system::Trait>::AccountId,
-    <T as system::Trait>::Hash,
->>::Currency;
 pub type Balance<T> = <<<T as Trait>::Referendum as ReferendumManager<
     <T as system::Trait>::Origin,
     <T as system::Trait>::AccountId,
@@ -182,9 +180,9 @@ pub trait Trait: system::Trait {
     type MinCandidateStake: Get<Balance<Self>>;
 
     /// Identifier for currency lock used for candidacy staking.
-    type CandidacyLockId: Get<LockIdentifier>;
+    type CandidacyLock: StakingHandler2<Self::AccountId, Balance<Self>, Self::CouncilUserId>;
     /// Identifier for currency lock used for candidacy staking.
-    type ElectedMemberLockId: Get<LockIdentifier>;
+    type ElectedMemberLock: StakingHandler2<Self::AccountId, Balance<Self>, Self::CouncilUserId>;
 
     /// Duration of annoncing period
     type AnnouncingPeriodDuration: Get<Self::BlockNumber>;
@@ -544,12 +542,7 @@ impl<T: Trait> Mutations<T> {
         CouncilMembers::<T>::get()
             .iter()
             .for_each(|council_member| {
-                CurrencyOf::<T>::set_lock(
-                    <T as Trait>::CandidacyLockId::get(),
-                    &council_member.account_id,
-                    0.into(),
-                    WithdrawReason::Transfer.into(),
-                )
+                T::CandidacyLock::set_stake(&council_member.account_id, 0.into());
             });
 
         // set new council
@@ -560,21 +553,12 @@ impl<T: Trait> Mutations<T> {
             .iter()
             .for_each(|council_member| {
                 // unlock candidacy stake
-                CurrencyOf::<T>::set_lock(
-                    <T as Trait>::CandidacyLockId::get(),
-                    &council_member.account_id,
-                    0.into(),
-                    WithdrawReason::Transfer.into(),
-                );
+                T::CandidacyLock::set_stake(&council_member.account_id, 0.into());
 
                 // lock council member stake
-                CurrencyOf::<T>::set_lock(
-                    <T as Trait>::ElectedMemberLockId::get(),
-                    &council_member.account_id,
-                    council_member.stake,
-                    WithdrawReason::Transfer.into(),
-                );
+                T::ElectedMemberLock::set_stake(&council_member.account_id, council_member.stake);
             });
+
     }
 
     /// Announce user's candidacy.
@@ -598,12 +582,7 @@ impl<T: Trait> Mutations<T> {
         };
 
         // lock candidacy stake
-        CurrencyOf::<T>::set_lock(
-            <T as Trait>::CandidacyLockId::get(),
-            &candidate.account_id,
-            *stake,
-            WithdrawReason::Transfer.into(),
-        );
+        T::CandidacyLock::set_stake(&candidate.account_id, stake.clone());
 
         // store new candidacy list
         Stage::<T>::mutate(|value| {
@@ -617,7 +596,7 @@ impl<T: Trait> Mutations<T> {
     /// Release user's stake that was used for candidacy.
     fn release_candidacy_stake(account_id: &T::AccountId, council_user_id: &T::CouncilUserId) {
         // release stake amount
-        CurrencyOf::<T>::remove_lock(<T as Trait>::CandidacyLockId::get(), account_id);
+        T::CandidacyLock::set_stake(&account_id, 0.into());
 
         let candidate = Candidates::<T>::get(council_user_id);
 
