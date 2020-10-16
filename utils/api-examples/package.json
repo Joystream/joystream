@@ -5,7 +5,8 @@
   "license": "GPL-3.0-only",
   "scripts": {
     "status": "ts-node src/status",
-    "script": "ts-node src/script"
+    "script": "ts-node src/script",
+    "tsnode-strict": "node -r ts-node/register --unhandled-rejections=strict"
   },
   "dependencies": {
     "@joystream/types": "^0.14.0",

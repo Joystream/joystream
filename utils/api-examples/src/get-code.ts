@@ -6,6 +6,8 @@ async function main() {
 
   const api = await ApiPromise.create({ provider, types })
 
+  await api.isReady
+
   const currentBlockHash = await api.rpc.chain.getBlockHash(1)
 
   console.log('getting code as of block hash', currentBlockHash.toString())
