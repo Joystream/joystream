@@ -52,7 +52,17 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       this.warn("You haven't provided a node/endpoint for the CLI to connect to yet!")
       apiUri = await this.promptForApiUri()
     }
-    this.api = await Api.create(apiUri)
+
+    const { metadataCache } = this.getPreservedState()
+    this.api = await Api.create(apiUri, metadataCache)
+
+    const { genesisHash, runtimeVersion } = this.getOriginalApi()
+    const metadataKey = `${genesisHash}-${runtimeVersion.specVersion}`
+    if (!metadataCache[metadataKey]) {
+      // Add new entry to metadata cache
+      metadataCache[metadataKey] = await this.getOriginalApi().runtimeMetadata.toJSON()
+      await this.setPreservedState({ metadataCache })
+    }
   }
 
   async promptForApiUri(): Promise<string> {

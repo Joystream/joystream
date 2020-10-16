@@ -75,9 +75,12 @@ export default class Api {
     return this._api
   }
 
-  private static async initApi(apiUri: string = DEFAULT_API_URI): Promise<ApiPromise> {
+  private static async initApi(
+    apiUri: string = DEFAULT_API_URI,
+    metadataCache: Record<string, any>
+  ): Promise<ApiPromise> {
     const wsProvider: WsProvider = new WsProvider(apiUri)
-    const api = await ApiPromise.create({ provider: wsProvider, types })
+    const api = await ApiPromise.create({ provider: wsProvider, types, metadata: metadataCache })
 
     // Initializing some api params based on pioneer/packages/react-api/Api.tsx
     const [properties] = await Promise.all([api.rpc.system.properties()])
@@ -94,8 +97,8 @@ export default class Api {
     return api
   }
 
-  static async create(apiUri: string = DEFAULT_API_URI): Promise<Api> {
-    const originalApi: ApiPromise = await Api.initApi(apiUri)
+  static async create(apiUri: string = DEFAULT_API_URI, metadataCache: Record<string, any>): Promise<Api> {
+    const originalApi: ApiPromise = await Api.initApi(apiUri, metadataCache)
     return new Api(originalApi)
   }
 
