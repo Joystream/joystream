@@ -12,8 +12,8 @@ ALICE_INITIAL_BALANCE=${ALICE_INITIAL_BALANCE:=100000000}
 
 # The docker image tag to use for joystream/node as the starting chain
 # that will be upgraded to the latest runtime.
-CURRENT_RUNTIME=alexandria
-TARGET_RUNTIME=babylon
+RUNTIME=${RUNTIME:=alexandria}
+TARGET_RUNTIME=${TARGET_RUNTIME:=babylon}
 
 mkdir -p ${DATA_PATH}
 
@@ -37,7 +37,7 @@ echo '
 ' > ${DATA_PATH}/initial-members.json
 
 # Create a chain spec file
-docker run --rm -v ${DATA_PATH}:/data --entrypoint ./chain-spec-builder joystream/node:${CURRENT_RUNTIME} \
+docker run --rm -v ${DATA_PATH}:/data --entrypoint ./chain-spec-builder joystream/node:${RUNTIME} \
   new \
   --authority-seeds Alice \
   --sudo-account  5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY \
@@ -47,13 +47,13 @@ docker run --rm -v ${DATA_PATH}:/data --entrypoint ./chain-spec-builder joystrea
   --initial-members-path /data/initial-members.json
 
 # Convert the chain spec file to a raw chainspec file
-docker run --rm -v ${DATA_PATH}:/data joystream/node:${CURRENT_RUNTIME} build-spec \
+docker run --rm -v ${DATA_PATH}:/data joystream/node:${RUNTIME} build-spec \
   --raw --disable-default-bootnode \
   --chain /data/chain-spec.json > ~/tmp/chain-spec-raw.json
 
 # Start a chain with generated chain spec
 # Add "-l ws=trace,ws::handler=info" to get websocket trace logs
-CONTAINER_ID=`docker run -d -v ${DATA_PATH}:/data -p 9944:9944 joystream/node:${CURRENT_RUNTIME} \
+CONTAINER_ID=`docker run -d -v ${DATA_PATH}:/data -p 9944:9944 joystream/node:${RUNTIME} \
   --validator --alice --unsafe-ws-external --rpc-cors=all -l runtime \
   --chain /data/chain-spec-raw.json`
 
@@ -65,25 +65,27 @@ function cleanup() {
 
 trap cleanup EXIT
 
-# Copy new runtime wasm file from target joystream/node image
-echo "Extracting wasm blob from target joystream/node image."
-id=$(docker create joystream/node:${TARGET_RUNTIME})
-docker cp $id:/joystream/runtime.compact.wasm .tmp/
-docker rm $id
+if [ "$TARGET_RUNIME" == "$RUNTIME" ]; then
+  echo "Not Performing a runtime upgrade."
+else
+  # Copy new runtime wasm file from target joystream/node image
+  echo "Extracting wasm blob from target joystream/node image."
+  id=`docker create joystream/node:${TARGET_RUNTIME}`
+  docker cp $id:/joystream/runtime.compact.wasm .tmp/
+  docker rm $id
 
-# Should we clone master branch to run scripts from to use correct types for live network?
-# New types seems to work for our needs though, no warnings about missing types
-# or anything like that..
+  # Display runtime version before runtime upgrade
+  yarn workspace api-examples tsnode-strict src/status.ts | grep Runtime
 
-# Display current runtime version
-yarn workspace api-examples tsnode-strict src/status.ts
+  echo "Performing runtime upgrade."
+  DEBUG=* yarn workspace api-examples tsnode-strict \
+    src/dev-set-runtime-code.ts -- `pwd`/.tmp/runtime.compact.wasm
 
-echo "Performing runtime upgrade."
-DEBUG=* yarn workspace api-examples tsnode-strict \
-  src/dev-set-runtime-code.ts -- `pwd`/.tmp/runtime.compact.wasm
+  echo "Runtime upgraded."
+fi
 
 # Display runtime version
-yarn workspace api-examples tsnode-strict src/status.ts
+yarn workspace api-examples tsnode-strict src/status.ts | grep Runtime
 
 # Execute the tests
 time DEBUG=* yarn workspace network-tests test-run src/scenarios/full.ts
