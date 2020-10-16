@@ -70,6 +70,7 @@ if [ "$TARGET_RUNIME" == "$RUNTIME" ]; then
 else
   # Copy new runtime wasm file from target joystream/node image
   echo "Extracting wasm blob from target joystream/node image."
+  mkdir -p .tmp/
   id=`docker create joystream/node:${TARGET_RUNTIME}`
   docker cp $id:/joystream/runtime.compact.wasm .tmp/
   docker rm $id
