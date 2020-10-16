@@ -129,7 +129,8 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {
     /// Proposal body
     pub description: Vec<u8>,
 
-    /// When it was created or reactivated to get constitutionality.
+    /// It contains the block number when it was first created or the beginning of a new council
+    /// where the proposal was automatically activated due to constitutionality.
     pub activated_at: BlockNumber,
 
     /// Current proposal status
