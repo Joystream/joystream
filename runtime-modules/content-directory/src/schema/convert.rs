@@ -1,7 +1,7 @@
 use super::*;
 use sp_runtime::traits::Hash;
 
-impl<T: Trait> From<InputPropertyValue<T>> for StoredPropertyValue<T::Hash, T::EntityId, T::Nonce> {
+impl<T: Trait> From<InputPropertyValue<T>> for StoredPropertyValueOf<T> {
     fn from(input_property_value: InputPropertyValue<T>) -> Self {
         match input_property_value {
             InputPropertyValue::Single(input_value) => {

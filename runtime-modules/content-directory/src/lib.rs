@@ -161,6 +161,23 @@ use core::debug_assert;
 /// Type, used in diffrent numeric constraints representations
 pub type MaxNumber = u32;
 
+/// Type simplification
+pub type EntityOf<T> = Entity<
+    <T as Trait>::ClassId,
+    <T as ActorAuthenticator>::MemberId,
+    <T as system::Trait>::Hash,
+    <T as Trait>::EntityId,
+    <T as Trait>::Nonce,
+>;
+
+/// Type simplification
+pub type ClassOf<T> =
+    Class<<T as Trait>::EntityId, <T as Trait>::ClassId, <T as ActorAuthenticator>::CuratorGroupId>;
+
+/// Type simplification
+pub type StoredPropertyValueOf<T> =
+    StoredPropertyValue<<T as system::Trait>::Hash, <T as Trait>::EntityId, <T as Trait>::Nonce>;
+
 /// Module configuration trait for this Substrate module.
 pub trait Trait: system::Trait + ActorAuthenticator + Clone {
     /// The overarching event type.
@@ -260,10 +277,10 @@ decl_storage! {
     trait Store for Module<T: Trait> as ContentDirectory {
 
         /// Map, representing ClassId -> Class relation
-        pub ClassById get(fn class_by_id) config(): map hasher(blake2_128_concat) T::ClassId => Class<T::EntityId, T::ClassId, T::CuratorGroupId>;
+        pub ClassById get(fn class_by_id) config(): map hasher(blake2_128_concat) T::ClassId => ClassOf<T>;
 
         /// Map, representing EntityId -> Entity relation
-        pub EntityById get(fn entity_by_id) config(): map hasher(blake2_128_concat) T::EntityId => Entity<T::ClassId, T::MemberId, T::Hash, T::EntityId, T::Nonce>;
+        pub EntityById get(fn entity_by_id) config(): map hasher(blake2_128_concat) T::EntityId => EntityOf<T>;
 
         /// Map, representing  CuratorGroupId -> CuratorGroup relation
         pub CuratorGroupById get(fn curator_group_by_id) config(): map hasher(blake2_128_concat) T::CuratorGroupId => CuratorGroup<T>;
@@ -1616,7 +1633,6 @@ decl_module! {
 
             for (index, operation_type) in operations.into_iter().enumerate() {
                 let origin = T::Origin::from(raw_origin.clone());
-                let actor = actor.clone();
                 match operation_type {
                     OperationType::CreateEntity(create_entity_operation) => {
                         Self::create_entity(origin, create_entity_operation.class_id, actor)?;
@@ -1752,7 +1768,7 @@ impl<T: Trait> Module<T> {
     /// Convert all provided `InputPropertyValue`'s into `StoredPropertyValue`'s
     pub fn make_output_property_values(
         input_property_values: BTreeMap<PropertyId, InputPropertyValue<T>>,
-    ) -> BTreeMap<PropertyId, StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>> {
+    ) -> BTreeMap<PropertyId, StoredPropertyValueOf<T>> {
         input_property_values
             .into_iter()
             .map(|(property_id, property_value)| (property_id, property_value.into()))
@@ -1763,29 +1779,18 @@ impl<T: Trait> Module<T> {
     /// Returns updated `entity_property_values`
     fn make_updated_entity_property_values(
         schema: Schema,
-        entity_property_values: BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        >,
-        output_property_values: &BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        >,
-    ) -> BTreeMap<PropertyId, StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>> {
+        entity_property_values: BTreeMap<PropertyId, StoredPropertyValueOf<T>>,
+        output_property_values: &BTreeMap<PropertyId, StoredPropertyValueOf<T>>,
+    ) -> BTreeMap<PropertyId, StoredPropertyValueOf<T>> {
         // Concatenate existing `entity_property_values` with `property_values`, provided, when adding `Schema` support.
-        let updated_entity_property_values: BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        > = entity_property_values
-            .into_iter()
-            .chain(output_property_values.to_owned().into_iter())
-            .collect();
+        let updated_entity_property_values: BTreeMap<PropertyId, StoredPropertyValueOf<T>> =
+            entity_property_values
+                .into_iter()
+                .chain(output_property_values.to_owned().into_iter())
+                .collect();
 
         // Write all missing non required `Schema` `property_values` as `InputPropertyValue::default()`
-        let non_required_property_values: BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        > = schema
+        let non_required_property_values: BTreeMap<PropertyId, StoredPropertyValueOf<T>> = schema
             .get_properties()
             .iter()
             .filter_map(|property_id| {
@@ -1921,23 +1926,15 @@ impl<T: Trait> Module<T> {
     pub fn get_updated_inbound_rcs_delta(
         current_entity_id: T::EntityId,
         class_properties: Vec<Property<T::ClassId>>,
-        entity_property_values: BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        >,
-        new_output_property_values: BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        >,
+        entity_property_values: BTreeMap<PropertyId, StoredPropertyValueOf<T>>,
+        new_output_property_values: BTreeMap<PropertyId, StoredPropertyValueOf<T>>,
     ) -> Result<Option<ReferenceCounterSideEffects<T>>, Error<T>> {
         // Filter entity_property_values to get only those, which will be substituted with new_property_values
-        let entity_property_values_to_update: BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        > = entity_property_values
-            .into_iter()
-            .filter(|(entity_id, _)| new_output_property_values.contains_key(entity_id))
-            .collect();
+        let entity_property_values_to_update: BTreeMap<PropertyId, StoredPropertyValueOf<T>> =
+            entity_property_values
+                .into_iter()
+                .filter(|(entity_id, _)| new_output_property_values.contains_key(entity_id))
+                .collect();
 
         // Calculate entities reference counter side effects for update operation
 
@@ -2110,7 +2107,7 @@ impl<T: Trait> Module<T> {
     pub fn ensure_vec_property_value_hashes(
         class_id: T::ClassId,
         in_class_schema_property_id: PropertyId,
-        property_value_vector_updated: &StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
+        property_value_vector_updated: &StoredPropertyValueOf<T>,
         property_value_vector: VecStoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
     ) -> Result<(T::Hash, T::Hash), Error<T>> {
         // Compute new hash from unique property value and its respective property id
@@ -2150,9 +2147,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Returns the stored `Class` if exist, error otherwise.
-    fn ensure_class_exists(
-        class_id: T::ClassId,
-    ) -> Result<Class<T::EntityId, T::ClassId, T::CuratorGroupId>, Error<T>> {
+    fn ensure_class_exists(class_id: T::ClassId) -> Result<ClassOf<T>, Error<T>> {
         ensure!(
             <ClassById<T>>::contains_key(class_id),
             Error::<T>::ClassNotFound
@@ -2165,14 +2160,7 @@ impl<T: Trait> Module<T> {
         account_id: T::AccountId,
         entity_id: T::EntityId,
         actor: &Actor<T::CuratorGroupId, T::CuratorId, T::MemberId>,
-    ) -> Result<
-        (
-            Class<T::EntityId, T::ClassId, T::CuratorGroupId>,
-            Entity<T::ClassId, T::MemberId, T::Hash, T::EntityId, T::Nonce>,
-            EntityAccessLevel,
-        ),
-        Error<T>,
-    > {
+    ) -> Result<(ClassOf<T>, EntityOf<T>, EntityAccessLevel), Error<T>> {
         // Ensure Entity under given id exists, retrieve corresponding one
         let entity = Self::ensure_known_entity_id(entity_id)?;
 
@@ -2193,13 +2181,7 @@ impl<T: Trait> Module<T> {
     /// Ensure `Entity` under given `entity_id` exists, retrieve corresponding `Entity` & `Class`
     pub fn ensure_known_entity_and_class(
         entity_id: T::EntityId,
-    ) -> Result<
-        (
-            Entity<T::ClassId, T::MemberId, T::Hash, T::EntityId, T::Nonce>,
-            Class<T::EntityId, T::ClassId, T::CuratorGroupId>,
-        ),
-        Error<T>,
-    > {
+    ) -> Result<(EntityOf<T>, ClassOf<T>), Error<T>> {
         // Ensure Entity under given id exists, retrieve corresponding one
         let entity = Self::ensure_known_entity_id(entity_id)?;
 
@@ -2313,15 +2295,12 @@ impl<T: Trait> Module<T> {
     /// Returns updated `entity_property_values`, if update performed
     pub fn make_updated_property_value_references_with_same_owner_flag_set(
         unused_property_id_references_with_same_owner_flag_set: BTreeSet<PropertyId>,
-        entity_property_values: &BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        >,
+        entity_property_values: &BTreeMap<PropertyId, StoredPropertyValueOf<T>>,
         new_property_value_references_with_same_owner_flag_set: &BTreeMap<
             PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
+            StoredPropertyValueOf<T>,
         >,
-    ) -> Option<BTreeMap<PropertyId, StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>>> {
+    ) -> Option<BTreeMap<PropertyId, StoredPropertyValueOf<T>>> {
         // Used to check if update performed
         let mut entity_property_values_updated = entity_property_values.clone();
 
@@ -2378,11 +2357,8 @@ impl<T: Trait> Module<T> {
 
     /// Used to compute old unique hashes, that should be substituted with new ones.
     pub fn compute_old_unique_hashes(
-        new_output_property_values: &BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        >,
-        entity_values: &BTreeMap<PropertyId, StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>>,
+        new_output_property_values: &BTreeMap<PropertyId, StoredPropertyValueOf<T>>,
+        entity_values: &BTreeMap<PropertyId, StoredPropertyValueOf<T>>,
     ) -> BTreeMap<PropertyId, T::Hash> {
         entity_values
             .iter()
@@ -2437,10 +2413,7 @@ impl<T: Trait> Module<T> {
 
     /// Ensure all provided `new_property_values` are already exist in `entity_property_values` map
     pub fn ensure_all_property_values_are_already_added(
-        entity_property_values: &BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        >,
+        entity_property_values: &BTreeMap<PropertyId, StoredPropertyValueOf<T>>,
         new_property_values: &BTreeMap<PropertyId, InputPropertyValue<T>>,
     ) -> Result<(), Error<T>> {
         ensure!(
@@ -2469,10 +2442,7 @@ impl<T: Trait> Module<T> {
     /// Filter `new_property_values` identical to `entity_property_values`.
     /// Return only `new_property_values`, that are not in `entity_property_values`
     pub fn try_filter_identical_property_values(
-        entity_property_values: &BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        >,
+        entity_property_values: &BTreeMap<PropertyId, StoredPropertyValueOf<T>>,
         new_property_values: BTreeMap<PropertyId, InputPropertyValue<T>>,
     ) -> BTreeMap<PropertyId, InputPropertyValue<T>> {
         new_property_values
@@ -2492,15 +2462,9 @@ impl<T: Trait> Module<T> {
     /// Update existing `entity_property_values` with `new_property_values`.
     /// if update performed, returns updated entity property values
     pub fn make_updated_property_values(
-        entity_property_values: &BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        >,
-        new_output_property_values: &BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        >,
-    ) -> Option<BTreeMap<PropertyId, StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>>> {
+        entity_property_values: &BTreeMap<PropertyId, StoredPropertyValueOf<T>>,
+        new_output_property_values: &BTreeMap<PropertyId, StoredPropertyValueOf<T>>,
+    ) -> Option<BTreeMap<PropertyId, StoredPropertyValueOf<T>>> {
         // Used to check if updated performed
         let mut entity_property_values_updated = entity_property_values.to_owned();
 
@@ -2525,7 +2489,7 @@ impl<T: Trait> Module<T> {
         mut property_value_vector: VecStoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
         index_in_property_vector: VecMaxLength,
         value: InputValue<T>,
-    ) -> StoredPropertyValue<T::Hash, T::EntityId, T::Nonce> {
+    ) -> StoredPropertyValueOf<T> {
         property_value_vector.insert_at(index_in_property_vector, value.into());
         StoredPropertyValue::Vector(property_value_vector)
     }
@@ -2535,7 +2499,7 @@ impl<T: Trait> Module<T> {
     pub fn remove_at_index_in_property_vector(
         mut property_value_vector: VecStoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
         index_in_property_vector: VecMaxLength,
-    ) -> StoredPropertyValue<T::Hash, T::EntityId, T::Nonce> {
+    ) -> StoredPropertyValueOf<T> {
         property_value_vector.remove_at(index_in_property_vector);
         StoredPropertyValue::Vector(property_value_vector)
     }
@@ -2544,7 +2508,7 @@ impl<T: Trait> Module<T> {
     /// Returns empty `VecStoredPropertyValue` wrapped in `StoredPropertyValue`
     pub fn clear_property_vector(
         mut property_value_vector: VecStoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-    ) -> StoredPropertyValue<T::Hash, T::EntityId, T::Nonce> {
+    ) -> StoredPropertyValueOf<T> {
         property_value_vector.clear();
         StoredPropertyValue::Vector(property_value_vector)
     }
@@ -2552,21 +2516,16 @@ impl<T: Trait> Module<T> {
     /// Insert `InputPropertyValue` into `entity_property_values` mapping at `in_class_schema_property_id`.
     /// Returns updated `entity_property_values`
     pub fn insert_at_in_class_schema_property_id(
-        mut entity_property_values: BTreeMap<
-            PropertyId,
-            StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-        >,
+        mut entity_property_values: BTreeMap<PropertyId, StoredPropertyValueOf<T>>,
         in_class_schema_property_id: PropertyId,
-        property_value: StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
-    ) -> BTreeMap<PropertyId, StoredPropertyValue<T::Hash, T::EntityId, T::Nonce>> {
+        property_value: StoredPropertyValueOf<T>,
+    ) -> BTreeMap<PropertyId, StoredPropertyValueOf<T>> {
         entity_property_values.insert(in_class_schema_property_id, property_value);
         entity_property_values
     }
 
     /// Ensure `Class` under given id exists, return corresponding one
-    pub fn ensure_known_class_id(
-        class_id: T::ClassId,
-    ) -> Result<Class<T::EntityId, T::ClassId, T::CuratorGroupId>, Error<T>> {
+    pub fn ensure_known_class_id(class_id: T::ClassId) -> Result<ClassOf<T>, Error<T>> {
         ensure!(
             <ClassById<T>>::contains_key(class_id),
             Error::<T>::ClassNotFound
@@ -2575,9 +2534,7 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensure `Entity` under given id exists, return corresponding one
-    pub fn ensure_known_entity_id(
-        entity_id: T::EntityId,
-    ) -> Result<Entity<T::ClassId, T::MemberId, T::Hash, T::EntityId, T::Nonce>, Error<T>> {
+    pub fn ensure_known_entity_id(entity_id: T::EntityId) -> Result<EntityOf<T>, Error<T>> {
         ensure!(
             <EntityById<T>>::contains_key(entity_id),
             Error::<T>::EntityNotFound

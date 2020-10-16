@@ -146,7 +146,7 @@ impl<
             // by an in-class index of a property.
             .ok_or(Error::<T>::UnknownEntityPropertyId)?
             .as_vec_property_value()
-            .map(|property_value_vec| property_value_vec.clone())
+            .cloned()
             // Ensure prop value under given class schema property id is vector
             .ok_or(Error::<T>::PropertyValueUnderGivenIndexIsNotAVector)
     }
