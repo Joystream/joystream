@@ -416,6 +416,9 @@ decl_module! {
             // Ensure max number of curators per group limit not reached yet
             curator_group.ensure_max_number_of_curators_limit_not_reached()?;
 
+            // Ensure curator under provided curator_id isn`t a CuratorGroup member yet
+            curator_group.ensure_curator_in_group_does_not_exist(&curator_id)?;
+
             //
             // == MUTATION SAFE ==
             //

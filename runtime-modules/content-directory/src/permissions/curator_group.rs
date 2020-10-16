@@ -95,6 +95,18 @@ impl<T: Trait> CuratorGroup<T> {
         Ok(())
     }
 
+    /// Ensure curator under given `curator_id` does not exist yet in `CuratorGroup`
+    pub fn ensure_curator_in_group_does_not_exist(
+        &self,
+        curator_id: &T::CuratorId,
+    ) -> Result<(), Error<T>> {
+        ensure!(
+            !self.get_curators().contains(curator_id),
+            Error::<T>::CuratorIsAlreadyAMemberOfGivenCuratorGroup
+        );
+        Ok(())
+    }
+
     /// Authorize curator, performing all checks to ensure curator can act
     pub fn perform_curator_in_group_auth(
         curator_id: &T::CuratorId,
