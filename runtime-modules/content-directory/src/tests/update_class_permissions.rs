@@ -38,7 +38,7 @@ fn update_class_permissions_success() {
         // Events number before tested call
         let number_of_events_before_call = System::events().len();
 
-        let maintainers =
+        let mut maintainers =
             BTreeSet::from_iter(vec![FIRST_CURATOR_GROUP_ID, SECOND_CURATOR_GROUP_ID]);
 
         // Update class permissions
@@ -78,10 +78,34 @@ fn update_class_permissions_success() {
             1
         );
 
+        maintainers = BTreeSet::from_iter(vec![SECOND_CURATOR_GROUP_ID]);
+
+        // Update class permissions
+        assert_ok!(update_class_permissions(
+            LEAD_ORIGIN,
+            FIRST_CLASS_ID,
+            None,
+            Some(true),
+            None,
+            Some(maintainers.clone())
+        ));
+
+        // Ensure number of classes maintained by curator groups updated succesfully.
+
+        assert_eq!(
+            curator_group_by_id(FIRST_CURATOR_GROUP_ID).get_number_of_classes_maintained(),
+            0
+        );
+
+        assert_eq!(
+            curator_group_by_id(SECOND_CURATOR_GROUP_ID).get_number_of_classes_maintained(),
+            1
+        );
+
         // Event checked
         assert_event_success(
             class_permissions_updated_event,
-            number_of_events_before_call + 1,
+            number_of_events_before_call + 2,
         );
     })
 }
