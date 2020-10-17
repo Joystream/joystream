@@ -143,16 +143,13 @@ export class InputParser {
         let value = customHandler && customHandler(schemaProperty, propertyValue)
         if (value === undefined) {
           value = createType('ParametrizedPropertyValue', {
-            InputPropertyValue: this.parsePropertyType(schemaProperty.property_type)
-              .toInputPropertyValue(propertyValue)
-              .toJSON(),
+            InputPropertyValue: this.parsePropertyType(schemaProperty.property_type).toInputPropertyValue(
+              propertyValue
+            ),
           })
         }
 
-        return {
-          in_class_index: schemaPropertyIndex,
-          value: value.toJSON(),
-        }
+        return { in_class_index: schemaPropertyIndex, value }
       })
   }
 
