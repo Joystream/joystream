@@ -11,12 +11,14 @@ import _ from 'lodash'
 type StateObject = {
   selectedAccountFilename: string
   apiUri: string
+  metadataCache: Record<string, any>
 }
 
 // State object default values
 const DEFAULT_STATE: StateObject = {
   selectedAccountFilename: '',
   apiUri: '',
+  metadataCache: {},
 }
 
 // State file path (relative to getAppDataPath())

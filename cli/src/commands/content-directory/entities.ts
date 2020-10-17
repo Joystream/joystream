@@ -1,8 +1,8 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import { displayTable } from '../../helpers/display'
-import _ from 'lodash'
+import { flags } from '@oclif/command'
 
-export default class ClassCommand extends ContentDirectoryCommandBase {
+export default class EntitiesCommand extends ContentDirectoryCommandBase {
   static description = 'Show entities list by class id or name.'
   static args = [
     {
@@ -19,22 +19,27 @@ export default class ClassCommand extends ContentDirectoryCommandBase {
     },
   ]
 
-  async run() {
-    const { className, properties } = this.parse(ClassCommand).args
-    const [classId, entityClass] = await this.classEntryByNameOrId(className)
-    const entityEntries = await this.getApi().entitiesByClassId(classId.toNumber())
-    const propertiesToInclude = properties && (properties as string).split(',')
+  static flags = {
+    filters: flags.string({
+      required: false,
+      description:
+        'Comma-separated filters, ie. title="Some video",channelId=3.' +
+        'Currently only the = operator is supported.' +
+        'When multiple filters are provided, only the entities that match all of them together will be displayed.',
+    }),
+  }
 
-    displayTable(
-      await Promise.all(
-        entityEntries.map(([id, entity]) => ({
-          'ID': id.toString(),
-          ..._.mapValues(this.parseEntityPropertyValues(entity, entityClass, propertiesToInclude), (v) =>
-            v.value.toString()
-          ),
-        }))
-      ),
-      3
-    )
+  async run() {
+    const { className, properties } = this.parse(EntitiesCommand).args
+    const { filters } = this.parse(EntitiesCommand).flags
+    const propsToInclude: string[] | undefined = (properties || undefined) && (properties as string).split(',')
+    const filtersArr: [string, string][] = filters
+      ? filters
+          .split(',')
+          .map((f) => f.split('='))
+          .map(([pName, pValue]) => [pName, pValue.replace(/^"(.+)"$/, '$1')])
+      : []
+
+    displayTable(await this.createEntityList(className, propsToInclude, filtersArr), 3)
   }
 }

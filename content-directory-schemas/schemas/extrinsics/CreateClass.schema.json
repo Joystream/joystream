@@ -9,11 +9,15 @@
   "properties": {
     "name": {
       "type": "string",
-      "description": "Name of this class. Required property."
+      "description": "Name of this class. Required property.",
+      "minLength": 1,
+      "maxLength": 49
     },
     "description": {
       "type": "string",
-      "description": "Description of this class."
+      "description": "Description of this class.",
+      "minLength": 1,
+      "maxLength": 500
     },
     "class_permissions": {
       "type": "object",

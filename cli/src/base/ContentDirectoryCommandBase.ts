@@ -2,14 +2,17 @@ import ExitCodes from '../ExitCodes'
 import AccountsCommandBase from './AccountsCommandBase'
 import { WorkingGroups, NamedKeyringPair } from '../Types'
 import { ReferenceProperty } from 'cd-schemas/types/extrinsics/AddClassSchema'
+import { FlattenRelations } from 'cd-schemas/types/utility'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
-import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity } from '@joystream/types/content-directory'
+import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity, EntityId } from '@joystream/types/content-directory'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import { Codec } from '@polkadot/types/types'
+import _ from 'lodash'
+import chalk from 'chalk'
 
 /**
- * Abstract base class for commands related to working groups
+ * Abstract base class for commands related to content directory
  */
 export default abstract class ContentDirectoryCommandBase extends AccountsCommandBase {
   // Use when lead access is required in given command
@@ -72,6 +75,9 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
 
   async promptForCuratorGroups(message = 'Select Curator Groups'): Promise<number[]> {
     const choices = await this.curatorGroupChoices()
+    if (!choices.length) {
+      return []
+    }
     const selectedIds = await this.simplePrompt({ message, type: 'checkbox', choices })
 
     return selectedIds
@@ -83,15 +89,24 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     return { className: selectedClass.name.toString(), sameOwner }
   }
 
-  async promptForCurator(message = 'Choose a Curator'): Promise<number> {
+  async promptForCurator(message = 'Choose a Curator', ids?: number[]): Promise<number> {
     const curators = await this.getApi().groupMembers(WorkingGroups.Curators)
+    const choices = curators
+      .filter((c) => (ids ? ids.includes(c.workerId.toNumber()) : true))
+      .map((c) => ({
+        name: `${c.profile.handle.toString()} (Worker ID: ${c.workerId})`,
+        value: c.workerId.toNumber(),
+      }))
+
+    if (!choices.length) {
+      this.warn('No Curators to choose from!')
+      this.exit(ExitCodes.InvalidInput)
+    }
+
     const selectedCuratorId = await this.simplePrompt({
       message,
       type: 'list',
-      choices: curators.map((c) => ({
-        name: `${c.profile.handle.toString()} (Worker ID: ${c.workerId})`,
-        value: c.workerId,
-      })),
+      choices,
     })
 
     return selectedCuratorId
@@ -129,7 +144,7 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     return group
   }
 
-  async getEntity(id: string | number): Promise<Entity> {
+  async getEntity(id: string | number, requiredClass?: string, ownerMemberId?: number): Promise<Entity> {
     if (typeof id === 'string') {
       id = parseInt(id)
     }
@@ -137,10 +152,85 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     const entity = await this.getApi().entityById(id)
 
     if (!entity) {
-      this.error('Invalid entity id!', { exit: ExitCodes.InvalidInput })
+      this.error(`Entity not found by id: ${id}`, { exit: ExitCodes.InvalidInput })
+    }
+
+    if (requiredClass) {
+      const [classId] = await this.classEntryByNameOrId(requiredClass)
+      if (entity.class_id.toNumber() !== classId.toNumber()) {
+        this.error(`Entity of id ${id} is not of class ${requiredClass}!`, { exit: ExitCodes.InvalidInput })
+      }
+    }
+
+    const { controller } = entity.entity_permissions
+    if (
+      ownerMemberId !== undefined &&
+      (!controller.isOfType('Member') || controller.asType('Member').toNumber() !== ownerMemberId)
+    ) {
+      this.error('Cannot execute this action for specified entity - invalid ownership.', {
+        exit: ExitCodes.AccessDenied,
+      })
     }
 
     return entity
+  }
+
+  async getAndParseKnownEntity<T>(id: string | number): Promise<FlattenRelations<T>> {
+    const entity = await this.getEntity(id)
+    return this.parseToKnownEntityJson<T>(entity)
+  }
+
+  async entitiesByClassAndOwner(classNameOrId: number | string, ownerMemberId?: number): Promise<[EntityId, Entity][]> {
+    const classId =
+      typeof classNameOrId === 'number' ? classNameOrId : (await this.classEntryByNameOrId(classNameOrId))[0].toNumber()
+
+    return (await this.getApi().entitiesByClassId(classId)).filter(([, entity]) => {
+      const controller = entity.entity_permissions.controller
+      return ownerMemberId !== undefined
+        ? controller.isOfType('Member') && controller.asType('Member').toNumber() === ownerMemberId
+        : true
+    })
+  }
+
+  async promptForEntityEntry(
+    message: string,
+    className: string,
+    propName?: string,
+    ownerMemberId?: number,
+    defaultId?: number
+  ): Promise<[EntityId, Entity]> {
+    const [classId, entityClass] = await this.classEntryByNameOrId(className)
+    const entityEntries = await this.entitiesByClassAndOwner(classId.toNumber(), ownerMemberId)
+
+    if (!entityEntries.length) {
+      this.log(`${message}:`)
+      this.error(`No choices available! Exiting...`, { exit: ExitCodes.UnexpectedException })
+    }
+
+    const choosenEntityId = await this.simplePrompt({
+      message,
+      type: 'list',
+      choices: entityEntries.map(([id, entity]) => {
+        const parsedEntityPropertyValues = this.parseEntityPropertyValues(entity, entityClass)
+        return {
+          name: (propName && parsedEntityPropertyValues[propName]?.value.toString()) || `ID:${id.toString()}`,
+          value: id.toString(), // With numbers there are issues with "default"
+        }
+      }),
+      default: defaultId?.toString(),
+    })
+
+    return entityEntries.find(([id]) => choosenEntityId === id.toString())!
+  }
+
+  async promptForEntityId(
+    message: string,
+    className: string,
+    propName?: string,
+    ownerMemberId?: number,
+    defaultId?: number
+  ): Promise<number> {
+    return (await this.promptForEntityEntry(message, className, propName, ownerMemberId, defaultId))[0].toNumber()
   }
 
   parseEntityPropertyValues(
@@ -162,5 +252,32 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
       }
       return columns
     }, {} as Record<string, { value: Codec; type: string }>)
+  }
+
+  async parseToKnownEntityJson<T>(entity: Entity): Promise<FlattenRelations<T>> {
+    const entityClass = (await this.classEntryByNameOrId(entity.class_id.toString()))[1]
+    return (_.mapValues(this.parseEntityPropertyValues(entity, entityClass), (v) =>
+      v.value.toJSON()
+    ) as unknown) as FlattenRelations<T>
+  }
+
+  async createEntityList(
+    className: string,
+    includedProps?: string[],
+    filters: [string, string][] = [],
+    ownerMemberId?: number
+  ): Promise<Record<string, string>[]> {
+    const [classId, entityClass] = await this.classEntryByNameOrId(className)
+    const entityEntries = await this.entitiesByClassAndOwner(classId.toNumber(), ownerMemberId)
+    const parsedEntities = (await Promise.all(
+      entityEntries.map(([id, entity]) => ({
+        'ID': id.toString(),
+        ..._.mapValues(this.parseEntityPropertyValues(entity, entityClass, includedProps), (v) =>
+          v.value.toJSON() === false && v.type !== 'Single<Bool>' ? chalk.grey('[not set]') : v.value.toString()
+        ),
+      }))
+    )) as Record<string, string>[]
+
+    return parsedEntities.filter((entity) => filters.every(([pName, pValue]) => entity[pName] === pValue))
   }
 }
