@@ -69,9 +69,9 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
     if (confirmed) {
       saveOutputJson(output, `${inputJson.title}Channel.json`, inputJson)
       const inputParser = InputParser.createWithKnownSchemas(this.getOriginalApi())
-      const updateOperation = await inputParser.createEntityUpdateOperation(inputJson, 'Channel', channelId)
+      const updateOperations = await inputParser.getEntityUpdateOperations(inputJson, 'Channel', channelId)
       this.log('Sending the extrinsic...')
-      await this.sendAndFollowNamedTx(account, 'contentDirectory', 'transaction', [actor, [updateOperation]])
+      await this.sendAndFollowNamedTx(account, 'contentDirectory', 'transaction', [actor, updateOperations])
     }
   }
 }
