@@ -43,8 +43,8 @@ export class RewardRelationship
   implements IRewardRelationship {}
 
 export const recurringRewardsTypes: RegistryTypes = {
-  RecipientId: 'u64',
-  RewardRelationshipId: 'u64',
+  RecipientId,
+  RewardRelationshipId,
   Recipient,
   RewardRelationship,
 }

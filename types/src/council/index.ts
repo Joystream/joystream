@@ -1,11 +1,12 @@
-import { Option, U8aFixed } from '@polkadot/types/codec'
+import { Option } from '@polkadot/types/codec'
 import { Vec } from '@polkadot/types'
-import { BlockNumber, Balance, Hash } from '@polkadot/types/interfaces'
+import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { u32, u128 } from '@polkadot/types/primitive'
 import { RegistryTypes } from '@polkadot/types/types'
 import { JoyStructDecorated } from '../JoyStruct'
 import { JoyEnum } from '../JoyEnum'
 import AccountId from '@polkadot/types/generic/AccountId'
+import { Hash } from '../common'
 
 export type ITransferableStake = {
   seat: Balance
@@ -52,7 +53,7 @@ export type ISealedVote = {
 export class SealedVote
   extends JoyStructDecorated({
     voter: AccountId,
-    commitment: U8aFixed, // Hash
+    commitment: Hash,
     stake: ElectionStake,
     vote: Option.with(AccountId),
   })

@@ -11,6 +11,7 @@ const baseConfig = require('./webpack.base.config');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const ENV = process.env.NODE_ENV || 'development';
+const IS_LIVE = !(process.env.IS_LIVE === false || process.env.IS_LIVE === 'false');
 const context = __dirname;
 const hasPublic = fs.existsSync(path.join(context, 'public'));
 
@@ -21,6 +22,7 @@ module.exports = merge(
     plugins: [
       new HtmlWebpackPlugin({
         IS_PROD: ENV === 'production',
+        IS_LIVE,
         PAGE_TITLE: 'Joystream Network Portal',
         inject: true,
         template: path.join(context, `${hasPublic ? 'public/' : ''}index.html`)

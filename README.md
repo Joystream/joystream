@@ -18,7 +18,7 @@ The following tools are required for building, testing and contributing to this 
 - [Rust](https://www.rust-lang.org/tools/install) toolchain - _required_
 - [nodejs](https://nodejs.org/) v12.x - _required_
 - [yarn classic](https://classic.yarnpkg.com/en/docs/install) package manager v1.22.x- _required_
-- [docker](https://www.docker.com/get-started) - _optional_
+- [docker](https://www.docker.com/get-started) and docker-compose - _optional_
 - [ansible](https://www.ansible.com/) - _optional_
 
 If you use VSCode as your code editor we recommend using the workspace [settings](devops/vscode/settings.json) for recommend eslint plugin to function properly.
@@ -94,7 +94,7 @@ You can also run your our own joystream-node:
 ```sh
 git checkout master
 WASM_BUILD_TOOLCHAIN=nightly-2020-05-23 cargo build --release
-./target/release/joystream-node -- --pruning archive --chain testnets/rome.json
+./target/release/joystream-node -- --pruning archive --chain testnets/joy-testnet-4.json
 ```
 
 Wait for the node to sync to the latest block, then change pioneer settings "remote node" option to "Local Node", or follow the link below:
@@ -104,6 +104,14 @@ http://localhost:3000/?rpc=ws://localhost:9944/
 Learn more about [joystream-node](node/README.md).
 
 A step by step guide to setup a full node and validator on the Joystream testnet, can be found [here](https://github.com/Joystream/helpdesk/tree/master/roles/validators).
+
+### Integration tests
+
+```bash
+docker-compose up -d
+DEBUG=* yarn workspace network-tests test-run src/scenarios/full.ts
+docker-compose down
+```
 
 ### Contributing
 

@@ -2,7 +2,8 @@
   "extends": "@polkadot/dev/config/tsconfig",
   "exclude": [
     "build/**/*",
-    "**/build/**/*"
+    "**/build/**/*",
+    "packages/joy-media/**"
   ],
   "compilerOptions": {
     "jsx": "react",
@@ -88,7 +89,9 @@
       "@polkadot/react-query": [ "packages/react-query/src" ],
       "@polkadot/react-query/*": [ "packages/react-query/src/*" ],
       "@polkadot/react-signer": [ "packages/react-signer/src" ],
-      "@polkadot/react-signer/*": [ "packages/react-signer/src/*" ]
+      "@polkadot/react-signer/*": [ "packages/react-signer/src/*" ],
+      "@polkadot/joy-tokenomics": [ "packages/joy-tokenomics/src" ],
+      "@polkadot/joy-tokenomics/*": [ "packages/joy-tokenomics/src/*" ]
     },
     "skipLibCheck": true,
     "typeRoots": [

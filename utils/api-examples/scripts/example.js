@@ -24,7 +24,7 @@ const script = async ({ api, hashing, keyring, types, util, joy }) => {
 
 if (typeof module === 'undefined') {
   // Pioneer js-toolbox
-  // Available globals [api, hashing, keyring, types, util]
+  // Available globals [api, hashing, keyring, types, util, joy]
   script({ api, hashing, keyring, types, util, joy })
 } else {
   // Node

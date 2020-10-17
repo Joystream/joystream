@@ -14,7 +14,7 @@ import React, { useCallback, useContext, useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { ApiPromise } from '@polkadot/api';
 import { getLedger } from '@polkadot/react-api';
-import { AddressInfo, AddressMini, AddressSmall, Badge, Button, ChainLock, CryptoType, Forget, Icon, IdentityIcon, LinkExternal, Menu, Popup, StatusContext, Tags } from '@polkadot/react-components';
+import { AddressInfo, AddressMini, AddressSmall, Badge, Button, CryptoType, Forget, Icon, IdentityIcon, LinkExternal, Menu, Popup, StatusContext, Tags } from '@polkadot/react-components';
 import { useAccountInfo, useApi, useCall, useToggle } from '@polkadot/react-hooks';
 import { Option } from '@polkadot/types';
 import keyring from '@polkadot/ui-keyring';
@@ -83,7 +83,7 @@ function Account ({ account: { address, meta }, className = '', delegation, filt
   });
   const multiInfos = useMultisigApprovals(address);
   const proxyInfo = useProxies(address);
-  const { flags: { isDevelopment, isExternal, isHardware, isInjected, isMultisig, isProxied }, genesisHash, identity, name: accName, onSetGenesisHash, tags } = useAccountInfo(address);
+  const { flags: { isDevelopment, isExternal, isHardware, isInjected, isMultisig, isProxied }, identity, name: accName, tags } = useAccountInfo(address);
   const [{ democracyUnlockTx }, setUnlockableIds] = useState<DemocracyUnlockable>({ democracyUnlockTx: null, ids: [] });
   const [vestingVestTx, setVestingTx] = useState<SubmittableExtrinsic<'promise'> | null>(null);
   const [isVisible, setIsVisible] = useState(true);
@@ -531,12 +531,13 @@ function Account ({ account: { address, meta }, className = '', delegation, filt
                 {t('Delegate democracy votes')}
               </Menu.Item>
             ])}
-            <ChainLock
+            {/* Joystream specific - disallow "Only this network" to avoid confusion */}
+            {/* <ChainLock
               className='accounts--network-toggle'
               genesisHash={genesisHash}
               isDisabled={api.isDevelopment}
               onChange={onSetGenesisHash}
-            />
+            /> */}
           </Menu>
         </Popup>
       </td>

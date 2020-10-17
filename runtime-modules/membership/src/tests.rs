@@ -332,7 +332,7 @@ fn set_root_account() {
 
             let membership = Members::membership(member_id);
 
-            assert_eq!(ALICE_ACCOUNT_ID, membership.root_account);
+            assert_eq!(ALICE_NEW_ROOT_ACCOUNT, membership.root_account);
 
             assert!(<crate::MemberIdsByRootAccountId<Test>>::get(&ALICE_ACCOUNT_ID).is_empty());
         });

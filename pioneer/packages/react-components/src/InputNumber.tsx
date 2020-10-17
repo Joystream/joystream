@@ -120,12 +120,12 @@ function inputToBn (input: string, si: SiDef | null, bitLength: BitLength, isZer
     }
 
     const div = new BN(input.replace(/\.\d*$/, ''));
-    const modString = input.replace(/^\d+\./, '');
-    const mod = new BN(modString);
+    // const modString = input.replace(/^\d+\./, '');
+    // const mod = new BN(modString);
 
     result = div
-      .mul(BN_TEN.pow(siPower))
-      .add(mod.mul(BN_TEN.pow(new BN(basePower + siUnitPower - modString.length))));
+      .mul(BN_TEN.pow(siPower));
+    // .add(mod.mul(BN_TEN.pow(new BN(basePower + siUnitPower - modString.length))));
   } else {
     result = new BN(input.replace(/[^\d]/g, ''))
       .mul(BN_TEN.pow(siPower));

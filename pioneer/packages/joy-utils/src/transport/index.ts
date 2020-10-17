@@ -7,6 +7,7 @@ import CouncilTransport from './council';
 import ValidatorsTransport from './validators';
 import WorkingGroupsTransport from './workingGroups';
 import { APIQueryCache } from './APIQueryCache';
+import TokenomicsTransport from './tokenomics';
 
 export default class Transport {
   protected api: ApiPromise;
@@ -19,6 +20,7 @@ export default class Transport {
   public contentWorkingGroup: ContentWorkingGroupTransport;
   public validators: ValidatorsTransport;
   public workingGroups: WorkingGroupsTransport;
+  public tokenomics: TokenomicsTransport
 
   constructor (api: ApiPromise) {
     this.api = api;
@@ -30,5 +32,6 @@ export default class Transport {
     this.contentWorkingGroup = new ContentWorkingGroupTransport(api, this.cacheApi, this.members);
     this.proposals = new ProposalsTransport(api, this.cacheApi, this.members, this.chain, this.council);
     this.workingGroups = new WorkingGroupsTransport(api, this.cacheApi, this.members);
+    this.tokenomics = new TokenomicsTransport(api, this.cacheApi, this.council, this.workingGroups);
   }
 }

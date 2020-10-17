@@ -13,6 +13,7 @@ import { Dropdown } from '@polkadot/react-components';
 
 type ProposalPreviewListProps = {
   bestNumber?: BlockNumber;
+  historical?: boolean;
 };
 
 const FilterContainer = styled.div`
@@ -22,6 +23,7 @@ const FilterContainer = styled.div`
   margin-bottom: 1.75rem;
 `;
 const StyledDropdown = styled(Dropdown)`
+  margin-left: auto;
   .dropdown {
     width: 200px;
   }
@@ -30,15 +32,17 @@ const PaginationBox = styled.div`
   margin-bottom: 1em;
 `;
 
-function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
+function ProposalPreviewList ({ bestNumber, historical }: ProposalPreviewListProps) {
   const { pathname } = useLocation();
   const transport = useTransport();
   const [activeFilter, setActiveFilter] = useState<ProposalStatusFilter>('All');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [proposalsBatch, error, loading] = usePromise<ProposalsBatch | undefined>(
-    () => transport.proposals.proposalsBatch(activeFilter, currentPage),
+    () => historical
+      ? transport.proposals.historicalProposalsBatch(activeFilter, currentPage)
+      : transport.proposals.proposalsBatch(activeFilter, currentPage),
     undefined,
-    [activeFilter, currentPage]
+    [activeFilter, currentPage, historical]
   );
 
   const filterOptions = proposalStatusFilters.map((filter) => ({
@@ -54,10 +58,12 @@ function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
   return (
     <Container className='Proposal' fluid>
       <FilterContainer>
-        <Button primary as={Link} to={`${pathname}/new`}>
-          <Icon name='add' />
-          New proposal
-        </Button>
+        { !historical && (
+          <Button primary as={Link} to={`${pathname}/new`}>
+            <Icon name='add' />
+            New proposal
+          </Button>
+        ) }
         <StyledDropdown
           label='Proposal state'
           options={filterOptions}
@@ -85,7 +91,7 @@ function ProposalPreviewList ({ bestNumber }: ProposalPreviewListProps) {
             ? (
               <Card.Group>
                 {proposalsBatch.proposals.map((prop: ParsedProposal, idx: number) => (
-                  <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} bestNumber={bestNumber} />
+                  <ProposalPreview key={`${prop.title}-${idx}`} proposal={prop} bestNumber={bestNumber} historical={historical}/>
                 ))}
               </Card.Group>
             )
