@@ -1,5 +1,6 @@
 import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import chalk from 'chalk'
+import ExitCodes from '../../ExitCodes'
 
 export default class AddCuratorGroupCommand extends ContentDirectoryCommandBase {
   static description = 'Remove existing Curator Group.'
@@ -18,8 +19,12 @@ export default class AddCuratorGroupCommand extends ContentDirectoryCommandBase 
     let { id } = this.parse(AddCuratorGroupCommand).args
     if (id === undefined) {
       id = await this.promptForCuratorGroup('Select Curator Group to remove')
-    } else {
-      await this.getCuratorGroup(id)
+    }
+
+    const group = await this.getCuratorGroup(id)
+
+    if (group.number_of_classes_maintained.toNumber() > 0) {
+      this.error('Cannot remove a group which has some maintained classes!', { exit: ExitCodes.InvalidInput })
     }
 
     await this.requestAccountDecoding(account)

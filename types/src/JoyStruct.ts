@@ -4,7 +4,8 @@ import { Codec, Constructor, Registry } from '@polkadot/types/types'
 export interface ExtendedStruct<FieldTypes extends Record<string, Constructor>> extends Struct<FieldTypes> {
   getField<FieldKey extends keyof FieldTypes>(key: FieldKey): InstanceType<FieldTypes[FieldKey]>
   getString<FieldKey extends keyof FieldTypes>(key: FieldKey): string
-  cloneValues(): { [k in keyof FieldTypes]: FieldTypes[k] }
+  cloneValues(): { [k in keyof FieldTypes]: InstanceType<FieldTypes[k]> }
+  typeDefs: FieldTypes
 }
 
 // Those getters are automatically added via Object.defineProperty when using Struct.with
@@ -27,12 +28,16 @@ export interface StructConstructor<
 export type ExtendedStructConstructor<FieldTypes extends Record<string, Constructor>> = StructConstructor<
   FieldTypes,
   ExtendedStruct<FieldTypes>
->
+> & {
+  typeDefs: FieldTypes
+}
 
 export type ExtendedStructDecoratedConstructor<FieldTypes extends Record<string, Constructor>> = StructConstructor<
   FieldTypes,
   ExtendedStructDecorated<FieldTypes>
->
+> & {
+  typeDefs: FieldTypes
+}
 
 // Helper for creating extended Struct type with TS-compatible interface
 // It's called JoyStructCustom, because eventually we'd want to migrate all structs to JoyStructDecorated,
@@ -42,6 +47,8 @@ export function JoyStructCustom<FieldTypes extends Record<string, Constructor>>(
   fields: FieldTypes
 ): ExtendedStructConstructor<FieldTypes> {
   return class JoyStructObject extends Struct.with(fields) {
+    static typeDefs = fields
+    typeDefs = JoyStructObject.typeDefs
     // eslint-disable-next-line no-useless-constructor
     constructor(registry: Registry, value?: { [k in keyof FieldTypes]: InstanceType<FieldTypes[k]> }) {
       super(registry, value)
@@ -56,14 +63,14 @@ export function JoyStructCustom<FieldTypes extends Record<string, Constructor>>(
     }
 
     // TODO: Check why would this ever be needed
-    cloneValues(): { [k in keyof FieldTypes]: FieldTypes[k] } {
+    cloneValues(): { [k in keyof FieldTypes]: InstanceType<FieldTypes[k]> } {
       const objectClone = {} as Partial<{ [k in keyof FieldTypes]: Codec }>
 
       super.forEach((v, k) => {
         objectClone[k] = v // shallow copy acceptable ?
       })
 
-      return (objectClone as unknown) as { [k in keyof FieldTypes]: FieldTypes[k] }
+      return objectClone as { [k in keyof FieldTypes]: InstanceType<FieldTypes[k]> }
     }
   }
 }

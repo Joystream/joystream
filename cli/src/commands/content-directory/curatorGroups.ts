@@ -8,14 +8,18 @@ export default class CuratorGroupsCommand extends ContentDirectoryCommandBase {
   async run() {
     const groups = await this.getApi().availableCuratorGroups()
 
-    displayTable(
-      groups.map(([id, group]) => ({
-        'ID': id.toString(),
-        'Status': group.active.valueOf() ? 'Active' : 'Inactive',
-        'Classes maintained': group.number_of_classes_maintained.toNumber(),
-        'Members': group.curators.toArray().length,
-      })),
-      5
-    )
+    if (groups.length) {
+      displayTable(
+        groups.map(([id, group]) => ({
+          'ID': id.toString(),
+          'Status': group.active.valueOf() ? 'Active' : 'Inactive',
+          'Classes maintained': group.number_of_classes_maintained.toNumber(),
+          'Members': group.curators.toArray().length,
+        })),
+        5
+      )
+    } else {
+      this.log('No Curator Groups available!')
+    }
   }
 }

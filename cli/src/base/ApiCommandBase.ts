@@ -2,7 +2,7 @@ import ExitCodes from '../ExitCodes'
 import { CLIError } from '@oclif/errors'
 import StateAwareCommandBase from './StateAwareCommandBase'
 import Api from '../Api'
-import { getTypeDef, Option, Tuple, Bytes } from '@polkadot/types'
+import { getTypeDef, Option, Tuple, Bytes, TypeRegistry } from '@polkadot/types'
 import { Registry, Codec, CodecArg, TypeDef, TypeDefInfo, Constructor } from '@polkadot/types/types'
 
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
@@ -16,6 +16,7 @@ import { createParamOptions } from '../helpers/promptOptions'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { DistinctQuestion } from 'inquirer'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
+import { DispatchError } from '@polkadot/types/interfaces/system'
 
 class ExtrinsicFailedError extends Error {}
 
@@ -51,7 +52,17 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       this.warn("You haven't provided a node/endpoint for the CLI to connect to yet!")
       apiUri = await this.promptForApiUri()
     }
-    this.api = await Api.create(apiUri)
+
+    const { metadataCache } = this.getPreservedState()
+    this.api = await Api.create(apiUri, metadataCache)
+
+    const { genesisHash, runtimeVersion } = this.getOriginalApi()
+    const metadataKey = `${genesisHash}-${runtimeVersion.specVersion}`
+    if (!metadataCache[metadataKey]) {
+      // Add new entry to metadata cache
+      metadataCache[metadataKey] = await this.getOriginalApi().runtimeMetadata.toJSON()
+      await this.setPreservedState({ metadataCache })
+    }
   }
 
   async promptForApiUri(): Promise<string> {
@@ -405,11 +416,26 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
         if (result.status.isInBlock) {
           unsubscribe()
           result.events
-            .filter(({ event: { section } }): boolean => section === 'system')
-            .forEach(({ event: { method } }): void => {
-              if (method === 'ExtrinsicFailed') {
-                reject(new ExtrinsicFailedError('Extrinsic execution error!'))
-              } else if (method === 'ExtrinsicSuccess') {
+            .filter(({ event }) => event.section === 'system')
+            .forEach(({ event }) => {
+              if (event.method === 'ExtrinsicFailed') {
+                const dispatchError = event.data[0] as DispatchError
+                let errorMsg = dispatchError.toString()
+                if (dispatchError.isModule) {
+                  try {
+                    // Need to assert that registry is of TypeRegistry type, since Registry intefrace
+                    // seems outdated and doesn't include DispatchErrorModule as possible argument for "findMetaError"
+                    const { name, documentation } = (this.getOriginalApi().registry as TypeRegistry).findMetaError(
+                      dispatchError.asModule
+                    )
+                    errorMsg = `${name} (${documentation})`
+                  } catch (e) {
+                    // This probably means we don't have this error in the metadata
+                    // In this case - continue (we'll just display dispatchError.toString())
+                  }
+                }
+                reject(new ExtrinsicFailedError(`Extrinsic execution error: ${errorMsg}`))
+              } else if (event.method === 'ExtrinsicSuccess') {
                 resolve()
               }
             })
@@ -427,7 +453,7 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   async sendAndFollowTx(
     account: KeyringPair,
     tx: SubmittableExtrinsic<'promise'>,
-    warnOnly = true // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
+    warnOnly = false // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
   ): Promise<void> {
     try {
       await this.sendExtrinsic(account, tx)
