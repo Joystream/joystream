@@ -27,9 +27,9 @@ function errorHandler(response, err, code) {
   response.status(err.code || code || 500).send({ message: err.toString() })
 }
 
-module.exports = function (storage, runtime) {
+module.exports = function (storage, runtime, ipfsHttpGatewayUrl) {
   // Creat the IPFS HTTP Gateway proxy middleware
-  const proxy = ipfsProxy.createProxy(storage)
+  const proxy = ipfsProxy.createProxy(storage, ipfsHttpGatewayUrl)
 
   const doc = {
     // parameters for all operations in this path

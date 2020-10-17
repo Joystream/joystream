@@ -1,4 +1,4 @@
-/* global api, hashing, keyring, types, util, window */
+/* global api, hashing, keyring, types, util, joy, window */
 
 // run this script with:
 // yarn script injectDataObjects
@@ -53,7 +53,7 @@ const script = async ({ api, keyring }) => {
 
 if (typeof module === 'undefined') {
   // Pioneer js-toolbox
-  script({ api, hashing, keyring, types, util })
+  script({ api, hashing, keyring, types, util, joy })
 } else {
   // Node
   module.exports = script

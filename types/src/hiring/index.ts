@@ -1,7 +1,6 @@
-import { Null, u128, u64, u32, Option, Text } from '@polkadot/types'
-import { BTreeSet } from '@polkadot/types/codec'
+import { Null, u128, u64, u32, Option, Text, BTreeSet } from '@polkadot/types'
 import { BlockNumber, Balance } from '@polkadot/types/interfaces'
-import { JoyEnum, JoyStructDecorated } from '../common'
+import { JoyBTreeSet, JoyEnum, JoyStructDecorated } from '../common'
 import { StakeId } from '../stake'
 
 import { GenericJoyStreamRoleSchema } from './schemas/role.schema.typings'
@@ -174,7 +173,7 @@ export type ActiveOpeningStageVariantType = {
 }
 export class ActiveOpeningStageVariant extends JoyStructDecorated({
   stage: ActiveOpeningStage,
-  applications_added: BTreeSet.with(ApplicationId),
+  applications_added: JoyBTreeSet(ApplicationId),
   active_application_count: u32,
   unstaking_application_count: u32,
   deactivated_application_count: u32,
@@ -335,8 +334,8 @@ export class Application
   implements IApplication {}
 
 export const hiringTypes: RegistryTypes = {
-  ApplicationId: 'u64',
-  OpeningId: 'u64',
+  ApplicationId,
+  OpeningId,
   Application,
   ApplicationStage,
   ActivateOpeningAt,

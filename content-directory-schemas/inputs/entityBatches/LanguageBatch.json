@@ -1,0 +1,8 @@
+{
+  "className": "Language",
+  "entries": [
+    { "code": "EN", "name": "English" },
+    { "code": "RU", "name": "Russian" },
+    { "code": "DE", "name": "German" }
+  ]
+}

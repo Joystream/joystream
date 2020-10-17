@@ -55,7 +55,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'updateRewardAmount', [
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'updateRewardAmount', [
       workerId,
       newRewardValue,
     ])

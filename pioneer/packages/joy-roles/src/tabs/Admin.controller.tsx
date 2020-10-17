@@ -601,8 +601,10 @@ const NewOpening = (props: NewOpeningProps) => {
   };
 
   const onChangeExactBlock = (e: any, { value }: InputOnChangeData) => {
-    setExactBlock(typeof value === 'number' ? value : (parseInt(value) || 0));
-    setStart(createType('ActivateOpeningAt', { ExactBlock: value }));
+    const valueInt = typeof value === 'number' ? value : (parseInt(value) || 0);
+
+    setExactBlock(valueInt);
+    setStart(createType('ActivateOpeningAt', { ExactBlock: valueInt }));
   };
 
   const [policy, setPolicy] = useState(props.desc.policy);
@@ -790,7 +792,7 @@ const OpeningView = (props: OpeningViewProps) => {
     case OpeningState.InReview:
       CTAs = (
         <Container align='right'>
-          <Button onClick={() => { props.controller.acceptCuratorApplications(address, props.opening.curatorId, selected.sort()); }}>Accept curator applications</Button>
+          <Button onClick={() => { props.controller.acceptCuratorApplications(address, props.opening.curatorId, selected); }}>Accept curator applications</Button>
         </Container>
       );
   }

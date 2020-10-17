@@ -13,7 +13,9 @@
     "baseUrl": ".",
     "paths": {
       "@polkadot/types/augment": ["../types/augment-codec/augment-types.ts"],
-    }
+    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*"

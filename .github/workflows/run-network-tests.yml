@@ -1,25 +1,165 @@
 name: run-network-tests
 on:
   pull_request:
-    types: [labeled]
+    types: [opened, labeled, synchronize]
+
   workflow_dispatch:
+    # TODO: add an input so dispatcher can specify a list of tests to run,
+    # composed of the job ids separated by `:`
+    # for eg.
+    #   'network_tests_1:network_tests_3'
+    #   'network_tests_2'
+    # inputs:
+    #   test_to_run:
+    #     description: 'Tests to run'
+    #     required: false
+    #     default: 'all'
 
 jobs:
-  run_ansible_tests:
-    if: github.event.label.name == 'run-network-tests' || github.event.action == null
-    name: run network tests using ansible
+  build_images:
+    name: Build joystream/node
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [12.x]
+    outputs:
+      use_artifact: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
     steps:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: ${{ matrix.node-version }}
-      - name: install toolchain
-        run: curl https://getsubstrate.io -sSf | bash -s -- --fast
-      - name: ansible build and tests
+          node-version: '12.x'
+
+      - id: compute_shasum
+        name: Compute runtime code shasum
         run: |
-          cd ./devops/ansible
-          ansible-playbook -i hosts build-and-run-tests-single-node-playbook.yml --become -v
+          export RUNTIME_CODE_SHASUM=`scripts/runtime-code-shasum.sh`
+          echo "::set-output name=shasum::${RUNTIME_CODE_SHASUM}"
+
+      - name: Setup cache directory
+        run: mkdir ~/docker-images
+
+      - name: Cache docker images
+        uses: actions/cache@v2
+        env:
+          cache-name: joystream-node-docker
+        with:
+          path: ~/docker-images
+          key: ${{ env.cache-name }}-${{ steps.compute_shasum.outputs.shasum }}
+
+      - name: Check if we have cached image
+        continue-on-error: true
+        run: |
+          if [ -f ~/docker-images/joystream-node-docker-image.tar.gz ]; then
+            docker load --input ~/docker-images/joystream-node-docker-image.tar.gz
+            cp ~/docker-images/joystream-node-docker-image.tar.gz .
+          fi
+
+      - name: Check if we have pre-built image on Dockerhub
+        continue-on-error: true
+        run: |
+          if ! [ -f joystream-node-docker-image.tar.gz ]; then
+            docker pull joystream/node:${{ steps.compute_shasum.outputs.shasum }}
+            docker image tag joystream/node:${{ steps.compute_shasum.outputs.shasum }} joystream/node:latest
+            docker save --output joystream-node-docker-image.tar joystream/node:latest
+            gzip joystream-node-docker-image.tar
+            cp joystream-node-docker-image.tar.gz ~/docker-images/
+          fi
+
+      - name: Build new joystream/node image
+        run: |
+          if ! [ -f joystream-node-docker-image.tar.gz ]; then
+            docker build . --file joystream-node.Dockerfile --tag joystream/node
+            docker save --output joystream-node-docker-image.tar joystream/node
+            gzip joystream-node-docker-image.tar
+            cp joystream-node-docker-image.tar.gz ~/docker-images/
+          fi
+
+      - name: Save joystream/node image to Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
+          path: joystream-node-docker-image.tar.gz
+  
+  network_tests_1:
+    name: Network Integration Runtime Tests
+    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests')
+    needs: build_images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - name: Get artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ needs.build_images.outputs.use_artifact }}
+      - name: Install artifacts
+        run: |
+          docker load --input joystream-node-docker-image.tar.gz
+          docker images
+      - name: Install packages and dependencies
+        run: yarn install --frozen-lockfile
+      - name: Ensure tests are runnable
+        run: yarn workspace network-tests build
+      - name: Execute network tests
+        run: tests/network-tests/run-tests.sh
+
+  network_tests_2:
+    name: Content Directory Initialization
+    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests')
+    needs: build_images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - name: Get artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ needs.build_images.outputs.use_artifact }}
+      - name: Install artifacts
+        run: |
+          docker load --input joystream-node-docker-image.tar.gz
+          docker images
+      - name: Install packages and dependencies
+        run: yarn install --frozen-lockfile
+      - name: Ensure tests are runnable
+        run: yarn workspace cd-schemas checks --quiet
+      - name: Start chain
+        run: docker-compose up -d
+      - name: Initialize the content directory
+        run: yarn workspace cd-schemas initialize:dev
+
+  network_tests_3:
+    name: Storage Node Tests
+    if: contains(github.event.pull_request.labels.*.name, 'run-network-tests')
+    needs: build_images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - name: Get artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ needs.build_images.outputs.use_artifact }}
+      - name: Install artifacts
+        run: |
+          docker load --input joystream-node-docker-image.tar.gz
+          docker images
+      - name: Install packages and dependencies
+        run: |
+          yarn install --frozen-lockfile
+          yarn workspace storage-node build
+      - name: Build storage node
+        run: yarn workspace storage-node build
+      - name: Start Services
+        run: docker-compose --file docker-compose-with-storage.yml up -d
+      - name: Add development storage node and initialize content directory
+        run: DEBUG=* yarn storage-cli dev-init
+      - name: Wait for storage-node to publish identity
+        run: sleep 90
+        # Better would be poll `http://localhost:3001/discover/v0/1` until we get 200 Response
+      - name: Upload a file
+        run: DEBUG=joystream:* yarn storage-cli upload ./pioneer/packages/apps/public/images/default-thumbnail.png 1 0

@@ -1,7 +1,6 @@
 {
-    "MemoText": "Text",
     "Credential": "u64",
-    "CredentialSet": "Vec<Credential>",
+    "CredentialSet": "BTreeSet<Credential>",
     "BlockAndTime": {
         "block": "u32",
         "time": "u64"
@@ -14,7 +13,8 @@
     },
     "WorkingGroup": {
         "_enum": [
-            "Storage"
+            "Storage",
+            "Content"
         ]
     },
     "SlashingTerms": {
@@ -27,6 +27,9 @@
         "max_count": "u16",
         "max_percent_pts_per_time": "u16"
     },
+    "MemoText": "Text",
+    "Address": "AccountId",
+    "LookupSource": "AccountId",
     "EntryMethod": {
         "_enum": {
             "Paid": "u64",
@@ -67,7 +70,7 @@
     },
     "SealedVote": {
         "voter": "GenericAccountId",
-        "commitment": "[u8;32]",
+        "commitment": "Hash",
         "stake": "ElectionStake",
         "vote": "Option<GenericAccountId>"
     },
@@ -204,8 +207,8 @@
         "created_at": "u32",
         "total_minted": "u128"
     },
-    "MintBalanceOf": "Balance",
-    "BalanceOfMint": "Balance",
+    "MintBalanceOf": "u128",
+    "BalanceOfMint": "u128",
     "NextAdjustment": {
         "adjustment": "AdjustOnInterval",
         "at_block": "u32"
@@ -228,8 +231,8 @@
         "total_reward_missed": "u128"
     },
     "RewardRelationship": {
-        "recipient": "u64",
-        "mint_id": "u64",
+        "recipient": "RecipientId",
+        "mint_id": "MintId",
         "account": "GenericAccountId",
         "amount_per_payout": "u128",
         "next_payment_at_block": "Option<u32>",
@@ -240,11 +243,11 @@
     "ApplicationId": "u64",
     "OpeningId": "u64",
     "Application": {
-        "opening_id": "u64",
+        "opening_id": "OpeningId",
         "application_index_in_opening": "u32",
         "add_to_opening_in_block": "u32",
-        "active_role_staking_id": "Option<u64>",
-        "active_application_staking_id": "Option<u64>",
+        "active_role_staking_id": "Option<StakeId>",
+        "active_application_staking_id": "Option<StakeId>",
         "stage": "ApplicationStage",
         "human_readable_text": "Text"
     },
@@ -290,7 +293,7 @@
     },
     "ActiveOpeningStageVariant": {
         "stage": "ActiveOpeningStage",
-        "applications_added": "Vec<HiringApplicationId>",
+        "applications_added": "Vec<ApplicationId>",
         "active_application_count": "u32",
         "unstaking_application_count": "u32",
         "deactivated_application_count": "u32"
@@ -350,144 +353,6 @@
             "Exact"
         ]
     },
-    "ClassId": "u64",
-    "EntityId": "u64",
-    "Class": {
-        "id": "ClassId",
-        "properties": "Vec<Property>",
-        "schemas": "Vec<ClassSchema>",
-        "name": "Text",
-        "description": "Text"
-    },
-    "Entity": {
-        "id": "EntityId",
-        "class_id": "ClassId",
-        "in_class_schema_indexes": "Vec<u16>"
-    },
-    "ClassSchema": {
-        "properties": "Vec<u16>"
-    },
-    "Property": {
-        "prop_type": "PropertyType",
-        "required": "bool",
-        "name": "Text",
-        "description": "Text"
-    },
-    "PropertyType": {
-        "_enum": {
-            "None": "Null",
-            "Bool": "Null",
-            "Uint16": "Null",
-            "Uint32": "Null",
-            "Uint64": "Null",
-            "Int16": "Null",
-            "Int32": "Null",
-            "Int64": "Null",
-            "Text": "u16",
-            "Internal": "u64",
-            "BoolVec": "u16",
-            "Uint16Vec": "u16",
-            "Uint32Vec": "u16",
-            "Uint64Vec": "u16",
-            "Int16Vec": "u16",
-            "Int32Vec": "u16",
-            "Int64Vec": "u16",
-            "TextVec": "(u16,u16)",
-            "InternalVec": "(u16,ClassId)"
-        }
-    },
-    "PropertyValue": {
-        "_enum": {
-            "None": "Null",
-            "Bool": "bool",
-            "Uint16": "u16",
-            "Uint32": "u32",
-            "Uint64": "u64",
-            "Int16": "i16",
-            "Int32": "i32",
-            "Int64": "i64",
-            "Text": "Text",
-            "Internal": "u64",
-            "BoolVec": "Vec<bool>",
-            "Uint16Vec": "Vec<u16>",
-            "Uint32Vec": "Vec<u32>",
-            "Uint64Vec": "Vec<u64>",
-            "Int16Vec": "Vec<i16>",
-            "Int32Vec": "Vec<i32>",
-            "Int64Vec": "Vec<i64>",
-            "TextVec": "Vec<Text>",
-            "InternalVec": "Vec<EntityId>"
-        }
-    },
-    "ClassPropertyValue": {
-        "in_class_index": "u16",
-        "value": "PropertyValue"
-    },
-    "EntityPermissions": {
-        "update": "CredentialSet",
-        "maintainer_has_all_permissions": "bool"
-    },
-    "ReferenceConstraint": {
-        "_enum": {
-            "NoReferencingAllowed": "Null",
-            "NoConstraint": "Null",
-            "Restricted": "Vec<PropertyOfClass>"
-        }
-    },
-    "ClassPermissionsType": {
-        "entity_permissions": "EntityPermissions",
-        "entities_can_be_created": "bool",
-        "add_schemas": "CredentialSet",
-        "create_entities": "CredentialSet",
-        "reference_constraint": "ReferenceConstraint",
-        "admins": "CredentialSet",
-        "last_permissions_update": "u32"
-    },
-    "Operation": {
-        "with_credential": "Option<Credential>",
-        "as_entity_maintainer": "bool",
-        "operation_type": "OperationType"
-    },
-    "OperationType": {
-        "_enum": {
-            "CreateEntity": "CreateEntity",
-            "UpdatePropertyValues": "UpdatePropertyValues",
-            "AddSchemaSupportToEntity": "AddSchemaSupportToEntity"
-        }
-    },
-    "CreateEntity": {
-        "class_id": "ClassId"
-    },
-    "UpdatePropertyValues": {
-        "entity_id": "ParametrizedEntity",
-        "parametrized_property_values": "Vec<ParametrizedClassPropertyValue>"
-    },
-    "AddSchemaSupportToEntity": {
-        "entity_id": "ParametrizedEntity",
-        "schema_id": "u16",
-        "parametrized_property_values": "Vec<ParametrizedClassPropertyValue>"
-    },
-    "ParametrizedEntity": {
-        "_enum": {
-            "InternalEntityJustAdded": "u32",
-            "ExistingEntity": "u64"
-        }
-    },
-    "ParametrizedClassPropertyValue": {
-        "in_class_index": "u16",
-        "value": "ParametrizedPropertyValue"
-    },
-    "ParametrizedPropertyValue": {
-        "_enum": {
-            "PropertyValue": "PropertyValue",
-            "InternalEntityJustAdded": "u32",
-            "InternalEntityVec": "Vec<ParametrizedEntity>"
-        }
-    },
-    "PropertyOfClass": {
-        "class_id": "ClassId",
-        "property_index": "u16"
-    },
     "ChannelId": "u64",
     "CuratorId": "u64",
     "CuratorOpeningId": "u64",
@@ -537,7 +402,7 @@
     },
     "Curator": {
         "role_account": "GenericAccountId",
-        "reward_relationship": "Option<u64>",
+        "reward_relationship": "Option<RewardRelationshipId>",
         "role_stake_profile": "Option<CuratorRoleStakeProfile>",
         "stage": "CuratorRoleStage",
         "induction": "CuratorInduction",
@@ -547,17 +412,17 @@
         "role_account": "GenericAccountId",
         "curator_opening_id": "CuratorOpeningId",
         "member_id": "MemberId",
-        "application_id": "HiringApplicationId"
+        "application_id": "ApplicationId"
     },
     "CuratorOpening": {
-        "opening_id": "u64",
+        "opening_id": "OpeningId",
         "curator_applications": "Vec<CuratorApplicationId>",
         "policy_commitment": "OpeningPolicyCommitment"
     },
     "Lead": {
         "member_id": "MemberId",
         "role_account": "GenericAccountId",
-        "reward_relationship": "Option<u64>",
+        "reward_relationship": "Option<RewardRelationshipId>",
         "inducted": "u32",
         "stage": "LeadRoleState"
     },
@@ -588,10 +453,10 @@
             "Curator": "CuratorId"
         }
     },
-    "CuratorApplicationIdToCuratorIdMap": "BTreeMap<HiringApplicationId,CuratorId>",
-    "CuratorApplicationIdSet": "Vec<CuratorApplicationId>",
+    "CuratorApplicationIdToCuratorIdMap": "BTreeMap<ApplicationId,CuratorId>",
+    "CuratorApplicationIdSet": "BTreeSet<CuratorApplicationId>",
     "CuratorRoleStakeProfile": {
-        "stake_id": "u64",
+        "stake_id": "StakeId",
         "termination_unstaking_period": "Option<u32>",
         "exit_unstaking_period": "Option<u32>"
     },
@@ -630,22 +495,22 @@
     "RationaleText": "Bytes",
     "ApplicationOf": {
         "role_account_id": "GenericAccountId",
-        "opening_id": "u64",
+        "opening_id": "OpeningId",
         "member_id": "MemberId",
-        "application_id": "HiringApplicationId"
+        "application_id": "ApplicationId"
     },
-    "ApplicationIdSet": "BTreeSet<HiringApplicationId>",
-    "ApplicationIdToWorkerIdMap": "BTreeMap<HiringApplicationId,WorkerId>",
+    "ApplicationIdSet": "BTreeSet<ApplicationId>",
+    "ApplicationIdToWorkerIdMap": "BTreeMap<ApplicationId,WorkerId>",
     "WorkerId": "u64",
     "WorkerOf": {
         "member_id": "MemberId",
         "role_account_id": "GenericAccountId",
-        "reward_relationship": "Option<u64>",
+        "reward_relationship": "Option<RewardRelationshipId>",
         "role_stake_profile": "Option<RoleStakeProfile>"
     },
     "OpeningOf": {
-        "hiring_opening_id": "u64",
-        "applications": "Vec<HiringApplicationId>",
+        "hiring_opening_id": "OpeningId",
+        "applications": "Vec<ApplicationId>",
         "policy_commitment": "WorkingGroupOpeningPolicyCommitment",
         "opening_type": "OpeningType"
     },
@@ -677,7 +542,7 @@
         "exit_role_stake_unstaking_period": "Option<u32>"
     },
     "RoleStakeProfile": {
-        "stake_id": "u64",
+        "stake_id": "StakeId",
         "termination_unstaking_period": "Option<u32>",
         "exit_unstaking_period": "Option<u32>"
     },
@@ -699,6 +564,7 @@
         "owner": "MemberId",
         "added_at": "BlockAndTime",
         "type_id": "DataObjectTypeId",
+        "size": "u64",
         "liaison": "StorageProviderId",
         "liaison_judgement": "LiaisonJudgement",
         "ipfs_content_id": "Text"
@@ -743,7 +609,7 @@
             "SetValidatorCount": "u32",
             "SetStorageRoleParameters": "RoleParameters",
             "AddWorkingGroupLeaderOpening": "AddOpeningParameters",
-            "BeginReviewWorkingGroupLeaderApplication": "(u64,WorkingGroup)",
+            "BeginReviewWorkingGroupLeaderApplication": "(OpeningId,WorkingGroup)",
             "FillWorkingGroupLeaderOpening": "FillOpeningParameters",
             "SetWorkingGroupMintCapacity": "(Balance,WorkingGroup)",
             "DecreaseWorkingGroupLeaderStake": "(WorkerId,Balance,WorkingGroup)",
@@ -764,7 +630,7 @@
             "SetValidatorCount": "u32",
             "SetStorageRoleParameters": "RoleParameters",
             "AddWorkingGroupLeaderOpening": "AddOpeningParameters",
-            "BeginReviewWorkingGroupLeaderApplication": "(u64,WorkingGroup)",
+            "BeginReviewWorkingGroupLeaderApplication": "(OpeningId,WorkingGroup)",
             "FillWorkingGroupLeaderOpening": "FillOpeningParameters",
             "SetWorkingGroupMintCapacity": "(Balance,WorkingGroup)",
             "DecreaseWorkingGroupLeaderStake": "(WorkerId,Balance,WorkingGroup)",
@@ -820,8 +686,8 @@
         "working_group": "WorkingGroup"
     },
     "FillOpeningParameters": {
-        "opening_id": "u64",
-        "successful_application_id": "HiringApplicationId",
+        "opening_id": "OpeningId",
+        "successful_application_id": "ApplicationId",
         "reward_policy": "Option<RewardPolicy>",
         "working_group": "WorkingGroup"
     },
@@ -832,7 +698,7 @@
         "working_group": "WorkingGroup"
     },
     "ActiveStake": {
-        "stake_id": "u64",
+        "stake_id": "StakeId",
         "source_account_id": "GenericAccountId"
     },
     "Finalized": {
@@ -862,6 +728,229 @@
         }
     },
     "SetLeadParams": "(MemberId,GenericAccountId)",
-    "Address": "AccountId",
-    "LookupSource": "AccountId"
+    "Nonce": "u64",
+    "EntityId": "u64",
+    "ClassId": "u64",
+    "CuratorGroupId": "u64",
+    "VecMaxLength": "u16",
+    "TextMaxLength": "u16",
+    "HashedTextMaxLength": "Option<u16>",
+    "PropertyId": "u16",
+    "SchemaId": "u16",
+    "SameController": "bool",
+    "ClassPermissions": {
+        "any_member": "bool",
+        "entity_creation_blocked": "bool",
+        "all_entity_property_values_locked": "bool",
+        "maintainers": "Vec<CuratorGroupId>"
+    },
+    "PropertyTypeSingle": {
+        "_enum": {
+            "Bool": "Null",
+            "Uint16": "Null",
+            "Uint32": "Null",
+            "Uint64": "Null",
+            "Int16": "Null",
+            "Int32": "Null",
+            "Int64": "Null",
+            "Text": "TextMaxLength",
+            "Hash": "HashedTextMaxLength",
+            "Reference": "(ClassId,SameController)"
+        }
+    },
+    "PropertyTypeVector": {
+        "vec_type": "PropertyTypeSingle",
+        "max_length": "VecMaxLength"
+    },
+    "PropertyType": {
+        "_enum": {
+            "Single": "PropertyTypeSingle",
+            "Vector": "PropertyTypeVector"
+        }
+    },
+    "PropertyLockingPolicy": {
+        "is_locked_from_maintainer": "bool",
+        "is_locked_from_controller": "bool"
+    },
+    "Property": {
+        "property_type": "PropertyType",
+        "required": "bool",
+        "unique": "bool",
+        "name": "Text",
+        "description": "Text",
+        "locking_policy": "PropertyLockingPolicy"
+    },
+    "Schema": {
+        "properties": "Vec<PropertyId>",
+        "is_active": "bool"
+    },
+    "Class": {
+        "class_permissions": "ClassPermissions",
+        "properties": "Vec<Property>",
+        "schemas": "Vec<Schema>",
+        "name": "Text",
+        "description": "Text",
+        "maximum_entities_count": "EntityId",
+        "current_number_of_entities": "EntityId",
+        "default_entity_creation_voucher_upper_bound": "EntityId"
+    },
+    "EntityController": {
+        "_enum": {
+            "Maintainers": "Null",
+            "Member": "MemberId",
+            "Lead": "Null"
+        }
+    },
+    "EntityPermissions": {
+        "controller": "EntityController",
+        "frozen": "bool",
+        "referenceable": "bool"
+    },
+    "StoredValue": {
+        "_enum": {
+            "Bool": "bool",
+            "Uint16": "u16",
+            "Uint32": "u32",
+            "Uint64": "u64",
+            "Int16": "i16",
+            "Int32": "i32",
+            "Int64": "i64",
+            "Text": "Text",
+            "Hash": "Hash",
+            "Reference": "EntityId"
+        }
+    },
+    "VecStoredValue": {
+        "_enum": {
+            "Bool": "Vec<bool>",
+            "Uint16": "Vec<u16>",
+            "Uint32": "Vec<u32>",
+            "Uint64": "Vec<u64>",
+            "Int16": "Vec<i16>",
+            "Int32": "Vec<i32>",
+            "Int64": "Vec<i64>",
+            "Hash": "Vec<Hash>",
+            "Text": "Vec<Text>",
+            "Reference": "Vec<EntityId>"
+        }
+    },
+    "VecStoredPropertyValue": {
+        "vec_value": "VecStoredValue",
+        "nonce": "Nonce"
+    },
+    "StoredPropertyValue": {
+        "_enum": {
+            "Single": "StoredValue",
+            "Vector": "VecStoredPropertyValue"
+        }
+    },
+    "InboundReferenceCounter": {
+        "total": "u32",
+        "same_owner": "u32"
+    },
+    "Entity": {
+        "entity_permissions": "EntityPermissions",
+        "class_id": "ClassId",
+        "supported_schemas": "Vec<SchemaId>",
+        "values": "BTreeMap<PropertyId,StoredPropertyValue>",
+        "reference_counter": "InboundReferenceCounter"
+    },
+    "CuratorGroup": {
+        "curators": "Vec<u64>",
+        "active": "bool",
+        "number_of_classes_maintained": "u32"
+    },
+    "EntityCreationVoucher": {
+        "maximum_entities_count": "EntityId",
+        "entities_created": "EntityId"
+    },
+    "Actor": {
+        "_enum": {
+            "Curator": "(CuratorGroupId,u64)",
+            "Member": "MemberId",
+            "Lead": "Null"
+        }
+    },
+    "EntityReferenceCounterSideEffect": {
+        "total": "i32",
+        "same_owner": "i32"
+    },
+    "ReferenceCounterSideEffects": "BTreeMap<EntityId,EntityReferenceCounterSideEffect>",
+    "SideEffects": "Option<ReferenceCounterSideEffects>",
+    "SideEffect": "Option<(EntityId,EntityReferenceCounterSideEffect)>",
+    "Status": "bool",
+    "InputValue": {
+        "_enum": {
+            "Bool": "bool",
+            "Uint16": "u16",
+            "Uint32": "u32",
+            "Uint64": "u64",
+            "Int16": "i16",
+            "Int32": "i32",
+            "Int64": "i64",
+            "Text": "Text",
+            "TextToHash": "Text",
+            "Reference": "EntityId"
+        }
+    },
+    "VecInputValue": {
+        "_enum": {
+            "Bool": "Vec<bool>",
+            "Uint16": "Vec<u16>",
+            "Uint32": "Vec<u32>",
+            "Uint64": "Vec<u64>",
+            "Int16": "Vec<i16>",
+            "Int32": "Vec<i32>",
+            "Int64": "Vec<i64>",
+            "TextToHash": "Vec<Text>",
+            "Text": "Vec<Text>",
+            "Reference": "Vec<EntityId>"
+        }
+    },
+    "InputPropertyValue": {
+        "_enum": {
+            "Single": "InputValue",
+            "Vector": "VecInputValue"
+        }
+    },
+    "ParameterizedEntity": {
+        "_enum": {
+            "InternalEntityJustAdded": "u32",
+            "ExistingEntity": "EntityId"
+        }
+    },
+    "ParametrizedPropertyValue": {
+        "_enum": {
+            "InputPropertyValue": "InputPropertyValue",
+            "InternalEntityJustAdded": "u32",
+            "InternalEntityVec": "Vec<ParameterizedEntity>"
+        }
+    },
+    "ParametrizedClassPropertyValue": {
+        "in_class_index": "PropertyId",
+        "value": "ParametrizedPropertyValue"
+    },
+    "CreateEntityOperation": {
+        "class_id": "ClassId"
+    },
+    "UpdatePropertyValuesOperation": {
+        "entity_id": "ParameterizedEntity",
+        "new_parametrized_property_values": "Vec<ParametrizedClassPropertyValue>"
+    },
+    "AddSchemaSupportToEntityOperation": {
+        "entity_id": "ParameterizedEntity",
+        "schema_id": "SchemaId",
+        "parametrized_property_values": "Vec<ParametrizedClassPropertyValue>"
+    },
+    "OperationType": {
+        "_enum": {
+            "CreateEntity": "CreateEntityOperation",
+            "UpdatePropertyValues": "UpdatePropertyValuesOperation",
+            "AddSchemaSupportToEntity": "AddSchemaSupportToEntityOperation"
+        }
+    },
+    "ClassPermissionsType": "Null",
+    "ClassPropertyValue": "Null",
+    "Operation": "Null",
+    "ReferenceConstraint": "Null"
 }

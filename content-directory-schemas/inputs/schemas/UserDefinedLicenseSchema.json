@@ -1,0 +1,13 @@
+{
+  "className": "UserDefinedLicense",
+  "newProperties": [
+    {
+      "name": "content",
+      "description": "Custom license content",
+      "required": true,
+      "property_type": {
+        "Single": { "Text": 4096 }
+      }
+    }
+  ]
+}
