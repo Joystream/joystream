@@ -65,7 +65,7 @@ function cleanup() {
 
 trap cleanup EXIT
 
-if [ "$TARGET_RUNIME" == "$RUNTIME" ]; then
+if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
   echo "Not Performing a runtime upgrade."
 else
   # Copy new runtime wasm file from target joystream/node image
