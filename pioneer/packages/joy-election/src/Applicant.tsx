@@ -10,7 +10,7 @@ import { formatBalance } from '@polkadot/util';
 import CandidatePreview from './CandidatePreview';
 
 import translate from './translate';
-import { calcTotalStake } from '@polkadot/joy-utils/functions/misc';
+import { calcTotalStake } from '@joystream/js/lib/functions/misc';
 import { ElectionStake } from '@joystream/types/council';
 
 type Props = ApiProps & I18nProps & {

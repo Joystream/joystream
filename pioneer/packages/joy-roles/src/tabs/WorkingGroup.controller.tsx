@@ -10,7 +10,7 @@ import { ContentCurators,
   StorageProviders } from './WorkingGroup';
 
 import styled from 'styled-components';
-import { normalizeError } from '@polkadot/joy-utils/functions/misc';
+import { normalizeError } from '@joystream/js/lib/functions/misc';
 
 type State = {
   contentCurators?: WorkingGroupMembership;

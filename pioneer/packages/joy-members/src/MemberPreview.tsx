@@ -12,7 +12,8 @@ import translate from './translate';
 import { MemberId, Membership } from '@joystream/types/members';
 import { queryMembershipToProp } from './utils';
 import { Seat } from '@joystream/types/council';
-import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { queryToProp } from '@polkadot/joy-utils/react/helpers';
+import { nonEmptyStr } from '@joystream/js/lib/functions/misc';
 import { FlexCenter, MutedSpan } from '@polkadot/joy-utils/react/components';
 
 const AvatarSizePx = 36;

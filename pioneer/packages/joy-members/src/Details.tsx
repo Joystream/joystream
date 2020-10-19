@@ -15,7 +15,8 @@ import translate from './translate';
 import { MemberId, Membership, EntryMethod, Paid, Screening, Genesis, SubscriptionId } from '@joystream/types/members';
 import { queryMembershipToProp } from './utils';
 import { Seat } from '@joystream/types/council';
-import { nonEmptyStr, queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { queryToProp } from '@polkadot/joy-utils/react/helpers';
+import { nonEmptyStr } from '@joystream/js/lib/functions/misc';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/react/hocs/accounts';
 
 type Props = ApiProps & I18nProps & MyAccountProps & {

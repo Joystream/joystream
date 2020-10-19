@@ -16,7 +16,7 @@ import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import _ from 'lodash';
 import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { IElectionParameters } from '@joystream/types/src/council';
-import { SimplifiedTypeInterface } from '@polkadot/joy-utils/types/common';
+import { SimplifiedTypeInterface } from '@joystream/js/lib/types/common';
 
 export type FormValues = GenericFormValues & {
   announcingPeriod: string;
@@ -65,27 +65,25 @@ const SetCouncilParamsForm: React.FunctionComponent<FormInnerProps> = (props) =>
   const [placeholders, setPlaceholders] = useState<{ [k in keyof FormValues]: string }>(defaultValues);
 
   const transport = useTransport();
-  const [councilParams, error, loading] = usePromise<IElectionParameters | null>(() => transport.council.electionParameters(), null);
+  const [councilParams, error, loading] = usePromise(() => transport.council.electionParameters(), null);
 
   useEffect(() => {
     if (councilParams) {
       const fetchedPlaceholders = { ...placeholders };
       const fieldsToPopulate = [
-        'announcing_period',
-        'voting_period',
-        'min_voting_stake',
-        'revealing_period',
-        'min_council_stake',
-        'new_term_duration',
-        'candidacy_limit',
-        'council_size'
+        'announcingPeriod',
+        'votingPeriod',
+        'minVotingStake',
+        'revealingPeriod',
+        'minCouncilStake',
+        'newTermDuration',
+        'candidacyLimit',
+        'councilSize'
       ] as const;
 
       fieldsToPopulate.forEach((field) => {
-        const camelCaseField = _.camelCase(field) as keyof FormValues;
-
-        setFieldValue(camelCaseField, councilParams[field].toString());
-        fetchedPlaceholders[camelCaseField] = councilParams[field].toString();
+        setFieldValue(field, councilParams[field].toString());
+        fetchedPlaceholders[field] = councilParams[field].toString();
       });
       setPlaceholders(fetchedPlaceholders);
     }

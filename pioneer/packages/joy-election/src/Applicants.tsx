@@ -13,7 +13,7 @@ import translate from './translate';
 import Applicant from './Applicant';
 import ApplyForm from './ApplyForm';
 import Section from '@polkadot/joy-utils/react/components/Section';
-import { queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { queryToProp } from '@polkadot/joy-utils/react/helpers';
 import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/react/hocs/accounts';
 import { ElectionStage } from '@joystream/types/src/council';
 import { RouteProps } from 'react-router-dom';

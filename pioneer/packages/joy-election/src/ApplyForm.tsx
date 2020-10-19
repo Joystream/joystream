@@ -11,7 +11,7 @@ import translate from './translate';
 import TxButton from '@polkadot/joy-utils/react/components/TxButton';
 import InputStake from '@polkadot/joy-utils/react/components/InputStake';
 import { ElectionStake } from '@joystream/types/council';
-import { calcTotalStake, ZERO } from '@polkadot/joy-utils/functions/misc';
+import { calcTotalStake, ZERO } from '@joystream/js/lib/functions/misc';
 import { MyAddressProps } from '@polkadot/joy-utils/react/hocs/accounts';
 import { withOnlyMembers } from '@polkadot/joy-utils/react/hocs/guards';
 

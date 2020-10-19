@@ -7,12 +7,12 @@ import { GenericProposalForm,
   ProposalFormContainerProps,
   ProposalFormInnerProps } from './GenericProposalForm';
 import { FormField } from './FormFields';
-import { ProposalType } from '@polkadot/joy-utils/types/proposals';
+import { ProposalType } from '@joystream/js/lib/types/proposals';
 import { WorkingGroupKey, WorkingGroupDef } from '@joystream/types/common';
 import { Dropdown, Message } from 'semantic-ui-react';
 import { usePromise, useTransport } from '@polkadot/joy-utils/react/hooks';
 import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
-import { WorkerData } from '@polkadot/joy-utils/types/workingGroups';
+import { WorkerData } from '@joystream/js/lib/types/workingGroups';
 import { LeadInfo } from '@polkadot/joy-utils/react/components/working-groups/LeadInfo';
 
 export type FormValues = GenericFormValues & {

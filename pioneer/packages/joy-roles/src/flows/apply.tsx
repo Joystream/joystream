@@ -39,7 +39,7 @@ import { IStakeRequirement } from '../StakeRequirement';
 import { Loadable } from '@polkadot/joy-utils/react/hocs';
 import { Add } from '../balances';
 import { createType } from '@joystream/types';
-import { ApplicationDetailsData, ApplicationQuestionAnswers } from '@polkadot/joy-utils/types/workingGroups';
+import { ApplicationDetailsData, ApplicationQuestionAnswers } from '@joystream/js/lib/types/workingGroups';
 
 type accordionProps = {
   title: string;

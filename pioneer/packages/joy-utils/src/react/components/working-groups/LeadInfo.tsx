@@ -1,12 +1,12 @@
 import React from 'react';
-import { WorkerData } from '../../../types/workingGroups';
+import { WorkerData } from '@joystream/js/lib/types/workingGroups';
 import { ProfilePreviewFromStruct as MemberPreview } from '../MemberProfilePreview';
 import { Label, Message } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import { WorkingGroupKey } from '@joystream/types/common';
 import { useTransport, usePromise } from '../../hooks';
 import PromiseComponent from '../PromiseComponent';
-import { formatReward } from '@polkadot/joy-utils/functions/format';
+import { formatReward } from '@joystream/js/lib/functions/format';
 
 type LeadInfoProps = {
   lead: WorkerData | null;

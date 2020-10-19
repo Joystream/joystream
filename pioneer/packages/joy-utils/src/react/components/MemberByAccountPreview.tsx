@@ -2,7 +2,7 @@ import React from 'react';
 
 import { ProfilePreviewFromStruct } from './MemberProfilePreview';
 import { AccountId } from '@polkadot/types/interfaces';
-import { MemberFromAccount } from '../../types/members';
+import { MemberFromAccount } from '@joystream/js/lib/types/members';
 import { useTransport, usePromise } from '../hooks';
 import styled from 'styled-components';
 

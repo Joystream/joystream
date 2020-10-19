@@ -9,7 +9,7 @@ import { Hash } from '@polkadot/types/interfaces';
 
 import translate from './translate';
 import SealedVote from './SealedVote';
-import { queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { queryToProp } from '@polkadot/joy-utils/react/helpers';
 import { MyAddressProps } from '@polkadot/joy-utils/react/hocs/accounts';
 import { SavedVote } from './myVotesStore';
 import Section from '@polkadot/joy-utils/react/components/Section';

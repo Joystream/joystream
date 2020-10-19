@@ -1,6 +1,6 @@
 import React from 'react';
 import { Field, FormikErrors, FormikTouched } from 'formik';
-import { nonEmptyStr } from '../../functions/misc';
+import { nonEmptyStr } from '@joystream/js/lib/functions/misc';
 import { Popup, Icon } from 'semantic-ui-react';
 
 export type LabelledProps<FormValues> = {

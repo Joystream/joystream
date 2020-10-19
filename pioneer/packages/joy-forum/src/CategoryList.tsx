@@ -13,7 +13,7 @@ import { UrlHasIdProps, CategoryCrumbs, Pagination, ThreadsPerPage, usePaginatio
 import { withForumCalls } from './calls';
 import { withMulti, withApi } from '@polkadot/react-api';
 import { ApiProps } from '@polkadot/react-api/types';
-import { bnToStr, isEmptyArr } from '@polkadot/joy-utils/functions/misc';
+import { bnToStr, isEmptyArr } from '@joystream/js/lib/functions/misc';
 import { IfIAmForumSudo } from './ForumSudo';
 import MemberPreview from '@polkadot/joy-utils/react/components/MemberByAccountPreview';
 import { useApi } from '@polkadot/react-hooks';

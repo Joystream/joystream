@@ -1,4 +1,4 @@
-import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
+import { ParsedProposal } from '@joystream/js/lib/types/proposals';
 import { createType } from '@joystream/types';
 
 const mockedProposal: ParsedProposal = {

@@ -4,7 +4,7 @@
 
 import { Modal, Password } from '@polkadot/react-components';
 // import keyring from '@polkadot/ui-keyring';
-import { isPasswordValid } from '@polkadot/joy-utils/functions/accounts';
+import { isPasswordValid } from '@joystream/js/lib/functions/accounts';
 
 import React, { useCallback, useState } from 'react';
 

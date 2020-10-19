@@ -11,7 +11,7 @@ import { AddressRow, Button, Input, InputAddress, Modal, Password, StatusContext
 import { useApi, useDebounce, useToggle } from '@polkadot/react-hooks';
 import keyring from '@polkadot/ui-keyring';
 import { keyExtractPath } from '@polkadot/util-crypto';
-import { isPasswordValid } from '@polkadot/joy-utils/functions/accounts';
+import { isPasswordValid } from '@joystream/js/lib/functions/accounts';
 
 import { useTranslation } from '../../translate';
 import { downloadAccount } from './Create';

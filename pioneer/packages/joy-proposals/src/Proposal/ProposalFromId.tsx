@@ -4,7 +4,7 @@ import ProposalDetails from './ProposalDetails';
 import { usePromise, useProposalSubscription, useTransport } from '@polkadot/joy-utils/react/hooks';
 import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { useApi } from '@polkadot/react-hooks';
-import { ParsedProposal } from '@polkadot/joy-utils/types/proposals';
+import { ParsedProposal } from '@joystream/js/lib/types/proposals';
 
 type RouteParams = { id?: string | undefined };
 

@@ -10,7 +10,7 @@ import React, { useCallback, useState } from 'react';
 import { AddressRow, Button, InputAddress, InputFile, Modal, Password } from '@polkadot/react-components';
 import { isObject, u8aToString } from '@polkadot/util';
 import keyring from '@polkadot/ui-keyring';
-import { isPasswordValid } from '@polkadot/joy-utils/functions/accounts';
+import { isPasswordValid } from '@joystream/js/lib/functions/accounts';
 
 import { useTranslation } from '../../translate';
 

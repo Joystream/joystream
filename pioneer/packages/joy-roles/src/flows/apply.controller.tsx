@@ -17,7 +17,7 @@ import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities';
 import { Min, Step, Sum } from '../balances';
 import { WorkingGroups, AvailableGroups } from '../working_groups';
 import { createType } from '@joystream/types';
-import { ApplicationDetailsData } from '@polkadot/joy-utils/types/workingGroups';
+import { ApplicationDetailsData } from '@joystream/js/lib/types/workingGroups';
 
 type State = {
   // Input data from state

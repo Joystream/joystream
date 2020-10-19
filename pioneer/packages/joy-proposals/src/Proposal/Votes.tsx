@@ -5,7 +5,7 @@ import { VoteKind } from '@joystream/types/proposals';
 import { VoteKindStr } from './VotingSection';
 import ProfilePreview from '@polkadot/joy-utils/react/components/MemberProfilePreview';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
-import { ParsedProposal, ProposalVotes } from '@polkadot/joy-utils/types/proposals';
+import { ParsedProposal, ProposalVotes } from '@joystream/js/lib/types/proposals';
 import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 
 type VotesProps = {

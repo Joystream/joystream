@@ -12,7 +12,7 @@ import Section from '@polkadot/joy-utils/react/components/Section';
 import { withMyAccount, MyAccountProps } from '@polkadot/joy-utils/react/hocs/accounts';
 import { getVotesByVoter } from './myVotesStore';
 import VoteForm from './VoteForm';
-import { queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { queryToProp } from '@polkadot/joy-utils/react/helpers';
 import { ElectionStage } from '@joystream/types/src/council';
 import { RouteProps } from 'react-router-dom';
 

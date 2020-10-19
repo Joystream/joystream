@@ -7,7 +7,8 @@ import { AccountId } from '@polkadot/types/interfaces';
 import { Input, Labelled, InputAddress } from '@polkadot/react-components/index';
 
 import translate from './translate';
-import { nonEmptyStr, queryToProp, getUrlParam } from '@polkadot/joy-utils/functions/misc';
+import { queryToProp } from '@polkadot/joy-utils/react/helpers';
+import { nonEmptyStr, getUrlParam } from '@joystream/js/lib/functions/misc';
 import { accountIdsToOptions, hashVote } from './utils';
 import TxButton from '@polkadot/joy-utils/react/components/TxButton';
 import { findVoteByHash } from './myVotesStore';

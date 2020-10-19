@@ -19,7 +19,7 @@ import Council from './Council';
 import Applicants from './Applicants';
 import Votes from './Votes';
 import Reveals from './Reveals';
-import { queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { queryToProp } from '@polkadot/joy-utils/react/helpers';
 import { Seat } from '@joystream/types/council';
 import { ApiProps } from '@polkadot/react-api/types';
 

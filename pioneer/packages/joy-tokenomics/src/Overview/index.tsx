@@ -6,7 +6,7 @@ import styled from 'styled-components';
 
 import usePromise from '@polkadot/joy-utils/react/hooks/usePromise';
 import { useTransport } from '@polkadot/joy-utils/react/hooks';
-import { StatusServerData } from '@polkadot/joy-utils/src/types/tokenomics';
+import { StatusServerData } from '@joystream/js/lib/types/tokenomics';
 
 const SpendingAndStakeContainer = styled('div')`
   display:flex;

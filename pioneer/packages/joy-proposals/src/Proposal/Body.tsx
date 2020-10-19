@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, Header, Message, Icon } from 'semantic-ui-react';
-import { ProposalType, ParsedProposalDetails, SpecificProposalDetails, RuntimeUpgradeProposalDetails } from '@polkadot/joy-utils/types/proposals';
-import { bytesToString } from '@polkadot/joy-utils/functions/misc';
+import { ProposalType, ParsedProposalDetails, SpecificProposalDetails, RuntimeUpgradeProposalDetails } from '@joystream/js/lib/types/proposals';
+import { bytesToString } from '@joystream/js/lib/functions/misc';
 import styled from 'styled-components';
 import AddressMini from '@polkadot/react-components/AddressMini';
 import { SemanticTxButton } from '@polkadot/joy-utils/react/components/TxButton';
@@ -19,7 +19,7 @@ import { StakingPolicy } from '@joystream/types/hiring';
 import { WorkingGroup } from '@joystream/types/common';
 import { ApplicationsDetailsByOpening } from '@polkadot/joy-utils/react/components/working-groups/ApplicationDetails';
 import { LeadInfoFromId } from '@polkadot/joy-utils/react/components/working-groups/LeadInfo';
-import { formatReward } from '@polkadot/joy-utils/functions/format';
+import { formatReward } from '@joystream/js/lib/functions/format';
 import BN from 'bn.js';
 import { WorkerId } from '@joystream/types/src/working-group';
 

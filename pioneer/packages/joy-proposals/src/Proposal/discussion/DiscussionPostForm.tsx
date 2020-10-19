@@ -7,7 +7,7 @@ import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { SubmittableResult } from '@polkadot/api';
 import { Button } from 'semantic-ui-react';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
-import { ParsedPost, DiscussionContraints } from '@polkadot/joy-utils/types/proposals';
+import { ParsedPost, DiscussionContraints } from '@joystream/js/lib/types/proposals';
 import { ThreadId } from '@joystream/types/common';
 import { MemberId } from '@joystream/types/members';
 import { Loading } from '@polkadot/joy-utils/react/components/PromiseComponent';

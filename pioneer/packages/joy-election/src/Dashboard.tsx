@@ -10,7 +10,7 @@ import { Label, Icon } from 'semantic-ui-react';
 import { formatNumber, formatBalance } from '@polkadot/util';
 
 import Section from '@polkadot/joy-utils/react/components/Section';
-import { queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { queryToProp } from '@polkadot/joy-utils/react/helpers';
 import { ElectionStage, Seat } from '@joystream/types/council';
 import translate from './translate';
 import { RouteProps } from 'react-router-dom';

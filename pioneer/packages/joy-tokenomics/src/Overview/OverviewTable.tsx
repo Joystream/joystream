@@ -2,7 +2,7 @@ import React from 'react';
 import { Table, Popup, Icon } from 'semantic-ui-react';
 import styled from 'styled-components';
 
-import { TokenomicsData, StatusServerData } from '@polkadot/joy-utils/src/types/tokenomics';
+import { TokenomicsData, StatusServerData } from '@joystream/js/lib/types/tokenomics';
 
 const StyledTableRow = styled(Table.Row)`
   .help-icon{

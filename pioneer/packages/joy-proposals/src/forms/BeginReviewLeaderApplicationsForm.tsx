@@ -13,7 +13,7 @@ import { Dropdown, Message } from 'semantic-ui-react';
 import _ from 'lodash';
 import Validation from '../validationSchema';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
-import { OpeningData } from '@polkadot/joy-utils/types/workingGroups';
+import { OpeningData } from '@joystream/js/lib/types/workingGroups';
 import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { getFormErrorLabelsProps } from './errorHandling';
 

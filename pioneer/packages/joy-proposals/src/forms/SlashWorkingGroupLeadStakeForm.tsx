@@ -14,7 +14,7 @@ import { Grid } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import _ from 'lodash';
 import Validation from '../validationSchema';
-import { WorkerData } from '@polkadot/joy-utils/types/workingGroups';
+import { WorkerData } from '@joystream/js/lib/types/workingGroups';
 
 export type FormValues = WGFormValues & {
   amount: string;
