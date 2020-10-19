@@ -266,6 +266,9 @@ decl_error! {
         /// Council member and candidates can't withdraw stake
         StakeStillNeeded,
 
+        /// Insufficient balance for candidacy staking.
+        InsufficientBalanceForStaking,
+
         /// Candidate can't vote for himself
         CantVoteForYourself,
 
@@ -654,14 +657,21 @@ impl<T: Trait> EnsureChecks<T> {
         };
 
         // prevent user from candidating twice in the same election
+        // NOTE: repeated candidacy without releasing stake is possible and the (still) locked stake will be reused
         if Candidates::<T>::contains_key(council_user_id)
             && Candidates::<T>::get(council_user_id).cycle_id == CurrentAnnouncementCycleId::get()
         {
             return Err(Error::CantCandidateTwice);
         }
 
+        // ensure stake is above minimal threshold
         if stake < &T::MinCandidateStake::get() {
             return Err(Error::CandidacyStakeTooLow);
+        }
+
+        // ensure user has enough balance - includes any already locked candidacy stake as it will be reused
+        if !T::CandidacyLock::is_enough_balance_for_stake(&account_id, *stake) {
+            return Err(Error::InsufficientBalanceForStaking);
         }
 
         Ok((stage_data, account_id))

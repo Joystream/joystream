@@ -327,8 +327,8 @@ pub mod mocks {
             true
         }
 
-        fn is_enough_balance_for_stake(account_id: &u64, amount: u64) -> bool {
-            if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK || amount > 1000 {
+        fn is_enough_balance_for_stake(account_id: &u64, _amount: u64) -> bool {
+            if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK {
                 return false;
             }
 
@@ -441,8 +441,8 @@ pub mod mocks {
             true
         }
 
-        fn is_enough_balance_for_stake(account_id: &u64, amount: u64) -> bool {
-            if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK || amount > 1000 {
+        fn is_enough_balance_for_stake(account_id: &u64, _amount: u64) -> bool {
+            if *account_id == STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK {
                 return false;
             }
 
