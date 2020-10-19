@@ -77,7 +77,6 @@ export type ProposalVotes = {
 export const Categories = {
   council: 'Council',
   validators: 'Validators',
-  cwg: 'Content Working Group',
   wg: 'Working Groups',
   other: 'Other'
 } as const;
