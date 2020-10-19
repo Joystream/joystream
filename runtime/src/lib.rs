@@ -586,6 +586,7 @@ parameter_types! {
 impl proposals_discussion::Trait for Runtime {
     type Event = Event;
     type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
+    type CouncilOriginValidator = CouncilManager<Self>;
     type ThreadId = ThreadId;
     type PostId = PostId;
     type MaxPostEditionNumber = ProposalMaxPostEditionNumber;

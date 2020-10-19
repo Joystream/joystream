@@ -82,6 +82,7 @@ impl membership::Trait for Test {
 impl crate::Trait for Test {
     type Event = TestEvent;
     type PostAuthorOriginValidator = ();
+    type CouncilOriginValidator = ();
     type ThreadId = u64;
     type PostId = u64;
     type MaxPostEditionNumber = MaxPostEditionNumber;

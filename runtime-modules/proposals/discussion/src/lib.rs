@@ -21,7 +21,7 @@
 //! ```
 //! use frame_support::decl_module;
 //! use system::ensure_root;
-//! use pallet_proposals_discussion::{self as discussions};
+//! use pallet_proposals_discussion::{self as discussions, ThreadMode};
 //!
 //! pub trait Trait: discussions::Trait + membership::Trait {}
 //!
@@ -31,7 +31,7 @@
 //!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) {
 //!             ensure_root(origin)?;
 //!             <discussions::Module<T>>::ensure_can_create_thread(author_id, &title)?;
-//!             <discussions::Module<T>>::create_thread(author_id, title)?;
+//!             <discussions::Module<T>>::create_thread(author_id, title, ThreadMode::Open)?;
 //!         }
 //!     }
 //! }
@@ -57,6 +57,8 @@ use sp_std::vec::Vec;
 use common::origin::ActorOriginValidator;
 use types::{DiscussionPost, DiscussionThread, ThreadCounter};
 
+pub use types::ThreadMode;
+
 type MemberId<T> = <T as membership::Trait>::MemberId;
 
 decl_event!(
@@ -78,6 +80,12 @@ decl_event!(
     }
 );
 
+/// Defines whether the member is an active councilor.
+pub trait CouncilMembership<AccountId, MemberId> {
+    /// Defines whether the member is an active councilor.
+    fn is_council_member(account_id: &AccountId, member_id: &MemberId) -> bool;
+}
+
 /// 'Proposal discussion' substrate module Trait
 pub trait Trait: system::Trait + membership::Trait {
     /// Discussion event type.
@@ -89,6 +97,9 @@ pub trait Trait: system::Trait + membership::Trait {
         MemberId<Self>,
         Self::AccountId,
     >;
+
+    /// Defines whether the member is an active councilor.
+    type CouncilOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Discussion thread Id type
     type ThreadId: From<u64> + Into<u64> + Parameter + Default + Copy;
@@ -141,6 +152,9 @@ decl_error! {
 
         /// Require root origin in extrinsics
         RequireRootOrigin,
+
+        /// The thread has Closed mode. And post author doesn't belong to council or allowed members.
+        CannotPostOnClosedThread,
     }
 }
 
@@ -149,7 +163,7 @@ decl_storage! {
     pub trait Store for Module<T: Trait> as ProposalDiscussion {
         /// Map thread identifier to corresponding thread.
         pub ThreadById get(fn thread_by_id): map hasher(blake2_128_concat)
-            T::ThreadId => DiscussionThread<MemberId<T>, T::BlockNumber>;
+            T::ThreadId => DiscussionThread<MemberId<T>, T::BlockNumber, MemberId<T>>;
 
         /// Count of all threads that have been created.
         pub ThreadCount get(fn thread_count): u64;
@@ -198,10 +212,13 @@ decl_module! {
             text : Vec<u8>
         ) {
             T::PostAuthorOriginValidator::ensure_actor_origin(
-                origin,
+                origin.clone(),
                 post_author_id,
             )?;
+
             ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
+
+            Self::ensure_thread_mode(origin, post_author_id, thread_id)?;
 
             ensure!(!text.is_empty(),Error::<T>::EmptyPostProvided);
             ensure!(
@@ -279,6 +296,7 @@ impl<T: Trait> Module<T> {
     pub fn create_thread(
         thread_author_id: MemberId<T>,
         title: Vec<u8>,
+        mode: ThreadMode<MemberId<T>>,
     ) -> Result<T::ThreadId, DispatchError> {
         Self::ensure_can_create_thread(thread_author_id, &title)?;
 
@@ -289,6 +307,7 @@ impl<T: Trait> Module<T> {
             title,
             activated_at: Self::current_block(),
             author_id: thread_author_id,
+            mode,
         };
 
         // get new 'threads in a row' counter for the author
@@ -346,5 +365,32 @@ impl<T: Trait> Module<T> {
 
         // else return new counter (set with 1 thread number)
         ThreadCounter::new(author_id)
+    }
+
+    fn ensure_thread_mode(
+        origin: T::Origin,
+        thread_author_id: MemberId<T>,
+        thread_id: T::ThreadId,
+    ) -> DispatchResult {
+        let thread = Self::thread_by_id(thread_id);
+
+        match thread.mode {
+            ThreadMode::Open => Ok(()),
+            ThreadMode::Closed(members) => {
+                let is_thread_author = thread_author_id == thread.author_id;
+                let is_councilor =
+                    T::CouncilOriginValidator::ensure_actor_origin(origin, thread_author_id)
+                        .is_ok();
+                let is_allowed_member = members
+                    .iter()
+                    .any(|member_id| *member_id == thread_author_id);
+
+                if is_thread_author || is_councilor || is_allowed_member {
+                    Ok(())
+                } else {
+                    Err(Error::<T>::CannotPostOnClosedThread.into())
+                }
+            }
+        }
     }
 }

@@ -42,6 +42,7 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
         title: thread_entry.title,
         activated_at: 0,
         author_id: 1,
+        mode: Default::default(),
     };
     assert_eq!(actual_thread, expected_thread);
 
@@ -65,6 +66,7 @@ struct DiscussionFixture {
     pub title: Vec<u8>,
     pub origin: RawOrigin<u64>,
     pub author_id: u64,
+    pub mode: ThreadMode<u64>,
 }
 
 impl Default for DiscussionFixture {
@@ -73,6 +75,7 @@ impl Default for DiscussionFixture {
             title: b"title".to_vec(),
             origin: RawOrigin::Signed(1),
             author_id: 1,
+            mode: ThreadMode::Open,
         }
     }
 }
@@ -84,7 +87,7 @@ impl DiscussionFixture {
 
     fn create_discussion_and_assert(&self, result: Result<u64, DispatchError>) -> Option<u64> {
         let create_discussion_result =
-            Discussions::create_thread(self.author_id, self.title.clone());
+            Discussions::create_thread(self.author_id, self.title.clone(), self.mode.clone());
 
         assert_eq!(create_discussion_result, result);
 

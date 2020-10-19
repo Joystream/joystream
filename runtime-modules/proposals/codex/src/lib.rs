@@ -73,6 +73,7 @@ use system::ensure_root;
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
 use governance::election_params::ElectionParameters;
+use proposals_discussion::ThreadMode;
 use proposals_engine::{
     BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
 };
@@ -820,6 +821,7 @@ impl<T: Trait> Module<T> {
         let discussion_thread_id = <proposals_discussion::Module<T>>::create_thread(
             params.member_id,
             params.title.clone(),
+            ThreadMode::Open,
         )?;
 
         let proposal_creation_params = ProposalCreationParameters {

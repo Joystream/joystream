@@ -8,7 +8,7 @@ use sp_std::vec::Vec;
 /// Represents a discussion thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct DiscussionThread<ThreadAuthorId, BlockNumber> {
+pub struct DiscussionThread<ThreadAuthorId, BlockNumber, MemberId> {
     /// Title
     pub title: Vec<u8>,
 
@@ -17,6 +17,8 @@ pub struct DiscussionThread<ThreadAuthorId, BlockNumber> {
 
     /// Author of the thread.
     pub author_id: ThreadAuthorId,
+
+    pub mode: ThreadMode<MemberId>,
 }
 
 /// Post for the discussion thread
@@ -68,6 +70,23 @@ impl<ThreadAuthorId: Clone> ThreadCounter<ThreadAuthorId> {
             author_id,
             counter: 1,
         }
+    }
+}
+
+/// Discussion thread permission modes.
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+pub enum ThreadMode<MemberId> {
+    /// Every member can post on the thread.
+    Open,
+
+    /// Only author, councilor or white member list could post on the thread.
+    Closed(Vec<MemberId>),
+}
+
+impl<MemberId> Default for ThreadMode<MemberId> {
+    fn default() -> Self {
+        Self::Open
     }
 }
 
