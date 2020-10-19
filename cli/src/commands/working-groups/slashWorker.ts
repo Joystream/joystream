@@ -39,7 +39,7 @@ export default class WorkingGroupsSlashWorker extends WorkingGroupsCommandBase {
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'slashStake', [workerId, balance])
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'slashStake', [workerId, balance])
 
     this.log(
       chalk.green(

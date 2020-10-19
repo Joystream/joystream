@@ -30,11 +30,12 @@ use sp_runtime::Perbill;
 
 use node_runtime::{
     membership, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
-    ContentWorkingGroupConfig, CouncilConfig, CouncilElectionConfig, DataDirectoryConfig,
-    DataObjectStorageRegistryConfig, DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig,
-    GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, ProposalsCodexConfig, SessionConfig,
-    SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig,
-    SystemConfig, VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
+    ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig,
+    CouncilConfig, CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
+    DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
+    MembersConfig, Moment, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
+    StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
+    VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
 };
 
 // Exported to be used by chain-spec-builder
@@ -320,6 +321,23 @@ pub fn testnet_genesis(
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
         }),
+        working_group_Instance3: Some(ContentDirectoryWorkingGroupConfig {
+            phantom: Default::default(),
+            storage_working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
+        }),
+        content_directory: Some({
+            ContentDirectoryConfig {
+                class_by_id: vec![],
+                entity_by_id: vec![],
+                curator_group_by_id: vec![],
+                next_class_id: 1,
+                next_entity_id: 1,
+                next_curator_group_id: 1,
+            }
+        }),
         versioned_store: Some(versioned_store_config),
         versioned_store_permissions: Some(versioned_store_permissions_config),
         content_wg: Some(content_working_group_config),
@@ -336,12 +354,6 @@ pub fn testnet_genesis(
                 .set_election_parameters_proposal_voting_period,
             set_election_parameters_proposal_grace_period: cpcp
                 .set_election_parameters_proposal_grace_period,
-            set_content_working_group_mint_capacity_proposal_voting_period: cpcp
-                .set_content_working_group_mint_capacity_proposal_voting_period,
-            set_content_working_group_mint_capacity_proposal_grace_period: cpcp
-                .set_content_working_group_mint_capacity_proposal_grace_period,
-            set_lead_proposal_voting_period: cpcp.set_lead_proposal_voting_period,
-            set_lead_proposal_grace_period: cpcp.set_lead_proposal_grace_period,
             spending_proposal_voting_period: cpcp.spending_proposal_voting_period,
             spending_proposal_grace_period: cpcp.spending_proposal_grace_period,
             add_working_group_opening_proposal_voting_period: cpcp

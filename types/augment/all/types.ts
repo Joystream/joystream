@@ -247,6 +247,18 @@ export interface Class extends Struct {
 /** @name ClassId */
 export interface ClassId extends u64 {}
 
+/** @name ClassOf */
+export interface ClassOf extends Struct {
+  readonly class_permissions: ClassPermissions;
+  readonly properties: Vec<Property>;
+  readonly schemas: Vec<Schema>;
+  readonly name: Text;
+  readonly description: Text;
+  readonly maximum_entities_count: EntityId;
+  readonly current_number_of_entities: EntityId;
+  readonly default_entity_creation_voucher_upper_bound: EntityId;
+}
+
 /** @name ClassPermissions */
 export interface ClassPermissions extends Struct {
   readonly any_member: bool;
@@ -477,6 +489,14 @@ export interface EntityCreationVoucher extends Struct {
 
 /** @name EntityId */
 export interface EntityId extends u64 {}
+
+/** @name EntityOf */
+export interface EntityOf extends Struct {
+  readonly entity_permissions: EntityPermissions;
+  readonly class_id: ClassId;
+  readonly supported_schemas: Vec<SchemaId>;
+  readonly reference_counter: InboundReferenceCounter;
+}
 
 /** @name EntityPermissions */
 export interface EntityPermissions extends Struct {
@@ -1361,6 +1381,7 @@ export interface WorkerOf extends Struct {
 /** @name WorkingGroup */
 export interface WorkingGroup extends Enum {
   readonly isStorage: boolean;
+  readonly isContent: boolean;
 }
 
 /** @name WorkingGroupOpeningPolicyCommitment */

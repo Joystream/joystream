@@ -1,0 +1,7 @@
+{
+  "name": "HttpMediaLocation",
+  "description": "An object describing http location of media object",
+  "maximum_entities_count": 400,
+  "default_entity_creation_voucher_upper_bound": 50,
+  "class_permissions": { "any_member": true }
+}

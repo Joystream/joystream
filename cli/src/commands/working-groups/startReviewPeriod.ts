@@ -29,7 +29,7 @@ export default class WorkingGroupsStartReviewPeriod extends WorkingGroupsCommand
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'beginApplicantReview', [openingId])
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'beginApplicantReview', [openingId])
 
     this.log(chalk.green(`Opening ${chalk.white(openingId)} status changed to: ${chalk.white('In Review')}`))
   }

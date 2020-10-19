@@ -38,7 +38,7 @@ export default class WorkingGroupsUpdateRewardAccount extends WorkingGroupsComma
 
     await this.requestAccountDecoding(account)
 
-    await this.sendAndFollowExtrinsic(account, apiModuleByGroup[this.group], 'updateRewardAccount', [
+    await this.sendAndFollowNamedTx(account, apiModuleByGroup[this.group], 'updateRewardAccount', [
       worker.workerId,
       newRewardAccount,
     ])

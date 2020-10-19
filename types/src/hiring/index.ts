@@ -221,20 +221,22 @@ export class StakingPolicy
   implements IStakingPolicy {}
 export const schemaValidator: Ajv.ValidateFunction = new Ajv({ allErrors: true }).compile(role_schema_json)
 
-const OpeningHRTFallback: GenericJoyStreamRoleSchema = {
-  version: 1,
-  headline: 'Unknown',
-  job: {
-    title: 'Unknown',
-    description: 'Unknown',
-  },
-  application: {},
-  reward: 'Unknown',
-  creator: {
-    membership: {
-      handle: 'Unknown',
+function openingHRTFallback(title = 'Working Group Opening', description = ''): GenericJoyStreamRoleSchema {
+  return {
+    version: 1,
+    headline: title,
+    job: {
+      title: title,
+      description,
     },
-  },
+    application: {},
+    reward: '? JOY',
+    creator: {
+      membership: {
+        handle: 'Unknown',
+      },
+    },
+  }
 }
 
 export type IOpening = {
@@ -280,11 +282,11 @@ export class Opening
     return str
   }
 
-  parse_human_readable_text_with_fallback(): GenericJoyStreamRoleSchema {
+  parse_human_readable_text_with_fallback(fallbackTitle?: string): GenericJoyStreamRoleSchema {
     const hrt = this.parse_human_readable_text()
 
     if (typeof hrt !== 'object') {
-      return OpeningHRTFallback
+      return openingHRTFallback(fallbackTitle, hrt)
     }
 
     return hrt
