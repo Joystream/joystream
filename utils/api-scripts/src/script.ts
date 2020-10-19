@@ -24,6 +24,8 @@ async function main() {
 
   const api = await ApiPromise.create({ provider, types: joyTypes })
 
+  await api.isReady
+
   // We don't pass a custom signer to the api so we must use a keyPair
   // when calling signAndSend on transactions
   const keyring = new Keyring()
