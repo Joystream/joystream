@@ -50,11 +50,12 @@
     "PropertyName": {
       "type": "string",
       "minLength": 1,
-      "maxLength": 100
+      "maxLength": 49
     },
     "PropertyDescription": {
       "type": "string",
-      "minLength": 0,
+      "minLength": 1,
+      "maxLength": 500,
       "default": ""
     },
     "SinglePropertyType": {
