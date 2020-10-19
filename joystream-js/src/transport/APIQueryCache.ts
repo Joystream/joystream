@@ -1,16 +1,17 @@
-import { Codec } from '@polkadot/types/types'
+import { Codec, AnyFunction } from '@polkadot/types/types'
 import ApiPromise from '@polkadot/api/promise'
-
-type CacheQueryStorage = {
-  (...args: any): Promise<Codec>
-}
-
-type CacheQueryModule = {
-  [index: string]: CacheQueryStorage
-}
+import { AugmentedQuery, QueryableStorage, ObsInnerType } from '@polkadot/api/types'
+import { ApiModuleKey } from '../types/api'
+import _ from 'lodash'
 
 type CacheQueryRuntime = {
-  [index: string]: CacheQueryModule
+  [Module in keyof QueryableStorage<'promise'>]: {
+    [Method in keyof QueryableStorage<'promise'>[Module]]: QueryableStorage<
+      'promise'
+    >[Module][Method] extends AugmentedQuery<'promise', infer F>
+      ? (...args: Parameters<F>) => Promise<ObsInnerType<ReturnType<F>>>
+      : never
+  }
 }
 
 export class APIQueryCache {
@@ -21,11 +22,11 @@ export class APIQueryCache {
   }
 
   protected cacheHits = 0
-  public query: CacheQueryRuntime = {}
+  public query: CacheQueryRuntime
 
   constructor(api: ApiPromise) {
     this.api = api
-    this.buildQuery()
+    this.query = this.buildQuery()
     this.cache = new Map<string, Codec>()
     this.breakCacheOnNewBlocks()
       .then((unsub) => {
@@ -49,16 +50,16 @@ export class APIQueryCache {
   }
 
   protected buildQuery() {
-    const modules = Object.keys(this.api.query).map((key) => ({ name: key, storage: this.api.query[key] }))
+    // Simplified version of CacheQueryRuntime for TS-compatibility purposes
+    const query: Record<string, Record<string, AnyFunction>> = {}
 
-    modules.map((module) => {
-      this.query[module.name] = {}
+    const modules = Object.keys(this.api.query) as ApiModuleKey[]
 
-      const funcs = Object.keys(module.storage).map((key) => ({ name: key, storage: module.storage[key] }))
-
-      funcs.map((func) => {
-        this.query[module.name][func.name] = async (...args: any): Promise<Codec> => {
-          const cacheKey = module.name + func.name + JSON.stringify(args)
+    for (const moduleKey of modules) {
+      query[moduleKey] = _.mapValues(
+        this.api.query[moduleKey],
+        (method, methodKey): AnyFunction => async (...args: any[]) => {
+          const cacheKey = moduleKey + methodKey + JSON.stringify(args)
           const cacheValue = this.cache.get(cacheKey)
 
           if (cacheValue) {
@@ -67,13 +68,15 @@ export class APIQueryCache {
             return cacheValue
           }
 
-          const toCache = await this.api.query[module.name][func.name](...args)
+          const toCache = (await (method as AnyFunction)(...args)) as Codec
 
           this.cache.set(cacheKey, toCache)
 
           return toCache
         }
-      })
-    })
+      )
+    }
+
+    return query as CacheQueryRuntime
   }
 }

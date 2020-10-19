@@ -1,23 +1,36 @@
 import { ApiPromise } from '@polkadot/api'
 import { UInt } from '@polkadot/types/codec'
-import { Codec, CodecArg } from '@polkadot/types/types'
-import { QueryableStorageEntry } from '@polkadot/api/types/storage'
+import { Codec, CodecArg, Observable } from '@polkadot/types/types'
+import { AugmentedQuery } from '@polkadot/api/types/storage'
 import { APIQueryCache } from './APIQueryCache'
 
 export async function entriesByIds<IDType extends UInt, ValueType extends Codec>(
-  apiMethod: QueryableStorageEntry<'promise'>,
-  firstKey?: CodecArg // First key in case of double maps
+  apiMethod: AugmentedQuery<'promise', (key: IDType) => Observable<ValueType>>
 ): Promise<[IDType, ValueType][]> {
-  const entries: [IDType, ValueType][] = (await apiMethod.entries<ValueType>(firstKey)).map(([storageKey, value]) => [
-    // If double-map (first key is provided), we map entries by second key
-    storageKey.args[firstKey !== undefined ? 1 : 0] as IDType,
+  const entries: [IDType, ValueType][] = (await apiMethod.entries()).map(([storageKey, value]) => [
+    storageKey.args[0] as IDType,
     value,
   ])
 
   return entries.sort((a, b) => a[0].toNumber() - b[0].toNumber())
 }
 
-export async function ids<IDType extends UInt>(apiMethod: QueryableStorageEntry<'promise'>): Promise<IDType[]> {
+export async function doubleMapEntriesByIds<K1Type extends CodecArg, IDType extends UInt, ValueType extends Codec>(
+  apiMethod: AugmentedQuery<'promise', (key1: K1Type, key2: IDType) => Observable<ValueType>>,
+  key1: K1Type
+): Promise<[IDType, ValueType][]> {
+  const entries: [IDType, ValueType][] = (await apiMethod.entries(key1)).map(([storageKey, value]) => [
+    // Ffirst key is provided - we map entries by second key
+    storageKey.args[1] as IDType,
+    value,
+  ])
+
+  return entries.sort((a, b) => a[0].toNumber() - b[0].toNumber())
+}
+
+export async function ids<IDType extends UInt, ValueType extends Codec>(
+  apiMethod: AugmentedQuery<'promise', (key: UInt) => Observable<ValueType>>
+): Promise<IDType[]> {
   const storageKeys = await apiMethod.keys()
 
   return storageKeys.map((key) => key.args[0] as IDType).sort((a, b) => a.toNumber() - b.toNumber())
@@ -56,10 +69,6 @@ export default class BaseTransport {
     return this.cacheApi.query.councilElection
   }
 
-  protected get actors() {
-    return this.cacheApi.query.actors
-  }
-
   protected get minting() {
     return this.cacheApi.query.minting
   }
@@ -76,12 +85,7 @@ export default class BaseTransport {
     return this.cacheApi.query.recurringRewards
   }
 
-  protected queryMethodByName(name: string) {
-    const [module, method] = name.split('.')
-
-    return this.api.query[module][method]
-  }
-
   protected entriesByIds = entriesByIds
+  protected doubleMapEntiresByIds = doubleMapEntriesByIds
   protected ids = ids
 }

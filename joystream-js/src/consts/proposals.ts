@@ -160,11 +160,8 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
   },
 }
 
-type ProposalsApiMethodNames = {
-  votingPeriod: string
-  gracePeriod: string
-}
-export const apiMethods: { [k in ProposalType]?: ProposalsApiMethodNames } = {
+// FIXME: Enforce keys to match ProposalType?
+export const apiMethods = {
   Text: {
     votingPeriod: 'textProposalVotingPeriod',
     gracePeriod: 'textProposalGracePeriod',
@@ -217,6 +214,10 @@ export const apiMethods: { [k in ProposalType]?: ProposalsApiMethodNames } = {
     votingPeriod: 'terminateWorkingGroupLeaderRoleProposalVotingPeriod',
     gracePeriod: 'terminateWorkingGroupLeaderRoleProposalGracePeriod',
   },
+  SetLead: null,
+  SetContentWorkingGroupMintCapacity: null,
+  EvictStorageProvider: null,
+  SetStorageRoleParameters: null,
 } as const
 
 export default metadata

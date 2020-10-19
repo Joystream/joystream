@@ -146,7 +146,7 @@ export default class ProposalsTransport extends BaseTransport {
   async proposalsIds() {
     const total: number = (await this.proposalCount()).toNumber()
 
-    return Array.from({ length: total }, (_, i) => this.api.createType('ProposalId', i + 1))
+    return Array.from({ length: total }, (v, i) => this.api.createType('ProposalId', i + 1))
   }
 
   async activeProposalsIds() {
@@ -207,7 +207,7 @@ export default class ProposalsTransport extends BaseTransport {
   }
 
   async votes(proposalId: ProposalId): Promise<ProposalVotes> {
-    const voteEntries = await this.entriesByIds<MemberId, VoteKind>(
+    const voteEntries = await this.doubleMapEntiresByIds<ProposalId, MemberId, VoteKind>(
       this.api.query.proposalsEngine.voteExistsByProposalByVoter,
       proposalId
     )
@@ -272,7 +272,7 @@ export default class ProposalsTransport extends BaseTransport {
     }
 
     const thread = (await this.proposalsDiscussion.threadById(threadId)) as DiscussionThread
-    const postEntries = await this.entriesByIds<PostId, DiscussionPost>(
+    const postEntries = await this.doubleMapEntiresByIds<ThreadId, PostId, DiscussionPost>(
       this.api.query.proposalsDiscussion.postThreadIdByPostId,
       threadId
     )
