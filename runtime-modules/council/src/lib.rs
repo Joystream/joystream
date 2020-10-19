@@ -597,9 +597,6 @@ impl<T: Trait> Mutations<T> {
             candidates_count: stage_data.candidates_count + 1,
         };
 
-        // lock candidacy stake
-        T::CandidacyLock::lock(&candidate.account_id, *stake);
-
         // store new candidacy list
         Stage::<T>::mutate(|value| {
             *value = CouncilStageUpdate {
@@ -609,6 +606,9 @@ impl<T: Trait> Mutations<T> {
                 ..*value
             }
         });
+
+        // lock candidacy stake
+        T::CandidacyLock::lock(&candidate.account_id, *stake);
     }
 
     /// Release user's stake that was used for candidacy.
