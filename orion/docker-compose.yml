@@ -7,5 +7,6 @@ services:
     - ORION_MONGO_HOSTNAME=mongo
     ports:
     - "6116:6116"
+    restart: always
   mongo:
     image: library/mongo:4.4
