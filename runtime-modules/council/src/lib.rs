@@ -321,7 +321,10 @@ decl_module! {
         #[weight = 10_000_000]
         pub fn announce_candidacy(origin, council_user_id: T::CouncilUserId, stake: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
-            let (stage_data, candidate) = EnsureChecks::<T>::can_announce_candidacy(origin, &council_user_id, &stake)?;
+            let (stage_data, account_id) = EnsureChecks::<T>::can_announce_candidacy(origin, &council_user_id, &stake)?;
+
+            // prepare candidate
+            let candidate = Self::prepare_new_candidate(account_id, stage_data.candidates_count, stake);
 
             //
             // == MUTATION SAFE ==
@@ -440,6 +443,16 @@ impl<T: Trait> Module<T> {
 
         // emit event
         Self::deposit_event(RawEvent::AnnouncingPeriodStarted());
+    }
+
+    /// Construct a new candidate for council election.
+    fn prepare_new_candidate(account_id: T::AccountId, current_candidate_count: u64, stake: Balance<T>) -> CandidateOf<T> {
+        Candidate {
+            account_id,
+            cycle_id: CurrentAnnouncementCycleId::get(),
+            order_index: current_candidate_count,
+            stake,
+        }
     }
 }
 
@@ -647,7 +660,7 @@ impl<T: Trait> EnsureChecks<T> {
         origin: T::Origin,
         council_user_id: &T::CouncilUserId,
         stake: &Balance<T>,
-    ) -> Result<(CouncilStageAnnouncing, CandidateOf<T>), Error<T>> {
+    ) -> Result<(CouncilStageAnnouncing, T::AccountId), Error<T>> {
         // ensure user's membership
         let account_id = Self::ensure_user_membership(origin, &council_user_id)?;
 
@@ -668,14 +681,7 @@ impl<T: Trait> EnsureChecks<T> {
             return Err(Error::CandidacyStakeTooLow);
         }
 
-        let candidate = Candidate {
-            account_id,
-            cycle_id: CurrentAnnouncementCycleId::get(),
-            order_index: stage_data.candidates_count,
-            stake: *stake,
-        };
-
-        Ok((stage_data, candidate))
+        Ok((stage_data, account_id))
     }
 
     fn can_release_candidacy_stake(
