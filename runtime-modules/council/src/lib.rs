@@ -507,15 +507,10 @@ impl<T: Trait> Mutations<T> {
 
         let block_number = <system::Module<T>>::block_number();
 
-        //// increase anouncement cycle id
-        //CurrentAnnouncementCycleId::mutate(|value| *value += 1);
-
         // set stage
-        Stage::<T>::mutate(|value| {
-            *value = CouncilStageUpdate {
-                stage: CouncilStage::Announcing(stage_data),
-                changed_at: block_number + 1.into(), // set next block as the start of next phase (this function is invoke on block finalization)
-            }
+        Stage::<T>::put(CouncilStageUpdate {
+            stage: CouncilStage::Announcing(stage_data),
+            changed_at: block_number + 1.into(), // set next block as the start of next phase (this function is invoke on block finalization)
         });
     }
 
@@ -538,13 +533,11 @@ impl<T: Trait> Mutations<T> {
         let block_number = <system::Module<T>>::block_number();
 
         // change council state
-        Stage::<T>::mutate(|value| {
-            *value = CouncilStageUpdate {
-                stage: CouncilStage::Election(CouncilStageElection {
-                    candidates_count: stage_data.candidates_count,
-                }),
-                changed_at: block_number + 1.into(), // set next block as the start of next phase (this function is invoke on block finalization)
-            }
+        Stage::<T>::put(CouncilStageUpdate {
+            stage: CouncilStage::Election(CouncilStageElection {
+                candidates_count: stage_data.candidates_count,
+            }),
+            changed_at: block_number + 1.into(), // set next block as the start of next phase (this function is invoke on block finalization)
         });
 
         Ok(())
@@ -571,7 +564,7 @@ impl<T: Trait> Mutations<T> {
             });
 
         // set new council
-        CouncilMembers::<T>::mutate(|value| *value = elected_members.to_vec());
+        CouncilMembers::<T>::put(elected_members.to_vec());
 
         // setup elected member lock to new council's members
         CouncilMembers::<T>::get()
@@ -593,7 +586,7 @@ impl<T: Trait> Mutations<T> {
         stake: &Balance<T>,
     ) {
         // insert candidate to candidate registery
-        Candidates::<T>::mutate(council_user_id, |value| *value = candidate.clone());
+        Candidates::<T>::insert(council_user_id, candidate.clone());
 
         // prepare new stage
         let new_stage_data = CouncilStageAnnouncing {
