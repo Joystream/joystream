@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "module": "commonjs",
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,     /* Allow default imports from modules with no default export. This does not affect code emit, just typechecking. */
+    "esModuleInterop": true,                  /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */
+    "declaration": true,
+    "resolveJsonModule": true,
+    "types" : [
+      "node"
+    ],
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
+    "paths": {
+      "@polkadot/types/augment": ["../types/augment-codec/augment-types.ts"],
+      "@polkadot/api/augment": ["../types/augment-codec/augment-api.ts"]
+    },
+    "outDir": "lib"
+  },
+  "include": [ "src/**/*" ]
+}

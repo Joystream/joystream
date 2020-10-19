@@ -18,8 +18,9 @@
     "devops/prettier-config",
     "pioneer",
     "pioneer/packages/*",
-    "utils/api-scripts",
-    "content-directory-schemas"
+    "utils/api-examples",
+    "content-directory-schemas",
+    "joystream-js"
   ],
   "resolutions": {
     "@polkadot/api": "1.26.1",
