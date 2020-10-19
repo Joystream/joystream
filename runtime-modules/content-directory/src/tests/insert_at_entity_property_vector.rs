@@ -456,9 +456,9 @@ fn insert_at_entity_property_vector_is_locked_for_given_actor() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
+        let property_type = PropertyType::<ClassId>::vec_reference(FIRST_CLASS_ID, true, 5);
 
-        let mut property = Property::<Runtime>::with_name_and_type(
+        let mut property = Property::<ClassId>::with_name_and_type(
             (PropertyNameLengthConstraint::get().max() - 1) as usize,
             property_type,
             true,
@@ -579,7 +579,7 @@ fn insert_at_entity_property_vector_value_under_given_index_is_not_a_vector() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create property
-        let property = Property::<Runtime>::default_with_name(
+        let property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 
@@ -818,12 +818,12 @@ fn insert_at_entity_property_vector_text_prop_is_too_long() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         // Create property
-        let property_type = PropertyType::<Runtime>::vec_text(
+        let property_type = PropertyType::<ClassId>::vec_text(
             TextMaxLengthConstraint::get(),
             VecMaxLengthConstraint::get(),
         );
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             (PropertyNameLengthConstraint::get().max() - 1) as usize,
             property_type,
             true,
@@ -898,12 +898,12 @@ fn insert_at_entity_property_vector_hashed_text_prop_is_too_long() {
         let hashed_text_max_length_constraint = HashedTextMaxLengthConstraint::get();
 
         // Create vec text hash property
-        let property_type = PropertyType::<Runtime>::vec_text_hash(
+        let property_type = PropertyType::<ClassId>::vec_text_hash(
             hashed_text_max_length_constraint,
             VecMaxLengthConstraint::get(),
         );
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize,
             property_type,
             true,
@@ -977,12 +977,12 @@ fn insert_at_entity_property_vector_prop_type_does_not_match_internal_vec_proper
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.clone()));
 
         // Create property
-        let property_type = PropertyType::<Runtime>::vec_text(
+        let property_type = PropertyType::<ClassId>::vec_text(
             TextMaxLengthConstraint::get(),
             VecMaxLengthConstraint::get(),
         );
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             (PropertyNameLengthConstraint::get().max() - 1) as usize,
             property_type,
             true,

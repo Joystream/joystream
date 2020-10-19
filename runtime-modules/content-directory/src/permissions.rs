@@ -107,21 +107,24 @@ pub fn ensure_is_lead<T: Trait>(origin: T::Origin) -> DispatchResult {
 
 /// Enum, representing all possible `Actor`s
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Eq, PartialEq, Clone, Copy)]
-pub enum Actor<T: Trait> {
-    Curator(T::CuratorGroupId, T::CuratorId),
-    Member(T::MemberId),
+#[derive(Encode, Decode, Eq, PartialEq, Clone, Copy, Debug)]
+pub enum Actor<
+    CuratorGroupId: Default + Clone + Copy,
+    CuratorId: Default + Clone + Copy,
+    MemberId: Default + Clone + Copy,
+> {
+    Curator(CuratorGroupId, CuratorId),
+    Member(MemberId),
     Lead,
 }
 
-impl<T: Trait> Default for Actor<T> {
+impl<
+        CuratorGroupId: Default + Clone + Copy,
+        CuratorId: Default + Clone + Copy,
+        MemberId: Default + Clone + Copy,
+    > Default for Actor<CuratorGroupId, CuratorId, MemberId>
+{
     fn default() -> Self {
         Self::Lead
-    }
-}
-
-impl<T: Trait> core::fmt::Debug for Actor<T> {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "Actor {:?}", self)
     }
 }

@@ -430,9 +430,9 @@ fn remove_at_entity_property_vector_is_locked_for_given_actor() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
+        let property_type = PropertyType::<ClassId>::vec_reference(FIRST_CLASS_ID, true, 5);
 
-        let mut property = Property::<Runtime>::with_name_and_type(
+        let mut property = Property::<ClassId>::with_name_and_type(
             (PropertyNameLengthConstraint::get().max() - 1) as usize,
             property_type,
             true,
@@ -549,7 +549,7 @@ fn remove_at_entity_property_vector_value_under_given_index_is_not_a_vector() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create property
-        let property = Property::<Runtime>::default_with_name(
+        let property = Property::<ClassId>::default_with_name(
             PropertyNameLengthConstraint::get().max() as usize,
         );
 

@@ -25,7 +25,10 @@ use super::*;
 use crate::mock::*;
 use core::iter::FromIterator;
 
-pub fn add_entity_schemas_support() -> (Entity<Runtime>, Entity<Runtime>) {
+pub fn add_entity_schemas_support() -> (
+    Entity<ClassId, MemberId, Hashed, EntityId, Nonce>,
+    Entity<ClassId, MemberId, Hashed, EntityId, Nonce>,
+) {
     // Create first class with default permissions
     assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
@@ -46,12 +49,12 @@ pub fn add_entity_schemas_support() -> (Entity<Runtime>, Entity<Runtime>) {
 
     // Create first property
     let first_property =
-        Property::<Runtime>::default_with_name(PropertyNameLengthConstraint::get().max() as usize);
+        Property::<ClassId>::default_with_name(PropertyNameLengthConstraint::get().max() as usize);
 
     // Create second property
-    let second_property_type = PropertyType::<Runtime>::vec_reference(SECOND_CLASS_ID, true, 5);
+    let second_property_type = PropertyType::<ClassId>::vec_reference(SECOND_CLASS_ID, true, 5);
 
-    let second_property = Property::<Runtime>::with_name_and_type(
+    let second_property = Property::<ClassId>::with_name_and_type(
         (PropertyNameLengthConstraint::get().max() - 1) as usize,
         second_property_type,
         true,
@@ -162,7 +165,7 @@ pub enum EntityAccessStateFailureType {
 
 pub fn emulate_entity_access_state_for_failure_case(
     entity_access_level_failure_type: EntityAccessStateFailureType,
-) -> Actor<Runtime> {
+) -> Actor<CuratorGroupId, CuratorId, MemberId> {
     // Create class with default permissions
     assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
@@ -305,9 +308,9 @@ pub fn emulate_entity_access_state_for_failure_case(
 pub fn add_unique_class_reference_schema() {
     // Create property
     let property_type =
-        PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, VecMaxLengthConstraint::get());
+        PropertyType::<ClassId>::vec_reference(FIRST_CLASS_ID, true, VecMaxLengthConstraint::get());
 
-    let property = Property::<Runtime>::with_name_and_type(
+    let property = Property::<ClassId>::with_name_and_type(
         (PropertyNameLengthConstraint::get().max() - 1) as usize,
         property_type,
         true,
@@ -325,7 +328,7 @@ pub fn add_unique_class_reference_schema() {
 
 ///  Create class reference schema and add corresponding schema support to the Entity
 pub fn add_unique_class_reference_schema_and_entity_schema_support(
-    actor: &Actor<Runtime>,
+    actor: &Actor<CuratorGroupId, CuratorId, MemberId>,
     origin: u64,
 ) {
     add_unique_class_reference_schema();

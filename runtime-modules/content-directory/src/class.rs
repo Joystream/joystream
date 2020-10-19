@@ -1,14 +1,18 @@
 use super::*;
 
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Eq, PartialEq, Clone)]
-pub struct Class<T: Trait> {
+#[derive(Encode, Decode, Eq, PartialEq, Default, Clone)]
+pub struct Class<
+    EntityId: Default + BaseArithmetic + Clone + Copy,
+    ClassId: Default + BaseArithmetic + Clone + Copy,
+    CuratorGroupId: Ord + Default,
+> {
     /// Permissions for an instance of a Class.
-    class_permissions: ClassPermissions<T>,
+    class_permissions: ClassPermissions<CuratorGroupId>,
     /// All properties that have been used on this class across different class schemas.
     /// Unlikely to be more than roughly 20 properties per class, often less.
     /// For Person, think "height", "weight", etc.
-    properties: Vec<Property<T>>,
+    properties: Vec<Property<ClassId>>,
 
     /// All schemas that are available for this class, think v0.0 Person, v.1.0 Person, etc.
     schemas: Vec<Schema>,
@@ -18,38 +22,28 @@ pub struct Class<T: Trait> {
     description: Vec<u8>,
 
     /// The maximum number of entities which can be created.
-    maximum_entities_count: T::EntityId,
+    maximum_entities_count: EntityId,
 
     /// The current number of entities which exist.
-    current_number_of_entities: T::EntityId,
+    current_number_of_entities: EntityId,
 
     /// How many entities a given controller may create at most.
-    default_entity_creation_voucher_upper_bound: T::EntityId,
+    default_entity_creation_voucher_upper_bound: EntityId,
 }
 
-impl<T: Trait> Default for Class<T> {
-    fn default() -> Self {
-        Self {
-            class_permissions: ClassPermissions::<T>::default(),
-            properties: vec![],
-            schemas: vec![],
-            name: vec![],
-            description: vec![],
-            maximum_entities_count: T::EntityId::default(),
-            current_number_of_entities: T::EntityId::default(),
-            default_entity_creation_voucher_upper_bound: T::EntityId::default(),
-        }
-    }
-}
-
-impl<T: Trait> Class<T> {
+impl<
+        EntityId: Default + BaseArithmetic + Clone + Copy,
+        ClassId: Default + BaseArithmetic + Clone + Copy,
+        CuratorGroupId: Ord + Default,
+    > Class<EntityId, ClassId, CuratorGroupId>
+{
     /// Create new `Class` with provided parameters
     pub fn new(
-        class_permissions: ClassPermissions<T>,
+        class_permissions: ClassPermissions<CuratorGroupId>,
         name: Vec<u8>,
         description: Vec<u8>,
-        maximum_entities_count: T::EntityId,
-        default_entity_creation_voucher_upper_bound: T::EntityId,
+        maximum_entities_count: EntityId,
+        default_entity_creation_voucher_upper_bound: EntityId,
     ) -> Self {
         Self {
             class_permissions,
@@ -58,7 +52,7 @@ impl<T: Trait> Class<T> {
             name,
             description,
             maximum_entities_count,
-            current_number_of_entities: T::EntityId::zero(),
+            current_number_of_entities: EntityId::zero(),
             default_entity_creation_voucher_upper_bound,
         }
     }
@@ -87,7 +81,7 @@ impl<T: Trait> Class<T> {
     }
 
     /// Used to update `Class` permissions
-    pub fn update_permissions(&mut self, permissions: ClassPermissions<T>) {
+    pub fn update_permissions(&mut self, permissions: ClassPermissions<CuratorGroupId>) {
         self.class_permissions = permissions
     }
 
@@ -103,72 +97,75 @@ impl<T: Trait> Class<T> {
 
     /// Increment number of entities, associated with this class
     pub fn increment_entities_count(&mut self) {
-        self.current_number_of_entities += T::EntityId::one();
+        self.current_number_of_entities += EntityId::one();
     }
 
     /// Decrement number of entities, associated with this class
     pub fn decrement_entities_count(&mut self) {
-        self.current_number_of_entities -= T::EntityId::one();
+        self.current_number_of_entities -= EntityId::one();
     }
 
     /// Retrieve `ClassPermissions` by mutable reference
-    pub fn get_permissions_mut(&mut self) -> &mut ClassPermissions<T> {
+    pub fn get_permissions_mut(&mut self) -> &mut ClassPermissions<CuratorGroupId> {
         &mut self.class_permissions
     }
 
     /// Retrieve `ClassPermissions` by reference
-    pub fn get_permissions_ref(&self) -> &ClassPermissions<T> {
+    pub fn get_permissions_ref(&self) -> &ClassPermissions<CuratorGroupId> {
         &self.class_permissions
     }
 
     /// Retrieve `ClassPermissions` by value
-    pub fn get_permissions(self) -> ClassPermissions<T> {
+    pub fn get_permissions(self) -> ClassPermissions<CuratorGroupId> {
         self.class_permissions
     }
 
     /// Retrieve `Class` properties by value  
-    pub fn get_properties(self) -> Vec<Property<T>> {
+    pub fn get_properties(self) -> Vec<Property<ClassId>> {
         self.properties
     }
 
     /// Replace `Class` properties with updated_class_properties
-    pub fn set_properties(&mut self, updated_class_properties: Vec<Property<T>>) {
+    pub fn set_properties(&mut self, updated_class_properties: Vec<Property<ClassId>>) {
         self.properties = updated_class_properties;
     }
 
     /// Get per controller `Class`- specific limit
-    pub fn get_default_entity_creation_voucher_upper_bound(&self) -> T::EntityId {
+    pub fn get_default_entity_creation_voucher_upper_bound(&self) -> EntityId {
         self.default_entity_creation_voucher_upper_bound
     }
 
     /// Retrive the maximum entities count, which can be created for given `Class`
-    pub fn get_maximum_entities_count(&self) -> T::EntityId {
+    pub fn get_maximum_entities_count(&self) -> EntityId {
         self.maximum_entities_count
     }
 
     /// Set per controller `Class`- specific limit
     pub fn set_default_entity_creation_voucher_upper_bound(
         &mut self,
-        new_default_entity_creation_voucher_upper_bound: T::EntityId,
+        new_default_entity_creation_voucher_upper_bound: EntityId,
     ) {
         self.default_entity_creation_voucher_upper_bound =
             new_default_entity_creation_voucher_upper_bound;
     }
 
     /// Set the maximum entities count, which can be created for given `Class`
-    pub fn set_maximum_entities_count(&mut self, maximum_entities_count: T::EntityId) {
+    pub fn set_maximum_entities_count(&mut self, maximum_entities_count: EntityId) {
         self.maximum_entities_count = maximum_entities_count;
     }
 
     /// Ensure `Class` `Schema` under given index exist, return corresponding `Schema`
-    pub fn ensure_schema_exists(&self, schema_index: SchemaId) -> Result<&Schema, Error<T>> {
+    pub fn ensure_schema_exists<T: Trait>(
+        &self,
+        schema_index: SchemaId,
+    ) -> Result<&Schema, Error<T>> {
         self.schemas
             .get(schema_index as usize)
             .ok_or(Error::<T>::UnknownClassSchemaId)
     }
 
     /// Ensure `schema_id` is a valid index of `Class` schemas vector
-    pub fn ensure_schema_id_exists(&self, schema_id: SchemaId) -> Result<(), Error<T>> {
+    pub fn ensure_schema_id_exists<T: Trait>(&self, schema_id: SchemaId) -> Result<(), Error<T>> {
         ensure!(
             schema_id < self.schemas.len() as SchemaId,
             Error::<T>::UnknownClassSchemaId
@@ -177,7 +174,7 @@ impl<T: Trait> Class<T> {
     }
 
     /// Ensure `Schema`s limit per `Class` not reached
-    pub fn ensure_schemas_limit_not_reached(&self) -> Result<(), Error<T>> {
+    pub fn ensure_schemas_limit_not_reached<T: Trait>(&self) -> Result<(), Error<T>> {
         ensure!(
             (self.schemas.len() as MaxNumber) < T::MaxNumberOfSchemasPerClass::get(),
             Error::<T>::ClassSchemasLimitReached
@@ -186,9 +183,9 @@ impl<T: Trait> Class<T> {
     }
 
     /// Ensure properties limit per `Schema` not reached
-    pub fn ensure_properties_limit_not_reached(
+    pub fn ensure_properties_limit_not_reached<T: Trait>(
         &self,
-        new_properties: &[Property<T>],
+        new_properties: &[Property<ClassId>],
     ) -> Result<(), Error<T>> {
         ensure!(
             T::MaxNumberOfPropertiesPerSchema::get()
@@ -199,7 +196,9 @@ impl<T: Trait> Class<T> {
     }
 
     /// Ensure `Class` specific entities limit not reached
-    pub fn ensure_maximum_entities_count_limit_not_reached(&self) -> Result<(), Error<T>> {
+    pub fn ensure_maximum_entities_count_limit_not_reached<T: Trait>(
+        &self,
+    ) -> Result<(), Error<T>> {
         ensure!(
             self.current_number_of_entities < self.maximum_entities_count,
             Error::<T>::NumberOfEntitiesPerClassLimitReached
@@ -209,11 +208,11 @@ impl<T: Trait> Class<T> {
 
     /// Ensure `Property` under given `PropertyId` is unlocked from actor with given `EntityAccessLevel`
     /// return corresponding `Property` by value
-    pub fn ensure_class_property_type_unlocked_from(
-        &self,
+    pub fn ensure_class_property_type_unlocked_from<T: Trait>(
+        self,
         in_class_schema_property_id: PropertyId,
         entity_access_level: EntityAccessLevel,
-    ) -> Result<Property<T>, Error<T>> {
+    ) -> Result<Property<ClassId>, Error<T>> {
         // Ensure property values were not locked on Class level
         self.ensure_property_values_unlocked()?;
 
@@ -226,13 +225,13 @@ impl<T: Trait> Class<T> {
             .ok_or(Error::<T>::ClassPropertyNotFound)?;
 
         // Ensure Property is unlocked from Actor with given EntityAccessLevel
-        class_property.ensure_unlocked_from(entity_access_level)?;
+        class_property.ensure_unlocked_from::<T>(entity_access_level)?;
 
-        Ok(class_property.to_owned())
+        Ok(class_property.clone())
     }
 
     /// Ensure property values were not locked on `Class` level
-    pub fn ensure_property_values_unlocked(&self) -> Result<(), Error<T>> {
+    pub fn ensure_property_values_unlocked<T: Trait>(&self) -> Result<(), Error<T>> {
         ensure!(
             !self
                 .get_permissions_ref()

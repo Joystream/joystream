@@ -391,9 +391,9 @@ fn update_entity_property_values_is_locked_for_given_actor() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create property
-        let property_type = PropertyType::<Runtime>::vec_reference(FIRST_CLASS_ID, true, 5);
+        let property_type = PropertyType::<ClassId>::vec_reference(FIRST_CLASS_ID, true, 5);
 
-        let mut property = Property::<Runtime>::with_name_and_type(
+        let mut property = Property::<ClassId>::with_name_and_type(
             (PropertyNameLengthConstraint::get().max() - 1) as usize,
             property_type,
             true,
@@ -605,9 +605,9 @@ fn update_entity_property_values_text_prop_is_too_long() {
         assert_ok!(create_entity(LEAD_ORIGIN, FIRST_CLASS_ID, actor.to_owned()));
 
         // Create text property
-        let property_type = PropertyType::<Runtime>::single_text(TextMaxLengthConstraint::get());
+        let property_type = PropertyType::<ClassId>::single_text(TextMaxLengthConstraint::get());
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize,
             property_type,
             true,
@@ -682,9 +682,9 @@ fn update_entity_property_values_hashed_text_prop_is_too_long() {
 
         // Create hash property
         let property_type =
-            PropertyType::<Runtime>::single_text_hash(hashed_text_max_length_constraint);
+            PropertyType::<ClassId>::single_text_hash(hashed_text_max_length_constraint);
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize,
             property_type,
             true,
