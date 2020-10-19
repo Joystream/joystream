@@ -16,10 +16,11 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@polkadot/types/augment": ["../types/augment-codec/augment-types.ts"],
-      "@polkadot/api/augment": ["../types/augment-codec/augment-api.ts"]
+      "@polkadot/types/augment": ["../node_modules/@joystream/types/augment-codec/augment-types.ts"],
+      "@polkadot/api/augment": ["../node_modules/@joystream/types/augment-codec/augment-api.ts"]
     },
-    "outDir": "lib"
+    "outDir": "lib",
+    "skipLibCheck": true
   },
   "include": [ "src/**/*" ]
 }
