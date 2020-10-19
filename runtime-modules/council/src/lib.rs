@@ -446,7 +446,11 @@ impl<T: Trait> Module<T> {
     }
 
     /// Construct a new candidate for council election.
-    fn prepare_new_candidate(account_id: T::AccountId, current_candidate_count: u64, stake: Balance<T>) -> CandidateOf<T> {
+    fn prepare_new_candidate(
+        account_id: T::AccountId,
+        current_candidate_count: u64,
+        stake: Balance<T>,
+    ) -> CandidateOf<T> {
         Candidate {
             account_id,
             cycle_id: CurrentAnnouncementCycleId::get(),
@@ -600,7 +604,9 @@ impl<T: Trait> Mutations<T> {
         Stage::<T>::mutate(|value| {
             *value = CouncilStageUpdate {
                 stage: CouncilStage::Announcing(new_stage_data),
-                changed_at: value.changed_at, // keep changed_at - stage phase haven't changed
+
+                // keep changed_at (and other values) - stage phase haven't changed
+                ..*value
             }
         });
     }
