@@ -554,7 +554,7 @@ impl<T: Trait> Mutations<T> {
         CouncilMembers::<T>::get()
             .iter()
             .for_each(|council_member| {
-                T::ElectedMemberLock::set_stake(&council_member.account_id, 0.into());
+                T::ElectedMemberLock::unlock(&council_member.account_id);
             });
 
         // set new council
@@ -565,10 +565,10 @@ impl<T: Trait> Mutations<T> {
             .iter()
             .for_each(|council_member| {
                 // unlock candidacy stake
-                T::CandidacyLock::set_stake(&council_member.account_id, 0.into());
+                T::CandidacyLock::unlock(&council_member.account_id);
 
                 // lock council member stake
-                T::ElectedMemberLock::set_stake(&council_member.account_id, council_member.stake);
+                T::ElectedMemberLock::lock(&council_member.account_id, council_member.stake);
             });
     }
 
@@ -588,7 +588,7 @@ impl<T: Trait> Mutations<T> {
         };
 
         // lock candidacy stake
-        T::CandidacyLock::set_stake(&candidate.account_id, *stake);
+        T::CandidacyLock::lock(&candidate.account_id, *stake);
 
         // store new candidacy list
         Stage::<T>::mutate(|value| {
@@ -602,7 +602,7 @@ impl<T: Trait> Mutations<T> {
     /// Release user's stake that was used for candidacy.
     fn release_candidacy_stake(account_id: &T::AccountId, council_user_id: &T::CouncilUserId) {
         // release stake amount
-        T::CandidacyLock::set_stake(&account_id, 0.into());
+        T::CandidacyLock::unlock(&account_id);
 
         let candidate = Candidates::<T>::get(council_user_id);
 
