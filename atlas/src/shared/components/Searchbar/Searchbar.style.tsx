@@ -4,11 +4,16 @@ import Button from '../Button'
 
 export const Input = styled.input`
   width: 100%;
+  height: 100%;
   border: unset;
   padding: 14px ${sizes.b3}px;
-  height: ${sizes.b12}px;
   background-color: ${colors.gray[800]};
   color: ${colors.white};
+
+  // override mobile Safari user agent styling
+  border-radius: 0;
+  -webkit-appearance: none;
+
   ::placeholder {
     color: ${colors.gray[400]};
   }

@@ -36,21 +36,19 @@ const Navbar: React.FC<NavbarProps> = () => {
   }
   return (
     <Header hasFocus={isFocused}>
-      <div>
-        {!isFocused && (
-          <NavigationContainer>
-            <Link to="/">
-              <Logo />
-            </Link>
-            <Link to="/">
-              <StyledIcon name="home" />
-            </Link>
-            <Link to={routes.browse()}>
-              <StyledIcon name="binocular" />
-            </Link>
-          </NavigationContainer>
-        )}
-      </div>
+      {!isFocused && (
+        <NavigationContainer>
+          <Link to="/">
+            <Logo />
+          </Link>
+          <Link to="/">
+            <StyledIcon name="home" />
+          </Link>
+          <Link to={routes.browse()}>
+            <StyledIcon name="binocular" />
+          </Link>
+        </NavigationContainer>
+      )}
       <SearchbarContainer>
         <StyledSearchbar
           placeholder="Search..."
@@ -59,6 +57,7 @@ const Navbar: React.FC<NavbarProps> = () => {
           onKeyDown={handleKeyPress}
           onFocus={handleFocus}
           onCancel={handleCancel}
+          showCancelButton={isFocused}
           controlled
         />
       </SearchbarContainer>
