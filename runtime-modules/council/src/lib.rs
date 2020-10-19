@@ -28,7 +28,7 @@
 //! - [can_release_vote_stake](./trait.ReferendumConnection.html#method.can_release_vote_stake)
 //!
 //! ## Dependencies:
-//! - [proposals engine](../referendum/index.html)
+//! - [referendum](../referendum/index.html)
 //!
 //! NOTE: When implementing runtime for this module, don't forget to call all ReferendumConnection
 //!       trait functions at proper places.
