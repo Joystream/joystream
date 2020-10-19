@@ -77,6 +77,9 @@ decl_event!(
 
         /// Emits on post update.
         PostUpdated(PostId, MemberId),
+
+        /// Emits on thread mode change.
+        ThreadModeChanged(ThreadId, ThreadMode<MemberId>),
     }
 );
 
@@ -92,11 +95,7 @@ pub trait Trait: system::Trait + membership::Trait {
     type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
 
     /// Validates post author id and origin combination
-    type PostAuthorOriginValidator: ActorOriginValidator<
-        Self::Origin,
-        MemberId<Self>,
-        Self::AccountId,
-    >;
+    type AuthorOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
 
     /// Defines whether the member is an active councilor.
     type CouncilOriginValidator: ActorOriginValidator<Self::Origin, MemberId<Self>, Self::AccountId>;
@@ -155,6 +154,9 @@ decl_error! {
 
         /// The thread has Closed mode. And post author doesn't belong to council or allowed members.
         CannotPostOnClosedThread,
+
+        /// Should be thread author or councilor.
+        NotAuthorOrCouncilor,
     }
 }
 
@@ -211,7 +213,7 @@ decl_module! {
             thread_id : T::ThreadId,
             text : Vec<u8>
         ) {
-            T::PostAuthorOriginValidator::ensure_actor_origin(
+            T::AuthorOriginValidator::ensure_actor_origin(
                 origin.clone(),
                 post_author_id,
             )?;
@@ -255,7 +257,7 @@ decl_module! {
             post_id : T::PostId,
             text : Vec<u8>
         ){
-            T::PostAuthorOriginValidator::ensure_actor_origin(
+            T::AuthorOriginValidator::ensure_actor_origin(
                 origin,
                 post_author_id,
             )?;
@@ -286,6 +288,35 @@ decl_module! {
 
             <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
             Self::deposit_event(RawEvent::PostUpdated(post_id, post_author_id));
+       }
+
+        /// Changes thread permission mode.
+        #[weight = 10_000_000] // TODO: adjust weight
+        pub fn change_thread_mode(
+            origin,
+            member_id: MemberId<T>,
+            thread_id : T::ThreadId,
+            mode : ThreadMode<MemberId<T>>
+        ) {
+            T::AuthorOriginValidator::ensure_actor_origin(origin.clone(), member_id)?;
+
+            ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
+
+            let thread = Self::thread_by_id(&thread_id);
+
+            let is_councilor =
+                    T::CouncilOriginValidator::ensure_actor_origin(origin, member_id)
+                        .is_ok();
+            let is_thread_author = thread.author_id == member_id;
+
+            ensure!(is_thread_author || is_councilor, Error::<T>::NotAuthorOrCouncilor);
+
+            // mutation
+
+            <ThreadById<T>>::mutate(thread_id, |thread| {
+                thread.mode = mode.clone();
+            });
+            Self::deposit_event(RawEvent::ThreadModeChanged(thread_id, mode));
        }
     }
 }

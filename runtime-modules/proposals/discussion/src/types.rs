@@ -74,8 +74,8 @@ impl<ThreadAuthorId: Clone> ThreadCounter<ThreadAuthorId> {
 }
 
 /// Discussion thread permission modes.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum ThreadMode<MemberId> {
     /// Every member can post on the thread.
     Open,

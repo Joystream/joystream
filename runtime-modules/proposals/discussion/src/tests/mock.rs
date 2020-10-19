@@ -81,8 +81,8 @@ impl membership::Trait for Test {
 
 impl crate::Trait for Test {
     type Event = TestEvent;
-    type PostAuthorOriginValidator = ();
-    type CouncilOriginValidator = ();
+    type AuthorOriginValidator = ();
+    type CouncilOriginValidator = CouncilMock;
     type ThreadId = u64;
     type PostId = u64;
     type MaxPostEditionNumber = MaxPostEditionNumber;
@@ -93,7 +93,7 @@ impl crate::Trait for Test {
 
 impl ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, actor_id: u64) -> Result<u64, &'static str> {
-        if system::ensure_none(origin).is_ok() {
+        if system::ensure_none(origin.clone()).is_ok() {
             return Ok(1);
         }
 
@@ -101,7 +101,30 @@ impl ActorOriginValidator<Origin, u64, u64> for () {
             return Ok(1);
         }
 
+        if actor_id == 2 {
+            return Ok(2);
+        }
+
+        if actor_id == 11 {
+            return Ok(11);
+        }
+
+        if actor_id == 12 && system::ensure_signed(origin).unwrap_or_default() == 12 {
+            return Ok(12);
+        }
+
         Err("Invalid author")
+    }
+}
+
+pub struct CouncilMock;
+impl ActorOriginValidator<Origin, u64, u64> for CouncilMock {
+    fn ensure_actor_origin(origin: Origin, actor_id: u64) -> Result<u64, &'static str> {
+        if actor_id == 2 && system::ensure_signed(origin).unwrap_or_default() == 2 {
+            return Ok(2);
+        }
+
+        Err("Not a council")
     }
 }
 
