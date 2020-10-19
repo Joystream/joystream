@@ -11,7 +11,25 @@ async function main() {
   const provider = new WsProvider('ws://127.0.0.1:9944')
 
   // Create the API and wait until ready
-  const api = await ApiPromise.create({ provider, types })
+  let api: ApiPromise
+  let retry = 3
+  while (true) {
+    try {
+      api = await ApiPromise.create({ provider, types })
+      await api.isReady
+      break
+    } catch (err) {
+      // failed to connect to node
+    }
+
+    if (retry-- === 0) {
+      process.exit(-1)
+    }
+
+    await new Promise((resolve) => {
+      setTimeout(resolve, 5000)
+    })
+  }
 
   // Retrieve the chain & node information information via rpc calls
   const [chain, nodeName, nodeVersion] = await Promise.all([
