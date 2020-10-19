@@ -87,6 +87,37 @@ fn add_curator_to_non_existent_group() {
 }
 
 #[test]
+fn add_curator_to_group_already_a_member_of_given_curator_group() {
+    with_test_externalities(|| {
+        // Add curator group
+        assert_ok!(add_curator_group(LEAD_ORIGIN));
+
+        // Add curator to group
+        assert_ok!(add_curator_to_group(
+            LEAD_ORIGIN,
+            FIRST_CURATOR_GROUP_ID,
+            FIRST_CURATOR_ID
+        ));
+
+        // Runtime tested state before call
+
+        // Events number before tested call
+        let number_of_events_before_call = System::events().len();
+
+        // Make an attempt to add curator, which is already a member of given curator group.
+        let add_curator_to_group_result =
+            add_curator_to_group(LEAD_ORIGIN, FIRST_CURATOR_GROUP_ID, FIRST_CURATOR_ID);
+
+        // Failure checked
+        assert_failure(
+            add_curator_to_group_result,
+            Error::<Runtime>::CuratorIsAlreadyAMemberOfGivenCuratorGroup,
+            number_of_events_before_call,
+        );
+    })
+}
+
+#[test]
 fn add_curator_to_group_curators_limit_reached() {
     with_test_externalities(|| {
         // Add curator group
