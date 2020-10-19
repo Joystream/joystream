@@ -9,7 +9,7 @@ import { BlockNumber, BalanceOf, Exposure } from '@polkadot/types/interfaces'
 import { WorkerId } from '@joystream/types/working-group'
 import { RewardRelationshipId, RewardRelationship } from '@joystream/types/recurring-rewards'
 import { StakeId, Stake } from '@joystream/types/stake'
-import { TokenomicsData } from '@polkadot/joy-utils/src/types/tokenomics'
+import { TokenomicsData } from '../types/tokenomics'
 import { calculateValidatorsRewardsPerEra } from '../functions/staking'
 import { WorkingGroupKey } from '@joystream/types/common'
 
@@ -55,18 +55,16 @@ export default class TokenomicsTransport extends BaseTransport {
       amountPerPayout && payoutInterval ? (amountPerPayout * numberOfCouncilMembers) / payoutInterval : 0
 
     const {
-      new_term_duration,
-      voting_period,
-      revealing_period,
-      announcing_period,
+      newTermDuration,
+      votingPeriod,
+      revealingPeriod,
+      announcingPeriod,
     } = await this.councilT.electionParameters()
-    const termDuration = new_term_duration.toNumber()
-    const votingPeriod = voting_period.toNumber()
-    const revealingPeriod = revealing_period.toNumber()
-    const announcingPeriod = announcing_period.toNumber()
     const weekInBlocks = 100800
 
-    const councilTermDurationRatio = termDuration / (termDuration + votingPeriod + revealingPeriod + announcingPeriod)
+    const councilTermDurationRatio =
+      newTermDuration.toNumber() /
+      (newTermDuration.toNumber() + votingPeriod.toNumber() + revealingPeriod.toNumber() + announcingPeriod.toNumber())
     const avgCouncilRewardPerBlock = councilTermDurationRatio * totalCouncilRewardsPerBlock
     const avgCouncilRewardPerWeek = avgCouncilRewardPerBlock * weekInBlocks
 

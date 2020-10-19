@@ -2,7 +2,6 @@ import { Bytes } from '@polkadot/types/primitive'
 import BN from 'bn.js'
 import keyring from '@polkadot/ui-keyring'
 import { ElectionStake, Backer } from '@joystream/types/council'
-import { Options as QueryOptions } from '@polkadot/react-api/hoc/types'
 import queryString from 'query-string'
 import { SubmittableResult } from '@polkadot/api'
 import { Codec } from '@polkadot/types/types'
@@ -45,19 +44,19 @@ export const nonEmptyArr = (x: any): boolean => Array.isArray(x) && x.length > 0
 export const isEmptyArr = (x: any): boolean => !nonEmptyArr(x)
 
 export function findNameByAddress(address: string): string | undefined {
-  let keyring_address
+  let keyringAddress
 
   try {
-    keyring_address = keyring.getAccount(address)
+    keyringAddress = keyring.getAccount(address)
   } catch (error) {
     try {
-      keyring_address = keyring.getAddress(address)
+      keyringAddress = keyring.getAddress(address)
     } catch (error) {
       // do nothing
     }
   }
 
-  return keyring_address ? keyring_address.meta.name : undefined
+  return keyringAddress ? keyringAddress.meta.name : undefined
 }
 
 export function isKnownAddress(address: string): boolean {
@@ -92,26 +91,6 @@ export function calcBackersStake(backers: Backer[]): BN {
     .reduce((accum, stake) => {
       return accum.add(stake)
     }, ZERO)
-}
-
-/** Example of apiQuery: 'query.councilElection.round' */
-export function queryToProp(apiQuery: string, paramNameOrOpts?: string | QueryOptions): [string, QueryOptions] {
-  let paramName: string | undefined
-  let propName: string | undefined
-
-  if (typeof paramNameOrOpts === 'string') {
-    paramName = paramNameOrOpts
-  } else if (paramNameOrOpts) {
-    paramName = paramNameOrOpts.paramName
-    propName = paramNameOrOpts.propName
-  }
-
-  // If prop name is still undefined, derive it from the name of storage item:
-  if (!propName) {
-    propName = apiQuery.split('.').slice(-1)[0]
-  }
-
-  return [apiQuery, { paramName, propName }]
 }
 
 export function getUrlParam(location: Location, paramName: string, deflt: string | null = null): string | null {

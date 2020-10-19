@@ -1,16 +1,16 @@
 import { Codec } from '@polkadot/types/types'
 import ApiPromise from '@polkadot/api/promise'
 
-type cacheQueryStorage = {
+type CacheQueryStorage = {
   (...args: any): Promise<Codec>
 }
 
-type cacheQueryModule = {
-  [index: string]: cacheQueryStorage
+type CacheQueryModule = {
+  [index: string]: CacheQueryStorage
 }
 
-type cacheQueryRuntime = {
-  [index: string]: cacheQueryModule
+type CacheQueryRuntime = {
+  [index: string]: CacheQueryModule
 }
 
 export class APIQueryCache {
@@ -19,8 +19,9 @@ export class APIQueryCache {
   protected unsubscribeFn: () => void = () => {
     /* do nothing */
   }
+
   protected cacheHits = 0
-  public query: cacheQueryRuntime = {}
+  public query: CacheQueryRuntime = {}
 
   constructor(api: ApiPromise) {
     this.api = api

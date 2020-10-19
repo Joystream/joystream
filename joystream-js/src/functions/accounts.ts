@@ -1,4 +1,3 @@
-import { ActionStatus } from '@polkadot/react-components/Status/types'
 import { CreateResult } from '@polkadot/ui-keyring/types'
 import { KeypairType } from '@polkadot/util-crypto/types'
 
@@ -62,12 +61,12 @@ function newSeed(seed: string | undefined | null, seedType: SeedType): string {
 }
 
 export function generateSeed(
-  _seed: string | undefined | null,
+  providedSeed: string | undefined | null,
   derivePath: string,
   seedType: SeedType,
   pairType: KeypairType = DEFAULT_PAIR_TYPE
 ): AddressState {
-  const seed = newSeed(_seed, seedType)
+  const seed = newSeed(providedSeed, seedType)
   const address = addressFromSeed(seed, derivePath, pairType)
 
   return {
@@ -116,31 +115,39 @@ export function downloadAccount({ json, pair }: CreateResult): void {
   FileSaver.saveAs(blob, `${pair.address}.json`)
 }
 
+// Should be ompatible with @polkadot/react-components/Status/types
+type CreateAccountStatus = {
+  action: 'create'
+  account?: string
+  status: 'success' | 'error'
+  message: string
+}
+
 export function createAccount(
   suri: string,
   pairType: KeypairType,
   name: string,
   password: string,
   success: string
-): ActionStatus {
-  // we will fill in all the details below
-  const status = { action: 'create' } as ActionStatus
-
+): CreateAccountStatus {
   try {
     const result = keyring.addUri(suri, password, { name: name.trim(), tags: [] }, pairType)
     const { address } = result.pair
 
-    status.account = address
-    status.status = 'success'
-    status.message = success
-
     downloadAccount(result)
+    return {
+      action: 'create',
+      account: address,
+      status: 'success',
+      message: success,
+    }
   } catch (error) {
-    status.status = 'error'
-    status.message = normalizeError(error)
+    return {
+      action: 'create',
+      status: 'error',
+      message: normalizeError(error),
+    }
   }
-
-  return status
 }
 
 export function isPasswordValid(password: string): boolean {

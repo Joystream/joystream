@@ -66,25 +66,25 @@ export default class CouncilTransport extends BaseTransport {
       .map(([memberId, member]) => ({ id: memberId.toNumber(), profile: member }))
   }
 
-  async electionParameters(): Promise<IElectionParameters> {
-    const announcing_period = (await this.councilElection.announcingPeriod()) as BlockNumber
-    const voting_period = (await this.councilElection.votingPeriod()) as BlockNumber
-    const revealing_period = (await this.councilElection.revealingPeriod()) as BlockNumber
-    const new_term_duration = (await this.councilElection.newTermDuration()) as BlockNumber
-    const min_council_stake = (await this.councilElection.minCouncilStake()) as Balance
-    const min_voting_stake = (await this.councilElection.minVotingStake()) as Balance
-    const candidacy_limit = (await this.councilElection.candidacyLimit()) as u32
-    const council_size = (await this.councilElection.councilSize()) as u32
+  async electionParameters() {
+    const announcingPeriod = (await this.councilElection.announcingPeriod()) as BlockNumber
+    const votingPeriod = (await this.councilElection.votingPeriod()) as BlockNumber
+    const revealingPeriod = (await this.councilElection.revealingPeriod()) as BlockNumber
+    const newTermDuration = (await this.councilElection.newTermDuration()) as BlockNumber
+    const minCouncilStake = (await this.councilElection.minCouncilStake()) as Balance
+    const minVotingStake = (await this.councilElection.minVotingStake()) as Balance
+    const candidacyLimit = (await this.councilElection.candidacyLimit()) as u32
+    const councilSize = (await this.councilElection.councilSize()) as u32
 
     return {
-      announcing_period,
-      voting_period,
-      revealing_period,
-      new_term_duration,
-      min_council_stake,
-      min_voting_stake,
-      candidacy_limit,
-      council_size,
+      announcingPeriod,
+      votingPeriod,
+      revealingPeriod,
+      newTermDuration,
+      minCouncilStake,
+      minVotingStake,
+      candidacyLimit,
+      councilSize,
     }
   }
 }
