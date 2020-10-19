@@ -321,7 +321,7 @@ decl_module! {
         #[weight = 10_000_000]
         pub fn announce_candidacy(origin, council_user_id: T::CouncilUserId, stake: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
-            let (stage_data, candidate) = EnsureChecks::<T>::can_candidate(origin, &council_user_id, &stake)?;
+            let (stage_data, candidate) = EnsureChecks::<T>::can_announce_candidacy(origin, &council_user_id, &stake)?;
 
             //
             // == MUTATION SAFE ==
@@ -643,7 +643,7 @@ impl<T: Trait> EnsureChecks<T> {
 
     /////////////////// Action checks //////////////////////////////////////////
 
-    fn can_candidate(
+    fn can_announce_candidacy(
         origin: T::Origin,
         council_user_id: &T::CouncilUserId,
         stake: &Balance<T>,
