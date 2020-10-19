@@ -1,4 +1,4 @@
-import { ProposalType, ProposalMeta } from '../types/proposals';
+import { ProposalType, ProposalMeta } from '../types/proposals'
 
 export const metadata: { [k in ProposalType]: ProposalMeta } = {
   EvictStorageProvider: {
@@ -9,7 +9,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalThreshold: 75,
     slashingQuorum: 60,
     slashingThreshold: 80,
-    outdated: true
+    outdated: true,
   },
   Text: {
     description: 'Signal Proposal',
@@ -18,7 +18,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalQuorum: 60,
     approvalThreshold: 80,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
   },
   SetStorageRoleParameters: {
     description: 'Set Storage Role Params Proposal',
@@ -28,7 +28,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalThreshold: 80,
     slashingQuorum: 60,
     slashingThreshold: 80,
-    outdated: true
+    outdated: true,
   },
   SetValidatorCount: {
     description: 'Set Max Validator Count Proposal',
@@ -37,7 +37,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalQuorum: 66,
     approvalThreshold: 80,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
   },
   SetLead: {
     description: 'Set Lead Proposal',
@@ -47,7 +47,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalThreshold: 75,
     slashingQuorum: 60,
     slashingThreshold: 80,
-    outdated: true
+    outdated: true,
   },
   SetContentWorkingGroupMintCapacity: {
     description: 'Set WG Mint Capacity Proposal',
@@ -57,7 +57,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalThreshold: 75,
     slashingQuorum: 60,
     slashingThreshold: 80,
-    outdated: true
+    outdated: true,
   },
   Spending: {
     description: 'Spending Proposal',
@@ -66,7 +66,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalQuorum: 60,
     approvalThreshold: 80,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
   },
   SetElectionParameters: {
     description: 'Set Election Parameters Proposal',
@@ -75,7 +75,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalQuorum: 66,
     approvalThreshold: 80,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
   },
   RuntimeUpgrade: {
     description: 'Runtime Upgrade Proposal',
@@ -84,7 +84,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalQuorum: 80,
     approvalThreshold: 100,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
   },
   AddWorkingGroupLeaderOpening: {
     description: 'Add Working Group Leader Opening Proposal',
@@ -93,7 +93,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalQuorum: 60,
     approvalThreshold: 80,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
   },
   SetWorkingGroupMintCapacity: {
     description: 'Set Working Group Mint Capacity Proposal',
@@ -102,7 +102,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalQuorum: 60,
     approvalThreshold: 75,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
   },
   BeginReviewWorkingGroupLeaderApplication: {
     description: 'Begin Working Group Leader Applications Review Proposal',
@@ -111,7 +111,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalQuorum: 60,
     approvalThreshold: 75,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
   },
   FillWorkingGroupLeaderOpening: {
     description: 'Fill Working Group Leader Opening Proposal',
@@ -120,7 +120,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalQuorum: 60,
     approvalThreshold: 75,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
   },
   DecreaseWorkingGroupLeaderStake: {
     description: 'Decrease Working Group Leader Stake Proposal',
@@ -129,7 +129,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalQuorum: 60,
     approvalThreshold: 75,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
   },
   SlashWorkingGroupLeaderStake: {
     description: 'Slash Working Group Leader Stake Proposal',
@@ -138,7 +138,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalQuorum: 60,
     approvalThreshold: 75,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
   },
   SetWorkingGroupLeaderReward: {
     description: 'Set Working Group Leader Reward Proposal',
@@ -147,7 +147,7 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalQuorum: 60,
     approvalThreshold: 75,
     slashingQuorum: 60,
-    slashingThreshold: 80
+    slashingThreshold: 80,
   },
   TerminateWorkingGroupLeaderRole: {
     description: 'Terminate Working Group Leader Role Proposal',
@@ -156,67 +156,67 @@ export const metadata: { [k in ProposalType]: ProposalMeta } = {
     approvalQuorum: 66,
     approvalThreshold: 80,
     slashingQuorum: 60,
-    slashingThreshold: 80
-  }
-};
+    slashingThreshold: 80,
+  },
+}
 
 type ProposalsApiMethodNames = {
-  votingPeriod: string;
-  gracePeriod: string;
+  votingPeriod: string
+  gracePeriod: string
 }
 export const apiMethods: { [k in ProposalType]?: ProposalsApiMethodNames } = {
   Text: {
     votingPeriod: 'textProposalVotingPeriod',
-    gracePeriod: 'textProposalGracePeriod'
+    gracePeriod: 'textProposalGracePeriod',
   },
   SetValidatorCount: {
     votingPeriod: 'setValidatorCountProposalVotingPeriod',
-    gracePeriod: 'setValidatorCountProposalGracePeriod'
+    gracePeriod: 'setValidatorCountProposalGracePeriod',
   },
   Spending: {
     votingPeriod: 'spendingProposalVotingPeriod',
-    gracePeriod: 'spendingProposalGracePeriod'
+    gracePeriod: 'spendingProposalGracePeriod',
   },
   SetElectionParameters: {
     votingPeriod: 'setElectionParametersProposalVotingPeriod',
-    gracePeriod: 'setElectionParametersProposalGracePeriod'
+    gracePeriod: 'setElectionParametersProposalGracePeriod',
   },
   RuntimeUpgrade: {
     votingPeriod: 'runtimeUpgradeProposalVotingPeriod',
-    gracePeriod: 'runtimeUpgradeProposalGracePeriod'
+    gracePeriod: 'runtimeUpgradeProposalGracePeriod',
   },
   AddWorkingGroupLeaderOpening: {
     votingPeriod: 'addWorkingGroupOpeningProposalVotingPeriod',
-    gracePeriod: 'addWorkingGroupOpeningProposalGracePeriod'
+    gracePeriod: 'addWorkingGroupOpeningProposalGracePeriod',
   },
   SetWorkingGroupMintCapacity: {
     votingPeriod: 'setWorkingGroupMintCapacityProposalVotingPeriod',
-    gracePeriod: 'setWorkingGroupMintCapacityProposalGracePeriod'
+    gracePeriod: 'setWorkingGroupMintCapacityProposalGracePeriod',
   },
   BeginReviewWorkingGroupLeaderApplication: {
     votingPeriod: 'beginReviewWorkingGroupLeaderApplicationsProposalVotingPeriod',
-    gracePeriod: 'beginReviewWorkingGroupLeaderApplicationsProposalGracePeriod'
+    gracePeriod: 'beginReviewWorkingGroupLeaderApplicationsProposalGracePeriod',
   },
   FillWorkingGroupLeaderOpening: {
     votingPeriod: 'fillWorkingGroupLeaderOpeningProposalVotingPeriod',
-    gracePeriod: 'fillWorkingGroupLeaderOpeningProposalGracePeriod'
+    gracePeriod: 'fillWorkingGroupLeaderOpeningProposalGracePeriod',
   },
   DecreaseWorkingGroupLeaderStake: {
     votingPeriod: 'decreaseWorkingGroupLeaderStakeProposalVotingPeriod',
-    gracePeriod: 'decreaseWorkingGroupLeaderStakeProposalGracePeriod'
+    gracePeriod: 'decreaseWorkingGroupLeaderStakeProposalGracePeriod',
   },
   SlashWorkingGroupLeaderStake: {
     votingPeriod: 'slashWorkingGroupLeaderStakeProposalVotingPeriod',
-    gracePeriod: 'slashWorkingGroupLeaderStakeProposalGracePeriod'
+    gracePeriod: 'slashWorkingGroupLeaderStakeProposalGracePeriod',
   },
   SetWorkingGroupLeaderReward: {
     votingPeriod: 'setWorkingGroupLeaderRewardProposalVotingPeriod',
-    gracePeriod: 'setWorkingGroupLeaderRewardProposalGracePeriod'
+    gracePeriod: 'setWorkingGroupLeaderRewardProposalGracePeriod',
   },
   TerminateWorkingGroupLeaderRole: {
     votingPeriod: 'terminateWorkingGroupLeaderRoleProposalVotingPeriod',
-    gracePeriod: 'terminateWorkingGroupLeaderRoleProposalGracePeriod'
-  }
-} as const;
+    gracePeriod: 'terminateWorkingGroupLeaderRoleProposalGracePeriod',
+  },
+} as const
 
-export default metadata;
+export default metadata

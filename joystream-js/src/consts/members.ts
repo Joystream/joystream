@@ -1,3 +1,3 @@
-import BN from 'bn.js';
+import BN from 'bn.js'
 
-export const FIRST_MEMBER_ID = new BN(0);
+export const FIRST_MEMBER_ID = new BN(0)

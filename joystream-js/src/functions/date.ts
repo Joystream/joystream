@@ -1,5 +1,5 @@
-import moment from 'moment';
+import moment from 'moment'
 
-export function formatDate (date: moment.Moment): string {
-  return date.format('DD/MM/YYYY LT');
+export function formatDate(date: moment.Moment): string {
+  return date.format('DD/MM/YYYY LT')
 }
