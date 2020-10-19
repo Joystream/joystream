@@ -1,6 +1,5 @@
 import { ApiPromise } from '@polkadot/api';
 import ChainTransport from './chain';
-import ContentWorkingGroupTransport from './contentWorkingGroup';
 import ProposalsTransport from './proposals';
 import MembersTransport from './members';
 import CouncilTransport from './council';
@@ -17,7 +16,6 @@ export default class Transport {
   public members: MembersTransport;
   public council: CouncilTransport;
   public proposals: ProposalsTransport;
-  public contentWorkingGroup: ContentWorkingGroupTransport;
   public validators: ValidatorsTransport;
   public workingGroups: WorkingGroupsTransport;
   public tokenomics: TokenomicsTransport
@@ -29,7 +27,6 @@ export default class Transport {
     this.members = new MembersTransport(api, this.cacheApi);
     this.validators = new ValidatorsTransport(api, this.cacheApi);
     this.council = new CouncilTransport(api, this.cacheApi, this.members, this.chain);
-    this.contentWorkingGroup = new ContentWorkingGroupTransport(api, this.cacheApi, this.members);
     this.proposals = new ProposalsTransport(api, this.cacheApi, this.members, this.chain, this.council);
     this.workingGroups = new WorkingGroupsTransport(api, this.cacheApi, this.members);
     this.tokenomics = new TokenomicsTransport(api, this.cacheApi, this.council, this.workingGroups);
