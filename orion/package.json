@@ -17,7 +17,7 @@
     "url": "https://github.com/Joystream/joystream/issues"
   },
   "scripts": {
-    "dev": "ts-node-dev --respawn src/server.ts",
+    "dev": "NODE_ENV=development ts-node-dev --respawn src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint . --ext .ts"
@@ -31,6 +31,7 @@
     "@typegoose/typegoose": "^7.4.1",
     "apollo-server-express": "^2.18.1",
     "class-validator": "^0.12.2",
+    "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "graphql": "^15.3.0",
     "mongoose": "^5.10.7",
