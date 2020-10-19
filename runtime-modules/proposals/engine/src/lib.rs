@@ -474,10 +474,12 @@ impl<T: Trait> Module<T> {
         let new_proposal_id = next_proposal_count_value;
         let proposal_id = T::ProposalId::from(new_proposal_id);
 
+        // Lock stake balance for proposal if the stake is required.
         if let Some(stake_balance) = creation_params.proposal_parameters.required_stake {
             if let Some(staking_account_id) = creation_params.staking_account_id.clone() {
                 T::StakingHandler::lock(&staking_account_id, stake_balance);
             } else {
+                // Return an error if no staking account provided.
                 return Err(Error::<T>::EmptyStake.into());
             }
         };
