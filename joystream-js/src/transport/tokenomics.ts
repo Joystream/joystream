@@ -3,10 +3,7 @@ import { ApiPromise } from '@polkadot/api'
 import CouncilTransport from './council'
 import WorkingGroupsTransport from './workingGroups'
 import { APIQueryCache } from './APIQueryCache'
-import { Seats } from '@joystream/types/council'
-import { Option } from '@polkadot/types'
-import { BlockNumber, BalanceOf, Exposure } from '@polkadot/types/interfaces'
-import { WorkerId } from '@joystream/types/working-group'
+import { Exposure } from '@polkadot/types/interfaces'
 import { RewardRelationshipId, RewardRelationship } from '@joystream/types/recurring-rewards'
 import { StakeId, Stake } from '@joystream/types/stake'
 import { TokenomicsData } from '../types/tokenomics'
@@ -30,7 +27,7 @@ export default class TokenomicsTransport extends BaseTransport {
 
   async councilSizeAndStake() {
     let totalCouncilStake = 0
-    const activeCouncil = (await this.council.activeCouncil()) as Seats
+    const activeCouncil = await this.council.activeCouncil()
 
     activeCouncil.map((member) => {
       let stakeAmount = 0
@@ -49,8 +46,8 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   private async councilRewardsPerWeek(numberOfCouncilMembers: number) {
-    const payoutInterval = Number(((await this.api.query.council.payoutInterval()) as Option<BlockNumber>).unwrapOr(0))
-    const amountPerPayout = ((await this.api.query.council.amountPerPayout()) as BalanceOf).toNumber()
+    const payoutInterval = Number((await this.api.query.council.payoutInterval()).unwrapOr(0))
+    const amountPerPayout = (await this.api.query.council.amountPerPayout()).toNumber()
     const totalCouncilRewardsPerBlock =
       amountPerPayout && payoutInterval ? (amountPerPayout * numberOfCouncilMembers) / payoutInterval : 0
 
@@ -90,9 +87,7 @@ export default class TokenomicsTransport extends BaseTransport {
     let numberOfWorkers = 0
     let leadNumber = 0
     const allWorkers = await this.workingGroupT.allWorkers(group)
-    const currentLeadId = ((await this.workingGroupT.queryByGroup(group).currentLead()) as Option<WorkerId>)
-      .unwrapOr(undefined)
-      ?.toNumber()
+    const currentLeadId = (await this.workingGroupT.queryByGroup(group).currentLead()).unwrapOr(undefined)?.toNumber()
 
     allWorkers.forEach(([workerId, worker]) => {
       const stakeId = worker.role_stake_profile.isSome ? worker.role_stake_profile.unwrap().stake_id : null
@@ -153,13 +148,11 @@ export default class TokenomicsTransport extends BaseTransport {
     )
 
     if (leadStakeId !== null) {
-      leadStake += ((await this.api.query.stake.stakes(leadStakeId)) as Stake).value.toNumber()
+      leadStake += (await this.api.query.stake.stakes(leadStakeId)).value.toNumber()
     }
 
     if (leadRewardId !== null) {
-      const leadRewardData = (await this.api.query.recurringRewards.rewardRelationships(
-        leadRewardId
-      )) as RewardRelationship
+      const leadRewardData = await this.api.query.recurringRewards.rewardRelationships(leadRewardId)
       const leadAmount = leadRewardData.amount_per_payout.toNumber()
       const leadRewardInterval = leadRewardData.payout_interval.isSome
         ? leadRewardData.payout_interval.unwrap().toNumber()

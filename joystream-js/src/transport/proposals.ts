@@ -18,21 +18,11 @@ import { ParsedMember } from '../types/members'
 import BaseTransport from './base'
 
 import { ThreadId, PostId } from '@joystream/types/common'
-import {
-  Proposal,
-  ProposalId,
-  VoteKind,
-  DiscussionThread,
-  DiscussionPost,
-  ProposalDetails,
-  ProposalStatus,
-} from '@joystream/types/proposals'
+import { Proposal, ProposalId, VoteKind, DiscussionPost, ProposalStatus } from '@joystream/types/proposals'
 import { MemberId } from '@joystream/types/members'
-import { u32, Bytes, Null } from '@polkadot/types/'
-import { BalanceOf } from '@polkadot/types/interfaces'
+import { Bytes, Null } from '@polkadot/types/'
 
 import { bytesToString } from '../functions/misc'
-import _ from 'lodash'
 import { metadata as proposalsConsts, apiMethods as proposalsApiMethods } from '../consts/proposals'
 
 import { ApiPromise } from '@polkadot/api'
@@ -73,19 +63,19 @@ export default class ProposalsTransport extends BaseTransport {
   }
 
   proposalCount() {
-    return this.proposalsEngine.proposalCount() as Promise<u32>
+    return this.proposalsEngine.proposalCount()
   }
 
   rawProposalById(id: ProposalId) {
-    return this.proposalsEngine.proposals(id) as Promise<Proposal>
+    return this.proposalsEngine.proposals(id)
   }
 
   rawProposalDetails(id: ProposalId) {
-    return this.proposalsCodex.proposalDetailsByProposalId(id) as Promise<ProposalDetails>
+    return this.proposalsCodex.proposalDetailsByProposalId(id)
   }
 
   cancellationFee(): number {
-    return (this.api.consts.proposalsEngine.cancellationFee as BalanceOf).toNumber()
+    return this.api.consts.proposalsEngine.cancellationFee.toNumber()
   }
 
   async typeAndDetails(id: ProposalId) {
@@ -198,7 +188,7 @@ export default class ProposalsTransport extends BaseTransport {
   }
 
   async voteByProposalAndMember(proposalId: ProposalId, voterId: MemberId): Promise<VoteKind | null> {
-    const vote = (await this.proposalsEngine.voteExistsByProposalByVoter(proposalId, voterId)) as VoteKind
+    const vote = await this.proposalsEngine.voteExistsByProposalByVoter(proposalId, voterId)
     const hasVoted = (
       await this.api.query.proposalsEngine.voteExistsByProposalByVoter.size(proposalId, voterId)
     ).toNumber()
@@ -240,8 +230,8 @@ export default class ProposalsTransport extends BaseTransport {
     let gracePeriod = 0
 
     if (methods) {
-      votingPeriod = ((await this.proposalsCodex[methods.votingPeriod]()) as u32).toNumber()
-      gracePeriod = ((await this.proposalsCodex[methods.gracePeriod]()) as u32).toNumber()
+      votingPeriod = (await this.proposalsCodex[methods.votingPeriod]()).toNumber()
+      gracePeriod = (await this.proposalsCodex[methods.gracePeriod]()).toNumber()
     }
 
     // Currently it's same for all types, but this will change soon (?)
@@ -265,13 +255,13 @@ export default class ProposalsTransport extends BaseTransport {
   }
 
   async discussion(id: number | ProposalId): Promise<ParsedDiscussion | null> {
-    const threadId = (await this.proposalsCodex.threadIdByProposalId(id)) as ThreadId
+    const threadId = await this.proposalsCodex.threadIdByProposalId(id)
 
     if (!threadId.toNumber()) {
       return null
     }
 
-    const thread = (await this.proposalsDiscussion.threadById(threadId)) as DiscussionThread
+    const thread = await this.proposalsDiscussion.threadById(threadId)
     const postEntries = await this.doubleMapEntiresByIds<ThreadId, PostId, DiscussionPost>(
       this.api.query.proposalsDiscussion.postThreadIdByPostId,
       threadId
@@ -306,8 +296,8 @@ export default class ProposalsTransport extends BaseTransport {
 
   discussionContraints(): DiscussionContraints {
     return {
-      maxPostEdits: (this.api.consts.proposalsDiscussion.maxPostEditionNumber as u32).toNumber(),
-      maxPostLength: (this.api.consts.proposalsDiscussion.postLengthLimit as u32).toNumber(),
+      maxPostEdits: this.api.consts.proposalsDiscussion.maxPostEditionNumber.toNumber(),
+      maxPostLength: this.api.consts.proposalsDiscussion.postLengthLimit.toNumber(),
     }
   }
 
@@ -385,7 +375,7 @@ export default class ProposalsTransport extends BaseTransport {
     batchNumber = 1,
     batchSize = 5
   ): Promise<ProposalsBatch> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const filteredProposalsData = HISTORICAL_PROPOSALS.sort(
         (a, b) => b.proposal.id - a.proposal.id
       ).filter(({ proposal }) =>

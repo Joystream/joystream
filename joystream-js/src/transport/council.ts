@@ -1,9 +1,6 @@
 import { ParsedMember } from '../types/members'
 import BaseTransport from './base'
-import { Seats, IElectionParameters } from '@joystream/types/council'
 import { MemberId, Membership } from '@joystream/types/members'
-import { u32, Vec } from '@polkadot/types/'
-import { Balance, BlockNumber } from '@polkadot/types/interfaces'
 import { ApiPromise } from '@polkadot/api'
 import MembersTransport from './members'
 import ChainTransport from './chain'
@@ -27,20 +24,20 @@ export default class CouncilTransport extends BaseTransport {
   async councilMembersLength(atBlock?: number): Promise<number> {
     if (atBlock) {
       const blockHash = await this.chainT.blockHash(atBlock)
-      const seats = await this.api.query.council.activeCouncil.at<Seats>(blockHash)
+      const seats = await this.api.query.council.activeCouncil.at(blockHash)
 
       return seats.length
     }
 
-    return ((await this.council.activeCouncil()) as Seats).length
+    return (await this.council.activeCouncil()).length
   }
 
   async councilMembers(): Promise<(ParsedMember & { memberId: MemberId })[]> {
-    const council = (await this.council.activeCouncil()) as Seats
+    const council = await this.council.activeCouncil()
 
     return Promise.all(
       council.map(async (seat) => {
-        const memberIds = (await this.members.memberIdsByControllerAccountId(seat.member)) as Vec<MemberId>
+        const memberIds = await this.members.memberIdsByControllerAccountId(seat.member)
         const member = (await this.membersT.expectedMembership(memberIds[0])).toJSON() as ParsedMember
 
         return {
@@ -53,11 +50,11 @@ export default class CouncilTransport extends BaseTransport {
 
   async membersExceptCouncil(): Promise<{ id: number; profile: Membership }[]> {
     // Council members to filter out
-    const activeCouncil = (await this.council.activeCouncil()) as Seats
+    const activeCouncil = await this.council.activeCouncil()
 
     return (await this.membersT.allMembers())
       .filter(
-        ([memberId, member]) =>
+        ([, member]) =>
           // Filter out council members
           !activeCouncil.some(
             (seat) => seat.member.eq(member.controller_account) || seat.member.eq(member.root_account)
@@ -67,14 +64,14 @@ export default class CouncilTransport extends BaseTransport {
   }
 
   async electionParameters() {
-    const announcingPeriod = (await this.councilElection.announcingPeriod()) as BlockNumber
-    const votingPeriod = (await this.councilElection.votingPeriod()) as BlockNumber
-    const revealingPeriod = (await this.councilElection.revealingPeriod()) as BlockNumber
-    const newTermDuration = (await this.councilElection.newTermDuration()) as BlockNumber
-    const minCouncilStake = (await this.councilElection.minCouncilStake()) as Balance
-    const minVotingStake = (await this.councilElection.minVotingStake()) as Balance
-    const candidacyLimit = (await this.councilElection.candidacyLimit()) as u32
-    const councilSize = (await this.councilElection.councilSize()) as u32
+    const announcingPeriod = await this.councilElection.announcingPeriod()
+    const votingPeriod = await this.councilElection.votingPeriod()
+    const revealingPeriod = await this.councilElection.revealingPeriod()
+    const newTermDuration = await this.councilElection.newTermDuration()
+    const minCouncilStake = await this.councilElection.minCouncilStake()
+    const minVotingStake = await this.councilElection.minVotingStake()
+    const candidacyLimit = await this.councilElection.candidacyLimit()
+    const councilSize = await this.councilElection.councilSize()
 
     return {
       announcingPeriod,

@@ -1,5 +1,5 @@
 export function mockPromise<T>(value: T, timeout?: number): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
+  return new Promise<T>((resolve) => {
     if (timeout) {
       new Promise((resolve) => setTimeout(resolve, timeout))
         .then(() => resolve(value))

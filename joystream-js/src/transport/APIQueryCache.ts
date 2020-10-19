@@ -1,14 +1,14 @@
 import { Codec, AnyFunction } from '@polkadot/types/types'
 import ApiPromise from '@polkadot/api/promise'
-import { AugmentedQuery, QueryableStorage, ObsInnerType } from '@polkadot/api/types'
+import { AugmentedQuery, QueryableStorage, ObsInnerType, AugmentedQueryDoubleMap } from '@polkadot/api/types'
 import { ApiModuleKey } from '../types/api'
 import _ from 'lodash'
 
 type CacheQueryRuntime = {
   [Module in keyof QueryableStorage<'promise'>]: {
-    [Method in keyof QueryableStorage<'promise'>[Module]]: QueryableStorage<
-      'promise'
-    >[Module][Method] extends AugmentedQuery<'promise', infer F>
+    [Method in keyof QueryableStorage<'promise'>[Module]]: QueryableStorage<'promise'>[Module][Method] extends
+      | AugmentedQuery<'promise', infer F>
+      | AugmentedQueryDoubleMap<'promise', infer F>
       ? (...args: Parameters<F>) => Promise<ObsInnerType<ReturnType<F>>>
       : never
   }
@@ -42,7 +42,7 @@ export class APIQueryCache {
   }
 
   protected breakCacheOnNewBlocks() {
-    return this.api.rpc.chain.subscribeNewHeads((header) => {
+    return this.api.rpc.chain.subscribeNewHeads(() => {
       this.cache = new Map<string, Codec>()
       // console.log("cache hits in this block", this.cacheHits)
       this.cacheHits = 0

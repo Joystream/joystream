@@ -1,12 +1,11 @@
 import BaseTransport from './base'
 import { MemberId, Membership } from '@joystream/types/members'
-import { Vec } from '@polkadot/types/codec'
 import { AccountId } from '@polkadot/types/interfaces'
 import { MemberFromAccount } from '../types/members'
 
 export default class MembersTransport extends BaseTransport {
   async membershipById(id: MemberId | number): Promise<Membership | null> {
-    const member = (await this.members.membershipById(id)) as Membership
+    const member = await this.members.membershipById(id)
 
     return member.isEmpty ? null : member
   }
@@ -27,8 +26,8 @@ export default class MembersTransport extends BaseTransport {
   }
 
   async membershipFromAccount(accountId: AccountId | string): Promise<MemberFromAccount> {
-    const memberIdsRoot = (await this.members.memberIdsByRootAccountId(accountId)) as Vec<MemberId>
-    const memberIdsController = (await this.members.memberIdsByControllerAccountId(accountId)) as Vec<MemberId>
+    const memberIdsRoot = await this.members.memberIdsByRootAccountId(accountId)
+    const memberIdsController = await this.members.memberIdsByControllerAccountId(accountId)
     const memberId: MemberId | undefined = memberIdsRoot.toArray().concat(memberIdsController.toArray())[0]
     const profile = memberId ? await this.expectedMembership(memberId) : undefined
 

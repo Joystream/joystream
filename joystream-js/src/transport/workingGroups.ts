@@ -1,4 +1,3 @@
-import { Option } from '@polkadot/types/'
 import { Balance } from '@polkadot/types/interfaces'
 import BaseTransport from './base'
 import { ApiPromise } from '@polkadot/api'
@@ -13,9 +12,8 @@ import {
 import { apiModuleByGroup } from '../consts/workingGroups'
 import { WorkingGroupKey } from '@joystream/types/common'
 import { WorkerData, OpeningData, ParsedApplication } from '../types/workingGroups'
-import { OpeningId, ApplicationId, Opening, Application, ActiveOpeningStageKey } from '@joystream/types/hiring'
-import { Stake, StakeId } from '@joystream/types/stake'
-import { RewardRelationship } from '@joystream/types/recurring-rewards'
+import { OpeningId, ApplicationId, ActiveOpeningStageKey } from '@joystream/types/hiring'
+import { StakeId } from '@joystream/types/stake'
 import { APIQueryCache } from './APIQueryCache'
 
 export default class WorkingGroupsTransport extends BaseTransport {
@@ -39,7 +37,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
   }
 
   public async groupMemberById(group: WorkingGroupKey, workerId: number): Promise<WorkerData | null> {
-    const worker = (await this.queryByGroup(group).workerById(workerId)) as Worker
+    const worker = await this.queryByGroup(group).workerById(workerId)
 
     if (worker.isEmpty) {
       return null
@@ -50,7 +48,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
       : undefined
 
     const reward = worker.reward_relationship.isSome
-      ? ((await this.recurringRewards.rewardRelationships(worker.reward_relationship.unwrap())) as RewardRelationship)
+      ? await this.recurringRewards.rewardRelationships(worker.reward_relationship.unwrap())
       : undefined
 
     const profile = await this.membersT.expectedMembership(worker.member_id)
@@ -59,7 +57,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
   }
 
   public async currentLead(group: WorkingGroupKey): Promise<WorkerData | null> {
-    const optLeadId = (await this.queryByGroup(group).currentLead()) as Option<WorkerId>
+    const optLeadId = await this.queryByGroup(group).currentLead()
 
     if (!optLeadId.isSome) {
       return null
@@ -72,9 +70,9 @@ export default class WorkingGroupsTransport extends BaseTransport {
 
   public async allOpenings(group: WorkingGroupKey, type?: OpeningTypeKey): Promise<OpeningData[]> {
     const wgOpeningEntries = await this.entriesByIds<OpeningId, WGOpening>(this.apiQueryByGroup(group).openingById)
-    const hiringOpenings = (await Promise.all(
-      wgOpeningEntries.map(([wgOpeningId, wgOpening]) => this.hiring.openingById(wgOpening.hiring_opening_id))
-    )) as Opening[]
+    const hiringOpenings = await Promise.all(
+      wgOpeningEntries.map(([, wgOpening]) => this.hiring.openingById(wgOpening.hiring_opening_id))
+    )
 
     return hiringOpenings
       .map((hiringOpening, index) => {
@@ -95,7 +93,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
   }
 
   async wgApplicationById(group: WorkingGroupKey, wgApplicationId: number | ApplicationId): Promise<WGApplication> {
-    const wgApplication = (await this.queryByGroup(group).applicationById(wgApplicationId)) as WGApplication
+    const wgApplication = await this.queryByGroup(group).applicationById(wgApplicationId)
 
     if (wgApplication.isEmpty) {
       throw new Error(`Working group application not found (ID: ${wgApplicationId.toString()})!`)
@@ -105,14 +103,14 @@ export default class WorkingGroupsTransport extends BaseTransport {
   }
 
   protected async stakeValue(stakeId: StakeId): Promise<Balance> {
-    const stake = (await this.stake.stakes(stakeId)) as Stake
+    const stake = await this.stake.stakes(stakeId)
 
     return stake.value
   }
 
   protected async parseApplication(wgApplicationId: number, wgApplication: WGApplication): Promise<ParsedApplication> {
     const appId = wgApplication.application_id
-    const application = (await this.hiring.applicationById(appId)) as Application
+    const application = await this.hiring.applicationById(appId)
 
     const { active_role_staking_id: roleStakingId, active_application_staking_id: appStakingId } = application
 
@@ -143,7 +141,7 @@ export default class WorkingGroupsTransport extends BaseTransport {
 
     return Promise.all(
       wgApplicationsEntries
-        .filter(([wgApplicationById, wgApplication]) => wgApplication.opening_id.eq(wgOpeningId))
+        .filter(([, wgApplication]) => wgApplication.opening_id.eq(wgOpeningId))
         .map(([wgApplicationId, wgApplication]) => this.parseApplication(wgApplicationId.toNumber(), wgApplication))
     )
   }
