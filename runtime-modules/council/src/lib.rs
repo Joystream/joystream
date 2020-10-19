@@ -107,7 +107,6 @@ pub struct CouncilStageElection {
 pub struct Candidate<AccountId, Balance> {
     account_id: AccountId,
     cycle_id: u64,
-    order_index: u64,
     stake: Balance,
 }
 
@@ -324,7 +323,7 @@ decl_module! {
             let (stage_data, account_id) = EnsureChecks::<T>::can_announce_candidacy(origin, &council_user_id, &stake)?;
 
             // prepare candidate
-            let candidate = Self::prepare_new_candidate(account_id, stage_data.candidates_count, stake);
+            let candidate = Self::prepare_new_candidate(account_id, stake);
 
             //
             // == MUTATION SAFE ==
@@ -446,15 +445,10 @@ impl<T: Trait> Module<T> {
     }
 
     /// Construct a new candidate for council election.
-    fn prepare_new_candidate(
-        account_id: T::AccountId,
-        current_candidate_count: u64,
-        stake: Balance<T>,
-    ) -> CandidateOf<T> {
+    fn prepare_new_candidate(account_id: T::AccountId, stake: Balance<T>) -> CandidateOf<T> {
         Candidate {
             account_id,
             cycle_id: CurrentAnnouncementCycleId::get(),
-            order_index: current_candidate_count,
             stake,
         }
     }
@@ -616,17 +610,8 @@ impl<T: Trait> Mutations<T> {
         // release stake amount
         T::CandidacyLock::unlock(&account_id);
 
-        let candidate = Candidates::<T>::get(council_user_id);
-
         // remove candidate record
         Candidates::<T>::remove(council_user_id);
-
-        // escape if order index is in use again
-        if let CouncilStage::Announcing(stage_data) = Stage::<T>::get().stage {
-            if stage_data.candidates_count > candidate.order_index {
-                return;
-            }
-        }
     }
 }
 
@@ -670,8 +655,7 @@ impl<T: Trait> EnsureChecks<T> {
 
         // prevent user from candidating twice in the same election
         if Candidates::<T>::contains_key(council_user_id)
-            && Candidates::<T>::get(council_user_id).order_index
-                == CurrentAnnouncementCycleId::get()
+            && Candidates::<T>::get(council_user_id).cycle_id == CurrentAnnouncementCycleId::get()
         {
             return Err(Error::CantCandidateTwice);
         }

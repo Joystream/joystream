@@ -451,17 +451,12 @@ where
         let _ = balances::Module::<RuntimeReferendum>::deposit_creating(&account_id, amount.into());
     }
 
-    pub fn generate_candidate(
-        index: u64,
-        stake: BalanceReferendum<T>,
-        order_index: u64,
-    ) -> CandidateInfo<T> {
+    pub fn generate_candidate(index: u64, stake: BalanceReferendum<T>) -> CandidateInfo<T> {
         let account_id = CANDIDATE_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
         let candidate = CandidateOf::<T> {
             account_id: account_id.into(),
             cycle_id: CurrentAnnouncementCycleId::get(),
-            order_index,
             stake,
         };
 
