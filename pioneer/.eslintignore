@@ -1,6 +1,5 @@
 **/build/*
 **/coverage/*
 **/node_modules/*
-packages/joy-media/**
 .eslintrc.js
 i18next-scanner.config.js

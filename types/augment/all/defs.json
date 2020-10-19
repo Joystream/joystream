@@ -794,6 +794,16 @@
         "current_number_of_entities": "EntityId",
         "default_entity_creation_voucher_upper_bound": "EntityId"
     },
+    "ClassOf": {
+        "class_permissions": "ClassPermissions",
+        "properties": "Vec<Property>",
+        "schemas": "Vec<Schema>",
+        "name": "Text",
+        "description": "Text",
+        "maximum_entities_count": "EntityId",
+        "current_number_of_entities": "EntityId",
+        "default_entity_creation_voucher_upper_bound": "EntityId"
+    },
     "EntityController": {
         "_enum": {
             "Maintainers": "Null",
@@ -849,6 +859,13 @@
         "same_owner": "u32"
     },
     "Entity": {
+        "entity_permissions": "EntityPermissions",
+        "class_id": "ClassId",
+        "supported_schemas": "Vec<SchemaId>",
+        "values": "BTreeMap<PropertyId,StoredPropertyValue>",
+        "reference_counter": "InboundReferenceCounter"
+    },
+    "EntityOf": {
         "entity_permissions": "EntityPermissions",
         "class_id": "ClassId",
         "supported_schemas": "Vec<SchemaId>",

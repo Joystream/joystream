@@ -17,7 +17,6 @@ import { OpportunityController, OpportunityView } from './tabs/Opportunity.contr
 import { OpportunitiesController, OpportunitiesView } from './tabs/Opportunities.controller';
 import { ApplyController, ApplyView } from './flows/apply.controller';
 import { MyRolesController, MyRolesView } from './tabs/MyRoles.controller';
-import { AdminController, AdminView } from './tabs/Admin.controller';
 
 import './index.sass';
 
@@ -51,7 +50,6 @@ export const App: React.FC<Props> = (props: Props) => {
   const [oppsCtrl] = useState(() => new OpportunitiesController(transport));
   const [applyCtrl] = useState(() => new ApplyController(transport));
   const [myRolesCtrl] = useState(() => new MyRolesController(transport));
-  const [adminCtrl] = useState(() => new AdminController(transport, api, queueExtrinsic));
 
   useEffect(() => {
     return () => {
@@ -98,9 +96,6 @@ export const App: React.FC<Props> = (props: Props) => {
         <Route
           path={`${basePath}/my-roles`}
           render={(props: DefaultRouteProps) => <MyRolesView controller={myRolesCtrl} params={props.match.params}/>} />
-        <Route
-          path={`${basePath}/admin`}
-          render={(props: DefaultRouteProps) => <AdminView controller={adminCtrl} params={props.match.params}/>} />
         <Route
           render={(props: DefaultRouteProps) => <WorkingGroupsView controller={wgCtrl} params={props.match.params}/> } />
       </Switch>

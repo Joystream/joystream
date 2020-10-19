@@ -84,13 +84,13 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
 
     // Parse inputs into operations and send final extrinsic
     const inputParser = InputParser.createWithKnownSchemas(this.getOriginalApi())
-    const videoUpdateOperation = await inputParser.createEntityUpdateOperation(updatedProps, 'Video', videoId)
-    const licenseUpdateOperation = await inputParser.createEntityUpdateOperation(
+    const videoUpdateOperations = await inputParser.getEntityUpdateOperations(updatedProps, 'Video', videoId)
+    const licenseUpdateOperations = await inputParser.getEntityUpdateOperations(
       updatedLicense,
       'License',
       currentValues.license
     )
-    const operations = [videoUpdateOperation, licenseUpdateOperation]
+    const operations = [...videoUpdateOperations, ...licenseUpdateOperations]
     await this.sendAndFollowNamedTx(account, 'contentDirectory', 'transaction', [actor, operations], true)
   }
 }

@@ -9,9 +9,9 @@ import { BlockNumber, BalanceOf, Exposure } from '@polkadot/types/interfaces';
 import { WorkerId } from '@joystream/types/working-group';
 import { RewardRelationshipId, RewardRelationship } from '@joystream/types/recurring-rewards';
 import { StakeId, Stake } from '@joystream/types/stake';
-import { CuratorId, Curator, LeadId } from '@joystream/types/content-working-group';
 import { TokenomicsData } from '@polkadot/joy-utils/src/types/tokenomics';
 import { calculateValidatorsRewardsPerEra } from '../functions/staking';
+import { WorkingGroupKey } from '@joystream/types/common';
 
 export default class TokenomicsTransport extends BaseTransport {
   private councilT: CouncilTransport;
@@ -75,15 +75,16 @@ export default class TokenomicsTransport extends BaseTransport {
     };
   }
 
-  private async storageProviderSizeAndIds () {
-    const stakeIds: StakeId[] = [];
-    const rewardIds: RewardRelationshipId[] = [];
+  private async workingGroupSizeAndIds (group: WorkingGroupKey) {
+    const workerStakeIds: StakeId[] = [];
+    const workerRewardIds: RewardRelationshipId[] = [];
     let leadStakeId: StakeId | null = null;
     let leadRewardId: RewardRelationshipId | null = null;
-    let numberOfStorageProviders = 0;
+    let numberOfWorkers = 0;
     let leadNumber = 0;
-    const allWorkers = await this.workingGroupT.allWorkers('Storage');
-    const currentLeadId = (await this.api.query.storageWorkingGroup.currentLead() as Option<WorkerId>).unwrapOr(null)?.toNumber();
+    const allWorkers = await this.workingGroupT.allWorkers(group);
+    const currentLeadId = (await this.workingGroupT.queryByGroup(group).currentLead() as Option<WorkerId>)
+      .unwrapOr(undefined)?.toNumber();
 
     allWorkers.forEach(([workerId, worker]) => {
       const stakeId = worker.role_stake_profile.isSome ? worker.role_stake_profile.unwrap().stake_id : null;
@@ -94,50 +95,50 @@ export default class TokenomicsTransport extends BaseTransport {
         leadRewardId = rewardId;
         leadNumber += 1;
       } else {
-        numberOfStorageProviders += 1;
+        numberOfWorkers += 1;
 
         if (stakeId) {
-          stakeIds.push(stakeId);
+          workerStakeIds.push(stakeId);
         }
 
         if (rewardId) {
-          rewardIds.push(rewardId);
+          workerRewardIds.push(rewardId);
         }
       }
     });
 
     return {
-      numberOfStorageProviders,
-      stakeIds,
-      rewardIds,
+      numberOfWorkers,
+      workerStakeIds,
+      workerRewardIds,
       leadNumber,
       leadRewardId,
       leadStakeId
     };
   }
 
-  private async storageProviderStakeAndRewards (
-    stakeIds: StakeId[],
+  private async resolveGroupStakeAndRewards (
+    workerStakeIds: StakeId[],
     leadStakeId: StakeId | null,
-    rewardIds: RewardRelationshipId[],
+    workerRewardIds: RewardRelationshipId[],
     leadRewardId: RewardRelationshipId | null
   ) {
-    let totalStorageProviderStake = 0;
+    let workersStake = 0;
     let leadStake = 0;
-    let storageProviderRewardsPerBlock = 0;
-    let storageLeadRewardsPerBlock = 0;
+    let workersRewardsPerBlock = 0;
+    let leadRewardsPerBlock = 0;
 
-    (await this.api.query.stake.stakes.multi<Stake>(stakeIds)).forEach((stake) => {
-      totalStorageProviderStake += stake.value.toNumber();
+    (await this.api.query.stake.stakes.multi<Stake>(workerStakeIds)).forEach((stake) => {
+      workersStake += stake.value.toNumber();
     });
-    (await this.api.query.recurringRewards.rewardRelationships.multi<RewardRelationship>(rewardIds)).map((rewardRelationship) => {
+    (await this.api.query.recurringRewards.rewardRelationships.multi<RewardRelationship>(workerRewardIds)).map((rewardRelationship) => {
       const amount = rewardRelationship.amount_per_payout.toNumber();
       const payoutInterval = rewardRelationship.payout_interval.isSome
         ? rewardRelationship.payout_interval.unwrap().toNumber()
         : null;
 
       if (amount && payoutInterval) {
-        storageProviderRewardsPerBlock += amount / payoutInterval;
+        workersRewardsPerBlock += amount / payoutInterval;
       }
     });
 
@@ -151,96 +152,31 @@ export default class TokenomicsTransport extends BaseTransport {
       const leadRewardInterval = leadRewardData.payout_interval.isSome ? leadRewardData.payout_interval.unwrap().toNumber() : null;
 
       if (leadAmount && leadRewardInterval) {
-        storageLeadRewardsPerBlock += leadAmount / leadRewardInterval;
+        leadRewardsPerBlock += leadAmount / leadRewardInterval;
       }
     }
 
     return {
-      totalStorageProviderStake,
+      workersStake,
       leadStake,
-      storageProviderRewardsPerWeek: storageProviderRewardsPerBlock * 100800,
-      storageProviderLeadRewardsPerWeek: storageLeadRewardsPerBlock * 100800
+      workersRewardsPerWeek: workersRewardsPerBlock * 100800,
+      leadRewardsPerWeek: leadRewardsPerBlock * 100800
     };
   }
 
-  async getStorageProviderData () {
-    const { numberOfStorageProviders, leadNumber, stakeIds, rewardIds, leadRewardId, leadStakeId } = await this.storageProviderSizeAndIds();
-    const { totalStorageProviderStake, leadStake, storageProviderRewardsPerWeek, storageProviderLeadRewardsPerWeek } =
-      await this.storageProviderStakeAndRewards(stakeIds, leadStakeId, rewardIds, leadRewardId);
+  async getWorkingGroupData (group: WorkingGroupKey) {
+    const { numberOfWorkers, leadNumber, workerStakeIds, workerRewardIds, leadRewardId, leadStakeId } =
+      await this.workingGroupSizeAndIds(group);
+    const { workersStake, leadStake, workersRewardsPerWeek, leadRewardsPerWeek } =
+      await this.resolveGroupStakeAndRewards(workerStakeIds, leadStakeId, workerRewardIds, leadRewardId);
 
     return {
-      numberOfStorageProviders,
-      storageProviderLeadNumber: leadNumber,
-      totalStorageProviderStake,
-      totalStorageProviderLeadStake: leadStake,
-      storageProviderRewardsPerWeek,
-      storageProviderLeadRewardsPerWeek
-    };
-  }
-
-  private async contentCuratorSizeAndIds () {
-    const stakeIds: StakeId[] = []; const rewardIds: RewardRelationshipId[] = []; let numberOfContentCurators = 0;
-    const contentCurators = await this.entriesByIds<CuratorId, Curator>(this.api.query.contentWorkingGroup.curatorById);
-    const currentLeadId = (await this.api.query.contentWorkingGroup.currentLeadId() as Option<LeadId>).unwrapOr(null)?.toNumber();
-
-    contentCurators.forEach(([curatorId, curator]) => {
-      const stakeId = curator.role_stake_profile.isSome ? curator.role_stake_profile.unwrap().stake_id : null;
-      const rewardId = curator.reward_relationship.unwrapOr(null);
-
-      if (curator.is_active) {
-        numberOfContentCurators += 1;
-
-        if (stakeId) {
-          stakeIds.push(stakeId);
-        }
-
-        if (rewardId) {
-          rewardIds.push(rewardId);
-        }
-      }
-    });
-
-    return {
-      stakeIds,
-      rewardIds,
-      numberOfContentCurators,
-      contentCuratorLeadNumber: currentLeadId ? 1 : 0
-    };
-  }
-
-  private async contentCuratorStakeAndRewards (stakeIds: StakeId[], rewardIds: RewardRelationshipId[]) {
-    let totalContentCuratorStake = 0;
-    let contentCuratorRewardsPerBlock = 0;
-
-    (await this.api.query.stake.stakes.multi<Stake>(stakeIds)).forEach((stake) => {
-      totalContentCuratorStake += stake.value.toNumber();
-    });
-    (await this.api.query.recurringRewards.rewardRelationships.multi<RewardRelationship>(rewardIds)).map((rewardRelationship) => {
-      const amount = rewardRelationship.amount_per_payout.toNumber();
-      const payoutInterval = rewardRelationship.payout_interval.isSome
-        ? rewardRelationship.payout_interval.unwrap().toNumber()
-        : null;
-
-      if (amount && payoutInterval) {
-        contentCuratorRewardsPerBlock += amount / payoutInterval;
-      }
-    });
-
-    return {
-      totalContentCuratorStake,
-      contentCuratorRewardsPerBlock
-    };
-  }
-
-  async getContentCuratorData () {
-    const { stakeIds, rewardIds, numberOfContentCurators, contentCuratorLeadNumber } = await this.contentCuratorSizeAndIds();
-    const { totalContentCuratorStake, contentCuratorRewardsPerBlock } = await this.contentCuratorStakeAndRewards(stakeIds, rewardIds);
-
-    return {
-      numberOfContentCurators,
-      contentCuratorLeadNumber,
-      totalContentCuratorStake,
-      contentCuratorRewardsPerWeek: contentCuratorRewardsPerBlock * 100800
+      numberOfWorkers,
+      leadNumber,
+      workersStake,
+      leadStake,
+      workersRewardsPerWeek,
+      leadRewardsPerWeek
     };
   }
 
@@ -287,13 +223,50 @@ export default class TokenomicsTransport extends BaseTransport {
   }
 
   async getTokenomicsData (): Promise<TokenomicsData> {
-    const { numberOfCouncilMembers, totalCouncilRewardsInOneWeek, totalCouncilStake } = await this.getCouncilData();
-    const { numberOfStorageProviders, storageProviderLeadNumber, totalStorageProviderStake, totalStorageProviderLeadStake, storageProviderLeadRewardsPerWeek, storageProviderRewardsPerWeek } = await this.getStorageProviderData();
-    const { numberOfContentCurators, contentCuratorLeadNumber, totalContentCuratorStake, contentCuratorRewardsPerWeek } = await this.getContentCuratorData();
-    const { numberOfValidators, numberOfNominators, totalValidatorStake, validatorRewardsPerWeek, totalIssuance } = await this.getValidatorData();
-    const currentlyStakedTokens = totalCouncilStake + totalStorageProviderStake + totalStorageProviderLeadStake + totalContentCuratorStake + totalValidatorStake;
-    const totalWeeklySpending = totalCouncilRewardsInOneWeek + storageProviderRewardsPerWeek + storageProviderLeadRewardsPerWeek + contentCuratorRewardsPerWeek + validatorRewardsPerWeek;
-    const totalNumberOfActors = numberOfCouncilMembers + numberOfStorageProviders + storageProviderLeadNumber + numberOfContentCurators + contentCuratorLeadNumber + numberOfValidators;
+    const { numberOfCouncilMembers, totalCouncilRewardsInOneWeek, totalCouncilStake } =
+      await this.getCouncilData();
+    const workingGroupsData = {
+      storageProviders: await this.getWorkingGroupData('Storage'),
+      curators: await this.getWorkingGroupData('Content')
+    };
+    const { numberOfValidators, numberOfNominators, totalValidatorStake, validatorRewardsPerWeek, totalIssuance } =
+      await this.getValidatorData();
+
+    const currentlyStakedTokens =
+      totalCouncilStake +
+      Object.values(workingGroupsData).reduce(
+        (sum, { workersStake, leadStake }) => sum + workersStake + leadStake,
+        0) +
+      totalValidatorStake;
+
+    const totalWeeklySpending =
+      totalCouncilRewardsInOneWeek +
+      Object.values(workingGroupsData).reduce(
+        (sum, { workersRewardsPerWeek, leadRewardsPerWeek }) => sum + workersRewardsPerWeek + leadRewardsPerWeek,
+        0) +
+      validatorRewardsPerWeek;
+
+    const totalNumberOfActors =
+      numberOfCouncilMembers +
+      Object.values(workingGroupsData).reduce(
+        (sum, { numberOfWorkers, leadNumber }) => sum + numberOfWorkers + leadNumber,
+        0) +
+      numberOfValidators;
+
+    const resolveGroupData = (data: typeof workingGroupsData[keyof typeof workingGroupsData]) => ({
+      number: data.numberOfWorkers,
+      totalStake: data.workersStake,
+      stakeShare: data.workersStake / currentlyStakedTokens,
+      rewardsPerWeek: data.workersRewardsPerWeek,
+      rewardsShare: data.workersRewardsPerWeek / totalWeeklySpending,
+      lead: {
+        number: data.leadNumber,
+        totalStake: data.leadStake,
+        stakeShare: data.leadStake / currentlyStakedTokens,
+        rewardsPerWeek: data.leadRewardsPerWeek,
+        rewardsShare: data.leadRewardsPerWeek / totalWeeklySpending
+      }
+    });
 
     return {
       totalIssuance,
@@ -317,28 +290,8 @@ export default class TokenomicsTransport extends BaseTransport {
         totalStake: totalCouncilStake,
         stakeShare: totalCouncilStake / currentlyStakedTokens
       },
-      storageProviders: {
-        number: numberOfStorageProviders,
-        totalStake: totalStorageProviderStake,
-        stakeShare: totalStorageProviderStake / currentlyStakedTokens,
-        rewardsPerWeek: storageProviderRewardsPerWeek,
-        rewardsShare: storageProviderRewardsPerWeek / totalWeeklySpending,
-        lead: {
-          number: storageProviderLeadNumber,
-          totalStake: totalStorageProviderLeadStake,
-          stakeShare: totalStorageProviderLeadStake / currentlyStakedTokens,
-          rewardsPerWeek: storageProviderLeadRewardsPerWeek,
-          rewardsShare: storageProviderLeadRewardsPerWeek / totalWeeklySpending
-        }
-      },
-      contentCurators: {
-        number: numberOfContentCurators,
-        contentCuratorLead: contentCuratorLeadNumber,
-        rewardsPerWeek: contentCuratorRewardsPerWeek,
-        rewardsShare: contentCuratorRewardsPerWeek / totalWeeklySpending,
-        totalStake: totalContentCuratorStake,
-        stakeShare: totalContentCuratorStake / currentlyStakedTokens
-      }
+      storageProviders: resolveGroupData(workingGroupsData.storageProviders),
+      contentCurators: resolveGroupData(workingGroupsData.curators)
     };
   }
 }
