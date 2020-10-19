@@ -20,7 +20,8 @@ export const IOFlags = {
   output: flags.string({
     char: 'o',
     required: false,
-    description: 'Path where the output JSON file should be placed (can be then reused as input)',
+    description:
+      'Path to the directory where the output JSON file should be placed (the output file can be then reused as input)',
   }),
 }
 

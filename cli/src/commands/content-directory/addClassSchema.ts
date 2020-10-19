@@ -17,6 +17,7 @@ export default class AddClassSchemaCommand extends ContentDirectoryCommandBase {
   async run() {
     const account = await this.getRequiredSelectedAccount()
     await this.requireLead()
+    await this.requestAccountDecoding(account)
 
     const { input, output } = this.parse(AddClassSchemaCommand).flags
 
@@ -33,14 +34,27 @@ export default class AddClassSchemaCommand extends ContentDirectoryCommandBase {
         ],
         [
           'existingProperties',
-          async () =>
-            this.simplePrompt({
+          async () => {
+            const choices = selectedClass!.properties.map((p, i) => ({ name: `${i}: ${p.name.toString()}`, value: i }))
+            if (!choices.length) {
+              return []
+            }
+            return await this.simplePrompt({
               type: 'checkbox',
               message: 'Choose existing properties to keep',
-              choices: selectedClass!.properties.map((p, i) => ({ name: `${i}: ${p.name.toString()}`, value: i })),
-            }),
+              choices,
+            })
+          },
         ],
-        [/^newProperties\[\d+\]\.property_type\.Single\.Reference/, async () => this.promptForClassReference()],
+        [
+          /^newProperties\[\d+\]\.property_type\.(Single|Vector\.vec_type)\.Reference/,
+          async () => this.promptForClassReference(),
+        ],
+        [/^newProperties\[\d+\]\.property_type\.(Single|Vector\.vec_type)\.Text/, { message: 'Provide TextMaxLength' }],
+        [
+          /^newProperties\[\d+\]\.property_type\.(Single|Vector\.vec_type)\.Hash/,
+          { message: 'Provide HashedTextMaxLength' },
+        ],
       ]
 
       const prompter = new JsonSchemaPrompter<AddClassSchema>(
@@ -56,12 +70,10 @@ export default class AddClassSchemaCommand extends ContentDirectoryCommandBase {
     const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
     if (confirmed) {
-      await this.requestAccountDecoding(account)
+      saveOutputJson(output, `${inputJson.className}Schema.json`, inputJson)
       const inputParser = new InputParser(this.getOriginalApi())
       this.log('Sending the extrinsic...')
-      await this.sendAndFollowTx(account, await inputParser.parseAddClassSchemaExtrinsic(inputJson), true)
-
-      saveOutputJson(output, `${inputJson.className}Schema.json`, inputJson)
+      await this.sendAndFollowTx(account, await inputParser.parseAddClassSchemaExtrinsic(inputJson))
     }
   }
 }

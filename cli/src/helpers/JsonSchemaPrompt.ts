@@ -34,7 +34,8 @@ export class JsonSchemaPrompter<JsonResult> {
     this.customPropmpts = customPrompts
     this.schema = schema
     this.schemaPath = schemaPath
-    this.ajv = new Ajv()
+    // allErrors prevents .validate from setting only one error when in fact there are multiple
+    this.ajv = new Ajv({ allErrors: true })
     this.filledObject = defaults || {}
   }
 
@@ -116,11 +117,11 @@ export class JsonSchemaPrompter<JsonResult> {
 
     // Normalizers
     if (schema.type === 'integer') {
-      normalizer = (v) => parseInt(v)
+      normalizer = (v) => (parseInt(v).toString() === v ? parseInt(v) : v)
     }
 
     if (schema.type === 'number') {
-      normalizer = (v) => Number(v)
+      normalizer = (v) => (Number(v).toString() === v ? Number(v) : v)
     }
 
     const promptOptions = { ...basicPromptOptions, ...additionalPromptOptions, ...customPrompt }

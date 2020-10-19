@@ -18,9 +18,10 @@ import { Codec } from '@polkadot/types/types'
 import _ from 'lodash'
 import { RolesCommandBase } from './WorkingGroupsCommandBase'
 import { createType } from '@joystream/types'
+import chalk from 'chalk'
 
 /**
- * Abstract base class for commands related to working groups
+ * Abstract base class for commands related to content directory
  */
 export default abstract class ContentDirectoryCommandBase extends RolesCommandBase {
   group = WorkingGroups.Curators // override group for RolesCommandBase
@@ -111,6 +112,9 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
 
   async promptForCuratorGroups(message = 'Select Curator Groups'): Promise<number[]> {
     const choices = await this.curatorGroupChoices()
+    if (!choices.length) {
+      return []
+    }
     const selectedIds = await this.simplePrompt({ message, type: 'checkbox', choices })
 
     return selectedIds
@@ -122,15 +126,24 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return { className: selectedClass.name.toString(), sameOwner }
   }
 
-  async promptForCurator(message = 'Choose a Curator'): Promise<number> {
+  async promptForCurator(message = 'Choose a Curator', ids?: number[]): Promise<number> {
     const curators = await this.getApi().groupMembers(WorkingGroups.Curators)
+    const choices = curators
+      .filter((c) => (ids ? ids.includes(c.workerId.toNumber()) : true))
+      .map((c) => ({
+        name: `${c.profile.handle.toString()} (Worker ID: ${c.workerId})`,
+        value: c.workerId.toNumber(),
+      }))
+
+    if (!choices.length) {
+      this.warn('No Curators to choose from!')
+      this.exit(ExitCodes.InvalidInput)
+    }
+
     const selectedCuratorId = await this.simplePrompt({
       message,
       type: 'list',
-      choices: curators.map((c) => ({
-        name: `${c.profile.handle.toString()} (Worker ID: ${c.workerId})`,
-        value: c.workerId,
-      })),
+      choices,
     })
 
     return selectedCuratorId
@@ -278,10 +291,8 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     }, {} as Record<string, { value: Codec; type: string }>)
   }
 
-  async parseToKnownEntityJson<T>(entity: Entity, entityClass?: Class): Promise<FlattenRelations<T>> {
-    if (!entityClass) {
-      entityClass = (await this.classEntryByNameOrId(entity.class_id.toString()))[1]
-    }
+  async parseToKnownEntityJson<T>(entity: Entity): Promise<FlattenRelations<T>> {
+    const entityClass = (await this.classEntryByNameOrId(entity.class_id.toString()))[1]
     return (_.mapValues(this.parseEntityPropertyValues(entity, entityClass), (v) =>
       v.value.toJSON()
     ) as unknown) as FlattenRelations<T>
@@ -298,7 +309,9 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     const parsedEntities = (await Promise.all(
       entityEntries.map(([id, entity]) => ({
         'ID': id.toString(),
-        ..._.mapValues(this.parseEntityPropertyValues(entity, entityClass, includedProps), (v) => v.value.toString()),
+        ..._.mapValues(this.parseEntityPropertyValues(entity, entityClass, includedProps), (v) =>
+          v.value.toJSON() === false && v.type !== 'Single<Bool>' ? chalk.grey('[not set]') : v.value.toString()
+        ),
       }))
     )) as Record<string, string>[]
 

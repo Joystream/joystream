@@ -11,7 +11,7 @@ services:
       # dockerfile is relative to the context
       dockerfile: joystream-node.Dockerfile
     container_name: joystream-node
-    command: --dev --alice --validator --unsafe-ws-external --rpc-cors=all
+    command: --dev --alice --validator --unsafe-ws-external --rpc-cors=all --log runtime
     ports:
       - "9944:9944"
   

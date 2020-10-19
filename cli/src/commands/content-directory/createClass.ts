@@ -15,12 +15,20 @@ export default class CreateClassCommand extends ContentDirectoryCommandBase {
   async run() {
     const account = await this.getRequiredSelectedAccount()
     await this.requireLead()
+    await this.requestAccountDecoding(account)
 
     const { input, output } = this.parse(CreateClassCommand).flags
+    const existingClassnames = (await this.getApi().availableClasses()).map(([, aClass]) => aClass.name.toString())
 
     let inputJson = await getInputJson<CreateClass>(input, CreateClassSchema as JSONSchema)
     if (!inputJson) {
-      const customPrompts: JsonSchemaCustomPrompts = [
+      const customPrompts: JsonSchemaCustomPrompts<CreateClass> = [
+        [
+          'name',
+          {
+            validate: (className) => existingClassnames.includes(className) && 'A class with this name already exists!',
+          },
+        ],
         ['class_permissions.maintainers', () => this.promptForCuratorGroups('Select class maintainers')],
       ]
 
@@ -33,12 +41,10 @@ export default class CreateClassCommand extends ContentDirectoryCommandBase {
     const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
     if (confirmed) {
-      await this.requestAccountDecoding(account)
+      saveOutputJson(output, `${inputJson.name}Class.json`, inputJson)
       this.log('Sending the extrinsic...')
       const inputParser = new InputParser(this.getOriginalApi())
-      await this.sendAndFollowTx(account, inputParser.parseCreateClassExtrinsic(inputJson), true)
-
-      saveOutputJson(output, `${inputJson.name}Class.json`, inputJson)
+      await this.sendAndFollowTx(account, inputParser.parseCreateClassExtrinsic(inputJson))
     }
   }
 }

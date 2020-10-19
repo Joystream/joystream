@@ -39,6 +39,7 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
     const confirmed = await this.simplePrompt({ type: 'confirm', message: 'Do you confirm the provided input?' })
 
     if (confirmed) {
+      saveOutputJson(output, `${inputJson.title}Channel.json`, inputJson)
       const inputParser = InputParser.createWithKnownSchemas(this.getOriginalApi(), [
         {
           className: 'Channel',
@@ -46,8 +47,7 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
         },
       ])
       const operations = await inputParser.getEntityBatchOperations()
-      await this.sendAndFollowNamedTx(account, 'contentDirectory', 'transaction', [actor, operations], true)
-      saveOutputJson(output, `${inputJson.title}Channel.json`, inputJson)
+      await this.sendAndFollowNamedTx(account, 'contentDirectory', 'transaction', [actor, operations])
     }
   }
 }
