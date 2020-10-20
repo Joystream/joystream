@@ -18,6 +18,14 @@
 //!
 //! The module supports requiring staking currency for the both candidacy and voting.
 //!
+//! ## Implementation
+//! Module expects that association of a particular account id to a membership id is never broken.
+//! Reassociation of an account id to a different membership id behind the scenes that the Council module
+//! can't be aware of will result in unexpected behavior.
+//!
+//! When implementing runtime for this module, don't forget to call all ReferendumConnection trait functions
+//! at proper places. See the trait details for more information.
+//!
 //! ## Supported extrinsics
 //! - [announce_candidacy](./struct.Module.html#method.announce_candidacy)
 //! - [release_candidacy_stake](./struct.Module.html#method.release_candidacy_stake)
@@ -196,9 +204,10 @@ pub trait ReferendumConnection<T: Trait> {
     fn recieve_referendum_results(winners: &[OptionResult<VotePowerOf<T>>])
         -> Result<(), Error<T>>;
 
-    /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `process_results()`.
+    /// Process referendum results. This function MUST be called in runtime's implementation of referendum's `can_release_voting_stake()`.
     fn can_release_vote_stake() -> Result<(), Error<T>>;
 
+    /// Checks that user is indeed candidating. This function MUST be called in runtime's implementation of referendum's `is_valid_option_id()`.
     fn is_valid_candidate_id(council_user_id: &T::CouncilUserId) -> bool;
 }
 
@@ -420,7 +429,6 @@ impl<T: Trait> Module<T> {
         let elected_members: Vec<CouncilMemberOf<T>> = winners
             .iter()
             .map(|item| {
-                println!("{:?}", item.option_id);
                 let council_user_id = item.option_id.into();
                 let candidate = Candidates::<T>::get(council_user_id);
 
@@ -472,6 +480,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
         Ok(())
     }
 
+    /// Check that it is a proper time to release stake.
     fn can_release_vote_stake() -> Result<(), Error<T>> {
         // ensure it's proper time to release stake
         match Stage::<T>::get().stage {
@@ -482,6 +491,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
         Ok(())
     }
 
+    /// Checks that user is indeed candidating.
     fn is_valid_candidate_id(council_user_id: &T::CouncilUserId) -> bool {
         if !Candidates::<T>::contains_key(council_user_id) {
             return false;

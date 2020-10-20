@@ -185,7 +185,7 @@ fn council_can_vote_for_yourself() {
 
         InstanceMocks::simulate_council_cycle(params.clone());
 
-        let self_voting_candidate_index = 0;
+        let self_voting_candidate_index = candidates[0].account_id;
         let voter = MockUtils::generate_voter(
             VOTER_CANDIDATE_OFFSET,
             vote_stake,

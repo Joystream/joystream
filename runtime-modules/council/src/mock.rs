@@ -219,12 +219,12 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
         INTERMEDIATE_RESULTS.with(|value| value.replace(BTreeMap::new()));
     }
 
-    fn is_valid_option_id(_option_index: &u64) -> bool {
+    fn is_valid_option_id(option_index: &u64) -> bool {
         if !IS_OPTION_ID_VALID.with(|value| value.borrow().0) {
             return false;
         }
 
-        true
+        <Module<Runtime> as ReferendumConnection<Runtime>>::is_valid_candidate_id(option_index)
     }
 
     fn get_option_power(option_id: &u64) -> Self::VotePower {
