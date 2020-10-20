@@ -17,6 +17,7 @@ import { JoyBTreeSet } from '@joystream/types/common'
 import { CreateClass } from '../../types/extrinsics/CreateClass'
 import { EntityBatch } from '../../types/EntityBatch'
 import { getInputs } from './inputs'
+import { SubmittableExtrinsic } from '@polkadot/api/types'
 
 export class InputParser {
   private api: ApiPromise
@@ -33,11 +34,20 @@ export class InputParser {
   private classMapInitialized = false
   private entityIdByUniqueQueryMapInitialized = false
 
+  static createWithInitialInputs(api: ApiPromise): InputParser {
+    return new InputParser(
+      api,
+      getInputs<CreateClass>('classes').map(({ data }) => data),
+      getInputs<AddClassSchema>('schemas').map(({ data }) => data),
+      getInputs<EntityBatch>('entityBatches').map(({ data }) => data)
+    )
+  }
+
   static createWithKnownSchemas(api: ApiPromise, entityBatches?: EntityBatch[]): InputParser {
     return new InputParser(
       api,
       [],
-      getInputs('schemas').map(({ data }) => data),
+      getInputs<AddClassSchema>('schemas').map(({ data }) => data),
       entityBatches
     )
   }
@@ -390,5 +400,13 @@ export class InputParser {
 
   public getCreateClassExntrinsics() {
     return this.classInputs.map((data) => this.parseCreateClassExtrinsic(data))
+  }
+
+  public async getAllExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
+    return [
+      ...this.getCreateClassExntrinsics(),
+      ...(await this.getAddSchemaExtrinsics()),
+      this.api.tx.contentDirectory.transaction({ Lead: null }, await this.getEntityBatchOperations()),
+    ]
   }
 }
