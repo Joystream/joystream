@@ -401,12 +401,4 @@ export class InputParser {
   public getCreateClassExntrinsics() {
     return this.classInputs.map((data) => this.parseCreateClassExtrinsic(data))
   }
-
-  public async getAllExtrinsics(): Promise<SubmittableExtrinsic<'promise'>[]> {
-    return [
-      ...this.getCreateClassExntrinsics(),
-      ...(await this.getAddSchemaExtrinsics()),
-      this.api.tx.contentDirectory.transaction({ Lead: null }, await this.getEntityBatchOperations()),
-    ]
-  }
 }
