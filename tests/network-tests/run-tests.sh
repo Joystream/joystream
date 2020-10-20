@@ -66,8 +66,11 @@ function cleanup() {
 trap cleanup EXIT
 
 # Initialize content-directory
-sleep 15
-yarn workspace cd-schemas initialize:dev
+# sleep 15
+# yarn workspace cd-schemas initialize:dev
+# NOTE: Skipping this step and let the scenarios do this setup instead
+# or align the scenario expectations of the initial state to match
+# with what we do here.
 
 if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
   echo "Not Performing a runtime upgrade."
