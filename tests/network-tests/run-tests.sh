@@ -12,7 +12,7 @@ ALICE_INITIAL_BALANCE=${ALICE_INITIAL_BALANCE:=100000000}
 
 # The docker image tag to use for joystream/node as the starting chain
 # that will be upgraded to the latest runtime.
-RUNTIME=${RUNTIME:=alexandria}
+RUNTIME=${RUNTIME:=latest}
 TARGET_RUNTIME=${TARGET_RUNTIME:=latest}
 
 mkdir -p ${DATA_PATH}
@@ -65,6 +65,10 @@ function cleanup() {
 
 trap cleanup EXIT
 
+# Initialize content-directory
+sleep 15
+yarn workspace cd-schemas initialize:dev
+
 if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
   echo "Not Performing a runtime upgrade."
 else
@@ -88,5 +92,10 @@ fi
 # Display runtime version
 yarn workspace api-scripts tsnode-strict src/status.ts | grep Runtime
 
+# pass the scenario name without .ts extension
+SCENARIO=$1
+# fallback to full.ts scenario if not specified
+SCENARIO=${SCENARIO:=full}
+
 # Execute the tests
-time DEBUG=* yarn workspace network-tests test-run src/scenarios/full.ts
+time DEBUG=* yarn workspace network-tests test-run src/scenarios/${SCENARIO}.ts
