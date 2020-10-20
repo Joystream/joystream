@@ -287,6 +287,9 @@ decl_error! {
 
         /// Invalid membership
         CouncilUserIdNotMatchAccount,
+
+        /// The combination of council user id and account id is invalid for unstaking an existing candidacy stake.
+        InvalidAccountToUnstake,
     }
 }
 
@@ -651,6 +654,30 @@ impl<T: Trait> EnsureChecks<T> {
         Ok(account_id)
     }
 
+    /// Checks there are no problems with existing candidacy record (if any present).
+    fn ensure_previous_stake_unlockable(
+        council_user_id: &T::CouncilUserId,
+        account_id: &T::AccountId,
+    ) -> Result<(), Error<T>> {
+        // escape when no previous candidacy stake is present
+        if !Candidates::<T>::contains_key(council_user_id) {
+            return Ok(());
+        }
+
+        let candidate = Candidates::<T>::get(council_user_id);
+
+        // prevent user from candidating twice in the same election
+        if candidate.cycle_id == CurrentAnnouncementCycleId::get() {
+            return Err(Error::StakeStillNeeded);
+        }
+
+        if &candidate.account_id != account_id {
+            return Err(Error::InvalidAccountToUnstake);
+        }
+
+        Ok(())
+    }
+
     /////////////////// Action checks //////////////////////////////////////////
 
     fn can_announce_candidacy(
@@ -665,6 +692,15 @@ impl<T: Trait> EnsureChecks<T> {
             CouncilStage::Announcing(stage_data) => stage_data,
             _ => return Err(Error::CantCandidateNow),
         };
+
+        // ensure that previous stake is unlockable (if any present)
+        Self::ensure_previous_stake_unlockable(council_user_id, &account_id).map_err(|error| {
+            if error == Error::StakeStillNeeded {
+                return Error::CantCandidateTwice;
+            }
+
+            error
+        })?;
 
         // prevent user from candidating twice in the same election
         // NOTE: repeated candidacy without releasing stake is possible and the (still) locked stake will be reused
@@ -701,12 +737,8 @@ impl<T: Trait> EnsureChecks<T> {
             return Err(Error::StakeStillNeeded);
         }
 
-        // ensure user is not candidating in current announcement cycle
-        if Candidates::<T>::contains_key(council_user_id)
-            && Candidates::<T>::get(council_user_id).cycle_id == CurrentAnnouncementCycleId::get()
-        {
-            return Err(Error::StakeStillNeeded);
-        }
+        // ensure that previous stake is unlockable (if any present)
+        Self::ensure_previous_stake_unlockable(council_user_id, &account_id)?;
 
         Ok(account_id)
     }
