@@ -42,6 +42,14 @@ impl ProposalParametersFixture {
             },
         }
     }
+    fn with_constitutionality(&self, constitutionality: u32) -> Self {
+        ProposalParametersFixture {
+            parameters: ProposalParameters {
+                constitutionality,
+                ..self.parameters
+            },
+        }
+    }
 
     fn params(&self) -> ProposalParameters<u64, u64> {
         self.parameters.clone()
@@ -59,6 +67,7 @@ impl Default for ProposalParametersFixture {
                 slashing_threshold_percentage: 60,
                 grace_period: 0,
                 required_stake: None,
+                constitutionality: 1,
             },
         }
     }
@@ -92,6 +101,7 @@ impl Default for DummyProposalFixture {
                 slashing_threshold_percentage: 60,
                 grace_period: 0,
                 required_stake: None,
+                constitutionality: 1,
             },
             account_id: 1,
             proposer_id: 1,
@@ -256,13 +266,14 @@ impl VoteGenerator {
             self.current_voter_id,
             self.proposal_id,
             vote_kind,
+            Vec::new(),
         )
     }
 }
 
 struct EventFixture;
 impl EventFixture {
-    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64, u64>>) {
+    fn assert_events(expected_raw_events: Vec<RawEvent<u32, u64, u64>>) {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
@@ -275,7 +286,7 @@ impl EventFixture {
         assert_eq!(System::events(), expected_events);
     }
 
-    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u32, u64, u64, u64>) {
+    pub fn assert_last_crate_event(expected_raw_event: RawEvent<u32, u64, u64>) {
         let converted_event = TestEvent::engine(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
@@ -306,6 +317,7 @@ fn run_to_block(n: u64) {
 
 fn run_to_block_and_finalize(n: u64) {
     run_to_block(n);
+    <System as OnFinalize<u64>>::on_finalize(n);
     <ProposalsEngine as OnFinalize<u64>>::on_finalize(n);
 }
 
@@ -333,7 +345,13 @@ fn vote_succeeds() {
 fn vote_fails_with_insufficient_rights() {
     initial_test_ext().execute_with(|| {
         assert_eq!(
-            ProposalsEngine::vote(system::RawOrigin::None.into(), 1, 1, VoteKind::Approve),
+            ProposalsEngine::vote(
+                system::RawOrigin::None.into(),
+                1,
+                1,
+                VoteKind::Approve,
+                Vec::new()
+            ),
             Err(DispatchError::Other("Bad origin"))
         );
     });
@@ -426,6 +444,7 @@ fn voting_results_calculation_succeeds() {
             slashing_threshold_percentage: 60,
             grace_period: 0,
             required_stake: None,
+            constitutionality: 1,
         };
         let dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
@@ -831,7 +850,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 0,
+                activated_at: 0,
                 status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
@@ -842,6 +861,8 @@ fn proposal_execution_postponed_because_of_grace_period() {
                     slashes: 0,
                 },
                 exact_execution_block: None,
+                current_constitutionality_level: 1,
+                staking_account_id: None,
             }
         );
     });
@@ -870,14 +891,14 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
             proposal_id
         ));
 
-        let proposal = <crate::Proposals<Test>>::get(proposal_id);
+        let pre_veto_proposal = <crate::Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
-            proposal,
+            pre_veto_proposal,
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 0,
+                activated_at: 0,
                 status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
@@ -888,6 +909,8 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
                     slashes: 0,
                 },
                 exact_execution_block: None,
+                current_constitutionality_level: 1,
+                staking_account_id: None,
             }
         );
 
@@ -899,19 +922,8 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
         assert_eq!(
             proposal,
             Proposal {
-                parameters: parameters_fixture.params(),
-                proposer_id: 1,
-                created_at: 0,
                 status: ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, 2),
-                title: b"title".to_vec(),
-                description: b"description".to_vec(),
-                voting_results: VotingResults {
-                    abstentions: 0,
-                    approvals: 4,
-                    rejections: 0,
-                    slashes: 0,
-                },
-                exact_execution_block: None,
+                ..pre_veto_proposal.clone()
             }
         );
 
@@ -951,7 +963,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
         let expected_proposal = Proposal {
             parameters: parameters_fixture.params(),
             proposer_id: 1,
-            created_at: starting_block,
+            activated_at: starting_block,
             status: ProposalStatus::approved(
                 ApprovedProposalStatus::PendingExecution,
                 starting_block,
@@ -965,6 +977,8 @@ fn proposal_execution_succeeds_after_the_grace_period() {
                 slashes: 0,
             },
             exact_execution_block: None,
+            current_constitutionality_level: 1,
+            staking_account_id: None,
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -1030,14 +1044,14 @@ fn create_dummy_proposal_succeeds_with_stake() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 0,
-                status: ProposalStatus::Active(Some(ActiveStake {
-                    source_account_id: 1
-                })),
+                activated_at: 0,
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
                 exact_execution_block: None,
+                current_constitutionality_level: 0,
+                staking_account_id: Some(1),
+                status: ProposalStatus::Active,
             }
         )
     });
@@ -1100,6 +1114,7 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
             slashing_threshold_percentage: 60,
             grace_period: 5,
             required_stake: Some(stake_amount),
+            constitutionality: 1,
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
@@ -1128,14 +1143,14 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
         let expected_proposal = Proposal {
             parameters,
             proposer_id: 1,
-            created_at: starting_block,
-            status: ProposalStatus::Active(Some(ActiveStake {
-                source_account_id: 1,
-            })),
+            activated_at: starting_block,
+            status: ProposalStatus::Active,
             title: b"title".to_vec(),
             description: b"description".to_vec(),
             voting_results: VotingResults::default(),
             exact_execution_block: None,
+            current_constitutionality_level: 0,
+            staking_account_id: Some(1),
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -1174,6 +1189,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             slashing_threshold_percentage: 60,
             grace_period: 5,
             required_stake: Some(stake_amount),
+            constitutionality: 1,
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
@@ -1202,14 +1218,14 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         let expected_proposal = Proposal {
             parameters,
             proposer_id: 1,
-            created_at: starting_block,
-            status: ProposalStatus::Active(Some(ActiveStake {
-                source_account_id: 1,
-            })),
+            activated_at: starting_block,
+            status: ProposalStatus::Active,
             title: b"title".to_vec(),
             description: b"description".to_vec(),
             voting_results: VotingResults::default(),
             exact_execution_block: None,
+            current_constitutionality_level: 0,
+            staking_account_id: Some(1),
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -1254,6 +1270,7 @@ fn proposal_slashing_succeeds() {
             slashing_threshold_percentage: 60,
             grace_period: 5,
             required_stake: Some(stake_amount),
+            constitutionality: 1,
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
@@ -1313,6 +1330,7 @@ fn create_proposal_fails_with_invalid_threshold_parameters() {
             slashing_threshold_percentage: 60,
             grace_period: 5,
             required_stake: None,
+            constitutionality: 1,
         };
 
         let mut dummy_proposal = DummyProposalFixture::default().with_parameters(parameters);
@@ -1362,7 +1380,7 @@ fn proposal_reset_succeeds() {
             }
         );
 
-        ProposalsEngine::reset_active_proposals();
+        ProposalsEngine::reset_votes_for_active_proposals();
 
         let updated_proposal = <Proposals<Test>>::get(proposal_id);
 
@@ -1532,7 +1550,7 @@ fn proposal_execution_with_exact_execution_works() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                created_at: 0,
+                activated_at: 0,
                 status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
                 title: b"title".to_vec(),
                 description: b"description".to_vec(),
@@ -1543,6 +1561,8 @@ fn proposal_execution_with_exact_execution_works() {
                     slashes: 0,
                 },
                 exact_execution_block: Some(exact_block),
+                current_constitutionality_level: 1,
+                staking_account_id: None,
             }
         );
 
@@ -1560,6 +1580,276 @@ fn proposal_execution_with_exact_execution_works() {
         // check internal cache for proposal_id absence
         assert!(!<PendingExecutionProposalIds<Test>>::contains_key(
             proposal_id
+        ));
+    });
+}
+
+#[test]
+fn proposal_with_pending_constitutionality_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let starting_block = 1;
+        run_to_block_and_finalize(1);
+
+        let parameters_fixture = ProposalParametersFixture::default().with_constitutionality(2);
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block_and_finalize(2);
+
+        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+            proposal_id,
+            ProposalStatus::approved(
+                ApprovedProposalStatus::PendingConstitutionality,
+                starting_block,
+            ),
+        ));
+
+        let proposal = <Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                parameters: parameters_fixture.params(),
+                proposer_id: 1,
+                activated_at: starting_block,
+                status: ProposalStatus::approved(
+                    ApprovedProposalStatus::PendingConstitutionality,
+                    starting_block
+                ),
+                title: b"title".to_vec(),
+                description: b"description".to_vec(),
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                    slashes: 0,
+                },
+                exact_execution_block: None,
+                current_constitutionality_level: 1,
+                staking_account_id: None,
+            }
+        );
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+        assert!(!<PendingExecutionProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
+
+        assert!(<PendingConstitutionalityProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
+    });
+}
+
+#[test]
+fn proposal_with_pending_constitutionality_reactivation_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let starting_block = 1;
+        run_to_block_and_finalize(1);
+
+        let parameters_fixture = ProposalParametersFixture::default().with_constitutionality(2);
+        let dummy_proposal =
+            DummyProposalFixture::default().with_parameters(parameters_fixture.params());
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block_and_finalize(2);
+
+        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+            proposal_id,
+            ProposalStatus::approved(
+                ApprovedProposalStatus::PendingConstitutionality,
+                starting_block,
+            ),
+        ));
+
+        let initial_proposal = <Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            initial_proposal,
+            Proposal {
+                parameters: parameters_fixture.params(),
+                proposer_id: 1,
+                activated_at: starting_block,
+                status: ProposalStatus::approved(
+                    ApprovedProposalStatus::PendingConstitutionality,
+                    starting_block
+                ),
+                title: b"title".to_vec(),
+                description: b"description".to_vec(),
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                    slashes: 0,
+                },
+                exact_execution_block: None,
+                current_constitutionality_level: 1,
+                staking_account_id: None,
+            }
+        );
+
+        let reactivation_block = 5;
+        run_to_block_and_finalize(reactivation_block);
+
+        ProposalsEngine::reactivate_pending_constitutionality_proposals();
+
+        let proposal = <Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                activated_at: reactivation_block,
+                status: ProposalStatus::Active,
+                voting_results: VotingResults::default(),
+                ..initial_proposal
+            }
+        );
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
+        assert!(<ActiveProposalIds<Test>>::contains_key(proposal_id));
+
+        assert!(!<PendingConstitutionalityProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
+    });
+}
+
+#[test]
+fn proposal_with_pending_constitutionality_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let starting_block = 1;
+        run_to_block_and_finalize(1);
+
+        let account_id = 1;
+        let total_balance = 1000;
+        let required_stake = 200;
+
+        increase_total_balance_issuance_using_account_id(account_id, total_balance);
+
+        let parameters_fixture = ProposalParametersFixture::default()
+            .with_constitutionality(2)
+            .with_required_stake(required_stake);
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_parameters(parameters_fixture.params())
+            .with_stake(account_id);
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            total_balance - required_stake
+        );
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 1);
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        run_to_block_and_finalize(2);
+
+        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+            proposal_id,
+            ProposalStatus::approved(
+                ApprovedProposalStatus::PendingConstitutionality,
+                starting_block,
+            ),
+        ));
+
+        let initial_proposal = <Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            initial_proposal,
+            Proposal {
+                parameters: parameters_fixture.params(),
+                proposer_id: 1,
+                activated_at: starting_block,
+                status: ProposalStatus::approved(
+                    ApprovedProposalStatus::PendingConstitutionality,
+                    starting_block
+                ),
+                title: b"title".to_vec(),
+                description: b"description".to_vec(),
+                voting_results: VotingResults {
+                    abstentions: 0,
+                    approvals: 4,
+                    rejections: 0,
+                    slashes: 0,
+                },
+                exact_execution_block: None,
+                current_constitutionality_level: 1,
+                staking_account_id: Some(account_id),
+            }
+        );
+
+        assert_eq!(
+            Balances::usable_balance(&account_id),
+            total_balance - required_stake
+        );
+
+        let reactivation_block = 5;
+        run_to_block_and_finalize(reactivation_block);
+
+        ProposalsEngine::reactivate_pending_constitutionality_proposals();
+
+        let proposal = <Proposals<Test>>::get(proposal_id);
+
+        assert_eq!(
+            proposal,
+            Proposal {
+                activated_at: reactivation_block,
+                status: ProposalStatus::Active,
+                voting_results: VotingResults::default(),
+                ..initial_proposal
+            }
+        );
+
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        let approval_block = 6;
+        run_to_block_and_finalize(approval_block);
+
+        // internal active proposal counter check
+        assert_eq!(<ActiveProposalCount>::get(), 0);
+
+        assert!(!<ActiveProposalIds<Test>>::contains_key(proposal_id));
+
+        assert!(!<PendingConstitutionalityProposalIds<Test>>::contains_key(
+            proposal_id
+        ));
+
+        assert_eq!(Balances::usable_balance(&account_id), total_balance);
+
+        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+            proposal_id,
+            ProposalStatus::approved(ApprovedProposalStatus::Executed, reactivation_block),
         ));
     });
 }

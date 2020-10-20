@@ -23,13 +23,10 @@
 //!
 //! - The proposal can be [vetoed](./struct.Module.html#method.veto_proposal)
 //! anytime before the proposal execution by the _sudo_.
-//! - When the proposal is created with some stake - refunding on proposal finalization with
-//! different statuses should be accomplished from the external handler from the _stake module_
-//! (_StakingEventsHandler_). Such a handler should call
-//! [refund_proposal_stake](./struct.Module.html#method.refund_proposal_stake) callback function.
 //! - If the _council_ got reelected during the proposal _voting period_ the external handler calls
-//! [reset_active_proposals](./trait.Module.html#method.reset_active_proposals) function and
-//! all voting results get cleared.
+//! [reset_votes_for_active_proposals](./trait.Module.html#method.reset_votes_for_active_proposals) function and
+//! all voting results get cleared and it also calls [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
+//! and proposals with pending constitutionality become active again.
 //!
 //! ### Important abstract types to be implemented
 //! Proposals `engine` module has several abstractions to be implemented in order to work correctly.
@@ -39,7 +36,7 @@
 //! the council size
 //! - _ProposerOriginValidator_ - ensure valid proposer identity. Proposers should have permissions
 //! to create a proposal: they should be members of the Joystream.
-//! - [StakeHandlerProvider](./trait.StakeHandlerProvider.html) - defines an interface for the staking.
+//! - [StakingHandler](./trait.StakingHandler.html) - defines an interface for the staking.
 //!
 //! A full list of the abstractions can be found [here](./trait.Trait.html).
 //!
@@ -51,8 +48,8 @@
 //! ### Public API
 //! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal using provided parameters
 //! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid) - ensures that we can create the proposal
-//! - [refund_proposal_stake](./struct.Module.html#method.refund_proposal_stake) - a callback for _StakingHandlerEvents_
-//! - [reset_active_proposals](./trait.Module.html#method.reset_active_proposals) - resets voting results for active proposals
+//! - [reset_votes_for_active_proposals](./trait.Module.html#method.reset_votes_for_active_proposals) - resets voting results for active proposals
+//! - [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reset_votes_for_active_proposals) - reactivate proposals with pending constitutionality.
 //!
 //! ## Usage
 //!
@@ -118,9 +115,9 @@
 use types::{ApprovedProposalData, FinalizedProposalData, MemberId};
 
 pub use types::{
-    ActiveStake, ApprovedProposalStatus, BalanceOf, FinalizationData, Proposal,
-    ProposalCodeDecoder, ProposalCreationParameters, ProposalDecisionStatus, ProposalExecutable,
-    ProposalParameters, ProposalStatus, StakingHandler, VoteKind, VotersParameters, VotingResults,
+    ApprovedProposalStatus, BalanceOf, FinalizationData, Proposal, ProposalCodeDecoder,
+    ProposalCreationParameters, ProposalDecisionStatus, ProposalExecutable, ProposalParameters,
+    ProposalStatus, StakingHandler, VoteKind, VotersParameters, VotingResults,
 };
 
 pub(crate) mod types;
@@ -130,6 +127,7 @@ mod tests;
 
 use codec::Decode;
 use frame_support::dispatch::{DispatchError, DispatchResult, UnfilteredDispatchable};
+use frame_support::sp_std::marker::PhantomData;
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{
@@ -140,7 +138,6 @@ use sp_std::vec::Vec;
 use system::{ensure_root, RawOrigin};
 
 use common::origin::ActorOriginValidator;
-use frame_support::sp_std::marker::PhantomData;
 
 /// Proposals engine trait.
 pub trait Trait:
@@ -211,7 +208,6 @@ decl_event!(
         <T as Trait>::ProposalId,
         MemberId = MemberId<T>,
         <T as system::Trait>::BlockNumber,
-        <T as system::Trait>::AccountId,
     {
         /// Emits on proposal creation.
         /// Params:
@@ -223,7 +219,7 @@ decl_event!(
         /// Params:
         /// - Id of a updated proposal.
         /// - New proposal status
-        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber, AccountId>),
+        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber>),
 
         /// Emits on voting for the proposal
         /// Params:
@@ -318,7 +314,11 @@ decl_storage! {
             T::ProposalId=> ();
 
         /// Ids of proposals that were approved and theirs grace period was not expired.
-        pub PendingExecutionProposalIds get(fn pending_proposal_ids): map hasher(blake2_128_concat)
+        pub PendingExecutionProposalIds get(fn pending_execution_proposal_ids): map hasher(blake2_128_concat)
+            T::ProposalId=> ();
+
+        /// Ids of proposals that were approved and needed more councils approvals to be executed.
+        pub PendingConstitutionalityProposalIds get(fn pending_consitutionality_proposal_ids): map hasher(blake2_128_concat)
             T::ProposalId=> ();
 
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
@@ -353,7 +353,13 @@ decl_module! {
 
         /// Vote extrinsic. Conditions:  origin must allow votes.
         #[weight = 10_000_000] // TODO: adjust weight
-        pub fn vote(origin, voter_id: MemberId<T>, proposal_id: T::ProposalId, vote: VoteKind)  {
+        pub fn vote(
+            origin,
+            voter_id: MemberId<T>,
+            proposal_id: T::ProposalId,
+            vote: VoteKind,
+            _rationale: Vec<u8>, // we use it on the query node side.
+        )  {
             T::VoterOriginValidator::ensure_actor_origin(
                 origin,
                 voter_id,
@@ -468,30 +474,27 @@ impl<T: Trait> Module<T> {
         let new_proposal_id = next_proposal_count_value;
         let proposal_id = T::ProposalId::from(new_proposal_id);
 
-        let stake_data =
-            if let Some(stake_balance) = creation_params.proposal_parameters.required_stake {
-                if let Some(staking_account_id) = creation_params.staking_account_id {
-                    T::StakingHandler::lock(&staking_account_id, stake_balance);
-
-                    Some(ActiveStake {
-                        source_account_id: staking_account_id,
-                    })
-                } else {
-                    return Err(Error::<T>::EmptyStake.into());
-                }
+        // Lock stake balance for proposal if the stake is required.
+        if let Some(stake_balance) = creation_params.proposal_parameters.required_stake {
+            if let Some(staking_account_id) = creation_params.staking_account_id.clone() {
+                T::StakingHandler::lock(&staking_account_id, stake_balance);
             } else {
-                None
-            };
+                // Return an error if no staking account provided.
+                return Err(Error::<T>::EmptyStake.into());
+            }
+        };
 
         let new_proposal = Proposal {
-            created_at: Self::current_block(),
+            activated_at: Self::current_block(),
             parameters: creation_params.proposal_parameters,
             title: creation_params.title,
             description: creation_params.description,
             proposer_id: creation_params.proposer_id,
-            status: ProposalStatus::Active(stake_data),
+            status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
             exact_execution_block: creation_params.exact_execution_block,
+            current_constitutionality_level: 0,
+            staking_account_id: creation_params.staking_account_id,
         };
 
         <Proposals<T>>::insert(proposal_id, new_proposal);
@@ -589,13 +592,31 @@ impl<T: Trait> Module<T> {
 
     /// Resets voting results for active proposals.
     /// Possible application includes new council elections.
-    pub fn reset_active_proposals() {
+    pub fn reset_votes_for_active_proposals() {
         <ActiveProposalIds<T>>::iter().for_each(|(proposal_id, _)| {
             <Proposals<T>>::mutate(proposal_id, |proposal| {
-                proposal.reset_proposal();
+                proposal.reset_proposal_votes();
                 <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
             });
         });
+    }
+
+    /// Reactivate proposals with pending constitutionality.
+    /// Possible application includes new council elections.
+    pub fn reactivate_pending_constitutionality_proposals() {
+        <PendingConstitutionalityProposalIds<T>>::iter().for_each(|(proposal_id, _)| {
+            <Proposals<T>>::mutate(proposal_id, |proposal| {
+                proposal.activated_at = Self::current_block();
+                proposal.status = ProposalStatus::Active;
+                // Resets votes for a proposal.
+                proposal.reset_proposal_votes();
+                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+            });
+
+            <ActiveProposalIds<T>>::insert(proposal_id, ());
+        });
+
+        <PendingConstitutionalityProposalIds<T>>::remove_all();
     }
 }
 
@@ -681,6 +702,7 @@ impl<T: Trait> Module<T> {
             proposal_execution_status,
         ));
 
+        Self::decrease_active_proposal_counter();
         Self::remove_proposal_data(&approved_proposal.proposal_id);
     }
 
@@ -688,35 +710,47 @@ impl<T: Trait> Module<T> {
     // - clean active proposal cache
     // - update proposal status fields (status, finalized_at)
     // - add to pending execution proposal cache if approved
+    // - add to pending constitutionality proposal cache if approved but constitutionality level is not reached
     // - slash and unstake proposal stake if stake exists
     // - decrease active proposal counter
     // - fire an event
     // It prints an error message in case of an attempt to finalize the non-active proposal.
     fn finalize_proposal(proposal_id: T::ProposalId, decision_status: ProposalDecisionStatus) {
-        Self::decrease_active_proposal_counter();
+        let now = Self::current_block();
+
         <ActiveProposalIds<T>>::remove(&proposal_id.clone());
 
         let mut proposal = Self::proposals(proposal_id);
 
-        if let ProposalStatus::Active(active_stake) = proposal.status.clone() {
-            let mut clean_finilized_proposal = true;
-            if let ProposalDecisionStatus::Approved { .. } = decision_status {
-                <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
+        if proposal.status == ProposalStatus::Active {
+            if let ProposalDecisionStatus::Approved(approved_status) = decision_status.clone() {
+                proposal.current_constitutionality_level += 1;
 
-                clean_finilized_proposal = false; // keep pending execution proposal
+                if approved_status == ApprovedProposalStatus::PendingConstitutionality {
+                    <PendingConstitutionalityProposalIds<T>>::insert(proposal_id, ());
+                } else {
+                    <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
+                }
             }
 
             // deal with stakes if necessary
-            let slash_balance =
-                Self::calculate_slash_balance(&decision_status, &proposal.parameters);
-            Self::slash_and_unstake(active_stake, slash_balance);
+            if decision_status
+                != ProposalDecisionStatus::Approved(
+                    ApprovedProposalStatus::PendingConstitutionality,
+                )
+            {
+                let slash_balance =
+                    Self::calculate_slash_balance(&decision_status, &proposal.parameters);
+                Self::slash_and_unstake(proposal.staking_account_id.clone(), slash_balance);
+            }
 
             // create finalized proposal status with error if any
-            let new_proposal_status =
-                ProposalStatus::finalized(decision_status, Self::current_block());
+            let new_proposal_status = ProposalStatus::finalized(decision_status.clone(), now);
 
-            if clean_finilized_proposal {
+            // update approved proposal or remove otherwise
+            if !matches!(decision_status, ProposalDecisionStatus::Approved(..)) {
                 Self::remove_proposal_data(&proposal_id);
+                Self::decrease_active_proposal_counter();
             } else {
                 proposal.status = new_proposal_status.clone();
                 <Proposals<T>>::insert(proposal_id, proposal);
@@ -731,18 +765,15 @@ impl<T: Trait> Module<T> {
         }
     }
 
-    // Slashes the stake and perform unstake only in case of existing stake
-    fn slash_and_unstake(
-        current_stake_data: Option<ActiveStake<T::AccountId>>,
-        slash_balance: BalanceOf<T>,
-    ) {
+    // Slashes the stake and perform unstake only in case of existing stake.
+    fn slash_and_unstake(staking_account_id: Option<T::AccountId>, slash_balance: BalanceOf<T>) {
         // only if stake exists
-        if let Some(stake_data) = current_stake_data {
+        if let Some(staking_account_id) = staking_account_id {
             if !slash_balance.is_zero() {
-                T::StakingHandler::slash(&stake_data.source_account_id, Some(slash_balance));
+                T::StakingHandler::slash(&staking_account_id, Some(slash_balance));
             }
 
-            T::StakingHandler::unlock(&stake_data.source_account_id);
+            T::StakingHandler::unlock(&staking_account_id);
         }
     }
 
@@ -778,17 +809,15 @@ impl<T: Trait> Module<T> {
                 if proposal.is_ready_for_execution(now) {
                     // this should be true, because it was tested inside is_grace_period_expired()
                     if let ProposalStatus::Finalized(finalisation_data) = proposal.status.clone() {
-                        Some(ApprovedProposalData {
+                        return Some(ApprovedProposalData {
                             proposal_id,
                             proposal,
                             finalisation_status_data: finalisation_data,
-                        })
-                    } else {
-                        None
+                        });
                     }
-                } else {
-                    None
                 }
+
+                None
             })
             .collect()
     }

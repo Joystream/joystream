@@ -9,7 +9,7 @@ use codec::Encode;
 use governance::election_params::ElectionParameters;
 use membership;
 use proposals_engine::{
-    ActiveStake, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,
+    ApprovedProposalStatus, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,
     ProposalStatus, VoteKind, VotersParameters, VotingResults,
 };
 
@@ -135,6 +135,7 @@ impl VoteGenerator {
             self.current_voter_id,
             self.proposal_id,
             vote_kind,
+            Vec::new(),
         )
     }
 }
@@ -167,6 +168,7 @@ impl Default for DummyProposalFixture {
                 slashing_threshold_percentage: 60,
                 grace_period: 0,
                 required_stake: None,
+                constitutionality: 1,
             },
             account_id: <Runtime as system::Trait>::AccountId::default(),
             proposer_id: 0,
@@ -182,6 +184,16 @@ impl Default for DummyProposalFixture {
 impl DummyProposalFixture {
     fn with_parameters(self, parameters: ProposalParameters<u32, u128>) -> Self {
         DummyProposalFixture { parameters, ..self }
+    }
+
+    fn with_constitutionality(&self, constitutionality: u32) -> Self {
+        DummyProposalFixture {
+            parameters: ProposalParameters {
+                constitutionality,
+                ..self.parameters
+            },
+            ..self.clone()
+        }
     }
 
     fn with_account_id(self, account_id: AccountId32) -> Self {
@@ -284,6 +296,7 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             slashing_threshold_percentage: 60,
             grace_period: 5,
             required_stake: Some(stake_amount),
+            constitutionality: 1,
         };
         let dummy_proposal = DummyProposalFixture::default()
             .with_parameters(parameters)
@@ -311,14 +324,14 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
         let expected_proposal = Proposal {
             parameters,
             proposer_id: member_id,
-            created_at: 0,
-            status: ProposalStatus::Active(Some(ActiveStake {
-                source_account_id: account_id.clone(),
-            })),
+            activated_at: 0,
+            status: ProposalStatus::Active,
             title: b"title".to_vec(),
             description: b"description".to_vec(),
             voting_results: VotingResults::default(),
             exact_execution_block: None,
+            current_constitutionality_level: 0,
+            staking_account_id: Some(account_id.clone()),
         };
 
         assert_eq!(proposal, expected_proposal);
@@ -595,5 +608,77 @@ fn set_validator_count_proposal_execution_succeeds() {
         codex_extrinsic_test_fixture.call_extrinsic_and_assert();
 
         assert_eq!(<pallet_staking::ValidatorCount>::get(), new_validator_count);
+    });
+}
+
+#[test]
+fn amend_constitution_proposal_execution_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let member_id = 10;
+        let account_id: [u8; 32] = [member_id; 32];
+
+        let codex_extrinsic_test_fixture = CodexProposalTestFixture::default_for_call(|| {
+            ProposalCodex::create_amend_constitution_proposal(
+                RawOrigin::Signed(account_id.into()).into(),
+                member_id as u64,
+                b"title".to_vec(),
+                b"body".to_vec(),
+                Some(account_id.into()),
+                b"Constitution text".to_vec(),
+                None,
+            )
+        })
+        .with_member_id(member_id as u64);
+
+        codex_extrinsic_test_fixture.call_extrinsic_and_assert();
+    });
+}
+
+#[test]
+fn proposal_reactivation_succeeds() {
+    initial_test_ext().execute_with(|| {
+        let starting_block = 0;
+        setup_members(5);
+        setup_council();
+        // create proposal
+        let dummy_proposal = DummyProposalFixture::default()
+            .with_voting_period(100)
+            .with_constitutionality(2);
+        let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
+
+        // create some votes
+        let mut vote_generator = VoteGenerator::new(proposal_id);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+        vote_generator.vote_and_assert_ok(VoteKind::Approve);
+
+        assert!(<proposals_engine::ActiveProposalIds<Runtime>>::contains_key(proposal_id));
+
+        run_to_block(2);
+
+        // check
+        let proposal = ProposalsEngine::proposals(proposal_id);
+        assert_eq!(
+            proposal.status,
+            ProposalStatus::approved(
+                ApprovedProposalStatus::PendingConstitutionality,
+                starting_block
+            )
+        );
+
+        // Ensure council was elected
+        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 6);
+
+        elect_single_councilor();
+
+        run_to_block(10);
+
+        let updated_proposal = ProposalsEngine::proposals(proposal_id);
+
+        assert_eq!(updated_proposal.status, ProposalStatus::Active);
+
+        // Check council CouncilElected hook. It should set current council. And we elected single councilor.
+        assert_eq!(CouncilManager::<Runtime>::total_voters_count(), 1);
     });
 }

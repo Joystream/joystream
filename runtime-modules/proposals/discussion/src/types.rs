@@ -13,7 +13,7 @@ pub struct DiscussionThread<ThreadAuthorId, BlockNumber> {
     pub title: Vec<u8>,
 
     /// When thread was established.
-    pub created_at: BlockNumber,
+    pub activated_at: BlockNumber,
 
     /// Author of the thread.
     pub author_id: ThreadAuthorId,
@@ -27,7 +27,7 @@ pub struct DiscussionPost<PostAuthorId, BlockNumber, ThreadId> {
     pub text: Vec<u8>,
 
     /// When post was added.
-    pub created_at: BlockNumber,
+    pub activated_at: BlockNumber,
 
     /// When post was updated last time.
     pub updated_at: BlockNumber,

@@ -216,7 +216,7 @@ decl_module! {
 
             let new_post = DiscussionPost {
                 text,
-                created_at: Self::current_block(),
+                activated_at: Self::current_block(),
                 updated_at: Self::current_block(),
                 author_id: post_author_id,
                 edition_number : 0,
@@ -287,7 +287,7 @@ impl<T: Trait> Module<T> {
 
         let new_thread = DiscussionThread {
             title,
-            created_at: Self::current_block(),
+            activated_at: Self::current_block(),
             author_id: thread_author_id,
         };
 

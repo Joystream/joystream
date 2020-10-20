@@ -1142,3 +1142,51 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
         proposal_fixture.check_all();
     });
 }
+
+#[test]
+fn create_amend_constitution_proposal_common_checks_succeed() {
+    initial_test_ext().execute_with(|| {
+        increase_total_balance_issuance(500000);
+
+        let proposal_fixture = ProposalTestFixture {
+            insufficient_rights_call: || {
+                ProposalCodex::create_amend_constitution_proposal(
+                    RawOrigin::None.into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    b"constitution text".to_vec(),
+                    None,
+                )
+            },
+            empty_stake_call: || {
+                ProposalCodex::create_amend_constitution_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    None,
+                    b"constitution text".to_vec(),
+                    None,
+                )
+            },
+            successful_call: || {
+                ProposalCodex::create_amend_constitution_proposal(
+                    RawOrigin::Signed(1).into(),
+                    1,
+                    b"title".to_vec(),
+                    b"body".to_vec(),
+                    Some(1),
+                    b"constitution text".to_vec(),
+                    None,
+                )
+            },
+            proposal_parameters: crate::proposal_types::parameters::amend_constitution_proposal::<
+                Test,
+            >(),
+            proposal_details: ProposalDetails::AmendConstitution(b"constitution text".to_vec()),
+        };
+        proposal_fixture.check_all();
+    });
+}

@@ -1993,7 +1993,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node"
-version = "3.3.1"
+version = "3.3.2"
 dependencies = [
  "frame-benchmarking",
  "frame-benchmarking-cli",
@@ -2053,7 +2053,7 @@ dependencies = [
 
 [[package]]
 name = "joystream-node-runtime"
-version = "7.5.2"
+version = "7.6.0"
 dependencies = [
  "frame-benchmarking",
  "frame-executive",
@@ -2067,6 +2067,7 @@ dependencies = [
  "pallet-balances",
  "pallet-collective",
  "pallet-common",
+ "pallet-constitution",
  "pallet-content-directory",
  "pallet-content-working-group",
  "pallet-finality-tracker",
@@ -3307,6 +3308,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-constitution"
+version = "1.0.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "serde",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-content-directory"
 version = "3.0.0"
 dependencies = [
@@ -3532,6 +3547,7 @@ dependencies = [
  "frame-system",
  "pallet-balances",
  "pallet-common",
+ "pallet-constitution",
  "pallet-governance",
  "pallet-hiring",
  "pallet-membership",

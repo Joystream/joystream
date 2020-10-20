@@ -68,6 +68,10 @@ pub struct ProposalParameters<BlockNumber, Balance> {
 
     /// Proposal stake
     pub required_stake: Option<Balance>,
+
+    /// The number of councils in that must approve the proposal in a row before it has its
+    /// intended effect. Integer no less than 1.
+    pub constitutionality: u32,
 }
 
 /// Contains current voting results
@@ -109,14 +113,6 @@ impl VotingResults {
     }
 }
 
-/// Contains source staking account for the stake.
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Default, Clone, Copy, PartialEq, Eq, Debug)]
-pub struct ActiveStake<AccountId> {
-    /// Source account of the stake balance. Refund if any will be provided using this account
-    pub source_account_id: AccountId,
-}
-
 /// 'Proposal' contains information necessary for the proposal system functioning.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq, Debug)]
@@ -133,17 +129,25 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {
     /// Proposal body
     pub description: Vec<u8>,
 
-    /// When it was created.
-    pub created_at: BlockNumber,
+    /// It contains the block number when it was first created or the beginning of a new council
+    /// where the proposal was automatically activated due to constitutionality.
+    pub activated_at: BlockNumber,
 
     /// Current proposal status
-    pub status: ProposalStatus<BlockNumber, AccountId>,
+    pub status: ProposalStatus<BlockNumber>,
 
     /// Curring voting result for the proposal
     pub voting_results: VotingResults,
 
     /// Optional exact block height which triggers the execution.
     pub exact_execution_block: Option<BlockNumber>,
+
+    /// The number of councils in that must approve the proposal in a row before it has its
+    /// intended effect.
+    pub current_constitutionality_level: u32,
+
+    /// Optional account id for staking.
+    pub staking_account_id: Option<AccountId>,
 }
 
 impl<BlockNumber, ProposerId, Balance, AccountId>
@@ -154,7 +158,7 @@ where
 {
     /// Returns whether voting period expired by now
     pub fn is_voting_period_expired(&self, now: BlockNumber) -> bool {
-        now >= self.created_at + self.parameters.voting_period
+        now >= self.activated_at + self.parameters.voting_period
     }
 
     /// Returns whether grace period expired by now.
@@ -207,9 +211,14 @@ where
         if proposal_status_resolution.is_approval_quorum_reached()
             && proposal_status_resolution.is_approval_threshold_reached()
         {
-            Some(ProposalDecisionStatus::Approved(
-                ApprovedProposalStatus::PendingExecution,
-            ))
+            let approved_status =
+                if proposal_status_resolution.is_constitutionality_reached_on_approval() {
+                    ApprovedProposalStatus::PendingExecution
+                } else {
+                    ApprovedProposalStatus::PendingConstitutionality
+                };
+
+            Some(ProposalDecisionStatus::Approved(approved_status))
         } else if proposal_status_resolution.is_slashing_quorum_reached()
             && proposal_status_resolution.is_slashing_threshold_reached()
         {
@@ -225,8 +234,8 @@ where
 
     /// Reset the proposal in Active status. Proposal with other status won't be changed.
     /// Reset proposal operation clears voting results.
-    pub fn reset_proposal(&mut self) {
-        if let ProposalStatus::Active(_) = self.status.clone() {
+    pub fn reset_proposal_votes(&mut self) {
+        if self.status == ProposalStatus::Active {
             self.voting_results = VotingResults::default();
         }
     }
@@ -306,6 +315,12 @@ where
     // All voters had voted
     pub fn is_voting_completed(&self) -> bool {
         self.votes_count == self.total_voters_count
+    }
+
+    // Council approved the proposal enough times.
+    pub fn is_constitutionality_reached_on_approval(&self) -> bool {
+        self.proposal.current_constitutionality_level + 1
+            >= self.proposal.parameters.constitutionality
     }
 }
 
@@ -431,7 +446,7 @@ mod tests {
     fn proposal_voting_period_expired() {
         let mut proposal = ProposalObject::default();
 
-        proposal.created_at = 1;
+        proposal.activated_at = 1;
         proposal.parameters.voting_period = 3;
 
         assert!(proposal.is_voting_period_expired(4));
@@ -441,7 +456,7 @@ mod tests {
     fn proposal_voting_period_not_expired() {
         let mut proposal = ProposalObject::default();
 
-        proposal.created_at = 1;
+        proposal.activated_at = 1;
         proposal.parameters.voting_period = 3;
 
         assert!(!proposal.is_voting_period_expired(3));
@@ -495,7 +510,7 @@ mod tests {
     fn define_proposal_decision_status_returns_expired() {
         let mut proposal = ProposalObject::default();
         let now = 5;
-        proposal.created_at = 1;
+        proposal.activated_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 80;
         proposal.parameters.approval_threshold_percentage = 40;
@@ -527,7 +542,7 @@ mod tests {
     fn define_proposal_decision_status_returns_approved() {
         let now = 2;
         let mut proposal = ProposalObject::default();
-        proposal.created_at = 1;
+        proposal.activated_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
         proposal.parameters.slashing_quorum_percentage = 50;
@@ -562,7 +577,7 @@ mod tests {
         let mut proposal = ProposalObject::default();
         let now = 2;
 
-        proposal.created_at = 1;
+        proposal.activated_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 50;
         proposal.parameters.approval_threshold_percentage = 51;
@@ -596,7 +611,7 @@ mod tests {
         let mut proposal = ProposalObject::default();
         let now = 2;
 
-        proposal.created_at = 1;
+        proposal.activated_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 50;
         proposal.parameters.approval_threshold_percentage = 50;
@@ -630,7 +645,7 @@ mod tests {
         let mut proposal = ProposalObject::default();
         let now = 2;
 
-        proposal.created_at = 1;
+        proposal.activated_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 60;
         proposal.parameters.slashing_quorum_percentage = 50;
@@ -655,7 +670,7 @@ mod tests {
         let mut proposal = ProposalObject::default();
         let now = 2;
 
-        proposal.created_at = 1;
+        proposal.activated_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 50;
         proposal.parameters.approval_threshold_percentage = 30;
@@ -694,7 +709,7 @@ mod tests {
         let mut proposal = ProposalObject::default();
         let now = 2;
 
-        proposal.created_at = 1;
+        proposal.activated_at = 1;
         proposal.parameters.voting_period = 3;
         proposal.parameters.approval_quorum_percentage = 50;
         proposal.parameters.approval_threshold_percentage = 30;
