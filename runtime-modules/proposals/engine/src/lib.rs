@@ -594,15 +594,10 @@ impl<T: Trait> Module<T> {
     /// Possible application includes new council elections.
     pub fn reset_votes_for_active_proposals() {
         <ActiveProposalIds<T>>::iter().for_each(|(proposal_id, _)| {
-            Self::reset_proposal_votes(proposal_id);
-        });
-    }
-
-    // Resets votes for a single proposal.
-    fn reset_proposal_votes(proposal_id: T::ProposalId) {
-        <Proposals<T>>::mutate(proposal_id, |proposal| {
-            proposal.reset_proposal_votes();
-            <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+            <Proposals<T>>::mutate(proposal_id, |proposal| {
+                proposal.reset_proposal_votes();
+                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+            });
         });
     }
 
@@ -613,8 +608,10 @@ impl<T: Trait> Module<T> {
             <Proposals<T>>::mutate(proposal_id, |proposal| {
                 proposal.activated_at = Self::current_block();
                 proposal.status = ProposalStatus::Active;
+                // Resets votes for a proposal.
+                proposal.reset_proposal_votes();
+                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
             });
-            Self::reset_proposal_votes(proposal_id);
 
             <ActiveProposalIds<T>>::insert(proposal_id, ());
         });
