@@ -100,7 +100,7 @@ jobs:
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
-        run: tests/network-tests/run-tests.sh
+        run: RUNTIME=alexandria tests/network-tests/run-tests.sh full
 
   network_tests_2:
     name: Integration Tests (New Chain)
@@ -124,7 +124,7 @@ jobs:
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
       - name: Execute network tests
-        run: RUNTIME=latest tests/network-tests/run-tests.sh
+        run: tests/network-tests/run-tests.sh full
 
   network_tests_3:
     name: Content Directory Initialization
@@ -153,6 +153,30 @@ jobs:
         run: yarn workspace cd-schemas initialize:dev
 
   network_tests_4:
+    name: Content Direcotry Integration Tests
+    needs: build_images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '12.x'
+      - name: Get artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ needs.build_images.outputs.use_artifact }}
+      - name: Install artifacts
+        run: |
+          docker load --input joystream-node-docker-image.tar.gz
+          docker images
+      - name: Install packages and dependencies
+        run: yarn install --frozen-lockfile
+      - name: Ensure tests are runnable
+        run: yarn workspace network-tests build
+      - name: Execute network tests
+        run: tests/network-tests/run-tests.sh content-directory
+  
+  network_tests_5:
     name: Storage Node Tests
     needs: build_images
     runs-on: ubuntu-latest
