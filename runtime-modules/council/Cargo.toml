@@ -1,5 +1,5 @@
 [package]
-name = 'substrate-referendum-module'
+name = 'pallet-council'
 version = '1.0.0'
 authors = ['Joystream contributors']
 edition = '2018'
@@ -12,10 +12,17 @@ sp-core = { package = 'sp-core', default-features = false, git = 'https://github
 sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+referendum = { package = 'substrate-referendum-module', default-features = false, path = '../referendum'}
 
+# remove this after `staking_handler.rs` is removed in favor of external crate
+membership = { package = 'pallet-membership', default-features = false, path = '../membership'}
+common = { package = 'pallet-common', default-features = false, path = '../common'}
+timestamp = { package = 'pallet-timestamp', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 
 [dev-dependencies]
-pallet-balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
+# uncomment balances after `staking_handler.rs` is removed in favor of external crate
+#balances = { package = 'pallet-balances', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4'}
 rand = "0.7.3"
 
@@ -24,10 +31,16 @@ default = ['std']
 std = [
     'codec/std',
     'sp-core/std',
+    'sp-io/std',
     'serde',
     'sp-runtime/std',
     'sp-arithmetic/std',
     'frame-support/std',
+    'referendum/std',
     'system/std',
+
+    # remove this after `staking_handler.rs` is removed in favor of external crate
+    'membership/std',
+    'common/std',
 ]
 

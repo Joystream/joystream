@@ -6,6 +6,7 @@ members = [
 	"runtime-modules/proposals/discussion",
 	"runtime-modules/common",
 	"runtime-modules/content-working-group",
+	"runtime-modules/council",
 	"runtime-modules/forum",
 	"runtime-modules/governance",
 	"runtime-modules/hiring",
