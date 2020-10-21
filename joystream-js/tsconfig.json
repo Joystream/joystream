@@ -19,8 +19,9 @@
       "@polkadot/types/augment": ["../node_modules/@joystream/types/augment-codec/augment-types.ts"],
       "@polkadot/api/augment": ["../node_modules/@joystream/types/augment-codec/augment-api.ts"]
     },
-    "outDir": "lib",
+    "outDir": "./",
     "skipLibCheck": true
   },
-  "include": [ "src/**/*" ]
+  "include": [ "src/**/*" ],
+  "exclude": []
 }

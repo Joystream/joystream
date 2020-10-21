@@ -8,7 +8,7 @@ import { Section } from '@polkadot/joy-utils/react/components';
 import { withMulti, withApi } from '@polkadot/react-api';
 import { PostId } from '@joystream/types/common';
 import { Post, Thread } from '@joystream/types/forum';
-import { bnToStr } from '@joystream/js/lib/functions/misc';
+import { bnToStr } from '@joystream/js/functions/misc';
 import { ApiProps } from '@polkadot/react-api/types';
 import MemberPreview from '@polkadot/joy-utils/react/components/MemberByAccountPreview';
 

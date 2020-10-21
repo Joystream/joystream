@@ -3,7 +3,7 @@ import { Table, Popup, Icon } from 'semantic-ui-react';
 import styled from 'styled-components';
 import { useWindowDimensions } from '../../../joy-utils/src/react/hooks';
 
-import { TokenomicsData, StatusServerData } from '@joystream/js/lib/types/tokenomics';
+import { TokenomicsData, StatusServerData } from '@joystream/js/types/tokenomics';
 
 const round = (num: number): number => Math.round((num + Number.EPSILON) * 100) / 100;
 

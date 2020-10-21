@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import useTransport from '../useTransport';
 import { ProposalId } from '@joystream/types/proposals';
-import { ParsedProposal } from '@joystream/js/lib/types/proposals';
-import { normalizeError } from '@joystream/js/lib/functions/misc';
+import { ParsedProposal } from '@joystream/js/types/proposals';
+import { normalizeError } from '@joystream/js/functions/misc';
 
 // Take advantage of polkadot api subscriptions to re-fetch proposal data and votes
 // each time there is some runtime change in the proposal

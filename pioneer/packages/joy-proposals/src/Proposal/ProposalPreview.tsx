@@ -1,7 +1,7 @@
 import React from 'react';
 import { Header, Card } from 'semantic-ui-react';
 import Details from './Details';
-import { ParsedProposal } from '@joystream/js/lib/types/proposals';
+import { ParsedProposal } from '@joystream/js/types/proposals';
 import { getExtendedStatus } from './ProposalDetails';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import styled from 'styled-components';

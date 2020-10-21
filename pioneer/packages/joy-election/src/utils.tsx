@@ -5,7 +5,7 @@ import { AccountId } from '@polkadot/types/interfaces';
 // -----------------------------------
 
 import createItem from '@polkadot/ui-keyring/options/item';
-import { findNameByAddress } from '@joystream/js/lib/functions/misc';
+import { findNameByAddress } from '@joystream/js/functions/misc';
 
 // Hash
 // -----------------------------------

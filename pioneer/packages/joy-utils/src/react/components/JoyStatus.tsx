@@ -1,6 +1,6 @@
 import React from 'react';
 import { Message } from 'semantic-ui-react';
-import { nonEmptyStr } from '@joystream/js/lib/functions/misc';
+import { nonEmptyStr } from '@joystream/js/functions/misc';
 
 type BaseProps = {
   title?: React.ReactNode;

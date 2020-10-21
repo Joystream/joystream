@@ -9,7 +9,7 @@ import path from 'path'
 import _ from 'lodash'
 import { ApplicationStageKeys } from '@joystream/types/hiring'
 import chalk from 'chalk'
-import { ParsedApplication, ParsedOpening, WorkerData, OpeningStatus } from '@joystream/js/lib/types/workingGroups'
+import { ParsedApplication, ParsedOpening, WorkerData, OpeningStatus } from '@joystream/js/types/workingGroups'
 
 const DEFAULT_GROUP = WorkingGroups.StorageProviders
 const DRAFTS_FOLDER = 'opening-drafts'

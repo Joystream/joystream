@@ -3,7 +3,7 @@ import { Icon, Label } from 'semantic-ui-react';
 import PieChart from '../../../react-components/src/Chart/PieChart';
 import styled from 'styled-components';
 
-import { TokenomicsData } from '@joystream/js/lib/types/tokenomics';
+import { TokenomicsData } from '@joystream/js/types/tokenomics';
 
 const StyledPieChart = styled(PieChart)`
   width:15rem;

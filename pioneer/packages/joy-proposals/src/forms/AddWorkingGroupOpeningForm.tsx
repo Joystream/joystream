@@ -20,7 +20,7 @@ import { IAddOpeningParameters } from '@joystream/types/proposals';
 import { WorkingGroupKey, InputValidationLengthConstraint } from '@joystream/types/common';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import { withCalls } from '@polkadot/react-api';
-import { SimplifiedTypeInterface } from '@joystream/js/lib/types/common';
+import { SimplifiedTypeInterface } from '@joystream/js/types/common';
 import Validation from '../validationSchema';
 
 export type FormValues = WGFormValues & {

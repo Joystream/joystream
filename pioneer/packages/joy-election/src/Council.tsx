@@ -7,7 +7,7 @@ import { Table } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import CouncilCandidate from './CandidatePreview';
 
-import { calcBackersStake } from '@joystream/js/lib/functions/misc';
+import { calcBackersStake } from '@joystream/js/functions/misc';
 import { Seat } from '@joystream/types/council';
 import translate from './translate';
 import Section from '@polkadot/joy-utils/react/components/Section';

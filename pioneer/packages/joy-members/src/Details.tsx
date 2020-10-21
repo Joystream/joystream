@@ -16,7 +16,7 @@ import { MemberId, Membership, EntryMethod, Paid, Screening, Genesis, Subscripti
 import { queryMembershipToProp } from './utils';
 import { Seat } from '@joystream/types/council';
 import { queryToProp } from '@polkadot/joy-utils/react/helpers';
-import { nonEmptyStr } from '@joystream/js/lib/functions/misc';
+import { nonEmptyStr } from '@joystream/js/functions/misc';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/react/hocs/accounts';
 
 type Props = ApiProps & I18nProps & MyAccountProps & {

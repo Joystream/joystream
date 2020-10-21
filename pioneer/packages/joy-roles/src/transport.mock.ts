@@ -2,7 +2,7 @@ import { Observable } from 'rxjs';
 import { Balance } from '@polkadot/types/interfaces';
 
 import { Subscribable } from '@polkadot/joy-utils/react/helpers';
-import MockTransportBase from '@joystream/js/lib/transport/mock/base';
+import MockTransportBase from '@joystream/js/transport/mock/base';
 
 import { ITransport } from './transport';
 

@@ -4,7 +4,7 @@ import chalk from 'chalk'
 import { positiveInt } from '../../validators/common'
 import { createParamOptions } from '../../helpers/promptOptions'
 import ExitCodes from '../../ExitCodes'
-import { formatReward } from '@joystream/js/lib/functions/format'
+import { formatReward } from '@joystream/js/functions/format'
 
 export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsCommandBase {
   static description = "Change given worker's reward (amount only). Requires lead access."

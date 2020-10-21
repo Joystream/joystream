@@ -16,10 +16,10 @@ import { withForumCalls } from './calls';
 import { withApi, withMulti } from '@polkadot/react-api';
 import { ApiProps } from '@polkadot/react-api/types';
 import { orderBy } from 'lodash';
-import { bnToStr } from '@joystream/js/lib/functions/misc';
+import { bnToStr } from '@joystream/js/functions/misc';
 import { IfIAmForumSudo } from './ForumSudo';
 import MemberPreview from '@polkadot/joy-utils/react/components/MemberByAccountPreview';
-import { formatDate } from '@joystream/js/lib/functions/date';
+import { formatDate } from '@joystream/js/functions/date';
 import { NewReply, EditReply } from './EditReply';
 import { useApi } from '@polkadot/react-hooks';
 

@@ -15,7 +15,7 @@ import { formatBalance } from '@polkadot/util';
 import translate from './translate';
 import { hashVote } from './utils';
 import { queryToProp } from '@polkadot/joy-utils/react/helpers';
-import { ZERO, getUrlParam, nonEmptyStr } from '@joystream/js/lib/functions/misc';
+import { ZERO, getUrlParam, nonEmptyStr } from '@joystream/js/functions/misc';
 import TxButton from '@polkadot/joy-utils/react/components/TxButton';
 import InputStake from '@polkadot/joy-utils/react/components/InputStake';
 import CandidatePreview from './CandidatePreview';

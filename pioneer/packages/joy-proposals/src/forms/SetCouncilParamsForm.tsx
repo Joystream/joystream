@@ -16,7 +16,7 @@ import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import _ from 'lodash';
 import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { IElectionParameters } from '@joystream/types/src/council';
-import { SimplifiedTypeInterface } from '@joystream/js/lib/types/common';
+import { SimplifiedTypeInterface } from '@joystream/js/types/common';
 
 export type FormValues = GenericFormValues & {
   announcingPeriod: string;

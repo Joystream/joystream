@@ -1,5 +1,5 @@
 import { ProposalTypeInfo } from '../../Proposal/ProposalTypePreview';
-import { Categories } from '@joystream/js/lib/types/proposals';
+import { Categories } from '@joystream/js/types/proposals';
 
 const MockProposalTypesInfo: ProposalTypeInfo[] = [
   {

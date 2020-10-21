@@ -1,7 +1,7 @@
 import React from 'react';
 import { Item, Header, Label } from 'semantic-ui-react';
-import { ParsedProposal } from '@joystream/js/lib/types/proposals';
-import { metadata as proposalConsts } from '@joystream/js/lib/consts/proposals';
+import { ParsedProposal } from '@joystream/js/types/proposals';
+import { metadata as proposalConsts } from '@joystream/js/consts/proposals';
 import { ExtendedProposalStatus } from './ProposalDetails';
 import styled from 'styled-components';
 

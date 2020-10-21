@@ -11,7 +11,7 @@ import { GenericAccountId } from '@polkadot/types';
 import { WorkerId } from '@joystream/types/working-group';
 import { WorkingGroups } from './working_groups';
 import { RewardRelationship } from '@joystream/types/recurring-rewards';
-import { formatReward } from '@joystream/js/lib/functions/format';
+import { formatReward } from '@joystream/js/functions/format';
 import styled from 'styled-components';
 
 type BalanceProps = {

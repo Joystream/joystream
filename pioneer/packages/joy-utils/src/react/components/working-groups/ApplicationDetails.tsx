@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ParsedApplication } from '@joystream/js/lib/types/workingGroups';
+import { ParsedApplication } from '@joystream/js/types/workingGroups';
 import { ProfilePreviewFromStruct as MemberPreview } from '../MemberProfilePreview';
 import { useTransport, usePromise } from '../../hooks';
 import { Item, Label, Button } from 'semantic-ui-react';

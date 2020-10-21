@@ -13,14 +13,14 @@ import { Dropdown, DropdownItemProps, DropdownProps, Header, Checkbox, Message }
 import _ from 'lodash';
 import Validation from '../validationSchema';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
-import { OpeningPair, ParsedApplication } from '@joystream/js/lib/types/workingGroups';
+import { OpeningPair, ParsedApplication } from '@joystream/js/types/workingGroups';
 import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { formatBalance } from '@polkadot/util';
 import { withCalls } from '@polkadot/react-api';
 import { BlockNumber } from '@polkadot/types/interfaces';
 import { getFormErrorLabelsProps } from './errorHandling';
 import { ApplicationsDetails } from '@polkadot/joy-utils/react/components/working-groups/ApplicationDetails';
-import { SimplifiedTypeInterface } from '@joystream/js/lib/types/common';
+import { SimplifiedTypeInterface } from '@joystream/js/types/common';
 import { IFillOpeningParameters } from '@joystream/types/src/proposals';
 
 export type FormValues = WGFormValues & {

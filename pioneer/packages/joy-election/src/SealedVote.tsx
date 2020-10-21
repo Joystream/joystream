@@ -9,7 +9,7 @@ import { Hash } from '@polkadot/types/interfaces';
 import { formatBalance } from '@polkadot/util';
 
 import translate from './translate';
-import { calcTotalStake } from '@joystream/js/lib/functions/misc';
+import { calcTotalStake } from '@joystream/js/functions/misc';
 import { SealedVote } from '@joystream/types/council';
 import AddressMini from '@polkadot/react-components/AddressMini';
 import CandidatePreview from './CandidatePreview';

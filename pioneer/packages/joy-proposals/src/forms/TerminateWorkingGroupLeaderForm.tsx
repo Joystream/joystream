@@ -10,14 +10,14 @@ import { GenericWorkingGroupProposalForm,
 import { withFormContainer } from './FormContainer';
 import _ from 'lodash';
 import Validation from '../validationSchema';
-import { WorkerData } from '@joystream/js/lib/types/workingGroups';
+import { WorkerData } from '@joystream/js/types/workingGroups';
 import { getFormErrorLabelsProps } from './errorHandling';
 import FormField, { TextareaFormField } from './FormFields';
 import { Checkbox } from 'semantic-ui-react';
 import { InputValidationLengthConstraint } from '@joystream/types/common';
 import { withCalls } from '@polkadot/react-api';
 import { formatBalance } from '@polkadot/util';
-import { SimplifiedTypeInterface } from '@joystream/js/lib/types/common';
+import { SimplifiedTypeInterface } from '@joystream/js/types/common';
 import { ITerminateRoleParameters } from '@joystream/types/src/proposals';
 
 export type FormValues = WGFormValues & {

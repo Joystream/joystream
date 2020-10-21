@@ -7,9 +7,9 @@ import { Moment } from '@polkadot/types/interfaces/runtime';
 import { QueueTxExtrinsicAdd } from '@polkadot/react-components/Status/types';
 import keyringOption from '@polkadot/ui-keyring/options';
 
-import { APIQueryCache } from '@joystream/js/lib/transport/APIQueryCache';
+import { APIQueryCache } from '@joystream/js/transport/APIQueryCache';
 import { Subscribable } from '@polkadot/joy-utils/react/helpers';
-import BaseTransport from '@joystream/js/lib/transport/base';
+import BaseTransport from '@joystream/js/transport/base';
 
 import { ITransport } from './transport';
 import { GroupMember } from './elements';
@@ -23,7 +23,7 @@ import { Application, Opening, OpeningId, ApplicationId, ActiveApplicationStage 
 import { Stake, StakeId } from '@joystream/types/stake';
 import { RewardRelationship, RewardRelationshipId } from '@joystream/types/recurring-rewards';
 import { Membership, MemberId } from '@joystream/types/members';
-import { createAccount, generateSeed } from '@joystream/js/lib/functions/accounts';
+import { createAccount, generateSeed } from '@joystream/js/functions/accounts';
 
 import { WorkingGroupMembership, GroupLeadStatus } from './tabs/WorkingGroup';
 import { WorkingGroupOpening } from './tabs/Opportunities';

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Dropdown, DropdownItemProps, DropdownProps } from 'semantic-ui-react';
-import { MemberFromAccount } from '@joystream/js/lib/types/members';
+import { MemberFromAccount } from '@joystream/js/types/members';
 import { useTransport } from '../hooks';
 import { AccountId } from '@polkadot/types/interfaces';
 import styled from 'styled-components';

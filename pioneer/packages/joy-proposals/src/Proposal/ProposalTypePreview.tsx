@@ -3,7 +3,7 @@ import React from 'react';
 import { History } from 'history';
 import { Item, Icon, Button, Label } from 'semantic-ui-react';
 
-import { ProposalType, Category } from '@joystream/js/lib/types/proposals';
+import { ProposalType, Category } from '@joystream/js/types/proposals';
 import _ from 'lodash';
 import styled from 'styled-components';
 import getVoteStyles from './getVoteStyles';

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { normalizeError } from '@joystream/js/lib/functions/misc';
+import { normalizeError } from '@joystream/js/functions/misc';
 import { randomBytes } from 'crypto';
 
 export type UsePromiseReturnValues<T> = [T, string | null, boolean, () => void];

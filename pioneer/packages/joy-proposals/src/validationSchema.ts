@@ -1,6 +1,6 @@
 import * as Yup from 'yup';
 import { schemaValidator, ActivateOpeningAtKeys } from '@joystream/types/hiring';
-import { ProposalTypes } from '@joystream/js/lib/types/proposals';
+import { ProposalTypes } from '@joystream/js/types/proposals';
 import { GenericFormValues } from './forms/GenericProposalForm';
 import { InputValidationLengthConstraint } from '@joystream/types/common';
 import { FormValues as SignalFormValues } from './forms/SignalForm';

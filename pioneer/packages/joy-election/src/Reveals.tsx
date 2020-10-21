@@ -8,7 +8,7 @@ import { Input, Labelled, InputAddress } from '@polkadot/react-components/index'
 
 import translate from './translate';
 import { queryToProp } from '@polkadot/joy-utils/react/helpers';
-import { nonEmptyStr, getUrlParam } from '@joystream/js/lib/functions/misc';
+import { nonEmptyStr, getUrlParam } from '@joystream/js/functions/misc';
 import { accountIdsToOptions, hashVote } from './utils';
 import TxButton from '@polkadot/joy-utils/react/components/TxButton';
 import { findVoteByHash } from './myVotesStore';

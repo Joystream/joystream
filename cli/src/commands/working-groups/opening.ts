@@ -6,7 +6,7 @@ import {
   GroupOpeningStage,
   ParsedOpeningStakes,
   UnstakingPeriodsKey,
-} from '@joystream/js/lib/types/workingGroups'
+} from '@joystream/js/types/workingGroups'
 import { StakingAmountLimitModeKeys, StakingPolicy } from '@joystream/types/hiring'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'

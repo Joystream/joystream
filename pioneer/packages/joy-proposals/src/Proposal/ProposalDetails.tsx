@@ -5,7 +5,7 @@ import Body from './Body';
 import VotingSection from './VotingSection';
 import Votes from './Votes';
 import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/react/hocs/accounts';
-import { ParsedProposal } from '@joystream/js/lib/types/proposals';
+import { ParsedProposal } from '@joystream/js/types/proposals';
 import { withCalls } from '@polkadot/react-api';
 import { withMulti } from '@polkadot/react-api/hoc';
 import { ProposalId, ProposalDecisionStatuses, ApprovedProposalStatuses } from '@joystream/types/proposals';

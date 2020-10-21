@@ -1,1 +1,7 @@
-/lib
+# Don't track build artifacts
+**/*.js
+**/*.d.ts
+**/*.json
+!.eslintrc.js
+!/*.json
+!src/**/*.json

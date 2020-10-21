@@ -27,9 +27,9 @@ import { ContentId, DataObject } from '@joystream/types/media'
 import { ServiceProviderRecord, Url } from '@joystream/types/discovery'
 import _ from 'lodash'
 
-import Transport from '@joystream/js/lib/transport'
-import { entriesByIds } from '@joystream/js/lib/transport/base'
-import { ParsedApplication, ParsedOpening, WorkerData } from '@joystream/js/lib/types/workingGroups'
+import Transport from '@joystream/js/transport'
+import { entriesByIds } from '@joystream/js/transport/base'
+import { ParsedApplication, ParsedOpening, WorkerData } from '@joystream/js/types/workingGroups'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 const DEFAULT_DECIMALS = new BN(12)

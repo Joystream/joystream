@@ -10,7 +10,7 @@ import { ContentCurators,
   StorageProviders } from './WorkingGroup';
 
 import styled from 'styled-components';
-import { normalizeError } from '@joystream/js/lib/functions/misc';
+import { normalizeError } from '@joystream/js/functions/misc';
 
 type State = {
   contentCurators?: WorkingGroupMembership;

@@ -2,7 +2,7 @@ import React from 'react';
 import { Divider, Header } from 'semantic-ui-react';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
 import { ProposalId } from '@joystream/types/proposals';
-import { ParsedDiscussion } from '@joystream/js/lib/types/proposals';
+import { ParsedDiscussion } from '@joystream/js/types/proposals';
 import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import DiscussionPost from './DiscussionPost';
 import DiscussionPostForm from './DiscussionPostForm';
