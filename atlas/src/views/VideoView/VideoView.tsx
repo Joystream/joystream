@@ -9,6 +9,7 @@ import {
   MoreVideosHeader,
   PlayerContainer,
   StyledChannelAvatar,
+  StyledVideoPlayer,
   Title,
   TitleActionsContainer,
 } from './VideoView.style'
@@ -67,7 +68,7 @@ const VideoView: React.FC<RouteComponentProps> = () => {
   return (
     <Container>
       <PlayerContainer>
-        <VideoPlayer src={data.video.media.location} height={700} autoplay />
+        <StyledVideoPlayer src={data.video.media.location} autoplay fluid />
       </PlayerContainer>
       <InfoContainer>
         <TitleActionsContainer>

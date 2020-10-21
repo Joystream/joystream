@@ -1,5 +1,4 @@
 export default {
-  small: '21rem',
-  medium: '48rem',
-  large: '72rem',
+  mobile: '480px',
+  tablet: '1156px',
 }

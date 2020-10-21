@@ -1,5 +1,5 @@
 import styled from '@emotion/styled'
-import { colors } from '@/shared/theme'
+import { colors, breakpoints as bp } from '@/shared/theme'
 
 export const Container = styled.div`
   color: ${colors.gray[300]};
@@ -8,8 +8,12 @@ export const Container = styled.div`
 
 export const Content = styled.div`
   display: grid;
-  grid-template-columns: 650px 1fr;
+  grid-template-columns: minmax(50%, 650px) 1fr;
   grid-column-gap: 24px;
+
+  @media (max-width: ${bp.mobile}) {
+    grid-template-columns: 1fr;
+  }
 `
 export const Poster = styled.img`
   width: 100%;

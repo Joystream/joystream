@@ -9,7 +9,7 @@ import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 import { spacing } from '@/shared/theme'
 
 type VideoGalleryProps = {
-  title: string
+  title?: string
   action?: string
   videos?: VideoFields[]
   loading?: boolean

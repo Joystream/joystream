@@ -1,5 +1,6 @@
 import styled from '@emotion/styled'
 import { Avatar } from '@/shared/components'
+import { fluidRange } from 'polished'
 import theme from '@/shared/theme'
 
 type ChannelHeaderProps = {
@@ -19,10 +20,14 @@ export const TitleSection = styled.div`
   display: flex;
   align-items: center;
   padding-top: ${theme.sizes.b10}px;
+  @media (max-width: ${theme.breakpoints.mobile}) {
+    flex-direction: column;
+    align-items: start;
+  }
 `
 export const Title = styled.h1`
-  font-size: ${theme.typography.sizes.h2};
   font-weight: bold;
+  ${fluidRange({ prop: 'fontSize', fromSize: '34px', toSize: '40px' })};
   max-width: 320px;
   display: inline-block;
   margin: 0;
@@ -38,4 +43,8 @@ export const StyledAvatar = styled(Avatar)`
   width: 136px;
   height: 136px;
   margin-right: ${theme.sizes.b6}px;
+  @media (max-width: ${theme.breakpoints.mobile}) {
+    width: 128px;
+    height: 128px;
+  }
 `

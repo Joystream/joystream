@@ -95,6 +95,7 @@
     "react-dom": "^16.13.1",
     "react-glider": "^2.0.2",
     "react-player": "^2.2.0",
+    "react-responsive": "^8.1.0",
     "react-scripts": "3.4.1",
     "react-spring": "^8.0.27",
     "storybook-addon-jsx": "^7.1.15",
