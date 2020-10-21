@@ -2,6 +2,8 @@ import { WsProvider } from '@polkadot/api'
 import { Api, WorkingGroups } from '../Api'
 import { config } from 'dotenv'
 import leaderSetup from '../flows/workingGroup/leaderSetup'
+import initializeContentDirectory from '../flows/contentDirectory/contentDirectoryInitialization'
+import createChannel from '../flows/contentDirectory/creatingChannel'
 
 const scenario = async () => {
   // Load env variables
@@ -17,6 +19,10 @@ const scenario = async () => {
 
   // Some flows that use the curator lead to perform some tests...
   //
+
+  await initializeContentDirectory(api)
+
+  await createChannel(api)
 
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!

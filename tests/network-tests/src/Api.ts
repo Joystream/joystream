@@ -13,7 +13,7 @@ import {
   Opening as WorkingGroupOpening,
 } from '@joystream/types/working-group'
 import { ElectionStake, Seat } from '@joystream/types/council'
-import { AccountInfo, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
+import { AccountInfo, Hash, Balance, BalanceOf, BlockNumber, Event, EventRecord } from '@polkadot/types/interfaces'
 import BN from 'bn.js'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
 import { Sender } from './sender'
@@ -30,6 +30,10 @@ import {
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
+import { InputParser } from 'cd-schemas'
+import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
+import initializeContentDir from 'cd-schemas/src/helpers/initialize'
+
 import Debugger from 'debug'
 const debug = Debugger('api')
 
@@ -1917,5 +1921,31 @@ export class Api {
 
   public getMaxWorkersCount(module: WorkingGroups): BN {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
+  }
+
+  public async createChannelEntity(memberId: number, channel: ChannelEntity): Promise<Hash> {
+    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
+  const parser = InputParser.createWithKnownSchemas(
+    this.api,
+    // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
+    [
+      {
+        className: 'Channel',
+        entries: [channel], // We could specify multiple entries here, but in this case we only need one
+      },
+    ]
+  )
+  // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
+  const operations = await parser.getEntityBatchOperations()
+  return this.api.tx.contentDirectory
+    .transaction(
+      { Member: memberId }, // We use member with id 0 as actor (in this case we assume this is Alice)
+      operations // We provide parsed operations as second argument
+    )
+    .signAndSend(this.keyring.getPairs()[0])
+  }
+
+  public async initializeContentDirectory() {
+    initializeContentDir(this.api, this.keyring.getPairs()[0])
   }
 }
