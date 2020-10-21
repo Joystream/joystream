@@ -32,7 +32,8 @@ import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
 import { InputParser } from 'cd-schemas'
 import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
-import initializeContentDir from 'cd-schemas/src/helpers/initialize'
+import { initializeContentDir } from 'cd-schemas'
+
 
 import Debugger from 'debug'
 const debug = Debugger('api')
