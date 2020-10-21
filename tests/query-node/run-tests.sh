@@ -9,15 +9,11 @@ cd hydra-test
 npx @dzlzv/hydra-cli scaffold --wsProviderUrl=ws://joystream-node:9944/ --projectName=Test
 
 cp ../../../types/augment/all/defs.json ./mappings/typedefs.json
+export TYPES_JSON=../../mappings/typedefs.json
+
+# Joystream mappings and graphsql schema
 # cp ../../../query-node/mappings/* ./mappings/
 # cp ../../../query-node/schema.graphql ./
-
-# might be good idea to add a typedefs.json as empty `{}` json at root, in hydra scaffold templates
-# Add a line in Dockerfile to copy typedefs into image (there are no volumes config in compose file)
-#   COPY typedefs.json /home/hydra
-
-# Sneak the typedefs file into this location to avoid need to modify the Dockerfile ;)
-export TYPES_JSON=../../mappings/typedefs.json
 
 npx @dzlzv/hydra-cli codegen
 
