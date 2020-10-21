@@ -9,7 +9,7 @@
     "develop": "tsc --watch",
     "lint": "eslint ./ --ext .ts --ignore-path .gitignore",
     "ts-check": "tsc --noEmit --pretty",
-    "circular": "madge --circular ./lib",
+    "circular": "madge --circular .",
     "pretty": "prettier ./ --write --ignore-path .gitignore",
     "checks": "yarn build && yarn circular && prettier ./ --check --ignore-path .gitignore && yarn lint"
   },
