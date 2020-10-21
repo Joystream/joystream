@@ -45,7 +45,7 @@ export const GET_NEWEST_VIDEOS = gql`
     videosConnection(
       first: $first
       after: $after
-      where: { categoryId_eq: $categoryId }
+      where: { categoryId_eq: $categoryId, isCurated_eq: false }
       orderBy: [publishedOnJoystreamAt_DESC]
     ) {
       edges {
