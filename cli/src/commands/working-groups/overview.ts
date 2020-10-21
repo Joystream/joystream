@@ -33,10 +33,10 @@ export default class WorkingGroupsOverview extends WorkingGroupsCommandBase {
       'Member id': m.memberId.toString(),
       'Member handle': m.profile.handle.toString(),
       Stake: formatBalance(m.stake),
-      Earned: formatBalance(m.reward?.totalRecieved),
+      Earned: formatBalance(m.reward?.total_reward_received),
       'Role account': shortAddress(m.roleAccount),
       '':
-        (lead?.workerId.eq(m.workerId) ? '\u{2B50}' : '  ') +
+        (lead?.workerId === m.workerId ? '\u{2B50}' : '  ') +
         ' ' +
         (accounts.some((a) => a.address === m.roleAccount.toString()) ? '\u{1F511}' : '  '),
     }))

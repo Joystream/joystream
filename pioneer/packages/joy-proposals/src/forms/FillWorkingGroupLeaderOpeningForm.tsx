@@ -13,7 +13,7 @@ import { Dropdown, DropdownItemProps, DropdownProps, Header, Checkbox, Message }
 import _ from 'lodash';
 import Validation from '../validationSchema';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
-import { OpeningData, ParsedApplication } from '@joystream/js/lib/types/workingGroups';
+import { OpeningPair, ParsedApplication } from '@joystream/js/lib/types/workingGroups';
 import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { formatBalance } from '@polkadot/util';
 import { withCalls } from '@polkadot/react-api';
@@ -71,19 +71,19 @@ const FillWorkingGroupLeaderOpeningForm: React.FunctionComponent<FormInnerProps>
   const { handleChange, setFieldValue, values, errors, touched } = props;
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
-  const [openings, openingsError, openingsLoading] = usePromise<OpeningData[]>(
-    () => transport.workingGroups.activeOpenings(values.workingGroup, 'ReviewPeriod', 'Leader'),
+  const [openings, openingsError, openingsLoading] = usePromise<OpeningPair[]>(
+    () => transport.workingGroups.activeOpeningPairs(values.workingGroup, 'ReviewPeriod', 'Leader'),
     [],
     [values.workingGroup]
   );
   const openingsOptions: DropdownItemProps[] = openings
     // Map to options
-    .map((od) => {
-      const hrt = od.hiringOpening.parse_human_readable_text_with_fallback();
+    .map((op) => {
+      const hrt = op.hiringOpening.parse_human_readable_text_with_fallback();
 
       return {
-        text: `${od.id.toString()}: ${hrt.headline} (${hrt.job.title})`,
-        value: od.id.toString()
+        text: `${op.id.toString()}: ${hrt.headline} (${hrt.job.title})`,
+        value: op.id.toString()
       };
     });
   const [activeApplications, applError, applLoading] = usePromise<ParsedApplication[]>(

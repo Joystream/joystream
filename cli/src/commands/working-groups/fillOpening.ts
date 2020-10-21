@@ -1,5 +1,5 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
-import { OpeningStatus } from '../../Types'
+import { OpeningStatus } from '@joystream/js/lib/types/workingGroups'
 import { apiModuleByGroup } from '../../Api'
 import chalk from 'chalk'
 import { createParamOptions } from '../../helpers/promptOptions'

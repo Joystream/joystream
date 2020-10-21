@@ -4,11 +4,9 @@ import { Option, Text } from '@polkadot/types'
 import { Constructor, Codec } from '@polkadot/types/types'
 import { Struct, Vec } from '@polkadot/types/codec'
 import { u32 } from '@polkadot/types/primitive'
-import { BlockNumber, Balance, AccountId } from '@polkadot/types/interfaces'
+import { BlockNumber, Balance } from '@polkadot/types/interfaces'
 import { DeriveBalancesAll } from '@polkadot/api-derive/types'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { WorkerId, OpeningType } from '@joystream/types/working-group'
-import { Membership, MemberId } from '@joystream/types/members'
 import {
   GenericJoyStreamRoleSchema,
   JobSpecifics,
@@ -23,7 +21,6 @@ import {
   CreatorDetails,
 } from '@joystream/types/hiring/schemas/role.schema.typings'
 import ajv from 'ajv'
-import { Opening, StakingPolicy, ApplicationStageKeys } from '@joystream/types/hiring'
 import { Validator } from 'inquirer'
 import { JoyStructCustom } from '@joystream/types/common'
 
@@ -90,102 +87,15 @@ export enum WorkingGroups {
   Curators = 'curators',
 }
 
-// In contrast to Pioneer, currently only StorageProviders group is available in CLI
+export const workingGroupKeyByGroup = {
+  [WorkingGroups.StorageProviders]: 'Storage',
+  [WorkingGroups.Curators]: 'Content',
+} as const
+
 export const AvailableGroups: readonly WorkingGroups[] = [
   WorkingGroups.StorageProviders,
   WorkingGroups.Curators,
 ] as const
-
-export type Reward = {
-  totalRecieved: Balance
-  value: Balance
-  interval?: number
-  nextPaymentBlock: number // 0 = no incoming payment
-}
-
-// Compound working group types
-export type GroupMember = {
-  workerId: WorkerId
-  memberId: MemberId
-  roleAccount: AccountId
-  profile: Membership
-  stake?: Balance
-  reward?: Reward
-}
-
-export type GroupApplication = {
-  wgApplicationId: number
-  applicationId: number
-  wgOpeningId: number
-  member: Membership | null
-  roleAccout: AccountId
-  stakes: {
-    application: number
-    role: number
-  }
-  humanReadableText: string
-  stage: ApplicationStageKeys
-}
-
-export enum OpeningStatus {
-  WaitingToBegin = 'WaitingToBegin',
-  AcceptingApplications = 'AcceptingApplications',
-  InReview = 'InReview',
-  Complete = 'Complete',
-  Cancelled = 'Cancelled',
-  Unknown = 'Unknown',
-}
-
-export type GroupOpeningStage = {
-  status: OpeningStatus
-  block?: number
-  date?: Date
-}
-
-export type GroupOpeningStakes = {
-  application?: StakingPolicy
-  role?: StakingPolicy
-}
-
-export const stakingPolicyUnstakingPeriodKeys = [
-  'crowded_out_unstaking_period_length',
-  'review_period_expired_unstaking_period_length',
-] as const
-
-export type StakingPolicyUnstakingPeriodKey = typeof stakingPolicyUnstakingPeriodKeys[number]
-
-export const openingPolicyUnstakingPeriodsKeys = [
-  'fill_opening_failed_applicant_application_stake_unstaking_period',
-  'fill_opening_failed_applicant_role_stake_unstaking_period',
-  'fill_opening_successful_applicant_application_stake_unstaking_period',
-  'terminate_application_stake_unstaking_period',
-  'terminate_role_stake_unstaking_period',
-  'exit_role_application_stake_unstaking_period',
-  'exit_role_stake_unstaking_period',
-] as const
-
-export type OpeningPolicyUnstakingPeriodsKey = typeof openingPolicyUnstakingPeriodsKeys[number]
-export type UnstakingPeriodsKey =
-  | OpeningPolicyUnstakingPeriodsKey
-  | 'crowded_out_application_stake_unstaking_period_length'
-  | 'crowded_out_role_stake_unstaking_period_length'
-  | 'review_period_expired_application_stake_unstaking_period_length'
-  | 'review_period_expired_role_stake_unstaking_period_length'
-
-export type UnstakingPeriods = {
-  [k in UnstakingPeriodsKey]: number
-}
-
-export type GroupOpening = {
-  wgOpeningId: number
-  openingId: number
-  stage: GroupOpeningStage
-  opening: Opening
-  stakes: GroupOpeningStakes
-  applications: GroupApplication[]
-  type: OpeningType
-  unstakingPeriods: UnstakingPeriods
-}
 
 // Some helper structs for generating human_readable_text in working group opening extrinsic
 // Note those types are not part of the runtime etc., we just use them to simplify prompting for values

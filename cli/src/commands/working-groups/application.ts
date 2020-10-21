@@ -1,6 +1,7 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { displayCollapsedRow, displayHeader } from '../../helpers/display'
 import chalk from 'chalk'
+import { formatBalance } from '@polkadot/util'
 
 export default class WorkingGroupsApplication extends WorkingGroupsCommandBase {
   static description = 'Shows an overview of given application by Working Group Application ID'
@@ -30,10 +31,10 @@ export default class WorkingGroupsApplication extends WorkingGroupsCommandBase {
       'Application ID': application.applicationId,
       'Member handle': application.member?.handle.toString() || chalk.red('NONE'),
       'Role account': application.roleAccout.toString(),
-      Stage: application.stage,
-      'Application stake': application.stakes.application,
-      'Role stake': application.stakes.role,
-      'Total stake': Object.values(application.stakes).reduce((a, b) => a + b),
+      Stage: application.stage.type,
+      'Application stake': formatBalance(application.stakes.application),
+      'Role stake': formatBalance(application.stakes.role),
+      'Total stake': formatBalance(application.stakes.total),
     }
     displayCollapsedRow(applicationRow)
   }

@@ -1,17 +1,7 @@
 import ExitCodes from '../ExitCodes'
 import AccountsCommandBase from './AccountsCommandBase'
 import { flags } from '@oclif/command'
-import {
-  WorkingGroups,
-  AvailableGroups,
-  NamedKeyringPair,
-  GroupMember,
-  GroupOpening,
-  ApiMethodArg,
-  ApiMethodNamedArgs,
-  OpeningStatus,
-  GroupApplication,
-} from '../Types'
+import { WorkingGroups, AvailableGroups, NamedKeyringPair, ApiMethodArg, ApiMethodNamedArgs } from '../Types'
 import { apiModuleByGroup } from '../Api'
 import { CLIError } from '@oclif/errors'
 import fs from 'fs'
@@ -19,6 +9,7 @@ import path from 'path'
 import _ from 'lodash'
 import { ApplicationStageKeys } from '@joystream/types/hiring'
 import chalk from 'chalk'
+import { ParsedApplication, ParsedOpening, WorkerData, OpeningStatus } from '@joystream/js/lib/types/workingGroups'
 
 const DEFAULT_GROUP = WorkingGroups.StorageProviders
 const DRAFTS_FOLDER = 'opening-drafts'
@@ -41,7 +32,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
   }
 
   // Use when lead access is required in given command
-  async getRequiredLead(): Promise<GroupMember> {
+  async getRequiredLead(): Promise<WorkerData> {
     const selectedAccount: NamedKeyringPair = await this.getRequiredSelectedAccount()
     const lead = await this.getApi().groupLead(this.group)
 
@@ -53,7 +44,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
   }
 
   // Use when worker access is required in given command
-  async getRequiredWorker(): Promise<GroupMember> {
+  async getRequiredWorker(): Promise<WorkerData> {
     const selectedAccount: NamedKeyringPair = await this.getRequiredSelectedAccount()
     const groupMembers = await this.getApi().groupMembers(this.group)
     const groupMembersByAccount = groupMembers.filter((m) => m.roleAccount.toString() === selectedAccount.address)
@@ -68,11 +59,11 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
   }
 
   // Use when member controller access is required, but one of the associated roles is expected to be selected
-  async getRequiredWorkerByMemberController(): Promise<GroupMember> {
+  async getRequiredWorkerByMemberController(): Promise<WorkerData> {
     const selectedAccount: NamedKeyringPair = await this.getRequiredSelectedAccount()
     const memberIds = await this.getApi().getMemberIdsByControllerAccount(selectedAccount.address)
     const controlledWorkers = (await this.getApi().groupMembers(this.group)).filter((groupMember) =>
-      memberIds.some((memberId) => groupMember.memberId.eq(memberId))
+      memberIds.some((memberId) => groupMember.memberId === memberId.toNumber())
     )
 
     if (!controlledWorkers.length) {
@@ -86,7 +77,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
     }
   }
 
-  async promptForWorker(groupMembers: GroupMember[]): Promise<GroupMember> {
+  async promptForWorker(groupMembers: WorkerData[]): Promise<WorkerData> {
     const chosenWorkerIndex = await this.simplePrompt({
       message: 'Choose the intended worker context:',
       type: 'list',
@@ -99,8 +90,8 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
     return groupMembers[chosenWorkerIndex]
   }
 
-  async promptForApplicationsToAccept(opening: GroupOpening): Promise<number[]> {
-    const acceptableApplications = opening.applications.filter((a) => a.stage === ApplicationStageKeys.Active)
+  async promptForApplicationsToAccept(opening: ParsedOpening): Promise<number[]> {
+    const acceptableApplications = opening.applications.filter((a) => a.stage.type === ApplicationStageKeys.Active)
     const acceptedApplications = await this.simplePrompt({
       message: 'Select succesful applicants',
       type: 'checkbox',
@@ -158,7 +149,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
     return selectedDraftName
   }
 
-  async getOpeningForLeadAction(id: number, requiredStatus?: OpeningStatus): Promise<GroupOpening> {
+  async getOpeningForLeadAction(id: number, requiredStatus?: OpeningStatus): Promise<ParsedOpening> {
     const opening = await this.getApi().groupOpening(this.group, id)
 
     if (!opening.type.isOfType('Worker')) {
@@ -179,7 +170,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
   // An alias for better code readibility in case we don't need the actual return value
   validateOpeningForLeadAction = this.getOpeningForLeadAction
 
-  async getApplicationForLeadAction(id: number, requiredStatus?: ApplicationStageKeys): Promise<GroupApplication> {
+  async getApplicationForLeadAction(id: number, requiredStatus?: ApplicationStageKeys): Promise<ParsedApplication> {
     const application = await this.getApi().groupApplication(this.group, id)
     const opening = await this.getApi().groupOpening(this.group, application.wgOpeningId)
 
@@ -187,10 +178,10 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
       this.error('A lead can only manage Worker opening applications!', { exit: ExitCodes.AccessDenied })
     }
 
-    if (requiredStatus && application.stage !== requiredStatus) {
+    if (requiredStatus && application.stage.type !== requiredStatus) {
       this.error(
         `The application needs to have "${_.startCase(requiredStatus)}" status! ` +
-          `This one has: "${_.startCase(application.stage)}"`,
+          `This one has: "${_.startCase(application.stage.type)}"`,
         { exit: ExitCodes.InvalidInput }
       )
     }
@@ -202,7 +193,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
     const groupMember = await this.getApi().groupMember(this.group, id)
     const groupLead = await this.getApi().groupLead(this.group)
 
-    if (groupLead?.workerId.eq(groupMember.workerId)) {
+    if (groupLead?.workerId === groupMember.workerId) {
       this.error('A lead cannot manage his own role this way!', { exit: ExitCodes.AccessDenied })
     }
 
@@ -216,7 +207,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
   // Helper for better TS handling.
   // We could also use some magic with conditional types instead, but those don't seem be very well supported yet.
   async getWorkerWithStakeForLeadAction(id: number) {
-    return (await this.getWorkerForLeadAction(id, true)) as GroupMember & Required<Pick<GroupMember, 'stake'>>
+    return (await this.getWorkerForLeadAction(id, true)) as WorkerData & Required<Pick<WorkerData, 'stake'>>
   }
 
   loadOpeningDraftParams(draftName: string): ApiMethodNamedArgs {

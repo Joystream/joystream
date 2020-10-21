@@ -11,13 +11,12 @@ import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role
 
 import { ITransport } from '../transport';
 
-import { keyPairDetails, FlowModal, ProgressSteps } from './apply';
+import { keyPairDetails, FlowModal, ProgressSteps, ApplicationDetailsData } from './apply';
 
 import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities';
 import { Min, Step, Sum } from '../balances';
 import { WorkingGroups, AvailableGroups } from '../working_groups';
 import { createType } from '@joystream/types';
-import { ApplicationDetailsData } from '@joystream/js/lib/types/workingGroups';
 
 type State = {
   // Input data from state

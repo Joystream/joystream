@@ -39,7 +39,9 @@ import { IStakeRequirement } from '../StakeRequirement';
 import { Loadable } from '@polkadot/joy-utils/react/hocs';
 import { Add } from '../balances';
 import { createType } from '@joystream/types';
-import { ApplicationDetailsData, ApplicationQuestionAnswers } from '@joystream/js/lib/types/workingGroups';
+
+export type ApplicationQuestionAnswers = { [questionTitle: string]: string | undefined }
+export type ApplicationDetailsData = { [sectionTitle: string]: ApplicationQuestionAnswers | undefined }
 
 type accordionProps = {
   title: string;

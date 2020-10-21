@@ -1,11 +1,10 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { apiModuleByGroup } from '../../Api'
-import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
-import { Reward } from '../../Types'
 import { positiveInt } from '../../validators/common'
 import { createParamOptions } from '../../helpers/promptOptions'
 import ExitCodes from '../../ExitCodes'
+import { formatReward } from '@joystream/js/lib/functions/format'
 
 export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsCommandBase {
   static description = "Change given worker's reward (amount only). Requires lead access."
@@ -19,14 +18,6 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
 
   static flags = {
     ...WorkingGroupsCommandBase.flags,
-  }
-
-  formatReward(reward?: Reward) {
-    return reward
-      ? formatBalance(reward.value) +
-          (reward.interval && ` / ${reward.interval} block(s)`) +
-          (reward.nextPaymentBlock && ` (next payment: #${reward.nextPaymentBlock})`)
-      : 'NONE'
   }
 
   async run() {
@@ -46,7 +37,7 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
       this.error('There is no reward relationship associated with this worker!', { exit: ExitCodes.InvalidInput })
     }
 
-    console.log(chalk.white(`Current worker reward: ${this.formatReward(reward)}`))
+    console.log(chalk.white(`Current worker reward: ${formatReward(reward)}`))
 
     const newRewardValue = await this.promptForParam(
       'BalanceOfMint',
@@ -60,8 +51,8 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
       newRewardValue,
     ])
 
-    const updatedGroupMember = await this.getApi().groupMember(this.group, workerId)
+    const { reward: updatedReward } = await this.getApi().groupMember(this.group, workerId)
     this.log(chalk.green(`Worker ${chalk.white(workerId)} reward has been updated!`))
-    this.log(chalk.green(`New worker reward: ${chalk.white(this.formatReward(updatedGroupMember.reward))}`))
+    this.log(chalk.green(`New worker reward: ${chalk.white(updatedReward ? formatReward(updatedReward) : 'NONE')}`))
   }
 }

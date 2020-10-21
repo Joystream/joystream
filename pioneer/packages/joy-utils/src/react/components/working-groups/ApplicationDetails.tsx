@@ -36,8 +36,8 @@ export const ApplicationsDetails = ({ applications, acceptedIds }: ApplicationsD
                 <Item.Header><MemberPreview profile={member}></MemberPreview></Item.Header>
                 <Item.Meta>
                   <Label>Application id: {wgApplicationId}</Label>
-                  { stakes.application > 0 && <Label>Appl. stake: {formatBalance(stakes.application)}</Label> }
-                  { stakes.role > 0 && <Label>Role stake: {formatBalance(stakes.role)}</Label> }
+                  { stakes.application.gtn(0) && <Label>Appl. stake: {formatBalance(stakes.application)}</Label> }
+                  { stakes.role.gtn(0) && <Label>Role stake: {formatBalance(stakes.role)}</Label> }
                 </Item.Meta>
                 <Item.Description>
                   <pre style={{

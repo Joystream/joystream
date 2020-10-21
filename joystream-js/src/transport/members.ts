@@ -4,6 +4,10 @@ import { AccountId } from '@polkadot/types/interfaces'
 import { MemberFromAccount } from '../types/members'
 
 export default class MembersTransport extends BaseTransport {
+  // Shortcuts
+  idsByController = this.members.memberIdsByControllerAccountId
+  idsByRoot = this.members.memberIdsByRootAccountId
+
   async membershipById(id: MemberId | number): Promise<Membership | null> {
     const member = await this.members.membershipById(id)
 
@@ -26,8 +30,8 @@ export default class MembersTransport extends BaseTransport {
   }
 
   async membershipFromAccount(accountId: AccountId | string): Promise<MemberFromAccount> {
-    const memberIdsRoot = await this.members.memberIdsByRootAccountId(accountId)
-    const memberIdsController = await this.members.memberIdsByControllerAccountId(accountId)
+    const memberIdsRoot = await this.idsByRoot(accountId)
+    const memberIdsController = await this.idsByController(accountId)
     const memberId: MemberId | undefined = memberIdsRoot.toArray().concat(memberIdsController.toArray())[0]
     const profile = memberId ? await this.expectedMembership(memberId) : undefined
 

@@ -1,7 +1,12 @@
 import WorkingGroupsCommandBase from '../../base/WorkingGroupsCommandBase'
 import { displayTable, displayCollapsedRow, displayHeader } from '../../helpers/display'
 import _ from 'lodash'
-import { OpeningStatus, GroupOpeningStage, GroupOpeningStakes, UnstakingPeriodsKey } from '../../Types'
+import {
+  OpeningStatus,
+  GroupOpeningStage,
+  ParsedOpeningStakes,
+  UnstakingPeriodsKey,
+} from '@joystream/js/lib/types/workingGroups'
 import { StakingAmountLimitModeKeys, StakingPolicy } from '@joystream/types/hiring'
 import { formatBalance } from '@polkadot/util'
 import chalk from 'chalk'
@@ -40,7 +45,7 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
       : `== ${formatBalance(amount)}`
   }
 
-  stakeColumns(stakes: GroupOpeningStakes) {
+  stakeColumns(stakes: ParsedOpeningStakes) {
     const { role, application } = stakes
     return {
       'Application stake': this.formatStake(application),
@@ -79,10 +84,10 @@ export default class WorkingGroupsOpening extends WorkingGroupsCommandBase {
       'WG appl. ID': a.wgApplicationId,
       'Appl. ID': a.applicationId,
       Member: a.member?.handle.toString() || chalk.red('NONE'),
-      Stage: a.stage,
-      'Appl. stake': a.stakes.application,
-      'Role stake': a.stakes.role,
-      'Total stake': Object.values(a.stakes).reduce((a, b) => a + b),
+      Stage: a.stage.type,
+      'Appl. stake': formatBalance(a.stakes.application),
+      'Role stake': formatBalance(a.stakes.role),
+      'Total stake': formatBalance(a.stakes.total),
     }))
     displayTable(applicationsRows, 5)
   }

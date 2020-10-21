@@ -13,7 +13,7 @@ import { Dropdown, Message } from 'semantic-ui-react';
 import _ from 'lodash';
 import Validation from '../validationSchema';
 import { useTransport, usePromise } from '@polkadot/joy-utils/react/hooks';
-import { OpeningData } from '@joystream/js/lib/types/workingGroups';
+import { OpeningPair } from '@joystream/js/lib/types/workingGroups';
 import PromiseComponent from '@polkadot/joy-utils/react/components/PromiseComponent';
 import { getFormErrorLabelsProps } from './errorHandling';
 
@@ -36,18 +36,18 @@ const BeginReviewLeadeApplicationsForm: React.FunctionComponent<FormInnerProps> 
   const errorLabelsProps = getFormErrorLabelsProps<FormValues>(errors, touched);
   const transport = useTransport();
   const [openings, openingsError, openingsLoading] = usePromise(
-    () => transport.workingGroups.activeOpenings(values.workingGroup, 'AcceptingApplications', 'Leader'),
-    [] as OpeningData[],
+    () => transport.workingGroups.activeOpeningPairs(values.workingGroup, 'AcceptingApplications', 'Leader'),
+    [] as OpeningPair[],
     [values.workingGroup]
   );
   const openingsOptions = openings
     // Map to options
-    .map((od) => {
-      const hrt = od.hiringOpening.parse_human_readable_text_with_fallback();
+    .map((op) => {
+      const hrt = op.hiringOpening.parse_human_readable_text_with_fallback();
 
       return {
-        text: `${od.id.toString()}: ${hrt.headline} (${hrt.job.title})`,
-        value: od.id.toString()
+        text: `${op.id.toString()}: ${hrt.headline} (${hrt.job.title})`,
+        value: op.id.toString()
       };
     });
 

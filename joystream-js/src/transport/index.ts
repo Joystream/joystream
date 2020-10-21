@@ -28,7 +28,7 @@ export default class Transport {
     this.validators = new ValidatorsTransport(api, this.cacheApi)
     this.council = new CouncilTransport(api, this.cacheApi, this.members, this.chain)
     this.proposals = new ProposalsTransport(api, this.cacheApi, this.members, this.chain, this.council)
-    this.workingGroups = new WorkingGroupsTransport(api, this.cacheApi, this.members)
+    this.workingGroups = new WorkingGroupsTransport(api, this.cacheApi, this.members, this.chain)
     this.tokenomics = new TokenomicsTransport(api, this.cacheApi, this.council, this.workingGroups)
   }
 }

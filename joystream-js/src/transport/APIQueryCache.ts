@@ -1,7 +1,7 @@
 import { Codec, AnyFunction } from '@polkadot/types/types'
 import ApiPromise from '@polkadot/api/promise'
 import { AugmentedQuery, QueryableStorage, ObsInnerType, AugmentedQueryDoubleMap } from '@polkadot/api/types'
-import { ApiModuleKey } from '../types/api'
+import { ApiQueryModuleKey } from '../types/api'
 import _ from 'lodash'
 
 type CacheQueryRuntime = {
@@ -53,7 +53,7 @@ export class APIQueryCache {
     // Simplified version of CacheQueryRuntime for TS-compatibility purposes
     const query: Record<string, Record<string, AnyFunction>> = {}
 
-    const modules = Object.keys(this.api.query) as ApiModuleKey[]
+    const modules = Object.keys(this.api.query) as ApiQueryModuleKey[]
 
     for (const moduleKey of modules) {
       query[moduleKey] = _.mapValues(

@@ -92,10 +92,10 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
   async promptForCurator(message = 'Choose a Curator', ids?: number[]): Promise<number> {
     const curators = await this.getApi().groupMembers(WorkingGroups.Curators)
     const choices = curators
-      .filter((c) => (ids ? ids.includes(c.workerId.toNumber()) : true))
+      .filter((c) => (ids ? ids.includes(c.workerId) : true))
       .map((c) => ({
         name: `${c.profile.handle.toString()} (Worker ID: ${c.workerId})`,
-        value: c.workerId.toNumber(),
+        value: c.workerId,
       }))
 
     if (!choices.length) {

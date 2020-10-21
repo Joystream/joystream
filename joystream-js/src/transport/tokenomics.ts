@@ -87,7 +87,7 @@ export default class TokenomicsTransport extends BaseTransport {
     let numberOfWorkers = 0
     let leadNumber = 0
     const allWorkers = await this.workingGroupT.allWorkers(group)
-    const currentLeadId = (await this.workingGroupT.queryByGroup(group).currentLead()).unwrapOr(undefined)?.toNumber()
+    const currentLeadId = (await this.workingGroupT.currentLeadId(group))?.toNumber()
 
     allWorkers.forEach(([workerId, worker]) => {
       const stakeId = worker.role_stake_profile.isSome ? worker.role_stake_profile.unwrap().stake_id : null
