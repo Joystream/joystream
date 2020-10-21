@@ -11,7 +11,6 @@ const generateChannel = () => {
   return {
     id: faker.random.uuid(),
     handle: faker.lorem.words(handleWordsCount),
-    totalViews: faker.random.number(150000),
   }
 }
 

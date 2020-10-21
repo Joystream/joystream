@@ -59,7 +59,6 @@ export interface Search_search_item_Channel {
   handle: string;
   avatarPhotoURL: string | null;
   coverPhotoURL: string | null;
-  totalViews: number;
 }
 
 export type Search_search_item = Search_search_item_Video | Search_search_item_Channel;

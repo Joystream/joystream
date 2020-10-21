@@ -28,8 +28,6 @@ type Channel {
 
   isPublic: Boolean!
 
-  totalViews: Int!
-
   isCurated: Boolean!
 
   language: Language

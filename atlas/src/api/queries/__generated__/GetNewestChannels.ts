@@ -13,7 +13,6 @@ export interface GetNewestChannels_channelsConnection_edges_node {
   handle: string;
   avatarPhotoURL: string | null;
   coverPhotoURL: string | null;
-  totalViews: number;
 }
 
 export interface GetNewestChannels_channelsConnection_edges {
