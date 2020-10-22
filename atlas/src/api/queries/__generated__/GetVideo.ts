@@ -45,7 +45,7 @@ export interface GetVideo_video {
   title: string;
   description: string;
   category: GetVideo_video_category;
-  views: number;
+  views: number | null;
   duration: number;
   thumbnailURL: string;
   publishedOnJoystreamAt: GQLDate;

@@ -81,3 +81,12 @@ export const GET_VIDEO = gql`
   }
   ${videoFieldsFragment}
 `
+
+export const ADD_VIDEO_VIEW = gql`
+  mutation AddVideoView($id: ID!) {
+    addVideoView(videoID: $id) {
+      id
+      views
+    }
+  }
+`

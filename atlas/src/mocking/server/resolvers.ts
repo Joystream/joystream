@@ -13,7 +13,7 @@ import { ChannelFields } from '@/api/queries/__generated__/ChannelFields'
 type QueryResolver<ArgsType extends object = Record<string, unknown>, ReturnType = unknown> = (
   obj: unknown,
   args: ArgsType,
-  context: any,
+  context: { mirageSchema: any },
   info: unknown
 ) => ReturnType
 
@@ -99,4 +99,20 @@ export const searchResolver: QueryResolver<SearchVariables, Search_search[]> = (
     return [...acc, result]
   }, [] as Search_search[])
   return relevantItems
+}
+
+type VideoViewsArgs = {
+  videoID: string
+}
+
+export const videoViewsResolver: QueryResolver<VideoViewsArgs> = (obj, args, context, info) => {
+  return mirageGraphQLFieldResolver(obj, { id: args.videoID }, context, info)
+}
+
+export const addVideoViewResolver: QueryResolver<VideoViewsArgs> = (obj, args, context, info) => {
+  const videoInfo = context.mirageSchema.videoViewsInfos.find(args.videoID)
+  videoInfo.update({
+    views: videoInfo.views + 1,
+  })
+  return videoInfo
 }

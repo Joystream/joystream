@@ -34,12 +34,19 @@ export const createMockData = (server: any) => {
 
   mockVideos.forEach((video, idx) => {
     const mediaIndex = idx % mockVideosMedia.length
+
     server.schema.create('Video', {
       ...video,
+      views: undefined,
       duration: mockVideosMedia[mediaIndex].duration,
       channel: channels[idx % channels.length],
       category: categories[idx % categories.length],
       media: videoMedias[mediaIndex],
+    })
+
+    server.create('VideoViewsInfo', {
+      id: video.id,
+      views: video.views,
     })
   })
 }

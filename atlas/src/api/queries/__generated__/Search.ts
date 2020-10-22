@@ -45,7 +45,7 @@ export interface Search_search_item_Video {
   title: string;
   description: string;
   category: Search_search_item_Video_category;
-  views: number;
+  views: number | null;
   duration: number;
   thumbnailURL: string;
   publishedOnJoystreamAt: GQLDate;

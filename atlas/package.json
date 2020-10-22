@@ -82,6 +82,7 @@
     "fluent-ffmpeg": "^2.1.2",
     "graphql": "^15.3.0",
     "graphql-tag": "^2.11.0",
+    "graphql-tools": "^6.2.4",
     "husky": "^4.2.5",
     "jest": "24.9.0",
     "lint-staged": "^10.2.7",

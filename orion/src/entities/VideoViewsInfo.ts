@@ -2,7 +2,7 @@ import { Field, ID, Int, ObjectType } from 'type-graphql'
 import { getModelForClass, prop } from '@typegoose/typegoose'
 
 @ObjectType()
-export class VideoInfo {
+export class VideoViewsInfo {
   @Field(() => ID, { name: 'id' })
   @prop({ required: true, index: true })
   videoID: string
@@ -12,4 +12,4 @@ export class VideoInfo {
   views: number
 }
 
-export const VideoInfoModel = getModelForClass(VideoInfo)
+export const VideoViewsInfoModel = getModelForClass(VideoViewsInfo)

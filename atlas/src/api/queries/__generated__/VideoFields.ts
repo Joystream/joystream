@@ -45,7 +45,7 @@ export interface VideoFields {
   title: string;
   description: string;
   category: VideoFields_category;
-  views: number;
+  views: number | null;
   duration: number;
   thumbnailURL: string;
   publishedOnJoystreamAt: GQLDate;

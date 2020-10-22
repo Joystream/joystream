@@ -3,12 +3,12 @@ import { ApolloServer } from 'apollo-server-express'
 import Express from 'express'
 import { connect } from 'mongoose'
 import { buildSchema } from 'type-graphql'
-import { VideoInfosResolver } from './resolvers/videoInfos'
+import { VideoViewsInfosResolver } from './resolvers/videoViewsInfos'
 import config from './config'
 
 const main = async () => {
   const schema = await buildSchema({
-    resolvers: [VideoInfosResolver],
+    resolvers: [VideoViewsInfosResolver],
     emitSchemaFile: 'schema.graphql',
     validate: true,
   })

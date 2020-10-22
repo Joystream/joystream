@@ -45,7 +45,7 @@ export interface GetFeaturedVideos_featured_videos {
   title: string;
   description: string;
   category: GetFeaturedVideos_featured_videos_category;
-  views: number;
+  views: number | null;
   duration: number;
   thumbnailURL: string;
   publishedOnJoystreamAt: GQLDate;

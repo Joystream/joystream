@@ -114,7 +114,7 @@ type Video {
 
   description: String!
 
-  views: Int!
+  views: Int
 
   # In seconds
   duration: Int!
@@ -204,6 +204,11 @@ type VideoConnection {
   totalCount: Int!
 }
 
+type VideoViewsInfo {
+  id: ID!
+  views: Int!
+}
+
 type Query {
   # Lookup a channel by its ID
   channel(id: ID!): Channel
@@ -233,4 +238,8 @@ type Query {
 
   # Free text search across videos and channels
   search(query_string: String!): [FreeTextSearchResult!]!
+}
+
+type Mutation {
+  addVideoView(videoID: ID!): VideoViewsInfo!
 }

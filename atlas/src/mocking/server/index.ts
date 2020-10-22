@@ -1,13 +1,24 @@
 import { createServer } from 'miragejs'
 import { createGraphQLHandler } from '@miragejs/graphql'
 
-import schema from '../../schema.graphql'
+import extendedQueryNodeSchema from '@/api/schemas/extendedQueryNode.graphql'
+import orionSchema from '@/api/schemas/orion.graphql'
+
 import { createMockData } from './data'
-import { channelsResolver, featuredVideosResolver, searchResolver, videosResolver } from './resolvers'
+import {
+  addVideoViewResolver,
+  channelsResolver,
+  featuredVideosResolver,
+  searchResolver,
+  videosResolver,
+  videoViewsResolver,
+} from './resolvers'
+import { ORION_GRAPHQL_URL, QUERY_NODE_GRAPHQL_URL } from '@/config/urls'
+import { MOCKED_SERVER_LOAD_DELAY } from '@/config/misc'
 
 createServer({
   routes() {
-    const graphQLHandler = createGraphQLHandler(schema, this.schema, {
+    const queryNodeHandler = createGraphQLHandler(extendedQueryNodeSchema, this.schema, {
       resolvers: {
         Query: {
           videosConnection: videosResolver,
@@ -25,7 +36,21 @@ createServer({
       },
     })
 
-    this.post('/graphql', graphQLHandler, { timing: 1500 }) // include load delay
+    const orionHandler = createGraphQLHandler(orionSchema, this.schema, {
+      resolvers: {
+        Query: {
+          videoViews: videoViewsResolver,
+        },
+        Mutation: {
+          addVideoView: addVideoViewResolver,
+        },
+      },
+    })
+
+    this.post(QUERY_NODE_GRAPHQL_URL, queryNodeHandler, { timing: MOCKED_SERVER_LOAD_DELAY })
+
+    this.post(ORION_GRAPHQL_URL, orionHandler, { timing: MOCKED_SERVER_LOAD_DELAY })
+    // this.passthrough(ORION_GRAPHQL_URL)
   },
 
   seeds(server) {
