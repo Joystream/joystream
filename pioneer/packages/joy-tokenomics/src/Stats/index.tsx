@@ -14,13 +14,15 @@ const Stats = () => {
   const transport = useTransport();
   const [networkStatisticsData] = usePromise(() => transport.tokenomics.networkStatistics(), undefined, []);
   const [proposalStatisticsData] = usePromise(() => transport.tokenomics.proposalStatistics(), undefined, []);
+  const historicalProposals = transport.tokenomics.historicalProposalStatistics();
 
   return (
     <>
       <Title> Network Statistics </Title>
       <NetworkStatisticsTable data={networkStatisticsData}/>
       <Title>Proposal Statistics</Title>
-      <ProposalStatisticsTable data={proposalStatisticsData}/>
+      <ProposalStatisticsTable title='Active Testnet' data={proposalStatisticsData}/>
+      <ProposalStatisticsTable title='Historical Testnets' data={historicalProposals} />
     </>
   );
 };

@@ -324,161 +324,95 @@ export default class TokenomicsTransport extends BaseTransport {
     };
   }
 
-  private textProposalData (proposals:[ProposalId, ProposalDetails][], proposalData: Proposal[]) {
-    const textProposals = { all: 0, Active: 0, Approved: 0, Rejected: 0, Expired: 0, Slashed: 0, Canceled: 0, Vetoed: 0, tokensBurned: 0 };
-
-    proposalData.forEach((proposal, index) => {
-      const proposalDetails = proposals[index][1];
-
-      if (proposalDetails.isOfType('Text')) {
-        textProposals.all++;
-
-        if (proposal.status.isOfType('Active')) {
-          textProposals.Active++;
-        } else if (proposal.status.isOfType('Finalized')) {
-          const proposalStatusIfFinalized = proposal.status.asType('Finalized').proposalStatus;
-
-          textProposals[proposalStatusIfFinalized.type]++;
-
-          if (proposalStatusIfFinalized.isOfType('Slashed')) {
-            textProposals.tokensBurned += proposal.parameters.requiredStake.unwrap().toNumber();
-          } else if (proposalStatusIfFinalized.isOfType('Canceled')) {
-            textProposals.tokensBurned += 10000;
-          } else {
-            textProposals.tokensBurned += 5000;
-          }
-        }
-      }
-    });
-
-    return textProposals;
-  }
-
-  private spendingProposalData (proposals:[ProposalId, ProposalDetails][], proposalData: Proposal[]) {
-    const spendingProposals = { all: 0, Active: 0, Approved: 0, Rejected: 0, Expired: 0, Slashed: 0, Canceled: 0, Vetoed: 0, tokensBurned: 0 };
-
-    proposalData.forEach((proposal, index) => {
-      const proposalDetails = proposals[index][1];
-
-      if (proposalDetails.isOfType('Spending')) {
-        spendingProposals.all++;
-
-        if (proposal.status.isOfType('Active')) {
-          spendingProposals.Active++;
-        } else if (proposal.status.isOfType('Finalized')) {
-          const proposalStatusIfFinalized = proposal.status.asType('Finalized').proposalStatus;
-
-          spendingProposals[proposalStatusIfFinalized.type]++;
-
-          if (proposalStatusIfFinalized.isOfType('Approved') && proposalStatusIfFinalized.asType('Approved').isOfType('Executed')) {
-            spendingProposals.tokensBurned += Number(proposalDetails.asType('Spending')[0]);
-          } else if (proposalStatusIfFinalized.isOfType('Approved') && !proposalStatusIfFinalized.asType('Approved').isOfType('Executed')) {
-            spendingProposals.tokensBurned += 0;
-          } else if (proposalStatusIfFinalized.isOfType('Slashed')) {
-            spendingProposals.tokensBurned += proposal.parameters.requiredStake.unwrap().toNumber();
-          } else if (proposalStatusIfFinalized.isOfType('Canceled')) {
-            spendingProposals.tokensBurned += 10000;
-          } else {
-            spendingProposals.tokensBurned += 5000;
-          }
-        }
-      }
-    });
-
-    return spendingProposals;
-  }
-
-  private workingGroupsProposalData (proposals:[ProposalId, ProposalDetails][], proposalData: Proposal[]) {
-    const workingGroupsProposals = { all: 0, Active: 0, Approved: 0, Rejected: 0, Expired: 0, Slashed: 0, Canceled: 0, Vetoed: 0, tokensBurned: 0 };
-
-    proposalData.forEach((proposal, index) => {
-      const proposalDetails = proposals[index][1];
-
-      if (!proposalDetails.isOfType('Text') &&
-        !proposalDetails.isOfType('Spending') &&
-        !proposalDetails.isOfType('RuntimeUpgrade') &&
-        !proposalDetails.isOfType('SetElectionParameters') &&
-        !proposalDetails.isOfType('SetValidatorCount')
-      ) {
-        workingGroupsProposals.all++;
-
-        if (proposal.status.isOfType('Active')) {
-          workingGroupsProposals.Active++;
-        } else if (proposal.status.isOfType('Finalized')) {
-          const proposalStatusIfFinalized = proposal.status.asType('Finalized').proposalStatus;
-
-          workingGroupsProposals[proposalStatusIfFinalized.type]++;
-
-          if (proposalDetails.isOfType('SlashWorkingGroupLeaderStake') && proposalStatusIfFinalized.isOfType('Approved') && proposalStatusIfFinalized.asType('Approved').isOfType('Executed')) {
-            workingGroupsProposals.tokensBurned += Number(proposalDetails.asType('SlashWorkingGroupLeaderStake')[1]);
-          } else if (proposalStatusIfFinalized.isOfType('Slashed')) {
-            workingGroupsProposals.tokensBurned += proposal.parameters.requiredStake.unwrap().toNumber();
-          } else if (proposalStatusIfFinalized.isOfType('Canceled')) {
-            workingGroupsProposals.tokensBurned += 10000;
-          } else {
-            workingGroupsProposals.tokensBurned += 5000;
-          }
-        }
-      }
-    });
-
-    return workingGroupsProposals;
-  }
-
-  private networkChangesProposalData (proposals:[ProposalId, ProposalDetails][], proposalData: Proposal[]) {
-    const networkChangesProposals = { all: 0, Active: 0, Approved: 0, Rejected: 0, Expired: 0, Slashed: 0, Canceled: 0, Vetoed: 0, tokensBurned: 0 };
-
-    proposalData.forEach((proposal, index) => {
-      const proposalDetails = proposals[index][1];
-
-      if (proposalDetails.isOfType('RuntimeUpgrade') || proposalDetails.isOfType('SetElectionParameters') || proposalDetails.isOfType('SetValidatorCount')) {
-        networkChangesProposals.all++;
-
-        if (proposal.status.isOfType('Active')) {
-          networkChangesProposals.Active++;
-        } else if (proposal.status.isOfType('Finalized')) {
-          const proposalStatusIfFinalized = proposal.status.asType('Finalized').proposalStatus;
-
-          networkChangesProposals[proposalStatusIfFinalized.type]++;
-
-          if (proposalStatusIfFinalized.isOfType('Slashed')) {
-            networkChangesProposals.tokensBurned += proposal.parameters.requiredStake.unwrap().toNumber();
-          } else if (proposalStatusIfFinalized.isOfType('Canceled')) {
-            networkChangesProposals.tokensBurned += 10000;
-          } else {
-            networkChangesProposals.tokensBurned += 5000;
-          }
-        }
-      }
-    });
-
-    return networkChangesProposals;
-  }
-
   async proposalStatistics () {
+    const proposal = {
+      all: 0,
+      Active: 0,
+      Approved: 0,
+      Rejected: 0,
+      Expired: 0,
+      Slashed: 0,
+      Canceled: 0,
+      Vetoed: 0
+    };
+
+    const returnData = {
+      text: { ...proposal },
+      spending: { ...proposal },
+      workingGroups: { ...proposal },
+      networkChanges: { ...proposal },
+      all: { ...proposal }
+    };
+
     const proposals = await this.entriesByIds<ProposalId, ProposalDetails>(this.api.query.proposalsCodex.proposalDetailsByProposalId);
     const proposalData = await this.api.query.proposalsEngine.proposals.multi<Proposal>(proposals.map(([id, _]) => id));
-    const textProposals = this.textProposalData(proposals, proposalData);
-    const spendingProposals = this.spendingProposalData(proposals, proposalData);
-    const workingGroupsProposals = this.workingGroupsProposalData(proposals, proposalData);
-    const networkChangesProposals = this.networkChangesProposalData(proposals, proposalData);
 
-    return {
-      textProposals,
-      spendingProposals,
-      workingGroupsProposals,
-      networkChangesProposals,
-      allProposals: {
-        all: textProposals.all + spendingProposals.all + workingGroupsProposals.all + networkChangesProposals.all,
-        Active: textProposals.Active + spendingProposals.Active + workingGroupsProposals.Active + networkChangesProposals.Active,
-        Approved: textProposals.Approved + spendingProposals.Approved + workingGroupsProposals.Approved + networkChangesProposals.Approved,
-        Rejected: textProposals.Rejected + spendingProposals.Rejected + workingGroupsProposals.Rejected + networkChangesProposals.Rejected,
-        Expired: textProposals.Expired + spendingProposals.Expired + workingGroupsProposals.Expired + networkChangesProposals.Expired,
-        Slashed: textProposals.Slashed + spendingProposals.Slashed + workingGroupsProposals.Slashed + networkChangesProposals.Slashed,
-        Canceled: textProposals.Canceled + spendingProposals.Canceled + workingGroupsProposals.Canceled + networkChangesProposals.Canceled,
-        Vetoed: textProposals.Vetoed + spendingProposals.Vetoed + workingGroupsProposals.Vetoed + networkChangesProposals.Vetoed,
-        tokensBurned: textProposals.tokensBurned + spendingProposals.tokensBurned + workingGroupsProposals.tokensBurned + networkChangesProposals.tokensBurned
+    proposalData.map((proposal, index) => {
+      const proposalType = proposals[index][1].type;
+      let definedProposalType: 'text' | 'spending' | 'networkChanges' | 'workingGroups';
+      const proposalStatus = proposal.status.isOfType('Active') ? 'Active' as const : proposal.status.asType('Finalized').proposalStatus.type;
+
+      if (proposalType === 'Text') {
+        definedProposalType = 'text';
+      } else if (proposalType === 'Spending') {
+        definedProposalType = 'spending';
+      } else if (proposalType === 'RuntimeUpgrade' || proposalType === 'SetElectionParameters' || proposalType === 'SetValidatorCount') {
+        definedProposalType = 'networkChanges';
+      } else {
+        definedProposalType = 'workingGroups';
       }
+
+      returnData[definedProposalType].all++;
+      returnData[definedProposalType][proposalStatus]++;
+      returnData.all.all++;
+      returnData.all[proposalStatus]++;
+    });
+
+    return returnData;
+  }
+
+  historicalProposalStatistics () {
+    const proposal = {
+      all: 0,
+      Active: 0,
+      Approved: 0,
+      Rejected: 0,
+      Expired: 0,
+      Slashed: 0,
+      Canceled: 0,
+      Vetoed: 0
     };
+
+    const historicalProposalData = {
+      text: { ...proposal },
+      spending: { ...proposal },
+      workingGroups: { ...proposal },
+      networkChanges: { ...proposal },
+      all: { ...proposal }
+    };
+
+    HISTORICAL_PROPOSALS.map(({ proposal }) => {
+      let proposalType: 'text' | 'spending' | 'networkChanges' | 'workingGroups';
+      const proposalStatus = proposal.status.Finalized
+        ? Object.keys(proposal.status.Finalized.proposalStatus)[0] as 'Approved' | 'Rejected' | 'Expired' | 'Slashed' | 'Canceled' | 'Vetoed'
+        : 'Active' as const;
+
+      if (proposal.type === 'Text') {
+        proposalType = 'text';
+      } else if (proposal.type === 'Spending') {
+        proposalType = 'spending';
+      } else if (proposal.type === 'RuntimeUpgrade' || proposal.type === 'SetElectionParameters' || proposal.type === 'SetValidatorCount') {
+        proposalType = 'networkChanges';
+      } else {
+        proposalType = 'workingGroups';
+      }
+
+      historicalProposalData[proposalType][proposalStatus]++;
+      historicalProposalData[proposalType].all++;
+      historicalProposalData.all[proposalStatus]++;
+      historicalProposalData.all.all++;
+    });
+
+    return historicalProposalData;
   }
 }
