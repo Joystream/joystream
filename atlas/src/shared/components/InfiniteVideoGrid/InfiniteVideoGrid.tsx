@@ -94,8 +94,7 @@ const InfiniteVideoGrid: React.FC<InfiniteVideoGridProps> = ({
   useEffect(() => {
     const scrollHandler = debounce(() => {
       const scrolledToBottom =
-        window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight
-
+        window.innerHeight + document.documentElement.scrollTop >= document.documentElement.offsetHeight
       if (scrolledToBottom && ready && !loading && !allVideosLoaded) {
         setTargetRowsCountByCategory((prevState) => ({
           ...prevState,
