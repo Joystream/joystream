@@ -113,7 +113,7 @@ pub struct CouncilStageElection {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
 pub struct Candidate<AccountId, Balance> {
-    account_id: AccountId,
+    staking_account_id: AccountId,
     cycle_id: u64,
     stake: Balance,
 }
@@ -122,7 +122,7 @@ pub struct Candidate<AccountId, Balance> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
 pub struct CouncilMember<AccountId, CouncilUserId, Balance> {
-    account_id: AccountId,
+    staking_account_id: AccountId,
     council_user_id: CouncilUserId,
     stake: Balance,
 }
@@ -132,7 +132,7 @@ impl<AccountId, CouncilUserId, Balance> From<(Candidate<AccountId, Balance>, Cou
 {
     fn from(candidate_and_user_id: (Candidate<AccountId, Balance>, CouncilUserId)) -> Self {
         Self {
-            account_id: candidate_and_user_id.0.account_id,
+            staking_account_id: candidate_and_user_id.0.staking_account_id,
             council_user_id: candidate_and_user_id.1,
             stake: candidate_and_user_id.0.stake,
         }
@@ -385,14 +385,14 @@ decl_module! {
         /// Withdraw candidacy and release candidacy stake.
         #[weight = 10_000_000]
         pub fn withdraw_candidacy(origin, council_user_id: T::CouncilUserId) -> Result<(), Error<T>> {
-            let account_id = EnsureChecks::<T>::can_withdraw_candidacy(origin, &council_user_id)?;
+            let staking_account_id = EnsureChecks::<T>::can_withdraw_candidacy(origin, &council_user_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // update state
-            Mutations::<T>::release_candidacy_stake(&account_id, &council_user_id);
+            Mutations::<T>::release_candidacy_stake(&staking_account_id, &council_user_id);
 
             // emit event
             Self::deposit_event(RawEvent::CandidacyWithdraw(council_user_id));
@@ -499,7 +499,7 @@ impl<T: Trait> Module<T> {
     /// Construct a new candidate for council election.
     fn prepare_new_candidate(account_id: T::AccountId, stake: Balance<T>) -> CandidateOf<T> {
         Candidate {
-            account_id,
+            staking_account_id: account_id,
             cycle_id: CurrentAnnouncementCycleId::get(),
             stake,
         }
@@ -612,7 +612,7 @@ impl<T: Trait> Mutations<T> {
         CouncilMembers::<T>::get()
             .iter()
             .for_each(|council_member| {
-                T::ElectedMemberLock::unlock(&council_member.account_id);
+                T::ElectedMemberLock::unlock(&council_member.staking_account_id);
             });
 
         // set new council
@@ -623,10 +623,13 @@ impl<T: Trait> Mutations<T> {
             .iter()
             .for_each(|council_member| {
                 // unlock candidacy stake
-                T::CandidacyLock::unlock(&council_member.account_id);
+                T::CandidacyLock::unlock(&council_member.staking_account_id);
 
                 // lock council member stake
-                T::ElectedMemberLock::lock(&council_member.account_id, council_member.stake);
+                T::ElectedMemberLock::lock(
+                    &council_member.staking_account_id,
+                    council_member.stake,
+                );
             });
     }
 
@@ -656,7 +659,7 @@ impl<T: Trait> Mutations<T> {
         });
 
         // lock candidacy stake
-        T::CandidacyLock::lock(&candidate.account_id, *stake);
+        T::CandidacyLock::lock(&candidate.staking_account_id, *stake);
     }
 
     /// Release user's stake that was used for candidacy.
@@ -692,19 +695,6 @@ impl<T: Trait> EnsureChecks<T> {
         Ok(account_id)
     }
 
-    /// Ensure there is no mismatch between saved and current `council_user_id`/`account_id` combination.
-    /// This ensures there was no change in the association between membership and account outside of this module.
-    fn prevent_ids_mismatch(
-        candidate: &CandidateOf<T>,
-        account_id: &T::AccountId,
-    ) -> Result<(), Error<T>> {
-        if &candidate.account_id != account_id {
-            return Err(Error::InvalidAccountToUnstake);
-        }
-
-        Ok(())
-    }
-
     /// Checks there are no problems with existing candidacy record (if any present).
     fn ensure_previous_stake_reusable(
         council_user_id: &T::CouncilUserId,
@@ -722,8 +712,10 @@ impl<T: Trait> EnsureChecks<T> {
             return Err(Error::StakeStillNeeded);
         }
 
-        // prevent membership and account combination change
-        Self::prevent_ids_mismatch(&candidate, account_id)?;
+        // allow stake reuse only when account_id is the same as it was when staking last time
+        if &candidate.staking_account_id != account_id {
+            return Err(Error::InvalidAccountToUnstake);
+        }
 
         Ok(())
     }
@@ -784,7 +776,9 @@ impl<T: Trait> EnsureChecks<T> {
 
         // ensure user is not current council member
         let members = CouncilMembers::<T>::get();
-        let council_member = members.iter().find(|item| item.account_id == account_id);
+        let council_member = members
+            .iter()
+            .find(|item| item.staking_account_id == account_id);
         if council_member.is_some() {
             return Err(Error::StakeStillNeeded);
         }
@@ -801,7 +795,7 @@ impl<T: Trait> EnsureChecks<T> {
         council_user_id: &T::CouncilUserId,
     ) -> Result<T::AccountId, Error<T>> {
         // ensure user's membership
-        let account_id = Self::ensure_user_membership(origin, council_user_id)?;
+        Self::ensure_user_membership(origin, council_user_id)?;
 
         // escape when no previous candidacy stake is present
         if !Candidates::<T>::contains_key(council_user_id) {
@@ -810,7 +804,7 @@ impl<T: Trait> EnsureChecks<T> {
 
         let candidate = Candidates::<T>::get(council_user_id);
 
-        // ensure candidacy was announced in on of previous election cycles
+        // ensure candidacy was announced in current election cycle
         if candidate.cycle_id != CurrentAnnouncementCycleId::get() {
             return Err(Error::NotCandidatingNow);
         }
@@ -821,14 +815,6 @@ impl<T: Trait> EnsureChecks<T> {
             _ => return Err(Error::CantWithdrawCandidacyNow),
         };
 
-        // ensure there is no mismatch between saved and current `council_user_id`/`account_id` combination
-        if candidate.account_id != account_id {
-            return Err(Error::InvalidAccountToUnstake);
-        }
-
-        // prevent membership and account combination change
-        Self::prevent_ids_mismatch(&candidate, &account_id)?;
-
-        Ok(account_id)
+        Ok(candidate.staking_account_id)
     }
 }
