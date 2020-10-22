@@ -22,7 +22,7 @@ const ProposalStatisticsTableRow: React.FC<{ item: string, all: string, text: st
   );
 };
 
-const ProposalStatisticsTable: React.FC<{ data?: ProposalStatisticsData }> = ({ data }) => {
+const ProposalStatisticsTable: React.FC<{ title: string, data?: ProposalStatisticsData }> = ({ title, data }) => {
   const parseData = (proposalType: keyof ProposalStatisticsData, proposalStatistics: keyof ProposalStatistics) => {
     return data ? `${data[proposalType][proposalStatistics]}` : 'Loading..';
   };
@@ -31,7 +31,7 @@ const ProposalStatisticsTable: React.FC<{ data?: ProposalStatisticsData }> = ({ 
     <Table style={{ marginBottom: '1.5rem' }} celled>
       <Table.Header>
         <Table.Row>
-          <Table.HeaderCell width={3}>Active Testnet</Table.HeaderCell>
+          <Table.HeaderCell width={3}>{title}</Table.HeaderCell>
           <Table.HeaderCell width={2}>All</Table.HeaderCell>
           <Table.HeaderCell width={2}>Text</Table.HeaderCell>
           <Table.HeaderCell width={2}>Spending</Table.HeaderCell>
@@ -43,67 +43,59 @@ const ProposalStatisticsTable: React.FC<{ data?: ProposalStatisticsData }> = ({ 
       <Table.Body>
         <ProposalStatisticsTableRow
           item='All Proposals'
-          all={parseData('allProposals', 'all')}
-          text={parseData('textProposals', 'all')}
-          spending={parseData('spendingProposals', 'all')}
-          workingGroups={parseData('workingGroupsProposals', 'all')}
-          networkChanges={parseData('networkChangesProposals', 'all')}
+          all={parseData('all', 'all')}
+          text={parseData('text', 'all')}
+          spending={parseData('spending', 'all')}
+          workingGroups={parseData('workingGroups', 'all')}
+          networkChanges={parseData('networkChanges', 'all')}
         />
         <ProposalStatisticsTableRow
           item='Active Proposals'
-          all={parseData('allProposals', 'Active')}
-          text={parseData('textProposals', 'Active')}
-          spending={parseData('spendingProposals', 'Active')}
-          workingGroups={parseData('workingGroupsProposals', 'Active')}
-          networkChanges={parseData('networkChangesProposals', 'Active')}
+          all={parseData('all', 'Active')}
+          text={parseData('text', 'Active')}
+          spending={parseData('spending', 'Active')}
+          workingGroups={parseData('workingGroups', 'Active')}
+          networkChanges={parseData('networkChanges', 'Active')}
         />
         <ProposalStatisticsTableRow
           item='Approved Proposals'
-          all={parseData('allProposals', 'Approved')}
-          text={parseData('textProposals', 'Approved')}
-          spending={parseData('spendingProposals', 'Approved')}
-          workingGroups={parseData('workingGroupsProposals', 'Approved')}
-          networkChanges={parseData('networkChangesProposals', 'Approved')}
+          all={parseData('all', 'Approved')}
+          text={parseData('text', 'Approved')}
+          spending={parseData('spending', 'Approved')}
+          workingGroups={parseData('workingGroups', 'Approved')}
+          networkChanges={parseData('networkChanges', 'Approved')}
         />
         <ProposalStatisticsTableRow
           item='Rejected Proposals'
-          all={parseData('allProposals', 'Rejected')}
-          text={parseData('textProposals', 'Rejected')}
-          spending={parseData('spendingProposals', 'Rejected')}
-          workingGroups={parseData('workingGroupsProposals', 'Rejected')}
-          networkChanges={parseData('networkChangesProposals', 'Rejected')}
+          all={parseData('all', 'Rejected')}
+          text={parseData('text', 'Rejected')}
+          spending={parseData('spending', 'Rejected')}
+          workingGroups={parseData('workingGroups', 'Rejected')}
+          networkChanges={parseData('networkChanges', 'Rejected')}
         />
         <ProposalStatisticsTableRow
           item='Expired Proposals'
-          all={parseData('allProposals', 'Expired')}
-          text={parseData('textProposals', 'Expired')}
-          spending={parseData('spendingProposals', 'Expired')}
-          workingGroups={parseData('workingGroupsProposals', 'Expired')}
-          networkChanges={parseData('networkChangesProposals', 'Expired')}
+          all={parseData('all', 'Expired')}
+          text={parseData('text', 'Expired')}
+          spending={parseData('spending', 'Expired')}
+          workingGroups={parseData('workingGroups', 'Expired')}
+          networkChanges={parseData('networkChanges', 'Expired')}
         />
         <ProposalStatisticsTableRow
           item='Slashed Proposals'
-          all={parseData('allProposals', 'Slashed')}
-          text={parseData('textProposals', 'Slashed')}
-          spending={parseData('spendingProposals', 'Slashed')}
-          workingGroups={parseData('workingGroupsProposals', 'Slashed')}
-          networkChanges={parseData('networkChangesProposals', 'Slashed')}
+          all={parseData('all', 'Slashed')}
+          text={parseData('text', 'Slashed')}
+          spending={parseData('spending', 'Slashed')}
+          workingGroups={parseData('workingGroups', 'Slashed')}
+          networkChanges={parseData('networkChanges', 'Slashed')}
         />
         <ProposalStatisticsTableRow
           item='Cancelled Proposals'
-          all={parseData('allProposals', 'Canceled')}
-          text={parseData('textProposals', 'Canceled')}
-          spending={parseData('spendingProposals', 'Canceled')}
-          workingGroups={parseData('workingGroupsProposals', 'Canceled')}
-          networkChanges={parseData('networkChangesProposals', 'Canceled')}
-        />
-        <ProposalStatisticsTableRow
-          item='Tokens Created/Burned'
-          all={parseData('allProposals', 'tokensBurned')}
-          text={parseData('textProposals', 'tokensBurned')}
-          spending={parseData('spendingProposals', 'tokensBurned')}
-          workingGroups={parseData('workingGroupsProposals', 'tokensBurned')}
-          networkChanges={parseData('networkChangesProposals', 'tokensBurned')}
+          all={parseData('all', 'Canceled')}
+          text={parseData('text', 'Canceled')}
+          spending={parseData('spending', 'Canceled')}
+          workingGroups={parseData('workingGroups', 'Canceled')}
+          networkChanges={parseData('networkChanges', 'Canceled')}
         />
       </Table.Body>
     </Table>

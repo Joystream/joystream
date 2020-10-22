@@ -73,13 +73,12 @@ export type ProposalStatistics = {
   Slashed: number;
   Canceled: number;
   Vetoed: number;
-  tokensBurned: number;
 }
 
 export type ProposalStatisticsData = {
-  textProposals: ProposalStatistics;
-  spendingProposals: ProposalStatistics;
-  workingGroupsProposals: ProposalStatistics;
-  networkChangesProposals: ProposalStatistics;
-  allProposals: ProposalStatistics
+  text: ProposalStatistics;
+  spending: ProposalStatistics;
+  workingGroups: ProposalStatistics;
+  networkChanges: ProposalStatistics;
+  all: ProposalStatistics
 }
