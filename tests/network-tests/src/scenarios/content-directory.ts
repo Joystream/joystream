@@ -4,6 +4,7 @@ import { config } from 'dotenv'
 import leaderSetup from '../flows/workingGroup/leaderSetup'
 import initializeContentDirectory from '../flows/contentDirectory/contentDirectoryInitialization'
 import createChannel from '../flows/contentDirectory/creatingChannel'
+import createVideo from '../flows/contentDirectory/creatingVideo'
 
 const scenario = async () => {
   // Load env variables
@@ -24,6 +25,8 @@ const scenario = async () => {
 
   await createChannel(api)
 
+  await createVideo(api)
+  
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!
   api.close()

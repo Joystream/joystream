@@ -1,5 +1,4 @@
 import { Api, WorkingGroups } from '../../Api'
-import { createSimpleChannelFixture } from '../../fixtures/contentDirectoryModule'
 import { assert } from 'chai'
 import { KeyringPair } from '@polkadot/keyring/types'
 

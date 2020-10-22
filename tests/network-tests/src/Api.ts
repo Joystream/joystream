@@ -1948,7 +1948,6 @@ export class Api {
       },
     ]
   )
-
   return await this.sendContentDirectoryTransaction(memberId, parser)
   }
 
@@ -1964,7 +1963,6 @@ export class Api {
       },
     ]
   )
-  
   return await this.sendContentDirectoryTransaction(memberId, parser)
   }
 
