@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react'
-import { RouteComponentProps, useParams, navigate } from '@reach/router'
+import { navigate, RouteComponentProps, useParams } from '@reach/router'
 import {
   Container,
   DescriptionContainer,
@@ -15,7 +15,7 @@ import {
 import { VideoGrid } from '@/components'
 import { VideoPlayer } from '@/shared/components'
 import { useMutation, useQuery } from '@apollo/client'
-import { ADD_VIDEO_VIEW, GET_VIDEO } from '@/api/queries'
+import { ADD_VIDEO_VIEW, GET_VIDEO_WITH_CHANNEL_VIDEOS } from '@/api/queries'
 import { GetVideo, GetVideoVariables } from '@/api/queries/__generated__/GetVideo'
 import routes from '@/config/routes'
 import { formatVideoViewsAndDate } from '@/utils/video'
@@ -23,7 +23,7 @@ import { AddVideoView, AddVideoViewVariables } from '@/api/queries/__generated__
 
 const VideoView: React.FC<RouteComponentProps> = () => {
   const { id } = useParams()
-  const { loading, data } = useQuery<GetVideo, GetVideoVariables>(GET_VIDEO, {
+  const { loading, data } = useQuery<GetVideo, GetVideoVariables>(GET_VIDEO_WITH_CHANNEL_VIDEOS, {
     variables: { id },
   })
   const [addVideoView] = useMutation<AddVideoView, AddVideoViewVariables>(ADD_VIDEO_VIEW)
@@ -64,8 +64,6 @@ const VideoView: React.FC<RouteComponentProps> = () => {
 
   const descriptionLines = description.split('\n')
 
-  const moreVideos = Array.from({ length: 10 }, () => data.video as NonNullable<typeof data.video>)
-
   return (
     <Container>
       <PlayerContainer>
@@ -88,7 +86,7 @@ const VideoView: React.FC<RouteComponentProps> = () => {
         </DescriptionContainer>
         <MoreVideosContainer>
           <MoreVideosHeader>More from {channel.handle}</MoreVideosHeader>
-          <VideoGrid videos={moreVideos} />
+          <VideoGrid videos={channel.videos} />
         </MoreVideosContainer>
       </InfoContainer>
     </Container>

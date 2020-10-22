@@ -32,7 +32,7 @@ type Channel {
 
   language: Language
 
-  videos: [Video!]
+  videos: [Video!]!
 }
 
 type Category {

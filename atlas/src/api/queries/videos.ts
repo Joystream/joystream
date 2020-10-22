@@ -73,10 +73,18 @@ export const GET_FEATURED_VIDEOS = gql`
   ${videoFieldsFragment}
 `
 
-export const GET_VIDEO = gql`
+export const GET_VIDEO_WITH_CHANNEL_VIDEOS = gql`
   query GetVideo($id: ID!) {
     video(id: $id) {
       ...VideoFields
+      channel {
+        id
+        avatarPhotoURL
+        handle
+        videos {
+          ...VideoFields
+        }
+      }
     }
   }
   ${videoFieldsFragment}
