@@ -59,7 +59,7 @@ export interface GetChannel_channel {
   handle: string;
   avatarPhotoURL: string | null;
   coverPhotoURL: string | null;
-  videos: GetChannel_channel_videos[] | null;
+  videos: GetChannel_channel_videos[];
 }
 
 export interface GetChannel {
