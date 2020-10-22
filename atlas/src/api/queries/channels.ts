@@ -7,7 +7,6 @@ export const channelFieldsFragment = gql`
     handle
     avatarPhotoURL
     coverPhotoURL
-    totalViews
   }
 `
 

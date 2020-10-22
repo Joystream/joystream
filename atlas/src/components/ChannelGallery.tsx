@@ -28,7 +28,6 @@ const ChannelGallery: React.FC<ChannelGalleryProps> = ({ title, action, channels
               id={channel.id}
               name={channel.handle}
               avatarURL={channel.avatarPhotoURL}
-              views={channel.totalViews}
               key={channel.id}
               animated
             />

@@ -1,12 +1,10 @@
 import React from 'react'
-import styled from '@emotion/styled'
 import { AvatarContainer, Info, InnerContainer, OuterContainer } from './ChannelPreviewBase.style'
 import Placeholder from '../Placeholder'
 
 type ChannelPreviewBaseProps = {
   avatarNode?: React.ReactNode
   nameNode?: React.ReactNode
-  metaNode?: React.ReactNode
   className?: string
   animated?: boolean
   onClick?: (e: React.MouseEvent<HTMLElement>) => void
@@ -15,14 +13,12 @@ type ChannelPreviewBaseProps = {
 const ChannelPreviewBase: React.FC<ChannelPreviewBaseProps> = ({
   avatarNode,
   nameNode,
-  metaNode,
   className,
   animated = false,
   onClick,
 }) => {
   const avatarPlaceholder = <Placeholder rounded />
   const namePlaceholder = <Placeholder width="140px" height="16px" />
-  const metaPlaceholder = <MetaPlaceholder width="80px" height="12px" />
 
   const handleClick = (e: React.MouseEvent<HTMLElement>) => {
     if (!onClick) return
@@ -34,17 +30,10 @@ const ChannelPreviewBase: React.FC<ChannelPreviewBaseProps> = ({
     <OuterContainer className={className} onClick={handleClick}>
       <InnerContainer animated={animated}>
         <AvatarContainer>{avatarNode || avatarPlaceholder}</AvatarContainer>
-        <Info>
-          {nameNode || namePlaceholder}
-          {metaNode || metaPlaceholder}
-        </Info>
+        <Info>{nameNode || namePlaceholder}</Info>
       </InnerContainer>
     </OuterContainer>
   )
 }
-
-const MetaPlaceholder = styled(Placeholder)`
-  margin-top: 6px;
-`
 
 export default ChannelPreviewBase

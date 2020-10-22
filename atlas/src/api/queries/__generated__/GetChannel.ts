@@ -59,7 +59,6 @@ export interface GetChannel_channel {
   handle: string;
   avatarPhotoURL: string | null;
   coverPhotoURL: string | null;
-  totalViews: number;
   videos: GetChannel_channel_videos[] | null;
 }
 
