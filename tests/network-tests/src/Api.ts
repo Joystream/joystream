@@ -1928,7 +1928,7 @@ export class Api {
   async sendContentDirectoryTransaction(memberId: number, parser: InputParser): Promise<Hash> {
     // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
     const operations = await parser.getEntityBatchOperations()
-    return this.api.tx.contentDirectory
+    return await this.api.tx.contentDirectory
       .transaction(
         { Member: memberId }, // We use member with id 0 as actor (in this case we assume this is Alice)
         operations // We provide parsed operations as second argument
