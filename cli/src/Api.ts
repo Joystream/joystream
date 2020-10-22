@@ -1,12 +1,12 @@
 import BN from 'bn.js'
 import { types } from '@joystream/types/'
 import { ApiPromise, WsProvider } from '@polkadot/api'
-import { QueryableStorageMultiArg, SubmittableExtrinsic } from '@polkadot/api/types'
+import { AugmentedQuery, SubmittableExtrinsic } from '@polkadot/api/types'
+import { AnyFunction, Codec } from '@polkadot/types/types'
 import { formatBalance } from '@polkadot/util'
 import { Balance } from '@polkadot/types/interfaces'
 import { KeyringPair } from '@polkadot/keyring/types'
-import { Codec } from '@polkadot/types/types'
-import { Option, Vec } from '@polkadot/types'
+
 import {
   AccountSummary,
   CouncilInfoObj,
@@ -24,7 +24,7 @@ import { InputValidationLengthConstraint } from '@joystream/types/common'
 
 import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity, EntityId } from '@joystream/types/content-directory'
 import { ContentId, DataObject } from '@joystream/types/media'
-import { ServiceProviderRecord, Url } from '@joystream/types/discovery'
+import { ServiceProviderRecord } from '@joystream/types/discovery'
 import _ from 'lodash'
 
 import Transport from '@joystream/js/transport'
@@ -82,7 +82,7 @@ export default class Api {
     return new Api(originalApi)
   }
 
-  private queryMultiOnce(queries: Parameters<typeof ApiPromise.prototype.queryMulti>[0]): Promise<Codec[]> {
+  private queryMultiOnce(queries: AugmentedQuery<'promise', AnyFunction>[]): Promise<Codec[]> {
     return new Promise((resolve, reject) => {
       let unsub: () => void
       this._api
@@ -121,20 +121,20 @@ export default class Api {
   }
 
   async getCouncilInfo(): Promise<CouncilInfoObj> {
-    const queries: { [P in keyof CouncilInfoObj]: QueryableStorageMultiArg<'promise'> } = {
-      activeCouncil: this._api.query.council.activeCouncil,
-      termEndsAt: this._api.query.council.termEndsAt,
-      autoStart: this._api.query.councilElection.autoStart,
-      newTermDuration: this._api.query.councilElection.newTermDuration,
-      candidacyLimit: this._api.query.councilElection.candidacyLimit,
-      councilSize: this._api.query.councilElection.councilSize,
-      minCouncilStake: this._api.query.councilElection.minCouncilStake,
-      minVotingStake: this._api.query.councilElection.minVotingStake,
-      announcingPeriod: this._api.query.councilElection.announcingPeriod,
-      votingPeriod: this._api.query.councilElection.votingPeriod,
-      revealingPeriod: this._api.query.councilElection.revealingPeriod,
-      round: this._api.query.councilElection.round,
-      stage: this._api.query.councilElection.stage,
+    const queries = {
+      activeCouncil: this._transport.query.council.activeCouncil,
+      termEndsAt: this._transport.query.council.termEndsAt,
+      autoStart: this._transport.query.councilElection.autoStart,
+      newTermDuration: this._transport.query.councilElection.newTermDuration,
+      candidacyLimit: this._transport.query.councilElection.candidacyLimit,
+      councilSize: this._transport.query.councilElection.councilSize,
+      minCouncilStake: this._transport.query.councilElection.minCouncilStake,
+      minVotingStake: this._transport.query.councilElection.minVotingStake,
+      announcingPeriod: this._transport.query.councilElection.announcingPeriod,
+      votingPeriod: this._transport.query.councilElection.votingPeriod,
+      revealingPeriod: this._transport.query.councilElection.revealingPeriod,
+      round: this._transport.query.councilElection.round,
+      stage: this._transport.query.councilElection.stage,
     }
     const results: CouncilInfoTuple = (await this.queryMultiOnce(Object.values(queries))) as CouncilInfoTuple
 
@@ -147,7 +147,7 @@ export default class Api {
   }
 
   createTransferTx(recipient: string, amount: BN) {
-    return this._api.tx.balances.transfer(recipient, amount)
+    return this._transport.tx.balances.transfer(recipient, amount)
   }
 
   // Working groups
@@ -200,60 +200,58 @@ export default class Api {
   async availableClasses(useCache = true): Promise<[ClassId, Class][]> {
     return useCache && this._cdClassesCache
       ? this._cdClassesCache
-      : (this._cdClassesCache = await entriesByIds<ClassId, Class>(this._api.query.contentDirectory.classById))
+      : (this._cdClassesCache = await entriesByIds<ClassId, Class>(this._transport.query.contentDirectory.classById))
   }
 
   availableCuratorGroups(): Promise<[CuratorGroupId, CuratorGroup][]> {
-    return entriesByIds<CuratorGroupId, CuratorGroup>(this._api.query.contentDirectory.curatorGroupById)
+    return entriesByIds<CuratorGroupId, CuratorGroup>(this._transport.query.contentDirectory.curatorGroupById)
   }
 
   async curatorGroupById(id: number): Promise<CuratorGroup | null> {
-    const exists = !!(await this._api.query.contentDirectory.curatorGroupById.size(id)).toNumber()
-    return exists ? await this._api.query.contentDirectory.curatorGroupById<CuratorGroup>(id) : null
+    const exists = !!(await this._transport.query.contentDirectory.curatorGroupById.size(id)).toNumber()
+    return exists ? await this._transport.query.contentDirectory.curatorGroupById(id) : null
   }
 
   async nextCuratorGroupId(): Promise<number> {
-    return (await this._api.query.contentDirectory.nextCuratorGroupId<CuratorGroupId>()).toNumber()
+    return (await this._transport.query.contentDirectory.nextCuratorGroupId()).toNumber()
   }
 
   async classById(id: number): Promise<Class | null> {
-    const c = await this._api.query.contentDirectory.classById<Class>(id)
+    const c = await this._transport.query.contentDirectory.classById(id)
     return c.isEmpty ? null : c
   }
 
   async entitiesByClassId(classId: number): Promise<[EntityId, Entity][]> {
-    const entityEntries = await entriesByIds<EntityId, Entity>(this._api.query.contentDirectory.entityById)
+    const entityEntries = await entriesByIds<EntityId, Entity>(this._transport.query.contentDirectory.entityById)
     return entityEntries.filter(([, entity]) => entity.class_id.toNumber() === classId)
   }
 
   async entityById(id: number): Promise<Entity | null> {
-    const exists = !!(await this._api.query.contentDirectory.curatorGroupById.size(id))
-    return exists ? await this._api.query.contentDirectory.entityById<Entity>(id) : null
+    const exists = !!(await this._transport.query.contentDirectory.curatorGroupById.size(id))
+    return exists ? await this._transport.query.contentDirectory.entityById(id) : null
   }
 
   async dataObjectByContentId(contentId: ContentId): Promise<DataObject | null> {
-    const dataObject = await this._api.query.dataDirectory.dataObjectByContentId<Option<DataObject>>(contentId)
+    const dataObject = await this._transport.query.dataDirectory.dataObjectByContentId(contentId)
     return dataObject.unwrapOr(null)
   }
 
   async ipnsIdentity(storageProviderId: number): Promise<string | null> {
-    const accountInfo = await this._api.query.discovery.accountInfoByStorageProviderId<ServiceProviderRecord>(
-      storageProviderId
-    )
+    const accountInfo = await this._transport.query.discovery.accountInfoByStorageProviderId(storageProviderId)
     return accountInfo.isEmpty || accountInfo.expires_at.toNumber() <= (await this.bestNumber())
       ? null
       : accountInfo.identity.toString()
   }
 
   async getRandomBootstrapEndpoint(): Promise<string | null> {
-    const endpoints = await this._api.query.discovery.bootstrapEndpoints<Vec<Url>>()
+    const endpoints = await this._transport.query.discovery.bootstrapEndpoints()
     const randomEndpoint = _.sample(endpoints.toArray())
     return randomEndpoint ? randomEndpoint.toString() : null
   }
 
   async isAnyProviderAvailable(): Promise<boolean> {
     const accounInfoEntries = await entriesByIds<StorageProviderId, ServiceProviderRecord>(
-      this._api.query.discovery.accountInfoByStorageProviderId
+      this._transport.query.discovery.accountInfoByStorageProviderId
     )
 
     const bestNumber = await this.bestNumber()
