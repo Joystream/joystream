@@ -144,7 +144,12 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     return group
   }
 
-  async getEntity(id: string | number, requiredClass?: string, ownerMemberId?: number): Promise<Entity> {
+  async getEntity(
+    id: string | number,
+    requiredClass?: string,
+    ownerMemberId?: number,
+    requireSchema = true
+  ): Promise<Entity> {
     if (typeof id === 'string') {
       id = parseInt(id)
     }
@@ -170,6 +175,10 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
       this.error('Cannot execute this action for specified entity - invalid ownership.', {
         exit: ExitCodes.AccessDenied,
       })
+    }
+
+    if (requireSchema && !entity.supported_schemas.toArray().length) {
+      this.error(`${requiredClass || ''}Entity of id ${id} has no schema support added!`)
     }
 
     return entity
@@ -268,10 +277,21 @@ export default abstract class ContentDirectoryCommandBase extends AccountsComman
     ownerMemberId?: number
   ): Promise<Record<string, string>[]> {
     const [classId, entityClass] = await this.classEntryByNameOrId(className)
+    // Create object of default "[not set]" values (prevents breaking the table if entity has no schema support)
+    const defaultValues = entityClass.properties
+      .map((p) => p.name.toString())
+      .reduce((d, propName) => {
+        if (includedProps?.includes(propName)) {
+          d[propName] = chalk.grey('[not set]')
+        }
+        return d
+      }, {} as Record<string, string>)
+
     const entityEntries = await this.entitiesByClassAndOwner(classId.toNumber(), ownerMemberId)
     const parsedEntities = (await Promise.all(
       entityEntries.map(([id, entity]) => ({
         'ID': id.toString(),
+        ...defaultValues,
         ..._.mapValues(this.parseEntityPropertyValues(entity, entityClass, includedProps), (v) =>
           v.value.toJSON() === false && v.type !== 'Single<Bool>' ? chalk.grey('[not set]') : v.value.toString()
         ),
