@@ -74,7 +74,7 @@ function Address ({ address, className = '', filterName, hasQueries, isElected, 
   const { api } = useApi();
   const accountInfo = useCall<DeriveAccountInfo>(api.derive.accounts.info, [address]);
   const stakingInfo = useCall<DeriveStakingQuery>(api.derive.staking.query, [address]);
-  const [{ commission, nominators, stakeOther, stakeOwn }, setStakingState] = useState<StakingState>({ nominators: [] });
+  const [{ commission, nominators, stakeOther, stakeOwn, stakeTotal }, setStakingState] = useState<StakingState>({ nominators: [] });
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect((): void => {
@@ -129,6 +129,9 @@ function Address ({ address, className = '', filterName, hasQueries, isElected, 
         {stakeOwn?.gtn(0) && (
           <FormatBalance value={stakeOwn} />
         )}
+      </td>
+      <td className='number'>
+        {stakeTotal && <FormatBalance value={stakeTotal} />}
       </td>
       <td className='number'>
         {commission}
