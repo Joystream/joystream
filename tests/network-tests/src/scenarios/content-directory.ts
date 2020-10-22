@@ -15,12 +15,12 @@ const scenario = async () => {
   const provider = new WsProvider(nodeUrl)
   const api: Api = await Api.create(provider, env.TREASURY_ACCOUNT_URI || '//Alice', env.SUDO_ACCOUNT_URI || '//Alice')
 
-  await leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
+  const leadKeyPair = await leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
 
   // Some flows that use the curator lead to perform some tests...
   //
 
-  await initializeContentDirectory(api)
+  await initializeContentDirectory(api, leadKeyPair)
 
   await createChannel(api)
 

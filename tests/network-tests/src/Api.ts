@@ -1943,10 +1943,10 @@ export class Api {
       { Member: memberId }, // We use member with id 0 as actor (in this case we assume this is Alice)
       operations // We provide parsed operations as second argument
     )
-    .signAndSend(this.keyring.getPairs()[0])
+    .signAndSend(this.createKeyPairs(1)[0])
   }
 
-  public async initializeContentDirectory() {
-    initializeContentDir(this.api, this.keyring.getPairs()[0])
+  public async initializeContentDirectory(leadKeyPair: KeyringPair) {
+    await initializeContentDir(this.api,  leadKeyPair)
   }
 }

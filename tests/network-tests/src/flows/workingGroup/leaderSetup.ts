@@ -3,13 +3,13 @@ import BN from 'bn.js'
 import { PaidTermId } from '@joystream/types/members'
 import { SudoHireLeadFixture } from '../../fixtures/sudoHireLead'
 import { assert } from 'chai'
+import { KeyringPair } from '@polkadot/keyring/types'
 
 // Worker application happy case scenario
-export default async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups) {
+export default async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<KeyringPair> {
   const lead = await api.getGroupLead(group)
-  if (lead) {
-    return
-  }
+
+  assert(!lead, `Lead is already set`)
 
   const leadKeyPair = api.createKeyPairs(1)[0]
   const paidTerms: PaidTermId = api.createPaidTermId(new BN(+env.MEMBERSHIP_PAID_TERMS!))
@@ -37,4 +37,6 @@ export default async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, grou
   const hiredLead = await api.getGroupLead(group)
   assert(hiredLead, `${group} group Lead was not hired!`)
   assert(hiredLead!.role_account_id.eq(leadKeyPair.address))
+
+  return leadKeyPair
 }
