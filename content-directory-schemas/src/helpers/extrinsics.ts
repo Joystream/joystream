@@ -2,6 +2,10 @@ import { Keyring } from '@polkadot/keyring'
 import { KeyringPair } from '@polkadot/keyring/types'
 import { ApiPromise } from '@polkadot/api'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
+import { DispatchError } from '@polkadot/types/interfaces/system'
+import { TypeRegistry } from '@polkadot/types'
+
+// TODO: Move to @joystream/js soon
 
 export function getAlicePair() {
   const keyring = new Keyring({ type: 'sr25519' })
@@ -34,17 +38,37 @@ export class ExtrinsicsHelper {
       promises.push(
         new Promise((resolve, reject) => {
           tx.signAndSend(sender, { nonce }, (result) => {
+            let txError: string | null = null
             if (result.isError) {
-              reject(new Error(errorMessage))
+              txError = `Transaction failed with status: ${result.status.type}`
+              reject(new Error(`${errorMessage} - ${txError}`))
             }
+
             if (result.status.isInBlock) {
-              if (
-                result.events.some(({ event }) => event.section === 'system' && event.method === 'ExtrinsicSuccess')
-              ) {
-                resolve()
-              } else {
-                reject(new Error(errorMessage))
-              }
+              result.events
+                .filter(({ event }) => event.section === 'system')
+                .forEach(({ event }) => {
+                  if (event.method === 'ExtrinsicFailed') {
+                    const dispatchError = event.data[0] as DispatchError
+                    let errorMsg = dispatchError.toString()
+                    if (dispatchError.isModule) {
+                      try {
+                        // Need to assert that registry is of TypeRegistry type, since Registry intefrace
+                        // seems outdated and doesn't include DispatchErrorModule as possible argument for "findMetaError"
+                        const { name, documentation } = (this.api.registry as TypeRegistry).findMetaError(
+                          dispatchError.asModule
+                        )
+                        errorMsg = `${name} (${documentation})`
+                      } catch (e) {
+                        // This probably means we don't have this error in the metadata
+                        // In this case - continue (we'll just display dispatchError.toString())
+                      }
+                    }
+                    reject(new Error(`${errorMessage} - Extrinsic execution error: ${errorMsg}`))
+                  } else if (event.method === 'ExtrinsicSuccess') {
+                    resolve()
+                  }
+                })
             }
           })
         })
