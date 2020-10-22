@@ -32,6 +32,7 @@ import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
 import { InputParser } from 'cd-schemas'
 import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
+import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
 import { initializeContentDir } from 'cd-schemas'
 
 
@@ -1924,6 +1925,17 @@ export class Api {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
   }
 
+  async sendContentDirectoryTransaction(memberId: number, parser: InputParser): Promise<Hash> {
+    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
+    const operations = await parser.getEntityBatchOperations()
+    return this.api.tx.contentDirectory
+      .transaction(
+        { Member: memberId }, // We use member with id 0 as actor (in this case we assume this is Alice)
+        operations // We provide parsed operations as second argument
+      )
+      .signAndSend(this.createKeyPairs(1)[0])
+  }
+
   public async createChannelEntity(memberId: number, channel: ChannelEntity): Promise<Hash> {
     // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
   const parser = InputParser.createWithKnownSchemas(
@@ -1936,14 +1948,24 @@ export class Api {
       },
     ]
   )
-  // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
-  const operations = await parser.getEntityBatchOperations()
-  return this.api.tx.contentDirectory
-    .transaction(
-      { Member: memberId }, // We use member with id 0 as actor (in this case we assume this is Alice)
-      operations // We provide parsed operations as second argument
-    )
-    .signAndSend(this.createKeyPairs(1)[0])
+
+  return await this.sendContentDirectoryTransaction(memberId, parser)
+  }
+
+  public async createVideoEntity(memberId: number, video: VideoEntity): Promise<Hash> {
+    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
+  const parser = InputParser.createWithKnownSchemas(
+    this.api,
+    // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
+    [
+      {
+        className: 'Video',
+        entries: [video], // We could specify multiple entries here, but in this case we only need one
+      },
+    ]
+  )
+  
+  return await this.sendContentDirectoryTransaction(memberId, parser)
   }
 
   public async initializeContentDirectory(leadKeyPair: KeyringPair) {
