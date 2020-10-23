@@ -1,28 +1,65 @@
 import ExitCodes from '../ExitCodes'
-import AccountsCommandBase from './AccountsCommandBase'
-import { WorkingGroups, NamedKeyringPair } from '../Types'
+import { WorkingGroups } from '../Types'
 import { ReferenceProperty } from 'cd-schemas/types/extrinsics/AddClassSchema'
 import { FlattenRelations } from 'cd-schemas/types/utility'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
-import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity, EntityId } from '@joystream/types/content-directory'
+import {
+  Class,
+  ClassId,
+  CuratorGroup,
+  CuratorGroupId,
+  Entity,
+  EntityId,
+  Actor,
+} from '@joystream/types/content-directory'
 import { Worker } from '@joystream/types/working-group'
 import { CLIError } from '@oclif/errors'
 import { Codec } from '@polkadot/types/types'
 import _ from 'lodash'
+import { RolesCommandBase } from './WorkingGroupsCommandBase'
+import { createType } from '@joystream/types'
 import chalk from 'chalk'
 
 /**
  * Abstract base class for commands related to content directory
  */
-export default abstract class ContentDirectoryCommandBase extends AccountsCommandBase {
+export default abstract class ContentDirectoryCommandBase extends RolesCommandBase {
+  group = WorkingGroups.Curators // override group for RolesCommandBase
+
   // Use when lead access is required in given command
   async requireLead(): Promise<void> {
-    const selectedAccount: NamedKeyringPair = await this.getRequiredSelectedAccount()
-    const lead = await this.getApi().groupLead(WorkingGroups.Curators)
+    await this.getRequiredLead()
+  }
 
-    if (!lead || lead.roleAccount.toString() !== selectedAccount.address) {
-      this.error('Content Working Group Lead access required for this command!', { exit: ExitCodes.AccessDenied })
+  async getCuratorContext(classNames: string[] = []): Promise<Actor> {
+    const curator = await this.getRequiredWorker()
+    const classes = await Promise.all(classNames.map(async (cName) => (await this.classEntryByNameOrId(cName))[1]))
+    const classMaintainers = classes.map(({ class_permissions: permissions }) => permissions.maintainers.toArray())
+
+    const groups = await this.getApi().availableCuratorGroups()
+    const availableGroupIds = groups
+      .filter(
+        ([groupId, group]) =>
+          group.active.valueOf() &&
+          classMaintainers.every((maintainers) => maintainers.some((m) => m.eq(groupId))) &&
+          group.curators.toArray().some((curatorId) => curatorId.eq(curator.workerId))
+      )
+      .map(([id]) => id)
+
+    let groupId: number
+    if (!availableGroupIds.length) {
+      this.error(
+        'You do not have the required maintainer access to at least one of the following classes: ' +
+          classNames.join(', '),
+        { exit: ExitCodes.AccessDenied }
+      )
+    } else if (availableGroupIds.length === 1) {
+      groupId = availableGroupIds[0].toNumber()
+    } else {
+      groupId = await this.promptForCuratorGroup('Select Curator Group context', availableGroupIds)
     }
+
+    return createType('Actor', { Curator: [groupId, curator.workerId.toNumber()] })
   }
 
   async promptForClass(message = 'Select a class'): Promise<Class> {

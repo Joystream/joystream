@@ -27,7 +27,7 @@ export default class CreateChannelCommand extends ContentDirectoryCommandBase {
     if (!inputJson) {
       const customPrompts: JsonSchemaCustomPrompts = [
         ['language', () => this.promptForEntityId('Choose channel language', 'Language', 'name')],
-        ['curationStatus', async () => undefined],
+        ['isCensored', async () => undefined],
       ]
 
       const prompter = new JsonSchemaPrompter<ChannelEntity>(channelJsonSchema, undefined, customPrompts)
