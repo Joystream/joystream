@@ -455,7 +455,7 @@ where
         let account_id = CANDIDATE_BASE_ID + index;
         let origin = OriginType::Signed(account_id.into());
         let candidate = CandidateOf::<T> {
-            account_id: account_id.into(),
+            staking_account_id: account_id.into(),
             cycle_id: CurrentAnnouncementCycleId::get(),
             stake,
         };

@@ -592,7 +592,9 @@ fn council_candidate_stake_can_be_unlocked() {
         // check that not-elected-member has still his candidacy stake locked
         assert_eq!(
             CandidacyLock::current_stake(
-                &candidates[not_elected_candidate_index].candidate.account_id
+                &candidates[not_elected_candidate_index]
+                    .candidate
+                    .staking_account_id
             ),
             council_settings.min_candidate_stake,
         );
@@ -600,7 +602,9 @@ fn council_candidate_stake_can_be_unlocked() {
         assert_eq!(
             Module::<Runtime>::release_candidacy_stake(
                 MockUtils::mock_origin(candidates[not_elected_candidate_index].origin.clone()),
-                candidates[not_elected_candidate_index].candidate.account_id
+                candidates[not_elected_candidate_index]
+                    .candidate
+                    .staking_account_id
             ),
             Ok(()),
         );
@@ -608,7 +612,9 @@ fn council_candidate_stake_can_be_unlocked() {
         // check that candidacy stake is unlocked
         assert_eq!(
             CandidacyLock::current_stake(
-                &candidates[not_elected_candidate_index].candidate.account_id
+                &candidates[not_elected_candidate_index]
+                    .candidate
+                    .staking_account_id
             ),
             0,
         );
@@ -686,10 +692,13 @@ fn council_candidate_stake_automaticly_converted() {
         expected_final_council_members
             .iter()
             .for_each(|council_member| {
-                assert_eq!(CandidacyLock::current_stake(&council_member.account_id), 0);
+                assert_eq!(
+                    CandidacyLock::current_stake(&council_member.staking_account_id),
+                    0
+                );
 
                 assert_eq!(
-                    ElectedMemberLock::current_stake(&council_member.account_id),
+                    ElectedMemberLock::current_stake(&council_member.staking_account_id),
                     council_settings.min_candidate_stake
                 );
             });
@@ -768,7 +777,7 @@ fn council_member_stake_is_locked() {
             .iter()
             .for_each(|council_member| {
                 assert_eq!(
-                    ElectedMemberLock::current_stake(&council_member.account_id),
+                    ElectedMemberLock::current_stake(&council_member.staking_account_id),
                     council_settings.min_candidate_stake
                 );
             });
