@@ -161,7 +161,6 @@ async function createVideo({ db, block, id }: IDBBlockId, p: IVideo): Promise<vo
   video.thumbnailUrl = p.thumbnailURL
   video.version = block
   video.happenedIn = await createBlockOrGetFromDatabase(db, block)
-  console.log(video)
   await db.save<Video>(video)
 }
 
@@ -208,14 +207,14 @@ async function getClassName(
     throw Error(`Can not determine class of the entity`)
   }
 
-  let classId: number
+  let classId: number | undefined
   // Is newly created entity in the same transaction
   if (indexOf !== undefined) {
     classId = createEntityOperations[indexOf].classId
   } else {
     const ce = await db.get(ClassEntity, { where: { id: entityId } })
-    if (ce === undefined) throw Error(`Class not found for the entity: ${entityId}`)
-    classId = ce.classId
+    if (ce === undefined) console.log(`Class not found for the entity: ${entityId}`)
+    classId = ce ? ce.classId : undefined
   }
 
   const c = contentDirectoryClassNamesWithId.find((c) => c.classId === classId)

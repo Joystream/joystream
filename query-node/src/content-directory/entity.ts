@@ -34,6 +34,7 @@ import {
   updateKnownLicenseEntityPropertyValues,
   updateLanguageEntityPropertyValues,
   updateVideoMediaEncodingEntityPropertyValues,
+  createBlockOrGetFromDatabase,
 } from './entity-helper'
 import {
   CategoryPropertyNamesWithId,
@@ -75,10 +76,16 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
   const entityId = decode.stringIfyEntityId(event)
   const classEntity = await db.get(ClassEntity, { where: { id: entityId } })
 
-  if (classEntity === undefined) throw Error(`Class not found for the EntityId: ${entityId}`)
+  if (classEntity === undefined) {
+    console.log(`Class not found for the EntityId: ${entityId}`)
+    return
+  }
 
   const cls = contentDirectoryClassNamesWithId.find((c) => c.classId === classEntity.classId)
-  if (cls === undefined) throw Error('Not recognized class')
+  if (cls === undefined) {
+    console.log('Not recognized class')
+    return
+  }
 
   const arg: IDBBlockId = { db, block, id: entityId }
 
@@ -148,10 +155,16 @@ async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent): Pr
   const where: IWhereCond = { where: { id: entityId } }
 
   const classEntity = await db.get(ClassEntity, where)
-  if (classEntity === undefined) throw Error(`Class not found for the EntityId: ${entityId}`)
+  if (classEntity === undefined) {
+    console.log(`Class not found for the EntityId: ${entityId}`)
+    return
+  }
 
   const cls = contentDirectoryClassNamesWithId.find((c) => c.classId === classEntity.classId)
-  if (cls === undefined) throw Error('Undefined class')
+  if (cls === undefined) {
+    console.log('Undefined class')
+    return
+  }
 
   switch (cls.name) {
     case ContentDirectoryKnownClasses.CHANNEL:
@@ -209,6 +222,7 @@ async function contentDirectory_EntityCreated(db: DB, event: SubstrateEvent): Pr
   classEntity.classId = c.classId
   classEntity.id = c.entityId.toString()
   classEntity.version = event.blockNumber
+  classEntity.happenedIn = await createBlockOrGetFromDatabase(db, event.blockNumber)
   await db.save<ClassEntity>(classEntity)
 }
 

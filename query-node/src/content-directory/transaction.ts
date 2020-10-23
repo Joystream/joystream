@@ -56,11 +56,11 @@ import {
   batchCreateClassEntities,
 } from './entity-helper'
 
-const debug = Debug('mappings:content-directory:TransactionCompleted')
+const debug = Debug('mappings:content-directory')
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function contentDirectory_TransactionCompleted(db: DB, event: SubstrateEvent): Promise<void> {
-  debug(`Substrate event: ${JSON.stringify(event)}`)
+  debug(`TransactionCompleted event: ${JSON.stringify(event)}`)
 
   const { extrinsic, blockNumber: block } = event
   if (!extrinsic) {
@@ -102,8 +102,6 @@ async function batchAddSchemaSupportToEntity(
 ) {
   // find the related entity ie. Channel, Video etc
   for (const entity of entities) {
-    debug(`Entity: ${JSON.stringify(entity)}`)
-
     const { entityId, indexOf, properties } = entity
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -174,7 +172,8 @@ async function batchAddSchemaSupportToEntity(
         break
 
       default:
-        throw new Error(`Unknown class name: ${className}`)
+        console.log(`Unknown class name: ${className}`)
+        break
     }
   }
 }
@@ -187,15 +186,16 @@ async function batchAddSchemaSupportToEntity(
  */
 async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateEntityOperation[], entities: IEntity[]) {
   for (const entity of entities) {
-    debug(`Update entity properties values: ${JSON.stringify(entity)}`)
-
     const { entityId, indexOf, properties } = entity
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const id = entityId ? entityId.toString() : indexOf!.toString()
 
     const where: IWhereCond = { where: { id } }
     const className = await getClassName(db, entity, createEntityOperations)
-    if (className === undefined) throw Error(`Can not update entity properties values. Unknown class name`)
+    if (className === undefined) {
+      console.log(`Can not update entity properties values. Unknown class name`)
+      return
+    }
 
     switch (className) {
       case ContentDirectoryKnownClasses.CHANNEL:
@@ -279,7 +279,8 @@ async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateE
         break
 
       default:
-        throw new Error(`Unknown class name: ${className}`)
+        console.log(`Unknown class name: ${className}`)
+        break
     }
   }
 }
