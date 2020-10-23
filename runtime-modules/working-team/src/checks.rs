@@ -9,6 +9,7 @@ use frame_support::traits::Get;
 use frame_support::{ensure, StorageMap, StorageValue};
 use sp_arithmetic::traits::Zero;
 use sp_std::collections::btree_set::BTreeSet;
+use sp_std::vec::Vec;
 use system::{ensure_root, ensure_signed};
 
 use crate::types::{ApplicationInfo, StakeParameters};

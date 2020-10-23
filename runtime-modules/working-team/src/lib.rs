@@ -29,6 +29,7 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
+mod benchmarking;
 mod checks;
 mod errors;
 #[cfg(test)]
@@ -47,7 +48,12 @@ use sp_std::vec::Vec;
 use system::{ensure_root, ensure_signed};
 
 pub use errors::Error;
-use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId, WorkerInfo};
+/*
+ * TODO: Change this back, this is only needed for the temporary implementation of `working_team` in the `Runtime`
+ */
+
+pub use types::BalanceOfCurrency;
+use types::{ApplicationInfo, MemberId, TeamWorker, TeamWorkerId, WorkerInfo};
 pub use types::{
     ApplyOnOpeningParameters, JobApplication, JobOpening, JobOpeningType, Penalty, RewardPolicy,
     StakePolicy, StakingHandler,
