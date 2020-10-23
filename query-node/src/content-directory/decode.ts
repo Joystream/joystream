@@ -19,19 +19,22 @@ function stringIfyEntityId(event: SubstrateEvent): string {
 function setProperties<T>({ extrinsic, blockNumber }: SubstrateEvent, propNamesWithId: IPropertyIdWithName): T {
   if (extrinsic === undefined) throw Error('Undefined extrinsic')
 
-  const { 3: newPropertyValues } = extrinsic?.args
+  const { 3: newPropertyValues } = extrinsic!.args
   const properties: { [key: string]: any } = {}
 
   for (const [k, v] of Object.entries(newPropertyValues.value)) {
     const propertyName = propNamesWithId[k]
-    properties[propertyName] = v
+    const propertyValue = createType('InputPropertyValue', v)
+      .asType('Single')
+      .value.toJSON()
+    properties[propertyName] = propertyValue
   }
   properties.version = blockNumber
   return properties as T
 }
 
 function getClassEntity(event: SubstrateEvent): IClassEntity {
-  const { 0: classId } = event.extrinsic?.args
+  const { 0: classId } = event.extrinsic!.args
   const { 1: entityId } = event.params
   return {
     entityId: (entityId.value as unknown) as number,
@@ -39,6 +42,12 @@ function getClassEntity(event: SubstrateEvent): IClassEntity {
   }
 }
 
+/**
+ * When entity is creation through `transaction` extrinsic we use this function to parse
+ * entity properties it looks quite similar to `setProperties` function
+ * @param properties
+ * @param propertyNamesWithId
+ */
 function setEntityPropertyValues<T>(properties: IProperty[], propertyNamesWithId: IPropertyIdWithName): T {
   const entityProperties: { [key: string]: any } = {}
 
@@ -57,7 +66,7 @@ function getEntityProperties(propertyValues: ParametrizedClassPropertyValue[]): 
   const properties: IProperty[] = []
   const entityPropertyValues = createType('Vec<ParametrizedClassPropertyValue>', propertyValues)
 
-  entityPropertyValues.map((pv) => {
+  entityPropertyValues.map((pv: ParametrizedClassPropertyValue) => {
     const v = createType('ParametrizedPropertyValue', pv.value)
     const propertyId = pv.in_class_index.toJSON()
 
@@ -80,7 +89,7 @@ function getEntityProperties(propertyValues: ParametrizedClassPropertyValue[]): 
 }
 
 function getOperations({ extrinsic }: SubstrateEvent): IBatchOperation {
-  const operations = createType('Vec<OperationType>', extrinsic?.args[1].value)
+  const operations = createType('Vec<OperationType>', extrinsic!.args[1].value as any)
 
   const updatePropertyValuesOperations: IEntity[] = []
   const addSchemaSupportToEntityOperations: IEntity[] = []
@@ -94,7 +103,7 @@ function getOperations({ extrinsic }: SubstrateEvent): IBatchOperation {
       const op = operation.asType('AddSchemaSupportToEntity')
       const pe = createType('ParameterizedEntity', op.entity_id)
       const entity: IEntity = {
-        properties: decode.getEntityProperties(op.parametrized_property_values),
+        properties: getEntityProperties(op.parametrized_property_values),
       }
       if (pe.isOfType('InternalEntityJustAdded')) {
         entity.indexOf = pe.asType('InternalEntityJustAdded').toJSON()
@@ -115,7 +124,7 @@ function getOperations({ extrinsic }: SubstrateEvent): IBatchOperation {
 
 function makeEntity(upv: UpdatePropertyValuesOperation): IEntity {
   const entity: IEntity = {
-    properties: decode.getEntityProperties(upv.new_parametrized_property_values),
+    properties: getEntityProperties(upv.new_parametrized_property_values),
   }
   const pe = createType('ParameterizedEntity', upv.entity_id)
   if (pe.isOfType('InternalEntityJustAdded')) {
