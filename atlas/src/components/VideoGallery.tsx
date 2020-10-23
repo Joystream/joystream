@@ -14,6 +14,7 @@ type VideoGalleryProps = {
   title?: string
   videos?: VideoFields[]
   loading?: boolean
+  error?: Error
 }
 
 const PLACEHOLDERS_COUNT = 12

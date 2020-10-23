@@ -10,12 +10,19 @@ import { CategoryFields } from '@/api/queries/__generated__/CategoryFields'
 
 const BrowseView: React.FC<RouteComponentProps> = () => {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
-  const { loading: categoriesLoading, data: categoriesData } = useQuery<GetCategories>(GET_CATEGORIES, {
-    onCompleted: (data) => handleCategoryChange(data.categories[0]),
-  })
+  const { loading: categoriesLoading, data: categoriesData, error: categoriesError } = useQuery<GetCategories>(
+    GET_CATEGORIES,
+    {
+      onCompleted: (data) => handleCategoryChange(data.categories[0]),
+    }
+  )
 
   const handleCategoryChange = (category: CategoryFields) => {
     setSelectedCategoryId(category.id)
+  }
+
+  if (categoriesError) {
+    throw categoriesError
   }
 
   return (
