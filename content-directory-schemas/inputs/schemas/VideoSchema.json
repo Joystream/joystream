@@ -90,11 +90,11 @@
       "property_type": { "Single": { "Reference": { "className": "License", "sameOwner": true } } }
     },
     {
-      "name": "curationStatus",
-      "description": "Video curation status set by the Curator",
+      "name": "isCensored",
+      "description": "Video censorship status set by the Curator.",
       "required": false,
       "unique": true,
-      "property_type": { "Single": { "Reference": { "className": "CurationStatus" } } },
+      "property_type": { "Single": "Bool" },
       "locking_policy": { "is_locked_from_controller": true }
     }
   ]
