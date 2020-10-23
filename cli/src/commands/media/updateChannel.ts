@@ -65,14 +65,18 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
 
     let inputJson = await getInputJson<ChannelEntity>(input, channelJsonSchema)
     if (!inputJson) {
-      const customPrompts: JsonSchemaCustomPrompts = [
+      const customPrompts: JsonSchemaCustomPrompts<ChannelEntity> = [
         [
           'language',
           () =>
             this.promptForEntityId('Choose channel language', 'Language', 'name', undefined, currentValues.language),
         ],
-        ['curationStatus', async () => undefined],
       ]
+
+      if (!asCurator) {
+        // Skip isCensored is it's not updated by the curator
+        customPrompts.push(['isCensored', async () => undefined])
+      }
 
       const prompter = new JsonSchemaPrompter<ChannelEntity>(channelJsonSchema, currentValues, customPrompts)
 

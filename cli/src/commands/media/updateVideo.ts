@@ -96,6 +96,10 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
       'hasMarketing',
     ])
 
+    if (asCurator) {
+      updatedProps.isCensored = await videoPrompter.promptSingleProp('isCensored')
+    }
+
     this.jsonPrettyPrint(JSON.stringify(updatedProps))
 
     // Parse inputs into operations and send final extrinsic
