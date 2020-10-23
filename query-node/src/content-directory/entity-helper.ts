@@ -171,6 +171,8 @@ async function createLanguage({ db, block, id }: IDBBlockId, p: ILanguage): Prom
   language.name = p.name
   language.code = p.code
   language.version = block
+  language.happenedIn = await createBlockOrGetFromDatabase(db, block)
+
   await db.save<Language>(language)
 }
 
@@ -180,7 +182,7 @@ async function createVideoMediaEncoding({ db, block, id }: IDBBlockId, p: IVideo
   encoding.id = id
   encoding.name = p.name
   encoding.version = block
-
+  encoding.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save<VideoMediaEncoding>(encoding)
 }
 

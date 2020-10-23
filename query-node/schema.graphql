@@ -63,6 +63,8 @@ type Language @entity {
 
   name: String!
   code: String!
+
+  happenedIn: Block!
 }
 
 type Channel @entity {
@@ -230,7 +232,7 @@ type Video @entity {
   languageId: Int
 
   "Reference to VideoMedia"
-  videoMediaEntityId: Int!
+  videoMediaId: Int!
 
   "Whether or not Video contains marketing"
   hasMarketing: Boolean
@@ -248,7 +250,7 @@ type Video @entity {
   isExplicit: Boolean!
 
   # Lincense
-  licenseEntityId: Int!
+  licenseId: Int!
 
   happenedIn: Block!
 }
