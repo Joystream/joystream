@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
+cd $SCRIPT_PATH
+
 # Location that will be mounted as the /data volume in containers
 # This is how we access the initial members and balances files from
 # the containers and where generated chainspec files will be located.
@@ -51,9 +54,14 @@ docker run --rm -v ${DATA_PATH}:/data joystream/node:${RUNTIME} build-spec \
   --raw --disable-default-bootnode \
   --chain /data/chain-spec.json > ~/tmp/chain-spec-raw.json
 
+NETWORK_ARG=
+if [ "$ATTACH_TO_NETWORK" != "" ]; then
+  NETWORK_ARG="--network ${ATTACH_TO_NETWORK}"
+fi
+
 # Start a chain with generated chain spec
 # Add "-l ws=trace,ws::handler=info" to get websocket trace logs
-CONTAINER_ID=`docker run -d -v ${DATA_PATH}:/data -p 9944:9944 joystream/node:${RUNTIME} \
+CONTAINER_ID=`docker run -d -v ${DATA_PATH}:/data -p 9944:9944 ${NETWORK_ARG} --name joystream-node joystream/node:${RUNTIME} \
   --validator --alice --unsafe-ws-external --rpc-cors=all -l runtime \
   --chain /data/chain-spec-raw.json`
 
@@ -77,9 +85,8 @@ if [ "$TARGET_RUNTIME" == "$RUNTIME" ]; then
 else
   # Copy new runtime wasm file from target joystream/node image
   echo "Extracting wasm blob from target joystream/node image."
-  mkdir -p .tmp/
   id=`docker create joystream/node:${TARGET_RUNTIME}`
-  docker cp $id:/joystream/runtime.compact.wasm .tmp/
+  docker cp $id:/joystream/runtime.compact.wasm ${DATA_PATH}
   docker rm $id
 
   # Display runtime version before runtime upgrade
@@ -87,7 +94,7 @@ else
 
   echo "Performing runtime upgrade."
   DEBUG=* yarn workspace api-scripts tsnode-strict \
-    src/dev-set-runtime-code.ts -- `pwd`/.tmp/runtime.compact.wasm
+    src/dev-set-runtime-code.ts -- ${DATA_PATH}/runtime.compact.wasm
 
   echo "Runtime upgraded."
 fi
