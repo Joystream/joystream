@@ -966,6 +966,7 @@
             "AddSchemaSupportToEntity": "AddSchemaSupportToEntityOperation"
         }
     },
+    "InputEntityValuesMap": "BTreeMap<PropertyId,InputPropertyValue>",
     "ClassPermissionsType": "Null",
     "ClassPropertyValue": "Null",
     "Operation": "Null",

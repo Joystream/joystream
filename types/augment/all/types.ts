@@ -565,6 +565,9 @@ export interface InboundReferenceCounter extends Struct {
   readonly same_owner: u32;
 }
 
+/** @name InputEntityValuesMap */
+export interface InputEntityValuesMap extends BTreeMap<PropertyId, InputPropertyValue> {}
+
 /** @name InputPropertyValue */
 export interface InputPropertyValue extends Enum {
   readonly isSingle: boolean;

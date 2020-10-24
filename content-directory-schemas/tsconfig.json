@@ -23,5 +23,5 @@
       "@polkadot/api/augment": ["../types/augment-codec/augment-api.ts"]
     }
   },
-  "include": [ "src/**/*", "scripts/**/*", "typings/**/*" ]
+  "include": [ "src/**/*", "scripts/**/*", "typings/**/*", "examples/**/*" ]
 }

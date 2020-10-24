@@ -3,7 +3,7 @@ import { types as joyTypes } from '@joystream/types'
 import { Keyring } from '@polkadot/keyring'
 // Import input parser and channel entity from cd-schemas (we use it as library here)
 import { InputParser } from 'cd-schemas'
-import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
+import { ChannelEntity } from 'cd-schemas/types/entities'
 
 async function main() {
   // Initialize the api
