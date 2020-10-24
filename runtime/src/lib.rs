@@ -142,7 +142,12 @@ impl working_team::StakingHandler<Runtime> for Runtime {
     fn current_stake(
         _account_id: &<Runtime as system::Trait>::AccountId,
     ) -> BalanceOfCurrency<Runtime> {
-        0
+        /*
+         * TODO: We need to return more than zero for `leave_role` later to work
+         * might need to implement more functions
+         * see `working_team` benchmarking
+         */
+        BalanceOfCurrency::<Runtime>::max_value()
     }
 }
 /*

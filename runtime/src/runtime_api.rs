@@ -8,6 +8,7 @@ use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
+#[cfg(feature = "runtime-benchmarks")]
 use sp_std::vec;
 use sp_std::vec::Vec;
 
