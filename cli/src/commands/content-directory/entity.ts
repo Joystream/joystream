@@ -15,7 +15,7 @@ export default class EntityCommand extends ContentDirectoryCommandBase {
 
   async run() {
     const { id } = this.parse(EntityCommand).args
-    const entity = await this.getEntity(id)
+    const entity = await this.getEntity(id, undefined, undefined, false)
     const { controller, frozen, referenceable } = entity.entity_permissions
     const [classId, entityClass] = await this.classEntryByNameOrId(entity.class_id.toString())
     const propertyValues = this.parseEntityPropertyValues(entity, entityClass)
