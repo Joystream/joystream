@@ -23,7 +23,7 @@
 //!
 //! - [vote](./struct.Module.html#method.vote)
 //! - [reveal_vote](./struct.Module.html#method.reveal_vote)
-//! - [release_stake](./struct.Module.html#method.release_stake)
+//! - [release_voting_stake](./struct.Module.html#method.release_voting_stake)
 //!
 //! ## Notes
 //! This module is instantiable pallet as described here https://substrate.dev/recipes/3-entrees/instantiable.html
@@ -361,15 +361,15 @@ decl_module! {
 
         /// Release a locked stake.
         #[weight = 10_000_000]
-        pub fn release_stake(origin) -> Result<(), Error<T, I>> {
-            let account_id = EnsureChecks::<T, I>::can_release_stake(origin)?;
+        pub fn release_voting_stake(origin) -> Result<(), Error<T, I>> {
+            let account_id = EnsureChecks::<T, I>::can_release_voting_stake(origin)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // reveal the vote - it can return error when stake fails to unlock
-            Mutations::<T, I>::release_stake(&account_id);
+            Mutations::<T, I>::release_voting_stake(&account_id);
 
             // emit event
             Self::deposit_event(RawEvent::StakeReleased(account_id));
@@ -582,7 +582,7 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
     }
 
     /// Release stake associated to the user's last vote.
-    fn release_stake(account_id: &<T as system::Trait>::AccountId) {
+    fn release_voting_stake(account_id: &<T as system::Trait>::AccountId) {
         // lock stake amount
         T::Currency::remove_lock(T::LockId::get(), account_id);
 
@@ -795,7 +795,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok((stage_data, account_id, cast_vote))
     }
 
-    fn can_release_stake(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
+    fn can_release_voting_stake(origin: T::Origin) -> Result<T::AccountId, Error<T, I>> {
         let cycle_id = CurrentCycleId::<I>::get();
 
         // ensure superuser requested action
