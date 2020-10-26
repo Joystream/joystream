@@ -838,11 +838,6 @@ fn proposal_execution_postponed_because_of_grace_period() {
         run_to_block_and_finalize(1);
         run_to_block_and_finalize(2);
 
-        // check internal cache for proposal_id presence
-        assert!(<PendingExecutionProposalIds<Test>>::contains_key(
-            proposal_id
-        ));
-
         let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
@@ -869,6 +864,9 @@ fn proposal_execution_postponed_because_of_grace_period() {
 #[test]
 fn proposal_execution_vetoed_successfully_during_the_grace_period() {
     initial_test_ext().execute_with(|| {
+        let starting_block = 1;
+        run_to_block_and_finalize(starting_block);
+
         let parameters_fixture = ProposalParametersFixture::default().with_grace_period(3);
         let dummy_proposal =
             DummyProposalFixture::default().with_parameters(parameters_fixture.params());
@@ -884,11 +882,6 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
         run_to_block_and_finalize(1);
         run_to_block_and_finalize(2);
 
-        // check internal cache for proposal_id presence
-        assert!(<PendingExecutionProposalIds<Test>>::contains_key(
-            proposal_id
-        ));
-
         let pre_veto_proposal = <crate::Proposals<Test>>::get(proposal_id);
 
         assert_eq!(
@@ -896,8 +889,11 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
             Proposal {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
-                activated_at: 0,
-                status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
+                activated_at: starting_block,
+                status: ProposalStatus::approved(
+                    ApprovedProposalStatus::PendingExecution,
+                    starting_block
+                ),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
@@ -913,19 +909,9 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
         let veto_proposal = VetoProposalFixture::new(proposal_id);
         veto_proposal.veto_and_assert(Ok(()));
 
-        let proposal = <crate::Proposals<Test>>::get(proposal_id);
-
-        assert_eq!(
-            proposal,
-            Proposal {
-                status: ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, 2),
-                ..pre_veto_proposal.clone()
-            }
-        );
-
-        // check internal cache for proposal_id absence
-        assert!(!<PendingExecutionProposalIds<Test>>::contains_key(
-            proposal_id
+        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+            proposal_id,
+            ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, starting_block + 1),
         ));
     });
 }
@@ -948,11 +934,6 @@ fn proposal_execution_succeeds_after_the_grace_period() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
         run_to_block_and_finalize(1);
-
-        // check internal cache for proposal_id presence
-        assert!(<PendingExecutionProposalIds<Test>>::contains_key(
-            proposal_id
-        ));
 
         let proposal = <crate::Proposals<Test>>::get(proposal_id);
 
@@ -983,11 +964,6 @@ fn proposal_execution_succeeds_after_the_grace_period() {
         EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
             proposal_id,
             ProposalStatus::approved(ApprovedProposalStatus::Executed, starting_block),
-        ));
-
-        // check internal cache for proposal_id absence
-        assert!(!<PendingExecutionProposalIds<Test>>::contains_key(
-            proposal_id
         ));
     });
 }
@@ -1561,11 +1537,6 @@ fn proposal_execution_with_exact_execution_works() {
 
         // Proposal is removed.
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
-
-        // check internal cache for proposal_id absence
-        assert!(!<PendingExecutionProposalIds<Test>>::contains_key(
-            proposal_id
-        ));
     });
 }
 
@@ -1624,13 +1595,6 @@ fn proposal_with_pending_constitutionality_succeeds() {
         );
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 1);
-        assert!(!<PendingExecutionProposalIds<Test>>::contains_key(
-            proposal_id
-        ));
-
-        assert!(<PendingConstitutionalityProposalIds<Test>>::contains_key(
-            proposal_id
-        ));
     });
 }
 

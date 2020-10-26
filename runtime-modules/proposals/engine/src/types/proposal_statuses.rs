@@ -22,7 +22,7 @@ impl<BlockNumber> Default for ProposalStatus<BlockNumber> {
     }
 }
 
-impl<BlockNumber> ProposalStatus<BlockNumber> {
+impl<BlockNumber: Clone> ProposalStatus<BlockNumber> {
     /// Creates finalized proposal status with provided ProposalDecisionStatus.
     pub fn finalized(
         decision_status: ProposalDecisionStatus,
@@ -43,6 +43,27 @@ impl<BlockNumber> ProposalStatus<BlockNumber> {
             proposal_status: ProposalDecisionStatus::Approved(approved_status),
             finalized_at: now,
         })
+    }
+
+    /// Determines whether a proposal in active or pending execution statuses.
+    pub fn is_active_or_pending_execution(&self) -> bool {
+        self.is_active_proposal() || self.is_pending_execution_proposal()
+    }
+
+    /// Detemines whether a proposal in active status.
+    pub fn is_active_proposal(&self) -> bool {
+        matches!(self.clone(), ProposalStatus::Active{..})
+    }
+
+    /// Determines whether a proposal in pending execution status.
+    pub fn is_pending_execution_proposal(&self) -> bool {
+        if let ProposalStatus::Finalized(data) = self.clone() {
+            if let ProposalDecisionStatus::Approved(approved_status) = data.proposal_status {
+                return approved_status == ApprovedProposalStatus::PendingExecution;
+            }
+        }
+
+        false
     }
 }
 

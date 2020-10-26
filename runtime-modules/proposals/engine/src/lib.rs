@@ -313,10 +313,6 @@ decl_storage! {
         pub ActiveProposalIds get(fn active_proposal_ids): map hasher(blake2_128_concat)
             T::ProposalId=> ();
 
-        /// Ids of proposals that were approved and theirs grace period was not expired.
-        pub PendingExecutionProposalIds get(fn pending_execution_proposal_ids): map hasher(blake2_128_concat)
-            T::ProposalId=> ();
-
         /// Ids of proposals that were approved and needed more councils approvals to be executed.
         pub PendingConstitutionalityProposalIds get(fn pending_consitutionality_proposal_ids): map hasher(blake2_128_concat)
             T::ProposalId=> ();
@@ -414,14 +410,14 @@ decl_module! {
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
+            ensure!(
+                proposal.status.is_active_or_pending_execution(),
+                Error::<T>::ProposalFinalized
+            );
+
             // mutation
 
-            if <PendingExecutionProposalIds<T>>::contains_key(proposal_id) {
-                Self::veto_pending_execution_proposal(proposal_id, proposal);
-            } else {
-                ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::<T>::ProposalFinalized);
-                Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Vetoed);
-            }
+            Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Vetoed)
         }
 
         /// Block finalization. Perform voting period check, vote result tally, approved proposals
@@ -433,7 +429,7 @@ decl_module! {
 
             // Check vote results. Approved proposals with zero grace period will be
             // transitioned to the PendingExecution status.
-            for  proposal_data in finalized_proposals {
+            for proposal_data in finalized_proposals {
                 <Proposals<T>>::insert(proposal_data.proposal_id, proposal_data.proposal);
                 Self::finalize_proposal(proposal_data.proposal_id, proposal_data.status);
             }
@@ -652,23 +648,6 @@ impl<T: Trait> Module<T> {
             .collect() // compose output vector
     }
 
-    // Veto approved proposal during its grace period. Saves a new proposal status and removes
-    // proposal id from the 'PendingExecutionProposalIds'
-    fn veto_pending_execution_proposal(proposal_id: T::ProposalId, proposal: ProposalOf<T>) {
-        <PendingExecutionProposalIds<T>>::remove(proposal_id);
-
-        let vetoed_proposal_status =
-            ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, Self::current_block());
-
-        <Proposals<T>>::insert(
-            proposal_id,
-            Proposal {
-                status: vetoed_proposal_status,
-                ..proposal
-            },
-        );
-    }
-
     // Executes approved proposal code
     fn execute_proposal(approved_proposal: ApprovedProposal<T>) {
         let proposal_code = Self::proposal_codes(approved_proposal.proposal_id);
@@ -705,10 +684,8 @@ impl<T: Trait> Module<T> {
     }
 
     // Performs all actions on proposal finalization:
-    // - clean active proposal cache
     // - update proposal status fields (status, finalized_at)
-    // - add to pending execution proposal cache if approved
-    // - add to pending constitutionality proposal cache if approved but constitutionality level is not reached
+    // - increment constitutionality level of the proposal
     // - slash and unstake proposal stake if stake exists
     // - decrease active proposal counter
     // - fire an event
@@ -720,14 +697,12 @@ impl<T: Trait> Module<T> {
 
         let mut proposal = Self::proposals(proposal_id);
 
-        if proposal.status == ProposalStatus::Active {
+        if proposal.status.is_active_or_pending_execution() {
             if let ProposalDecisionStatus::Approved(approved_status) = decision_status.clone() {
                 proposal.current_constitutionality_level += 1;
 
                 if approved_status == ApprovedProposalStatus::PendingConstitutionality {
                     <PendingConstitutionalityProposalIds<T>>::insert(proposal_id, ());
-                } else {
-                    <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
                 }
             }
 
@@ -799,19 +774,21 @@ impl<T: Trait> Module<T> {
     // Enumerates approved proposals and checks their grace period expiration and
     // exact execution block.
     fn get_approved_proposal_ready_for_execution() -> Vec<ApprovedProposal<T>> {
-        <PendingExecutionProposalIds<T>>::iter()
-            .filter_map(|(proposal_id, _)| {
-                let proposal = Self::proposals(proposal_id);
-
-                let now = Self::current_block();
-                if proposal.is_ready_for_execution(now) {
-                    // this should be true, because it was tested inside is_grace_period_expired()
-                    if let ProposalStatus::Finalized(finalisation_data) = proposal.status.clone() {
-                        return Some(ApprovedProposalData {
-                            proposal_id,
-                            proposal,
-                            finalisation_status_data: finalisation_data,
-                        });
+        <Proposals<T>>::iter()
+            .filter_map(|(proposal_id, proposal)| {
+                if proposal.status.is_pending_execution_proposal() {
+                    let now = Self::current_block();
+                    if proposal.is_ready_for_execution(now) {
+                        // this should be true, because it was tested inside is_grace_period_expired()
+                        if let ProposalStatus::Finalized(finalisation_data) =
+                            proposal.status.clone()
+                        {
+                            return Some(ApprovedProposalData {
+                                proposal_id,
+                                proposal,
+                                finalisation_status_data: finalisation_data,
+                            });
+                        }
                     }
                 }
 
@@ -854,7 +831,6 @@ impl<T: Trait> Module<T> {
     fn remove_proposal_data(proposal_id: &T::ProposalId) {
         <Proposals<T>>::remove(proposal_id);
         <DispatchableCallCode<T>>::remove(proposal_id);
-        <PendingExecutionProposalIds<T>>::remove(proposal_id);
         <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
 
         T::ProposalObserver::proposal_removed(proposal_id);
