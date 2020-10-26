@@ -474,10 +474,12 @@ impl<T: Trait> Module<T> {
         let new_proposal_id = next_proposal_count_value;
         let proposal_id = T::ProposalId::from(new_proposal_id);
 
+        // Lock stake balance for proposal if the stake is required.
         if let Some(stake_balance) = creation_params.proposal_parameters.required_stake {
             if let Some(staking_account_id) = creation_params.staking_account_id.clone() {
                 T::StakingHandler::lock(&staking_account_id, stake_balance);
             } else {
+                // Return an error if no staking account provided.
                 return Err(Error::<T>::EmptyStake.into());
             }
         };
@@ -592,15 +594,10 @@ impl<T: Trait> Module<T> {
     /// Possible application includes new council elections.
     pub fn reset_votes_for_active_proposals() {
         <ActiveProposalIds<T>>::iter().for_each(|(proposal_id, _)| {
-            Self::reset_proposal_votes(proposal_id);
-        });
-    }
-
-    // Resets votes for a single proposal.
-    fn reset_proposal_votes(proposal_id: T::ProposalId) {
-        <Proposals<T>>::mutate(proposal_id, |proposal| {
-            proposal.reset_proposal_votes();
-            <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+            <Proposals<T>>::mutate(proposal_id, |proposal| {
+                proposal.reset_proposal_votes();
+                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+            });
         });
     }
 
@@ -611,8 +608,10 @@ impl<T: Trait> Module<T> {
             <Proposals<T>>::mutate(proposal_id, |proposal| {
                 proposal.activated_at = Self::current_block();
                 proposal.status = ProposalStatus::Active;
+                // Resets votes for a proposal.
+                proposal.reset_proposal_votes();
+                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
             });
-            Self::reset_proposal_votes(proposal_id);
 
             <ActiveProposalIds<T>>::insert(proposal_id, ());
         });

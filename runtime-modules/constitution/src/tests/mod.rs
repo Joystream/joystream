@@ -63,7 +63,6 @@ impl AmendConstitutionFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         let old_constitution = Constitution::constitution();
-        let old_next_amendment_number = Constitution::next_amendment_number();
 
         let actual_result =
             Constitution::amend_constitution(self.origin.clone().into(), self.text.clone());
@@ -72,19 +71,10 @@ impl AmendConstitutionFixture {
 
         let new_constitution = Constitution::constitution();
         if actual_result.is_ok() {
-            let new_next_amendment_number = Constitution::next_amendment_number();
-            assert_eq!(new_next_amendment_number, old_next_amendment_number + 1);
-
             let hashed = <Test as system::Trait>::Hashing::hash(&self.text);
             let hash = hashed.as_ref().to_vec();
 
-            assert_eq!(
-                new_constitution,
-                ConstitutionInfo {
-                    text_hash: hash,
-                    amendment_number: old_next_amendment_number,
-                }
-            );
+            assert_eq!(new_constitution, ConstitutionInfo { text_hash: hash });
         } else {
             assert_eq!(old_constitution, new_constitution);
         }
@@ -105,7 +95,7 @@ fn amend_contitution_succeeds() {
         let amend_constitution_fixture = AmendConstitutionFixture::default().with_text(text);
         amend_constitution_fixture.call_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(Event::ConstutionAmended(hash, 0));
+        EventFixture::assert_last_crate_event(Event::ConstutionAmended(hash));
     });
 }
 

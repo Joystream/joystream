@@ -28,15 +28,11 @@ pub trait Trait: system::Trait {
 pub struct ConstitutionInfo {
     /// Constitution text hash.
     pub text_hash: Vec<u8>,
-
-    /// Constitution amendment number.
-    pub amendment_number: u32,
 }
 
 decl_storage! {
     trait Store for Module<T: Trait> as Memo {
         Constitution get(fn constitution) : ConstitutionInfo;
-        NextAmendmentNumber get(fn next_amendment_number) : u32 = 0;
     }
 }
 
@@ -45,8 +41,7 @@ decl_event! {
         /// Emits on constitution amendment.
         /// Parameters:
         /// - constitution text hash
-        /// - amendment number
-        ConstutionAmended(Vec<u8>, u32),
+        ConstutionAmended(Vec<u8>),
     }
 }
 
@@ -54,8 +49,7 @@ decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
         fn deposit_event() = default;
 
-        /// Sets the current constitution hash.It also sets the amendment number for the
-        /// constitution and increment it for the next amendment. Requires root origin.
+        /// Sets the current constitution hash. Requires root origin.
         #[weight = 10_000_000] // TODO: adjust weight
         fn amend_constitution(origin, constitution_text: Vec<u8>) {
             ensure_root(origin)?;
@@ -67,17 +61,13 @@ decl_module! {
             let hashed = T::Hashing::hash(&constitution_text);
             let hash = hashed.as_ref().to_vec();
 
-            let amendment_number = Self::next_amendment_number();
-
             let constitution = ConstitutionInfo{
                 text_hash: hash.clone(),
-                amendment_number
             };
 
             Constitution::put(constitution);
-            NextAmendmentNumber::put(amendment_number + 1);
 
-            Self::deposit_event(Event::ConstutionAmended(hash, amendment_number));
+            Self::deposit_event(Event::ConstutionAmended(hash));
         }
     }
 }
