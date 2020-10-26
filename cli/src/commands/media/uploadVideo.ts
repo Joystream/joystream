@@ -1,4 +1,3 @@
-import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import VideoEntitySchema from 'cd-schemas/schemas/entities/VideoEntity.schema.json'
 import VideoMediaEntitySchema from 'cd-schemas/schemas/entities/VideoMediaEntity.schema.json'
 import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
@@ -20,6 +19,7 @@ import last from 'it-last'
 import toBuffer from 'it-to-buffer'
 import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 import ffmpeg from 'fluent-ffmpeg'
+import MediaCommandBase from '../../base/MediaCommandBase'
 
 ffmpeg.setFfmpegPath(ffmpegInstaller.path)
 
@@ -34,7 +34,7 @@ type VideoMetadata = {
   duration?: number
 }
 
-export default class UploadVideoCommand extends ContentDirectoryCommandBase {
+export default class UploadVideoCommand extends MediaCommandBase {
   static description = 'Upload a new Video to a channel (requires a membership).'
   static flags = {
     // TODO: ...IOFlags, - providing input as json
@@ -331,7 +331,6 @@ export default class UploadVideoCommand extends ContentDirectoryCommandBase {
     const { pixelWidth, pixelHeight } = await videoMediaPrompter.promptMultipleProps(['pixelWidth', 'pixelHeight'])
     const language = await this.promptForEntityId('Choose Video language', 'Language', 'name')
     const category = await this.promptForEntityId('Choose Video category', 'ContentCategory', 'name')
-    const license = await this.promptForEntityId('Choose License', 'KnownLicense', 'code')
     const videoProps = await videoPrompter.promptMultipleProps([
       'title',
       'description',
@@ -340,7 +339,13 @@ export default class UploadVideoCommand extends ContentDirectoryCommandBase {
       'isPublic',
       'isExplicit',
       'hasMarketing',
+      'skippableIntroDuration',
     ])
+
+    const license = await videoPrompter.promptSingleProp('license', () => this.promptForNewLicense())
+    const publishedBeforeJoystream = await videoPrompter.promptSingleProp('publishedBeforeJoystream', () =>
+      this.promptForPublishedBeforeJoystream('add')
+    )
 
     // Create final inputs
     const videoMediaInput: VideoMediaEntity = {
@@ -355,8 +360,9 @@ export default class UploadVideoCommand extends ContentDirectoryCommandBase {
       channel: channelId,
       language,
       category,
-      license: { new: { knownLicense: license } },
+      license,
       media: { new: videoMediaInput },
+      publishedBeforeJoystream,
     }
 
     // Parse inputs into operations and send final extrinsic

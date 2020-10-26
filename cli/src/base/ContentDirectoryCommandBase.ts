@@ -19,12 +19,31 @@ import _ from 'lodash'
 import { RolesCommandBase } from './WorkingGroupsCommandBase'
 import { createType } from '@joystream/types'
 import chalk from 'chalk'
+import { flags } from '@oclif/command'
+
+const CONTEXTS = ['Member', 'Curator', 'Lead'] as const
+type Context = typeof CONTEXTS[number]
 
 /**
  * Abstract base class for commands related to content directory
  */
 export default abstract class ContentDirectoryCommandBase extends RolesCommandBase {
   group = WorkingGroups.Curators // override group for RolesCommandBase
+
+  static contextFlag = flags.enum({
+    name: 'context',
+    required: false,
+    description: `Actor context to execute the command in (${CONTEXTS.join('/')})`,
+    options: [...CONTEXTS],
+  })
+
+  async promptForContext(message = 'Choose in which context you wish to execute the command'): Promise<Context> {
+    return this.simplePrompt({
+      message,
+      type: 'list',
+      choices: CONTEXTS.map((c) => ({ name: c, value: c })),
+    })
+  }
 
   // Use when lead access is required in given command
   async requireLead(): Promise<void> {
