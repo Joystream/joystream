@@ -64,8 +64,59 @@ fn insert_a_worker<T: Trait<I>, I: Instance>(
     (caller_id, worker_id)
 }
 
+fn create_lead<T: Trait<I>, I: Instance>() -> (T::AccountId, TeamWorkerId<T>) {
+    let (caller_id, lead_worker_id) = insert_a_worker::<T, I>(true);
+    WorkingTeam::<T, I>::set_lead(lead_worker_id);
+    (caller_id, lead_worker_id)
+}
+
 benchmarks_instance! {
     _ { }
+
+    set_status_text {
+      let i in 0 .. 50000; // TODO: We should have a bounded value for description
+
+      let (lead_id, _) = create_lead::<T,I>();
+      let status_text = Some(vec![0u8][..].repeat(i as usize)); // TODO:don't use as
+
+    }: _ (RawOrigin::Signed(lead_id), status_text)
+    verify {}
+
+    update_reward_account {
+      let i in 0 .. 10;
+
+      let (caller_id, worker_id) = insert_a_worker::<T, I>(false);
+      let new_id = account::<T::AccountId>("new_id", 1, 0);
+
+    }: _ (RawOrigin::Signed(caller_id), worker_id, new_id)
+    verify {}
+
+    set_budget {
+      let i in 0 .. 10;
+
+      let new_budget = BalanceOfCurrency::<T>::max_value();
+
+    }: _(RawOrigin::Root, new_budget)
+    verify { }
+
+    add_opening{
+      let i in 0 .. 50000; // TODO: We should have a bounded value for description
+
+      let caller_id = account::<T::AccountId>("caller", 0, 0);
+
+      let stake_policy = StakePolicy {
+        stake_amount: BalanceOfCurrency::<T>::max_value(),
+        leaving_unstaking_period: T::BlockNumber::max_value(),
+      };
+
+      let reward_policy = RewardPolicy {
+        reward_per_block: BalanceOfCurrency::<T>::max_value(),
+      };
+
+      let description = vec![0u8][..].repeat(i as usize); // TODO:don't use as
+
+    }: _(RawOrigin::Root, description, JobOpeningType::Leader, Some(stake_policy), Some(reward_policy))
+    verify { }
 
     // Might erase later
     leave_role_immediatly {
@@ -80,8 +131,7 @@ benchmarks_instance! {
         let i in 0 .. 10; // TODO: test not running if we don't set a range of values
         // Worst case scenario there is a lead(this requires **always** more steps)
         // could separate into new branch to tighten weight
-        let (caller_id, lead_worker_id) = insert_a_worker::<T, I>(true);
-        WorkingTeam::<T, I>::set_lead(lead_worker_id);
+        let (caller_id, lead_worker_id) = create_lead::<T, I>();
 
         WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
 
