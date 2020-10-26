@@ -51,6 +51,11 @@ createServer({
 
     this.post(ORION_GRAPHQL_URL, orionHandler, { timing: MOCKED_SERVER_LOAD_DELAY })
     // this.passthrough(ORION_GRAPHQL_URL)
+
+    // allow Hotjar analytics requests
+    this.passthrough((request) => {
+      return request.url.includes('hotjar')
+    })
   },
 
   seeds(server) {

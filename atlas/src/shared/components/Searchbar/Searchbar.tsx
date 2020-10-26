@@ -50,6 +50,7 @@ const Searchbar: React.FC<SearchbarProps> = ({
         onFocusCapture={onFocus}
         onBlur={onBlur}
         onSubmit={onSubmit}
+        data-hj-allow
         {...htmlProps}
       />
       {showCancelButton && <CancelButton onClick={handleCancel} variant="tertiary" icon="times" size="smaller" />}
