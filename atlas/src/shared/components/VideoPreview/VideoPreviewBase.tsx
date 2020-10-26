@@ -35,7 +35,7 @@ const VideoPreviewBase: React.FC<VideoPreviewBaseProps> = ({
 }) => {
   const clickable = !!onClick
 
-  const coverPlaceholder = <Placeholder />
+  const coverPlaceholder = <CoverPlaceholder />
   const channelAvatarPlaceholder = <Placeholder rounded />
   const titlePlaceholder = <Placeholder height="18px" width="60%" />
   const channelNamePlaceholder = <SpacedPlaceholder height="12px" width="60%" />
@@ -58,6 +58,13 @@ const VideoPreviewBase: React.FC<VideoPreviewBaseProps> = ({
 
 const SpacedPlaceholder = styled(Placeholder)`
   margin-top: 6px;
+`
+const CoverPlaceholder = styled(Placeholder)`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 `
 
 export default VideoPreviewBase

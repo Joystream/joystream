@@ -1,21 +1,42 @@
 import React from 'react'
 import styled from '@emotion/styled'
 import useResizeObserver from 'use-resize-observer'
+import { useMediaQuery } from 'react-responsive'
 import { spacing } from '../../theme'
 
-const Container = styled.div<GridProps>`
+const toPx = (n: number | string) => (typeof n === 'number' ? `${n}px` : n)
+
+const LARGE_VIEWPORT_BREAKPOINT = toPx(2000)
+
+type ContainerProps = {
+  gap: number | string
+  gridTemplateColumns: string
+}
+
+const Container = styled.div<ContainerProps>`
   display: grid;
-  gap: ${(props) => props.gap};
-  grid-template-columns: repeat(${(props) => `auto-${props.repeat}`}, minmax(min(270px, 100%), 1fr));
+  gap: ${(props) => toPx(props.gap)};
+  grid-template-columns: ${(props) => props.gridTemplateColumns};
 `
 
 type GridProps = {
   gap?: number | string
-  repeat?: 'fit' | 'fill'
   className?: string
+  maxColumns?: number
+  minWidth?: number | string
+  repeat?: 'fit' | 'fill'
   onResize?: (sizes: number[]) => void
 }
-const Grid: React.FC<GridProps> = ({ children, className, gap = spacing.xl, repeat = 'fit', onResize, ...props }) => {
+
+const Grid: React.FC<GridProps> = ({
+  className,
+  gap = spacing.xl,
+  onResize,
+  repeat = 'fit',
+  maxColumns = 6,
+  minWidth = 300,
+  ...props
+}) => {
   const { ref: gridRef } = useResizeObserver<HTMLDivElement>({
     onResize: () => {
       if (onResize && gridRef.current) {
@@ -25,11 +46,14 @@ const Grid: React.FC<GridProps> = ({ children, className, gap = spacing.xl, repe
       }
     },
   })
+  const isLargeViewport = useMediaQuery({ query: `(min-width: ${LARGE_VIEWPORT_BREAKPOINT})` })
+
+  const gridTemplateColumns = isLargeViewport
+    ? `repeat(${maxColumns}, 1fr)`
+    : `repeat(auto-${repeat}, minmax(min(${toPx(minWidth)}, 100%), 1fr))`
 
   return (
-    <Container {...props} repeat={repeat} className={className} ref={gridRef} gap={gap}>
-      {children}
-    </Container>
+    <Container {...props} className={className} ref={gridRef} gap={gap} gridTemplateColumns={gridTemplateColumns} />
   )
 }
 export default Grid

@@ -7,6 +7,7 @@ import VideoPreview from './VideoPreviewWithNavigation'
 
 const StyledVideoPreview = styled(VideoPreview)`
   margin: 0 auto;
+  width: 100%;
 `
 
 type VideoGridProps = {

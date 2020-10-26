@@ -123,5 +123,8 @@
     },
     "clearMocks": true,
     "coverageDirectory": ".coverage"
+  },
+  "devDependencies": {
+    "@types/react-responsive": "^8.0.2"
   }
 }
