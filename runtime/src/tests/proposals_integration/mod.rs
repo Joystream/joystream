@@ -512,7 +512,7 @@ where
             setup_members(15);
             setup_council();
 
-            increase_total_balance_issuance_using_account_id(account_id.clone().into(), 500000);
+            increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
         }
 
         assert_eq!((self.successful_call)(), Ok(()));
