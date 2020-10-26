@@ -787,12 +787,11 @@ decl_module! {
             origin,
             wasm: Vec<u8>,
         ) {
-            let (cloned_origin1, cloned_origin2) = common::origin::double_origin::<T>(origin);
-            ensure_root(cloned_origin1)?;
+            ensure_root(origin.clone())?;
 
             print("Runtime upgrade proposal execution started.");
 
-            <system::Module<T>>::set_code(cloned_origin2, wasm)?;
+            <system::Module<T>>::set_code(origin, wasm)?;
 
             print("Runtime upgrade proposal execution finished.");
         }
