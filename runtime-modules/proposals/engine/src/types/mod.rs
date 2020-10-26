@@ -123,12 +123,6 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {
     /// Identifier of member proposing.
     pub proposer_id: ProposerId,
 
-    /// Proposal description
-    pub title: Vec<u8>,
-
-    /// Proposal body
-    pub description: Vec<u8>,
-
     /// It contains the block number when it was first created or the beginning of a new council
     /// where the proposal was automatically activated due to constitutionality.
     pub activated_at: BlockNumber,

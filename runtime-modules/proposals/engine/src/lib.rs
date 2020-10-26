@@ -487,8 +487,6 @@ impl<T: Trait> Module<T> {
         let new_proposal = Proposal {
             activated_at: Self::current_block(),
             parameters: creation_params.proposal_parameters,
-            title: creation_params.title,
-            description: creation_params.description,
             proposer_id: creation_params.proposer_id,
             status: ProposalStatus::Active,
             voting_results: VotingResults::default(),

@@ -852,8 +852,6 @@ fn proposal_execution_postponed_because_of_grace_period() {
                 proposer_id: 1,
                 activated_at: 0,
                 status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
-                title: b"title".to_vec(),
-                description: b"description".to_vec(),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
@@ -900,8 +898,6 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
                 proposer_id: 1,
                 activated_at: 0,
                 status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
-                title: b"title".to_vec(),
-                description: b"description".to_vec(),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
@@ -968,8 +964,6 @@ fn proposal_execution_succeeds_after_the_grace_period() {
                 ApprovedProposalStatus::PendingExecution,
                 starting_block,
             ),
-            title: b"title".to_vec(),
-            description: b"description".to_vec(),
             voting_results: VotingResults {
                 abstentions: 0,
                 approvals: 4,
@@ -1045,8 +1039,6 @@ fn create_dummy_proposal_succeeds_with_stake() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 activated_at: 0,
-                title: b"title".to_vec(),
-                description: b"description".to_vec(),
                 voting_results: VotingResults::default(),
                 exact_execution_block: None,
                 current_constitutionality_level: 0,
@@ -1145,8 +1137,6 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
             proposer_id: 1,
             activated_at: starting_block,
             status: ProposalStatus::Active,
-            title: b"title".to_vec(),
-            description: b"description".to_vec(),
             voting_results: VotingResults::default(),
             exact_execution_block: None,
             current_constitutionality_level: 0,
@@ -1220,8 +1210,6 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             proposer_id: 1,
             activated_at: starting_block,
             status: ProposalStatus::Active,
-            title: b"title".to_vec(),
-            description: b"description".to_vec(),
             voting_results: VotingResults::default(),
             exact_execution_block: None,
             current_constitutionality_level: 0,
@@ -1551,8 +1539,6 @@ fn proposal_execution_with_exact_execution_works() {
                 proposer_id: 1,
                 activated_at: 0,
                 status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
-                title: b"title".to_vec(),
-                description: b"description".to_vec(),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
@@ -1625,8 +1611,6 @@ fn proposal_with_pending_constitutionality_succeeds() {
                     ApprovedProposalStatus::PendingConstitutionality,
                     starting_block
                 ),
-                title: b"title".to_vec(),
-                description: b"description".to_vec(),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
@@ -1692,8 +1676,6 @@ fn proposal_with_pending_constitutionality_reactivation_succeeds() {
                     ApprovedProposalStatus::PendingConstitutionality,
                     starting_block
                 ),
-                title: b"title".to_vec(),
-                description: b"description".to_vec(),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
@@ -1790,8 +1772,6 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
                     ApprovedProposalStatus::PendingConstitutionality,
                     starting_block
                 ),
-                title: b"title".to_vec(),
-                description: b"description".to_vec(),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,

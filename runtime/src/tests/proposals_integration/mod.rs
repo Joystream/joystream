@@ -326,8 +326,6 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             proposer_id: member_id,
             activated_at: 0,
             status: ProposalStatus::Active,
-            title: b"title".to_vec(),
-            description: b"description".to_vec(),
             voting_results: VotingResults::default(),
             exact_execution_block: None,
             current_constitutionality_level: 0,
