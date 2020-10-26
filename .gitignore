@@ -32,3 +32,11 @@ yarn*
 
 # Istanbul report output
 **.nyc_output/
+
+# Warthog codegen
+**/generated/
+# Auto generated api preview
+apipreview.graphql
+
+# eslint cache
+**/.eslintcache

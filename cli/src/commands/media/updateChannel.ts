@@ -5,12 +5,18 @@ import { InputParser } from 'cd-schemas'
 import { IOFlags, getInputJson, saveOutputJson } from '../../helpers/InputOutput'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import { JsonSchemaCustomPrompts, JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
-import { Entity } from '@joystream/types/content-directory'
+import { Actor, Entity } from '@joystream/types/content-directory'
+import { flags } from '@oclif/command'
+import { createType } from '@joystream/types'
 
 export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
   static description = 'Update one of the owned channels on Joystream (requires a membership).'
   static flags = {
     ...IOFlags,
+    asCurator: flags.boolean({
+      description: 'Provide this flag in order to use Curator context for the update',
+      required: false,
+    }),
   }
 
   static args = [
@@ -22,13 +28,23 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
   ]
 
   async run() {
+    const {
+      args: { id },
+      flags: { asCurator },
+    } = this.parse(UpdateChannelCommand)
+
     const account = await this.getRequiredSelectedAccount()
-    const memberId = await this.getRequiredMemberId()
-    const actor = { Member: memberId }
+
+    let memberId: number | undefined, actor: Actor
+
+    if (asCurator) {
+      actor = await this.getCuratorContext(['Channel'])
+    } else {
+      memberId = await this.getRequiredMemberId()
+      actor = createType('Actor', { Member: memberId })
+    }
 
     await this.requestAccountDecoding(account)
-
-    const { id } = this.parse(UpdateChannelCommand).args
 
     let channelEntity: Entity, channelId: number
     if (id) {
@@ -49,14 +65,18 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
 
     let inputJson = await getInputJson<ChannelEntity>(input, channelJsonSchema)
     if (!inputJson) {
-      const customPrompts: JsonSchemaCustomPrompts = [
+      const customPrompts: JsonSchemaCustomPrompts<ChannelEntity> = [
         [
           'language',
           () =>
             this.promptForEntityId('Choose channel language', 'Language', 'name', undefined, currentValues.language),
         ],
-        ['curationStatus', async () => undefined],
       ]
+
+      if (!asCurator) {
+        // Skip isCensored is it's not updated by the curator
+        customPrompts.push(['isCensored', async () => undefined])
+      }
 
       const prompter = new JsonSchemaPrompter<ChannelEntity>(channelJsonSchema, currentValues, customPrompts)
 

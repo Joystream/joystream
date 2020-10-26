@@ -1092,8 +1092,8 @@ decl_module! {
 
             let entity_values = entity.get_values();
 
-            let unique_property_value_hashes = match StoredValuesForExistingProperties::<T>::from(&class_properties, &entity_values) {
-                Ok(values_for_existing_properties) => values_for_existing_properties.compute_unique_hashes(),
+            let values_for_existing_properties = match StoredValuesForExistingProperties::<T>::from(&class_properties, &entity_values) {
+                Ok(values_for_existing_properties) => values_for_existing_properties,
                 Err(e) => {
                     debug_assert!(false, "Should not fail! {:?}", e);
                     return Err(e.into())
@@ -1103,6 +1103,14 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+
+            let unique_property_value_hashes = values_for_existing_properties.compute_unique_hashes();
+
+            // Calculate entities reference counter side effects for current operation
+            let entities_inbound_rcs_delta = Self::calculate_entities_inbound_rcs_delta(entity_id, values_for_existing_properties, DeltaMode::Decrement);
+
+            // Update InboundReferenceCounter, based on previously calculated entities_inbound_rcs_delta, for each Entity involved
+            Self::update_entities_rcs(&entities_inbound_rcs_delta);
 
             // Remove property value entries, that should be unique on Class level
             Self::remove_unique_property_value_hashes(class_id, unique_property_value_hashes);
