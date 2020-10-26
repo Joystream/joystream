@@ -1,5 +1,0 @@
-export default class {{input.name}} {
-  {{#input.fields}}
-    {{name}}: {{type}}
-  {{/input.fields}}
-}

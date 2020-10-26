@@ -1,4 +1,0 @@
-type Cat {
-  # should fail
-  memberId: Int! @fulltext(query:"meow") 
-}
