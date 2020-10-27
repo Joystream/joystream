@@ -129,6 +129,11 @@ pub trait Trait:
 
     /// Encodes the proposal usint its details
     type ProposalEncoder: ProposalEncoder<Self>;
+
+    /// 'Set validator count' proposal parameters
+    type SetValidatorCountProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
@@ -218,14 +223,6 @@ decl_storage! {
         /// Map proposal id to proposal details
         pub ProposalDetailsByProposalId get(fn proposal_details_by_proposal_id):
             map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
-
-        /// Voting period for the 'set validator count' proposal
-        pub SetValidatorCountProposalVotingPeriod get(fn set_validator_count_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'set validator count' proposal
-        pub SetValidatorCountProposalGracePeriod get(fn set_validator_count_proposal_grace_period)
-            config(): T::BlockNumber;
 
         /// Voting period for the 'runtime upgrade' proposal
         pub RuntimeUpgradeProposalVotingPeriod get(fn runtime_upgrade_proposal_voting_period)
@@ -464,7 +461,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::set_validator_count_proposal::<T>(),
+                proposal_parameters: T::SetValidatorCountProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
@@ -840,89 +837,6 @@ impl<T: Trait> Module<T> {
         <ProposalDetailsByProposalId<T>>::insert(proposal_id, params.proposal_details);
 
         Ok(())
-    }
-
-    /// Sets config values for the proposals.
-    /// Should be called on the migration to the new runtime version.
-    pub fn set_config_values(p: ProposalsConfigParameters) {
-        <SetValidatorCountProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.set_validator_count_proposal_voting_period,
-        ));
-        <SetValidatorCountProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.set_validator_count_proposal_grace_period,
-        ));
-        <RuntimeUpgradeProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.runtime_upgrade_proposal_voting_period,
-        ));
-        <RuntimeUpgradeProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.runtime_upgrade_proposal_grace_period,
-        ));
-        <TextProposalVotingPeriod<T>>::put(T::BlockNumber::from(p.text_proposal_voting_period));
-        <TextProposalGracePeriod<T>>::put(T::BlockNumber::from(p.text_proposal_grace_period));
-        <SpendingProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.spending_proposal_voting_period,
-        ));
-        <SpendingProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.spending_proposal_grace_period,
-        ));
-        <AddWorkingGroupOpeningProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.add_working_group_opening_proposal_voting_period,
-        ));
-        <AddWorkingGroupOpeningProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.add_working_group_opening_proposal_grace_period,
-        ));
-        <BeginReviewWorkingGroupLeaderApplicationsProposalVotingPeriod<T>>::put(
-            T::BlockNumber::from(
-                p.begin_review_working_group_leader_applications_proposal_voting_period,
-            ),
-        );
-        <BeginReviewWorkingGroupLeaderApplicationsProposalGracePeriod<T>>::put(
-            T::BlockNumber::from(
-                p.begin_review_working_group_leader_applications_proposal_grace_period,
-            ),
-        );
-        <FillWorkingGroupLeaderOpeningProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.fill_working_group_leader_opening_proposal_voting_period,
-        ));
-        <FillWorkingGroupLeaderOpeningProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.fill_working_group_leader_opening_proposal_grace_period,
-        ));
-        <SetWorkingGroupMintCapacityProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.set_working_group_mint_capacity_proposal_voting_period,
-        ));
-        <SetWorkingGroupMintCapacityProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.set_working_group_mint_capacity_proposal_grace_period,
-        ));
-        <DecreaseWorkingGroupLeaderStakeProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.decrease_working_group_leader_stake_proposal_voting_period,
-        ));
-        <DecreaseWorkingGroupLeaderStakeProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.decrease_working_group_leader_stake_proposal_grace_period,
-        ));
-        <SlashWorkingGroupLeaderStakeProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.slash_working_group_leader_stake_proposal_voting_period,
-        ));
-        <SlashWorkingGroupLeaderStakeProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.slash_working_group_leader_stake_proposal_grace_period,
-        ));
-        <SetWorkingGroupLeaderRewardProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.set_working_group_leader_reward_proposal_voting_period,
-        ));
-        <SetWorkingGroupLeaderRewardProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.set_working_group_leader_reward_proposal_grace_period,
-        ));
-        <TerminateWorkingGroupLeaderRoleProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.terminate_working_group_leader_role_proposal_voting_period,
-        ));
-        <TerminateWorkingGroupLeaderRoleProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.terminate_working_group_leader_role_proposal_grace_period,
-        ));
-        <AmendConstitutionProposalVotingPeriod<T>>::put(T::BlockNumber::from(
-            p.amend_constitution_proposal_voting_period,
-        ));
-        <AmendConstitutionProposalGracePeriod<T>>::put(T::BlockNumber::from(
-            p.amend_constitution_proposal_grace_period,
-        ));
     }
 }
 

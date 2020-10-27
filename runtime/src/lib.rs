@@ -52,6 +52,10 @@ use storage::data_object_storage_registry;
 
 // Node dependencies
 pub use common;
+pub use content_directory;
+pub use content_directory::{
+    HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
+};
 pub use content_working_group as content_wg;
 pub use forum;
 pub use governance::election_params::ElectionParameters;
@@ -60,15 +64,11 @@ pub use membership;
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
 pub use proposals_codex::ProposalsConfigParameters;
+pub use proposals_engine::ProposalParameters;
 pub use storage::{data_directory, data_object_type_registry};
 pub use versioned_store;
 pub use versioned_store_permissions;
 pub use working_group;
-
-pub use content_directory;
-pub use content_directory::{
-    HashedTextMaxLength, InputValidationLengthConstraint, MaxNumber, TextMaxLength, VecMaxLength,
-};
 
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
@@ -598,6 +598,21 @@ impl proposals_discussion::Trait for Runtime {
 parameter_types! {
     pub const TextProposalMaxLength: u32 = 5_000;
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
+    pub SetValidatorCountProposalParameters: ProposalParameters<BlockNumber, Balance> = set_validator_count_proposal();
+}
+
+// Proposal parameters for the 'Set validator count' proposal
+pub(crate) fn set_validator_count_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 43200u32,
+        grace_period: 0u32,
+        approval_quorum_percentage: 66,
+        approval_threshold_percentage: 80,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(100_000_u128),
+        constitutionality: 1,
+    }
 }
 
 impl proposals_codex::Trait for Runtime {
@@ -605,6 +620,7 @@ impl proposals_codex::Trait for Runtime {
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type ProposalEncoder = ExtrinsicProposalEncoder;
+    type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
 }
 
 impl constitution::Trait for Runtime {

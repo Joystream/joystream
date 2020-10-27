@@ -12,7 +12,7 @@ use sp_runtime::{
 use sp_staking::SessionIndex;
 pub use system;
 
-use crate::{ProposalDetailsOf, ProposalEncoder};
+use crate::{ProposalDetailsOf, ProposalEncoder, ProposalParameters};
 use proposals_engine::VotersParameters;
 use sp_runtime::testing::TestXt;
 
@@ -254,11 +254,30 @@ impl staking::SessionInterface<u64> for Test {
     }
 }
 
+parameter_types! {
+    pub SetValidatorCountProposalParameters: ProposalParameters<u64, u64> = set_validator_count_proposal();
+}
+
+// Proposal parameters for the 'Set validator count' proposal
+pub(crate) fn set_validator_count_proposal() -> ProposalParameters<u64, u64> {
+    ProposalParameters {
+        voting_period: 43200,
+        grace_period: 0,
+        approval_quorum_percentage: 66,
+        approval_threshold_percentage: 80,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(100_000),
+        constitutionality: 1,
+    }
+}
+
 impl crate::Trait for Test {
     type TextProposalMaxLength = TextProposalMaxLength;
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
+    type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
 }
 
 impl ProposalEncoder<Test> for () {
