@@ -1,10 +1,9 @@
 import styled from '@emotion/styled'
 
 import { Icon, Searchbar } from '@/shared/components'
-import { colors, sizes } from '@/shared/theme'
+import { breakpoints, colors, sizes } from '@/shared/theme'
 import { ReactComponent as UnstyledLogo } from '@/assets/logo.svg'
-
-const BREAKPOINT = '600px'
+import { Link } from '@reach/router'
 
 type NavbarStyleProps = {
   hasFocus: boolean
@@ -22,7 +21,7 @@ export const NavigationContainer = styled.div`
 
   > * + * {
     margin-left: ${sizes.b3}px;
-    @media screen and (min-width: ${BREAKPOINT}) {
+    @media screen and (min-width: ${breakpoints.medium}) {
       margin-left: ${sizes.b6}px;
     }
   }
@@ -34,18 +33,44 @@ export const StyledSearchbar = styled(Searchbar)`
 `
 export const SearchbarContainer = styled.div`
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
 
-  justify-self: center;
   width: 100%;
   max-width: 1156px;
 `
 export const StyledIcon = styled(Icon)`
   color: ${colors.gray[300]};
+`
+export const StyledLink = styled(Link)`
+  display: inline-flex;
+  align-items: center;
+  color: ${colors.gray[300]};
+  font-weight: 500;
+
+  text-decoration: none;
+
+  span {
+    display: none;
+    margin-left: ${sizes.b2}px;
+  }
+  @media screen and (min-width: ${breakpoints.medium}) {
+    span {
+      display: inline-block;
+    }
+  }
+
+  &[data-active='true'] {
+    ${StyledIcon} {
+      color: ${colors.gray[100]};
+    }
+    color: ${colors.gray[100]};
+  }
   &:hover {
+    ${StyledIcon} {
+      color: ${colors.white};
+    }
     color: ${colors.white};
-    cursor: pointer;
   }
 `
 
@@ -53,10 +78,10 @@ export const Header = styled.header<NavbarStyleProps>`
   display: grid;
   width: 100%;
 
-  grid-template-columns: ${({ hasFocus }) => (hasFocus ? '1fr' : '1fr 2fr')};
+  grid-template-columns: 1fr 2fr;
+
   padding: ${(props) => (props.hasFocus ? `${sizes.b2}px` : `${sizes.b2}px ${sizes.b4}px`)};
-  @media screen and (min-width: ${BREAKPOINT}) {
-    grid-template-columns: ${({ hasFocus }) => (hasFocus ? '1fr' : '1fr 2fr 1fr')};
+  @media screen and (min-width: ${breakpoints.medium}) {
     padding: ${(props) => (props.hasFocus ? `${sizes.b2}px` : `${sizes.b3}px ${sizes.b8}px`)};
   }
   border-bottom: 1px solid ${colors.gray[800]};
