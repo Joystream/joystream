@@ -594,15 +594,19 @@ impl<T: Trait> Module<T> {
     /// Reactivate proposals with pending constitutionality.
     /// Possible application includes new council elections.
     pub fn reactivate_pending_constitutionality_proposals() {
-        // Calculate new proposals and update the state.
+        // Filter pending constitutionality proposals, calculate new proposals and update the state.
         <Proposals<T>>::iter()
-            .map(|(proposal_id, mut proposal)| {
-                proposal.activated_at = Self::current_block();
-                proposal.status = ProposalStatus::Active;
-                // Resets votes for a proposal.
-                proposal.reset_proposal_votes();
+            .filter_map(|(proposal_id, mut proposal)| {
+                if proposal.status.is_pending_constitutionality_proposal() {
+                    proposal.activated_at = Self::current_block();
+                    proposal.status = ProposalStatus::Active;
+                    // Resets votes for a proposal.
+                    proposal.reset_proposal_votes();
 
-                (proposal_id, proposal)
+                    return Some((proposal_id, proposal));
+                }
+
+                None
             })
             .for_each(|(proposal_id, proposal)| {
                 <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);

@@ -65,6 +65,17 @@ impl<BlockNumber: Clone> ProposalStatus<BlockNumber> {
 
         false
     }
+
+    /// Determines whether a proposal in pending contitutionality status.
+    pub fn is_pending_constitutionality_proposal(&self) -> bool {
+        if let ProposalStatus::Finalized(data) = self.clone() {
+            if let ProposalDecisionStatus::Approved(approved_status) = data.proposal_status {
+                return approved_status == ApprovedProposalStatus::PendingConstitutionality;
+            }
+        }
+
+        false
+    }
 }
 
 /// Final proposal status and potential error.
