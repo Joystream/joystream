@@ -313,10 +313,6 @@ decl_storage! {
         pub ActiveProposalIds get(fn active_proposal_ids): map hasher(blake2_128_concat)
             T::ProposalId=> ();
 
-        /// Ids of proposals that were approved and needed more councils approvals to be executed.
-        pub PendingConstitutionalityProposalIds get(fn pending_consitutionality_proposal_ids): map hasher(blake2_128_concat)
-            T::ProposalId=> ();
-
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
         pub VoteExistsByProposalByVoter get(fn vote_by_proposal_by_voter):
             double_map hasher(blake2_128_concat)  T::ProposalId, hasher(blake2_128_concat) MemberId<T> => VoteKind;
@@ -598,19 +594,21 @@ impl<T: Trait> Module<T> {
     /// Reactivate proposals with pending constitutionality.
     /// Possible application includes new council elections.
     pub fn reactivate_pending_constitutionality_proposals() {
-        <PendingConstitutionalityProposalIds<T>>::iter().for_each(|(proposal_id, _)| {
-            <Proposals<T>>::mutate(proposal_id, |proposal| {
+        // Calculate new proposals and update the state.
+        <Proposals<T>>::iter()
+            .map(|(proposal_id, mut proposal)| {
                 proposal.activated_at = Self::current_block();
                 proposal.status = ProposalStatus::Active;
                 // Resets votes for a proposal.
                 proposal.reset_proposal_votes();
+
+                (proposal_id, proposal)
+            })
+            .for_each(|(proposal_id, proposal)| {
                 <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+                <Proposals<T>>::insert(proposal_id, proposal);
+                <ActiveProposalIds<T>>::insert(proposal_id, ());
             });
-
-            <ActiveProposalIds<T>>::insert(proposal_id, ());
-        });
-
-        <PendingConstitutionalityProposalIds<T>>::remove_all();
     }
 }
 
@@ -698,12 +696,8 @@ impl<T: Trait> Module<T> {
         let mut proposal = Self::proposals(proposal_id);
 
         if proposal.status.is_active_or_pending_execution() {
-            if let ProposalDecisionStatus::Approved(approved_status) = decision_status.clone() {
-                proposal.current_constitutionality_level += 1;
-
-                if approved_status == ApprovedProposalStatus::PendingConstitutionality {
-                    <PendingConstitutionalityProposalIds<T>>::insert(proposal_id, ());
-                }
+            if matches!(decision_status, ProposalDecisionStatus::Approved(..)) {
+                proposal.increase_constitutionality_level();
             }
 
             // deal with stakes if necessary

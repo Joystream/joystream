@@ -1673,10 +1673,6 @@ fn proposal_with_pending_constitutionality_reactivation_succeeds() {
         assert_eq!(<ActiveProposalCount>::get(), 1);
 
         assert!(<ActiveProposalIds<Test>>::contains_key(proposal_id));
-
-        assert!(!<PendingConstitutionalityProposalIds<Test>>::contains_key(
-            proposal_id
-        ));
     });
 }
 
@@ -1783,10 +1779,6 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
         assert_eq!(<ActiveProposalCount>::get(), 0);
 
         assert!(!<ActiveProposalIds<Test>>::contains_key(proposal_id));
-
-        assert!(!<PendingConstitutionalityProposalIds<Test>>::contains_key(
-            proposal_id
-        ));
 
         assert_eq!(Balances::usable_balance(&account_id), total_balance);
 

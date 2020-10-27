@@ -150,6 +150,11 @@ where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
     AccountId: Clone,
 {
+    /// Increases proposal constitutionality level.
+    pub fn increase_constitutionality_level(&mut self) {
+        self.current_constitutionality_level += 1;
+    }
+
     /// Returns whether voting period expired by now
     pub fn is_voting_period_expired(&self, now: BlockNumber) -> bool {
         now >= self.activated_at + self.parameters.voting_period
