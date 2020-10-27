@@ -29,7 +29,7 @@ const ChannelView: React.FC<RouteComponentProps> = () => {
       </Header>
       {videos.length > 0 && (
         <VideoSection>
-          <VideoGrid videos={videos} />
+          <VideoGrid videos={videos} showChannel={false} />
         </VideoSection>
       )}
     </div>
