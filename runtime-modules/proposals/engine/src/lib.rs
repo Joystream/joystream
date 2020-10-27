@@ -24,8 +24,8 @@
 //! - The proposal can be [vetoed](./struct.Module.html#method.veto_proposal)
 //! anytime before the proposal execution by the _sudo_.
 //! - If the _council_ got reelected during the proposal _voting period_ the external handler calls
-//! [reset_votes_for_active_proposals](./trait.Module.html#method.reset_votes_for_active_proposals) function and
-//! all voting results get cleared and it also calls [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
+//! [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) function and
+//! all active proposals got rejected and it also calls [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
 //! and proposals with pending constitutionality become active again.
 //!
 //! ### Important abstract types to be implemented
@@ -48,8 +48,8 @@
 //! ### Public API
 //! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal using provided parameters
 //! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid) - ensures that we can create the proposal
-//! - [reset_votes_for_active_proposals](./trait.Module.html#method.reset_votes_for_active_proposals) - resets voting results for active proposals
-//! - [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reset_votes_for_active_proposals) - reactivate proposals with pending constitutionality.
+//! - [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) - rejects all active proposals.
+//! - [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals) - reactivate proposals with pending constitutionality.
 //!
 //! ## Usage
 //!
@@ -575,23 +575,20 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Resets voting results for active proposals.
+    /// Rejects all active proposals.
     /// Possible application includes new council elections.
-    pub fn reset_votes_for_active_proposals() {
-        // Filter active proposals, calculate new proposals and update the state.
+    pub fn reject_active_proposals() {
+        // Filter active proposals and reject them.
         <Proposals<T>>::iter()
-            .filter_map(|(proposal_id, mut proposal)| {
+            .filter_map(|(proposal_id, proposal)| {
                 if proposal.status.is_active_proposal() {
-                    proposal.reset_proposal_votes();
-
-                    return Some((proposal_id, proposal));
+                    return Some(proposal_id);
                 }
 
                 None
             })
-            .for_each(|(proposal_id, proposal)| {
-                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
-                <Proposals<T>>::insert(proposal_id, proposal);
+            .for_each(|proposal_id| {
+                Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Rejected)
             });
     }
 

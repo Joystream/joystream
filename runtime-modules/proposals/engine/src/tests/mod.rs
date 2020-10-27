@@ -1307,8 +1307,12 @@ fn create_proposal_fails_with_invalid_threshold_parameters() {
 }
 
 #[test]
-fn proposal_reset_succeeds() {
+fn active_proposal_rejection_succeeds() {
     initial_test_ext().execute_with(|| {
+        // to enable events
+        let starting_block = 1;
+        run_to_block_and_finalize(starting_block);
+
         let dummy_proposal = DummyProposalFixture::default();
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
@@ -1321,7 +1325,8 @@ fn proposal_reset_succeeds() {
             VoteKind::Abstain
         );
 
-        run_to_block_and_finalize(1);
+        let current_block = 2;
+        run_to_block_and_finalize(current_block);
 
         let proposal = <Proposals<Test>>::get(proposal_id);
 
@@ -1335,25 +1340,14 @@ fn proposal_reset_succeeds() {
             }
         );
 
-        ProposalsEngine::reset_votes_for_active_proposals();
+        ProposalsEngine::reject_active_proposals();
 
-        let updated_proposal = <Proposals<Test>>::get(proposal_id);
+        assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
 
-        assert_eq!(
-            updated_proposal.voting_results,
-            VotingResults {
-                abstentions: 0,
-                approvals: 0,
-                rejections: 0,
-                slashes: 0,
-            }
-        );
-
-        // whole double map prefix was removed (should return default value)
-        assert_eq!(
-            <VoteExistsByProposalByVoter<Test>>::get(&proposal_id, &2),
-            VoteKind::default()
-        );
+        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+            proposal_id,
+            ProposalStatus::finalized(ProposalDecisionStatus::Rejected, current_block),
+        ));
     });
 }
 
