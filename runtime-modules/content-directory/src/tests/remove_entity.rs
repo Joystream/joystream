@@ -27,7 +27,7 @@ fn remove_entity_success() {
         // Ensure number of entities_created under respective entity creation voucher decremented succesfully.
         let entity_voucher = EntityCreationVoucher::new(IndividualEntitiesCreationLimit::get());
 
-        let entity_controller = EntityController::from_actor(&actor);
+        let entity_controller = EntityController::<MemberId>::from_actor::<Runtime>(&actor);
 
         assert_eq!(
             entity_creation_vouchers(FIRST_CLASS_ID, &entity_controller),

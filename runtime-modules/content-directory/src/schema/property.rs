@@ -16,8 +16,8 @@ pub type HashedTextMaxLength = Option<u16>;
 type SameController = bool;
 
 /// Locking policy, representing `Property` locking status for both controller and maintainer
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Default, Decode, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Default, Decode, Clone, Copy, PartialEq, Eq, Debug)]
 pub struct PropertyLockingPolicy {
     /// If property is locked from maintainer
     pub is_locked_from_maintainer: bool,
@@ -26,9 +26,9 @@ pub struct PropertyLockingPolicy {
 }
 
 /// Enum, used for `PropertyType` representation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
-pub enum Type<T: Trait> {
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Type<ClassId: Default + BaseArithmetic + Clone + Copy> {
     Bool,
     Uint16,
     Uint32,
@@ -40,18 +40,18 @@ pub enum Type<T: Trait> {
     Text(TextMaxLength),
     Hash(HashedTextMaxLength),
     /// Can reference only specific class id entities
-    Reference(T::ClassId, SameController),
+    Reference(ClassId, SameController),
 }
 
-impl<T: Trait> Default for Type<T> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> Default for Type<ClassId> {
     fn default() -> Self {
         Self::Bool
     }
 }
 
-impl<T: Trait> Type<T> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> Type<ClassId> {
     /// Ensure `Type` specific `TextMaxLengthConstraint` or `HashedTextMaxLengthConstraint` satisfied
-    pub fn ensure_property_type_size_is_valid(&self) -> Result<(), Error<T>> {
+    pub fn ensure_property_type_size_is_valid<T: Trait>(&self) -> Result<(), Error<T>> {
         if let Type::Text(text_max_len) = self {
             ensure!(
                 *text_max_len <= T::TextMaxLengthConstraint::get(),
@@ -71,26 +71,17 @@ impl<T: Trait> Type<T> {
 }
 
 /// Vector property type representation
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
-pub struct VecPropertyType<T: Trait> {
-    vec_type: Type<T>,
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, Default, Copy, PartialEq, Eq, Debug)]
+pub struct VecPropertyType<ClassId: Default + BaseArithmetic + Clone + Copy> {
+    vec_type: Type<ClassId>,
     /// Max length of vector, corresponding to a given type
     max_length: VecMaxLength,
 }
 
-impl<T: Trait> Default for VecPropertyType<T> {
-    fn default() -> Self {
-        Self {
-            vec_type: Type::default(),
-            max_length: 0,
-        }
-    }
-}
-
-impl<T: Trait> VecPropertyType<T> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> VecPropertyType<ClassId> {
     /// Create new `VecPropertyType` from provided `type` and `max_length`
-    pub fn new(vec_type: Type<T>, max_length: VecMaxLength) -> Self {
+    pub fn new(vec_type: Type<ClassId>, max_length: VecMaxLength) -> Self {
         Self {
             vec_type,
             max_length,
@@ -98,7 +89,7 @@ impl<T: Trait> VecPropertyType<T> {
     }
 
     /// Ensure `Type` specific `TextMaxLengthConstraint` & `VecMaxLengthConstraint` satisfied
-    fn ensure_property_type_size_is_valid(&self) -> Result<(), Error<T>> {
+    fn ensure_property_type_size_is_valid<T: Trait>(&self) -> Result<(), Error<T>> {
         // Ensure Type specific TextMaxLengthConstraint or HashedTextMaxLengthConstraint satisfied
         self.vec_type.ensure_property_type_size_is_valid()?;
 
@@ -109,7 +100,7 @@ impl<T: Trait> VecPropertyType<T> {
         Ok(())
     }
 
-    fn get_vec_type(&self) -> &Type<T> {
+    fn get_vec_type(&self) -> &Type<ClassId> {
         &self.vec_type
     }
 
@@ -119,21 +110,21 @@ impl<T: Trait> VecPropertyType<T> {
 }
 
 /// Enum, representing either `Type` or `VecPropertyType`
-#[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
-#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq)]
-pub enum PropertyType<T: Trait> {
-    Single(Type<T>),
-    Vector(VecPropertyType<T>),
+#[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
+#[derive(Encode, Decode, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum PropertyType<ClassId: Default + BaseArithmetic + Clone + Copy> {
+    Single(Type<ClassId>),
+    Vector(VecPropertyType<ClassId>),
 }
 
-impl<T: Trait> Default for PropertyType<T> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> Default for PropertyType<ClassId> {
     fn default() -> Self {
         Self::Single(Type::default())
     }
 }
 
-impl<T: Trait> PropertyType<T> {
-    fn as_single_value_type(&self) -> Option<&Type<T>> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> PropertyType<ClassId> {
+    fn as_single_value_type(&self) -> Option<&Type<ClassId>> {
         if let PropertyType::Single(single_value_property_type) = self {
             Some(single_value_property_type)
         } else {
@@ -141,7 +132,7 @@ impl<T: Trait> PropertyType<T> {
         }
     }
 
-    pub fn as_vec_type(&self) -> Option<&VecPropertyType<T>> {
+    pub fn as_vec_type(&self) -> Option<&VecPropertyType<ClassId>> {
         if let PropertyType::Vector(vec_value_property_type) = self {
             Some(vec_value_property_type)
         } else {
@@ -149,7 +140,8 @@ impl<T: Trait> PropertyType<T> {
         }
     }
 
-    fn get_inner_type(&self) -> &Type<T> {
+    /// Get inner type of `PropertyType` enum wrapper
+    pub fn get_inner_type(&self) -> &Type<ClassId> {
         match self {
             PropertyType::Single(single_property_type) => single_property_type,
             PropertyType::Vector(vec_property_type) => vec_property_type.get_vec_type(),
@@ -169,10 +161,10 @@ impl<T: Trait> PropertyType<T> {
 
 /// `Property` representation, related to a given `Class`
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
-#[derive(Encode, Decode, Clone, PartialEq, Eq)]
-pub struct Property<T: Trait> {
+#[derive(Encode, Decode, Clone, Debug, PartialEq, Eq)]
+pub struct Property<ClassId: Default + BaseArithmetic + Clone + Copy> {
     /// The type of `Property`
-    pub property_type: PropertyType<T>,
+    pub property_type: PropertyType<ClassId>,
     /// If property value can be skipped, when adding entity schema support
     pub required: bool,
     /// Used to enforce uniquness of a property across all entities that have this property
@@ -185,10 +177,10 @@ pub struct Property<T: Trait> {
     pub locking_policy: PropertyLockingPolicy,
 }
 
-impl<T: Trait> Default for Property<T> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> Default for Property<ClassId> {
     fn default() -> Self {
         Self {
-            property_type: PropertyType::<T>::default(),
+            property_type: PropertyType::<ClassId>::default(),
             required: false,
             unique: false,
             name: vec![],
@@ -198,13 +190,7 @@ impl<T: Trait> Default for Property<T> {
     }
 }
 
-impl<T: Trait> core::fmt::Debug for Property<T> {
-    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(formatter, "Property {:?}", self)
-    }
-}
-
-impl<T: Trait> Property<T> {
+impl<ClassId: Default + BaseArithmetic + Clone + Copy> Property<ClassId> {
     /// Check if property is locked from actor with provided `EntityAccessLevel`
     pub fn is_locked_from(&self, access_level: EntityAccessLevel) -> bool {
         let is_locked_from_controller = self.locking_policy.is_locked_from_controller;
@@ -219,7 +205,10 @@ impl<T: Trait> Property<T> {
     }
 
     /// Ensure `Property` is unlocked from `Actor` with given `EntityAccessLevel`
-    pub fn ensure_unlocked_from(&self, access_level: EntityAccessLevel) -> Result<(), Error<T>> {
+    pub fn ensure_unlocked_from<T: Trait>(
+        &self,
+        access_level: EntityAccessLevel,
+    ) -> Result<(), Error<T>> {
         ensure!(
             !self.is_locked_from(access_level),
             Error::<T>::ClassPropertyTypeLockedForGivenActor
@@ -229,27 +218,31 @@ impl<T: Trait> Property<T> {
 
     /// Validate new `InputPropertyValue` against the type of this `Property`
     /// and check any additional constraints
-    pub fn ensure_property_value_to_update_is_valid(
-        &self,
+    pub fn ensure_property_value_to_update_is_valid<T: Trait>(
+        property: &Property<T::ClassId>,
         value: &InputPropertyValue<T>,
-        current_entity_controller: &EntityController<T>,
+        current_entity_controller: &EntityController<T::MemberId>,
     ) -> Result<(), Error<T>> {
         // Ensure provided InputPropertyValue matches its Type
-        self.ensure_property_value_matches_its_type(value)?;
+        property.ensure_property_value_matches_its_type(value)?;
 
         // Perform all required checks to ensure provided InputPropertyValue is valid, when current PropertyType is Reference
-        self.ensure_property_value_is_valid_reference(value, current_entity_controller)?;
+        Self::ensure_property_value_is_valid_reference(
+            &property,
+            value,
+            current_entity_controller,
+        )?;
 
         // Ensure text property does not exceed its max length
-        self.validate_max_len_if_text_property(value)?;
+        property.validate_max_len_if_text_property(value)?;
 
         // Ensure vector property does not exceed its max length
-        self.validate_max_len_if_vec_property(value)?;
+        property.validate_max_len_if_vec_property(value)?;
         Ok(())
     }
 
     /// Ensure property vector length after value inserted is valid
-    fn validate_property_vector_length_after_value_insert<V>(
+    fn validate_property_vector_length_after_value_insert<T: Trait, V>(
         vec: &[V],
         max_len: VecMaxLength,
     ) -> Result<(), Error<T>> {
@@ -262,17 +255,17 @@ impl<T: Trait> Property<T> {
 
     /// Ensure `SingleInputPropertyValue` type is equal to the `VecInputPropertyValue` type
     /// and check all constraints
-    pub fn ensure_property_value_can_be_inserted_at_property_vector(
-        &self,
+    pub fn ensure_property_value_can_be_inserted_at_property_vector<T: Trait>(
+        property: &Property<T::ClassId>,
         single_value: &InputValue<T>,
-        vec_value: &VecStoredPropertyValue<T>,
+        vec_value: &VecStoredPropertyValue<T::Hash, T::EntityId, T::Nonce>,
         index_in_property_vec: VecMaxLength,
-        current_entity_controller: &EntityController<T>,
+        current_entity_controller: &EntityController<T::MemberId>,
     ) -> Result<(), Error<T>> {
         // Ensure, provided index_in_property_vec is valid index of VecInputValue
         vec_value.ensure_index_in_property_vector_is_valid(index_in_property_vec)?;
 
-        let property_type_vec = self
+        let property_type_vec = property
             .property_type
             .as_vec_type()
             .ok_or(Error::<T>::PropertyValueTypeDoesNotMatchInternalVectorType)?;
@@ -286,29 +279,35 @@ impl<T: Trait> Property<T> {
         ) {
             // Single values
             (InputValue::Bool(_), VecStoredValue::Bool(vec), Type::Bool) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, bool>(
+                    vec,
+                    max_vec_len,
+                )
             }
             (InputValue::Uint16(_), VecStoredValue::Uint16(vec), Type::Uint16) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, u16>(vec, max_vec_len)
             }
             (InputValue::Uint32(_), VecStoredValue::Uint32(vec), Type::Uint32) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, u32>(vec, max_vec_len)
             }
             (InputValue::Uint64(_), VecStoredValue::Uint64(vec), Type::Uint64) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, u64>(vec, max_vec_len)
             }
             (InputValue::Int16(_), VecStoredValue::Int16(vec), Type::Int16) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, i16>(vec, max_vec_len)
             }
             (InputValue::Int32(_), VecStoredValue::Int32(vec), Type::Int32) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, i32>(vec, max_vec_len)
             }
             (InputValue::Int64(_), VecStoredValue::Int64(vec), Type::Int64) => {
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, i64>(vec, max_vec_len)
             }
             (InputValue::Text(text_item), VecStoredValue::Text(vec), Type::Text(text_max_len)) => {
                 Self::validate_max_len_of_text(text_item, *text_max_len)?;
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, Vec<u8>>(
+                    vec,
+                    max_vec_len,
+                )
             }
             (
                 InputValue::TextToHash(text_item),
@@ -318,7 +317,10 @@ impl<T: Trait> Property<T> {
                 if let Some(text_max_len) = text_max_len {
                     Self::validate_max_len_of_text_to_be_hashed(text_item, *text_max_len)?;
                 }
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, T::Hash>(
+                    vec,
+                    max_vec_len,
+                )
             }
             (
                 InputValue::Reference(entity_id),
@@ -328,21 +330,25 @@ impl<T: Trait> Property<T> {
                 // Ensure class_id of Entity under provided entity_id references Entity,
                 // which class_id is equal to class_id, declared in corresponding PropertyType
                 // Retrieve corresponding Entity
-                let entity = Self::ensure_referenced_entity_match_its_class(*entity_id, *class_id)?;
+                let entity =
+                    Self::ensure_referenced_entity_match_its_class::<T>(*entity_id, *class_id)?;
                 // Ensure Entity can be referenced.
                 Self::ensure_entity_can_be_referenced(
                     entity,
                     *same_controller_status,
                     current_entity_controller,
                 )?;
-                Self::validate_property_vector_length_after_value_insert(vec, max_vec_len)
+                Self::validate_property_vector_length_after_value_insert::<T, T::EntityId>(
+                    vec,
+                    max_vec_len,
+                )
             }
             _ => Err(Error::<T>::PropertyValueTypeDoesNotMatchInternalVectorType),
         }
     }
 
     /// Ensure text property does not exceed its max len
-    pub fn validate_max_len_if_text_property(
+    pub fn validate_max_len_if_text_property<T: Trait>(
         &self,
         value: &InputPropertyValue<T>,
     ) -> Result<(), Error<T>> {
@@ -363,7 +369,10 @@ impl<T: Trait> Property<T> {
         }
     }
 
-    fn validate_max_len_of_text(text: &[u8], text_max_len: TextMaxLength) -> Result<(), Error<T>> {
+    fn validate_max_len_of_text<T: Trait>(
+        text: &[u8],
+        text_max_len: TextMaxLength,
+    ) -> Result<(), Error<T>> {
         ensure!(
             text.len() <= text_max_len as usize,
             Error::<T>::TextPropertyTooLong
@@ -371,7 +380,7 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    fn validate_max_len_of_text_to_be_hashed(
+    fn validate_max_len_of_text_to_be_hashed<T: Trait>(
         text_to_be_hashed: &[u8],
         text_to_be_hashed_max_len: u16,
     ) -> Result<(), Error<T>> {
@@ -382,7 +391,7 @@ impl<T: Trait> Property<T> {
         Ok(())
     }
 
-    fn validate_vec_len<V>(vec: &[V], max_len: VecMaxLength) -> Result<(), Error<T>> {
+    fn validate_vec_len<V, T: Trait>(vec: &[V], max_len: VecMaxLength) -> Result<(), Error<T>> {
         ensure!(
             vec.len() <= max_len as usize,
             Error::<T>::VecPropertyTooLong
@@ -391,7 +400,7 @@ impl<T: Trait> Property<T> {
     }
 
     /// Ensure `VecInputValue` does not exceed its max len
-    pub fn validate_max_len_if_vec_property(
+    pub fn validate_max_len_if_vec_property<T: Trait>(
         &self,
         value: &InputPropertyValue<T>,
     ) -> Result<(), Error<T>> {
@@ -441,7 +450,7 @@ impl<T: Trait> Property<T> {
     }
 
     /// Ensure provided `InputPropertyValue` matches its `Type`
-    pub fn ensure_property_value_matches_its_type(
+    pub fn ensure_property_value_matches_its_type<T: Trait>(
         &self,
         value: &InputPropertyValue<T>,
     ) -> Result<(), Error<T>> {
@@ -453,7 +462,7 @@ impl<T: Trait> Property<T> {
     }
 
     /// Check if provided `InputPropertyValue` matches its `Type`
-    pub fn does_prop_value_match_type(&self, value: &InputPropertyValue<T>) -> bool {
+    pub fn does_prop_value_match_type<T: Trait>(&self, value: &InputPropertyValue<T>) -> bool {
         // A non required property can be updated to Bool(false):
         if !self.required && *value == InputPropertyValue::default() {
             return true;
@@ -462,7 +471,7 @@ impl<T: Trait> Property<T> {
             (
                 InputPropertyValue::Single(single_property_value),
                 PropertyType::Single(ref single_property_type),
-            ) => match (single_property_value, single_property_type.deref()) {
+            ) => matches!((single_property_value, single_property_type.deref()),
                 (InputValue::Bool(_), Type::Bool)
                 | (InputValue::Uint16(_), Type::Uint16)
                 | (InputValue::Uint32(_), Type::Uint32)
@@ -472,13 +481,11 @@ impl<T: Trait> Property<T> {
                 | (InputValue::Int64(_), Type::Int64)
                 | (InputValue::Text(_), Type::Text(_))
                 | (InputValue::TextToHash(_), Type::Hash(_))
-                | (InputValue::Reference(_), Type::Reference(_, _)) => true,
-                _ => false,
-            },
+                | (InputValue::Reference(_), Type::Reference(_, _))),
             (
                 InputPropertyValue::Vector(vec_value),
                 PropertyType::Vector(ref vec_property_type),
-            ) => match (vec_value, vec_property_type.get_vec_type()) {
+            ) => matches!((vec_value, vec_property_type.get_vec_type()),
                 (VecInputValue::Bool(_), Type::Bool)
                 | (VecInputValue::Uint16(_), Type::Uint16)
                 | (VecInputValue::Uint32(_), Type::Uint32)
@@ -488,21 +495,19 @@ impl<T: Trait> Property<T> {
                 | (VecInputValue::Int64(_), Type::Int64)
                 | (VecInputValue::Text(_), Type::Text(_))
                 | (VecInputValue::TextToHash(_), Type::Hash(_))
-                | (VecInputValue::Reference(_), Type::Reference(_, _)) => true,
-                _ => false,
-            },
+                | (VecInputValue::Reference(_), Type::Reference(_, _))),
             _ => false,
         }
     }
 
     /// Perform all required checks to ensure provided `InputPropertyValue` is valid,
     /// when current `PropertyType` is `Reference`
-    pub fn ensure_property_value_is_valid_reference(
-        &self,
+    pub fn ensure_property_value_is_valid_reference<T: Trait>(
+        property: &Property<T::ClassId>,
         value: &InputPropertyValue<T>,
-        current_entity_controller: &EntityController<T>,
+        current_entity_controller: &EntityController<T::MemberId>,
     ) -> Result<(), Error<T>> {
-        match (value, &self.property_type) {
+        match (value, &property.property_type) {
             (
                 InputPropertyValue::Single(single_property_value),
                 PropertyType::Single(single_property_type),
@@ -516,7 +521,7 @@ impl<T: Trait> Property<T> {
                     // which class_id is equal to class_id, declared in corresponding PropertyType
                     // Retrieve corresponding Entity
                     let entity =
-                        Self::ensure_referenced_entity_match_its_class(*entity_id, *class_id)?;
+                        Self::ensure_referenced_entity_match_its_class::<T>(*entity_id, *class_id)?;
 
                     // Ensure Entity can be referenced.
                     Self::ensure_entity_can_be_referenced(
@@ -536,8 +541,9 @@ impl<T: Trait> Property<T> {
                         // Ensure class_id of Entity under provided entity_id references Entity,
                         // which class_id is equal to class_id, declared in corresponding PropertyType
                         // Retrieve corresponding Entity
-                        let entity =
-                            Self::ensure_referenced_entity_match_its_class(*entity_id, *class_id)?;
+                        let entity = Self::ensure_referenced_entity_match_its_class::<T>(
+                            *entity_id, *class_id,
+                        )?;
 
                         // Ensure Entity can be referenced.
                         Self::ensure_entity_can_be_referenced(
@@ -556,26 +562,25 @@ impl<T: Trait> Property<T> {
     /// Ensure `class_id` of `Entity` under provided `entity_id` references `Entity`, which `class_id` is equal to `class_id`,
     /// declared in corresponding `PropertyType`.
     /// Returns  corresponding `Entity` instance
-    pub fn ensure_referenced_entity_match_its_class(
+    pub fn ensure_referenced_entity_match_its_class<T: Trait>(
         entity_id: T::EntityId,
         class_id: T::ClassId,
-    ) -> Result<Entity<T>, Error<T>> {
+    ) -> Result<EntityOf<T>, Error<T>> {
         // Ensure Entity under given id exists
-        Module::<T>::ensure_known_entity_id(entity_id)?;
+        let entity = Module::<T>::ensure_known_entity_id(entity_id)?;
 
-        let entity = Module::<T>::entity_by_id(entity_id);
         ensure!(
-            entity.get_class_id() == class_id,
+            class_id == entity.get_class_id(),
             Error::<T>::ReferencedEntityDoesNotMatchItsClass
         );
         Ok(entity)
     }
 
     /// Ensure `Entity` can be referenced.
-    pub fn ensure_entity_can_be_referenced(
-        entity: Entity<T>,
+    pub fn ensure_entity_can_be_referenced<T: Trait>(
+        entity: EntityOf<T>,
         same_controller_status: bool,
-        current_entity_controller: &EntityController<T>,
+        current_entity_controller: &EntityController<T::MemberId>,
     ) -> Result<(), Error<T>> {
         let entity_permissions = entity.get_permissions();
 
@@ -596,7 +601,7 @@ impl<T: Trait> Property<T> {
     }
 
     /// Ensure `PropertyNameLengthConstraint` satisfied
-    pub fn ensure_name_is_valid(&self) -> Result<(), Error<T>> {
+    pub fn ensure_name_is_valid<T: Trait>(&self) -> Result<(), Error<T>> {
         T::PropertyNameLengthConstraint::get().ensure_valid(
             self.name.len(),
             Error::<T>::PropertyNameTooShort,
@@ -605,7 +610,7 @@ impl<T: Trait> Property<T> {
     }
 
     /// Ensure `PropertyDescriptionLengthConstraint` satisfied
-    pub fn ensure_description_is_valid(&self) -> Result<(), Error<T>> {
+    pub fn ensure_description_is_valid<T: Trait>(&self) -> Result<(), Error<T>> {
         T::PropertyDescriptionLengthConstraint::get().ensure_valid(
             self.description.len(),
             Error::<T>::PropertyDescriptionTooShort,
@@ -614,7 +619,7 @@ impl<T: Trait> Property<T> {
     }
 
     /// Ensure `Type` specific constraints satisfied
-    pub fn ensure_property_type_size_is_valid(&self) -> Result<(), Error<T>> {
+    pub fn ensure_property_type_size_is_valid<T: Trait>(&self) -> Result<(), Error<T>> {
         match &self.property_type {
             PropertyType::Single(single_property_type) => {
                 // Ensure Type specific TextMaxLengthConstraint satisfied
@@ -625,22 +630,5 @@ impl<T: Trait> Property<T> {
                 vec_property_type.ensure_property_type_size_is_valid()
             }
         }
-    }
-
-    /// Ensure refers to existing `class_id`, if If `Property` `Type` is `Reference`,
-    pub fn ensure_property_type_reference_is_valid(&self) -> Result<(), Error<T>> {
-        let has_unknown_reference =
-            if let Type::Reference(other_class_id, _) = self.property_type.get_inner_type() {
-                !<ClassById<T>>::contains_key(other_class_id)
-            } else {
-                false
-            };
-
-        ensure!(
-            !has_unknown_reference,
-            Error::<T>::ClassSchemaRefersUnknownClass
-        );
-
-        Ok(())
     }
 }

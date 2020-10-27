@@ -32,6 +32,7 @@ import {
   RoleStakeProfile,
   Opening as WGOpening,
   Application as WGApplication,
+  StorageProviderId,
 } from '@joystream/types/working-group'
 import {
   Opening,
@@ -48,6 +49,9 @@ import { Stake, StakeId } from '@joystream/types/stake'
 
 import { InputValidationLengthConstraint } from '@joystream/types/common'
 import { Class, ClassId, CuratorGroup, CuratorGroupId, Entity, EntityId } from '@joystream/types/content-directory'
+import { ContentId, DataObject } from '@joystream/types/media'
+import { ServiceProviderRecord, Url } from '@joystream/types/discovery'
+import _ from 'lodash'
 
 export const DEFAULT_API_URI = 'ws://localhost:9944/'
 const DEFAULT_DECIMALS = new BN(12)
@@ -61,6 +65,7 @@ export const apiModuleByGroup: { [key in WorkingGroups]: string } = {
 // Api wrapper for handling most common api calls and allowing easy API implementation switch in the future
 export default class Api {
   private _api: ApiPromise
+  private _cdClassesCache: [ClassId, Class][] | null = null
 
   private constructor(originalApi: ApiPromise) {
     this._api = originalApi
@@ -70,9 +75,12 @@ export default class Api {
     return this._api
   }
 
-  private static async initApi(apiUri: string = DEFAULT_API_URI): Promise<ApiPromise> {
+  private static async initApi(
+    apiUri: string = DEFAULT_API_URI,
+    metadataCache: Record<string, any>
+  ): Promise<ApiPromise> {
     const wsProvider: WsProvider = new WsProvider(apiUri)
-    const api = await ApiPromise.create({ provider: wsProvider, types })
+    const api = await ApiPromise.create({ provider: wsProvider, types, metadata: metadataCache })
 
     // Initializing some api params based on pioneer/packages/react-api/Api.tsx
     const [properties] = await Promise.all([api.rpc.system.properties()])
@@ -89,8 +97,8 @@ export default class Api {
     return api
   }
 
-  static async create(apiUri: string = DEFAULT_API_URI): Promise<Api> {
-    const originalApi: ApiPromise = await Api.initApi(apiUri)
+  static async create(apiUri: string = DEFAULT_API_URI, metadataCache: Record<string, any>): Promise<Api> {
+    const originalApi: ApiPromise = await Api.initApi(apiUri, metadataCache)
     return new Api(originalApi)
   }
 
@@ -109,6 +117,10 @@ export default class Api {
         .then((unsubscribe) => (unsub = unsubscribe))
         .catch((e) => reject(e))
     })
+  }
+
+  async bestNumber(): Promise<number> {
+    return (await this._api.derive.chain.bestNumber()).toNumber()
   }
 
   async getAccountsBalancesInfo(accountAddresses: string[]): Promise<DeriveBalancesAll[]> {
@@ -481,8 +493,10 @@ export default class Api {
   }
 
   // Content directory
-  availableClasses(): Promise<[ClassId, Class][]> {
-    return this.entriesByIds<ClassId, Class>(this._api.query.contentDirectory.classById)
+  async availableClasses(useCache = true): Promise<[ClassId, Class][]> {
+    return useCache && this._cdClassesCache
+      ? this._cdClassesCache
+      : (this._cdClassesCache = await this.entriesByIds<ClassId, Class>(this._api.query.contentDirectory.classById))
   }
 
   availableCuratorGroups(): Promise<[CuratorGroupId, CuratorGroup][]> {
@@ -490,7 +504,7 @@ export default class Api {
   }
 
   async curatorGroupById(id: number): Promise<CuratorGroup | null> {
-    const exists = !!(await this._api.query.contentDirectory.curatorGroupById.size(id))
+    const exists = !!(await this._api.query.contentDirectory.curatorGroupById.size(id)).toNumber()
     return exists ? await this._api.query.contentDirectory.curatorGroupById<CuratorGroup>(id) : null
   }
 
@@ -511,5 +525,34 @@ export default class Api {
   async entityById(id: number): Promise<Entity | null> {
     const exists = !!(await this._api.query.contentDirectory.curatorGroupById.size(id))
     return exists ? await this._api.query.contentDirectory.entityById<Entity>(id) : null
+  }
+
+  async dataObjectByContentId(contentId: ContentId): Promise<DataObject | null> {
+    const dataObject = await this._api.query.dataDirectory.dataObjectByContentId<Option<DataObject>>(contentId)
+    return dataObject.unwrapOr(null)
+  }
+
+  async ipnsIdentity(storageProviderId: number): Promise<string | null> {
+    const accountInfo = await this._api.query.discovery.accountInfoByStorageProviderId<ServiceProviderRecord>(
+      storageProviderId
+    )
+    return accountInfo.isEmpty || accountInfo.expires_at.toNumber() <= (await this.bestNumber())
+      ? null
+      : accountInfo.identity.toString()
+  }
+
+  async getRandomBootstrapEndpoint(): Promise<string | null> {
+    const endpoints = await this._api.query.discovery.bootstrapEndpoints<Vec<Url>>()
+    const randomEndpoint = _.sample(endpoints.toArray())
+    return randomEndpoint ? randomEndpoint.toString() : null
+  }
+
+  async isAnyProviderAvailable(): Promise<boolean> {
+    const accounInfoEntries = await this.entriesByIds<StorageProviderId, ServiceProviderRecord>(
+      this._api.query.discovery.accountInfoByStorageProviderId
+    )
+
+    const bestNumber = await this.bestNumber()
+    return !!accounInfoEntries.filter(([, info]) => info.expires_at.toNumber() > bestNumber).length
   }
 }

@@ -1,7 +1,7 @@
 use super::*;
 use sp_runtime::traits::Hash;
 
-impl<T: Trait> From<InputPropertyValue<T>> for StoredPropertyValue<T> {
+impl<T: Trait> From<InputPropertyValue<T>> for StoredPropertyValueOf<T> {
     fn from(input_property_value: InputPropertyValue<T>) -> Self {
         match input_property_value {
             InputPropertyValue::Single(input_value) => {
@@ -16,7 +16,7 @@ impl<T: Trait> From<InputPropertyValue<T>> for StoredPropertyValue<T> {
     }
 }
 
-impl<T: Trait> From<InputValue<T>> for StoredValue<T> {
+impl<T: Trait> From<InputValue<T>> for StoredValue<T::Hash, T::EntityId> {
     fn from(input_value: InputValue<T>) -> Self {
         match input_value {
             InputValue::Bool(value) => StoredValue::Bool(value),
@@ -37,7 +37,7 @@ impl<T: Trait> From<InputValue<T>> for StoredValue<T> {
     }
 }
 
-impl<T: Trait> From<VecInputValue<T>> for VecStoredValue<T> {
+impl<T: Trait> From<VecInputValue<T>> for VecStoredValue<T::Hash, T::EntityId> {
     fn from(vec_input_value: VecInputValue<T>) -> Self {
         match vec_input_value {
             VecInputValue::Bool(vec_value) => VecStoredValue::Bool(vec_value),

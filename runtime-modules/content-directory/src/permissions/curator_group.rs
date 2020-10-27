@@ -36,6 +36,10 @@ impl<T: Trait> CuratorGroup<T> {
         self.active
     }
 
+    pub fn get_number_of_classes_maintained(&self) -> u32 {
+        self.number_of_classes_maintained
+    }
+
     /// Set `CuratorGroup` status as provided
     pub fn set_status(&mut self, is_active: bool) {
         self.active = is_active
@@ -87,6 +91,18 @@ impl<T: Trait> CuratorGroup<T> {
         ensure!(
             self.get_curators().contains(curator_id),
             Error::<T>::CuratorIsNotAMemberOfGivenCuratorGroup
+        );
+        Ok(())
+    }
+
+    /// Ensure curator under given `curator_id` does not exist yet in `CuratorGroup`
+    pub fn ensure_curator_in_group_does_not_exist(
+        &self,
+        curator_id: &T::CuratorId,
+    ) -> Result<(), Error<T>> {
+        ensure!(
+            !self.get_curators().contains(curator_id),
+            Error::<T>::CuratorIsAlreadyAMemberOfGivenCuratorGroup
         );
         Ok(())
     }

@@ -4,8 +4,12 @@ import ExitCodes from '../ExitCodes'
 import fs from 'fs'
 import path from 'path'
 import Ajv from 'ajv'
-import { JSONSchema7 } from 'json-schema'
+import $RefParser, { JSONSchema } from '@apidevtools/json-schema-ref-parser'
+import { getSchemasLocation } from 'cd-schemas'
 import chalk from 'chalk'
+
+// Default schema path for resolving refs
+const DEFAULT_SCHEMA_PATH = getSchemasLocation('entities') + path.sep
 
 export const IOFlags = {
   input: flags.string({
@@ -16,11 +20,12 @@ export const IOFlags = {
   output: flags.string({
     char: 'o',
     required: false,
-    description: 'Path where the output JSON file should be placed (can be then reused as input)',
+    description:
+      'Path to the directory where the output JSON file should be placed (the output file can be then reused as input)',
   }),
 }
 
-export function getInputJson<T>(inputPath?: string, schema?: JSONSchema7): T | null {
+export async function getInputJson<T>(inputPath?: string, schema?: JSONSchema, schemaPath?: string): Promise<T | null> {
   if (inputPath) {
     let content, jsonObj
     try {
@@ -35,7 +40,8 @@ export function getInputJson<T>(inputPath?: string, schema?: JSONSchema7): T | n
     }
     if (schema) {
       const ajv = new Ajv()
-      const valid = ajv.validate(schema, jsonObj)
+      schema = await $RefParser.dereference(schemaPath || DEFAULT_SCHEMA_PATH, schema, {})
+      const valid = ajv.validate(schema, jsonObj) as boolean
       if (!valid) {
         throw new CLIError(`Input JSON file is not valid: ${ajv.errorsText()}`)
       }

@@ -1,19 +1,28 @@
 import { AddClassSchema, Property } from '../../types/extrinsics/AddClassSchema'
 import { createType } from '@joystream/types'
-import { blake2AsHex } from '@polkadot/util-crypto'
 import {
+  InputEntityValuesMap,
   ClassId,
   OperationType,
   ParametrizedPropertyValue,
   PropertyId,
   PropertyType,
+  EntityId,
+  Entity,
+  ParametrizedClassPropertyValue,
+  InputPropertyValue,
 } from '@joystream/types/content-directory'
+import { blake2AsHex } from '@polkadot/util-crypto'
 import { isSingle, isReference } from './propertyType'
 import { ApiPromise } from '@polkadot/api'
 import { JoyBTreeSet } from '@joystream/types/common'
 import { CreateClass } from '../../types/extrinsics/CreateClass'
 import { EntityBatch } from '../../types/EntityBatch'
 import { getInputs } from './inputs'
+
+type SimpleEntityValue = string | boolean | number | string[] | boolean[] | number[] | undefined
+// Input without "new" or "extising" keywords
+type SimpleEntityInput = { [K: string]: SimpleEntityValue }
 
 export class InputParser {
   private api: ApiPromise
@@ -22,16 +31,26 @@ export class InputParser {
   private batchInputs: EntityBatch[]
   private createEntityOperations: OperationType[] = []
   private addSchemaToEntityOprations: OperationType[] = []
+  private updateEntityPropertyValuesOperations: OperationType[] = []
   private entityIndexByUniqueQueryMap = new Map<string, number>()
+  private entityIdByUniqueQueryMap = new Map<string, number>()
   private entityByUniqueQueryCurrentIndex = 0
   private classIdByNameMap = new Map<string, number>()
-  private classMapInitialized = false
 
-  static createWithKnownSchemas(api: ApiPromise, entityBatches?: EntityBatch[]) {
+  static createWithInitialInputs(api: ApiPromise): InputParser {
+    return new InputParser(
+      api,
+      getInputs<CreateClass>('classes').map(({ data }) => data),
+      getInputs<AddClassSchema>('schemas').map(({ data }) => data),
+      getInputs<EntityBatch>('entityBatches').map(({ data }) => data)
+    )
+  }
+
+  static createWithKnownSchemas(api: ApiPromise, entityBatches?: EntityBatch[]): InputParser {
     return new InputParser(
       api,
       [],
-      getInputs('schemas').map(({ data }) => data),
+      getInputs<AddClassSchema>('schemas').map(({ data }) => data),
       entityBatches
     )
   }
@@ -48,15 +67,61 @@ export class InputParser {
     this.batchInputs = batchInputs || []
   }
 
-  private async initializeClassMap() {
-    if (this.classMapInitialized) {
-      return
-    }
+  private async loadClassMap() {
+    this.classIdByNameMap = new Map<string, number>()
+
     const classEntries = await this.api.query.contentDirectory.classById.entries()
     classEntries.forEach(([key, aClass]) => {
       this.classIdByNameMap.set(aClass.name.toString(), (key.args[0] as ClassId).toNumber())
     })
-    this.classMapInitialized = true
+  }
+
+  private async loadEntityIdByUniqueQueryMap() {
+    this.entityIdByUniqueQueryMap = new Map<string, number>()
+
+    // Get entity entries
+    const entityEntries: [EntityId, Entity][] = (
+      await this.api.query.contentDirectory.entityById.entries()
+    ).map(([storageKey, entity]) => [storageKey.args[0] as EntityId, entity])
+
+    // Since we use classMap directly we need to make sure it's loaded first
+    if (!this.classIdByNameMap.size) {
+      await this.loadClassMap()
+    }
+
+    entityEntries.forEach(([entityId, entity]) => {
+      const classId = entity.class_id.toNumber()
+      const className = Array.from(this.classIdByNameMap.entries()).find(([, id]) => id === classId)?.[0]
+      if (!className) {
+        // Class not found - skip
+        return
+      }
+      let schema: AddClassSchema
+      try {
+        schema = this.schemaByClassName(className)
+      } catch (e) {
+        // Input schema not found - skip
+        return
+      }
+      const valuesEntries = Array.from(entity.getField('values').entries())
+      schema.newProperties.forEach(({ name, unique }, index) => {
+        if (!unique) {
+          return // Skip non-unique properties
+        }
+        const storedValue = valuesEntries.find(([propertyId]) => propertyId.toNumber() === index)?.[1]
+        if (
+          storedValue === undefined ||
+          // If unique value is Bool, it's almost definitely empty, so we skip it
+          (storedValue.isOfType('Single') && storedValue.asType('Single').isOfType('Bool'))
+        ) {
+          // Skip empty values (not all unique properties are required)
+          return
+        }
+        const simpleValue = storedValue.getValue().toJSON()
+        const hash = this.getUniqueQueryHash({ [name]: simpleValue }, schema.className)
+        this.entityIdByUniqueQueryMap.set(hash, entityId.toNumber())
+      })
+    })
   }
 
   private schemaByClassName(className: string) {
@@ -84,18 +149,42 @@ export class InputParser {
     return foundIndex
   }
 
-  private getClassIdByName(className: string): number {
-    const classId = this.classIdByNameMap.get(className)
+  // Seatch for entity by { [uniquePropName]: [uniquePropVal] } on chain
+  async findEntityIdByUniqueQuery(uniquePropVal: Record<string, any>, className: string): Promise<number> {
+    const hash = this.getUniqueQueryHash(uniquePropVal, className)
+    let foundId = this.entityIdByUniqueQueryMap.get(hash)
+    if (foundId === undefined) {
+      // Try to re-load the map and find again
+      await this.loadEntityIdByUniqueQueryMap()
+      foundId = this.entityIdByUniqueQueryMap.get(hash)
+      if (foundId === undefined) {
+        // If still not found - throw
+        throw new Error(
+          `findEntityIdByUniqueQuery failed for class ${className} and query: ${JSON.stringify(uniquePropVal)}`
+        )
+      }
+    }
+    return foundId
+  }
+
+  async getClassIdByName(className: string): Promise<number> {
+    let classId = this.classIdByNameMap.get(className)
     if (classId === undefined) {
-      throw new Error(`Could not find class id by name: "${className}"!`)
+      // Try to re-load the map
+      await this.loadClassMap()
+      classId = this.classIdByNameMap.get(className)
+      if (classId === undefined) {
+        // If still not found - throw
+        throw new Error(`Could not find class id by name: "${className}"!`)
+      }
     }
     return classId
   }
 
-  private parsePropertyType(propertyType: Property['property_type']): PropertyType {
+  private async parsePropertyType(propertyType: Property['property_type']): Promise<PropertyType> {
     if (isSingle(propertyType) && isReference(propertyType.Single)) {
       const { className, sameOwner } = propertyType.Single.Reference
-      const classId = this.getClassIdByName(className)
+      const classId = await this.getClassIdByName(className)
       return createType('PropertyType', { Single: { Reference: [classId, sameOwner] } })
     }
     // Types other than reference are fully compatible
@@ -129,88 +218,139 @@ export class InputParser {
     ++this.entityByUniqueQueryCurrentIndex
   }
 
-  private createParametrizedPropertyValues(
+  private async createParametrizedPropertyValues(
     entityInput: Record<string, any>,
     schema: AddClassSchema,
-    customHandler?: (property: Property, value: any) => ParametrizedPropertyValue | undefined
-  ) {
-    return Object.entries(entityInput)
-      .filter(([, pValue]) => pValue !== undefined)
-      .map(([propertyName, propertyValue]) => {
-        const schemaPropertyIndex = schema.newProperties.findIndex((p) => p.name === propertyName)
-        const schemaProperty = schema.newProperties[schemaPropertyIndex]
+    customHandler?: (property: Property, value: any) => Promise<ParametrizedPropertyValue | undefined>
+  ): Promise<ParametrizedClassPropertyValue[]> {
+    const filteredInput = Object.entries(entityInput).filter(([, pValue]) => pValue !== undefined)
+    const parametrizedClassPropValues: ParametrizedClassPropertyValue[] = []
 
-        let value = customHandler && customHandler(schemaProperty, propertyValue)
-        if (value === undefined) {
-          value = createType('ParametrizedPropertyValue', {
-            InputPropertyValue: this.parsePropertyType(schemaProperty.property_type)
-              .toInputPropertyValue(propertyValue)
-              .toJSON(),
-          })
-        }
+    for (const [propertyName, propertyValue] of filteredInput) {
+      const schemaPropertyIndex = schema.newProperties.findIndex((p) => p.name === propertyName)
+      const schemaProperty = schema.newProperties[schemaPropertyIndex]
 
-        return {
+      let value = customHandler && (await customHandler(schemaProperty, propertyValue))
+      if (value === undefined) {
+        value = createType('ParametrizedPropertyValue', {
+          InputPropertyValue: (await this.parsePropertyType(schemaProperty.property_type)).toInputPropertyValue(
+            propertyValue
+          ),
+        })
+      }
+
+      parametrizedClassPropValues.push(
+        createType('ParametrizedClassPropertyValue', {
           in_class_index: schemaPropertyIndex,
-          value: value.toJSON(),
-        }
-      })
+          value,
+        })
+      )
+    }
+
+    return parametrizedClassPropValues
   }
 
-  private parseEntityInput(entityInput: Record<string, any>, schema: AddClassSchema) {
-    const parametrizedPropertyValues = this.createParametrizedPropertyValues(entityInput, schema, (property, value) => {
-      // Custom handler for references
-      const { property_type: propertyType } = property
-      if (isSingle(propertyType) && isReference(propertyType.Single)) {
-        const refEntitySchema = this.schemaByClassName(propertyType.Single.Reference.className)
-        if (Object.keys(value).includes('new')) {
-          const entityIndex = this.parseEntityInput(value.new, refEntitySchema)
-          return createType('ParametrizedPropertyValue', { InternalEntityJustAdded: entityIndex })
-        } else if (Object.keys(value).includes('existing')) {
-          const entityIndex = this.findEntityIndexByUniqueQuery(value.existing, refEntitySchema.className)
-          return createType('ParametrizedPropertyValue', { InternalEntityJustAdded: entityIndex })
-        }
-      }
-      return undefined
-    })
-
-    // Add operations
-    const createEntityOperationIndex = this.createEntityOperations.length
-    const classId = this.classIdByNameMap.get(schema.className)
-    this.createEntityOperations.push(createType('OperationType', { CreateEntity: { class_id: classId } }))
-    this.addSchemaToEntityOprations.push(
-      createType('OperationType', {
-        AddSchemaSupportToEntity: {
-          schema_id: 0,
-          entity_id: { InternalEntityJustAdded: createEntityOperationIndex },
-          parametrized_property_values: parametrizedPropertyValues,
-        },
+  private async existingEntityQueryToParametrizedPropertyValue(className: string, uniquePropVal: Record<string, any>) {
+    try {
+      // First - try to find in existing batches
+      const entityIndex = this.findEntityIndexByUniqueQuery(uniquePropVal, className)
+      return createType('ParametrizedPropertyValue', { InternalEntityJustAdded: entityIndex })
+    } catch (e) {
+      // If not found - fallback to chain search
+      const entityId = await this.findEntityIdByUniqueQuery(uniquePropVal, className)
+      return createType('ParametrizedPropertyValue', {
+        InputPropertyValue: { Single: { Reference: entityId } },
       })
+    }
+  }
+
+  // parseEntityInput Overloads
+  private parseEntityInput(entityInput: Record<string, any>, schema: AddClassSchema): Promise<number>
+  private parseEntityInput(
+    entityInput: Record<string, any>,
+    schema: AddClassSchema,
+    updatedEntityId: number
+  ): Promise<void>
+
+  // Parse entity input. Speficy "updatedEntityId" only if want to parse into update operation!
+  private async parseEntityInput(
+    entityInput: Record<string, any>,
+    schema: AddClassSchema,
+    updatedEntityId?: number
+  ): Promise<void | number> {
+    const parametrizedPropertyValues = await this.createParametrizedPropertyValues(
+      entityInput,
+      schema,
+      async (property, value) => {
+        // Custom handler for references
+        const { property_type: propertyType } = property
+        if (isSingle(propertyType) && isReference(propertyType.Single)) {
+          const refEntitySchema = this.schemaByClassName(propertyType.Single.Reference.className)
+          if (Object.keys(value).includes('new')) {
+            const entityIndex = await this.parseEntityInput(value.new, refEntitySchema)
+            return createType('ParametrizedPropertyValue', { InternalEntityJustAdded: entityIndex })
+          } else if (Object.keys(value).includes('existing')) {
+            return this.existingEntityQueryToParametrizedPropertyValue(refEntitySchema.className, value.existing)
+          }
+        }
+        return undefined
+      }
     )
 
-    // Return CreateEntity operation index
-    return createEntityOperationIndex
+    if (updatedEntityId) {
+      // Update operation
+      this.updateEntityPropertyValuesOperations.push(
+        createType('OperationType', {
+          UpdatePropertyValues: {
+            entity_id: { ExistingEntity: updatedEntityId },
+            new_parametrized_property_values: parametrizedPropertyValues,
+          },
+        })
+      )
+    } else {
+      // Add operations (createEntity, AddSchemaSupportToEntity)
+      const createEntityOperationIndex = this.createEntityOperations.length
+      const classId = await this.getClassIdByName(schema.className)
+      this.createEntityOperations.push(createType('OperationType', { CreateEntity: { class_id: classId } }))
+      this.addSchemaToEntityOprations.push(
+        createType('OperationType', {
+          AddSchemaSupportToEntity: {
+            schema_id: 0,
+            entity_id: { InternalEntityJustAdded: createEntityOperationIndex },
+            parametrized_property_values: parametrizedPropertyValues,
+          },
+        })
+      )
+
+      // Return CreateEntity operation index
+      return createEntityOperationIndex
+    }
   }
 
   private reset() {
     this.entityIndexByUniqueQueryMap = new Map<string, number>()
     this.classIdByNameMap = new Map<string, number>()
+
     this.createEntityOperations = []
     this.addSchemaToEntityOprations = []
+    this.updateEntityPropertyValuesOperations = []
+
     this.entityByUniqueQueryCurrentIndex = 0
   }
 
   public async getEntityBatchOperations() {
-    await this.initializeClassMap()
     // First - create entityUniqueQueryMap to allow referencing any entity at any point
     this.batchInputs.forEach((batch) => {
       const entitySchema = this.schemaByClassName(batch.className)
       batch.entries.forEach((entityInput) => this.includeEntityInputInUniqueQueryMap(entityInput, entitySchema))
     })
     // Then - parse into actual operations
-    this.batchInputs.forEach((batch) => {
+    for (const batch of this.batchInputs) {
       const entitySchema = this.schemaByClassName(batch.className)
-      batch.entries.forEach((entityInput) => this.parseEntityInput(entityInput, entitySchema))
-    })
+      for (const entityInput of batch.entries) {
+        await this.parseEntityInput(entityInput, entitySchema)
+      }
+    }
 
     const operations = [...this.createEntityOperations, ...this.addSchemaToEntityOprations]
     this.reset()
@@ -218,31 +358,32 @@ export class InputParser {
     return operations
   }
 
-  public async createEntityUpdateOperation(
-    entityInput: Record<string, any>,
+  public async getEntityUpdateOperations(
+    input: Record<string, any>,
     className: string,
     entityId: number
-  ): Promise<OperationType> {
-    await this.initializeClassMap()
+  ): Promise<OperationType[]> {
     const schema = this.schemaByClassName(className)
-    const parametrizedPropertyValues = this.createParametrizedPropertyValues(entityInput, schema)
+    await this.parseEntityInput(input, schema, entityId)
+    const operations = [
+      ...this.createEntityOperations,
+      ...this.addSchemaToEntityOprations,
+      ...this.updateEntityPropertyValuesOperations,
+    ]
+    this.reset()
 
-    return createType('OperationType', {
-      UpdatePropertyValues: {
-        entity_id: { ExistingEntity: entityId },
-        new_parametrized_property_values: parametrizedPropertyValues,
-      },
-    })
+    return operations
   }
 
   public async parseAddClassSchemaExtrinsic(inputData: AddClassSchema) {
-    await this.initializeClassMap() // Initialize if not yet initialized
-    const classId = this.getClassIdByName(inputData.className)
-    const newProperties = inputData.newProperties.map((p) => ({
-      ...p,
-      // Parse different format for Reference (and potentially other propTypes in the future)
-      property_type: this.parsePropertyType(p.property_type).toJSON(),
-    }))
+    const classId = await this.getClassIdByName(inputData.className)
+    const newProperties = await Promise.all(
+      inputData.newProperties.map(async (p) => ({
+        ...p,
+        // Parse different format for Reference (and potentially other propTypes in the future)
+        property_type: (await this.parsePropertyType(p.property_type)).toJSON(),
+      }))
+    )
     return this.api.tx.contentDirectory.addClassSchema(
       classId,
       new (JoyBTreeSet(PropertyId))(this.api.registry, inputData.existingProperties),
@@ -266,5 +407,28 @@ export class InputParser {
 
   public getCreateClassExntrinsics() {
     return this.classInputs.map((data) => this.parseCreateClassExtrinsic(data))
+  }
+
+  // Helper parser for "standalone" extrinsics like addSchemaSupportToEntity / updateEntityPropertyValues
+  public async parseToInputEntityValuesMap(
+    inputData: SimpleEntityInput,
+    className: string
+  ): Promise<InputEntityValuesMap> {
+    await this.parseEntityInput(inputData, this.schemaByClassName(className))
+    const inputPropValMap = new Map<PropertyId, InputPropertyValue>()
+
+    const [operation] = this.addSchemaToEntityOprations
+    operation
+      .asType('AddSchemaSupportToEntity')
+      .parametrized_property_values /* First we need to sort by propertyId, since otherwise there will be issues
+      when encoding the BTreeMap (similar to BTreeSet) */
+      .sort((a, b) => a.in_class_index.toNumber() - b.in_class_index.toNumber())
+      .map((pcpv) => {
+        inputPropValMap.set(pcpv.in_class_index, pcpv.value.asType('InputPropertyValue'))
+      })
+
+    this.reset()
+
+    return createType('InputEntityValuesMap', inputPropValMap)
   }
 }

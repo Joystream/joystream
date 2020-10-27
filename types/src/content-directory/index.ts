@@ -269,6 +269,8 @@ export class ClassPropertyValue extends Null {}
 export class Operation extends Null {}
 export class ReferenceConstraint extends Null {}
 
+export class InputEntityValuesMap extends BTreeMap.with(PropertyId, InputPropertyValue) {}
+
 export const contentDirectoryTypes = {
   Nonce,
   EntityId,
@@ -288,6 +290,7 @@ export const contentDirectoryTypes = {
   Property,
   Schema,
   Class,
+  ClassOf: Class,
   EntityController,
   EntityPermissions,
   StoredValue,
@@ -296,6 +299,7 @@ export const contentDirectoryTypes = {
   StoredPropertyValue,
   InboundReferenceCounter,
   Entity,
+  EntityOf: Entity,
   CuratorGroup,
   EntityCreationVoucher,
   Actor,
@@ -314,6 +318,7 @@ export const contentDirectoryTypes = {
   UpdatePropertyValuesOperation,
   AddSchemaSupportToEntityOperation,
   OperationType,
+  InputEntityValuesMap,
   // Versioned store relicts - to be removed:
   ClassPermissionsType,
   ClassPropertyValue,

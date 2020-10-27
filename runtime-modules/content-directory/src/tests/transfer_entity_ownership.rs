@@ -616,13 +616,13 @@ fn transfer_entity_ownership_unique_constraint_violation() {
         assert_ok!(create_simple_class(LEAD_ORIGIN, ClassType::Valid));
 
         // Create unique reference property with same_controller flag set
-        let property_type = PropertyType::<Runtime>::vec_reference(
+        let property_type = PropertyType::<ClassId>::vec_reference(
             FIRST_CLASS_ID,
             true,
             VecMaxLengthConstraint::get(),
         );
 
-        let property = Property::<Runtime>::with_name_and_type(
+        let property = Property::<ClassId>::with_name_and_type(
             PropertyNameLengthConstraint::get().max() as usize,
             property_type,
             true,

@@ -15,7 +15,7 @@ export default class EntityCommand extends ContentDirectoryCommandBase {
 
   async run() {
     const { id } = this.parse(EntityCommand).args
-    const entity = await this.getEntity(id)
+    const entity = await this.getEntity(id, undefined, undefined, false)
     const { controller, frozen, referenceable } = entity.entity_permissions
     const [classId, entityClass] = await this.classEntryByNameOrId(entity.class_id.toString())
     const propertyValues = this.parseEntityPropertyValues(entity, entityClass)
@@ -32,6 +32,13 @@ export default class EntityCommand extends ContentDirectoryCommandBase {
       'Total references': entity.reference_counter.total.toNumber(),
     })
     displayHeader('Property values')
-    displayCollapsedRow(_.mapValues(propertyValues, (v) => `${v.value.toString()} ${chalk.green(`${v.type}`)}`))
+    displayCollapsedRow(
+      _.mapValues(
+        propertyValues,
+        (v) =>
+          (v.value.toJSON() === false && v.type !== 'Single<Bool>' ? chalk.grey('[not set]') : v.value.toString()) +
+          ` ${chalk.green(`${v.type}`)}`
+      )
+    )
   }
 }

@@ -13,6 +13,7 @@ type StateObject = {
   selectedAccountFilename: string
   apiUri: string
   defaultWorkingGroup: WorkingGroups
+  metadataCache: Record<string, any>
 }
 
 // State object default values
@@ -20,6 +21,7 @@ const DEFAULT_STATE: StateObject = {
   selectedAccountFilename: '',
   apiUri: '',
   defaultWorkingGroup: WorkingGroups.StorageProviders,
+  metadataCache: {},
 }
 
 // State file path (relative to getAppDataPath())

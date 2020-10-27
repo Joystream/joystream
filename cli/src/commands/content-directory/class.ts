@@ -37,7 +37,8 @@ export default class ClassCommand extends ContentDirectoryCommandBase {
     displayHeader(`Properties`)
     if (aClass.properties.length) {
       displayTable(
-        aClass.properties.map((p) => ({
+        aClass.properties.map((p, i) => ({
+          'Index': i,
           'Name': p.name.toString(),
           'Type': JSON.stringify(p.property_type.toJSON()),
           'Required': p.required.toString(),

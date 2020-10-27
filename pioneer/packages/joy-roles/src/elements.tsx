@@ -8,7 +8,6 @@ import { formatBalance } from '@polkadot/util';
 import Identicon from '@polkadot/react-identicon';
 import { IMembership, MemberId } from '@joystream/types/members';
 import { GenericAccountId } from '@polkadot/types';
-import { LeadRoleState } from '@joystream/types/content-working-group';
 import { WorkerId } from '@joystream/types/working-group';
 import { WorkingGroups } from './working_groups';
 import { RewardRelationship } from '@joystream/types/recurring-rewards';
@@ -58,7 +57,6 @@ export type GroupLead = {
   roleAccount: GenericAccountId;
   profile: IMembership;
   title: string;
-  stage?: LeadRoleState;
   stake?: Balance;
   rewardRelationship?: RewardRelationship;
 }
@@ -187,7 +185,7 @@ export function GroupMemberView (props: GroupMember) {
         <Card.Meta>{props.title}</Card.Meta>
         <Card.Meta>
           <Label>
-            { (props.group === WorkingGroups.ContentCurators ? 'Curator' : 'Worker') + ` ID: ${props.workerId.toString()}` }
+            { `Worker ID: ${props.workerId.toString()}` }
           </Label>
         </Card.Meta>
       </Card.Content>

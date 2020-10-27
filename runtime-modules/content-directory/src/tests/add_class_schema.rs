@@ -303,7 +303,7 @@ fn add_class_schema_property_name_too_long() {
         // Events number before tested calls
         let number_of_events_before_call = System::events().len();
 
-        let property = Property::<Runtime>::invalid(InvalidPropertyType::NameTooLong);
+        let property = Property::<ClassId>::invalid(InvalidPropertyType::NameTooLong);
 
         // Make an attempt to add class schema, providing property with name, which length exceeds PropertyNameLengthConstraint
         let add_class_schema_result =
@@ -329,7 +329,7 @@ fn add_class_schema_property_name_too_short() {
         // Events number before tested calls
         let number_of_events_before_call = System::events().len();
 
-        let property = Property::<Runtime>::invalid(InvalidPropertyType::NameTooShort);
+        let property = Property::<ClassId>::invalid(InvalidPropertyType::NameTooShort);
 
         // Make an attempt to add class schema, providing property with name, which length is less than min value of PropertyNameLengthConstraint
         let add_class_schema_result =
@@ -355,7 +355,7 @@ fn add_class_schema_property_description_too_long() {
         // Events number before tested calls
         let number_of_events_before_call = System::events().len();
 
-        let property = Property::<Runtime>::invalid(InvalidPropertyType::DescriptionTooLong);
+        let property = Property::<ClassId>::invalid(InvalidPropertyType::DescriptionTooLong);
 
         // Make an attempt to add class schema, providing property with description, which length exceeds PropertyDescriptionLengthConstraint
         let add_class_schema_result =
@@ -381,7 +381,7 @@ fn add_class_schema_property_description_too_short() {
         // Events number before tested calls
         let number_of_events_before_call = System::events().len();
 
-        let property = Property::<Runtime>::invalid(InvalidPropertyType::DescriptionTooShort);
+        let property = Property::<ClassId>::invalid(InvalidPropertyType::DescriptionTooShort);
 
         // Make an attempt to add class schema, providing property with description, which length is less than min value of PropertyDescriptionLengthConstraint
         let add_class_schema_result =
@@ -407,7 +407,7 @@ fn add_class_schema_text_property_is_too_long() {
         // Events number before tested calls
         let number_of_events_before_call = System::events().len();
 
-        let property = Property::<Runtime>::invalid(InvalidPropertyType::TextIsTooLong);
+        let property = Property::<ClassId>::invalid(InvalidPropertyType::TextIsTooLong);
 
         // Make an attempt to add class schema, providing property with Text type, which TextMaxLength exceeds corresponding TextMaxLengthConstraint
         let add_class_schema_result =
@@ -433,7 +433,7 @@ fn add_class_schema_text_hash_property_is_too_long() {
         // Events number before tested calls
         let number_of_events_before_call = System::events().len();
 
-        let property = Property::<Runtime>::invalid(InvalidPropertyType::TextHashIsTooLong);
+        let property = Property::<ClassId>::invalid(InvalidPropertyType::TextHashIsTooLong);
 
         // Make an attempt to add class schema, providing property with Hash type,
         // which HashedTextMaxLength exceeds corresponding HashedTextMaxLengthConstraint
@@ -460,7 +460,7 @@ fn add_class_schema_property_vec_property_is_too_long() {
         // Events number before tested calls
         let number_of_events_before_call = System::events().len();
 
-        let property = Property::<Runtime>::invalid(InvalidPropertyType::VecIsTooLong);
+        let property = Property::<ClassId>::invalid(InvalidPropertyType::VecIsTooLong);
 
         // Make an attempt to add class schema, providing Vector property, which VecMaxLength exceeds corresponding VecMaxLengthConstraint
         let add_class_schema_result =
@@ -486,12 +486,12 @@ fn add_class_schema_property_refers_unknown_class() {
         // Events number before tested calls
         let number_of_events_before_call = System::events().len();
 
-        let reference_vec_type = PropertyType::<Runtime>::vec_reference(
+        let reference_vec_type = PropertyType::<ClassId>::vec_reference(
             UNKNOWN_CLASS_ID,
             true,
             VecMaxLengthConstraint::get(),
         );
-        let property = Property::<Runtime>::with_name_and_type(1, reference_vec_type, true, true);
+        let property = Property::<ClassId>::with_name_and_type(1, reference_vec_type, true, true);
 
         // Make an attempt to add class schema, providing property with Type::Reference, which refers to unknown ClassId
         let add_class_schema_result =

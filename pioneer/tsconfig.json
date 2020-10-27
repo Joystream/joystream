@@ -2,8 +2,7 @@
   "extends": "@polkadot/dev/config/tsconfig",
   "exclude": [
     "build/**/*",
-    "**/build/**/*",
-    "packages/joy-media/**"
+    "**/build/**/*"
   ],
   "compilerOptions": {
     "jsx": "react",
@@ -27,8 +26,6 @@
       "@polkadot/joy-roles/*": [ "packages/joy-roles/src/*" ],
       "@polkadot/joy-utils": [ "packages/joy-utils/src/" ],
       "@polkadot/joy-utils/*": [ "packages/joy-utils/src/*" ],
-      "@polkadot/joy-media": [ "packages/joy-media/src/" ],
-      "@polkadot/joy-media/*": [ "packages/joy-media/src/*" ],
       "@polkadot/joy-forum": [ "packages/joy-forum/src/" ],
       "@polkadot/joy-forum/*": [ "packages/joy-forum/src/*" ],
       "@polkadot/apps/*": ["packages/apps/src/*"],
