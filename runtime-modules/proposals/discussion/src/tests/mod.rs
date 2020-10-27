@@ -39,7 +39,6 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
 
     let actual_thread = <ThreadById<Test>>::get(thread_entry.thread_id);
     let expected_thread = DiscussionThread {
-        title: thread_entry.title,
         activated_at: 0,
         author_id: 1,
         mode: Default::default(),
@@ -50,7 +49,6 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
         let actual_post =
             <PostThreadIdByPostId<Test>>::get(thread_entry.thread_id, post_entry.post_id);
         let expected_post = DiscussionPost {
-            text: post_entry.text,
             activated_at: 0,
             updated_at: 0,
             author_id: 1,

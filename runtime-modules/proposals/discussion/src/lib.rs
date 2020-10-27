@@ -234,7 +234,6 @@ decl_module! {
             let new_post_id = next_post_count_value;
 
             let new_post = DiscussionPost {
-                text,
                 activated_at: Self::current_block(),
                 updated_at: Self::current_block(),
                 author_id: post_author_id,
@@ -278,7 +277,6 @@ decl_module! {
                 Error::<T>::PostEditionNumberExceeded);
 
             let new_post = DiscussionPost {
-                text,
                 updated_at: Self::current_block(),
                 edition_number: post.edition_number + 1,
                 ..post
@@ -335,7 +333,6 @@ impl<T: Trait> Module<T> {
         let new_thread_id = next_thread_count_value;
 
         let new_thread = DiscussionThread {
-            title,
             activated_at: Self::current_block(),
             author_id: thread_author_id,
             mode,

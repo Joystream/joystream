@@ -9,15 +9,13 @@ use sp_std::vec::Vec;
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct DiscussionThread<ThreadAuthorId, BlockNumber, MemberId> {
-    /// Title
-    pub title: Vec<u8>,
-
     /// When thread was established.
     pub activated_at: BlockNumber,
 
     /// Author of the thread.
     pub author_id: ThreadAuthorId,
 
+    /// Thread permission mode.
     pub mode: ThreadMode<MemberId>,
 }
 
@@ -25,9 +23,6 @@ pub struct DiscussionThread<ThreadAuthorId, BlockNumber, MemberId> {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
 pub struct DiscussionPost<PostAuthorId, BlockNumber, ThreadId> {
-    /// Text
-    pub text: Vec<u8>,
-
     /// When post was added.
     pub activated_at: BlockNumber,
 
