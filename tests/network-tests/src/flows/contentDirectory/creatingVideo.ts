@@ -2,8 +2,9 @@ import { Api, WorkingGroups } from '../../Api'
 import { CreateVideoFixture } from '../../fixtures/contentDirectoryModule'
 import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
 import { assert } from 'chai'
+import { KeyringPair } from '@polkadot/keyring/types'
 
-export function createVideoReferencingChannelFixture(api: Api): CreateVideoFixture {
+export function createVideoReferencingChannelFixture(api: Api, pair: KeyringPair): CreateVideoFixture {
     const videoEntity: VideoEntity = {
       title: 'Example video',
       description: 'This is an example video',
@@ -39,11 +40,11 @@ export function createVideoReferencingChannelFixture(api: Api): CreateVideoFixtu
       isExplicit: false,
       isPublic: true,
     }
-    return new CreateVideoFixture (api, 0, videoEntity)
+    return new CreateVideoFixture (api, videoEntity, pair)
 }
 
-export default async function createVideo(api: Api) {
-  const createVideoHappyCaseFixture = createVideoReferencingChannelFixture(api)
+export default async function createVideo(api: Api, pair: KeyringPair) {
+  const createVideoHappyCaseFixture = createVideoReferencingChannelFixture(api, pair)
  
   await createVideoHappyCaseFixture.runner(false)
 }

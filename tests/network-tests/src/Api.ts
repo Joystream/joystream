@@ -33,7 +33,8 @@ import { v4 as uuid } from 'uuid'
 import { InputParser } from 'cd-schemas'
 import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
 import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
-import { initializeContentDir } from 'cd-schemas'
+import { initializeContentDir, ExtrinsicsHelper } from 'cd-schemas'
+import { OperationType } from '@joystream/types/content-directory';
 
 
 import Debugger from 'debug'
@@ -1925,18 +1926,19 @@ export class Api {
     return this.api.createType('u32', this.api.consts[module].maxWorkerNumberLimit)
   }
 
-  async sendContentDirectoryTransaction(memberId: number, parser: InputParser): Promise<Hash> {
-    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
-    const operations = await parser.getEntityBatchOperations()
-    return await this.api.tx.contentDirectory
+  async sendContentDirectoryTransaction(operations: OperationType[], pair: KeyringPair): Promise<void> {
+
+    const transaction = this.api.tx.contentDirectory
       .transaction(
-        { Member: memberId }, // We use member with id 0 as actor (in this case we assume this is Alice)
+        { Lead: null }, // We use member with id 0 as actor (in this case we assume this is Alice)
         operations // We provide parsed operations as second argument
       )
-      .signAndSend(this.createKeyPairs(1)[0])
+
+      const txHelper = new ExtrinsicsHelper(this.api)
+      await txHelper.sendAndCheck(pair, [transaction], 'Transaction failed!')
   }
 
-  public async createChannelEntity(memberId: number, channel: ChannelEntity): Promise<Hash> {
+  public async createChannelEntity(channel: ChannelEntity, pair: KeyringPair): Promise<void> {
     // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
   const parser = InputParser.createWithKnownSchemas(
     this.api,
@@ -1948,10 +1950,12 @@ export class Api {
       },
     ]
   )
-  return await this.sendContentDirectoryTransaction(memberId, parser)
+  // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
+  const operations = await parser.getEntityBatchOperations()
+  return await this.sendContentDirectoryTransaction(operations, pair)
   }
 
-  public async createVideoEntity(memberId: number, video: VideoEntity): Promise<Hash> {
+  public async createVideoEntity(video: VideoEntity, pair: KeyringPair): Promise<void> {
     // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
   const parser = InputParser.createWithKnownSchemas(
     this.api,
@@ -1963,7 +1967,24 @@ export class Api {
       },
     ]
   )
-  return await this.sendContentDirectoryTransaction(memberId, parser)
+  // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
+  const operations = await parser.getEntityBatchOperations()
+  return await this.sendContentDirectoryTransaction(operations, pair)
+  }
+
+  public async updateChannelEntity(channelUpdateInput: Record<string, any>, uniquePropValue: Record<string, any>, pair: KeyringPair): Promise<void> {
+    // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
+  const parser = InputParser.createWithKnownSchemas(this.api)
+
+  // We can reuse InputParser's `findEntityIdByUniqueQuery` method to find entityId of the channel we
+  // created in ./createChannel.ts example (normally we would probably use some other way to do it, ie.: query node)
+  const CHANNEL_ID = await parser.findEntityIdByUniqueQuery(uniquePropValue, 'Channel')// Use getEntityUpdateOperations to parse the update input
+  const updateOperations = await parser.getEntityUpdateOperations(
+    channelUpdateInput,
+    'Channel', // Class name
+    CHANNEL_ID // Id of the entity we want to update
+  )
+  return await this.sendContentDirectoryTransaction(updateOperations, pair)
   }
 
   public async initializeContentDirectory(leadKeyPair: KeyringPair) {

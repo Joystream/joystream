@@ -5,6 +5,7 @@ import leaderSetup from '../flows/workingGroup/leaderSetup'
 import initializeContentDirectory from '../flows/contentDirectory/contentDirectoryInitialization'
 import createChannel from '../flows/contentDirectory/creatingChannel'
 import createVideo from '../flows/contentDirectory/creatingVideo'
+import updateChannel from '../flows/contentDirectory/updatingChannel'
 
 const scenario = async () => {
   // Load env variables
@@ -23,9 +24,11 @@ const scenario = async () => {
 
   await initializeContentDirectory(api, leadKeyPair)
 
-  await createChannel(api)
+  await createChannel(api, leadKeyPair)
 
-  await createVideo(api)
+  await createVideo(api, leadKeyPair)
+
+  await updateChannel(api, leadKeyPair)
   
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!
