@@ -362,8 +362,6 @@ fn proposal_reset_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
         vote_generator.vote_and_assert_ok(VoteKind::Slash);
 
-        assert!(<proposals_engine::ActiveProposalIds<Runtime>>::contains_key(proposal_id));
-
         // check
         let proposal = ProposalsEngine::proposals(proposal_id);
         assert_eq!(
@@ -650,8 +648,6 @@ fn proposal_reactivation_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
-
-        assert!(<proposals_engine::ActiveProposalIds<Runtime>>::contains_key(proposal_id));
 
         run_to_block(2);
 

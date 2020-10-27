@@ -486,8 +486,6 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
 
-        assert!(<ActiveProposalIds<Test>>::contains_key(proposal_id));
-
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 1);
 
@@ -497,8 +495,6 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
             proposal_id,
             ProposalStatus::finalized(ProposalDecisionStatus::Rejected, starting_block),
         ));
-
-        assert!(!<ActiveProposalIds<Test>>::contains_key(proposal_id));
 
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 0);
@@ -1264,11 +1260,8 @@ fn proposal_slashing_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Slash);
         vote_generator.vote_and_assert_ok(VoteKind::Slash);
 
-        assert!(<ActiveProposalIds<Test>>::contains_key(proposal_id));
-
         run_to_block_and_finalize(2);
 
-        assert!(!<ActiveProposalIds<Test>>::contains_key(proposal_id));
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
 
         assert_eq!(
@@ -1323,7 +1316,6 @@ fn proposal_reset_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
 
-        assert!(<ActiveProposalIds<Test>>::contains_key(proposal_id));
         assert_eq!(
             <VoteExistsByProposalByVoter<Test>>::get(&proposal_id, &2),
             VoteKind::Abstain
@@ -1671,8 +1663,6 @@ fn proposal_with_pending_constitutionality_reactivation_succeeds() {
 
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 1);
-
-        assert!(<ActiveProposalIds<Test>>::contains_key(proposal_id));
     });
 }
 
@@ -1778,8 +1768,6 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 0);
 
-        assert!(!<ActiveProposalIds<Test>>::contains_key(proposal_id));
-
         assert_eq!(Balances::usable_balance(&account_id), total_balance);
 
         EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
@@ -1799,7 +1787,6 @@ fn proposal_early_rejection_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
 
-        assert!(<ActiveProposalIds<Test>>::contains_key(proposal_id));
         assert_eq!(
             <VoteExistsByProposalByVoter<Test>>::get(&proposal_id, &2),
             VoteKind::Abstain

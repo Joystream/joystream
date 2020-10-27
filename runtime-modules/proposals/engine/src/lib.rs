@@ -309,10 +309,6 @@ decl_storage! {
         /// Count of active proposals.
         pub ActiveProposalCount get(fn active_proposal_count): u32;
 
-        /// Ids of proposals that are open for voting (have not been finalized yet).
-        pub ActiveProposalIds get(fn active_proposal_ids): map hasher(blake2_128_concat)
-            T::ProposalId=> ();
-
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
         pub VoteExistsByProposalByVoter get(fn vote_by_proposal_by_voter):
             double_map hasher(blake2_128_concat)  T::ProposalId, hasher(blake2_128_concat) MemberId<T> => VoteKind;
@@ -492,7 +488,6 @@ impl<T: Trait> Module<T> {
             proposal_id,
             creation_params.encoded_dispatchable_call_code,
         );
-        <ActiveProposalIds<T>>::insert(proposal_id, ());
         ProposalCount::put(next_proposal_count_value);
         Self::increase_active_proposal_counter();
 
@@ -583,12 +578,21 @@ impl<T: Trait> Module<T> {
     /// Resets voting results for active proposals.
     /// Possible application includes new council elections.
     pub fn reset_votes_for_active_proposals() {
-        <ActiveProposalIds<T>>::iter().for_each(|(proposal_id, _)| {
-            <Proposals<T>>::mutate(proposal_id, |proposal| {
-                proposal.reset_proposal_votes();
+        // Filter active proposals, calculate new proposals and update the state.
+        <Proposals<T>>::iter()
+            .filter_map(|(proposal_id, mut proposal)| {
+                if proposal.status.is_active_proposal() {
+                    proposal.reset_proposal_votes();
+
+                    return Some((proposal_id, proposal));
+                }
+
+                None
+            })
+            .for_each(|(proposal_id, proposal)| {
                 <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+                <Proposals<T>>::insert(proposal_id, proposal);
             });
-        });
     }
 
     /// Reactivate proposals with pending constitutionality.
@@ -611,7 +615,6 @@ impl<T: Trait> Module<T> {
             .for_each(|(proposal_id, proposal)| {
                 <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
                 <Proposals<T>>::insert(proposal_id, proposal);
-                <ActiveProposalIds<T>>::insert(proposal_id, ());
             });
     }
 }
@@ -625,12 +628,14 @@ impl<T: Trait> Module<T> {
     // Enumerates through active proposals. Tally Voting results.
     // Returns proposals with finalized status and id
     fn get_finalized_proposals() -> Vec<FinalizedProposal<T>> {
-        // Enumerate active proposals id and gather finalization data.
+        // Filter active proposals and gather finalization data.
         // Skip proposals with unfinished voting.
-        <ActiveProposalIds<T>>::iter()
-            .filter_map(|(proposal_id, _)| {
-                // load current proposal
-                let proposal = Self::proposals(proposal_id);
+        <Proposals<T>>::iter()
+            .filter_map(|(proposal_id, proposal)| {
+                // Filter only active proposals.
+                if !proposal.status.is_active_proposal() {
+                    return None;
+                }
 
                 // Calculates votes, takes in account voting period expiration.
                 // If voting process is in progress, then decision status is None.
@@ -639,7 +644,7 @@ impl<T: Trait> Module<T> {
                     Self::current_block(),
                 );
 
-                // map to FinalizedProposalData if decision for the proposal is made or return None
+                // Map to FinalizedProposalData if decision for the proposal is made or return None.
                 decision_status.map(|status| FinalizedProposalData {
                     proposal_id,
                     proposal,
@@ -681,7 +686,6 @@ impl<T: Trait> Module<T> {
             proposal_execution_status,
         ));
 
-        Self::decrease_active_proposal_counter();
         Self::remove_proposal_data(&approved_proposal.proposal_id);
     }
 
@@ -693,17 +697,9 @@ impl<T: Trait> Module<T> {
     // - fire an event
     // It prints an error message in case of an attempt to finalize the non-active proposal.
     fn finalize_proposal(proposal_id: T::ProposalId, decision_status: ProposalDecisionStatus) {
-        let now = Self::current_block();
-
-        <ActiveProposalIds<T>>::remove(&proposal_id.clone());
-
         let mut proposal = Self::proposals(proposal_id);
 
         if proposal.status.is_active_or_pending_execution() {
-            if matches!(decision_status, ProposalDecisionStatus::Approved(..)) {
-                proposal.increase_constitutionality_level();
-            }
-
             // deal with stakes if necessary
             if decision_status
                 != ProposalDecisionStatus::Approved(
@@ -715,18 +711,21 @@ impl<T: Trait> Module<T> {
                 Self::slash_and_unstake(proposal.staking_account_id.clone(), slash_balance);
             }
 
-            // create finalized proposal status with error if any
+            // create finalized proposal status
+            let now = Self::current_block();
             let new_proposal_status = ProposalStatus::finalized(decision_status.clone(), now);
 
             // update approved proposal or remove otherwise
             if !matches!(decision_status, ProposalDecisionStatus::Approved(..)) {
                 Self::remove_proposal_data(&proposal_id);
-                Self::decrease_active_proposal_counter();
             } else {
                 proposal.status = new_proposal_status.clone();
+                proposal.increase_constitutionality_level();
+
                 <Proposals<T>>::insert(proposal_id, proposal);
             }
 
+            // fire the event
             Self::deposit_event(RawEvent::ProposalStatusUpdated(
                 proposal_id,
                 new_proposal_status,
@@ -830,6 +829,8 @@ impl<T: Trait> Module<T> {
         <Proposals<T>>::remove(proposal_id);
         <DispatchableCallCode<T>>::remove(proposal_id);
         <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+
+        Self::decrease_active_proposal_counter();
 
         T::ProposalObserver::proposal_removed(proposal_id);
     }
