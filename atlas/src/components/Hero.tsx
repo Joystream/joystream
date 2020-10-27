@@ -2,7 +2,6 @@ import React from 'react'
 import { fluidRange } from 'polished'
 import { css } from '@emotion/core'
 import { Button, Header } from '@/shared/components'
-import sizes from '@/shared/theme/sizes'
 
 type HeroProps = {
   backgroundImg: string
@@ -21,7 +20,7 @@ const Hero: React.FC<Partial<HeroProps>> = ({ backgroundImg }) => {
           ${fluidRange({ prop: 'fontSize', fromSize: '40px', toSize: '72px' })};
           line-height: 0.94;
         }
-        margin: 0 -${sizes.b8}px;
+        margin: 0 calc(-1 * var(--global-horizontal-padding));
       `}
     >
       <div

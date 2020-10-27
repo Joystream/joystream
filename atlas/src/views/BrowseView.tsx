@@ -42,7 +42,7 @@ const StyledCategoryPicker = styled(CategoryPicker)`
   position: sticky;
   top: 0;
   padding: ${sizes.b5}px ${sizes.b8}px ${sizes.b2}px;
-  margin: 0 -${sizes.b8}px;
+  margin: 0 calc(-1 * var(--global-horizontal-padding));
   background-color: ${colors.black};
 `
 const StyledInfiniteVideoGrid = styled(InfiniteVideoGrid)`

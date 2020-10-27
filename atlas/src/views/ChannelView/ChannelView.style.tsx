@@ -1,6 +1,6 @@
 import styled from '@emotion/styled'
-import { Avatar } from '@/shared/components'
 import { fluidRange } from 'polished'
+import { Avatar } from '@/shared/components'
 import theme from '@/shared/theme'
 
 type ChannelHeaderProps = {
@@ -13,8 +13,8 @@ export const Header = styled.section<ChannelHeaderProps>`
   background-position: center center;
   background-repeat: no-repeat;
   height: 430px;
-  padding: 0 ${theme.sizes.b8}px;
-  margin: 0 -${theme.sizes.b8}px;
+  padding: 0 var(--global-horizontal-padding);
+  margin: 0 calc(-1 * var(--global-horizontal-padding));
 `
 export const TitleSection = styled.div`
   display: flex;
@@ -26,12 +26,28 @@ export const TitleSection = styled.div`
     align-items: center;
   }
 `
+export const TitleContainer = styled.div`
+  max-width: 100%;
+  @media screen and (min-width: ${theme.breakpoints.medium}) {
+    max-width: 60%;
+  }
+  background-color: ${theme.colors.gray[800]};
+  padding: 0 ${theme.sizes.b2}px;
+`
+
 export const Title = styled.h1`
+  ${fluidRange({ prop: 'fontSize', fromSize: '32px', toSize: '40px' })};
   font-weight: bold;
-  ${fluidRange({ prop: 'fontSize', fromSize: '34px', toSize: '40px' })};
-  max-width: 320px;
-  display: inline-block;
-  margin: 0;
+  margin: -4px 0 0;
+  line-height: 48px;
+  @media screen and (min-width: ${theme.breakpoints.medium}) {
+    line-height: 56px;
+  }
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow-x: hidden;
+  max-width: 100%;
 `
 
 export const VideoSection = styled.section`
@@ -39,16 +55,13 @@ export const VideoSection = styled.section`
 `
 
 export const StyledAvatar = styled(Avatar)`
-  max-width: 136px;
-  max-height: 136px;
   width: 128px;
   height: 128px;
-  margin-right: ${theme.sizes.b6}px;
-  > span {
-    font-size: ${theme.typography.sizes.h2};
-  };
+  margin-bottom: ${theme.sizes.b3}px;
+
   @media (min-width: ${theme.breakpoints.small}) {
     width: 136px;
     height: 136px;
+    margin: 0 ${theme.sizes.b6}px 0 0;
   }
 `

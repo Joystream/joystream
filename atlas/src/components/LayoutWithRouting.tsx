@@ -4,9 +4,8 @@ import { Router } from '@reach/router'
 
 import { GlobalStyle } from '@/shared/components'
 import { Navbar } from '@/components'
-import { HomeView, VideoView, SearchView, ChannelView, BrowseView } from '@/views'
+import { BrowseView, ChannelView, HomeView, SearchView, VideoView } from '@/views'
 import routes from '@/config/routes'
-import { sizes } from '@/shared/theme'
 
 const LayoutWithRouting: React.FC = () => (
   <>
@@ -27,7 +26,7 @@ const LayoutWithRouting: React.FC = () => (
 )
 
 const MainContainer = styled.main`
-  padding: 0 ${sizes.b8}px;
+  padding: 0 var(--global-horizontal-padding);
 `
 
 export default LayoutWithRouting
