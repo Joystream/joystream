@@ -36,6 +36,8 @@ export default class RemoveVideoCommand extends ContentDirectoryCommandBase {
 
     const video = await this.parseToKnownEntityJson<VideoEntity>(videoEntity)
 
+    await this.requireConfirmation(`Are you sure you want to remove the "${video.title}" video?`)
+
     const api = this.getOriginalApi()
     this.log(`Removing the Video entity (ID: ${videoId})...`)
     await this.sendAndFollowTx(account, api.tx.contentDirectory.removeEntity(actor, videoId))
