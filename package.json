@@ -19,7 +19,10 @@
     "pioneer",
     "pioneer/packages/*",
     "utils/api-scripts",
-    "content-directory-schemas"
+    "content-directory-schemas",
+    "query-node",
+    "query-node/generated/graphql-server",
+    "query-node/generated/indexer"
   ],
   "resolutions": {
     "@polkadot/api": "1.26.1",

@@ -1,5 +1,5 @@
 {
-	"name": "joystream_query_node",
+	"name": "query-node-root",
 	"version": "1.0.0",
 	"description": "GraphQL server and Substrate indexer. Generated with ♥ by Hydra-CLI",
 	"scripts": {
