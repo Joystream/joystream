@@ -316,14 +316,14 @@ pub fn testnet_genesis(
         }),
         working_group_Instance2: Some(StorageWorkingGroupConfig {
             phantom: Default::default(),
-            storage_working_group_mint_capacity: 0,
+            working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,
         }),
         working_group_Instance3: Some(ContentDirectoryWorkingGroupConfig {
             phantom: Default::default(),
-            storage_working_group_mint_capacity: 0,
+            working_group_mint_capacity: 0,
             opening_human_readable_text_constraint: default_text_constraint,
             worker_application_human_readable_text_constraint: default_text_constraint,
             worker_exit_rationale_text_constraint: default_text_constraint,

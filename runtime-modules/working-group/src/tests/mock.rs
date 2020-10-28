@@ -156,7 +156,7 @@ pub fn build_test_externalities() -> sp_io::TestExternalities {
 
     crate::GenesisConfig::<Test, TestWorkingGroupInstance> {
         phantom: Default::default(),
-        storage_working_group_mint_capacity: WORKING_GROUP_MINT_CAPACITY,
+        working_group_mint_capacity: WORKING_GROUP_MINT_CAPACITY,
         opening_human_readable_text_constraint: InputValidationLengthConstraint::new(
             WORKING_GROUP_CONSTRAINT_MIN,
             WORKING_GROUP_CONSTRAINT_DIFF,
