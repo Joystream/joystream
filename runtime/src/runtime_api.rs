@@ -1,5 +1,5 @@
 use frame_support::inherent::{CheckInherentsResult, InherentData};
-use frame_support::traits::{KeyOwnerProofSystem, Randomness};
+use frame_support::traits::{KeyOwnerProofSystem, OnRuntimeUpgrade, Randomness};
 use frame_support::unsigned::{TransactionSource, TransactionValidity};
 use pallet_grandpa::fg_primitives;
 use pallet_transaction_payment_rpc_runtime_api::RuntimeDispatchInfo;
@@ -11,6 +11,7 @@ use sp_runtime::{generic, ApplyExtrinsicResult};
 use sp_std::vec::Vec;
 
 use crate::constants::PRIMARY_PROBABILITY;
+use crate::integration::content_directory::ContentDirectoryWorkingGroup;
 use crate::{
     AccountId, AuthorityDiscoveryId, Balance, BlockNumber, EpochDuration, GrandpaAuthorityList,
     GrandpaId, Hash, Index, RuntimeVersion, Signature, VERSION,
@@ -19,6 +20,7 @@ use crate::{
     AllModules, AuthorityDiscovery, Babe, Call, Grandpa, Historical, InherentDataExt,
     RandomnessCollectiveFlip, Runtime, SessionKeys, System, TransactionPayment,
 };
+use frame_support::weights::Weight;
 
 /// The SignedExtension to the basic transaction logic.
 pub type SignedExtra = (
@@ -50,9 +52,37 @@ pub type BlockId = generic::BlockId<Block>;
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic = generic::UncheckedExtrinsic<AccountId, Call, Signature, SignedExtra>;
 
+// Default Executive type without the RuntimeUpgrade
+// pub type Executive =
+//     frame_executive::Executive<Runtime, Block, system::ChainContext<Runtime>, Runtime, AllModules>;
+
+/// Custom runtime upgrade handler.
+pub struct CustomOnRuntimeUpgrade;
+impl OnRuntimeUpgrade for CustomOnRuntimeUpgrade {
+    fn on_runtime_upgrade() -> Weight {
+        let default_text_constraint = crate::working_group::default_text_constraint();
+        let default_content_working_group_mint_capacity = 0;
+
+        ContentDirectoryWorkingGroup::<Runtime>::initialize_working_group(
+            default_text_constraint,
+            default_text_constraint,
+            default_text_constraint,
+            default_content_working_group_mint_capacity,
+        );
+
+        10_000_000 // TODO: adjust weight
+    }
+}
+
 /// Executive: handles dispatch to the various modules.
-pub type Executive =
-    frame_executive::Executive<Runtime, Block, system::ChainContext<Runtime>, Runtime, AllModules>;
+pub type Executive = frame_executive::Executive<
+    Runtime,
+    Block,
+    system::ChainContext<Runtime>,
+    Runtime,
+    AllModules,
+    CustomOnRuntimeUpgrade,
+>;
 
 /// Export of the private const generated within the macro.
 pub const EXPORTED_RUNTIME_API_VERSIONS: sp_version::ApisVec = RUNTIME_API_VERSIONS;
