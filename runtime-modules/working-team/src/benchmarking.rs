@@ -6,51 +6,60 @@ use sp_std::prelude::*;
 use system as frame_system;
 use system::RawOrigin;
 
-use crate::Module as WorkingTeam;
 use crate::types::StakeParameters;
+use crate::Module as WorkingTeam;
 
-fn create_a_worker<T: Trait<I>, I: Instance>(
-    caller_id: &T::AccountId,
-    member_id: &T::MemberId,
-    can_leave_immediatly: bool,
-) -> TeamWorker<T> {
+const SEED: u32 = 0;
 
-    let job_unstaking_period = if !can_leave_immediatly {
-        <T as system::Trait>::BlockNumber::max_value()
-    } else {
-        Zero::zero()
-    };
-
-    TeamWorker::<T>::new(
-        &member_id,
-        &caller_id,
-        &caller_id,
-        &Some(caller_id.clone()),
-        job_unstaking_period,
-        Some(BalanceOfCurrency::<T>::max_value()),
-        Zero::zero(),
-    )
-}
-
-
-/*
- * TODO: For now we don't need to create more than 1 worker and the worst case always include that worker being the lead
- */
 fn insert_a_worker<T: Trait<I>, I: Instance>(
     can_leave_immediatly: bool,
+    is_lead: bool,
+    lead_id: Option<T::AccountId>,
 ) -> (T::AccountId, TeamWorkerId<T>) {
     /*
-     * TODO: Be able to have a different name for each account/member
+     * TODO: Refator this!!!!! :(
      */
-    let caller_id = account::<T::AccountId>("caller", 0, 0);
+    let (
+        caller_id,
+        opening_type,
+        add_opening_origin,
+        member_id,
+        handle,
+        opening_id,
+        application_id,
+        worker_id,
+    ) = if is_lead {
+        (
+            account::<T::AccountId>("lead", 0, SEED),
+            JobOpeningType::Leader,
+            RawOrigin::Root,
+            Zero::zero(),
+            vec![0u8, 0u8, 0u8, 0u8, 0u8],
+            Zero::zero(),
+            Zero::zero(),
+            Zero::zero(),
+        )
+    } else {
+        (
+            account::<T::AccountId>("member", 1, SEED),
+            JobOpeningType::Regular,
+            RawOrigin::Signed(lead_id.unwrap()),
+            <T::MemberId as One>::one(),
+            vec![1u8, 1u8, 1u8, 1u8, 1u8],
+            <T::OpeningId as One>::one(),
+            <T::ApplicationId as One>::one(),
+            <TeamWorkerId<T> as One>::one(),
+        )
+    };
 
     /*
      * TODO: Does this create a dependency to the membership pallet for benchmarking that we just don't want?
      */
 
-    let _ = <T as common::currency::GovernanceCurrency>::Currency::make_free_balance_be(&caller_id, BalanceOfCurrency::<T>::max_value());
-
-
+    let _ = <T as common::currency::GovernanceCurrency>::Currency::make_free_balance_be(
+        &caller_id,
+        BalanceOfCurrency::<T>::max_value(),
+    );
 
     // If job usntaking period is zero the worker can always
     // leave immediatly. However for the ase the worker can't
@@ -60,34 +69,36 @@ fn insert_a_worker<T: Trait<I>, I: Instance>(
     T::StakingHandler::lock(&caller_id, BalanceOfCurrency::<T>::max_value());
 
     let (staking_policy, stake_parameters) = if can_leave_immediatly {
-      (None, None)
+        (None, None)
     } else {
-      (Some(StakePolicy {
-        stake_amount: BalanceOfCurrency::<T>::max_value(),
-        leaving_unstaking_period: T::BlockNumber::max_value(),
-      }),
-      Some(StakeParameters {
-        stake: BalanceOfCurrency::<T>::max_value(),
-        staking_account_id: caller_id.clone(),
-      }))
+        (
+            Some(StakePolicy {
+                stake_amount: BalanceOfCurrency::<T>::max_value(),
+                leaving_unstaking_period: T::BlockNumber::max_value(),
+            }),
+            Some(StakeParameters {
+                stake: BalanceOfCurrency::<T>::max_value(),
+                staking_account_id: caller_id.clone(),
+            }),
+        )
     };
 
     membership::Module::<T>::buy_membership(
         RawOrigin::Signed(caller_id.clone()).into(),
         Zero::zero(),
-        Some(vec![0u8, 0u8, 0u8, 0u8, 0u8]),
+        Some(handle),
         None,
         None,
     )
     .unwrap();
 
     WorkingTeam::<T, I>::add_opening(
-        RawOrigin::Root.into(),
+        add_opening_origin.clone().into(),
         vec![],
-        JobOpeningType::Leader,
+        opening_type,
         staking_policy,
-        Some(RewardPolicy{
-          reward_per_block: BalanceOfCurrency::<T>::max_value(),
+        Some(RewardPolicy {
+            reward_per_block: BalanceOfCurrency::<T>::max_value(),
         }),
     )
     .unwrap();
@@ -95,8 +106,8 @@ fn insert_a_worker<T: Trait<I>, I: Instance>(
     WorkingTeam::<T, I>::apply_on_opening(
         RawOrigin::Signed(caller_id.clone()).into(),
         ApplyOnOpeningParameters::<T, I> {
-            member_id: Zero::zero(),
-            opening_id: Zero::zero(),
+            member_id,
+            opening_id,
             role_account_id: caller_id.clone(),
             reward_account_id: caller_id.clone(),
             description: vec![],
@@ -106,19 +117,19 @@ fn insert_a_worker<T: Trait<I>, I: Instance>(
     .unwrap();
 
     let mut successful_application_ids = BTreeSet::<T::ApplicationId>::new();
-    successful_application_ids.insert(Zero::zero());
+    successful_application_ids.insert(application_id);
     WorkingTeam::<T, I>::fill_opening(
-        RawOrigin::Root.into(),
-        Zero::zero(),
+        add_opening_origin.clone().into(),
+        opening_id,
         successful_application_ids,
     )
     .unwrap();
 
-    (caller_id, Zero::zero())
+    (caller_id, worker_id)
 }
 
 fn create_lead<T: Trait<I>, I: Instance>() -> (T::AccountId, TeamWorkerId<T>) {
-    let (caller_id, lead_worker_id) = insert_a_worker::<T, I>(true);
+    let (caller_id, lead_worker_id) = insert_a_worker::<T, I>(true, true, None);
     /*
     WorkingTeam::<T, I>::set_lead(lead_worker_id);
     */
@@ -127,6 +138,35 @@ fn create_lead<T: Trait<I>, I: Instance>() -> (T::AccountId, TeamWorkerId<T>) {
 
 benchmarks_instance! {
     _ { }
+
+    decrease_stake {
+      let i in 0 .. 10;
+
+      let (lead_id, _) = create_lead::<T, I>();
+      let (_, worker_id) = insert_a_worker::<T, I>(false, false, Some(lead_id.clone()));
+
+      let new_stake = BalanceOfCurrency::<T>::max_value() - BalanceOfCurrency::<T>::one();
+    }: _ (RawOrigin::Signed(lead_id), worker_id, new_stake)
+    verify {}
+
+    spend_from_budget {
+      let i in 0 .. 10;
+
+      let (lead_id, _) = create_lead::<T, I>();
+      let current_budget = BalanceOfCurrency::<T>::max_value();
+      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
+
+    }: _ (RawOrigin::Signed(lead_id.clone()), lead_id.clone(), current_budget, None)
+    verify {}
+
+    update_reward_amount {
+      let i in 0 .. 10;
+
+      let (lead_id, _) = create_lead::<T, I>();
+      let (_, worker_id) = insert_a_worker::<T, I>(true, false, Some(lead_id.clone()));
+      let new_reward = Some(BalanceOfCurrency::<T>::max_value());
+    }: _ (RawOrigin::Signed(lead_id.clone()), worker_id, new_reward)
+    verify {}
 
     set_status_text {
       let i in 0 .. 50000; // TODO: We should have a bounded value for description
@@ -140,7 +180,7 @@ benchmarks_instance! {
     update_reward_account {
       let i in 0 .. 10;
 
-      let (caller_id, worker_id) = insert_a_worker::<T, I>(false);
+      let (caller_id, worker_id) = create_lead::<T, I>();
       let new_id = account::<T::AccountId>("new_id", 1, 0);
 
     }: _ (RawOrigin::Signed(caller_id), worker_id, new_id)
@@ -159,6 +199,8 @@ benchmarks_instance! {
 
       let caller_id = account::<T::AccountId>("caller", 0, 0);
 
+      let (lead_id, _) = create_lead::<T, I>();
+
       let stake_policy = StakePolicy {
         stake_amount: BalanceOfCurrency::<T>::max_value(),
         leaving_unstaking_period: T::BlockNumber::max_value(),
@@ -170,7 +212,7 @@ benchmarks_instance! {
 
       let description = vec![0u8][..].repeat(i as usize); // TODO:don't use as
 
-    }: _(RawOrigin::Root, description, JobOpeningType::Leader, Some(stake_policy), Some(reward_policy))
+    }: _(RawOrigin::Signed(lead_id), description, JobOpeningType::Regular, Some(stake_policy), Some(reward_policy))
     verify { }
 
     // This is always worse than leave_role_immediatly
@@ -193,7 +235,7 @@ benchmarks_instance! {
     leave_role_later {
         let i in 0 .. 10;
 
-        let (caller_id, caller_worker_id) = insert_a_worker::<T, I>(false);
+        let (caller_id, caller_worker_id) = create_lead::<T, I>();
     }: leave_role(RawOrigin::Signed(caller_id), caller_worker_id)
     verify { }
 }
