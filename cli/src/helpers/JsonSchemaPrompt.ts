@@ -8,7 +8,7 @@ import { getSchemasLocation } from 'cd-schemas'
 import path from 'path'
 
 type CustomPromptMethod = () => Promise<any>
-type CustomPrompt = DistinctQuestion | CustomPromptMethod | { $item: CustomPrompt }
+type CustomPrompt = DistinctQuestion | CustomPromptMethod | { $item: CustomPrompt } | 'skip'
 
 // For the explaination of "string & { x: never }", see: https://github.com/microsoft/TypeScript/issues/29729
 // eslint-disable-next-line @typescript-eslint/ban-types
@@ -39,20 +39,29 @@ export class JsonSchemaPrompter<JsonResult> {
     this.filledObject = defaults || {}
   }
 
-  private oneOfToChoices(oneOf: JSONSchema[]) {
+  private oneOfToOptions(oneOf: JSONSchema[], currentValue: any) {
+    let defaultValue: any
     const choices: { name: string; value: number | string }[] = []
 
     oneOf.forEach((pSchema, index) => {
       if (pSchema.description) {
-        choices.push({ name: pSchema.description, value: index })
+        choices.push({ name: pSchema.description, value: index.toString() })
       } else if (pSchema.type === 'object' && pSchema.properties) {
-        choices.push({ name: `{ ${Object.keys(pSchema.properties).join(', ')} }`, value: index })
+        choices.push({ name: `{ ${Object.keys(pSchema.properties).join(', ')} }`, value: index.toString() })
+        // Supports defaults for enum variants:
+        if (
+          typeof currentValue === 'object' &&
+          currentValue !== null &&
+          Object.keys(currentValue).join(',') === Object.keys(pSchema.properties).join(',')
+        ) {
+          defaultValue = index.toString()
+        }
       } else {
-        choices.push({ name: index.toString(), value: index })
+        choices.push({ name: index.toString(), value: index.toString() })
       }
     })
 
-    return choices
+    return { choices, default: defaultValue }
   }
 
   private getCustomPrompt(propertyPath: string): CustomPrompt | undefined {
@@ -67,9 +76,25 @@ export class JsonSchemaPrompter<JsonResult> {
     return chalk.green(propertyPath)
   }
 
-  private async prompt(schema: JSONSchema, propertyPath = '', custom?: CustomPrompt): Promise<any> {
+  private async prompt(
+    schema: JSONSchema,
+    propertyPath = '',
+    custom?: CustomPrompt,
+    allPropsRequired = false
+  ): Promise<any> {
     const customPrompt: CustomPrompt | undefined = custom || this.getCustomPrompt(propertyPath)
     const propDisplayName = this.propertyDisplayName(propertyPath)
+    const currentValue = _.get(this.filledObject, propertyPath)
+
+    if (customPrompt === 'skip') {
+      return
+    }
+
+    // Automatically handle "null" values (useful for enum variants)
+    if (schema.type === 'null') {
+      _.set(this.filledObject, propertyPath, null)
+      return null
+    }
 
     // Custom prompt
     if (typeof customPrompt === 'function') {
@@ -79,16 +104,40 @@ export class JsonSchemaPrompter<JsonResult> {
     // oneOf
     if (schema.oneOf) {
       const oneOf = schema.oneOf as JSONSchema[]
-      const choices = this.oneOfToChoices(oneOf)
-      const { choosen } = await inquirer.prompt({ name: 'choosen', message: propDisplayName, type: 'list', choices })
-      return await this.prompt(oneOf[choosen], propertyPath)
+      const options = this.oneOfToOptions(oneOf, currentValue)
+      const { choosen } = await inquirer.prompt({ name: 'choosen', message: propDisplayName, type: 'list', ...options })
+      return await this.prompt(oneOf[parseInt(choosen)], propertyPath)
     }
 
     // object
     if (schema.type === 'object' && schema.properties) {
       const value: Record<string, any> = {}
       for (const [pName, pSchema] of Object.entries(schema.properties)) {
-        value[pName] = await this.prompt(pSchema, propertyPath ? `${propertyPath}.${pName}` : pName)
+        const objectPropertyPath = propertyPath ? `${propertyPath}.${pName}` : pName
+        const propertyCustomPrompt = this.getCustomPrompt(objectPropertyPath)
+
+        if (propertyCustomPrompt === 'skip') {
+          continue
+        }
+
+        let confirmed = true
+        const required = allPropsRequired || (Array.isArray(schema.required) && schema.required.includes(pName))
+
+        if (!required) {
+          confirmed = (
+            await inquirer.prompt([
+              {
+                message: `Do you want to provide optional ${chalk.greenBright(objectPropertyPath)}?`,
+                type: 'confirm',
+                name: 'confirmed',
+                default: _.get(this.filledObject, objectPropertyPath) !== undefined,
+              },
+            ])
+          ).confirmed
+        }
+        if (confirmed) {
+          value[pName] = await this.prompt(pSchema, objectPropertyPath)
+        }
       }
       return value
     }
@@ -99,7 +148,6 @@ export class JsonSchemaPrompter<JsonResult> {
     }
 
     // "primitive" values:
-    const currentValue = _.get(this.filledObject, propertyPath)
     const basicPromptOptions: DistinctQuestion = {
       message: propDisplayName,
       default: currentValue !== undefined ? currentValue : schema.default,
@@ -156,6 +204,7 @@ export class JsonSchemaPrompter<JsonResult> {
           ...BOOL_PROMPT_OPTIONS,
           name: 'next',
           message: `Do you want to add another item to ${this.propertyDisplayName(propertyPath)} array?`,
+          default: _.get(this.filledObject, `${propertyPath}[${currItem}]`) !== undefined,
         },
       ])
       if (!next) {
@@ -210,8 +259,8 @@ export class JsonSchemaPrompter<JsonResult> {
     return await RefParser.dereference(this.schemaPath, this.schema, {})
   }
 
-  async promptAll() {
-    await this.prompt(await this.getMainSchema())
+  async promptAll(allPropsRequired = false) {
+    await this.prompt(await this.getMainSchema(), '', undefined, allPropsRequired)
     return this.filledObject as JsonResult
   }
 

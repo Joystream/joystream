@@ -18,7 +18,7 @@ import { DistinctQuestion } from 'inquirer'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import { DispatchError } from '@polkadot/types/interfaces/system'
 
-class ExtrinsicFailedError extends Error {}
+export class ExtrinsicFailedError extends Error {}
 
 /**
  * Abstract base class for commands that require access to the API.
@@ -454,13 +454,15 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     account: KeyringPair,
     tx: SubmittableExtrinsic<'promise'>,
     warnOnly = false // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
-  ): Promise<void> {
+  ): Promise<boolean> {
     try {
       await this.sendExtrinsic(account, tx)
       this.log(chalk.green(`Extrinsic successful!`))
+      return true
     } catch (e) {
       if (e instanceof ExtrinsicFailedError && warnOnly) {
         this.warn(`Extrinsic failed! ${e.message}`)
+        return false
       } else if (e instanceof ExtrinsicFailedError) {
         throw new CLIError(`Extrinsic failed! ${e.message}`, { exit: ExitCodes.ApiError })
       } else {
@@ -475,10 +477,10 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     method: string,
     params: CodecArg[],
     warnOnly = false
-  ): Promise<void> {
+  ): Promise<boolean> {
     this.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
     const tx = await this.getOriginalApi().tx[module][method](...params)
-    await this.sendAndFollowTx(account, tx, warnOnly)
+    return await this.sendAndFollowTx(account, tx, warnOnly)
   }
 
   async buildAndSendExtrinsic(

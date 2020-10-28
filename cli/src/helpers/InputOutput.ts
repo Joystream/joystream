@@ -61,14 +61,49 @@ export function saveOutputJson(outputPath: string | undefined, fileName: string,
       fileName = fileName.replace(/(_[0-9]+)?\.json/, `_${++postfix}.json`)
       outputFilePath = path.join(outputPath, fileName)
     }
-    try {
-      fs.writeFileSync(outputFilePath, JSON.stringify(data, null, 4))
-    } catch (e) {
-      throw new CLIError(`Could not save the output to: ${outputFilePath}. Check directory permissions`, {
-        exit: ExitCodes.FsOperationFailed,
-      })
-    }
+    saveOutputJsonToFile(outputFilePath, data)
 
     console.log(`${chalk.green('Output succesfully saved to:')} ${chalk.white(outputFilePath)}`)
+  }
+}
+
+// Output as file:
+
+export function saveOutputJsonToFile(outputFilePath: string, data: any): void {
+  try {
+    fs.writeFileSync(outputFilePath, JSON.stringify(data, null, 4))
+  } catch (e) {
+    throw new CLIError(`Could not save the output to: ${outputFilePath}. Check permissions...`, {
+      exit: ExitCodes.FsOperationFailed,
+    })
+  }
+}
+
+export function ensureOutputFileIsWriteable(outputFilePath: string | undefined): void {
+  if (outputFilePath === undefined) {
+    return
+  }
+
+  if (path.extname(outputFilePath) !== '.json') {
+    throw new CLIError(`Output path ${outputFilePath} is not a JSON file!`, { exit: ExitCodes.InvalidInput })
+  }
+
+  if (fs.existsSync(outputFilePath)) {
+    // File already exists - warn the user and check it it's writeable
+    console.warn(`WARNING: ${outputFilePath} already exists and it will get overriden!`)
+    try {
+      fs.accessSync(`${outputFilePath}`, fs.constants.W_OK)
+    } catch (e) {
+      throw new CLIError(`Output path ${outputFilePath} is not writeable!`, { exit: ExitCodes.InvalidInput })
+    }
+  } else {
+    // File does not exist yet - check if the directory is writeable
+    try {
+      fs.accessSync(`${path.dirname(outputFilePath)}`, fs.constants.W_OK)
+    } catch (e) {
+      throw new CLIError(`Output directory ${path.dirname(outputFilePath)} is not writeable!`, {
+        exit: ExitCodes.InvalidInput,
+      })
+    }
   }
 }
