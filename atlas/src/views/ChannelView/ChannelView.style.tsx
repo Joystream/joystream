@@ -31,10 +31,6 @@ export const Title = styled.h1`
 export const VideoSection = styled.section`
   margin-top: -100px;
 `
-export const VideoSectionHeader = styled.h5`
-  margin: 0 0 ${theme.spacing.m};
-  font-size: ${theme.typography.sizes.h5};
-`
 
 export const StyledAvatar = styled(Avatar)`
   max-width: 136px;
