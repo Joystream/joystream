@@ -7,19 +7,13 @@ use system as frame_system;
 use system::RawOrigin;
 
 use crate::Module as WorkingTeam;
+use crate::types::StakeParameters;
 
 fn create_a_worker<T: Trait<I>, I: Instance>(
     caller_id: &T::AccountId,
     member_id: &T::MemberId,
     can_leave_immediatly: bool,
 ) -> TeamWorker<T> {
-    // If job usntaking period is zero the worker can always
-    // leave immediatly. However for the ase the worker can't
-    // leave immmediatly we need a non-zero stake.
-    // This is handled by `T::StakingHandler::current_stake
-
-    T::StakingHandler::increase_stake(&caller_id, BalanceOfCurrency::<T>::max_value()).unwrap();
-    T::StakingHandler::lock(&caller_id, BalanceOfCurrency::<T>::max_value());
 
     let job_unstaking_period = if !can_leave_immediatly {
         <T as system::Trait>::BlockNumber::max_value()
@@ -38,6 +32,10 @@ fn create_a_worker<T: Trait<I>, I: Instance>(
     )
 }
 
+
+/*
+ * TODO: For now we don't need to create more than 1 worker and the worst case always include that worker being the lead
+ */
 fn insert_a_worker<T: Trait<I>, I: Instance>(
     can_leave_immediatly: bool,
 ) -> (T::AccountId, TeamWorkerId<T>) {
@@ -45,28 +43,85 @@ fn insert_a_worker<T: Trait<I>, I: Instance>(
      * TODO: Be able to have a different name for each account/member
      */
     let caller_id = account::<T::AccountId>("caller", 0, 0);
-    let member_id = account::<T::MemberId>("member", 0, 0);
 
     /*
-     * TODO: Ideally it's better to create the workers using opening/apply/fill
-     * However, I couldn't find yet how to grab the RawEvent::OpeningAdded
-     * To find the add_opening event
+     * TODO: Does this create a dependency to the membership pallet for benchmarking that we just don't want?
      */
-    let worker_id = <NextWorkerId<T, I>>::get();
 
-    let worker = create_a_worker::<T, I>(&caller_id, &member_id, can_leave_immediatly);
+    let _ = <T as common::currency::GovernanceCurrency>::Currency::make_free_balance_be(&caller_id, BalanceOfCurrency::<T>::max_value());
 
-    <NextWorkerId<T, I>>::mutate(|id| *id += <TeamWorkerId<T> as One>::one());
-    <ActiveWorkerCount<I>>::put(<ActiveWorkerCount<I>>::get() + 1);
 
-    <WorkerById<T, I>>::insert(worker_id, worker);
 
-    (caller_id, worker_id)
+    // If job usntaking period is zero the worker can always
+    // leave immediatly. However for the ase the worker can't
+    // leave immmediatly we need a non-zero stake.
+    // This is handled by `T::StakingHandler::current_stake
+    T::StakingHandler::increase_stake(&caller_id, BalanceOfCurrency::<T>::max_value()).unwrap();
+    T::StakingHandler::lock(&caller_id, BalanceOfCurrency::<T>::max_value());
+
+    let (staking_policy, stake_parameters) = if can_leave_immediatly {
+      (None, None)
+    } else {
+      (Some(StakePolicy {
+        stake_amount: BalanceOfCurrency::<T>::max_value(),
+        leaving_unstaking_period: T::BlockNumber::max_value(),
+      }),
+      Some(StakeParameters {
+        stake: BalanceOfCurrency::<T>::max_value(),
+        staking_account_id: caller_id.clone(),
+      }))
+    };
+
+    membership::Module::<T>::buy_membership(
+        RawOrigin::Signed(caller_id.clone()).into(),
+        Zero::zero(),
+        Some(vec![0u8, 0u8, 0u8, 0u8, 0u8]),
+        None,
+        None,
+    )
+    .unwrap();
+
+    WorkingTeam::<T, I>::add_opening(
+        RawOrigin::Root.into(),
+        vec![],
+        JobOpeningType::Leader,
+        staking_policy,
+        Some(RewardPolicy{
+          reward_per_block: BalanceOfCurrency::<T>::max_value(),
+        }),
+    )
+    .unwrap();
+
+    WorkingTeam::<T, I>::apply_on_opening(
+        RawOrigin::Signed(caller_id.clone()).into(),
+        ApplyOnOpeningParameters::<T, I> {
+            member_id: Zero::zero(),
+            opening_id: Zero::zero(),
+            role_account_id: caller_id.clone(),
+            reward_account_id: caller_id.clone(),
+            description: vec![],
+            stake_parameters,
+        },
+    )
+    .unwrap();
+
+    let mut successful_application_ids = BTreeSet::<T::ApplicationId>::new();
+    successful_application_ids.insert(Zero::zero());
+    WorkingTeam::<T, I>::fill_opening(
+        RawOrigin::Root.into(),
+        Zero::zero(),
+        successful_application_ids,
+    )
+    .unwrap();
+
+    (caller_id, Zero::zero())
 }
 
 fn create_lead<T: Trait<I>, I: Instance>() -> (T::AccountId, TeamWorkerId<T>) {
     let (caller_id, lead_worker_id) = insert_a_worker::<T, I>(true);
+    /*
     WorkingTeam::<T, I>::set_lead(lead_worker_id);
+    */
     (caller_id, lead_worker_id)
 }
 
@@ -118,16 +173,8 @@ benchmarks_instance! {
     }: _(RawOrigin::Root, description, JobOpeningType::Leader, Some(stake_policy), Some(reward_policy))
     verify { }
 
-    // Might erase later
-    leave_role_immediatly {
-        let i in 0 .. 10; // TODO: test not running if we don't set a range of values
-
-        let (caller_id, caller_worker_id) = insert_a_worker::<T, I>(true);
-    }: leave_role(RawOrigin::Signed(caller_id), caller_worker_id)
-    verify { }
-
     // This is always worse than leave_role_immediatly
-    leave_lead_immediatly {
+    leave_role_immediatly {
         let i in 0 .. 10; // TODO: test not running if we don't set a range of values
         // Worst case scenario there is a lead(this requires **always** more steps)
         // could separate into new branch to tighten weight
