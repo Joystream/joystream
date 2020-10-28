@@ -14,7 +14,10 @@
     "inlineSources": false,
     "baseUrl": ".",
     "paths": {
-      "@polkadot/types/augment": ["../types/augment/all"]
+      "@polkadot/types/augment": [
+        "../types/augment/all",
+        "../types/augment-codec/augment-types.ts"
+      ]
     }
   },
   "include": ["mappings/**/*"],
