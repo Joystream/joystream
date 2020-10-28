@@ -63,6 +63,7 @@ import {
   IVideoMediaEncoding,
   IDBBlockId,
   IWhereCond,
+  IEntity,
 } from '../types'
 
 const debug = Debug('mappings:content-directory')
@@ -91,7 +92,11 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
 
   switch (cls.name) {
     case ContentDirectoryKnownClasses.CHANNEL:
-      await createChannel(arg, decode.setProperties<IChannel>(event, channelPropertyNamesWithId))
+      await createChannel(
+        arg,
+        new Map<String, IEntity[]>(),
+        decode.setProperties<IChannel>(event, channelPropertyNamesWithId)
+      )
       break
 
     case ContentDirectoryKnownClasses.CATEGORY:
@@ -124,11 +129,19 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
       break
 
     case ContentDirectoryKnownClasses.VIDEOMEDIA:
-      await createVideoMedia(arg, decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId))
+      await createVideoMedia(
+        arg,
+        new Map<String, IEntity[]>(),
+        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId)
+      )
       break
 
     case ContentDirectoryKnownClasses.VIDEO:
-      await createVideo(arg, decode.setProperties<IVideo>(event, videoPropertyNamesWithId))
+      await createVideo(
+        arg,
+        new Map<String, IEntity[]>(),
+        decode.setProperties<IVideo>(event, videoPropertyNamesWithId)
+      )
       break
 
     case ContentDirectoryKnownClasses.LANGUAGE:
@@ -162,7 +175,7 @@ async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent): Pr
 
   const cls = contentDirectoryClassNamesWithId.find((c) => c.classId === classEntity.classId)
   if (cls === undefined) {
-    console.log('Undefined class')
+    console.log('Unknown class')
     return
   }
 

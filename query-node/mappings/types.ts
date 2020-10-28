@@ -166,5 +166,8 @@ export interface ICreateEntityOperation {
 export interface IDBBlockId {
   db: DB
   block: number
+  // Entity id
   id: string
 }
+
+export type ClassEntityMap = Map<String, IEntity[]>
