@@ -70,7 +70,8 @@
     "ts-jest": "^24.1.0",
     "ts-node": "^8.10",
     "ts-node-dev": "^1.0.0-pre.60",
-    "typescript": "^3.9.7"
+    "typescript": "^3.9.7",
+    "typeorm": "^0.2.28"
   },
   "jest": {
     "globals": {
