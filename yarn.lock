@@ -1341,10 +1341,10 @@
     ajv "^6.12.0"
     ajv-keywords "^3.4.1"
 
-"@dzlzv/hydra-indexer-lib@^0.0.16-alpha.3":
-  version "0.0.16-alpha.3"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-indexer-lib/-/hydra-indexer-lib-0.0.16-alpha.3.tgz#d130c38c78596760b171c390f44fa2ff5b35f9ff"
-  integrity sha512-F50hyEVWuoxFhinwxqB6hUXq/C47F/kFHGVUG/MgwtareyLgc6XCC8SDrjm3X4SBt8SsbghOYsUcFsFylaEI2w==
+"@dzlzv/hydra-indexer-lib@^0.0.17-alpha":
+  version "0.0.17-alpha"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-indexer-lib/-/hydra-indexer-lib-0.0.17-alpha.tgz#60be76f17ec27d915d570a62c7ccf50adba01899"
+  integrity sha512-pi89MNmf1QbsDsYgutwlBHbLk/FMoV0WzUkmZFMt+7Fp/kNVQ9UV3zU8Yuroh6DEwYidh5LdOFUbcf54rYoEEA==
   dependencies:
     "@polkadot/api" "^2.1.1"
     "@types/ioredis" "^4.17.4"
