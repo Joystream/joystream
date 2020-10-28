@@ -1,30 +1,28 @@
 import React from 'react'
-import { SerializedStyles } from '@emotion/core'
-import { useCSS } from './Gallery.style'
+import { Container, HeadingContainer } from './Gallery.style'
 import Button from '../Button'
-import Carousel, { CarouselProps } from '../Carousel'
+import Carousel from '../Carousel'
 
 type GalleryProps = {
   title?: string
   action?: string
   onClick?: () => void
-  containerCss?: SerializedStyles
-} & CarouselProps
+  className?: string
+} & React.ComponentProps<typeof Carousel>
 
-const Gallery: React.FC<GalleryProps> = ({ title, action = '', containerCss, onClick, ...props }) => {
-  const styles = useCSS()
+const Gallery: React.FC<GalleryProps> = ({ title, action = '', className, onClick, ...carouselProps }) => {
   return (
-    <section css={[styles.container, containerCss]}>
-      <div css={styles.headingContainer}>
+    <Container className={className}>
+      <HeadingContainer>
         {title && <h4>{title}</h4>}
         {action && (
           <Button variant="tertiary" onClick={onClick}>
             {action}
           </Button>
         )}
-      </div>
-      <Carousel {...props} />
-    </section>
+      </HeadingContainer>
+      <Carousel {...carouselProps} />
+    </Container>
   )
 }
 

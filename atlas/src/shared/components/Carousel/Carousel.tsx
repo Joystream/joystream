@@ -1,52 +1,70 @@
-import React from 'react'
-import styled from '@emotion/styled'
-import Glider, { GliderProps, BreakPoint } from 'react-glider'
+import React, { useState, useEffect, useRef } from 'react'
+import { GliderProps, BreakPoint, GliderMethods } from 'react-glider'
+
+import { Container, StyledGlider, Arrow } from './Carousel.style'
+
 import 'glider-js/glider.min.css'
 
-import Icon from '../Icon'
-
-export type CarouselProps = {
+type CarouselProps = {
   trackPadding?: string
 } & GliderProps
 
-const Track: React.FC<any> = ({ className = '', ...props }) => (
+type TrackProps = {
+  className?: string
+  padding?: string
+}
+const Track: React.FC<TrackProps> = ({ className = '', ...props }) => (
   <div className={`glider-track ${className}`} {...props} />
 )
 
-const defaultBreakpoints: BreakPoint[] = [
-  {
-    breakpoint: 400,
-    settings: {
-      slidesToShow: 1,
-      slidesToScroll: 1,
-      duration: 0.25,
-    },
-  },
-  {
-    breakpoint: 775,
-    settings: {
-      slidesToShow: 4,
-      slidesToScroll: 'auto',
-      duration: 0.25,
-    },
-  },
-] as BreakPoint[]
+const RightArrow = <Arrow name="chevron-right" />
+const LeftArrow = <Arrow name="chevron-left" />
 
-const StyledTrack = styled(Track)<{ padding: string }>`
-  padding: ${(props) => props.padding};
-`
-const LeftIcon = <Icon name="chevron-left" />
-const RightIcon = <Icon name="chevron-right" />
-const Carousel: React.FC<CarouselProps> = ({
-  children,
-  trackPadding = '0',
-  responsive = defaultBreakpoints,
-  ...gliderProps
-}) => {
+const Carousel: React.FC<CarouselProps> = ({ children, trackPadding = '0', className, ...gliderProps }) => {
+  // Using any because the GliderMethods type only has methods and I need the full instance
+  const gliderRef = React.useRef<any>()
+  const [arrows, setArrows] = React.useState<
+    { prev: string | HTMLButtonElement; next: string | HTMLButtonElement } | undefined
+  >(undefined)
+
+  React.useLayoutEffect(() => {
+    if (gliderRef.current) {
+      const glider = gliderRef.current.ele
+      const prevArrow = glider.previousSibling
+      const nextArrow = glider.nextSibling
+      const INSTANCE_KEY = Math.round(Math.random() * 1000)
+      prevArrow.classList.add(`glider-${INSTANCE_KEY}-prev`)
+      nextArrow.classList.add(`glider-${INSTANCE_KEY}-next`)
+      setArrows({ prev: prevArrow, next: nextArrow })
+    }
+  }, [])
+
+  // This is needed because react-glider will render arrows only if the arrows option is undefined, so arrows won't display if you pass an object to StyledGlider
+  React.useLayoutEffect(() => {
+    if (gliderRef.current && arrows) {
+      const { prev: prevArrow, next: nextArrow } = arrows
+      const container = gliderRef.current.ele.parentElement
+      container.insertBefore(prevArrow, gliderRef.current.ele)
+      container.appendChild(nextArrow)
+    }
+  }, [arrows])
+
   return (
-    <Glider skipTrack hasArrows iconLeft={LeftIcon} iconRight={RightIcon} responsive={responsive} {...gliderProps}>
-      <StyledTrack padding={trackPadding}>{children}</StyledTrack>
-    </Glider>
+    <Container trackPadding={trackPadding} className={className}>
+      <StyledGlider
+        addTrack
+        skipTrack
+        hasArrows
+        draggable
+        ref={gliderRef}
+        iconLeft={LeftArrow}
+        iconRight={RightArrow}
+        arrows={arrows as { prev: string; next: string }}
+        {...gliderProps}
+      >
+        <Track padding={trackPadding}>{children}</Track>
+      </StyledGlider>
+    </Container>
   )
 }
 export default Carousel

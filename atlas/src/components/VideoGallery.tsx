@@ -28,7 +28,7 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, action, videos, load
         ? Array.from({ length: PLACEHOLDERS_COUNT }).map((_, idx) => (
             <StyledVideoPreviewBase key={`video-placeholder-${idx}`} />
           ))
-        : videos!.map((video, idx) => (
+        : videos!.map((video) => (
             <StyledVideoPreview
               id={video.id}
               channelId={video.channel.id}
