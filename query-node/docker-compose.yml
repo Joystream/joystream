@@ -80,7 +80,7 @@ services:
     depends_on:
       - redis
       - db
-      # - indexer
+      - indexer
     
   redis:
     image: redis:6.0-alpine
