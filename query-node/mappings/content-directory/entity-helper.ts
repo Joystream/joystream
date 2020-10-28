@@ -181,7 +181,8 @@ async function createVideoMediaEncoding({ db, block, id }: IDBBlockId, p: IVideo
   encoding.id = id
   encoding.name = p.name
   encoding.version = block
-  encoding.happenedIn = await createBlockOrGetFromDatabase(db, block)
+  // happenedIn is not defined in the graphql schema!
+  // encoding.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save<VideoMediaEncoding>(encoding)
 }
 
