@@ -2,15 +2,14 @@ import ExitCodes from '../ExitCodes'
 import { CLIError } from '@oclif/errors'
 import StateAwareCommandBase from './StateAwareCommandBase'
 import Api from '../Api'
-import { getTypeDef, Option, Tuple, Bytes, TypeRegistry } from '@polkadot/types'
-import { Registry, Codec, CodecArg, TypeDef, TypeDefInfo, Constructor } from '@polkadot/types/types'
+import { getTypeDef, Option, Tuple, TypeRegistry } from '@polkadot/types'
+import { Registry, Codec, CodecArg, TypeDef, TypeDefInfo } from '@polkadot/types/types'
 
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
-import ajv from 'ajv'
 import { ApiMethodArg, ApiMethodNamedArgs, ApiParamsOptions, ApiParamOptions } from '../Types'
 import { createParamOptions } from '../helpers/promptOptions'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
@@ -308,16 +307,6 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       return paramOptions.value.default
     }
 
-    if (paramOptions?.jsonSchema) {
-      const { struct, schemaValidator } = paramOptions.jsonSchema
-      return await this.promptForJsonBytes(
-        struct,
-        typeDef.name,
-        paramOptions.value?.default as Bytes | undefined,
-        schemaValidator
-      )
-    }
-
     if (rawTypeDef.info === TypeDefInfo.Option) {
       return await this.promptForOption(typeDef, paramOptions)
     } else if (rawTypeDef.info === TypeDefInfo.Tuple) {
@@ -336,49 +325,6 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   // More typesafe version
   async promptForType(type: keyof InterfaceTypes, options?: ApiParamOptions) {
     return await this.promptForParam(type, options)
-  }
-
-  async promptForJsonBytes(
-    jsonStruct: Constructor<Struct>,
-    argName?: string,
-    defaultValue?: Bytes,
-    schemaValidator?: ajv.ValidateFunction
-  ) {
-    const JsonStructObject = jsonStruct
-    const rawType = new JsonStructObject(this.getTypesRegistry()).toRawType()
-    const typeDef = getTypeDef(rawType)
-
-    const defaultStruct =
-      defaultValue &&
-      new JsonStructObject(
-        this.getTypesRegistry(),
-        JSON.parse(Buffer.from(defaultValue.toHex().replace('0x', ''), 'hex').toString())
-      )
-
-    if (argName) {
-      typeDef.name = argName
-    }
-
-    let isValid = true
-    let jsonText: string
-    do {
-      const structVal = await this.promptForStruct(typeDef, createParamOptions(typeDef.name, defaultStruct))
-      jsonText = JSON.stringify(structVal.toJSON())
-      if (schemaValidator) {
-        isValid = Boolean(schemaValidator(JSON.parse(jsonText)))
-        if (!isValid) {
-          this.log('\n')
-          this.warn(
-            'Schema validation failed with:\n' +
-              schemaValidator.errors?.map((e) => chalk.red(`${chalk.bold(e.dataPath)}: ${e.message}`)).join('\n') +
-              '\nTry again...'
-          )
-          this.log('\n')
-        }
-      }
-    } while (!isValid)
-
-    return this.createType('Bytes', '0x' + Buffer.from(jsonText, 'ascii').toString('hex'))
   }
 
   async promptForExtrinsicParams(
