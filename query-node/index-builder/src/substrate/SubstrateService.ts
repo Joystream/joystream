@@ -101,8 +101,8 @@ export class SubstrateService implements ISubstrateService {
   }
 
   async stop(): Promise<void> {
-    if (this.api.isConnected) {
-      await this.api.disconnect()
+    if (this.api.isReady) {
+      this.api.disconnect()
     }
   }
 }

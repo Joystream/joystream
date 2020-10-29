@@ -78,7 +78,7 @@ export class QueryNode {
     // Create the API and wait until ready
     const api = await retry(
       () =>
-        new ApiPromise({ provider, registry, types, typesSpec }).isReadyOrError,
+        new ApiPromise({ provider, registry, types, typesSpec }).isReady,
       SUBSTRATE_API_CALL_RETRIES
     )
 
