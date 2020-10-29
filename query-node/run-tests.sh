@@ -16,14 +16,10 @@ function cleanup() {
 
 trap cleanup EXIT
 
-# The endpoint name comes from the expected container name for joystream/node
-# in tests/network-tests/run-tests.sh
-export WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944/
-
 yarn build
 yarn db:up
 yarn db:migrate
-yarn docker:up
+WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944/ yarn docker:up
 
 # Run tests
 ATTACH_TO_NETWORK=query-node_default ../tests/network-tests/run-tests.sh content-directory

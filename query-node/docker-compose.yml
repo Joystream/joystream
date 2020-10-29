@@ -42,6 +42,7 @@ services:
       - DB_HOST=db
       - TYPEORM_HOST=db
       - DEBUG=index-builder:*
+      - WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944/
     depends_on:
       - indexer-api-gateway
     command: ["workspace", "query-node-root", "processor:start"]
@@ -60,6 +61,7 @@ services:
       - PROCESSOR_POLL_INTERVAL=1000 # refresh every second 
       - REDIS_URI=redis://redis:6379/0
       - DEBUG=index-builder:*
+      - WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944/
     depends_on: 
       - db
     command: ["workspace", "query-node-root", "indexer:start"] 
