@@ -152,6 +152,12 @@ where
 benchmarks_instance! {
     _ { }
 
+    update_role_account{
+      let i in 1 .. 10;
+      let (lead_id, lead_worker_id) = create_lead::<T, I>(true);
+      let new_account_id = account::<T::AccountId>("new_lead_account", 1, SEED);
+    }: _ (RawOrigin::Signed(lead_id), lead_worker_id, new_account_id)
+    verify {}
 
     cancel_opening {
       let i in 1 .. 10;
