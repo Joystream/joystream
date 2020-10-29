@@ -5,7 +5,12 @@ SCRIPT_PATH="$(dirname "${BASH_SOURCE[0]}")"
 cd $SCRIPT_PATH
 
 function cleanup() {
-    docker logs query-node_processor_1 --tail 15
+    # Show tail end of logs for the processor and indexer containers to
+    # see any possible errors
+    echo "## Processor Logs ##"
+    docker logs query-node_processor_1 --tail 50
+    echo "## Indexer Logs ##"
+    docker logs query-node_indexer_1 --tail 50
     docker-compose down -v
 }
 
