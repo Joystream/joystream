@@ -1,22 +1,22 @@
 import React from 'react'
 import styled from '@emotion/styled'
 import useResizeObserver from 'use-resize-observer'
-import { useMediaQuery } from 'react-responsive'
-import { spacing } from '../../theme'
+import { spacing, breakpoints } from '../../theme'
 
 const toPx = (n: number | string) => (typeof n === 'number' ? `${n}px` : n)
 
-const LARGE_VIEWPORT_BREAKPOINT = toPx(2000)
-
-type ContainerProps = {
-  gap: number | string
-  gridTemplateColumns: string
-}
+type ContainerProps = Required<Pick<GridProps, 'gap' | 'maxColumns' | 'minWidth' | 'repeat'>>
 
 const Container = styled.div<ContainerProps>`
   display: grid;
   gap: ${(props) => toPx(props.gap)};
-  grid-template-columns: ${(props) => props.gridTemplateColumns};
+  grid-template-columns: repeat(
+    auto-${(props) => props.repeat},
+    minmax(min(${(props) => toPx(props.minWidth)}, 100%), 1fr)
+  );
+  @media (min-width: ${toPx(breakpoints.largeViewport)}) {
+    grid-template-columns: repeat(${(props) => props.maxColumns}, 1fr);
+  }
 `
 
 type GridProps = {
@@ -46,14 +46,17 @@ const Grid: React.FC<GridProps> = ({
       }
     },
   })
-  const isLargeViewport = useMediaQuery({ query: `(min-width: ${LARGE_VIEWPORT_BREAKPOINT})` })
-
-  const gridTemplateColumns = isLargeViewport
-    ? `repeat(${maxColumns}, 1fr)`
-    : `repeat(auto-${repeat}, minmax(min(${toPx(minWidth)}, 100%), 1fr))`
 
   return (
-    <Container {...props} className={className} ref={gridRef} gap={gap} gridTemplateColumns={gridTemplateColumns} />
+    <Container
+      {...props}
+      className={className}
+      ref={gridRef}
+      gap={gap}
+      minWidth={minWidth}
+      maxColumns={maxColumns}
+      repeat={repeat}
+    />
   )
 }
 export default Grid
