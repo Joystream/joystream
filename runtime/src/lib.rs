@@ -16,9 +16,13 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 mod constants;
 mod integration;
 pub mod primitives;
+mod proposals_configuration;
 mod runtime_api;
 #[cfg(test)]
 mod tests; // Runtime integration tests
+
+#[macro_use]
+extern crate lazy_static; // for proposals_configuration module
 
 use frame_support::traits::{KeyOwnerProofSystem, LockIdentifier};
 use frame_support::weights::{
@@ -43,6 +47,7 @@ use system::EnsureRoot;
 
 pub use constants::*;
 pub use primitives::*;
+pub use proposals_configuration::*;
 pub use runtime_api::*;
 
 use integration::proposals::{CouncilManager, ExtrinsicProposalEncoder, MembershipOriginValidator};
@@ -598,21 +603,6 @@ impl proposals_discussion::Trait for Runtime {
 parameter_types! {
     pub const TextProposalMaxLength: u32 = 5_000;
     pub const RuntimeUpgradeWasmProposalMaxLength: u32 = 3_000_000;
-    pub SetValidatorCountProposalParameters: ProposalParameters<BlockNumber, Balance> = set_validator_count_proposal();
-}
-
-// Proposal parameters for the 'Set validator count' proposal
-pub(crate) fn set_validator_count_proposal() -> ProposalParameters<BlockNumber, Balance> {
-    ProposalParameters {
-        voting_period: 43200u32,
-        grace_period: 0u32,
-        approval_quorum_percentage: 66,
-        approval_threshold_percentage: 80,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(100_000_u128),
-        constitutionality: 1,
-    }
 }
 
 impl proposals_codex::Trait for Runtime {

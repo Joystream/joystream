@@ -9,6 +9,8 @@ version = '7.6.0'
 [dependencies]
 # Third-party dependencies
 serde = { version = "1.0.101", optional = true, features = ["derive"] }
+lazy_static = {version = "1.4.0", features = ["spin_no_std"] }
+lite-json = { version = '0.1.3', default-features = false}
 codec = { package = 'parity-scale-codec', version = '1.3.1', default-features = false, features = ['derive'] }
 
 # Substrate primitives
