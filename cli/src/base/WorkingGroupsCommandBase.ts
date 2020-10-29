@@ -19,15 +19,21 @@ import path from 'path'
 import _ from 'lodash'
 import { ApplicationStageKeys } from '@joystream/types/hiring'
 import chalk from 'chalk'
+import { IConfig } from '@oclif/config'
 
-const DEFAULT_GROUP = WorkingGroups.StorageProviders
 const DRAFTS_FOLDER = 'opening-drafts'
 
 /**
  * Abstract base class for commands that need to use gates based on user's roles
  */
 export abstract class RolesCommandBase extends AccountsCommandBase {
-  group: WorkingGroups = DEFAULT_GROUP
+  group: WorkingGroups
+
+  constructor(argv: string[], config: IConfig) {
+    super(argv, config)
+    // Can be modified by child class constructor
+    this.group = this.getPreservedState().defaultWorkingGroup
+  }
 
   // Use when lead access is required in given command
   async getRequiredLead(): Promise<GroupMember> {
@@ -97,16 +103,21 @@ export abstract class RolesCommandBase extends AccountsCommandBase {
  * Abstract base class for commands directly related to working groups
  */
 export default abstract class WorkingGroupsCommandBase extends RolesCommandBase {
-  group: WorkingGroups = DEFAULT_GROUP
+  group: WorkingGroups
+
+  constructor(argv: string[], config: IConfig) {
+    super(argv, config)
+    this.group = this.getPreservedState().defaultWorkingGroup
+  }
 
   static flags = {
-    group: flags.string({
+    group: flags.enum({
       char: 'g',
       description:
         'The working group context in which the command should be executed\n' +
         `Available values are: ${AvailableGroups.join(', ')}.`,
-      required: true,
-      default: DEFAULT_GROUP,
+      required: false,
+      options: [...AvailableGroups],
     }),
   }
 
@@ -273,13 +284,9 @@ export default abstract class WorkingGroupsCommandBase extends RolesCommandBase 
       throw this.createDataDirInitError()
     }
     const { flags } = this.parse(this.constructor as typeof WorkingGroupsCommandBase)
-    if (!AvailableGroups.includes(flags.group as any)) {
-      throw new CLIError(`Invalid group! Available values are: ${AvailableGroups.join(', ')}`, {
-        exit: ExitCodes.InvalidInput,
-      })
+    if (flags.group) {
+      this.group = flags.group
     }
-    this.group = flags.group as WorkingGroups
-
-    this.log(chalk.white('Group: ' + flags.group))
+    this.log(chalk.white('Current Group: ' + this.group))
   }
 }
