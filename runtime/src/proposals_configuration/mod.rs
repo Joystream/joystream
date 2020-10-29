@@ -1,3 +1,14 @@
+//! This module defines a set of the parameters for each proposal in the runtime like
+//! _SetValidatorCountProposalParameters_. It is separated because we need to be able to configure
+//! these parameters during the compilation time. Main consumer of the conditional compilation planned
+//! to be the integration tests.
+//!
+//! The whole parameter set is initialized only once by deserializing JSON from the environment variable
+//! "ALL_PROPOSALS_PARAMETERS_JSON". If it doesn't exists or contains invalid or empty JSON then
+//! the default parameters are returned. If some proposal section of the JSON file contains only
+//! partial object definition - default values are returned as missing fields.
+//!
+
 use crate::{Balance, BlockNumber, ProposalParameters};
 use frame_support::dispatch::Vec;
 use frame_support::parameter_types;
@@ -8,35 +19,42 @@ mod defaults;
 #[cfg(test)]
 mod tests;
 
-struct AllProposalsParameters {
-    pub set_validator_count_proposal: ProposalParameters<BlockNumber, Balance>,
-}
-
-// to initialize parameter only once.
-lazy_static! {
-    static ref ALL_PROPOSALS_PARAMETERS: AllProposalsParameters = get_all_proposals_parameters();
-}
+/////////// Proposal parameters definition
 
 parameter_types! {
     pub SetValidatorCountProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.set_validator_count_proposal;
 }
 
+///////////
+
+struct AllProposalsParameters {
+    pub set_validator_count_proposal: ProposalParameters<BlockNumber, Balance>,
+}
+
+// to initialize parameters only once.
+lazy_static! {
+    static ref ALL_PROPOSALS_PARAMETERS: AllProposalsParameters =
+        get_all_proposals_parameters_objects();
+}
+
 // Composes AllProposalsParameters object from the JSON string.
 // It gets the JSON string from the environment variable and tries to parse it.
 // On error and any missing values it gets default values.
-fn get_all_proposals_parameters() -> AllProposalsParameters {
+fn get_all_proposals_parameters_objects() -> AllProposalsParameters {
     let json_str: Option<&'static str> = option_env!("ALL_PROPOSALS_PARAMETERS_JSON");
 
     json_str
         .map(lite_json::parse_json)
         .map(|res| res.ok())
         .flatten()
-        .map(convert_json_object)
+        .map(convert_json_object_to_proposal_parameters)
         .unwrap_or_else(default_parameters)
 }
 
 // Tries to extract all proposal parameters from the parsed JSON object.
-fn convert_json_object(json: lite_json::JsonValue) -> AllProposalsParameters {
+fn convert_json_object_to_proposal_parameters(
+    json: lite_json::JsonValue,
+) -> AllProposalsParameters {
     let mut parameters = default_parameters();
 
     if let lite_json::JsonValue::Object(json_object) = json {
@@ -70,51 +88,51 @@ fn extract_proposal_parameters(
     defaults: ProposalParameters<BlockNumber, Balance>,
 ) -> ProposalParameters<BlockNumber, Balance> {
     ProposalParameters::<BlockNumber, Balance> {
-        voting_period: extract_parameter(
+        voting_period: extract_numeric_parameter(
             json_object,
             "voting_period",
             defaults.voting_period.saturated_into(),
         )
         .saturated_into(),
-        grace_period: extract_parameter(
+        grace_period: extract_numeric_parameter(
             json_object,
             "grace_period",
             defaults.grace_period.saturated_into(),
         )
         .saturated_into(),
-        approval_quorum_percentage: extract_parameter(
+        approval_quorum_percentage: extract_numeric_parameter(
             json_object,
             "approval_quorum_percentage",
             defaults.approval_quorum_percentage.saturated_into(),
         )
         .saturated_into(),
-        approval_threshold_percentage: extract_parameter(
+        approval_threshold_percentage: extract_numeric_parameter(
             json_object,
             "approval_threshold_percentage",
             defaults.approval_threshold_percentage.saturated_into(),
         )
         .saturated_into(),
-        slashing_quorum_percentage: extract_parameter(
+        slashing_quorum_percentage: extract_numeric_parameter(
             json_object,
             "slashing_quorum_percentage",
             defaults.slashing_quorum_percentage.saturated_into(),
         )
         .saturated_into(),
-        slashing_threshold_percentage: extract_parameter(
+        slashing_threshold_percentage: extract_numeric_parameter(
             json_object,
             "slashing_threshold_percentage",
             defaults.slashing_threshold_percentage.saturated_into(),
         )
         .saturated_into(),
         required_stake: Some(
-            extract_parameter(
+            extract_numeric_parameter(
                 json_object,
                 "required_stake",
                 defaults.required_stake.unwrap_or_default().saturated_into(),
             )
             .saturated_into(),
         ),
-        constitutionality: extract_parameter(
+        constitutionality: extract_numeric_parameter(
             json_object,
             "constitutionality",
             defaults.constitutionality.saturated_into(),
@@ -123,8 +141,12 @@ fn extract_proposal_parameters(
     }
 }
 
-// Extracts a specific parameter from the parsed JSON object.
-fn extract_parameter(json_object: &JsonValue, parameter_name: &'static str, default: u128) -> u128 {
+// Extracts a specific numeric parameter from the parsed JSON object.
+fn extract_numeric_parameter(
+    json_object: &JsonValue,
+    parameter_name: &'static str,
+    default: u128,
+) -> u128 {
     match json_object {
         JsonValue::Object(json_object) => json_object
             .iter()

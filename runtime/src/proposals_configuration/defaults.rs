@@ -1,3 +1,5 @@
+//! This module contains default parameters for the runtime codex proposals.
+
 use crate::{Balance, BlockNumber, ProposalParameters};
 
 // Proposal parameters for the 'Set validator count' proposal
