@@ -18,7 +18,7 @@ trap cleanup EXIT
 
 # The endpoint name comes from the expected container name for joystream/node
 # in tests/network-tests/run-tests.sh
-WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944/
+export WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944/
 
 yarn build
 yarn db:up
