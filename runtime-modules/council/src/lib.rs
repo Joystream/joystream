@@ -66,6 +66,7 @@ use referendum::{OptionResult, ReferendumManager};
 mod mock;
 mod staking_handler;
 mod tests;
+mod spending_budget;
 
 use staking_handler::StakingHandler2;
 
