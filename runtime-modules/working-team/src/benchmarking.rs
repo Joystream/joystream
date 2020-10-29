@@ -62,22 +62,20 @@ where
      */
 
     // If job usntaking period is zero the worker can always
-    // leave immediatly. However for the ase the worker can't
-    // leave immmediatly we need a non-zero stake.
+    // leave immediatly. However we also need a current_stake to not
+    // leave immmediatly(Appart from the unstaking_period).
     // This is handled by `T::StakingHandler::current_stake
     let _ = <T as common::currency::GovernanceCurrency>::Currency::make_free_balance_be(
         &caller_id,
         BalanceOfCurrency::<T>::max_value(),
     );
-    T::StakingHandler::increase_stake(&caller_id, BalanceOfCurrency::<T>::max_value()).unwrap();
-    T::StakingHandler::lock(&caller_id, BalanceOfCurrency::<T>::max_value());
 
     let (staking_policy, stake_parameters) = if can_leave_immediatly {
         (None, None)
     } else {
         (
             Some(StakePolicy {
-                stake_amount: BalanceOfCurrency::<T>::max_value(),
+                stake_amount: <BalanceOfCurrency<T> as One>::one(),
                 leaving_unstaking_period: T::BlockNumber::max_value(),
             }),
             Some(StakeParameters {
@@ -153,6 +151,102 @@ where
 
 benchmarks_instance! {
     _ { }
+
+
+    cancel_opening {
+      let i in 1 .. 10;
+
+      let (lead_id, _) = create_lead::<T, I>(true);
+
+      WorkingTeam::<T, I>::add_opening(
+          RawOrigin::Signed(lead_id.clone()).into(),
+          vec![],
+          JobOpeningType::Regular,
+          None,
+          None,
+      )
+      .unwrap();
+    }: _ (RawOrigin::Signed(lead_id.clone()), <T::OpeningId as One>::one())
+    verify {}
+
+    withdraw_application {
+    let i in 1 .. 10;
+
+    let (
+        caller_id,
+        opening_type,
+        add_opening_origin,
+        member_id,
+        handle,
+        opening_id,
+        application_id,
+        worker_id,
+    ) =
+        (
+            account::<T::AccountId>("lead", 0, SEED),
+            JobOpeningType::Leader,
+            RawOrigin::Root,
+            Zero::zero(),
+            vec![0u8, 0u8, 0u8, 0u8, 0u8],
+            Zero::zero(),
+            Zero::zero(),
+            <TeamWorkerId<T> as Zero>::zero(),
+        );
+
+
+    // This is handled by `T::StakingHandler::current_stake
+    let _ = <T as common::currency::GovernanceCurrency>::Currency::make_free_balance_be(
+        &caller_id,
+        BalanceOfCurrency::<T>::max_value(),
+    );
+
+    let (staking_policy, stake_parameters) =
+        (
+            Some(StakePolicy {
+                stake_amount: <BalanceOfCurrency::<T> as One>::one(),
+                leaving_unstaking_period: T::BlockNumber::max_value(),
+            }),
+            Some(StakeParameters {
+                stake: BalanceOfCurrency::<T>::max_value(),
+                staking_account_id: caller_id.clone(),
+            }),
+        );
+
+    membership::Module::<T>::buy_membership(
+        RawOrigin::Signed(caller_id.clone()).into(),
+        Zero::zero(),
+        Some(handle),
+        None,
+        None,
+    )
+    .unwrap();
+
+    WorkingTeam::<T, I>::add_opening(
+        add_opening_origin.clone().into(),
+        vec![],
+        opening_type,
+        staking_policy,
+        Some(RewardPolicy {
+            reward_per_block: <BalanceOfCurrency<T> as One>::one(),
+        }),
+    )
+    .unwrap();
+
+    WorkingTeam::<T, I>::apply_on_opening(
+        RawOrigin::Signed(caller_id.clone()).into(),
+        ApplyOnOpeningParameters::<T, I> {
+            member_id,
+            opening_id,
+            role_account_id: caller_id.clone(),
+            reward_account_id: caller_id.clone(),
+            description: vec![],
+            stake_parameters,
+        },
+    )
+    .unwrap();
+
+    }: _ (RawOrigin::Signed(caller_id.clone()), application_id)
+    verify {}
 
     slash_stake {
       let i in 0 .. 10;
