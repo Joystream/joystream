@@ -3,7 +3,6 @@
 	"version": "1.0.0",
 	"description": "GraphQL server and Substrate indexer. Generated with ♥ by Hydra-CLI",
 	"scripts": {
-		"postinstall": "yarn build",
 		"build": "(cd index-builder && yarn build) && tsc --build tsconfig.json",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"clean": "rm -rf ./generated",

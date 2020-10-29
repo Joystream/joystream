@@ -16,6 +16,7 @@ function cleanup() {
 
 trap cleanup EXIT
 
+yarn build
 yarn db:up
 yarn db:migrate
 yarn docker:up
