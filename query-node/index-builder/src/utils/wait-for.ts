@@ -52,6 +52,8 @@ export async function waitFor(condition: () => boolean, exit?: () => boolean, po
         }
         resolve()
       } else {
+        // Type 'number' is not assignable to type 'Timeout | undefined'. !!?
+        // @ts-ignore
         timeout = setTimeout(checkCondition, pollInterval);
       }    
 
