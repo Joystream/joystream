@@ -4,7 +4,7 @@
     "importHelpers": true,
     "module": "commonjs",
     "outDir": "lib",
-    "rootDir": "src",
+    "rootDir": "./",
     "strict": true,
     "target": "es2017",
     "experimentalDecorators": true,
@@ -14,9 +14,12 @@
     "inlineSources": false,
     "baseUrl": ".",
     "paths": {
-      "@polkadot/types/augment": ["./node_modules/@joystream/types/augment-codec/augment-types.ts"]
+      "@polkadot/types/augment": [
+        "../types/augment/all",
+        "../types/augment-codec/augment-types.ts"
+      ]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["mappings/**/*"],
   "exclude": ["node_modules"]
 }
