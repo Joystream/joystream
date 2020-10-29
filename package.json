@@ -22,7 +22,8 @@
     "content-directory-schemas",
     "query-node",
     "query-node/generated/graphql-server",
-    "query-node/generated/indexer"
+    "query-node/generated/indexer",
+    "query-node/index-builder"
   ],
   "resolutions": {
     "@polkadot/api": "1.26.1",
