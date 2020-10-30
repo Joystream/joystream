@@ -80,9 +80,9 @@ export const Header = styled.header<NavbarStyleProps>`
 
   grid-template-columns: 1fr 2fr;
 
-  padding: ${(props) => (props.hasFocus ? `${sizes.b2}px` : `${sizes.b2}px ${sizes.b4}px`)};
+  padding: ${sizes.b2}px ${sizes.b4}px;
   @media screen and (min-width: ${breakpoints.medium}) {
-    padding: ${(props) => (props.hasFocus ? `${sizes.b2}px` : `${sizes.b3}px ${sizes.b8}px`)};
+    padding: ${sizes.b2}px ${sizes.b8}px;
   }
   border-bottom: 1px solid ${colors.gray[800]};
   background-color: ${(props) => (props.hasFocus ? colors.gray[900] : colors.black)};
