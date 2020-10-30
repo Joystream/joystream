@@ -629,25 +629,26 @@ impl<T: Trait> Module<T> {
         // Skip proposals with unfinished voting.
         <Proposals<T>>::iter()
             .filter_map(|(proposal_id, proposal)| {
-                // Filter only active proposals.
-                if !proposal.status.is_active_proposal() {
-                    return None;
+                match proposal.status {
+                    ProposalStatus::Active => {
+                        // Calculates votes, takes in account voting period expiration.
+                        // If voting process is in progress, then decision status is None.
+                        let decision_status = proposal.define_proposal_decision_status(
+                            T::TotalVotersCounter::total_voters_count(),
+                            Self::current_block(),
+                        );
+
+                        // Map to FinalizedProposalData if decision for the proposal is made or return None.
+                        decision_status.map(|status| FinalizedProposalData {
+                            proposal_id,
+                            proposal,
+                            status,
+                            finalized_at: Self::current_block(),
+                        })
+                    }
+                    // Skip finalized proposals.
+                    _ => None,
                 }
-
-                // Calculates votes, takes in account voting period expiration.
-                // If voting process is in progress, then decision status is None.
-                let decision_status = proposal.define_proposal_decision_status(
-                    T::TotalVotersCounter::total_voters_count(),
-                    Self::current_block(),
-                );
-
-                // Map to FinalizedProposalData if decision for the proposal is made or return None.
-                decision_status.map(|status| FinalizedProposalData {
-                    proposal_id,
-                    proposal,
-                    status,
-                    finalized_at: Self::current_block(),
-                })
             })
             .collect() // compose output vector
     }
