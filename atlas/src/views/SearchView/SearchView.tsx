@@ -35,7 +35,7 @@ const SearchView: React.FC<SearchViewProps> = ({ search = '' }) => {
     throw error
   }
   if (!loading && !data?.search) {
-    return <p>Something went wrong...</p>
+    throw new Error(`There was a problem with your search...`)
   }
   if (loading || !data) {
     return <p>Loading...</p>

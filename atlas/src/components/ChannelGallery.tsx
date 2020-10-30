@@ -9,19 +9,15 @@ type ChannelGalleryProps = {
   title?: string
   channels?: ChannelFields[]
   loading?: boolean
-  error?: Error
 }
 
 const PLACEHOLDERS_COUNT = 12
 
 const trackPadding = `${spacing.xs} 0 0 ${spacing.xs}`
 
-const ChannelGallery: React.FC<ChannelGalleryProps> = ({ title, channels, loading, error }) => {
+const ChannelGallery: React.FC<ChannelGalleryProps> = ({ title, channels, loading }) => {
   const displayPlaceholders = loading || !channels
 
-  if (error) {
-    throw error
-  }
   return (
     <Gallery title={title} trackPadding={trackPadding} itemWidth={210}>
       {displayPlaceholders
