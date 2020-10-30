@@ -221,9 +221,41 @@ where
 benchmarks_instance! {
     _ { }
 
+    apply_on_opening {
+      let i in 1 .. 50000;
+
+      let (lead_account_id, lead_member_id) = member_funded_account::<T>("lead", 0, None);
+
+      WorkingTeam::<T, I>::add_opening(
+          RawOrigin::Root.into(),
+          vec![],
+          JobOpeningType::Leader,
+          Some(StakePolicy {
+            stake_amount: <BalanceOfCurrency<T> as One>::one(),
+            leaving_unstaking_period: T::BlockNumber::max_value(),
+          }),
+          None,
+      ).unwrap();
+
+      let apply_on_opening_params = ApplyOnOpeningParameters::<T, I> {
+        member_id: lead_member_id,
+        opening_id: Zero::zero(),
+        role_account_id: lead_account_id.clone(),
+        reward_account_id: lead_account_id.clone(),
+        description: vec![0u8].repeat(i as usize),
+        stake_parameters: Some(
+          StakeParameters {
+            stake: BalanceOfCurrency::<T>::max_value(),
+            staking_account_id: lead_account_id.clone(),
+          }
+        ),
+      };
+
+    }: _ (RawOrigin::Signed(lead_account_id.clone()), apply_on_opening_params)
+    verify { }
+
     fill_opening_lead {
       let i in 0 .. 10;
-
 
       WorkingTeam::<T, I>::add_opening(
           RawOrigin::Root.into(),
@@ -480,7 +512,7 @@ benchmarks_instance! {
       let i in 0 .. 50000; // TODO: We should have a bounded value for description
 
       let (lead_id, _) = create_lead::<T,I>(true);
-      let status_text = Some(vec![0u8][..].repeat(i as usize)); // TODO:don't use as
+      let status_text = Some(vec![0u8].repeat(i as usize)); // TODO:don't use as
 
     }: _ (RawOrigin::Signed(lead_id), status_text)
     verify {}
@@ -518,7 +550,7 @@ benchmarks_instance! {
         reward_per_block: BalanceOfCurrency::<T>::max_value(),
       };
 
-      let description = vec![0u8][..].repeat(i as usize); // TODO:don't use as
+      let description = vec![0u8].repeat(i as usize); // TODO:don't use as
 
     }: _(RawOrigin::Signed(lead_id), description, JobOpeningType::Regular, Some(stake_policy), Some(reward_policy))
     verify { }
