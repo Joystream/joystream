@@ -22,12 +22,9 @@ pub struct DiscussionThread<ThreadAuthorId, BlockNumber, MemberId> {
 /// Post for the discussion thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct DiscussionPost<PostAuthorId, ThreadId> {
+pub struct DiscussionPost<PostAuthorId> {
     /// Author of the post.
     pub author_id: PostAuthorId,
-
-    /// Parent thread id for this post
-    pub thread_id: ThreadId,
 
     /// Defines how many times this post was edited. Zero on creation.
     pub edition_number: u32,

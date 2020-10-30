@@ -51,7 +51,6 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
             <PostThreadIdByPostId<Test>>::get(thread_entry.thread_id, post_entry.post_id);
         let expected_post = DiscussionPost {
             author_id: 1,
-            thread_id: thread_entry.thread_id,
             edition_number: post_entry.edition_number,
         };
 

@@ -155,7 +155,7 @@ decl_storage! {
         /// Map thread id and post id to corresponding post.
         pub PostThreadIdByPostId:
             double_map hasher(blake2_128_concat) T::ThreadId, hasher(blake2_128_concat) T::PostId =>
-                DiscussionPost<MemberId<T>, T::ThreadId>;
+                DiscussionPost<MemberId<T>>;
 
         /// Count of all posts that have been created.
         pub PostCount get(fn post_count): u64;
@@ -206,7 +206,6 @@ decl_module! {
             let new_post = DiscussionPost {
                 author_id: post_author_id,
                 edition_number : 0,
-                thread_id,
             };
 
             let post_id = T::PostId::from(new_post_id);
