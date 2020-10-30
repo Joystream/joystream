@@ -10,7 +10,6 @@ RUN yarn install --frozen-lockfile
 # Pioneer is failing to build only on github actions workflow runner
 # Error: packages/page-staking/src/index.tsx(24,21): error TS2307: Cannot find module './Targets' or its corresponding type declarations.
 # RUN yarn workspace pioneer build
-RUN yarn workspace @joystream/cli build
 RUN yarn workspace storage-node build
 
 ENTRYPOINT [ "yarn" ]

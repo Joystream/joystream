@@ -19,25 +19,20 @@ import path from 'path'
 import _ from 'lodash'
 import { ApplicationStageKeys } from '@joystream/types/hiring'
 import chalk from 'chalk'
+import { IConfig } from '@oclif/config'
 
-const DEFAULT_GROUP = WorkingGroups.StorageProviders
 const DRAFTS_FOLDER = 'opening-drafts'
 
 /**
- * Abstract base class for commands related to working groups
+ * Abstract base class for commands that need to use gates based on user's roles
  */
-export default abstract class WorkingGroupsCommandBase extends AccountsCommandBase {
-  group: WorkingGroups = DEFAULT_GROUP
+export abstract class RolesCommandBase extends AccountsCommandBase {
+  group: WorkingGroups
 
-  static flags = {
-    group: flags.string({
-      char: 'g',
-      description:
-        'The working group context in which the command should be executed\n' +
-        `Available values are: ${AvailableGroups.join(', ')}.`,
-      required: true,
-      default: DEFAULT_GROUP,
-    }),
+  constructor(argv: string[], config: IConfig) {
+    super(argv, config)
+    // Can be modified by child class constructor
+    this.group = this.getPreservedState().defaultWorkingGroup
   }
 
   // Use when lead access is required in given command
@@ -46,7 +41,9 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
     const lead = await this.getApi().groupLead(this.group)
 
     if (!lead || lead.roleAccount.toString() !== selectedAccount.address) {
-      this.error('Lead access required for this command!', { exit: ExitCodes.AccessDenied })
+      this.error(`${_.startCase(this.group)} Group Lead access required for this command!`, {
+        exit: ExitCodes.AccessDenied,
+      })
     }
 
     return lead
@@ -59,7 +56,9 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
     const groupMembersByAccount = groupMembers.filter((m) => m.roleAccount.toString() === selectedAccount.address)
 
     if (!groupMembersByAccount.length) {
-      this.error('Worker access required for this command!', { exit: ExitCodes.AccessDenied })
+      this.error(`${_.startCase(this.group)} Group Worker access required for this command!`, {
+        exit: ExitCodes.AccessDenied,
+      })
     } else if (groupMembersByAccount.length === 1) {
       return groupMembersByAccount[0]
     } else {
@@ -88,7 +87,7 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
 
   async promptForWorker(groupMembers: GroupMember[]): Promise<GroupMember> {
     const chosenWorkerIndex = await this.simplePrompt({
-      message: 'Choose the intended worker context:',
+      message: `Choose the intended ${_.startCase(this.group)} Group Worker context:`,
       type: 'list',
       choices: groupMembers.map((groupMember, index) => ({
         name: `Worker ID ${groupMember.workerId.toString()}`,
@@ -97,6 +96,29 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
     })
 
     return groupMembers[chosenWorkerIndex]
+  }
+}
+
+/**
+ * Abstract base class for commands directly related to working groups
+ */
+export default abstract class WorkingGroupsCommandBase extends RolesCommandBase {
+  group: WorkingGroups
+
+  constructor(argv: string[], config: IConfig) {
+    super(argv, config)
+    this.group = this.getPreservedState().defaultWorkingGroup
+  }
+
+  static flags = {
+    group: flags.enum({
+      char: 'g',
+      description:
+        'The working group context in which the command should be executed\n' +
+        `Available values are: ${AvailableGroups.join(', ')}.`,
+      required: false,
+      options: [...AvailableGroups],
+    }),
   }
 
   async promptForApplicationsToAccept(opening: GroupOpening): Promise<number[]> {
@@ -262,13 +284,9 @@ export default abstract class WorkingGroupsCommandBase extends AccountsCommandBa
       throw this.createDataDirInitError()
     }
     const { flags } = this.parse(this.constructor as typeof WorkingGroupsCommandBase)
-    if (!AvailableGroups.includes(flags.group as any)) {
-      throw new CLIError(`Invalid group! Available values are: ${AvailableGroups.join(', ')}`, {
-        exit: ExitCodes.InvalidInput,
-      })
+    if (flags.group) {
+      this.group = flags.group
     }
-    this.group = flags.group as WorkingGroups
-
-    this.log(chalk.white('Group: ' + flags.group))
+    this.log(chalk.white('Current Group: ' + this.group))
   }
 }

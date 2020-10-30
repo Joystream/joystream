@@ -78,7 +78,7 @@ jobs:
           name: ${{ steps.compute_shasum.outputs.shasum }}-joystream-node-docker-image.tar.gz
           path: joystream-node-docker-image.tar.gz
   
-  network_tests_1:
+  basic_runtime_with_upgrade:
     name: Integration Tests (Runtime Upgrade)
     needs: build_images
     runs-on: ubuntu-latest
@@ -102,7 +102,7 @@ jobs:
       - name: Execute network tests
         run: RUNTIME=alexandria tests/network-tests/run-tests.sh full
 
-  network_tests_2:
+  basic_runtime:
     name: Integration Tests (New Chain)
     needs: build_images
     runs-on: ubuntu-latest
@@ -126,7 +126,7 @@ jobs:
       - name: Execute network tests
         run: tests/network-tests/run-tests.sh full
 
-  network_tests_3:
+  content_dir_init:
     name: Content Directory Initialization
     needs: build_images
     runs-on: ubuntu-latest
@@ -152,8 +152,8 @@ jobs:
       - name: Initialize the content directory
         run: yarn workspace cd-schemas initialize:dev
 
-  network_tests_4:
-    name: Content Direcotry Integration Tests
+  query_node:
+    name: Query Node Integration Tests
     needs: build_images
     runs-on: ubuntu-latest
     steps:
@@ -173,10 +173,12 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Ensure tests are runnable
         run: yarn workspace network-tests build
-      - name: Execute network tests
-        run: tests/network-tests/run-tests.sh content-directory
+      # Bring up hydra query-node development instance, then run content directory
+      # integration tests
+      - name: Execute Tests
+        run: query-node/run-tests.sh
   
-  network_tests_5:
+  storage_node:
     name: Storage Node Tests
     needs: build_images
     runs-on: ubuntu-latest

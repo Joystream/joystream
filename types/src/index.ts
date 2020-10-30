@@ -15,7 +15,7 @@ import media from './media'
 import proposals from './proposals'
 import contentDirectory from './content-directory'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
-import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet } from '@polkadot/types'
+import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap } from '@polkadot/types'
 import { ExtendedEnum } from './JoyEnum'
 import { ExtendedStruct } from './JoyStruct'
 import BN from 'bn.js'
@@ -87,6 +87,8 @@ type CreateInterface_NoOption<T extends Codec> =
       ? boolean
       : T extends Vec<infer S> | BTreeSet<infer S>
       ? CreateInterface<S>[]
+      : T extends BTreeMap<infer K, infer V>
+      ? Map<K, V>
       : any)
 
 // Wrapper for CreateInterface_NoOption that includes resolving an Option
