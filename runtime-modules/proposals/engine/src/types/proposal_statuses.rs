@@ -141,36 +141,3 @@ pub enum ProposalDecisionStatus {
     /// must be no less than the quorum value for the given proposal type.
     Approved(ApprovedProposalStatus),
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::{ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus, ProposalStatus};
-
-    #[test]
-    fn approved_proposal_status_helper_succeeds() {
-        let msg = "error";
-
-        assert_eq!(
-            ApprovedProposalStatus::failed_execution(&msg),
-            ApprovedProposalStatus::ExecutionFailed {
-                error: msg.as_bytes().to_vec()
-            }
-        );
-    }
-
-    #[test]
-    fn finalized_proposal_status_helper_succeeds() {
-        let block_number = 20;
-
-        let proposal_status =
-            ProposalStatus::<u64>::finalized(ProposalDecisionStatus::Slashed, block_number);
-
-        assert_eq!(
-            ProposalStatus::Finalized(FinalizationData {
-                proposal_status: ProposalDecisionStatus::Slashed,
-                finalized_at: block_number,
-            }),
-            proposal_status
-        );
-    }
-}

@@ -1,5 +1,6 @@
 pub(crate) mod mock;
 
+use crate::types::ProposalStatusResolution;
 use crate::*;
 use mock::*;
 
@@ -1790,4 +1791,531 @@ fn proposal_early_rejection_succeeds() {
 
         assert!(!<Proposals<Test>>::contains_key(proposal_id));
     });
+}
+
+#[test]
+fn approved_proposal_status_helper_succeeds() {
+    let msg = "error";
+
+    assert_eq!(
+        ApprovedProposalStatus::failed_execution(&msg),
+        ApprovedProposalStatus::ExecutionFailed {
+            error: msg.as_bytes().to_vec()
+        }
+    );
+}
+
+#[test]
+fn finalized_proposal_status_helper_succeeds() {
+    let block_number = 20;
+
+    let proposal_status =
+        ProposalStatus::<u64>::finalized(ProposalDecisionStatus::Slashed, block_number);
+
+    assert_eq!(
+        ProposalStatus::Finalized(FinalizationData {
+            proposal_status: ProposalDecisionStatus::Slashed,
+            finalized_at: block_number,
+        }),
+        proposal_status
+    );
+}
+
+// Alias introduced for simplicity of changing Proposal exact types.
+type ProposalObject = Proposal<u64, u64, u64, u64>;
+
+#[test]
+fn proposal_voting_period_expired() {
+    let mut proposal = ProposalObject::default();
+
+    proposal.activated_at = 1;
+    proposal.parameters.voting_period = 3;
+
+    assert!(proposal.is_voting_period_expired(4));
+}
+
+#[test]
+fn proposal_voting_period_not_expired() {
+    let mut proposal = ProposalObject::default();
+
+    proposal.activated_at = 1;
+    proposal.parameters.voting_period = 3;
+
+    assert!(!proposal.is_voting_period_expired(3));
+}
+
+#[test]
+fn proposal_grace_period_expired() {
+    let mut proposal = ProposalObject::default();
+
+    proposal.parameters.grace_period = 3;
+    proposal.status = ProposalStatus::finalized(
+        ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingExecution),
+        0,
+    );
+
+    assert!(proposal.is_grace_period_expired(4));
+}
+
+#[test]
+fn proposal_grace_period_auto_expired() {
+    let mut proposal = ProposalObject::default();
+
+    proposal.parameters.grace_period = 0;
+    proposal.status = ProposalStatus::finalized(
+        ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingExecution),
+        0,
+    );
+
+    assert!(proposal.is_grace_period_expired(1));
+}
+
+#[test]
+fn proposal_grace_period_not_expired() {
+    let mut proposal = ProposalObject::default();
+
+    proposal.parameters.grace_period = 3;
+
+    assert!(!proposal.is_grace_period_expired(3));
+}
+
+#[test]
+fn proposal_grace_period_not_expired_because_of_not_approved_proposal() {
+    let mut proposal = ProposalObject::default();
+
+    proposal.parameters.grace_period = 3;
+
+    assert!(!proposal.is_grace_period_expired(3));
+}
+
+#[test]
+fn define_proposal_decision_status_returns_expired() {
+    let mut proposal = ProposalObject::default();
+    let now = 5;
+    proposal.activated_at = 1;
+    proposal.parameters.voting_period = 3;
+    proposal.parameters.approval_quorum_percentage = 80;
+    proposal.parameters.approval_threshold_percentage = 40;
+    proposal.parameters.slashing_quorum_percentage = 50;
+    proposal.parameters.slashing_threshold_percentage = 50;
+
+    proposal.voting_results.add_vote(VoteKind::Reject);
+    proposal.voting_results.add_vote(VoteKind::Approve);
+    proposal.voting_results.add_vote(VoteKind::Approve);
+
+    assert_eq!(
+        proposal.voting_results,
+        VotingResults {
+            abstentions: 0,
+            approvals: 2,
+            rejections: 1,
+            slashes: 0,
+        }
+    );
+
+    let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
+    assert_eq!(
+        expected_proposal_status,
+        Some(ProposalDecisionStatus::Expired)
+    );
+}
+
+#[test]
+fn define_proposal_decision_status_returns_approved() {
+    let now = 2;
+    let mut proposal = ProposalObject::default();
+    proposal.activated_at = 1;
+    proposal.parameters.voting_period = 3;
+    proposal.parameters.approval_quorum_percentage = 60;
+    proposal.parameters.slashing_quorum_percentage = 50;
+    proposal.parameters.slashing_threshold_percentage = 50;
+
+    proposal.voting_results.add_vote(VoteKind::Reject);
+    proposal.voting_results.add_vote(VoteKind::Approve);
+    proposal.voting_results.add_vote(VoteKind::Approve);
+    proposal.voting_results.add_vote(VoteKind::Approve);
+
+    assert_eq!(
+        proposal.voting_results,
+        VotingResults {
+            abstentions: 0,
+            approvals: 3,
+            rejections: 1,
+            slashes: 0,
+        }
+    );
+
+    let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
+    assert_eq!(
+        expected_proposal_status,
+        Some(ProposalDecisionStatus::Approved(
+            ApprovedProposalStatus::PendingExecution
+        ))
+    );
+}
+
+#[test]
+fn define_proposal_decision_status_returns_rejected() {
+    let mut proposal = ProposalObject::default();
+    let now = 2;
+
+    proposal.activated_at = 1;
+    proposal.parameters.voting_period = 3;
+    proposal.parameters.approval_quorum_percentage = 50;
+    proposal.parameters.approval_threshold_percentage = 51;
+    proposal.parameters.slashing_quorum_percentage = 50;
+    proposal.parameters.slashing_threshold_percentage = 50;
+
+    proposal.voting_results.add_vote(VoteKind::Reject);
+    proposal.voting_results.add_vote(VoteKind::Reject);
+    proposal.voting_results.add_vote(VoteKind::Abstain);
+    proposal.voting_results.add_vote(VoteKind::Approve);
+
+    assert_eq!(
+        proposal.voting_results,
+        VotingResults {
+            abstentions: 1,
+            approvals: 1,
+            rejections: 2,
+            slashes: 0,
+        }
+    );
+
+    let expected_proposal_status = proposal.define_proposal_decision_status(4, now);
+    assert_eq!(
+        expected_proposal_status,
+        Some(ProposalDecisionStatus::Rejected)
+    );
+}
+
+#[test]
+fn define_proposal_decision_status_returns_slashed() {
+    let mut proposal = ProposalObject::default();
+    let now = 2;
+
+    proposal.activated_at = 1;
+    proposal.parameters.voting_period = 3;
+    proposal.parameters.approval_quorum_percentage = 50;
+    proposal.parameters.approval_threshold_percentage = 50;
+    proposal.parameters.slashing_quorum_percentage = 50;
+    proposal.parameters.slashing_threshold_percentage = 50;
+
+    proposal.voting_results.add_vote(VoteKind::Slash);
+    proposal.voting_results.add_vote(VoteKind::Reject);
+    proposal.voting_results.add_vote(VoteKind::Abstain);
+    proposal.voting_results.add_vote(VoteKind::Slash);
+
+    assert_eq!(
+        proposal.voting_results,
+        VotingResults {
+            abstentions: 1,
+            approvals: 0,
+            rejections: 1,
+            slashes: 2,
+        }
+    );
+
+    let expected_proposal_status = proposal.define_proposal_decision_status(4, now);
+    assert_eq!(
+        expected_proposal_status,
+        Some(ProposalDecisionStatus::Slashed)
+    );
+}
+
+#[test]
+fn define_proposal_decision_status_returns_none() {
+    let mut proposal = ProposalObject::default();
+    let now = 2;
+
+    proposal.activated_at = 1;
+    proposal.parameters.voting_period = 3;
+    proposal.parameters.approval_quorum_percentage = 60;
+    proposal.parameters.slashing_quorum_percentage = 50;
+
+    proposal.voting_results.add_vote(VoteKind::Abstain);
+    assert_eq!(
+        proposal.voting_results,
+        VotingResults {
+            abstentions: 1,
+            approvals: 0,
+            rejections: 0,
+            slashes: 0,
+        }
+    );
+
+    let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
+    assert_eq!(expected_proposal_status, None);
+}
+
+#[test]
+fn define_proposal_decision_status_returns_approved_before_slashing_before_rejection() {
+    let mut proposal = ProposalObject::default();
+    let now = 2;
+
+    proposal.activated_at = 1;
+    proposal.parameters.voting_period = 3;
+    proposal.parameters.approval_quorum_percentage = 50;
+    proposal.parameters.approval_threshold_percentage = 30;
+    proposal.parameters.slashing_quorum_percentage = 50;
+    proposal.parameters.slashing_threshold_percentage = 30;
+
+    proposal.voting_results.add_vote(VoteKind::Approve);
+    proposal.voting_results.add_vote(VoteKind::Approve);
+    proposal.voting_results.add_vote(VoteKind::Reject);
+    proposal.voting_results.add_vote(VoteKind::Reject);
+    proposal.voting_results.add_vote(VoteKind::Slash);
+    proposal.voting_results.add_vote(VoteKind::Slash);
+
+    assert_eq!(
+        proposal.voting_results,
+        VotingResults {
+            abstentions: 0,
+            approvals: 2,
+            rejections: 2,
+            slashes: 2,
+        }
+    );
+
+    let expected_proposal_status = proposal.define_proposal_decision_status(6, now);
+
+    assert_eq!(
+        expected_proposal_status,
+        Some(ProposalDecisionStatus::Approved(
+            ApprovedProposalStatus::PendingExecution
+        ))
+    );
+}
+
+#[test]
+fn define_proposal_decision_status_returns_slashed_before_rejection() {
+    let mut proposal = ProposalObject::default();
+    let now = 2;
+
+    proposal.activated_at = 1;
+    proposal.parameters.voting_period = 3;
+    proposal.parameters.approval_quorum_percentage = 50;
+    proposal.parameters.approval_threshold_percentage = 30;
+    proposal.parameters.slashing_quorum_percentage = 50;
+    proposal.parameters.slashing_threshold_percentage = 30;
+
+    proposal.voting_results.add_vote(VoteKind::Abstain);
+    proposal.voting_results.add_vote(VoteKind::Approve);
+    proposal.voting_results.add_vote(VoteKind::Reject);
+    proposal.voting_results.add_vote(VoteKind::Reject);
+    proposal.voting_results.add_vote(VoteKind::Slash);
+    proposal.voting_results.add_vote(VoteKind::Slash);
+
+    assert_eq!(
+        proposal.voting_results,
+        VotingResults {
+            abstentions: 1,
+            approvals: 1,
+            rejections: 2,
+            slashes: 2,
+        }
+    );
+
+    let expected_proposal_status = proposal.define_proposal_decision_status(6, now);
+
+    assert_eq!(
+        expected_proposal_status,
+        Some(ProposalDecisionStatus::Slashed)
+    );
+}
+
+#[test]
+fn proposal_status_resolution_approval_quorum_works_correctly() {
+    let no_approval_quorum_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            approval_quorum_percentage: 63,
+            slashing_threshold_percentage: 63,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let no_approval_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &no_approval_quorum_proposal,
+        now: 20,
+        votes_count: 314,
+        total_voters_count: 500,
+        approvals: 3,
+        slashes: 3,
+    };
+
+    assert!(!no_approval_proposal_status_resolution.is_approval_quorum_reached());
+
+    let approval_quorum_proposal_status_resolution = ProposalStatusResolution {
+        votes_count: 315,
+        ..no_approval_proposal_status_resolution
+    };
+
+    assert!(approval_quorum_proposal_status_resolution.is_approval_quorum_reached());
+}
+
+#[test]
+fn proposal_status_resolution_slashing_quorum_works_correctly() {
+    let no_slashing_quorum_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            approval_quorum_percentage: 63,
+            slashing_quorum_percentage: 63,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let no_slashing_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &no_slashing_quorum_proposal,
+        now: 20,
+        votes_count: 314,
+        total_voters_count: 500,
+        approvals: 3,
+        slashes: 3,
+    };
+
+    assert!(!no_slashing_proposal_status_resolution.is_slashing_quorum_reached());
+
+    let slashing_quorum_proposal_status_resolution = ProposalStatusResolution {
+        votes_count: 315,
+        ..no_slashing_proposal_status_resolution
+    };
+
+    assert!(slashing_quorum_proposal_status_resolution.is_slashing_quorum_reached());
+}
+
+#[test]
+fn proposal_status_resolution_approval_threshold_works_correctly() {
+    let no_approval_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            slashing_threshold_percentage: 63,
+            approval_threshold_percentage: 63,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let no_approval_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &no_approval_threshold_proposal,
+        now: 20,
+        votes_count: 500,
+        total_voters_count: 600,
+        approvals: 314,
+        slashes: 3,
+    };
+
+    assert!(!no_approval_proposal_status_resolution.is_approval_threshold_reached());
+
+    let approval_threshold_proposal_status_resolution = ProposalStatusResolution {
+        approvals: 315,
+        ..no_approval_proposal_status_resolution
+    };
+
+    assert!(approval_threshold_proposal_status_resolution.is_approval_threshold_reached());
+}
+
+#[test]
+fn proposal_status_resolution_slashing_threshold_works_correctly() {
+    let no_slashing_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            slashing_threshold_percentage: 63,
+            approval_threshold_percentage: 63,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let no_slashing_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &no_slashing_threshold_proposal,
+        now: 20,
+        votes_count: 500,
+        total_voters_count: 600,
+        approvals: 3,
+        slashes: 314,
+    };
+
+    assert!(!no_slashing_proposal_status_resolution.is_slashing_threshold_reached());
+
+    let slashing_threshold_proposal_status_resolution = ProposalStatusResolution {
+        slashes: 315,
+        ..no_slashing_proposal_status_resolution
+    };
+
+    assert!(slashing_threshold_proposal_status_resolution.is_slashing_threshold_reached());
+}
+
+#[test]
+fn proposal_exact_execution_block_reached() {
+    let mut proposal = ProposalObject::default();
+
+    proposal.exact_execution_block = None;
+    assert!(proposal.is_execution_block_reached_or_not_set(3));
+
+    proposal.exact_execution_block = Some(3);
+    assert!(proposal.is_execution_block_reached_or_not_set(3));
+}
+
+#[test]
+fn proposal_exact_execution_block_not_reached() {
+    let mut proposal = ProposalObject::default();
+
+    proposal.exact_execution_block = Some(3);
+    assert!(!proposal.is_execution_block_reached_or_not_set(2));
+}
+
+#[test]
+fn proposal_status_resolution_is_approval_achievable_works_correctly() {
+    let approval_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            slashing_threshold_percentage: 50,
+            approval_threshold_percentage: 50,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let not_achievable_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &approval_threshold_proposal,
+        now: 20,
+        votes_count: 302,
+        total_voters_count: 600,
+        approvals: 1,
+        slashes: 0,
+    };
+
+    assert!(!not_achievable_proposal_status_resolution.is_approval_threshold_achievable());
+    assert!(not_achievable_proposal_status_resolution.is_rejection_imminent());
+
+    let approval_threshold_achievable_resolution = ProposalStatusResolution {
+        approvals: 2,
+        ..not_achievable_proposal_status_resolution
+    };
+
+    assert!(approval_threshold_achievable_resolution.is_approval_threshold_achievable());
+    assert!(!approval_threshold_achievable_resolution.is_rejection_imminent());
+}
+
+#[test]
+fn proposal_status_resolution_is_slashing_achievable_works_correctly() {
+    let slashing_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
+        parameters: ProposalParameters {
+            slashing_threshold_percentage: 50,
+            approval_threshold_percentage: 50,
+            ..ProposalParameters::default()
+        },
+        ..Proposal::default()
+    };
+    let not_achievable_proposal_status_resolution = ProposalStatusResolution {
+        proposal: &slashing_threshold_proposal,
+        now: 20,
+        votes_count: 302,
+        total_voters_count: 600,
+        approvals: 0,
+        slashes: 1,
+    };
+
+    assert!(!not_achievable_proposal_status_resolution.is_approval_threshold_achievable());
+    assert!(not_achievable_proposal_status_resolution.is_rejection_imminent());
+
+    let slashing_threshold_achievable_resolution = ProposalStatusResolution {
+        slashes: 2,
+        ..not_achievable_proposal_status_resolution
+    };
+
+    assert!(slashing_threshold_achievable_resolution.is_slashing_threshold_achievable());
+    assert!(!slashing_threshold_achievable_resolution.is_rejection_imminent());
 }

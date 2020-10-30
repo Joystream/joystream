@@ -4,6 +4,7 @@ use frame_support::dispatch::{DispatchError, DispatchResult};
 use system::RawOrigin;
 use system::{EventRecord, Phase};
 
+use crate::types::ThreadCounter;
 use crate::*;
 use mock::*;
 
@@ -571,4 +572,28 @@ fn create_post_call_fails_with_closed_mode_by_not_allowed_member() {
 
         post_fixture.add_post_and_assert(Err(Error::<Test>::CannotPostOnClosedThread.into()));
     });
+}
+
+#[test]
+fn thread_counter_increment_works() {
+    let test = ThreadCounter {
+        author_id: 56,
+        counter: 56,
+    };
+    let expected = ThreadCounter {
+        author_id: 56,
+        counter: 57,
+    };
+
+    assert_eq!(expected, test.increment());
+}
+
+#[test]
+fn thread_counter_new_works() {
+    let expected = ThreadCounter {
+        author_id: 56,
+        counter: 1,
+    };
+
+    assert_eq!(expected, ThreadCounter::new(56));
 }

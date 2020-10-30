@@ -78,32 +78,3 @@ impl<MemberId> Default for ThreadMode<MemberId> {
         Self::Open
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::types::ThreadCounter;
-
-    #[test]
-    fn thread_counter_increment_works() {
-        let test = ThreadCounter {
-            author_id: 56,
-            counter: 56,
-        };
-        let expected = ThreadCounter {
-            author_id: 56,
-            counter: 57,
-        };
-
-        assert_eq!(expected, test.increment());
-    }
-
-    #[test]
-    fn thread_counter_new_works() {
-        let expected = ThreadCounter {
-            author_id: 56,
-            counter: 1,
-        };
-
-        assert_eq!(expected, ThreadCounter::new(56));
-    }
-}
