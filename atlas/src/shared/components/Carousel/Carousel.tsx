@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { GliderProps, BreakPoint, GliderMethods } from 'react-glider'
+import React, { useState, useLayoutEffect, useRef } from 'react'
+import { GliderProps, GliderMethods } from 'react-glider'
 
 import { Container, StyledGlider, Arrow } from './Carousel.style'
 
@@ -21,20 +21,16 @@ const RightArrow = <Arrow name="chevron-right" />
 const LeftArrow = <Arrow name="chevron-left" />
 
 const Carousel: React.FC<CarouselProps> = ({ children, trackPadding = '0', className, ...gliderProps }) => {
-  // Using any because the GliderMethods type only has methods and I need the full instance
-  const gliderRef = React.useRef<any>()
-  const [arrows, setArrows] = React.useState<
-    { prev: string | HTMLButtonElement; next: string | HTMLButtonElement } | undefined
-  >(undefined)
+  //  The GliderMethods type only has methods and I need the full instance
+  const gliderRef = useRef<GliderMethods & { ele: HTMLDivElement }>()
+  const [arrows, setArrows] = useState<{ prev: HTMLButtonElement; next: HTMLButtonElement } | undefined>(undefined)
 
-  React.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     if (gliderRef.current) {
       const glider = gliderRef.current.ele
-      const prevArrow = glider.previousSibling
-      const nextArrow = glider.nextSibling
-      const INSTANCE_KEY = Math.round(Math.random() * 1000)
-      prevArrow.classList.add(`glider-${INSTANCE_KEY}-prev`)
-      nextArrow.classList.add(`glider-${INSTANCE_KEY}-next`)
+      const prevArrow = glider.previousSibling as HTMLButtonElement
+      const nextArrow = glider.nextSibling as HTMLButtonElement
+
       setArrows({ prev: prevArrow, next: nextArrow })
     }
   }, [])
@@ -44,8 +40,10 @@ const Carousel: React.FC<CarouselProps> = ({ children, trackPadding = '0', class
     if (gliderRef.current && arrows) {
       const { prev: prevArrow, next: nextArrow } = arrows
       const container = gliderRef.current.ele.parentElement
-      container.insertBefore(prevArrow, gliderRef.current.ele)
-      container.appendChild(nextArrow)
+      if (container) {
+        container.insertBefore(prevArrow, gliderRef.current.ele)
+        container.appendChild(nextArrow)
+      }
     }
   }, [arrows])
 
@@ -56,10 +54,11 @@ const Carousel: React.FC<CarouselProps> = ({ children, trackPadding = '0', class
         skipTrack
         hasArrows
         draggable
-        ref={gliderRef}
+        ref={gliderRef as React.RefObject<GliderMethods>}
         iconLeft={LeftArrow}
         iconRight={RightArrow}
-        arrows={arrows as { prev: string; next: string }}
+        // Akward conversion needed until this is resolved: https://github.com/hipstersmoothie/react-glider/issues/36
+        arrows={(arrows as unknown) as { prev: string; next: string }}
         {...gliderProps}
       >
         <Track padding={trackPadding}>{children}</Track>
