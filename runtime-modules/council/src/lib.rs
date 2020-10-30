@@ -641,6 +641,7 @@ struct EnsureChecks<T: Trait> {
 impl<T: Trait> EnsureChecks<T> {
     /////////////////// Common checks //////////////////////////////////////////
 
+    /// Ensures membership id is associated with account derived from the origin.
     fn ensure_user_membership(
         origin: T::Origin,
         council_user_id: &T::CouncilUserId,
@@ -681,6 +682,7 @@ impl<T: Trait> EnsureChecks<T> {
 
     /////////////////// Action checks //////////////////////////////////////////
 
+    /// Checks there are no obstacles for announcing candidacy.
     fn can_announce_candidacy(
         origin: T::Origin,
         council_user_id: &T::CouncilUserId,
@@ -724,6 +726,7 @@ impl<T: Trait> EnsureChecks<T> {
         Ok((stage_data, account_id))
     }
 
+    /// Checks candidacy stake can be released.
     fn can_release_candidacy_stake(
         origin: T::Origin,
         council_user_id: &T::CouncilUserId,
