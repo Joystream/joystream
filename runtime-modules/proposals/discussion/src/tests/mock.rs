@@ -86,8 +86,6 @@ impl crate::Trait for Test {
     type ThreadId = u64;
     type PostId = u64;
     type MaxPostEditionNumber = MaxPostEditionNumber;
-    type ThreadTitleLengthLimit = ThreadTitleLengthLimit;
-    type PostLengthLimit = PostLengthLimit;
     type MaxThreadInARowNumber = MaxThreadInARowNumber;
 }
 

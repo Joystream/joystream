@@ -22,13 +22,7 @@ pub struct DiscussionThread<ThreadAuthorId, BlockNumber, MemberId> {
 /// Post for the discussion thread
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, Debug))]
 #[derive(Encode, Decode, Default, Clone, PartialEq, Eq)]
-pub struct DiscussionPost<PostAuthorId, BlockNumber, ThreadId> {
-    /// When post was added.
-    pub activated_at: BlockNumber,
-
-    /// When post was updated last time.
-    pub updated_at: BlockNumber,
-
+pub struct DiscussionPost<PostAuthorId, ThreadId> {
     /// Author of the post.
     pub author_id: PostAuthorId,
 

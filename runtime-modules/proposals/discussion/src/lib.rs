@@ -30,8 +30,8 @@
 //!         #[weight = 10_000_000]
 //!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) {
 //!             ensure_root(origin)?;
-//!             <discussions::Module<T>>::ensure_can_create_thread(author_id, &title)?;
-//!             <discussions::Module<T>>::create_thread(author_id, title, ThreadMode::Open)?;
+//!             <discussions::Module<T>>::ensure_can_create_thread(author_id)?;
+//!             <discussions::Module<T>>::create_thread(author_id, ThreadMode::Open)?;
 //!         }
 //!     }
 //! }
@@ -109,12 +109,6 @@ pub trait Trait: system::Trait + membership::Trait {
     /// Defines post edition number limit.
     type MaxPostEditionNumber: Get<u32>;
 
-    /// Defines thread title length limit.
-    type ThreadTitleLengthLimit: Get<u32>;
-
-    /// Defines post length limit.
-    type PostLengthLimit: Get<u32>;
-
     /// Defines max thread by same author in a row number limit.
     type MaxThreadInARowNumber: Get<u32>;
 }
@@ -128,23 +122,11 @@ decl_error! {
         ///  Post edition limit reached
         PostEditionNumberExceeded,
 
-        /// Discussion cannot have an empty title
-        EmptyTitleProvided,
-
-        /// Title is too long
-        TitleIsTooLong,
-
         /// Thread doesn't exist
         ThreadDoesntExist,
 
         /// Post doesn't exist
         PostDoesntExist,
-
-        /// Post cannot be empty
-        EmptyPostProvided,
-
-        /// Post is too long
-        PostIsTooLong,
 
         /// Max number of threads by same author in a row limit exceeded
         MaxThreadInARowLimitExceeded,
@@ -173,7 +155,7 @@ decl_storage! {
         /// Map thread id and post id to corresponding post.
         pub PostThreadIdByPostId:
             double_map hasher(blake2_128_concat) T::ThreadId, hasher(blake2_128_concat) T::PostId =>
-                DiscussionPost<MemberId<T>, T::BlockNumber, T::ThreadId>;
+                DiscussionPost<MemberId<T>, T::ThreadId>;
 
         /// Count of all posts that have been created.
         pub PostCount get(fn post_count): u64;
@@ -196,12 +178,6 @@ decl_module! {
         /// Exports post edition number limit const.
         const MaxPostEditionNumber: u32 = T::MaxPostEditionNumber::get();
 
-        /// Exports thread title length limit const.
-        const ThreadTitleLengthLimit: u32 = T::ThreadTitleLengthLimit::get();
-
-        /// Exports post length limit const.
-        const PostLengthLimit: u32 = T::PostLengthLimit::get();
-
         /// Exports max thread by same author in a row number limit const.
         const MaxThreadInARowNumber: u32 = T::MaxThreadInARowNumber::get();
 
@@ -211,7 +187,7 @@ decl_module! {
             origin,
             post_author_id: MemberId<T>,
             thread_id : T::ThreadId,
-            text : Vec<u8>
+            _text : Vec<u8>
         ) {
             T::AuthorOriginValidator::ensure_actor_origin(
                 origin.clone(),
@@ -222,20 +198,12 @@ decl_module! {
 
             Self::ensure_thread_mode(origin, post_author_id, thread_id)?;
 
-            ensure!(!text.is_empty(),Error::<T>::EmptyPostProvided);
-            ensure!(
-                text.len() as u32 <= T::PostLengthLimit::get(),
-                Error::<T>::PostIsTooLong
-            );
-
             // mutation
 
             let next_post_count_value = Self::post_count() + 1;
             let new_post_id = next_post_count_value;
 
             let new_post = DiscussionPost {
-                activated_at: Self::current_block(),
-                updated_at: Self::current_block(),
                 author_id: post_author_id,
                 edition_number : 0,
                 thread_id,
@@ -254,7 +222,7 @@ decl_module! {
             post_author_id: MemberId<T>,
             thread_id: T::ThreadId,
             post_id : T::PostId,
-            text : Vec<u8>
+            _text : Vec<u8>
         ){
             T::AuthorOriginValidator::ensure_actor_origin(
                 origin,
@@ -264,12 +232,6 @@ decl_module! {
             ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
             ensure!(<PostThreadIdByPostId<T>>::contains_key(thread_id, post_id), Error::<T>::PostDoesntExist);
 
-            ensure!(!text.is_empty(), Error::<T>::EmptyPostProvided);
-            ensure!(
-                text.len() as u32 <= T::PostLengthLimit::get(),
-                Error::<T>::PostIsTooLong
-            );
-
             let post = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id);
 
             ensure!(post.author_id == post_author_id, Error::<T>::NotAuthor);
@@ -277,7 +239,6 @@ decl_module! {
                 Error::<T>::PostEditionNumberExceeded);
 
             let new_post = DiscussionPost {
-                updated_at: Self::current_block(),
                 edition_number: post.edition_number + 1,
                 ..post
             };
@@ -324,10 +285,9 @@ impl<T: Trait> Module<T> {
     /// times in a row by the same author.
     pub fn create_thread(
         thread_author_id: MemberId<T>,
-        title: Vec<u8>,
         mode: ThreadMode<MemberId<T>>,
     ) -> Result<T::ThreadId, DispatchError> {
-        Self::ensure_can_create_thread(thread_author_id, &title)?;
+        Self::ensure_can_create_thread(thread_author_id)?;
 
         let next_thread_count_value = Self::thread_count() + 1;
         let new_thread_id = next_thread_count_value;
@@ -353,16 +313,8 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensures thread can be created.
-    /// Checks:
-    /// - title is valid
-    /// - max thread in a row by the same author
-    pub fn ensure_can_create_thread(thread_author_id: MemberId<T>, title: &[u8]) -> DispatchResult {
-        ensure!(!title.is_empty(), Error::<T>::EmptyTitleProvided);
-        ensure!(
-            title.len() as u32 <= T::ThreadTitleLengthLimit::get(),
-            Error::<T>::TitleIsTooLong
-        );
-
+    /// Checks max thread in a row by the same author
+    pub fn ensure_can_create_thread(thread_author_id: MemberId<T>) -> DispatchResult {
         // get new 'threads in a row' counter for the author
         let current_thread_counter = Self::get_updated_thread_counter(thread_author_id);
 

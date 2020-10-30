@@ -49,8 +49,6 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
         let actual_post =
             <PostThreadIdByPostId<Test>>::get(thread_entry.thread_id, post_entry.post_id);
         let expected_post = DiscussionPost {
-            activated_at: 0,
-            updated_at: 0,
             author_id: 1,
             thread_id: thread_entry.thread_id,
             edition_number: post_entry.edition_number,
@@ -79,17 +77,13 @@ impl Default for DiscussionFixture {
 }
 
 impl DiscussionFixture {
-    fn with_title(self, title: Vec<u8>) -> Self {
-        DiscussionFixture { title, ..self }
-    }
-
     fn with_mode(self, mode: ThreadMode<u64>) -> Self {
         Self { mode, ..self }
     }
 
     fn create_discussion_and_assert(&self, result: Result<u64, DispatchError>) -> Option<u64> {
         let create_discussion_result =
-            Discussions::create_thread(self.author_id, self.title.clone(), self.mode.clone());
+            Discussions::create_thread(self.author_id, self.mode.clone());
 
         assert_eq!(create_discussion_result, result);
 
@@ -114,10 +108,6 @@ impl PostFixture {
             origin: RawOrigin::Signed(1),
             post_id: None,
         }
-    }
-
-    fn with_text(self, text: Vec<u8>) -> Self {
-        PostFixture { text, ..self }
     }
 
     fn with_origin(self, origin: RawOrigin<u64>) -> Self {
@@ -349,18 +339,6 @@ fn thread_content_check_succeeded() {
 }
 
 #[test]
-fn create_discussion_call_with_bad_title_failed() {
-    initial_test_ext().execute_with(|| {
-        let mut discussion_fixture = DiscussionFixture::default().with_title(Vec::new());
-        discussion_fixture
-            .create_discussion_and_assert(Err(Error::<Test>::EmptyTitleProvided.into()));
-
-        discussion_fixture = DiscussionFixture::default().with_title([0; 201].to_vec());
-        discussion_fixture.create_discussion_and_assert(Err(Error::<Test>::TitleIsTooLong.into()));
-    });
-}
-
-#[test]
 fn add_post_call_with_invalid_thread_failed() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default();
@@ -402,42 +380,6 @@ fn update_post_call_with_invalid_thread_failed() {
 
         let mut post_fixture2 = post_fixture1.change_thread_id(2);
         post_fixture2.update_post_and_assert(Err(Error::<Test>::ThreadDoesntExist.into()));
-    });
-}
-
-#[test]
-fn add_post_call_with_invalid_text_failed() {
-    initial_test_ext().execute_with(|| {
-        let discussion_fixture = DiscussionFixture::default();
-        let thread_id = discussion_fixture
-            .create_discussion_and_assert(Ok(1))
-            .unwrap();
-
-        let mut post_fixture1 = PostFixture::default_for_thread(thread_id).with_text(Vec::new());
-        post_fixture1.add_post_and_assert(Err(Error::<Test>::EmptyPostProvided.into()));
-
-        let mut post_fixture2 =
-            PostFixture::default_for_thread(thread_id).with_text([0; 2001].to_vec());
-        post_fixture2.add_post_and_assert(Err(Error::<Test>::PostIsTooLong.into()));
-    });
-}
-
-#[test]
-fn update_post_call_with_invalid_text_failed() {
-    initial_test_ext().execute_with(|| {
-        let discussion_fixture = DiscussionFixture::default();
-        let thread_id = discussion_fixture
-            .create_discussion_and_assert(Ok(1))
-            .unwrap();
-
-        let mut post_fixture1 = PostFixture::default_for_thread(thread_id);
-        post_fixture1.add_post_and_assert(Ok(()));
-
-        let mut post_fixture2 = post_fixture1.with_text(Vec::new());
-        post_fixture2.update_post_and_assert(Err(Error::<Test>::EmptyPostProvided.into()));
-
-        let mut post_fixture3 = post_fixture2.with_text([0; 2001].to_vec());
-        post_fixture3.update_post_and_assert(Err(Error::<Test>::PostIsTooLong.into()));
     });
 }
 

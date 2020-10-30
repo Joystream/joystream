@@ -812,16 +812,10 @@ impl<T: Trait> Module<T> {
             params.exact_execution_block,
         )?;
 
-        <proposals_discussion::Module<T>>::ensure_can_create_thread(
-            params.member_id,
-            &params.title,
-        )?;
+        <proposals_discussion::Module<T>>::ensure_can_create_thread(params.member_id)?;
 
-        let discussion_thread_id = <proposals_discussion::Module<T>>::create_thread(
-            params.member_id,
-            params.title.clone(),
-            ThreadMode::Open,
-        )?;
+        let discussion_thread_id =
+            <proposals_discussion::Module<T>>::create_thread(params.member_id, ThreadMode::Open)?;
 
         let proposal_creation_params = ProposalCreationParameters {
             account_id,

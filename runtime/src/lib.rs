@@ -590,8 +590,6 @@ impl proposals_discussion::Trait for Runtime {
     type ThreadId = ThreadId;
     type PostId = PostId;
     type MaxPostEditionNumber = ProposalMaxPostEditionNumber;
-    type ThreadTitleLengthLimit = ProposalThreadTitleLengthLimit;
-    type PostLengthLimit = ProposalPostLengthLimit;
     type MaxThreadInARowNumber = ProposalMaxThreadInARowNumber;
 }
 
