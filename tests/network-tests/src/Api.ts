@@ -35,7 +35,7 @@ import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
 import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
 import { initializeContentDir, ExtrinsicsHelper } from 'cd-schemas'
 import { OperationType } from '@joystream/types/content-directory';
-
+import { gql, ApolloClient, NormalizedCacheObject } from '@apollo/client';
 
 import Debugger from 'debug'
 const debug = Debugger('api')
@@ -1989,5 +1989,39 @@ export class Api {
 
   public async initializeContentDirectory(leadKeyPair: KeyringPair) {
     await initializeContentDir(this.api,  leadKeyPair)
+  }
+}
+
+export class QueryNodeApi extends Api {
+  private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
+
+  public static async new(provider: WsProvider, queryNodeProvider: ApolloClient<NormalizedCacheObject>, treasuryAccountUri: string, sudoAccountUri: string): Promise<QueryNodeApi> {
+    let connectAttempts = 0
+    while (true) {
+      connectAttempts++
+      debug(`Connecting to chain, attempt ${connectAttempts}..`)
+      try {
+        const api = await ApiPromise.create({ provider, types })
+
+        // Wait for api to be connected and ready
+        await api.isReady
+
+        // If a node was just started up it might take a few seconds to start producing blocks
+        // Give it a few seconds to be ready.
+        await Utils.wait(5000)
+
+        return new QueryNodeApi(api, queryNodeProvider, treasuryAccountUri, sudoAccountUri)
+      } catch (err) {
+        if (connectAttempts === 3) {
+          throw new Error('Unable to connect to chain')
+        }
+      }
+      await Utils.wait(5000)
+    }
+  }
+
+  constructor(api: ApiPromise, queryNodeProvider: ApolloClient<NormalizedCacheObject>, treasuryAccountUri: string, sudoAccountUri: string) {
+    super(api, treasuryAccountUri, sudoAccountUri)
+    this.queryNodeProvider = queryNodeProvider
   }
 }
