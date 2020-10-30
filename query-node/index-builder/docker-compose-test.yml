@@ -1,0 +1,22 @@
+version: "3"
+
+services:
+  substrate:
+    image: paritytech/substrate-playground-template-node-template:sha-7212614
+    ports:
+      - "9944:9944"
+    command: ["./target/release/node-template", "--dev", "--tmp", "--ws-external"]
+  
+  redis:
+    image: redis:6.0-alpine
+    ports:
+      - "6379:6379"
+
+  db:
+    image: postgres:12
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test
