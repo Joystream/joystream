@@ -596,3 +596,30 @@ fn thread_counter_new_works() {
 
     assert_eq!(expected, ThreadCounter::new(56));
 }
+
+#[test]
+fn change_thread_mode_fails_with_exceeded_max_author_list_size() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
+            .with_mode(ThreadMode::Closed(vec![2, 3, 4, 5, 6]));
+        change_thread_mode_fixture
+            .call_and_assert(Err(Error::<Test>::MaxWhiteListSizeExceeded.into()));
+    });
+}
+
+#[test]
+fn create_discussion_call_fails_with_exceeded_max_author_list_size() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture =
+            DiscussionFixture::default().with_mode(ThreadMode::Closed(vec![2, 3, 4, 5, 6]));
+
+        discussion_fixture
+            .create_discussion_and_assert(Err(Error::<Test>::MaxWhiteListSizeExceeded.into()));
+    });
+}

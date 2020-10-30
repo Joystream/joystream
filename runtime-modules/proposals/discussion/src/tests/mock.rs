@@ -57,6 +57,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
     pub const TransferFee: u32 = 0;
     pub const CreationFee: u32 = 0;
+    pub const MaxWhiteListSize: u32 = 4;
 }
 
 impl balances::Trait for Test {
@@ -87,6 +88,7 @@ impl crate::Trait for Test {
     type PostId = u64;
     type MaxPostEditionNumber = MaxPostEditionNumber;
     type MaxThreadInARowNumber = MaxThreadInARowNumber;
+    type MaxWhiteListSize = MaxWhiteListSize;
 }
 
 impl ActorOriginValidator<Origin, u64, u64> for () {

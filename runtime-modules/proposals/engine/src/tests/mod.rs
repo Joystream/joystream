@@ -2259,7 +2259,7 @@ fn proposal_exact_execution_block_not_reached() {
 }
 
 #[test]
-fn proposal_status_resolution_is_approval_achievable_works_correctly() {
+fn proposal_status_resolution_approval_achievable_works_correctly() {
     let approval_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
         parameters: ProposalParameters {
             slashing_threshold_percentage: 50,

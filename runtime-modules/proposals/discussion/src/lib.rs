@@ -30,8 +30,9 @@
 //!         #[weight = 10_000_000]
 //!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) {
 //!             ensure_root(origin)?;
-//!             <discussions::Module<T>>::ensure_can_create_thread(author_id)?;
-//!             <discussions::Module<T>>::create_thread(author_id, ThreadMode::Open)?;
+//!             let thread_mode = ThreadMode::Open;
+//!             <discussions::Module<T>>::ensure_can_create_thread(author_id, &thread_mode)?;
+//!             <discussions::Module<T>>::create_thread(author_id, thread_mode)?;
 //!         }
 //!     }
 //! }
@@ -49,6 +50,7 @@ mod tests;
 mod types;
 
 use frame_support::dispatch::{DispatchError, DispatchResult};
+use frame_support::sp_runtime::SaturatedConversion;
 use frame_support::traits::Get;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use sp_std::clone::Clone;
@@ -111,6 +113,9 @@ pub trait Trait: system::Trait + membership::Trait {
 
     /// Defines max thread by same author in a row number limit.
     type MaxThreadInARowNumber: Get<u32>;
+
+    /// Defines author list size limit for the Closed discussion.
+    type MaxWhiteListSize: Get<u32>;
 }
 
 decl_error! {
@@ -139,6 +144,9 @@ decl_error! {
 
         /// Should be thread author or councilor.
         NotAuthorOrCouncilor,
+
+        /// Max allowed authors list limit exceeded.
+        MaxWhiteListSizeExceeded,
     }
 }
 
@@ -260,6 +268,13 @@ decl_module! {
 
             ensure!(<ThreadById<T>>::contains_key(thread_id), Error::<T>::ThreadDoesntExist);
 
+            if let ThreadMode::Closed(ref list) = mode{
+                ensure!(
+                    list.len() <= (T::MaxWhiteListSize::get()).saturated_into(),
+                    Error::<T>::MaxWhiteListSizeExceeded
+                );
+            }
+
             let thread = Self::thread_by_id(&thread_id);
 
             let is_councilor =
@@ -286,7 +301,7 @@ impl<T: Trait> Module<T> {
         thread_author_id: MemberId<T>,
         mode: ThreadMode<MemberId<T>>,
     ) -> Result<T::ThreadId, DispatchError> {
-        Self::ensure_can_create_thread(thread_author_id)?;
+        Self::ensure_can_create_thread(thread_author_id, &mode)?;
 
         let next_thread_count_value = Self::thread_count() + 1;
         let new_thread_id = next_thread_count_value;
@@ -312,8 +327,20 @@ impl<T: Trait> Module<T> {
     }
 
     /// Ensures thread can be created.
-    /// Checks max thread in a row by the same author
-    pub fn ensure_can_create_thread(thread_author_id: MemberId<T>) -> DispatchResult {
+    /// Checks:
+    /// - max thread in a row by the same author
+    /// - max allowed authors for the Closed thread mode
+    pub fn ensure_can_create_thread(
+        thread_author_id: MemberId<T>,
+        mode: &ThreadMode<MemberId<T>>,
+    ) -> DispatchResult {
+        if let ThreadMode::Closed(list) = mode {
+            ensure!(
+                list.len() <= (T::MaxWhiteListSize::get()).saturated_into(),
+                Error::<T>::MaxWhiteListSizeExceeded
+            );
+        }
+
         // get new 'threads in a row' counter for the author
         let current_thread_counter = Self::get_updated_thread_counter(thread_author_id);
 

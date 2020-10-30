@@ -127,6 +127,7 @@ parameter_types! {
     pub const MaxThreadInARowNumber: u32 = 3;
     pub const ThreadTitleLengthLimit: u32 = 200;
     pub const PostLengthLimit: u32 = 2000;
+    pub const MaxWhiteListSize: u32 = 20;
 }
 
 impl proposals_discussion::Trait for Test {
@@ -137,6 +138,7 @@ impl proposals_discussion::Trait for Test {
     type PostId = u64;
     type MaxPostEditionNumber = MaxPostEditionNumber;
     type MaxThreadInARowNumber = MaxThreadInARowNumber;
+    type MaxWhiteListSize = MaxWhiteListSize;
 }
 
 pub struct MockVotersParameters;
