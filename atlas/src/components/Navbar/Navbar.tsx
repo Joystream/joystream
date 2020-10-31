@@ -1,8 +1,16 @@
 import React, { useState } from 'react'
-import { RouteComponentProps, Link, navigate } from '@reach/router'
+import { RouteComponentProps, Link, navigate, LinkGetProps } from '@reach/router'
 
 import routes from '@/config/routes'
-import { Header, NavigationContainer, StyledIcon, StyledSearchbar, SearchbarContainer, Logo } from './Navbar.style'
+import {
+  Header,
+  NavigationContainer,
+  StyledIcon,
+  StyledSearchbar,
+  SearchbarContainer,
+  Logo,
+  StyledLink,
+} from './Navbar.style'
 
 type NavbarProps = RouteComponentProps
 
@@ -36,19 +44,19 @@ const Navbar: React.FC<NavbarProps> = () => {
   }
   return (
     <Header hasFocus={isFocused}>
-      {!isFocused && (
-        <NavigationContainer>
-          <Link to="/">
-            <Logo />
-          </Link>
-          <Link to="/">
-            <StyledIcon name="home" />
-          </Link>
-          <Link to={routes.browse()}>
-            <StyledIcon name="binocular" />
-          </Link>
-        </NavigationContainer>
-      )}
+      <NavigationContainer>
+        <Link to="/">
+          <Logo />
+        </Link>
+        <StyledLink to="/" getProps={isActive}>
+          <StyledIcon name="home" />
+          <span>Home</span>
+        </StyledLink>
+        <StyledLink to={routes.browse()} getProps={isActive}>
+          <StyledIcon name="binocular" />
+          <span>Browse</span>
+        </StyledLink>
+      </NavigationContainer>
       <SearchbarContainer>
         <StyledSearchbar
           placeholder="Search..."
@@ -63,6 +71,10 @@ const Navbar: React.FC<NavbarProps> = () => {
       </SearchbarContainer>
     </Header>
   )
+}
+
+const isActive = ({ isCurrent }: LinkGetProps) => {
+  return isCurrent ? { 'data-active': 'true' } : {}
 }
 
 export default Navbar
