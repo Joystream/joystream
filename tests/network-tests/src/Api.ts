@@ -35,7 +35,7 @@ import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
 import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
 import { initializeContentDir, ExtrinsicsHelper } from 'cd-schemas'
 import { OperationType } from '@joystream/types/content-directory';
-import { gql, ApolloClient, NormalizedCacheObject } from '@apollo/client';
+import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client';
 
 import Debugger from 'debug'
 const debug = Debugger('api')
@@ -46,11 +46,11 @@ export enum WorkingGroups {
 }
 
 export class Api {
-  private readonly api: ApiPromise
-  private readonly sender: Sender
-  private readonly keyring: Keyring
+  protected readonly api: ApiPromise
+  protected readonly sender: Sender
+  protected readonly keyring: Keyring
   // source of funds for all new accounts
-  private readonly treasuryAccount: string
+  protected readonly treasuryAccount: string
 
   public static async create(provider: WsProvider, treasuryAccountUri: string, sudoAccountUri: string): Promise<Api> {
     let connectAttempts = 0
@@ -2023,5 +2023,22 @@ export class QueryNodeApi extends Api {
   constructor(api: ApiPromise, queryNodeProvider: ApolloClient<NormalizedCacheObject>, treasuryAccountUri: string, sudoAccountUri: string) {
     super(api, treasuryAccountUri, sudoAccountUri)
     this.queryNodeProvider = queryNodeProvider
+  }
+
+  public async getChannelbyTitle(channel_title: string): Promise<ApolloQueryResult<any>> {
+    const GET_CHANNEL_BY_TITLE = gql`
+      query getChannelbyTitle($title: String) {
+        channels(title: $title) {
+          title
+          description
+          language
+          coverPhotoUrl
+          avatarPhotoURL
+          isPublic
+        }
+      }
+    `;
+
+    return await this.queryNodeProvider.query({query: GET_CHANNEL_BY_TITLE, variables: [channel_title]})
   }
 }

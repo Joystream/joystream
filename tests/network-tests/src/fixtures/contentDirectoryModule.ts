@@ -1,4 +1,4 @@
-import { Api } from '../Api'
+import { QueryNodeApi } from '../Api'
 import BN from 'bn.js'
 import { assert } from 'chai'
 import { Seat } from '@joystream/types/council'
@@ -10,11 +10,11 @@ import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
 import { KeyringPair } from '@polkadot/keyring/types'
 
 export class CreateChannelFixture implements Fixture {
-  private api: Api
-  private channelEntity: ChannelEntity
+  private api: QueryNodeApi
+  public channelEntity: ChannelEntity
   private pair: KeyringPair
 
-  public constructor(api: Api,  channelEntity: ChannelEntity, pair: KeyringPair) {
+  public constructor(api: QueryNodeApi, channelEntity: ChannelEntity, pair: KeyringPair) {
     this.api = api
     this.pair = pair
     this.channelEntity = channelEntity
@@ -31,11 +31,11 @@ export class CreateChannelFixture implements Fixture {
 }
 
 export class CreateVideoFixture implements Fixture {
-  private api: Api
+  private api: QueryNodeApi
   private pair: KeyringPair
   private videoEntity: VideoEntity
 
-  public constructor(api: Api, videoEntity: VideoEntity, pair: KeyringPair) {
+  public constructor(api: QueryNodeApi, videoEntity: VideoEntity, pair: KeyringPair) {
     this.api = api
     this.videoEntity = videoEntity
     this.pair = pair
@@ -52,12 +52,12 @@ export class CreateVideoFixture implements Fixture {
 }
 
 export class UpdateChannelFixture implements Fixture {
-  private api: Api
+  private api: QueryNodeApi
   private pair: KeyringPair
   private channelUpdateInput: Record<string, any>
   private uniquePropValue: Record<string, any>
 
-  public constructor(api: Api, channelUpdateInput: Record<string, any>, uniquePropValue: Record<string, any>, pair: KeyringPair) {
+  public constructor(api: QueryNodeApi, channelUpdateInput: Record<string, any>, uniquePropValue: Record<string, any>, pair: KeyringPair) {
     this.api = api
     this.channelUpdateInput = channelUpdateInput
     this.uniquePropValue = uniquePropValue
