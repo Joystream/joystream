@@ -7,10 +7,8 @@ cd $SCRIPT_PATH
 function cleanup() {
     # Show tail end of logs for the processor and indexer containers to
     # see any possible errors
-    echo "## Processor Logs ##"
-    docker logs query-node_processor_1 --tail 50
-    echo "## Indexer Logs ##"
-    docker logs query-node_indexer_1 --tail 50
+    (echo "## Processor Logs ##" && docker logs query-node_processor_1 --tail 50) || :
+    (echo "## Indexer Logs ##" && docker logs query-node_indexer_1 --tail 50) || :
     docker-compose down -v
 }
 
