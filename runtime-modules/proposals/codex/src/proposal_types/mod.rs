@@ -217,12 +217,6 @@ pub struct RoleParameters<Balance, BlockNumber> {
 /// Contains proposal config parameters. Default values are used by migration and genesis config.
 #[derive(Copy, Clone)]
 pub struct ProposalsConfigParameters {
-    /// 'Text' proposal voting period
-    pub text_proposal_voting_period: u32,
-
-    /// 'Text' proposal grace period
-    pub text_proposal_grace_period: u32,
-
     /// 'Set election parameters' proposal voting period
     pub set_election_parameters_proposal_voting_period: u32,
 
@@ -299,8 +293,6 @@ pub struct ProposalsConfigParameters {
 impl Default for ProposalsConfigParameters {
     fn default() -> Self {
         ProposalsConfigParameters {
-            text_proposal_voting_period: 72000u32,
-            text_proposal_grace_period: 0u32,
             set_election_parameters_proposal_voting_period: 72000u32,
             set_election_parameters_proposal_grace_period: 201_601_u32,
             set_lead_proposal_voting_period: 43200u32,
@@ -335,8 +327,6 @@ impl ProposalsConfigParameters {
     /// All remaining proposals get assigned grace_period.
     pub fn with_grace_and_voting_periods(grace_period: u32, voting_period: u32) -> Self {
         ProposalsConfigParameters {
-            text_proposal_voting_period: voting_period,
-            text_proposal_grace_period: 0,
             set_election_parameters_proposal_voting_period: voting_period,
             set_election_parameters_proposal_grace_period: grace_period,
             set_lead_proposal_voting_period: voting_period,

@@ -1,19 +1,5 @@
 use crate::{BalanceOf, Module, ProposalParameters};
 
-// Proposal parameters for the text proposal
-pub(crate) fn text_proposal<T: crate::Trait>() -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
-    ProposalParameters {
-        voting_period: <Module<T>>::text_proposal_voting_period(),
-        grace_period: <Module<T>>::text_proposal_grace_period(),
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 80,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(<BalanceOf<T>>::from(25000u32)),
-        constitutionality: 1,
-    }
-}
-
 // Proposal parameters for the 'Spending' proposal
 pub(crate) fn spending_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {

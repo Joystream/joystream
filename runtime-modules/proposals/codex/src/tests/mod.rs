@@ -128,7 +128,7 @@ fn create_text_proposal_common_checks_succeed() {
                     None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::text_proposal::<Test>(),
+            proposal_parameters: <Test as crate::Trait>::TextProposalParameters::get(),
             proposal_details: ProposalDetails::Text(b"text".to_vec()),
         };
         proposal_fixture.check_all();
