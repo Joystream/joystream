@@ -11,5 +11,6 @@ RUN yarn install --frozen-lockfile
 # Error: packages/page-staking/src/index.tsx(24,21): error TS2307: Cannot find module './Targets' or its corresponding type declarations.
 # RUN yarn workspace pioneer build
 RUN yarn workspace storage-node build
+RUN yarn workspace query-node-root build
 
 ENTRYPOINT [ "yarn" ]

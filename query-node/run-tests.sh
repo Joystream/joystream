@@ -16,7 +16,9 @@ trap cleanup EXIT
 
 export WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944/
 
-yarn build
+# Only run codegen if no generated files found
+[ ! -d "generated/" ] && yarn codegen:all
+
 yarn db:up
 yarn db:migrate
 yarn docker:up
