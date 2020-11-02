@@ -2028,7 +2028,7 @@ export class QueryNodeApi extends Api {
   public async getChannelbyTitle(channel_title: string): Promise<ApolloQueryResult<any>> {
     const GET_CHANNEL_BY_TITLE = gql`
       query getChannelbyTitle($title: String) {
-        channel(title: $title) {
+        channels(title: $title) {
           title
           description
           language
