@@ -38,4 +38,8 @@ export const StyledAvatar = styled(Avatar)`
   width: 136px;
   height: 136px;
   margin-right: ${theme.sizes.b6}px;
+
+  > span {
+    font-size: ${theme.typography.sizes.h2};
+  }
 `
