@@ -49,10 +49,7 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
     for post_entry in post_entries {
         let actual_post =
             <PostThreadIdByPostId<Test>>::get(thread_entry.thread_id, post_entry.post_id);
-        let expected_post = DiscussionPost {
-            author_id: 1,
-            edition_number: post_entry.edition_number,
-        };
+        let expected_post = DiscussionPost { author_id: 1 };
 
         assert_eq!(actual_post, expected_post);
     }
@@ -254,27 +251,6 @@ fn update_post_call_succeeds() {
             RawEvent::PostCreated(1, 1),
             RawEvent::PostUpdated(1, 1),
         ]);
-    });
-}
-
-#[test]
-fn update_post_call_fails_because_of_post_edition_limit() {
-    initial_test_ext().execute_with(|| {
-        let discussion_fixture = DiscussionFixture::default();
-
-        let thread_id = discussion_fixture
-            .create_discussion_and_assert(Ok(1))
-            .unwrap();
-
-        let mut post_fixture = PostFixture::default_for_thread(thread_id);
-
-        post_fixture.add_post_and_assert(Ok(()));
-
-        for _ in 1..6 {
-            post_fixture.update_post_and_assert(Ok(()));
-        }
-
-        post_fixture.update_post_and_assert(Err(Error::<Test>::PostEditionNumberExceeded.into()));
     });
 }
 

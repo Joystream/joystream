@@ -108,9 +108,6 @@ pub trait Trait: system::Trait + membership::Trait {
     /// Post Id type
     type PostId: From<u64> + Parameter + Default + Copy;
 
-    /// Defines post edition number limit.
-    type MaxPostEditionNumber: Get<u32>;
-
     /// Defines max thread by same author in a row number limit.
     type MaxThreadInARowNumber: Get<u32>;
 
@@ -123,9 +120,6 @@ decl_error! {
     pub enum Error for Module<T: Trait> {
         /// Author should match the post creator
         NotAuthor,
-
-        ///  Post edition limit reached
-        PostEditionNumberExceeded,
 
         /// Thread doesn't exist
         ThreadDoesntExist,
@@ -183,9 +177,6 @@ decl_module! {
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
 
-        /// Exports post edition number limit const.
-        const MaxPostEditionNumber: u32 = T::MaxPostEditionNumber::get();
-
         /// Exports max thread by same author in a row number limit const.
         const MaxThreadInARowNumber: u32 = T::MaxThreadInARowNumber::get();
 
@@ -213,7 +204,6 @@ decl_module! {
 
             let new_post = DiscussionPost {
                 author_id: post_author_id,
-                edition_number : 0,
             };
 
             let post_id = T::PostId::from(new_post_id);
@@ -242,17 +232,9 @@ decl_module! {
             let post = <PostThreadIdByPostId<T>>::get(&thread_id, &post_id);
 
             ensure!(post.author_id == post_author_id, Error::<T>::NotAuthor);
-            ensure!(post.edition_number < T::MaxPostEditionNumber::get(),
-                Error::<T>::PostEditionNumberExceeded);
-
-            let new_post = DiscussionPost {
-                edition_number: post.edition_number + 1,
-                ..post
-            };
 
             // mutation
 
-            <PostThreadIdByPostId<T>>::insert(thread_id, post_id, new_post);
             Self::deposit_event(RawEvent::PostUpdated(post_id, post_author_id));
        }
 

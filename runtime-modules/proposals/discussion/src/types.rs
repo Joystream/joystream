@@ -25,9 +25,6 @@ pub struct DiscussionThread<ThreadAuthorId, BlockNumber, MemberId> {
 pub struct DiscussionPost<PostAuthorId> {
     /// Author of the post.
     pub author_id: PostAuthorId,
-
-    /// Defines how many times this post was edited. Zero on creation.
-    pub edition_number: u32,
 }
 
 /// Post for the discussion thread

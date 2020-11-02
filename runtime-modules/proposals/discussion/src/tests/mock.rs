@@ -30,7 +30,6 @@ parameter_types! {
 }
 
 parameter_types! {
-    pub const MaxPostEditionNumber: u32 = 5;
     pub const MaxThreadInARowNumber: u32 = 3;
     pub const ThreadTitleLengthLimit: u32 = 200;
     pub const PostLengthLimit: u32 = 2000;
@@ -86,7 +85,6 @@ impl crate::Trait for Test {
     type CouncilOriginValidator = CouncilMock;
     type ThreadId = u64;
     type PostId = u64;
-    type MaxPostEditionNumber = MaxPostEditionNumber;
     type MaxThreadInARowNumber = MaxThreadInARowNumber;
     type MaxWhiteListSize = MaxWhiteListSize;
 }
