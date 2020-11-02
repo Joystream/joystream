@@ -3,6 +3,7 @@ import Debug from 'debug'
 import { DB, SubstrateEvent } from '../../generated/indexer'
 import { decode } from './decode'
 import {
+  ClassEntityMap,
   ICategory,
   IChannel,
   ICreateEntityOperation,
@@ -100,80 +101,98 @@ async function batchAddSchemaSupportToEntity(
   entities: IEntity[],
   block: number
 ) {
-  // find the related entity ie. Channel, Video etc
+  const classEntityMap: ClassEntityMap = new Map<string, IEntity[]>()
+
   for (const entity of entities) {
-    const { entityId, indexOf, properties } = entity
-
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const id = entityId ? entityId.toString() : indexOf!.toString()
-
     const className = await getClassName(db, entity, createEntityOperations)
-    if (className === undefined) continue
+    if (className !== undefined) {
+      const es = classEntityMap.get(className)
+      classEntityMap.set(className, es ? [...es, entity] : [entity])
+    }
+  }
 
-    const arg: IDBBlockId = { db, block, id }
+  // This is a copy of classEntityMap, we will use it to keep track of items.
+  // We will remove items from this list whenever we insert them into db
+  const doneList: ClassEntityMap = new Map(classEntityMap.entries())
 
-    switch (className) {
-      case ContentDirectoryKnownClasses.CATEGORY:
-        await createCategory(arg, decode.setEntityPropertyValues<ICategory>(properties, CategoryPropertyNamesWithId))
-        break
+  for (const [className, entities] of classEntityMap) {
+    for (const entity of entities) {
+      const { entityId, indexOf, properties } = entity
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const id = entityId ? entityId.toString() : indexOf!.toString()
+      const arg: IDBBlockId = { db, block, id }
 
-      case ContentDirectoryKnownClasses.CHANNEL:
-        await createChannel(arg, decode.setEntityPropertyValues<IChannel>(properties, channelPropertyNamesWithId))
-        break
+      switch (className) {
+        case ContentDirectoryKnownClasses.CATEGORY:
+          await createCategory(arg, decode.setEntityPropertyValues<ICategory>(properties, CategoryPropertyNamesWithId))
+          break
 
-      case ContentDirectoryKnownClasses.KNOWNLICENSE:
-        await createKnownLicense(
-          arg,
-          decode.setEntityPropertyValues<IKnownLicense>(properties, knownLicensePropertyNamesWIthId)
-        )
-        break
+        case ContentDirectoryKnownClasses.CHANNEL:
+          await createChannel(
+            arg,
+            doneList,
+            decode.setEntityPropertyValues<IChannel>(properties, channelPropertyNamesWithId)
+          )
+          break
 
-      case ContentDirectoryKnownClasses.USERDEFINEDLICENSE:
-        await createUserDefinedLicense(
-          arg,
-          decode.setEntityPropertyValues<IUserDefinedLicense>(properties, userDefinedLicensePropertyNamesWithId)
-        )
-        break
+        case ContentDirectoryKnownClasses.KNOWNLICENSE:
+          await createKnownLicense(
+            arg,
+            decode.setEntityPropertyValues<IKnownLicense>(properties, knownLicensePropertyNamesWIthId)
+          )
+          break
 
-      case ContentDirectoryKnownClasses.JOYSTREAMMEDIALOCATION:
-        await createJoystreamMediaLocation(
-          arg,
-          decode.setEntityPropertyValues<IJoystreamMediaLocation>(properties, joystreamMediaLocationPropertyNamesWithId)
-        )
-        break
+        case ContentDirectoryKnownClasses.USERDEFINEDLICENSE:
+          await createUserDefinedLicense(
+            arg,
+            decode.setEntityPropertyValues<IUserDefinedLicense>(properties, userDefinedLicensePropertyNamesWithId)
+          )
+          break
 
-      case ContentDirectoryKnownClasses.HTTPMEDIALOCATION:
-        await createHttpMediaLocation(
-          arg,
-          decode.setEntityPropertyValues<IHttpMediaLocation>(properties, httpMediaLocationPropertyNamesWithId)
-        )
-        break
+        case ContentDirectoryKnownClasses.JOYSTREAMMEDIALOCATION:
+          await createJoystreamMediaLocation(
+            arg,
+            decode.setEntityPropertyValues<IJoystreamMediaLocation>(
+              properties,
+              joystreamMediaLocationPropertyNamesWithId
+            )
+          )
+          break
 
-      case ContentDirectoryKnownClasses.VIDEOMEDIA:
-        await createVideoMedia(
-          arg,
-          decode.setEntityPropertyValues<IVideoMedia>(properties, videoMediaPropertyNamesWithId)
-        )
-        break
+        case ContentDirectoryKnownClasses.HTTPMEDIALOCATION:
+          await createHttpMediaLocation(
+            arg,
+            decode.setEntityPropertyValues<IHttpMediaLocation>(properties, httpMediaLocationPropertyNamesWithId)
+          )
+          break
 
-      case ContentDirectoryKnownClasses.VIDEO:
-        await createVideo(arg, decode.setEntityPropertyValues<IVideo>(properties, videoPropertyNamesWithId))
-        break
+        case ContentDirectoryKnownClasses.VIDEOMEDIA:
+          await createVideoMedia(
+            arg,
+            doneList,
+            decode.setEntityPropertyValues<IVideoMedia>(properties, videoMediaPropertyNamesWithId)
+          )
+          break
 
-      case ContentDirectoryKnownClasses.LANGUAGE:
-        await createLanguage(arg, decode.setEntityPropertyValues<ILanguage>(properties, languagePropertyNamesWIthId))
-        break
+        case ContentDirectoryKnownClasses.VIDEO:
+          await createVideo(arg, doneList, decode.setEntityPropertyValues<IVideo>(properties, videoPropertyNamesWithId))
+          break
 
-      case ContentDirectoryKnownClasses.VIDEOMEDIAENCODING:
-        await createVideoMediaEncoding(
-          arg,
-          decode.setEntityPropertyValues<IVideoMediaEncoding>(properties, videoMediaEncodingPropertyNamesWithId)
-        )
-        break
+        case ContentDirectoryKnownClasses.LANGUAGE:
+          await createLanguage(arg, decode.setEntityPropertyValues<ILanguage>(properties, languagePropertyNamesWIthId))
+          break
 
-      default:
-        console.log(`Unknown class name: ${className}`)
-        break
+        case ContentDirectoryKnownClasses.VIDEOMEDIAENCODING:
+          await createVideoMediaEncoding(
+            arg,
+            decode.setEntityPropertyValues<IVideoMediaEncoding>(properties, videoMediaEncodingPropertyNamesWithId)
+          )
+          break
+
+        default:
+          console.log(`Unknown class name: ${className}`)
+          break
+      }
     }
   }
 }

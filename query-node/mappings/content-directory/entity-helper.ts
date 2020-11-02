@@ -26,6 +26,7 @@ import {
   ContentDirectoryKnownClasses,
 } from './content-dir-consts'
 import {
+  ClassEntityMap,
   ICategory,
   IChannel,
   ICreateEntityOperation,
@@ -41,6 +42,7 @@ import {
   IVideoMediaEncoding,
   IWhereCond,
 } from '../types'
+import { getOrCreate } from './get-or-create'
 
 async function createBlockOrGetFromDatabase(db: DB, blockNumber: number): Promise<Block> {
   let b = await db.get(Block, { where: { block: blockNumber } })
@@ -52,8 +54,14 @@ async function createBlockOrGetFromDatabase(db: DB, blockNumber: number): Promis
   return b
 }
 
-async function createChannel({ db, block, id }: IDBBlockId, p: IChannel): Promise<void> {
-  // const { properties: p } = decode.channelEntity(event);
+async function createChannel(
+  { db, block, id }: IDBBlockId,
+  classEntityMap: Map<String, IEntity[]>,
+  p: IChannel
+): Promise<Channel> {
+  const record = await db.get(Channel, { where: { id } })
+  if (record) return record
+
   const channel = new Channel()
 
   channel.version = block
@@ -64,13 +72,16 @@ async function createChannel({ db, block, id }: IDBBlockId, p: IChannel): Promis
   channel.isPublic = p.isPublic
   channel.coverPhotoUrl = p.coverPhotoURL
   channel.avatarPhotoUrl = p.avatarPhotoURL
-  channel.languageId = p.language
+  channel.language = await getOrCreate.language({ db, block, id }, classEntityMap, p.language)
   channel.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save(channel)
+  return channel
 }
 
-async function createCategory({ db, block, id }: IDBBlockId, p: ICategory): Promise<void> {
-  // const p = decode.categoryEntity(event);
+async function createCategory({ db, block, id }: IDBBlockId, p: ICategory): Promise<Category> {
+  const record = await db.get(Category, { where: { id } })
+  if (record) return record
+
   const category = new Category()
 
   category.id = id
@@ -79,9 +90,13 @@ async function createCategory({ db, block, id }: IDBBlockId, p: ICategory): Prom
   category.version = block
   category.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save(category)
+  return category
 }
 
-async function createKnownLicense({ db, block, id }: IDBBlockId, p: IKnownLicense): Promise<void> {
+async function createKnownLicense({ db, block, id }: IDBBlockId, p: IKnownLicense): Promise<KnownLicense> {
+  const record = await db.get(KnownLicense, { where: { id } })
+  if (record) return record
+
   const knownLicence = new KnownLicense()
 
   knownLicence.id = id
@@ -92,9 +107,16 @@ async function createKnownLicense({ db, block, id }: IDBBlockId, p: IKnownLicens
   knownLicence.version = block
   knownLicence.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save(knownLicence)
+  return knownLicence
 }
 
-async function createUserDefinedLicense({ db, block, id }: IDBBlockId, p: IUserDefinedLicense): Promise<void> {
+async function createUserDefinedLicense(
+  { db, block, id }: IDBBlockId,
+  p: IUserDefinedLicense
+): Promise<UserDefinedLicense> {
+  const record = await db.get(UserDefinedLicense, { where: { id } })
+  if (record) return record
+
   const userDefinedLicense = new UserDefinedLicense()
 
   userDefinedLicense.id = id
@@ -102,9 +124,16 @@ async function createUserDefinedLicense({ db, block, id }: IDBBlockId, p: IUserD
   userDefinedLicense.version = block
   userDefinedLicense.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save(userDefinedLicense)
+  return userDefinedLicense
 }
 
-async function createJoystreamMediaLocation({ db, block, id }: IDBBlockId, p: IJoystreamMediaLocation): Promise<void> {
+async function createJoystreamMediaLocation(
+  { db, block, id }: IDBBlockId,
+  p: IJoystreamMediaLocation
+): Promise<JoystreamMediaLocation> {
+  const record = await db.get(JoystreamMediaLocation, { where: { id } })
+  if (record) return record
+
   const joyMediaLoc = new JoystreamMediaLocation()
 
   joyMediaLoc.id = id
@@ -112,9 +141,16 @@ async function createJoystreamMediaLocation({ db, block, id }: IDBBlockId, p: IJ
   joyMediaLoc.version = block
   joyMediaLoc.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save(joyMediaLoc)
+  return joyMediaLoc
 }
 
-async function createHttpMediaLocation({ db, block, id }: IDBBlockId, p: IHttpMediaLocation): Promise<void> {
+async function createHttpMediaLocation(
+  { db, block, id }: IDBBlockId,
+  p: IHttpMediaLocation
+): Promise<HttpMediaLocation> {
+  const record = await db.get(HttpMediaLocation, { where: { id } })
+  if (record) return record
+
   const httpMediaLoc = new HttpMediaLocation()
 
   httpMediaLoc.id = id
@@ -123,48 +159,68 @@ async function createHttpMediaLocation({ db, block, id }: IDBBlockId, p: IHttpMe
   httpMediaLoc.version = block
   httpMediaLoc.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save(httpMediaLoc)
+  return httpMediaLoc
 }
 
-async function createVideoMedia({ db, block, id }: IDBBlockId, p: IVideoMedia): Promise<void> {
+async function createVideoMedia(
+  { db, block, id }: IDBBlockId,
+  classEntityMap: ClassEntityMap,
+  p: IVideoMedia
+): Promise<VideoMedia> {
   const videoMedia = new VideoMedia()
 
   videoMedia.id = id
-  videoMedia.encodingId = p.encoding
-  videoMedia.locationId = p.location
   videoMedia.pixelHeight = p.pixelHeight
   videoMedia.pixelWidth = p.pixelWidth
   videoMedia.size = p.size
   videoMedia.version = block
+  videoMedia.encoding = await getOrCreate.videoMediaEncoding({ db, block, id }, classEntityMap, p.encoding)
+  videoMedia.httpMediaLocation = await getOrCreate.httpMediaLocation({ db, block, id }, classEntityMap, p.location)
+  videoMedia.joystreamMediaLocation = await getOrCreate.joystreamMediaLocation(
+    { db, block, id },
+    classEntityMap,
+    p.location
+  )
   videoMedia.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save(videoMedia)
+  return videoMedia
 }
 
-async function createVideo({ db, block, id }: IDBBlockId, p: IVideo): Promise<void> {
+async function createVideo({ db, block, id }: IDBBlockId, classEntityMap: ClassEntityMap, p: IVideo): Promise<Video> {
+  const record = await db.get(Video, { where: { id } })
+  if (record) return record
+
   const video = new Video()
 
   video.id = id
   video.title = p.title
   video.description = p.description
-  video.categoryId = p.category
-  video.channelId = p.channel
   video.duration = p.duration
   video.hasMarketing = p.hasMarketing
   // TODO: needs to be handled correctly, from runtime CurationStatus is coming
   video.isCurated = p.isCurated || true
   video.isExplicit = p.isExplicit
   video.isPublic = p.isPublic
-  video.languageId = p.language
-  video.licenseId = p.license
-  video.videoMediaId = p.media
   video.publishedBeforeJoystream = p.publishedBeforeJoystream
   video.skippableIntroDuration = p.skippableIntroDuration
   video.thumbnailUrl = p.thumbnailURL
   video.version = block
+
+  video.language = await getOrCreate.language({ db, block, id }, classEntityMap, p.language)
+  video.knownLicense = await getOrCreate.knownLicense({ db, block, id }, classEntityMap, p.license)
+  video.userdefinedLicense = await getOrCreate.userDefinedLicense({ db, block, id }, classEntityMap, p.license)
+  video.category = await getOrCreate.category({ db, block, id }, classEntityMap, p.category)
+  video.channel = await getOrCreate.channel({ db, block, id }, classEntityMap, p.channel)
   video.happenedIn = await createBlockOrGetFromDatabase(db, block)
+  video.media = await getOrCreate.videoMedia({ db, block, id }, classEntityMap, p.media)
   await db.save<Video>(video)
+  return video
 }
 
-async function createLanguage({ db, block, id }: IDBBlockId, p: ILanguage): Promise<void> {
+async function createLanguage({ db, block, id }: IDBBlockId, p: ILanguage): Promise<Language> {
+  const record = await db.get(Language, { where: { id } })
+  if (record) return record
+
   const language = new Language()
   language.id = id
   language.name = p.name
@@ -173,17 +229,24 @@ async function createLanguage({ db, block, id }: IDBBlockId, p: ILanguage): Prom
   language.happenedIn = await createBlockOrGetFromDatabase(db, block)
 
   await db.save<Language>(language)
+  return language
 }
 
-async function createVideoMediaEncoding({ db, block, id }: IDBBlockId, p: IVideoMediaEncoding): Promise<void> {
-  const encoding = new VideoMediaEncoding()
+async function createVideoMediaEncoding(
+  { db, block, id }: IDBBlockId,
+  p: IVideoMediaEncoding
+): Promise<VideoMediaEncoding> {
+  const record = await db.get(VideoMediaEncoding, { where: { id } })
+  if (record) return record
 
+  const encoding = new VideoMediaEncoding()
   encoding.id = id
   encoding.name = p.name
   encoding.version = block
   // happenedIn is not defined in the graphql schema!
-  // encoding.happenedIn = await createBlockOrGetFromDatabase(db, block)
+  encoding.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save<VideoMediaEncoding>(encoding)
+  return encoding
 }
 
 async function batchCreateClassEntities(db: DB, block: number, operations: ICreateEntityOperation[]): Promise<void> {
