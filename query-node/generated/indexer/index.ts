@@ -9,7 +9,7 @@ import {
   QueryNodeManager,
   DatabaseManager,
   SubstrateEvent,
-} from "@joystream/hydra-indexer-lib/lib";
+} from "@dzlzv/hydra-indexer-lib/lib";
 
 // Mappings use!
 export { DatabaseManager as DB, getLogger, SubstrateEvent };
