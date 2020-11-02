@@ -61,7 +61,7 @@
     "dotenv": "^8.2.0",
     "lodash": "^4.17.20",
     "reflect-metadata": "^0.1.13",
-    "warthog": "https://github.com/metmirr/warthog/releases/download/v2.19/warthog-v2.19.tgz"
+    "warthog": "https://github.com/metmirr/warthog/releases/download/v2.20.0/warthog-v2.20.0.tgz"
   },
   "devDependencies": {
     "@types/jest": "^24.0.23",
