@@ -20,7 +20,14 @@ const Track: React.FC<TrackProps> = ({ className = '', ...props }) => (
 const RightArrow = <Arrow name="chevron-right" />
 const LeftArrow = <Arrow name="chevron-left" />
 
-const Carousel: React.FC<CarouselProps> = ({ children, trackPadding = '0', className, ...gliderProps }) => {
+const Carousel: React.FC<CarouselProps> = ({
+  children,
+  trackPadding = '0',
+  className,
+  itemWidth = 300,
+  slidesToShow = 'auto',
+  ...gliderProps
+}) => {
   //  The GliderMethods type only has methods and I need the full instance
   const gliderRef = useRef<GliderMethods & { ele: HTMLDivElement }>()
   const [arrows, setArrows] = useState<{ prev: HTMLButtonElement; next: HTMLButtonElement } | undefined>(undefined)
@@ -57,6 +64,8 @@ const Carousel: React.FC<CarouselProps> = ({ children, trackPadding = '0', class
         ref={gliderRef as React.RefObject<GliderMethods>}
         iconLeft={LeftArrow}
         iconRight={RightArrow}
+        itemWidth={itemWidth}
+        slidesToShow={slidesToShow}
         // Akward conversion needed until this is resolved: https://github.com/hipstersmoothie/react-glider/issues/36
         arrows={(arrows as unknown) as { prev: string; next: string }}
         {...gliderProps}

@@ -59,4 +59,23 @@ const Grid: React.FC<GridProps> = ({
     />
   )
 }
+
+type BreakpointsToMatchGridArg = {
+  breakpoints: number
+  minItemWidth: number
+  gridColumnGap?: number
+  viewportContainerDifference?: number
+}
+//  This will generate the Array of breakpoints at which the Grid adds one element
+export function breakpointsOfGrid({
+  breakpoints = 0,
+  minItemWidth,
+  gridColumnGap = 0,
+  viewportContainerDifference = 0,
+}: BreakpointsToMatchGridArg) {
+  return Array(breakpoints)
+    .fill(null)
+    .map((_, n) => (n + 1) * minItemWidth + n * gridColumnGap + viewportContainerDifference)
+}
+
 export default Grid
