@@ -232,11 +232,16 @@ export class InputParser {
 
       let value = customHandler && (await customHandler(schemaProperty, propertyValue))
       if (value === undefined) {
-        value = createType('ParametrizedPropertyValue', {
-          InputPropertyValue: (await this.parsePropertyType(schemaProperty.property_type)).toInputPropertyValue(
-            propertyValue
-          ),
-        })
+        if (propertyValue === null) {
+          // Optional values: (can be cleared by setting them to Bool(false)):
+          value = createType('ParametrizedPropertyValue', { InputPropertyValue: { Single: { Bool: false } } })
+        } else {
+          value = createType('ParametrizedPropertyValue', {
+            InputPropertyValue: (await this.parsePropertyType(schemaProperty.property_type)).toInputPropertyValue(
+              propertyValue
+            ),
+          })
+        }
       }
 
       parametrizedClassPropValues.push(
@@ -286,10 +291,10 @@ export class InputParser {
         const { property_type: propertyType } = property
         if (isSingle(propertyType) && isReference(propertyType.Single)) {
           const refEntitySchema = this.schemaByClassName(propertyType.Single.Reference.className)
-          if (Object.keys(value).includes('new')) {
+          if (value !== null && Object.keys(value).includes('new')) {
             const entityIndex = await this.parseEntityInput(value.new, refEntitySchema)
             return createType('ParametrizedPropertyValue', { InternalEntityJustAdded: entityIndex })
-          } else if (Object.keys(value).includes('existing')) {
+          } else if (value !== null && Object.keys(value).includes('existing')) {
             return this.existingEntityQueryToParametrizedPropertyValue(refEntitySchema.className, value.existing)
           }
         }

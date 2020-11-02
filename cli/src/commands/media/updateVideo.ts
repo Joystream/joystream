@@ -73,10 +73,7 @@ export default class UpdateVideoCommand extends MediaCommandBase {
         'category',
         () => this.promptForEntityId('Choose Video category', 'ContentCategory', 'name', undefined, currCategoryId),
       ],
-      [
-        'publishedBeforeJoystream',
-        () => this.promptForPublishedBeforeJoystream('update', currPublishedBeforeJoystream),
-      ],
+      ['publishedBeforeJoystream', () => this.promptForPublishedBeforeJoystream(currPublishedBeforeJoystream)],
     ]
     const videoPrompter = new JsonSchemaPrompter<VideoEntity>(videoJsonSchema, currentValues, customizedPrompts)
 

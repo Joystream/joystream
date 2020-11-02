@@ -312,6 +312,7 @@ export default class UploadVideoCommand extends MediaCommandBase {
     }
     const videoDefaults: Partial<VideoEntity> = {
       duration: videoMetadata?.duration,
+      skippableIntroDuration: 0,
     }
     // Create prompting helpers
     const videoJsonSchema = (VideoEntitySchema as unknown) as JSONSchema
@@ -344,7 +345,7 @@ export default class UploadVideoCommand extends MediaCommandBase {
 
     const license = await videoPrompter.promptSingleProp('license', () => this.promptForNewLicense())
     const publishedBeforeJoystream = await videoPrompter.promptSingleProp('publishedBeforeJoystream', () =>
-      this.promptForPublishedBeforeJoystream('add')
+      this.promptForPublishedBeforeJoystream()
     )
 
     // Create final inputs
@@ -364,6 +365,9 @@ export default class UploadVideoCommand extends MediaCommandBase {
       media: { new: videoMediaInput },
       publishedBeforeJoystream,
     }
+
+    this.jsonPrettyPrint(JSON.stringify(videoInput))
+    await this.requireConfirmation('Do you confirm the provided input?')
 
     // Parse inputs into operations and send final extrinsic
     const inputParser = InputParser.createWithKnownSchemas(this.getOriginalApi(), [

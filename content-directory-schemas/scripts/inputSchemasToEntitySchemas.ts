@@ -12,7 +12,7 @@ import {
 import PRIMITIVE_PROPERTY_DEFS from '../schemas/propertyValidationDefs.schema.json'
 import { getInputs } from '../src/helpers/inputs'
 import { getSchemasLocation, SCHEMA_TYPES } from '../src/helpers/schemas'
-import { JSONSchema7 } from 'json-schema'
+import { JSONSchema7, JSONSchema7TypeName } from 'json-schema'
 
 const schemaInputs = getInputs<AddClassSchema>('schemas')
 
@@ -68,12 +68,25 @@ const VecPropertyDef = ({ Vector: vec }: VecPropertyVariant): JSONSchema7 => ({
   'items': SinglePropertyDef({ Single: vec.vec_type }),
 })
 
-const PropertyDef = ({ property_type: propertyType, description }: Property): JSONSchema7 => ({
-  ...((propertyType as SinglePropertyVariant).Single
-    ? SinglePropertyDef(propertyType as SinglePropertyVariant)
-    : VecPropertyDef(propertyType as VecPropertyVariant)),
-  description,
-})
+const PropertyDef = ({ property_type: propertyType, description, required }: Property): JSONSchema7 => {
+  const def = {
+    ...((propertyType as SinglePropertyVariant).Single
+      ? SinglePropertyDef(propertyType as SinglePropertyVariant)
+      : VecPropertyDef(propertyType as VecPropertyVariant)),
+    description,
+  }
+  // Non-required fields:
+  // Simple fields:
+  if (!required && def.type) {
+    def.type = [def.type as JSONSchema7TypeName, 'null']
+  }
+  // Relationships:
+  else if (!required && def.oneOf) {
+    def.oneOf = [...def.oneOf, { type: 'null' }]
+  }
+
+  return def
+}
 
 // Mkdir entity schemas directories if they do not exist
 SCHEMA_TYPES.forEach((type) => {

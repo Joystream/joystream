@@ -85,13 +85,14 @@ export class JsonSchemaPrompter<JsonResult> {
     const customPrompt: CustomPrompt | undefined = custom || this.getCustomPrompt(propertyPath)
     const propDisplayName = this.propertyDisplayName(propertyPath)
     const currentValue = _.get(this.filledObject, propertyPath)
+    const type = Array.isArray(schema.type) ? schema.type[0] : schema.type
 
     if (customPrompt === 'skip') {
       return
     }
 
     // Automatically handle "null" values (useful for enum variants)
-    if (schema.type === 'null') {
+    if (type === 'null') {
       _.set(this.filledObject, propertyPath, null)
       return null
     }
@@ -113,7 +114,7 @@ export class JsonSchemaPrompter<JsonResult> {
     }
 
     // object
-    if (schema.type === 'object' && schema.properties) {
+    if (type === 'object' && schema.properties) {
       const value: Record<string, any> = {}
       for (const [pName, pSchema] of Object.entries(schema.properties)) {
         const objectPropertyPath = propertyPath ? `${propertyPath}.${pName}` : pName
@@ -133,7 +134,9 @@ export class JsonSchemaPrompter<JsonResult> {
                 message: `Do you want to provide optional ${chalk.greenBright(objectPropertyPath)}?`,
                 type: 'confirm',
                 name: 'confirmed',
-                default: _.get(this.filledObject, objectPropertyPath) !== undefined,
+                default:
+                  _.get(this.filledObject, objectPropertyPath) !== undefined &&
+                  _.get(this.filledObject, objectPropertyPath) !== null,
               },
             ])
           ).confirmed
@@ -141,14 +144,14 @@ export class JsonSchemaPrompter<JsonResult> {
         if (confirmed) {
           value[pName] = await this.prompt(pSchema, objectPropertyPath)
         } else {
-          _.set(this.filledObject, objectPropertyPath, undefined)
+          _.set(this.filledObject, objectPropertyPath, null)
         }
       }
       return value
     }
 
     // array
-    if (schema.type === 'array' && schema.items) {
+    if (type === 'array' && schema.items) {
       return await this.promptWithRetry(() => this.promptArray(schema, propertyPath), propertyPath, true)
     }
 
@@ -164,16 +167,16 @@ export class JsonSchemaPrompter<JsonResult> {
     // Prompt options
     if (schema.enum) {
       additionalPromptOptions = { type: 'list', choices: schema.enum as any[] }
-    } else if (schema.type === 'boolean') {
+    } else if (type === 'boolean') {
       additionalPromptOptions = BOOL_PROMPT_OPTIONS
     }
 
     // Normalizers
-    if (schema.type === 'integer') {
+    if (type === 'integer') {
       normalizer = (v) => (parseInt(v).toString() === v ? parseInt(v) : v)
     }
 
-    if (schema.type === 'number') {
+    if (type === 'number') {
       normalizer = (v) => (Number(v).toString() === v ? Number(v) : v)
     }
 

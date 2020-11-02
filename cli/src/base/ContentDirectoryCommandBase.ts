@@ -262,7 +262,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     className: string,
     propName?: string,
     ownerMemberId?: number,
-    defaultId?: number
+    defaultId?: number | null
   ): Promise<[EntityId, Entity]> {
     const [classId, entityClass] = await this.classEntryByNameOrId(className)
     const entityEntries = await this.entitiesByClassAndOwner(classId.toNumber(), ownerMemberId)
@@ -282,7 +282,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
           value: id.toString(), // With numbers there are issues with "default"
         }
       }),
-      default: defaultId?.toString(),
+      default: typeof defaultId === 'number' ? defaultId.toString() : undefined,
     })
 
     return entityEntries.find(([id]) => choosenEntityId === id.toString())!
@@ -293,7 +293,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     className: string,
     propName?: string,
     ownerMemberId?: number,
-    defaultId?: number
+    defaultId?: number | null
   ): Promise<number> {
     return (await this.promptForEntityEntry(message, className, propName, ownerMemberId, defaultId))[0].toNumber()
   }
@@ -322,7 +322,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
   async parseToKnownEntityJson<T>(entity: Entity): Promise<FlattenRelations<T>> {
     const entityClass = (await this.classEntryByNameOrId(entity.class_id.toString()))[1]
     return (_.mapValues(this.parseEntityPropertyValues(entity, entityClass), (v) =>
-      v.value.toJSON()
+      v.type !== 'Single<Bool>' && v.value.toJSON() === false ? null : v.value.toJSON()
     ) as unknown) as FlattenRelations<T>
   }
 
