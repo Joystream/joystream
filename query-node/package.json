@@ -1,0 +1,36 @@
+{
+	"name": "query-node-root",
+	"version": "1.0.0",
+	"description": "GraphQL server and Substrate indexer. Generated with ♥ by Hydra-CLI",
+	"scripts": {
+		"build": "(cd index-builder && yarn build) && tsc --build tsconfig.json",
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"clean": "rm -rf ./generated",
+		"processor:start": "(cd ./generated/indexer && yarn && DEBUG=${DEBUG} yarn start:processor)",
+		"indexer:start": "(cd ./generated/indexer && yarn && DEBUG=${DEBUG} yarn start:indexer)",
+		"server:start:dev": "(cd ./generated/graphql-server && yarn start:dev)",
+		"server:start:prod": "(cd ./generated/graphql-server && yarn start:prod)",
+		"configure": "(cd ./generated/graphql-server && yarn config:dev)",
+		"db:up": "docker-compose up -d db",
+		"db:drop": "(cd ./generated/graphql-server && yarn db:drop)",
+		"db:schema:migrate": "(cd ./generated/graphql-server && yarn db:create && yarn db:sync && yarn db:migrate)",
+		"db:indexer:migrate": "(cd ./generated/indexer && yarn db:migrate)",
+		"db:migrate": "yarn db:schema:migrate && yarn db:indexer:migrate",
+		"codegen:all": "hydra-cli codegen",
+		"codegen:indexer": "hydra-cli codegen --no-graphql",
+		"codegen:server": "hydra-cli codegen --no-indexer",
+		"docker:indexer:build": "docker build -t hydra-indexer -f docker/Dockerfile.indexer .",
+		"docker:server:build": "docker build -t hydra-graphql-server -f docker/Dockerfile.server .",
+		"docker:up": "docker-compose up -d"
+	},
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"@joystream/types": "^0.14.0",
+		"@types/bn.js": "^4.11.6",
+		"@types/debug": "^4.1.5",
+		"bn.js": "^5.1.2",
+		"debug": "^4.2.0",
+		"tslib": "^2.0.0"
+	}
+}

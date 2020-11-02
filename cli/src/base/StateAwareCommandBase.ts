@@ -6,11 +6,13 @@ import lockFile from 'proper-lockfile'
 import DefaultCommandBase from './DefaultCommandBase'
 import os from 'os'
 import _ from 'lodash'
+import { WorkingGroups } from '../Types'
 
 // Type for the state object (which is preserved as json in the state file)
 type StateObject = {
   selectedAccountFilename: string
   apiUri: string
+  defaultWorkingGroup: WorkingGroups
   metadataCache: Record<string, any>
 }
 
@@ -18,6 +20,7 @@ type StateObject = {
 const DEFAULT_STATE: StateObject = {
   selectedAccountFilename: '',
   apiUri: '',
+  defaultWorkingGroup: WorkingGroups.StorageProviders,
   metadataCache: {},
 }
 
