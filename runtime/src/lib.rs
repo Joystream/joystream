@@ -611,6 +611,7 @@ impl proposals_codex::Trait for Runtime {
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type ProposalEncoder = ExtrinsicProposalEncoder;
     type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
+    type RuntimeUpgradeProposalParameters = RuntimeUpgradeProposalParameters;
 }
 
 impl constitution::Trait for Runtime {

@@ -255,11 +255,10 @@ impl staking::SessionInterface<u64> for Test {
 }
 
 parameter_types! {
-    pub SetValidatorCountProposalParameters: ProposalParameters<u64, u64> = set_validator_count_proposal();
+    pub DefaultProposalParameters: ProposalParameters<u64, u64> = default_proposal_parameters();
 }
 
-// Proposal parameters for the 'Set validator count' proposal
-pub(crate) fn set_validator_count_proposal() -> ProposalParameters<u64, u64> {
+pub(crate) fn default_proposal_parameters() -> ProposalParameters<u64, u64> {
     ProposalParameters {
         voting_period: 43200,
         grace_period: 0,
@@ -277,7 +276,8 @@ impl crate::Trait for Test {
     type RuntimeUpgradeWasmProposalMaxLength = RuntimeUpgradeWasmProposalMaxLength;
     type MembershipOriginValidator = ();
     type ProposalEncoder = ();
-    type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
+    type SetValidatorCountProposalParameters = DefaultProposalParameters;
+    type RuntimeUpgradeProposalParameters = DefaultProposalParameters;
 }
 
 impl ProposalEncoder<Test> for () {

@@ -15,3 +15,17 @@ pub(crate) fn set_validator_count_proposal() -> ProposalParameters<BlockNumber, 
         constitutionality: 1,
     }
 }
+
+// Proposal parameters for the upgrade runtime proposal
+pub(crate) fn runtime_upgrade_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72000,
+        grace_period: 72000,
+        approval_quorum_percentage: 80,
+        approval_threshold_percentage: 100,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(1_000_000),
+        constitutionality: 1,
+    }
+}

@@ -340,8 +340,6 @@ pub fn testnet_genesis(
         versioned_store_permissions: Some(versioned_store_permissions_config),
         content_wg: Some(content_working_group_config),
         proposals_codex: Some(ProposalsCodexConfig {
-            runtime_upgrade_proposal_voting_period: cpcp.runtime_upgrade_proposal_voting_period,
-            runtime_upgrade_proposal_grace_period: cpcp.runtime_upgrade_proposal_grace_period,
             text_proposal_voting_period: cpcp.text_proposal_voting_period,
             text_proposal_grace_period: cpcp.text_proposal_grace_period,
             spending_proposal_voting_period: cpcp.spending_proposal_voting_period,

@@ -23,12 +23,14 @@ mod tests;
 
 parameter_types! {
     pub SetValidatorCountProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.set_validator_count_proposal;
+    pub RuntimeUpgradeProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.runtime_upgrade_proposal;
 }
 
 ///////////
 
 struct AllProposalsParameters {
     pub set_validator_count_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub runtime_upgrade_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -59,9 +61,14 @@ fn convert_json_object_to_proposal_parameters(
 
     if let lite_json::JsonValue::Object(json_object) = json {
         parameters.set_validator_count_proposal = create_proposal_parameters_object(
-            json_object,
+            json_object.clone(),
             "set_validator_count_proposal",
             defaults::set_validator_count_proposal(),
+        );
+        parameters.runtime_upgrade_proposal = create_proposal_parameters_object(
+            json_object,
+            "runtime_upgrade_proposal",
+            defaults::runtime_upgrade_proposal(),
         );
     }
 
@@ -164,5 +171,6 @@ fn extract_numeric_parameter(
 fn default_parameters() -> AllProposalsParameters {
     AllProposalsParameters {
         set_validator_count_proposal: defaults::set_validator_count_proposal(),
+        runtime_upgrade_proposal: defaults::runtime_upgrade_proposal(),
     }
 }

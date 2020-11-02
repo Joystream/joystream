@@ -9,5 +9,6 @@
     "slashing_threshold_percentage": 6,
     "required_stake": 7,
     "constitutionality": 8
-  }
+  },
+  "runtime_upgrade_proposal" : {}
 }
