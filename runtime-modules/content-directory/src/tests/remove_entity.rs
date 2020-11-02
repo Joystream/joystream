@@ -292,5 +292,11 @@ fn remove_entity_rc_does_not_equal_to_zero() {
             Error::<Runtime>::EntityRcDoesNotEqualToZero,
             number_of_events_before_call,
         );
+
+        // Remove first entity, which have property values referencing second one.
+        assert_ok!(remove_entity(LEAD_ORIGIN, actor, FIRST_ENTITY_ID));
+
+        // Succesfully perform second entity removal
+        assert_ok!(remove_entity(LEAD_ORIGIN, actor, SECOND_ENTITY_ID));
     })
 }
