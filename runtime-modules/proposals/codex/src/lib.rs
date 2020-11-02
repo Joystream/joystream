@@ -813,10 +813,7 @@ impl<T: Trait> Module<T> {
         )?;
 
         let initial_thread_mode = ThreadMode::Open;
-        <proposals_discussion::Module<T>>::ensure_can_create_thread(
-            params.member_id,
-            &initial_thread_mode,
-        )?;
+        <proposals_discussion::Module<T>>::ensure_can_create_thread(&initial_thread_mode)?;
 
         let discussion_thread_id = <proposals_discussion::Module<T>>::create_thread(
             params.member_id,

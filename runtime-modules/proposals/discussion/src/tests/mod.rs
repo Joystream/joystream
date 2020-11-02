@@ -4,7 +4,6 @@ use frame_support::dispatch::{DispatchError, DispatchResult};
 use system::RawOrigin;
 use system::{EventRecord, Phase};
 
-use crate::types::ThreadCounter;
 use crate::*;
 use mock::*;
 
@@ -360,21 +359,6 @@ fn update_post_call_with_invalid_thread_failed() {
 }
 
 #[test]
-fn add_discussion_thread_fails_because_of_max_thread_by_same_author_in_a_row_limit_exceeded() {
-    initial_test_ext().execute_with(|| {
-        let discussion_fixture = DiscussionFixture::default();
-        for idx in 1..=3 {
-            discussion_fixture
-                .create_discussion_and_assert(Ok(idx))
-                .unwrap();
-        }
-
-        discussion_fixture
-            .create_discussion_and_assert(Err(Error::<Test>::MaxThreadInARowLimitExceeded.into()));
-    });
-}
-
-#[test]
 fn discussion_thread_and_post_counters_are_valid() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default();
@@ -547,30 +531,6 @@ fn create_post_call_fails_with_closed_mode_by_not_allowed_member() {
 
         post_fixture.add_post_and_assert(Err(Error::<Test>::CannotPostOnClosedThread.into()));
     });
-}
-
-#[test]
-fn thread_counter_increment_works() {
-    let test = ThreadCounter {
-        author_id: 56,
-        counter: 56,
-    };
-    let expected = ThreadCounter {
-        author_id: 56,
-        counter: 57,
-    };
-
-    assert_eq!(expected, test.increment());
-}
-
-#[test]
-fn thread_counter_new_works() {
-    let expected = ThreadCounter {
-        author_id: 56,
-        counter: 1,
-    };
-
-    assert_eq!(expected, ThreadCounter::new(56));
 }
 
 #[test]

@@ -31,7 +31,7 @@
 //!         pub fn create_discussion(origin, title: Vec<u8>, author_id : T::MemberId) {
 //!             ensure_root(origin)?;
 //!             let thread_mode = ThreadMode::Open;
-//!             <discussions::Module<T>>::ensure_can_create_thread(author_id, &thread_mode)?;
+//!             <discussions::Module<T>>::ensure_can_create_thread(&thread_mode)?;
 //!             <discussions::Module<T>>::create_thread(author_id, thread_mode)?;
 //!         }
 //!     }
@@ -57,7 +57,7 @@ use sp_std::clone::Clone;
 use sp_std::vec::Vec;
 
 use common::origin::ActorOriginValidator;
-use types::{DiscussionPost, DiscussionThread, ThreadCounter};
+use types::{DiscussionPost, DiscussionThread};
 
 pub use types::ThreadMode;
 
@@ -108,9 +108,6 @@ pub trait Trait: system::Trait + membership::Trait {
     /// Post Id type
     type PostId: From<u64> + Parameter + Default + Copy;
 
-    /// Defines max thread by same author in a row number limit.
-    type MaxThreadInARowNumber: Get<u32>;
-
     /// Defines author list size limit for the Closed discussion.
     type MaxWhiteListSize: Get<u32>;
 }
@@ -126,9 +123,6 @@ decl_error! {
 
         /// Post doesn't exist
         PostDoesntExist,
-
-        /// Max number of threads by same author in a row limit exceeded
-        MaxThreadInARowLimitExceeded,
 
         /// Require root origin in extrinsics
         RequireRootOrigin,
@@ -161,10 +155,6 @@ decl_storage! {
 
         /// Count of all posts that have been created.
         pub PostCount get(fn post_count): u64;
-
-        /// Last author thread counter (part of the antispam mechanism)
-        pub LastThreadAuthorCounter get(fn last_thread_author_counter):
-            Option<ThreadCounter<MemberId<T>>>;
     }
 }
 
@@ -176,9 +166,6 @@ decl_module! {
 
         /// Emits an event. Default substrate implementation.
         fn deposit_event() = default;
-
-        /// Exports max thread by same author in a row number limit const.
-        const MaxThreadInARowNumber: u32 = T::MaxThreadInARowNumber::get();
 
         /// Adds a post with author origin check.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -277,13 +264,13 @@ decl_module! {
 }
 
 impl<T: Trait> Module<T> {
-    /// Create the discussion thread. Cannot add more threads than 'predefined limit = MaxThreadInARowNumber'
+    /// Create the discussion thread.
     /// times in a row by the same author.
     pub fn create_thread(
         thread_author_id: MemberId<T>,
         mode: ThreadMode<MemberId<T>>,
     ) -> Result<T::ThreadId, DispatchError> {
-        Self::ensure_can_create_thread(thread_author_id, &mode)?;
+        Self::ensure_can_create_thread(&mode)?;
 
         let next_thread_count_value = Self::thread_count() + 1;
         let new_thread_id = next_thread_count_value;
@@ -294,15 +281,11 @@ impl<T: Trait> Module<T> {
             mode,
         };
 
-        // get new 'threads in a row' counter for the author
-        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id);
-
         // mutation
 
         let thread_id = T::ThreadId::from(new_thread_id);
         <ThreadById<T>>::insert(thread_id, new_thread);
         ThreadCount::put(next_thread_count_value);
-        <LastThreadAuthorCounter<T>>::put(current_thread_counter);
         Self::deposit_event(RawEvent::ThreadCreated(thread_id, thread_author_id));
 
         Ok(thread_id)
@@ -310,26 +293,14 @@ impl<T: Trait> Module<T> {
 
     /// Ensures thread can be created.
     /// Checks:
-    /// - max thread in a row by the same author
     /// - max allowed authors for the Closed thread mode
-    pub fn ensure_can_create_thread(
-        thread_author_id: MemberId<T>,
-        mode: &ThreadMode<MemberId<T>>,
-    ) -> DispatchResult {
+    pub fn ensure_can_create_thread(mode: &ThreadMode<MemberId<T>>) -> DispatchResult {
         if let ThreadMode::Closed(list) = mode {
             ensure!(
                 list.len() <= (T::MaxWhiteListSize::get()).saturated_into(),
                 Error::<T>::MaxWhiteListSizeExceeded
             );
         }
-
-        // get new 'threads in a row' counter for the author
-        let current_thread_counter = Self::get_updated_thread_counter(thread_author_id);
-
-        ensure!(
-            current_thread_counter.counter as u32 <= T::MaxThreadInARowNumber::get(),
-            Error::<T>::MaxThreadInARowLimitExceeded
-        );
 
         Ok(())
     }
@@ -339,20 +310,6 @@ impl<T: Trait> Module<T> {
     // Wrapper-function over system::block_number()
     fn current_block() -> T::BlockNumber {
         <system::Module<T>>::block_number()
-    }
-
-    // returns incremented thread counter if last thread author equals with provided parameter
-    fn get_updated_thread_counter(author_id: MemberId<T>) -> ThreadCounter<MemberId<T>> {
-        // if thread counter exists
-        if let Some(last_thread_author_counter) = Self::last_thread_author_counter() {
-            // if last(previous) author is the same as current author
-            if last_thread_author_counter.author_id == author_id {
-                return last_thread_author_counter.increment();
-            }
-        }
-
-        // else return new counter (set with 1 thread number)
-        ThreadCounter::new(author_id)
     }
 
     fn ensure_thread_mode(
