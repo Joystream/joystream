@@ -788,8 +788,8 @@ export interface MemberCreateInput {
   avatarUri?: String | null
   about?: String | null
   registeredAtBlock: Float
-  controllerAccount: String
-  rootAccount: String
+  controllerAccount: Bytes
+  rootAccount: Bytes
   happenedInId: ID_Output
 }
 
@@ -798,8 +798,8 @@ export interface MemberUpdateInput {
   avatarUri?: String | null
   about?: String | null
   registeredAtBlock?: Float | null
-  controllerAccount?: String | null
-  rootAccount?: String | null
+  controllerAccount?: Bytes | null
+  rootAccount?: Bytes | null
   happenedInId?: ID_Input | null
 }
 
@@ -849,16 +849,10 @@ export interface MemberWhereInput {
   registeredAtBlock_lt?: Int | null
   registeredAtBlock_lte?: Int | null
   registeredAtBlock_in?: Int[] | Int | null
-  controllerAccount_eq?: String | null
-  controllerAccount_contains?: String | null
-  controllerAccount_startsWith?: String | null
-  controllerAccount_endsWith?: String | null
-  controllerAccount_in?: String[] | String | null
-  rootAccount_eq?: String | null
-  rootAccount_contains?: String | null
-  rootAccount_startsWith?: String | null
-  rootAccount_endsWith?: String | null
-  rootAccount_in?: String[] | String | null
+  controllerAccount_eq?: Bytes | null
+  controllerAccount_in?: Bytes[] | Bytes | null
+  rootAccount_eq?: Bytes | null
+  rootAccount_in?: Bytes[] | Bytes | null
   happenedInId_eq?: ID_Input | null
   happenedInId_in?: ID_Output[] | ID_Output | null
 }
@@ -1475,8 +1469,8 @@ export interface Member extends BaseGraphQLObject {
   avatarUri?: String | null
   about?: String | null
   registeredAtBlock: Int
-  controllerAccount: String
-  rootAccount: String
+  controllerAccount: Bytes
+  rootAccount: Bytes
   happenedIn?: Block | null
   happenedInId: String
 }
@@ -1641,6 +1635,11 @@ export interface VideoMediaEncodingEdge {
 The `Boolean` scalar type represents `true` or `false`.
 */
 export type Boolean = boolean
+
+/*
+GraphQL representation of Bytes
+*/
+export type Bytes = string
 
 /*
 The javascript `Date` as string. Type represents date and time as the ISO Date string.

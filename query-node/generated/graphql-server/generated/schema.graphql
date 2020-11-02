@@ -163,6 +163,9 @@ input BlockWhereUniqueInput {
   id: ID!
 }
 
+"""GraphQL representation of Bytes"""
+scalar Bytes
+
 type Category implements BaseGraphQLObject {
   id: ID!
   createdAt: DateTime!
@@ -970,10 +973,10 @@ type Member implements BaseGraphQLObject {
   registeredAtBlock: Int!
 
   """Member's controller account id"""
-  controllerAccount: String!
+  controllerAccount: Bytes!
 
   """Member's root account id"""
-  rootAccount: String!
+  rootAccount: Bytes!
   happenedIn: Block
   happenedInId: String!
 }
@@ -989,8 +992,8 @@ input MemberCreateInput {
   avatarUri: String
   about: String
   registeredAtBlock: Float!
-  controllerAccount: String!
-  rootAccount: String!
+  controllerAccount: Bytes!
+  rootAccount: Bytes!
   happenedInId: ID!
 }
 
@@ -1027,8 +1030,8 @@ input MemberUpdateInput {
   avatarUri: String
   about: String
   registeredAtBlock: Float
-  controllerAccount: String
-  rootAccount: String
+  controllerAccount: Bytes
+  rootAccount: Bytes
   happenedInId: ID
 }
 
@@ -1078,16 +1081,10 @@ input MemberWhereInput {
   registeredAtBlock_lt: Int
   registeredAtBlock_lte: Int
   registeredAtBlock_in: [Int!]
-  controllerAccount_eq: String
-  controllerAccount_contains: String
-  controllerAccount_startsWith: String
-  controllerAccount_endsWith: String
-  controllerAccount_in: [String!]
-  rootAccount_eq: String
-  rootAccount_contains: String
-  rootAccount_startsWith: String
-  rootAccount_endsWith: String
-  rootAccount_in: [String!]
+  controllerAccount_eq: Bytes
+  controllerAccount_in: [Bytes!]
+  rootAccount_eq: Bytes
+  rootAccount_in: [Bytes!]
   happenedInId_eq: ID
   happenedInId_in: [ID!]
 }

@@ -14,12 +14,14 @@ import { ArgsType, Field as TypeGraphQLField, Float, InputType as TypeGraphQLInp
 // @ts-ignore
 import { registerEnumType, GraphQLISODateTime as DateTime } from "type-graphql";
 
+import * as BN from "bn.js";
+
 // prettier-ignore
 // @ts-ignore eslint-disable-next-line @typescript-eslint/no-var-requires
 const { GraphQLJSONObject } = require('graphql-type-json');
 // prettier-ignore
 // @ts-ignore
-import { BaseWhereInput, JsonObject, PaginationArgs, DateOnlyString, DateTimeString } from 'warthog';
+import { BaseWhereInput, JsonObject, PaginationArgs, DateOnlyString, DateTimeString, BigInt, Bytes } from 'warthog';
 
 import { Network } from "../src/modules/block/block.model";
 // @ts-ignore
@@ -1644,35 +1646,17 @@ export class MemberWhereInput {
   @TypeGraphQLField(() => [Int], { nullable: true })
   registeredAtBlock_in?: number[];
 
-  @TypeGraphQLField({ nullable: true })
-  controllerAccount_eq?: string;
+  @TypeGraphQLField(() => Bytes, { nullable: true })
+  controllerAccount_eq?: Buffer;
 
-  @TypeGraphQLField({ nullable: true })
-  controllerAccount_contains?: string;
+  @TypeGraphQLField(() => [Bytes], { nullable: true })
+  controllerAccount_in?: Buffer[];
 
-  @TypeGraphQLField({ nullable: true })
-  controllerAccount_startsWith?: string;
+  @TypeGraphQLField(() => Bytes, { nullable: true })
+  rootAccount_eq?: Buffer;
 
-  @TypeGraphQLField({ nullable: true })
-  controllerAccount_endsWith?: string;
-
-  @TypeGraphQLField(() => [String], { nullable: true })
-  controllerAccount_in?: string[];
-
-  @TypeGraphQLField({ nullable: true })
-  rootAccount_eq?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  rootAccount_contains?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  rootAccount_startsWith?: string;
-
-  @TypeGraphQLField({ nullable: true })
-  rootAccount_endsWith?: string;
-
-  @TypeGraphQLField(() => [String], { nullable: true })
-  rootAccount_in?: string[];
+  @TypeGraphQLField(() => [Bytes], { nullable: true })
+  rootAccount_in?: Buffer[];
 
   @TypeGraphQLField(() => ID, { nullable: true })
   happenedInId_eq?: string;
@@ -1704,11 +1688,11 @@ export class MemberCreateInput {
   @TypeGraphQLField()
   registeredAtBlock!: number;
 
-  @TypeGraphQLField()
-  controllerAccount!: string;
+  @TypeGraphQLField(() => Bytes)
+  controllerAccount!: Buffer;
 
-  @TypeGraphQLField()
-  rootAccount!: string;
+  @TypeGraphQLField(() => Bytes)
+  rootAccount!: Buffer;
 
   @TypeGraphQLField(() => ID)
   happenedInId!: string;
@@ -1728,11 +1712,11 @@ export class MemberUpdateInput {
   @TypeGraphQLField({ nullable: true })
   registeredAtBlock?: number;
 
-  @TypeGraphQLField({ nullable: true })
-  controllerAccount?: string;
+  @TypeGraphQLField(() => Bytes, { nullable: true })
+  controllerAccount?: Buffer;
 
-  @TypeGraphQLField({ nullable: true })
-  rootAccount?: string;
+  @TypeGraphQLField(() => Bytes, { nullable: true })
+  rootAccount?: Buffer;
 
   @TypeGraphQLField(() => ID, { nullable: true })
   happenedInId?: string;
