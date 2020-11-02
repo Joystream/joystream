@@ -1,4 +1,4 @@
-import * as BN from 'bn.js'
+import BN from 'bn.js'
 import { EntityId, SchemaId, ParametrizedClassPropertyValue, ClassId } from '@joystream/types/content-directory'
 import { DB } from '../generated/indexer'
 
