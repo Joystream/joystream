@@ -290,16 +290,19 @@ async function getClassName(
 async function removeChannel(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(Channel, where)
   if (record === undefined) throw Error(`Channel not found`)
+  if (record.videos) record.videos.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
   await db.remove<Channel>(record)
 }
 async function removeCategory(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(Category, where)
   if (record === undefined) throw Error(`Category not found`)
+  if (record.videos) record.videos.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
   await db.remove<Category>(record)
 }
 async function removeVideoMedia(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(VideoMedia, where)
   if (record === undefined) throw Error(`VideoMedia not found`)
+  if (record.video) await db.remove<Video>(record.video)
   await db.remove<VideoMedia>(record)
 }
 async function removeVideo(db: DB, where: IWhereCond): Promise<void> {
@@ -310,26 +313,36 @@ async function removeVideo(db: DB, where: IWhereCond): Promise<void> {
 async function removeUserDefinedLicense(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(UserDefinedLicense, where)
   if (record === undefined) throw Error(`UserDefinedLicense not found`)
+  if (record.videouserdefinedLicense)
+    record.videouserdefinedLicense.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
   await db.remove<UserDefinedLicense>(record)
 }
 async function removeKnownLicense(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(KnownLicense, where)
   if (record === undefined) throw Error(`KnownLicense not found`)
+  if (record.videoknownLicense)
+    record.videoknownLicense.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
   await db.remove<KnownLicense>(record)
 }
 async function removeHttpMediaLocation(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(HttpMediaLocation, where)
   if (record === undefined) throw Error(`HttpMediaLocation not found`)
+  if (record.videomediahttpMediaLocation)
+    record.videomediahttpMediaLocation.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
   await db.remove<HttpMediaLocation>(record)
 }
 async function removeJoystreamMediaLocation(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(JoystreamMediaLocation, where)
   if (record === undefined) throw Error(`JoystreamMediaLocation not found`)
+  if (record.videomediajoystreamMediaLocation)
+    record.videomediajoystreamMediaLocation.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
   await db.remove<JoystreamMediaLocation>(record)
 }
 async function removeLanguage(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(Language, where)
   if (record === undefined) throw Error(`Language not found`)
+  if (record.channellanguage) record.channellanguage.map(async (c) => await removeChannel(db, { where: { id: c.id } }))
+  if (record.videolanguage) record.videolanguage.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
   await db.remove<Language>(record)
 }
 async function removeVideoMediaEncoding(db: DB, where: IWhereCond): Promise<void> {
