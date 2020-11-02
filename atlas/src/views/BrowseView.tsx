@@ -1,6 +1,9 @@
 import React, { useState } from 'react'
 import styled from '@emotion/styled'
 import { RouteComponentProps } from '@reach/router'
+import { ErrorBoundary } from 'react-error-boundary'
+
+import { ErrorFallback } from '@/components'
 import { CategoryPicker, InfiniteVideoGrid, Typography } from '@/shared/components'
 import { colors, sizes } from '@/shared/theme'
 import { useQuery } from '@apollo/client'
@@ -35,7 +38,9 @@ const BrowseView: React.FC<RouteComponentProps> = () => {
         selectedCategoryId={selectedCategoryId}
         onChange={handleCategoryChange}
       />
-      <StyledInfiniteVideoGrid categoryId={selectedCategoryId || undefined} ready={!!selectedCategoryId} />
+      <ErrorBoundary FallbackComponent={ErrorFallback}>
+        <StyledInfiniteVideoGrid categoryId={selectedCategoryId || undefined} ready={!!selectedCategoryId} />
+      </ErrorBoundary>
     </div>
   )
 }

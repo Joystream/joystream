@@ -4,13 +4,13 @@ import { ChannelGallery, FeaturedVideoHeader, ErrorFallback, VideoGallery } from
 
 import { RouteComponentProps } from '@reach/router'
 import { useQuery } from '@apollo/client'
+import { ErrorBoundary } from 'react-error-boundary'
 import { InfiniteVideoGrid } from '@/shared/components'
 import { GET_FEATURED_VIDEOS, GET_NEWEST_CHANNELS, GET_NEWEST_VIDEOS } from '@/api/queries'
 import { GetFeaturedVideos } from '@/api/queries/__generated__/GetFeaturedVideos'
 import { GetNewestVideos, GetNewestVideosVariables } from '@/api/queries/__generated__/GetNewestVideos'
 import { GetNewestChannels, GetNewestChannelsVariables } from '@/api/queries/__generated__/GetNewestChannels'
 import { spacing } from '@/shared/theme'
-import { ErrorBoundary } from 'react-error-boundary'
 
 const NEWEST_VIDEOS_COUNT = 8
 const NEWEST_CHANNELS_COUNT = 8
@@ -30,7 +30,9 @@ const HomeView: React.FC<RouteComponentProps> = () => {
     data: featuredVideosData,
     error: featuredVideosError,
     refetch: refetchFeaturedVideos,
-  } = useQuery<GetFeaturedVideos>(GET_FEATURED_VIDEOS)
+  } = useQuery<GetFeaturedVideos>(GET_FEATURED_VIDEOS, {
+    notifyOnNetworkStatusChange: true,
+  })
   const {
     loading: newestChannelsLoading,
     data: newestChannelsData,
@@ -54,7 +56,7 @@ const HomeView: React.FC<RouteComponentProps> = () => {
         {!hasNewestVideosError ? (
           <VideoGallery title="Newest videos" loading={newestVideosLoading} videos={newestVideos} />
         ) : (
-          <GalleryErrorFallback error={newestVideosError} reset={() => refetchNewestVideos()} />
+          <ErrorFallback error={newestVideosError} resetErrorBoundary={() => refetchNewestVideos()} />
         )}
 
         {!hasFeaturedVideosError ? (
@@ -64,16 +66,17 @@ const HomeView: React.FC<RouteComponentProps> = () => {
             videos={featuredVideosData?.featured_videos}
           />
         ) : (
-          <GalleryErrorFallback error={featuredVideosError} reset={() => refetchFeaturedVideos()} />
+          <ErrorFallback error={featuredVideosError} resetErrorBoundary={() => refetchFeaturedVideos()} />
         )}
 
         {!hasNewestChannelsError ? (
           <ChannelGallery title="Newest channels" loading={newestChannelsLoading} channels={newestChannels} />
         ) : (
-          <GalleryErrorFallback error={newestChannelsError} reset={() => refetchNewestChannels()} />
+          <ErrorFallback error={newestChannelsError} resetErrorBoundary={() => refetchNewestChannels()} />
         )}
-
-        <StyledInfiniteVideoGrid title="More videos" skipCount={NEWEST_VIDEOS_COUNT} />
+        <ErrorBoundary FallbackComponent={ErrorFallback}>
+          <StyledInfiniteVideoGrid title="More videos" skipCount={NEWEST_VIDEOS_COUNT} />
+        </ErrorBoundary>
       </Container>
     </>
   )
