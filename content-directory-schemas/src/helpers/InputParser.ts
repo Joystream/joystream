@@ -20,7 +20,7 @@ import { CreateClass } from '../../types/extrinsics/CreateClass'
 import { EntityBatch } from '../../types/EntityBatch'
 import { getInputs } from './inputs'
 
-type SimpleEntityValue = string | boolean | number | string[] | boolean[] | number[] | undefined
+type SimpleEntityValue = string | boolean | number | string[] | boolean[] | number[] | undefined | null
 // Input without "new" or "extising" keywords
 type SimpleEntityInput = { [K: string]: SimpleEntityValue }
 
