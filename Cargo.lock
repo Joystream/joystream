@@ -3564,7 +3564,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-codex"
-version = "3.0.0"
+version = "4.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3596,7 +3596,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-discussion"
-version = "3.0.0"
+version = "4.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -3614,7 +3614,7 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-engine"
-version = "3.0.0"
+version = "4.0.0"
 dependencies = [
  "frame-support",
  "frame-system",
