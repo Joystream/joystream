@@ -49,7 +49,7 @@ fn add_and_apply_opening<T: Trait<I>, I: Instance>(
         (
             Some(StakePolicy {
                 stake_amount: <BalanceOfCurrency<T> as One>::one(),
-                leaving_unstaking_period: T::BlockNumber::max_value(),
+                leaving_unstaking_period: T::MinUnstakingPeriodLimit::get() + One::one(),
             }),
             Some(StakeParameters {
                 stake: BalanceOfCurrency::<T>::max_value(),
@@ -196,7 +196,7 @@ where
     )
     .unwrap();
 
-    // Force a missed_reward for the created worker(and any posterior)
+    // Force a missed_reward for the created worker
     // Every worst case either include or doesn't mind having a non-zero
     // remaining reward
     let curr_block_number =
@@ -220,6 +220,215 @@ where
 
 benchmarks_instance! {
     _ { }
+
+    on_initialize_leaving {
+      let i in 1 .. T::MaxWorkerNumberLimit::get();
+
+      let (lead_id, lead_worker_id) = create_lead::<T, I>(false);
+
+      let leaving_unstaking_period = T::MinUnstakingPeriodLimit::get() + One::one();
+
+      WorkingTeam::<T, I>::add_opening(
+          RawOrigin::Signed(lead_id.clone()).into(),
+          vec![],
+          JobOpeningType::Regular,
+          Some(StakePolicy {
+            stake_amount: One::one(),
+            leaving_unstaking_period,
+          }),
+          Some(RewardPolicy {
+              reward_per_block: <BalanceOfCurrency<T> as One>::one(),
+          }),
+      )
+      .unwrap();
+
+      let opening_id = <T::OpeningId as One>::one();
+      let mut last_application_id: T::ApplicationId = Zero::zero();
+      let mut successful_application_ids = BTreeSet::new();
+      let mut last_member_id = Zero::zero();
+      let mut account_ids = vec![];
+      for member in 0 .. i - 1 {
+        let res = member_funded_account::<T>("member", member + 1, Some(last_member_id));
+        last_member_id = res.1;
+        let applicant_account_id = res.0;
+        account_ids.push(applicant_account_id.clone());
+
+        WorkingTeam::<T, I>::apply_on_opening(
+            RawOrigin::Signed(applicant_account_id.clone()).into(),
+            ApplyOnOpeningParameters::<T, I> {
+                member_id: last_member_id,
+                opening_id: opening_id.clone(),
+                role_account_id: applicant_account_id.clone(),
+                reward_account_id: applicant_account_id.clone(),
+                description: vec![],
+                stake_parameters: Some(
+                  StakeParameters {
+                    stake: One::one(),
+                    staking_account_id: applicant_account_id.clone(),
+                }),
+            },
+        ).unwrap();
+
+        last_application_id = last_application_id.saturating_add(<T::ApplicationId as One>::one());
+        successful_application_ids.insert(last_application_id);
+      }
+
+      WorkingTeam::<T, I>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+      successful_application_ids).unwrap();
+
+      let curr_block_number =
+          System::<T>::block_number().saturating_add(T::RewardPeriod::get().into());
+      System::<T>::set_block_number(curr_block_number);
+      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), Zero::zero()).unwrap();
+      WorkingTeam::<T, I>::on_initialize(curr_block_number);
+
+      let mut worker_id = Zero::zero();
+      for account_id in account_ids {
+        worker_id += One::one();
+        WorkingTeam::<T, I>::leave_role(RawOrigin::Signed(account_id).into(), worker_id).unwrap();
+      }
+
+      // Worst case scenario one of the leaving workers is the lead
+      WorkingTeam::<T, I>::leave_role(RawOrigin::Signed(lead_id).into(), lead_worker_id).unwrap();
+
+      let curr_block_number =
+          System::<T>::block_number().saturating_add(leaving_unstaking_period.into());
+      System::<T>::set_block_number(curr_block_number);
+      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
+
+    }: { WorkingTeam::<T, I>::on_initialize(curr_block_number) }
+    verify { }
+
+
+    on_initialize_rewarding_with_missing_reward {
+      let i in 1 .. T::MaxWorkerNumberLimit::get();
+
+      let (lead_id, _) = create_lead::<T, I>(false);
+
+
+      WorkingTeam::<T, I>::add_opening(
+          RawOrigin::Signed(lead_id.clone()).into(),
+          vec![],
+          JobOpeningType::Regular,
+          Some(StakePolicy {
+            stake_amount: <BalanceOfCurrency<T> as One>::one(),
+            leaving_unstaking_period: T::BlockNumber::max_value(),
+          }),
+          Some(RewardPolicy {
+              reward_per_block: <BalanceOfCurrency<T> as One>::one(),
+          }),
+      )
+      .unwrap();
+
+
+      let opening_id = <T::OpeningId as One>::one();
+      let mut last_application_id: T::ApplicationId = Zero::zero();
+      let mut successful_application_ids = BTreeSet::new();
+      let mut last_member_id = Zero::zero();
+      for member in 0 .. i - 1 {
+        let res = member_funded_account::<T>("member", member + 1, Some(last_member_id));
+        last_member_id = res.1;
+        let applicant_account_id = res.0;
+
+        WorkingTeam::<T, I>::apply_on_opening(
+            RawOrigin::Signed(applicant_account_id.clone()).into(),
+            ApplyOnOpeningParameters::<T, I> {
+                member_id: last_member_id,
+                opening_id: opening_id.clone(),
+                role_account_id: applicant_account_id.clone(),
+                reward_account_id: applicant_account_id.clone(),
+                description: vec![],
+                stake_parameters: Some(
+                  StakeParameters {
+                    stake: BalanceOfCurrency::<T>::max_value(),
+                    staking_account_id: applicant_account_id.clone(),
+                }),
+            },
+        ).unwrap();
+
+        last_application_id = last_application_id.saturating_add(<T::ApplicationId as One>::one());
+        successful_application_ids.insert(last_application_id);
+      }
+
+      WorkingTeam::<T, I>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+      successful_application_ids).unwrap();
+
+
+      let curr_block_number =
+          System::<T>::block_number().saturating_add(T::RewardPeriod::get().into());
+      System::<T>::set_block_number(curr_block_number);
+      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), Zero::zero()).unwrap();
+      WorkingTeam::<T, I>::on_initialize(curr_block_number);
+
+      let curr_block_number =
+          System::<T>::block_number().saturating_add(T::RewardPeriod::get().into());
+      System::<T>::set_block_number(curr_block_number);
+      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
+
+    }: { WorkingTeam::<T, I>::on_initialize(curr_block_number) }
+    verify { }
+
+    on_initialize_rewarding_without_missing_reward {
+      let i in 1 .. T::MaxWorkerNumberLimit::get();
+
+      let (lead_id, _) = create_lead::<T, I>(false);
+
+
+      WorkingTeam::<T, I>::add_opening(
+          RawOrigin::Signed(lead_id.clone()).into(),
+          vec![],
+          JobOpeningType::Regular,
+          Some(StakePolicy {
+            stake_amount: <BalanceOfCurrency<T> as One>::one(),
+            leaving_unstaking_period: T::BlockNumber::max_value(),
+          }),
+          Some(RewardPolicy {
+              reward_per_block: <BalanceOfCurrency<T> as One>::one(),
+          }),
+      )
+      .unwrap();
+
+
+      let opening_id = <T::OpeningId as One>::one();
+      let mut last_application_id: T::ApplicationId = Zero::zero();
+      let mut successful_application_ids = BTreeSet::new();
+      let mut last_member_id = Zero::zero();
+      for member in 0 .. i - 1 {
+        let res = member_funded_account::<T>("member", member + 1, Some(last_member_id));
+        last_member_id = res.1;
+        let applicant_account_id = res.0;
+
+        WorkingTeam::<T, I>::apply_on_opening(
+            RawOrigin::Signed(applicant_account_id.clone()).into(),
+            ApplyOnOpeningParameters::<T, I> {
+                member_id: last_member_id,
+                opening_id: opening_id.clone(),
+                role_account_id: applicant_account_id.clone(),
+                reward_account_id: applicant_account_id.clone(),
+                description: vec![],
+                stake_parameters: Some(
+                  StakeParameters {
+                    stake: BalanceOfCurrency::<T>::max_value(),
+                    staking_account_id: applicant_account_id.clone(),
+                }),
+            },
+        ).unwrap();
+
+        last_application_id = last_application_id.saturating_add(<T::ApplicationId as One>::one());
+        successful_application_ids.insert(last_application_id);
+      }
+
+      WorkingTeam::<T, I>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+      successful_application_ids).unwrap();
+
+      let curr_block_number =
+          System::<T>::block_number().saturating_add(T::RewardPeriod::get().into());
+      System::<T>::set_block_number(curr_block_number);
+
+      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
+
+    }: { WorkingTeam::<T, I>::on_initialize(curr_block_number) }
+    verify { }
 
     apply_on_opening {
       let i in 1 .. 50000;
@@ -540,6 +749,7 @@ benchmarks_instance! {
       let caller_id = account::<T::AccountId>("caller", 0, 0);
 
       let (lead_id, _) = create_lead::<T, I>(true);
+
 
       let stake_policy = StakePolicy {
         stake_amount: BalanceOfCurrency::<T>::max_value(),
