@@ -24,8 +24,8 @@ export default class WorkingGroupsUpdateWorkerReward extends WorkingGroupsComman
   formatReward(reward?: Reward) {
     return reward
       ? formatBalance(reward.value) +
-          (reward.interval && ` / ${reward.interval} block(s)`) +
-          (reward.nextPaymentBlock && ` (next payment: #${reward.nextPaymentBlock})`)
+          (reward.interval ? ` / ${reward.interval} block(s)` : '') +
+          (reward.nextPaymentBlock ? ` (next payment: #${reward.nextPaymentBlock})` : '')
       : 'NONE'
   }
 
