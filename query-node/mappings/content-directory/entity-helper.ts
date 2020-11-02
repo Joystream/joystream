@@ -43,12 +43,13 @@ import {
   IWhereCond,
 } from '../types'
 import { getOrCreate } from './get-or-create'
+import * as BN from 'bn.js'
 
 async function createBlockOrGetFromDatabase(db: DB, blockNumber: number): Promise<Block> {
   let b = await db.get(Block, { where: { block: blockNumber } })
   if (b === undefined) {
     // TODO: get timestamp from the event or extrinsic
-    b = new Block({ block: blockNumber, nework: Network.BABYLON, timestamp: 123 })
+    b = new Block({ block: blockNumber, network: Network.BABYLON, timestamp: new BN(Date.now()) })
     await db.save<Block>(b)
   }
   return b
@@ -56,7 +57,7 @@ async function createBlockOrGetFromDatabase(db: DB, blockNumber: number): Promis
 
 async function createChannel(
   { db, block, id }: IDBBlockId,
-  classEntityMap: Map<String, IEntity[]>,
+  classEntityMap: ClassEntityMap,
   p: IChannel
 ): Promise<Channel> {
   const record = await db.get(Channel, { where: { id } })
@@ -72,7 +73,7 @@ async function createChannel(
   channel.isPublic = p.isPublic
   channel.coverPhotoUrl = p.coverPhotoURL
   channel.avatarPhotoUrl = p.avatarPhotoURL
-  channel.language = await getOrCreate.language({ db, block, id }, classEntityMap, p.language)
+  if (p.language) channel.language = await getOrCreate.language({ db, block, id }, classEntityMap, p.language)
   channel.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save(channel)
   return channel
@@ -123,7 +124,7 @@ async function createUserDefinedLicense(
   userDefinedLicense.content = p.content
   userDefinedLicense.version = block
   userDefinedLicense.happenedIn = await createBlockOrGetFromDatabase(db, block)
-  await db.save(userDefinedLicense)
+  await db.save<UserDefinedLicense>(userDefinedLicense)
   return userDefinedLicense
 }
 
@@ -174,13 +175,17 @@ async function createVideoMedia(
   videoMedia.pixelWidth = p.pixelWidth
   videoMedia.size = p.size
   videoMedia.version = block
-  videoMedia.encoding = await getOrCreate.videoMediaEncoding({ db, block, id }, classEntityMap, p.encoding)
-  videoMedia.httpMediaLocation = await getOrCreate.httpMediaLocation({ db, block, id }, classEntityMap, p.location)
-  videoMedia.joystreamMediaLocation = await getOrCreate.joystreamMediaLocation(
-    { db, block, id },
-    classEntityMap,
-    p.location
-  )
+  const { encoding, location } = p
+  if (encoding) videoMedia.encoding = await getOrCreate.videoMediaEncoding({ db, block, id }, classEntityMap, encoding)
+  if (location) {
+    // TODO: We need to make sure to create only one location either http or joystream
+    videoMedia.httpMediaLocation = await getOrCreate.httpMediaLocation({ db, block, id }, classEntityMap, location)
+    videoMedia.joystreamMediaLocation = await getOrCreate.joystreamMediaLocation(
+      { db, block, id },
+      classEntityMap,
+      location
+    )
+  }
   videoMedia.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save(videoMedia)
   return videoMedia
@@ -206,13 +211,16 @@ async function createVideo({ db, block, id }: IDBBlockId, classEntityMap: ClassE
   video.thumbnailUrl = p.thumbnailURL
   video.version = block
 
-  video.language = await getOrCreate.language({ db, block, id }, classEntityMap, p.language)
-  video.knownLicense = await getOrCreate.knownLicense({ db, block, id }, classEntityMap, p.license)
-  video.userdefinedLicense = await getOrCreate.userDefinedLicense({ db, block, id }, classEntityMap, p.license)
-  video.category = await getOrCreate.category({ db, block, id }, classEntityMap, p.category)
-  video.channel = await getOrCreate.channel({ db, block, id }, classEntityMap, p.channel)
+  const { language, license, category, channel, media } = p
+  if (language) video.language = await getOrCreate.language({ db, block, id }, classEntityMap, language)
+  if (license) {
+    video.knownLicense = await getOrCreate.knownLicense({ db, block, id }, classEntityMap, license)
+    video.userdefinedLicense = await getOrCreate.userDefinedLicense({ db, block, id }, classEntityMap, license)
+  }
+  if (category) video.category = await getOrCreate.category({ db, block, id }, classEntityMap, category)
+  if (channel) video.channel = await getOrCreate.channel({ db, block, id }, classEntityMap, channel)
   video.happenedIn = await createBlockOrGetFromDatabase(db, block)
-  video.media = await getOrCreate.videoMedia({ db, block, id }, classEntityMap, p.media)
+  if (media) video.media = await getOrCreate.videoMedia({ db, block, id }, classEntityMap, media)
   await db.save<Video>(video)
   return video
 }
@@ -362,18 +370,75 @@ async function updateCategoryEntityPropertyValues(db: DB, where: IWhereCond, pro
 async function updateChannelEntityPropertyValues(db: DB, where: IWhereCond, props: IChannel): Promise<void> {
   const record = await db.get(Channel, where)
   if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
+  if (props.language) {
+    const l = await db.get(Language, { where: { id: props.language.toString() } })
+    if (l === undefined) throw Error(`Language entity not found: ${props.language}`)
+    record.language = l
+    props.language = undefined
+  }
   Object.assign(record, props)
   await db.save<Channel>(record)
 }
 async function updateVideoMediaEntityPropertyValues(db: DB, where: IWhereCond, props: IVideoMedia): Promise<void> {
   const record = await db.get(VideoMedia, where)
   if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
+
+  const { encoding, location } = props
+  if (encoding) {
+    const e = await db.get(VideoMediaEncoding, { where: { id: encoding.toString() } })
+    if (e === undefined) throw Error(`VideoMediaEncoding entity not found: ${encoding}`)
+    record.encoding = e
+    props.encoding = undefined
+  }
+  if (location) {
+    const httpLoc = await db.get(HttpMediaLocation, { where: { id: location.toString() } })
+    const joyLoc = await db.get(JoystreamMediaLocation, { where: { id: location.toString() } })
+    if (!httpLoc && !joyLoc) throw Error(`HttpMediaLocation/JoystreamMediaLocation entity not found: ${location}`)
+    record.httpMediaLocation = httpLoc
+    record.joystreamMediaLocation = joyLoc
+    props.location = undefined
+  }
   Object.assign(record, props)
   await db.save<VideoMedia>(record)
 }
 async function updateVideoEntityPropertyValues(db: DB, where: IWhereCond, props: IVideo): Promise<void> {
-  const record = await db.get(Video, where)
+  const record = await db.get<Video>(Video, where)
   if (record === undefined) throw Error(`Entity not found: ${where.where.id}`)
+
+  const { channel, category, language, media, license } = props
+  if (channel) {
+    const c = await db.get(Channel, { where: { id: channel.toString() } })
+    if (c === undefined) throw Error(`Channel entity not found: ${channel}`)
+    record.channel = c
+    props.channel = undefined
+  }
+  if (category) {
+    const c = await db.get(Category, { where: { id: category.toString() } })
+    if (c === undefined) throw Error(`Category entity not found: ${category}`)
+    record.category = c
+    props.category = undefined
+  }
+  if (media) {
+    const m = await db.get(VideoMedia, { where: { id: media.toString() } })
+    if (m === undefined) throw Error(`VideoMedia entity not found: ${channel}`)
+    record.media = m
+    props.media = undefined
+  }
+  if (license) {
+    const k = await db.get(KnownLicense, { where: { id: license.toString() } })
+    const u = await db.get(UserDefinedLicense, { where: { id: license.toString() } })
+    if (!k && !u) throw Error(`KnownLicense/UserDefinedLicense entity not found: ${license}`)
+    record.knownLicense = k
+    record.userdefinedLicense = u
+    props.license = undefined
+  }
+  if (language) {
+    const l = await db.get(Language, { where: { id: language.toString() } })
+    if (l === undefined) throw Error(`Language entity not found: ${language}`)
+    record.language = l
+    props.language = undefined
+  }
+
   Object.assign(record, props)
   await db.save<Video>(record)
 }
@@ -438,7 +503,11 @@ async function updateEntityPropertyValues(
 ): Promise<void> {
   switch (className) {
     case ContentDirectoryKnownClasses.CHANNEL:
-      updateChannelEntityPropertyValues(db, where, decode.setProperties<IChannel>(event, channelPropertyNamesWithId))
+      await updateChannelEntityPropertyValues(
+        db,
+        where,
+        decode.setProperties<IChannel>(event, channelPropertyNamesWithId)
+      )
       break
 
     case ContentDirectoryKnownClasses.CATEGORY:

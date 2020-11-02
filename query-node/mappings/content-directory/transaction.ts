@@ -218,7 +218,7 @@ async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateE
 
     switch (className) {
       case ContentDirectoryKnownClasses.CHANNEL:
-        updateChannelEntityPropertyValues(
+        await updateChannelEntityPropertyValues(
           db,
           where,
           decode.setEntityPropertyValues<IChannel>(properties, CategoryPropertyNamesWithId)

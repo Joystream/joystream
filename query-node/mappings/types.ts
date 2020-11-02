@@ -41,7 +41,7 @@ export interface IChannel {
   avatarPhotoURL: string
   isPublic: boolean
   isCurated: boolean
-  language: number
+  language?: number
 }
 
 export interface ICategory {
@@ -79,32 +79,32 @@ export interface IVideoMediaEncoding {
 }
 
 export interface IVideoMedia {
-  encoding: number
+  encoding?: number
   pixelWidth: number
   pixelHeight: number
   size: number
-  location: number
+  location?: number
 }
 
 export interface IVideo {
   // referenced entity's id
-  channel: number
+  channel?: number
   // referenced entity's id
-  category: number
+  category?: number
   title: string
   description: string
   duration: number
   skippableIntroDuration?: number
   thumbnailURL: string
-  language: number
+  language?: number
   // referenced entity's id
-  media: number
+  media?: number
   hasMarketing?: boolean
   publishedBeforeJoystream?: number
   isPublic: boolean
   isCurated: boolean
   isExplicit: boolean
-  license: number
+  license?: number
 }
 
 export enum OperationType {
