@@ -75,12 +75,12 @@ export default class UpdateChannelCommand extends ContentDirectoryCommandBase {
 
       if (!asCurator) {
         // Skip isCensored is it's not updated by the curator
-        customPrompts.push(['isCensored', async () => undefined])
+        customPrompts.push(['isCensored', 'skip'])
       }
 
       const prompter = new JsonSchemaPrompter<ChannelEntity>(channelJsonSchema, currentValues, customPrompts)
 
-      inputJson = await prompter.promptAll()
+      inputJson = await prompter.promptAll(true)
     }
 
     this.jsonPrettyPrint(JSON.stringify(inputJson))
