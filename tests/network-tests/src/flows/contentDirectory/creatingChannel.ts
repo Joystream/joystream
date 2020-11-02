@@ -28,7 +28,7 @@ export default async function channelCreation(api: QueryNodeApi, pair: KeyringPa
 
   assert(data.title === createChannelHappyCaseFixture.channelEntity.title, "Should be equal")
   assert(data.description === createChannelHappyCaseFixture.channelEntity.description, "Should be equal")
-  assert(data.language === createChannelHappyCaseFixture.channelEntity.language?.toString(), "Should be equal")
+  assert(data.language === createChannelHappyCaseFixture.channelEntity.language as unknown as string, "Should be equal")
   assert(data.coverPhotoUrl === createChannelHappyCaseFixture.channelEntity.coverPhotoUrl, "Should be equal")
   assert(data.avatarPhotoURL === createChannelHappyCaseFixture.channelEntity.avatarPhotoURL, "Should be equal")
   assert(data.isPublic === createChannelHappyCaseFixture.channelEntity.isPublic.toString(), "Should be equal")
