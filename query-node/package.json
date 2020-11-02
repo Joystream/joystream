@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"description": "GraphQL server and Substrate indexer. Generated with ♥ by Hydra-CLI",
 	"scripts": {
-		"build": "tsc --build tsconfig.json",
+		"build": "yarn hydra-cli codegen && cp indexer-tsconfig.json generated/indexer/tsconfig.json && tsc --build tsconfig.json",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"clean": "rm -rf ./generated",
 		"processor:start": "(cd ./generated/indexer && yarn && DEBUG=${DEBUG} yarn start:processor)",
@@ -25,6 +25,9 @@
 	},
 	"author": "",
 	"license": "ISC",
+	"devDependencies": {
+		"@dzlzv/hydra-cli": "^0.0.17"
+	},
 	"dependencies": {
 		"@joystream/types": "^0.14.0",
 		"@types/bn.js": "^4.11.6",
