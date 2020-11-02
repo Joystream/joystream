@@ -106,6 +106,9 @@ export class JsonSchemaPrompter<JsonResult> {
       const oneOf = schema.oneOf as JSONSchema[]
       const options = this.oneOfToOptions(oneOf, currentValue)
       const { choosen } = await inquirer.prompt({ name: 'choosen', message: propDisplayName, type: 'list', ...options })
+      if (choosen !== options.default) {
+        _.set(this.filledObject, propertyPath, undefined) // Clear any previous value if different variant selected
+      }
       return await this.prompt(oneOf[parseInt(choosen)], propertyPath)
     }
 
@@ -137,6 +140,8 @@ export class JsonSchemaPrompter<JsonResult> {
         }
         if (confirmed) {
           value[pName] = await this.prompt(pSchema, objectPropertyPath)
+        } else {
+          _.set(this.filledObject, objectPropertyPath, undefined)
         }
       }
       return value
