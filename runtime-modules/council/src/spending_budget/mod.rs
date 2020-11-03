@@ -87,60 +87,56 @@ pub trait Trait: system::Trait {
     /// (and there might be other problems).
     fn blocks_to_balance(block_number: Self::BlockNumber) -> Balance<Self>;
 }
-/*
-pub trait BudgetController<T: Trait> {
-    fn get_budget(budget_type: T::BudgetType) -> Option<BudgetOf<T>>;
-    fn has_sufficient_balance(budget_type: T::BudgetType, amount: Balance<T>) -> bool;
-    fn spend_from_budget(budget_type: T::BudgetType, amount: Balance<T>) -> bool;
-    fn refill_budget(budget_type: T::BudgetType, amount: Balance<T>) -> bool;
-    fn set_budget(budget_type: T::BudgetType, amount: Balance<T>);
+
+pub trait BudgetControllerTrait<Balance> {
+    fn get_balance(&self) -> Balance;
+    fn spend_from_budget(&self, amount: Balance) -> bool;
+    fn refill_budget(&self, amount: Balance);
+    fn set_budget(&self, amount: Balance);
 }
 
-pub trait PeriodicRewardBudget<T: Trait>: BudgetController<T> {
-    fn add_recipient(budget_type: T::BudgetType, id: T::BudgetUserId, reward_per_block: Balance<T>);
-    fn get_recipient(budget_type: T::BudgetType, user_id: T::BudgetUserId) -> Option<RewardRecipientOf<T>>;
-    fn remove_recipient(budget_type: T::BudgetType, id: T::BudgetUserId);
-    fn remove_recipient_clear_reward(budget_type: T::BudgetType, id: T::BudgetUserId);
-    fn set_budget_periodic_refill(budget_type: T::BudgetType, period: T::BlockNumber, amount: Balance<T>) -> bool;
-}
-*/
-pub trait BudgetController<BudgetType, Balance, BlockNumber> {
-    fn get_budget(budget_type: BudgetType) -> Option<Budget<BlockNumber, Balance>>;
-    fn has_sufficient_balance(budget_type: BudgetType, amount: Balance) -> bool;
-    fn spend_from_budget(budget_type: BudgetType, amount: Balance) -> bool;
-    fn refill_budget(budget_type: BudgetType, amount: Balance) -> bool;
-    fn set_budget(budget_type: BudgetType, amount: Balance);
+pub trait PeriodicRewardBudgetControllerTrait<BudgetUserId, Balance, BlockNumber, RewardRecipient>:
+    BudgetControllerTrait<Balance>
+{
+    fn add_recipient(&self, id: BudgetUserId, reward_per_block: Balance);
+    fn get_recipient(&self, user_id: BudgetUserId) -> Option<RewardRecipient>;
+    fn remove_recipient(&self, id: BudgetUserId);
+    fn remove_recipient_clear_reward(&self, id: BudgetUserId);
 }
 
-pub trait PeriodicRewardBudgetController<
+pub trait PeriodicRefillingBudgetControllerTrait<Balance, BlockNumber>:
+    BudgetControllerTrait<Balance>
+{
+    fn set_budget_periodic_refill(&self, period: BlockNumber, amount: Balance) -> bool;
+}
+
+pub trait BudgetCollection<BudgetType, Balance, BudgetController: BudgetControllerTrait<Balance>> {
+    fn get_budget(budget_type: BudgetType) -> Option<BudgetController>;
+}
+
+pub trait PeriodicRewardBudgetCollection<
     BudgetType,
     BudgetUserId,
     Balance,
     BlockNumber,
     RewardRecipient,
->: BudgetController<BudgetType, Balance, BlockNumber>
+    BudgetController: PeriodicRewardBudgetControllerTrait<BudgetUserId, Balance, BlockNumber, RewardRecipient>,
+>: BudgetCollection<BudgetType, Balance, BudgetController>
 {
-    fn add_recipient(budget_type: BudgetType, id: BudgetUserId, reward_per_block: Balance);
-    fn get_recipient(budget_type: BudgetType, user_id: BudgetUserId) -> Option<RewardRecipient>;
-    fn remove_recipient(budget_type: BudgetType, id: BudgetUserId);
-    fn remove_recipient_clear_reward(budget_type: BudgetType, id: BudgetUserId);
-    fn set_budget_periodic_refill(
-        budget_type: BudgetType,
-        period: BlockNumber,
-        amount: Balance,
-    ) -> bool;
+    fn get_budget(budget_type: BudgetType) -> Option<BudgetController>;
 }
-/*
-pub type BudgetControllerOf<T> = BudgetController<T>::BudgetType, Balance<T>>;
 
-pub type PeriodicRewardBudgetControllerOf<T> = PeriodicRewardBudgetController<
-    T::BudgetType,
-    T::BudgetUserId,
-    Balance<T>,
-    T::BlockNumber,
-    RewardRecipientOf<T>
->;
-*/
+pub(crate) struct BudgetController<T: Trait> {
+    budget_type: T::BudgetType,
+}
+
+impl<T: Trait> From<(T::BudgetType,)> for BudgetController<T> {
+    fn from(from: (T::BudgetType,)) -> Self {
+        BudgetController {
+            budget_type: from.0,
+        }
+    }
+}
 
 decl_storage! {
     trait Store for Module<T: Trait> as SpendingBudget {
@@ -193,7 +189,6 @@ impl<T: Trait> From<BadOrigin> for Error<T> {
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {
-    //pub struct Module<T: Trait> for enum Call where origin: T::Origin, T::BlockNumber: Into<Balance<T>>, Balance<T>: Into<T::BlockNumber> {
 
         /// Predefined errors
         type Error = Error<T>;
@@ -244,33 +239,83 @@ impl<T: Trait> Module<T> {
     }
 }
 
-impl<T: Trait> BudgetController<T::BudgetType, Balance<T>, T::BlockNumber> for Module<T> {
-    fn get_budget(budget_type: T::BudgetType) -> Option<BudgetOf<T>> {
+impl<
+        T: Trait,
+        BudgetController: BudgetControllerTrait<Balance<T>> + From<<T as Trait>::BudgetType>,
+    > BudgetCollection<T::BudgetType, Balance<T>, BudgetController> for Module<T>
+{
+    fn get_budget(budget_type: T::BudgetType) -> Option<BudgetController> {
         if !Budgets::<T>::contains_key(budget_type) {
             return None;
         }
 
-        Some(Budgets::<T>::get(budget_type))
-    }
+        let budget_controller = budget_type.into();
 
-    fn has_sufficient_balance(budget_type: T::BudgetType, amount: Balance<T>) -> bool {
-        match Self::get_budget(budget_type) {
-            Some(budget) => (amount <= budget.balance),
-            None => false,
+        Some(budget_controller)
+    }
+}
+
+impl<
+        T: Trait,
+        BudgetController: PeriodicRewardBudgetControllerTrait<
+                T::BudgetUserId,
+                Balance<T>,
+                T::BlockNumber,
+                RewardRecipientOf<T>,
+            > + From<<T as Trait>::BudgetType>,
+    >
+    PeriodicRewardBudgetCollection<
+        T::BudgetType,
+        T::BudgetUserId,
+        Balance<T>,
+        T::BlockNumber,
+        RewardRecipientOf<T>,
+        BudgetController,
+    > for Module<T>
+{
+    fn get_budget(budget_type: T::BudgetType) -> Option<BudgetController> {
+        if !Budgets::<T>::contains_key(budget_type) {
+            return None;
         }
+
+        let budget_controller = budget_type.into();
+
+        Some(budget_controller)
+    }
+}
+
+impl<T: Trait> BudgetControllerTrait<Balance<T>> for BudgetController<T> {
+    fn get_balance(&self) -> Balance<T> {
+        if !Budgets::<T>::contains_key(self.budget_type) {
+            return 0.into();
+        }
+
+        Budgets::<T>::get(self.budget_type).balance
     }
 
-    fn spend_from_budget(budget_type: T::BudgetType, amount: Balance<T>) -> bool {
-        if !Self::has_sufficient_balance(budget_type, amount) {
+    fn spend_from_budget(&self, amount: Balance<T>) -> bool {
+        // ensure something is really about to be spent
+        if amount == 0.into() {
             return false;
         }
 
-        let budget = Budgets::<T>::get(budget_type);
+        if !Budgets::<T>::contains_key(self.budget_type) {
+            return false;
+        }
 
+        let budget = Budgets::<T>::get(self.budget_type);
+
+        if budget.balance < amount {
+            return false;
+        }
+
+        let new_balance = budget.balance - amount;
+
+        let budget = Budgets::<T>::get(self.budget_type);
         Budgets::<T>::insert(
-            budget_type,
+            self.budget_type,
             Budget {
-                balance: budget.balance - amount,
+                balance: new_balance,
                 ..budget
             },
         );
@@ -278,40 +323,49 @@ impl<T: Trait> BudgetController<T::BudgetType, Balance<T>, T::BlockNumber> for M
         true
     }
 
-    fn refill_budget(budget_type: T::BudgetType, amount: Balance<T>) -> bool {
-        match Self::get_budget(budget_type) {
-            Some(budget) => {
-                Budgets::<T>::insert(
-                    budget_type,
-                    Budget {
-                        balance: budget.balance + amount,
-                        ..budget
-                    },
-                );
-
-                true
-            }
-            None => false,
-        }
-    }
-
-    fn set_budget(budget_type: T::BudgetType, amount: Balance<T>) {
-        if !Budgets::<T>::contains_key(budget_type) {
-            return Budgets::<T>::insert(
-                budget_type,
+    fn refill_budget(&self, amount: Balance<T>) {
+        if !Budgets::<T>::contains_key(self.budget_type) {
+            Budgets::<T>::insert(
+                self.budget_type,
                 Budget {
                     balance: amount,
                     refill: None,
                 },
             );
+
+            return;
         }
 
-        let budget = Budgets::<T>::get(budget_type);
+        let budget = Budgets::<T>::get(self.budget_type);
 
         Budgets::<T>::insert(
-            budget_type,
+            self.budget_type,
             Budget {
-                balance: amount,
+                balance: budget.balance + amount,
+                ..budget
+            },
+        );
+    }
+
+    fn set_budget(&self, amount: Balance<T>) {
+        if !Budgets::<T>::contains_key(self.budget_type) {
+            Budgets::<T>::insert(
+                self.budget_type,
+                Budget {
+                    balance: amount,
+                    refill: None,
+                },
+            );
+
+            return;
+        }
+
+        let budget = Budgets::<T>::get(self.budget_type);
+
+        Budgets::<T>::insert(
+            self.budget_type,
+            Budget {
+                balance: budget.balance + amount,
                 ..budget
             },
         );
@@ -319,22 +373,17 @@ impl<T: Trait> BudgetController<T::BudgetType, Balance<T>, T::BlockNumber> for M
 }
 
 impl<T: Trait>
-    PeriodicRewardBudgetController<
-        T::BudgetType,
+    PeriodicRewardBudgetControllerTrait<
         T::BudgetUserId,
         Balance<T>,
         T::BlockNumber,
         RewardRecipientOf<T>,
-    > for Module<T>
+    > for BudgetController<T>
 {
-    fn add_recipient(
-        budget_type: T::BudgetType,
-        user_id: T::BudgetUserId,
-        reward_per_block: Balance<T>,
-    ) {
-        if !PeriodicRewardRecipient::<T>::contains_key(budget_type, user_id) {
+    fn add_recipient(&self, user_id: T::BudgetUserId, reward_per_block: Balance<T>) {
+        if !PeriodicRewardRecipient::<T>::contains_key(self.budget_type, user_id) {
             PeriodicRewardRecipient::<T>::insert(
-                budget_type,
+                self.budget_type,
                 user_id,
                 RewardRecipient {
                     last_withdraw_block: <system::Module<T>>::block_number(),
@@ -346,11 +395,11 @@ impl<T: Trait>
             return;
         }
 
-        let recipient = PeriodicRewardRecipient::<T>::get(budget_type, user_id);
+        let recipient = PeriodicRewardRecipient::<T>::get(self.budget_type, user_id);
         let new_unpaid_reward = Calculations::<T>::get_current_reward(&recipient);
 
         PeriodicRewardRecipient::<T>::insert(
-            budget_type,
+            self.budget_type,
             user_id,
             RewardRecipient {
                 last_withdraw_block: <system::Module<T>>::block_number(),
@@ -360,29 +409,26 @@ impl<T: Trait>
         );
     }
 
-    fn get_recipient(
-        budget_type: T::BudgetType,
-        user_id: T::BudgetUserId,
-    ) -> Option<RewardRecipientOf<T>> {
-        if !PeriodicRewardRecipient::<T>::contains_key(budget_type, user_id) {
+    fn get_recipient(&self, user_id: T::BudgetUserId) -> Option<RewardRecipientOf<T>> {
+        if !PeriodicRewardRecipient::<T>::contains_key(self.budget_type, user_id) {
             return None;
         }
 
-        let recipient = PeriodicRewardRecipient::<T>::get(budget_type, user_id);
+        let recipient = PeriodicRewardRecipient::<T>::get(self.budget_type, user_id);
 
         Some(recipient)
     }
 
-    fn remove_recipient(budget_type: T::BudgetType, user_id: T::BudgetUserId) {
-        if !PeriodicRewardRecipient::<T>::contains_key(budget_type, user_id) {
+    fn remove_recipient(&self, user_id: T::BudgetUserId) {
+        if !PeriodicRewardRecipient::<T>::contains_key(self.budget_type, user_id) {
             return;
         }
 
-        let recipient = PeriodicRewardRecipient::<T>::get(budget_type, user_id);
+        let recipient = PeriodicRewardRecipient::<T>::get(self.budget_type, user_id);
         let new_unpaid_reward = Calculations::<T>::get_current_reward(&recipient);
 
         PeriodicRewardRecipient::<T>::insert(
-            budget_type,
+            self.budget_type,
             user_id,
             RewardRecipientOf::<T> {
                 last_withdraw_block: <system::Module<T>>::block_number(),
@@ -392,19 +438,21 @@ impl<T: Trait>
         );
     }
 
-    fn remove_recipient_clear_reward(budget_type: T::BudgetType, user_id: T::BudgetUserId) {
-        PeriodicRewardRecipient::<T>::remove(budget_type, user_id);
+    fn remove_recipient_clear_reward(&self, user_id: T::BudgetUserId) {
+        PeriodicRewardRecipient::<T>::remove(self.budget_type, user_id);
     }
+}
 
-    fn set_budget_periodic_refill(
-        budget_type: T::BudgetType,
-        period: T::BlockNumber,
-        amount: Balance<T>,
-    ) -> bool {
-        let budget = match Self::get_budget(budget_type) {
-            Some(tmp_budget) => tmp_budget,
-            None => return false,
-        };
+impl<T: Trait> PeriodicRefillingBudgetControllerTrait<Balance<T>, T::BlockNumber>
+    for BudgetController<T>
+{
+    fn set_budget_periodic_refill(&self, period: T::BlockNumber, amount: Balance<T>) -> bool {
+        // don't allow periodic refill set for not-well-setup budget
+        if !Budgets::<T>::contains_key(self.budget_type) {
+            return false;
+        }
+
+        let budget = Budgets::<T>::get(self.budget_type);
 
         // ensure refilling budgets count haven't reached maximum yet
         if budget.refill.is_none()
@@ -417,7 +465,7 @@ impl<T: Trait>
         if budget.refill.is_some() && amount == 0.into() {
             // remove budget refill
             Budgets::<T>::insert(
-                budget_type,
+                self.budget_type,
                 Budget {
                     refill: None,
                     ..budget
@@ -426,7 +474,7 @@ impl<T: Trait>
 
             // remove budget from list of refilling budgets
             ActiveBudgetRefills::<T>::mutate(|value| {
-                value.retain(|tmp_budget_type| tmp_budget_type != &budget_type)
+                value.retain(|tmp_budget_type| tmp_budget_type != &self.budget_type)
             });
 
             return true;
@@ -434,12 +482,12 @@ impl<T: Trait>
 
         // add budget to refilling budget list if not present yet
         if budget.refill.is_none() {
-            ActiveBudgetRefills::<T>::mutate(|value| value.push(budget_type));
+            ActiveBudgetRefills::<T>::mutate(|value| value.push(self.budget_type));
         }
 
         // update budget's refill info
         Budgets::<T>::insert(
-            budget_type,
+            self.budget_type,
             Budget {
                 refill: Some(BudgetRefill {
                     period,

@@ -2,7 +2,7 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    BalanceReferendum, CandidateOf, CouncilMemberOf, CouncilMembers, CouncilStage,
+    Balance, BalanceReferendum, CandidateOf, CouncilMemberOf, CouncilMembers, CouncilStage,
     CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate, CouncilStageUpdateOf,
     CurrentAnnouncementCycleId, Error, GenesisConfig, Module, ReferendumConnection, Stage, Trait,
 };
@@ -12,8 +12,8 @@ use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageValue};
 use rand::Rng;
 use referendum::{
-    Balance, CastVote, CurrentCycleId, OptionResult, ReferendumManager, ReferendumStage,
-    ReferendumStageRevealing,
+    Balance as ReferendumBalance, CastVote, CurrentCycleId, OptionResult, ReferendumManager,
+    ReferendumStage, ReferendumStageRevealing,
 };
 use sp_core::H256;
 use sp_io;
@@ -27,6 +27,8 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 
+use crate::spending_budget;
+use crate::spending_budget::{BudgetCollection, PeriodicRewardBudgetCollection};
 use crate::staking_handler::mocks::{Lock1, Lock2, CANDIDATE_BASE_ID, VOTER_BASE_ID};
 
 pub const USER_REGULAR_POWER_VOTES: u64 = 0;
@@ -39,6 +41,10 @@ pub const POWER_VOTE_STRENGTH: u64 = 10;
 //pub const VOTER_CANDIDATE_OFFSET: u64 = 1000;
 
 pub const INVALID_USER_MEMBER: u64 = 9999;
+
+// budgets
+pub const BUDGET_WORKING_TEAM: u64 = 1;
+pub const BUDGET_MEMBER_REWARD: u64 = 2;
 
 /////////////////// Runtime and Instances //////////////////////////////////////
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -69,6 +75,11 @@ impl Trait for Runtime {
 
     type CandidacyLock = Lock1;
     type ElectedMemberLock = Lock2;
+
+    //type WorkingTeamBudget = spending_budget::Module<Self>::get_budget(BUDGET_WORKING_TEAM);
+    //type ElectedMemberRewardBudget = spending_budget::Module<Self>::get_budget(BUDGET_MEMBER_REWARD);
+    //type WorkingTeamBudget = <spending_budget::Module<Self> as BudgetCollection<BudgetType, Balance, BudgetController<Self>>>::get_budget(BUDGET_WORKING_TEAM);
+    //type ElectedMemberRewardBudget = <spending_budget::Module<Self> as PeriodicRewardBudgetCollection<>>::get_budget(BUDGET_MEMBER_REWARD);
 }
 
 /////////////////// Module implementation //////////////////////////////////////
@@ -86,10 +97,15 @@ mod referendum_mod {
     pub use referendum::Instance0;
 }
 
+mod spending_budget_mod {
+    pub use crate::spending_budget::Event;
+}
+
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         event_mod<T>,
         system<T>,
+        spending_budget_mod<T>,
     }
 }
 
@@ -182,7 +198,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
 
     fn caclulate_vote_power(
         account_id: &<Self as system::Trait>::AccountId,
-        stake: &Balance<Self, ReferendumInstance>,
+        stake: &ReferendumBalance<Self, ReferendumInstance>,
     ) -> Self::VotePower {
         let stake: u64 = u64::from(*stake);
         if *account_id == USER_REGULAR_POWER_VOTES {
@@ -193,7 +209,7 @@ impl referendum::Trait<ReferendumInstance> for RuntimeReferendum {
     }
 
     fn can_release_voting_stake(
-        _vote: &CastVote<Self::Hash, Balance<Self, ReferendumInstance>>,
+        _vote: &CastVote<Self::Hash, ReferendumBalance<Self, ReferendumInstance>>,
     ) -> bool {
         // trigger fail when requested to do so
         if !IS_UNSTAKE_ENABLED.with(|value| value.borrow().0) {
@@ -288,6 +304,39 @@ impl Runtime {
 
 parameter_types! {
     pub const ExistentialDeposit: u64 = 0;
+}
+
+/////////////////// Spending budget module /////////////////////////////////////
+
+parameter_types! {
+    pub const MaxRefillingBudgets: u64 = 1;
+}
+
+impl spending_budget::Trait for Runtime {
+    type Event = TestEvent;
+    type BudgetUserId = u64;
+    type Currency = balances::Module<RuntimeReferendum>;
+    type BudgetType = u64;
+    type MaxRefillingBudgets = MaxRefillingBudgets;
+
+    fn pay_reward(
+        budget_type: &Self::BudgetType,
+        target_account_id: &Self::AccountId,
+        amount: &Balance<Self>,
+    ) -> Result<(), ()> {
+        //Self::Currency::transfer(from???, target_account_id, amount, ExistenceRequirement::)
+        Self::Currency::deposit_creating(target_account_id, *amount);
+
+        Ok(())
+    }
+
+    fn is_member_account(_member_id: &Self::BudgetUserId, _account_id: &Self::AccountId) -> bool {
+        true // allow all account_id/member_id combination
+    }
+
+    fn blocks_to_balance(block_number: Self::BlockNumber) -> Balance<Self> {
+        block_number.into()
+    }
 }
 
 /////////////////// Data structures ////////////////////////////////////////////

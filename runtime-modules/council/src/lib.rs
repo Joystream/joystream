@@ -68,7 +68,10 @@ mod spending_budget;
 mod staking_handler;
 mod tests;
 
-use spending_budget::{BudgetController, PeriodicRewardBudgetController, RewardRecipient};
+use spending_budget::{
+    BudgetControllerTrait, PeriodicRefillingBudgetControllerTrait,
+    PeriodicRewardBudgetControllerTrait, RewardRecipient,
+};
 use staking_handler::StakingHandler2;
 
 /////////////////// Data Structures ////////////////////////////////////////////
@@ -199,16 +202,17 @@ pub trait Trait: system::Trait {
     /// Duration of idle period
     type IdlePeriodDuration: Get<Self::BlockNumber>;
 
-    type BudgetController: BudgetController<u64, Balance<Self>, Self::BlockNumber>;
-    type RewardBudgetController: PeriodicRewardBudgetController<
-        u64,
-        Self::CouncilUserId,
-        Balance<Self>,
-        Self::BlockNumber,
-        RewardRecipient<Self::BlockNumber, Balance<Self>>,
-    >;
-
-    type ElectedMemberRewardBudgetId: Get<u64>;
+    /*
+    // TODO: this is mere illustration of how to add more budgets
+    type WorkingTeamBudget: BudgetControllerTrait<Balance<Self>>;
+    ///
+    type ElectedMemberRewardBudget: PeriodicRewardBudgetControllerTrait<
+            Self::CouncilUserId,
+            Balance<Self>,
+            Self::BlockNumber,
+            RewardRecipient<Self::BlockNumber, Balance<Self>>,
+        > + PeriodicRefillingBudgetControllerTrait<Balance<Self>, Self::BlockNumber>;
+    */
 }
 
 /// Trait with functions that MUST be called by the runtime with values received from the referendum module.
