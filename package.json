@@ -20,7 +20,8 @@
     "pioneer/packages/*",
     "utils/api-scripts",
     "content-directory-schemas",
-    "query-node"
+    "query-node",
+    "query-node/generated/*"
   ],
   "resolutions": {
     "@polkadot/api": "1.26.1",
