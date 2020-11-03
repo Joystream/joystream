@@ -214,6 +214,6 @@ jobs:
             if yarn storage-cli upload ./pioneer/packages/apps/public/images/default-thumbnail.png 1 0; then
               break
             else
-              echo "Upload test failed, will retry" && sleep ${WAIT_TIME}
+              echo "Upload test failed, will retry"
             fi
           done
