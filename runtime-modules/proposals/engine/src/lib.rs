@@ -112,7 +112,7 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-use types::{ApprovedProposalData, FinalizationProposalData, MemberId};
+use types::{ApprovedProposalData, MemberId};
 
 pub use types::{
     ApprovedProposalStatus, BalanceOf, FinalizationData, Proposal, ProposalCodeDecoder,
@@ -391,7 +391,7 @@ decl_module! {
 
             // mutation
 
-            Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Canceled);
+            Self::finalize_proposal(proposal_id, proposal, ProposalDecisionStatus::Canceled);
         }
 
         /// Veto a proposal. Must be root.
@@ -409,7 +409,7 @@ decl_module! {
 
             // mutation
 
-            Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Vetoed)
+            Self::finalize_proposal(proposal_id, proposal, ProposalDecisionStatus::Vetoed);
         }
 
         /// Block finalization. Perform voting period check, vote result tally, approved proposals
@@ -565,13 +565,13 @@ impl<T: Trait> Module<T> {
         <Proposals<T>>::iter()
             .filter_map(|(proposal_id, proposal)| {
                 if proposal.status.is_active_proposal() {
-                    return Some(proposal_id);
+                    return Some((proposal_id, proposal));
                 }
 
                 None
             })
-            .for_each(|proposal_id| {
-                Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Rejected)
+            .for_each(|(proposal_id, proposal)| {
+                Self::finalize_proposal(proposal_id, proposal, ProposalDecisionStatus::Rejected);
             });
     }
 
@@ -603,37 +603,6 @@ impl<T: Trait> Module<T> {
     // Wrapper-function over system::block_number()
     fn current_block() -> T::BlockNumber {
         <system::Module<T>>::block_number()
-    }
-
-    // Enumerates through active proposals. Tally Voting results.
-    // Returns proposals with finalization status and id.
-    fn get_finalization_ready_proposals() -> Vec<FinalizationReadyProposal<T>> {
-        // Filter active proposals and gather finalization data.
-        // Skip proposals with unfinished voting.
-        <Proposals<T>>::iter()
-            .filter_map(|(proposal_id, proposal)| {
-                match proposal.status {
-                    ProposalStatus::Active => {
-                        // Calculates votes, takes in account voting period expiration.
-                        // If voting process is in progress, then decision status is None.
-                        let decision_status = proposal.define_proposal_decision_status(
-                            T::TotalVotersCounter::total_voters_count(),
-                            Self::current_block(),
-                        );
-
-                        // Map to FinalizedProposalData if decision for the proposal is made or return None.
-                        decision_status.map(|status| FinalizationProposalData {
-                            proposal_id,
-                            proposal,
-                            status,
-                            finalized_at: Self::current_block(),
-                        })
-                    }
-                    // Skip finalized proposals.
-                    _ => None,
-                }
-            })
-            .collect() // compose output vector
     }
 
     // Executes approved proposal code
@@ -670,13 +639,17 @@ impl<T: Trait> Module<T> {
         Self::remove_proposal_data(&approved_proposal.proposal_id);
     }
 
-    // Computes finalized proposal and executes all side-effects.
-    fn finalize_proposal(proposal_id: T::ProposalId, decision_status: ProposalDecisionStatus) {
-        let proposal = Self::proposals(proposal_id);
-
+    // Computes finalized proposal and executes all side-effects. Returns updated proposal.
+    fn finalize_proposal(
+        proposal_id: T::ProposalId,
+        proposal: ProposalOf<T>,
+        decision_status: ProposalDecisionStatus,
+    ) -> ProposalOf<T> {
         let finalized_proposal =
             Self::compute_finalized_proposal(proposal, decision_status.clone());
-        Self::resolve_proposal(proposal_id, finalized_proposal, decision_status);
+        Self::resolve_proposal(proposal_id, finalized_proposal.clone(), decision_status);
+
+        finalized_proposal
     }
 
     // Performs all side-effect actions on proposal finalization:
@@ -728,6 +701,29 @@ impl<T: Trait> Module<T> {
         finalized_proposal
     }
 
+    // Composes an optional approved proposal data if the proposal is ready for execution -
+    // checks their grace period expiration and exact execution block.
+    // Returns None if it is not ready.
+    fn compose_approved_proposal_data_if_ready_for_execution(
+        proposal_id: T::ProposalId,
+        proposal: ProposalOf<T>,
+    ) -> Option<ApprovedProposal<T>> {
+        if proposal.status.is_pending_execution_proposal() {
+            let now = Self::current_block();
+            if proposal.is_ready_for_execution(now) {
+                if let ProposalStatus::Finalized(finalisation_data) = proposal.status.clone() {
+                    return Some(ApprovedProposalData {
+                        proposal_id,
+                        proposal,
+                        finalisation_status_data: finalisation_data,
+                    });
+                }
+            }
+        }
+
+        None
+    }
+
     // Slashes the stake and perform unstake only in case of existing stake.
     fn slash_and_unstake(staking_account_id: Option<T::AccountId>, slash_balance: BalanceOf<T>) {
         // only if stake exists
@@ -759,32 +755,6 @@ impl<T: Trait> Module<T> {
                 .clone()
                 .unwrap_or_else(BalanceOf::<T>::zero), // stake if set or zero
         }
-    }
-
-    // Enumerates approved proposals and checks their grace period expiration and
-    // exact execution block.
-    fn get_approved_proposal_ready_for_execution() -> Vec<ApprovedProposal<T>> {
-        <Proposals<T>>::iter()
-            .filter_map(|(proposal_id, proposal)| {
-                if proposal.status.is_pending_execution_proposal() {
-                    let now = Self::current_block();
-                    if proposal.is_ready_for_execution(now) {
-                        // this should be true, because it was tested inside is_grace_period_expired()
-                        if let ProposalStatus::Finalized(finalisation_data) =
-                            proposal.status.clone()
-                        {
-                            return Some(ApprovedProposalData {
-                                proposal_id,
-                                proposal,
-                                finalisation_status_data: finalisation_data,
-                            });
-                        }
-                    }
-                }
-
-                None
-            })
-            .collect()
     }
 
     // Increases active proposal counter.
@@ -831,35 +801,43 @@ impl<T: Trait> Module<T> {
     /// Perform voting period check, vote result tally, approved proposals
     /// grace period checks, and proposal execution.
     fn process_proposals() {
-        // 1. Get proposals with known voting results.
-        let finalization_ready_proposals = Self::get_finalization_ready_proposals();
+        // Collect all proposals.
+        let proposals = <Proposals<T>>::iter().collect::<Vec<_>>();
+        let now = Self::current_block();
 
-        // 2. Finalize voting results. Approved proposals with zero grace period will be
-        // transitioned to the PendingExecution status.
-        for proposal_data in finalization_ready_proposals {
-            Self::finalize_proposal(proposal_data.proposal_id, proposal_data.status);
-        }
+        for (proposal_id, proposal) in proposals {
+            // Assume that proposal is finalized by default.
+            let mut finalized_proposal = proposal.clone();
 
-        // 3. Get all ready for execution proposals:
-        //   a) proposals with expired grace period,
-        //   b) just finalized proposals with zero grace period (from step 2).
-        let executable_proposals = Self::get_approved_proposal_ready_for_execution();
+            // Try to determine a decision for an active proposal.
+            if proposal.status.is_active_proposal() {
+                let decision_status = proposal.define_proposal_decision_status(
+                    T::TotalVotersCounter::total_voters_count(),
+                    now,
+                );
 
-        // 4. Execute approved proposals with expired grace period.
-        for approved_proposal in executable_proposals {
-            Self::execute_proposal(approved_proposal);
+                // If decision is calculated for a proposal - finalize it.
+                if let Some(decision_status) = decision_status {
+                    let updated_proposal =
+                        Self::finalize_proposal(proposal_id, proposal, decision_status);
+
+                    // Update finalized proposal with a newly computed value.
+                    finalized_proposal = updated_proposal;
+                }
+            }
+
+            let approved_proposal = Self::compose_approved_proposal_data_if_ready_for_execution(
+                proposal_id,
+                finalized_proposal,
+            );
+
+            // Execute the proposal if it is ready for execution.
+            if let Some(approved_proposal) = approved_proposal {
+                Self::execute_proposal(approved_proposal);
+            }
         }
     }
 }
-
-// Simplification of the 'FinalizationProposalData' type
-type FinalizationReadyProposal<T> = FinalizationProposalData<
-    <T as Trait>::ProposalId,
-    <T as system::Trait>::BlockNumber,
-    MemberId<T>,
-    BalanceOf<T>,
-    <T as system::Trait>::AccountId,
->;
 
 // Simplification of the 'ApprovedProposalData' type
 type ApprovedProposal<T> = ApprovedProposalData<

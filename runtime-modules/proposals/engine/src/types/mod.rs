@@ -381,22 +381,6 @@ pub trait ProposalCodeDecoder<T: system::Trait> {
     ) -> Result<Box<dyn ProposalExecutable>, &'static str>;
 }
 
-/// Data container for the proposal finalization results
-pub(crate) struct FinalizationProposalData<ProposalId, BlockNumber, ProposerId, Balance, AccountId>
-{
-    /// Proposal id
-    pub proposal_id: ProposalId,
-
-    /// Proposal to be finalized
-    pub proposal: Proposal<BlockNumber, ProposerId, Balance, AccountId>,
-
-    /// Proposal finalization status
-    pub status: ProposalDecisionStatus,
-
-    /// Proposal finalization block number
-    pub finalized_at: BlockNumber,
-}
-
 /// Data container for the approved proposal results
 pub(crate) struct ApprovedProposalData<ProposalId, BlockNumber, ProposerId, Balance, AccountId> {
     /// Proposal id.
