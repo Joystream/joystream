@@ -268,6 +268,9 @@ decl_event! {
 
         /// New council was elected and appointed
         NewCouncilNotElected(),
+
+        /// Candidacy stake released
+        StakeRelease(CouncilUserId, AccountId),
     }
 }
 
@@ -372,6 +375,7 @@ decl_module! {
 
         #[weight = 10_000_000]
         pub fn release_candidacy_stake(origin, council_user_id: T::CouncilUserId) -> Result<(), Error<T>> {
+            // ensure action can be started
             let account_id = EnsureChecks::<T>::can_release_candidacy_stake(origin, &council_user_id)?;
 
             //
@@ -380,6 +384,9 @@ decl_module! {
 
             // update state
             Mutations::<T>::release_candidacy_stake(&account_id, &council_user_id);
+
+            // emit event
+            Self::deposit_event(RawEvent::StakeRelease(council_user_id, account_id));
 
             Ok(())
         }
