@@ -55,14 +55,20 @@ class RuntimeApi {
     options = options || {}
 
     const provider = new WsProvider(options.provider_url || 'ws://localhost:9944')
-
+    let attempts = 0
     // Create the API instrance
     while (true) {
+      attempts++
+
+      if (options.retries && attempts > options.retries) {
+        throw new Error('Timeout trying to connect to node')
+      }
+
       try {
         this.api = await ApiPromise.create({ provider, types: types })
         break
       } catch (err) {
-        debug('connecting to node failed, will retry..')
+        debug('Connecting to node failed, will retry..')
       }
       await sleep(5000)
     }
