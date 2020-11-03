@@ -291,7 +291,7 @@ fn create_spending_proposal_common_checks_succeed() {
                     None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::spending_proposal::<Test>(),
+            proposal_parameters: <Test as crate::Trait>::SpendingProposalParameters::get(),
             proposal_details: ProposalDetails::Spending(100, 2),
         };
         proposal_fixture.check_all();

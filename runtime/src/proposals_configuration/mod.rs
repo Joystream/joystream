@@ -25,6 +25,7 @@ parameter_types! {
     pub SetValidatorCountProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.set_validator_count_proposal;
     pub RuntimeUpgradeProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.runtime_upgrade_proposal;
     pub TextProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.text_proposal;
+    pub SpendingProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.spending_proposal;
 }
 
 ///////////
@@ -33,6 +34,7 @@ struct AllProposalsParameters {
     pub set_validator_count_proposal: ProposalParameters<BlockNumber, Balance>,
     pub runtime_upgrade_proposal: ProposalParameters<BlockNumber, Balance>,
     pub text_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub spending_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -73,9 +75,14 @@ fn convert_json_object_to_proposal_parameters(
             defaults::runtime_upgrade_proposal(),
         );
         parameters.text_proposal = create_proposal_parameters_object(
-            json_object,
+            json_object.clone(),
             "text_proposal",
             defaults::text_proposal(),
+        );
+        parameters.spending_proposal = create_proposal_parameters_object(
+            json_object,
+            "spending_proposal",
+            defaults::spending_proposal(),
         );
     }
 
@@ -180,5 +187,6 @@ fn default_parameters() -> AllProposalsParameters {
         set_validator_count_proposal: defaults::set_validator_count_proposal(),
         runtime_upgrade_proposal: defaults::runtime_upgrade_proposal(),
         text_proposal: defaults::text_proposal(),
+        spending_proposal: defaults::spending_proposal(),
     }
 }

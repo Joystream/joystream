@@ -279,6 +279,7 @@ impl crate::Trait for Test {
     type SetValidatorCountProposalParameters = DefaultProposalParameters;
     type RuntimeUpgradeProposalParameters = DefaultProposalParameters;
     type TextProposalParameters = DefaultProposalParameters;
+    type SpendingProposalParameters = DefaultProposalParameters;
 }
 
 impl ProposalEncoder<Test> for () {

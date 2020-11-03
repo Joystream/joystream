@@ -613,6 +613,7 @@ impl proposals_codex::Trait for Runtime {
     type SetValidatorCountProposalParameters = SetValidatorCountProposalParameters;
     type RuntimeUpgradeProposalParameters = RuntimeUpgradeProposalParameters;
     type TextProposalParameters = TextProposalParameters;
+    type SpendingProposalParameters = SpendingProposalParameters;
 }
 
 impl constitution::Trait for Runtime {

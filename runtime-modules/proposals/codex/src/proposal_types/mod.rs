@@ -229,12 +229,6 @@ pub struct ProposalsConfigParameters {
     /// 'Set lead' proposal grace period
     pub set_lead_proposal_grace_period: u32,
 
-    /// 'Spending' proposal voting period
-    pub spending_proposal_voting_period: u32,
-
-    /// 'Spending' proposal grace period
-    pub spending_proposal_grace_period: u32,
-
     /// 'Add working group opening' proposal voting period
     pub add_working_group_opening_proposal_voting_period: u32,
 
@@ -297,8 +291,6 @@ impl Default for ProposalsConfigParameters {
             set_election_parameters_proposal_grace_period: 201_601_u32,
             set_lead_proposal_voting_period: 43200u32,
             set_lead_proposal_grace_period: 0u32,
-            spending_proposal_voting_period: 72000u32,
-            spending_proposal_grace_period: 14400u32,
             add_working_group_opening_proposal_voting_period: 72000u32,
             add_working_group_opening_proposal_grace_period: 0u32,
             begin_review_working_group_leader_applications_proposal_voting_period: 43200u32,
@@ -331,8 +323,6 @@ impl ProposalsConfigParameters {
             set_election_parameters_proposal_grace_period: grace_period,
             set_lead_proposal_voting_period: voting_period,
             set_lead_proposal_grace_period: 0,
-            spending_proposal_voting_period: voting_period,
-            spending_proposal_grace_period: grace_period,
             add_working_group_opening_proposal_voting_period: voting_period,
             add_working_group_opening_proposal_grace_period: 0,
             begin_review_working_group_leader_applications_proposal_voting_period: voting_period,

@@ -43,3 +43,17 @@ pub(crate) fn text_proposal() -> ProposalParameters<BlockNumber, Balance> {
         constitutionality: 1,
     }
 }
+
+// Proposal parameters for the 'Spending' proposal
+pub(crate) fn spending_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72000,
+        grace_period: 14400,
+        approval_quorum_percentage: 60,
+        approval_threshold_percentage: 80,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(25000),
+        constitutionality: 1,
+    }
+}

@@ -11,7 +11,8 @@
     "constitutionality": 8
   },
   "runtime_upgrade_proposal" : {},
-  "text_proposal": {
+  "text_proposal": {},
+  "spending_proposal": {
     "voting_period": 1,
     "grace_period": 2,
     "approval_quorum_percentage": 3,
