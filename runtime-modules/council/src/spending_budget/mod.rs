@@ -19,7 +19,7 @@ use system::ensure_signed;
 pub struct BudgetRefill<BlockNumber, Balance> {
     period: BlockNumber,
     amount: Balance,
-    last_refill: BlockNumber,
+    next_refill: BlockNumber,
 }
 
 /// Generic budget representation.
@@ -56,6 +56,7 @@ pub type Balance<T> =
     <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 pub type BudgetOf<T> = Budget<<T as system::Trait>::BlockNumber, Balance<T>>;
 pub type RewardRecipientOf<T> = RewardRecipient<<T as system::Trait>::BlockNumber, Balance<T>>;
+pub type BudgetRefillOf<T> = BudgetRefill<<T as system::Trait>::BlockNumber, Balance<T>>;
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
@@ -134,9 +135,11 @@ pub trait PeriodicRewardBudgetControllerTrait<BudgetUserId, Balance, BlockNumber
     fn get_recipient(&self, user_id: BudgetUserId) -> Option<RewardRecipient>;
 
     /// Remove the user from the list of periodic reward recipients. If user still has any unpaid reward it remains withdrawable.
+    /// Use it when a user should no longer receive new rewards but can withdraw rewards accumulated up to now.
     fn remove_recipient(&self, id: BudgetUserId);
 
     /// Remove the user from the list of periodic reward recipients. Any unpaid reward is annulled, and the user can't withdraw it.
+    /// Use it when, for example, you want to prevent a malicious user from any reward accumulated so far.
     fn remove_recipient_clear_reward(&self, id: BudgetUserId);
 }
 
@@ -150,6 +153,7 @@ pub trait PeriodicRefillingBudgetControllerTrait<Balance, BlockNumber>:
 
 /// The trait facilitating access to generic budgets.
 pub trait BudgetCollection<BudgetType, Balance, BudgetController: BudgetControllerTrait<Balance>> {
+    /// Get selected budget controller.
     fn get_budget(budget_type: BudgetType) -> Option<BudgetController>;
 }
 
@@ -163,6 +167,7 @@ pub trait PeriodicRewardBudgetCollection<
     BudgetController: PeriodicRewardBudgetControllerTrait<BudgetUserId, Balance, BlockNumber, RewardRecipient>,
 >: BudgetCollection<BudgetType, Balance, BudgetController>
 {
+    /// Get selected budget controller.
     fn get_budget(budget_type: BudgetType) -> Option<BudgetController>;
 }
 
@@ -274,23 +279,16 @@ decl_module! {
 
 impl<T: Trait> Module<T> {
     fn try_progress_stage(now: T::BlockNumber) {
-        // TODO: improve performance by calculating next reward cycle in critical blocks rather than on each block
-
+        // iterate through refilling budgets
         for budget_type in ActiveBudgetRefills::<T>::get() {
             let budget = Budgets::<T>::get(budget_type);
 
+            // deconstruct refill
             if let Some(refill) = &budget.refill {
-                if refill.last_refill + refill.period != now {
-                    continue;
+                // refill budget if it is due time
+                if refill.next_refill == now {
+                    Mutations::<T>::refill_budget(&budget_type, &budget, refill);
                 }
-
-                Budgets::<T>::insert(
-                    budget_type,
-                    Budget {
-                        balance: budget.balance + refill.amount,
-                        ..budget
-                    },
-                );
             }
         }
     }
@@ -301,6 +299,7 @@ impl<
         BudgetController: BudgetControllerTrait<Balance<T>> + From<<T as Trait>::BudgetType>,
     > BudgetCollection<T::BudgetType, Balance<T>, BudgetController> for Module<T>
 {
+    /// Get selected budget controller.
     fn get_budget(budget_type: T::BudgetType) -> Option<BudgetController> {
         // emsire budget exists
         if !Budgets::<T>::contains_key(budget_type) {
@@ -331,6 +330,7 @@ impl<
         BudgetController,
     > for Module<T>
 {
+    /// Get selected budget controller.
     fn get_budget(budget_type: T::BudgetType) -> Option<BudgetController> {
         // emsire budget exists
         if !Budgets::<T>::contains_key(budget_type) {
@@ -443,7 +443,7 @@ impl<T: Trait> BudgetControllerTrait<Balance<T>> for BudgetController<T> {
         Budgets::<T>::insert(
             self.budget_type,
             Budget {
-                balance: budget.balance + amount,
+                balance: new_balance,
                 ..budget
             },
         );
@@ -583,7 +583,7 @@ impl<T: Trait> PeriodicRefillingBudgetControllerTrait<Balance<T>, T::BlockNumber
                 refill: Some(BudgetRefill {
                     period,
                     amount,
-                    last_refill: <system::Module<T>>::block_number(),
+                    next_refill: <system::Module<T>>::block_number() + period,
                 }),
                 ..budget
             },
@@ -670,6 +670,28 @@ impl<T: Trait> Mutations<T> {
         );
 
         Ok(())
+    }
+
+    fn refill_budget(
+        budget_type: &T::BudgetType,
+        budget: &BudgetOf<T>,
+        refill: &BudgetRefillOf<T>,
+    ) {
+        // calculate new balance
+        let new_balance = budget.balance + refill.amount;
+
+        // update budget balance and set next refill block number
+        Budgets::<T>::insert(
+            budget_type,
+            Budget {
+                balance: new_balance,
+                refill: Some(BudgetRefill {
+                    next_refill: <system::Module<T>>::block_number() + refill.period,
+                    ..*refill
+                }),
+                ..*budget
+            },
+        );
     }
 }
 
