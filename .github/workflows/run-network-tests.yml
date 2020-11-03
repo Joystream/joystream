@@ -211,6 +211,9 @@ jobs:
             [ "$i" == "4" ] && exit -1
             echo "Waiting for ipfs name registration"
             sleep ${WAIT_TIME}
-            (yarn storage-cli upload ./pioneer/packages/apps/public/images/default-thumbnail.png 1 0 && break) || \
-              (echo "Upload test failed, will retry" && sleep ${WAIT_TIME} && continue)
+            if yarn storage-cli upload ./pioneer/packages/apps/public/images/default-thumbnail.png 1 0; then
+              break
+            else
+              echo "Upload test failed, will retry" && sleep ${WAIT_TIME}
+            fi
           done
