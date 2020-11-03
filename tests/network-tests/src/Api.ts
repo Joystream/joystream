@@ -2038,8 +2038,8 @@ export class QueryNodeApi extends Api {
 
   public async getChannelbyTitle(channelTitle: string): Promise<ApolloQueryResult<any>> {
     const GET_CHANNEL_BY_TITLE = gql`
-      query($title: String) {
-        channels(title: $title) {
+      query {
+        channels {
           title
           description
           coverPhotoUrl
@@ -2051,6 +2051,6 @@ export class QueryNodeApi extends Api {
       }
     `
 
-    return await this.queryNodeProvider.query({ query: GET_CHANNEL_BY_TITLE, variables: [channelTitle] })
+    return await this.queryNodeProvider.query({ query: GET_CHANNEL_BY_TITLE })
   }
 }
