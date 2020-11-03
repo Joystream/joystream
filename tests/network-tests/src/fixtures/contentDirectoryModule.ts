@@ -23,7 +23,6 @@ export class CreateChannelFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     await this.api.createChannelEntity(this.channelEntity, this.pair)
 
-
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -44,7 +43,6 @@ export class CreateVideoFixture implements Fixture {
   public async runner(expectFailure: boolean): Promise<void> {
     await this.api.createVideoEntity(this.videoEntity, this.pair)
 
-
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')
     }
@@ -57,7 +55,12 @@ export class UpdateChannelFixture implements Fixture {
   private channelUpdateInput: Record<string, any>
   private uniquePropValue: Record<string, any>
 
-  public constructor(api: QueryNodeApi, channelUpdateInput: Record<string, any>, uniquePropValue: Record<string, any>, pair: KeyringPair) {
+  public constructor(
+    api: QueryNodeApi,
+    channelUpdateInput: Record<string, any>,
+    uniquePropValue: Record<string, any>,
+    pair: KeyringPair
+  ) {
     this.api = api
     this.channelUpdateInput = channelUpdateInput
     this.uniquePropValue = uniquePropValue
@@ -66,7 +69,6 @@ export class UpdateChannelFixture implements Fixture {
 
   public async runner(expectFailure: boolean): Promise<void> {
     await this.api.updateChannelEntity(this.channelUpdateInput, this.uniquePropValue, this.pair)
-
 
     if (expectFailure) {
       throw new Error('Successful fixture run while expecting failure')

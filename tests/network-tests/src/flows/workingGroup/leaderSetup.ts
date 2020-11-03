@@ -6,7 +6,11 @@ import { assert } from 'chai'
 import { KeyringPair } from '@polkadot/keyring/types'
 
 // Worker application happy case scenario
-export default async function leaderSetup(api: Api, env: NodeJS.ProcessEnv, group: WorkingGroups): Promise<KeyringPair> {
+export default async function leaderSetup(
+  api: Api,
+  env: NodeJS.ProcessEnv,
+  group: WorkingGroups
+): Promise<KeyringPair> {
   const lead = await api.getGroupLead(group)
 
   assert(!lead, `Lead is already set`)

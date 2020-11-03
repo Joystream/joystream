@@ -6,7 +6,7 @@ import initializeContentDirectory from '../flows/contentDirectory/contentDirecto
 import createChannel from '../flows/contentDirectory/creatingChannel'
 import createVideo from '../flows/contentDirectory/creatingVideo'
 import updateChannel from '../flows/contentDirectory/updatingChannel'
-import { ApolloClient, InMemoryCache } from '@apollo/client';
+import { ApolloClient, InMemoryCache } from '@apollo/client'
 
 const scenario = async () => {
   // Load env variables
@@ -21,10 +21,15 @@ const scenario = async () => {
 
   const queryNodeProvider = new ApolloClient({
     uri: queryNodeUrl,
-    cache: new InMemoryCache()
-  });
+    cache: new InMemoryCache(),
+  })
 
-  const api: QueryNodeApi = await QueryNodeApi.new(provider, queryNodeProvider, env.TREASURY_ACCOUNT_URI || '//Alice', env.SUDO_ACCOUNT_URI || '//Alice')
+  const api: QueryNodeApi = await QueryNodeApi.new(
+    provider,
+    queryNodeProvider,
+    env.TREASURY_ACCOUNT_URI || '//Alice',
+    env.SUDO_ACCOUNT_URI || '//Alice'
+  )
 
   const leadKeyPair = await leaderSetup(api, env, WorkingGroups.ContentDirectoryWorkingGroup)
 
@@ -38,7 +43,7 @@ const scenario = async () => {
   await createVideo(api, leadKeyPair)
 
   await updateChannel(api, leadKeyPair)
-  
+
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!
   api.close()

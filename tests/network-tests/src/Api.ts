@@ -30,12 +30,11 @@ import {
 } from '@joystream/types/hiring'
 import { FillOpeningParameters, ProposalId } from '@joystream/types/proposals'
 import { v4 as uuid } from 'uuid'
-import { InputParser } from 'cd-schemas'
 import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
 import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
-import { initializeContentDir, ExtrinsicsHelper } from 'cd-schemas'
-import { OperationType } from '@joystream/types/content-directory';
-import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client';
+import { initializeContentDir, InputParser, ExtrinsicsHelper } from 'cd-schemas'
+import { OperationType } from '@joystream/types/content-directory'
+import { gql, ApolloClient, ApolloQueryResult, NormalizedCacheObject } from '@apollo/client'
 
 import Debugger from 'debug'
 const debug = Debugger('api')
@@ -1927,75 +1926,82 @@ export class Api {
   }
 
   async sendContentDirectoryTransaction(operations: OperationType[], pair: KeyringPair): Promise<void> {
+    const transaction = this.api.tx.contentDirectory.transaction(
+      { Lead: null }, // We use member with id 0 as actor (in this case we assume this is Alice)
+      operations // We provide parsed operations as second argument
+    )
 
-    const transaction = this.api.tx.contentDirectory
-      .transaction(
-        { Lead: null }, // We use member with id 0 as actor (in this case we assume this is Alice)
-        operations // We provide parsed operations as second argument
-      )
-
-      const txHelper = new ExtrinsicsHelper(this.api)
-      await txHelper.sendAndCheck(pair, [transaction], 'Transaction failed!')
+    const txHelper = new ExtrinsicsHelper(this.api)
+    await txHelper.sendAndCheck(pair, [transaction], 'Transaction failed!')
   }
 
   public async createChannelEntity(channel: ChannelEntity, pair: KeyringPair): Promise<void> {
     // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-  const parser = InputParser.createWithKnownSchemas(
-    this.api,
-    // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
-    [
-      {
-        className: 'Channel',
-        entries: [channel], // We could specify multiple entries here, but in this case we only need one
-      },
-    ]
-  )
-  // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
-  const operations = await parser.getEntityBatchOperations()
-  return await this.sendContentDirectoryTransaction(operations, pair)
+    const parser = InputParser.createWithKnownSchemas(
+      this.api,
+      // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
+      [
+        {
+          className: 'Channel',
+          entries: [channel], // We could specify multiple entries here, but in this case we only need one
+        },
+      ]
+    )
+    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
+    const operations = await parser.getEntityBatchOperations()
+    return await this.sendContentDirectoryTransaction(operations, pair)
   }
 
   public async createVideoEntity(video: VideoEntity, pair: KeyringPair): Promise<void> {
     // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-  const parser = InputParser.createWithKnownSchemas(
-    this.api,
-    // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
-    [
-      {
-        className: 'Video',
-        entries: [video], // We could specify multiple entries here, but in this case we only need one
-      },
-    ]
-  )
-  // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
-  const operations = await parser.getEntityBatchOperations()
-  return await this.sendContentDirectoryTransaction(operations, pair)
+    const parser = InputParser.createWithKnownSchemas(
+      this.api,
+      // The second argument is an array of entity batches, following standard entity batch syntax ({ className, entries }):
+      [
+        {
+          className: 'Video',
+          entries: [video], // We could specify multiple entries here, but in this case we only need one
+        },
+      ]
+    )
+    // We parse the input into CreateEntity and AddSchemaSupportToEntity operations
+    const operations = await parser.getEntityBatchOperations()
+    return await this.sendContentDirectoryTransaction(operations, pair)
   }
 
-  public async updateChannelEntity(channelUpdateInput: Record<string, any>, uniquePropValue: Record<string, any>, pair: KeyringPair): Promise<void> {
+  public async updateChannelEntity(
+    channelUpdateInput: Record<string, any>,
+    uniquePropValue: Record<string, any>,
+    pair: KeyringPair
+  ): Promise<void> {
     // Create the parser with known entity schemas (the ones in content-directory-schemas/inputs)
-  const parser = InputParser.createWithKnownSchemas(this.api)
+    const parser = InputParser.createWithKnownSchemas(this.api)
 
-  // We can reuse InputParser's `findEntityIdByUniqueQuery` method to find entityId of the channel we
-  // created in ./createChannel.ts example (normally we would probably use some other way to do it, ie.: query node)
-  const CHANNEL_ID = await parser.findEntityIdByUniqueQuery(uniquePropValue, 'Channel')// Use getEntityUpdateOperations to parse the update input
-  const updateOperations = await parser.getEntityUpdateOperations(
-    channelUpdateInput,
-    'Channel', // Class name
-    CHANNEL_ID // Id of the entity we want to update
-  )
-  return await this.sendContentDirectoryTransaction(updateOperations, pair)
+    // We can reuse InputParser's `findEntityIdByUniqueQuery` method to find entityId of the channel we
+    // created in ./createChannel.ts example (normally we would probably use some other way to do it, ie.: query node)
+    const CHANNEL_ID = await parser.findEntityIdByUniqueQuery(uniquePropValue, 'Channel') // Use getEntityUpdateOperations to parse the update input
+    const updateOperations = await parser.getEntityUpdateOperations(
+      channelUpdateInput,
+      'Channel', // Class name
+      CHANNEL_ID // Id of the entity we want to update
+    )
+    return await this.sendContentDirectoryTransaction(updateOperations, pair)
   }
 
   public async initializeContentDirectory(leadKeyPair: KeyringPair) {
-    await initializeContentDir(this.api,  leadKeyPair)
+    await initializeContentDir(this.api, leadKeyPair)
   }
 }
 
 export class QueryNodeApi extends Api {
   private readonly queryNodeProvider: ApolloClient<NormalizedCacheObject>
 
-  public static async new(provider: WsProvider, queryNodeProvider: ApolloClient<NormalizedCacheObject>, treasuryAccountUri: string, sudoAccountUri: string): Promise<QueryNodeApi> {
+  public static async new(
+    provider: WsProvider,
+    queryNodeProvider: ApolloClient<NormalizedCacheObject>,
+    treasuryAccountUri: string,
+    sudoAccountUri: string
+  ): Promise<QueryNodeApi> {
     let connectAttempts = 0
     while (true) {
       connectAttempts++
@@ -2020,25 +2026,31 @@ export class QueryNodeApi extends Api {
     }
   }
 
-  constructor(api: ApiPromise, queryNodeProvider: ApolloClient<NormalizedCacheObject>, treasuryAccountUri: string, sudoAccountUri: string) {
+  constructor(
+    api: ApiPromise,
+    queryNodeProvider: ApolloClient<NormalizedCacheObject>,
+    treasuryAccountUri: string,
+    sudoAccountUri: string
+  ) {
     super(api, treasuryAccountUri, sudoAccountUri)
     this.queryNodeProvider = queryNodeProvider
   }
 
-  public async getChannelbyTitle(channel_title: string): Promise<ApolloQueryResult<any>> {
+  public async getChannelbyTitle(channelTitle: string): Promise<ApolloQueryResult<any>> {
     const GET_CHANNEL_BY_TITLE = gql`
-      query getChannelbyTitle($title: String) {
+      query($title: String) {
         channels(title: $title) {
           title
           description
-          language
           coverPhotoUrl
-          avatarPhotoURL
+          avatarPhotoUrl
           isPublic
+          isCurated
+          languageId
         }
       }
-    `;
+    `
 
-    return await this.queryNodeProvider.query({query: GET_CHANNEL_BY_TITLE, variables: [channel_title]})
+    return await this.queryNodeProvider.query({ query: GET_CHANNEL_BY_TITLE, variables: [channelTitle] })
   }
 }
