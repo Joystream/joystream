@@ -7,21 +7,13 @@ import {
   NamedKeyringPair,
   GroupMember,
   GroupOpening,
-  ApiMethodArg,
-  ApiMethodNamedArgs,
   OpeningStatus,
   GroupApplication,
 } from '../Types'
-import { apiModuleByGroup } from '../Api'
-import { CLIError } from '@oclif/errors'
-import fs from 'fs'
-import path from 'path'
 import _ from 'lodash'
 import { ApplicationStageKeys } from '@joystream/types/hiring'
 import chalk from 'chalk'
 import { IConfig } from '@oclif/config'
-
-const DRAFTS_FOLDER = 'opening-drafts'
 
 /**
  * Abstract base class for commands that need to use gates based on user's roles
@@ -135,51 +127,6 @@ export default abstract class WorkingGroupsCommandBase extends RolesCommandBase 
     return acceptedApplications
   }
 
-  async promptForNewOpeningDraftName() {
-    let draftName = ''
-    let fileExists = false
-    let overrideConfirmed = false
-
-    do {
-      draftName = await this.simplePrompt({
-        type: 'input',
-        message: 'Provide the draft name',
-        validate: (val) => (typeof val === 'string' && val.length >= 1) || 'Draft name is required!',
-      })
-
-      fileExists = fs.existsSync(this.getOpeningDraftPath(draftName))
-      if (fileExists) {
-        overrideConfirmed = await this.simplePrompt({
-          type: 'confirm',
-          message: 'Such draft already exists. Do you wish to override it?',
-          default: false,
-        })
-      }
-    } while (fileExists && !overrideConfirmed)
-
-    return draftName
-  }
-
-  async promptForOpeningDraft() {
-    let draftFiles: string[] = []
-    try {
-      draftFiles = fs.readdirSync(this.getOpeingDraftsPath())
-    } catch (e) {
-      throw this.createDataReadError(DRAFTS_FOLDER)
-    }
-    if (!draftFiles.length) {
-      throw new CLIError('No drafts available!', { exit: ExitCodes.FileNotFound })
-    }
-    const draftNames = draftFiles.map((fileName) => _.startCase(fileName.replace('.json', '')))
-    const selectedDraftName = await this.simplePrompt({
-      message: 'Select a draft',
-      type: 'list',
-      choices: draftNames,
-    })
-
-    return selectedDraftName
-  }
-
   async getOpeningForLeadAction(id: number, requiredStatus?: OpeningStatus): Promise<GroupOpening> {
     const opening = await this.getApi().groupOpening(this.group, id)
 
@@ -241,48 +188,8 @@ export default abstract class WorkingGroupsCommandBase extends RolesCommandBase 
     return (await this.getWorkerForLeadAction(id, true)) as GroupMember & Required<Pick<GroupMember, 'stake'>>
   }
 
-  loadOpeningDraftParams(draftName: string): ApiMethodNamedArgs {
-    const draftFilePath = this.getOpeningDraftPath(draftName)
-    const params = this.extrinsicArgsFromDraft(apiModuleByGroup[this.group], 'addOpening', draftFilePath)
-
-    return params
-  }
-
-  getOpeingDraftsPath() {
-    return path.join(this.getAppDataPath(), DRAFTS_FOLDER)
-  }
-
-  getOpeningDraftPath(draftName: string) {
-    return path.join(this.getOpeingDraftsPath(), _.snakeCase(draftName) + '.json')
-  }
-
-  saveOpeningDraft(draftName: string, params: ApiMethodArg[]) {
-    const paramsJson = JSON.stringify(
-      params.map((p) => p.toJSON()),
-      null,
-      2
-    )
-
-    try {
-      fs.writeFileSync(this.getOpeningDraftPath(draftName), paramsJson)
-    } catch (e) {
-      throw this.createDataWriteError(DRAFTS_FOLDER)
-    }
-  }
-
-  private initOpeningDraftsDir(): void {
-    if (!fs.existsSync(this.getOpeingDraftsPath())) {
-      fs.mkdirSync(this.getOpeingDraftsPath())
-    }
-  }
-
   async init() {
     await super.init()
-    try {
-      this.initOpeningDraftsDir()
-    } catch (e) {
-      throw this.createDataDirInitError()
-    }
     const { flags } = this.parse(this.constructor as typeof WorkingGroupsCommandBase)
     if (flags.group) {
       this.group = flags.group

@@ -2,15 +2,14 @@ import ExitCodes from '../ExitCodes'
 import { CLIError } from '@oclif/errors'
 import StateAwareCommandBase from './StateAwareCommandBase'
 import Api from '../Api'
-import { getTypeDef, Option, Tuple, Bytes, TypeRegistry } from '@polkadot/types'
-import { Registry, Codec, CodecArg, TypeDef, TypeDefInfo, Constructor } from '@polkadot/types/types'
+import { getTypeDef, Option, Tuple, TypeRegistry } from '@polkadot/types'
+import { Registry, Codec, CodecArg, TypeDef, TypeDefInfo } from '@polkadot/types/types'
 
 import { Vec, Struct, Enum } from '@polkadot/types/codec'
 import { ApiPromise, WsProvider } from '@polkadot/api'
 import { KeyringPair } from '@polkadot/keyring/types'
 import chalk from 'chalk'
 import { InterfaceTypes } from '@polkadot/types/types/registry'
-import ajv from 'ajv'
 import { ApiMethodArg, ApiMethodNamedArgs, ApiParamsOptions, ApiParamOptions } from '../Types'
 import { createParamOptions } from '../helpers/promptOptions'
 import { SubmittableExtrinsic } from '@polkadot/api/types'
@@ -18,7 +17,7 @@ import { DistinctQuestion } from 'inquirer'
 import { BOOL_PROMPT_OPTIONS } from '../helpers/prompting'
 import { DispatchError } from '@polkadot/types/interfaces/system'
 
-class ExtrinsicFailedError extends Error {}
+export class ExtrinsicFailedError extends Error {}
 
 /**
  * Abstract base class for commands that require access to the API.
@@ -308,16 +307,6 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
       return paramOptions.value.default
     }
 
-    if (paramOptions?.jsonSchema) {
-      const { struct, schemaValidator } = paramOptions.jsonSchema
-      return await this.promptForJsonBytes(
-        struct,
-        typeDef.name,
-        paramOptions.value?.default as Bytes | undefined,
-        schemaValidator
-      )
-    }
-
     if (rawTypeDef.info === TypeDefInfo.Option) {
       return await this.promptForOption(typeDef, paramOptions)
     } else if (rawTypeDef.info === TypeDefInfo.Tuple) {
@@ -336,49 +325,6 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
   // More typesafe version
   async promptForType(type: keyof InterfaceTypes, options?: ApiParamOptions) {
     return await this.promptForParam(type, options)
-  }
-
-  async promptForJsonBytes(
-    jsonStruct: Constructor<Struct>,
-    argName?: string,
-    defaultValue?: Bytes,
-    schemaValidator?: ajv.ValidateFunction
-  ) {
-    const JsonStructObject = jsonStruct
-    const rawType = new JsonStructObject(this.getTypesRegistry()).toRawType()
-    const typeDef = getTypeDef(rawType)
-
-    const defaultStruct =
-      defaultValue &&
-      new JsonStructObject(
-        this.getTypesRegistry(),
-        JSON.parse(Buffer.from(defaultValue.toHex().replace('0x', ''), 'hex').toString())
-      )
-
-    if (argName) {
-      typeDef.name = argName
-    }
-
-    let isValid = true
-    let jsonText: string
-    do {
-      const structVal = await this.promptForStruct(typeDef, createParamOptions(typeDef.name, defaultStruct))
-      jsonText = JSON.stringify(structVal.toJSON())
-      if (schemaValidator) {
-        isValid = Boolean(schemaValidator(JSON.parse(jsonText)))
-        if (!isValid) {
-          this.log('\n')
-          this.warn(
-            'Schema validation failed with:\n' +
-              schemaValidator.errors?.map((e) => chalk.red(`${chalk.bold(e.dataPath)}: ${e.message}`)).join('\n') +
-              '\nTry again...'
-          )
-          this.log('\n')
-        }
-      }
-    } while (!isValid)
-
-    return this.createType('Bytes', '0x' + Buffer.from(jsonText, 'ascii').toString('hex'))
   }
 
   async promptForExtrinsicParams(
@@ -454,13 +400,15 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     account: KeyringPair,
     tx: SubmittableExtrinsic<'promise'>,
     warnOnly = false // If specified - only warning will be displayed in case of failure (instead of error beeing thrown)
-  ): Promise<void> {
+  ): Promise<boolean> {
     try {
       await this.sendExtrinsic(account, tx)
       this.log(chalk.green(`Extrinsic successful!`))
+      return true
     } catch (e) {
       if (e instanceof ExtrinsicFailedError && warnOnly) {
         this.warn(`Extrinsic failed! ${e.message}`)
+        return false
       } else if (e instanceof ExtrinsicFailedError) {
         throw new CLIError(`Extrinsic failed! ${e.message}`, { exit: ExitCodes.ApiError })
       } else {
@@ -475,10 +423,10 @@ export default abstract class ApiCommandBase extends StateAwareCommandBase {
     method: string,
     params: CodecArg[],
     warnOnly = false
-  ): Promise<void> {
+  ): Promise<boolean> {
     this.log(chalk.white(`\nSending ${module}.${method} extrinsic...`))
     const tx = await this.getOriginalApi().tx[module][method](...params)
-    await this.sendAndFollowTx(account, tx, warnOnly)
+    return await this.sendAndFollowTx(account, tx, warnOnly)
   }
 
   async buildAndSendExtrinsic(
