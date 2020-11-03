@@ -131,7 +131,7 @@ use frame_support::sp_std::marker::PhantomData;
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, print, Parameter, StorageDoubleMap,
+    decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
 };
 use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
@@ -670,50 +670,62 @@ impl<T: Trait> Module<T> {
         Self::remove_proposal_data(&approved_proposal.proposal_id);
     }
 
-    // Performs all actions on proposal finalization:
+    // Computes finalized proposal and executes all side-effects.
+    fn finalize_proposal(proposal_id: T::ProposalId, decision_status: ProposalDecisionStatus) {
+        let proposal = Self::proposals(proposal_id);
+
+        let finalized_proposal =
+            Self::compute_finalized_proposal(proposal, decision_status.clone());
+        Self::resolve_proposal(proposal_id, finalized_proposal, decision_status);
+    }
+
+    // Performs all side-effect actions on proposal finalization:
+    // - slash and unstake proposal stake if stake exists
+    // - fire an event
+    // - update or delete proposal state
+    // It prints an error message in case of an attempt to finalize the non-active proposal.
+    fn resolve_proposal(
+        proposal_id: T::ProposalId,
+        proposal: ProposalOf<T>,
+        decision_status: ProposalDecisionStatus,
+    ) {
+        // deal with stakes if necessary
+        if decision_status
+            != ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingConstitutionality)
+        {
+            let slash_balance =
+                Self::calculate_slash_balance(&decision_status, &proposal.parameters);
+            Self::slash_and_unstake(proposal.staking_account_id.clone(), slash_balance);
+        }
+
+        // update approved proposal or remove otherwise
+        if !matches!(decision_status, ProposalDecisionStatus::Approved(..)) {
+            Self::remove_proposal_data(&proposal_id);
+        } else {
+            <Proposals<T>>::insert(proposal_id, proposal.clone());
+        }
+
+        // fire the event
+        Self::deposit_event(RawEvent::ProposalStatusUpdated(
+            proposal_id,
+            proposal.status,
+        ));
+    }
+
+    // Computes a finalilzed proposal:
     // - update proposal status fields (status, finalized_at)
     // - increment constitutionality level of the proposal
-    // - slash and unstake proposal stake if stake exists
-    // - decrease active proposal counter
-    // - fire an event
-    // It prints an error message in case of an attempt to finalize the non-active proposal.
-    fn finalize_proposal(proposal_id: T::ProposalId, decision_status: ProposalDecisionStatus) {
-        let mut proposal = Self::proposals(proposal_id);
+    fn compute_finalized_proposal(
+        proposal: ProposalOf<T>,
+        decision_status: ProposalDecisionStatus,
+    ) -> ProposalOf<T> {
+        let now = Self::current_block();
 
-        if proposal.status.is_active_or_pending_execution() {
-            // deal with stakes if necessary
-            if decision_status
-                != ProposalDecisionStatus::Approved(
-                    ApprovedProposalStatus::PendingConstitutionality,
-                )
-            {
-                let slash_balance =
-                    Self::calculate_slash_balance(&decision_status, &proposal.parameters);
-                Self::slash_and_unstake(proposal.staking_account_id.clone(), slash_balance);
-            }
+        let mut finalized_proposal = proposal;
+        finalized_proposal.status = ProposalStatus::finalized(decision_status, now);
+        finalized_proposal.increase_constitutionality_level();
 
-            // create finalized proposal status
-            let now = Self::current_block();
-            let new_proposal_status = ProposalStatus::finalized(decision_status.clone(), now);
-
-            // update approved proposal or remove otherwise
-            if !matches!(decision_status, ProposalDecisionStatus::Approved(..)) {
-                Self::remove_proposal_data(&proposal_id);
-            } else {
-                proposal.status = new_proposal_status.clone();
-                proposal.increase_constitutionality_level();
-
-                <Proposals<T>>::insert(proposal_id, proposal);
-            }
-
-            // fire the event
-            Self::deposit_event(RawEvent::ProposalStatusUpdated(
-                proposal_id,
-                new_proposal_status,
-            ));
-        } else {
-            print("Broken invariant: proposal cannot be non-active during the finalisation");
-        }
+        finalized_proposal
     }
 
     // Slashes the stake and perform unstake only in case of existing stake.
