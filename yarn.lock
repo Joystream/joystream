@@ -1396,20 +1396,22 @@
     typeorm-model-generator "^0.4.2"
     warthog "https://github.com/metmirr/warthog/releases/download/v2.20.0/warthog-v2.20.0.tgz"
 
-"@dzlzv/hydra-indexer-lib@^0.0.18-legacy.1.26.1":
-  version "0.0.18-legacy.1.26.1"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-indexer-lib/-/hydra-indexer-lib-0.0.18-legacy.1.26.1.tgz#11ccb02f24c96081f152ae5aa49b792884fb597f"
-  integrity sha512-Z2IpY8i785u4wx0Q/dqH8Ub0r3F5NV3H/1sPPsxYNbGo5KstUeguKrQbZk56t/KF7YBt6bEPlexmmEVH7gjksg==
+"@dzlzv/hydra-indexer-lib@0.0.19-legacy.1.26.1", "@dzlzv/hydra-indexer-lib@^0.0.18-legacy.1.26.1":
+  version "0.0.19-legacy.1.26.1"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-indexer-lib/-/hydra-indexer-lib-0.0.19-legacy.1.26.1.tgz#346b564845b2014f7a4d9b3976c03e30da8dd309"
+  integrity sha512-4pwaSDRIo/1MqxjfSotjv91fkIj/bfZcZx5nqjB9gRT85X28b3WqkqTFrzlGsGGbvUFWAx4WIeQKnY1yrpX89Q==
   dependencies:
     "@polkadot/api" "^1.26.1"
     "@types/ioredis" "^4.17.4"
     "@types/lodash" "^4.14.161"
     "@types/shortid" "^0.0.29"
     debug "^4.1.1"
+    express "^4.17.1"
     graphql "15"
     graphql-request "^3.1.0"
     ioredis "^4.17.3"
     lodash "^4.17.20"
+    prom-client "^12.0.0"
     reflect-metadata "^0.1.13"
     shortid "^2.2.15"
     typedi "^0.8.0"
@@ -7740,6 +7742,11 @@ bindings@^1.2.1, bindings@^1.4.0, bindings@^1.5.0:
   integrity sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==
   dependencies:
     file-uri-to-path "1.0.0"
+
+bintrees@1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/bintrees/-/bintrees-1.0.1.tgz#0e655c9b9c2435eaab68bf4027226d2b55a34524"
+  integrity sha1-DmVcm5wkNeqraL9AJyJtK1WjRSQ=
 
 bip39@^3.0.2:
   version "3.0.2"
@@ -23177,6 +23184,13 @@ progress@^2.0.0, progress@^2.0.3:
   resolved "https://registry.yarnpkg.com/progress/-/progress-2.0.3.tgz#7e8cf8d8f5b8f239c1bc68beb4eb78567d572ef8"
   integrity sha512-7PiHtLll5LdnKIMw100I+8xJXR5gW2QwWYkT6iJva0bXitZKa/XMrSbdmg3r2Xnaidz9Qumd0VPaMrZlF9V9sA==
 
+prom-client@^12.0.0:
+  version "12.0.0"
+  resolved "https://registry.yarnpkg.com/prom-client/-/prom-client-12.0.0.tgz#9689379b19bd3f6ab88a9866124db9da3d76c6ed"
+  integrity sha512-JbzzHnw0VDwCvoqf8y1WDtq4wSBAbthMB1pcVI/0lzdqHGJI3KBJDXle70XK+c7Iv93Gihqo0a5LlOn+g8+DrQ==
+  dependencies:
+    tdigest "^0.1.1"
+
 promise-inflight@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/promise-inflight/-/promise-inflight-1.0.1.tgz#98472870bf228132fcbdd868129bad12c3c029e3"
@@ -27071,6 +27085,13 @@ tarn@^1.1.5:
   version "1.1.5"
   resolved "https://registry.yarnpkg.com/tarn/-/tarn-1.1.5.tgz#7be88622e951738b9fa3fb77477309242cdddc2d"
   integrity sha512-PMtJ3HCLAZeedWjJPgGnCvcphbCOMbtZpjKgLq3qM5Qq9aQud+XHrL0WlrlgnTyS8U+jrjGbEXprFcQrxPy52g==
+
+tdigest@^0.1.1:
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/tdigest/-/tdigest-0.1.1.tgz#2e3cb2c39ea449e55d1e6cd91117accca4588021"
+  integrity sha1-Ljyyw56kSeVdHmzZEReszKRYgCE=
+  dependencies:
+    bintrees "1.0.1"
 
 tedious@^6.6.2:
   version "6.7.0"
