@@ -1,20 +1,5 @@
 use crate::{BalanceOf, Module, ProposalParameters};
 
-// Proposal parameters for the 'Add working group leader' proposal
-pub(crate) fn add_working_group_leader_opening_proposal<T: crate::Trait>(
-) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {
-    ProposalParameters {
-        voting_period: <Module<T>>::add_working_group_opening_proposal_voting_period(),
-        grace_period: <Module<T>>::add_working_group_opening_proposal_grace_period(),
-        approval_quorum_percentage: 60,
-        approval_threshold_percentage: 80,
-        slashing_quorum_percentage: 60,
-        slashing_threshold_percentage: 80,
-        required_stake: Some(<BalanceOf<T>>::from(100_000_u32)),
-        constitutionality: 1,
-    }
-}
-
 // Proposal parameters for the 'Begin review working group leader applications' proposal
 pub(crate) fn begin_review_working_group_leader_applications_proposal<T: crate::Trait>(
 ) -> ProposalParameters<T::BlockNumber, BalanceOf<T>> {

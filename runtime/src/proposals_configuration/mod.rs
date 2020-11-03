@@ -26,6 +26,7 @@ parameter_types! {
     pub RuntimeUpgradeProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.runtime_upgrade_proposal;
     pub TextProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.text_proposal;
     pub SpendingProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.spending_proposal;
+    pub AddWorkingGroupOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.add_working_group_opening_proposal;
 }
 
 ///////////
@@ -35,6 +36,7 @@ struct AllProposalsParameters {
     pub runtime_upgrade_proposal: ProposalParameters<BlockNumber, Balance>,
     pub text_proposal: ProposalParameters<BlockNumber, Balance>,
     pub spending_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub add_working_group_opening_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -80,9 +82,14 @@ fn convert_json_object_to_proposal_parameters(
             defaults::text_proposal(),
         );
         parameters.spending_proposal = create_proposal_parameters_object(
-            json_object,
+            json_object.clone(),
             "spending_proposal",
             defaults::spending_proposal(),
+        );
+        parameters.add_working_group_opening_proposal = create_proposal_parameters_object(
+            json_object,
+            "add_working_group_opening_proposal",
+            defaults::add_working_group_opening_proposal(),
         );
     }
 
@@ -188,5 +195,6 @@ fn default_parameters() -> AllProposalsParameters {
         runtime_upgrade_proposal: defaults::runtime_upgrade_proposal(),
         text_proposal: defaults::text_proposal(),
         spending_proposal: defaults::spending_proposal(),
+        add_working_group_opening_proposal: defaults::add_working_group_opening_proposal(),
     }
 }

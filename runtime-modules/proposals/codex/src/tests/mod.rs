@@ -465,10 +465,11 @@ fn run_create_add_working_group_leader_opening_proposal_common_checks_succeed(
                     None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::add_working_group_leader_opening_proposal::<
-                Test,
-            >(),
-            proposal_details: ProposalDetails::AddWorkingGroupLeaderOpening(add_opening_parameters.clone()),
+            proposal_parameters:
+                <Test as crate::Trait>::AddWorkingGroupOpeningProposalParameters::get(),
+            proposal_details: ProposalDetails::AddWorkingGroupLeaderOpening(
+                add_opening_parameters.clone(),
+            ),
         };
         proposal_fixture.check_all();
     });
