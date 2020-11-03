@@ -1396,7 +1396,7 @@
     typeorm-model-generator "^0.4.2"
     warthog "https://github.com/metmirr/warthog/releases/download/v2.20.0/warthog-v2.20.0.tgz"
 
-"@dzlzv/hydra-indexer-lib@0.0.19-legacy.1.26.1", "@dzlzv/hydra-indexer-lib@^0.0.18-legacy.1.26.1":
+"@dzlzv/hydra-indexer-lib@0.0.19-legacy.1.26.1", "@dzlzv/hydra-indexer-lib@^0.0.19-legacy.1.26.1":
   version "0.0.19-legacy.1.26.1"
   resolved "https://registry.yarnpkg.com/@dzlzv/hydra-indexer-lib/-/hydra-indexer-lib-0.0.19-legacy.1.26.1.tgz#346b564845b2014f7a4d9b3976c03e30da8dd309"
   integrity sha512-4pwaSDRIo/1MqxjfSotjv91fkIj/bfZcZx5nqjB9gRT85X28b3WqkqTFrzlGsGGbvUFWAx4WIeQKnY1yrpX89Q==
