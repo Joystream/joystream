@@ -104,7 +104,7 @@ const commands = {
 
 // Entry point.
 export async function main() {
-  const api = await RuntimeApi.create()
+  const api = await RuntimeApi.create({ retries: 3 })
 
   // Simple CLI commands
   const command = cli.input[0]

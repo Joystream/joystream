@@ -120,7 +120,7 @@ export default class UploadVideoCommand extends ContentDirectoryCommandBase {
       this.error('No bootstrap endpoints available', { exit: ExitCodes.ApiError })
     }
     this.log('Bootstrap endpoint:', bootstrapEndpoint)
-    const discoveryEndpoint = new URL(`/discover/v0/${storageProviderId}`, bootstrapEndpoint).toString()
+    const discoveryEndpoint = new URL(`discover/v0/${storageProviderId}`, bootstrapEndpoint).toString()
     try {
       const data = (await axios.get(discoveryEndpoint)).data
       return data
@@ -135,7 +135,7 @@ export default class UploadVideoCommand extends ContentDirectoryCommandBase {
     if (typeof data === 'object' && data !== null && data.serialized) {
       const unserialized = JSON.parse(data.serialized)
       if (unserialized.asset && unserialized.asset.endpoint && typeof unserialized.asset.endpoint === 'string') {
-        return new URL(`/asset/v0/${contentId.encode()}`, unserialized.asset.endpoint).toString()
+        return new URL(`asset/v0/${contentId.encode()}`, unserialized.asset.endpoint).toString()
       }
     }
     this.error(`Unexpected discovery data: ${JSON.stringify(data)}`)

@@ -17,7 +17,11 @@ trap cleanup EXIT
 export WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944/
 
 # Only run codegen if no generated files found
-[ ! -d "generated/" ] && yarn codegen:all
+[ ! -d "generated/" ] && yarn build
+
+# Make sure typeorm is available.. it get removed again when yarn is run again
+# typeorm commandline is used by db:migrate step below.
+ln -s ../../../../../node_modules/typeorm/cli.js generated/graphql-server/node_modules/.bin/typeorm || :
 
 yarn db:up
 yarn db:migrate

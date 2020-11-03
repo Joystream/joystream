@@ -205,8 +205,17 @@ jobs:
         run: docker-compose --file docker-compose-with-storage.yml up -d
       - name: Add development storage node and initialize content directory
         run: DEBUG=* yarn storage-cli dev-init
-      - name: Wait for storage-node to publish identity
-        run: sleep 90
-        # Better would be poll `http://localhost:3001/discover/v0/1` until we get 200 Response
-      - name: Upload a file
-        run: DEBUG=joystream:* yarn storage-cli upload ./pioneer/packages/apps/public/images/default-thumbnail.png 1 0
+      - name: Try uploading
+        run: |
+          WAIT_TIME=90
+          export DEBUG=joystream:*
+          for i in {1..4}; do
+            [ "$i" == "4" ] && exit -1
+            echo "Waiting for ipfs name registration"
+            sleep ${WAIT_TIME}
+            if yarn storage-cli upload ./pioneer/packages/apps/public/images/default-thumbnail.png 1 0; then
+              break
+            else
+              echo "Upload test failed, will retry"
+            fi
+          done
