@@ -530,9 +530,7 @@ fn run_create_begin_review_working_group_leader_applications_proposal_common_che
  					None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::begin_review_working_group_leader_applications_proposal::<
-                Test,
-            >(),
+            proposal_parameters: <Test as crate::Trait>::BeginReviewWorkingGroupApplicationsProposalParameters::get(),
             proposal_details: ProposalDetails::BeginReviewWorkingGroupLeaderApplications(opening_id,
                 working_group),
         };

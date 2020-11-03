@@ -281,6 +281,7 @@ impl crate::Trait for Test {
     type TextProposalParameters = DefaultProposalParameters;
     type SpendingProposalParameters = DefaultProposalParameters;
     type AddWorkingGroupOpeningProposalParameters = DefaultProposalParameters;
+    type BeginReviewWorkingGroupApplicationsProposalParameters = DefaultProposalParameters;
 }
 
 impl ProposalEncoder<Test> for () {

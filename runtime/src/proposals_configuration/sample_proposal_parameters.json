@@ -13,7 +13,8 @@
   "runtime_upgrade_proposal" : {},
   "text_proposal": {},
   "spending_proposal": {},
-  "add_working_group_opening_proposal": {
+  "add_working_group_opening_proposal": {},
+  "begin_review_working_group_applications_proposal": {
     "voting_period": 1,
     "grace_period": 2,
     "approval_quorum_percentage": 3,

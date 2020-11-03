@@ -27,6 +27,7 @@ parameter_types! {
     pub TextProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.text_proposal;
     pub SpendingProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.spending_proposal;
     pub AddWorkingGroupOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.add_working_group_opening_proposal;
+    pub BeginReviewWorkingGroupApplicationsProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.begin_review_working_group_applications_proposal;
 }
 
 ///////////
@@ -37,6 +38,7 @@ struct AllProposalsParameters {
     pub text_proposal: ProposalParameters<BlockNumber, Balance>,
     pub spending_proposal: ProposalParameters<BlockNumber, Balance>,
     pub add_working_group_opening_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub begin_review_working_group_applications_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -87,10 +89,16 @@ fn convert_json_object_to_proposal_parameters(
             defaults::spending_proposal(),
         );
         parameters.add_working_group_opening_proposal = create_proposal_parameters_object(
-            json_object,
+            json_object.clone(),
             "add_working_group_opening_proposal",
             defaults::add_working_group_opening_proposal(),
         );
+        parameters.begin_review_working_group_applications_proposal =
+            create_proposal_parameters_object(
+                json_object,
+                "begin_review_working_group_applications_proposal",
+                defaults::begin_review_working_group_applications_proposal(),
+            );
     }
 
     parameters
@@ -196,5 +204,7 @@ fn default_parameters() -> AllProposalsParameters {
         text_proposal: defaults::text_proposal(),
         spending_proposal: defaults::spending_proposal(),
         add_working_group_opening_proposal: defaults::add_working_group_opening_proposal(),
+        begin_review_working_group_applications_proposal:
+            defaults::begin_review_working_group_applications_proposal(),
     }
 }

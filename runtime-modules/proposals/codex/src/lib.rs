@@ -150,6 +150,11 @@ pub trait Trait:
     type AddWorkingGroupOpeningProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
+
+    /// 'Begin review working group applications' proposal parameters
+    type BeginReviewWorkingGroupApplicationsProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
@@ -239,12 +244,6 @@ decl_storage! {
         /// Map proposal id to proposal details
         pub ProposalDetailsByProposalId get(fn proposal_details_by_proposal_id):
             map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
-
-        /// Voting period for the 'begin review working group leader applications' proposal
-        pub BeginReviewWorkingGroupLeaderApplicationsProposalVotingPeriod get(fn begin_review_working_group_leader_applications_proposal_voting_period) config(): T::BlockNumber;
-
-        /// Grace period for the 'begin review working group leader applications' proposal
-        pub BeginReviewWorkingGroupLeaderApplicationsProposalGracePeriod get(fn begin_review_working_group_leader_applications_proposal_grace_period) config(): T::BlockNumber;
 
         /// Voting period for the 'fill working group leader opening' proposal
         pub FillWorkingGroupLeaderOpeningProposalVotingPeriod get(fn fill_working_group_leader_opening_proposal_voting_period) config(): T::BlockNumber;
@@ -508,7 +507,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::begin_review_working_group_leader_applications_proposal::<T>(),
+                proposal_parameters: T::BeginReviewWorkingGroupApplicationsProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
