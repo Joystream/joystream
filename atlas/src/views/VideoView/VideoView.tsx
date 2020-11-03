@@ -86,7 +86,7 @@ const VideoView: React.FC<RouteComponentProps> = () => {
         </DescriptionContainer>
         <MoreVideosContainer>
           <MoreVideosHeader>More from {channel.handle}</MoreVideosHeader>
-          <VideoGrid videos={channel.videos} />
+          <VideoGrid videos={channel.videos} showChannel={false} />
         </MoreVideosContainer>
       </InfoContainer>
     </Container>
