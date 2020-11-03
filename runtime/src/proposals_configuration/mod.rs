@@ -30,6 +30,7 @@ parameter_types! {
     pub BeginReviewWorkingGroupApplicationsProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.begin_review_working_group_applications_proposal;
     pub FillWorkingGroupOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.fill_working_group_opening_proposal;
     pub SetWorkingGroupMintCapacityProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.set_working_group_mint_capacity_proposal;
+    pub DecreaseWorkingGroupLeaderStakeProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.decrease_working_group_leader_stake_proposal;
 }
 
 ///////////
@@ -43,6 +44,7 @@ struct AllProposalsParameters {
     pub begin_review_working_group_applications_proposal: ProposalParameters<BlockNumber, Balance>,
     pub fill_working_group_opening_proposal: ProposalParameters<BlockNumber, Balance>,
     pub set_working_group_mint_capacity_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub decrease_working_group_leader_stake_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -109,9 +111,14 @@ fn convert_json_object_to_proposal_parameters(
             defaults::fill_working_group_opening_proposal(),
         );
         parameters.set_working_group_mint_capacity_proposal = create_proposal_parameters_object(
-            json_object,
+            json_object.clone(),
             "set_working_group_mint_capacity_proposal",
             defaults::set_working_group_mint_capacity_proposal(),
+        );
+        parameters.decrease_working_group_leader_stake_proposal = create_proposal_parameters_object(
+            json_object,
+            "decrease_working_group_leader_stake_proposal",
+            defaults::decrease_working_group_leader_stake_proposal(),
         );
     }
 
@@ -223,5 +230,7 @@ fn default_parameters() -> AllProposalsParameters {
         fill_working_group_opening_proposal: defaults::fill_working_group_opening_proposal(),
         set_working_group_mint_capacity_proposal:
             defaults::set_working_group_mint_capacity_proposal(),
+        decrease_working_group_leader_stake_proposal:
+            defaults::decrease_working_group_leader_stake_proposal(),
     }
 }

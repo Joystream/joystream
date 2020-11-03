@@ -749,9 +749,7 @@ fn run_create_decrease_working_group_leader_stake_proposal_common_checks_succeed
                 )
             },
             proposal_parameters:
-                crate::proposal_types::parameters::decrease_working_group_leader_stake_proposal::<
-                    Test,
-                >(),
+                <Test as crate::Trait>::DecreaseWorkingGroupLeaderStakeProposalParameters::get(),
             proposal_details: ProposalDetails::DecreaseWorkingGroupLeaderStake(
                 10,
                 10,
