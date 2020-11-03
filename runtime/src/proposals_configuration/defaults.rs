@@ -85,3 +85,17 @@ pub(crate) fn begin_review_working_group_applications_proposal(
         constitutionality: 1,
     }
 }
+
+// Proposal parameters for the 'Fill working group opening' proposal
+pub(crate) fn fill_working_group_opening_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 43200,
+        grace_period: 0,
+        approval_quorum_percentage: 60,
+        approval_threshold_percentage: 75,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(50000),
+        constitutionality: 1,
+    }
+}

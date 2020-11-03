@@ -28,6 +28,7 @@ parameter_types! {
     pub SpendingProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.spending_proposal;
     pub AddWorkingGroupOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.add_working_group_opening_proposal;
     pub BeginReviewWorkingGroupApplicationsProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.begin_review_working_group_applications_proposal;
+    pub FillWorkingGroupOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.fill_working_group_opening_proposal;
 }
 
 ///////////
@@ -39,6 +40,7 @@ struct AllProposalsParameters {
     pub spending_proposal: ProposalParameters<BlockNumber, Balance>,
     pub add_working_group_opening_proposal: ProposalParameters<BlockNumber, Balance>,
     pub begin_review_working_group_applications_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub fill_working_group_opening_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -95,10 +97,15 @@ fn convert_json_object_to_proposal_parameters(
         );
         parameters.begin_review_working_group_applications_proposal =
             create_proposal_parameters_object(
-                json_object,
+                json_object.clone(),
                 "begin_review_working_group_applications_proposal",
                 defaults::begin_review_working_group_applications_proposal(),
             );
+        parameters.fill_working_group_opening_proposal = create_proposal_parameters_object(
+            json_object,
+            "fill_working_group_opening_proposal",
+            defaults::fill_working_group_opening_proposal(),
+        );
     }
 
     parameters
@@ -206,5 +213,6 @@ fn default_parameters() -> AllProposalsParameters {
         add_working_group_opening_proposal: defaults::add_working_group_opening_proposal(),
         begin_review_working_group_applications_proposal:
             defaults::begin_review_working_group_applications_proposal(),
+        fill_working_group_opening_proposal: defaults::fill_working_group_opening_proposal(),
     }
 }

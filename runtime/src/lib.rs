@@ -617,6 +617,7 @@ impl proposals_codex::Trait for Runtime {
     type AddWorkingGroupOpeningProposalParameters = AddWorkingGroupOpeningProposalParameters;
     type BeginReviewWorkingGroupApplicationsProposalParameters =
         BeginReviewWorkingGroupApplicationsProposalParameters;
+    type FillWorkingGroupOpeningProposalParameters = FillWorkingGroupOpeningProposalParameters;
 }
 
 impl constitution::Trait for Runtime {

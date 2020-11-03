@@ -595,9 +595,7 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
                     None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::fill_working_group_leader_opening_proposal::<
-                Test,
-            >(),
+            proposal_parameters: <Test as crate::Trait>::FillWorkingGroupOpeningProposalParameters::get(),
             proposal_details: ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_parameters.clone()),
         };
         proposal_fixture.check_all();
