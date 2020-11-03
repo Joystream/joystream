@@ -415,25 +415,7 @@ decl_module! {
         /// Block finalization. Perform voting period check, vote result tally, approved proposals
         /// grace period checks, and proposal execution.
         fn on_finalize(_n: T::BlockNumber) {
-            // 1. Get proposals with known voting results.
-            let finalization_ready_proposals = Self::get_finalization_ready_proposals();
-
-            // 2. Finalize voting results. Approved proposals with zero grace period will be
-            // transitioned to the PendingExecution status.
-            for proposal_data in finalization_ready_proposals {
-                Self::finalize_proposal(proposal_data.proposal_id, proposal_data.status);
-            }
-
-            // 3. Get all ready for execution proposals:
-            //   a) proposals with expired grace period,
-            //   b) just finalized proposals with zero grace period (from step 2).
-            let executable_proposals =
-                Self::get_approved_proposal_ready_for_execution();
-
-            // 4. Execute approved proposals with expired grace period.
-            for approved_proposal in executable_proposals {
-                Self::execute_proposal(approved_proposal);
-            }
+            Self::process_proposals();
         }
     }
 }
@@ -675,10 +657,10 @@ impl<T: Trait> Module<T> {
             Err(error) => ApprovedProposalStatus::failed_execution(error.what()),
         };
 
-        let proposal_execution_status = ProposalStatus::Finalized(FinalizationData {
-            proposal_status: ProposalDecisionStatus::Approved(approved_proposal_status),
-            finalized_at: approved_proposal.finalisation_status_data.finalized_at,
-        });
+        let proposal_execution_status = ProposalStatus::approved(
+            approved_proposal_status,
+            approved_proposal.finalisation_status_data.finalized_at,
+        );
 
         Self::deposit_event(RawEvent::ProposalStatusUpdated(
             approved_proposal.proposal_id,
@@ -832,6 +814,29 @@ impl<T: Trait> Module<T> {
         Self::decrease_active_proposal_counter();
 
         T::ProposalObserver::proposal_removed(proposal_id);
+    }
+
+    /// Perform voting period check, vote result tally, approved proposals
+    /// grace period checks, and proposal execution.
+    fn process_proposals() {
+        // 1. Get proposals with known voting results.
+        let finalization_ready_proposals = Self::get_finalization_ready_proposals();
+
+        // 2. Finalize voting results. Approved proposals with zero grace period will be
+        // transitioned to the PendingExecution status.
+        for proposal_data in finalization_ready_proposals {
+            Self::finalize_proposal(proposal_data.proposal_id, proposal_data.status);
+        }
+
+        // 3. Get all ready for execution proposals:
+        //   a) proposals with expired grace period,
+        //   b) just finalized proposals with zero grace period (from step 2).
+        let executable_proposals = Self::get_approved_proposal_ready_for_execution();
+
+        // 4. Execute approved proposals with expired grace period.
+        for approved_proposal in executable_proposals {
+            Self::execute_proposal(approved_proposal);
+        }
     }
 }
 
