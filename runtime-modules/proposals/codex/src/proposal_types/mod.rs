@@ -229,12 +229,6 @@ pub struct ProposalsConfigParameters {
     /// 'Set lead' proposal grace period
     pub set_lead_proposal_grace_period: u32,
 
-    /// 'Set working group mint capacity' proposal voting period
-    pub set_working_group_mint_capacity_proposal_voting_period: u32,
-
-    /// 'Set working group mint capacity' proposal grace period
-    pub set_working_group_mint_capacity_proposal_grace_period: u32,
-
     /// 'Decrease working group leader stake' proposal voting period
     pub decrease_working_group_leader_stake_proposal_voting_period: u32,
 
@@ -273,8 +267,6 @@ impl Default for ProposalsConfigParameters {
             set_election_parameters_proposal_grace_period: 201_601_u32,
             set_lead_proposal_voting_period: 43200u32,
             set_lead_proposal_grace_period: 0u32,
-            set_working_group_mint_capacity_proposal_voting_period: 43200u32,
-            set_working_group_mint_capacity_proposal_grace_period: 0u32,
             decrease_working_group_leader_stake_proposal_voting_period: 43200u32,
             decrease_working_group_leader_stake_proposal_grace_period: 0u32,
             slash_working_group_leader_stake_proposal_voting_period: 43200u32,
@@ -299,8 +291,6 @@ impl ProposalsConfigParameters {
             set_election_parameters_proposal_grace_period: grace_period,
             set_lead_proposal_voting_period: voting_period,
             set_lead_proposal_grace_period: 0,
-            set_working_group_mint_capacity_proposal_voting_period: voting_period,
-            set_working_group_mint_capacity_proposal_grace_period: 0,
             decrease_working_group_leader_stake_proposal_voting_period: voting_period,
             decrease_working_group_leader_stake_proposal_grace_period: 0,
             slash_working_group_leader_stake_proposal_voting_period: voting_period,

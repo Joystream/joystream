@@ -595,8 +595,11 @@ fn run_create_fill_working_group_leader_opening_proposal_common_checks_succeed(
                     None,
                 )
             },
-            proposal_parameters: <Test as crate::Trait>::FillWorkingGroupOpeningProposalParameters::get(),
-            proposal_details: ProposalDetails::FillWorkingGroupLeaderOpening(fill_opening_parameters.clone()),
+            proposal_parameters:
+                <Test as crate::Trait>::FillWorkingGroupOpeningProposalParameters::get(),
+            proposal_details: ProposalDetails::FillWorkingGroupLeaderOpening(
+                fill_opening_parameters.clone(),
+            ),
         };
         proposal_fixture.check_all();
     });
@@ -684,8 +687,7 @@ fn run_create_set_working_group_mint_capacity_proposal_common_checks_succeed(
                 )
             },
             proposal_parameters:
-                crate::proposal_types::parameters::set_working_group_mint_capacity_proposal::<Test>(
-                ),
+                <Test as crate::Trait>::SetWorkingGroupMintCapacityProposalParameters::get(),
             proposal_details: ProposalDetails::SetWorkingGroupMintCapacity(10, working_group),
         };
         proposal_fixture.check_all();
