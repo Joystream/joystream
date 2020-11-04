@@ -12,7 +12,7 @@ export const Content = styled.div`
   grid-template-columns: min(650px, 50%) 1fr;
   grid-column-gap: 24px;
 
-  @media (max-width: 750px) {
+  @media (max-width: ${bp.smallTablet}) {
     grid-template-columns: 1fr;
   }
 `
