@@ -35,7 +35,7 @@ import {
   IWhereCond,
 } from '../types'
 import { getOrCreate } from './get-or-create'
-import * as BN from 'bn.js'
+import BN from 'bn.js'
 
 async function createBlockOrGetFromDatabase(db: DB, blockNumber: number): Promise<Block> {
   let b = await db.get(Block, { where: { block: blockNumber } })
@@ -548,6 +548,7 @@ async function updateHttpMediaLocationEntityPropertyValues(
   Object.assign(record, props)
   await db.save<HttpMediaLocation>(record)
 }
+
 async function updateJoystreamMediaLocationEntityPropertyValues(
   db: DB,
   where: IWhereCond,
