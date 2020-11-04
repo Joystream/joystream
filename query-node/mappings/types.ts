@@ -107,6 +107,16 @@ export interface IVideo {
   license?: number
 }
 
+export interface ILicense {
+  knownLicense?: number
+  userDefinedLicense?: number
+}
+
+export interface IMediaLocation {
+  httpMediaLocation?: number
+  joystreamMediaLocation?: number
+}
+
 export enum OperationType {
   CreateEntity = 'CreateEntity',
   AddSchemaSupportToEntity = 'AddSchemaSupportToEntity',
