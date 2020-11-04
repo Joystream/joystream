@@ -13,7 +13,12 @@ import {
   videosResolver,
   videoViewsResolver,
 } from './resolvers'
-import { ORION_GRAPHQL_URL, QUERY_NODE_GRAPHQL_URL } from '@/config/urls'
+import {
+  MOCK_ORION_GRAPHQL_URL,
+  MOCK_QUERY_NODE_GRAPHQL_URL,
+  ORION_GRAPHQL_URL,
+  QUERY_NODE_GRAPHQL_URL,
+} from '@/config/urls'
 import { MOCKED_SERVER_LOAD_DELAY } from '@/config/misc'
 
 createServer({
@@ -47,10 +52,15 @@ createServer({
       },
     })
 
-    this.post(QUERY_NODE_GRAPHQL_URL, queryNodeHandler, { timing: MOCKED_SERVER_LOAD_DELAY })
+    this.post(MOCK_QUERY_NODE_GRAPHQL_URL, queryNodeHandler, { timing: MOCKED_SERVER_LOAD_DELAY })
+    if (QUERY_NODE_GRAPHQL_URL !== MOCK_QUERY_NODE_GRAPHQL_URL) {
+      this.passthrough(QUERY_NODE_GRAPHQL_URL)
+    }
 
-    this.post(ORION_GRAPHQL_URL, orionHandler, { timing: MOCKED_SERVER_LOAD_DELAY })
-    // this.passthrough(ORION_GRAPHQL_URL)
+    this.post(MOCK_ORION_GRAPHQL_URL, orionHandler, { timing: MOCKED_SERVER_LOAD_DELAY })
+    if (ORION_GRAPHQL_URL !== MOCK_ORION_GRAPHQL_URL) {
+      this.passthrough(ORION_GRAPHQL_URL)
+    }
 
     // allow Hotjar analytics requests
     this.passthrough((request) => {
