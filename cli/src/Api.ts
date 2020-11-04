@@ -523,7 +523,7 @@ export default class Api {
   }
 
   async entityById(id: number): Promise<Entity | null> {
-    const exists = !!(await this._api.query.contentDirectory.curatorGroupById.size(id))
+    const exists = !!(await this._api.query.contentDirectory.entityById.size(id)).toNumber()
     return exists ? await this._api.query.contentDirectory.entityById<Entity>(id) : null
   }
 

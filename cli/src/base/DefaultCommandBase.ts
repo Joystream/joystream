@@ -2,6 +2,7 @@ import ExitCodes from '../ExitCodes'
 import Command from '@oclif/command'
 import inquirer, { DistinctQuestion } from 'inquirer'
 import chalk from 'chalk'
+import inquirerDatepicker from 'inquirer-datepicker-prompt'
 
 /**
  * Abstract base class for pretty much all commands
@@ -102,5 +103,9 @@ export default abstract class DefaultCommandBase extends Command {
     // We'll force exit here, in case there is no error, to prevent console.log from hanging the process
     if (!err) this.exit(ExitCodes.OK)
     super.finally(err)
+  }
+
+  async init() {
+    inquirer.registerPrompt('datetime', inquirerDatepicker)
   }
 }

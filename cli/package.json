@@ -26,6 +26,7 @@
     "cli-ux": "^5.4.5",
     "fluent-ffmpeg": "^2.1.2",
     "inquirer": "^7.1.0",
+    "inquirer-datepicker-prompt": "^0.4.2",
     "ipfs-http-client": "^47.0.1",
     "ipfs-only-hash": "^1.0.2",
     "it-all": "^1.0.4",

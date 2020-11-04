@@ -1,16 +1,15 @@
-import ContentDirectoryCommandBase from '../../base/ContentDirectoryCommandBase'
 import VideoEntitySchema from 'cd-schemas/schemas/entities/VideoEntity.schema.json'
 import { VideoEntity } from 'cd-schemas/types/entities/VideoEntity'
-import { LicenseEntity } from 'cd-schemas/types/entities/LicenseEntity'
 import { InputParser } from 'cd-schemas'
 import { JSONSchema } from '@apidevtools/json-schema-ref-parser'
 import { JsonSchemaCustomPrompts, JsonSchemaPrompter } from '../../helpers/JsonSchemaPrompt'
 import { Actor, Entity } from '@joystream/types/content-directory'
 import { createType } from '@joystream/types'
 import { flags } from '@oclif/command'
+import MediaCommandBase from '../../base/MediaCommandBase'
 
-export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
-  static description = 'Update existing video information (requires a membership).'
+export default class UpdateVideoCommand extends MediaCommandBase {
+  static description = 'Update existing video information (requires controller/maintainer access).'
   static flags = {
     // TODO: ...IOFlags, - providing input as json
     asCurator: flags.boolean({
@@ -38,7 +37,7 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
     let memberId: number | undefined, actor: Actor
 
     if (asCurator) {
-      actor = await this.getCuratorContext(['Video', 'License'])
+      actor = await this.getCuratorContext(['Video'])
     } else {
       memberId = await this.getRequiredMemberId()
       actor = createType('Actor', { Member: memberId })
@@ -59,7 +58,11 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
     const currentValues = await this.parseToKnownEntityJson<VideoEntity>(videoEntity)
     const videoJsonSchema = (VideoEntitySchema as unknown) as JSONSchema
 
-    const { language: currLanguageId, category: currCategoryId, license: currLicenseId } = currentValues
+    const {
+      language: currLanguageId,
+      category: currCategoryId,
+      publishedBeforeJoystream: currPublishedBeforeJoystream,
+    } = currentValues
 
     const customizedPrompts: JsonSchemaCustomPrompts<VideoEntity> = [
       [
@@ -70,19 +73,9 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
         'category',
         () => this.promptForEntityId('Choose Video category', 'ContentCategory', 'name', undefined, currCategoryId),
       ],
+      ['publishedBeforeJoystream', () => this.promptForPublishedBeforeJoystream(currPublishedBeforeJoystream)],
     ]
     const videoPrompter = new JsonSchemaPrompter<VideoEntity>(videoJsonSchema, currentValues, customizedPrompts)
-
-    // Updating a license is currently a bit more tricky since it's a nested relation
-    const currKnownLicenseId = (await this.getAndParseKnownEntity<LicenseEntity>(currLicenseId)).knownLicense
-    const knownLicenseId = await this.promptForEntityId(
-      'Choose a license',
-      'KnownLicense',
-      'code',
-      undefined,
-      currKnownLicenseId
-    )
-    const updatedLicense: LicenseEntity = { knownLicense: knownLicenseId }
 
     // Prompt for other video data
     const updatedProps: Partial<VideoEntity> = await videoPrompter.promptMultipleProps([
@@ -93,7 +86,10 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
       'thumbnailURL',
       'duration',
       'isPublic',
+      'isExplicit',
       'hasMarketing',
+      'publishedBeforeJoystream',
+      'skippableIntroDuration',
     ])
 
     if (asCurator) {
@@ -105,12 +101,6 @@ export default class UpdateVideoCommand extends ContentDirectoryCommandBase {
     // Parse inputs into operations and send final extrinsic
     const inputParser = InputParser.createWithKnownSchemas(this.getOriginalApi())
     const videoUpdateOperations = await inputParser.getEntityUpdateOperations(updatedProps, 'Video', videoId)
-    const licenseUpdateOperations = await inputParser.getEntityUpdateOperations(
-      updatedLicense,
-      'License',
-      currentValues.license
-    )
-    const operations = [...videoUpdateOperations, ...licenseUpdateOperations]
-    await this.sendAndFollowNamedTx(account, 'contentDirectory', 'transaction', [actor, operations], true)
+    await this.sendAndFollowNamedTx(account, 'contentDirectory', 'transaction', [actor, videoUpdateOperations], true)
   }
 }
