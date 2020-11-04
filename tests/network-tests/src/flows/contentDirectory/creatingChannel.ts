@@ -1,4 +1,5 @@
 import { QueryNodeApi } from '../../Api'
+import { Utils } from '../../utils'
 import { CreateChannelFixture } from '../../fixtures/contentDirectoryModule'
 import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
 import { assert } from 'chai'
@@ -19,18 +20,15 @@ export function createSimpleChannelFixture(api: QueryNodeApi, pair: KeyringPair)
   return new CreateChannelFixture(api, channelEntity, pair)
 }
 
-async function delay(ms: number) {
-  await new Promise((resolve) => setTimeout(() => resolve(), ms)).then(() => console.log('fired'))
-}
-
 export default async function channelCreation(api: QueryNodeApi, pair: KeyringPair) {
   const createChannelHappyCaseFixture = createSimpleChannelFixture(api, pair)
 
   await createChannelHappyCaseFixture.runner(false)
 
   // Temporary solution (wait 2 minutes)
-  await delay(120000)
+  await Utils.wait(120000)
 
+  // Ensure newly created channel was parsed by query node
   const result = await api.getChannelbyTitle(createChannelHappyCaseFixture.channelEntity.title)
   const queriedChannel = result.data.channels[0]
 
