@@ -35,6 +35,10 @@ import {
   updateLanguageEntityPropertyValues,
   updateVideoMediaEncodingEntityPropertyValues,
   createBlockOrGetFromDatabase,
+  removeLicense,
+  removeMediaLocation,
+  updateLicenseEntityPropertyValues,
+  updateMediaLocationEntityPropertyValues,
 } from './entity-helper'
 import {
   CategoryPropertyNamesWithId,
@@ -64,6 +68,8 @@ import {
   IDBBlockId,
   IWhereCond,
   IEntity,
+  ILicense,
+  IMediaLocation,
 } from '../types'
 
 const debug = Debug('mappings:content-directory')
@@ -219,6 +225,14 @@ async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent): Pr
       await removeVideoMediaEncoding(db, where)
       break
 
+    case ContentDirectoryKnownClasses.LICENSE:
+      await removeLicense(db, where)
+      break
+
+    case ContentDirectoryKnownClasses.MEDIALOCATION:
+      await removeMediaLocation(db, where)
+      break
+
     default:
       throw new Error(`Unknown class name: ${cls.name}`)
   }
@@ -334,6 +348,22 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
         db,
         where,
         decode.setProperties<IVideoMediaEncoding>(event, videoMediaEncodingPropertyNamesWithId)
+      )
+      break
+
+    case ContentDirectoryKnownClasses.LICENSE:
+      await updateLicenseEntityPropertyValues(
+        db,
+        where,
+        decode.setProperties<ILicense>(event, videoMediaEncodingPropertyNamesWithId)
+      )
+      break
+
+    case ContentDirectoryKnownClasses.MEDIALOCATION:
+      await updateMediaLocationEntityPropertyValues(
+        db,
+        where,
+        decode.setProperties<IMediaLocation>(event, videoMediaEncodingPropertyNamesWithId)
       )
       break
 

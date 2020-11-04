@@ -13,6 +13,8 @@ import {
   IJoystreamMediaLocation,
   IKnownLicense,
   ILanguage,
+  ILicense,
+  IMediaLocation,
   IUserDefinedLicense,
   IVideo,
   IVideoMedia,
@@ -31,6 +33,8 @@ import {
   videoPropertyNamesWithId,
   languagePropertyNamesWIthId,
   ContentDirectoryKnownClasses,
+  licensePropertyNamesWithId,
+  mediaLocationPropertyNamesWithId,
 } from './content-dir-consts'
 import {
   createCategory,
@@ -55,6 +59,10 @@ import {
   updateLanguageEntityPropertyValues,
   updateVideoMediaEncodingEntityPropertyValues,
   batchCreateClassEntities,
+  createLicense,
+  createMediaLocation,
+  updateLicenseEntityPropertyValues,
+  updateMediaLocationEntityPropertyValues,
 } from './entity-helper'
 
 const debug = Debug('mappings:content-directory')
@@ -81,11 +89,12 @@ export async function contentDirectory_TransactionCompleted(db: DB, event: Subst
 
   // Create entities before adding schema support
   // We need this to know which entity belongs to which class(we will need to know to update/create
-  // Channel, Video etc.). For example if there is
-  // a property update operation there is no class id
+  // Channel, Video etc.). For example if there is a property update operation there is no class id
   await batchCreateClassEntities(db, block, createEntityOperations)
-  await batchUpdatePropertyValue(db, createEntityOperations, updatePropertyValuesOperations)
+
   await batchAddSchemaSupportToEntity(db, createEntityOperations, addSchemaSupportToEntityOperations, block)
+
+  await batchUpdatePropertyValue(db, createEntityOperations, updatePropertyValuesOperations)
 }
 
 /**
@@ -186,6 +195,21 @@ async function batchAddSchemaSupportToEntity(
           await createVideoMediaEncoding(
             arg,
             decode.setEntityPropertyValues<IVideoMediaEncoding>(properties, videoMediaEncodingPropertyNamesWithId)
+          )
+          break
+
+        case ContentDirectoryKnownClasses.LICENSE:
+          await createLicense(
+            arg,
+            classEntityMap,
+            decode.setEntityPropertyValues<ILicense>(properties, licensePropertyNamesWithId)
+          )
+          break
+        case ContentDirectoryKnownClasses.MEDIALOCATION:
+          await createMediaLocation(
+            arg,
+            classEntityMap,
+            decode.setEntityPropertyValues<IMediaLocation>(properties, mediaLocationPropertyNamesWithId)
           )
           break
 
@@ -294,6 +318,20 @@ async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateE
           db,
           where,
           decode.setEntityPropertyValues<IVideoMediaEncoding>(properties, videoMediaEncodingPropertyNamesWithId)
+        )
+        break
+      case ContentDirectoryKnownClasses.LICENSE:
+        await updateLicenseEntityPropertyValues(
+          db,
+          where,
+          decode.setEntityPropertyValues<ILicense>(properties, licensePropertyNamesWithId)
+        )
+        break
+      case ContentDirectoryKnownClasses.MEDIALOCATION:
+        await updateMediaLocationEntityPropertyValues(
+          db,
+          where,
+          decode.setEntityPropertyValues<IMediaLocation>(properties, mediaLocationPropertyNamesWithId)
         )
         break
 

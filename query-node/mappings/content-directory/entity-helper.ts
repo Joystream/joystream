@@ -1,4 +1,4 @@
-import { DB, SubstrateEvent } from '../../generated/indexer'
+import { DB } from '../../generated/indexer'
 import { Channel } from '../../generated/graphql-server/src/modules/channel/channel.model'
 import { Category } from '../../generated/graphql-server/src/modules/category/category.model'
 import { KnownLicense } from '../../generated/graphql-server/src/modules/known-license/known-license.model'
@@ -11,20 +11,10 @@ import { Block, Network } from '../../generated/graphql-server/src/modules/block
 import { Language } from '../../generated/graphql-server/src/modules/language/language.model'
 import { VideoMediaEncoding } from '../../generated/graphql-server/src/modules/video-media-encoding/video-media-encoding.model'
 import { ClassEntity } from '../../generated/graphql-server/src/modules/class-entity/class-entity.model'
-import { decode } from './decode'
-import {
-  CategoryPropertyNamesWithId,
-  channelPropertyNamesWithId,
-  httpMediaLocationPropertyNamesWithId,
-  joystreamMediaLocationPropertyNamesWithId,
-  knownLicensePropertyNamesWIthId,
-  languagePropertyNamesWIthId,
-  userDefinedLicensePropertyNamesWithId,
-  videoMediaEncodingPropertyNamesWithId,
-  videoPropertyNamesWithId,
-  contentDirectoryClassNamesWithId,
-  ContentDirectoryKnownClasses,
-} from './content-dir-consts'
+import { License } from '../../generated/graphql-server/src/modules/license/license.model'
+import { MediaLocation } from '../../generated/graphql-server/src/modules/media-location/media-location.model'
+
+import { contentDirectoryClassNamesWithId } from './content-dir-consts'
 import {
   ClassEntityMap,
   ICategory,
@@ -36,6 +26,8 @@ import {
   IJoystreamMediaLocation,
   IKnownLicense,
   ILanguage,
+  ILicense,
+  IMediaLocation,
   IUserDefinedLicense,
   IVideo,
   IVideoMedia,
@@ -178,13 +170,7 @@ async function createVideoMedia(
   const { encoding, location } = p
   if (encoding) videoMedia.encoding = await getOrCreate.videoMediaEncoding({ db, block, id }, classEntityMap, encoding)
   if (location) {
-    // TODO: We need to make sure to create only one location either http or joystream
-    videoMedia.httpMediaLocation = await getOrCreate.httpMediaLocation({ db, block, id }, classEntityMap, location)
-    videoMedia.joystreamMediaLocation = await getOrCreate.joystreamMediaLocation(
-      { db, block, id },
-      classEntityMap,
-      location
-    )
+    videoMedia.location = await getOrCreate.mediaLocation({ db, block, id }, classEntityMap, location)
   }
   videoMedia.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save(videoMedia)
@@ -213,10 +199,7 @@ async function createVideo({ db, block, id }: IDBBlockId, classEntityMap: ClassE
 
   const { language, license, category, channel, media } = p
   if (language) video.language = await getOrCreate.language({ db, block, id }, classEntityMap, language)
-  if (license) {
-    video.knownLicense = await getOrCreate.knownLicense({ db, block, id }, classEntityMap, license)
-    video.userdefinedLicense = await getOrCreate.userDefinedLicense({ db, block, id }, classEntityMap, license)
-  }
+  if (license) video.license = await getOrCreate.license({ db, block, id }, classEntityMap, license)
   if (category) video.category = await getOrCreate.category({ db, block, id }, classEntityMap, category)
   if (channel) video.channel = await getOrCreate.channel({ db, block, id }, classEntityMap, channel)
   video.happenedIn = await createBlockOrGetFromDatabase(db, block)
@@ -257,11 +240,62 @@ async function createVideoMediaEncoding(
   return encoding
 }
 
+async function createLicense(
+  { db, block, id }: IDBBlockId,
+  classEntityMap: ClassEntityMap,
+  p: ILicense
+): Promise<License> {
+  const record = await db.get(License, { where: { id } })
+  if (record) return record
+
+  const { knownLicense, userDefinedLicense } = p
+
+  const license = new License()
+  license.id = id
+  if (knownLicense)
+    license.knownLicense = await getOrCreate.knownLicense({ db, block, id }, classEntityMap, knownLicense)
+  if (userDefinedLicense)
+    license.userdefinedLicense = await getOrCreate.userDefinedLicense(
+      { db, block, id },
+      classEntityMap,
+      userDefinedLicense
+    )
+  license.happenedIn = await createBlockOrGetFromDatabase(db, block)
+  await db.save<License>(license)
+  return license
+}
+
+async function createMediaLocation(
+  { db, block, id }: IDBBlockId,
+  classEntityMap: ClassEntityMap,
+  p: IMediaLocation
+): Promise<MediaLocation> {
+  const { httpMediaLocation, joystreamMediaLocation } = p
+
+  const location = new MediaLocation()
+  location.id = id
+  if (httpMediaLocation)
+    location.httpMediaLocation = await getOrCreate.httpMediaLocation(
+      { db, block, id },
+      classEntityMap,
+      httpMediaLocation
+    )
+  if (joystreamMediaLocation)
+    location.joystreamMediaLocation = await getOrCreate.joystreamMediaLocation(
+      { db, block, id },
+      classEntityMap,
+      joystreamMediaLocation
+    )
+  location.happenedIn = await createBlockOrGetFromDatabase(db, block)
+  await db.save<License>(location)
+  return location
+}
+
 async function batchCreateClassEntities(db: DB, block: number, operations: ICreateEntityOperation[]): Promise<void> {
   // Create entities before adding schema support
   operations.map(async ({ classId }, index) => {
     const c = new ClassEntity()
-    c.id = index.toString()
+    c.id = index.toString() // entity id
     c.classId = classId
     c.version = block
     c.happenedIn = await createBlockOrGetFromDatabase(db, block)
@@ -318,32 +352,46 @@ async function removeVideo(db: DB, where: IWhereCond): Promise<void> {
   if (record === undefined) throw Error(`Video not found`)
   await db.remove<Video>(record)
 }
+
+async function removeLicense(db: DB, where: IWhereCond): Promise<void> {
+  const record = await db.get(License, where)
+  if (record === undefined) throw Error(`License not found`)
+  // Remove all the videos under this license
+  if (record.videolicense) record.videolicense.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
+  await db.remove<License>(record)
+}
 async function removeUserDefinedLicense(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(UserDefinedLicense, where)
   if (record === undefined) throw Error(`UserDefinedLicense not found`)
-  if (record.videouserdefinedLicense)
-    record.videouserdefinedLicense.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
+  if (record.licenseuserdefinedLicense)
+    record.licenseuserdefinedLicense.map(async (l) => await removeLicense(db, { where: { id: l.id } }))
   await db.remove<UserDefinedLicense>(record)
 }
 async function removeKnownLicense(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(KnownLicense, where)
   if (record === undefined) throw Error(`KnownLicense not found`)
-  if (record.videoknownLicense)
-    record.videoknownLicense.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
+  if (record.licenseknownLicense)
+    record.licenseknownLicense.map(async (k) => await removeLicense(db, { where: { id: k.id } }))
   await db.remove<KnownLicense>(record)
+}
+async function removeMediaLocation(db: DB, where: IWhereCond): Promise<void> {
+  const record = await db.get(MediaLocation, where)
+  if (record === undefined) throw Error(`MediaLocation not found`)
+  if (record.videoMedia) await removeVideo(db, { where: { id: record.videoMedia.id } })
+  await db.remove<MediaLocation>(record)
 }
 async function removeHttpMediaLocation(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(HttpMediaLocation, where)
   if (record === undefined) throw Error(`HttpMediaLocation not found`)
-  if (record.videomediahttpMediaLocation)
-    record.videomediahttpMediaLocation.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
+  if (record.medialocationhttpMediaLocation)
+    record.medialocationhttpMediaLocation.map(async (v) => await removeMediaLocation(db, { where: { id: v.id } }))
   await db.remove<HttpMediaLocation>(record)
 }
 async function removeJoystreamMediaLocation(db: DB, where: IWhereCond): Promise<void> {
   const record = await db.get(JoystreamMediaLocation, where)
   if (record === undefined) throw Error(`JoystreamMediaLocation not found`)
-  if (record.videomediajoystreamMediaLocation)
-    record.videomediajoystreamMediaLocation.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
+  if (record.medialocationjoystreamMediaLocation)
+    record.medialocationjoystreamMediaLocation.map(async (v) => await removeVideo(db, { where: { id: v.id } }))
   await db.remove<JoystreamMediaLocation>(record)
 }
 async function removeLanguage(db: DB, where: IWhereCond): Promise<void> {
@@ -360,6 +408,42 @@ async function removeVideoMediaEncoding(db: DB, where: IWhereCond): Promise<void
 }
 
 // ========Entity property value updates========
+
+async function updateMediaLocationEntityPropertyValues(
+  db: DB,
+  where: IWhereCond,
+  props: IMediaLocation
+): Promise<void> {
+  const { httpMediaLocation, joystreamMediaLocation } = props
+  const record = await db.get(MediaLocation, where)
+  if (record === undefined) throw Error(`MediaLocation entity not found: ${where.where.id}`)
+
+  if (httpMediaLocation) {
+    record.httpMediaLocation = await db.get(HttpMediaLocation, { where: { id: httpMediaLocation.toString() } })
+  }
+  if (joystreamMediaLocation) {
+    record.joystreamMediaLocation = await db.get(JoystreamMediaLocation, {
+      where: { id: joystreamMediaLocation.toString() },
+    })
+  }
+  await db.save<MediaLocation>(record)
+}
+
+async function updateLicenseEntityPropertyValues(db: DB, where: IWhereCond, props: ILicense): Promise<void> {
+  const { knownLicense, userDefinedLicense } = props
+  const record = await db.get(License, where)
+  if (record === undefined) throw Error(`License entity not found: ${where.where.id}`)
+
+  if (knownLicense) {
+    record.knownLicense = await db.get(KnownLicense, { where: { id: knownLicense.toString() } })
+  }
+  if (userDefinedLicense) {
+    record.userdefinedLicense = await db.get(UserDefinedLicense, {
+      where: { id: userDefinedLicense.toString() },
+    })
+  }
+  await db.save<License>(record)
+}
 
 async function updateCategoryEntityPropertyValues(db: DB, where: IWhereCond, props: ICategory): Promise<void> {
   const record = await db.get(Category, where)
@@ -391,11 +475,9 @@ async function updateVideoMediaEntityPropertyValues(db: DB, where: IWhereCond, p
     props.encoding = undefined
   }
   if (location) {
-    const httpLoc = await db.get(HttpMediaLocation, { where: { id: location.toString() } })
-    const joyLoc = await db.get(JoystreamMediaLocation, { where: { id: location.toString() } })
-    if (!httpLoc && !joyLoc) throw Error(`HttpMediaLocation/JoystreamMediaLocation entity not found: ${location}`)
-    record.httpMediaLocation = httpLoc
-    record.joystreamMediaLocation = joyLoc
+    const mediaLoc = await db.get(MediaLocation, { where: { id: location.toString() } })
+    if (!mediaLoc) throw Error(`MediaLocation entity not found: ${location}`)
+    record.location = mediaLoc
     props.location = undefined
   }
   Object.assign(record, props)
@@ -425,11 +507,9 @@ async function updateVideoEntityPropertyValues(db: DB, where: IWhereCond, props:
     props.media = undefined
   }
   if (license) {
-    const k = await db.get(KnownLicense, { where: { id: license.toString() } })
-    const u = await db.get(UserDefinedLicense, { where: { id: license.toString() } })
-    if (!k && !u) throw Error(`KnownLicense/UserDefinedLicense entity not found: ${license}`)
-    record.knownLicense = k
-    record.userdefinedLicense = u
+    const l = await db.get(License, { where: { id: license.toString() } })
+    if (!l) throw Error(`License entity not found: ${license}`)
+    record.license = l
     props.license = undefined
   }
   if (language) {
@@ -495,94 +575,6 @@ async function updateVideoMediaEncodingEntityPropertyValues(
   await db.save<VideoMediaEncoding>(record)
 }
 
-async function updateEntityPropertyValues(
-  db: DB,
-  event: SubstrateEvent,
-  where: IWhereCond,
-  className: string
-): Promise<void> {
-  switch (className) {
-    case ContentDirectoryKnownClasses.CHANNEL:
-      await updateChannelEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IChannel>(event, channelPropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.CATEGORY:
-      await updateCategoryEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<ICategory>(event, CategoryPropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.KNOWNLICENSE:
-      await updateKnownLicenseEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IKnownLicense>(event, knownLicensePropertyNamesWIthId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.USERDEFINEDLICENSE:
-      await updateUserDefinedLicenseEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IUserDefinedLicense>(event, userDefinedLicensePropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.JOYSTREAMMEDIALOCATION:
-      await updateJoystreamMediaLocationEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IJoystreamMediaLocation>(event, joystreamMediaLocationPropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.HTTPMEDIALOCATION:
-      await updateHttpMediaLocationEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IHttpMediaLocation>(event, httpMediaLocationPropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.VIDEOMEDIA:
-      await updateVideoMediaEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.VIDEO:
-      await updateVideoEntityPropertyValues(db, where, decode.setProperties<IVideo>(event, videoPropertyNamesWithId))
-      break
-
-    case ContentDirectoryKnownClasses.LANGUAGE:
-      await updateLanguageEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<ILanguage>(event, languagePropertyNamesWIthId)
-      )
-      break
-
-    case ContentDirectoryKnownClasses.VIDEOMEDIAENCODING:
-      await updateVideoMediaEncodingEntityPropertyValues(
-        db,
-        where,
-        decode.setProperties<IVideoMediaEncoding>(event, videoMediaEncodingPropertyNamesWithId)
-      )
-      break
-
-    default:
-      throw new Error(`Unknown class name: ${className}`)
-  }
-}
-
 export {
   createCategory,
   createChannel,
@@ -594,6 +586,8 @@ export {
   createJoystreamMediaLocation,
   createLanguage,
   createVideoMediaEncoding,
+  createLicense,
+  createMediaLocation,
   removeCategory,
   removeChannel,
   removeVideoMedia,
@@ -604,6 +598,8 @@ export {
   removeJoystreamMediaLocation,
   removeLanguage,
   removeVideoMediaEncoding,
+  removeMediaLocation,
+  removeLicense,
   createBlockOrGetFromDatabase,
   batchCreateClassEntities,
   getClassName,
@@ -617,5 +613,6 @@ export {
   updateKnownLicenseEntityPropertyValues,
   updateLanguageEntityPropertyValues,
   updateVideoMediaEncodingEntityPropertyValues,
-  updateEntityPropertyValues,
+  updateLicenseEntityPropertyValues,
+  updateMediaLocationEntityPropertyValues,
 }

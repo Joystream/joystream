@@ -7,6 +7,9 @@ import { HttpMediaLocation } from '../../generated/graphql-server/src/modules/ht
 import { VideoMedia } from '../../generated/graphql-server/src/modules/video-media/video-media.model'
 import { Language } from '../../generated/graphql-server/src/modules/language/language.model'
 import { VideoMediaEncoding } from '../../generated/graphql-server/src/modules/video-media-encoding/video-media-encoding.model'
+import { License } from '../../generated/graphql-server/src/modules/license/license.model'
+import { MediaLocation } from '../../generated/graphql-server/src/modules/media-location/media-location.model'
+
 import { decode } from './decode'
 import {
   CategoryPropertyNamesWithId,
@@ -15,6 +18,8 @@ import {
   joystreamMediaLocationPropertyNamesWithId,
   knownLicensePropertyNamesWIthId,
   languagePropertyNamesWIthId,
+  licensePropertyNamesWithId,
+  mediaLocationPropertyNamesWithId,
   userDefinedLicensePropertyNamesWithId,
   videoMediaEncodingPropertyNamesWithId,
   videoPropertyNamesWithId,
@@ -29,6 +34,8 @@ import {
   IJoystreamMediaLocation,
   IKnownLicense,
   ILanguage,
+  ILicense,
+  IMediaLocation,
   IUserDefinedLicense,
   IVideoMedia,
   IVideoMediaEncoding,
@@ -41,6 +48,8 @@ import {
   createJoystreamMediaLocation,
   createKnownLicense,
   createLanguage,
+  createLicense,
+  createMediaLocation,
   createUserDefinedLicense,
   createVideoMedia,
   createVideoMediaEncoding,
@@ -281,6 +290,52 @@ async function joystreamMediaLocation(
   return record
 }
 
+async function license({ db, block }: IDBBlockId, classEntityMap: ClassEntityMap, entityId: number): Promise<License> {
+  let record = await db.get(License, { where: { id: entityId.toString() } })
+  if (record) return record
+
+  const newlyCreatedEntities = classEntityMap.get('License')
+  if (newlyCreatedEntities) {
+    const entity = findEntity(entityId, newlyCreatedEntities)
+    if (!entity) throw Error(`Unknown License entity id`)
+
+    record = await createLicense(
+      { db, block, id: entityId.toString() },
+      classEntityMap,
+      decode.setEntityPropertyValues<ILicense>(entity.properties, licensePropertyNamesWithId)
+    )
+  }
+  if (!record) throw Error(`License entity not found on the database`)
+  removeInsertedEntity('License', entityId, classEntityMap)
+  return record
+}
+
+async function mediaLocation(
+  { db, block }: IDBBlockId,
+  classEntityMap: ClassEntityMap,
+  entityId: number
+): Promise<MediaLocation> {
+  let record = await db.get(MediaLocation, { where: { id: entityId.toString() } })
+  if (record) return record
+
+  const newlyCreatedEntities = classEntityMap.get('MediaLocation')
+  if (newlyCreatedEntities) {
+    const entity = findEntity(entityId, newlyCreatedEntities)
+    if (!entity) throw Error(`Unknown MediaLocation entity id`)
+
+    record = await createMediaLocation(
+      { db, block, id: entityId.toString() },
+      classEntityMap,
+      decode.setEntityPropertyValues<IMediaLocation>(entity.properties, mediaLocationPropertyNamesWithId)
+    )
+  }
+  if (!record) {
+    throw Error(`MediaLocation entity not found on the database`)
+  }
+  removeInsertedEntity('MediaLocation', entityId, classEntityMap)
+  return record
+}
+
 function removeInsertedEntity(key: string, insertedEntityId: number, classEntityMap: ClassEntityMap) {
   const newlyCreatedEntities = classEntityMap.get(key)
   // Remove the inserted entity from the list
@@ -300,4 +355,6 @@ export const getOrCreate = {
   category,
   joystreamMediaLocation,
   httpMediaLocation,
+  license,
+  mediaLocation,
 }
