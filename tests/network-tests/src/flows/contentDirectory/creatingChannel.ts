@@ -28,8 +28,8 @@ export default async function channelCreation(api: QueryNodeApi, pair: KeyringPa
 
   await createChannelHappyCaseFixture.runner(false)
 
-  // Temporary solution (wait 10 minutes)
-  await delay(600000)
+  // Temporary solution (wait 2 minutes)
+  await delay(120000)
 
   const result = await api.getChannelbyTitle(createChannelHappyCaseFixture.channelEntity.title)
   console.log(result.data)
