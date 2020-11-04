@@ -45,7 +45,14 @@ fn get_all_proposals_parameters_objects() -> AllProposalsParameters {
 
     json_str
         .map(lite_json::parse_json)
-        .map(|res| res.ok())
+        .map(|res| {
+            match res {
+                Ok(json) => Some(json),
+                Err(_) => {
+                    panic!("Invalid JSON with proposals parameters provided.");
+                }
+            }
+        })
         .flatten()
         .map(convert_json_object_to_proposal_parameters)
         .unwrap_or_else(default_parameters)
