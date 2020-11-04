@@ -1713,6 +1713,7 @@ export class Api {
     ).filter((addr) => addr !== '')
   }
   */
+
   public async terminateApplication(
     leader: string,
     applicationId: ApplicationId,
@@ -1931,8 +1932,7 @@ export class Api {
       operations // We provide parsed operations as second argument
     )
 
-    const txHelper = new ExtrinsicsHelper(this.api)
-    await txHelper.sendAndCheck(pair, [transaction], 'Transaction failed!')
+    await this.sender.signAndSend(transaction, pair.address, false)
   }
 
   public async createChannelEntity(channel: ChannelEntity, pair: KeyringPair): Promise<void> {
