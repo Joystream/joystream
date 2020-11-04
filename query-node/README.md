@@ -8,20 +8,7 @@ We use Hydra-cli to generate a graphql server and a block indexer for joystream 
 
 ```bash
 $ cd query-node
-$ hydra-cli codegen
-```
-
-After codegen process is done, we must add this lines to the `indexer/tsconfig.json` file. It is required because we are using `joystream/types` for decoding chain data in the mappings:
-
-```json
-{
-  "compilerOptions":
-    ...
-    "baseUrl": ".",
-    "paths": {
-      "@polkadot/types/augment": ["../../node_modules/@joystream/types/augment-codec/augment-types.ts"]
-    }
-}
+$ yarn build
 ```
 
 ## Run mapping processor
