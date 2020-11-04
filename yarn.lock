@@ -10529,7 +10529,7 @@ date-utils@*:
   resolved "https://registry.yarnpkg.com/date-utils/-/date-utils-1.2.21.tgz#61fb16cdc1274b3c9acaaffe9fc69df8720a2b64"
   integrity sha1-YfsWzcEnSzyayq/+n8ad+HIKK2Q=
 
-dateformat@^3.0.0:
+dateformat@^3.0.0, dateformat@^3.0.2:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/dateformat/-/dateformat-3.0.3.tgz#a6e37499a4d9a9cf85ef5872044d62901c9889ae"
   integrity sha512-jyCETtSl3VMZMWeRo7iY1FL19ges1t55hMo5yaam4Jrsm5EPL89UQkoQRyiI+Yf4k8r2ZpdngkV8hr1lIdjb3Q==
@@ -10541,6 +10541,11 @@ dateformat@~1.0.4-1.2.3:
   dependencies:
     get-stdin "^4.0.1"
     meow "^3.3.0"
+
+datejs@^1.0.0-rc3:
+  version "1.0.0-rc3"
+  resolved "https://registry.yarnpkg.com/datejs/-/datejs-1.0.0-rc3.tgz#bffa1efedefeb41fdd8a242af55afa01fb58de57"
+  integrity sha1-v/oe/t7+tB/diiQq9Vr6AftY3lc=
 
 de-indent@^1.0.2:
   version "1.0.2"
@@ -19248,7 +19253,7 @@ lodash@^4.17.11, lodash@^4.17.12, lodash@^4.17.13, lodash@^4.17.14, lodash@^4.17
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.15.tgz#b447f6670a0455bbfeedd11392eff330ea097548"
   integrity sha512-8xOcRHvCjnocdS5cpwXQXVzmmh5e5+saE2QGoeQmbKmRS6J3VQppPOIt0MnmE+4xlZoumy0GPG0D0MVIQbNA1A==
 
-lodash@^4.17.20:
+lodash@^4.17.20, lodash@^4.3.0:
   version "4.17.20"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.20.tgz#b44a9b6297bcb698f1c51a3545a2b3b368d59c52"
   integrity sha512-PlhdFcillOINfeV7Ni6oF1TAEayyZBoZ8bcshTHqOYJYlrqzRK5hagpagky5o4HfCzzd1TRkXPMFq6cKk9rGmA==

@@ -31,9 +31,8 @@ export default async function channelCreation(api: QueryNodeApi, pair: KeyringPa
   // Temporary solution (wait 10 minutes)
   await delay(600000)
 
-  await api
-    .getChannelbyTitle(createChannelHappyCaseFixture.channelEntity.title)
-    .then((result) => console.log(result.data))
+  const result = await api.getChannelbyTitle(createChannelHappyCaseFixture.channelEntity.title)
+  console.log(result.data)
 
   // assert(data.title === createChannelHappyCaseFixture.channelEntity.title, 'Should be equal')
   // assert(data.description === createChannelHappyCaseFixture.channelEntity.description, 'Should be equal')

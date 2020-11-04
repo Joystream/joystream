@@ -18,13 +18,13 @@ export enum ContentDirectoryKnownClasses {
 export const contentDirectoryClassNamesWithId: { classId: number; name: string }[] = [
   { name: ContentDirectoryKnownClasses.CHANNEL, classId: 1 },
   { name: ContentDirectoryKnownClasses.CATEGORY, classId: 2 },
-  { name: ContentDirectoryKnownClasses.HTTPMEDIALOCATION, classId: 3 },
-  { name: ContentDirectoryKnownClasses.JOYSTREAMMEDIALOCATION, classId: 4 },
   { name: ContentDirectoryKnownClasses.KNOWNLICENSE, classId: 5 },
-  { name: ContentDirectoryKnownClasses.LANGUAGE, classId: 6 },
   { name: ContentDirectoryKnownClasses.USERDEFINEDLICENSE, classId: 9 },
-  { name: ContentDirectoryKnownClasses.VIDEO, classId: 10 },
+  { name: ContentDirectoryKnownClasses.LANGUAGE, classId: 6 },
+  { name: ContentDirectoryKnownClasses.JOYSTREAMMEDIALOCATION, classId: 4 },
+  { name: ContentDirectoryKnownClasses.HTTPMEDIALOCATION, classId: 3 },
   { name: ContentDirectoryKnownClasses.VIDEOMEDIA, classId: 11 },
+  { name: ContentDirectoryKnownClasses.VIDEO, classId: 10 },
   { name: ContentDirectoryKnownClasses.VIDEOMEDIAENCODING, classId: 12 },
 ]
 

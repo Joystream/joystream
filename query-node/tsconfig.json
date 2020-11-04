@@ -14,11 +14,9 @@
     "inlineSources": false,
     "baseUrl": ".",
     "paths": {
-      "@polkadot/types/augment": [
-        "../types/augment/all",
-        "../types/augment-codec/augment-types.ts"
-      ]
-    }
+      "@polkadot/types/augment": ["../types/augment-codec/augment-types.ts"]
+    },
+    "esModuleInterop": true
   },
   "include": ["mappings/**/*"],
   "exclude": ["node_modules"]

@@ -50,8 +50,5 @@
   "engines": {
     "node": ">=12.18.0",
     "yarn": "^1.22.0"
-  },
-  "dependencies": {
-    "@apollo/client": "^3.2.5"
   }
 }
