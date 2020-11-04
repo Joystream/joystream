@@ -26,7 +26,7 @@ async function main() {
   const ALICE = getAlicePair()
 
   // Emptiness check
-  if ((await api.query.contentDirectory.nextClassId()).toNumber() > 1) {
+  if ((await api.query.contentDirectory.classById.keys()).length > 0) {
     console.log('Content directory is not empty! Skipping...')
     process.exit()
   }

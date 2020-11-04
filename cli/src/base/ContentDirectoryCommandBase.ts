@@ -19,12 +19,31 @@ import _ from 'lodash'
 import { RolesCommandBase } from './WorkingGroupsCommandBase'
 import { createType } from '@joystream/types'
 import chalk from 'chalk'
+import { flags } from '@oclif/command'
+
+const CONTEXTS = ['Member', 'Curator', 'Lead'] as const
+type Context = typeof CONTEXTS[number]
 
 /**
  * Abstract base class for commands related to content directory
  */
 export default abstract class ContentDirectoryCommandBase extends RolesCommandBase {
   group = WorkingGroups.Curators // override group for RolesCommandBase
+
+  static contextFlag = flags.enum({
+    name: 'context',
+    required: false,
+    description: `Actor context to execute the command in (${CONTEXTS.join('/')})`,
+    options: [...CONTEXTS],
+  })
+
+  async promptForContext(message = 'Choose in which context you wish to execute the command'): Promise<Context> {
+    return this.simplePrompt({
+      message,
+      type: 'list',
+      choices: CONTEXTS.map((c) => ({ name: c, value: c })),
+    })
+  }
 
   // Use when lead access is required in given command
   async requireLead(): Promise<void> {
@@ -243,7 +262,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     className: string,
     propName?: string,
     ownerMemberId?: number,
-    defaultId?: number
+    defaultId?: number | null
   ): Promise<[EntityId, Entity]> {
     const [classId, entityClass] = await this.classEntryByNameOrId(className)
     const entityEntries = await this.entitiesByClassAndOwner(classId.toNumber(), ownerMemberId)
@@ -263,7 +282,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
           value: id.toString(), // With numbers there are issues with "default"
         }
       }),
-      default: defaultId?.toString(),
+      default: typeof defaultId === 'number' ? defaultId.toString() : undefined,
     })
 
     return entityEntries.find(([id]) => choosenEntityId === id.toString())!
@@ -274,7 +293,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     className: string,
     propName?: string,
     ownerMemberId?: number,
-    defaultId?: number
+    defaultId?: number | null
   ): Promise<number> {
     return (await this.promptForEntityEntry(message, className, propName, ownerMemberId, defaultId))[0].toNumber()
   }
@@ -303,7 +322,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
   async parseToKnownEntityJson<T>(entity: Entity): Promise<FlattenRelations<T>> {
     const entityClass = (await this.classEntryByNameOrId(entity.class_id.toString()))[1]
     return (_.mapValues(this.parseEntityPropertyValues(entity, entityClass), (v) =>
-      v.value.toJSON()
+      v.type !== 'Single<Bool>' && v.value.toJSON() === false ? null : v.value.toJSON()
     ) as unknown) as FlattenRelations<T>
   }
 
