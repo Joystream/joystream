@@ -32,11 +32,11 @@ export default async function channelCreation(api: QueryNodeApi, pair: KeyringPa
   await delay(120000)
 
   const result = await api.getChannelbyTitle(createChannelHappyCaseFixture.channelEntity.title)
-  console.log(result.data)
+  const queriedChannel = result.data.channels[0]
 
-  // assert(data.title === createChannelHappyCaseFixture.channelEntity.title, 'Should be equal')
-  // assert(data.description === createChannelHappyCaseFixture.channelEntity.description, 'Should be equal')
-  // assert(data.coverPhotoUrl === createChannelHappyCaseFixture.channelEntity.coverPhotoUrl, 'Should be equal')
-  // assert(data.avatarPhotoUrl === createChannelHappyCaseFixture.channelEntity.avatarPhotoURL, 'Should be equal')
-  // assert(data.isPublic === createChannelHappyCaseFixture.channelEntity.isPublic.toString(), 'Should be equal')
+  assert(queriedChannel.title === createChannelHappyCaseFixture.channelEntity.title, 'Should be equal')
+  assert(queriedChannel.description === createChannelHappyCaseFixture.channelEntity.description, 'Should be equal')
+  assert(queriedChannel.coverPhotoUrl === createChannelHappyCaseFixture.channelEntity.coverPhotoUrl, 'Should be equal')
+  assert(queriedChannel.avatarPhotoUrl === createChannelHappyCaseFixture.channelEntity.avatarPhotoURL, 'Should be equal')
+  assert(queriedChannel.isPublic === createChannelHappyCaseFixture.channelEntity.isPublic, 'Should be equal')
 }
