@@ -51,6 +51,25 @@ fn get_all_proposals_parameters_objects() -> AllProposalsParameters {
         .unwrap_or_else(default_parameters)
 }
 
+// Helper macro for initializing single ProposalParameters object for a specified field of the
+// AllProposalsParameters object. It helps to reduce duplication of the field names for
+// AllProposalsParameters field, JSON object field name and default value function.
+// Consider this as duplication example:
+//         parameters.set_validator_count_proposal = create_proposal_parameters_object(
+//             json_object,
+//             "set_validator_count_proposal",
+//             defaults::set_validator_count_proposal(),
+//         );
+macro_rules! init_proposal_parameter_object {
+    ($parameters_object:ident, $jsonObj:expr, $name:ident) => {
+        $parameters_object.$name = create_proposal_parameters_object(
+            $jsonObj,
+            stringify!($name),
+            defaults::$name(),
+        );
+    };
+}
+
 // Tries to extract all proposal parameters from the parsed JSON object.
 fn convert_json_object_to_proposal_parameters(
     json: lite_json::JsonValue,
@@ -58,11 +77,7 @@ fn convert_json_object_to_proposal_parameters(
     let mut parameters = default_parameters();
 
     if let lite_json::JsonValue::Object(json_object) = json {
-        parameters.set_validator_count_proposal = create_proposal_parameters_object(
-            json_object,
-            "set_validator_count_proposal",
-            defaults::set_validator_count_proposal(),
-        );
+        init_proposal_parameter_object!(parameters, json_object, set_validator_count_proposal)
     }
 
     parameters
@@ -82,63 +97,57 @@ fn create_proposal_parameters_object(
         .unwrap_or(defaults)
 }
 
+// Helper macro for initializing single field of the ProposalParameters object.
+// It helps to reduce duplication of the field names for ProposalParameters
+// field name, JSON object field name and default value field name.
+// Consider this as duplication example:
+//     ProposalParameters::<BlockNumber, Balance> {
+//         voting_period: extract_numeric_parameter(
+//             json_object,
+//             "voting_period",
+//             defaults.voting_period.saturated_into(),
+//         )
+//         .saturated_into(),
+//      ....
+//      }
+macro_rules! init_proposal_parameter_field {
+    ($parameters_object:ident, $jsonObj:expr, $default_object:ident, $name:ident) => {
+        $parameters_object.$name = extract_numeric_parameter(
+            $jsonObj,
+            stringify!($name),
+            $default_object.$name.saturated_into(),
+        ).saturated_into();
+    };
+}
+
+// Helper macro similar to init_proposal_parameter_field but for optional parameters.
+macro_rules! init_proposal_parameter_optional_field {
+    ($parameters_object:ident, $jsonObj:expr, $default_object:ident, $name:ident) => {
+        $parameters_object.$name = Some(extract_numeric_parameter(
+            $jsonObj,
+            stringify!($name),
+            $default_object.$name.unwrap_or_default().saturated_into(),
+        ).saturated_into());
+    };
+}
+
 // Extracts proposal parameters from the parsed JSON object.
 fn extract_proposal_parameters(
     json_object: &JsonValue,
     defaults: ProposalParameters<BlockNumber, Balance>,
 ) -> ProposalParameters<BlockNumber, Balance> {
-    ProposalParameters::<BlockNumber, Balance> {
-        voting_period: extract_numeric_parameter(
-            json_object,
-            "voting_period",
-            defaults.voting_period.saturated_into(),
-        )
-        .saturated_into(),
-        grace_period: extract_numeric_parameter(
-            json_object,
-            "grace_period",
-            defaults.grace_period.saturated_into(),
-        )
-        .saturated_into(),
-        approval_quorum_percentage: extract_numeric_parameter(
-            json_object,
-            "approval_quorum_percentage",
-            defaults.approval_quorum_percentage.saturated_into(),
-        )
-        .saturated_into(),
-        approval_threshold_percentage: extract_numeric_parameter(
-            json_object,
-            "approval_threshold_percentage",
-            defaults.approval_threshold_percentage.saturated_into(),
-        )
-        .saturated_into(),
-        slashing_quorum_percentage: extract_numeric_parameter(
-            json_object,
-            "slashing_quorum_percentage",
-            defaults.slashing_quorum_percentage.saturated_into(),
-        )
-        .saturated_into(),
-        slashing_threshold_percentage: extract_numeric_parameter(
-            json_object,
-            "slashing_threshold_percentage",
-            defaults.slashing_threshold_percentage.saturated_into(),
-        )
-        .saturated_into(),
-        required_stake: Some(
-            extract_numeric_parameter(
-                json_object,
-                "required_stake",
-                defaults.required_stake.unwrap_or_default().saturated_into(),
-            )
-            .saturated_into(),
-        ),
-        constitutionality: extract_numeric_parameter(
-            json_object,
-            "constitutionality",
-            defaults.constitutionality.saturated_into(),
-        )
-        .saturated_into(),
-    }
+    let mut proposals_parameters = ProposalParameters::default();
+
+    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, voting_period);
+    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, grace_period);
+    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, approval_quorum_percentage);
+    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, approval_threshold_percentage);
+    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, slashing_quorum_percentage);
+    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, slashing_threshold_percentage);
+    init_proposal_parameter_optional_field!(proposals_parameters, json_object, defaults, required_stake);
+    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, constitutionality);
+
+    proposals_parameters
 }
 
 // Extracts a specific numeric parameter from the parsed JSON object.
