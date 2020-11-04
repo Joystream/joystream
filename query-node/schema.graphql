@@ -8,8 +8,8 @@ type Block @entity {
   "Block number as a string"
   id: ID!
   block: Int!
-  timestamp: Int!
-  nework: Network!
+  timestamp: BigInt!
+  network: Network!
 }
 
 "Stored information about a registered user"
@@ -155,6 +155,38 @@ type UserDefinedLicense @entity {
   happenedIn: Block!
 }
 
+type License @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
+  # One of the following field will be non-null
+
+  "Reference to a known license"
+  knownLicense: KnownLicense
+
+  "Reference to user-defined license"
+  userdefinedLicense: UserDefinedLicense
+
+  happenedIn: Block!
+}
+
+type MediaLocation @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
+  # One of the following field will be non-null
+
+  "A reference to HttpMediaLocation"
+  httpMediaLocation: HttpMediaLocation
+
+  "A reference to JoystreamMediaLocation"
+  joystreamMediaLocation: JoystreamMediaLocation
+
+  videoMedia: VideoMedia @derivedFrom(field: "location")
+
+  happenedIn: Block!
+}
+
 type JoystreamMediaLocation @entity {
   "Runtime entity identifier (EntityId)"
   id: ID!
@@ -196,9 +228,8 @@ type VideoMedia @entity {
 
   video: Video @derivedFrom(field: "media")
 
-  # One of the location field will be non-null
-  httpMediaLocation: HttpMediaLocation
-  joystreamMediaLocation: JoystreamMediaLocation
+  "Location of the video media object"
+  location: MediaLocation!
 
   happenedIn: Block!
 }
@@ -249,9 +280,7 @@ type Video @entity {
   "Whether the Video contains explicit material."
   isExplicit: Boolean!
 
-  # Lincense
-  knownLicense: KnownLicense
-  userdefinedLicense: UserDefinedLicense
+  license: License!
 
   happenedIn: Block!
 }
