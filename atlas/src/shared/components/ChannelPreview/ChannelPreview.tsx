@@ -13,7 +13,7 @@ type ChannelPreviewProps = {
 }
 
 const ChannelPreview: React.FC<ChannelPreviewProps> = ({ name, avatarURL, className, animated = false, onClick }) => {
-  const avatarNode = <StyledAvatar img={avatarURL} />
+  const avatarNode = <StyledAvatar img={avatarURL} name={name} />
   const nameNode = <NameHeader>{name}</NameHeader>
 
   return (
@@ -41,6 +41,9 @@ const NameHeader = styled.h2`
 export const StyledAvatar = styled(Avatar)`
   width: 100%;
   height: 100%;
+  > span {
+    font-size: ${typography.sizes.h2};
+  }
 `
 
 export default ChannelPreview
