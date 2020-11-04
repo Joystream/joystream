@@ -1,6 +1,6 @@
 import React from 'react'
 import styled from '@emotion/styled'
-import { ChannelGallery, Hero, VideoGallery } from '@/components'
+import { ChannelGallery, FeaturedVideoHeader, VideoGallery } from '@/components'
 import { RouteComponentProps } from '@reach/router'
 import { useQuery } from '@apollo/client'
 import { InfiniteVideoGrid } from '@/shared/components'
@@ -8,8 +8,7 @@ import { GET_FEATURED_VIDEOS, GET_NEWEST_CHANNELS, GET_NEWEST_VIDEOS } from '@/a
 import { GetFeaturedVideos } from '@/api/queries/__generated__/GetFeaturedVideos'
 import { GetNewestVideos, GetNewestVideosVariables } from '@/api/queries/__generated__/GetNewestVideos'
 import { GetNewestChannels, GetNewestChannelsVariables } from '@/api/queries/__generated__/GetNewestChannels'
-
-const backgroundImg = 'https://eu-central-1.linodeobjects.com/atlas-assets/hero.jpeg'
+import { spacing } from '@/shared/theme'
 
 const NEWEST_VIDEOS_COUNT = 8
 const NEWEST_CHANNELS_COUNT = 8
@@ -32,7 +31,7 @@ const HomeView: React.FC<RouteComponentProps> = () => {
 
   return (
     <>
-      <Hero backgroundImg={backgroundImg} />
+      <FeaturedVideoHeader />
       <Container>
         <VideoGallery title="Newest videos" loading={newestVideosLoading} videos={newestVideos} />
         <VideoGallery
@@ -48,7 +47,8 @@ const HomeView: React.FC<RouteComponentProps> = () => {
 }
 
 const Container = styled.div`
-  margin: 1rem 0;
+  position: relative;
+  margin: ${spacing.xxxxl} 0;
   & > * {
     margin-bottom: 3rem;
   }
