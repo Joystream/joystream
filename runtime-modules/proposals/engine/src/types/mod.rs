@@ -379,18 +379,6 @@ pub trait ProposalCodeDecoder<T: system::Trait> {
     ) -> Result<Box<dyn ProposalExecutable>, &'static str>;
 }
 
-/// Data container for the approved proposal results
-pub(crate) struct ApprovedProposalData<ProposalId, BlockNumber, ProposerId, Balance, AccountId> {
-    /// Proposal id.
-    pub proposal_id: ProposalId,
-
-    /// Proposal to be finalized.
-    pub proposal: Proposal<BlockNumber, ProposerId, Balance, AccountId>,
-
-    /// Proposal finalisation block number.
-    pub finalized_at: BlockNumber,
-}
-
 /// Containter-type for a proposal creation method.
 pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId> {
     /// Account id of the proposer.
@@ -424,15 +412,6 @@ pub(crate) type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
-
-// Simplification of the 'ApprovedProposalData' type
-pub(crate) type ApprovedProposal<T> = ApprovedProposalData<
-    <T as crate::Trait>::ProposalId,
-    <T as system::Trait>::BlockNumber,
-    MemberId<T>,
-    BalanceOf<T>,
-    <T as system::Trait>::AccountId,
->;
 
 // Simplification of the 'Proposal' type
 pub(crate) type ProposalOf<T> = Proposal<

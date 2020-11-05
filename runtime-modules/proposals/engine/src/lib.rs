@@ -109,10 +109,7 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
-//#![warn(missing_docs)]
-
-use types::{ApprovedProposal, ApprovedProposalData, MemberId, ProposalOf};
+use types::{MemberId, ProposalOf};
 
 pub use types::{
     ApprovedProposalStatus, BalanceOf, ExecutionStatus, Proposal, ProposalCodeDecoder,
@@ -359,11 +356,8 @@ decl_module! {
             proposal_id: T::ProposalId,
             vote: VoteKind,
             _rationale: Vec<u8>, // we use it on the query node side.
-        )  {
-            T::VoterOriginValidator::ensure_actor_origin(
-                origin,
-                voter_id,
-            )?;
+        ) {
+            T::VoterOriginValidator::ensure_actor_origin(origin, voter_id)?;
 
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let mut proposal = Self::proposals(proposal_id);
@@ -389,10 +383,7 @@ decl_module! {
         /// Cancel a proposal by its original proposer.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
-            T::ProposerOriginValidator::ensure_actor_origin(
-                origin,
-                proposer_id,
-            )?;
+            T::ProposerOriginValidator::ensure_actor_origin(origin, proposer_id)?;
 
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
@@ -623,9 +614,9 @@ impl<T: Trait> Module<T> {
         <system::Module<T>>::block_number()
     }
 
-    // Executes approved proposal code
-    fn execute_proposal(approved_proposal: ApprovedProposal<T>) {
-        let proposal_code = Self::proposal_codes(approved_proposal.proposal_id);
+    // Executes proposal code.
+    fn execute_proposal(proposal_id: T::ProposalId) {
+        let proposal_code = Self::proposal_codes(proposal_id);
 
         let proposal_code_result = T::DispatchableCallCode::decode(&mut &proposal_code[..]);
 
@@ -644,37 +635,26 @@ impl<T: Trait> Module<T> {
             Err(error) => ExecutionStatus::failed_execution(error.what()),
         };
 
-        Self::deposit_event(RawEvent::ProposalExecuted(
-            approved_proposal.proposal_id,
-            execution_status,
-        ));
+        Self::deposit_event(RawEvent::ProposalExecuted(proposal_id, execution_status));
 
-        Self::remove_proposal_data(&approved_proposal.proposal_id);
+        Self::remove_proposal_data(&proposal_id);
     }
 
-    // Computes finalized proposal and executes all side-effects. Returns updated proposal.
-    fn finalize_proposal(
-        proposal_id: T::ProposalId,
-        proposal: ProposalOf<T>,
-        proposal_decision: ProposalDecision,
-    ) -> ProposalOf<T> {
-        let finalized_proposal =
-            Self::compute_finalized_proposal(proposal, proposal_decision.clone());
-        Self::resolve_proposal(proposal_id, finalized_proposal.clone(), proposal_decision);
-
-        finalized_proposal
-    }
-
+    // Computes a finalilzed proposal:
+    // - update proposal status fields (status, finalized_at)
+    // - increment constitutionality level of the proposal
     // Performs all side-effect actions on proposal finalization:
     // - slash and unstake proposal stake if stake exists
     // - fire an event
     // - update or delete proposal state
     // It prints an error message in case of an attempt to finalize the non-active proposal.
-    fn resolve_proposal(
+    fn finalize_proposal(
         proposal_id: T::ProposalId,
         proposal: ProposalOf<T>,
         proposal_decision: ProposalDecision,
-    ) {
+    ) -> ProposalOf<T> {
+        let mut finalized_proposal = proposal;
+
         // fire the proposal decision event
         Self::deposit_event(RawEvent::ProposalDecisionMade(
             proposal_id,
@@ -686,69 +666,29 @@ impl<T: Trait> Module<T> {
             != ProposalDecision::Approved(ApprovedProposalStatus::PendingConstitutionality)
         {
             let slash_balance =
-                Self::calculate_slash_balance(&proposal_decision, &proposal.parameters);
-            Self::slash_and_unstake(proposal.staking_account_id.clone(), slash_balance);
+                Self::calculate_slash_balance(&proposal_decision, &finalized_proposal.parameters);
+            Self::slash_and_unstake(finalized_proposal.staking_account_id.clone(), slash_balance);
         }
 
         // update approved proposal or remove otherwise
-        if !matches!(proposal_decision, ProposalDecision::Approved(..)) {
-            Self::remove_proposal_data(&proposal_id);
-        } else {
-            <Proposals<T>>::insert(proposal_id, proposal.clone());
+        if let ProposalDecision::Approved(approved_proposal_decision) = proposal_decision {
+            let now = Self::current_block();
+
+            finalized_proposal.increase_constitutionality_level();
+            finalized_proposal.status = ProposalStatus::approved(approved_proposal_decision, now);
+
+            <Proposals<T>>::insert(proposal_id, finalized_proposal.clone());
 
             // fire the proposal status update event
             Self::deposit_event(RawEvent::ProposalStatusUpdated(
                 proposal_id,
-                proposal.status,
+                finalized_proposal.status.clone(),
             ));
+        } else {
+            Self::remove_proposal_data(&proposal_id);
         }
-    }
-
-    // Computes a finalilzed proposal:
-    // - update proposal status fields (status, finalized_at)
-    // - increment constitutionality level of the proposal
-    fn compute_finalized_proposal(
-        proposal: ProposalOf<T>,
-        proposal_decision: ProposalDecision,
-    ) -> ProposalOf<T> {
-        let now = Self::current_block();
-
-        let mut finalized_proposal = proposal;
-        finalized_proposal.status = match proposal_decision {
-            ProposalDecision::Approved(approved_status) => match approved_status {
-                ApprovedProposalStatus::PendingExecution => ProposalStatus::PendingExecution(now),
-                ApprovedProposalStatus::PendingConstitutionality => {
-                    ProposalStatus::PendingConstitutionality
-                }
-            },
-            _ => finalized_proposal.status,
-        };
-        finalized_proposal.increase_constitutionality_level();
 
         finalized_proposal
-    }
-
-    // Composes an optional approved proposal data if the proposal is ready for execution -
-    // checks their grace period expiration and exact execution block.
-    // Returns None if it is not ready.
-    fn compose_approved_proposal_data_if_ready_for_execution(
-        proposal_id: T::ProposalId,
-        proposal: ProposalOf<T>,
-    ) -> Option<ApprovedProposal<T>> {
-        if proposal.status.is_pending_execution_proposal() {
-            let now = Self::current_block();
-            if proposal.is_ready_for_execution(now) {
-                if let ProposalStatus::PendingExecution(finalized_at) = proposal.status {
-                    return Some(ApprovedProposalData {
-                        proposal_id,
-                        proposal,
-                        finalized_at,
-                    });
-                }
-            }
-        }
-
-        None
     }
 
     // Slashes the stake and perform unstake only in case of existing stake.
@@ -847,14 +787,8 @@ impl<T: Trait> Module<T> {
                 }
             }
 
-            let approved_proposal = Self::compose_approved_proposal_data_if_ready_for_execution(
-                proposal_id,
-                finalized_proposal,
-            );
-
-            // Execute the proposal if it is ready for execution.
-            if let Some(approved_proposal) = approved_proposal {
-                Self::execute_proposal(approved_proposal);
+            if finalized_proposal.is_ready_for_execution(now) {
+                Self::execute_proposal(proposal_id);
             }
         }
     }
