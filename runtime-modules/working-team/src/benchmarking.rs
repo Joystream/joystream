@@ -15,37 +15,35 @@ use membership::Module as Membership;
 
 const SEED: u32 = 0;
 
+enum StakingRole {
+    WithStakes,
+    WithoutStakes,
+}
+
 fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
 }
 
-fn add_and_apply_opening<T: Trait<I>, I: Instance>(
+// TODO: Use references in helper instead of cloning
+
+fn add_opening_helper<T: Trait<I>, I: Instance>(
     id: u32,
-    add_opening_origin: T::Origin,
-    without_stake: bool,
-    applicant_id: T::AccountId,
-    member_id: T::MemberId,
-    job_opening_type: JobOpeningType,
-) -> (T::OpeningId, T::ApplicationId) {
-    let (staking_policy, stake_parameters) = if without_stake {
-        (None, None)
-    } else {
-        (
-            Some(StakePolicy {
-                stake_amount: One::one(),
-                leaving_unstaking_period: T::MinUnstakingPeriodLimit::get() + One::one(),
-            }),
-            Some(StakeParameters {
-                stake: BalanceOfCurrency::<T>::max_value(),
-                staking_account_id: applicant_id.clone(),
-            }),
-        )
+    add_opening_origin: &T::Origin,
+    staking_role: &StakingRole,
+    job_opening_type: &JobOpeningType,
+) -> T::OpeningId {
+    let staking_policy = match staking_role {
+        StakingRole::WithStakes => Some(StakePolicy {
+            stake_amount: One::one(),
+            leaving_unstaking_period: T::MinUnstakingPeriodLimit::get() + One::one(),
+        }),
+        StakingRole::WithoutStakes => None,
     };
 
     WorkingTeam::<T, I>::add_opening(
         add_opening_origin.clone(),
         vec![],
-        job_opening_type,
+        *job_opening_type,
         staking_policy,
         Some(RewardPolicy {
             reward_per_block: One::one(),
@@ -53,13 +51,23 @@ fn add_and_apply_opening<T: Trait<I>, I: Instance>(
     )
     .unwrap();
 
-    let opening_id = T::OpeningId::from(id.try_into().unwrap());
+    T::OpeningId::from(id.try_into().unwrap())
+}
+
+fn apply_on_opening_helper<T: Trait<I>, I: Instance>(id: u32, staking_role: &StakingRole, applicant_id: &T::AccountId, member_id: &T::MemberId, opening_id: &T::OpeningId) -> T::ApplicationId {
+    let stake_parameters = match staking_role {
+        StakingRole::WithStakes => Some(StakeParameters {
+            stake: BalanceOfCurrency::<T>::max_value(),
+            staking_account_id: applicant_id.clone(),
+        }),
+        StakingRole::WithoutStakes => None,
+    };
 
     WorkingTeam::<T, I>::apply_on_opening(
         RawOrigin::Signed(applicant_id.clone()).into(),
         ApplyOnOpeningParameters::<T, I> {
-            member_id,
-            opening_id,
+            member_id: *member_id,
+            opening_id: *opening_id,
             role_account_id: applicant_id.clone(),
             reward_account_id: applicant_id.clone(),
             description: vec![],
@@ -68,7 +76,20 @@ fn add_and_apply_opening<T: Trait<I>, I: Instance>(
     )
     .unwrap();
 
-    let application_id = T::ApplicationId::from(id.try_into().unwrap());
+    T::ApplicationId::from(id.try_into().unwrap())
+}
+
+fn add_and_apply_opening<T: Trait<I>, I: Instance>(
+    id: u32,
+    add_opening_origin: T::Origin,
+    staking_role: StakingRole,
+    applicant_id: T::AccountId,
+    member_id: T::MemberId,
+    job_opening_type: JobOpeningType,
+) -> (T::OpeningId, T::ApplicationId) {
+    let opening_id = add_opening_helper::<T, I>(id, &add_opening_origin, &staking_role, &job_opening_type);
+
+    let application_id = apply_on_opening_helper::<T, I>(id, &staking_role, &applicant_id, &member_id, &opening_id);
 
     (opening_id, application_id)
 }
@@ -118,7 +139,7 @@ fn member_funded_account<T: membership::Trait>(
 }
 
 fn insert_a_worker<T: Trait<I>, I: Instance>(
-    without_stake: bool, // TODO: Check this
+    staking_role: StakingRole,
     job_opening_type: JobOpeningType,
     id: u32,
     lead_id: Option<T::AccountId>,
@@ -136,7 +157,7 @@ where
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
         id,
         add_worker_origin.clone().into(),
-        without_stake,
+        staking_role,
         caller_id.clone(),
         member_id.clone(),
         job_opening_type,
@@ -169,7 +190,7 @@ benchmarks_instance! {
     on_initialize_leaving {
       let i in 1 .. T::MaxWorkerNumberLimit::get();
 
-      let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(false, JobOpeningType::Leader, 0, None);
+      let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Leader, 0, None);
 
       let leaving_unstaking_period = T::MinUnstakingPeriodLimit::get() + One::one();
 
@@ -245,7 +266,7 @@ benchmarks_instance! {
     on_initialize_rewarding_with_missing_reward {
       let i in 1 .. T::MaxWorkerNumberLimit::get();
 
-      let (lead_id, _) = insert_a_worker::<T, I>(false, JobOpeningType::Leader, 0, None);
+      let (lead_id, _) = insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Leader, 0, None);
 
 
       WorkingTeam::<T, I>::add_opening(
@@ -310,7 +331,7 @@ benchmarks_instance! {
     on_initialize_rewarding_without_missing_reward {
       let i in 1 .. T::MaxWorkerNumberLimit::get();
 
-      let (lead_id, _) = insert_a_worker::<T, I>(false, JobOpeningType::Leader, 0, None);
+      let (lead_id, _) = insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Leader, 0, None);
 
 
       WorkingTeam::<T, I>::add_opening(
@@ -370,25 +391,17 @@ benchmarks_instance! {
       let i in 1 .. 50000;
 
       let (lead_account_id, lead_member_id) = member_funded_account::<T>("lead", 0);
-
-      WorkingTeam::<T, I>::add_opening(
-          RawOrigin::Root.into(),
-          vec![],
-          JobOpeningType::Leader,
-          Some(StakePolicy {
-            stake_amount: One::one(),
-            leaving_unstaking_period: T::BlockNumber::max_value(),
-          }),
-          None,
-      ).unwrap();
+      let opening_id = add_opening_helper::<T, I>(0, &T::Origin::from(RawOrigin::Root), &StakingRole::WithStakes, &JobOpeningType::Leader);
 
       let apply_on_opening_params = ApplyOnOpeningParameters::<T, I> {
         member_id: lead_member_id,
-        opening_id: Zero::zero(),
+        opening_id: opening_id,
         role_account_id: lead_account_id.clone(),
         reward_account_id: lead_account_id.clone(),
         description: vec![0u8].repeat(i as usize),
         stake_parameters: Some(
+          // Make sure to keep consistency with the StakePolicy in add_opening_helper (we are safe as long as we are
+          // using max_value for stake)
           StakeParameters {
             stake: BalanceOfCurrency::<T>::max_value(),
             staking_account_id: lead_account_id.clone(),
@@ -402,65 +415,34 @@ benchmarks_instance! {
     fill_opening_lead {
       let i in 0 .. 10;
 
-      WorkingTeam::<T, I>::add_opening(
-          RawOrigin::Root.into(),
-          vec![],
-          JobOpeningType::Leader,
-          None,
-          None,
-      ).unwrap();
-
       let (lead_account_id, lead_member_id) = member_funded_account::<T>("lead", 0);
-      let opening_id = Zero::zero();
-
-      WorkingTeam::<T, I>::apply_on_opening(
-          RawOrigin::Signed(lead_account_id.clone()).into(),
-          ApplyOnOpeningParameters::<T, I> {
-              member_id: lead_member_id,
-              opening_id,
-              role_account_id: lead_account_id.clone(),
-              reward_account_id: lead_account_id.clone(),
-              description: vec![],
-              stake_parameters: None,
-          },
-      ).unwrap();
+      let (opening_id, application_id) = add_and_apply_opening::<T, I>(0, RawOrigin::Root.into(), StakingRole::WithoutStakes, lead_account_id,
+        lead_member_id, JobOpeningType::Leader);
 
       let mut successful_application_ids: BTreeSet<T::ApplicationId> = BTreeSet::new();
-      successful_application_ids.insert(Zero::zero());
+      successful_application_ids.insert(application_id);
     }: fill_opening(RawOrigin::Root, opening_id, successful_application_ids)
     verify {}
 
     fill_opening_worker { // We can actually fill an opening with 0 applications?
-      let i in 0 .. T::MaxWorkerNumberLimit::get() - 1;
-      let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
+      let i in 1 .. T::MaxWorkerNumberLimit::get();
+      let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
 
-      WorkingTeam::<T, I>::add_opening(
-          RawOrigin::Signed(lead_id.clone()).into(),
-          vec![],
-          JobOpeningType::Regular,
-          None,
-          None,
-      )
-      .unwrap();
-      let opening_id: T::OpeningId = One::one();
-      let mut last_application_id: T::ApplicationId = Zero::zero();
+      let staking_role = StakingRole::WithoutStakes;
+
+      let opening_id = add_opening_helper::<T, I>(
+        1,
+        &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
+        &staking_role,
+        &JobOpeningType::Regular,
+      );
+
       let mut successful_application_ids = BTreeSet::new();
-      for member in 0 .. i {
-        let (applicant_account_id, last_member_id) = member_funded_account::<T>("member", member + 1);
+      for id in 1 .. i {
+        let (applicant_account_id, applicant_member_id) = member_funded_account::<T>("member", id);
+        let last_application_id = apply_on_opening_helper::<T, I>(id, &staking_role, &applicant_account_id,
+          &applicant_member_id, &opening_id);
 
-        WorkingTeam::<T, I>::apply_on_opening(
-            RawOrigin::Signed(applicant_account_id.clone()).into(),
-            ApplyOnOpeningParameters::<T, I> {
-                member_id: last_member_id,
-                opening_id: opening_id.clone(),
-                role_account_id: applicant_account_id.clone(),
-                reward_account_id: applicant_account_id.clone(),
-                description: vec![],
-                stake_parameters: None,
-            },
-        ).unwrap();
-
-        last_application_id = last_application_id.saturating_add(One::one());
         successful_application_ids.insert(last_application_id);
       }
     }: fill_opening(RawOrigin::Signed(lead_id.clone()), opening_id, successful_application_ids)
@@ -468,8 +450,7 @@ benchmarks_instance! {
 
     update_role_account{
       let i in 1 .. 10;
-      let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
-
+      let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
       let new_account_id = account::<T::AccountId>("new_lead_account", 1, SEED);
     }: _ (RawOrigin::Signed(lead_id), lead_worker_id, new_account_id)
     verify {}
@@ -477,16 +458,14 @@ benchmarks_instance! {
     cancel_opening {
       let i in 1 .. 10;
 
-      let (lead_id, _) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
+      let (lead_id, _) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+      let opening_id = add_opening_helper::<T, I>(
+        1,
+        &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
+        &StakingRole::WithoutStakes,
+        &JobOpeningType::Regular
+      );
 
-      WorkingTeam::<T, I>::add_opening(
-          RawOrigin::Signed(lead_id.clone()).into(),
-          vec![],
-          JobOpeningType::Regular,
-          None,
-          None,
-      )
-      .unwrap();
     }: _ (RawOrigin::Signed(lead_id.clone()), One::one())
     verify {}
 
@@ -494,47 +473,15 @@ benchmarks_instance! {
       let i in 1 .. 10;
 
       let (caller_id, member_id) = member_funded_account::<T>("lead", 0);
+      let (_, application_id) = add_and_apply_opening::<T, I>(0,
+        RawOrigin::Root.into(),
+        StakingRole::WithStakes,
+        caller_id.clone(),
+        member_id.clone(),
+        JobOpeningType::Leader
+        );
 
-      let staking_policy = Some(
-        StakePolicy {
-          stake_amount: One::one(),
-          leaving_unstaking_period: T::MinUnstakingPeriodLimit::get() + One::one(),
-        }
-      );
-
-      let stake_parameters = Some(
-        StakeParameters {
-          stake: BalanceOfCurrency::<T>::max_value(),
-          staking_account_id: caller_id.clone(),
-        }
-      );
-
-
-      WorkingTeam::<T, I>::add_opening(
-          RawOrigin::Root.into(),
-          vec![],
-          JobOpeningType::Leader,
-          staking_policy,
-          Some(RewardPolicy {
-              reward_per_block: One::one(),
-          }),
-      )
-      .unwrap();
-
-      WorkingTeam::<T, I>::apply_on_opening(
-          RawOrigin::Signed(caller_id.clone()).into(),
-          ApplyOnOpeningParameters::<T, I> {
-              member_id,
-              opening_id: Zero::zero(),
-              role_account_id: caller_id.clone(),
-              reward_account_id: caller_id.clone(),
-              description: vec![],
-              stake_parameters,
-          },
-      )
-      .unwrap();
-
-    }: _ (RawOrigin::Signed(caller_id.clone()), Zero::zero())
+    }: _ (RawOrigin::Signed(caller_id.clone()), application_id)
     verify {}
 
     // Regular worker is the worst case scenario since the checks
@@ -542,8 +489,8 @@ benchmarks_instance! {
     slash_stake {
       let i in 0 .. 10;
 
-      let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
-      let (caller_id, worker_id) = insert_a_worker::<T, I>(false, JobOpeningType::Regular, 1, Some(lead_id.clone()));
+      let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+      let (caller_id, worker_id) = insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Regular, 1, Some(lead_id.clone()));
       let penalty = Penalty {
         slashing_text: vec![],
         slashing_amount: One::one(),
@@ -554,8 +501,8 @@ benchmarks_instance! {
     terminate_role_worker {
       let i in 0 .. 10;
 
-      let (lead_id, _) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
-      let (caller_id, worker_id) = insert_a_worker::<T, I>(false, JobOpeningType::Regular, 1, Some(lead_id.clone()));
+      let (lead_id, _) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+      let (caller_id, worker_id) = insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Regular, 1, Some(lead_id.clone()));
       // To be able to pay unpaid reward
       let current_budget = BalanceOfCurrency::<T>::max_value();
       WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
@@ -569,7 +516,7 @@ benchmarks_instance! {
     terminate_role_lead {
       let i in 0 .. 10;
 
-      let (_, lead_worker_id) = insert_a_worker::<T, I>(false, JobOpeningType::Leader, 0, None);
+      let (_, lead_worker_id) = insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Leader, 0, None);
       let current_budget = BalanceOfCurrency::<T>::max_value();
       // To be able to pay unpaid reward
       WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
@@ -585,8 +532,8 @@ benchmarks_instance! {
     increase_stake {
       let i in 0 .. 10;
 
-      let (lead_id, _) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
-      let (caller_id, worker_id) = insert_a_worker::<T, I>(false, JobOpeningType::Regular, 1, Some(lead_id.clone()));
+      let (lead_id, _) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+      let (caller_id, worker_id) = insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Regular, 1, Some(lead_id.clone()));
 
       let old_stake = One::one();
       WorkingTeam::<T, I>::decrease_stake(RawOrigin::Signed(lead_id.clone()).into(), worker_id.clone(), old_stake).unwrap();
@@ -599,8 +546,8 @@ benchmarks_instance! {
     decrease_stake {
       let i in 0 .. 10;
 
-      let (lead_id, _) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
-      let (_, worker_id) = insert_a_worker::<T, I>(false, JobOpeningType::Regular, 1, Some(lead_id.clone()));
+      let (lead_id, _) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+      let (_, worker_id) = insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Regular, 1, Some(lead_id.clone()));
 
       // I'm assuming that we will usually have MaxBalance > 1
       let new_stake = One::one();
@@ -610,7 +557,7 @@ benchmarks_instance! {
     spend_from_budget {
       let i in 0 .. 10;
 
-      let (lead_id, _) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
+      let (lead_id, _) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
 
       let current_budget = BalanceOfCurrency::<T>::max_value();
       WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
@@ -622,8 +569,8 @@ benchmarks_instance! {
     update_reward_amount {
       let i in 0 .. 10;
 
-      let (lead_id, _) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
-      let (_, worker_id) = insert_a_worker::<T, I>(true, JobOpeningType::Regular, 1, Some(lead_id.clone()));
+      let (lead_id, _) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
+      let (_, worker_id) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Regular, 1, Some(lead_id.clone()));
       let new_reward = Some(BalanceOfCurrency::<T>::max_value());
     }: _ (RawOrigin::Signed(lead_id.clone()), worker_id, new_reward)
     verify {}
@@ -631,7 +578,7 @@ benchmarks_instance! {
     set_status_text {
       let i in 0 .. 50000; // TODO: We should have a bounded value for description
 
-      let (lead_id, _) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
+      let (lead_id, _) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
       let status_text = Some(vec![0u8].repeat(i.try_into().unwrap()));
 
     }: _ (RawOrigin::Signed(lead_id), status_text)
@@ -640,7 +587,7 @@ benchmarks_instance! {
     update_reward_account {
       let i in 0 .. 10;
 
-      let (caller_id, worker_id) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
+      let (caller_id, worker_id) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
       let new_id = account::<T::AccountId>("new_id", 1, 0);
 
     }: _ (RawOrigin::Signed(caller_id), worker_id, new_id)
@@ -659,7 +606,7 @@ benchmarks_instance! {
     add_opening{
       let i in 0 .. 50000; // TODO: We should have a bounded value for description
 
-      let (lead_id, _) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
+      let (lead_id, _) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
 
 
       let stake_policy = StakePolicy {
@@ -682,7 +629,7 @@ benchmarks_instance! {
         // Worst case scenario there is a lead(this requires **always** more steps)
         // could separate into new branch to tighten weight
         // Also, workers without stake can leave immediatly
-        let (caller_id, lead_worker_id) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
+        let (caller_id, lead_worker_id) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
 
         // To be able to pay unpaid reward
         WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
@@ -697,7 +644,7 @@ benchmarks_instance! {
         let i in 0 .. 10;
 
         // Workers with stake can't leave immediatly
-        let (caller_id, caller_worker_id) = insert_a_worker::<T, I>(true, JobOpeningType::Leader, 0, None);
+        let (caller_id, caller_worker_id) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
     }: leave_role(RawOrigin::Signed(caller_id), caller_worker_id)
     verify { }
 }
