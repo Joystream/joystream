@@ -16,7 +16,7 @@ use sp_std::vec::Vec;
 mod proposal_statuses;
 
 pub use proposal_statuses::{
-    ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus, ProposalStatus,
+    ApprovedProposalStatus, ExecutionStatus, ProposalDecision, ProposalStatus,
 };
 
 /// Vote kind for the proposal. Sum of all votes defines proposal status.
@@ -164,10 +164,8 @@ where
     /// Grace period can be expired only if proposal is finalized with Approved status.
     /// Returns false otherwise.
     pub fn is_grace_period_expired(&self, now: BlockNumber) -> bool {
-        if let ProposalStatus::Finalized(finalized_status) = self.status.clone() {
-            if let ProposalDecisionStatus::Approved(_) = finalized_status.proposal_status {
-                return now >= finalized_status.finalized_at + self.parameters.grace_period;
-            }
+        if let ProposalStatus::PendingExecution(finalized_at) = self.status.clone() {
+            return now >= finalized_at + self.parameters.grace_period;
         }
 
         false
@@ -197,7 +195,7 @@ where
         &self,
         total_voters_count: u32,
         now: BlockNumber,
-    ) -> Option<ProposalDecisionStatus> {
+    ) -> Option<ProposalDecision> {
         let proposal_status_resolution = ProposalStatusResolution {
             proposal: self,
             approvals: self.voting_results.approvals,
@@ -217,17 +215,17 @@ where
                     ApprovedProposalStatus::PendingConstitutionality
                 };
 
-            Some(ProposalDecisionStatus::Approved(approved_status))
+            Some(ProposalDecision::Approved(approved_status))
         } else if proposal_status_resolution.is_slashing_quorum_reached()
             && proposal_status_resolution.is_slashing_threshold_reached()
         {
-            Some(ProposalDecisionStatus::Slashed)
+            Some(ProposalDecision::Slashed)
         } else if proposal_status_resolution.is_rejection_imminent() {
-            Some(ProposalDecisionStatus::Rejected)
+            Some(ProposalDecision::Rejected)
         } else if proposal_status_resolution.is_expired() {
-            Some(ProposalDecisionStatus::Expired)
+            Some(ProposalDecision::Expired)
         } else if proposal_status_resolution.is_voting_completed() {
-            Some(ProposalDecisionStatus::Rejected)
+            Some(ProposalDecision::Rejected)
         } else {
             None
         }
@@ -389,8 +387,8 @@ pub(crate) struct ApprovedProposalData<ProposalId, BlockNumber, ProposerId, Bala
     /// Proposal to be finalized.
     pub proposal: Proposal<BlockNumber, ProposerId, Balance, AccountId>,
 
-    /// Proposal finalisation status data.
-    pub finalisation_status_data: FinalizationData<BlockNumber>,
+    /// Proposal finalisation block number.
+    pub finalized_at: BlockNumber,
 }
 
 /// Containter-type for a proposal creation method.
@@ -426,6 +424,23 @@ pub(crate) type MemberId<T> = <T as membership::Trait>::MemberId;
 
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+
+// Simplification of the 'ApprovedProposalData' type
+pub(crate) type ApprovedProposal<T> = ApprovedProposalData<
+    <T as crate::Trait>::ProposalId,
+    <T as system::Trait>::BlockNumber,
+    MemberId<T>,
+    BalanceOf<T>,
+    <T as system::Trait>::AccountId,
+>;
+
+// Simplification of the 'Proposal' type
+pub(crate) type ProposalOf<T> = Proposal<
+    <T as system::Trait>::BlockNumber,
+    MemberId<T>,
+    BalanceOf<T>,
+    <T as system::Trait>::AccountId,
+>;
 
 /// Defines abstract staking handler to manage user stakes for different activities
 /// like adding a proposal. Implementation should use built-in LockableCurrency

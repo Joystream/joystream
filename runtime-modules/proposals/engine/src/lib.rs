@@ -112,11 +112,11 @@
 // Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
 //#![warn(missing_docs)]
 
-use types::{ApprovedProposalData, MemberId};
+use types::{ApprovedProposal, ApprovedProposalData, MemberId, ProposalOf};
 
 pub use types::{
-    ApprovedProposalStatus, BalanceOf, FinalizationData, Proposal, ProposalCodeDecoder,
-    ProposalCreationParameters, ProposalDecisionStatus, ProposalExecutable, ProposalParameters,
+    ApprovedProposalStatus, BalanceOf, ExecutionStatus, Proposal, ProposalCodeDecoder,
+    ProposalCreationParameters, ProposalDecision, ProposalExecutable, ProposalParameters,
     ProposalStatus, StakingHandler, VoteKind, VotersParameters, VotingResults,
 };
 
@@ -207,7 +207,6 @@ decl_event!(
     where
         <T as Trait>::ProposalId,
         MemberId = MemberId<T>,
-        <T as system::Trait>::BlockNumber,
     {
         /// Emits on proposal creation.
         /// Params:
@@ -215,11 +214,17 @@ decl_event!(
         /// - Id of a newly created proposal after it was saved in storage.
         ProposalCreated(MemberId, ProposalId),
 
-        /// Emits on proposal status change.
+        /// Emits on proposal status decision.
         /// Params:
         /// - Id of a updated proposal.
-        /// - New proposal status
-        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber>),
+        /// - Proposal decision
+        ProposalDecision(ProposalId, ProposalDecision),
+
+        /// Emits on proposal execution.
+        /// Params:
+        /// - Id of a updated proposal.
+        /// - Proposal execution status.
+        ProposalExecuted(ProposalId, ExecutionStatus),
 
         /// Emits on voting for the proposal
         /// Params:
@@ -391,7 +396,7 @@ decl_module! {
 
             // mutation
 
-            Self::finalize_proposal(proposal_id, proposal, ProposalDecisionStatus::Canceled);
+            Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Canceled);
         }
 
         /// Veto a proposal. Must be root.
@@ -409,7 +414,7 @@ decl_module! {
 
             // mutation
 
-            Self::finalize_proposal(proposal_id, proposal, ProposalDecisionStatus::Vetoed);
+            Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Vetoed);
         }
 
         /// Block finalization. Perform voting period check, vote result tally, approved proposals
@@ -571,7 +576,7 @@ impl<T: Trait> Module<T> {
                 None
             })
             .for_each(|(proposal_id, proposal)| {
-                Self::finalize_proposal(proposal_id, proposal, ProposalDecisionStatus::Rejected);
+                Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Rejected);
             });
     }
 
@@ -611,29 +616,24 @@ impl<T: Trait> Module<T> {
 
         let proposal_code_result = T::DispatchableCallCode::decode(&mut &proposal_code[..]);
 
-        let approved_proposal_status = match proposal_code_result {
+        let execution_status = match proposal_code_result {
             Ok(proposal_code) => {
                 if let Err(dispatch_error) =
                     proposal_code.dispatch_bypass_filter(T::Origin::from(RawOrigin::Root))
                 {
-                    ApprovedProposalStatus::failed_execution(Self::parse_dispatch_error(
+                    ExecutionStatus::failed_execution(Self::parse_dispatch_error(
                         dispatch_error.error,
                     ))
                 } else {
-                    ApprovedProposalStatus::Executed
+                    ExecutionStatus::Executed
                 }
             }
-            Err(error) => ApprovedProposalStatus::failed_execution(error.what()),
+            Err(error) => ExecutionStatus::failed_execution(error.what()),
         };
 
-        let proposal_execution_status = ProposalStatus::approved(
-            approved_proposal_status,
-            approved_proposal.finalisation_status_data.finalized_at,
-        );
-
-        Self::deposit_event(RawEvent::ProposalStatusUpdated(
+        Self::deposit_event(RawEvent::ProposalExecuted(
             approved_proposal.proposal_id,
-            proposal_execution_status,
+            execution_status,
         ));
 
         Self::remove_proposal_data(&approved_proposal.proposal_id);
@@ -643,11 +643,11 @@ impl<T: Trait> Module<T> {
     fn finalize_proposal(
         proposal_id: T::ProposalId,
         proposal: ProposalOf<T>,
-        decision_status: ProposalDecisionStatus,
+        proposal_decision: ProposalDecision,
     ) -> ProposalOf<T> {
         let finalized_proposal =
-            Self::compute_finalized_proposal(proposal, decision_status.clone());
-        Self::resolve_proposal(proposal_id, finalized_proposal.clone(), decision_status);
+            Self::compute_finalized_proposal(proposal, proposal_decision.clone());
+        Self::resolve_proposal(proposal_id, finalized_proposal.clone(), proposal_decision);
 
         finalized_proposal
     }
@@ -660,29 +660,26 @@ impl<T: Trait> Module<T> {
     fn resolve_proposal(
         proposal_id: T::ProposalId,
         proposal: ProposalOf<T>,
-        decision_status: ProposalDecisionStatus,
+        proposal_decision: ProposalDecision,
     ) {
         // deal with stakes if necessary
-        if decision_status
-            != ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingConstitutionality)
+        if proposal_decision
+            != ProposalDecision::Approved(ApprovedProposalStatus::PendingConstitutionality)
         {
             let slash_balance =
-                Self::calculate_slash_balance(&decision_status, &proposal.parameters);
+                Self::calculate_slash_balance(&proposal_decision, &proposal.parameters);
             Self::slash_and_unstake(proposal.staking_account_id.clone(), slash_balance);
         }
 
         // update approved proposal or remove otherwise
-        if !matches!(decision_status, ProposalDecisionStatus::Approved(..)) {
+        if !matches!(proposal_decision, ProposalDecision::Approved(..)) {
             Self::remove_proposal_data(&proposal_id);
         } else {
-            <Proposals<T>>::insert(proposal_id, proposal.clone());
+            <Proposals<T>>::insert(proposal_id, proposal);
         }
 
         // fire the event
-        Self::deposit_event(RawEvent::ProposalStatusUpdated(
-            proposal_id,
-            proposal.status,
-        ));
+        Self::deposit_event(RawEvent::ProposalDecision(proposal_id, proposal_decision));
     }
 
     // Computes a finalilzed proposal:
@@ -690,12 +687,20 @@ impl<T: Trait> Module<T> {
     // - increment constitutionality level of the proposal
     fn compute_finalized_proposal(
         proposal: ProposalOf<T>,
-        decision_status: ProposalDecisionStatus,
+        proposal_decision: ProposalDecision,
     ) -> ProposalOf<T> {
         let now = Self::current_block();
 
         let mut finalized_proposal = proposal;
-        finalized_proposal.status = ProposalStatus::finalized(decision_status, now);
+        finalized_proposal.status = match proposal_decision {
+            ProposalDecision::Approved(approved_status) => match approved_status {
+                ApprovedProposalStatus::PendingExecution => ProposalStatus::PendingExecution(now),
+                ApprovedProposalStatus::PendingConstitutionality => {
+                    ProposalStatus::PendingConstitutionality
+                }
+            },
+            _ => finalized_proposal.status,
+        };
         finalized_proposal.increase_constitutionality_level();
 
         finalized_proposal
@@ -711,12 +716,13 @@ impl<T: Trait> Module<T> {
         if proposal.status.is_pending_execution_proposal() {
             let now = Self::current_block();
             if proposal.is_ready_for_execution(now) {
-                if let ProposalStatus::Finalized(finalisation_data) = proposal.status.clone() {
+                if let ProposalStatus::PendingExecution(finalized_at) = proposal.status {
                     return Some(ApprovedProposalData {
                         proposal_id,
                         proposal,
-                        finalisation_status_data: finalisation_data,
+                        finalized_at
                     });
+
                 }
             }
         }
@@ -739,18 +745,14 @@ impl<T: Trait> Module<T> {
     // Calculates required slash based on finalization ProposalDecisionStatus and proposal parameters.
     // Method visibility allows testing.
     pub(crate) fn calculate_slash_balance(
-        decision_status: &ProposalDecisionStatus,
+        proposal_decision: &ProposalDecision,
         proposal_parameters: &ProposalParameters<T::BlockNumber, BalanceOf<T>>,
     ) -> BalanceOf<T> {
-        match decision_status {
-            ProposalDecisionStatus::Rejected | ProposalDecisionStatus::Expired => {
-                T::RejectionFee::get()
-            }
-            ProposalDecisionStatus::Approved { .. } | ProposalDecisionStatus::Vetoed => {
-                BalanceOf::<T>::zero()
-            }
-            ProposalDecisionStatus::Canceled => T::CancellationFee::get(),
-            ProposalDecisionStatus::Slashed => proposal_parameters
+        match proposal_decision {
+            ProposalDecision::Rejected | ProposalDecision::Expired => T::RejectionFee::get(),
+            ProposalDecision::Approved { .. } | ProposalDecision::Vetoed => BalanceOf::<T>::zero(),
+            ProposalDecision::Canceled => T::CancellationFee::get(),
+            ProposalDecision::Slashed => proposal_parameters
                 .required_stake
                 .clone()
                 .unwrap_or_else(BalanceOf::<T>::zero), // stake if set or zero
@@ -838,23 +840,6 @@ impl<T: Trait> Module<T> {
         }
     }
 }
-
-// Simplification of the 'ApprovedProposalData' type
-type ApprovedProposal<T> = ApprovedProposalData<
-    <T as Trait>::ProposalId,
-    <T as system::Trait>::BlockNumber,
-    MemberId<T>,
-    BalanceOf<T>,
-    <T as system::Trait>::AccountId,
->;
-
-// Simplification of the 'Proposal' type
-type ProposalOf<T> = Proposal<
-    <T as system::Trait>::BlockNumber,
-    MemberId<T>,
-    BalanceOf<T>,
-    <T as system::Trait>::AccountId,
->;
 
 pub struct StakingManager<T: Trait, LockId: Get<LockIdentifier>> {
     trait_marker: PhantomData<T>,
