@@ -647,14 +647,12 @@ impl<T: Trait> Module<T> {
     // - slash and unstake proposal stake if stake exists
     // - fire an event
     // - update or delete proposal state
-    // It prints an error message in case of an attempt to finalize the non-active proposal.
+    // Executes the proposal if it ready.
     fn finalize_proposal(
         proposal_id: T::ProposalId,
         proposal: ProposalOf<T>,
         proposal_decision: ProposalDecision,
-    ) -> ProposalOf<T> {
-        let mut finalized_proposal = proposal;
-
+    ) {
         // fire the proposal decision event
         Self::deposit_event(RawEvent::ProposalDecisionMade(
             proposal_id,
@@ -666,29 +664,34 @@ impl<T: Trait> Module<T> {
             != ProposalDecision::Approved(ApprovedProposalStatus::PendingConstitutionality)
         {
             let slash_balance =
-                Self::calculate_slash_balance(&proposal_decision, &finalized_proposal.parameters);
-            Self::slash_and_unstake(finalized_proposal.staking_account_id.clone(), slash_balance);
+                Self::calculate_slash_balance(&proposal_decision, &proposal.parameters);
+            Self::slash_and_unstake(proposal.staking_account_id.clone(), slash_balance);
         }
 
         // update approved proposal or remove otherwise
         if let ProposalDecision::Approved(approved_proposal_decision) = proposal_decision {
             let now = Self::current_block();
 
+            let mut finalized_proposal = proposal;
+
             finalized_proposal.increase_constitutionality_level();
             finalized_proposal.status = ProposalStatus::approved(approved_proposal_decision, now);
-
-            <Proposals<T>>::insert(proposal_id, finalized_proposal.clone());
 
             // fire the proposal status update event
             Self::deposit_event(RawEvent::ProposalStatusUpdated(
                 proposal_id,
                 finalized_proposal.status.clone(),
             ));
+
+            // immediately execute proposal if it ready for execution or save it for the future otherwise.
+            if finalized_proposal.is_ready_for_execution(now) {
+                Self::execute_proposal(proposal_id);
+            } else {
+                <Proposals<T>>::insert(proposal_id, finalized_proposal);
+            }
         } else {
             Self::remove_proposal_data(&proposal_id);
         }
-
-        finalized_proposal
     }
 
     // Slashes the stake and perform unstake only in case of existing stake.
@@ -769,26 +772,25 @@ impl<T: Trait> Module<T> {
         let now = Self::current_block();
 
         for (proposal_id, proposal) in proposals {
-            // Assume that proposal is finalized by default.
-            let mut finalized_proposal = proposal.clone();
+            match proposal.status {
+                // Try to determine a decision for an active proposal.
+                ProposalStatus::Active => {
+                    let decision_status = proposal
+                        .define_proposal_decision(T::TotalVotersCounter::total_voters_count(), now);
 
-            // Try to determine a decision for an active proposal.
-            if proposal.status.is_active_proposal() {
-                let decision_status = proposal
-                    .define_proposal_decision(T::TotalVotersCounter::total_voters_count(), now);
-
-                // If decision is calculated for a proposal - finalize it.
-                if let Some(decision_status) = decision_status {
-                    let updated_proposal =
+                    // If decision is calculated for a proposal - finalize it.
+                    if let Some(decision_status) = decision_status {
                         Self::finalize_proposal(proposal_id, proposal, decision_status);
-
-                    // Update finalized proposal with a newly computed value.
-                    finalized_proposal = updated_proposal;
+                    }
                 }
-            }
-
-            if finalized_proposal.is_ready_for_execution(now) {
-                Self::execute_proposal(proposal_id);
+                // Execute the proposal code if the proposal is ready for execution.
+                ProposalStatus::PendingExecution(_) => {
+                    if proposal.is_ready_for_execution(now) {
+                        Self::execute_proposal(proposal_id);
+                    }
+                }
+                // Skip the proposal until it gets reactivated.
+                ProposalStatus::PendingConstitutionality => {}
             }
         }
     }
