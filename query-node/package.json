@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"description": "GraphQL server and Substrate indexer. Generated with ♥ by Hydra-CLI",
 	"scripts": {
-		"build": "yarn codegen:all && (ln -s ../../../../../node_modules/typeorm/cli.js generated/graphql-server/node_modules/.bin/typeorm || :) && tsc --build tsconfig.json",
+		"build": "./build.sh",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"clean": "rm -rf ./generated",
 		"processor:start": "(cd ./generated/indexer && yarn && DEBUG=${DEBUG} yarn start:processor)",
