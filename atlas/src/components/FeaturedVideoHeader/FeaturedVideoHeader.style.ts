@@ -7,11 +7,17 @@ import { Link } from '@reach/router'
 
 export const Container = styled.section`
   position: relative;
+  @media screen and (min-width: ${breakpoints.small}) {
+    margin-bottom: -75px;
+  }
   @media screen and (min-width: ${breakpoints.medium}) {
-    margin-bottom: -100px;
+    margin-bottom: -200px;
   }
   @media screen and (min-width: ${breakpoints.large}) {
     margin-bottom: -250px;
+  }
+  @media screen and (min-width: ${breakpoints.xlarge}) {
+    margin-bottom: -400px;
   }
 `
 
@@ -28,9 +34,19 @@ export const BackgroundImage = styled.div<{ src: string }>`
   background-position: center;
   background-attachment: local;
   background-size: cover;
+
   background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 20%), url(${({ src }) => src});
+  @media screen and (min-width: ${breakpoints.small}) {
+    background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 50%), url(${({ src }) => src});
+  }
   @media screen and (min-width: ${breakpoints.medium}) {
     background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 70%), url(${({ src }) => src});
+  }
+  @media screen and (min-width: ${breakpoints.large}) {
+    background-image: linear-gradient(0deg, black 0%, black 20%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
+  }
+  @media screen and (min-width: ${breakpoints.xlarge}) {
+    background-image: linear-gradient(0deg, black 0%, black 30%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
   }
 `
 
@@ -39,17 +55,26 @@ export const InfoContainer = styled.div`
   margin-top: -${spacing.xxl};
   padding-bottom: ${spacing.xs};
 
-  @media screen and (min-width: ${breakpoints.medium}) {
+  @media screen and (min-width: ${breakpoints.small}) {
     position: absolute;
     margin: 0;
     padding: 0;
-    bottom: 20%;
+    bottom: 15%;
+    max-width: 80%;
+  }
+
+  @media screen and (min-width: ${breakpoints.medium}) {
+    bottom: 30%;
     max-width: 60%;
   }
 
   @media screen and (min-width: ${breakpoints.large}) {
     bottom: 35%;
     max-width: 40%;
+  }
+
+  @media screen and (min-width: ${breakpoints.xlarge}) {
+    bottom: 45%;
   }
 `
 
