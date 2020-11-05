@@ -1,6 +1,7 @@
 import React from 'react'
 import {
   BackgroundImage,
+  ChannelLink,
   Container,
   InfoContainer,
   MediaWrapper,
@@ -8,20 +9,25 @@ import {
   StyledAvatar,
   TitleContainer,
 } from './FeaturedVideoHeader.style'
+import { mockCoverVideo, mockCoverVideoChannel } from '@/mocking/data/mockCoverVideo'
+import { navigate } from '@reach/router'
+import routes from '@/config/routes'
 
 const FeaturedVideoHeader: React.FC = () => {
   return (
     <Container>
       <MediaWrapper>
-        <BackgroundImage />
+        <BackgroundImage src={mockCoverVideo.thumbnailURL} />
       </MediaWrapper>
       <InfoContainer>
-        <StyledAvatar img="https://eu-central-1.linodeobjects.com/atlas-assets/feautured-video-channel-avatar.png" />
+        <ChannelLink to={routes.channel(mockCoverVideoChannel.id)}>
+          <StyledAvatar img={mockCoverVideoChannel.avatarPhotoURL} name={mockCoverVideoChannel.handle} />
+        </ChannelLink>
         <TitleContainer>
-          <h2>Ghost Signals</h2>
-          <span>How We Lost Trust In Authority, And Authority Taught Us To Distrust Ourselves</span>
+          <h2>{mockCoverVideo.title}</h2>
+          <span>{mockCoverVideo.description}</span>
         </TitleContainer>
-        <PlayButton>Play</PlayButton>
+        <PlayButton onClick={() => navigate(routes.video(mockCoverVideo.id))}>Play</PlayButton>
       </InfoContainer>
     </Container>
   )

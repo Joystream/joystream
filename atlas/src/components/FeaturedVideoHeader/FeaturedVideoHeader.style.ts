@@ -3,6 +3,7 @@ import { fluidRange } from 'polished'
 
 import { Avatar, Button } from '@/shared/components'
 import { breakpoints, colors, spacing, typography } from '@/shared/theme'
+import { Link } from '@reach/router'
 
 export const Container = styled.section`
   position: relative;
@@ -19,7 +20,7 @@ export const MediaWrapper = styled.div`
   width: calc(100% + calc(2 * var(--global-horizontal-padding)));
 `
 
-export const BackgroundImage = styled.div`
+export const BackgroundImage = styled.div<{ src: string }>`
   width: 100%;
   height: 0;
   padding-top: 56.25%;
@@ -27,11 +28,9 @@ export const BackgroundImage = styled.div`
   background-position: center;
   background-attachment: local;
   background-size: cover;
-  background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 20%),
-    url(https://eu-central-1.linodeobjects.com/atlas-assets/featured-video-thumbnail.jpg);
+  background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 20%), url(${({ src }) => src});
   @media screen and (min-width: ${breakpoints.medium}) {
-    background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 70%),
-      url(https://eu-central-1.linodeobjects.com/atlas-assets/featured-video-thumbnail.jpg);
+    background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 70%), url(${({ src }) => src});
   }
 `
 
@@ -54,14 +53,17 @@ export const InfoContainer = styled.div`
   }
 `
 
+export const ChannelLink = styled(Link)`
+  margin-bottom: ${spacing.m};
+  display: inline-block;
+`
+
 export const StyledAvatar = styled(Avatar)`
   width: 64px;
   height: 64px;
-  margin-bottom: ${spacing.m};
   @media screen and (min-width: ${breakpoints.medium}) {
     width: 88px;
     height: 88px;
-    margin-bottom: ${spacing.m};
   }
 `
 

@@ -1,0 +1,25 @@
+{
+  "video": {
+    "id": "2edfa557-9298-43c7-a6c5-95e580ace40e",
+    "title": "Ghost Signals",
+    "description": "How We Lost Trust In Authority, And Authority Taught Us To Distrust Ourselves",
+    "views": 132,
+    "publishedOnJoystreamAt": "2020-11-04T15:59:55.820Z",
+    "thumbnailURL": "https://eu-central-1.linodeobjects.com/atlas-assets/featured-video-thumbnail.jpg"
+  },
+  "videoMedia": {
+    "id": "4551c421-8edd-4d3b-8357-9fe825742775",
+    "codec": "H264_mpeg4",
+    "pixelWidth": 2560,
+    "pixelHeight": 1440,
+    "duration": 29,
+    "size": 44851016,
+    "location": { "URL": "https://eu-central-1.linodeobjects.com/atlas-assets/videos/1.mp4" }
+  },
+  "channel": {
+    "id": "d458e199-e1ae-4ccc-9f42-0ff8fbf9ab81",
+    "handle": "SCHISM",
+    "avatarPhotoURL": "https://eu-central-1.linodeobjects.com/atlas-assets/feautured-video-channel-avatar.png",
+    "coverPhotoURL": null
+  }
+}
