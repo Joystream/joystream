@@ -38,11 +38,11 @@ const scenario = async () => {
 
   await initializeContentDirectory(api, leadKeyPair)
 
-  await createChannel(api, leadKeyPair)
+  await createChannel(api)
 
-  await createVideo(api, leadKeyPair)
+  await createVideo(api)
 
-  await updateChannel(api, leadKeyPair)
+  await updateChannel(api)
 
   // Note: disconnecting and then reconnecting to the chain in the same process
   // doesn't seem to work!

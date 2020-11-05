@@ -5,7 +5,7 @@ import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
 import { assert } from 'chai'
 import { KeyringPair } from '@polkadot/keyring/types'
 
-export function createSimpleChannelFixture(api: QueryNodeApi, pair: KeyringPair): CreateChannelFixture {
+export function createSimpleChannelFixture(api: QueryNodeApi): CreateChannelFixture {
   const channelEntity: ChannelEntity = {
     title: 'Example channel',
     description: 'This is an example channel',
@@ -17,11 +17,11 @@ export function createSimpleChannelFixture(api: QueryNodeApi, pair: KeyringPair)
     avatarPhotoURL: '',
     isPublic: true,
   }
-  return new CreateChannelFixture(api, channelEntity, pair)
+  return new CreateChannelFixture(api, channelEntity)
 }
 
-export default async function channelCreation(api: QueryNodeApi, pair: KeyringPair) {
-  const createChannelHappyCaseFixture = createSimpleChannelFixture(api, pair)
+export default async function channelCreation(api: QueryNodeApi) {
+  const createChannelHappyCaseFixture = createSimpleChannelFixture(api)
 
   await createChannelHappyCaseFixture.runner(false)
 
