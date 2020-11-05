@@ -12,12 +12,10 @@
 //! ## Proposal lifecycle
 //! When a proposal passes [checks](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
 //! for its [parameters](./struct.ProposalParameters.html) - it can be [created](./struct.Module.html#method.create_proposal).
-//! The newly created proposal has _Active_ status. The proposal can be voted on or canceled during its
+//! The newly created proposal has _Active_ status. The proposal can be voted on, vetoed or canceled during its
 //! _voting period_. Votes can be [different](./enum.VoteKind.html). When the proposal gets enough votes
-//! to be slashed or approved or _voting period_ ends - the proposal becomes _Finalized_. If the proposal
-//! got approved and _grace period_ passed - the  `engine` module tries to execute the proposal.
-//! The final [approved status](./enum.ApprovedProposalStatus.html) of the proposal defines
-//! an overall proposal outcome.
+//! to be approved or _voting period_ ends - the proposal becomes _PendingExecution_ or _PendingConstitutionality_.
+//! If the proposal got approved and _grace period_ passed - the  `engine` module tries to execute the proposal.
 //!
 //! ### Notes
 //!
@@ -112,7 +110,7 @@
 use types::{MemberId, ProposalOf};
 
 pub use types::{
-    ApprovedProposalStatus, BalanceOf, ExecutionStatus, Proposal, ProposalCodeDecoder,
+    ApprovedProposalDecision, BalanceOf, ExecutionStatus, Proposal, ProposalCodeDecoder,
     ProposalCreationParameters, ProposalDecision, ProposalExecutable, ProposalParameters,
     ProposalStatus, StakingHandler, VoteKind, VotersParameters, VotingResults,
 };
@@ -640,13 +638,13 @@ impl<T: Trait> Module<T> {
         Self::remove_proposal_data(&proposal_id);
     }
 
-    // Computes a finalilzed proposal:
-    // - update proposal status fields (status, finalized_at)
-    // - increment constitutionality level of the proposal
+    // Computes a finalized proposal:
+    // - update proposal status fields (status, finalized_at),
+    // - increment constitutionality level of the proposal.
     // Performs all side-effect actions on proposal finalization:
-    // - slash and unstake proposal stake if stake exists
-    // - fire an event
-    // - update or delete proposal state
+    // - slash and unstake proposal stake if stake exists,
+    // - fire an event,
+    // - update or delete proposal state.
     // Executes the proposal if it ready.
     fn finalize_proposal(
         proposal_id: T::ProposalId,
@@ -661,7 +659,7 @@ impl<T: Trait> Module<T> {
 
         // deal with stakes if necessary
         if proposal_decision
-            != ProposalDecision::Approved(ApprovedProposalStatus::PendingConstitutionality)
+            != ProposalDecision::Approved(ApprovedProposalDecision::PendingConstitutionality)
         {
             let slash_balance =
                 Self::calculate_slash_balance(&proposal_decision, &proposal.parameters);

@@ -5,7 +5,7 @@ use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use sp_std::vec::Vec;
 
-/// Current status of the proposal
+/// Current status of the proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum ProposalStatus<BlockNumber> {
@@ -27,14 +27,14 @@ impl<BlockNumber> Default for ProposalStatus<BlockNumber> {
 }
 
 impl<BlockNumber: Clone> ProposalStatus<BlockNumber> {
-    /// Creates finalized and approved proposal status with provided ApprovedProposalStatus
+    /// Creates proposal status using ApprovedProposalDecision.
     pub fn approved(
-        approved_status: ApprovedProposalStatus,
+        approved_status: ApprovedProposalDecision,
         now: BlockNumber,
     ) -> ProposalStatus<BlockNumber> {
         match approved_status {
-            ApprovedProposalStatus::PendingExecution => ProposalStatus::PendingExecution(now),
-            ApprovedProposalStatus::PendingConstitutionality => {
+            ApprovedProposalDecision::PendingExecution => ProposalStatus::PendingExecution(now),
+            ApprovedProposalDecision::PendingConstitutionality => {
                 ProposalStatus::PendingConstitutionality
             }
         }
@@ -61,7 +61,7 @@ impl<BlockNumber: Clone> ProposalStatus<BlockNumber> {
     }
 }
 
-/// Decision for the finalized proposal
+/// Decision for the finalized proposal.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum ProposalDecision {
@@ -71,25 +71,24 @@ pub enum ProposalDecision {
     /// Proposal was vetoed by root.
     Vetoed,
 
-    /// A proposal was rejected
+    /// A proposal was rejected.
     Rejected,
 
-    /// A proposal was rejected ans its stake should be slashed
+    /// A proposal was rejected ans its stake should be slashed.
     Slashed,
 
     /// Not enough votes and voting period expired.
     Expired,
 
-    /// To clear the quorum requirement, the percentage of council members with revealed votes
-    /// must be no less than the quorum value for the given proposal type.
-    Approved(ApprovedProposalStatus),
+    /// A proposal was approved.
+    Approved(ApprovedProposalDecision),
 }
 
-/// Status of the approved proposal. Defines execution stages.
+/// Approved proposal decision.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
-pub enum ApprovedProposalStatus {
-    /// A proposal was approved and grace period is in effect
+pub enum ApprovedProposalDecision {
+    /// A proposal should be executed and grace period is in effect.
     PendingExecution,
 
     /// The proposal needs more than one council approval.
@@ -100,10 +99,10 @@ pub enum ApprovedProposalStatus {
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, Clone, PartialEq, Eq, Debug)]
 pub enum ExecutionStatus {
-    /// Proposal was successfully executed
+    /// Proposal was successfully executed.
     Executed,
 
-    /// Proposal was executed and failed with an error
+    /// Proposal was executed and failed with an error.
     ExecutionFailed {
         /// Error message
         error: Vec<u8>,
@@ -111,7 +110,7 @@ pub enum ExecutionStatus {
 }
 
 impl ExecutionStatus {
-    /// ExecutionStatus helper, creates ExecutionFailed approved proposal status
+    /// ExecutionStatus helper, creates ExecutionFailed proposal execution status
     pub fn failed_execution(err: &str) -> ExecutionStatus {
         ExecutionStatus::ExecutionFailed {
             error: err.as_bytes().to_vec(),

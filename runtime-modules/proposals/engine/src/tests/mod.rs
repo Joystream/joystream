@@ -401,7 +401,7 @@ fn proposal_execution_succeeds() {
             RawEvent::Voted(4, proposal_id, VoteKind::Approve),
             RawEvent::ProposalDecisionMade(
                 proposal_id,
-                ProposalDecision::Approved(ApprovedProposalStatus::PendingExecution),
+                ProposalDecision::Approved(ApprovedProposalDecision::PendingExecution),
             ),
             RawEvent::ProposalStatusUpdated(
                 proposal_id,
@@ -453,7 +453,7 @@ fn proposal_execution_failed() {
             RawEvent::Voted(4, proposal_id, VoteKind::Approve),
             RawEvent::ProposalDecisionMade(
                 proposal_id,
-                ProposalDecision::Approved(ApprovedProposalStatus::PendingExecution),
+                ProposalDecision::Approved(ApprovedProposalDecision::PendingExecution),
             ),
             RawEvent::ProposalStatusUpdated(
                 proposal_id,
@@ -504,7 +504,7 @@ fn voting_results_calculation_succeeds() {
             RawEvent::Voted(4, proposal_id, VoteKind::Abstain),
             RawEvent::ProposalDecisionMade(
                 proposal_id,
-                ProposalDecision::Approved(ApprovedProposalStatus::PendingExecution),
+                ProposalDecision::Approved(ApprovedProposalDecision::PendingExecution),
             ),
             RawEvent::ProposalStatusUpdated(
                 proposal_id,
@@ -888,7 +888,7 @@ fn proposal_execution_postponed_because_of_grace_period() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 activated_at: 0,
-                status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
+                status: ProposalStatus::approved(ApprovedProposalDecision::PendingExecution, 0),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
@@ -933,7 +933,7 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
                 proposer_id: 1,
                 activated_at: starting_block,
                 status: ProposalStatus::approved(
-                    ApprovedProposalStatus::PendingExecution,
+                    ApprovedProposalDecision::PendingExecution,
                     starting_block
                 ),
                 voting_results: VotingResults {
@@ -984,7 +984,7 @@ fn proposal_execution_succeeds_after_the_grace_period() {
             proposer_id: 1,
             activated_at: starting_block,
             status: ProposalStatus::approved(
-                ApprovedProposalStatus::PendingExecution,
+                ApprovedProposalDecision::PendingExecution,
                 starting_block,
             ),
             voting_results: VotingResults {
@@ -1430,7 +1430,7 @@ fn slash_balance_is_calculated_correctly() {
         assert_eq!(vetoed_slash_balance, 0);
 
         let approved_slash_balance = ProposalsEngine::calculate_slash_balance(
-            &ProposalDecision::Approved(ApprovedProposalStatus::PendingExecution),
+            &ProposalDecision::Approved(ApprovedProposalDecision::PendingExecution),
             &ProposalParametersFixture::default().params(),
         );
 
@@ -1545,7 +1545,7 @@ fn proposal_execution_with_exact_execution_works() {
                 parameters: parameters_fixture.params(),
                 proposer_id: 1,
                 activated_at: 0,
-                status: ProposalStatus::approved(ApprovedProposalStatus::PendingExecution, 0),
+                status: ProposalStatus::approved(ApprovedProposalDecision::PendingExecution, 0),
                 voting_results: VotingResults {
                     abstentions: 0,
                     approvals: 4,
@@ -1601,7 +1601,7 @@ fn proposal_with_pending_constitutionality_succeeds() {
             RawEvent::Voted(4, proposal_id, VoteKind::Approve),
             RawEvent::ProposalDecisionMade(
                 proposal_id,
-                ProposalDecision::Approved(ApprovedProposalStatus::PendingConstitutionality),
+                ProposalDecision::Approved(ApprovedProposalDecision::PendingConstitutionality),
             ),
             RawEvent::ProposalStatusUpdated(proposal_id, ProposalStatus::PendingConstitutionality),
         ]);
@@ -1615,7 +1615,7 @@ fn proposal_with_pending_constitutionality_succeeds() {
                 proposer_id: 1,
                 activated_at: starting_block,
                 status: ProposalStatus::approved(
-                    ApprovedProposalStatus::PendingConstitutionality,
+                    ApprovedProposalDecision::PendingConstitutionality,
                     starting_block
                 ),
                 voting_results: VotingResults {
@@ -1664,7 +1664,7 @@ fn proposal_with_pending_constitutionality_reactivation_succeeds() {
             RawEvent::Voted(4, proposal_id, VoteKind::Approve),
             RawEvent::ProposalDecisionMade(
                 proposal_id,
-                ProposalDecision::Approved(ApprovedProposalStatus::PendingConstitutionality),
+                ProposalDecision::Approved(ApprovedProposalDecision::PendingConstitutionality),
             ),
             RawEvent::ProposalStatusUpdated(proposal_id, ProposalStatus::PendingConstitutionality),
         ]);
@@ -1678,7 +1678,7 @@ fn proposal_with_pending_constitutionality_reactivation_succeeds() {
                 proposer_id: 1,
                 activated_at: starting_block,
                 status: ProposalStatus::approved(
-                    ApprovedProposalStatus::PendingConstitutionality,
+                    ApprovedProposalDecision::PendingConstitutionality,
                     starting_block
                 ),
                 voting_results: VotingResults {
@@ -1762,7 +1762,7 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
             TestEvent::engine(RawEvent::Voted(4, proposal_id, VoteKind::Approve)),
             TestEvent::engine(RawEvent::ProposalDecisionMade(
                 proposal_id,
-                ProposalDecision::Approved(ApprovedProposalStatus::PendingConstitutionality),
+                ProposalDecision::Approved(ApprovedProposalDecision::PendingConstitutionality),
             )),
             TestEvent::engine(RawEvent::ProposalStatusUpdated(
                 proposal_id,
@@ -1779,7 +1779,7 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
                 proposer_id: 1,
                 activated_at: starting_block,
                 status: ProposalStatus::approved(
-                    ApprovedProposalStatus::PendingConstitutionality,
+                    ApprovedProposalDecision::PendingConstitutionality,
                     starting_block
                 ),
                 voting_results: VotingResults {
@@ -1841,7 +1841,7 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
             TestEvent::engine(RawEvent::Voted(4, proposal_id, VoteKind::Approve)),
             TestEvent::engine(RawEvent::ProposalDecisionMade(
                 proposal_id,
-                ProposalDecision::Approved(ApprovedProposalStatus::PendingConstitutionality),
+                ProposalDecision::Approved(ApprovedProposalDecision::PendingConstitutionality),
             )),
             TestEvent::engine(RawEvent::ProposalStatusUpdated(
                 proposal_id,
@@ -1859,7 +1859,7 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
             TestEvent::engine(RawEvent::Voted(4, proposal_id, VoteKind::Approve)),
             TestEvent::engine(RawEvent::ProposalDecisionMade(
                 proposal_id,
-                ProposalDecision::Approved(ApprovedProposalStatus::PendingExecution),
+                ProposalDecision::Approved(ApprovedProposalDecision::PendingExecution),
             )),
             TestEvent::engine(RawEvent::ProposalStatusUpdated(
                 proposal_id,
@@ -2026,7 +2026,7 @@ fn define_proposal_decision_status_returns_approved() {
     assert_eq!(
         expected_proposal_decision,
         Some(ProposalDecision::Approved(
-            ApprovedProposalStatus::PendingExecution
+            ApprovedProposalDecision::PendingExecution
         ))
     );
 }
@@ -2176,7 +2176,7 @@ fn define_proposal_decision_status_returns_approved_before_slashing_before_rejec
     assert_eq!(
         expected_proposal_decision,
         Some(ProposalDecision::Approved(
-            ApprovedProposalStatus::PendingExecution
+            ApprovedProposalDecision::PendingExecution
         ))
     );
 }

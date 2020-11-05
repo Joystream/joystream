@@ -16,7 +16,7 @@ use sp_std::vec::Vec;
 mod proposal_statuses;
 
 pub use proposal_statuses::{
-    ApprovedProposalStatus, ExecutionStatus, ProposalDecision, ProposalStatus,
+    ApprovedProposalDecision, ExecutionStatus, ProposalDecision, ProposalStatus,
 };
 
 /// Vote kind for the proposal. Sum of all votes defines proposal status.
@@ -210,9 +210,9 @@ where
         {
             let approved_status =
                 if proposal_status_resolution.is_constitutionality_reached_on_approval() {
-                    ApprovedProposalStatus::PendingExecution
+                    ApprovedProposalDecision::PendingExecution
                 } else {
-                    ApprovedProposalStatus::PendingConstitutionality
+                    ApprovedProposalDecision::PendingConstitutionality
                 };
 
             Some(ProposalDecision::Approved(approved_status))
