@@ -69,7 +69,7 @@ mod staking_handler;
 mod tests;
 
 use spending_budget::{
-    BudgetControllerTrait, PeriodicRefillingBudgetControllerTrait,
+    BudgetCollection, BudgetControllerTrait, PeriodicRewardBudgetCollection,
     PeriodicRewardBudgetControllerTrait, RewardRecipient,
 };
 use staking_handler::StakingHandler2;
@@ -202,17 +202,33 @@ pub trait Trait: system::Trait {
     /// Duration of idle period
     type IdlePeriodDuration: Get<Self::BlockNumber>;
 
-    /*
-    // TODO: this is mere illustration of how to add more budgets
-    type WorkingTeamBudget: BudgetControllerTrait<Balance<Self>>;
-    ///
-    type ElectedMemberRewardBudget: PeriodicRewardBudgetControllerTrait<
+    /// Budget identifier.
+    type BudgetType: From<u64>;
+    /// Generic budget controller.
+    type GenericBudgetControllerTrait: BudgetControllerTrait<Balance<Self>> + Codec;
+    /// Controller for budget with periodic rewards.
+    type PeriodicBudgetControllerTrait: PeriodicRewardBudgetControllerTrait<
             Self::CouncilUserId,
             Balance<Self>,
             Self::BlockNumber,
             RewardRecipient<Self::BlockNumber, Balance<Self>>,
-        > + PeriodicRefillingBudgetControllerTrait<Balance<Self>, Self::BlockNumber>;
-    */
+        > + Codec;
+    /// Collection of budgets.
+    type BudgetCollection: BudgetCollection<Self::BudgetType, Balance<Self>, Self::GenericBudgetControllerTrait>
+        + PeriodicRewardBudgetCollection<
+            Self::BudgetType,
+            Self::CouncilUserId,
+            Balance<Self>,
+            Self::BlockNumber,
+            RewardRecipient<Self::BlockNumber, Balance<Self>>,
+            Self::PeriodicBudgetControllerTrait,
+        >;
+
+    /// Identifier for working group budget.
+    type BudgetIdWorkingBudget: Get<Self::BudgetType>;
+
+    /// The value elected members will be awarded each block of their reign.
+    type ElectedMemberRewardPerBlock: Get<Balance<Self>>;
 }
 
 /// Trait with functions that MUST be called by the runtime with values received from the referendum module.
@@ -595,25 +611,26 @@ impl<T: Trait> Mutations<T> {
         });
 
         // release stakes for previous council members
-        CouncilMembers::<T>::get()
-            .iter()
-            .for_each(|council_member| {
-                T::ElectedMemberLock::unlock(&council_member.account_id);
-            });
+        let old_members = CouncilMembers::<T>::get();
+        old_members.iter().for_each(|council_member| {
+            T::ElectedMemberLock::unlock(&council_member.account_id);
+        });
 
         // set new council
         CouncilMembers::<T>::put(elected_members.to_vec());
 
         // setup elected member lock to new council's members
-        CouncilMembers::<T>::get()
-            .iter()
-            .for_each(|council_member| {
-                // unlock candidacy stake
-                T::CandidacyLock::unlock(&council_member.account_id);
+        let new_members = CouncilMembers::<T>::get();
+        new_members.iter().for_each(|council_member| {
+            // unlock candidacy stake
+            T::CandidacyLock::unlock(&council_member.account_id);
 
-                // lock council member stake
-                T::ElectedMemberLock::lock(&council_member.account_id, council_member.stake);
-            });
+            // lock council member stake
+            T::ElectedMemberLock::lock(&council_member.account_id, council_member.stake);
+        });
+
+        // prepare rewards for newly elected members
+        Self::setup_new_council_rewards(&old_members, &new_members);
     }
 
     /// Announce user's candidacy.
@@ -652,6 +669,33 @@ impl<T: Trait> Mutations<T> {
 
         // remove candidate record
         Candidates::<T>::remove(council_user_id);
+    }
+
+    /// Setup a periodic reward for the council members.
+    fn setup_new_council_rewards(
+        old_members: &[CouncilMemberOf<T>],
+        new_members: &[CouncilMemberOf<T>],
+    ) {
+        let budget = <T::BudgetCollection as PeriodicRewardBudgetCollection<
+            T::BudgetType,
+            T::CouncilUserId,
+            Balance<T>,
+            T::BlockNumber,
+            RewardRecipient<T::BlockNumber, Balance<T>>,
+            T::PeriodicBudgetControllerTrait,
+        >>::get_budget(&T::BudgetIdWorkingBudget::get());
+
+        // stop paying reward to old council members
+        old_members
+            .iter()
+            .for_each(|member| budget.remove_recipient(&member.council_user_id));
+
+        let reward_per_block = T::ElectedMemberRewardPerBlock::get();
+
+        // start paying reward to new council members
+        new_members
+            .iter()
+            .for_each(|member| budget.add_recipient(&member.council_user_id, &reward_per_block));
     }
 }
 

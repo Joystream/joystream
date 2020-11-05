@@ -8,6 +8,7 @@ use crate::{
 };
 
 use balances;
+use codec::{Decode, Encode};
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageValue};
 use rand::Rng;
@@ -28,7 +29,7 @@ use std::marker::PhantomData;
 use system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 
 use crate::spending_budget;
-use crate::spending_budget::{BudgetCollection, PeriodicRewardBudgetCollection};
+use crate::spending_budget::BudgetController;
 use crate::staking_handler::mocks::{Lock1, Lock2, CANDIDATE_BASE_ID, VOTER_BASE_ID};
 
 pub const USER_REGULAR_POWER_VOTES: u64 = 0;
@@ -43,8 +44,36 @@ pub const POWER_VOTE_STRENGTH: u64 = 10;
 pub const INVALID_USER_MEMBER: u64 = 9999;
 
 // budgets
-pub const BUDGET_WORKING_TEAM: u64 = 1;
-pub const BUDGET_MEMBER_REWARD: u64 = 2;
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Copy, Clone)]
+pub enum Budgets {
+    WorkingTeam,
+    ElectedMemberReward,
+}
+
+impl Default for Budgets {
+    fn default() -> Self {
+        0.into()
+    }
+}
+
+impl From<u64> for Budgets {
+    fn from(from: u64) -> Self {
+        match from {
+            0 => Budgets::WorkingTeam,
+            1 => Budgets::ElectedMemberReward,
+            _ => Self::default(),
+        }
+    }
+}
+
+impl Into<u64> for Budgets {
+    fn into(self) -> u64 {
+        match self {
+            Budgets::WorkingTeam => 0,
+            Budgets::ElectedMemberReward => 1,
+        }
+    }
+}
 
 /////////////////// Runtime and Instances //////////////////////////////////////
 // Workaround for https://github.com/rust-lang/rust/issues/26925 . Remove when sorted.
@@ -59,6 +88,8 @@ parameter_types! {
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const ElectedMemberLockId: LockIdentifier = *b"council2";
+    pub const BudgetIdWorkingBudget: Budgets = Budgets::WorkingTeam;
+    pub const ElectedMemberRewardPerBlock: u64 = 100;
 }
 
 impl Trait for Runtime {
@@ -76,10 +107,14 @@ impl Trait for Runtime {
     type CandidacyLock = Lock1;
     type ElectedMemberLock = Lock2;
 
-    //type WorkingTeamBudget = spending_budget::Module<Self>::get_budget(BUDGET_WORKING_TEAM);
-    //type ElectedMemberRewardBudget = spending_budget::Module<Self>::get_budget(BUDGET_MEMBER_REWARD);
-    //type WorkingTeamBudget = <spending_budget::Module<Self> as BudgetCollection<BudgetType, Balance, BudgetController<Self>>>::get_budget(BUDGET_WORKING_TEAM);
-    //type ElectedMemberRewardBudget = <spending_budget::Module<Self> as PeriodicRewardBudgetCollection<>>::get_budget(BUDGET_MEMBER_REWARD);
+    type BudgetType = Budgets;
+    type GenericBudgetControllerTrait = BudgetController<Self>;
+    type BudgetCollection = spending_budget::Module<Self>;
+
+    type BudgetIdWorkingBudget = BudgetIdWorkingBudget;
+
+    type PeriodicBudgetControllerTrait = BudgetController<Self>;
+    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
 }
 
 /////////////////// Module implementation //////////////////////////////////////
@@ -316,16 +351,15 @@ impl spending_budget::Trait for Runtime {
     type Event = TestEvent;
     type BudgetUserId = u64;
     type Currency = balances::Module<RuntimeReferendum>;
-    type BudgetType = u64;
+    type BudgetType = Budgets;
     type MaxRefillingBudgets = MaxRefillingBudgets;
 
     fn pay_reward(
-        budget_type: &Self::BudgetType,
+        _budget_type: &Self::BudgetType,
         target_account_id: &Self::AccountId,
         amount: &Balance<Self>,
     ) -> Result<(), ()> {
-        //Self::Currency::transfer(from???, target_account_id, amount, ExistenceRequirement::)
-        Self::Currency::deposit_creating(target_account_id, *amount);
+        let _ = Self::Currency::deposit_creating(target_account_id, *amount);
 
         Ok(())
     }
@@ -334,8 +368,8 @@ impl spending_budget::Trait for Runtime {
         true // allow all account_id/member_id combination
     }
 
-    fn blocks_to_balance(block_number: Self::BlockNumber) -> Balance<Self> {
-        block_number.into()
+    fn blocks_to_balance(block_number: &Self::BlockNumber) -> Balance<Self> {
+        (*block_number).into()
     }
 }
 
