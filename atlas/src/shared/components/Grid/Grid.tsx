@@ -14,7 +14,7 @@ const Container = styled.div<ContainerProps>`
     auto-${(props) => props.repeat},
     minmax(min(${(props) => toPx(props.minWidth)}, 100%), 1fr)
   );
-  @media (min-width: ${toPx(breakpoints.largeViewport)}) {
+  @media (min-width: ${toPx(breakpoints.xlarge)}) {
     grid-template-columns: repeat(${(props) => props.maxColumns}, 1fr);
   }
 `

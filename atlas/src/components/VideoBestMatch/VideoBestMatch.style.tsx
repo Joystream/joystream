@@ -9,11 +9,11 @@ export const Container = styled.div`
 
 export const Content = styled.div`
   display: grid;
-  grid-template-columns: min(650px, 50%) 1fr;
+  grid-template-columns: 1fr;
   grid-column-gap: 24px;
 
-  @media (max-width: ${bp.smallTablet}) {
-    grid-template-columns: 1fr;
+  @media (min-width: ${bp.small}) {
+    grid-template-columns: min(650px, 50%) 1fr;
   }
 `
 

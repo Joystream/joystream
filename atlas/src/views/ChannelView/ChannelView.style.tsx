@@ -18,11 +18,12 @@ export const Header = styled.section<ChannelHeaderProps>`
 `
 export const TitleSection = styled.div`
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: start;
   padding-top: ${theme.sizes.b10}px;
-  @media (max-width: ${theme.breakpoints.mobile}) {
-    flex-direction: column;
-    align-items: start;
+  @media (min-width: ${theme.breakpoints.small}) {
+    flex-direction: row;
+    align-items: center;
   }
 `
 export const Title = styled.h1`
@@ -40,11 +41,11 @@ export const VideoSection = styled.section`
 export const StyledAvatar = styled(Avatar)`
   max-width: 136px;
   max-height: 136px;
-  width: 136px;
-  height: 136px;
+  width: 128px;
+  height: 128px;
   margin-right: ${theme.sizes.b6}px;
-  @media (max-width: ${theme.breakpoints.mobile}) {
-    width: 128px;
-    height: 128px;
+  @media (min-width: ${theme.breakpoints.small}) {
+    width: 136px;
+    height: 136px;
   }
 `
