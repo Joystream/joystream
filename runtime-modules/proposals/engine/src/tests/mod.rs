@@ -287,6 +287,19 @@ impl EventFixture {
         assert_eq!(System::events(), expected_events);
     }
 
+    fn assert_global_events(expected_raw_events: Vec<TestEvent>) {
+        let expected_events = expected_raw_events
+            .iter()
+            .map(|ev| EventRecord {
+                phase: Phase::Initialization,
+                event: ev.clone(),
+                topics: vec![],
+            })
+            .collect::<Vec<EventRecord<_, _>>>();
+
+        assert_eq!(System::events(), expected_events);
+    }
+
     pub fn assert_last_crate_event(expected_raw_event: RawEvent<u32, u64, u64>) {
         let converted_event = TestEvent::engine(expected_raw_event);
 
@@ -362,7 +375,7 @@ fn vote_fails_with_insufficient_rights() {
 fn proposal_execution_succeeds() {
     initial_test_ext().execute_with(|| {
         let starting_block = 1;
-        run_to_block_and_finalize(1);
+        run_to_block_and_finalize(starting_block);
 
         let parameters_fixture = ProposalParametersFixture::default();
         let dummy_proposal =
@@ -380,10 +393,22 @@ fn proposal_execution_succeeds() {
 
         run_to_block_and_finalize(2);
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
-            proposal_id,
-            ProposalStatus::approved(ApprovedProposalStatus::Executed, starting_block),
-        ));
+        EventFixture::assert_events(vec![
+            RawEvent::ProposalCreated(1, proposal_id),
+            RawEvent::Voted(1, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(2, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(3, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(4, proposal_id, VoteKind::Approve),
+            RawEvent::ProposalDecisionMade(
+                proposal_id,
+                ProposalDecision::Approved(ApprovedProposalStatus::PendingExecution),
+            ),
+            RawEvent::ProposalStatusUpdated(
+                proposal_id,
+                ProposalStatus::PendingExecution(starting_block),
+            ),
+            RawEvent::ProposalExecuted(proposal_id, ExecutionStatus::Executed),
+        ]);
 
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
         // internal active proposal counter check
@@ -420,13 +445,25 @@ fn proposal_execution_failed() {
 
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
-            proposal_id,
-            ProposalStatus::approved(
-                ApprovedProposalStatus::failed_execution("ExecutionFailed"),
-                starting_block,
+        EventFixture::assert_events(vec![
+            RawEvent::ProposalCreated(1, proposal_id),
+            RawEvent::Voted(1, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(2, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(3, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(4, proposal_id, VoteKind::Approve),
+            RawEvent::ProposalDecisionMade(
+                proposal_id,
+                ProposalDecision::Approved(ApprovedProposalStatus::PendingExecution),
             ),
-        ));
+            RawEvent::ProposalStatusUpdated(
+                proposal_id,
+                ProposalStatus::PendingExecution(starting_block),
+            ),
+            RawEvent::ProposalExecuted(
+                proposal_id,
+                ExecutionStatus::failed_execution("ExecutionFailed"),
+            ),
+        ]);
     });
 }
 
@@ -459,10 +496,22 @@ fn voting_results_calculation_succeeds() {
         let block_number = 3;
         run_to_block_and_finalize(block_number);
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
-            proposal_id,
-            ProposalStatus::approved(ApprovedProposalStatus::Executed, starting_block),
-        ));
+        EventFixture::assert_events(vec![
+            RawEvent::ProposalCreated(1, proposal_id),
+            RawEvent::Voted(1, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(2, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(3, proposal_id, VoteKind::Reject),
+            RawEvent::Voted(4, proposal_id, VoteKind::Abstain),
+            RawEvent::ProposalDecisionMade(
+                proposal_id,
+                ProposalDecision::Approved(ApprovedProposalStatus::PendingExecution),
+            ),
+            RawEvent::ProposalStatusUpdated(
+                proposal_id,
+                ProposalStatus::PendingExecution(starting_block),
+            ),
+            RawEvent::ProposalExecuted(proposal_id, ExecutionStatus::Executed),
+        ]);
 
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
     });
@@ -492,9 +541,9 @@ fn rejected_voting_results_and_remove_proposal_id_from_active_succeeds() {
 
         run_to_block_and_finalize(3);
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
             proposal_id,
-            ProposalStatus::finalized(ProposalDecisionStatus::Rejected, starting_block),
+            ProposalDecision::Rejected,
         ));
 
         // internal active proposal counter check
@@ -597,9 +646,9 @@ fn cancel_proposal_succeeds() {
 
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
             proposal_id,
-            ProposalStatus::finalized(ProposalDecisionStatus::Canceled, starting_block),
+            ProposalDecision::Canceled,
         ));
     });
 }
@@ -684,9 +733,9 @@ fn veto_proposal_succeeds() {
         let veto_proposal = VetoProposalFixture::new(proposal_id);
         veto_proposal.veto_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
             proposal_id,
-            ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, starting_block),
+            ProposalDecision::Vetoed,
         ));
 
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
@@ -740,11 +789,8 @@ fn veto_proposal_event_emitted() {
         veto_proposal.veto_and_assert(Ok(()));
 
         EventFixture::assert_events(vec![
-            RawEvent::ProposalCreated(1, 1),
-            RawEvent::ProposalStatusUpdated(
-                1,
-                ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, 1),
-            ),
+            RawEvent::ProposalCreated(1, proposal_id),
+            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Vetoed),
         ]);
     });
 }
@@ -762,14 +808,8 @@ fn cancel_proposal_event_emitted() {
         cancel_proposal.cancel_and_assert(Ok(()));
 
         EventFixture::assert_events(vec![
-            RawEvent::ProposalCreated(1, 1),
-            RawEvent::ProposalStatusUpdated(
-                1,
-                ProposalStatus::Finalized(FinalizationData {
-                    proposal_status: ProposalDecisionStatus::Canceled,
-                    finalized_at: 1,
-                }),
-            ),
+            RawEvent::ProposalCreated(1, proposal_id),
+            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Canceled),
         ]);
     });
 }
@@ -804,16 +844,21 @@ fn create_proposal_and_expire_it() {
             DummyProposalFixture::default().with_parameters(parameters_fixture.params());
         let proposal_id = dummy_proposal.create_proposal_and_assert(Ok(1)).unwrap();
 
-        run_to_block_and_finalize(8);
-
-        assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
         let expected_expriration_block =
             starting_block + parameters_fixture.parameters.voting_period;
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
-            proposal_id,
-            ProposalStatus::finalized(ProposalDecisionStatus::Expired, expected_expriration_block),
-        ));
+        run_to_block_and_finalize(expected_expriration_block - 1);
+
+        assert!(<crate::Proposals<Test>>::contains_key(proposal_id));
+        EventFixture::assert_last_crate_event(RawEvent::ProposalCreated(1, proposal_id));
+
+        run_to_block_and_finalize(expected_expriration_block);
+
+        assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
+        EventFixture::assert_events(vec![
+            RawEvent::ProposalCreated(1, proposal_id),
+            RawEvent::ProposalDecisionMade(proposal_id, ProposalDecision::Expired),
+        ]);
     });
 }
 
@@ -906,9 +951,9 @@ fn proposal_execution_vetoed_successfully_during_the_grace_period() {
         let veto_proposal = VetoProposalFixture::new(proposal_id);
         veto_proposal.veto_and_assert(Ok(()));
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
             proposal_id,
-            ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, starting_block + 1),
+            ProposalDecision::Vetoed,
         ));
     });
 }
@@ -958,9 +1003,9 @@ fn proposal_execution_succeeds_after_the_grace_period() {
         let finalization_block = 3;
         run_to_block_and_finalize(finalization_block);
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+        EventFixture::assert_last_crate_event(RawEvent::ProposalExecuted(
             proposal_id,
-            ProposalStatus::approved(ApprovedProposalStatus::Executed, starting_block),
+            ExecutionStatus::Executed,
         ));
     });
 }
@@ -1120,10 +1165,9 @@ fn finalize_expired_proposal_and_check_stake_removing_with_balance_checks_succee
 
         run_to_block_and_finalize(5);
 
-        let finalization_block = starting_block + parameters.voting_period;
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
             proposal_id,
-            ProposalStatus::finalized(ProposalDecisionStatus::Expired, finalization_block),
+            ProposalDecision::Expired,
         ));
 
         let rejection_fee = RejectionFee::get();
@@ -1197,9 +1241,9 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
 
         run_to_block_and_finalize(3);
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
             proposal_id,
-            ProposalStatus::finalized(ProposalDecisionStatus::Canceled, starting_block),
+            ProposalDecision::Canceled,
         ));
 
         let cancellation_fee = CancellationFee::get();
@@ -1270,9 +1314,9 @@ fn proposal_slashing_succeeds() {
             initial_balance - stake_amount
         );
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
             proposal_id,
-            ProposalStatus::finalized(ProposalDecisionStatus::Slashed, starting_block),
+            ProposalDecision::Slashed,
         ));
     });
 }
@@ -1345,9 +1389,9 @@ fn active_proposal_rejection_succeeds() {
 
         assert!(!<crate::Proposals<Test>>::contains_key(proposal_id));
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+        EventFixture::assert_last_crate_event(RawEvent::ProposalDecisionMade(
             proposal_id,
-            ProposalStatus::finalized(ProposalDecisionStatus::Rejected, current_block),
+            ProposalDecision::Rejected,
         ));
     });
 }
@@ -1379,14 +1423,14 @@ fn proposal_counters_are_valid() {
 fn slash_balance_is_calculated_correctly() {
     initial_test_ext().execute_with(|| {
         let vetoed_slash_balance = ProposalsEngine::calculate_slash_balance(
-            &ProposalDecisionStatus::Vetoed,
+            &ProposalDecision::Vetoed,
             &ProposalParametersFixture::default().params(),
         );
 
         assert_eq!(vetoed_slash_balance, 0);
 
         let approved_slash_balance = ProposalsEngine::calculate_slash_balance(
-            &ProposalDecisionStatus::Approved(ApprovedProposalStatus::Executed),
+            &ProposalDecision::Approved(ApprovedProposalStatus::PendingExecution),
             &ProposalParametersFixture::default().params(),
         );
 
@@ -1395,14 +1439,14 @@ fn slash_balance_is_calculated_correctly() {
         let rejection_fee = <Test as crate::Trait>::RejectionFee::get();
 
         let rejected_slash_balance = ProposalsEngine::calculate_slash_balance(
-            &ProposalDecisionStatus::Rejected,
+            &ProposalDecision::Rejected,
             &ProposalParametersFixture::default().params(),
         );
 
         assert_eq!(rejected_slash_balance, rejection_fee);
 
         let expired_slash_balance = ProposalsEngine::calculate_slash_balance(
-            &ProposalDecisionStatus::Expired,
+            &ProposalDecision::Expired,
             &ProposalParametersFixture::default().params(),
         );
 
@@ -1411,14 +1455,14 @@ fn slash_balance_is_calculated_correctly() {
         let cancellation_fee = <Test as crate::Trait>::CancellationFee::get();
 
         let cancellation_slash_balance = ProposalsEngine::calculate_slash_balance(
-            &ProposalDecisionStatus::Canceled,
+            &ProposalDecision::Canceled,
             &ProposalParametersFixture::default().params(),
         );
 
         assert_eq!(cancellation_slash_balance, cancellation_fee);
 
         let slash_balance_with_no_stake = ProposalsEngine::calculate_slash_balance(
-            &ProposalDecisionStatus::Slashed,
+            &ProposalDecision::Slashed,
             &ProposalParametersFixture::default().params(),
         );
 
@@ -1426,7 +1470,7 @@ fn slash_balance_is_calculated_correctly() {
 
         let stake = 256;
         let slash_balance_with_stake = ProposalsEngine::calculate_slash_balance(
-            &ProposalDecisionStatus::Slashed,
+            &ProposalDecision::Slashed,
             &ProposalParametersFixture::default()
                 .with_required_stake(stake)
                 .params(),
@@ -1517,9 +1561,9 @@ fn proposal_execution_with_exact_execution_works() {
         // Exact execution block time.
         run_to_block_and_finalize(exact_block);
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
+        EventFixture::assert_last_crate_event(RawEvent::ProposalExecuted(
             proposal_id,
-            ProposalStatus::approved(ApprovedProposalStatus::Executed, 0),
+            ExecutionStatus::Executed,
         ));
 
         // Proposal is removed.
@@ -1549,13 +1593,18 @@ fn proposal_with_pending_constitutionality_succeeds() {
 
         run_to_block_and_finalize(2);
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
-            proposal_id,
-            ProposalStatus::approved(
-                ApprovedProposalStatus::PendingConstitutionality,
-                starting_block,
+        EventFixture::assert_events(vec![
+            RawEvent::ProposalCreated(1, proposal_id),
+            RawEvent::Voted(1, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(2, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(3, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(4, proposal_id, VoteKind::Approve),
+            RawEvent::ProposalDecisionMade(
+                proposal_id,
+                ProposalDecision::Approved(ApprovedProposalStatus::PendingConstitutionality),
             ),
-        ));
+            RawEvent::ProposalStatusUpdated(proposal_id, ProposalStatus::PendingConstitutionality),
+        ]);
 
         let proposal = <Proposals<Test>>::get(proposal_id);
 
@@ -1607,13 +1656,18 @@ fn proposal_with_pending_constitutionality_reactivation_succeeds() {
 
         run_to_block_and_finalize(2);
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
-            proposal_id,
-            ProposalStatus::approved(
-                ApprovedProposalStatus::PendingConstitutionality,
-                starting_block,
+        EventFixture::assert_events(vec![
+            RawEvent::ProposalCreated(1, proposal_id),
+            RawEvent::Voted(1, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(2, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(3, proposal_id, VoteKind::Approve),
+            RawEvent::Voted(4, proposal_id, VoteKind::Approve),
+            RawEvent::ProposalDecisionMade(
+                proposal_id,
+                ProposalDecision::Approved(ApprovedProposalStatus::PendingConstitutionality),
             ),
-        ));
+            RawEvent::ProposalStatusUpdated(proposal_id, ProposalStatus::PendingConstitutionality),
+        ]);
 
         let initial_proposal = <Proposals<Test>>::get(proposal_id);
 
@@ -1697,13 +1751,24 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
 
         run_to_block_and_finalize(2);
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
-            proposal_id,
-            ProposalStatus::approved(
-                ApprovedProposalStatus::PendingConstitutionality,
-                starting_block,
-            ),
-        ));
+        // first chain of event from the creation to the approval
+        EventFixture::assert_global_events(vec![
+            TestEvent::system(system::RawEvent::NewAccount(1)), // because of token transfer
+            TestEvent::balances(balances::RawEvent::Endowed(1, total_balance)), // because of token transfer
+            TestEvent::engine(RawEvent::ProposalCreated(1, proposal_id)),
+            TestEvent::engine(RawEvent::Voted(1, proposal_id, VoteKind::Approve)),
+            TestEvent::engine(RawEvent::Voted(2, proposal_id, VoteKind::Approve)),
+            TestEvent::engine(RawEvent::Voted(3, proposal_id, VoteKind::Approve)),
+            TestEvent::engine(RawEvent::Voted(4, proposal_id, VoteKind::Approve)),
+            TestEvent::engine(RawEvent::ProposalDecisionMade(
+                proposal_id,
+                ProposalDecision::Approved(ApprovedProposalStatus::PendingConstitutionality),
+            )),
+            TestEvent::engine(RawEvent::ProposalStatusUpdated(
+                proposal_id,
+                ProposalStatus::PendingConstitutionality,
+            )),
+        ]);
 
         let initial_proposal = <Proposals<Test>>::get(proposal_id);
 
@@ -1757,18 +1822,55 @@ fn proposal_with_pending_constitutionality_execution_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
-        let approval_block = 6;
-        run_to_block_and_finalize(approval_block);
+        let next_block_after_approval = 6;
+        run_to_block_and_finalize(next_block_after_approval);
 
         // internal active proposal counter check
         assert_eq!(<ActiveProposalCount>::get(), 0);
 
         assert_eq!(Balances::usable_balance(&account_id), total_balance);
 
-        EventFixture::assert_last_crate_event(RawEvent::ProposalStatusUpdated(
-            proposal_id,
-            ProposalStatus::approved(ApprovedProposalStatus::Executed, reactivation_block),
-        ));
+        EventFixture::assert_global_events(vec![
+            // first chain of event from the creation to the approval
+            TestEvent::system(system::RawEvent::NewAccount(1)), // because of token transfer
+            TestEvent::balances(balances::RawEvent::Endowed(1, total_balance)), // because of token transfer
+            TestEvent::engine(RawEvent::ProposalCreated(1, proposal_id)),
+            TestEvent::engine(RawEvent::Voted(1, proposal_id, VoteKind::Approve)),
+            TestEvent::engine(RawEvent::Voted(2, proposal_id, VoteKind::Approve)),
+            TestEvent::engine(RawEvent::Voted(3, proposal_id, VoteKind::Approve)),
+            TestEvent::engine(RawEvent::Voted(4, proposal_id, VoteKind::Approve)),
+            TestEvent::engine(RawEvent::ProposalDecisionMade(
+                proposal_id,
+                ProposalDecision::Approved(ApprovedProposalStatus::PendingConstitutionality),
+            )),
+            TestEvent::engine(RawEvent::ProposalStatusUpdated(
+                proposal_id,
+                ProposalStatus::PendingConstitutionality,
+            )),
+            // reactivation of the proposal
+            TestEvent::engine(RawEvent::ProposalStatusUpdated(
+                proposal_id,
+                ProposalStatus::Active,
+            )),
+            // second proposal approval chain
+            TestEvent::engine(RawEvent::Voted(1, proposal_id, VoteKind::Approve)),
+            TestEvent::engine(RawEvent::Voted(2, proposal_id, VoteKind::Approve)),
+            TestEvent::engine(RawEvent::Voted(3, proposal_id, VoteKind::Approve)),
+            TestEvent::engine(RawEvent::Voted(4, proposal_id, VoteKind::Approve)),
+            TestEvent::engine(RawEvent::ProposalDecisionMade(
+                proposal_id,
+                ProposalDecision::Approved(ApprovedProposalStatus::PendingExecution),
+            )),
+            TestEvent::engine(RawEvent::ProposalStatusUpdated(
+                proposal_id,
+                ProposalStatus::PendingExecution(reactivation_block),
+            )),
+            // execution
+            TestEvent::engine(RawEvent::ProposalExecuted(
+                proposal_id,
+                ExecutionStatus::Executed,
+            )),
+        ]);
     });
 }
 
@@ -1794,30 +1896,14 @@ fn proposal_early_rejection_succeeds() {
 }
 
 #[test]
-fn approved_proposal_status_helper_succeeds() {
+fn proposal_execution_status_helper_succeeds() {
     let msg = "error";
 
     assert_eq!(
-        ApprovedProposalStatus::failed_execution(&msg),
-        ApprovedProposalStatus::ExecutionFailed {
+        ExecutionStatus::failed_execution(&msg),
+        ExecutionStatus::ExecutionFailed {
             error: msg.as_bytes().to_vec()
         }
-    );
-}
-
-#[test]
-fn finalized_proposal_status_helper_succeeds() {
-    let block_number = 20;
-
-    let proposal_status =
-        ProposalStatus::<u64>::finalized(ProposalDecisionStatus::Slashed, block_number);
-
-    assert_eq!(
-        ProposalStatus::Finalized(FinalizationData {
-            proposal_status: ProposalDecisionStatus::Slashed,
-            finalized_at: block_number,
-        }),
-        proposal_status
     );
 }
 
@@ -1849,10 +1935,7 @@ fn proposal_grace_period_expired() {
     let mut proposal = ProposalObject::default();
 
     proposal.parameters.grace_period = 3;
-    proposal.status = ProposalStatus::finalized(
-        ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingExecution),
-        0,
-    );
+    proposal.status = ProposalStatus::PendingExecution(0);
 
     assert!(proposal.is_grace_period_expired(4));
 }
@@ -1862,10 +1945,7 @@ fn proposal_grace_period_auto_expired() {
     let mut proposal = ProposalObject::default();
 
     proposal.parameters.grace_period = 0;
-    proposal.status = ProposalStatus::finalized(
-        ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingExecution),
-        0,
-    );
+    proposal.status = ProposalStatus::PendingExecution(0);
 
     assert!(proposal.is_grace_period_expired(1));
 }
@@ -1913,11 +1993,8 @@ fn define_proposal_decision_status_returns_expired() {
         }
     );
 
-    let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
-    assert_eq!(
-        expected_proposal_status,
-        Some(ProposalDecisionStatus::Expired)
-    );
+    let expected_proposal_decision = proposal.define_proposal_decision(5, now);
+    assert_eq!(expected_proposal_decision, Some(ProposalDecision::Expired));
 }
 
 #[test]
@@ -1945,10 +2022,10 @@ fn define_proposal_decision_status_returns_approved() {
         }
     );
 
-    let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
+    let expected_proposal_decision = proposal.define_proposal_decision(5, now);
     assert_eq!(
-        expected_proposal_status,
-        Some(ProposalDecisionStatus::Approved(
+        expected_proposal_decision,
+        Some(ProposalDecision::Approved(
             ApprovedProposalStatus::PendingExecution
         ))
     );
@@ -1956,6 +2033,30 @@ fn define_proposal_decision_status_returns_approved() {
 
 #[test]
 fn define_proposal_decision_status_returns_rejected() {
+    let mut proposal = ProposalObject::default();
+
+    proposal.activated_at = 1;
+    proposal.parameters.voting_period = 3;
+    proposal.parameters.approval_quorum_percentage = 50;
+    proposal.parameters.approval_threshold_percentage = 51;
+    proposal.parameters.slashing_quorum_percentage = 50;
+    proposal.parameters.slashing_threshold_percentage = 50;
+
+    proposal.voting_results.add_vote(VoteKind::Reject);
+    proposal.voting_results.add_vote(VoteKind::Reject);
+    proposal.voting_results.add_vote(VoteKind::Abstain);
+    proposal.voting_results.add_vote(VoteKind::Approve);
+
+    assert_eq!(
+        proposal.voting_results,
+        VotingResults {
+            abstentions: 1,
+            approvals: 1,
+            rejections: 2,
+            slashes: 0,
+        }
+    );
+
     let mut proposal = ProposalObject::default();
     let now = 2;
 
@@ -1981,11 +2082,8 @@ fn define_proposal_decision_status_returns_rejected() {
         }
     );
 
-    let expected_proposal_status = proposal.define_proposal_decision_status(4, now);
-    assert_eq!(
-        expected_proposal_status,
-        Some(ProposalDecisionStatus::Rejected)
-    );
+    let expected_proposal_decision = proposal.define_proposal_decision(4, now);
+    assert_eq!(expected_proposal_decision, Some(ProposalDecision::Rejected));
 }
 
 #[test]
@@ -2015,11 +2113,8 @@ fn define_proposal_decision_status_returns_slashed() {
         }
     );
 
-    let expected_proposal_status = proposal.define_proposal_decision_status(4, now);
-    assert_eq!(
-        expected_proposal_status,
-        Some(ProposalDecisionStatus::Slashed)
-    );
+    let expected_proposal_decision = proposal.define_proposal_decision(4, now);
+    assert_eq!(expected_proposal_decision, Some(ProposalDecision::Slashed));
 }
 
 #[test]
@@ -2043,7 +2138,7 @@ fn define_proposal_decision_status_returns_none() {
         }
     );
 
-    let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
+    let expected_proposal_status = proposal.define_proposal_decision(5, now);
     assert_eq!(expected_proposal_status, None);
 }
 
@@ -2076,11 +2171,11 @@ fn define_proposal_decision_status_returns_approved_before_slashing_before_rejec
         }
     );
 
-    let expected_proposal_status = proposal.define_proposal_decision_status(6, now);
+    let expected_proposal_decision = proposal.define_proposal_decision(6, now);
 
     assert_eq!(
-        expected_proposal_status,
-        Some(ProposalDecisionStatus::Approved(
+        expected_proposal_decision,
+        Some(ProposalDecision::Approved(
             ApprovedProposalStatus::PendingExecution
         ))
     );
@@ -2115,12 +2210,9 @@ fn define_proposal_decision_status_returns_slashed_before_rejection() {
         }
     );
 
-    let expected_proposal_status = proposal.define_proposal_decision_status(6, now);
+    let expected_proposal_decision = proposal.define_proposal_decision(6, now);
 
-    assert_eq!(
-        expected_proposal_status,
-        Some(ProposalDecisionStatus::Slashed)
-    );
+    assert_eq!(expected_proposal_decision, Some(ProposalDecision::Slashed));
 }
 
 #[test]

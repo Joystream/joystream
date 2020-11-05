@@ -207,6 +207,7 @@ decl_event!(
     where
         <T as Trait>::ProposalId,
         MemberId = MemberId<T>,
+        <T as system::Trait>::BlockNumber,
     {
         /// Emits on proposal creation.
         /// Params:
@@ -214,11 +215,17 @@ decl_event!(
         /// - Id of a newly created proposal after it was saved in storage.
         ProposalCreated(MemberId, ProposalId),
 
-        /// Emits on proposal status decision.
+        /// Emits on proposal creation.
         /// Params:
-        /// - Id of a updated proposal.
+        /// - Id of a proposal.
+        /// - New proposal status.
+        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber>),
+
+        /// Emits on getting a proposal status decision.
+        /// Params:
+        /// - Id of a proposal.
         /// - Proposal decision
-        ProposalDecision(ProposalId, ProposalDecision),
+        ProposalDecisionMade(ProposalId, ProposalDecision),
 
         /// Emits on proposal execution.
         /// Params:
@@ -599,7 +606,13 @@ impl<T: Trait> Module<T> {
             })
             .for_each(|(proposal_id, proposal)| {
                 <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
-                <Proposals<T>>::insert(proposal_id, proposal);
+                <Proposals<T>>::insert(proposal_id, proposal.clone());
+
+                // fire the proposal status update event
+                Self::deposit_event(RawEvent::ProposalStatusUpdated(
+                    proposal_id,
+                    proposal.status,
+                ));
             });
     }
 }
@@ -662,6 +675,12 @@ impl<T: Trait> Module<T> {
         proposal: ProposalOf<T>,
         proposal_decision: ProposalDecision,
     ) {
+        // fire the proposal decision event
+        Self::deposit_event(RawEvent::ProposalDecisionMade(
+            proposal_id,
+            proposal_decision.clone(),
+        ));
+
         // deal with stakes if necessary
         if proposal_decision
             != ProposalDecision::Approved(ApprovedProposalStatus::PendingConstitutionality)
@@ -675,11 +694,14 @@ impl<T: Trait> Module<T> {
         if !matches!(proposal_decision, ProposalDecision::Approved(..)) {
             Self::remove_proposal_data(&proposal_id);
         } else {
-            <Proposals<T>>::insert(proposal_id, proposal);
-        }
+            <Proposals<T>>::insert(proposal_id, proposal.clone());
 
-        // fire the event
-        Self::deposit_event(RawEvent::ProposalDecision(proposal_id, proposal_decision));
+            // fire the proposal status update event
+            Self::deposit_event(RawEvent::ProposalStatusUpdated(
+                proposal_id,
+                proposal.status,
+            ));
+        }
     }
 
     // Computes a finalilzed proposal:
@@ -720,9 +742,8 @@ impl<T: Trait> Module<T> {
                     return Some(ApprovedProposalData {
                         proposal_id,
                         proposal,
-                        finalized_at
+                        finalized_at,
                     });
-
                 }
             }
         }
@@ -813,10 +834,8 @@ impl<T: Trait> Module<T> {
 
             // Try to determine a decision for an active proposal.
             if proposal.status.is_active_proposal() {
-                let decision_status = proposal.define_proposal_decision_status(
-                    T::TotalVotersCounter::total_voters_count(),
-                    now,
-                );
+                let decision_status = proposal
+                    .define_proposal_decision(T::TotalVotersCounter::total_voters_count(), now);
 
                 // If decision is calculated for a proposal - finalize it.
                 if let Some(decision_status) = decision_status {

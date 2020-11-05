@@ -191,7 +191,7 @@ where
     /// If voting process is in progress, then decision status is None.
     /// Parameters: current time, total voters number involved (council size).
     /// Returns the proposal finalized status if any.
-    pub fn define_proposal_decision_status(
+    pub fn define_proposal_decision(
         &self,
         total_voters_count: u32,
         now: BlockNumber,
@@ -422,7 +422,7 @@ pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId>
 // Type alias for member id.
 pub(crate) type MemberId<T> = <T as membership::Trait>::MemberId;
 
-/// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
+/// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
 
 // Simplification of the 'ApprovedProposalData' type
