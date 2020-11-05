@@ -24,8 +24,6 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
     ((num & (0xff << (8 * byte_number))) >> 8 * byte_number) as u8
 }
 
-// TODO: Use references in helper instead of cloning
-
 fn add_opening_helper<T: Trait<I>, I: Instance>(
     id: u32,
     add_opening_origin: &T::Origin,
@@ -91,44 +89,49 @@ fn add_opening_and_n_apply<T: Trait<I>, I: Instance>(
     staking_role: &StakingRole,
     job_opening_type: &JobOpeningType,
 ) -> (T::OpeningId, BTreeSet<T::ApplicationId>, Vec<T::AccountId>) {
-      let opening_id = add_opening_helper::<T, I>(1, add_opening_origin, &staking_role, job_opening_type);
+    let opening_id =
+        add_opening_helper::<T, I>(1, add_opening_origin, &staking_role, job_opening_type);
 
-      let mut successful_application_ids = BTreeSet::new();
+    let mut successful_application_ids = BTreeSet::new();
 
-      let mut account_ids = Vec::new();
-      for id in ids.iter()  {
+    let mut account_ids = Vec::new();
+    for id in ids.iter() {
         let (applicant_account_id, applicant_member_id) = member_funded_account::<T>("member", *id);
-        let application_id = apply_on_opening_helper::<T, I>(*id, &staking_role, &applicant_account_id,
-          &applicant_member_id, &opening_id);
+        let application_id = apply_on_opening_helper::<T, I>(
+            *id,
+            &staking_role,
+            &applicant_account_id,
+            &applicant_member_id,
+            &opening_id,
+        );
 
         successful_application_ids.insert(application_id);
         account_ids.push(applicant_account_id);
-
-      }
+    }
 
     (opening_id, successful_application_ids, account_ids)
 }
 
 fn add_and_apply_opening<T: Trait<I>, I: Instance>(
     id: u32,
-    add_opening_origin: T::Origin,
-    staking_role: StakingRole,
-    applicant_id: T::AccountId,
-    member_id: T::MemberId,
-    job_opening_type: JobOpeningType,
+    add_opening_origin: &T::Origin,
+    staking_role: &StakingRole,
+    applicant_id: &T::AccountId,
+    member_id: &T::MemberId,
+    job_opening_type: &JobOpeningType,
 ) -> (T::OpeningId, T::ApplicationId) {
     let opening_id =
-        add_opening_helper::<T, I>(id, &add_opening_origin, &staking_role, &job_opening_type);
+        add_opening_helper::<T, I>(id, add_opening_origin, staking_role, job_opening_type);
 
     let application_id =
-        apply_on_opening_helper::<T, I>(id, &staking_role, &applicant_id, &member_id, &opening_id);
+        apply_on_opening_helper::<T, I>(id, staking_role, applicant_id, member_id, &opening_id);
 
     (opening_id, application_id)
 }
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-// TODO: This will only work as long as min_handle_length >= 4
+// TODO: This will only work as long as max_handle_length >= 4
 fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     let min_handle_length = Membership::<T>::min_handle_length();
     // If the index is ever different from u32 change this
@@ -170,14 +173,13 @@ fn member_funded_account<T: membership::Trait>(
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
 
-fn force_missed_reward<T: Trait<I>, I: Instance> () {
+fn force_missed_reward<T: Trait<I>, I: Instance>() {
     let curr_block_number =
         System::<T>::block_number().saturating_add(T::RewardPeriod::get().into());
     System::<T>::set_block_number(curr_block_number);
     WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), Zero::zero()).unwrap();
     WorkingTeam::<T, I>::on_initialize(curr_block_number);
 }
-
 
 fn insert_a_worker<T: Trait<I>, I: Instance>(
     staking_role: StakingRole,
@@ -197,11 +199,11 @@ where
 
     let (opening_id, application_id) = add_and_apply_opening::<T, I>(
         id,
-        add_worker_origin.clone().into(),
-        staking_role,
-        caller_id.clone(),
-        member_id.clone(),
-        job_opening_type,
+        &T::Origin::from(add_worker_origin.clone()),
+        &staking_role,
+        &caller_id,
+        &member_id,
+        &job_opening_type,
     );
 
     let mut successful_application_ids = BTreeSet::<T::ApplicationId>::new();
@@ -252,7 +254,6 @@ benchmarks_instance! {
       // Worst case scenario one of the leaving workers is the lead
       WorkingTeam::<T, I>::leave_role(RawOrigin::Signed(lead_id).into(), lead_worker_id).unwrap();
 
-
       // Maintain consistency with add_opening_helper
       let leaving_unstaking_period = T::MinUnstakingPeriodLimit::get() + One::one();
 
@@ -284,18 +285,45 @@ benchmarks_instance! {
       // Worst case scenario there is a missing reward
       force_missed_reward::<T, I>();
 
-      // Sets perios so that we can reward
+      // Sets periods so that we can reward
       let curr_block_number =
           System::<T>::block_number().saturating_add(T::RewardPeriod::get().into());
       System::<T>::set_block_number(curr_block_number);
 
-      // Sets budget so that we can pay it(That's the worst case scenario)
+      // Sets budget so that we can pay it
       WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
 
     }: { WorkingTeam::<T, I>::on_initialize(curr_block_number) }
     verify { }
 
-    // TODO: Add unable to reward
+    on_initialize_rewarding_with_missing_reward_cant_pay {
+      let i in 1 .. T::MaxWorkerNumberLimit::get();
+
+      let (lead_id, _) = insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Leader, 0, None);
+
+      let (opening_id, successful_application_ids, _) = add_opening_and_n_apply::<T, I>(
+        &(1..i).collect(),
+        &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
+        &StakingRole::WithStakes,
+        &JobOpeningType::Regular
+      );
+
+      WorkingTeam::<T, I>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+      successful_application_ids).unwrap();
+
+      force_missed_reward::<T, I>();
+
+      // Sets periods so that we can reward
+      let curr_block_number =
+          System::<T>::block_number().saturating_add(T::RewardPeriod::get().into());
+      System::<T>::set_block_number(curr_block_number);
+
+      // Sets budget so that we can't pay it
+      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), Zero::zero()).unwrap();
+
+    }: { WorkingTeam::<T, I>::on_initialize(curr_block_number) }
+    verify { }
+
     on_initialize_rewarding_without_missing_reward {
       let i in 1 .. T::MaxWorkerNumberLimit::get();
 
@@ -311,12 +339,12 @@ benchmarks_instance! {
       WorkingTeam::<T, I>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
       successful_application_ids).unwrap();
 
-      // Sets perios so that we can reward
+      // Sets periods so that we can reward
       let curr_block_number =
           System::<T>::block_number().saturating_add(T::RewardPeriod::get().into());
       System::<T>::set_block_number(curr_block_number);
 
-      // Sets budget so that we can pay it(That's the worst case scenario)
+      // Sets budget so that we can pay it
       WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
 
     }: { WorkingTeam::<T, I>::on_initialize(curr_block_number) }
@@ -351,8 +379,8 @@ benchmarks_instance! {
       let i in 0 .. 10;
 
       let (lead_account_id, lead_member_id) = member_funded_account::<T>("lead", 0);
-      let (opening_id, application_id) = add_and_apply_opening::<T, I>(0, RawOrigin::Root.into(), StakingRole::WithoutStakes, lead_account_id,
-        lead_member_id, JobOpeningType::Leader);
+      let (opening_id, application_id) = add_and_apply_opening::<T, I>(0, &RawOrigin::Root.into(), &StakingRole::WithoutStakes, &lead_account_id,
+        &lead_member_id, &JobOpeningType::Leader);
 
       let mut successful_application_ids: BTreeSet<T::ApplicationId> = BTreeSet::new();
       successful_application_ids.insert(application_id);
@@ -398,11 +426,11 @@ benchmarks_instance! {
 
       let (caller_id, member_id) = member_funded_account::<T>("lead", 0);
       let (_, application_id) = add_and_apply_opening::<T, I>(0,
-        RawOrigin::Root.into(),
-        StakingRole::WithStakes,
-        caller_id.clone(),
-        member_id.clone(),
-        JobOpeningType::Leader
+        &RawOrigin::Root.into(),
+        &StakingRole::WithStakes,
+        &caller_id,
+        &member_id,
+        &JobOpeningType::Leader
         );
 
     }: _ (RawOrigin::Signed(caller_id.clone()), application_id)
