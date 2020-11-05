@@ -44,6 +44,9 @@ export const StyledAvatar = styled(Avatar)`
   width: 128px;
   height: 128px;
   margin-right: ${theme.sizes.b6}px;
+  > span {
+    font-size: ${theme.typography.sizes.h2};
+  };
   @media (min-width: ${theme.breakpoints.small}) {
     width: 136px;
     height: 136px;
