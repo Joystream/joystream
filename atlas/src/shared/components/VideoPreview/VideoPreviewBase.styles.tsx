@@ -20,19 +20,17 @@ const fadeIn = keyframes`
   }
 `
 export const CoverContainer = styled.div`
+  position: relative;
   width: 100%;
-  height: 190px;
-
+  height: 0;
+  padding-top: 56.25%;
   transition-property: box-shadow, transform;
   transition-duration: 0.4s;
   transition-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
-
-  position: relative;
   animation: ${fadeIn} 0.5s ease-in;
 `
 
 export const Container = styled.article<ContainerProps>`
-  max-width: ${MAX_VIDEO_PREVIEW_WIDTH};
   color: ${colors.gray[300]};
   cursor: ${({ clickable }) => (clickable ? 'pointer' : 'auto')};
   display: inline-block;

@@ -2,7 +2,15 @@ import React from 'react'
 
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 import { formatVideoViewsAndDate } from '@/utils/video'
-import { Container, Content, InnerContainer, Poster, Title, TitleContainer } from './VideoBestMatch.style'
+import {
+  Container,
+  Content,
+  InnerContainer,
+  Poster,
+  PosterContainer,
+  Title,
+  TitleContainer,
+} from './VideoBestMatch.style'
 
 type BestVideoMatchProps = {
   video: VideoFields
@@ -16,7 +24,9 @@ const BestVideoMatch: React.FC<BestVideoMatchProps> = ({
   <Container>
     <h3>Best Match</h3>
     <Content>
-      <Poster src={thumbnailURL} onClick={onClick} />
+      <PosterContainer>
+        <Poster src={thumbnailURL} onClick={onClick} />
+      </PosterContainer>
       <InnerContainer>
         <TitleContainer>
           <Title>{title}</Title>

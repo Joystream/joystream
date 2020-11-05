@@ -7,15 +7,16 @@ import { useQuery } from '@apollo/client'
 import { SEARCH } from '@/api/queries'
 import { Search, SearchVariables } from '@/api/queries/__generated__/Search'
 import { TabsMenu } from '@/shared/components'
-import { VideoGrid, ChannelGallery, VideoBestMatch } from '@/components'
+import { VideoGrid, ChannelGallery, VideoBestMatch, VideoGallery } from '@/components'
 import routes from '@/config/routes'
+import ChannelGrid from '@/components/ChannelGrid'
 
 type SearchViewProps = {
   search?: string
 } & RouteComponentProps
 const tabs = ['all results', 'videos', 'channels']
 
-const VideosHeader = styled.h5`
+const SectionHeader = styled.h5`
   margin: 0 0 ${spacing.m};
   font-size: ${typography.sizes.h5};
 `
@@ -46,15 +47,24 @@ const SearchView: React.FC<SearchViewProps> = ({ search = '' }) => {
   return (
     <Container>
       <TabsMenu tabs={tabs} onSelectTab={setSelectedIndex} initialIndex={0} />
-      {bestMatch && <VideoBestMatch video={bestMatch} onClick={() => navigate(routes.video(bestMatch.id))} />}
-      {videos.length > 0 && (selectedIndex === 0 || selectedIndex === 1) && (
+      {bestMatch && selectedIndex === 0 && (
+        <VideoBestMatch video={bestMatch} onClick={() => navigate(routes.video(bestMatch.id))} />
+      )}
+      {videos.length > 0 && selectedIndex !== 2 && (
         <div>
-          <VideosHeader>Videos</VideosHeader>
-          <VideoGrid videos={videos} />
+          <SectionHeader>Videos</SectionHeader>
+          {selectedIndex === 0 ? <VideoGallery videos={videos} /> : <VideoGrid videos={videos} />}
         </div>
       )}
-      {channels.length > 0 && (selectedIndex === 0 || selectedIndex === 2) && (
-        <ChannelGallery title="Channels" action="See all" loading={loading} channels={channels} />
+      {channels.length > 0 && selectedIndex !== 1 && (
+        <div>
+          <SectionHeader>Channels</SectionHeader>
+          {selectedIndex === 0 ? (
+            <ChannelGallery channels={channels} />
+          ) : (
+            <ChannelGrid channels={channels} repeat="fill" />
+          )}
+        </div>
       )}
     </Container>
   )

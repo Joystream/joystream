@@ -21,7 +21,7 @@ export const NavigationContainer = styled.div`
 
   > * + * {
     margin-left: ${sizes.b3}px;
-    @media screen and (min-width: ${breakpoints.medium}) {
+    @media screen and (min-width: ${breakpoints.small}) {
       margin-left: ${sizes.b6}px;
     }
   }
@@ -54,7 +54,7 @@ export const StyledLink = styled(Link)`
     display: none;
     margin-left: ${sizes.b2}px;
   }
-  @media screen and (min-width: ${breakpoints.medium}) {
+  @media screen and (min-width: ${breakpoints.small}) {
     span {
       display: inline-block;
     }
@@ -81,7 +81,7 @@ export const Header = styled.header<NavbarStyleProps>`
   grid-template-columns: 1fr 2fr;
 
   padding: ${sizes.b2}px ${sizes.b4}px;
-  @media screen and (min-width: ${breakpoints.medium}) {
+  @media screen and (min-width: ${breakpoints.small}) {
     padding: ${sizes.b2}px ${sizes.b8}px;
   }
   border-bottom: 1px solid ${colors.gray[800]};

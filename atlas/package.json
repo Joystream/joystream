@@ -122,5 +122,6 @@
     },
     "clearMocks": true,
     "coverageDirectory": ".coverage"
-  }
+  },
+  "devDependencies": {}
 }

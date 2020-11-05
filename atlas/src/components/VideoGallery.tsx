@@ -1,15 +1,16 @@
 import React from 'react'
+import { BreakPoint } from 'react-glider'
 
 import styled from '@emotion/styled'
 
-import { Gallery, MAX_VIDEO_PREVIEW_WIDTH, VideoPreviewBase } from '@/shared/components'
+import { Gallery, MAX_VIDEO_PREVIEW_WIDTH, VideoPreviewBase, breakpointsOfGrid } from '@/shared/components'
 import VideoPreview from './VideoPreviewWithNavigation'
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 
 import { spacing } from '@/shared/theme'
 
 type VideoGalleryProps = {
-  title: string
+  title?: string
   action?: string
   videos?: VideoFields[]
   loading?: boolean
@@ -17,13 +18,26 @@ type VideoGalleryProps = {
 
 const PLACEHOLDERS_COUNT = 12
 
-const trackPadding = `${spacing.xs} 0 0 ${spacing.xs}`
+const trackPadding = `${spacing.xs} 0 0 0`
+
+// This is needed since Gliderjs and the Grid have different resizing policies
+const breakpoints = breakpointsOfGrid({
+  breakpoints: 6,
+  minItemWidth: 300,
+  gridColumnGap: 24,
+  viewportContainerDifference: 64,
+}).map((breakpoint, idx) => ({
+  breakpoint,
+  settings: {
+    slidesToShow: idx + 1,
+  },
+})) as BreakPoint[]
 
 const VideoGallery: React.FC<VideoGalleryProps> = ({ title, action, videos, loading }) => {
   const displayPlaceholders = loading || !videos
 
   return (
-    <Gallery title={title} action={action} trackPadding={trackPadding}>
+    <Gallery title={title} action={action} trackPadding={trackPadding} responsive={breakpoints}>
       {displayPlaceholders
         ? Array.from({ length: PLACEHOLDERS_COUNT }).map((_, idx) => (
             <StyledVideoPreviewBase key={`video-placeholder-${idx}`} />
@@ -55,7 +69,7 @@ const StyledVideoPreviewBase = styled(VideoPreviewBase)`
 `
 const StyledVideoPreview = styled(VideoPreview)`
   & + & {
-    margin-left: 1.25rem;
+    margin-left: 24px;
   }
 
   width: ${MAX_VIDEO_PREVIEW_WIDTH};

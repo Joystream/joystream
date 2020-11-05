@@ -7,7 +7,7 @@ import { spacing } from '@/shared/theme'
 import { ChannelFields } from '@/api/queries/__generated__/ChannelFields'
 
 type ChannelGalleryProps = {
-  title: string
+  title?: string
   action?: string
   channels?: ChannelFields[]
   loading?: boolean

@@ -1,5 +1,6 @@
 export default {
-  small: '21rem',
-  medium: '48rem',
-  large: '72rem',
+  small: '600px',
+  medium: '1024px',
+  large: '1440px',
+  xlarge: '1920px',
 }

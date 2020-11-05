@@ -1,5 +1,5 @@
 import styled from '@emotion/styled'
-import { ChannelAvatar } from '@/shared/components'
+import { ChannelAvatar, VideoPlayer } from '@/shared/components'
 import theme from '@/shared/theme'
 
 export const Container = styled.div`
@@ -57,4 +57,8 @@ export const MoreVideosContainer = styled.div`
 export const MoreVideosHeader = styled.h5`
   margin: 0 0 ${theme.spacing.m};
   font-size: ${theme.typography.sizes.h5};
+`
+
+export const StyledVideoPlayer = styled(VideoPlayer)`
+  width: min(1250px, 100%);
 `
