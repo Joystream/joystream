@@ -14,7 +14,8 @@
 //! for its [parameters](./struct.ProposalParameters.html) - it can be [created](./struct.Module.html#method.create_proposal).
 //! The newly created proposal has _Active_ status. The proposal can be voted on, vetoed or canceled during its
 //! _voting period_. Votes can be [different](./enum.VoteKind.html). When the proposal gets enough votes
-//! to be approved or _voting period_ ends - the proposal becomes _PendingExecution_ or _PendingConstitutionality_.
+//! to be approved - the proposal becomes _PendingExecution_ or _PendingConstitutionality_. The proposal
+//! could also be slashed or rejected. If the _voting period_ ends with no decision it becomes expired.
 //! If the proposal got approved and _grace period_ passed - the  `engine` module tries to execute the proposal.
 //!
 //! ### Notes
@@ -25,6 +26,7 @@
 //! [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) function and
 //! all active proposals got rejected and it also calls [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
 //! and proposals with pending constitutionality become active again.
+//! - There are different fees to apply for slashed, rejected, expired or cancelled proposals.
 //!
 //! ### Important abstract types to be implemented
 //! Proposals `engine` module has several abstractions to be implemented in order to work correctly.
