@@ -45,12 +45,10 @@ fn get_all_proposals_parameters_objects() -> AllProposalsParameters {
 
     json_str
         .map(lite_json::parse_json)
-        .map(|res| {
-            match res {
-                Ok(json) => Some(json),
-                Err(_) => {
-                    panic!("Invalid JSON with proposals parameters provided.");
-                }
+        .map(|res| match res {
+            Ok(json) => Some(json),
+            Err(_) => {
+                panic!("Invalid JSON with proposals parameters provided.");
             }
         })
         .flatten()
@@ -69,11 +67,8 @@ fn get_all_proposals_parameters_objects() -> AllProposalsParameters {
 //         );
 macro_rules! init_proposal_parameter_object {
     ($parameters_object:ident, $jsonObj:expr, $name:ident) => {
-        $parameters_object.$name = create_proposal_parameters_object(
-            $jsonObj,
-            stringify!($name),
-            defaults::$name(),
-        );
+        $parameters_object.$name =
+            create_proposal_parameters_object($jsonObj, stringify!($name), defaults::$name());
     };
 }
 
@@ -123,18 +118,22 @@ macro_rules! init_proposal_parameter_field {
             $jsonObj,
             stringify!($name),
             $default_object.$name.saturated_into(),
-        ).saturated_into();
+        )
+        .saturated_into();
     };
 }
 
 // Helper macro similar to init_proposal_parameter_field but for optional parameters.
 macro_rules! init_proposal_parameter_optional_field {
     ($parameters_object:ident, $jsonObj:expr, $default_object:ident, $name:ident) => {
-        $parameters_object.$name = Some(extract_numeric_parameter(
-            $jsonObj,
-            stringify!($name),
-            $default_object.$name.unwrap_or_default().saturated_into(),
-        ).saturated_into());
+        $parameters_object.$name = Some(
+            extract_numeric_parameter(
+                $jsonObj,
+                stringify!($name),
+                $default_object.$name.unwrap_or_default().saturated_into(),
+            )
+            .saturated_into(),
+        );
     };
 }
 
@@ -147,12 +146,42 @@ fn extract_proposal_parameters(
 
     init_proposal_parameter_field!(proposals_parameters, json_object, defaults, voting_period);
     init_proposal_parameter_field!(proposals_parameters, json_object, defaults, grace_period);
-    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, approval_quorum_percentage);
-    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, approval_threshold_percentage);
-    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, slashing_quorum_percentage);
-    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, slashing_threshold_percentage);
-    init_proposal_parameter_optional_field!(proposals_parameters, json_object, defaults, required_stake);
-    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, constitutionality);
+    init_proposal_parameter_field!(
+        proposals_parameters,
+        json_object,
+        defaults,
+        approval_quorum_percentage
+    );
+    init_proposal_parameter_field!(
+        proposals_parameters,
+        json_object,
+        defaults,
+        approval_threshold_percentage
+    );
+    init_proposal_parameter_field!(
+        proposals_parameters,
+        json_object,
+        defaults,
+        slashing_quorum_percentage
+    );
+    init_proposal_parameter_field!(
+        proposals_parameters,
+        json_object,
+        defaults,
+        slashing_threshold_percentage
+    );
+    init_proposal_parameter_optional_field!(
+        proposals_parameters,
+        json_object,
+        defaults,
+        required_stake
+    );
+    init_proposal_parameter_field!(
+        proposals_parameters,
+        json_object,
+        defaults,
+        constitutionality
+    );
 
     proposals_parameters
 }
