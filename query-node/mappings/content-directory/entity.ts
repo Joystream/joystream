@@ -35,6 +35,10 @@ import {
   updateLanguageEntityPropertyValues,
   updateVideoMediaEncodingEntityPropertyValues,
   createBlockOrGetFromDatabase,
+  removeLicense,
+  removeMediaLocation,
+  updateLicenseEntityPropertyValues,
+  updateMediaLocationEntityPropertyValues,
 } from './entity-helper'
 import {
   CategoryPropertyNamesWithId,
@@ -63,6 +67,9 @@ import {
   IVideoMediaEncoding,
   IDBBlockId,
   IWhereCond,
+  IEntity,
+  ILicense,
+  IMediaLocation,
 } from '../types'
 
 const debug = Debug('mappings:content-directory')
@@ -91,7 +98,11 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
 
   switch (cls.name) {
     case ContentDirectoryKnownClasses.CHANNEL:
-      await createChannel(arg, decode.setProperties<IChannel>(event, channelPropertyNamesWithId))
+      await createChannel(
+        arg,
+        new Map<string, IEntity[]>(),
+        decode.setProperties<IChannel>(event, channelPropertyNamesWithId)
+      )
       break
 
     case ContentDirectoryKnownClasses.CATEGORY:
@@ -124,11 +135,19 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
       break
 
     case ContentDirectoryKnownClasses.VIDEOMEDIA:
-      await createVideoMedia(arg, decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId))
+      await createVideoMedia(
+        arg,
+        new Map<string, IEntity[]>(),
+        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId)
+      )
       break
 
     case ContentDirectoryKnownClasses.VIDEO:
-      await createVideo(arg, decode.setProperties<IVideo>(event, videoPropertyNamesWithId))
+      await createVideo(
+        arg,
+        new Map<string, IEntity[]>(),
+        decode.setProperties<IVideo>(event, videoPropertyNamesWithId)
+      )
       break
 
     case ContentDirectoryKnownClasses.LANGUAGE:
@@ -162,7 +181,7 @@ async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent): Pr
 
   const cls = contentDirectoryClassNamesWithId.find((c) => c.classId === classEntity.classId)
   if (cls === undefined) {
-    console.log('Undefined class')
+    console.log('Unknown class')
     return
   }
 
@@ -204,6 +223,14 @@ async function contentDirectory_EntityRemoved(db: DB, event: SubstrateEvent): Pr
 
     case ContentDirectoryKnownClasses.VIDEOMEDIAENCODING:
       await removeVideoMediaEncoding(db, where)
+      break
+
+    case ContentDirectoryKnownClasses.LICENSE:
+      await removeLicense(db, where)
+      break
+
+    case ContentDirectoryKnownClasses.MEDIALOCATION:
+      await removeMediaLocation(db, where)
       break
 
     default:
@@ -321,6 +348,22 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
         db,
         where,
         decode.setProperties<IVideoMediaEncoding>(event, videoMediaEncodingPropertyNamesWithId)
+      )
+      break
+
+    case ContentDirectoryKnownClasses.LICENSE:
+      await updateLicenseEntityPropertyValues(
+        db,
+        where,
+        decode.setProperties<ILicense>(event, videoMediaEncodingPropertyNamesWithId)
+      )
+      break
+
+    case ContentDirectoryKnownClasses.MEDIALOCATION:
+      await updateMediaLocationEntityPropertyValues(
+        db,
+        where,
+        decode.setProperties<IMediaLocation>(event, videoMediaEncodingPropertyNamesWithId)
       )
       break
 

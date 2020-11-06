@@ -8,8 +8,8 @@ type Block @entity {
   "Block number as a string"
   id: ID!
   block: Int!
-  timestamp: Int!
-  nework: Network!
+  timestamp: BigInt!
+  network: Network!
 }
 
 "Stored information about a registered user"
@@ -94,9 +94,9 @@ type Channel @entity {
   isCurated: Boolean!
 
   "The primary langauge of the channel's content"
-  languageId: Int
+  language: Language!
 
-  # videos: [Video!] @derivedFrom(field: "channel")
+  videos: [Video!] @derivedFrom(field: "channel")
 
   happenedIn: Block!
 }
@@ -111,7 +111,7 @@ type Category @entity {
   "The description of the category"
   description: String
 
-  # videos: [Video!] @derivedFrom(field: "category")
+  videos: [Video!] @derivedFrom(field: "category")
 
   happenedIn: Block!
 }
@@ -122,6 +122,8 @@ type VideoMediaEncoding @entity {
   id: ID!
 
   name: String!
+
+  happenedIn: Block!
 }
 
 type KnownLicense @entity {
@@ -149,6 +151,38 @@ type UserDefinedLicense @entity {
 
   "Custom license content"
   content: String!
+
+  happenedIn: Block!
+}
+
+type License @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
+  # One of the following field will be non-null
+
+  "Reference to a known license"
+  knownLicense: KnownLicense
+
+  "Reference to user-defined license"
+  userdefinedLicense: UserDefinedLicense
+
+  happenedIn: Block!
+}
+
+type MediaLocation @entity {
+  "Runtime entity identifier (EntityId)"
+  id: ID!
+
+  # One of the following field will be non-null
+
+  "A reference to HttpMediaLocation"
+  httpMediaLocation: HttpMediaLocation
+
+  "A reference to JoystreamMediaLocation"
+  joystreamMediaLocation: JoystreamMediaLocation
+
+  videoMedia: VideoMedia @derivedFrom(field: "location")
 
   happenedIn: Block!
 }
@@ -181,7 +215,7 @@ type VideoMedia @entity {
   id: ID!
 
   "Encoding of the video media object"
-  encodingId: Int!
+  encoding: VideoMediaEncoding!
 
   "Video media width in pixels"
   pixelWidth: Int!
@@ -192,13 +226,10 @@ type VideoMedia @entity {
   "Video media size in bytes"
   size: Int
 
-  # video: Video! @derivedFrom(field: "media")
+  video: Video @derivedFrom(field: "media")
 
-  # One of the location field will be non-null
-
-  # httpMediaLocation: HttpMediaLocation
-  # joystreamMediaLocation: JoystreamMediaLocation
-  locationId: Int!
+  "Location of the video media object"
+  location: MediaLocation!
 
   happenedIn: Block!
 }
@@ -208,10 +239,10 @@ type Video @entity {
   id: ID!
 
   "Reference to member's channel"
-  channelId: Int!
+  channel: Channel!
 
   "Reference to a video category"
-  categoryId: Int!
+  category: Category!
 
   "The title of the video"
   title: String! @fulltext(query: "titles")
@@ -229,10 +260,10 @@ type Video @entity {
   thumbnailURL: String!
 
   "Video's main langauge"
-  languageId: Int
+  language: Language
 
   "Reference to VideoMedia"
-  videoMediaId: Int!
+  media: VideoMedia!
 
   "Whether or not Video contains marketing"
   hasMarketing: Boolean
@@ -249,8 +280,7 @@ type Video @entity {
   "Whether the Video contains explicit material."
   isExplicit: Boolean!
 
-  # Lincense
-  licenseId: Int!
+  license: License!
 
   happenedIn: Block!
 }
