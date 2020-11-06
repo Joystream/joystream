@@ -12,21 +12,21 @@
 //! ## Proposal lifecycle
 //! When a proposal passes [checks](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid)
 //! for its [parameters](./struct.ProposalParameters.html) - it can be [created](./struct.Module.html#method.create_proposal).
-//! The newly created proposal has _Active_ status. The proposal can be voted on or canceled during its
+//! The newly created proposal has _Active_ status. The proposal can be voted on, vetoed or canceled during its
 //! _voting period_. Votes can be [different](./enum.VoteKind.html). When the proposal gets enough votes
-//! to be slashed or approved or _voting period_ ends - the proposal becomes _Finalized_. If the proposal
-//! got approved and _grace period_ passed - the  `engine` module tries to execute the proposal.
-//! The final [approved status](./enum.ApprovedProposalStatus.html) of the proposal defines
-//! an overall proposal outcome.
+//! to be approved - the proposal becomes _PendingExecution_ or _PendingConstitutionality_. The proposal
+//! could also be slashed or rejected. If the _voting period_ ends with no decision it becomes expired.
+//! If the proposal got approved and _grace period_ passed - the  `engine` module tries to execute the proposal.
 //!
 //! ### Notes
 //!
 //! - The proposal can be [vetoed](./struct.Module.html#method.veto_proposal)
 //! anytime before the proposal execution by the _sudo_.
 //! - If the _council_ got reelected during the proposal _voting period_ the external handler calls
-//! [reset_votes_for_active_proposals](./trait.Module.html#method.reset_votes_for_active_proposals) function and
-//! all voting results get cleared and it also calls [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
+//! [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) function and
+//! all active proposals got rejected and it also calls [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals)
 //! and proposals with pending constitutionality become active again.
+//! - There are different fees to apply for slashed, rejected, expired or cancelled proposals.
 //!
 //! ### Important abstract types to be implemented
 //! Proposals `engine` module has several abstractions to be implemented in order to work correctly.
@@ -48,8 +48,8 @@
 //! ### Public API
 //! - [create_proposal](./struct.Module.html#method.create_proposal) - creates proposal using provided parameters
 //! - [ensure_create_proposal_parameters_are_valid](./struct.Module.html#method.ensure_create_proposal_parameters_are_valid) - ensures that we can create the proposal
-//! - [reset_votes_for_active_proposals](./trait.Module.html#method.reset_votes_for_active_proposals) - resets voting results for active proposals
-//! - [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reset_votes_for_active_proposals) - reactivate proposals with pending constitutionality.
+//! - [reject_active_proposals](./trait.Module.html#method.reject_active_proposals) - rejects all active proposals.
+//! - [reactivate_pending_constitutionality_proposals](./trait.Module.html#method.reactivate_pending_constitutionality_proposals) - reactivate proposals with pending constitutionality.
 //!
 //! ## Usage
 //!
@@ -109,14 +109,11 @@
 // Ensure we're `no_std` when compiling for Wasm.
 #![cfg_attr(not(feature = "std"), no_std)]
 
-// Do not delete! Cannot be uncommented by default, because of Parity decl_module! issue.
-//#![warn(missing_docs)]
-
-use types::{ApprovedProposalData, FinalizedProposalData, MemberId};
+use types::{MemberId, ProposalOf};
 
 pub use types::{
-    ApprovedProposalStatus, BalanceOf, FinalizationData, Proposal, ProposalCodeDecoder,
-    ProposalCreationParameters, ProposalDecisionStatus, ProposalExecutable, ProposalParameters,
+    ApprovedProposalDecision, BalanceOf, ExecutionStatus, Proposal, ProposalCodeDecoder,
+    ProposalCreationParameters, ProposalDecision, ProposalExecutable, ProposalParameters,
     ProposalStatus, StakingHandler, VoteKind, VotersParameters, VotingResults,
 };
 
@@ -131,7 +128,7 @@ use frame_support::sp_std::marker::PhantomData;
 use frame_support::storage::IterableStorageMap;
 use frame_support::traits::{Currency, Get, LockIdentifier, LockableCurrency, WithdrawReasons};
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, ensure, print, Parameter, StorageDoubleMap,
+    decl_error, decl_event, decl_module, decl_storage, ensure, Parameter, StorageDoubleMap,
 };
 use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
@@ -215,11 +212,23 @@ decl_event!(
         /// - Id of a newly created proposal after it was saved in storage.
         ProposalCreated(MemberId, ProposalId),
 
-        /// Emits on proposal status change.
+        /// Emits on proposal creation.
+        /// Params:
+        /// - Id of a proposal.
+        /// - New proposal status.
+        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber>),
+
+        /// Emits on getting a proposal status decision.
+        /// Params:
+        /// - Id of a proposal.
+        /// - Proposal decision
+        ProposalDecisionMade(ProposalId, ProposalDecision),
+
+        /// Emits on proposal execution.
         /// Params:
         /// - Id of a updated proposal.
-        /// - New proposal status
-        ProposalStatusUpdated(ProposalId, ProposalStatus<BlockNumber>),
+        /// - Proposal execution status.
+        ProposalExecuted(ProposalId, ExecutionStatus),
 
         /// Emits on voting for the proposal
         /// Params:
@@ -309,18 +318,6 @@ decl_storage! {
         /// Count of active proposals.
         pub ActiveProposalCount get(fn active_proposal_count): u32;
 
-        /// Ids of proposals that are open for voting (have not been finalized yet).
-        pub ActiveProposalIds get(fn active_proposal_ids): map hasher(blake2_128_concat)
-            T::ProposalId=> ();
-
-        /// Ids of proposals that were approved and theirs grace period was not expired.
-        pub PendingExecutionProposalIds get(fn pending_execution_proposal_ids): map hasher(blake2_128_concat)
-            T::ProposalId=> ();
-
-        /// Ids of proposals that were approved and needed more councils approvals to be executed.
-        pub PendingConstitutionalityProposalIds get(fn pending_consitutionality_proposal_ids): map hasher(blake2_128_concat)
-            T::ProposalId=> ();
-
         /// Double map for preventing duplicate votes. Should be cleaned after usage.
         pub VoteExistsByProposalByVoter get(fn vote_by_proposal_by_voter):
             double_map hasher(blake2_128_concat)  T::ProposalId, hasher(blake2_128_concat) MemberId<T> => VoteKind;
@@ -359,11 +356,8 @@ decl_module! {
             proposal_id: T::ProposalId,
             vote: VoteKind,
             _rationale: Vec<u8>, // we use it on the query node side.
-        )  {
-            T::VoterOriginValidator::ensure_actor_origin(
-                origin,
-                voter_id,
-            )?;
+        ) {
+            T::VoterOriginValidator::ensure_actor_origin(origin, voter_id)?;
 
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let mut proposal = Self::proposals(proposal_id);
@@ -389,10 +383,7 @@ decl_module! {
         /// Cancel a proposal by its original proposer.
         #[weight = 10_000_000] // TODO: adjust weight
         pub fn cancel_proposal(origin, proposer_id: MemberId<T>, proposal_id: T::ProposalId) {
-            T::ProposerOriginValidator::ensure_actor_origin(
-                origin,
-                proposer_id,
-            )?;
+            T::ProposerOriginValidator::ensure_actor_origin(origin, proposer_id)?;
 
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
@@ -403,7 +394,7 @@ decl_module! {
 
             // mutation
 
-            Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Canceled);
+            Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Canceled);
         }
 
         /// Veto a proposal. Must be root.
@@ -414,37 +405,20 @@ decl_module! {
             ensure!(<Proposals<T>>::contains_key(proposal_id), Error::<T>::ProposalNotFound);
             let proposal = Self::proposals(proposal_id);
 
+            ensure!(
+                proposal.status.is_active_or_pending_execution(),
+                Error::<T>::ProposalFinalized
+            );
+
             // mutation
 
-            if <PendingExecutionProposalIds<T>>::contains_key(proposal_id) {
-                Self::veto_pending_execution_proposal(proposal_id, proposal);
-            } else {
-                ensure!(matches!(proposal.status, ProposalStatus::Active{..}), Error::<T>::ProposalFinalized);
-                Self::finalize_proposal(proposal_id, ProposalDecisionStatus::Vetoed);
-            }
+            Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Vetoed);
         }
 
         /// Block finalization. Perform voting period check, vote result tally, approved proposals
         /// grace period checks, and proposal execution.
         fn on_finalize(_n: T::BlockNumber) {
-            let finalized_proposals = Self::get_finalized_proposals();
-
-            // mutation
-
-            // Check vote results. Approved proposals with zero grace period will be
-            // transitioned to the PendingExecution status.
-            for  proposal_data in finalized_proposals {
-                <Proposals<T>>::insert(proposal_data.proposal_id, proposal_data.proposal);
-                Self::finalize_proposal(proposal_data.proposal_id, proposal_data.status);
-            }
-
-            let executable_proposals =
-                Self::get_approved_proposal_ready_for_execution();
-
-            // Execute approved proposals with expired grace period
-            for approved_proposal in executable_proposals {
-                Self::execute_proposal(approved_proposal);
-            }
+            Self::process_proposals();
         }
     }
 }
@@ -487,8 +461,6 @@ impl<T: Trait> Module<T> {
         let new_proposal = Proposal {
             activated_at: Self::current_block(),
             parameters: creation_params.proposal_parameters,
-            title: creation_params.title,
-            description: creation_params.description,
             proposer_id: creation_params.proposer_id,
             status: ProposalStatus::Active,
             voting_results: VotingResults::default(),
@@ -502,7 +474,6 @@ impl<T: Trait> Module<T> {
             proposal_id,
             creation_params.encoded_dispatchable_call_code,
         );
-        <ActiveProposalIds<T>>::insert(proposal_id, ());
         ProposalCount::put(next_proposal_count_value);
         Self::increase_active_proposal_counter();
 
@@ -590,33 +561,50 @@ impl<T: Trait> Module<T> {
         Ok(())
     }
 
-    /// Resets voting results for active proposals.
+    /// Rejects all active proposals.
     /// Possible application includes new council elections.
-    pub fn reset_votes_for_active_proposals() {
-        <ActiveProposalIds<T>>::iter().for_each(|(proposal_id, _)| {
-            <Proposals<T>>::mutate(proposal_id, |proposal| {
-                proposal.reset_proposal_votes();
-                <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+    pub fn reject_active_proposals() {
+        // Filter active proposals and reject them.
+        <Proposals<T>>::iter()
+            .filter_map(|(proposal_id, proposal)| {
+                if proposal.status.is_active_proposal() {
+                    return Some((proposal_id, proposal));
+                }
+
+                None
+            })
+            .for_each(|(proposal_id, proposal)| {
+                Self::finalize_proposal(proposal_id, proposal, ProposalDecision::Rejected);
             });
-        });
     }
 
     /// Reactivate proposals with pending constitutionality.
     /// Possible application includes new council elections.
     pub fn reactivate_pending_constitutionality_proposals() {
-        <PendingConstitutionalityProposalIds<T>>::iter().for_each(|(proposal_id, _)| {
-            <Proposals<T>>::mutate(proposal_id, |proposal| {
-                proposal.activated_at = Self::current_block();
-                proposal.status = ProposalStatus::Active;
-                // Resets votes for a proposal.
-                proposal.reset_proposal_votes();
+        // Filter pending constitutionality proposals, calculate new proposals and update the state.
+        <Proposals<T>>::iter()
+            .filter_map(|(proposal_id, mut proposal)| {
+                if proposal.status.is_pending_constitutionality_proposal() {
+                    proposal.activated_at = Self::current_block();
+                    proposal.status = ProposalStatus::Active;
+                    // Resets votes for a proposal.
+                    proposal.reset_proposal_votes();
+
+                    return Some((proposal_id, proposal));
+                }
+
+                None
+            })
+            .for_each(|(proposal_id, proposal)| {
                 <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+                <Proposals<T>>::insert(proposal_id, proposal.clone());
+
+                // fire the proposal status update event
+                Self::deposit_event(RawEvent::ProposalStatusUpdated(
+                    proposal_id,
+                    proposal.status,
+                ));
             });
-
-            <ActiveProposalIds<T>>::insert(proposal_id, ());
-        });
-
-        <PendingConstitutionalityProposalIds<T>>::remove_all();
     }
 }
 
@@ -626,142 +614,83 @@ impl<T: Trait> Module<T> {
         <system::Module<T>>::block_number()
     }
 
-    // Enumerates through active proposals. Tally Voting results.
-    // Returns proposals with finalized status and id
-    fn get_finalized_proposals() -> Vec<FinalizedProposal<T>> {
-        // Enumerate active proposals id and gather finalization data.
-        // Skip proposals with unfinished voting.
-        <ActiveProposalIds<T>>::iter()
-            .filter_map(|(proposal_id, _)| {
-                // load current proposal
-                let proposal = Self::proposals(proposal_id);
-
-                // Calculates votes, takes in account voting period expiration.
-                // If voting process is in progress, then decision status is None.
-                let decision_status = proposal.define_proposal_decision_status(
-                    T::TotalVotersCounter::total_voters_count(),
-                    Self::current_block(),
-                );
-
-                // map to FinalizedProposalData if decision for the proposal is made or return None
-                decision_status.map(|status| FinalizedProposalData {
-                    proposal_id,
-                    proposal,
-                    status,
-                    finalized_at: Self::current_block(),
-                })
-            })
-            .collect() // compose output vector
-    }
-
-    // Veto approved proposal during its grace period. Saves a new proposal status and removes
-    // proposal id from the 'PendingExecutionProposalIds'
-    fn veto_pending_execution_proposal(proposal_id: T::ProposalId, proposal: ProposalOf<T>) {
-        <PendingExecutionProposalIds<T>>::remove(proposal_id);
-
-        let vetoed_proposal_status =
-            ProposalStatus::finalized(ProposalDecisionStatus::Vetoed, Self::current_block());
-
-        <Proposals<T>>::insert(
-            proposal_id,
-            Proposal {
-                status: vetoed_proposal_status,
-                ..proposal
-            },
-        );
-    }
-
-    // Executes approved proposal code
-    fn execute_proposal(approved_proposal: ApprovedProposal<T>) {
-        let proposal_code = Self::proposal_codes(approved_proposal.proposal_id);
+    // Executes proposal code.
+    fn execute_proposal(proposal_id: T::ProposalId) {
+        let proposal_code = Self::proposal_codes(proposal_id);
 
         let proposal_code_result = T::DispatchableCallCode::decode(&mut &proposal_code[..]);
 
-        let approved_proposal_status = match proposal_code_result {
+        let execution_status = match proposal_code_result {
             Ok(proposal_code) => {
                 if let Err(dispatch_error) =
                     proposal_code.dispatch_bypass_filter(T::Origin::from(RawOrigin::Root))
                 {
-                    ApprovedProposalStatus::failed_execution(Self::parse_dispatch_error(
+                    ExecutionStatus::failed_execution(Self::parse_dispatch_error(
                         dispatch_error.error,
                     ))
                 } else {
-                    ApprovedProposalStatus::Executed
+                    ExecutionStatus::Executed
                 }
             }
-            Err(error) => ApprovedProposalStatus::failed_execution(error.what()),
+            Err(error) => ExecutionStatus::failed_execution(error.what()),
         };
 
-        let proposal_execution_status = ProposalStatus::Finalized(FinalizationData {
-            proposal_status: ProposalDecisionStatus::Approved(approved_proposal_status),
-            finalized_at: approved_proposal.finalisation_status_data.finalized_at,
-        });
+        Self::deposit_event(RawEvent::ProposalExecuted(proposal_id, execution_status));
 
-        Self::deposit_event(RawEvent::ProposalStatusUpdated(
-            approved_proposal.proposal_id,
-            proposal_execution_status,
-        ));
-
-        Self::decrease_active_proposal_counter();
-        Self::remove_proposal_data(&approved_proposal.proposal_id);
+        Self::remove_proposal_data(&proposal_id);
     }
 
-    // Performs all actions on proposal finalization:
-    // - clean active proposal cache
-    // - update proposal status fields (status, finalized_at)
-    // - add to pending execution proposal cache if approved
-    // - add to pending constitutionality proposal cache if approved but constitutionality level is not reached
-    // - slash and unstake proposal stake if stake exists
-    // - decrease active proposal counter
-    // - fire an event
-    // It prints an error message in case of an attempt to finalize the non-active proposal.
-    fn finalize_proposal(proposal_id: T::ProposalId, decision_status: ProposalDecisionStatus) {
-        let now = Self::current_block();
+    // Computes a finalized proposal:
+    // - update proposal status fields (status, finalized_at),
+    // - increment constitutionality level of the proposal.
+    // Performs all side-effect actions on proposal finalization:
+    // - slash and unstake proposal stake if stake exists,
+    // - fire an event,
+    // - update or delete proposal state.
+    // Executes the proposal if it ready.
+    fn finalize_proposal(
+        proposal_id: T::ProposalId,
+        proposal: ProposalOf<T>,
+        proposal_decision: ProposalDecision,
+    ) {
+        // fire the proposal decision event
+        Self::deposit_event(RawEvent::ProposalDecisionMade(
+            proposal_id,
+            proposal_decision.clone(),
+        ));
 
-        <ActiveProposalIds<T>>::remove(&proposal_id.clone());
+        // deal with stakes if necessary
+        if proposal_decision
+            != ProposalDecision::Approved(ApprovedProposalDecision::PendingConstitutionality)
+        {
+            let slash_balance =
+                Self::calculate_slash_balance(&proposal_decision, &proposal.parameters);
+            Self::slash_and_unstake(proposal.staking_account_id.clone(), slash_balance);
+        }
 
-        let mut proposal = Self::proposals(proposal_id);
+        // update approved proposal or remove otherwise
+        if let ProposalDecision::Approved(approved_proposal_decision) = proposal_decision {
+            let now = Self::current_block();
 
-        if proposal.status == ProposalStatus::Active {
-            if let ProposalDecisionStatus::Approved(approved_status) = decision_status.clone() {
-                proposal.current_constitutionality_level += 1;
+            let mut finalized_proposal = proposal;
 
-                if approved_status == ApprovedProposalStatus::PendingConstitutionality {
-                    <PendingConstitutionalityProposalIds<T>>::insert(proposal_id, ());
-                } else {
-                    <PendingExecutionProposalIds<T>>::insert(proposal_id, ());
-                }
-            }
+            finalized_proposal.increase_constitutionality_level();
+            finalized_proposal.status = ProposalStatus::approved(approved_proposal_decision, now);
 
-            // deal with stakes if necessary
-            if decision_status
-                != ProposalDecisionStatus::Approved(
-                    ApprovedProposalStatus::PendingConstitutionality,
-                )
-            {
-                let slash_balance =
-                    Self::calculate_slash_balance(&decision_status, &proposal.parameters);
-                Self::slash_and_unstake(proposal.staking_account_id.clone(), slash_balance);
-            }
-
-            // create finalized proposal status with error if any
-            let new_proposal_status = ProposalStatus::finalized(decision_status.clone(), now);
-
-            // update approved proposal or remove otherwise
-            if !matches!(decision_status, ProposalDecisionStatus::Approved(..)) {
-                Self::remove_proposal_data(&proposal_id);
-                Self::decrease_active_proposal_counter();
-            } else {
-                proposal.status = new_proposal_status.clone();
-                <Proposals<T>>::insert(proposal_id, proposal);
-            }
-
+            // fire the proposal status update event
             Self::deposit_event(RawEvent::ProposalStatusUpdated(
                 proposal_id,
-                new_proposal_status,
+                finalized_proposal.status.clone(),
             ));
+
+            // immediately execute proposal if it ready for execution or save it for the future otherwise.
+            if finalized_proposal.is_ready_for_execution(now) {
+                Self::execute_proposal(proposal_id);
+            } else {
+                <Proposals<T>>::insert(proposal_id, finalized_proposal);
+            }
         } else {
-            print("Broken invariant: proposal cannot be non-active during the finalisation");
+            Self::remove_proposal_data(&proposal_id);
         }
     }
 
@@ -780,46 +709,18 @@ impl<T: Trait> Module<T> {
     // Calculates required slash based on finalization ProposalDecisionStatus and proposal parameters.
     // Method visibility allows testing.
     pub(crate) fn calculate_slash_balance(
-        decision_status: &ProposalDecisionStatus,
+        proposal_decision: &ProposalDecision,
         proposal_parameters: &ProposalParameters<T::BlockNumber, BalanceOf<T>>,
     ) -> BalanceOf<T> {
-        match decision_status {
-            ProposalDecisionStatus::Rejected | ProposalDecisionStatus::Expired => {
-                T::RejectionFee::get()
-            }
-            ProposalDecisionStatus::Approved { .. } | ProposalDecisionStatus::Vetoed => {
-                BalanceOf::<T>::zero()
-            }
-            ProposalDecisionStatus::Canceled => T::CancellationFee::get(),
-            ProposalDecisionStatus::Slashed => proposal_parameters
+        match proposal_decision {
+            ProposalDecision::Rejected | ProposalDecision::Expired => T::RejectionFee::get(),
+            ProposalDecision::Approved { .. } | ProposalDecision::Vetoed => BalanceOf::<T>::zero(),
+            ProposalDecision::Canceled => T::CancellationFee::get(),
+            ProposalDecision::Slashed => proposal_parameters
                 .required_stake
                 .clone()
                 .unwrap_or_else(BalanceOf::<T>::zero), // stake if set or zero
         }
-    }
-
-    // Enumerates approved proposals and checks their grace period expiration and
-    // exact execution block.
-    fn get_approved_proposal_ready_for_execution() -> Vec<ApprovedProposal<T>> {
-        <PendingExecutionProposalIds<T>>::iter()
-            .filter_map(|(proposal_id, _)| {
-                let proposal = Self::proposals(proposal_id);
-
-                let now = Self::current_block();
-                if proposal.is_ready_for_execution(now) {
-                    // this should be true, because it was tested inside is_grace_period_expired()
-                    if let ProposalStatus::Finalized(finalisation_data) = proposal.status.clone() {
-                        return Some(ApprovedProposalData {
-                            proposal_id,
-                            proposal,
-                            finalisation_status_data: finalisation_data,
-                        });
-                    }
-                }
-
-                None
-            })
-            .collect()
     }
 
     // Increases active proposal counter.
@@ -856,38 +757,44 @@ impl<T: Trait> Module<T> {
     fn remove_proposal_data(proposal_id: &T::ProposalId) {
         <Proposals<T>>::remove(proposal_id);
         <DispatchableCallCode<T>>::remove(proposal_id);
-        <PendingExecutionProposalIds<T>>::remove(proposal_id);
         <VoteExistsByProposalByVoter<T>>::remove_prefix(&proposal_id);
+
+        Self::decrease_active_proposal_counter();
 
         T::ProposalObserver::proposal_removed(proposal_id);
     }
+
+    /// Perform voting period check, vote result tally, approved proposals
+    /// grace period checks, and proposal execution.
+    fn process_proposals() {
+        // Collect all proposals.
+        let proposals = <Proposals<T>>::iter().collect::<Vec<_>>();
+        let now = Self::current_block();
+
+        for (proposal_id, proposal) in proposals {
+            match proposal.status {
+                // Try to determine a decision for an active proposal.
+                ProposalStatus::Active => {
+                    let decision_status = proposal
+                        .define_proposal_decision(T::TotalVotersCounter::total_voters_count(), now);
+
+                    // If decision is calculated for a proposal - finalize it.
+                    if let Some(decision_status) = decision_status {
+                        Self::finalize_proposal(proposal_id, proposal, decision_status);
+                    }
+                }
+                // Execute the proposal code if the proposal is ready for execution.
+                ProposalStatus::PendingExecution(_) => {
+                    if proposal.is_ready_for_execution(now) {
+                        Self::execute_proposal(proposal_id);
+                    }
+                }
+                // Skip the proposal until it gets reactivated.
+                ProposalStatus::PendingConstitutionality => {}
+            }
+        }
+    }
 }
-
-// Simplification of the 'FinalizedProposalData' type
-type FinalizedProposal<T> = FinalizedProposalData<
-    <T as Trait>::ProposalId,
-    <T as system::Trait>::BlockNumber,
-    MemberId<T>,
-    BalanceOf<T>,
-    <T as system::Trait>::AccountId,
->;
-
-// Simplification of the 'ApprovedProposalData' type
-type ApprovedProposal<T> = ApprovedProposalData<
-    <T as Trait>::ProposalId,
-    <T as system::Trait>::BlockNumber,
-    MemberId<T>,
-    BalanceOf<T>,
-    <T as system::Trait>::AccountId,
->;
-
-// Simplification of the 'Proposal' type
-type ProposalOf<T> = Proposal<
-    <T as system::Trait>::BlockNumber,
-    MemberId<T>,
-    BalanceOf<T>,
-    <T as system::Trait>::AccountId,
->;
 
 pub struct StakingManager<T: Trait, LockId: Get<LockIdentifier>> {
     trait_marker: PhantomData<T>,

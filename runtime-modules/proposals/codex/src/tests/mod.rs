@@ -1146,7 +1146,7 @@ fn run_create_terminate_working_group_leader_role_proposal_common_checks_succeed
 #[test]
 fn create_amend_constitution_proposal_common_checks_succeed() {
     initial_test_ext().execute_with(|| {
-        increase_total_balance_issuance(500000);
+        increase_total_balance_issuance_using_account_id(1, 1_500_000);
 
         let proposal_fixture = ProposalTestFixture {
             insufficient_rights_call: || {

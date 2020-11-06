@@ -73,6 +73,7 @@ use system::ensure_root;
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;
 use governance::election_params::ElectionParameters;
+use proposals_discussion::ThreadMode;
 use proposals_engine::{
     BalanceOf, ProposalCreationParameters, ProposalObserver, ProposalParameters,
 };
@@ -786,12 +787,11 @@ decl_module! {
             origin,
             wasm: Vec<u8>,
         ) {
-            let (cloned_origin1, cloned_origin2) = common::origin::double_origin::<T>(origin);
-            ensure_root(cloned_origin1)?;
+            ensure_root(origin.clone())?;
 
             print("Runtime upgrade proposal execution started.");
 
-            <system::Module<T>>::set_code(cloned_origin2, wasm)?;
+            <system::Module<T>>::set_code(origin, wasm)?;
 
             print("Runtime upgrade proposal execution finished.");
         }
@@ -812,14 +812,12 @@ impl<T: Trait> Module<T> {
             params.exact_execution_block,
         )?;
 
-        <proposals_discussion::Module<T>>::ensure_can_create_thread(
-            params.member_id,
-            &params.title,
-        )?;
+        let initial_thread_mode = ThreadMode::Open;
+        <proposals_discussion::Module<T>>::ensure_can_create_thread(&initial_thread_mode)?;
 
         let discussion_thread_id = <proposals_discussion::Module<T>>::create_thread(
             params.member_id,
-            params.title.clone(),
+            initial_thread_mode,
         )?;
 
         let proposal_creation_params = ProposalCreationParameters {

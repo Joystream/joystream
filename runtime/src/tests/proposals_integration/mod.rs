@@ -9,7 +9,7 @@ use codec::Encode;
 use governance::election_params::ElectionParameters;
 use membership;
 use proposals_engine::{
-    ApprovedProposalStatus, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,
+    ApprovedProposalDecision, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,
     ProposalStatus, VoteKind, VotersParameters, VotingResults,
 };
 
@@ -326,8 +326,6 @@ fn proposal_cancellation_with_slashes_with_balance_checks_succeeds() {
             proposer_id: member_id,
             activated_at: 0,
             status: ProposalStatus::Active,
-            title: b"title".to_vec(),
-            description: b"description".to_vec(),
             voting_results: VotingResults::default(),
             exact_execution_block: None,
             current_constitutionality_level: 0,
@@ -363,8 +361,6 @@ fn proposal_reset_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Reject);
         vote_generator.vote_and_assert_ok(VoteKind::Abstain);
         vote_generator.vote_and_assert_ok(VoteKind::Slash);
-
-        assert!(<proposals_engine::ActiveProposalIds<Runtime>>::contains_key(proposal_id));
 
         // check
         let proposal = ProposalsEngine::proposals(proposal_id);
@@ -512,7 +508,7 @@ where
             setup_members(15);
             setup_council();
 
-            increase_total_balance_issuance_using_account_id(account_id.clone().into(), 500000);
+            increase_total_balance_issuance_using_account_id(account_id.clone().into(), 1_500_000);
         }
 
         assert_eq!((self.successful_call)(), Ok(()));
@@ -653,8 +649,6 @@ fn proposal_reactivation_succeeds() {
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
         vote_generator.vote_and_assert_ok(VoteKind::Approve);
 
-        assert!(<proposals_engine::ActiveProposalIds<Runtime>>::contains_key(proposal_id));
-
         run_to_block(2);
 
         // check
@@ -662,7 +656,7 @@ fn proposal_reactivation_succeeds() {
         assert_eq!(
             proposal.status,
             ProposalStatus::approved(
-                ApprovedProposalStatus::PendingConstitutionality,
+                ApprovedProposalDecision::PendingConstitutionality,
                 starting_block
             )
         );

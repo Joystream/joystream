@@ -16,7 +16,7 @@ use sp_std::vec::Vec;
 mod proposal_statuses;
 
 pub use proposal_statuses::{
-    ApprovedProposalStatus, FinalizationData, ProposalDecisionStatus, ProposalStatus,
+    ApprovedProposalDecision, ExecutionStatus, ProposalDecision, ProposalStatus,
 };
 
 /// Vote kind for the proposal. Sum of all votes defines proposal status.
@@ -123,12 +123,6 @@ pub struct Proposal<BlockNumber, ProposerId, Balance, AccountId> {
     /// Identifier of member proposing.
     pub proposer_id: ProposerId,
 
-    /// Proposal description
-    pub title: Vec<u8>,
-
-    /// Proposal body
-    pub description: Vec<u8>,
-
     /// It contains the block number when it was first created or the beginning of a new council
     /// where the proposal was automatically activated due to constitutionality.
     pub activated_at: BlockNumber,
@@ -156,6 +150,11 @@ where
     BlockNumber: Add<Output = BlockNumber> + PartialOrd + Copy,
     AccountId: Clone,
 {
+    /// Increases proposal constitutionality level.
+    pub fn increase_constitutionality_level(&mut self) {
+        self.current_constitutionality_level += 1;
+    }
+
     /// Returns whether voting period expired by now
     pub fn is_voting_period_expired(&self, now: BlockNumber) -> bool {
         now >= self.activated_at + self.parameters.voting_period
@@ -165,10 +164,8 @@ where
     /// Grace period can be expired only if proposal is finalized with Approved status.
     /// Returns false otherwise.
     pub fn is_grace_period_expired(&self, now: BlockNumber) -> bool {
-        if let ProposalStatus::Finalized(finalized_status) = self.status.clone() {
-            if let ProposalDecisionStatus::Approved(_) = finalized_status.proposal_status {
-                return now >= finalized_status.finalized_at + self.parameters.grace_period;
-            }
+        if let ProposalStatus::PendingExecution(finalized_at) = self.status.clone() {
+            return now >= finalized_at + self.parameters.grace_period;
         }
 
         false
@@ -194,11 +191,11 @@ where
     /// If voting process is in progress, then decision status is None.
     /// Parameters: current time, total voters number involved (council size).
     /// Returns the proposal finalized status if any.
-    pub fn define_proposal_decision_status(
+    pub fn define_proposal_decision(
         &self,
         total_voters_count: u32,
         now: BlockNumber,
-    ) -> Option<ProposalDecisionStatus> {
+    ) -> Option<ProposalDecision> {
         let proposal_status_resolution = ProposalStatusResolution {
             proposal: self,
             approvals: self.voting_results.approvals,
@@ -213,20 +210,22 @@ where
         {
             let approved_status =
                 if proposal_status_resolution.is_constitutionality_reached_on_approval() {
-                    ApprovedProposalStatus::PendingExecution
+                    ApprovedProposalDecision::PendingExecution
                 } else {
-                    ApprovedProposalStatus::PendingConstitutionality
+                    ApprovedProposalDecision::PendingConstitutionality
                 };
 
-            Some(ProposalDecisionStatus::Approved(approved_status))
+            Some(ProposalDecision::Approved(approved_status))
         } else if proposal_status_resolution.is_slashing_quorum_reached()
             && proposal_status_resolution.is_slashing_threshold_reached()
         {
-            Some(ProposalDecisionStatus::Slashed)
+            Some(ProposalDecision::Slashed)
+        } else if proposal_status_resolution.is_rejection_imminent() {
+            Some(ProposalDecision::Rejected)
         } else if proposal_status_resolution.is_expired() {
-            Some(ProposalDecisionStatus::Expired)
+            Some(ProposalDecision::Expired)
         } else if proposal_status_resolution.is_voting_completed() {
-            Some(ProposalDecisionStatus::Rejected)
+            Some(ProposalDecision::Rejected)
         } else {
             None
         }
@@ -248,13 +247,19 @@ pub trait VotersParameters {
 }
 
 // Calculates quorum, votes threshold, expiration status
-struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, AccountId> {
-    proposal: &'a Proposal<BlockNumber, ProposerId, Balance, AccountId>,
-    now: BlockNumber,
-    votes_count: u32,
-    total_voters_count: u32,
-    approvals: u32,
-    slashes: u32,
+pub(crate) struct ProposalStatusResolution<'a, BlockNumber, ProposerId, Balance, AccountId> {
+    /// Proposal data
+    pub proposal: &'a Proposal<BlockNumber, ProposerId, Balance, AccountId>,
+    /// Current block
+    pub now: BlockNumber,
+    /// Total votes number so far
+    pub votes_count: u32,
+    /// Council size
+    pub total_voters_count: u32,
+    /// Approval votes number
+    pub approvals: u32,
+    /// Slash votes number
+    pub slashes: u32,
 }
 
 impl<'a, BlockNumber, ProposerId, Balance, AccountId>
@@ -269,8 +274,8 @@ where
     }
 
     // Approval quorum reached for the proposal. Compares predefined parameter with actual
-    // votes sum divided by total possible votes count.
-    pub fn is_approval_quorum_reached(&self) -> bool {
+    // votes sum divided by total possible votes number.
+    pub(crate) fn is_approval_quorum_reached(&self) -> bool {
         let actual_votes_fraction =
             Perbill::from_rational_approximation(self.votes_count, self.total_voters_count);
         let approval_quorum_fraction =
@@ -279,8 +284,43 @@ where
         actual_votes_fraction.deconstruct() >= approval_quorum_fraction.deconstruct()
     }
 
+    // Verifies that approval threshold is still achievable for the proposal.
+    // Compares actual approval votes sum with remaining possible votes number.
+    pub(crate) fn is_approval_threshold_achievable(&self) -> bool {
+        let remaining_votes_count = self.total_voters_count - self.votes_count;
+        let possible_approval_votes_fraction = Perbill::from_rational_approximation(
+            self.approvals + remaining_votes_count,
+            self.votes_count + remaining_votes_count,
+        );
+
+        let required_threshold_fraction =
+            Perbill::from_percent(self.proposal.parameters.approval_threshold_percentage);
+
+        possible_approval_votes_fraction.deconstruct() >= required_threshold_fraction.deconstruct()
+    }
+
+    // Verifies that both approval and slashing thresholds cannot be achieved.
+    pub fn is_rejection_imminent(&self) -> bool {
+        !self.is_approval_threshold_achievable() && !self.is_slashing_threshold_achievable()
+    }
+
+    // Verifies that slashing threshold is still achievable for the proposal.
+    // Compares actual slashing votes sum with remaining possible votes number.
+    pub(crate) fn is_slashing_threshold_achievable(&self) -> bool {
+        let remaining_votes_count = self.total_voters_count - self.votes_count;
+        let possible_slashing_votes_fraction = Perbill::from_rational_approximation(
+            self.slashes + remaining_votes_count,
+            self.votes_count + remaining_votes_count,
+        );
+
+        let required_threshold_fraction =
+            Perbill::from_percent(self.proposal.parameters.slashing_threshold_percentage);
+
+        possible_slashing_votes_fraction.deconstruct() >= required_threshold_fraction.deconstruct()
+    }
+
     // Slashing quorum reached for the proposal. Compares predefined parameter with actual
-    // votes sum divided by total possible votes count.
+    // votes sum divided by total possible votes number.
     pub fn is_slashing_quorum_reached(&self) -> bool {
         let actual_votes_fraction =
             Perbill::from_rational_approximation(self.votes_count, self.total_voters_count);
@@ -291,7 +331,7 @@ where
     }
 
     // Approval threshold reached for the proposal. Compares predefined parameter with 'approve'
-    // votes sum divided by actual votes count.
+    // votes sum divided by actual votes number.
     pub fn is_approval_threshold_reached(&self) -> bool {
         let approval_votes_fraction =
             Perbill::from_rational_approximation(self.approvals, self.votes_count);
@@ -339,33 +379,6 @@ pub trait ProposalCodeDecoder<T: system::Trait> {
     ) -> Result<Box<dyn ProposalExecutable>, &'static str>;
 }
 
-/// Data container for the finalized proposal results
-pub(crate) struct FinalizedProposalData<ProposalId, BlockNumber, ProposerId, Balance, AccountId> {
-    /// Proposal id
-    pub proposal_id: ProposalId,
-
-    /// Proposal to be finalized
-    pub proposal: Proposal<BlockNumber, ProposerId, Balance, AccountId>,
-
-    /// Proposal finalization status
-    pub status: ProposalDecisionStatus,
-
-    /// Proposal finalization block number
-    pub finalized_at: BlockNumber,
-}
-
-/// Data container for the approved proposal results
-pub(crate) struct ApprovedProposalData<ProposalId, BlockNumber, ProposerId, Balance, AccountId> {
-    /// Proposal id.
-    pub proposal_id: ProposalId,
-
-    /// Proposal to be finalized.
-    pub proposal: Proposal<BlockNumber, ProposerId, Balance, AccountId>,
-
-    /// Proposal finalisation status data.
-    pub finalisation_status_data: FinalizationData<BlockNumber>,
-}
-
 /// Containter-type for a proposal creation method.
 pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId> {
     /// Account id of the proposer.
@@ -397,8 +410,16 @@ pub struct ProposalCreationParameters<BlockNumber, Balance, MemberId, AccountId>
 // Type alias for member id.
 pub(crate) type MemberId<T> = <T as membership::Trait>::MemberId;
 
-/// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
+/// Balance alias for `balances` module.
 pub type BalanceOf<T> = <T as balances::Trait>::Balance;
+
+// Simplification of the 'Proposal' type
+pub(crate) type ProposalOf<T> = Proposal<
+    <T as system::Trait>::BlockNumber,
+    MemberId<T>,
+    BalanceOf<T>,
+    <T as system::Trait>::AccountId,
+>;
 
 /// Defines abstract staking handler to manage user stakes for different activities
 /// like adding a proposal. Implementation should use built-in LockableCurrency
@@ -432,447 +453,4 @@ pub trait StakingHandler<T: system::Trait + membership::Trait + balances::Trait>
 
     /// Returns the current stake on the account.
     fn current_stake(account_id: &T::AccountId) -> BalanceOf<T>;
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::types::ProposalStatusResolution;
-    use crate::*;
-
-    // Alias introduced for simplicity of changing Proposal exact types.
-    type ProposalObject = Proposal<u64, u64, u64, u64>;
-
-    #[test]
-    fn proposal_voting_period_expired() {
-        let mut proposal = ProposalObject::default();
-
-        proposal.activated_at = 1;
-        proposal.parameters.voting_period = 3;
-
-        assert!(proposal.is_voting_period_expired(4));
-    }
-
-    #[test]
-    fn proposal_voting_period_not_expired() {
-        let mut proposal = ProposalObject::default();
-
-        proposal.activated_at = 1;
-        proposal.parameters.voting_period = 3;
-
-        assert!(!proposal.is_voting_period_expired(3));
-    }
-
-    #[test]
-    fn proposal_grace_period_expired() {
-        let mut proposal = ProposalObject::default();
-
-        proposal.parameters.grace_period = 3;
-        proposal.status = ProposalStatus::finalized(
-            ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingExecution),
-            0,
-        );
-
-        assert!(proposal.is_grace_period_expired(4));
-    }
-
-    #[test]
-    fn proposal_grace_period_auto_expired() {
-        let mut proposal = ProposalObject::default();
-
-        proposal.parameters.grace_period = 0;
-        proposal.status = ProposalStatus::finalized(
-            ProposalDecisionStatus::Approved(ApprovedProposalStatus::PendingExecution),
-            0,
-        );
-
-        assert!(proposal.is_grace_period_expired(1));
-    }
-
-    #[test]
-    fn proposal_grace_period_not_expired() {
-        let mut proposal = ProposalObject::default();
-
-        proposal.parameters.grace_period = 3;
-
-        assert!(!proposal.is_grace_period_expired(3));
-    }
-
-    #[test]
-    fn proposal_grace_period_not_expired_because_of_not_approved_proposal() {
-        let mut proposal = ProposalObject::default();
-
-        proposal.parameters.grace_period = 3;
-
-        assert!(!proposal.is_grace_period_expired(3));
-    }
-
-    #[test]
-    fn define_proposal_decision_status_returns_expired() {
-        let mut proposal = ProposalObject::default();
-        let now = 5;
-        proposal.activated_at = 1;
-        proposal.parameters.voting_period = 3;
-        proposal.parameters.approval_quorum_percentage = 80;
-        proposal.parameters.approval_threshold_percentage = 40;
-        proposal.parameters.slashing_quorum_percentage = 50;
-        proposal.parameters.slashing_threshold_percentage = 50;
-
-        proposal.voting_results.add_vote(VoteKind::Reject);
-        proposal.voting_results.add_vote(VoteKind::Approve);
-        proposal.voting_results.add_vote(VoteKind::Approve);
-
-        assert_eq!(
-            proposal.voting_results,
-            VotingResults {
-                abstentions: 0,
-                approvals: 2,
-                rejections: 1,
-                slashes: 0,
-            }
-        );
-
-        let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
-        assert_eq!(
-            expected_proposal_status,
-            Some(ProposalDecisionStatus::Expired)
-        );
-    }
-
-    #[test]
-    fn define_proposal_decision_status_returns_approved() {
-        let now = 2;
-        let mut proposal = ProposalObject::default();
-        proposal.activated_at = 1;
-        proposal.parameters.voting_period = 3;
-        proposal.parameters.approval_quorum_percentage = 60;
-        proposal.parameters.slashing_quorum_percentage = 50;
-        proposal.parameters.slashing_threshold_percentage = 50;
-
-        proposal.voting_results.add_vote(VoteKind::Reject);
-        proposal.voting_results.add_vote(VoteKind::Approve);
-        proposal.voting_results.add_vote(VoteKind::Approve);
-        proposal.voting_results.add_vote(VoteKind::Approve);
-
-        assert_eq!(
-            proposal.voting_results,
-            VotingResults {
-                abstentions: 0,
-                approvals: 3,
-                rejections: 1,
-                slashes: 0,
-            }
-        );
-
-        let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
-        assert_eq!(
-            expected_proposal_status,
-            Some(ProposalDecisionStatus::Approved(
-                ApprovedProposalStatus::PendingExecution
-            ))
-        );
-    }
-
-    #[test]
-    fn define_proposal_decision_status_returns_rejected() {
-        let mut proposal = ProposalObject::default();
-        let now = 2;
-
-        proposal.activated_at = 1;
-        proposal.parameters.voting_period = 3;
-        proposal.parameters.approval_quorum_percentage = 50;
-        proposal.parameters.approval_threshold_percentage = 51;
-        proposal.parameters.slashing_quorum_percentage = 50;
-        proposal.parameters.slashing_threshold_percentage = 50;
-
-        proposal.voting_results.add_vote(VoteKind::Reject);
-        proposal.voting_results.add_vote(VoteKind::Reject);
-        proposal.voting_results.add_vote(VoteKind::Abstain);
-        proposal.voting_results.add_vote(VoteKind::Approve);
-
-        assert_eq!(
-            proposal.voting_results,
-            VotingResults {
-                abstentions: 1,
-                approvals: 1,
-                rejections: 2,
-                slashes: 0,
-            }
-        );
-
-        let expected_proposal_status = proposal.define_proposal_decision_status(4, now);
-        assert_eq!(
-            expected_proposal_status,
-            Some(ProposalDecisionStatus::Rejected)
-        );
-    }
-
-    #[test]
-    fn define_proposal_decision_status_returns_slashed() {
-        let mut proposal = ProposalObject::default();
-        let now = 2;
-
-        proposal.activated_at = 1;
-        proposal.parameters.voting_period = 3;
-        proposal.parameters.approval_quorum_percentage = 50;
-        proposal.parameters.approval_threshold_percentage = 50;
-        proposal.parameters.slashing_quorum_percentage = 50;
-        proposal.parameters.slashing_threshold_percentage = 50;
-
-        proposal.voting_results.add_vote(VoteKind::Slash);
-        proposal.voting_results.add_vote(VoteKind::Reject);
-        proposal.voting_results.add_vote(VoteKind::Abstain);
-        proposal.voting_results.add_vote(VoteKind::Slash);
-
-        assert_eq!(
-            proposal.voting_results,
-            VotingResults {
-                abstentions: 1,
-                approvals: 0,
-                rejections: 1,
-                slashes: 2,
-            }
-        );
-
-        let expected_proposal_status = proposal.define_proposal_decision_status(4, now);
-        assert_eq!(
-            expected_proposal_status,
-            Some(ProposalDecisionStatus::Slashed)
-        );
-    }
-
-    #[test]
-    fn define_proposal_decision_status_returns_none() {
-        let mut proposal = ProposalObject::default();
-        let now = 2;
-
-        proposal.activated_at = 1;
-        proposal.parameters.voting_period = 3;
-        proposal.parameters.approval_quorum_percentage = 60;
-        proposal.parameters.slashing_quorum_percentage = 50;
-
-        proposal.voting_results.add_vote(VoteKind::Abstain);
-        assert_eq!(
-            proposal.voting_results,
-            VotingResults {
-                abstentions: 1,
-                approvals: 0,
-                rejections: 0,
-                slashes: 0,
-            }
-        );
-
-        let expected_proposal_status = proposal.define_proposal_decision_status(5, now);
-        assert_eq!(expected_proposal_status, None);
-    }
-
-    #[test]
-    fn define_proposal_decision_status_returns_approved_before_slashing_before_rejection() {
-        let mut proposal = ProposalObject::default();
-        let now = 2;
-
-        proposal.activated_at = 1;
-        proposal.parameters.voting_period = 3;
-        proposal.parameters.approval_quorum_percentage = 50;
-        proposal.parameters.approval_threshold_percentage = 30;
-        proposal.parameters.slashing_quorum_percentage = 50;
-        proposal.parameters.slashing_threshold_percentage = 30;
-
-        proposal.voting_results.add_vote(VoteKind::Approve);
-        proposal.voting_results.add_vote(VoteKind::Approve);
-        proposal.voting_results.add_vote(VoteKind::Reject);
-        proposal.voting_results.add_vote(VoteKind::Reject);
-        proposal.voting_results.add_vote(VoteKind::Slash);
-        proposal.voting_results.add_vote(VoteKind::Slash);
-
-        assert_eq!(
-            proposal.voting_results,
-            VotingResults {
-                abstentions: 0,
-                approvals: 2,
-                rejections: 2,
-                slashes: 2,
-            }
-        );
-
-        let expected_proposal_status = proposal.define_proposal_decision_status(6, now);
-
-        assert_eq!(
-            expected_proposal_status,
-            Some(ProposalDecisionStatus::Approved(
-                ApprovedProposalStatus::PendingExecution
-            ))
-        );
-    }
-
-    #[test]
-    fn define_proposal_decision_status_returns_slashed_before_rejection() {
-        let mut proposal = ProposalObject::default();
-        let now = 2;
-
-        proposal.activated_at = 1;
-        proposal.parameters.voting_period = 3;
-        proposal.parameters.approval_quorum_percentage = 50;
-        proposal.parameters.approval_threshold_percentage = 30;
-        proposal.parameters.slashing_quorum_percentage = 50;
-        proposal.parameters.slashing_threshold_percentage = 30;
-
-        proposal.voting_results.add_vote(VoteKind::Abstain);
-        proposal.voting_results.add_vote(VoteKind::Approve);
-        proposal.voting_results.add_vote(VoteKind::Reject);
-        proposal.voting_results.add_vote(VoteKind::Reject);
-        proposal.voting_results.add_vote(VoteKind::Slash);
-        proposal.voting_results.add_vote(VoteKind::Slash);
-
-        assert_eq!(
-            proposal.voting_results,
-            VotingResults {
-                abstentions: 1,
-                approvals: 1,
-                rejections: 2,
-                slashes: 2,
-            }
-        );
-
-        let expected_proposal_status = proposal.define_proposal_decision_status(6, now);
-
-        assert_eq!(
-            expected_proposal_status,
-            Some(ProposalDecisionStatus::Slashed)
-        );
-    }
-
-    #[test]
-    fn proposal_status_resolution_approval_quorum_works_correctly() {
-        let no_approval_quorum_proposal: Proposal<u64, u64, u64, u64> = Proposal {
-            parameters: ProposalParameters {
-                approval_quorum_percentage: 63,
-                slashing_threshold_percentage: 63,
-                ..ProposalParameters::default()
-            },
-            ..Proposal::default()
-        };
-        let no_approval_proposal_status_resolution = ProposalStatusResolution {
-            proposal: &no_approval_quorum_proposal,
-            now: 20,
-            votes_count: 314,
-            total_voters_count: 500,
-            approvals: 3,
-            slashes: 3,
-        };
-
-        assert!(!no_approval_proposal_status_resolution.is_approval_quorum_reached());
-
-        let approval_quorum_proposal_status_resolution = ProposalStatusResolution {
-            votes_count: 315,
-            ..no_approval_proposal_status_resolution
-        };
-
-        assert!(approval_quorum_proposal_status_resolution.is_approval_quorum_reached());
-    }
-
-    #[test]
-    fn proposal_status_resolution_slashing_quorum_works_correctly() {
-        let no_slashing_quorum_proposal: Proposal<u64, u64, u64, u64> = Proposal {
-            parameters: ProposalParameters {
-                approval_quorum_percentage: 63,
-                slashing_quorum_percentage: 63,
-                ..ProposalParameters::default()
-            },
-            ..Proposal::default()
-        };
-        let no_slashing_proposal_status_resolution = ProposalStatusResolution {
-            proposal: &no_slashing_quorum_proposal,
-            now: 20,
-            votes_count: 314,
-            total_voters_count: 500,
-            approvals: 3,
-            slashes: 3,
-        };
-
-        assert!(!no_slashing_proposal_status_resolution.is_slashing_quorum_reached());
-
-        let slashing_quorum_proposal_status_resolution = ProposalStatusResolution {
-            votes_count: 315,
-            ..no_slashing_proposal_status_resolution
-        };
-
-        assert!(slashing_quorum_proposal_status_resolution.is_slashing_quorum_reached());
-    }
-
-    #[test]
-    fn proposal_status_resolution_approval_threshold_works_correctly() {
-        let no_approval_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
-            parameters: ProposalParameters {
-                slashing_threshold_percentage: 63,
-                approval_threshold_percentage: 63,
-                ..ProposalParameters::default()
-            },
-            ..Proposal::default()
-        };
-        let no_approval_proposal_status_resolution = ProposalStatusResolution {
-            proposal: &no_approval_threshold_proposal,
-            now: 20,
-            votes_count: 500,
-            total_voters_count: 600,
-            approvals: 314,
-            slashes: 3,
-        };
-
-        assert!(!no_approval_proposal_status_resolution.is_approval_threshold_reached());
-
-        let approval_threshold_proposal_status_resolution = ProposalStatusResolution {
-            approvals: 315,
-            ..no_approval_proposal_status_resolution
-        };
-
-        assert!(approval_threshold_proposal_status_resolution.is_approval_threshold_reached());
-    }
-
-    #[test]
-    fn proposal_status_resolution_slashing_threshold_works_correctly() {
-        let no_slashing_threshold_proposal: Proposal<u64, u64, u64, u64> = Proposal {
-            parameters: ProposalParameters {
-                slashing_threshold_percentage: 63,
-                approval_threshold_percentage: 63,
-                ..ProposalParameters::default()
-            },
-            ..Proposal::default()
-        };
-        let no_slashing_proposal_status_resolution = ProposalStatusResolution {
-            proposal: &no_slashing_threshold_proposal,
-            now: 20,
-            votes_count: 500,
-            total_voters_count: 600,
-            approvals: 3,
-            slashes: 314,
-        };
-
-        assert!(!no_slashing_proposal_status_resolution.is_slashing_threshold_reached());
-
-        let slashing_threshold_proposal_status_resolution = ProposalStatusResolution {
-            slashes: 315,
-            ..no_slashing_proposal_status_resolution
-        };
-
-        assert!(slashing_threshold_proposal_status_resolution.is_slashing_threshold_reached());
-    }
-
-    #[test]
-    fn proposal_exact_execution_block_reached() {
-        let mut proposal = ProposalObject::default();
-
-        proposal.exact_execution_block = None;
-        assert!(proposal.is_execution_block_reached_or_not_set(3));
-
-        proposal.exact_execution_block = Some(3);
-        assert!(proposal.is_execution_block_reached_or_not_set(3));
-    }
-
-    #[test]
-    fn proposal_exact_execution_block_not_reached() {
-        let mut proposal = ProposalObject::default();
-
-        proposal.exact_execution_block = Some(3);
-        assert!(!proposal.is_execution_block_reached_or_not_set(2));
-    }
 }

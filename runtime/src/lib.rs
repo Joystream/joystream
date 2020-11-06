@@ -577,21 +577,16 @@ impl Default for Call {
 }
 
 parameter_types! {
-    pub const ProposalMaxPostEditionNumber: u32 = 0; // post update is disabled
-    pub const ProposalMaxThreadInARowNumber: u32 = 100_000; // will not be used
-    pub const ProposalThreadTitleLengthLimit: u32 = 40;
-    pub const ProposalPostLengthLimit: u32 = 1000;
+    pub const MaxWhiteListSize: u32 = 20;
 }
 
 impl proposals_discussion::Trait for Runtime {
     type Event = Event;
-    type PostAuthorOriginValidator = MembershipOriginValidator<Self>;
+    type AuthorOriginValidator = MembershipOriginValidator<Self>;
+    type CouncilOriginValidator = CouncilManager<Self>;
     type ThreadId = ThreadId;
     type PostId = PostId;
-    type MaxPostEditionNumber = ProposalMaxPostEditionNumber;
-    type ThreadTitleLengthLimit = ProposalThreadTitleLengthLimit;
-    type PostLengthLimit = ProposalPostLengthLimit;
-    type MaxThreadInARowNumber = ProposalMaxThreadInARowNumber;
+    type MaxWhiteListSize = MaxWhiteListSize;
 }
 
 parameter_types! {

@@ -340,7 +340,7 @@ impl Default for ProposalsConfigParameters {
             terminate_working_group_leader_role_proposal_voting_period: 72200u32,
             terminate_working_group_leader_role_proposal_grace_period: 0u32,
             amend_constitution_proposal_voting_period: 72200u32,
-            amend_constitution_proposal_grace_period: 0u32,
+            amend_constitution_proposal_grace_period: 72200u32,
         }
     }
 }
