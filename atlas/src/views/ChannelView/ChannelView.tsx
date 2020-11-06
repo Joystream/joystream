@@ -6,7 +6,7 @@ import { GET_CHANNEL } from '@/api/queries/channels'
 import { GetChannel, GetChannelVariables } from '@/api/queries/__generated__/GetChannel'
 import { VideoGrid } from '@/components'
 
-import { Header, StyledAvatar, Title, TitleSection, VideoSection } from './ChannelView.style'
+import { Header, StyledAvatar, Title, TitleContainer, TitleSection, VideoSection } from './ChannelView.style'
 
 const ChannelView: React.FC<RouteComponentProps> = () => {
   const { id } = useParams()
@@ -24,7 +24,9 @@ const ChannelView: React.FC<RouteComponentProps> = () => {
       <Header coverPhotoURL={data.channel.coverPhotoURL}>
         <TitleSection>
           <StyledAvatar img={data.channel.avatarPhotoURL} name={data.channel.handle} />
-          <Title>{data.channel.handle}</Title>
+          <TitleContainer>
+            <Title>{data.channel.handle}</Title>
+          </TitleContainer>
         </TitleSection>
       </Header>
       {videos.length > 0 && (

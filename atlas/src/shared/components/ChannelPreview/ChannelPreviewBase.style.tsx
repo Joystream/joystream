@@ -3,11 +3,10 @@ import styled from '@emotion/styled'
 import { colors, sizes, spacing } from '../../theme'
 
 const imageTopOverflow = '2rem'
+const containerPadding = '22px'
 
 export const OuterContainer = styled.article`
-  max-width: 200px;
-  width: 200px;
-  height: ${`calc(166px + ${imageTopOverflow})`};
+  min-height: ${`calc(166px + ${imageTopOverflow})`};
   padding-top: ${imageTopOverflow};
   :hover {
     cursor: ${(props) => (props.onClick ? 'pointer' : 'default')};
@@ -32,10 +31,14 @@ const hoverTransition = ({ animated }: InnerContainerProps) =>
 export const InnerContainer = styled.div<InnerContainerProps>`
   background-color: ${colors.gray[800]};
   color: ${colors.gray[300]};
+
+  width: calc(156px + calc(2 * ${containerPadding}));
+  padding: 0 ${containerPadding};
+  height: 100%;
+
   display: flex;
   flex-direction: column;
   align-items: center;
-  height: 100%;
   ${hoverTransition}
 `
 
@@ -51,9 +54,9 @@ export const Info = styled.div`
 `
 
 export const AvatarContainer = styled.div`
-  width: 156px;
+  width: 100%;
   height: 156px;
   position: relative;
-  margin: -${imageTopOverflow} auto 0;
+  margin-top: -${imageTopOverflow};
   z-index: 2;
 `

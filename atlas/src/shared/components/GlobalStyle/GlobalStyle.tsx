@@ -1,6 +1,6 @@
 import { css, Global } from '@emotion/core'
 import emotionNormalize from 'emotion-normalize'
-import { typography, colors } from '../../theme'
+import { breakpoints, colors, sizes, typography } from '../../theme'
 import React from 'react'
 
 const globalStyles = css`
@@ -30,6 +30,15 @@ const globalStyles = css`
   h6 {
     font-family: ${typography.fonts.headers};
     color: ${colors.white};
+  }
+
+  :root {
+    --global-horizontal-padding: ${sizes.b4}px;
+  }
+  @media screen and (min-width: ${breakpoints.medium}) {
+    :root {
+      --global-horizontal-padding: ${sizes.b8}px;
+    }
   }
 `
 
