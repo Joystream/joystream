@@ -25,7 +25,7 @@
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
-		"@dzlzv/hydra-cli": "^0.0.18"
+		"@dzlzv/hydra-cli": "^0.0.19"
 	},
 	"dependencies": {
 		"@joystream/types": "^0.14.0",
