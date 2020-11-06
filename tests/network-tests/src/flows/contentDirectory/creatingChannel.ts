@@ -3,7 +3,7 @@ import { Utils } from '../../utils'
 import { CreateChannelFixture } from '../../fixtures/contentDirectoryModule'
 import { ChannelEntity } from 'cd-schemas/types/entities/ChannelEntity'
 import { assert } from 'chai'
-import { KeyringPair } from '@polkadot/keyring/types'
+import { ApolloQueryResult } from '@apollo/client'
 
 export function createSimpleChannelFixture(api: QueryNodeApi): CreateChannelFixture {
   const channelEntity: ChannelEntity = {
@@ -20,6 +20,14 @@ export function createSimpleChannelFixture(api: QueryNodeApi): CreateChannelFixt
   return new CreateChannelFixture(api, channelEntity)
 }
 
+function assertChannelMatchQueriedResult(queriedChannel: any, channel: ChannelEntity) {
+  assert(queriedChannel.title === channel.title, 'Should be equal')
+  assert(queriedChannel.description === channel.description, 'Should be equal')
+  assert(queriedChannel.coverPhotoUrl === channel.coverPhotoUrl, 'Should be equal')
+  assert(queriedChannel.avatarPhotoUrl === channel.avatarPhotoURL, 'Should be equal')
+  assert(queriedChannel.isPublic === channel.isPublic, 'Should be equal')
+}
+
 export default async function channelCreation(api: QueryNodeApi) {
   const createChannelHappyCaseFixture = createSimpleChannelFixture(api)
 
@@ -29,15 +37,29 @@ export default async function channelCreation(api: QueryNodeApi) {
   await Utils.wait(120000)
 
   // Ensure newly created channel was parsed by query node
-  const result = await api.getChannelbyTitle(createChannelHappyCaseFixture.channelEntity.title)
-  const queriedChannel = result.data.channels[0]
+  let result = await api.getChannelbyTitle(createChannelHappyCaseFixture.channelEntity.title)
 
-  assert(queriedChannel.title === createChannelHappyCaseFixture.channelEntity.title, 'Should be equal')
-  assert(queriedChannel.description === createChannelHappyCaseFixture.channelEntity.description, 'Should be equal')
-  assert(queriedChannel.coverPhotoUrl === createChannelHappyCaseFixture.channelEntity.coverPhotoUrl, 'Should be equal')
-  assert(
-    queriedChannel.avatarPhotoUrl === createChannelHappyCaseFixture.channelEntity.avatarPhotoURL,
-    'Should be equal'
-  )
-  assert(queriedChannel.isPublic === createChannelHappyCaseFixture.channelEntity.isPublic, 'Should be equal')
+  console.log(result.data.channels[0])
+
+  assertChannelMatchQueriedResult(result.data.channels[0], createChannelHappyCaseFixture.channelEntity)
+
+  // Perform number of full text searches on Channel title, that should return a Channel.
+  result = await api.performFullTextSearchOnChannelTitle('Examp')
+
+  console.log(result.data.titles[0].item)
+
+  assertChannelMatchQueriedResult(result.data.titles[0].item, createChannelHappyCaseFixture.channelEntity)
+
+  result = await api.performFullTextSearchOnChannelTitle(' channel')
+
+  assertChannelMatchQueriedResult(result.data.titles[0].item, createChannelHappyCaseFixture.channelEntity)
+
+  // Perform number full text searches on Channel title, that should not return a Channel.
+  result = await api.performFullTextSearchOnChannelTitle('First')
+
+  assert(result.data.titles[0].length === 0, 'Should be empty')
+
+  result = await api.performFullTextSearchOnChannelTitle('Chanel')
+
+  assert(result.data.titles[0].length === 0, 'Should be empty')
 }

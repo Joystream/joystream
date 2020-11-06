@@ -45,5 +45,8 @@ export function createVideoReferencingChannelFixture(api: QueryNodeApi): CreateV
 export default async function createVideo(api: QueryNodeApi) {
   const createVideoHappyCaseFixture = createVideoReferencingChannelFixture(api)
 
+  // Temporary solution (wait 2 minutes)
+  // await Utils.wait(120000)
+
   await createVideoHappyCaseFixture.runner(false)
 }

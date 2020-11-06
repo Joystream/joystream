@@ -2045,11 +2045,33 @@ export class QueryNodeApi extends Api {
           avatarPhotoUrl
           isPublic
           isCurated
-          languageId
+          language
         }
       }
     `
 
     return await this.queryNodeProvider.query({ query: GET_CHANNEL_BY_TITLE, variables: { title } })
+  }
+
+  public async performFullTextSearchOnChannelTitle(text: string): Promise<ApolloQueryResult<any>> {
+    const FULL_TEXT_SEARCH_ON_CHANNEL_TITLE = gql`
+      query($text: String!) {
+        titles(text: $text) {
+          item {
+            ... on Channel {
+              title
+              description
+              coverPhotoUrl
+              avatarPhotoUrl
+              isPublic
+              isCurated
+              language
+            }
+          }
+        }
+      }
+    `
+
+    return await this.queryNodeProvider.query({ query: FULL_TEXT_SEARCH_ON_CHANNEL_TITLE, variables: { text } })
   }
 }
