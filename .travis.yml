@@ -9,7 +9,7 @@ language: rust
 # one is embedded in the binary)
 # cache: cargo
 
-rust: stable
+rust: 1.46.0
 
 # Skip Rust build in a pull request if no rust project files were modified
 before_install:
