@@ -65,7 +65,8 @@ async function createChannel(
   channel.isPublic = p.isPublic
   channel.coverPhotoUrl = p.coverPhotoURL
   channel.avatarPhotoUrl = p.avatarPhotoURL
-  if (p.language) channel.language = await getOrCreate.language({ db, block, id }, classEntityMap, p.language)
+  if (p.language !== undefined)
+    channel.language = await getOrCreate.language({ db, block, id }, classEntityMap, p.language)
   channel.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save(channel)
   return channel
@@ -168,8 +169,9 @@ async function createVideoMedia(
   videoMedia.size = p.size
   videoMedia.version = block
   const { encoding, location } = p
-  if (encoding) videoMedia.encoding = await getOrCreate.videoMediaEncoding({ db, block, id }, classEntityMap, encoding)
-  if (location) {
+  if (encoding !== undefined)
+    videoMedia.encoding = await getOrCreate.videoMediaEncoding({ db, block, id }, classEntityMap, encoding)
+  if (location !== undefined) {
     videoMedia.location = await getOrCreate.mediaLocation({ db, block, id }, classEntityMap, location)
   }
   videoMedia.happenedIn = await createBlockOrGetFromDatabase(db, block)
@@ -198,12 +200,13 @@ async function createVideo({ db, block, id }: IDBBlockId, classEntityMap: ClassE
   video.version = block
 
   const { language, license, category, channel, media } = p
-  if (language) video.language = await getOrCreate.language({ db, block, id }, classEntityMap, language)
-  if (license) video.license = await getOrCreate.license({ db, block, id }, classEntityMap, license)
-  if (category) video.category = await getOrCreate.category({ db, block, id }, classEntityMap, category)
-  if (channel) video.channel = await getOrCreate.channel({ db, block, id }, classEntityMap, channel)
+  if (language !== undefined) video.language = await getOrCreate.language({ db, block, id }, classEntityMap, language)
+  if (license !== undefined) video.license = await getOrCreate.license({ db, block, id }, classEntityMap, license)
+  if (category !== undefined) video.category = await getOrCreate.category({ db, block, id }, classEntityMap, category)
+  if (channel !== undefined) video.channel = await getOrCreate.channel({ db, block, id }, classEntityMap, channel)
+  if (media !== undefined) video.media = await getOrCreate.videoMedia({ db, block, id }, classEntityMap, media)
+
   video.happenedIn = await createBlockOrGetFromDatabase(db, block)
-  if (media) video.media = await getOrCreate.videoMedia({ db, block, id }, classEntityMap, media)
   await db.save<Video>(video)
   return video
 }
@@ -234,7 +237,6 @@ async function createVideoMediaEncoding(
   encoding.id = id
   encoding.name = p.name
   encoding.version = block
-  // happenedIn is not defined in the graphql schema!
   encoding.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save<VideoMediaEncoding>(encoding)
   return encoding
@@ -252,9 +254,9 @@ async function createLicense(
 
   const license = new License()
   license.id = id
-  if (knownLicense)
+  if (knownLicense !== undefined)
     license.knownLicense = await getOrCreate.knownLicense({ db, block, id }, classEntityMap, knownLicense)
-  if (userDefinedLicense)
+  if (userDefinedLicense !== undefined)
     license.userdefinedLicense = await getOrCreate.userDefinedLicense(
       { db, block, id },
       classEntityMap,
@@ -274,13 +276,13 @@ async function createMediaLocation(
 
   const location = new MediaLocation()
   location.id = id
-  if (httpMediaLocation)
+  if (httpMediaLocation !== undefined)
     location.httpMediaLocation = await getOrCreate.httpMediaLocation(
       { db, block, id },
       classEntityMap,
       httpMediaLocation
     )
-  if (joystreamMediaLocation)
+  if (joystreamMediaLocation !== undefined)
     location.joystreamMediaLocation = await getOrCreate.joystreamMediaLocation(
       { db, block, id },
       classEntityMap,
