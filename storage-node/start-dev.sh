@@ -16,14 +16,15 @@ cd $SCRIPT_PATH
 # stop prior run and clear volumes
 # docker-compose down -v
 
-# Run a development joystream-node chain and ipfs daemon in the background
-docker-compose up -d
-
 function down()
 {
     # Stop containers and clear volumes
     docker-compose down -v
 }
+
+# Run a development joystream-node chain and ipfs daemon in the background
+docker-compose up -d ipfs
+docker-compose up -d joystream-node
 
 trap down EXIT
 

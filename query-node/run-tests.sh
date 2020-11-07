@@ -23,9 +23,13 @@ export WS_PROVIDER_ENDPOINT_URI=ws://joystream-node:9944/
 # typeorm commandline is used by db:migrate step below.
 ln -s ../../../../../node_modules/typeorm/cli.js generated/graphql-server/node_modules/.bin/typeorm || :
 
-yarn db:up
+docker-compose up -d db
 yarn db:migrate
-yarn docker:up
+docker-compose up -d redis
+docker-compose up -d indexer
+docker-compose up -d graphql-server
+docker-compose up -d indexer-api-gateway
+docker-compose up -d processor
 
 # Run tests
 ATTACH_TO_NETWORK=query-node_default ../tests/network-tests/run-tests.sh content-directory

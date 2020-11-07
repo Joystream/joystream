@@ -1388,10 +1388,10 @@
     ajv "^6.12.0"
     ajv-keywords "^3.4.1"
 
-"@dzlzv/hydra-cli@^0.0.17":
-  version "0.0.17"
-  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-0.0.17.tgz#56ccae132f76e738724cdc5f0abcd47ff25df530"
-  integrity sha512-ixrjGn6a7UG7ecHYKWTHpcxbdi6X32NbtyCuewm4YGFdb+v0/Eg5zWhFbg1PbMUW9GllC4MiIjDF7Bh1fh9t7Q==
+"@dzlzv/hydra-cli@^0.0.19":
+  version "0.0.19"
+  resolved "https://registry.yarnpkg.com/@dzlzv/hydra-cli/-/hydra-cli-0.0.19.tgz#bd7711cb62a8eb71e447538dcdc2790f8a71001b"
+  integrity sha512-F2Jg9hmLmEOsjrKUp0aVr3VfD5tYTN94RgH0gQnN6I/syq9OtkjZdoV9d3iq6Ujzw7VvAksboytLsa+GViLlZA==
   dependencies:
     "@oclif/command" "^1.5.20"
     "@oclif/config" "^1"
@@ -4938,7 +4938,7 @@
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.159.tgz#61089719dc6fdd9c5cb46efc827f2571d1517065"
   integrity sha512-gF7A72f7WQN33DpqOWw9geApQPh4M3PxluMtaHxWHXEGSN12/WbcEk/eNSqWNQcQhF66VSZ06vCF94CrHwXJDg==
 
-"@types/lodash@^4.14.148", "@types/lodash@^4.14.161":
+"@types/lodash@^4.14.148":
   version "4.14.164"
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.164.tgz#52348bcf909ac7b4c1bcbeda5c23135176e5dfa0"
   integrity sha512-fXCEmONnrtbYUc5014avwBeMdhHHO8YJCkOBflUL9EoJBSKZ1dei+VO74fA7JkTHZ1GvZack2TyIw5U+1lT8jg==
@@ -4947,6 +4947,11 @@
   version "4.14.157"
   resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.157.tgz#fdac1c52448861dfde1a2e1515dbc46e54926dc8"
   integrity sha512-Ft5BNFmv2pHDgxV5JDsndOWTRJ+56zte0ZpYLowp03tW+K+t8u8YMOzAnpuqPgzX6WO1XpDIUm7u04M8vdDiVQ==
+
+"@types/lodash@^4.14.161":
+  version "4.14.165"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.165.tgz#74d55d947452e2de0742bad65270433b63a8c30f"
+  integrity sha512-tjSSOTHhI5mCHTy/OOXYIhi2Wt1qcbHmuXD1Ha7q70CgI/I71afO4XtLb/cVexki1oVYchpul/TOuu3Arcdxrg==
 
 "@types/long@^4.0.0":
   version "4.0.1"
@@ -11341,7 +11346,7 @@ dotenv@^6.2.0:
   resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-6.2.0.tgz#941c0410535d942c8becf28d3f357dbd9d476064"
   integrity sha512-HygQCKUBSFl8wKQZBSemMywRWcEDNidvNbjGVyZu3nbZ8qq9ubiPoGLMdRDpfSrpkkm9BXYFkpKxxFX38o/76w==
 
-dotenvi@^0.9.0:
+dotenvi@^0.9.0, dotenvi@^0.9.1:
   version "0.9.1"
   resolved "https://registry.yarnpkg.com/dotenvi/-/dotenvi-0.9.1.tgz#e280012ee9d201a0c57cb1f6e43559603b6f0fb4"
   integrity sha512-gM9HKu6P8BS+jBQRcJRdWKkbIA35Ztszr2FEqp1oKYLMfdTWDumLNi9xlIeEAFc2C4DeOwsYcNi+mMl5OWGtcw==
