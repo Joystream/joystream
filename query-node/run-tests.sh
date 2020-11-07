@@ -25,10 +25,11 @@ ln -s ../../../../../node_modules/typeorm/cli.js generated/graphql-server/node_m
 
 docker-compose up -d db
 yarn db:migrate
-docker-compose up -d redis
-docker-compose up -d indexer
-docker-compose up -d graphql-server
-docker-compose up -d indexer-api-gateway
+# docker-compose up -d redis
+# docker-compose up -d indexer
+# docker-compose up -d graphql-server
+# docker-compose up -d indexer-api-gateway
+# Starting up processor will bring up all services it depends on
 docker-compose up -d processor
 
 # Run tests
