@@ -148,7 +148,7 @@ jobs:
       - name: Ensure tests are runnable
         run: yarn workspace cd-schemas checks --quiet
       - name: Start chain
-        run: docker-compose up -d
+        run: docker-compose up -d joystream-node
       - name: Initialize the content directory
         run: yarn workspace cd-schemas initialize:dev
 
@@ -202,7 +202,10 @@ jobs:
       - name: Build storage node
         run: yarn workspace storage-node build
       - name: Start Services
-        run: docker-compose --file docker-compose-with-storage.yml up -d
+        run: |
+          docker-compose up -d ipfs
+          docker-compose up -d joystream-node
+          docker-compose up -d colossus
       - name: Add development storage node and initialize content directory
         run: DEBUG=* yarn storage-cli dev-init
       - name: Try uploading
