@@ -4,7 +4,6 @@ import { Gallery, SeriesPreview } from '@/shared/components'
 
 type SeriesGalleryProps = {
   title: string
-  action: string
 }
 
 const series = [
@@ -58,8 +57,8 @@ const series = [
   },
 ]
 
-const SeriesGallery: React.FC<Partial<SeriesGalleryProps>> = ({ title, action }) => (
-  <Gallery title={title} action={action}>
+const SeriesGallery: React.FC<Partial<SeriesGalleryProps>> = ({ title }) => (
+  <Gallery title={title}>
     {series.map((series) => (
       <SeriesPreview
         key={series.series}

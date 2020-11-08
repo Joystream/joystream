@@ -1,25 +1,20 @@
 import React, { useState, useMemo } from 'react'
 import styled from '@emotion/styled'
-import { spacing, typography, sizes } from '@/shared/theme'
-import { RouteComponentProps, navigate } from '@reach/router'
+import { sizes } from '@/shared/theme'
+import { RouteComponentProps } from '@reach/router'
 import { useQuery } from '@apollo/client'
 
 import { SEARCH } from '@/api/queries'
 import { Search, SearchVariables } from '@/api/queries/__generated__/Search'
 import { TabsMenu } from '@/shared/components'
-import { VideoGrid, ChannelGallery, VideoBestMatch, VideoGallery } from '@/components'
-import routes from '@/config/routes'
-import ChannelGrid from '@/components/ChannelGrid'
+import { VideoGrid, PlaceholderVideoGrid, ChannelGrid } from '@/components'
+import AllResultsTab from '@/views/SearchView/AllResultsTab'
 
 type SearchViewProps = {
   search?: string
 } & RouteComponentProps
 const tabs = ['all results', 'videos', 'channels']
 
-const SectionHeader = styled.h5`
-  margin: 0 0 ${spacing.m};
-  font-size: ${typography.sizes.h5};
-`
 const SearchView: React.FC<SearchViewProps> = ({ search = '' }) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const { data, loading } = useQuery<Search, SearchVariables>(SEARCH, { variables: { query_string: search } })
@@ -34,38 +29,20 @@ const SearchView: React.FC<SearchViewProps> = ({ search = '' }) => {
     return { channels, videos }
   }
 
-  const { channels, videos: allVideos } = useMemo(() => getChannelsAndVideos(loading, data), [loading, data])
+  const { channels, videos } = useMemo(() => getChannelsAndVideos(loading, data), [loading, data])
 
-  if (loading || !data) {
-    return <p>Loading...</p>
-  }
-  if (!data.search) {
+  if (!loading && !data?.search) {
     return <p>Something went wrong...</p>
   }
 
-  const [bestMatch, ...videos] = allVideos
+  console.log({ videos, loading })
+
   return (
     <Container>
       <TabsMenu tabs={tabs} onSelectTab={setSelectedIndex} initialIndex={0} />
-      {bestMatch && selectedIndex === 0 && (
-        <VideoBestMatch video={bestMatch} onClick={() => navigate(routes.video(bestMatch.id))} />
-      )}
-      {videos.length > 0 && selectedIndex !== 2 && (
-        <div>
-          <SectionHeader>Videos</SectionHeader>
-          {selectedIndex === 0 ? <VideoGallery videos={videos} /> : <VideoGrid videos={videos} />}
-        </div>
-      )}
-      {channels.length > 0 && selectedIndex !== 1 && (
-        <div>
-          <SectionHeader>Channels</SectionHeader>
-          {selectedIndex === 0 ? (
-            <ChannelGallery channels={channels} />
-          ) : (
-            <ChannelGrid channels={channels} repeat="fill" />
-          )}
-        </div>
-      )}
+      {selectedIndex === 0 && <AllResultsTab loading={loading} videos={videos} channels={channels} />}
+      {selectedIndex === 1 && (loading ? <PlaceholderVideoGrid /> : <VideoGrid videos={videos} />)}
+      {selectedIndex === 2 && (loading ? <PlaceholderVideoGrid /> : <ChannelGrid channels={channels} repeat="fill" />)}
     </Container>
   )
 }

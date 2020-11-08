@@ -1,20 +1,22 @@
 import React, { useEffect } from 'react'
 import { navigate, RouteComponentProps, useParams } from '@reach/router'
 import {
+  ChannelContainer,
   Container,
   DescriptionContainer,
+  DescriptionPlaceholder,
   InfoContainer,
   Meta,
   MoreVideosContainer,
   MoreVideosHeader,
   PlayerContainer,
+  PlayerPlaceholder,
+  PlayerWrapper,
   StyledChannelAvatar,
-  StyledVideoPlayer,
   Title,
-  TitleActionsContainer,
 } from './VideoView.style'
-import { VideoGrid } from '@/components'
-import { VideoPlayer } from '@/shared/components'
+import { VideoGrid, PlaceholderVideoGrid } from '@/components'
+import { Placeholder, VideoPlayer } from '@/shared/components'
 import { useMutation, useQuery } from '@apollo/client'
 import { ADD_VIDEO_VIEW, GET_VIDEO_WITH_CHANNEL_VIDEOS } from '@/api/queries'
 import { GetVideo, GetVideoVariables } from '@/api/queries/__generated__/GetVideo'
@@ -53,41 +55,62 @@ const VideoView: React.FC<RouteComponentProps> = () => {
     })
   }, [addVideoView, videoID])
 
-  if (loading || !data) {
-    return <p>Loading</p>
-  }
-
-  if (!data.video) {
+  if (!loading && !data?.video) {
     return <p>Video not found</p>
   }
 
-  const { title, views, publishedOnJoystreamAt, channel, description } = data.video
-
-  const descriptionLines = description.split('\n')
-
   return (
     <Container>
-      <PlayerContainer>
-        <StyledVideoPlayer src={data.video.media.location} autoplay fluid />
-      </PlayerContainer>
+      <PlayerWrapper>
+        <PlayerContainer>
+          {data?.video ? <VideoPlayer src={data.video.media.location} autoplay fluid /> : <PlayerPlaceholder />}
+        </PlayerContainer>
+      </PlayerWrapper>
       <InfoContainer>
-        <TitleActionsContainer>
-          <Title>{title}</Title>
-        </TitleActionsContainer>
-        <Meta>{formatVideoViewsAndDate(views, publishedOnJoystreamAt, { fullViews: true })}</Meta>
-        <StyledChannelAvatar
-          name={channel.handle}
-          avatarUrl={channel.avatarPhotoURL}
-          onClick={() => navigate(routes.channel(channel.id))}
-        />
+        {data?.video ? <Title>{data.video.title}</Title> : <Placeholder height={46} width={400} />}
+        <Meta>
+          {data?.video ? (
+            formatVideoViewsAndDate(data.video.views, data.video.publishedOnJoystreamAt, { fullViews: true })
+          ) : (
+            <Placeholder height={18} width={200} />
+          )}
+        </Meta>
+        <ChannelContainer>
+          {data?.video ? (
+            <StyledChannelAvatar
+              name={data.video.channel.handle}
+              avatarUrl={data.video.channel.avatarPhotoURL}
+              onClick={() => navigate(routes.channel(data.video!.channel.id))}
+            />
+          ) : (
+            <Placeholder height={32} width={200} />
+          )}
+        </ChannelContainer>
         <DescriptionContainer>
-          {descriptionLines.map((line, idx) => (
-            <p key={idx}>{line}</p>
-          ))}
+          {data?.video ? (
+            <>
+              {data.video.description.split('\n').map((line, idx) => (
+                <p key={idx}>{line}</p>
+              ))}
+            </>
+          ) : (
+            <>
+              <DescriptionPlaceholder width={700} />
+              <DescriptionPlaceholder width={400} />
+              <DescriptionPlaceholder width={800} />
+              <DescriptionPlaceholder width={300} />
+            </>
+          )}
         </DescriptionContainer>
         <MoreVideosContainer>
-          <MoreVideosHeader>More from {channel.handle}</MoreVideosHeader>
-          <VideoGrid videos={channel.videos} showChannel={false} />
+          <MoreVideosHeader>
+            {data?.video ? `More from ${data.video.channel.handle}` : <Placeholder height={23} width={300} />}
+          </MoreVideosHeader>
+          {data?.video ? (
+            <VideoGrid videos={data.video.channel.videos} showChannel={false} />
+          ) : (
+            <PlaceholderVideoGrid />
+          )}
         </MoreVideosContainer>
       </InfoContainer>
     </Container>

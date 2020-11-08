@@ -3,15 +3,15 @@ import { BreakPoint } from 'react-glider'
 
 import styled from '@emotion/styled'
 
-import { Gallery, MAX_VIDEO_PREVIEW_WIDTH, VideoPreviewBase, breakpointsOfGrid } from '@/shared/components'
+import { breakpointsOfGrid, Gallery, MAX_VIDEO_PREVIEW_WIDTH, VideoPreviewBase } from '@/shared/components'
 import VideoPreview from './VideoPreviewWithNavigation'
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 
-import { spacing } from '@/shared/theme'
+import { sizes, spacing } from '@/shared/theme'
+import { css } from '@emotion/core'
 
 type VideoGalleryProps = {
   title?: string
-  action?: string
   videos?: VideoFields[]
   loading?: boolean
 }
@@ -33,11 +33,13 @@ const breakpoints = breakpointsOfGrid({
   },
 })) as BreakPoint[]
 
-const VideoGallery: React.FC<VideoGalleryProps> = ({ title, action, videos, loading }) => {
+console.log(breakpoints)
+
+const VideoGallery: React.FC<VideoGalleryProps> = ({ title, videos, loading }) => {
   const displayPlaceholders = loading || !videos
 
   return (
-    <Gallery title={title} action={action} trackPadding={trackPadding} responsive={breakpoints}>
+    <Gallery title={title} trackPadding={trackPadding} responsive={breakpoints}>
       {displayPlaceholders
         ? Array.from({ length: PLACEHOLDERS_COUNT }).map((_, idx) => (
             <StyledVideoPreviewBase key={`video-placeholder-${idx}`} />
@@ -60,19 +62,19 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, action, videos, load
   )
 }
 
-const StyledVideoPreviewBase = styled(VideoPreviewBase)`
+const videoPreviewCss = css`
   & + & {
-    margin-left: 1.25rem;
+    margin-left: ${sizes.b6}px;
   }
 
-  width: ${MAX_VIDEO_PREVIEW_WIDTH};
+  min-width: ${MAX_VIDEO_PREVIEW_WIDTH};
+`
+
+const StyledVideoPreviewBase = styled(VideoPreviewBase)`
+  ${videoPreviewCss};
 `
 const StyledVideoPreview = styled(VideoPreview)`
-  & + & {
-    margin-left: 24px;
-  }
-
-  width: ${MAX_VIDEO_PREVIEW_WIDTH};
+  ${videoPreviewCss};
 `
 
 export default VideoGallery
