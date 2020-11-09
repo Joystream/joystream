@@ -28,6 +28,8 @@ type VideoPreviewProps = {
 
   showChannel?: boolean
   showMeta?: boolean
+  main?: boolean
+
   imgRef?: React.Ref<HTMLImageElement>
   onClick?: (e: React.MouseEvent<HTMLElement>) => void
   onChannelClick?: (e: React.MouseEvent<HTMLElement>) => void
@@ -45,6 +47,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
   posterURL,
   showChannel = true,
   showMeta = true,
+  main = false,
   imgRef,
   onClick,
   onChannelClick,
@@ -83,7 +86,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
     </>
   )
 
-  const titleNode = <TitleHeader>{title}</TitleHeader>
+  const titleNode = <TitleHeader main={main}>{title}</TitleHeader>
 
   const channelAvatarNode = (
     <StyledAvatar
@@ -101,7 +104,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
     </ChannelName>
   )
 
-  const metaNode = <MetaText>{formatVideoViewsAndDate(views, createdAt)}</MetaText>
+  const metaNode = <MetaText main={main}>{formatVideoViewsAndDate(views, createdAt, { fullViews: main })}</MetaText>
 
   return (
     <VideoPreviewBase
@@ -111,6 +114,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
       channelAvatarNode={channelAvatarNode}
       channelNameNode={channelNameNode}
       showMeta={showMeta}
+      main={main}
       metaNode={metaNode}
       onClick={onClick && handleClick}
       className={className}

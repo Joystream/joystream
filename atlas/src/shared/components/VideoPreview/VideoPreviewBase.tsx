@@ -6,6 +6,7 @@ import {
   InfoContainer,
   MetaContainer,
   TextContainer,
+  CoverWrapper,
 } from './VideoPreviewBase.styles'
 import styled from '@emotion/styled'
 import Placeholder from '../Placeholder'
@@ -17,6 +18,7 @@ type VideoPreviewBaseProps = {
   channelAvatarNode?: React.ReactNode
   channelNameNode?: React.ReactNode
   showMeta?: boolean
+  main?: boolean
   metaNode?: React.ReactNode
   onClick?: (e: React.MouseEvent<HTMLElement>) => void
   className?: string
@@ -29,27 +31,32 @@ const VideoPreviewBase: React.FC<VideoPreviewBaseProps> = ({
   channelAvatarNode,
   channelNameNode,
   showMeta = true,
+  main = false,
   metaNode,
   onClick,
   className,
 }) => {
   const clickable = !!onClick
 
+  const displayChannel = showChannel && !main
+
   const coverPlaceholder = <CoverPlaceholder />
   const channelAvatarPlaceholder = <Placeholder rounded />
-  const titlePlaceholder = <Placeholder height="18px" width="60%" />
+  const titlePlaceholder = <Placeholder height={main ? 45 : 18} width="60%" />
   const channelNamePlaceholder = <SpacedPlaceholder height="12px" width="60%" />
-  const metaPlaceholder = <SpacedPlaceholder height="12px" width="80%" />
+  const metaPlaceholder = <SpacedPlaceholder height={main ? 16 : 12} width={main ? '40%' : '80%'} />
 
   return (
-    <Container onClick={onClick} clickable={clickable} className={className}>
-      <CoverContainer>{coverNode || coverPlaceholder}</CoverContainer>
-      <InfoContainer>
-        {showChannel && <AvatarContainer>{channelAvatarNode || channelAvatarPlaceholder}</AvatarContainer>}
+    <Container onClick={onClick} clickable={clickable} main={main} className={className}>
+      <CoverWrapper>
+        <CoverContainer>{coverNode || coverPlaceholder}</CoverContainer>
+      </CoverWrapper>
+      <InfoContainer main={main}>
+        {displayChannel && <AvatarContainer>{channelAvatarNode || channelAvatarPlaceholder}</AvatarContainer>}
         <TextContainer>
           {titleNode || titlePlaceholder}
-          {showChannel && (channelNameNode || channelNamePlaceholder)}
-          {showMeta && <MetaContainer>{metaNode || metaPlaceholder}</MetaContainer>}
+          {displayChannel && (channelNameNode || channelNamePlaceholder)}
+          {showMeta && <MetaContainer main={main}>{metaNode || metaPlaceholder}</MetaContainer>}
         </TextContainer>
       </InfoContainer>
     </Container>

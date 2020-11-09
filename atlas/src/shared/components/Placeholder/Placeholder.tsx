@@ -6,6 +6,7 @@ import { darken } from 'polished'
 type PlaceholderProps = {
   width?: string | number
   height?: string | number
+  bottomSpace?: string | number
   rounded?: boolean
 }
 
@@ -19,9 +20,11 @@ const pulse = keyframes`
     background-color: ${darken(0.15, colors.gray[400])}
   }
 `
+
 const Placeholder = styled.div<PlaceholderProps>`
   width: ${({ width = '100%' }) => getPropValue(width)};
   height: ${({ height = '100%' }) => getPropValue(height)};
+  margin-bottom: ${({ bottomSpace = 0 }) => getPropValue(bottomSpace)};
   border-radius: ${({ rounded = false }) => (rounded ? '100%' : '0')};
   background-color: ${colors.gray['400']};
   animation: ${pulse} 0.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;

@@ -38,6 +38,7 @@ export const Container = styled.div<{ trackPadding: string }>`
 
   .glider-track {
     padding: ${(props) => props.trackPadding};
+    align-items: start;
   }
 `
 

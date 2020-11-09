@@ -1,13 +1,17 @@
 import styled from '@emotion/styled'
-import { keyframes } from '@emotion/core'
-import { colors, spacing } from '@/shared/theme'
+import { css, keyframes } from '@emotion/core'
+import { breakpoints, colors, spacing } from '@/shared/theme'
 import { CoverHoverOverlay, CoverIcon, ProgressOverlay } from './VideoPreview.styles'
 
 export const HOVER_BORDER_SIZE = '2px'
 
+type MainProps = {
+  main: boolean
+}
+
 type ContainerProps = {
   clickable: boolean
-}
+} & MainProps
 
 export const MAX_VIDEO_PREVIEW_WIDTH = '320px'
 
@@ -19,21 +23,39 @@ const fadeIn = keyframes`
     opacity: 1
   }
 `
+
+export const CoverWrapper = styled.div`
+  max-width: 650px;
+  width: 100%;
+`
+
 export const CoverContainer = styled.div`
   position: relative;
   width: 100%;
   height: 0;
   padding-top: 56.25%;
+
   transition-property: box-shadow, transform;
   transition-duration: 0.4s;
   transition-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
   animation: ${fadeIn} 0.5s ease-in;
 `
 
+const mainContainerCss = css`
+  @media screen and (min-width: ${breakpoints.medium}) {
+    flex-direction: row;
+  }
+`
+
 export const Container = styled.article<ContainerProps>`
+  width: 100%;
   color: ${colors.gray[300]};
   cursor: ${({ clickable }) => (clickable ? 'pointer' : 'auto')};
-  display: inline-block;
+
+  display: inline-flex;
+  flex-direction: column;
+  ${({ main }) => main && mainContainerCss}
+
   ${({ clickable }) =>
     clickable &&
     `
@@ -55,12 +77,20 @@ export const Container = styled.article<ContainerProps>`
 						bottom: ${HOVER_BORDER_SIZE};
 					}
 				}
-			`}
+			`};
 `
 
-export const InfoContainer = styled.div`
+const mainInfoContainerCss = css`
+  @media screen and (min-width: ${breakpoints.medium}) {
+    margin: ${spacing.xxl} 0 0 ${spacing.xl};
+  }
+`
+
+export const InfoContainer = styled.div<MainProps>`
+  width: 100%;
   display: flex;
-  margin-top: ${spacing.s};
+  margin-top: ${({ main }) => (main ? spacing.m : spacing.s)};
+  ${({ main }) => main && mainInfoContainerCss};
 `
 
 export const AvatarContainer = styled.div`
@@ -77,7 +107,7 @@ export const TextContainer = styled.div`
   width: 100%;
 `
 
-export const MetaContainer = styled.div`
-  margin-top: ${spacing.xs};
+export const MetaContainer = styled.div<MainProps>`
+  margin-top: ${({ main }) => (main ? spacing.s : spacing.xs)};
   width: 100%;
 `

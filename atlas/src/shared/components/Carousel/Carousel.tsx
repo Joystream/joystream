@@ -1,7 +1,7 @@
-import React, { useState, useLayoutEffect, useRef } from 'react'
-import { GliderProps, GliderMethods } from 'react-glider'
+import React, { useLayoutEffect, useRef, useState } from 'react'
+import { GliderMethods, GliderProps } from 'react-glider'
 
-import { Container, StyledGlider, Arrow } from './Carousel.style'
+import { Arrow, Container, StyledGlider } from './Carousel.style'
 
 import 'glider-js/glider.min.css'
 
@@ -11,10 +11,9 @@ type CarouselProps = {
 
 type TrackProps = {
   className?: string
-  padding?: string
 }
-const Track: React.FC<TrackProps> = ({ className = '', ...props }) => (
-  <div className={`glider-track ${className}`} {...props} />
+const Track: React.FC<TrackProps> = ({ className = '', children }) => (
+  <div className={`glider-track ${className}`}>{children}</div>
 )
 
 const RightArrow = <Arrow name="chevron-right" />
@@ -70,7 +69,7 @@ const Carousel: React.FC<CarouselProps> = ({
         arrows={(arrows as unknown) as { prev: string; next: string }}
         {...gliderProps}
       >
-        <Track padding={trackPadding}>{children}</Track>
+        <Track>{children}</Track>
       </StyledGlider>
     </Container>
   )

@@ -1,11 +1,16 @@
 import React from 'react'
 import styled from '@emotion/styled'
+import { fluidRange } from 'polished'
 import { colors, spacing, typography } from '../../theme'
 import Avatar from '../Avatar'
 import Icon from '../Icon'
 import { HOVER_BORDER_SIZE } from './VideoPreviewBase.styles'
 
 type CoverImageProps = Record<string, unknown>
+
+type MainProps = {
+  main: boolean
+}
 
 type ChannelProps = {
   channelClickable: boolean
@@ -82,11 +87,12 @@ export const StyledAvatar = styled(Avatar)<ChannelProps>`
   cursor: ${({ channelClickable }) => (channelClickable ? 'pointer' : 'auto')};
 `
 
-export const TitleHeader = styled.h3`
+export const TitleHeader = styled.h3<MainProps>`
   margin: 0;
   font-weight: ${typography.weights.bold};
   font-size: ${typography.sizes.h6};
-  line-height: 1.25rem;
+  ${({ main }) => main && fluidRange({ prop: 'fontSize', fromSize: '24px', toSize: '40px' })};
+  line-height: ${({ main }) => (main ? 1 : 1.25)};
   color: ${colors.white};
   display: inline-block;
 `
@@ -98,6 +104,6 @@ export const ChannelName = styled.span<ChannelProps>`
   cursor: ${({ channelClickable }) => (channelClickable ? 'pointer' : 'auto')};
 `
 
-export const MetaText = styled.span`
-  font-size: ${typography.sizes.subtitle2};
+export const MetaText = styled.span<MainProps>`
+  font-size: ${({ main }) => (main ? typography.sizes.h6 : typography.sizes.subtitle2)};
 `

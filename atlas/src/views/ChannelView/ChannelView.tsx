@@ -4,9 +4,20 @@ import { useQuery } from '@apollo/client'
 
 import { GET_CHANNEL } from '@/api/queries/channels'
 import { GetChannel, GetChannelVariables } from '@/api/queries/__generated__/GetChannel'
-import { VideoGrid } from '@/components'
+import { VideoGrid, PlaceholderVideoGrid } from '@/components'
 
-import { Header, StyledAvatar, Title, TitleContainer, TitleSection, VideoSection } from './ChannelView.style'
+import {
+  AvatarPlaceholder,
+  Header,
+  StyledAvatar,
+  Title,
+  TitleContainer,
+  TitlePlaceholder,
+  TitleSection,
+  VideoSection,
+} from './ChannelView.style'
+
+const DEFAULT_CHANNEL_COVER_URL = 'https://eu-central-1.linodeobjects.com/atlas-assets/default-channel-cover.png'
 
 const ChannelView: React.FC<RouteComponentProps> = () => {
   const { id } = useParams()
@@ -14,24 +25,36 @@ const ChannelView: React.FC<RouteComponentProps> = () => {
     variables: { id },
   })
 
-  if (loading || !data?.channel) {
-    return <p>Loading Channel...</p>
-  }
   const videos = data?.channel?.videos || []
 
   return (
     <div>
-      <Header coverPhotoURL={data.channel.coverPhotoURL}>
+      <Header coverPhotoURL={data?.channel?.coverPhotoURL || DEFAULT_CHANNEL_COVER_URL}>
         <TitleSection>
-          <StyledAvatar img={data.channel.avatarPhotoURL} name={data.channel.handle} />
-          <TitleContainer>
-            <Title>{data.channel.handle}</Title>
-          </TitleContainer>
+          {data?.channel ? (
+            <>
+              <StyledAvatar img={data.channel.avatarPhotoURL} name={data.channel.handle} />
+              <TitleContainer>
+                <Title>{data.channel.handle}</Title>
+              </TitleContainer>
+            </>
+          ) : (
+            <>
+              <AvatarPlaceholder />
+              <TitlePlaceholder />
+            </>
+          )}
         </TitleSection>
       </Header>
-      {videos.length > 0 && (
+      {!loading ? (
+        videos.length > 0 && (
+          <VideoSection>
+            <VideoGrid videos={videos} showChannel={false} />
+          </VideoSection>
+        )
+      ) : (
         <VideoSection>
-          <VideoGrid videos={videos} showChannel={false} />
+          <PlaceholderVideoGrid />
         </VideoSection>
       )}
     </div>
