@@ -36,6 +36,7 @@ import {
   ILanguage,
   ILicense,
   IMediaLocation,
+  IReference,
   IUserDefinedLicense,
   IVideoMedia,
   IVideoMediaEncoding,
@@ -64,157 +65,281 @@ function findEntity(entityId: number, className: string, classEntityMap: ClassEn
   if (newlyCreatedEntities === undefined) throw Error(`Couldn't find '${className}' entities in the classEntityMap`)
   const entity = newlyCreatedEntities.find((e) => e.indexOf === entityId)
   if (!entity) throw Error(`Unknown ${className} entity id: ${entityId}`)
+  removeInsertedEntity(className, entityId, classEntityMap)
   return entity
 }
 
 async function language(
   { db, block }: IDBBlockId,
   classEntityMap: ClassEntityMap,
-  entityId: number
+  language: IReference
 ): Promise<Language> {
-  const entity = findEntity(entityId, 'Language', classEntityMap)
-  const record = await createLanguage(
+  let lang
+  const { entityId, existing } = language
+  if (existing) {
+    lang = await db.get(Language, { where: { id: entityId.toString() } })
+    if (!lang) throw Error(`Language entity not found`)
+    return lang
+  }
+
+  // could be created in the transaction
+  lang = await db.get(Language, { where: { id: generateEntityIdFromIndex(entityId) } })
+  if (lang) return lang
+
+  // get the entity from list of newly created entities and insert into db
+  const { properties } = findEntity(entityId, 'Language', classEntityMap)
+  return await createLanguage(
     { db, block, id: generateEntityIdFromIndex(entityId) },
-    decode.setEntityPropertyValues<ILanguage>(entity.properties, languagePropertyNamesWIthId)
+    decode.setEntityPropertyValues<ILanguage>(properties, languagePropertyNamesWIthId)
   )
-  removeInsertedEntity('Language', entityId, classEntityMap)
-  return record
 }
 
 async function videoMediaEncoding(
   { db, block }: IDBBlockId,
   classEntityMap: ClassEntityMap,
-  entityId: number
+  encoding: IReference
 ): Promise<VideoMediaEncoding> {
-  const entity = findEntity(entityId, 'VideoMediaEncoding', classEntityMap)
-  const record = await createVideoMediaEncoding(
+  let vmEncoding
+  const { entityId, existing } = encoding
+  if (existing) {
+    vmEncoding = await db.get(VideoMediaEncoding, { where: { id: entityId.toString() } })
+    if (!vmEncoding) throw Error(`VideoMediaEncoding entity not found`)
+    return vmEncoding
+  }
+
+  // could be created in the transaction
+  vmEncoding = await db.get(VideoMediaEncoding, { where: { id: generateEntityIdFromIndex(entityId) } })
+  if (vmEncoding) return vmEncoding
+
+  const { properties } = findEntity(entityId, 'VideoMediaEncoding', classEntityMap)
+  return await createVideoMediaEncoding(
     { db, block, id: generateEntityIdFromIndex(entityId) },
-    decode.setEntityPropertyValues<IVideoMediaEncoding>(entity.properties, videoMediaEncodingPropertyNamesWithId)
+    decode.setEntityPropertyValues<IVideoMediaEncoding>(properties, videoMediaEncodingPropertyNamesWithId)
   )
-  removeInsertedEntity('VideoMediaEncoding', entityId, classEntityMap)
-  return record
 }
 
 async function videoMedia(
   { db, block }: IDBBlockId,
   classEntityMap: ClassEntityMap,
-  entityId: number
+  media: IReference
 ): Promise<VideoMedia> {
-  const entity = findEntity(entityId, 'VideoMedia', classEntityMap)
-  const record = await createVideoMedia(
+  let videoM: VideoMedia | undefined
+  const { entityId, existing } = media
+  if (existing) {
+    videoM = await db.get(VideoMedia, { where: { id: entityId.toString() } })
+    if (!videoM) throw Error(`VideoMedia entity not found`)
+    return videoM
+  }
+
+  // could be created in the transaction
+  videoM = await db.get(VideoMedia, { where: { id: generateEntityIdFromIndex(entityId) } })
+  if (videoM) return videoM
+
+  const { properties } = findEntity(entityId, 'VideoMedia', classEntityMap)
+  return await createVideoMedia(
     { db, block, id: generateEntityIdFromIndex(entityId) },
     classEntityMap,
-    decode.setEntityPropertyValues<IVideoMedia>(entity.properties, videoPropertyNamesWithId)
+    decode.setEntityPropertyValues<IVideoMedia>(properties, videoPropertyNamesWithId)
   )
-  removeInsertedEntity('VideoMedia', entityId, classEntityMap)
-  return record
 }
 
 async function knownLicense(
   { db, block }: IDBBlockId,
   classEntityMap: ClassEntityMap,
-  entityId: number
+  knownLicense: IReference
 ): Promise<KnownLicense> {
-  const entity = findEntity(entityId, 'KnownLicense', classEntityMap)
-  const record = await createKnownLicense(
+  let kLicense: KnownLicense | undefined
+  const { entityId, existing } = knownLicense
+  if (existing) {
+    kLicense = await db.get(KnownLicense, { where: { id: entityId.toString() } })
+    if (!kLicense) throw Error(`KnownLicense entity not found`)
+    return kLicense
+  }
+
+  // could be created in the transaction
+  kLicense = await db.get(KnownLicense, { where: { id: generateEntityIdFromIndex(entityId) } })
+  if (kLicense) return kLicense
+
+  const { properties } = findEntity(entityId, 'KnownLicense', classEntityMap)
+  return await createKnownLicense(
     { db, block, id: generateEntityIdFromIndex(entityId) },
-    decode.setEntityPropertyValues<IKnownLicense>(entity.properties, knownLicensePropertyNamesWIthId)
+    decode.setEntityPropertyValues<IKnownLicense>(properties, knownLicensePropertyNamesWIthId)
   )
-  removeInsertedEntity('KnownLicense', entityId, classEntityMap)
-  return record
 }
 async function userDefinedLicense(
   { db, block }: IDBBlockId,
   classEntityMap: ClassEntityMap,
-  entityId: number
+  userDefinedLicense: IReference
 ): Promise<UserDefinedLicense> {
-  const entity = findEntity(entityId, 'UserDefinedLicense', classEntityMap)
-  const record = await createUserDefinedLicense(
+  let udLicense: UserDefinedLicense | undefined
+  const { entityId, existing } = userDefinedLicense
+  if (existing) {
+    udLicense = await db.get(UserDefinedLicense, { where: { id: entityId.toString() } })
+    if (!udLicense) throw Error(`UserDefinedLicense entity not found`)
+    return udLicense
+  }
+
+  // could be created in the transaction
+  udLicense = await db.get(UserDefinedLicense, { where: { id: generateEntityIdFromIndex(entityId) } })
+  if (udLicense) return udLicense
+
+  const { properties } = findEntity(entityId, 'UserDefinedLicense', classEntityMap)
+  return await createUserDefinedLicense(
     { db, block, id: generateEntityIdFromIndex(entityId) },
-    decode.setEntityPropertyValues<IUserDefinedLicense>(entity.properties, userDefinedLicensePropertyNamesWithId)
+    decode.setEntityPropertyValues<IUserDefinedLicense>(properties, userDefinedLicensePropertyNamesWithId)
   )
-  removeInsertedEntity('UserDefinedLicense', entityId, classEntityMap)
-  return record
 }
-async function channel({ db, block }: IDBBlockId, classEntityMap: ClassEntityMap, entityId: number): Promise<Channel> {
-  const entity = findEntity(entityId, 'Channel', classEntityMap)
-  const record = await createChannel(
+
+async function channel(
+  { db, block }: IDBBlockId,
+  classEntityMap: ClassEntityMap,
+  channel: IReference
+): Promise<Channel> {
+  let chann: Channel | undefined
+  const { entityId, existing } = channel
+
+  if (existing) {
+    chann = await db.get(Channel, { where: { id: entityId.toString() } })
+    if (!chann) throw Error(`Channel entity not found`)
+    return chann
+  }
+
+  // could be created in the transaction
+  chann = await db.get(Channel, { where: { id: generateEntityIdFromIndex(entityId) } })
+  if (chann) return chann
+
+  const { properties } = findEntity(entityId, 'Channel', classEntityMap)
+  return await createChannel(
     { db, block, id: generateEntityIdFromIndex(entityId) },
     classEntityMap,
-    decode.setEntityPropertyValues<IChannel>(entity.properties, channelPropertyNamesWithId)
+    decode.setEntityPropertyValues<IChannel>(properties, channelPropertyNamesWithId)
   )
-  removeInsertedEntity('Channel', entityId, classEntityMap)
-  return record
 }
+
 async function category(
   { db, block }: IDBBlockId,
   classEntityMap: ClassEntityMap,
-  entityId: number
+  category: IReference
 ): Promise<Category> {
-  const entity = findEntity(entityId, 'Category', classEntityMap)
-  const record = await createCategory(
+  let cat: Category | undefined
+  const { entityId, existing } = category
+
+  if (existing) {
+    cat = await db.get(Category, { where: { id: entityId.toString() } })
+    if (!cat) throw Error(`Category entity not found`)
+    return cat
+  }
+
+  // could be created in the transaction
+  cat = await db.get(Category, { where: { id: generateEntityIdFromIndex(entityId) } })
+  if (cat) return cat
+
+  const { properties } = findEntity(entityId, 'Category', classEntityMap)
+  return await createCategory(
     { db, block, id: generateEntityIdFromIndex(entityId) },
-    decode.setEntityPropertyValues<ICategory>(entity.properties, CategoryPropertyNamesWithId)
+    decode.setEntityPropertyValues<ICategory>(properties, CategoryPropertyNamesWithId)
   )
-  removeInsertedEntity('Category', entityId, classEntityMap)
-  return record
 }
 
 async function httpMediaLocation(
   { db, block }: IDBBlockId,
   classEntityMap: ClassEntityMap,
-  entityId: number
+  httpMediaLoc: IReference
 ): Promise<HttpMediaLocation | undefined> {
-  const entity = findEntity(entityId, 'HttpMediaLocation', classEntityMap)
-  const record = await createHttpMediaLocation(
+  let loc: HttpMediaLocation | undefined
+  const { entityId, existing } = httpMediaLoc
+
+  if (existing) {
+    loc = await db.get(HttpMediaLocation, { where: { id: entityId.toString() } })
+    if (!loc) throw Error(`HttpMediaLocation entity not found`)
+    return loc
+  }
+
+  // could be created in the transaction
+  loc = await db.get(HttpMediaLocation, { where: { id: generateEntityIdFromIndex(entityId) } })
+  if (loc) return loc
+
+  const { properties } = findEntity(entityId, 'HttpMediaLocation', classEntityMap)
+  return await createHttpMediaLocation(
     { db, block, id: generateEntityIdFromIndex(entityId) },
-    decode.setEntityPropertyValues<IHttpMediaLocation>(entity.properties, httpMediaLocationPropertyNamesWithId)
+    decode.setEntityPropertyValues<IHttpMediaLocation>(properties, httpMediaLocationPropertyNamesWithId)
   )
-  removeInsertedEntity('HttpMediaLocation', entityId, classEntityMap)
-  return record
 }
 
 async function joystreamMediaLocation(
   { db, block }: IDBBlockId,
   classEntityMap: ClassEntityMap,
-  entityId: number
+  joyMediaLoc: IReference
 ): Promise<JoystreamMediaLocation | undefined> {
-  const entity = findEntity(entityId, 'JoystreamMediaLocation', classEntityMap)
-  const record = await createJoystreamMediaLocation(
+  let loc: JoystreamMediaLocation | undefined
+  const { entityId, existing } = joyMediaLoc
+
+  if (existing) {
+    loc = await db.get(JoystreamMediaLocation, { where: { id: entityId.toString() } })
+    if (!loc) throw Error(`JoystreamMediaLocation entity not found`)
+    return loc
+  }
+
+  // could be created in the transaction
+  loc = await db.get(JoystreamMediaLocation, { where: { id: generateEntityIdFromIndex(entityId) } })
+  if (loc) return loc
+
+  const { properties } = findEntity(entityId, 'JoystreamMediaLocation', classEntityMap)
+  return await createJoystreamMediaLocation(
     { db, block, id: generateEntityIdFromIndex(entityId) },
-    decode.setEntityPropertyValues<IJoystreamMediaLocation>(
-      entity.properties,
-      joystreamMediaLocationPropertyNamesWithId
-    )
+    decode.setEntityPropertyValues<IJoystreamMediaLocation>(properties, joystreamMediaLocationPropertyNamesWithId)
   )
-  removeInsertedEntity('JoystreamMediaLocation', entityId, classEntityMap)
-  return record
 }
 
-async function license({ db, block }: IDBBlockId, classEntityMap: ClassEntityMap, entityId: number): Promise<License> {
-  const entity = findEntity(entityId, 'License', classEntityMap)
-  const record = await createLicense(
+async function license(
+  { db, block }: IDBBlockId,
+  classEntityMap: ClassEntityMap,
+  license: IReference
+): Promise<License> {
+  let lic: License | undefined
+  const { entityId, existing } = license
+
+  if (existing) {
+    lic = await db.get(License, { where: { id: entityId.toString() } })
+    if (!lic) throw Error(`License entity not found`)
+    return lic
+  }
+
+  // could be created in the transaction
+  lic = await db.get(License, { where: { id: generateEntityIdFromIndex(entityId) } })
+  if (lic) return lic
+
+  const { properties } = findEntity(entityId, 'License', classEntityMap)
+  return await createLicense(
     { db, block, id: generateEntityIdFromIndex(entityId) },
     classEntityMap,
-    decode.setEntityPropertyValues<ILicense>(entity.properties, licensePropertyNamesWithId)
+    decode.setEntityPropertyValues<ILicense>(properties, licensePropertyNamesWithId)
   )
-  removeInsertedEntity('License', entityId, classEntityMap)
-  return record
 }
 
 async function mediaLocation(
   { db, block }: IDBBlockId,
   classEntityMap: ClassEntityMap,
-  entityId: number
+  location: IReference
 ): Promise<MediaLocation> {
-  const entity = findEntity(entityId, 'MediaLocation', classEntityMap)
-  const record = await createMediaLocation(
+  let loc: MediaLocation | undefined
+  const { entityId, existing } = location
+  if (existing) {
+    loc = await db.get(MediaLocation, { where: { id: entityId.toString() } })
+    if (!loc) throw Error(`MediaLocation entity not found`)
+    return loc
+  }
+
+  // could be created in the transaction
+  loc = await db.get(MediaLocation, { where: { id: generateEntityIdFromIndex(entityId) } })
+  if (loc) return loc
+
+  const { properties } = findEntity(entityId, 'MediaLocation', classEntityMap)
+  return await createMediaLocation(
     { db, block, id: generateEntityIdFromIndex(entityId) },
     classEntityMap,
-    decode.setEntityPropertyValues<IMediaLocation>(entity.properties, mediaLocationPropertyNamesWithId)
+    decode.setEntityPropertyValues<IMediaLocation>(properties, mediaLocationPropertyNamesWithId)
   )
-  removeInsertedEntity('MediaLocation', entityId, classEntityMap)
-  return record
 }
 
 function removeInsertedEntity(key: string, insertedEntityId: number, classEntityMap: ClassEntityMap) {
