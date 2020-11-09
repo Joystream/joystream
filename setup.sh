@@ -19,13 +19,12 @@ rustup component add rustfmt clippy
 rustup install nightly-2020-05-23 --force
 rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-23
 
-# Ensure the stable toolchain is still the default
-rustup default stable
+# Sticking with older version of compiler to ensure working build
+rustup install 1.46.0
+rustup default 1.46.0
 
-# TODO: Install additional tools...
+# Install additional tools...
 
-# - b2sum
-# - nodejs
-# - npm
-# - yarn
-# .... ?
+# - docker engine, docker, docker-compose,
+# - nodejs, npm, yarn (classic), npx
+# - b2sum,
