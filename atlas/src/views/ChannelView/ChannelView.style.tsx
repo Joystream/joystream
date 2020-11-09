@@ -1,33 +1,87 @@
 import styled from '@emotion/styled'
 import { fluidRange } from 'polished'
 import { Avatar, Placeholder } from '@/shared/components'
-import theme from '@/shared/theme'
+import theme, { breakpoints } from '@/shared/theme'
 import { css } from '@emotion/core'
 
 const SM_TITLE_HEIGHT = '48px'
 const TITLE_HEIGHT = '56px'
 
-type ChannelHeaderProps = {
-  coverPhotoURL: string
+type CoverImageProps = {
+  src: string
 }
-export const Header = styled.section<ChannelHeaderProps>`
-  background-image: linear-gradient(0deg, #000000 10.85%, rgba(0, 0, 0, 0) 88.35%),
-    ${(props) => `url(${props.coverPhotoURL})`};
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
-  height: 430px;
-  padding: 0 var(--global-horizontal-padding);
-  margin: 0 calc(-1 * var(--global-horizontal-padding));
+
+export const Header = styled.section`
+  position: relative;
+  margin-bottom: 60px;
+
+  @media screen and (min-width: ${breakpoints.small}) {
+    margin-bottom: -75px;
+    padding-bottom: 0;
+  }
+  @media screen and (min-width: ${breakpoints.medium}) {
+    margin-bottom: -200px;
+  }
+  @media screen and (min-width: ${breakpoints.large}) {
+    margin-bottom: -250px;
+  }
+  @media screen and (min-width: ${breakpoints.xlarge}) {
+    margin-bottom: -400px;
+  }
+  @media screen and (min-width: ${breakpoints.xxlarge}) {
+    margin-bottom: -600px;
+  }
 `
+
+export const MediaWrapper = styled.div`
+  margin: 0 calc(-1 * var(--global-horizontal-padding));
+  width: calc(100% + calc(2 * var(--global-horizontal-padding)));
+`
+
+export const CoverImage = styled.div<CoverImageProps>`
+  width: 100%;
+  height: 0;
+  padding-top: 56.25%;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-attachment: local;
+  background-size: cover;
+
+  background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 40%), url(${({ src }) => src});
+  @media screen and (min-width: ${breakpoints.small}) {
+    background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 80%), url(${({ src }) => src});
+  }
+  @media screen and (min-width: ${breakpoints.medium}) {
+    background-image: linear-gradient(0deg, black 0%, black 10%, rgba(0, 0, 0, 0) 70%), url(${({ src }) => src});
+  }
+  @media screen and (min-width: ${breakpoints.large}) {
+    background-image: linear-gradient(0deg, black 0%, black 20%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
+  }
+  @media screen and (min-width: ${breakpoints.xlarge}) {
+    background-image: linear-gradient(0deg, black 0%, black 30%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
+  }
+  @media screen and (min-width: ${breakpoints.xxlarge}) {
+    background-image: linear-gradient(0deg, black 0%, black 40%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
+  }
+`
+
 export const TitleSection = styled.div`
+  position: absolute;
   display: flex;
   flex-direction: column;
   align-items: start;
-  padding-top: ${theme.sizes.b10}px;
   @media (min-width: ${theme.breakpoints.small}) {
     flex-direction: row;
     align-items: center;
+  }
+
+  width: 100%;
+
+  max-width: 100%;
+  top: 5%;
+
+  @media screen and (min-width: ${breakpoints.small}) {
+    top: 20%;
   }
 `
 export const TitleContainer = styled.div`
@@ -55,7 +109,7 @@ export const Title = styled.h1`
 `
 
 export const VideoSection = styled.section`
-  margin-top: -100px;
+  position: relative;
 `
 
 const avatarCss = css`
