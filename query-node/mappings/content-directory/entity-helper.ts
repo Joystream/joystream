@@ -384,17 +384,13 @@ async function createMediaLocation(
 }
 
 async function batchCreateClassEntities(db: DB, block: number, operations: ICreateEntityOperation[]): Promise<void> {
-  let entityId = 1 // Entity id starts at 1
-  // Create entities before adding schema support
-  operations.map(async ({ classId }) => {
+  operations.map(async ({ classId }, index) => {
     const c = new ClassEntity()
-    c.id = entityId.toString()
+    c.id = (index + 1).toString() // entity id
     c.classId = classId
     c.version = block
     c.happenedIn = await createBlockOrGetFromDatabase(db, block)
     await db.save<ClassEntity>(c)
-
-    entityId++
   })
 }
 
