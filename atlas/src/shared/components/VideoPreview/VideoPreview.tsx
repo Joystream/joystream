@@ -1,4 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
+import useResizeObserver from 'use-resize-observer'
+
 import {
   ChannelName,
   CoverDurationOverlay,
@@ -48,7 +50,6 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
   showChannel = true,
   showMeta = true,
   main = false,
-  imgRef,
   onClick,
   onChannelClick,
   className,
@@ -71,6 +72,25 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
     onClick(e)
   }
 
+  const MIN_COVER_WIDTH = 300
+  const MAX_COVER_WIDTH = 600
+  const MIN_SCALING_FACTOR = 1
+  const MAX_SCALING_FACTOR = 1.375
+  // Linear Interpolation, see https://en.wikipedia.org/wiki/Linear_interpolation
+  const calculateScalingFactor = (coverWidth: number) =>
+    MIN_SCALING_FACTOR +
+    ((coverWidth - MIN_COVER_WIDTH) * (MAX_SCALING_FACTOR - MIN_SCALING_FACTOR)) / (MAX_COVER_WIDTH - MIN_COVER_WIDTH)
+
+  const [scalingFactor, setScalingFactor] = useState(MIN_SCALING_FACTOR)
+  const { ref: imgRef } = useResizeObserver<HTMLImageElement>({
+    onResize: (size) => {
+      const { width: coverWidth } = size
+      if (coverWidth && !main) {
+        setScalingFactor(calculateScalingFactor(coverWidth))
+      }
+    },
+  })
+
   const coverNode = (
     <>
       <CoverImage src={posterURL} ref={imgRef} alt={`${title} by ${channelName} thumbnail`} />
@@ -86,7 +106,11 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
     </>
   )
 
-  const titleNode = <TitleHeader main={main}>{title}</TitleHeader>
+  const titleNode = (
+    <TitleHeader main={main} scalingFactor={scalingFactor}>
+      {title}
+    </TitleHeader>
+  )
 
   const channelAvatarNode = (
     <StyledAvatar
@@ -99,12 +123,16 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
   )
 
   const channelNameNode = (
-    <ChannelName channelClickable={channelClickable} onClick={handleChannelClick}>
+    <ChannelName channelClickable={channelClickable} onClick={handleChannelClick} scalingFactor={scalingFactor}>
       {channelName}
     </ChannelName>
   )
 
-  const metaNode = <MetaText main={main}>{formatVideoViewsAndDate(views, createdAt, { fullViews: main })}</MetaText>
+  const metaNode = (
+    <MetaText main={main} scalingFactor={scalingFactor}>
+      {formatVideoViewsAndDate(views, createdAt, { fullViews: main })}
+    </MetaText>
+  )
 
   return (
     <VideoPreviewBase
@@ -118,6 +146,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
       metaNode={metaNode}
       onClick={onClick && handleClick}
       className={className}
+      scalingFactor={scalingFactor}
     />
   )
 }

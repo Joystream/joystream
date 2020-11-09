@@ -13,6 +13,10 @@ type ContainerProps = {
   clickable: boolean
 } & MainProps
 
+type ScalesWithCoverProps = {
+  scalingFactor: number
+}
+
 export const MAX_VIDEO_PREVIEW_WIDTH = '320px'
 
 const fadeIn = keyframes`
@@ -93,10 +97,10 @@ export const InfoContainer = styled.div<MainProps>`
   ${({ main }) => main && mainInfoContainerCss};
 `
 
-export const AvatarContainer = styled.div`
-  width: 40px;
-  min-width: 40px;
-  height: 40px;
+export const AvatarContainer = styled.div<ScalesWithCoverProps>`
+  width: calc(40px * ${(props) => props.scalingFactor});
+  min-width: calc(40px * ${(props) => props.scalingFactor});
+  height: calc(40px * ${(props) => props.scalingFactor});
   margin-right: ${spacing.xs};
 `
 
