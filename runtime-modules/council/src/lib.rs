@@ -287,6 +287,9 @@ decl_error! {
         /// Council member and candidates can't withdraw stake yet.
         StakeStillNeeded,
 
+        /// User tried to release stake when no stake exists.
+        NoStake,
+
         /// Insufficient balance for candidacy staking.
         InsufficientBalanceForStaking,
 
@@ -374,14 +377,14 @@ decl_module! {
         /// Release candidacy stake that is no longer needed.
         #[weight = 10_000_000]
         pub fn release_candidacy_stake(origin, council_user_id: T::CouncilUserId) -> Result<(), Error<T>> {
-            let account_id = EnsureChecks::<T>::can_release_candidacy_stake(origin, &council_user_id)?;
+            let staking_account_id = EnsureChecks::<T>::can_release_candidacy_stake(origin, &council_user_id)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // update state
-            Mutations::<T>::release_candidacy_stake(&account_id, &council_user_id);
+            Mutations::<T>::release_candidacy_stake(&staking_account_id, &council_user_id);
 
             // emit event
             Self::deposit_event(RawEvent::CandidacyStakeRelease(council_user_id));
@@ -734,10 +737,10 @@ impl<T: Trait> EnsureChecks<T> {
     fn ensure_previous_stake_reusable(
         council_user_id: &T::CouncilUserId,
         account_id: &T::AccountId,
-    ) -> Result<(), Error<T>> {
+    ) -> Result<Option<T::AccountId>, Error<T>> {
         // escape when no previous candidacy stake is present
         if !Candidates::<T>::contains_key(council_user_id) {
-            return Ok(());
+            return Ok(None);
         }
 
         let candidate = Candidates::<T>::get(council_user_id);
@@ -752,7 +755,7 @@ impl<T: Trait> EnsureChecks<T> {
             return Err(Error::InvalidAccountToUnstake);
         }
 
-        Ok(())
+        Ok(Some(candidate.staking_account_id))
     }
 
     /////////////////// Action checks //////////////////////////////////////////
@@ -819,9 +822,14 @@ impl<T: Trait> EnsureChecks<T> {
         }
 
         // ensure that previous stake is unlockable (if any present)
-        Self::ensure_previous_stake_reusable(council_user_id, &account_id)?;
+        let mb_staking_account_id =
+            Self::ensure_previous_stake_reusable(council_user_id, &account_id)?;
 
-        Ok(account_id)
+        if let Some(staking_account_id) = mb_staking_account_id {
+            return Ok(staking_account_id);
+        }
+
+        Err(Error::NoStake)
     }
 
     /// Ensures there is no problem in withdrawing already announced candidacy.
