@@ -34,6 +34,11 @@ export interface MemberControllerAccount extends BaseJoystreamMember {
   controllerAccount: Buffer
 }
 
+export interface IReference {
+  entityId: number
+  existing: boolean
+}
+
 export interface IChannel {
   title: string
   description: string
@@ -41,7 +46,7 @@ export interface IChannel {
   avatarPhotoURL: string
   isPublic: boolean
   isCurated: boolean
-  language?: number
+  language?: IReference
 }
 
 export interface ICategory {
@@ -79,42 +84,42 @@ export interface IVideoMediaEncoding {
 }
 
 export interface IVideoMedia {
-  encoding?: number
+  encoding?: IReference
   pixelWidth: number
   pixelHeight: number
   size: number
-  location?: number
+  location?: IReference
 }
 
 export interface IVideo {
   // referenced entity's id
-  channel?: number
+  channel?: IReference
   // referenced entity's id
-  category?: number
+  category?: IReference
   title: string
   description: string
   duration: number
   skippableIntroDuration?: number
   thumbnailURL: string
-  language?: number
+  language?: IReference
   // referenced entity's id
-  media?: number
+  media?: IReference
   hasMarketing?: boolean
   publishedBeforeJoystream?: number
   isPublic: boolean
   isCurated: boolean
   isExplicit: boolean
-  license?: number
+  license?: IReference
 }
 
 export interface ILicense {
-  knownLicense?: number
-  userDefinedLicense?: number
+  knownLicense?: IReference
+  userDefinedLicense?: IReference
 }
 
 export interface IMediaLocation {
-  httpMediaLocation?: number
-  joystreamMediaLocation?: number
+  httpMediaLocation?: IReference
+  joystreamMediaLocation?: IReference
 }
 
 export enum OperationType {
@@ -145,9 +150,15 @@ export interface IBatchOperation {
 }
 
 export interface IProperty {
-  [propertyId: string]: any
-  // propertyId: string;
-  // value: any;
+  // PropertId: Value
+  // [propertyId: string]: any
+
+  id: string
+  value: any
+
+  // If reference.exising is false then reference.entityId is the index that entity is at
+  // in the transaction batch operation
+  reference?: IReference
 }
 
 export interface IEntity {
