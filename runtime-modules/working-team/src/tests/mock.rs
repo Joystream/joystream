@@ -10,7 +10,7 @@ use sp_runtime::{
 };
 use system;
 
-use crate::{BalanceOfCurrency, Module, StakingHandler, Trait};
+use crate::{BalanceOfCurrency, DefaultInstance, Module, StakingHandler, Trait};
 use common::currency::GovernanceCurrency;
 use frame_support::dispatch::DispatchResult;
 
@@ -19,7 +19,6 @@ impl_outer_origin! {
 }
 
 mod working_team {
-    pub use super::TestWorkingTeamInstance;
     pub use crate::Event;
 }
 
@@ -30,7 +29,7 @@ mod membership_mod {
 impl_outer_event! {
     pub enum TestEvent for Test {
         balances<T>,
-        working_team TestWorkingTeamInstance <T>,
+        crate DefaultInstance <T>,
         membership_mod<T>,
         system<T>,
     }
@@ -114,7 +113,7 @@ parameter_types! {
     pub const LockId: [u8; 8] = [1; 8];
 }
 
-impl Trait<TestWorkingTeamInstance> for Test {
+impl Trait for Test {
     type OpeningId = u64;
     type ApplicationId = u64;
     type Event = TestEvent;
@@ -139,8 +138,7 @@ impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-pub type TestWorkingTeamInstance = crate::Instance1;
-pub type TestWorkingTeam = Module<Test, TestWorkingTeamInstance>;
+pub type TestWorkingTeam = Module<Test, DefaultInstance>;
 
 pub const STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK: u64 = 111;
 pub const STAKING_ACCOUNT_ID_FOR_FAILED_AMOUNT_CHECK: u64 = 222;

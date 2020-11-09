@@ -62,7 +62,7 @@ pub use types::{
 use common::origin::ActorOriginValidator;
 
 /// The _Team_ main _Trait_
-pub trait Trait<I: Instance>:
+pub trait Trait<I: Instance = DefaultInstance>:
     system::Trait + membership::Trait + balances::Trait + common::currency::GovernanceCurrency
 {
     /// OpeningId type
@@ -106,7 +106,7 @@ pub trait Trait<I: Instance>:
 
 decl_event!(
     /// _Team_ events
-    pub enum Event<T, I>
+    pub enum Event<T, I = DefaultInstance>
     where
        <T as Trait<I>>::OpeningId,
        <T as Trait<I>>::ApplicationId,
@@ -219,7 +219,7 @@ decl_event!(
 );
 
 decl_storage! {
-    trait Store for Module<T: Trait<I>, I: Instance> as WorkingTeam {
+    trait Store for Module<T: Trait<I>, I: Instance=DefaultInstance> as WorkingTeam {
         /// Next identifier value for new job opening.
         pub NextOpeningId get(fn next_opening_id): T::OpeningId;
 
@@ -257,7 +257,7 @@ decl_storage! {
 
 decl_module! {
     /// _Working group_ substrate module.
-    pub struct Module<T: Trait<I>, I: Instance> for enum Call where origin: T::Origin {
+    pub struct Module<T: Trait<I>, I: Instance=DefaultInstance> for enum Call where origin: T::Origin {
         /// Default deposit_event() handler
         fn deposit_event() = default;
 
@@ -267,7 +267,7 @@ decl_module! {
         /// Exports const -  max simultaneous active worker number.
         const MaxWorkerNumberLimit: u32 = T::MaxWorkerNumberLimit::get();
 
-        fn on_initialize() -> Weight{
+        fn on_initialize() -> Weight {
             let leaving_workers = Self::get_workers_with_finished_unstaking_period();
 
             leaving_workers.iter().for_each(|wi| {

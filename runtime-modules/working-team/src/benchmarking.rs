@@ -38,7 +38,7 @@ fn add_opening_helper<T: Trait<I>, I: Instance>(
         StakingRole::WithoutStakes => None,
     };
 
-    WorkingTeam::<T, I>::add_opening(
+    WorkingTeam::<T, _>::add_opening(
         add_opening_origin.clone(),
         vec![],
         *job_opening_type,
@@ -67,7 +67,7 @@ fn apply_on_opening_helper<T: Trait<I>, I: Instance>(
         StakingRole::WithoutStakes => None,
     };
 
-    WorkingTeam::<T, I>::apply_on_opening(
+    WorkingTeam::<T, _>::apply_on_opening(
         RawOrigin::Signed(applicant_id.clone()).into(),
         ApplyOnOpeningParameters::<T, I> {
             member_id: *member_id,
@@ -161,9 +161,14 @@ fn member_funded_account<T: membership::Trait>(
         BalanceOfCurrency::<T>::max_value(),
     );
 
-    Membership::<T>::buy_membership(
-        RawOrigin::Signed(account_id.clone()).into(),
-        Zero::zero(),
+    let authority_account = account::<T::AccountId>(name, 0, SEED);
+
+    Membership::<T>::set_screening_authority(RawOrigin::Root.into(), authority_account.clone())
+        .unwrap();
+
+    Membership::<T>::add_screened_member(
+        RawOrigin::Signed(authority_account.clone()).into(),
+        account_id.clone(),
         Some(handle),
         None,
         None,
@@ -177,8 +182,8 @@ fn force_missed_reward<T: Trait<I>, I: Instance>() {
     let curr_block_number =
         System::<T>::block_number().saturating_add(T::RewardPeriod::get().into());
     System::<T>::set_block_number(curr_block_number);
-    WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), Zero::zero()).unwrap();
-    WorkingTeam::<T, I>::on_initialize(curr_block_number);
+    WorkingTeam::<T, _>::set_budget(RawOrigin::Root.into(), Zero::zero()).unwrap();
+    WorkingTeam::<T, _>::on_initialize(curr_block_number);
 }
 
 fn insert_a_worker<T: Trait<I>, I: Instance>(
@@ -208,7 +213,7 @@ where
 
     let mut successful_application_ids = BTreeSet::<T::ApplicationId>::new();
     successful_application_ids.insert(application_id);
-    WorkingTeam::<T, I>::fill_opening(
+    WorkingTeam::<T, _>::fill_opening(
         add_worker_origin.clone().into(),
         opening_id,
         successful_application_ids,
@@ -237,7 +242,7 @@ benchmarks_instance! {
         &JobOpeningType::Regular
       );
 
-      WorkingTeam::<T, I>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+      WorkingTeam::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
       successful_application_ids).unwrap();
 
       force_missed_reward::<T,I>();
@@ -248,11 +253,11 @@ benchmarks_instance! {
       let mut worker_id = Zero::zero();
       for id in application_account_id {
         worker_id += One::one();
-        WorkingTeam::<T, I>::leave_role(RawOrigin::Signed(id).into(), worker_id).unwrap();
+        WorkingTeam::<T, _>::leave_role(RawOrigin::Signed(id).into(), worker_id).unwrap();
       }
 
       // Worst case scenario one of the leaving workers is the lead
-      WorkingTeam::<T, I>::leave_role(RawOrigin::Signed(lead_id).into(), lead_worker_id).unwrap();
+      WorkingTeam::<T, _>::leave_role(RawOrigin::Signed(lead_id).into(), lead_worker_id).unwrap();
 
       // Maintain consistency with add_opening_helper
       let leaving_unstaking_period = T::MinUnstakingPeriodLimit::get() + One::one();
@@ -261,10 +266,9 @@ benchmarks_instance! {
       let curr_block_number =
           System::<T>::block_number().saturating_add(leaving_unstaking_period.into());
       System::<T>::set_block_number(curr_block_number);
-      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
+      WorkingTeam::<T, _>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
 
-    }: { WorkingTeam::<T, I>::on_initialize(curr_block_number) }
-    verify { }
+    }: { WorkingTeam::<T, _>::on_initialize(curr_block_number) }
 
 
     on_initialize_rewarding_with_missing_reward {
@@ -279,7 +283,7 @@ benchmarks_instance! {
         &JobOpeningType::Regular
       );
 
-      WorkingTeam::<T, I>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+      WorkingTeam::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
       successful_application_ids).unwrap();
 
       // Worst case scenario there is a missing reward
@@ -291,10 +295,9 @@ benchmarks_instance! {
       System::<T>::set_block_number(curr_block_number);
 
       // Sets budget so that we can pay it
-      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
+      WorkingTeam::<T, _>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
 
-    }: { WorkingTeam::<T, I>::on_initialize(curr_block_number) }
-    verify { }
+    }: { WorkingTeam::<T, _>::on_initialize(curr_block_number) }
 
     on_initialize_rewarding_with_missing_reward_cant_pay {
       let i in 1 .. T::MaxWorkerNumberLimit::get();
@@ -308,7 +311,7 @@ benchmarks_instance! {
         &JobOpeningType::Regular
       );
 
-      WorkingTeam::<T, I>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+      WorkingTeam::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
       successful_application_ids).unwrap();
 
       force_missed_reward::<T, I>();
@@ -319,10 +322,9 @@ benchmarks_instance! {
       System::<T>::set_block_number(curr_block_number);
 
       // Sets budget so that we can't pay it
-      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), Zero::zero()).unwrap();
+      WorkingTeam::<T, _>::set_budget(RawOrigin::Root.into(), Zero::zero()).unwrap();
 
-    }: { WorkingTeam::<T, I>::on_initialize(curr_block_number) }
-    verify { }
+    }: { WorkingTeam::<T, _>::on_initialize(curr_block_number) }
 
     on_initialize_rewarding_without_missing_reward {
       let i in 1 .. T::MaxWorkerNumberLimit::get();
@@ -336,7 +338,7 @@ benchmarks_instance! {
         &JobOpeningType::Regular
       );
 
-      WorkingTeam::<T, I>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
+      WorkingTeam::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
       successful_application_ids).unwrap();
 
       // Sets periods so that we can reward
@@ -345,10 +347,9 @@ benchmarks_instance! {
       System::<T>::set_block_number(curr_block_number);
 
       // Sets budget so that we can pay it
-      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
+      WorkingTeam::<T, _>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
 
-    }: { WorkingTeam::<T, I>::on_initialize(curr_block_number) }
-    verify { }
+    }: { WorkingTeam::<T, _>::on_initialize(curr_block_number) }
 
     apply_on_opening {
       let i in 1 .. 50000;
@@ -373,7 +374,6 @@ benchmarks_instance! {
       };
 
     }: _ (RawOrigin::Signed(lead_account_id.clone()), apply_on_opening_params)
-    verify { }
 
     fill_opening_lead {
       let i in 0 .. 10;
@@ -385,7 +385,6 @@ benchmarks_instance! {
       let mut successful_application_ids: BTreeSet<T::ApplicationId> = BTreeSet::new();
       successful_application_ids.insert(application_id);
     }: fill_opening(RawOrigin::Root, opening_id, successful_application_ids)
-    verify {}
 
     fill_opening_worker { // We can actually fill an opening with 0 applications?
       let i in 1 .. T::MaxWorkerNumberLimit::get();
@@ -398,14 +397,12 @@ benchmarks_instance! {
         &JobOpeningType::Regular
       );
     }: fill_opening(RawOrigin::Signed(lead_id.clone()), opening_id, successful_application_ids)
-    verify {}
 
     update_role_account{
       let i in 1 .. 10;
       let (lead_id, lead_worker_id) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
       let new_account_id = account::<T::AccountId>("new_lead_account", 1, SEED);
     }: _ (RawOrigin::Signed(lead_id), lead_worker_id, new_account_id)
-    verify {}
 
     cancel_opening {
       let i in 1 .. 10;
@@ -419,7 +416,6 @@ benchmarks_instance! {
       );
 
     }: _ (RawOrigin::Signed(lead_id.clone()), One::one())
-    verify {}
 
     withdraw_application {
       let i in 1 .. 10;
@@ -434,7 +430,6 @@ benchmarks_instance! {
         );
 
     }: _ (RawOrigin::Signed(caller_id.clone()), application_id)
-    verify {}
 
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
@@ -448,7 +443,6 @@ benchmarks_instance! {
         slashing_amount: One::one(),
       };
     }: _(RawOrigin::Signed(lead_id.clone()), worker_id, penalty)
-    verify {}
 
     terminate_role_worker {
       let i in 0 .. 10;
@@ -457,13 +451,12 @@ benchmarks_instance! {
       let (caller_id, worker_id) = insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Regular, 1, Some(lead_id.clone()));
       // To be able to pay unpaid reward
       let current_budget = BalanceOfCurrency::<T>::max_value();
-      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
+      WorkingTeam::<T, _>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
       let penalty = Penalty {
         slashing_text: vec![],
         slashing_amount: One::one(),
       };
     }: terminate_role(RawOrigin::Signed(lead_id.clone()), worker_id, Some(penalty))
-    verify {}
 
     terminate_role_lead {
       let i in 0 .. 10;
@@ -471,13 +464,12 @@ benchmarks_instance! {
       let (_, lead_worker_id) = insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Leader, 0, None);
       let current_budget = BalanceOfCurrency::<T>::max_value();
       // To be able to pay unpaid reward
-      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
+      WorkingTeam::<T, _>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
       let penalty = Penalty {
         slashing_text: vec![],
         slashing_amount: One::one(),
       };
     }: terminate_role(RawOrigin::Root, lead_worker_id, Some(penalty))
-    verify {}
 
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
@@ -488,10 +480,9 @@ benchmarks_instance! {
       let (caller_id, worker_id) = insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Regular, 1, Some(lead_id.clone()));
 
       let old_stake = One::one();
-      WorkingTeam::<T, I>::decrease_stake(RawOrigin::Signed(lead_id.clone()).into(), worker_id.clone(), old_stake).unwrap();
+      WorkingTeam::<T, _>::decrease_stake(RawOrigin::Signed(lead_id.clone()).into(), worker_id.clone(), old_stake).unwrap();
       let new_stake = BalanceOfCurrency::<T>::max_value();
     }: _ (RawOrigin::Signed(caller_id.clone()), worker_id.clone(), new_stake)
-    verify {}
 
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
@@ -504,7 +495,6 @@ benchmarks_instance! {
       // I'm assuming that we will usually have MaxBalance > 1
       let new_stake = One::one();
     }: _ (RawOrigin::Signed(lead_id), worker_id, new_stake)
-    verify {}
 
     spend_from_budget {
       let i in 0 .. 10;
@@ -512,9 +502,8 @@ benchmarks_instance! {
       let (lead_id, _) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
 
       let current_budget = BalanceOfCurrency::<T>::max_value();
-      WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
+      WorkingTeam::<T, _>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
     }: _ (RawOrigin::Signed(lead_id.clone()), lead_id.clone(), current_budget, None)
-    verify {}
 
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
@@ -525,7 +514,6 @@ benchmarks_instance! {
       let (_, worker_id) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Regular, 1, Some(lead_id.clone()));
       let new_reward = Some(BalanceOfCurrency::<T>::max_value());
     }: _ (RawOrigin::Signed(lead_id.clone()), worker_id, new_reward)
-    verify {}
 
     set_status_text {
       let i in 0 .. 50000; // TODO: We should have a bounded value for description
@@ -534,7 +522,6 @@ benchmarks_instance! {
       let status_text = Some(vec![0u8].repeat(i.try_into().unwrap()));
 
     }: _ (RawOrigin::Signed(lead_id), status_text)
-    verify {}
 
     update_reward_account {
       let i in 0 .. 10;
@@ -543,7 +530,6 @@ benchmarks_instance! {
       let new_id = account::<T::AccountId>("new_id", 1, 0);
 
     }: _ (RawOrigin::Signed(caller_id), worker_id, new_id)
-    verify {}
 
     set_budget {
       let i in 0 .. 10;
@@ -551,7 +537,6 @@ benchmarks_instance! {
       let new_budget = BalanceOfCurrency::<T>::max_value();
 
     }: _(RawOrigin::Root, new_budget)
-    verify { }
 
     // Regular opening is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
@@ -573,7 +558,6 @@ benchmarks_instance! {
       let description = vec![0u8].repeat(i.try_into().unwrap());
 
     }: _(RawOrigin::Signed(lead_id), description, JobOpeningType::Regular, Some(stake_policy), Some(reward_policy))
-    verify { }
 
     // This is always worse than leave_role_immediatly
     leave_role_immediatly {
@@ -584,9 +568,8 @@ benchmarks_instance! {
         let (caller_id, lead_worker_id) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
 
         // To be able to pay unpaid reward
-        WorkingTeam::<T, I>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
+        WorkingTeam::<T, _>::set_budget(RawOrigin::Root.into(), BalanceOfCurrency::<T>::max_value()).unwrap();
     }: leave_role(RawOrigin::Signed(caller_id), lead_worker_id)
-    verify { }
 
 
     // Generally speaking this seems to be always the best case scenario
@@ -598,22 +581,19 @@ benchmarks_instance! {
         // Workers with stake can't leave immediatly
         let (caller_id, caller_worker_id) = insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
     }: leave_role(RawOrigin::Signed(caller_id), caller_worker_id)
-    verify { }
+    verify { assert_eq!(true, true); }
 }
 
-/*
-TODO: we need to implement new_test_ext that creates a `sp_io::TestExternalities`
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::tests::{new_test_ext, Test};
+    use crate::tests::{build_test_externalities, Test};
     use frame_support::assert_ok;
 
     #[test]
     fn test_benchmarks() {
-        new_test_ext().execute_with(|| {
-            assert_ok!(test_benchmark_leave_role::<Test>());
+        build_test_externalities().execute_with(|| {
+            assert_ok!(test_benchmark_leave_role_later::<Test>());
         });
     }
 }
-*/

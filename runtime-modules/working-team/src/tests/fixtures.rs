@@ -1,3 +1,4 @@
+#![cfg(test)]
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::StorageMap;
 use sp_runtime::traits::Hash;
@@ -5,29 +6,19 @@ use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use system::{EventRecord, Phase, RawOrigin};
 
 use super::hiring_workflow::HiringWorkflow;
-use super::mock::{
-    Balances, LockId, Membership, System, Test, TestEvent, TestWorkingTeam, TestWorkingTeamInstance,
-};
+use super::mock::{Balances, LockId, Membership, System, Test, TestEvent, TestWorkingTeam};
 use crate::types::StakeParameters;
 use crate::{
-    ApplyOnOpeningParameters, JobApplication, JobOpening, JobOpeningType, Penalty, RawEvent,
-    RewardPolicy, StakePolicy, TeamWorker,
+    ApplyOnOpeningParameters, DefaultInstance, JobApplication, JobOpening, JobOpeningType, Penalty,
+    RawEvent, RewardPolicy, StakePolicy, TeamWorker,
 };
 
 pub struct EventFixture;
 impl EventFixture {
     pub fn assert_last_crate_event(
-        expected_raw_event: RawEvent<
-            u64,
-            u64,
-            BTreeMap<u64, u64>,
-            u64,
-            u64,
-            u64,
-            TestWorkingTeamInstance,
-        >,
+        expected_raw_event: RawEvent<u64, u64, BTreeMap<u64, u64>, u64, u64, u64, DefaultInstance>,
     ) {
-        let converted_event = TestEvent::working_team_TestWorkingTeamInstance(expected_raw_event);
+        let converted_event = TestEvent::crate_DefaultInstance(expected_raw_event);
 
         Self::assert_last_global_event(converted_event)
     }
@@ -194,7 +185,7 @@ impl ApplyOnOpeningFixture {
         let saved_application_next_id = TestWorkingTeam::next_application_id();
         TestWorkingTeam::apply_on_opening(
             self.origin.clone().into(),
-            ApplyOnOpeningParameters::<Test, TestWorkingTeamInstance> {
+            ApplyOnOpeningParameters::<Test, DefaultInstance> {
                 member_id: self.member_id,
                 opening_id: self.opening_id,
                 role_account_id: self.role_account_id,
@@ -337,15 +328,13 @@ impl FillOpeningFixture {
             assert_eq!(TestWorkingTeam::next_worker_id(), saved_worker_next_id + 1);
             let worker_id = saved_worker_next_id;
 
-            assert!(
-                !<crate::OpeningById<Test, TestWorkingTeamInstance>>::contains_key(self.opening_id)
-            );
+            assert!(!<crate::OpeningById<Test, DefaultInstance>>::contains_key(
+                self.opening_id
+            ));
 
             for application_id in self.successful_application_ids.iter() {
                 assert!(
-                    !<crate::ApplicationById<Test, TestWorkingTeamInstance>>::contains_key(
-                        application_id
-                    )
+                    !<crate::ApplicationById<Test, DefaultInstance>>::contains_key(application_id)
                 );
             }
 
@@ -559,9 +548,9 @@ impl LeaveWorkerRoleFixture {
                 }
             }
 
-            assert!(
-                !<crate::WorkerById<Test, TestWorkingTeamInstance>>::contains_key(self.worker_id)
-            );
+            assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+                self.worker_id
+            ));
         }
     }
 }
@@ -598,11 +587,9 @@ impl TerminateWorkerRoleFixture {
 
         if actual_result.is_ok() {
             if actual_result.is_ok() {
-                assert!(
-                    !<crate::WorkerById<Test, TestWorkingTeamInstance>>::contains_key(
-                        self.worker_id
-                    )
-                );
+                assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+                    self.worker_id
+                ));
             }
         }
     }
@@ -866,9 +853,9 @@ impl CancelOpeningFixture {
 
     pub fn call_and_assert(&self, expected_result: DispatchResult) {
         if expected_result.is_ok() {
-            assert!(
-                <crate::OpeningById<Test, TestWorkingTeamInstance>>::contains_key(self.opening_id)
-            );
+            assert!(<crate::OpeningById<Test, DefaultInstance>>::contains_key(
+                self.opening_id
+            ));
         }
 
         let actual_result = self.call().map(|_| ());
@@ -876,9 +863,9 @@ impl CancelOpeningFixture {
         assert_eq!(actual_result.clone(), expected_result);
 
         if actual_result.is_ok() {
-            assert!(
-                !<crate::OpeningById<Test, TestWorkingTeamInstance>>::contains_key(self.opening_id)
-            );
+            assert!(!<crate::OpeningById<Test, DefaultInstance>>::contains_key(
+                self.opening_id
+            ));
         }
     }
 }
