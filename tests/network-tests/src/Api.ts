@@ -2045,7 +2045,14 @@ export class QueryNodeApi extends Api {
           avatarPhotoUrl
           isPublic
           isCurated
-          language
+          videos {
+            title
+            description
+            duration
+            thumbnailUrl
+            isExplicit
+            isPublic
+          }
         }
       }
     `
@@ -2065,7 +2072,6 @@ export class QueryNodeApi extends Api {
               avatarPhotoUrl
               isPublic
               isCurated
-              language
             }
           }
         }
@@ -2073,5 +2079,26 @@ export class QueryNodeApi extends Api {
     `
 
     return await this.queryNodeProvider.query({ query: FULL_TEXT_SEARCH_ON_CHANNEL_TITLE, variables: { text } })
+  }
+
+  public async performFullTextSearchOnVideoTitle(text: string): Promise<ApolloQueryResult<any>> {
+    const FULL_TEXT_SEARCH_ON_VIDEO_TITLE = gql`
+      query($text: String!) {
+        titles(text: $text) {
+          item {
+            ... on Video {
+              title
+              description
+              duration
+              thumbnailUrl
+              isExplicit
+              isPublic
+            }
+          }
+        }
+      }
+    `
+
+    return await this.queryNodeProvider.query({ query: FULL_TEXT_SEARCH_ON_VIDEO_TITLE, variables: { text } })
   }
 }

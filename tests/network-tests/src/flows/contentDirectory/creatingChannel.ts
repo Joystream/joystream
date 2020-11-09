@@ -39,27 +39,5 @@ export default async function channelCreation(api: QueryNodeApi) {
   // Ensure newly created channel was parsed by query node
   let result = await api.getChannelbyTitle(createChannelHappyCaseFixture.channelEntity.title)
 
-  console.log(result.data.channels[0])
-
   assertChannelMatchQueriedResult(result.data.channels[0], createChannelHappyCaseFixture.channelEntity)
-
-  // Perform number of full text searches on Channel title, that should return a Channel.
-  result = await api.performFullTextSearchOnChannelTitle('Examp')
-
-  console.log(result.data.titles[0].item)
-
-  assertChannelMatchQueriedResult(result.data.titles[0].item, createChannelHappyCaseFixture.channelEntity)
-
-  result = await api.performFullTextSearchOnChannelTitle(' channel')
-
-  assertChannelMatchQueriedResult(result.data.titles[0].item, createChannelHappyCaseFixture.channelEntity)
-
-  // Perform number full text searches on Channel title, that should not return a Channel.
-  result = await api.performFullTextSearchOnChannelTitle('First')
-
-  assert(result.data.titles[0].length === 0, 'Should be empty')
-
-  result = await api.performFullTextSearchOnChannelTitle('Chanel')
-
-  assert(result.data.titles[0].length === 0, 'Should be empty')
 }
