@@ -1,9 +1,9 @@
 import React from 'react'
 import { Search_search_item_Channel, Search_search_item_Video } from '@/api/queries/__generated__/Search'
-import { VideoPreview, Placeholder, VideoPreviewBase } from '@/shared/components'
+import { Placeholder, VideoPreviewBase } from '@/shared/components'
 import styled from '@emotion/styled'
 import { spacing, typography } from '@/shared/theme'
-import { ChannelGallery, VideoGallery } from '@/components'
+import { VideoPreview, ChannelGallery, VideoGallery } from '@/components'
 
 type AllResultsTabProps = {
   videos: Search_search_item_Video[]
@@ -27,6 +27,8 @@ const AllResultsTab: React.FC<AllResultsTabProps> = ({ videos: allVideos, channe
           <>
             <h3>Best Match</h3>
             <VideoPreview
+              id={bestMatch.id}
+              channelId={bestMatch.channel.id}
               title={bestMatch.title}
               duration={bestMatch.duration}
               channelName={bestMatch.channel.handle}
