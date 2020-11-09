@@ -52,7 +52,7 @@ services:
     image: postgres:12
     restart: always
     ports:
-      - "${DB_PORT}:5432"
+      - "127.0.0.1:${DB_PORT}:5432"
     volumes:
       - /var/lib/postgresql/data
     environment:
@@ -72,7 +72,7 @@ services:
     environment:
       - DB_HOST=db
     ports:
-      - "8081:${GRAPHQL_SERVER_PORT}"
+      - "127.0.0.1:8081:${GRAPHQL_SERVER_PORT}"
     depends_on: 
       - db
     command: ["workspace", "query-node-root", "server:start:prod"]
@@ -128,7 +128,7 @@ services:
       - WARTHOG_STARTER_REDIS_URI=redis://redis:6379/0 
       - PORT=4000
     ports:
-      - "4000:4000"
+      - "127.0.0.1:4000:4000"
     depends_on:
       - redis
       - db
@@ -138,7 +138,7 @@ services:
     image: redis:6.0-alpine
     restart: always
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
 
   pioneer:
     image: joystream/apps
