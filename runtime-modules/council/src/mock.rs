@@ -2,14 +2,16 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    BalanceReferendum, CandidateOf, CouncilMemberOf, CouncilMembers, CouncilStage,
+    BalanceReferendum, CandidateOf, Candidates, CouncilMemberOf, CouncilMembers, CouncilStage,
     CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate, CouncilStageUpdateOf,
     CurrentAnnouncementCycleId, Error, GenesisConfig, Module, ReferendumConnection, Stage, Trait,
 };
 
 use balances;
 use frame_support::traits::{Currency, Get, LockIdentifier, OnFinalize};
-use frame_support::{impl_outer_event, impl_outer_origin, parameter_types, StorageValue};
+use frame_support::{
+    impl_outer_event, impl_outer_origin, parameter_types, StorageMap, StorageValue,
+};
 use rand::Rng;
 use referendum::{
     Balance, CastVote, CurrentCycleId, OptionResult, ReferendumManager, ReferendumStage,
@@ -17,6 +19,7 @@ use referendum::{
 };
 use sp_core::H256;
 use sp_io;
+use sp_runtime::traits::Hash;
 use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, IdentityLookup},
@@ -458,6 +461,7 @@ where
             staking_account_id: account_id.into(),
             cycle_id: CurrentAnnouncementCycleId::get(),
             stake,
+            note_hash: None,
         };
 
         Self::topup_account(account_id.into(), stake);
@@ -613,6 +617,40 @@ where
                     .collect(),
             )
         });
+    }
+
+    pub fn check_candidacy_note(council_user_id: &T::CouncilUserId, note: Option<&[u8]>) {
+        assert_eq!(Candidates::<T>::contains_key(council_user_id), true);
+
+        let note_hash = match note {
+            Some(tmp_note) => Some(T::Hashing::hash(tmp_note)),
+            None => None,
+        };
+
+        assert_eq!(Candidates::<T>::get(council_user_id).note_hash, note_hash,);
+    }
+
+    pub fn set_candidacy_note(
+        origin: OriginType<T::AccountId>,
+        council_user_id: T::CouncilUserId,
+        note: &[u8],
+        expected_result: Result<(), Error<T>>,
+    ) {
+        // check method returns expected result
+        assert_eq!(
+            Module::<T>::set_candidacy_note(
+                InstanceMockUtils::<T>::mock_origin(origin),
+                council_user_id,
+                note.to_vec()
+            ),
+            expected_result,
+        );
+
+        if expected_result.is_err() {
+            return;
+        }
+
+        Self::check_candidacy_note(&council_user_id, Some(note));
     }
 
     pub fn announce_candidacy(
