@@ -19,6 +19,9 @@ export const Container = styled.section`
   @media screen and (min-width: ${breakpoints.xlarge}) {
     margin-bottom: -400px;
   }
+  @media screen and (min-width: ${breakpoints.xxlarge}) {
+    margin-bottom: -600px;
+  }
 `
 
 export const MediaWrapper = styled.div`
@@ -48,6 +51,9 @@ export const BackgroundImage = styled.div<{ src: string }>`
   @media screen and (min-width: ${breakpoints.xlarge}) {
     background-image: linear-gradient(0deg, black 0%, black 30%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
   }
+  @media screen and (min-width: ${breakpoints.xxlarge}) {
+    background-image: linear-gradient(0deg, black 0%, black 40%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
+  }
 `
 
 export const InfoContainer = styled.div`
@@ -75,6 +81,10 @@ export const InfoContainer = styled.div`
 
   @media screen and (min-width: ${breakpoints.xlarge}) {
     bottom: 45%;
+  }
+
+  @media screen and (min-width: ${breakpoints.xxlarge}) {
+    bottom: 60%;
   }
 `
 

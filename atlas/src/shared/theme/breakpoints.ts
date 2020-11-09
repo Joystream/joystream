@@ -3,4 +3,5 @@ export default {
   medium: '1024px',
   large: '1440px',
   xlarge: '1920px',
+  xxlarge: '2560px',
 }
