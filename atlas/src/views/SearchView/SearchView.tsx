@@ -35,8 +35,6 @@ const SearchView: React.FC<SearchViewProps> = ({ search = '' }) => {
     return <p>Something went wrong...</p>
   }
 
-  console.log({ videos, loading })
-
   return (
     <Container>
       <TabsMenu tabs={tabs} onSelectTab={setSelectedIndex} initialIndex={0} />

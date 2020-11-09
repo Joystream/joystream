@@ -33,8 +33,6 @@ const breakpoints = breakpointsOfGrid({
   },
 })) as BreakPoint[]
 
-console.log(breakpoints)
-
 const VideoGallery: React.FC<VideoGalleryProps> = ({ title, videos, loading }) => {
   const displayPlaceholders = loading || !videos
 
