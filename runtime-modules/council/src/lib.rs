@@ -413,12 +413,12 @@ decl_module! {
             // ensure action can be started
             EnsureChecks::<T>::can_set_candidacy_note(origin, &council_user_id)?;
 
-            // calculate note's hash
-            let note_hash = T::Hashing::hash(note.as_slice());
-
             //
             // == MUTATION SAFE ==
             //
+
+            // calculate note's hash
+            let note_hash = T::Hashing::hash(note.as_slice());
 
             // update state
             Mutations::<T>::set_candidacy_note(&council_user_id, &note_hash);
