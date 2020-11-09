@@ -65,8 +65,18 @@ async function createChannel(
   channel.isPublic = p.isPublic
   channel.coverPhotoUrl = p.coverPhotoURL
   channel.avatarPhotoUrl = p.avatarPhotoURL
-  if (p.language !== undefined)
-    channel.language = await getOrCreate.language({ db, block, id }, classEntityMap, p.language)
+
+  const { language } = p
+  if (language !== undefined) {
+    if (language.existing) {
+      const r = await db.get(Language, { where: { id: language.entityId.toString() } })
+      if (!r) throw Error(`Language entity not found`)
+      channel.language = r
+    } else {
+      // Language entity id is based on the index so we increase the entityid to make it correct
+      channel.language = await getOrCreate.language({ db, block, id }, classEntityMap, language.entityId)
+    }
+  }
   channel.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save(channel)
   return channel
@@ -169,11 +179,25 @@ async function createVideoMedia(
   videoMedia.size = p.size
   videoMedia.version = block
   const { encoding, location } = p
-  if (encoding !== undefined)
-    videoMedia.encoding = await getOrCreate.videoMediaEncoding({ db, block, id }, classEntityMap, encoding)
-  if (location !== undefined) {
-    videoMedia.location = await getOrCreate.mediaLocation({ db, block, id }, classEntityMap, location)
+  if (encoding !== undefined) {
+    if (encoding.existing) {
+      const e = await db.get(VideoMediaEncoding, { where: { id: encoding.entityId.toString() } })
+      if (!e) throw Error(`VideoMediaEncoding not found: ${encoding.entityId}`)
+      videoMedia.encoding = e
+    } else {
+      videoMedia.encoding = await getOrCreate.videoMediaEncoding({ db, block, id }, classEntityMap, encoding.entityId)
+    }
   }
+  if (location !== undefined) {
+    if (location.existing) {
+      const l = await db.get(MediaLocation, { where: { id: location.entityId.toString() } })
+      if (!l) throw Error(`MediaLocation not found: ${location.entityId}`)
+      videoMedia.location = l
+    } else {
+      videoMedia.location = await getOrCreate.mediaLocation({ db, block, id }, classEntityMap, location.entityId)
+    }
+  }
+
   videoMedia.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save(videoMedia)
   return videoMedia
@@ -200,11 +224,51 @@ async function createVideo({ db, block, id }: IDBBlockId, classEntityMap: ClassE
   video.version = block
 
   const { language, license, category, channel, media } = p
-  if (language !== undefined) video.language = await getOrCreate.language({ db, block, id }, classEntityMap, language)
-  if (license !== undefined) video.license = await getOrCreate.license({ db, block, id }, classEntityMap, license)
-  if (category !== undefined) video.category = await getOrCreate.category({ db, block, id }, classEntityMap, category)
-  if (channel !== undefined) video.channel = await getOrCreate.channel({ db, block, id }, classEntityMap, channel)
-  if (media !== undefined) video.media = await getOrCreate.videoMedia({ db, block, id }, classEntityMap, media)
+  if (language !== undefined) {
+    if (language.existing) {
+      const l = await db.get(Language, { where: { id: language.entityId.toString() } })
+      if (!l) throw Error(`Language entity not found`)
+      video.language = l
+    } else {
+      video.language = await getOrCreate.language({ db, block, id }, classEntityMap, language.entityId)
+    }
+  }
+  if (license !== undefined) {
+    if (license.existing) {
+      const lic = await db.get(License, { where: { id: license.entityId.toString() } })
+      if (!lic) throw Error(`License entity not found`)
+      video.license = lic
+    } else {
+      video.license = await getOrCreate.license({ db, block, id }, classEntityMap, license.entityId)
+    }
+  }
+  if (category !== undefined) {
+    if (category.existing) {
+      const ca = await db.get(Category, { where: { id: category.entityId.toString() } })
+      if (!ca) throw Error(`Category not found`)
+      video.category = ca
+    } else {
+      video.category = await getOrCreate.category({ db, block, id }, classEntityMap, category.entityId)
+    }
+  }
+  if (channel !== undefined) {
+    if (channel.existing) {
+      const c = await db.get(Channel, { where: { id: channel.entityId.toString() } })
+      if (!c) throw Error(`Channel not found: ${channel.entityId}`)
+      video.channel = c
+    } else {
+      video.channel = await getOrCreate.channel({ db, block, id }, classEntityMap, channel.entityId)
+    }
+  }
+  if (media !== undefined) {
+    if (media.existing) {
+      const m = await db.get(VideoMedia, { where: { id: media.entityId.toString() } })
+      if (!m) throw Error(`VideoMedia not found: ${media.entityId}`)
+      video.media = m
+    } else {
+      video.media = await getOrCreate.videoMedia({ db, block, id }, classEntityMap, media.entityId)
+    }
+  }
 
   video.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save<Video>(video)
@@ -254,14 +318,28 @@ async function createLicense(
 
   const license = new License()
   license.id = id
-  if (knownLicense !== undefined)
-    license.knownLicense = await getOrCreate.knownLicense({ db, block, id }, classEntityMap, knownLicense)
-  if (userDefinedLicense !== undefined)
-    license.userdefinedLicense = await getOrCreate.userDefinedLicense(
-      { db, block, id },
-      classEntityMap,
-      userDefinedLicense
-    )
+  if (knownLicense !== undefined) {
+    if (knownLicense.existing) {
+      const kl = await db.get(KnownLicense, { where: { id: knownLicense.entityId.toString() } })
+      if (!kl) throw Error(`KnownLicense not found: ${knownLicense.entityId}`)
+      license.knownLicense = kl
+    } else {
+      license.knownLicense = await getOrCreate.knownLicense({ db, block, id }, classEntityMap, knownLicense.entityId)
+    }
+  }
+  if (userDefinedLicense !== undefined) {
+    if (userDefinedLicense.existing) {
+      const udl = await db.get(UserDefinedLicense, { where: { id: userDefinedLicense.entityId.toString() } })
+      if (!udl) throw Error(`UserDefinedLicense not found: ${userDefinedLicense.entityId}`)
+      license.userdefinedLicense = udl
+    } else {
+      license.userdefinedLicense = await getOrCreate.userDefinedLicense(
+        { db, block, id },
+        classEntityMap,
+        userDefinedLicense.entityId
+      )
+    }
+  }
   license.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save<License>(license)
   return license
@@ -276,32 +354,47 @@ async function createMediaLocation(
 
   const location = new MediaLocation()
   location.id = id
-  if (httpMediaLocation !== undefined)
-    location.httpMediaLocation = await getOrCreate.httpMediaLocation(
-      { db, block, id },
-      classEntityMap,
-      httpMediaLocation
-    )
-  if (joystreamMediaLocation !== undefined)
-    location.joystreamMediaLocation = await getOrCreate.joystreamMediaLocation(
-      { db, block, id },
-      classEntityMap,
-      joystreamMediaLocation
-    )
+  console.log(p)
+  if (httpMediaLocation !== undefined) {
+    const { existing, entityId } = httpMediaLocation
+    if (existing) {
+      const hml = await db.get(HttpMediaLocation, { where: { id: entityId.toString() } })
+      if (!hml) throw Error(`HttpMediaLocation not found: ${entityId}`)
+    } else {
+      location.httpMediaLocation = await getOrCreate.httpMediaLocation({ db, block, id }, classEntityMap, entityId)
+    }
+  }
+  if (joystreamMediaLocation !== undefined) {
+    const { entityId, existing } = joystreamMediaLocation
+    if (existing) {
+      const jml = await db.get(JoystreamMediaLocation, { where: { id: entityId.toString() } })
+      if (!jml) throw Error(`JoystreamMediaLocation not found: ${entityId}`)
+      location.joystreamMediaLocation = jml
+    } else {
+      location.joystreamMediaLocation = await getOrCreate.joystreamMediaLocation(
+        { db, block, id },
+        classEntityMap,
+        entityId
+      )
+    }
+  }
   location.happenedIn = await createBlockOrGetFromDatabase(db, block)
   await db.save<License>(location)
   return location
 }
 
 async function batchCreateClassEntities(db: DB, block: number, operations: ICreateEntityOperation[]): Promise<void> {
+  let entityId = 1 // Entity id starts at 1
   // Create entities before adding schema support
-  operations.map(async ({ classId }, index) => {
+  operations.map(async ({ classId }) => {
     const c = new ClassEntity()
-    c.id = index.toString() // entity id
+    c.id = entityId.toString()
     c.classId = classId
     c.version = block
     c.happenedIn = await createBlockOrGetFromDatabase(db, block)
     await db.save<ClassEntity>(c)
+
+    entityId++
   })
 }
 

@@ -55,12 +55,15 @@ import {
   createVideoMediaEncoding,
 } from './entity-helper'
 
-function findEntity(entityId: number, newlyCreatedEntities: IEntity[]): IEntity | undefined {
+function generateEntityIdFromIndex(index: number): string {
+  return `${index + 1}`
+}
+
+function findEntity(entityId: number, className: string, classEntityMap: ClassEntityMap): IEntity {
+  const newlyCreatedEntities = classEntityMap.get(className)
+  if (newlyCreatedEntities === undefined) throw Error(`Couldn't find '${className}' entities in the classEntityMap`)
   const entity = newlyCreatedEntities.find((e) => e.indexOf === entityId)
-  if (!entity) {
-    console.log(`Unknown entity id: ${entityId}`)
-    return
-  }
+  if (!entity) throw Error(`Unknown ${className} entity id: ${entityId}`)
   return entity
 }
 
@@ -69,20 +72,11 @@ async function language(
   classEntityMap: ClassEntityMap,
   entityId: number
 ): Promise<Language> {
-  let record = await db.get(Language, { where: { id: entityId.toString() } })
-  if (record) return record
-  const newlyCreatedEntities = classEntityMap.get('Language')
-
-  if (newlyCreatedEntities) {
-    const entity = findEntity(entityId, newlyCreatedEntities)
-    if (!entity) throw Error(`Unknown Language entity id`)
-
-    record = await createLanguage(
-      { db, block, id: entityId.toString() },
-      decode.setEntityPropertyValues<ILanguage>(entity.properties, languagePropertyNamesWIthId)
-    )
-  }
-  if (!record) throw Error(`Language entity not found on the database`)
+  const entity = findEntity(entityId, 'Language', classEntityMap)
+  const record = await createLanguage(
+    { db, block, id: generateEntityIdFromIndex(entityId) },
+    decode.setEntityPropertyValues<ILanguage>(entity.properties, languagePropertyNamesWIthId)
+  )
   removeInsertedEntity('Language', entityId, classEntityMap)
   return record
 }
@@ -92,20 +86,11 @@ async function videoMediaEncoding(
   classEntityMap: ClassEntityMap,
   entityId: number
 ): Promise<VideoMediaEncoding> {
-  let record = await db.get(VideoMediaEncoding, { where: { id: entityId.toString() } })
-  if (record) return record
-  const newlyCreatedEntities = classEntityMap.get('VideoMediaEncoding')
-  if (newlyCreatedEntities) {
-    const entity = findEntity(entityId, newlyCreatedEntities)
-    if (!entity) throw Error(`Unknown VideoMediaEncoding entity id`)
-
-    record = await createVideoMediaEncoding(
-      { db, block, id: entityId.toString() },
-      decode.setEntityPropertyValues<IVideoMediaEncoding>(entity.properties, videoMediaEncodingPropertyNamesWithId)
-    )
-  }
-
-  if (!record) throw Error(`VideoMediaEncoding entity not found on the database`)
+  const entity = findEntity(entityId, 'VideoMediaEncoding', classEntityMap)
+  const record = await createVideoMediaEncoding(
+    { db, block, id: generateEntityIdFromIndex(entityId) },
+    decode.setEntityPropertyValues<IVideoMediaEncoding>(entity.properties, videoMediaEncodingPropertyNamesWithId)
+  )
   removeInsertedEntity('VideoMediaEncoding', entityId, classEntityMap)
   return record
 }
@@ -115,22 +100,12 @@ async function videoMedia(
   classEntityMap: ClassEntityMap,
   entityId: number
 ): Promise<VideoMedia> {
-  let record = await db.get(VideoMedia, { where: { id: entityId.toString() } })
-  if (record) return record
-
-  const newlyCreatedEntities = classEntityMap.get('VideoMedia')
-  if (newlyCreatedEntities) {
-    const entity = findEntity(entityId, newlyCreatedEntities)
-    if (!entity) throw Error(`Unknown VideoMedia entity id`)
-
-    record = await createVideoMedia(
-      { db, block, id: entityId.toString() },
-      classEntityMap,
-      decode.setEntityPropertyValues<IVideoMedia>(entity.properties, videoPropertyNamesWithId)
-    )
-  }
-
-  if (!record) throw Error(`Video entity not found on the database`)
+  const entity = findEntity(entityId, 'VideoMedia', classEntityMap)
+  const record = await createVideoMedia(
+    { db, block, id: generateEntityIdFromIndex(entityId) },
+    classEntityMap,
+    decode.setEntityPropertyValues<IVideoMedia>(entity.properties, videoPropertyNamesWithId)
+  )
   removeInsertedEntity('VideoMedia', entityId, classEntityMap)
   return record
 }
@@ -139,25 +114,12 @@ async function knownLicense(
   { db, block }: IDBBlockId,
   classEntityMap: ClassEntityMap,
   entityId: number
-): Promise<KnownLicense | undefined> {
-  let record = await db.get(KnownLicense, { where: { id: entityId.toString() } })
-  if (record) return record
-
-  const newlyCreatedEntities = classEntityMap.get('KnownLicense')
-  if (newlyCreatedEntities) {
-    const entity = findEntity(entityId, newlyCreatedEntities)
-    if (!entity) {
-      console.log(`Unknown KnownLicense entity id`)
-      return
-    }
-
-    record = await createKnownLicense(
-      { db, block, id: entityId.toString() },
-      decode.setEntityPropertyValues<IKnownLicense>(entity.properties, knownLicensePropertyNamesWIthId)
-    )
-  }
-
-  if (!record) throw Error(`KnownLicense entity not found on the database`)
+): Promise<KnownLicense> {
+  const entity = findEntity(entityId, 'KnownLicense', classEntityMap)
+  const record = await createKnownLicense(
+    { db, block, id: generateEntityIdFromIndex(entityId) },
+    decode.setEntityPropertyValues<IKnownLicense>(entity.properties, knownLicensePropertyNamesWIthId)
+  )
   removeInsertedEntity('KnownLicense', entityId, classEntityMap)
   return record
 }
@@ -165,46 +127,22 @@ async function userDefinedLicense(
   { db, block }: IDBBlockId,
   classEntityMap: ClassEntityMap,
   entityId: number
-): Promise<UserDefinedLicense | undefined> {
-  let record = await db.get(UserDefinedLicense, { where: { id: entityId.toString() } })
-  if (record) return record
-
-  const newlyCreatedEntities = classEntityMap.get('UserDefinedLicense')
-  if (newlyCreatedEntities) {
-    const entity = findEntity(entityId, newlyCreatedEntities)
-    if (!entity) {
-      console.log(`Unknown UserDefinedLicense entity id`)
-      return
-    }
-    record = await createUserDefinedLicense(
-      { db, block, id: entityId.toString() },
-      decode.setEntityPropertyValues<IUserDefinedLicense>(entity.properties, userDefinedLicensePropertyNamesWithId)
-    )
-  }
-  if (!record) {
-    console.log(`UserDefinedLicense entity not found on the database`)
-    return
-  }
+): Promise<UserDefinedLicense> {
+  const entity = findEntity(entityId, 'UserDefinedLicense', classEntityMap)
+  const record = await createUserDefinedLicense(
+    { db, block, id: generateEntityIdFromIndex(entityId) },
+    decode.setEntityPropertyValues<IUserDefinedLicense>(entity.properties, userDefinedLicensePropertyNamesWithId)
+  )
   removeInsertedEntity('UserDefinedLicense', entityId, classEntityMap)
   return record
 }
 async function channel({ db, block }: IDBBlockId, classEntityMap: ClassEntityMap, entityId: number): Promise<Channel> {
-  let record = await db.get(Channel, { where: { id: entityId.toString() } })
-  if (record) return record
-
-  const newlyCreatedEntities = classEntityMap.get('Channel')
-  if (newlyCreatedEntities) {
-    const entity = findEntity(entityId, newlyCreatedEntities)
-    if (!entity) throw Error(`Unknown Channel entity id`)
-
-    record = await createChannel(
-      { db, block, id: entityId.toString() },
-      classEntityMap,
-      decode.setEntityPropertyValues<IChannel>(entity.properties, channelPropertyNamesWithId)
-    )
-  }
-
-  if (!record) throw Error(`Channel entity not found on the database`)
+  const entity = findEntity(entityId, 'Channel', classEntityMap)
+  const record = await createChannel(
+    { db, block, id: generateEntityIdFromIndex(entityId) },
+    classEntityMap,
+    decode.setEntityPropertyValues<IChannel>(entity.properties, channelPropertyNamesWithId)
+  )
   removeInsertedEntity('Channel', entityId, classEntityMap)
   return record
 }
@@ -213,21 +151,11 @@ async function category(
   classEntityMap: ClassEntityMap,
   entityId: number
 ): Promise<Category> {
-  let record = await db.get(Category, { where: { id: entityId.toString() } })
-  if (record) return record
-
-  const newlyCreatedEntities = classEntityMap.get('Category')
-  if (newlyCreatedEntities) {
-    const entity = findEntity(entityId, newlyCreatedEntities)
-    if (!entity) throw Error(`Unknown Category entity id`)
-
-    record = await createCategory(
-      { db, block, id: entityId.toString() },
-      decode.setEntityPropertyValues<ICategory>(entity.properties, CategoryPropertyNamesWithId)
-    )
-  }
-
-  if (!record) throw Error(`Category entity not found on the database`)
+  const entity = findEntity(entityId, 'Category', classEntityMap)
+  const record = await createCategory(
+    { db, block, id: generateEntityIdFromIndex(entityId) },
+    decode.setEntityPropertyValues<ICategory>(entity.properties, CategoryPropertyNamesWithId)
+  )
   removeInsertedEntity('Category', entityId, classEntityMap)
   return record
 }
@@ -237,25 +165,11 @@ async function httpMediaLocation(
   classEntityMap: ClassEntityMap,
   entityId: number
 ): Promise<HttpMediaLocation | undefined> {
-  let record = await db.get(HttpMediaLocation, { where: { id: entityId.toString() } })
-  if (record) return record
-
-  const newlyCreatedEntities = classEntityMap.get('HttpMediaLocation')
-  if (newlyCreatedEntities) {
-    const entity = findEntity(entityId, newlyCreatedEntities)
-    if (!entity) {
-      console.log(`Unknown HttpMediaLocation entity id`)
-      return
-    }
-    record = await createHttpMediaLocation(
-      { db, block, id: entityId.toString() },
-      decode.setEntityPropertyValues<IHttpMediaLocation>(entity.properties, httpMediaLocationPropertyNamesWithId)
-    )
-  }
-  if (!record) {
-    console.log(`HttpMediaLocation entity not found on the database`)
-    return
-  }
+  const entity = findEntity(entityId, 'HttpMediaLocation', classEntityMap)
+  const record = await createHttpMediaLocation(
+    { db, block, id: generateEntityIdFromIndex(entityId) },
+    decode.setEntityPropertyValues<IHttpMediaLocation>(entity.properties, httpMediaLocationPropertyNamesWithId)
+  )
   removeInsertedEntity('HttpMediaLocation', entityId, classEntityMap)
   return record
 }
@@ -265,47 +179,25 @@ async function joystreamMediaLocation(
   classEntityMap: ClassEntityMap,
   entityId: number
 ): Promise<JoystreamMediaLocation | undefined> {
-  let record = await db.get(JoystreamMediaLocation, { where: { id: entityId.toString() } })
-  if (record) return record
-
-  const newlyCreatedEntities = classEntityMap.get('JoystreamMediaLocation')
-  if (newlyCreatedEntities) {
-    const entity = findEntity(entityId, newlyCreatedEntities)
-    if (!entity) throw Error(`Unknown JoystreamMediaLocation entity id`)
-
-    record = await createJoystreamMediaLocation(
-      { db, block, id: entityId.toString() },
-      decode.setEntityPropertyValues<IJoystreamMediaLocation>(
-        entity.properties,
-        joystreamMediaLocationPropertyNamesWithId
-      )
+  const entity = findEntity(entityId, 'JoystreamMediaLocation', classEntityMap)
+  const record = await createJoystreamMediaLocation(
+    { db, block, id: generateEntityIdFromIndex(entityId) },
+    decode.setEntityPropertyValues<IJoystreamMediaLocation>(
+      entity.properties,
+      joystreamMediaLocationPropertyNamesWithId
     )
-  }
-
-  if (!record) {
-    console.log(`JoystreamMediaLocation entity not found on the database`)
-    return
-  }
+  )
   removeInsertedEntity('JoystreamMediaLocation', entityId, classEntityMap)
   return record
 }
 
 async function license({ db, block }: IDBBlockId, classEntityMap: ClassEntityMap, entityId: number): Promise<License> {
-  let record = await db.get(License, { where: { id: entityId.toString() } })
-  if (record) return record
-
-  const newlyCreatedEntities = classEntityMap.get('License')
-  if (newlyCreatedEntities) {
-    const entity = findEntity(entityId, newlyCreatedEntities)
-    if (!entity) throw Error(`Unknown License entity id`)
-
-    record = await createLicense(
-      { db, block, id: entityId.toString() },
-      classEntityMap,
-      decode.setEntityPropertyValues<ILicense>(entity.properties, licensePropertyNamesWithId)
-    )
-  }
-  if (!record) throw Error(`License entity not found on the database`)
+  const entity = findEntity(entityId, 'License', classEntityMap)
+  const record = await createLicense(
+    { db, block, id: generateEntityIdFromIndex(entityId) },
+    classEntityMap,
+    decode.setEntityPropertyValues<ILicense>(entity.properties, licensePropertyNamesWithId)
+  )
   removeInsertedEntity('License', entityId, classEntityMap)
   return record
 }
@@ -315,23 +207,12 @@ async function mediaLocation(
   classEntityMap: ClassEntityMap,
   entityId: number
 ): Promise<MediaLocation> {
-  let record = await db.get(MediaLocation, { where: { id: entityId.toString() } })
-  if (record) return record
-
-  const newlyCreatedEntities = classEntityMap.get('MediaLocation')
-  if (newlyCreatedEntities) {
-    const entity = findEntity(entityId, newlyCreatedEntities)
-    if (!entity) throw Error(`Unknown MediaLocation entity id`)
-
-    record = await createMediaLocation(
-      { db, block, id: entityId.toString() },
-      classEntityMap,
-      decode.setEntityPropertyValues<IMediaLocation>(entity.properties, mediaLocationPropertyNamesWithId)
-    )
-  }
-  if (!record) {
-    throw Error(`MediaLocation entity not found on the database`)
-  }
+  const entity = findEntity(entityId, 'MediaLocation', classEntityMap)
+  const record = await createMediaLocation(
+    { db, block, id: generateEntityIdFromIndex(entityId) },
+    classEntityMap,
+    decode.setEntityPropertyValues<IMediaLocation>(entity.properties, mediaLocationPropertyNamesWithId)
+  )
   removeInsertedEntity('MediaLocation', entityId, classEntityMap)
   return record
 }

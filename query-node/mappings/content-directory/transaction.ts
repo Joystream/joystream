@@ -65,7 +65,7 @@ import {
   updateMediaLocationEntityPropertyValues,
 } from './entity-helper'
 
-const debug = Debug('mappings:content-directory')
+const debug = Debug('mappings:cd:transaction')
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function contentDirectory_TransactionCompleted(db: DB, event: SubstrateEvent): Promise<void> {
@@ -128,8 +128,9 @@ async function batchAddSchemaSupportToEntity(
     for (const entity of entities) {
       const { entityId, indexOf, properties } = entity
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const id = entityId ? entityId.toString() : indexOf!.toString()
-      const arg: IDBBlockId = { db, block, id }
+      const id = entityId !== undefined ? entityId : indexOf! + 1 // create entity id from index
+
+      const arg: IDBBlockId = { db, block, id: id.toString() }
 
       switch (className) {
         case ContentDirectoryKnownClasses.CATEGORY:
