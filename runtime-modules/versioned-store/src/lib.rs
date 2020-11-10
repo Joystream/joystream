@@ -20,6 +20,7 @@ use frame_support::{decl_event, decl_module, decl_storage, ensure};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
+use system as frame_system;
 
 mod example;
 mod mock;

@@ -137,6 +137,7 @@ use frame_support::{
 use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
 use system::{ensure_root, RawOrigin};
+use system as frame_system;
 
 use common::origin::ActorOriginValidator;
 

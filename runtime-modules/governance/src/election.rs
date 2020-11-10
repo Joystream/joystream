@@ -42,6 +42,7 @@ use sp_std::ops::Add;
 use sp_std::vec;
 use sp_std::vec::Vec;
 use system::{ensure_root, ensure_signed};
+use system as frame_system;
 
 use super::sealed_vote::SealedVote;
 use super::stake::Stake;

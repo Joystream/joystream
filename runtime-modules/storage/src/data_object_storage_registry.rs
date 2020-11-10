@@ -28,6 +28,7 @@ use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, P
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::vec::Vec;
+use system as frame_system;
 
 use crate::data_directory::{self, ContentIdExists};
 use crate::{StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};

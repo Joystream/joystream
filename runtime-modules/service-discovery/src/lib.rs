@@ -29,6 +29,8 @@ use serde::{Deserialize, Serialize};
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
 use sp_std::vec::Vec;
 use system::ensure_root;
+use system as frame_system;
+
 /*
   Although there is support for ed25519 keys as the IPNS identity key and we could potentially
   reuse the same key for the role account and ipns (and make this discovery module obselete)

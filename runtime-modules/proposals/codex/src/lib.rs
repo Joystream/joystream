@@ -69,6 +69,7 @@ use sp_std::clone::Clone;
 use sp_std::str::from_utf8;
 use sp_std::vec::Vec;
 use system::ensure_root;
+use system as frame_system;
 
 use common::origin::ActorOriginValidator;
 use common::working_group::WorkingGroup;

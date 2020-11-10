@@ -53,6 +53,7 @@ use frame_support::traits::Get;
 use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, Parameter};
 use sp_std::clone::Clone;
 use sp_std::vec::Vec;
+use system as frame_system;
 
 use common::origin::ActorOriginValidator;
 use types::{DiscussionPost, DiscussionThread, ThreadCounter};

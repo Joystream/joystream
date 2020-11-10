@@ -6,6 +6,7 @@ use frame_support::{decl_event, decl_module, decl_storage, ensure};
 use sp_arithmetic::traits::Zero;
 use sp_std::vec::Vec;
 use system::ensure_signed;
+use system as frame_system;
 
 use common::currency::GovernanceCurrency;
 

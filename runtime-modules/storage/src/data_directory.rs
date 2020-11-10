@@ -29,6 +29,7 @@ use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
 use system::ensure_root;
+use system as frame_system;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};

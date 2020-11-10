@@ -7,6 +7,7 @@ use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::vec::Vec;
+use system as frame_system;
 
 //TODO: Convert errors to the Substrate decl_error! macro.
 /// Result with string error message. This exists for backward compatibility purpose.

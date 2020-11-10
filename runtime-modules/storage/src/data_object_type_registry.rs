@@ -29,6 +29,7 @@ use frame_support::{decl_error, decl_event, decl_module, decl_storage, Parameter
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::vec::Vec;
+use system as frame_system;
 
 use crate::{StorageWorkingGroup, StorageWorkingGroupInstance};
 

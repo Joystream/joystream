@@ -56,7 +56,6 @@ pub(crate) fn create_transaction<
         system::CheckNonce::<Runtime>::from(nonce),
         system::CheckWeight::<Runtime>::new(),
         pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
-        pallet_grandpa::ValidateEquivocationReport::<Runtime>::new(),
     );
     let raw_payload = SignedPayload::new(call, extra)
         .map_err(|e| {

@@ -3,6 +3,7 @@ use sp_arithmetic::traits::{One, Zero};
 use sp_std::vec;
 use sp_std::vec::Vec;
 use system::ensure_root;
+use system as frame_system;
 
 pub use super::election::{self, CouncilElected, Seat, Seats};
 pub use common::currency::{BalanceOf, GovernanceCurrency};

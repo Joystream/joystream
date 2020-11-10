@@ -36,6 +36,7 @@ use sp_std::collections::btree_set::BTreeSet;
 use sp_std::iter::Iterator;
 use sp_std::rc::Rc;
 use sp_std::vec::Vec;
+use system as frame_system;
 
 use stake::{InitiateUnstakingError, Stake, StakeActionError, StakingError, Trait as StakeTrait};
 

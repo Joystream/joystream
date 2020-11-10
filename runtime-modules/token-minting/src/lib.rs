@@ -12,6 +12,7 @@ use frame_support::traits::Currency;
 use frame_support::{decl_module, decl_storage, ensure, Parameter};
 use sp_arithmetic::traits::{BaseArithmetic, One, Zero};
 use sp_runtime::traits::{MaybeSerialize, Member};
+use system as frame_system;
 
 mod mint;
 mod mock;
