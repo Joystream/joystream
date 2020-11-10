@@ -1,29 +1,9 @@
 import Debug from 'debug'
-import { DB, SubstrateEvent } from '../../generated/indexer'
-import { ClassEntity } from '../../generated/graphql-server/src/modules/class-entity/class-entity.model'
+import { DB, SubstrateEvent } from '../../../generated/indexer'
+import { ClassEntity } from '../../../generated/graphql-server/src/modules/class-entity/class-entity.model'
 
-import { decode } from './decode'
+import { decode } from '../decode'
 import {
-  createCategory,
-  createChannel,
-  createVideoMedia,
-  createVideo,
-  createUserDefinedLicense,
-  createKnownLicense,
-  createHttpMediaLocation,
-  createJoystreamMediaLocation,
-  removeCategory,
-  removeChannel,
-  removeVideoMedia,
-  removeVideo,
-  removeUserDefinedLicense,
-  removeKnownLicense,
-  removeHttpMediaLocation,
-  removeJoystreamMediaLocation,
-  removeLanguage,
-  removeVideoMediaEncoding,
-  createLanguage,
-  createVideoMediaEncoding,
   updateCategoryEntityPropertyValues,
   updateChannelEntityPropertyValues,
   updateVideoMediaEntityPropertyValues,
@@ -34,12 +14,36 @@ import {
   updateKnownLicenseEntityPropertyValues,
   updateLanguageEntityPropertyValues,
   updateVideoMediaEncodingEntityPropertyValues,
-  createBlockOrGetFromDatabase,
-  removeLicense,
-  removeMediaLocation,
   updateLicenseEntityPropertyValues,
   updateMediaLocationEntityPropertyValues,
-} from './entity-helper'
+} from './update'
+import {
+  removeCategory,
+  removeChannel,
+  removeVideoMedia,
+  removeVideo,
+  removeUserDefinedLicense,
+  removeKnownLicense,
+  removeHttpMediaLocation,
+  removeJoystreamMediaLocation,
+  removeLanguage,
+  removeVideoMediaEncoding,
+  removeLicense,
+  removeMediaLocation,
+} from './remove'
+import {
+  createCategory,
+  createChannel,
+  createVideoMedia,
+  createVideo,
+  createUserDefinedLicense,
+  createKnownLicense,
+  createHttpMediaLocation,
+  createJoystreamMediaLocation,
+  createLanguage,
+  createVideoMediaEncoding,
+  createBlockOrGetFromDatabase,
+} from './create'
 import {
   CategoryPropertyNamesWithId,
   channelPropertyNamesWithId,
@@ -52,7 +56,7 @@ import {
   videoPropertyNamesWithId,
   contentDirectoryClassNamesWithId,
   ContentDirectoryKnownClasses,
-} from './content-dir-consts'
+} from '../content-dir-consts'
 
 import {
   IChannel,
@@ -70,7 +74,8 @@ import {
   IEntity,
   ILicense,
   IMediaLocation,
-} from '../types'
+} from '../../types'
+import { getOrCreate } from '../get-or-create'
 
 const debug = Debug('mappings:content-directory')
 
@@ -101,7 +106,8 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
       await createChannel(
         arg,
         new Map<string, IEntity[]>(),
-        decode.setProperties<IChannel>(event, channelPropertyNamesWithId)
+        decode.setProperties<IChannel>(event, channelPropertyNamesWithId),
+        0 // ignored
       )
       break
 
@@ -138,7 +144,8 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
       await createVideoMedia(
         arg,
         new Map<string, IEntity[]>(),
-        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId)
+        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId),
+        0 // ignored
       )
       break
 
@@ -146,7 +153,8 @@ async function contentDirectory_EntitySchemaSupportAdded(db: DB, event: Substrat
       await createVideo(
         arg,
         new Map<string, IEntity[]>(),
-        decode.setProperties<IVideo>(event, videoPropertyNamesWithId)
+        decode.setProperties<IVideo>(event, videoPropertyNamesWithId),
+        0 // ignored
       )
       break
 
@@ -251,16 +259,17 @@ async function contentDirectory_EntityCreated(db: DB, event: SubstrateEvent): Pr
   classEntity.version = event.blockNumber
   classEntity.happenedIn = await createBlockOrGetFromDatabase(db, event.blockNumber)
   await db.save<ClassEntity>(classEntity)
+
+  await getOrCreate.nextEntityId(db, c.entityId + 1)
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: SubstrateEvent): Promise<void> {
-  debug(`EntityPropertyValuesUpdated event: ${JSON.stringify(event)}`)
-
   const { extrinsic } = event
-
   if (extrinsic && extrinsic.method === 'transaction') return
   if (extrinsic === undefined) throw Error(`Extrinsic data not found for event: ${event.id}`)
+
+  debug(`EntityPropertyValuesUpdated event: ${JSON.stringify(event)}`)
 
   const { 2: newPropertyValues } = extrinsic.args
   const entityId = decode.stringIfyEntityId(event)

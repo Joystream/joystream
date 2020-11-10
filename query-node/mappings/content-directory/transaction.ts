@@ -1,6 +1,9 @@
 import Debug from 'debug'
 
 import { DB, SubstrateEvent } from '../../generated/indexer'
+import { NextEntityId } from '../../generated/graphql-server/src/modules/next-entity-id/next-entity-id.model'
+import { ClassEntity } from '../../generated/graphql-server/src/modules/class-entity/class-entity.model'
+
 import { decode } from './decode'
 import {
   ClassEntityMap,
@@ -37,6 +40,21 @@ import {
   mediaLocationPropertyNamesWithId,
 } from './content-dir-consts'
 import {
+  updateCategoryEntityPropertyValues,
+  updateChannelEntityPropertyValues,
+  updateVideoMediaEntityPropertyValues,
+  updateVideoEntityPropertyValues,
+  updateUserDefinedLicenseEntityPropertyValues,
+  updateHttpMediaLocationEntityPropertyValues,
+  updateJoystreamMediaLocationEntityPropertyValues,
+  updateKnownLicenseEntityPropertyValues,
+  updateLanguageEntityPropertyValues,
+  updateVideoMediaEncodingEntityPropertyValues,
+  updateLicenseEntityPropertyValues,
+  updateMediaLocationEntityPropertyValues,
+} from './entity/update'
+
+import {
   createCategory,
   createChannel,
   createVideoMedia,
@@ -48,24 +66,20 @@ import {
   createLanguage,
   createVideoMediaEncoding,
   getClassName,
-  updateCategoryEntityPropertyValues,
-  updateChannelEntityPropertyValues,
-  updateVideoMediaEntityPropertyValues,
-  updateVideoEntityPropertyValues,
-  updateUserDefinedLicenseEntityPropertyValues,
-  updateHttpMediaLocationEntityPropertyValues,
-  updateJoystreamMediaLocationEntityPropertyValues,
-  updateKnownLicenseEntityPropertyValues,
-  updateLanguageEntityPropertyValues,
-  updateVideoMediaEncodingEntityPropertyValues,
-  batchCreateClassEntities,
   createLicense,
   createMediaLocation,
-  updateLicenseEntityPropertyValues,
-  updateMediaLocationEntityPropertyValues,
-} from './entity-helper'
+  createBlockOrGetFromDatabase,
+} from './entity/create'
+import { getOrCreate } from './get-or-create'
 
 const debug = Debug('mappings:cd:transaction')
+
+async function getNextEntityId(db: DB): Promise<number> {
+  const e = await db.get(NextEntityId, { where: { id: '1' } })
+  // Entity creation happens before addSchemaSupport so this should never happen
+  if (!e) throw Error(`NextEntityId table doesn't have any record`)
+  return e.nextId
+}
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export async function contentDirectory_TransactionCompleted(db: DB, event: SubstrateEvent): Promise<void> {
@@ -97,6 +111,24 @@ export async function contentDirectory_TransactionCompleted(db: DB, event: Subst
   await batchUpdatePropertyValue(db, createEntityOperations, updatePropertyValuesOperations)
 }
 
+async function batchCreateClassEntities(db: DB, block: number, operations: ICreateEntityOperation[]): Promise<void> {
+  const nId = await db.get(NextEntityId, { where: { id: '1' } })
+  let nextId = nId ? nId.nextId : 1 // start entity id from 1
+
+  for (const { classId } of operations) {
+    const c = new ClassEntity({
+      id: nextId.toString(), // entity id
+      classId: classId,
+      version: block,
+      happenedIn: await createBlockOrGetFromDatabase(db, block),
+    })
+    await db.save<ClassEntity>(c)
+    nextId++
+  }
+
+  await getOrCreate.nextEntityId(db, nextId)
+}
+
 /**
  *
  * @param db database connection
@@ -124,12 +156,13 @@ async function batchAddSchemaSupportToEntity(
   // We will remove items from this list whenever we insert them into db
   const doneList: ClassEntityMap = new Map(classEntityMap.entries())
 
+  const nextEntityIdBeforeTransaction = (await getNextEntityId(db)) - createEntityOperations.length
+
   for (const [className, entities] of classEntityMap) {
     for (const entity of entities) {
       const { entityId, indexOf, properties } = entity
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const id = entityId !== undefined ? entityId : indexOf! + 1 // create entity id from index
-
+      const id = entityId !== undefined ? entityId : indexOf! + nextEntityIdBeforeTransaction
       const arg: IDBBlockId = { db, block, id: id.toString() }
 
       switch (className) {
@@ -141,7 +174,8 @@ async function batchAddSchemaSupportToEntity(
           await createChannel(
             arg,
             doneList,
-            decode.setEntityPropertyValues<IChannel>(properties, channelPropertyNamesWithId)
+            decode.setEntityPropertyValues<IChannel>(properties, channelPropertyNamesWithId),
+            nextEntityIdBeforeTransaction
           )
           break
 
@@ -180,12 +214,18 @@ async function batchAddSchemaSupportToEntity(
           await createVideoMedia(
             arg,
             doneList,
-            decode.setEntityPropertyValues<IVideoMedia>(properties, videoMediaPropertyNamesWithId)
+            decode.setEntityPropertyValues<IVideoMedia>(properties, videoMediaPropertyNamesWithId),
+            nextEntityIdBeforeTransaction
           )
           break
 
         case ContentDirectoryKnownClasses.VIDEO:
-          await createVideo(arg, doneList, decode.setEntityPropertyValues<IVideo>(properties, videoPropertyNamesWithId))
+          await createVideo(
+            arg,
+            doneList,
+            decode.setEntityPropertyValues<IVideo>(properties, videoPropertyNamesWithId),
+            nextEntityIdBeforeTransaction
+          )
           break
 
         case ContentDirectoryKnownClasses.LANGUAGE:
@@ -203,14 +243,16 @@ async function batchAddSchemaSupportToEntity(
           await createLicense(
             arg,
             classEntityMap,
-            decode.setEntityPropertyValues<ILicense>(properties, licensePropertyNamesWithId)
+            decode.setEntityPropertyValues<ILicense>(properties, licensePropertyNamesWithId),
+            nextEntityIdBeforeTransaction
           )
           break
         case ContentDirectoryKnownClasses.MEDIALOCATION:
           await createMediaLocation(
             arg,
             classEntityMap,
-            decode.setEntityPropertyValues<IMediaLocation>(properties, mediaLocationPropertyNamesWithId)
+            decode.setEntityPropertyValues<IMediaLocation>(properties, mediaLocationPropertyNamesWithId),
+            nextEntityIdBeforeTransaction
           )
           break
 
@@ -229,12 +271,14 @@ async function batchAddSchemaSupportToEntity(
  * @param entities list of entities those properties values updated
  */
 async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateEntityOperation[], entities: IEntity[]) {
+  const entityIdBeforeTransaction = (await getNextEntityId(db)) - createEntityOperations.length
+
   for (const entity of entities) {
     const { entityId, indexOf, properties } = entity
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const id = entityId ? entityId.toString() : indexOf!.toString()
+    const id = entityId ? entityId.toString() : entityIdBeforeTransaction - indexOf!
 
-    const where: IWhereCond = { where: { id } }
+    const where: IWhereCond = { where: { id: id.toString() } }
     const className = await getClassName(db, entity, createEntityOperations)
     if (className === undefined) {
       console.log(`Can not update entity properties values. Unknown class name`)

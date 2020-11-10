@@ -83,6 +83,12 @@ function getEntityProperties(propertyValues: ParametrizedClassPropertyValue[]): 
       value = inputPropVal.isOfType('Single')
         ? inputPropVal.asType('Single').value.toJSON()
         : inputPropVal.asType('Vector').value.toJSON()
+
+      if (inputPropVal.isOfType('Single')) {
+        if (inputPropVal.asType('Single').isOfType('Reference')) {
+          reference = { entityId: value as number, existing: true }
+        }
+      }
     } else if (v.isOfType('InternalEntityJustAdded')) {
       value = v.asType('InternalEntityJustAdded').toJSON()
       reference = { entityId: value as number, existing: false }
