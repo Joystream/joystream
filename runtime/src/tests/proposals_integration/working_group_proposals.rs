@@ -241,7 +241,7 @@ fn set_reward(
 
 fn set_mint_capacity<
     T: working_group::Trait<I> + system::Trait + minting::Trait,
-    I: working_group::Instance,
+    I: frame_support::traits::Instance,
 >(
     member_id: MemberId,
     account_id: [u8; 32],
@@ -336,7 +336,7 @@ fn create_add_working_group_leader_opening_proposal_execution_succeeds() {
 
 fn run_create_add_working_group_leader_opening_proposal_execution_succeeds<
     T: working_group::Trait<I> + system::Trait + stake::Trait,
-    I: working_group::Instance,
+    I: frame_support::traits::Instance,
 >(
     working_group: WorkingGroup,
 ) where
@@ -394,7 +394,7 @@ fn create_begin_review_working_group_leader_applications_proposal_execution_succ
 
 fn run_create_begin_review_working_group_leader_applications_proposal_execution_succeeds<
     T: working_group::Trait<I> + system::Trait + stake::Trait,
-    I: working_group::Instance,
+    I: frame_support::traits::Instance,
 >(
     working_group: WorkingGroup,
 ) where
@@ -473,7 +473,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
 
     fn run_create_fill_working_group_leader_opening_proposal_execution_succeeds<
         T: working_group::Trait<I> + system::Trait + stake::Trait,
-        I: working_group::Instance,
+        I: frame_support::traits::Instance,
     >(
         working_group: WorkingGroup,
     ) where
@@ -551,7 +551,7 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
 
 fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
     T: working_group::Trait<I> + system::Trait + stake::Trait,
-    I: working_group::Instance,
+    I: frame_support::traits::Instance,
 >(
     working_group: WorkingGroup,
 ) where
@@ -667,7 +667,7 @@ fn run_create_decrease_group_leader_stake_proposal_execution_succeeds<
 
 fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
     T: working_group::Trait<I> + system::Trait + stake::Trait,
-    I: working_group::Instance,
+    I: frame_support::traits::Instance,
 >(
     working_group: WorkingGroup,
 ) where
@@ -783,7 +783,7 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
 
         fn run_create_set_working_group_mint_capacity_proposal_execution_succeeds<
             T: working_group::Trait<I> + system::Trait + minting::Trait,
-            I: working_group::Instance,
+            I: frame_support::traits::Instance,
         >(
             working_group: WorkingGroup,
         ) where
@@ -840,7 +840,7 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
 
         fn run_create_set_group_leader_reward_proposal_execution_succeeds<
             T: working_group::Trait<I> + system::Trait + minting::Trait,
-            I: working_group::Instance,
+            I: frame_support::traits::Instance,
         >(
             working_group: WorkingGroup,
         ) where
@@ -963,7 +963,7 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
 
         fn run_create_terminate_group_leader_role_proposal_execution_succeeds<
             T: working_group::Trait<I> + system::Trait + minting::Trait,
-            I: working_group::Instance,
+            I: frame_support::traits::Instance,
         >(
             working_group: WorkingGroup,
         ) where
@@ -1082,7 +1082,7 @@ fn run_create_slash_group_leader_stake_proposal_execution_succeeds<
 
         fn run_create_terminate_group_leader_role_proposal_with_slashing_execution_succeeds<
             T: working_group::Trait<I> + system::Trait + minting::Trait,
-            I: working_group::Instance,
+            I: frame_support::traits::Instance,
         >(
             working_group: WorkingGroup,
         ) where

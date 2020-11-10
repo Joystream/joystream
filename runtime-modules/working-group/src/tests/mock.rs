@@ -9,6 +9,7 @@ use sp_runtime::{
 };
 use std::marker::PhantomData;
 use system;
+use system as frame_system;
 
 use crate::{BalanceOf, Module, NegativeImbalance, Trait};
 use common::constraints::InputValidationLengthConstraint;
@@ -70,10 +71,11 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
+    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
 }
 
 impl hiring::Trait for Test {
@@ -112,6 +114,7 @@ impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
+    type WeightInfo = ();
 }
 
 impl balances::Trait for Test {
@@ -120,6 +123,8 @@ impl balances::Trait for Test {
     type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = ();
 }
 
 impl recurringrewards::Trait for Test {

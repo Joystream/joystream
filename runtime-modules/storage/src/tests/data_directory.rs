@@ -197,7 +197,7 @@ fn reject_content_as_liaison() {
 fn data_object_injection_works() {
     with_default_mock_builder(|| {
         // No objects in directory before injection
-        assert_eq!(TestDataDirectory::known_content_ids(), vec![]);
+        assert_eq!(TestDataDirectory::known_content_ids(), Vec::<u64>::new());
 
         // new objects to inject into the directory
         let mut objects = BTreeMap::new();

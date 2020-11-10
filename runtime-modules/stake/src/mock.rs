@@ -46,15 +46,17 @@ impl system::Trait for Test {
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
-    type ModuleToIndex = ();
+    type PalletInfo = ();
     type AccountData = balances::AccountData<u64>;
     type OnNewAccount = ();
     type OnKilledAccount = ();
+    type SystemWeightInfo = ();
 }
 
 parameter_types! {
     pub const ExistentialDeposit: u32 = 500;
     pub const StakePoolId: [u8; 8] = *b"joystake";
+    pub const MaxLocks: u32 = 50;
 }
 
 impl balances::Trait for Test {
@@ -63,6 +65,8 @@ impl balances::Trait for Test {
     type Event = ();
     type ExistentialDeposit = ExistentialDeposit;
     type AccountStore = System;
+    type WeightInfo = ();
+    type MaxLocks = MaxLocks;
 }
 
 impl Trait for Test {

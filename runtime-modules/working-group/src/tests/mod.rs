@@ -2160,7 +2160,7 @@ fn slash_worker_stake_fails_with_not_set_lead() {
 fn get_regular_worker_ids_succeeds() {
     build_test_externalities().execute_with(|| {
         let worker_ids = TestWorkingGroup::get_regular_worker_ids();
-        assert_eq!(worker_ids, Vec::new());
+        assert_eq!(worker_ids, Vec::<u64>::new());
 
         let leader_worker_id = HireLeadFixture::default().hire_lead();
 
@@ -2186,7 +2186,7 @@ fn get_regular_worker_ids_succeeds() {
 fn get_all_worker_ids_succeeds() {
     build_test_externalities().execute_with(|| {
         let worker_ids = TestWorkingGroup::get_all_worker_ids();
-        assert_eq!(worker_ids, Vec::new());
+        assert_eq!(worker_ids, Vec::<u64>::new());
 
         let leader_worker_id = HireLeadFixture::default().hire_lead();
 
