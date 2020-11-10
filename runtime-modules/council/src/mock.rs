@@ -72,6 +72,13 @@ impl Trait for Runtime {
 
     type CandidacyLock = Lock1;
     type ElectedMemberLock = Lock2;
+
+    fn is_council_member_account(
+        council_user_id: &Self::CouncilUserId,
+        account_id: &<Self as system::Trait>::AccountId,
+    ) -> bool {
+        council_user_id == account_id
+    }
 }
 
 /////////////////// Module implementation //////////////////////////////////////
@@ -533,6 +540,7 @@ where
         + Into<<RuntimeReferendum as system::Trait>::Origin>,
     <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::Hash>>::VotePower:
         From<u64> + Into<u64>,
+    T::CouncilUserId: Into<T::AccountId>,
 {
     pub fn check_announcing_period(
         expected_update_block_number: T::BlockNumber,
@@ -664,6 +672,7 @@ where
             Module::<T>::announce_candidacy(
                 InstanceMockUtils::<T>::mock_origin(origin),
                 member_id,
+                member_id.into(),
                 stake
             ),
             expected_result,
