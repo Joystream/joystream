@@ -75,8 +75,8 @@ use working_team::BalanceOfCurrency;
 pub type StorageWorkingTeamInstance = working_team::Instance1;
 
 parameter_types! {
-  pub const RewardPeriod: u32 = 3;
-  pub const MinUnstakingPeriodLimit: u32 = 3;
+    pub const RewardPeriod: u32 = 3;
+    pub const MinUnstakingPeriodLimit: u32 = 3;
 }
 
 impl working_team::Trait<StorageWorkingTeamInstance> for Runtime {
