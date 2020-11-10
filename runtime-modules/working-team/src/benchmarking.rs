@@ -111,7 +111,7 @@ fn apply_on_opening_helper<T: Trait<I>, I: Instance>(
     application_id
 }
 
-fn add_opening_and_n_apply<T: Trait<I>, I: Instance>(
+fn add_opening_and_apply_with_multiple_ids<T: Trait<I>, I: Instance>(
     ids: &Vec<u32>,
     add_opening_origin: &T::Origin,
     staking_role: &StakingRole,
@@ -273,7 +273,7 @@ benchmarks_instance! {
         );
 
         let (opening_id, successful_application_ids, application_account_id) =
-            add_opening_and_n_apply::<T, I>(
+            add_opening_and_apply_with_multiple_ids::<T, I>(
                 &(1..i).collect(),
                 &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
                 &StakingRole::WithStakes,
@@ -354,12 +354,13 @@ benchmarks_instance! {
             None
         );
 
-        let (opening_id, successful_application_ids, _) = add_opening_and_n_apply::<T, I>(
-            &(1..i).collect(),
-            &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
-            &StakingRole::WithStakes,
-            &JobOpeningType::Regular
-        );
+        let (opening_id, successful_application_ids, _) =
+            add_opening_and_apply_with_multiple_ids::<T, I>(
+                &(1..i).collect(),
+                &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
+                &StakingRole::WithStakes,
+                &JobOpeningType::Regular
+            );
 
         WorkingTeam::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
         successful_application_ids.clone()).unwrap();
@@ -415,12 +416,13 @@ benchmarks_instance! {
             None
         );
 
-        let (opening_id, successful_application_ids, _) = add_opening_and_n_apply::<T, I>(
-            &(1..i).collect(),
-            &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
-            &StakingRole::WithStakes,
-            &JobOpeningType::Regular
-        );
+        let (opening_id, successful_application_ids, _) =
+            add_opening_and_apply_with_multiple_ids::<T, I>(
+                &(1..i).collect(),
+                &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
+                &StakingRole::WithStakes,
+                &JobOpeningType::Regular
+            );
 
         WorkingTeam::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
         successful_application_ids.clone()).unwrap();
@@ -465,12 +467,13 @@ benchmarks_instance! {
             None
         );
 
-        let (opening_id, successful_application_ids, _) = add_opening_and_n_apply::<T, I>(
-            &(1..i).collect(),
-            &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
-            &StakingRole::WithStakes,
-            &JobOpeningType::Regular
-        );
+        let (opening_id, successful_application_ids, _) =
+            add_opening_and_apply_with_multiple_ids::<T, I>(
+                &(1..i).collect(),
+                &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
+                &StakingRole::WithStakes,
+                &JobOpeningType::Regular
+            );
 
         WorkingTeam::<T, _>::fill_opening(RawOrigin::Signed(lead_id.clone()).into(), opening_id,
         successful_application_ids.clone()).unwrap();
@@ -510,7 +513,7 @@ benchmarks_instance! {
     }
 
     apply_on_opening {
-        let i in 1 .. 50000;
+        let i in 1 .. 50000; // TODO: We should have a bounded value for description
 
         let (lead_account_id, lead_member_id) = member_funded_account::<T>("lead", 0);
         let opening_id = add_opening_helper::<T, I>(
@@ -547,7 +550,8 @@ benchmarks_instance! {
     }
 
     fill_opening_lead {
-        let i in 0 .. 10;
+        // TODO: This is needed only to run in the current version erase when upgrading
+        let i in 0 .. 1;
 
         let (lead_account_id, lead_member_id) = member_funded_account::<T>("lead", 0);
         let (opening_id, application_id) = add_and_apply_opening::<T, I>(
@@ -564,10 +568,20 @@ benchmarks_instance! {
     }: fill_opening(RawOrigin::Root, opening_id, successful_application_ids)
     verify {
         assert!(!OpeningById::<T, I>::contains_key(opening_id), "Opening still not filled");
+
+        let worker_id = Zero::zero();
+
         assert_eq!(
             WorkingTeam::<T, I>::current_lead(),
-            Some(Zero::zero()),
+            Some(worker_id),
             "Opening for lead not filled"
+        );
+
+        let mut application_id_to_worker_id = BTreeMap::new();
+        application_id_to_worker_id.insert(application_id, worker_id);
+
+        assert_last_event::<T, I>(
+            RawEvent::OpeningFilled(opening_id, application_id_to_worker_id).into()
         );
     }
 
@@ -580,12 +594,13 @@ benchmarks_instance! {
             None
         );
 
-        let (opening_id, successful_application_ids, _) = add_opening_and_n_apply::<T, I>(
-            &(1..i).collect(),
-            &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
-            &StakingRole::WithoutStakes,
-            &JobOpeningType::Regular
-        );
+        let (opening_id, successful_application_ids, _) =
+            add_opening_and_apply_with_multiple_ids::<T, I>(
+                &(1..i).collect(),
+                &T::Origin::from(RawOrigin::Signed(lead_id.clone())),
+                &StakingRole::WithoutStakes,
+                &JobOpeningType::Regular
+            );
     }: fill_opening(
             RawOrigin::Signed(lead_id.clone()),
             opening_id,
@@ -594,16 +609,24 @@ benchmarks_instance! {
     verify {
         assert!(!OpeningById::<T, I>::contains_key(opening_id), "Opening still not filled");
 
-        for i in 1..successful_application_ids.len() {
+        let mut application_id_to_worker_id = BTreeMap::new();
+        for (i, application_id) in successful_application_ids.iter().enumerate() {
+            let worker_id = TeamWorkerId::<T>::from((i + 1).try_into().unwrap());
+            application_id_to_worker_id.insert(*application_id, worker_id);
             assert!(
                 WorkerById::<T, I>::contains_key(TeamWorkerId::<T>::from(i.try_into().unwrap())),
                 "Not all workers added"
             );
         }
+
+        assert_last_event::<T, I>(
+            RawEvent::OpeningFilled(opening_id, application_id_to_worker_id).into()
+        );
     }
 
     update_role_account{
-        let i in 1 .. 10;
+        // TODO: This is needed only to run in the current version erase when upgrading
+        let i in 0 .. 1;
         let (lead_id, lead_worker_id) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
         let new_account_id = account::<T::AccountId>("new_lead_account", 1, SEED);
@@ -621,7 +644,8 @@ benchmarks_instance! {
     }
 
     cancel_opening {
-        let i in 1 .. 10;
+        // TODO: This is needed only to run in the current version erase when upgrading
+        let i in 0 .. 1;
 
         let (lead_id, _) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
@@ -639,7 +663,8 @@ benchmarks_instance! {
     }
 
     withdraw_application {
-        let i in 1 .. 10;
+        // TODO: This is needed only to run in the current version erase when upgrading
+        let i in 0 .. 1;
 
         let (caller_id, member_id) = member_funded_account::<T>("lead", 0);
         let (_, application_id) = add_and_apply_opening::<T, I>(0,
@@ -659,7 +684,8 @@ benchmarks_instance! {
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     slash_stake {
-        let i in 0 .. 10;
+        // TODO: We should have a bounded value for the slashing_text
+        let i in 0 .. 50000;
 
         let (lead_id, lead_worker_id) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
@@ -671,7 +697,7 @@ benchmarks_instance! {
         );
         let slashing_amount = One::one();
         let penalty = Penalty {
-            slashing_text: vec![],
+            slashing_text: vec![0u8; i.try_into().unwrap()],
             slashing_amount,
         };
     }: _(RawOrigin::Signed(lead_id.clone()), worker_id, penalty)
@@ -680,7 +706,8 @@ benchmarks_instance! {
     }
 
     terminate_role_worker {
-        let i in 0 .. 10;
+        // TODO: We should have a bounded value for the slashing_text
+        let i in 0 .. 50000;
 
         let (lead_id, _) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
@@ -694,7 +721,7 @@ benchmarks_instance! {
         let current_budget = BalanceOfCurrency::<T>::max_value();
         WorkingTeam::<T, _>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
         let penalty = Penalty {
-            slashing_text: vec![],
+            slashing_text: vec![0u8; i.try_into().unwrap()],
             slashing_amount: One::one(),
         };
     }: terminate_role(RawOrigin::Signed(lead_id.clone()), worker_id, Some(penalty))
@@ -704,7 +731,8 @@ benchmarks_instance! {
     }
 
     terminate_role_lead {
-        let i in 0 .. 10;
+        // TODO: We should have a bounded value for the slashing_text
+        let i in 0 .. 50000;
 
         let (_, lead_worker_id) =
             insert_a_worker::<T, I>(StakingRole::WithStakes, JobOpeningType::Leader, 0, None);
@@ -712,7 +740,7 @@ benchmarks_instance! {
         // To be able to pay unpaid reward
         WorkingTeam::<T, _>::set_budget(RawOrigin::Root.into(), current_budget).unwrap();
         let penalty = Penalty {
-            slashing_text: vec![],
+            slashing_text: vec![0u8; i.try_into().unwrap()],
             slashing_amount: One::one(),
         };
     }: terminate_role(RawOrigin::Root, lead_worker_id, Some(penalty))
@@ -724,7 +752,8 @@ benchmarks_instance! {
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     increase_stake {
-        let i in 0 .. 10;
+        // TODO: This is needed only to run in the current version erase when upgrading
+        let i in 0 .. 1;
 
         let (lead_id, _) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
@@ -747,7 +776,8 @@ benchmarks_instance! {
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     decrease_stake {
-        let i in 0 .. 10;
+        // TODO: This is needed only to run in the current version erase when upgrading
+        let i in 0 .. 1;
 
         let (lead_id, _) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
@@ -766,7 +796,8 @@ benchmarks_instance! {
     }
 
     spend_from_budget {
-        let i in 0 .. 10;
+        // TODO: This is needed only to run in the current version erase when upgrading
+        let i in 0 .. 1;
 
         let (lead_id, _) = insert_a_worker::<T, I>(
             StakingRole::WithoutStakes,
@@ -786,7 +817,8 @@ benchmarks_instance! {
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     update_reward_amount {
-        let i in 0 .. 10;
+        // TODO: This is needed only to run in the current version erase when upgrading
+        let i in 0 .. 1;
 
         let (lead_id, _) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
@@ -832,7 +864,8 @@ benchmarks_instance! {
     }
 
     update_reward_account {
-        let i in 0 .. 10;
+        // TODO: This is needed only to run in the current version erase when upgrading
+        let i in 0 .. 1;
 
         let (caller_id, worker_id) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
@@ -850,7 +883,8 @@ benchmarks_instance! {
     }
 
     set_budget {
-        let i in 0 .. 10;
+        // TODO: This is needed only to run in the current version erase when upgrading
+        let i in 0 .. 1;
 
         let new_budget = BalanceOfCurrency::<T>::max_value();
 
@@ -893,7 +927,8 @@ benchmarks_instance! {
 
     // This is always worse than leave_role_immediatly
     leave_role_immediatly {
-        let i in 0 .. 10; // TODO: test not running if we don't set a range of values
+        // TODO: This is needed only to run in the current version erase when upgrading
+        let i in 0 .. 1;
         // Worst case scenario there is a lead(this requires **always** more steps)
         // could separate into new branch to tighten weight
         // Also, workers without stake can leave immediatly
@@ -916,7 +951,8 @@ benchmarks_instance! {
     // but since it's so obviously a different branch I think it's a good idea
     // to leave this branch and use tha max between these 2
     leave_role_later {
-        let i in 0 .. 10;
+        // TODO: This is needed only to run in the current version erase when upgrading
+        let i in 0 .. 1;
 
         // Workers with stake can't leave immediatly
         let (caller_id, caller_worker_id) = insert_a_worker::<T, I>(

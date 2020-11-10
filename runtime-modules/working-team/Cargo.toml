@@ -37,5 +37,4 @@ std = [
 	'common/std',
 	'membership/std',
 	'balances/std',
-  'frame-benchmarking/std',
 ]

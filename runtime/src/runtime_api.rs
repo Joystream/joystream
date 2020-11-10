@@ -8,8 +8,6 @@ use sp_core::crypto::KeyTypeId;
 use sp_core::OpaqueMetadata;
 use sp_runtime::traits::{BlakeTwo256, Block as BlockT, NumberFor};
 use sp_runtime::{generic, ApplyExtrinsicResult};
-#[cfg(feature = "runtime-benchmarks")]
-use sp_std::vec;
 use sp_std::vec::Vec;
 
 use crate::constants::PRIMARY_PROBABILITY;
@@ -218,6 +216,7 @@ impl_runtime_apis! {
             /*
              * TODO: remember to benchhmark every pallet
              */
+            use sp_std::vec;
             use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark};
             use frame_system_benchmarking::Module as SystemBench;
             impl frame_system_benchmarking::Trait for Runtime {}
