@@ -11,7 +11,7 @@ yarn workspace query-node-root build
 yarn workspace storage-node build
 # Not strictly needed during development, we run "yarn workspace pioneer start" to start
 # a dev instance, but will show highlight build issues
-yarn workspace pioneer build 
+yarn workspace pioneer build
 
 # Build cargo crates: native binaries joystream/node, wasm runtime, and chainspec builder.
 while true
@@ -31,38 +31,25 @@ done
 
 if ! command -v docker-compose &> /dev/null
 then
-    echo "docker-compose not found, skipping docker images build"
-    exit
+  echo "docker-compose not found, skipping docker build!"
+else
+  # Build joystream/apps docker image
+  docker-compose build pioneer
+
+  # Optionally build joystream/node docker image
+  # TODO: Try to fetch a cached joystream/node image
+  # if one is found matching code shasum instead of building
+  while true
+  do
+    read -p "Rebuild joystream/node docker image? (y/N): " answer2
+
+    case $answer2 in
+    [yY]* ) docker-compose build joystream-node
+            break;;
+
+    [nN]* ) break;;
+
+    * )     break;;
+    esac
+  done
 fi
-
-# Optionally build joystream/node docker image
-# TODO: Try to fetch a cached joystream/node image
-# if one is found matching code shasum instead of building
-while true
-do
-  read -p "Rebuild joystream/node docker image? (y/N): " answer2
-
-  case $answer2 in
-   [yY]* ) docker-compose build joystream-node
-           break;;
-
-   [nN]* ) break;;
-
-   * )     break;;
-  esac
-done
-
-# Optionlly Build joystream/apps docker image
-while true
-do
-  read -p "Rebuild joystream/apps docker image? (y/N): " answer3
-
-  case $answer3 in
-   [yY]* ) docker-compose build pioneer
-           break;;
-
-   [nN]* ) break;;
-
-   * )     break;;
-  esac
-done
