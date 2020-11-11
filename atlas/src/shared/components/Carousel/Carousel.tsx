@@ -1,75 +1,159 @@
-import React, { useLayoutEffect, useRef, useState } from 'react'
-import { GliderMethods, GliderProps } from 'react-glider'
+import React, { useEffect, useRef, useLayoutEffect } from 'react'
 
-import { Arrow, Container, StyledGlider } from './Carousel.style'
+import { Container, GliderContainer, Arrow, Track, FADE_COLOR } from './Carousel.style'
 
+import Glider, { Options, GliderEventMap, GliderEvent } from 'glider-js'
 import 'glider-js/glider.min.css'
+
+type GliderEventHandlers = {
+  onAdd?: (event: GliderEvent<GliderEventMap['glider-add']>) => void
+  onAnimated?: (event: GliderEvent<GliderEventMap['glider-animated']>) => void
+  onDestroy?: (args: GliderEvent<GliderEventMap['glider-destroy']>) => void
+  onLoaded?: (args: GliderEvent<GliderEventMap['glider-loaded']>) => void
+  onRefresh?: (args: GliderEvent<GliderEventMap['glider-refresh']>) => void
+  onRemove?: (args: GliderEvent<GliderEventMap['glider-remove']>) => void
+  onSlideHidden?: (args: GliderEvent<GliderEventMap['glider-slide-hidden']>) => void
+  onSlideVisible?: (args: GliderEvent<GliderEventMap['glider-slide-visible']>) => void
+}
 
 type CarouselProps = {
   trackPadding?: string
-} & GliderProps
-
-type TrackProps = {
   className?: string
-}
-const Track: React.FC<TrackProps> = ({ className = '', children }) => (
-  <div className={`glider-track ${className}`}>{children}</div>
-)
-
-const RightArrow = <Arrow name="chevron-right" />
-const LeftArrow = <Arrow name="chevron-left" />
+} & Options &
+  GliderEventHandlers
 
 const Carousel: React.FC<CarouselProps> = ({
   children,
   trackPadding = '0',
-  className,
+  className = '',
   slidesToShow = 'auto',
-  ...gliderProps
+  onSlideHidden = () => {},
+  onSlideVisible = () => {},
+  onAdd = () => {},
+  onAnimated = () => {},
+  onDestroy = () => {},
+  onRefresh = () => {},
+  onLoaded = () => {},
+  onRemove = () => {},
+  ...gliderOptions
 }) => {
-  //  The GliderMethods type only has methods and I need the full instance
-  const gliderRef = useRef<GliderMethods & { ele: HTMLDivElement }>()
-  const [arrows, setArrows] = useState<{ prev: HTMLButtonElement; next: HTMLButtonElement } | undefined>(undefined)
+  const nextArrowRef = useRef<HTMLButtonElement>(null)
+  const prevArrowRef = useRef<HTMLButtonElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const gliderRef = useRef<HTMLDivElement>(null)
+  const instanceRef = useRef<Glider.Static<HTMLDivElement>>()
 
   useLayoutEffect(() => {
     if (gliderRef.current) {
-      const glider = gliderRef.current.ele
-      const prevArrow = glider.previousSibling as HTMLButtonElement
-      const nextArrow = glider.nextSibling as HTMLButtonElement
-
-      setArrows({ prev: prevArrow, next: nextArrow })
+      //  @ts-ignore there are no typings for gliderjs
+      const gliderInstance = new Glider(gliderRef.current, {
+        skipTrack: true,
+        arrows: {
+          prev: prevArrowRef.current,
+          next: nextArrowRef.current,
+        },
+      })
+      instanceRef.current = gliderInstance
+    }
+    return () => {
+      if (instanceRef.current) {
+        instanceRef.current.destroy()
+      }
     }
   }, [])
 
-  // This is needed because react-glider will render arrows only if the arrows option is undefined, so arrows won't display if you pass an object to StyledGlider
-  React.useLayoutEffect(() => {
-    if (gliderRef.current && arrows) {
-      const { prev: prevArrow, next: nextArrow } = arrows
-      const container = gliderRef.current.ele.parentElement
-      if (container) {
-        container.insertBefore(prevArrow, gliderRef.current.ele)
-        container.appendChild(nextArrow)
+  useLayoutEffect(() => {
+    if (instanceRef.current) {
+      instanceRef.current.setOption(
+        {
+          slidesToShow,
+          ...gliderOptions,
+          skipTrack: true,
+          arrows: {
+            prev: prevArrowRef.current,
+            next: nextArrowRef.current,
+          },
+        },
+        true
+      )
+      instanceRef.current.refresh(true)
+    }
+  }, [gliderOptions, slidesToShow])
+
+  useEffect(() => {
+    const element = gliderRef.current as Element | null
+
+    const setContainerCSS = () => {
+      const isNextArrowDisabled = nextArrowRef.current?.classList.contains('disabled')
+      const isPrevArrowDisabled = prevArrowRef.current?.classList.contains('disabled')
+      if (containerRef.current) {
+        containerRef.current.style.setProperty('--next-arrow-color', isNextArrowDisabled ? 'transparent' : FADE_COLOR)
+        containerRef.current.style.setProperty('--prev-arrow-color', isPrevArrowDisabled ? 'transparent' : FADE_COLOR)
       }
     }
-  }, [arrows])
+    const handleSlideVisible = (event: GliderEvent<GliderEventMap['glider-slide-visible']>) => {
+      if (onSlideVisible) {
+        onSlideVisible(event)
+      }
+      setContainerCSS()
+    }
+
+    const handleSlideHidden = (event: GliderEvent<GliderEventMap['glider-slide-hidden']>) => {
+      if (onSlideHidden) {
+        onSlideHidden(event)
+      }
+      setContainerCSS()
+    }
+    if (element) {
+      element.addEventListener('glider-add', onAdd)
+      element.addEventListener('glider-animated', onAnimated)
+      element.addEventListener('glider-destroy', onDestroy)
+      element.addEventListener('glider-loaded', onLoaded)
+      element.addEventListener('glider-refresh', onRefresh)
+      element.addEventListener('glider-remove', onRemove)
+      element.addEventListener('glider-slide-hidden', handleSlideHidden)
+      element.addEventListener('glider-slide-visible', handleSlideVisible)
+    }
+
+    return () => {
+      if (element) {
+        element.removeEventListener('glider-add', onAdd)
+        element.removeEventListener('glider-animated', onAnimated)
+        element.removeEventListener('glider-destroy', onDestroy)
+        element.removeEventListener('glider-loaded', onLoaded)
+        element.removeEventListener('glider-refresh', onRefresh)
+        element.removeEventListener('glider-remove', onRemove)
+        element.removeEventListener('glider-slide-hidden', onSlideHidden)
+        element.removeEventListener('glider-slide-visible', onSlideVisible)
+      }
+    }
+  }, [onAdd, onAnimated, onDestroy, onLoaded, onRefresh, onRemove, onSlideHidden, onSlideVisible])
 
   return (
-    <Container trackPadding={trackPadding} className={className}>
-      <StyledGlider
-        addTrack
-        skipTrack
-        hasArrows
-        draggable
-        ref={gliderRef as React.RefObject<GliderMethods>}
-        iconLeft={LeftArrow}
-        iconRight={RightArrow}
-        slidesToShow={slidesToShow}
-        // Akward conversion needed until this is resolved: https://github.com/hipstersmoothie/react-glider/issues/36
-        arrows={(arrows as unknown) as { prev: string; next: string }}
-        {...gliderProps}
-      >
-        <Track>{children}</Track>
-      </StyledGlider>
+    <Container className={`glider-contain ${className}`} ref={containerRef}>
+      <Arrow className="glider-prev" icon="chevron-left" ref={prevArrowRef} />
+      <GliderContainer className="glider" ref={gliderRef}>
+        <Track className="glider-track" trackPadding={trackPadding}>
+          {children}
+        </Track>
+      </GliderContainer>
+      <Arrow className="glider-next" icon="chevron-right" ref={nextArrowRef} />
     </Container>
   )
 }
 export default Carousel
+
+declare global {
+  interface Element {
+    addEventListener<K extends keyof Glider.GliderEventMap>(
+      type: K,
+      listener: (event: Glider.GliderEvent<Glider.GliderEventMap[K]>) => void,
+      options?: boolean | AddEventListenerOptions
+    ): void
+    removeEventListener<K extends keyof Glider.GliderEventMap>(
+      type: K,
+      listener: (event: Glider.GliderEvent<Glider.GliderEventMap[K]>) => void,
+      options?: boolean | EventListenerOptions
+    ): void
+  }
+}
