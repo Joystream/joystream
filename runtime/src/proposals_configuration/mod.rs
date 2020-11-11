@@ -186,16 +186,22 @@ macro_rules! init_proposal_parameter_field {
 }
 
 // Helper macro similar to init_proposal_parameter_field but for optional parameters.
+// Zero value is wrapped as None.
 macro_rules! init_proposal_parameter_optional_field {
     ($parameters_object:ident, $jsonObj:expr, $default_object:ident, $name:ident) => {
-        $parameters_object.$name = Some(
-            extract_numeric_parameter(
+        let param_value = extract_numeric_parameter(
                 $jsonObj,
                 stringify!($name),
                 $default_object.$name.unwrap_or_default().saturated_into(),
             )
-            .saturated_into(),
-        );
+            .saturated_into();
+        let opt_value = if param_value == 0 {
+            None
+        } else {
+            Some(param_value)
+        };
+
+        $parameters_object.$name = opt_value;
     };
 }
 
