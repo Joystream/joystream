@@ -1,7 +1,7 @@
 use crate::ProposalParameters;
 
 // Enable during the conditional compilation tests.
-//#[ignore]
+#[ignore]
 #[test]
 fn proposal_parameters_are_initialized() {
     let actual_params = super::DecreaseWorkingGroupLeaderStakeProposalParameters::get();

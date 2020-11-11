@@ -441,6 +441,8 @@ fn run_create_begin_review_working_group_leader_applications_proposal_execution_
         );
 
         begin_review_applications(member_id, account_id, opening_id, 2, working_group);
+        let grace_period = 14400;
+        run_to_block(grace_period + 10);
 
         let hiring_opening = Hiring::opening_by_id(hiring_opening_id);
         assert_eq!(
@@ -448,7 +450,7 @@ fn run_create_begin_review_working_group_leader_applications_proposal_execution_
             hiring::OpeningStage::Active {
                 stage: hiring::ActiveOpeningStage::ReviewPeriod {
                     started_accepting_applicants_at_block: 0,
-                    started_review_period_at_block: 2,
+                    started_review_period_at_block: grace_period + 2,
                 },
                 applications_added: BTreeSet::new(),
                 active_application_count: 0,
@@ -521,6 +523,9 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
             let lead = WorkingGroupInstance::<T, I>::current_lead();
             assert!(lead.is_none());
 
+            let grace_period_for_begin_application_proposal = 14400;
+            run_to_block(grace_period_for_begin_application_proposal + 20);
+
             fill_opening(
                 member_id,
                 account_id,
@@ -530,6 +535,8 @@ fn create_fill_working_group_leader_opening_proposal_execution_succeeds() {
                 3,
                 working_group,
             );
+
+            run_to_block(grace_period_for_begin_application_proposal + 30);
 
             let lead = WorkingGroupInstance::<T, I>::current_lead();
             assert!(lead.is_some());

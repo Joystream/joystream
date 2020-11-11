@@ -94,58 +94,53 @@ macro_rules! init_proposal_parameter_object {
 fn convert_json_object_to_proposal_parameters(
     json: lite_json::JsonValue,
 ) -> AllProposalsParameters {
-    let mut parameters = default_parameters();
+    let mut params = default_parameters();
 
     if let lite_json::JsonValue::Object(json_object) = json {
-        init_proposal_parameter_object!(
-            parameters,
-            json_object.clone(),
-            set_validator_count_proposal
-        );
-        parameters.runtime_upgrade_proposal = create_proposal_parameters_object(
+        init_proposal_parameter_object!(params, json_object.clone(), set_validator_count_proposal);
+        params.runtime_upgrade_proposal = create_proposal_parameters_object(
             json_object.clone(),
             "runtime_upgrade_proposal",
             defaults::runtime_upgrade_proposal(),
         );
-        parameters.text_proposal = create_proposal_parameters_object(
+        params.text_proposal = create_proposal_parameters_object(
             json_object.clone(),
             "text_proposal",
             defaults::text_proposal(),
         );
-        parameters.spending_proposal = create_proposal_parameters_object(
+        params.spending_proposal = create_proposal_parameters_object(
             json_object.clone(),
             "spending_proposal",
             defaults::spending_proposal(),
         );
-        parameters.add_working_group_opening_proposal = create_proposal_parameters_object(
+        params.add_working_group_opening_proposal = create_proposal_parameters_object(
             json_object.clone(),
             "add_working_group_opening_proposal",
             defaults::add_working_group_opening_proposal(),
         );
-        parameters.begin_review_working_group_applications_proposal =
-            create_proposal_parameters_object(
-                json_object.clone(),
-                "begin_review_working_group_applications_proposal",
-                defaults::begin_review_working_group_applications_proposal(),
-            );
-        parameters.fill_working_group_opening_proposal = create_proposal_parameters_object(
+        params.begin_review_working_group_applications_proposal = create_proposal_parameters_object(
+            json_object.clone(),
+            "begin_review_working_group_applications_proposal",
+            defaults::begin_review_working_group_applications_proposal(),
+        );
+        params.fill_working_group_opening_proposal = create_proposal_parameters_object(
             json_object.clone(),
             "fill_working_group_opening_proposal",
             defaults::fill_working_group_opening_proposal(),
         );
-        parameters.set_working_group_mint_capacity_proposal = create_proposal_parameters_object(
+        params.set_working_group_mint_capacity_proposal = create_proposal_parameters_object(
             json_object.clone(),
             "set_working_group_mint_capacity_proposal",
             defaults::set_working_group_mint_capacity_proposal(),
         );
-        parameters.decrease_working_group_leader_stake_proposal = create_proposal_parameters_object(
+        params.decrease_working_group_leader_stake_proposal = create_proposal_parameters_object(
             json_object,
             "decrease_working_group_leader_stake_proposal",
             defaults::decrease_working_group_leader_stake_proposal(),
         );
     }
 
-    parameters
+    params
 }
 
 // Tries to create specific ProposalParameters object from the parsed JSON object.
@@ -205,48 +200,18 @@ fn extract_proposal_parameters(
     json_object: &JsonValue,
     defaults: ProposalParameters<BlockNumber, Balance>,
 ) -> ProposalParameters<BlockNumber, Balance> {
-    let mut proposals_parameters = ProposalParameters::default();
+    let mut params = ProposalParameters::default();
 
-    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, voting_period);
-    init_proposal_parameter_field!(proposals_parameters, json_object, defaults, grace_period);
-    init_proposal_parameter_field!(
-        proposals_parameters,
-        json_object,
-        defaults,
-        approval_quorum_percentage
-    );
-    init_proposal_parameter_field!(
-        proposals_parameters,
-        json_object,
-        defaults,
-        approval_threshold_percentage
-    );
-    init_proposal_parameter_field!(
-        proposals_parameters,
-        json_object,
-        defaults,
-        slashing_quorum_percentage
-    );
-    init_proposal_parameter_field!(
-        proposals_parameters,
-        json_object,
-        defaults,
-        slashing_threshold_percentage
-    );
-    init_proposal_parameter_optional_field!(
-        proposals_parameters,
-        json_object,
-        defaults,
-        required_stake
-    );
-    init_proposal_parameter_field!(
-        proposals_parameters,
-        json_object,
-        defaults,
-        constitutionality
-    );
+    init_proposal_parameter_field!(params, json_object, defaults, voting_period);
+    init_proposal_parameter_field!(params, json_object, defaults, grace_period);
+    init_proposal_parameter_field!(params, json_object, defaults, approval_quorum_percentage);
+    init_proposal_parameter_field!(params, json_object, defaults, approval_threshold_percentage);
+    init_proposal_parameter_field!(params, json_object, defaults, slashing_quorum_percentage);
+    init_proposal_parameter_field!(params, json_object, defaults, slashing_threshold_percentage);
+    init_proposal_parameter_optional_field!(params, json_object, defaults, required_stake);
+    init_proposal_parameter_field!(params, json_object, defaults, constitutionality);
 
-    proposals_parameters
+    params
 }
 
 // Extracts a specific numeric parameter from the parsed JSON object.
