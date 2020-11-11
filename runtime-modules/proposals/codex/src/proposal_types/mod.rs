@@ -1,7 +1,5 @@
 #![warn(missing_docs)]
 
-pub(crate) mod parameters;
-
 use codec::{Decode, Encode};
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
@@ -212,55 +210,4 @@ pub struct RoleParameters<Balance, BlockNumber> {
 
     /// Small fee burned to make a request to enter role.
     pub entry_request_fee: Balance,
-}
-
-/// Contains proposal config parameters. Default values are used by migration and genesis config.
-#[derive(Copy, Clone)]
-pub struct ProposalsConfigParameters {
-    /// 'Set election parameters' proposal voting period
-    pub set_election_parameters_proposal_voting_period: u32,
-
-    /// 'Set election parameters' proposal grace period
-    pub set_election_parameters_proposal_grace_period: u32,
-
-    /// 'Set lead' proposal voting period
-    pub set_lead_proposal_voting_period: u32,
-
-    /// 'Set lead' proposal grace period
-    pub set_lead_proposal_grace_period: u32,
-
-    /// 'Amend constitution' proposal voting period
-    pub amend_constitution_proposal_voting_period: u32,
-
-    /// 'Amend constitution' proposal grace period
-    pub amend_constitution_proposal_grace_period: u32,
-}
-
-impl Default for ProposalsConfigParameters {
-    fn default() -> Self {
-        ProposalsConfigParameters {
-            set_election_parameters_proposal_voting_period: 72000u32,
-            set_election_parameters_proposal_grace_period: 201_601_u32,
-            set_lead_proposal_voting_period: 43200u32,
-            set_lead_proposal_grace_period: 0u32,
-            amend_constitution_proposal_voting_period: 72200u32,
-            amend_constitution_proposal_grace_period: 72200u32,
-        }
-    }
-}
-
-impl ProposalsConfigParameters {
-    /// Set same voting_period for all proposals. For proposals
-    /// that by default have 0 grace period remain with 0 grace period.
-    /// All remaining proposals get assigned grace_period.
-    pub fn with_grace_and_voting_periods(grace_period: u32, voting_period: u32) -> Self {
-        ProposalsConfigParameters {
-            set_election_parameters_proposal_voting_period: voting_period,
-            set_election_parameters_proposal_grace_period: grace_period,
-            set_lead_proposal_voting_period: voting_period,
-            set_lead_proposal_grace_period: 0,
-            amend_constitution_proposal_voting_period: voting_period,
-            amend_constitution_proposal_grace_period: 0,
-        }
-    }
 }

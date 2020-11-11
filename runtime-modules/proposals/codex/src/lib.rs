@@ -63,7 +63,7 @@ mod tests;
 
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::{Currency, Get};
-use frame_support::{decl_error, decl_module, decl_storage, ensure, print, StorageValue};
+use frame_support::{decl_error, decl_module, decl_storage, ensure, print};
 use sp_arithmetic::traits::Zero;
 use sp_std::clone::Clone;
 use sp_std::str::from_utf8;
@@ -79,7 +79,7 @@ use proposals_engine::{
 };
 
 pub use crate::proposal_types::{
-    AddOpeningParameters, FillOpeningParameters, ProposalsConfigParameters, TerminateRoleParameters,
+    AddOpeningParameters, FillOpeningParameters, TerminateRoleParameters,
 };
 pub use proposal_types::{ProposalDetails, ProposalDetailsOf, ProposalEncoder};
 
@@ -120,69 +120,74 @@ pub trait Trait:
     /// Defines max wasm code length of the runtime upgrade proposal.
     type RuntimeUpgradeWasmProposalMaxLength: Get<u32>;
 
-    /// Validates member id and origin combination
+    /// Validates member id and origin combination.
     type MembershipOriginValidator: ActorOriginValidator<
         Self::Origin,
         MemberId<Self>,
         Self::AccountId,
     >;
 
-    /// Encodes the proposal usint its details
+    /// Encodes the proposal usint its details.
     type ProposalEncoder: ProposalEncoder<Self>;
 
-    /// 'Set validator count' proposal parameters
+    /// 'Set validator count' proposal parameters.
     type SetValidatorCountProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Runtime upgrade' proposal parameters
+    /// 'Runtime upgrade' proposal parameters.
     type RuntimeUpgradeProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Text' proposal parameters
+    /// 'Text' proposal parameters.
     type TextProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
 
-    /// 'Spending' proposal parameters
+    /// 'Spending' proposal parameters.
     type SpendingProposalParameters: Get<ProposalParameters<Self::BlockNumber, BalanceOf<Self>>>;
 
-    /// 'Add working group opening' proposal parameters
+    /// 'Add working group opening' proposal parameters.
     type AddWorkingGroupOpeningProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Begin review working group applications' proposal parameters
+    /// 'Begin review working group applications' proposal parameters.
     type BeginReviewWorkingGroupApplicationsProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Fill working group opening' proposal parameters
+    /// 'Fill working group opening' proposal parameters.
     type FillWorkingGroupOpeningProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Set working group mint capacity' proposal parameters
+    /// 'Set working group mint capacity' proposal parameters.
     type SetWorkingGroupMintCapacityProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Decrease working group leader stake' proposal parameters
+    /// 'Decrease working group leader stake' proposal parameters.
     type DecreaseWorkingGroupLeaderStakeProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Slash working group leader stake' proposal parameters
+    /// 'Slash working group leader stake' proposal parameters.
     type SlashWorkingGroupLeaderStakeProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Set working group leader reward' proposal parameters
+    /// 'Set working group leader reward' proposal parameters.
     type SetWorkingGroupLeaderRewardProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 
-    /// 'Terminate working group leader role' proposal parameters
+    /// 'Terminate working group leader role' proposal parameters.
     type TerminateWorkingGroupLeaderRoleProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
+
+    /// 'Amend constitution' proposal parameters.
+    type AmendConstitutionProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
 }
@@ -274,14 +279,6 @@ decl_storage! {
         /// Map proposal id to proposal details
         pub ProposalDetailsByProposalId get(fn proposal_details_by_proposal_id):
             map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
-
-        /// Voting period for the 'amend constitution' proposal
-        pub AmendConstitutionProposalVotingPeriod get(fn amend_constitution_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'amend constitution' proposal
-        pub AmendConstitutionProposalGracePeriod get(fn amend_constitution_proposal_grace_period)
-            config(): T::BlockNumber;
     }
 }
 
@@ -296,15 +293,6 @@ decl_module! {
 
         /// Exports max wasm code length of the runtime upgrade proposal const.
         const RuntimeUpgradeWasmProposalMaxLength: u32 = T::RuntimeUpgradeWasmProposalMaxLength::get();
-
-        // Runtime upgrade summary:
-        //  - add values for the new 'amend constitution' proposal.
-        fn on_runtime_upgrade() -> frame_support::weights::Weight {
-            <AmendConstitutionProposalVotingPeriod<T>>::put::<T::BlockNumber>(72_000u32.into());
-            <AmendConstitutionProposalGracePeriod<T>>::put::<T::BlockNumber>(0u32.into());
-
-            10_000_000u64 // TODO: adjust weight
-        }
 
         /// Create 'Text (signal)' proposal type.
         #[weight = 10_000_000] // TODO: adjust weight
@@ -725,7 +713,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::amend_constitution_proposal::<T>(),
+                proposal_parameters: T::AmendConstitutionProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };

@@ -1058,9 +1058,7 @@ fn create_amend_constitution_proposal_common_checks_succeed() {
                     None,
                 )
             },
-            proposal_parameters: crate::proposal_types::parameters::amend_constitution_proposal::<
-                Test,
-            >(),
+            proposal_parameters: <Test as crate::Trait>::AmendConstitutionProposalParameters::get(),
             proposal_details: ProposalDetails::AmendConstitution(b"constitution text".to_vec()),
         };
         proposal_fixture.check_all();

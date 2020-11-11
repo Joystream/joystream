@@ -68,7 +68,6 @@ pub use membership;
 #[cfg(any(feature = "std", test))]
 pub use pallet_balances::Call as BalancesCall;
 pub use pallet_staking::StakerStatus;
-pub use proposals_codex::ProposalsConfigParameters;
 pub use proposals_engine::ProposalParameters;
 pub use storage::{data_directory, data_object_type_registry};
 pub use versioned_store;
@@ -622,6 +621,7 @@ impl proposals_codex::Trait for Runtime {
         SetWorkingGroupLeaderRewardProposalParameters;
     type TerminateWorkingGroupLeaderRoleProposalParameters =
         TerminateWorkingGroupLeaderRoleProposalParameters;
+    type AmendConstitutionProposalParameters = AmendConstitutionProposalParameters;
 }
 
 impl constitution::Trait for Runtime {
@@ -699,7 +699,7 @@ construct_runtime!(
         // --- Proposals
         ProposalsEngine: proposals_engine::{Module, Call, Storage, Event<T>},
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
-        ProposalsCodex: proposals_codex::{Module, Call, Storage, Config<T>},
+        ProposalsCodex: proposals_codex::{Module, Call, Storage},
         // --- Working groups
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},

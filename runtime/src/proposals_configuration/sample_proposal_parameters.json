@@ -20,14 +20,6 @@
   "decrease_working_group_leader_stake_proposal": {},
   "slash_working_group_leader_stake_proposal": {},
   "set_working_group_leader_reward_proposal": {},
-  "terminate_working_group_leader_role_proposal": {
-    "voting_period": 1,
-    "grace_period": 2,
-    "approval_quorum_percentage": 3,
-    "approval_threshold_percentage": 4,
-    "slashing_quorum_percentage": 5,
-    "slashing_threshold_percentage": 6,
-    "required_stake": 7,
-    "constitutionality": 8
-  }
+  "terminate_working_group_leader_role_proposal": {},
+  "amend_constitution_proposal": {}
 }

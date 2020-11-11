@@ -173,3 +173,17 @@ pub(crate) fn terminate_working_group_leader_role_proposal(
         constitutionality: 1,
     }
 }
+
+// Proposal parameters for the 'Amend constitution' proposal
+pub(crate) fn amend_constitution_proposal() -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72200,
+        grace_period: 72200,
+        approval_quorum_percentage: 80,
+        approval_threshold_percentage: 100,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(1_000_000),
+        constitutionality: 1,
+    }
+}

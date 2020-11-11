@@ -33,9 +33,9 @@ use node_runtime::{
     ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
-    MembersConfig, Moment, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
-    StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
-    VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
+    MembersConfig, Moment, SessionConfig, SessionKeys, Signature, StakerStatus, StakingConfig,
+    StorageWorkingGroupConfig, SudoConfig, SystemConfig, VersionedStoreConfig,
+    VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
 };
 
 // Exported to be used by chain-spec-builder
@@ -45,7 +45,6 @@ pub mod content_config;
 pub mod forum_config;
 pub mod initial_balances;
 pub mod initial_members;
-pub mod proposals_config;
 
 type AccountPublic = <Signature as Verify>::Signer;
 
@@ -133,7 +132,6 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
                         ],
-                        proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         content_config::empty_versioned_store_config(),
@@ -174,7 +172,6 @@ impl Alternative {
                             get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
                             get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
                         ],
-                        proposals_config::development(),
                         initial_members::none(),
                         forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
                         content_config::empty_versioned_store_config(),
@@ -220,7 +217,6 @@ pub fn testnet_genesis(
     )>,
     root_key: AccountId,
     endowed_accounts: Vec<AccountId>,
-    cpcp: node_runtime::ProposalsConfigParameters,
     members: Vec<membership::genesis::Member<u64, AccountId, Moment>>,
     forum_config: ForumConfig,
     versioned_store_config: VersionedStoreConfig,
@@ -339,11 +335,6 @@ pub fn testnet_genesis(
         versioned_store: Some(versioned_store_config),
         versioned_store_permissions: Some(versioned_store_permissions_config),
         content_wg: Some(content_working_group_config),
-        proposals_codex: Some(ProposalsCodexConfig {
-            amend_constitution_proposal_voting_period: cpcp
-                .amend_constitution_proposal_voting_period,
-            amend_constitution_proposal_grace_period: cpcp.amend_constitution_proposal_grace_period,
-        }),
     }
 }
 
@@ -358,7 +349,6 @@ pub(crate) mod tests {
             vec![get_authority_keys_from_seed("Alice")],
             get_account_id_from_seed::<sr25519::Public>("Alice"),
             vec![get_authority_keys_from_seed("Alice").0],
-            proposals_config::development(),
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             content_config::empty_versioned_store_config(),
@@ -395,7 +385,6 @@ pub(crate) mod tests {
                 get_authority_keys_from_seed("Alice").0,
                 get_authority_keys_from_seed("Bob").0,
             ],
-            proposals_config::development(),
             initial_members::none(),
             forum_config::empty(get_account_id_from_seed::<sr25519::Public>("Alice")),
             content_config::empty_versioned_store_config(),
