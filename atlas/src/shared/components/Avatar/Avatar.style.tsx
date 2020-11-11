@@ -12,7 +12,7 @@ const container: StyleFn = (_, { size = 'default' }) => {
     minWidth: width,
     backgroundColor: colors.gray[400],
     color: colors.white,
-    display: 'flex',
+    display: 'inline-flex',
     justifyContent: 'center',
     alignItems: 'center',
 

@@ -4,8 +4,11 @@ import faker from 'faker'
 import { mockCategories, mockChannels, mockVideos, mockVideosMedia } from '@/mocking/data'
 import { ChannelFields } from '@/api/queries/__generated__/ChannelFields'
 import { CategoryFields } from '@/api/queries/__generated__/CategoryFields'
+import { mockCoverVideo, mockCoverVideoChannel, mockCoverVideoMedia } from '@/mocking/data/mockCoverVideo'
 
-export const createMockData = (server: any) => {
+type MirageJSServer = any
+
+export const createMockData = (server: MirageJSServer) => {
   const channels = mockChannels.map((channel) => {
     return server.schema.create('Channel', {
       ...channel,
@@ -48,5 +51,36 @@ export const createMockData = (server: any) => {
       id: video.id,
       views: video.views,
     })
+  })
+
+  createCoverVideoData(server, categories)
+}
+
+const createCoverVideoData = (server: MirageJSServer, categories: unknown[]) => {
+  const channel = server.schema.create('Channel', {
+    ...mockCoverVideoChannel,
+  })
+
+  const location = server.schema.create('HTTPVideoMediaLocation', {
+    id: faker.random.uuid(),
+    ...mockCoverVideoMedia.location,
+  })
+
+  const media = server.schema.create('VideoMedia', {
+    ...mockCoverVideoMedia,
+    location,
+  })
+
+  const video = server.schema.create('Video', {
+    ...mockCoverVideo,
+    duration: media.duration,
+    category: categories[0],
+    channel,
+    media,
+  })
+
+  server.create('VideoViewsInfo', {
+    id: video.id,
+    views: video.views,
   })
 }
