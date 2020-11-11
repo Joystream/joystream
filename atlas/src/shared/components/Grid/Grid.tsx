@@ -2,6 +2,7 @@ import React from 'react'
 import styled from '@emotion/styled'
 import useResizeObserver from 'use-resize-observer'
 import { spacing, breakpoints } from '../../theme'
+import { MIN_VIDEO_PREVIEW_WIDTH } from '../VideoPreview'
 
 const toPx = (n: number | string) => (typeof n === 'number' ? `${n}px` : n)
 
@@ -34,7 +35,7 @@ const Grid: React.FC<GridProps> = ({
   onResize,
   repeat = 'fit',
   maxColumns = 6,
-  minWidth = 300,
+  minWidth = MIN_VIDEO_PREVIEW_WIDTH,
   ...props
 }) => {
   const { ref: gridRef } = useResizeObserver<HTMLDivElement>({

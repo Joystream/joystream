@@ -1,4 +1,6 @@
-import React from 'react'
+import React, { useState } from 'react'
+import useResizeObserver from 'use-resize-observer'
+
 import {
   ChannelName,
   CoverDurationOverlay,
@@ -14,6 +16,16 @@ import {
 import { formatDurationShort } from '@/utils/time'
 import VideoPreviewBase from './VideoPreviewBase'
 import { formatVideoViewsAndDate } from '@/utils/video'
+
+export const MIN_VIDEO_PREVIEW_WIDTH = 300
+const MAX_VIDEO_PREVIEW_WIDTH = 600
+const MIN_SCALING_FACTOR = 1
+const MAX_SCALING_FACTOR = 1.375
+// Linear Interpolation, see https://en.wikipedia.org/wiki/Linear_interpolation
+const calculateScalingFactor = (videoPreviewWidth: number) =>
+  MIN_SCALING_FACTOR +
+  ((videoPreviewWidth - MIN_VIDEO_PREVIEW_WIDTH) * (MAX_SCALING_FACTOR - MIN_SCALING_FACTOR)) /
+    (MAX_VIDEO_PREVIEW_WIDTH - MIN_VIDEO_PREVIEW_WIDTH)
 
 type VideoPreviewProps = {
   title: string
@@ -48,11 +60,20 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
   showChannel = true,
   showMeta = true,
   main = false,
-  imgRef,
   onClick,
   onChannelClick,
   className,
 }) => {
+  const [scalingFactor, setScalingFactor] = useState(MIN_SCALING_FACTOR)
+  const { ref: imgRef } = useResizeObserver<HTMLImageElement>({
+    onResize: (size) => {
+      const { width: videoPreviewWidth } = size
+      if (videoPreviewWidth && !main) {
+        setScalingFactor(calculateScalingFactor(videoPreviewWidth))
+      }
+    },
+  })
+
   const channelClickable = !!onChannelClick
 
   const handleChannelClick = (e: React.MouseEvent<HTMLElement>) => {
@@ -86,7 +107,11 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
     </>
   )
 
-  const titleNode = <TitleHeader main={main}>{title}</TitleHeader>
+  const titleNode = (
+    <TitleHeader main={main} scalingFactor={scalingFactor}>
+      {title}
+    </TitleHeader>
+  )
 
   const channelAvatarNode = (
     <StyledAvatar
@@ -99,12 +124,16 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
   )
 
   const channelNameNode = (
-    <ChannelName channelClickable={channelClickable} onClick={handleChannelClick}>
+    <ChannelName channelClickable={channelClickable} onClick={handleChannelClick} scalingFactor={scalingFactor}>
       {channelName}
     </ChannelName>
   )
 
-  const metaNode = <MetaText main={main}>{formatVideoViewsAndDate(views, createdAt, { fullViews: main })}</MetaText>
+  const metaNode = (
+    <MetaText main={main} scalingFactor={scalingFactor}>
+      {formatVideoViewsAndDate(views, createdAt, { fullViews: main })}
+    </MetaText>
+  )
 
   return (
     <VideoPreviewBase
@@ -118,6 +147,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
       metaNode={metaNode}
       onClick={onClick && handleClick}
       className={className}
+      scalingFactor={scalingFactor}
     />
   )
 }

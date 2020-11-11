@@ -22,6 +22,7 @@ type VideoPreviewBaseProps = {
   metaNode?: React.ReactNode
   onClick?: (e: React.MouseEvent<HTMLElement>) => void
   className?: string
+  scalingFactor?: number
 }
 
 const VideoPreviewBase: React.FC<VideoPreviewBaseProps> = ({
@@ -35,6 +36,7 @@ const VideoPreviewBase: React.FC<VideoPreviewBaseProps> = ({
   metaNode,
   onClick,
   className,
+  scalingFactor = 1,
 }) => {
   const clickable = !!onClick
 
@@ -52,7 +54,11 @@ const VideoPreviewBase: React.FC<VideoPreviewBaseProps> = ({
         <CoverContainer>{coverNode || coverPlaceholder}</CoverContainer>
       </CoverWrapper>
       <InfoContainer main={main}>
-        {displayChannel && <AvatarContainer>{channelAvatarNode || channelAvatarPlaceholder}</AvatarContainer>}
+        {displayChannel && (
+          <AvatarContainer scalingFactor={scalingFactor}>
+            {channelAvatarNode || channelAvatarPlaceholder}
+          </AvatarContainer>
+        )}
         <TextContainer>
           {titleNode || titlePlaceholder}
           {displayChannel && (channelNameNode || channelNamePlaceholder)}

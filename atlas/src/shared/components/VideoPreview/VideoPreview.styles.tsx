@@ -16,6 +16,10 @@ type ChannelProps = {
   channelClickable: boolean
 }
 
+type ScalesWithCoverProps = {
+  scalingFactor: number
+}
+
 export const CoverImage = styled.img<CoverImageProps>`
   display: block;
   position: absolute;
@@ -87,23 +91,22 @@ export const StyledAvatar = styled(Avatar)<ChannelProps>`
   cursor: ${({ channelClickable }) => (channelClickable ? 'pointer' : 'auto')};
 `
 
-export const TitleHeader = styled.h3<MainProps>`
+export const TitleHeader = styled.h3<MainProps & ScalesWithCoverProps>`
   margin: 0;
   font-weight: ${typography.weights.bold};
-  font-size: ${typography.sizes.h6};
+  font-size: calc(${(props) => props.scalingFactor} * ${typography.sizes.h6});
   ${({ main }) => main && fluidRange({ prop: 'fontSize', fromSize: '24px', toSize: '40px' })};
   line-height: ${({ main }) => (main ? 1 : 1.25)};
-  color: ${colors.white};
-  display: inline-block;
 `
 
-export const ChannelName = styled.span<ChannelProps>`
-  font-size: ${typography.sizes.subtitle2};
+export const ChannelName = styled.span<ChannelProps & ScalesWithCoverProps>`
+  font-size: calc(${(props) => props.scalingFactor} * ${typography.sizes.subtitle2});
   line-height: 1.25rem;
   display: inline-block;
   cursor: ${({ channelClickable }) => (channelClickable ? 'pointer' : 'auto')};
 `
 
-export const MetaText = styled.span<MainProps>`
-  font-size: ${({ main }) => (main ? typography.sizes.h6 : typography.sizes.subtitle2)};
+export const MetaText = styled.span<MainProps & ScalesWithCoverProps>`
+  font-size: ${({ main, scalingFactor }) =>
+    main ? typography.sizes.h6 : `calc(${scalingFactor}*${typography.sizes.subtitle2})`};
 `

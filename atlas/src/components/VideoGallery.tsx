@@ -3,7 +3,7 @@ import { BreakPoint } from 'react-glider'
 
 import styled from '@emotion/styled'
 
-import { breakpointsOfGrid, Gallery, MAX_VIDEO_PREVIEW_WIDTH, VideoPreviewBase } from '@/shared/components'
+import { breakpointsOfGrid, Gallery, MIN_VIDEO_PREVIEW_WIDTH, VideoPreviewBase } from '@/shared/components'
 import VideoPreview from './VideoPreviewWithNavigation'
 import { VideoFields } from '@/api/queries/__generated__/VideoFields'
 
@@ -37,7 +37,7 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({ title, videos, loading }) =
   const displayPlaceholders = loading || !videos
 
   return (
-    <Gallery title={title} trackPadding={trackPadding} responsive={breakpoints}>
+    <Gallery title={title} trackPadding={trackPadding} responsive={breakpoints} itemWidth={MIN_VIDEO_PREVIEW_WIDTH}>
       {displayPlaceholders
         ? Array.from({ length: PLACEHOLDERS_COUNT }).map((_, idx) => (
             <StyledVideoPreviewBase key={`video-placeholder-${idx}`} />
@@ -65,7 +65,7 @@ const videoPreviewCss = css`
     margin-left: ${sizes.b6}px;
   }
 
-  min-width: ${MAX_VIDEO_PREVIEW_WIDTH};
+  min-width: ${MIN_VIDEO_PREVIEW_WIDTH};
 `
 
 const StyledVideoPreviewBase = styled(VideoPreviewBase)`
