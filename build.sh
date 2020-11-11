@@ -13,22 +13,6 @@ yarn workspace storage-node build
 # a dev instance, but will show highlight build issues
 yarn workspace pioneer build
 
-# Build cargo crates: native binaries joystream/node, wasm runtime, and chainspec builder.
-while true
-do
-  read -p "Compile joystream node native binary? (y/N): " answer1
-
-  case $answer1 in
-   [yY]* ) yarn cargo-checks
-           yarn cargo-build
-           break;;
-
-   [nN]* ) break;;
-
-   * )     break;;
-  esac
-done
-
 if ! command -v docker-compose &> /dev/null
 then
   echo "docker-compose not found, skipping docker build!"
@@ -53,3 +37,19 @@ else
     esac
   done
 fi
+
+# Build cargo crates: native binaries joystream/node, wasm runtime, and chainspec builder.
+while true
+do
+  read -p "Compile joystream node native binary? (y/N): " answer1
+
+  case $answer1 in
+   [yY]* ) yarn cargo-checks
+           yarn cargo-build
+           break;;
+
+   [nN]* ) break;;
+
+   * )     break;;
+  esac
+done
