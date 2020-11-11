@@ -2,11 +2,8 @@
 
 set -e
 
-# If OS is supported will install:
-#  - build tools and any other dependencies required for rust and substrate
-#  - rustup - rust insaller
-#  - rust compiler and toolchains
-#  - skips installing substrate and subkey
+# If OS is supported will install build tools for rust and substrate.
+# Skips installing substrate itself and subkey
 curl https://getsubstrate.io -sSf | bash -s -- --fast
 
 source ~/.cargo/env
@@ -19,13 +16,16 @@ rustup component add rustfmt clippy
 rustup install nightly-2020-05-23 --force
 rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-23
 
-# Ensure the stable toolchain is still the default
-rustup default stable
+# Sticking with older version of compiler to ensure working build
+rustup install 1.46.0
+rustup default 1.46.0
 
-# TODO: Install additional tools...
+if [[ "$OSTYPE" == "linux-gnu" ]]; then
+    apt-get install coreutils
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+	brew install b2sum gnu-tar
+fi
 
-# - b2sum
-# - nodejs
-# - npm
-# - yarn
-# .... ?
+# Volta nodejs, npm, yarn tools manager
+curl https://get.volta.sh | bash
+

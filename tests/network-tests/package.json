@@ -21,7 +21,8 @@
     "bn.js": "^4.11.8",
     "dotenv": "^8.2.0",
     "fs": "^0.0.1-security",
-    "uuid": "^7.0.3"
+    "uuid": "^7.0.3",
+    "@apollo/client": "^3.2.5"
   },
   "devDependencies": {
     "@polkadot/ts": "^0.3.14",
