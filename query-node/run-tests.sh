@@ -28,10 +28,7 @@ docker-compose down -v
 
 docker-compose up -d db
 yarn db:migrate
-# docker-compose up -d redis
-# docker-compose up -d indexer
-# docker-compose up -d graphql-server
-# docker-compose up -d indexer-api-gateway
+docker-compose up -d graphql-server
 # Starting up processor will bring up all services it depends on
 docker-compose up -d processor
 

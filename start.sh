@@ -30,6 +30,7 @@ yarn workspace cd-schemas initialize:dev
 docker-compose up -d db
 yarn workspace query-node-root db:migrate
 # Startup all query-node infrastructure services
+docker-compose up -d graphql-server
 docker-compose up -d processor
 
 echo "press Ctrl+C to shutdown"
