@@ -96,47 +96,27 @@ fn convert_json_object_to_proposal_parameters(
 ) -> AllProposalsParameters {
     let mut params = default_parameters();
 
-    if let lite_json::JsonValue::Object(json_object) = json {
-        init_proposal_parameter_object!(params, json_object.clone(), set_validator_count_proposal);
-        params.runtime_upgrade_proposal = create_proposal_parameters_object(
-            json_object.clone(),
-            "runtime_upgrade_proposal",
-            defaults::runtime_upgrade_proposal(),
+    if let lite_json::JsonValue::Object(jo) = json {
+        init_proposal_parameter_object!(params, jo.clone(), set_validator_count_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), runtime_upgrade_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), text_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), spending_proposal);
+        init_proposal_parameter_object!(params, jo.clone(), add_working_group_opening_proposal);
+        init_proposal_parameter_object!(
+            params,
+            jo.clone(),
+            begin_review_working_group_applications_proposal
         );
-        params.text_proposal = create_proposal_parameters_object(
-            json_object.clone(),
-            "text_proposal",
-            defaults::text_proposal(),
+        init_proposal_parameter_object!(params, jo.clone(), fill_working_group_opening_proposal);
+        init_proposal_parameter_object!(
+            params,
+            jo.clone(),
+            set_working_group_mint_capacity_proposal
         );
-        params.spending_proposal = create_proposal_parameters_object(
-            json_object.clone(),
-            "spending_proposal",
-            defaults::spending_proposal(),
-        );
-        params.add_working_group_opening_proposal = create_proposal_parameters_object(
-            json_object.clone(),
-            "add_working_group_opening_proposal",
-            defaults::add_working_group_opening_proposal(),
-        );
-        params.begin_review_working_group_applications_proposal = create_proposal_parameters_object(
-            json_object.clone(),
-            "begin_review_working_group_applications_proposal",
-            defaults::begin_review_working_group_applications_proposal(),
-        );
-        params.fill_working_group_opening_proposal = create_proposal_parameters_object(
-            json_object.clone(),
-            "fill_working_group_opening_proposal",
-            defaults::fill_working_group_opening_proposal(),
-        );
-        params.set_working_group_mint_capacity_proposal = create_proposal_parameters_object(
-            json_object.clone(),
-            "set_working_group_mint_capacity_proposal",
-            defaults::set_working_group_mint_capacity_proposal(),
-        );
-        params.decrease_working_group_leader_stake_proposal = create_proposal_parameters_object(
-            json_object,
-            "decrease_working_group_leader_stake_proposal",
-            defaults::decrease_working_group_leader_stake_proposal(),
+        init_proposal_parameter_object!(
+            params,
+            jo.clone(),
+            decrease_working_group_leader_stake_proposal
         );
     }
 
