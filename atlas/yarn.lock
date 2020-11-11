@@ -2772,6 +2772,11 @@
   resolved "https://registry.yarnpkg.com/@types/faker/-/faker-5.1.2.tgz#3d5a97d5648502d7fb1eeb2809ca105edcd0d59b"
   integrity sha512-a3FADSHjjinczCwr7tTejoMZzbSS5vi70VCyns4C1idxJrDSRGZCQG0s27YppXLcoWrBOkwBbBsZ9vDRDpQK7A==
 
+"@types/glider-js@^1.7.3":
+  version "1.7.3"
+  resolved "https://registry.yarnpkg.com/@types/glider-js/-/glider-js-1.7.3.tgz#2adb1220922e8bfd32fbb8909f256f77d84dfac6"
+  integrity sha512-V+NRCK3sIdhXiZ/hG0U/vLEbl4Atz6ySbUuYeCfVPKiyyx4mfN30rBDatCke2uVhkKOgyQ1gRBeCAzpLAJVe0w==
+
 "@types/glob@^7.1.1":
   version "7.1.3"
   resolved "https://registry.yarnpkg.com/@types/glob/-/glob-7.1.3.tgz#e6ba80f36b7daad2c685acd9266382e68985c183"
@@ -8393,10 +8398,10 @@ github-slugger@^1.0.0:
   dependencies:
     emoji-regex ">=6.0.0 <=6.1.1"
 
-glider-js@1.7.1:
-  version "1.7.1"
-  resolved "https://registry.yarnpkg.com/glider-js/-/glider-js-1.7.1.tgz#ffa4ae6775b0c005e2eeca72e586acd1f64774e9"
-  integrity sha512-kry/GVCmo/MFUtMTgZONTjXorcvzKskt4VklSQD8kVDJbVfT3arV4Xf7o/ZwMZkDhLKlWX9bpV30fsp7vLHuUA==
+glider-js@^1.7.3:
+  version "1.7.3"
+  resolved "https://registry.yarnpkg.com/glider-js/-/glider-js-1.7.3.tgz#4d397fb9de0870753953244d146a94248d4eb394"
+  integrity sha512-smiepWalDyBAUtOH6Ev06fHlcQ128OUzGLx97E/9NcR8/fR+uALUVSMytVN6z5pIqO4kDGTzINniqZV2yMf8bg==
 
 glob-base@^0.3.0:
   version "0.3.0"
@@ -14074,13 +14079,6 @@ react-focus-lock@^2.1.0:
     react-clientside-effect "^1.2.2"
     use-callback-ref "^1.2.1"
     use-sidecar "^1.0.1"
-
-react-glider@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/react-glider/-/react-glider-2.0.2.tgz#d8d098f341b4776c6cafda160dfd275ba23b3194"
-  integrity sha512-ONDO+e5gFTp+R0bVGvEh+NWGSHVaTdPrQxNYQWz3u8Oybkr48DWmqOxLpdEH48kd09Q12TI3kd13EgOO8Xen/A==
-  dependencies:
-    glider-js "1.7.1"
 
 react-helmet-async@^1.0.2:
   version "1.0.7"

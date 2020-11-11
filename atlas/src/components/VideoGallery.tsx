@@ -1,5 +1,4 @@
 import React from 'react'
-import { BreakPoint } from 'react-glider'
 
 import styled from '@emotion/styled'
 
@@ -31,7 +30,7 @@ const breakpoints = breakpointsOfGrid({
   settings: {
     slidesToShow: idx + 1,
   },
-})) as BreakPoint[]
+}))
 
 const VideoGallery: React.FC<VideoGalleryProps> = ({ title, videos, loading }) => {
   const displayPlaceholders = loading || !videos

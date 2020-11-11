@@ -4,24 +4,28 @@ import { ButtonStyleProps, StyledButton, StyledIcon } from './Button.style'
 import type { IconType } from '../Icon'
 
 export type ButtonProps = {
-  icon: IconType
-  disabled: boolean
-  containerCss: SerializedStyles
-  className: string
-  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void
+  children?: React.ReactNode
+  icon?: IconType
+  disabled?: boolean
+  containerCss?: SerializedStyles
+  className?: string
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
 } & Omit<ButtonStyleProps, 'clickable' | 'hasText'>
 
-const Button: React.FC<Partial<ButtonProps>> = ({
-  children,
-  icon,
-  variant = 'primary',
-  disabled = false,
-  full = false,
-  size = 'regular',
-  containerCss,
-  className,
-  onClick,
-}) => {
+const ButtonComponent: React.ForwardRefRenderFunction<HTMLButtonElement, ButtonProps> = (
+  {
+    children,
+    icon,
+    variant = 'primary',
+    disabled = false,
+    full = false,
+    size = 'regular',
+    containerCss,
+    className,
+    onClick,
+  },
+  ref
+) => {
   const clickable = !!onClick
   const hasText = !!children
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -40,11 +44,16 @@ const Button: React.FC<Partial<ButtonProps>> = ({
       hasText={hasText}
       full={full}
       size={size}
+      ref={ref}
     >
       {icon && <StyledIcon name={icon} />}
       {children && <span>{children}</span>}
     </StyledButton>
   )
 }
+
+const Button = React.forwardRef(ButtonComponent)
+
+Button.displayName = 'Button'
 
 export default Button
