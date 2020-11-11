@@ -158,3 +158,18 @@ pub(crate) fn set_working_group_leader_reward_proposal() -> ProposalParameters<B
         constitutionality: 1,
     }
 }
+
+// Proposal parameters for the 'Terminate working group leader role' proposal
+pub(crate) fn terminate_working_group_leader_role_proposal(
+) -> ProposalParameters<BlockNumber, Balance> {
+    ProposalParameters {
+        voting_period: 72200,
+        grace_period: 0,
+        approval_quorum_percentage: 66,
+        approval_threshold_percentage: 80,
+        slashing_quorum_percentage: 60,
+        slashing_threshold_percentage: 80,
+        required_stake: Some(100_000),
+        constitutionality: 1,
+    }
+}

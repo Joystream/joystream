@@ -283,6 +283,7 @@ impl crate::Trait for Test {
     type DecreaseWorkingGroupLeaderStakeProposalParameters = DefaultProposalParameters;
     type SlashWorkingGroupLeaderStakeProposalParameters = DefaultProposalParameters;
     type SetWorkingGroupLeaderRewardProposalParameters = DefaultProposalParameters;
+    type TerminateWorkingGroupLeaderRoleProposalParameters = DefaultProposalParameters;
 }
 
 impl ProposalEncoder<Test> for () {

@@ -340,10 +340,6 @@ pub fn testnet_genesis(
         versioned_store_permissions: Some(versioned_store_permissions_config),
         content_wg: Some(content_working_group_config),
         proposals_codex: Some(ProposalsCodexConfig {
-            terminate_working_group_leader_role_proposal_voting_period: cpcp
-                .terminate_working_group_leader_role_proposal_voting_period,
-            terminate_working_group_leader_role_proposal_grace_period: cpcp
-                .terminate_working_group_leader_role_proposal_grace_period,
             amend_constitution_proposal_voting_period: cpcp
                 .amend_constitution_proposal_voting_period,
             amend_constitution_proposal_grace_period: cpcp.amend_constitution_proposal_grace_period,

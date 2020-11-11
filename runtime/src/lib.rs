@@ -620,6 +620,8 @@ impl proposals_codex::Trait for Runtime {
         SlashWorkingGroupLeaderStakeProposalParameters;
     type SetWorkingGroupLeaderRewardProposalParameters =
         SetWorkingGroupLeaderRewardProposalParameters;
+    type TerminateWorkingGroupLeaderRoleProposalParameters =
+        TerminateWorkingGroupLeaderRoleProposalParameters;
 }
 
 impl constitution::Trait for Runtime {
