@@ -30,8 +30,6 @@ parameter_types! {
 }
 
 parameter_types! {
-    pub const MaxPostEditionNumber: u32 = 5;
-    pub const MaxThreadInARowNumber: u32 = 3;
     pub const ThreadTitleLengthLimit: u32 = 200;
     pub const PostLengthLimit: u32 = 2000;
 }
@@ -57,6 +55,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
     pub const TransferFee: u32 = 0;
     pub const CreationFee: u32 = 0;
+    pub const MaxWhiteListSize: u32 = 4;
 }
 
 impl balances::Trait for Test {
@@ -85,10 +84,7 @@ impl crate::Trait for Test {
     type CouncilOriginValidator = CouncilMock;
     type ThreadId = u64;
     type PostId = u64;
-    type MaxPostEditionNumber = MaxPostEditionNumber;
-    type ThreadTitleLengthLimit = ThreadTitleLengthLimit;
-    type PostLengthLimit = PostLengthLimit;
-    type MaxThreadInARowNumber = MaxThreadInARowNumber;
+    type MaxWhiteListSize = MaxWhiteListSize;
 }
 
 impl ActorOriginValidator<Origin, u64, u64> for () {

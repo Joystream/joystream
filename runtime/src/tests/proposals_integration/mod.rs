@@ -9,7 +9,7 @@ use codec::Encode;
 use governance::election_params::ElectionParameters;
 use membership;
 use proposals_engine::{
-    ApprovedProposalStatus, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,
+    ApprovedProposalDecision, BalanceOf, Proposal, ProposalCreationParameters, ProposalParameters,
     ProposalStatus, VoteKind, VotersParameters, VotingResults,
 };
 
@@ -656,7 +656,7 @@ fn proposal_reactivation_succeeds() {
         assert_eq!(
             proposal.status,
             ProposalStatus::approved(
-                ApprovedProposalStatus::PendingConstitutionality,
+                ApprovedProposalDecision::PendingConstitutionality,
                 starting_block
             )
         );
