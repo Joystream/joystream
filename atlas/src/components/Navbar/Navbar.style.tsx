@@ -36,6 +36,8 @@ export const SearchbarContainer = styled.div`
   justify-content: flex-end;
   align-items: center;
 
+  justify-self: end;
+
   width: 100%;
   max-width: 1156px;
 `
