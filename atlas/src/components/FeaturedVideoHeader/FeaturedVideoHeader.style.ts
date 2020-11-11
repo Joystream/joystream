@@ -7,6 +7,9 @@ import { Link } from '@reach/router'
 
 export const Container = styled.section`
   position: relative;
+
+  // because of the fixed aspect ratio, as the viewport width grows, the media will occupy more height as well
+  // so that the media doesn't take too big of a portion of the space, we let the content overlap the media via a negative margin
   @media screen and (min-width: ${breakpoints.small}) {
     margin-bottom: -75px;
   }
@@ -38,6 +41,8 @@ export const BackgroundImage = styled.div<{ src: string }>`
   background-attachment: local;
   background-size: cover;
 
+  // as the content overlaps the media more and more as the viewport width grows, we need to hide some part of the media with a gradient
+  // this helps with keeping a consistent background behind a page content - we don't want the media to peek out in the content spacing
   background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 20%), url(${({ src }) => src});
   @media screen and (min-width: ${breakpoints.small}) {
     background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 50%), url(${({ src }) => src});
@@ -49,10 +54,10 @@ export const BackgroundImage = styled.div<{ src: string }>`
     background-image: linear-gradient(0deg, black 0%, black 20%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
   }
   @media screen and (min-width: ${breakpoints.xlarge}) {
-    background-image: linear-gradient(0deg, black 0%, black 30%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
+    background-image: linear-gradient(0deg, black 0%, black 25%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
   }
   @media screen and (min-width: ${breakpoints.xxlarge}) {
-    background-image: linear-gradient(0deg, black 0%, black 40%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
+    background-image: linear-gradient(0deg, black 0%, black 30%, rgba(0, 0, 0, 0) 90%), url(${({ src }) => src});
   }
 `
 
