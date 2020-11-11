@@ -229,12 +229,6 @@ pub struct ProposalsConfigParameters {
     /// 'Set lead' proposal grace period
     pub set_lead_proposal_grace_period: u32,
 
-    /// 'Set working group leader reward' proposal voting period
-    pub set_working_group_leader_reward_proposal_voting_period: u32,
-
-    /// 'Set working group leader reward' proposal grace period
-    pub set_working_group_leader_reward_proposal_grace_period: u32,
-
     /// 'Terminate working group leader role' proposal voting period
     pub terminate_working_group_leader_role_proposal_voting_period: u32,
 
@@ -255,8 +249,6 @@ impl Default for ProposalsConfigParameters {
             set_election_parameters_proposal_grace_period: 201_601_u32,
             set_lead_proposal_voting_period: 43200u32,
             set_lead_proposal_grace_period: 0u32,
-            set_working_group_leader_reward_proposal_voting_period: 43200u32,
-            set_working_group_leader_reward_proposal_grace_period: 0u32,
             terminate_working_group_leader_role_proposal_voting_period: 72200u32,
             terminate_working_group_leader_role_proposal_grace_period: 0u32,
             amend_constitution_proposal_voting_period: 72200u32,
@@ -275,8 +267,6 @@ impl ProposalsConfigParameters {
             set_election_parameters_proposal_grace_period: grace_period,
             set_lead_proposal_voting_period: voting_period,
             set_lead_proposal_grace_period: 0,
-            set_working_group_leader_reward_proposal_voting_period: voting_period,
-            set_working_group_leader_reward_proposal_grace_period: 0,
             terminate_working_group_leader_role_proposal_voting_period: voting_period,
             terminate_working_group_leader_role_proposal_grace_period: 0,
             amend_constitution_proposal_voting_period: voting_period,

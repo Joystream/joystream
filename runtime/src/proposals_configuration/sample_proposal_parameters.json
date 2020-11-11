@@ -18,7 +18,8 @@
   "fill_working_group_opening_proposal": {},
   "set_working_group_mint_capacity_proposal": {},
   "decrease_working_group_leader_stake_proposal": {},
-  "slash_working_group_leader_stake_proposal": {
+  "slash_working_group_leader_stake_proposal": {},
+  "set_working_group_leader_reward_proposal": {
     "voting_period": 1,
     "grace_period": 2,
     "approval_quorum_percentage": 3,

@@ -947,8 +947,7 @@ fn run_create_set_working_group_leader_reward_proposal_common_checks_succeed(
                 )
             },
             proposal_parameters:
-                crate::proposal_types::parameters::set_working_group_leader_reward_proposal::<Test>(
-                ),
+            <Test as crate::Trait>::SlashWorkingGroupLeaderStakeProposalParameters::get(),
             proposal_details: ProposalDetails::SetWorkingGroupLeaderReward(10, 10, working_group),
         };
         proposal_fixture.check_all();

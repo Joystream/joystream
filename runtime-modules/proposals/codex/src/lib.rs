@@ -175,6 +175,11 @@ pub trait Trait:
     type SlashWorkingGroupLeaderStakeProposalParameters: Get<
         ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
     >;
+
+    /// 'Set working group leader reward' proposal parameters
+    type SetWorkingGroupLeaderRewardProposalParameters: Get<
+        ProposalParameters<Self::BlockNumber, BalanceOf<Self>>,
+    >;
 }
 
 /// Balance alias for GovernanceCurrency from `common` module. TODO: replace with BalanceOf
@@ -264,14 +269,6 @@ decl_storage! {
         /// Map proposal id to proposal details
         pub ProposalDetailsByProposalId get(fn proposal_details_by_proposal_id):
             map hasher(blake2_128_concat) T::ProposalId => ProposalDetailsOf<T>;
-
-        /// Voting period for the 'set working group leader reward' proposal
-        pub SetWorkingGroupLeaderRewardProposalVotingPeriod get(fn set_working_group_leader_reward_proposal_voting_period)
-            config(): T::BlockNumber;
-
-        /// Grace period for the 'set working group leader reward' proposal
-        pub SetWorkingGroupLeaderRewardProposalGracePeriod get(fn set_working_group_leader_reward_proposal_grace_period)
-            config(): T::BlockNumber;
 
         /// Voting period for the 'terminate working group leader role' proposal
         pub TerminateWorkingGroupLeaderRoleProposalVotingPeriod get(fn terminate_working_group_leader_role_proposal_voting_period)
@@ -673,7 +670,7 @@ decl_module! {
                 description,
                 staking_account_id,
                 proposal_details: proposal_details.clone(),
-                proposal_parameters: proposal_types::parameters::set_working_group_leader_reward_proposal::<T>(),
+                proposal_parameters: T::SetWorkingGroupLeaderRewardProposalParameters::get(),
                 proposal_code: T::ProposalEncoder::encode_proposal(proposal_details),
                 exact_execution_block,
             };
