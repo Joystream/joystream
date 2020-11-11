@@ -321,6 +321,7 @@ pub struct CandidateInfo<T: Trait> {
 #[derive(Clone)]
 pub struct VoterInfo<T: Trait> {
     pub origin: OriginType<T::AccountId>,
+    pub account_id: T::AccountId,
     pub commitment: T::Hash,
     pub salt: Vec<u8>,
     pub vote_for: u64,
@@ -494,6 +495,7 @@ where
 
         VoterInfo {
             origin,
+            account_id: account_id.into(),
             commitment,
             salt,
             vote_for: vote_for_index,
@@ -529,7 +531,7 @@ pub struct InstanceMocks<T: Trait> {
 
 impl<T: Trait> InstanceMocks<T>
 where
-    T::AccountId: From<u64>,
+    T::AccountId: From<u64> + Into<u64>,
     T::CouncilUserId: From<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
     BalanceReferendum<T>: From<u64> + Into<u64>,
@@ -681,6 +683,7 @@ where
 
     pub fn vote_for_candidate(
         origin: OriginType<T::AccountId>,
+        staking_account_id: T::AccountId,
         commitment: T::Hash,
         stake: BalanceReferendum<T>,
         expected_result: Result<(), ()>,
@@ -689,6 +692,7 @@ where
         assert_eq!(
             referendum::Module::<RuntimeReferendum, ReferendumInstance>::vote(
                 InstanceMockUtils::<T>::mock_origin(origin).into(),
+                staking_account_id.into(),
                 commitment.into(),
                 stake.into(),
             )
@@ -773,6 +777,7 @@ where
         params.voters.iter().for_each(|voter| {
             Self::vote_for_candidate(
                 voter.origin.clone(),
+                voter.account_id.clone(),
                 voter.commitment.clone(),
                 voter.stake.clone(),
                 Ok(()),

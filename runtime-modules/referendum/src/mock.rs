@@ -494,6 +494,7 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(
             Module::<Runtime, Instance0>::vote(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
+                account_id,
                 commitment,
                 stake,
             ),
@@ -517,7 +518,9 @@ impl InstanceMocks<Runtime, Instance0> {
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::event_mod_Instance0(RawEvent::VoteCast(account_id, commitment, stake))
+            TestEvent::event_mod_Instance0(RawEvent::VoteCast(
+                account_id, account_id, commitment, stake
+            ))
         );
     }
 
