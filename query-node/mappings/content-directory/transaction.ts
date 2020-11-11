@@ -290,7 +290,8 @@ async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateE
         await updateChannelEntityPropertyValues(
           db,
           where,
-          decode.setEntityPropertyValues<IChannel>(properties, CategoryPropertyNamesWithId)
+          decode.setEntityPropertyValues<IChannel>(properties, channelPropertyNamesWithId),
+          entityIdBeforeTransaction
         )
         break
 
@@ -338,7 +339,8 @@ async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateE
         await updateVideoMediaEntityPropertyValues(
           db,
           where,
-          decode.setEntityPropertyValues<IVideoMedia>(properties, videoPropertyNamesWithId)
+          decode.setEntityPropertyValues<IVideoMedia>(properties, videoPropertyNamesWithId),
+          entityIdBeforeTransaction
         )
         break
 
@@ -346,7 +348,8 @@ async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateE
         await updateVideoEntityPropertyValues(
           db,
           where,
-          decode.setEntityPropertyValues<IVideo>(properties, videoPropertyNamesWithId)
+          decode.setEntityPropertyValues<IVideo>(properties, videoPropertyNamesWithId),
+          entityIdBeforeTransaction
         )
         break
 
@@ -369,14 +372,16 @@ async function batchUpdatePropertyValue(db: DB, createEntityOperations: ICreateE
         await updateLicenseEntityPropertyValues(
           db,
           where,
-          decode.setEntityPropertyValues<ILicense>(properties, licensePropertyNamesWithId)
+          decode.setEntityPropertyValues<ILicense>(properties, licensePropertyNamesWithId),
+          entityIdBeforeTransaction
         )
         break
       case ContentDirectoryKnownClasses.MEDIALOCATION:
         await updateMediaLocationEntityPropertyValues(
           db,
           where,
-          decode.setEntityPropertyValues<IMediaLocation>(properties, mediaLocationPropertyNamesWithId)
+          decode.setEntityPropertyValues<IMediaLocation>(properties, mediaLocationPropertyNamesWithId),
+          entityIdBeforeTransaction
         )
         break
 

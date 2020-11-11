@@ -289,7 +289,7 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
 
   switch (cls.name) {
     case ContentDirectoryKnownClasses.CHANNEL:
-      updateChannelEntityPropertyValues(db, where, decode.setProperties<IChannel>(event, channelPropertyNamesWithId))
+      updateChannelEntityPropertyValues(db, where, decode.setProperties<IChannel>(event, channelPropertyNamesWithId), 0)
       break
 
     case ContentDirectoryKnownClasses.CATEGORY:
@@ -336,12 +336,13 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
       await updateVideoMediaEntityPropertyValues(
         db,
         where,
-        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId)
+        decode.setProperties<IVideoMedia>(event, videoPropertyNamesWithId),
+        0
       )
       break
 
     case ContentDirectoryKnownClasses.VIDEO:
-      await updateVideoEntityPropertyValues(db, where, decode.setProperties<IVideo>(event, videoPropertyNamesWithId))
+      await updateVideoEntityPropertyValues(db, where, decode.setProperties<IVideo>(event, videoPropertyNamesWithId), 0)
       break
 
     case ContentDirectoryKnownClasses.LANGUAGE:
@@ -364,7 +365,8 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
       await updateLicenseEntityPropertyValues(
         db,
         where,
-        decode.setProperties<ILicense>(event, videoMediaEncodingPropertyNamesWithId)
+        decode.setProperties<ILicense>(event, videoMediaEncodingPropertyNamesWithId),
+        0
       )
       break
 
@@ -372,7 +374,8 @@ async function contentDirectory_EntityPropertyValuesUpdated(db: DB, event: Subst
       await updateMediaLocationEntityPropertyValues(
         db,
         where,
-        decode.setProperties<IMediaLocation>(event, videoMediaEncodingPropertyNamesWithId)
+        decode.setProperties<IMediaLocation>(event, videoMediaEncodingPropertyNamesWithId),
+        0
       )
       break
 

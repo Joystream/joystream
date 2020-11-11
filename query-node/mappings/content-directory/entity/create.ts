@@ -13,7 +13,6 @@ import { VideoMediaEncoding } from '../../../generated/graphql-server/src/module
 import { ClassEntity } from '../../../generated/graphql-server/src/modules/class-entity/class-entity.model'
 import { License } from '../../../generated/graphql-server/src/modules/license/license.model'
 import { MediaLocation } from '../../../generated/graphql-server/src/modules/media-location/media-location.model'
-import { NextEntityId } from '../../../generated/graphql-server/src/modules/next-entity-id/next-entity-id.model'
 
 import { contentDirectoryClassNamesWithId } from '../content-dir-consts'
 import {
@@ -333,7 +332,6 @@ async function createMediaLocation(
 
   const location = new MediaLocation()
   location.id = id
-  console.log(p)
   if (httpMediaLocation !== undefined) {
     location.httpMediaLocation = await getOrCreate.httpMediaLocation(
       { db, block, id },
