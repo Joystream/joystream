@@ -1,0 +1,52 @@
+{
+  "name": "@joystream/storage-node-backend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Storage management code for Joystream Storage Node",
+  "author": "Joystream",
+  "homepage": "https://github.com/Joystream/joystream",
+  "bugs": {
+    "url": "https://github.com/Joystream/joystream/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joystream/joystream.git"
+  },
+  "license": "GPL-3.0-only",
+  "contributors": [
+    {
+      "name": "Joystream",
+      "url": "https://joystream.org"
+    }
+  ],
+  "keywords": [
+    "joystream",
+    "storage",
+    "node",
+    "storage"
+  ],
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "engines": {
+    "node": ">=12.18.0"
+  },
+  "scripts": {
+    "test": "mocha --exit 'test/**/*.js'",
+    "lint": "eslint '**/*.js' --ignore-pattern 'test/**/*.js'",
+    "checks": "yarn lint && prettier ./ --check && tsc --noEmit --pretty"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "eslint": "^7.6.0",
+    "mocha": "^5.2.0"
+  },
+  "dependencies": {
+    "bluebird": "^3.5.5",
+    "file-type": "^11.0.0",
+    "ipfs-http-client": "^32.0.1",
+    "temp": "^0.9.0"
+  }
+}

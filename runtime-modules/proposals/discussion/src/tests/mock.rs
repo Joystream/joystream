@@ -2,16 +2,16 @@
 
 pub use system;
 
-pub use primitives::{Blake2Hasher, H256};
-pub use sr_primitives::{
-    testing::{Digest, DigestItem, Header, UintAuthorityId},
-    traits::{BlakeTwo256, Convert, IdentityLookup, OnFinalize},
-    weights::Weight,
-    BuildStorage, Perbill,
+use frame_support::traits::{OnFinalize, OnInitialize};
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use sp_core::H256;
+use sp_runtime::{
+    testing::Header,
+    traits::{BlakeTwo256, IdentityLookup},
+    Perbill,
 };
 
 use crate::ActorOriginValidator;
-use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -41,7 +41,7 @@ mod discussion {
 }
 
 mod membership_mod {
-    pub use membership::members::Event;
+    pub use membership::Event;
 }
 
 impl_outer_event! {
@@ -49,6 +49,7 @@ impl_outer_event! {
         discussion<T>,
         balances<T>,
         membership_mod<T>,
+        system<T>,
     }
 }
 
@@ -60,28 +61,22 @@ parameter_types! {
 
 impl balances::Trait for Test {
     type Balance = u64;
-    /// What to do if an account's free balance gets zeroed.
-    type OnFreeBalanceZero = ();
-    type OnNewAccount = ();
-    type TransferPayment = ();
     type DustRemoval = ();
     type Event = TestEvent;
     type ExistentialDeposit = ExistentialDeposit;
-    type TransferFee = TransferFee;
-    type CreationFee = CreationFee;
+    type AccountStore = System;
 }
 
 impl common::currency::GovernanceCurrency for Test {
     type Currency = balances::Module<Self>;
 }
 
-impl membership::members::Trait for Test {
+impl membership::Trait for Test {
     type Event = TestEvent;
     type MemberId = u64;
     type PaidTermId = u64;
     type SubscriptionId = u64;
     type ActorId = u64;
-    type InitialMembersBalance = ();
 }
 
 impl crate::Trait for Test {
@@ -110,6 +105,7 @@ impl ActorOriginValidator<Origin, u64, u64> for () {
 }
 
 impl system::Trait for Test {
+    type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
     type Index = u64;
@@ -122,18 +118,26 @@ impl system::Trait for Test {
     type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = balances::AccountData<u64>;
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
-impl timestamp::Trait for Test {
+impl pallet_timestamp::Trait for Test {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
 }
 
-pub fn initial_test_ext() -> runtime_io::TestExternalities {
+pub fn initial_test_ext() -> sp_io::TestExternalities {
     let t = system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
@@ -143,3 +147,15 @@ pub fn initial_test_ext() -> runtime_io::TestExternalities {
 
 pub type Discussions = crate::Module<Test>;
 pub type System = system::Module<Test>;
+
+// Recommendation from Parity on testing on_finalize
+// https://substrate.dev/docs/en/next/development/module/tests
+pub fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        <Discussions as OnFinalize<u64>>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <Discussions as OnInitialize<u64>>::on_initialize(System::block_number());
+    }
+}

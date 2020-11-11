@@ -1,15 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 
 import { formatBalance } from '@polkadot/util';
-import { u128 } from '@polkadot/types';
 import { Balance } from '@polkadot/types/interfaces';
-import AccountId from '@polkadot/types/primitive/Generic/AccountId';
+import AccountId from '@polkadot/types/generic/AccountId';
 
-import { Controller, View } from '@polkadot/joy-utils/index';
+import { Controller } from '@polkadot/joy-utils/react/helpers';
+import { View } from '@polkadot/joy-utils/react/hocs';
 
 import { GenericJoyStreamRoleSchema } from '@joystream/types/hiring/schemas/role.schema.typings';
-
-import { Container } from 'semantic-ui-react';
 
 import { ITransport } from '../transport';
 
@@ -17,6 +15,9 @@ import { keyPairDetails, FlowModal, ProgressSteps } from './apply';
 
 import { OpeningStakeAndApplicationStatus } from '../tabs/Opportunities';
 import { Min, Step, Sum } from '../balances';
+import { WorkingGroups, AvailableGroups } from '../working_groups';
+import { createType } from '@joystream/types';
+import { ApplicationDetailsData } from '@polkadot/joy-utils/types/workingGroups';
 
 type State = {
   // Input data from state
@@ -30,7 +31,7 @@ type State = {
   // Data captured from form
   applicationStake: Balance;
   roleStake: Balance;
-  appDetails: any;
+  appDetails: ApplicationDetailsData;
   txKeyAddress: AccountId;
   activeStep: ProgressSteps;
   txInProgress: boolean;
@@ -38,6 +39,7 @@ type State = {
 
   // Data generated for transaction
   transactionDetails: Map<string, string>;
+  roleKeyNameBase: string;
   roleKeyName: string;
 
   // Error capture and display
@@ -46,13 +48,14 @@ type State = {
 
 const newEmptyState = (): State => {
   return {
-    applicationStake: new u128(0),
-    roleStake: new u128(0),
+    applicationStake: createType('Balance', 0),
+    roleStake: createType('Balance', 0),
     appDetails: {},
     hasError: false,
     transactionDetails: new Map<string, string>(),
+    roleKeyNameBase: '',
     roleKeyName: '',
-    txKeyAddress: new AccountId(),
+    txKeyAddress: createType('AccountId', undefined),
     activeStep: 0,
     txInProgress: false,
     complete: false
@@ -60,12 +63,20 @@ const newEmptyState = (): State => {
 };
 
 export class ApplyController extends Controller<State, ITransport> {
-  protected currentOpeningId = -1
+  protected currentOpeningId = -1;
+  protected currentGroup: WorkingGroups | null = null;
 
-  constructor (transport: ITransport, initialState: State = newEmptyState()) {
+  constructor (
+    transport: ITransport,
+    initialState: State = newEmptyState()
+  ) {
     super(transport, initialState);
 
     this.transport.accounts().subscribe((keys) => this.updateAccounts(keys));
+  }
+
+  protected parseGroup (group: string | undefined): WorkingGroups | undefined {
+    return AvailableGroups.find((availableGroup) => availableGroup === group);
   }
 
   protected updateAccounts (keys: keyPairDetails[]) {
@@ -73,28 +84,31 @@ export class ApplyController extends Controller<State, ITransport> {
     this.dispatch();
   }
 
-  findOpening (rawId: string | undefined) {
+  findOpening (rawId: string | undefined, rawGroup: string | undefined) {
     if (!rawId) {
       return this.onError('ApplyController: no ID provided in params');
     }
-    const id = parseInt(rawId);
 
-    if (this.currentOpeningId === id) {
+    const id = parseInt(rawId);
+    const group = this.parseGroup(rawGroup);
+
+    if (!group) {
+      return this.onError('ApplyController: invalid group');
+    }
+
+    if (this.currentOpeningId === id && this.currentGroup === group) {
       return;
     }
 
     Promise.all(
       [
-        this.transport.curationGroupOpening(id),
-        this.transport.openingApplicationRanks(id)
+        this.transport.groupOpening(group, id),
+        this.transport.openingApplicationRanks(group, id)
       ]
     )
       .then(
         ([opening, ranks]) => {
-          const hrt = opening.opening.parse_human_readable_text();
-          if (typeof hrt !== 'object') {
-            return this.onError('human_readable_text is not an object');
-          }
+          const hrt = opening.opening.parse_human_readable_text_with_fallback();
 
           this.state.role = hrt;
           this.state.applications = opening.applications;
@@ -110,8 +124,9 @@ export class ApplyController extends Controller<State, ITransport> {
           this.state.activeStep = this.state.hasConfirmStep
             ? ProgressSteps.ConfirmStakes
             : ProgressSteps.ApplicationDetails;
+          this.state.complete = false;
 
-          this.state.roleKeyName = hrt.job.title + ' role key';
+          this.state.roleKeyNameBase = hrt.job.title + ' role key';
 
           // When everything is collected, update the view
           this.dispatch();
@@ -120,11 +135,13 @@ export class ApplyController extends Controller<State, ITransport> {
       .catch(
         (err: any) => {
           this.currentOpeningId = -1;
+          this.currentGroup = null;
           this.onError(err);
         }
       );
 
     this.currentOpeningId = id;
+    this.currentGroup = group;
   }
 
   setApplicationStake (b: Balance): void {
@@ -137,12 +154,12 @@ export class ApplyController extends Controller<State, ITransport> {
     this.dispatch();
   }
 
-  setAppDetails (v: any): void {
+  setAppDetails (v: ApplicationDetailsData): void {
     this.state.appDetails = v;
     this.dispatch();
   }
 
-  setTxKeyAddress (v: any): void {
+  setTxKeyAddress (v: AccountId): void {
     this.state.txKeyAddress = v;
     this.dispatch();
   }
@@ -179,11 +196,29 @@ export class ApplyController extends Controller<State, ITransport> {
     this.state.transactionDetails.set('Total commitment', formatBalance(totalCommitment));
 
     this.dispatch();
+
     return true;
   }
 
+  private updateRoleKeyName () {
+    let roleKeyNamePrefix = 0;
+
+    do {
+      this.state.roleKeyName = `${this.state.roleKeyNameBase}${(++roleKeyNamePrefix > 1 ? ` ${roleKeyNamePrefix}` : '')}`;
+    } while (this.state.keypairs?.some((k) => (
+      k.shortName.toLowerCase() === this.state.roleKeyName.toLowerCase()
+    )));
+  }
+
   async makeApplicationTransaction (): Promise<number> {
-    return this.transport.applyToCuratorOpening(
+    if (!this.currentGroup || this.currentOpeningId < 0) {
+      throw new Error('Trying to apply to unfetched opening');
+    }
+
+    this.updateRoleKeyName();
+
+    return this.transport.applyToOpening(
+      this.currentGroup,
       this.currentOpeningId,
       this.state.roleKeyName,
       this.state.txKeyAddress.toString(),
@@ -195,39 +230,38 @@ export class ApplyController extends Controller<State, ITransport> {
 }
 
 export const ApplyView = View<ApplyController, State>(
-  (state, controller, params) => {
-    controller.findOpening(params.get('id'));
+  ({ state, controller, params }) => {
+    useEffect(() => {
+      controller.findOpening(params.get('id'), params.get('group'));
+    }, [params]);
+
     return (
-      <Container className="apply-flow">
-        <div className="dimmer"></div>
-        // @ts-ignore
-        <FlowModal
-          role={state.role!}
-          applications={state.applications!}
-          keypairs={state.keypairs!}
-          hasConfirmStep={state.hasConfirmStep!}
-          step={state.step!}
-          slots={state.slots!}
-          transactionDetails={state.transactionDetails}
-          roleKeyName={state.roleKeyName}
-          prepareApplicationTransaction={(...args) => controller.prepareApplicationTransaction(...args)}
-          makeApplicationTransaction={() => controller.makeApplicationTransaction()}
-          applicationStake={state.applicationStake}
-          setApplicationStake={(v) => controller.setApplicationStake(v)}
-          roleStake={state.roleStake}
-          setRoleStake={(v) => controller.setRoleStake(v)}
-          appDetails={state.appDetails}
-          setAppDetails={(v) => controller.setAppDetails(v)}
-          txKeyAddress={state.txKeyAddress}
-          setTxKeyAddress={(v) => controller.setTxKeyAddress(v)}
-          activeStep={state.activeStep}
-          setActiveStep={(v) => controller.setActiveStep(v)}
-          txInProgress={state.txInProgress}
-          setTxInProgress={(v) => controller.setTxInProgress(v)}
-          complete={state.complete}
-          setComplete={(v) => controller.setComplete(v)}
-        />
-      </Container>
+      <FlowModal
+        role={state.role!}
+        applications={state.applications!}
+        keypairs={state.keypairs!}
+        hasConfirmStep={state.hasConfirmStep!}
+        step={state.step!}
+        slots={state.slots!}
+        transactionDetails={state.transactionDetails}
+        roleKeyName={state.roleKeyName}
+        prepareApplicationTransaction={controller.prepareApplicationTransaction.bind(controller)}
+        makeApplicationTransaction={controller.makeApplicationTransaction.bind(controller)}
+        applicationStake={state.applicationStake}
+        setApplicationStake={controller.setApplicationStake.bind(controller)}
+        roleStake={state.roleStake}
+        setRoleStake={controller.setRoleStake.bind(controller)}
+        appDetails={state.appDetails}
+        setAppDetails={controller.setAppDetails.bind(controller)}
+        txKeyAddress={state.txKeyAddress}
+        setTxKeyAddress={controller.setTxKeyAddress.bind(controller)}
+        activeStep={state.activeStep}
+        setActiveStep={controller.setActiveStep.bind(controller)}
+        txInProgress={state.txInProgress}
+        setTxInProgress={controller.setTxInProgress.bind(controller)}
+        complete={state.complete}
+        setComplete={controller.setComplete.bind(controller)}
+      />
     );
   }
 );

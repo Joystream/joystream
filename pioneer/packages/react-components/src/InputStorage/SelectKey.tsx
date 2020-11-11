@@ -1,36 +1,37 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
+import { QueryableStorageEntry } from '@polkadot/api/types';
 import { DropdownOptions } from '../util/types';
-import { BareProps } from '../types';
-import { StorageEntryPromise } from './types';
 
-import React, { useContext } from 'react';
+import React from 'react';
 import { ApiPromise } from '@polkadot/api';
-import { ApiContext } from '@polkadot/react-api';
+import { useApi } from '@polkadot/react-hooks';
 
 import Dropdown from '../Dropdown';
 import { classes } from '../util';
 
-interface Props extends BareProps {
+interface Props {
+  className?: string;
   isError?: boolean;
-  onChange: (value: StorageEntryPromise) => void;
+  onChange: (value: QueryableStorageEntry<'promise'>) => void;
   options: DropdownOptions;
-  value: StorageEntryPromise;
+  value: QueryableStorageEntry<'promise'>;
 }
 
-function transform (api: ApiPromise, { value }: Props): (method: string) => StorageEntryPromise {
-  return function (method: string): StorageEntryPromise {
+function transform (api: ApiPromise, { value }: Props): (method: string) => QueryableStorageEntry<'promise'> {
+  return function (method: string): QueryableStorageEntry<'promise'> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return api.query[value.creator.section]
-      ? api.query[value.creator.section][method]
+      ? api.query[value.creator.section][method] as any
       : value;
   };
 }
 
-export default function SelectKey (props: Props): React.ReactElement<Props> | null {
-  const { api } = useContext(ApiContext);
-  const { className, isError, onChange, options, style, value } = props;
+function SelectKey (props: Props): React.ReactElement<Props> | null {
+  const { api } = useApi();
+  const { className = '', isError, onChange, options, value } = props;
 
   if (!options.length) {
     return null;
@@ -42,10 +43,11 @@ export default function SelectKey (props: Props): React.ReactElement<Props> | nu
       isError={isError}
       onChange={onChange}
       options={options}
-      style={style}
       transform={transform(api, props)}
       value={value.creator.method}
       withLabel={false}
     />
   );
 }
+
+export default React.memo(SelectKey);

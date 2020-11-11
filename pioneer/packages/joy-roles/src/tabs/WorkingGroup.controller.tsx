@@ -1,58 +1,65 @@
 import React from 'react';
 
-import { Controller, View } from '@polkadot/joy-utils/index';
+import { Controller } from '@polkadot/joy-utils/react/helpers';
+import { View } from '@polkadot/joy-utils/react/hocs';
 
 import { ITransport } from '../transport';
 
-import {
-  ContentCurators,
+import { ContentCurators,
   WorkingGroupMembership,
-  StorageAndDistributionMembership,
-  GroupLeadStatus,
-  ContentLead
-} from './WorkingGroup';
+  StorageProviders } from './WorkingGroup';
+
+import styled from 'styled-components';
+import { normalizeError } from '@polkadot/joy-utils/functions/misc';
 
 type State = {
   contentCurators?: WorkingGroupMembership;
-  storageProviders?: StorageAndDistributionMembership;
-  groupLeadStatus?: GroupLeadStatus;
+  storageProviders?: WorkingGroupMembership;
 }
 
 export class WorkingGroupsController extends Controller<State, ITransport> {
   constructor (transport: ITransport, initialState: State = {}) {
     super(transport, {});
+  }
+
+  refreshState () {
     this.getCurationGroup();
     this.getStorageGroup();
-    this.getGroupLeadStatus();
   }
 
   getCurationGroup () {
-    this.transport.curationGroup().then((value: WorkingGroupMembership) => {
-      this.setState({ contentCurators: value });
-      this.dispatch();
-    });
+    this.transport.curationGroup()
+      .then((value: WorkingGroupMembership) => {
+        this.setState({ contentCurators: value });
+        this.dispatch();
+      })
+      .catch((e) => this.onError(normalizeError(e)));
   }
 
   getStorageGroup () {
-    this.transport.storageGroup().then((value: StorageAndDistributionMembership) => {
-      this.setState({ storageProviders: value });
-      this.dispatch();
-    });
-  }
-
-  getGroupLeadStatus () {
-    this.transport.groupLeadStatus().then((value: GroupLeadStatus) => {
-      this.setState({ groupLeadStatus: value });
-      this.dispatch();
-    });
+    this.transport.storageGroup()
+      .then((value: WorkingGroupMembership) => {
+        this.setState({ storageProviders: value });
+        this.dispatch();
+      })
+      .catch((e) => this.onError(normalizeError(e)));
   }
 }
 
+const WorkingGroupsOverview = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-gap: 2rem;
+  @media screen and (max-width: 1199px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
 export const WorkingGroupsView = View<WorkingGroupsController, State>(
-  (state) => (
-    <div>
-      <ContentCurators {...state.contentCurators!} />
-      <ContentLead {...state.groupLeadStatus!} />
-    </div>
+  ({ state }) => (
+    <WorkingGroupsOverview>
+      <ContentCurators {...state.contentCurators}/>
+      <StorageProviders {...state.storageProviders}/>
+    </WorkingGroupsOverview>
   )
 );

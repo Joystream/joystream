@@ -1,10 +1,11 @@
 mod mock;
 
-use mock::*;
-
-use crate::*;
+use frame_support::dispatch::{DispatchError, DispatchResult};
 use system::RawOrigin;
 use system::{EventRecord, Phase};
+
+use crate::*;
+use mock::*;
 
 struct EventFixture;
 impl EventFixture {
@@ -12,7 +13,7 @@ impl EventFixture {
         let expected_events = expected_raw_events
             .iter()
             .map(|ev| EventRecord {
-                phase: Phase::ApplyExtrinsic(0),
+                phase: Phase::Initialization,
                 event: TestEvent::discussion(ev.clone()),
                 topics: vec![],
             })
@@ -34,12 +35,12 @@ struct TestThreadEntry {
 }
 
 fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPostEntry>) {
-    assert!(<ThreadById<Test>>::exists(thread_entry.thread_id));
+    assert!(<ThreadById<Test>>::contains_key(thread_entry.thread_id));
 
     let actual_thread = <ThreadById<Test>>::get(thread_entry.thread_id);
     let expected_thread = DiscussionThread {
         title: thread_entry.title,
-        created_at: 1,
+        created_at: 0,
         author_id: 1,
     };
     assert_eq!(actual_thread, expected_thread);
@@ -49,8 +50,8 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
             <PostThreadIdByPostId<Test>>::get(thread_entry.thread_id, post_entry.post_id);
         let expected_post = DiscussionPost {
             text: post_entry.text,
-            created_at: 1,
-            updated_at: 1,
+            created_at: 0,
+            updated_at: 0,
             author_id: 1,
             thread_id: thread_entry.thread_id,
             edition_number: post_entry.edition_number,
@@ -81,7 +82,7 @@ impl DiscussionFixture {
         DiscussionFixture { title, ..self }
     }
 
-    fn create_discussion_and_assert(&self, result: Result<u64, Error>) -> Option<u64> {
+    fn create_discussion_and_assert(&self, result: Result<u64, DispatchError>) -> Option<u64> {
         let create_discussion_result =
             Discussions::create_thread(self.author_id, self.title.clone());
 
@@ -133,7 +134,7 @@ impl PostFixture {
         }
     }
 
-    fn add_post_and_assert(&mut self, result: Result<(), Error>) -> Option<u64> {
+    fn add_post_and_assert(&mut self, result: DispatchResult) -> Option<u64> {
         let add_post_result = Discussions::add_post(
             self.origin.clone().into(),
             self.author_id,
@@ -150,7 +151,7 @@ impl PostFixture {
         self.post_id
     }
 
-    fn update_post_with_text_and_assert(&mut self, new_text: Vec<u8>, result: Result<(), Error>) {
+    fn update_post_with_text_and_assert(&mut self, new_text: Vec<u8>, result: DispatchResult) {
         let add_post_result = Discussions::update_post(
             self.origin.clone().into(),
             self.author_id,
@@ -162,7 +163,7 @@ impl PostFixture {
         assert_eq!(add_post_result, result);
     }
 
-    fn update_post_and_assert(&mut self, result: Result<(), Error>) {
+    fn update_post_and_assert(&mut self, result: DispatchResult) {
         self.update_post_with_text_and_assert(self.text.clone(), result);
     }
 }
@@ -194,6 +195,13 @@ fn create_post_call_succeeds() {
 #[test]
 fn update_post_call_succeeds() {
     initial_test_ext().execute_with(|| {
+        /*
+           Events are not emitted on block 0.
+           So any dispatchable calls made during genesis block formation will have no events emitted.
+           https://substrate.dev/recipes/2-appetizers/4-events.html
+        */
+        run_to_block(1);
+
         let discussion_fixture = DiscussionFixture::default();
 
         let thread_id = discussion_fixture
@@ -230,7 +238,7 @@ fn update_post_call_fails_because_of_post_edition_limit() {
             post_fixture.update_post_and_assert(Ok(()));
         }
 
-        post_fixture.update_post_and_assert(Err(Error::PostEditionNumberExceeded));
+        post_fixture.update_post_and_assert(Err(Error::<Test>::PostEditionNumberExceeded.into()));
     });
 }
 
@@ -249,11 +257,11 @@ fn update_post_call_fails_because_of_the_wrong_author() {
 
         post_fixture = post_fixture.with_author(2);
 
-        post_fixture.update_post_and_assert(Err(Error::Other("Invalid author")));
+        post_fixture.update_post_and_assert(Err(DispatchError::Other("Invalid author")));
 
         post_fixture = post_fixture.with_origin(RawOrigin::None).with_author(2);
 
-        post_fixture.update_post_and_assert(Err(Error::NotAuthor));
+        post_fixture.update_post_and_assert(Err(Error::<Test>::NotAuthor.into()));
     });
 }
 
@@ -298,10 +306,11 @@ fn thread_content_check_succeeded() {
 fn create_discussion_call_with_bad_title_failed() {
     initial_test_ext().execute_with(|| {
         let mut discussion_fixture = DiscussionFixture::default().with_title(Vec::new());
-        discussion_fixture.create_discussion_and_assert(Err(Error::EmptyTitleProvided));
+        discussion_fixture
+            .create_discussion_and_assert(Err(Error::<Test>::EmptyTitleProvided.into()));
 
         discussion_fixture = DiscussionFixture::default().with_title([0; 201].to_vec());
-        discussion_fixture.create_discussion_and_assert(Err(Error::TitleIsTooLong));
+        discussion_fixture.create_discussion_and_assert(Err(Error::<Test>::TitleIsTooLong.into()));
     });
 }
 
@@ -314,7 +323,7 @@ fn add_post_call_with_invalid_thread_failed() {
             .unwrap();
 
         let mut post_fixture = PostFixture::default_for_thread(2);
-        post_fixture.add_post_and_assert(Err(Error::ThreadDoesntExist));
+        post_fixture.add_post_and_assert(Err(Error::<Test>::ThreadDoesntExist.into()));
     });
 }
 
@@ -330,7 +339,7 @@ fn update_post_call_with_invalid_post_failed() {
         post_fixture1.add_post_and_assert(Ok(())).unwrap();
 
         let mut post_fixture2 = post_fixture1.change_post_id(2);
-        post_fixture2.update_post_and_assert(Err(Error::PostDoesntExist));
+        post_fixture2.update_post_and_assert(Err(Error::<Test>::PostDoesntExist.into()));
     });
 }
 
@@ -346,7 +355,7 @@ fn update_post_call_with_invalid_thread_failed() {
         post_fixture1.add_post_and_assert(Ok(())).unwrap();
 
         let mut post_fixture2 = post_fixture1.change_thread_id(2);
-        post_fixture2.update_post_and_assert(Err(Error::ThreadDoesntExist));
+        post_fixture2.update_post_and_assert(Err(Error::<Test>::ThreadDoesntExist.into()));
     });
 }
 
@@ -359,11 +368,11 @@ fn add_post_call_with_invalid_text_failed() {
             .unwrap();
 
         let mut post_fixture1 = PostFixture::default_for_thread(thread_id).with_text(Vec::new());
-        post_fixture1.add_post_and_assert(Err(Error::EmptyPostProvided));
+        post_fixture1.add_post_and_assert(Err(Error::<Test>::EmptyPostProvided.into()));
 
         let mut post_fixture2 =
             PostFixture::default_for_thread(thread_id).with_text([0; 2001].to_vec());
-        post_fixture2.add_post_and_assert(Err(Error::PostIsTooLong));
+        post_fixture2.add_post_and_assert(Err(Error::<Test>::PostIsTooLong.into()));
     });
 }
 
@@ -379,10 +388,10 @@ fn update_post_call_with_invalid_text_failed() {
         post_fixture1.add_post_and_assert(Ok(()));
 
         let mut post_fixture2 = post_fixture1.with_text(Vec::new());
-        post_fixture2.update_post_and_assert(Err(Error::EmptyPostProvided));
+        post_fixture2.update_post_and_assert(Err(Error::<Test>::EmptyPostProvided.into()));
 
         let mut post_fixture3 = post_fixture2.with_text([0; 2001].to_vec());
-        post_fixture3.update_post_and_assert(Err(Error::PostIsTooLong));
+        post_fixture3.update_post_and_assert(Err(Error::<Test>::PostIsTooLong.into()));
     });
 }
 
@@ -396,7 +405,8 @@ fn add_discussion_thread_fails_because_of_max_thread_by_same_author_in_a_row_lim
                 .unwrap();
         }
 
-        discussion_fixture.create_discussion_and_assert(Err(Error::MaxThreadInARowLimitExceeded));
+        discussion_fixture
+            .create_discussion_and_assert(Err(Error::<Test>::MaxThreadInARowLimitExceeded.into()));
     });
 }
 

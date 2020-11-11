@@ -1,0 +1,49 @@
+{
+  "name": "@joystream/storage-utils",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Utility code for Joystream Storage Node",
+  "author": "Joystream",
+  "homepage": "https://github.com/Joystream/joystream",
+  "bugs": {
+    "url": "https://github.com/Joystream/joystream/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joystream/joystream.git"
+  },
+  "license": "GPL-3.0-only",
+  "contributors": [
+    {
+      "name": "Joystream",
+      "url": "https://joystream.org"
+    }
+  ],
+  "keywords": [
+    "joystream",
+    "storage",
+    "node",
+    "utility"
+  ],
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "engines": {
+    "node": ">=12.18.0"
+  },
+  "scripts": {
+    "test": "mocha 'test/**/*.js'",
+    "lint": "eslint '**/*.js' --ignore-pattern 'test/**/*.js'"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "eslint": "^7.6.0",
+    "mocha": "^5.2.0",
+    "temp": "^0.9.0"
+  },
+  "dependencies": {
+    "stream-buffers": "^3.0.2",
+    "uuid": "^3.3.2"
+  }
+}

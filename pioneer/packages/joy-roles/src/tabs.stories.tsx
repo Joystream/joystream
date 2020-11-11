@@ -1,9 +1,9 @@
 import React from 'react';
 import { withKnobs } from '@storybook/addon-knobs';
 import { Container, Tab } from 'semantic-ui-react';
-import { ContentCuratorsSection, StorageProvidersSection } from './tabs/WorkingGroup.stories';
+import { ContentCuratorsSection } from './tabs/WorkingGroup.stories';
 import { OpportunitySandbox } from './tabs/Opportunities.stories';
-import { ApplicationSandbox } from './flows/apply.stories';
+// import { ApplicationSandbox } from './flows/apply.stories';
 import { MyRolesSandbox } from './tabs/MyRoles.stories';
 
 export default {
@@ -14,11 +14,8 @@ export default {
 export const RolesPage = () => {
   const tab = (
     <Container>
-      <Container className="outer">
+      <Container className='outer'>
         <ContentCuratorsSection />
-      </Container>
-      <Container>
-        <StorageProvidersSection />
       </Container>
     </Container>
   );
@@ -30,7 +27,7 @@ export const RolesPage = () => {
   const panes = [
     { menuItem: 'Working groups', render: renderWorkingGroups },
     { menuItem: 'Opportunities', render: renderOpportunitySandbox },
-    { menuItem: 'My roles', render: renderMyRolesSandbox }
+    { menuItem: 'My roles and applications', render: renderMyRolesSandbox }
   ];
 
   return (
@@ -41,4 +38,4 @@ export const RolesPage = () => {
   );
 };
 
-export const ApplicationLightbox = ApplicationSandbox;
+// export const ApplicationLightbox = ApplicationSandbox;

@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 
+export WASM_BUILD_TOOLCHAIN=nightly-2020-05-23
+
 # Build release binary
-cargo build --release -p joystream-node
+cargo build --release
 
 # Purge existing local chain
-yes | cargo run --release -p joystream-node -- purge-chain --dev
+yes | cargo run --release -- purge-chain --dev
 
-# Run local development chain
-cargo run --release -p joystream-node -- --dev
+# Run local development chain -
+# No need to specify `-p joystream-node` it is the default bin crate in the cargo workspace
+cargo run --release -- --dev

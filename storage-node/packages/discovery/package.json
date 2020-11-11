@@ -1,0 +1,60 @@
+{
+  "name": "@joystream/service-discovery",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Service Discovery - Joystream Storage Node",
+  "author": "Joystream",
+  "homepage": "https://github.com/Joystream/joystream",
+  "bugs": {
+    "url": "https://github.com/Joystream/joystream/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Joystream/joystream.git"
+  },
+  "license": "GPL-3.0-only",
+  "contributors": [
+    {
+      "name": "Joystream",
+      "url": "https://joystream.org"
+    }
+  ],
+  "keywords": [
+    "joystream",
+    "storage",
+    "node"
+  ],
+  "os": [
+    "darwin",
+    "linux"
+  ],
+  "engines": {
+    "node": ">=12.18.0"
+  },
+  "main": "./index.js",
+  "scripts": {
+    "test": "mocha 'test/**/*.js'",
+    "lint": "eslint 'paths/**/*.js' 'lib/**/*.js'"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "eslint": "^7.6.0",
+    "mocha": "^5.2.0",
+    "supertest": "^3.4.2",
+    "temp": "^0.9.0"
+  },
+  "dependencies": {
+    "@joystream/storage-runtime-api": "^0.1.0",
+    "@joystream/storage-utils": "^0.1.0",
+    "async-lock": "^1.2.0",
+    "axios": "^0.18.0",
+    "chalk": "^2.4.2",
+    "configstore": "^4.0.0",
+    "figlet": "^1.2.1",
+    "ipfs-http-client": "^32.0.1",
+    "js-yaml": "^3.13.1",
+    "meow": "^5.0.0",
+    "multer": "^1.4.1",
+    "si-prefix": "^0.2.0"
+  }
+}

@@ -1,8 +1,8 @@
 #![warn(missing_docs)]
 
-use rstd::marker::PhantomData;
+use sp_std::marker::PhantomData;
 
-use common::origin_validator::ActorOriginValidator;
+use common::origin::ActorOriginValidator;
 use proposals_engine::VotersParameters;
 
 use super::{MemberId, MembershipOriginValidator};
@@ -13,7 +13,7 @@ pub struct CouncilManager<T> {
     marker: PhantomData<T>,
 }
 
-impl<T: governance::council::Trait + membership::members::Trait>
+impl<T: governance::council::Trait + membership::Trait>
     ActorOriginValidator<<T as system::Trait>::Origin, MemberId<T>, <T as system::Trait>::AccountId>
     for CouncilManager<T>
 {
@@ -44,15 +44,14 @@ impl<T: governance::council::Trait> VotersParameters for CouncilManager<T> {
 mod tests {
     use super::CouncilManager;
     use crate::Runtime;
-    use common::origin_validator::ActorOriginValidator;
-    use membership::members::UserInfo;
+    use common::origin::ActorOriginValidator;
     use proposals_engine::VotersParameters;
-    use sr_primitives::AccountId32;
+    use sp_runtime::AccountId32;
     use system::RawOrigin;
 
     type Council = governance::council::Module<Runtime>;
 
-    fn initial_test_ext() -> runtime_io::TestExternalities {
+    fn initial_test_ext() -> sp_io::TestExternalities {
         let t = system::GenesisConfig::default()
             .build_storage::<Runtime>()
             .unwrap();
@@ -60,7 +59,7 @@ mod tests {
         t.into()
     }
 
-    type Membership = membership::members::Module<Runtime>;
+    type Membership = membership::Module<Runtime>;
 
     #[test]
     fn council_origin_validator_fails_with_unregistered_member() {
@@ -101,11 +100,9 @@ mod tests {
             Membership::add_screened_member(
                 RawOrigin::Signed(authority_account_id).into(),
                 account_id.clone(),
-                UserInfo {
-                    handle: Some(b"handle".to_vec()),
-                    avatar_uri: None,
-                    about: None,
-                },
+                Some(b"handle".to_vec()),
+                None,
+                None,
             )
             .unwrap();
             let member_id = 0; // newly created member_id
@@ -133,11 +130,9 @@ mod tests {
             Membership::add_screened_member(
                 RawOrigin::Signed(authority_account_id).into(),
                 account_id.clone(),
-                UserInfo {
-                    handle: Some(b"handle".to_vec()),
-                    avatar_uri: None,
-                    about: None,
-                },
+                Some(b"handle".to_vec()),
+                None,
+                None,
             )
             .unwrap();
             let member_id = 0; // newly created member_id
@@ -168,11 +163,9 @@ mod tests {
             Membership::add_screened_member(
                 RawOrigin::Signed(authority_account_id).into(),
                 account_id,
-                UserInfo {
-                    handle: Some(b"handle".to_vec()),
-                    avatar_uri: None,
-                    about: None,
-                },
+                Some(b"handle".to_vec()),
+                None,
+                None,
             )
             .unwrap();
             let member_id = 0; // newly created member_id

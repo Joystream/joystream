@@ -1,1 +1,9 @@
-**
+**/*.js
+**/*.d.ts
+!.eslintrc.js
+hiring/schemas/role.schema.json
+lib/
+build/
+augment/
+augment-codec/
+src/hiring/schemas/role.schema.typings.ts

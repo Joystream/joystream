@@ -22,13 +22,16 @@ yarn*
 .*.sw*
 
 # Visual Studio Code
-.vscode
+.vscode/
 
 # Compiled WASM code
 *.wasm
 
 # Temporary files
-.tmp/
+**.tmp/
 
 # Istanbul report output
 **.nyc_output/
+
+# eslint cache
+**/.eslintcache

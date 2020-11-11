@@ -1,19 +1,18 @@
 import BN from 'bn.js';
-import React from 'react';
+import React, { useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { Form, Field, withFormik, FormikProps } from 'formik';
 import * as Yup from 'yup';
 
-import { Option, Vec } from '@polkadot/types';
-import Section from '@polkadot/joy-utils/Section';
-import TxButton from '@polkadot/joy-utils/TxButton';
-import * as JoyForms from '@polkadot/joy-utils/forms';
+import { Vec } from '@polkadot/types';
+import { Section, TxButton } from '@polkadot/joy-utils/react/components';
+import * as JoyForms from '@polkadot/joy-utils/react/components/forms';
 import { SubmittableResult } from '@polkadot/api';
-import { MemberId, UserInfo, Profile, PaidTermId, PaidMembershipTerms } from '@joystream/types/members';
-import { OptionText } from '@joystream/types/';
-import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/MyAccount';
+import { MemberId, Membership, PaidTermId, PaidMembershipTerms } from '@joystream/types/members';
+import { OptionText } from '@joystream/types/common';
+import { MyAccountProps, withMyAccount } from '@polkadot/joy-utils/react/hocs/accounts';
 import { queryMembershipToProp } from './utils';
-import { withCalls } from '@polkadot/react-api/index';
+import { withCalls, ApiContext } from '@polkadot/react-api/index';
 import { Button, Message } from 'semantic-ui-react';
 import { formatBalance } from '@polkadot/util';
 import { TxFailedCallback, TxCallback } from '@polkadot/react-components/Status/types';
@@ -43,7 +42,7 @@ type ValidationProps = {
 };
 
 type OuterProps = ValidationProps & {
-  profile?: Profile;
+  profile?: Membership;
   paidTerms: PaidMembershipTerms;
   paidTermId: PaidTermId;
   memberId?: MemberId;
@@ -79,12 +78,15 @@ const InnerForm = (props: FormProps) => {
     memberId
   } = props;
 
+  const { api } = useContext(ApiContext);
+
   const onSubmit = (sendTx: () => void) => {
     if (isValid) sendTx();
   };
 
   const onTxFailed: TxFailedCallback = (txResult: SubmittableResult | null) => {
     setSubmitting(false);
+
     if (txResult == null) {
       // Tx cancelled.
 
@@ -102,53 +104,55 @@ const InnerForm = (props: FormProps) => {
 
   // TODO extract to forms.tsx
   const fieldToTextOption = (field: FieldName): OptionText => {
-    return isFieldChanged(field) ? OptionText.some(values[field]) : OptionText.none();
+    return isFieldChanged(field)
+      ? api.createType('Option<Text>', values[field])
+      : api.createType('Option<Text>', null);
   };
 
   const buildTxParams = () => {
     if (!isValid) return [];
 
-    const userInfo = new UserInfo({
-      handle: fieldToTextOption('handle'),
-      avatar_uri: fieldToTextOption('avatar'),
-      about: fieldToTextOption('about')
-    });
+    const userInfo = [
+      fieldToTextOption('handle'),
+      fieldToTextOption('avatar'),
+      fieldToTextOption('about')
+    ];
 
     if (profile) {
       // update profile
-      return [memberId, userInfo];
+      return [memberId, ...userInfo];
     } else {
       // register as new member
-      return [paidTermId, userInfo];
+      return [paidTermId, ...userInfo];
     }
   };
 
   // TODO show warning that you don't have enough balance to buy a membership
 
   return (
-    <Section title="My Membership Profile">
-      <Form className="ui form JoyForm">
+    <Section title='My Membership Profile'>
+      <Form className='ui form JoyForm'>
         <LabelledText
-          name="handle"
-          label="Handle/nickname"
+          name='handle'
+          label='Handle/nickname'
           placeholder={'You can use a-z, 0-9 and underscores.'}
           style={{ maxWidth: '30rem' }}
           {...props}
         />
         <LabelledText
-          name="avatar"
-          label="Avatar URL"
-          placeholder="Paste here an URL of your avatar image."
+          name='avatar'
+          label='Avatar URL'
+          placeholder='Paste here an URL of your avatar image.'
           {...props}
         />
-        <LabelledField name="about" label="About" {...props}>
+        <LabelledField name='about' label='About' {...props}>
           <Field
-            component="textarea"
-            id="about"
-            name="about"
+            component='textarea'
+            id='about'
+            name='about'
             disabled={isSubmitting}
             rows={3}
-            placeholder="Write here anything you would like to share about yourself with Joystream community."
+            placeholder='Write here anything you would like to share about yourself with Joystream community.'
           />
         </LabelledField>
         {!profile && paidTerms && (
@@ -165,24 +169,25 @@ const InnerForm = (props: FormProps) => {
           </Message>
         )}
         <LabelledField invisibleLabel {...props}>
-          <TxButton
-            type="submit"
-            size="large"
-            label={profile ? 'Update my profile' : 'Register'}
-            isDisabled={!dirty || isSubmitting}
-            params={buildTxParams()}
-            tx={profile ? 'members.updateProfile' : 'members.buyMembership'}
-            onClick={onSubmit}
-            txFailedCb={onTxFailed}
-            txSuccessCb={onTxSuccess}
-          />
-          <Button
-            type="button"
-            size="large"
-            disabled={!dirty || isSubmitting}
-            onClick={() => resetForm()}
-            content="Reset form"
-          />
+          <div style={{ display: 'flex' }}>
+            <TxButton
+              type='submit'
+              label={profile ? 'Update my profile' : 'Register'}
+              isDisabled={!dirty || isSubmitting}
+              params={buildTxParams()}
+              tx={profile ? 'members.updateMembership' : 'members.buyMembership'}
+              onClick={onSubmit}
+              txFailedCb={onTxFailed}
+              txSuccessCb={onTxSuccess}
+            />
+            <Button
+              type='button'
+              size='large'
+              disabled={!dirty || isSubmitting}
+              onClick={() => resetForm()}
+              content='Reset form'
+            />
+          </div>
         </LabelledField>
       </Form>
     </Section>
@@ -191,8 +196,9 @@ const InnerForm = (props: FormProps) => {
 
 const EditForm = withFormik<OuterProps, FormValues>({
   // Transform outer props into form values
-  mapPropsToValues: props => {
+  mapPropsToValues: (props) => {
     const { profile: p } = props;
+
     return {
       handle: p ? p.handle.toString() : '',
       avatar: p ? p.avatar_uri.toString() : '',
@@ -202,24 +208,25 @@ const EditForm = withFormik<OuterProps, FormValues>({
 
   validationSchema: buildSchema,
 
-  handleSubmit: values => {
+  handleSubmit: (values) => {
     // do submitting things
   }
 })(InnerForm);
 
-type WithMyProfileProps = {
+type WithMembershipDataProps = {
   memberId?: MemberId;
-  memberProfile?: Option<any>; // TODO refactor to Option<Profile>
+  membership?: Membership;
   paidTermsId: PaidTermId;
-  paidTerms?: Option<PaidMembershipTerms>;
+  paidTerms?: PaidMembershipTerms;
   minHandleLength?: BN;
   maxHandleLength?: BN;
   maxAvatarUriLength?: BN;
   maxAboutTextLength?: BN;
 };
 
-function WithMyProfileInner (p: WithMyProfileProps) {
-  const triedToFindProfile = !p.memberId || p.memberProfile;
+function WithMembershipDataInner (p: WithMembershipDataProps) {
+  const triedToFindProfile = !p.memberId || p.membership;
+
   if (
     triedToFindProfile &&
     p.paidTerms &&
@@ -228,9 +235,11 @@ function WithMyProfileInner (p: WithMyProfileProps) {
     p.maxAvatarUriLength &&
     p.maxAboutTextLength
   ) {
-    const profile = p.memberProfile ? p.memberProfile.unwrapOr(undefined) : undefined;
+    const membership = (p.memberId && p.membership && !p.membership.handle.isEmpty)
+      ? p.membership
+      : undefined;
 
-    if (!profile && p.paidTerms.isNone) {
+    if (!membership && p.paidTerms.isEmpty) {
       console.error('Could not find active paid membership terms');
     }
 
@@ -240,8 +249,8 @@ function WithMyProfileInner (p: WithMyProfileProps) {
         maxHandleLength={p.maxHandleLength.toNumber()}
         maxAvatarUriLength={p.maxAvatarUriLength.toNumber()}
         maxAboutTextLength={p.maxAboutTextLength.toNumber()}
-        profile={profile as Profile}
-        paidTerms={p.paidTerms.unwrap()}
+        profile={membership}
+        paidTerms={p.paidTerms}
         paidTermId={p.paidTermsId}
         memberId={p.memberId}
       />
@@ -249,28 +258,28 @@ function WithMyProfileInner (p: WithMyProfileProps) {
   } else return <em>Loading...</em>;
 }
 
-const WithMyProfile = withCalls<WithMyProfileProps>(
+const WithMembershipData = withCalls<WithMembershipDataProps>(
   queryMembershipToProp('minHandleLength'),
   queryMembershipToProp('maxHandleLength'),
   queryMembershipToProp('maxAvatarUriLength'),
   queryMembershipToProp('maxAboutTextLength'),
-  queryMembershipToProp('memberProfile', 'memberId'),
+  queryMembershipToProp('membershipById', { paramName: 'memberId', propName: 'membership' }),
   queryMembershipToProp('paidMembershipTermsById', { paramName: 'paidTermsId', propName: 'paidTerms' })
-)(WithMyProfileInner);
+)(WithMembershipDataInner);
 
-type WithMyMemberIdProps = MyAccountProps & {
+type WithMembershipDataWrapperProps = MyAccountProps & {
   memberIdsByRootAccountId?: Vec<MemberId>;
   memberIdsByControllerAccountId?: Vec<MemberId>;
   paidTermsIds?: Vec<PaidTermId>;
 };
 
-function WithMyMemberIdInner (p: WithMyMemberIdProps) {
+function WithMembershipDataWrapperInner (p: WithMembershipDataWrapperProps) {
   if (p.allAccounts && !Object.keys(p.allAccounts).length) {
     return (
-      <Message warning className="JoyMainStatus">
+      <Message warning className='JoyMainStatus'>
         <Message.Header>Please create a key to get started.</Message.Header>
         <div style={{ marginTop: '1rem' }}>
-          <Link to={'/accounts'} className="ui button orange">
+          <Link to={'/accounts'} className='ui button orange'>
             Create key
           </Link>
         </div>
@@ -280,11 +289,9 @@ function WithMyMemberIdInner (p: WithMyMemberIdProps) {
 
   if (p.memberIdsByRootAccountId && p.memberIdsByControllerAccountId && p.paidTermsIds) {
     if (p.paidTermsIds.length) {
-      // let member_ids = p.memberIdsByRootAccountId.slice(); // u8a.subarray is not a function!!
-      p.memberIdsByRootAccountId.concat(p.memberIdsByControllerAccountId);
-      const memberId = p.memberIdsByRootAccountId.length ? p.memberIdsByRootAccountId[0] : undefined;
+      const [memberId] = p.memberIdsByRootAccountId.toArray().concat(p.memberIdsByControllerAccountId.toArray());
 
-      return <WithMyProfile memberId={memberId} paidTermsId={p.paidTermsIds[0]} />;
+      return <WithMembershipData memberId={memberId} paidTermsId={p.paidTermsIds[0]} />;
     } else {
       console.error('Active paid membership terms is empty');
     }
@@ -293,12 +300,12 @@ function WithMyMemberIdInner (p: WithMyMemberIdProps) {
   return <em>Loading...</em>;
 }
 
-const WithMyMemberId = withMyAccount(
-  withCalls<WithMyMemberIdProps>(
+const WithMembershipDataWrapper = withMyAccount(
+  withCalls<WithMembershipDataWrapperProps>(
     queryMembershipToProp('memberIdsByRootAccountId', 'myAddress'),
     queryMembershipToProp('memberIdsByControllerAccountId', 'myAddress'),
     queryMembershipToProp('activePaidMembershipTerms', { propName: 'paidTermsIds' })
-  )(WithMyMemberIdInner)
+  )(WithMembershipDataWrapperInner)
 );
 
-export default WithMyMemberId;
+export default WithMembershipDataWrapper;

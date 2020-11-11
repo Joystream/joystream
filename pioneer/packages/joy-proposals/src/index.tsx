@@ -1,30 +1,36 @@
 import React from 'react';
-import { Route, Switch } from 'react-router';
+import { Route, Switch, RouteComponentProps } from 'react-router';
+import Tabs from '@polkadot/react-components/Tabs';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { Breadcrumb } from 'semantic-ui-react';
+import { Breadcrumb, Message } from 'semantic-ui-react';
 
-import { AppProps, I18nProps } from '@polkadot/react-components/types';
-import { TransportProvider } from '@polkadot/joy-utils/react/context';
+import { I18nProps } from '@polkadot/react-components/types';
 import { ProposalPreviewList, ProposalFromId, ChooseProposalType } from './Proposal';
-
-import './index.css';
+import _ from 'lodash';
 
 import translate from './translate';
 import NotDone from './NotDone';
-import {
-  SignalForm,
-  EvictStorageProviderForm,
+import { SignalForm,
   SpendingProposalForm,
-  SetContentWorkingGroupLeadForm,
-  SetContentWorkingGroupMintCapForm,
   SetCouncilParamsForm,
-  SetStorageRoleParamsForm,
   SetMaxValidatorCountForm,
-  RuntimeUpgradeForm
-} from './forms';
+  RuntimeUpgradeForm,
+  AddWorkingGroupOpeningForm,
+  SetWorkingGroupMintCapacityForm,
+  BeginReviewLeaderApplicationsForm,
+  FillWorkingGroupLeaderOpeningForm,
+  DecreaseWorkingGroupLeadStakeFrom,
+  SlashWorkingGroupLeadStakeForm,
+  SetWorkingGroupLeadRewardForm,
+  TerminateWorkingGroupLeaderForm } from './forms';
+import { RouteProps as AppMainRouteProps } from '@polkadot/apps-routing/types';
+import style from './style';
+import { HistoricalProposalFromId } from './Proposal/ProposalFromId';
 
-interface Props extends AppProps, I18nProps {}
+const ProposalsMain = styled.main`${style}`;
+
+interface Props extends AppMainRouteProps, I18nProps {}
 
 const StyledHeader = styled.header`
   text-align: left;
@@ -36,47 +42,86 @@ const StyledHeader = styled.header`
 `;
 
 function App (props: Props): React.ReactElement<Props> {
-  const { basePath } = props;
+  const { basePath, t } = props;
+  const tabs = [
+    {
+      isRoot: true,
+      name: 'current',
+      text: t('Current')
+    },
+    {
+      name: 'historical',
+      text: t('Historical'),
+      hasParams: true
+    }
+  ];
 
   return (
-    <TransportProvider>
-      <main className="proposal--App">
-        <StyledHeader>
-          <Breadcrumb>
-            <Switch>
-              <Route path={`${basePath}/new`}>
+    <ProposalsMain className='proposal--App'>
+      <StyledHeader>
+        <Tabs
+          basePath={basePath}
+          items={tabs}
+        />
+        <Breadcrumb>
+          <Switch>
+            <Route path={`${basePath}/new/:type`} render={(props: RouteComponentProps<{ type?: string }>) => (
+              <>
                 <Breadcrumb.Section link as={Link} to={basePath}>Proposals</Breadcrumb.Section>
-                <Breadcrumb.Divider icon="right angle" />
-                <Breadcrumb.Section active>New proposal</Breadcrumb.Section>
-              </Route>
-              <Route>
-                <Breadcrumb.Section active>Proposals</Breadcrumb.Section>
-              </Route>
-            </Switch>
-          </Breadcrumb>
-        </StyledHeader>
+                <Breadcrumb.Divider icon='right angle' />
+                <Breadcrumb.Section link as={Link} to={`${basePath}/new`}>New proposal</Breadcrumb.Section>
+                <Breadcrumb.Divider icon='right angle' />
+                <Breadcrumb.Section active>{_.startCase(props.match.params.type)}</Breadcrumb.Section>
+              </>
+            )} />
+            <Route path={`${basePath}/new`}>
+              <Breadcrumb.Section link as={Link} to={basePath}>Proposals</Breadcrumb.Section>
+              <Breadcrumb.Divider icon='right angle' />
+              <Breadcrumb.Section active>New proposal</Breadcrumb.Section>
+            </Route>
+            <Route path={`${basePath}/historical`}>
+              <Breadcrumb.Section active>Historical Proposals</Breadcrumb.Section>
+            </Route>
+            <Route>
+              <Breadcrumb.Section active>Proposals</Breadcrumb.Section>
+            </Route>
+          </Switch>
+        </Breadcrumb>
         <Switch>
-          <Route exact path={`${basePath}/new`} component={ChooseProposalType} />
-          <Route exact path={`${basePath}/new/text`} component={SignalForm} />
-          <Route exact path={`${basePath}/new/runtime-upgrade`} component={RuntimeUpgradeForm} />
-          <Route exact path={`${basePath}/new/set-election-parameters`} component={SetCouncilParamsForm} />
-          <Route exact path={`${basePath}/new/spending`} component={SpendingProposalForm} />
-          <Route exact path={`${basePath}/new/set-lead`} component={SetContentWorkingGroupLeadForm} />
-          <Route
-            exact
-            path={`${basePath}/new/set-content-working-group-mint-capacity`}
-            component={SetContentWorkingGroupMintCapForm}
-          />
-          <Route exact path={`${basePath}/new/evict-storage-provider`} component={EvictStorageProviderForm} />
-          <Route exact path={`${basePath}/new/set-validator-count`} component={SetMaxValidatorCountForm} />
-          <Route exact path={`${basePath}/new/set-storage-role-parameters`} component={SetStorageRoleParamsForm} />
-          <Route exact path={`${basePath}/active`} component={NotDone} />
-          <Route exact path={`${basePath}/finalized`} component={NotDone} />
-          <Route exact path={`${basePath}/:id`} component={ProposalFromId} />
-          <Route component={ProposalPreviewList} />
+          <Route path={`${basePath}/historical`}>
+            <Message warning active>
+              <Message.Header>{"You're in a historical proposals view."}</Message.Header>
+              <Message.Content>
+                The data presented here comes from previous Joystream testnet chain, which
+                means all proposals are read-only and can no longer be interacted with!
+              </Message.Content>
+            </Message>
+          </Route>
         </Switch>
-      </main>
-    </TransportProvider>
+      </StyledHeader>
+      <Switch>
+        <Route exact path={`${basePath}/new`} component={ChooseProposalType} />
+        <Route exact path={`${basePath}/new/text`} component={SignalForm} />
+        <Route exact path={`${basePath}/new/runtime-upgrade`} component={RuntimeUpgradeForm} />
+        <Route exact path={`${basePath}/new/set-election-parameters`} component={SetCouncilParamsForm} />
+        <Route exact path={`${basePath}/new/spending`} component={SpendingProposalForm} />
+        <Route exact path={`${basePath}/new/set-validator-count`} component={SetMaxValidatorCountForm} />
+        <Route exact path={`${basePath}/new/add-working-group-leader-opening`} component={AddWorkingGroupOpeningForm} />
+        <Route exact path={`${basePath}/new/set-working-group-mint-capacity`} component={SetWorkingGroupMintCapacityForm} />
+        <Route exact path={`${basePath}/new/begin-review-working-group-leader-application`} component={BeginReviewLeaderApplicationsForm} />
+        <Route exact path={`${basePath}/new/fill-working-group-leader-opening`} component={FillWorkingGroupLeaderOpeningForm} />
+        <Route exact path={`${basePath}/new/decrease-working-group-leader-stake`} component={DecreaseWorkingGroupLeadStakeFrom} />
+        <Route exact path={`${basePath}/new/slash-working-group-leader-stake`} component={SlashWorkingGroupLeadStakeForm} />
+        <Route exact path={`${basePath}/new/set-working-group-leader-reward`} component={SetWorkingGroupLeadRewardForm} />
+        <Route exact path={`${basePath}/new/terminate-working-group-leader-role`} component={TerminateWorkingGroupLeaderForm} />
+        <Route exact path={`${basePath}/active`} component={NotDone} />
+        <Route exact path={`${basePath}/finalized`} component={NotDone} />
+        <Route exact path={`${basePath}/historical`} render={() => <ProposalPreviewList historical={true}/>} />
+        <Route exact path={`${basePath}/historical/:id`} component={HistoricalProposalFromId}/>
+        <Route exact path={`${basePath}/:id`} component={ProposalFromId}/>
+        <Route component={ProposalPreviewList} />
+      </Switch>
+    </ProposalsMain>
   );
 }
 

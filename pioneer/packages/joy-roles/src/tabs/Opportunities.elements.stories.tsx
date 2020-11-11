@@ -2,17 +2,11 @@ import React from 'react';
 import { withKnobs } from '@storybook/addon-knobs';
 import { Card, Container } from 'semantic-ui-react';
 
-import { u128 } from '@polkadot/types';
-
-import {
-  OpeningBodyApplicationsStatus, OpeningStakeAndApplicationStatus,
+import { OpeningBodyApplicationsStatus, OpeningStakeAndApplicationStatus,
   OpeningBodyReviewInProgress,
   OpeningBodyStakeRequirement, StakeRequirementProps,
-  OpeningHeader
-} from './Opportunities';
-import {
-  openingClass
-} from '../openingStateMarkup';
+  OpeningHeader } from './Opportunities';
+import { openingClass } from '../openingStateMarkup';
 import { ApplicationStakeRequirement, RoleStakeRequirement, StakeType } from '../StakeRequirement';
 
 import { tomorrow, yesterday } from './Opportunities.stories';
@@ -22,6 +16,8 @@ import { OpeningMetadata } from '../OpeningMetadata';
 
 import 'semantic-ui-css/semantic.min.css';
 import '@polkadot/joy-roles/index.sass';
+import { WorkingGroups } from '../working_groups';
+import { createType } from '@joystream/types';
 
 export default {
   title: 'Roles / Components / Opportunities groups tab / Elements',
@@ -34,7 +30,7 @@ type TestProps = {
 
 const meta: OpeningMetadata = {
   id: '1',
-  group: 'group-name'
+  group: WorkingGroups.ContentCurators
 };
 
 export function OpeningHeaderByState () {
@@ -75,8 +71,8 @@ export function OpeningHeaderByState () {
     <Container>
       {stages.map((stage, key) => (
         <Container className={'inner opening ' + openingClass(stage.state)} key={key}>
-          <Card fluid className="container">
-            <Card.Content className="header">
+          <Card fluid className='container'>
+            <Card.Content className='header'>
               <OpeningHeader stage={stage} meta={meta} />
             </Card.Content>
           </Card>
@@ -92,90 +88,90 @@ export function OpeningApplicationsStatusByState () {
       _description: 'No limit, no applications, no stake',
       numberOfApplications: 0,
       maxNumberOfApplications: 0,
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'No limit, some applications, no stake',
       numberOfApplications: 15,
       maxNumberOfApplications: 0,
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'Limit, no applications, no stake',
       numberOfApplications: 0,
       maxNumberOfApplications: 20,
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'Limit, some applications, no stake',
       numberOfApplications: 10,
       maxNumberOfApplications: 20,
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'Limit, full applications, no stake (application impossible)',
       numberOfApplications: 20,
       maxNumberOfApplications: 20,
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'No limit, no applications, some stake',
       numberOfApplications: 0,
       maxNumberOfApplications: 0,
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 10)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'No limit, some applications, some stake',
       numberOfApplications: 15,
       maxNumberOfApplications: 0,
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 10)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'Limit, no applications, some stake',
       numberOfApplications: 0,
       maxNumberOfApplications: 20,
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 10)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'Limit, some applications, some stake',
       numberOfApplications: 10,
       maxNumberOfApplications: 20,
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 10)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     },
     {
       _description: 'Limit, full applications, some stake',
       numberOfApplications: 20,
       maxNumberOfApplications: 20,
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(10)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(0)
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 10)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0)
     }
   ];
 
   return (
     <Container>
       {permutations.map((permutation, key) => (
-        <Container className="outer opening" key={key}>
+        <Container className='outer opening' key={key}>
           <h4>{permutation._description}</h4>
-          <Container className="main">
+          <Container className='main'>
             <OpeningBodyApplicationsStatus {...permutation} />
           </Container>
         </Container>
@@ -188,51 +184,51 @@ export function OpeningApplicationsStakeRequirementByStake () {
   const permutations: (StakeRequirementProps & TestProps)[] = [
     {
       _description: 'No stakes required (should be empty)',
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(0),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0),
       maxNumberOfApplications: 0
     },
     {
       _description: 'App stake required; no role stake required',
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(500)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(0),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 500)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0),
       maxNumberOfApplications: 0
     },
     {
       _description: 'App stake required >; no role stake required',
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(500), StakeType.AtLeast),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(0),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 500), StakeType.AtLeast),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 0),
       maxNumberOfApplications: 0
     },
     {
       _description: 'No app stake required; role stake required',
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(0)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(101)),
-      defactoMinimumStake: new u128(0),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 101)),
+      defactoMinimumStake: createType('Balance', 0),
       maxNumberOfApplications: 0
     },
     {
       _description: 'No app stake required; role stake required',
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(0), StakeType.AtLeast),
-      requiredRoleStake: new RoleStakeRequirement(new u128(102)),
-      defactoMinimumStake: new u128(0),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 0), StakeType.AtLeast),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 102)),
+      defactoMinimumStake: createType('Balance', 0),
       maxNumberOfApplications: 0
     },
     {
       _description: '>= App stake required; role stake required',
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(101), StakeType.AtLeast),
-      requiredRoleStake: new RoleStakeRequirement(new u128(102)),
-      defactoMinimumStake: new u128(0),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 101), StakeType.AtLeast),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 102)),
+      defactoMinimumStake: createType('Balance', 0),
       maxNumberOfApplications: 0
     },
     {
       _description: 'App stake required; no role stake required; dynamic minimum > 0',
-      requiredApplicationStake: new ApplicationStakeRequirement(new u128(500)),
-      requiredRoleStake: new RoleStakeRequirement(new u128(0)),
-      defactoMinimumStake: new u128(1000),
+      requiredApplicationStake: new ApplicationStakeRequirement(createType('Balance', 500)),
+      requiredRoleStake: new RoleStakeRequirement(createType('Balance', 0)),
+      defactoMinimumStake: createType('Balance', 1000),
       maxNumberOfApplications: 20
     }
   ];
@@ -240,11 +236,11 @@ export function OpeningApplicationsStakeRequirementByStake () {
   return (
     <Container>
       {permutations.map((permutation, key) => (
-        <Container className="outer opening" key={key}>
+        <Container className='outer opening' key={key}>
           <h4>{permutation._description}</h4>
           <Card fluid>
             <Card.Content>
-              <Container className="main">
+              <Container className='main'>
                 <OpeningBodyStakeRequirement {...permutation} />
               </Container>
             </Card.Content>
@@ -271,11 +267,11 @@ export function ReviewInProgress () {
   return (
     <Container>
       {permutations.map((permutation, key) => (
-        <Container className="outer opening" key={key}>
+        <Container className='outer opening' key={key}>
           <h4>{permutation._description}</h4>
           <Card fluid>
             <Card.Content>
-              <Container className="main">
+              <Container className='main'>
                 <OpeningBodyReviewInProgress {...permutation} />
               </Container>
             </Card.Content>

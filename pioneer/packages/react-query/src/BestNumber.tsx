@@ -1,34 +1,33 @@
-/* eslint-disable @typescript-eslint/camelcase */
-// Copyright 2017-2019 @polkadot/react-query authors & contributors
+// Copyright 2017-2020 @polkadot/react-query authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { BareProps, CallProps } from '@polkadot/react-api/types';
 import { BlockNumber } from '@polkadot/types/interfaces';
 
 import React from 'react';
-import { withCalls } from '@polkadot/react-api';
+import { useApi, useCall } from '@polkadot/react-hooks';
 import { formatNumber } from '@polkadot/util';
 
-interface Props extends BareProps, CallProps {
+interface Props {
   children?: React.ReactNode;
+  className?: string;
   label?: React.ReactNode;
-  chain_bestNumber?: BlockNumber;
+  withPound?: boolean;
 }
 
-export function BestNumber ({ children, className, label = '', style, chain_bestNumber }: Props): React.ReactElement<Props> {
+function BestNumber ({ children, className = '', label, withPound }: Props): React.ReactElement<Props> {
+  const { api, isApiReady } = useApi();
+  const bestNumber = useCall<BlockNumber>(isApiReady && api.derive.chain.bestNumber, []);
+
   return (
-    <div
-      className={className}
-      style={style}
-    >
-      {label}{
-        chain_bestNumber
-          ? formatNumber(chain_bestNumber)
+    <div className={className}>
+      {label || ''}{withPound && '#'}{
+        bestNumber
+          ? formatNumber(bestNumber)
           : '-'
       }{children}
     </div>
   );
 }
 
-export default withCalls<Props>('derive.chain.bestNumber')(BestNumber);
+export default React.memo(BestNumber);

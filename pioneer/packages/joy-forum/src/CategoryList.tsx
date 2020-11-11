@@ -1,25 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Table, Dropdown, Button, Segment, Label } from 'semantic-ui-react';
-import { History } from 'history';
+import { Table, Dropdown, Button, Segment, Label, SemanticICONS, Icon } from 'semantic-ui-react';
+import styled from 'styled-components';
 import orderBy from 'lodash/orderBy';
 import BN from 'bn.js';
-
-import { Option, bool } from '@polkadot/types';
-import { CategoryId, Category, ThreadId, Thread } from '@joystream/types/forum';
+import { ThreadId } from '@joystream/types/common';
+import { CategoryId, Category, Thread } from '@joystream/types/forum';
 import { ViewThread } from './ViewThread';
-import { MutedSpan } from '@polkadot/joy-utils/MutedText';
-import { UrlHasIdProps, CategoryCrumbs, Pagination, ThreadsPerPage } from './utils';
-import Section from '@polkadot/joy-utils/Section';
-import { JoyWarn } from '@polkadot/joy-utils/JoyStatus';
+import { MutedSpan, Section, JoyWarn, SemanticTxButton } from '@polkadot/joy-utils/react/components';
+import { UrlHasIdProps, CategoryCrumbs, Pagination, ThreadsPerPage, usePagination } from './utils';
 import { withForumCalls } from './calls';
 import { withMulti, withApi } from '@polkadot/react-api';
 import { ApiProps } from '@polkadot/react-api/types';
-import { bnToStr, isEmptyArr } from '@polkadot/joy-utils/index';
-import TxButton from '@polkadot/joy-utils/TxButton';
+import { bnToStr, isEmptyArr } from '@polkadot/joy-utils/functions/misc';
 import { IfIAmForumSudo } from './ForumSudo';
-import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
+import MemberPreview from '@polkadot/joy-utils/react/components/MemberByAccountPreview';
+import { useApi } from '@polkadot/react-hooks';
 
 type CategoryActionsProps = {
   id: CategoryId;
@@ -28,23 +25,25 @@ type CategoryActionsProps = {
 
 function CategoryActions (props: CategoryActionsProps) {
   const { id, category } = props;
+  const { api } = useApi();
   const className = 'ui button ActionButton';
 
   type BtnProps = {
     label: string;
-    icon?: string;
+    icon?: SemanticICONS;
     archive?: boolean;
     delete?: boolean;
   };
 
   const UpdateCategoryButton = (btnProps: BtnProps) => {
-    return <TxButton
+    return <SemanticTxButton
       className='item'
-      isPrimary={false}
-      label={<><i className={`${btnProps.icon} icon`} />{btnProps.label}</>}
-      params={[id, new Option(bool, btnProps.archive), new Option(bool, btnProps.delete)]}
+      params={[id, api.createType('Option<bool>', btnProps.archive), api.createType('Option<bool>', btnProps.delete)]}
       tx={'forum.updateCategory'}
-    />;
+    >
+      <Icon name={btnProps.icon}/>
+      { btnProps.label }
+    </SemanticTxButton>;
   };
 
   if (category.archived) {
@@ -99,17 +98,19 @@ function CategoryActions (props: CategoryActionsProps) {
 
 type InnerViewCategoryProps = {
   category?: Category;
-  page?: number;
   preview?: boolean;
-  history?: History;
 };
 
 type ViewCategoryProps = InnerViewCategoryProps & {
   id: CategoryId;
 };
 
+const CategoryPreviewRow = styled(Table.Row)`
+  height: 55px;
+`;
+
 function InnerViewCategory (props: InnerViewCategoryProps) {
-  const { history, category, page = 1, preview = false } = props;
+  const { category, preview = false } = props;
 
   if (!category) {
     return <em>Loading...</em>;
@@ -127,7 +128,7 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
 
   if (preview) {
     return (
-      <Table.Row>
+      <CategoryPreviewRow>
         <Table.Cell>
           <Link to={`/forum/categories/${id.toString()}`}>
             {category.archived
@@ -143,17 +144,10 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
           {category.num_direct_subcategories.toString()}
         </Table.Cell>
         <Table.Cell>
-          {renderCategoryActions()}
+          {category.description}
         </Table.Cell>
-        <Table.Cell>
-          <MemberPreview accountId={category.moderator_id} />
-        </Table.Cell>
-      </Table.Row>
+      </CategoryPreviewRow>
     );
-  }
-
-  if (!history) {
-    return <em>Error: <code>history</code> property was not found.</em>;
   }
 
   const renderSubCategoriesAndThreads = () => <>
@@ -164,8 +158,9 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
     }
 
     <Segment>
-      <div>
-        <MemberPreview accountId={category.moderator_id} prefixLabel='Creator:' />
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ marginRight: '0.5em', color: '#777' }}>Creator:</div>
+        <MemberPreview accountId={category.moderator_id} showCouncilBadge showId={false}/>
       </div>
       <div style={{ marginTop: '1rem' }}>
         <ReactMarkdown className='JoyMemo--full' source={category.description} linkTarget='_blank' />
@@ -179,7 +174,7 @@ function InnerViewCategory (props: InnerViewCategoryProps) {
     }
 
     <Section title={`Threads (${category.num_direct_unmoderated_threads.toString()})`}>
-      <CategoryThreads category={category} page={page} history={history} />
+      <CategoryThreads category={category} />
     </Section>
   </>;
 
@@ -203,8 +198,6 @@ const ViewCategory = withForumCalls<ViewCategoryProps>(
 
 type InnerCategoryThreadsProps = {
   category: Category;
-  page: number;
-  history: History;
 };
 
 type CategoryThreadsProps = ApiProps & InnerCategoryThreadsProps & {
@@ -212,13 +205,9 @@ type CategoryThreadsProps = ApiProps & InnerCategoryThreadsProps & {
 };
 
 function InnerCategoryThreads (props: CategoryThreadsProps) {
-  const { api, category, nextThreadId, page, history } = props;
-
-  if (!category.hasUnmoderatedThreads) {
-    return <em>No threads in this category</em>;
-  }
-
+  const { api, category, nextThreadId } = props;
   const threadCount = category.num_threads_created.toNumber();
+  const [currentPage, setCurrentPage] = usePagination();
   const [loaded, setLoaded] = useState(false);
   const [threads, setThreads] = useState(new Array<Thread>());
 
@@ -226,16 +215,17 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
     const loadThreads = async () => {
       if (!nextThreadId || threadCount === 0) return;
 
-      const newId = (id: number | BN) => new ThreadId(id);
+      const newId = (id: number | BN) => api.createType('ThreadId', id);
       const apiCalls: Promise<Thread>[] = [];
       let id = newId(1);
+
       while (nextThreadId.gt(id)) {
         apiCalls.push(api.query.forum.threadById(id) as Promise<Thread>);
         id = newId(id.add(newId(1)));
       }
 
       const allThreads = await Promise.all<Thread>(apiCalls);
-      const threadsInThisCategory = allThreads.filter(item =>
+      const threadsInThisCategory = allThreads.filter((item) =>
         !item.isEmpty &&
         item.category_id.eq(category.id)
       );
@@ -243,9 +233,9 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
         threadsInThisCategory,
         // TODO UX: Replace sort by id with sort by blocktime of the last reply.
         [
-          x => x.moderated,
+          (x) => x.moderated,
           // x => x.pinned,
-          x => x.nr_in_category.toNumber()
+          (x) => x.nr_in_category.toNumber()
         ],
         [
           'asc',
@@ -258,9 +248,12 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
       setLoaded(true);
     };
 
-    loadThreads();
+    void loadThreads();
   }, [bnToStr(category.id), bnToStr(nextThreadId)]);
 
+  if (!category.hasUnmoderatedThreads) {
+    return <em>No threads in this category</em>;
+  }
   // console.log({ nextThreadId: bnToStr(nextThreadId), loaded, threads });
 
   if (!loaded) {
@@ -271,20 +264,16 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
     return <em>No threads in this category</em>;
   }
 
-  const onPageChange = (activePage?: string | number) => {
-    history.push(`/forum/categories/${category.id.toString()}/page/${activePage}`);
-  };
-
   const itemsPerPage = ThreadsPerPage;
-  const minIdx = (page - 1) * itemsPerPage;
+  const minIdx = (currentPage - 1) * itemsPerPage;
   const maxIdx = minIdx + itemsPerPage - 1;
 
   const pagination =
     <Pagination
-      currentPage={page}
+      currentPage={currentPage}
       totalItems={threadCount}
       itemsPerPage={itemsPerPage}
-      onPageChange={onPageChange}
+      onPageChange={setCurrentPage}
     />;
 
   const pageOfItems = threads
@@ -299,6 +288,7 @@ function InnerCategoryThreads (props: CategoryThreadsProps) {
           <Table.HeaderCell>Thread</Table.HeaderCell>
           <Table.HeaderCell>Replies</Table.HeaderCell>
           <Table.HeaderCell>Creator</Table.HeaderCell>
+          <Table.HeaderCell>Created</Table.HeaderCell>
         </Table.Row>
       </Table.Header>
       <Table.Body>
@@ -318,21 +308,19 @@ export const CategoryThreads = withMulti(
 );
 
 type ViewCategoryByIdProps = UrlHasIdProps & {
-  history: History;
   match: {
     params: {
       id: string;
-      page?: string;
     };
   };
 };
 
 export function ViewCategoryById (props: ViewCategoryByIdProps) {
-  const { history, match: { params: { id, page: pageStr } } } = props;
+  const { match: { params: { id } } } = props;
+  const { api } = useApi();
+
   try {
-    // tslint:disable-next-line:radix
-    const page = pageStr ? parseInt(pageStr) : 1;
-    return <ViewCategory id={new CategoryId(id)} page={page} history={history} />;
+    return <ViewCategory id={api.createType('CategoryId', id)} />;
   } catch (err) {
     return <em>Invalid category ID: {id}</em>;
   }
@@ -352,16 +340,17 @@ function InnerCategoryList (props: CategoryListProps) {
     const loadCategories = async () => {
       if (!nextCategoryId) return;
 
-      const newId = (id: number | BN) => new CategoryId(id);
+      const newId = (id: number | BN) => api.createType('CategoryId', id);
       const apiCalls: Promise<Category>[] = [];
       let id = newId(1);
+
       while (nextCategoryId.gt(id)) {
         apiCalls.push(api.query.forum.categoryById(id) as Promise<Category>);
         id = newId(id.add(newId(1)));
       }
 
       const allCats = await Promise.all<Category>(apiCalls);
-      const filteredCats = allCats.filter(cat =>
+      const filteredCats = allCats.filter((cat) =>
         !cat.isEmpty &&
         !cat.deleted && // TODO show deleted categories if current user is forum sudo
         (parentId ? parentId.eq(cat.parent_id) : cat.isRoot)
@@ -371,7 +360,7 @@ function InnerCategoryList (props: CategoryListProps) {
       setLoaded(true);
     };
 
-    loadCategories();
+    void loadCategories();
   }, [bnToStr(parentId), bnToStr(nextCategoryId)]);
 
   // console.log({ nextCategoryId: bnToStr(nextCategoryId), loaded, categories });
@@ -391,8 +380,7 @@ function InnerCategoryList (props: CategoryListProps) {
           <Table.HeaderCell>Category</Table.HeaderCell>
           <Table.HeaderCell>Threads</Table.HeaderCell>
           <Table.HeaderCell>Subcategories</Table.HeaderCell>
-          <Table.HeaderCell>Actions</Table.HeaderCell>
-          <Table.HeaderCell>Creator</Table.HeaderCell>
+          <Table.HeaderCell>Description</Table.HeaderCell>
         </Table.Row>
       </Table.Header>
       <Table.Body>{categories.map((category, i) => (

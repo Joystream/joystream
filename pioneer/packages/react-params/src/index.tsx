@@ -1,33 +1,37 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-params authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
 import { I18nProps } from '@polkadot/react-components/types';
 import { ComponentMap, ParamDef, RawParam, RawParams, RawParamOnChangeValue } from './types';
 
-import './Params.css';
-
 import React from 'react';
-import styled from 'styled-components';
-import { classes } from '@polkadot/react-components/util';
+import { ErrorBoundary } from '@polkadot/react-components';
 
+import Holder from './Holder';
 import ParamComp from './ParamComp';
 import translate from './translate';
 import { createValue } from './values';
 
 interface Props extends I18nProps {
+  children?: React.ReactNode;
   isDisabled?: boolean;
   onChange?: (value: RawParams) => void;
   onEnter?: () => void;
+  onError?: () => void;
+  onEscape?: () => void;
   overrides?: ComponentMap;
   params: ParamDef[];
   values?: RawParams | null;
+  withBorder?: boolean;
 }
 
 interface State {
   params?: ParamDef[] | null;
   values?: RawParams;
 }
+
+export { Holder };
 
 class Params extends React.PureComponent<Props, State> {
   public state: State = {
@@ -72,7 +76,7 @@ class Params extends React.PureComponent<Props, State> {
   }
 
   public render (): React.ReactNode {
-    const { className, isDisabled, overrides, params, style } = this.props;
+    const { children, className = '', isDisabled, onEnter, onEscape, overrides, params, withBorder = true } = this.props;
     const { values = this.props.values } = this.state;
 
     if (!values || !values.length) {
@@ -80,25 +84,30 @@ class Params extends React.PureComponent<Props, State> {
     }
 
     return (
-      <div
-        className={classes('ui--Params', className)}
-        style={style}
+      <Holder
+        className={className}
+        withBorder={withBorder}
       >
-        <div className='ui--Params-Content'>
-          {values && params.map(({ name, type }: ParamDef, index: number): React.ReactNode => (
-            <ParamComp
-              defaultValue={values[index]}
-              index={index}
-              isDisabled={isDisabled}
-              key={`${name}:${type}:${index}`}
-              name={name}
-              onChange={this.onChangeParam}
-              overrides={overrides}
-              type={type}
-            />
-          ))}
-        </div>
-      </div>
+        <ErrorBoundary onError={this.onRenderError}>
+          <div className='ui--Params-Content'>
+            {values && params.map(({ name, type }: ParamDef, index: number): React.ReactNode => (
+              <ParamComp
+                defaultValue={values[index]}
+                index={index}
+                isDisabled={isDisabled}
+                key={`${name || ''}:${type.toString()}:${index}`}
+                name={name}
+                onChange={this.onChangeParam}
+                onEnter={onEnter}
+                onEscape={onEscape}
+                overrides={overrides}
+                type={type}
+              />
+            ))}
+          </div>
+          {children}
+        </ErrorBoundary>
+      </Holder>
     );
   }
 
@@ -124,7 +133,7 @@ class Params extends React.PureComponent<Props, State> {
   }
 
   private triggerUpdate = (): void => {
-    const { onChange, isDisabled } = this.props;
+    const { isDisabled, onChange } = this.props;
     const { values } = this.state;
 
     if (isDisabled || !values) {
@@ -133,18 +142,12 @@ class Params extends React.PureComponent<Props, State> {
 
     onChange && onChange(values);
   }
+
+  private onRenderError = (): void => {
+    const { onError } = this.props;
+
+    onError && onError();
+  }
 }
 
-export default translate(
-  styled(Params as React.ComponentClass<Props>)`
-    .ui--Param-composite {
-      position: relative;
-
-      .ui--Param-overlay {
-        position: absolute;
-        top: 0.5rem;
-        right: 3.5rem;
-      }
-    }
-  `
-);
+export default translate(Params);

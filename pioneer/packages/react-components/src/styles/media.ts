@@ -1,4 +1,4 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
@@ -28,6 +28,108 @@ export default css`
   th.ui--media-medium,
   th.ui--media-small {
     display: none;
+  }
+
+  .ui--media-2000 {
+    @media only screen and (max-width: 1900px) {
+      display: none;
+    }
+  }
+
+  .ui--media-1900 {
+    @media only screen and (max-width: 1900px) {
+      display: none;
+    }
+  }
+
+  .ui--media-1800 {
+    @media only screen and (max-width: 1800px) {
+      display: none;
+    }
+  }
+
+  .ui--media-1700 {
+    @media only screen and (max-width: 1700px) {
+      display: none;
+    }
+  }
+
+  .ui--media-1600 {
+    @media only screen and (max-width: 1600px) {
+      display: none;
+    }
+  }
+
+  .ui--media-1500 {
+    @media only screen and (max-width: 1500px) {
+      display: none;
+    }
+  }
+
+  .ui--media-1400 {
+    @media only screen and (max-width: 1400px) {
+      display: none;
+    }
+  }
+
+  .ui--media-1300 {
+    @media only screen and (max-width: 1300px) {
+      display: none;
+    }
+  }
+
+  .ui--media-1200 {
+    @media only screen and (max-width: 1200px) {
+      display: none;
+    }
+  }
+
+  .ui--media-1100 {
+    @media only screen and (max-width: 1100px) {
+      display: none;
+    }
+  }
+
+  .ui--media-1000 {
+    @media only screen and (max-width: 1000px) {
+      display: none;
+    }
+  }
+
+  .ui--media-900 {
+    @media only screen and (max-width: 900px) {
+      display: none;
+    }
+  }
+
+  .ui--media-800 {
+    @media only screen and (max-width: 800px) {
+      display: none;
+    }
+  }
+
+  .ui--media-700 {
+    @media only screen and (max-width: 700px) {
+      display: none;
+    }
+  }
+
+  .ui--media-600 {
+    @media only screen and (max-width: 600px) {
+      display: none;
+    }
+  }
+
+  .ui--media-500 {
+    @media only screen and (max-width: 500px) {
+      display: none;
+    }
+  }
+
+  .ui--media-400 {
+    @media only screen and (max-width: 400px) {
+      display: none;
+    }
   }
 
   @media (min-width: 1281px) {
@@ -87,8 +189,8 @@ export default css`
 
   /* tabs */
   @media (max-width: 991px) {
-    .ui.menu.tabular {
-      padding-left: 5.2rem !important;
+    .ui--Tabs {
+      padding-left: 5.2rem;
     }
   }
 `;

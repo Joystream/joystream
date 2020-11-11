@@ -1,23 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, RouteComponentProps } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Table, Button, Label } from 'semantic-ui-react';
-import { History } from 'history';
+import styled from 'styled-components';
+import { Table, Button, Label, Icon } from 'semantic-ui-react';
 import BN from 'bn.js';
 
-import { Category, Thread, ThreadId, Post, PostId } from '@joystream/types/forum';
-import { Pagination, RepliesPerPage, CategoryCrumbs } from './utils';
+import { ThreadId } from '@joystream/types/common';
+import { Category, Thread, Post } from '@joystream/types/forum';
+import { Pagination, RepliesPerPage, CategoryCrumbs, TimeAgoDate, usePagination, useQueryParam, ReplyIdxQueryParam, ReplyEditIdQueryParam } from './utils';
 import { ViewReply } from './ViewReply';
 import { Moderate } from './Moderate';
-import { MutedSpan } from '@polkadot/joy-utils/MutedText';
-import { JoyWarn } from '@polkadot/joy-utils/JoyStatus';
+import { MutedSpan, JoyWarn } from '@polkadot/joy-utils/react/components';
+
 import { withForumCalls } from './calls';
 import { withApi, withMulti } from '@polkadot/react-api';
 import { ApiProps } from '@polkadot/react-api/types';
 import { orderBy } from 'lodash';
-import { bnToStr } from '@polkadot/joy-utils/index';
+import { bnToStr } from '@polkadot/joy-utils/functions/misc';
 import { IfIAmForumSudo } from './ForumSudo';
-import { MemberPreview } from '@polkadot/joy-members/MemberPreview';
+import MemberPreview from '@polkadot/joy-utils/react/components/MemberByAccountPreview';
+import { formatDate } from '@polkadot/joy-utils/functions/date';
+import { NewReply, EditReply } from './EditReply';
+import { useApi } from '@polkadot/react-hooks';
 
 type ThreadTitleProps = {
   thread: Thread;
@@ -26,6 +30,7 @@ type ThreadTitleProps = {
 
 function ThreadTitle (props: ThreadTitleProps) {
   const { thread, className } = props;
+
   return <span className={className}>
     {/* {thread.pinned && <i
       className='star icon'
@@ -36,12 +41,83 @@ function ThreadTitle (props: ThreadTitleProps) {
   </span>;
 }
 
+const ThreadHeader = styled.div`
+  margin: 1rem 0;
+
+  h1 {
+    margin: 0;
+  }
+`;
+
+const ThreadInfoAndActions = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-top: .3rem;
+
+  h1 {
+    margin: 0;
+  }
+`;
+
+const ThreadInfo = styled.span`
+  display: inline-flex;
+  align-items: center;
+
+  font-size: .85rem;
+  color: rgba(0, 0, 0, 0.5);
+`;
+
+const ThreadInfoMemberPreview = styled(MemberPreview)`
+  margin: 0 .5rem;
+`;
+
+const ReplyEditContainer = styled.div`
+  margin-top: 30px;
+  padding-bottom: 60px;
+`;
+
+type ThreadPreviewProps = {
+  thread: Thread;
+  repliesCount: number;
+}
+
+const ThreadPreview: React.FC<ThreadPreviewProps> = ({ thread, repliesCount }) => {
+  const title = <ThreadTitle thread={thread} />;
+
+  return (
+    <Table.Row>
+      <Table.Cell>
+        <Link to={`/forum/threads/${thread.id.toString()}`}>
+          {
+            thread.moderated
+              ? (
+                <MutedSpan>
+                  <Label color='orange'>Moderated</Label> {title}
+                </MutedSpan>
+              )
+              : title
+          }
+        </Link>
+      </Table.Cell>
+      <Table.Cell>
+        {repliesCount}
+      </Table.Cell>
+      <Table.Cell>
+        <MemberPreview accountId={thread.author_id} showCouncilBadge showId={false}/>
+      </Table.Cell>
+      <Table.Cell>
+        {formatDate(thread.created_at.momentDate)}
+      </Table.Cell>
+    </Table.Row>
+  );
+};
+
 type InnerViewThreadProps = {
   category: Category;
   thread: Thread;
-  page?: number;
   preview?: boolean;
-  history?: History;
 };
 
 type ViewThreadProps = ApiProps & InnerViewThreadProps & {
@@ -50,11 +126,111 @@ type ViewThreadProps = ApiProps & InnerViewThreadProps & {
 
 function InnerViewThread (props: ViewThreadProps) {
   const [showModerateForm, setShowModerateForm] = useState(false);
-  const { history, category, thread, page = 1, preview = false } = props;
+  const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
+  const [quotedPost, setQuotedPost] = useState<Post | null>(null);
 
-  if (!thread) {
-    return <em>Loading thread details...</em>;
-  }
+  const postsRefs = useRef<Record<number, React.RefObject<HTMLDivElement>>>({});
+  const replyFormRef = useRef<HTMLDivElement>(null);
+
+  const [rawSelectedPostIdx, setSelectedPostIdx] = useQueryParam(ReplyIdxQueryParam);
+  const [rawEditedPostId, setEditedPostId] = useQueryParam(ReplyEditIdQueryParam);
+  const [currentPage, setCurrentPage] = usePagination();
+
+  const parsedSelectedPostIdx = rawSelectedPostIdx ? parseInt(rawSelectedPostIdx) : null;
+  const selectedPostIdx = (parsedSelectedPostIdx && !Number.isNaN(parsedSelectedPostIdx)) ? parsedSelectedPostIdx : null;
+
+  const { category, thread, preview = false, api, nextPostId } = props;
+
+  const editedPostId = rawEditedPostId && api.createType('PostId', rawEditedPostId);
+
+  const { id } = thread;
+  const totalPostsInThread = thread.num_posts_ever_created.toNumber();
+
+  const [loaded, setLoaded] = useState(false);
+  const [posts, setPosts] = useState(new Array<Post>());
+
+  // fetch posts
+  useEffect(() => {
+    const loadPosts = async () => {
+      if (!nextPostId || totalPostsInThread === 0 || thread.isEmpty) return;
+
+      const newId = (id: number | BN) => api.createType('PostId', id);
+      const apiCalls: Promise<Post>[] = [];
+      let id = newId(1);
+
+      while (nextPostId.gt(id)) {
+        apiCalls.push(api.query.forum.postById(id) as Promise<Post>);
+        id = newId(id.add(newId(1)));
+      }
+
+      const allPosts = await Promise.all<Post>(apiCalls);
+      const postsInThisThread = allPosts.filter((item) =>
+        !item.isEmpty &&
+        item.thread_id.eq(thread.id)
+      );
+      const sortedPosts = orderBy(
+        postsInThisThread,
+        [(x) => x.nr_in_thread.toNumber()],
+        ['asc']
+      );
+
+      // initialize refs for posts
+      postsRefs.current = sortedPosts.reduce((acc, reply) => {
+        const refKey = reply.nr_in_thread.toNumber();
+
+        acc[refKey] = React.createRef();
+
+        return acc;
+      }, postsRefs.current);
+
+      setPosts(sortedPosts);
+      setLoaded(true);
+    };
+
+    void loadPosts();
+  }, [bnToStr(thread.id), bnToStr(nextPostId)]);
+
+  // handle selected post
+  useEffect(() => {
+    if (!selectedPostIdx) return;
+
+    const selectedPostPage = Math.ceil(selectedPostIdx / RepliesPerPage);
+
+    if (currentPage !== selectedPostPage) {
+      setCurrentPage(selectedPostPage);
+    }
+
+    if (!loaded) return;
+
+    if (selectedPostIdx > posts.length) {
+      // eslint-disable-next-line no-console
+      console.warn(`Tried to open nonexistent reply with idx: ${selectedPostIdx}`);
+
+      return;
+    }
+
+    const postRef = postsRefs.current[selectedPostIdx];
+
+    // postpone scrolling for one render to make sure the ref is set
+    setTimeout(() => {
+      if (postRef.current) {
+        postRef.current.scrollIntoView();
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn('Ref for selected post empty');
+      }
+    });
+  }, [loaded, selectedPostIdx, currentPage]);
+
+  // handle displayed posts based on pagination
+  useEffect(() => {
+    if (!loaded) return;
+    const minIdx = (currentPage - 1) * RepliesPerPage;
+    const maxIdx = minIdx + RepliesPerPage - 1;
+    const postsToDisplay = posts.filter((_id, i) => i >= minIdx && i <= maxIdx);
+
+    setDisplayedPosts(postsToDisplay);
+  }, [loaded, posts, currentPage]);
 
   const renderThreadNotFound = () => (
     preview ? null : <em>Thread not found</em>
@@ -64,9 +240,6 @@ function InnerViewThread (props: ViewThreadProps) {
     return renderThreadNotFound();
   }
 
-  const { id } = thread;
-  const totalPostsInThread = thread.num_posts_ever_created.toNumber();
-
   if (!category) {
     return <em>{'Thread\'s category was not found.'}</em>;
   } else if (category.deleted) {
@@ -74,63 +247,43 @@ function InnerViewThread (props: ViewThreadProps) {
   }
 
   if (preview) {
-    const title = <ThreadTitle thread={thread} />;
-    const repliesCount = totalPostsInThread - 1;
-    return (
-      <Table.Row>
-        <Table.Cell>
-          <Link to={`/forum/threads/${id.toString()}`}>{thread.moderated
-            ? <MutedSpan><Label color='orange'>Moderated</Label> {title}</MutedSpan>
-            : title
-          }</Link>
-        </Table.Cell>
-        <Table.Cell>
-          {repliesCount}
-        </Table.Cell>
-        <Table.Cell>
-          <MemberPreview accountId={thread.author_id} />
-        </Table.Cell>
-      </Table.Row>
-    );
+    return <ThreadPreview thread={thread} repliesCount={totalPostsInThread - 1} />;
   }
 
-  if (!history) {
-    return <em>History propoerty is undefined</em>;
-  }
+  const changePageAndClearSelectedPost = (page?: number | string) => {
+    setSelectedPostIdx(null);
+    setCurrentPage(page, [ReplyIdxQueryParam]);
+  };
 
-  const { api, nextPostId } = props;
-  const [loaded, setLoaded] = useState(false);
-  const [posts, setPosts] = useState(new Array<Post>());
+  const scrollToReplyForm = () => {
+    if (!replyFormRef.current) return;
+    replyFormRef.current.scrollIntoView();
+  };
 
-  useEffect(() => {
-    const loadPosts = async () => {
-      if (!nextPostId || totalPostsInThread === 0) return;
+  const clearEditedPost = () => {
+    setEditedPostId(null);
+  };
 
-      const newId = (id: number | BN) => new PostId(id);
-      const apiCalls: Promise<Post>[] = [];
-      let id = newId(1);
-      while (nextPostId.gt(id)) {
-        apiCalls.push(api.query.forum.postById(id) as Promise<Post>);
-        id = newId(id.add(newId(1)));
-      }
+  const onThreadReplyClick = () => {
+    clearEditedPost();
+    setQuotedPost(null);
+    scrollToReplyForm();
+  };
 
-      const allPosts = await Promise.all<Post>(apiCalls);
-      const postsInThisThread = allPosts.filter(item =>
-        !item.isEmpty &&
-        item.thread_id.eq(thread.id)
-      );
-      const sortedPosts = orderBy(
-        postsInThisThread,
-        [x => x.nr_in_thread.toNumber()],
-        ['asc']
-      );
+  const onPostEditSuccess = async () => {
+    if (!editedPostId) {
+      // eslint-disable-next-line no-console
+      console.error('editedPostId not set!');
 
-      setPosts(sortedPosts);
-      setLoaded(true);
-    };
+      return;
+    }
 
-    loadPosts();
-  }, [bnToStr(thread.id), bnToStr(nextPostId)]);
+    const updatedPost = await api.query.forum.postById(editedPostId) as Post;
+    const updatedPosts = posts.map((post) => post.id.eq(editedPostId) ? updatedPost : post);
+
+    setPosts(updatedPosts);
+    clearEditedPost();
+  };
 
   // console.log({ nextPostId: bnToStr(nextPostId), loaded, posts });
 
@@ -139,29 +292,44 @@ function InnerViewThread (props: ViewThreadProps) {
       return <em>Loading posts...</em>;
     }
 
-    const onPageChange = (activePage?: string | number) => {
-      history.push(`/forum/threads/${id.toString()}/page/${activePage}`);
-    };
-
-    const itemsPerPage = RepliesPerPage;
-    const minIdx = (page - 1) * RepliesPerPage;
-    const maxIdx = minIdx + RepliesPerPage - 1;
-
     const pagination =
       <Pagination
-        currentPage={page}
-        totalItems={totalPostsInThread}
-        itemsPerPage={itemsPerPage}
-        onPageChange={onPageChange}
+        currentPage={currentPage}
+        totalItems={posts.length}
+        itemsPerPage={RepliesPerPage}
+        onPageChange={changePageAndClearSelectedPost}
       />;
 
-    const pageOfItems = posts
-      .filter((_id, i) => i >= minIdx && i <= maxIdx)
-      .map((reply, i) => <ViewReply key={i} category={category} thread={thread} reply={reply} />);
+    const renderedReplies = displayedPosts.map((reply) => {
+      const replyIdx = reply.nr_in_thread.toNumber();
+
+      const onReplyEditClick = () => {
+        setEditedPostId(reply.id.toString());
+        scrollToReplyForm();
+      };
+
+      const onReplyQuoteClick = () => {
+        setQuotedPost(reply);
+        scrollToReplyForm();
+      };
+
+      return (
+        <ViewReply
+          ref={postsRefs.current[replyIdx]}
+          key={replyIdx}
+          category={category}
+          thread={thread}
+          reply={reply}
+          selected={selectedPostIdx === replyIdx}
+          onEdit={onReplyEditClick}
+          onQuote={onReplyQuoteClick}
+        />
+      );
+    });
 
     return <>
       {pagination}
-      {pageOfItems}
+      {renderedReplies}
       {pagination}
     </>;
   };
@@ -170,14 +338,12 @@ function InnerViewThread (props: ViewThreadProps) {
     if (thread.moderated || category.archived || category.deleted) {
       return null;
     }
+
     return <span className='JoyInlineActions'>
-      <Link
-        to={`/forum/threads/${id.toString()}/reply`}
-        className='ui small button'
-      >
-        <i className='reply icon' />
+      <Button onClick={onThreadReplyClick}>
+        <Icon name='reply' />
         Reply
-      </Link>
+      </Button>
 
       {/* TODO show 'Edit' button only if I am owner */}
       {/* <Link
@@ -211,10 +377,20 @@ function InnerViewThread (props: ViewThreadProps) {
 
   return <div style={{ marginBottom: '1rem' }}>
     <CategoryCrumbs categoryId={thread.category_id} />
-    <h1 className='ForumPageTitle'>
-      <ThreadTitle thread={thread} className='TitleText' />
-      {renderActions()}
-    </h1>
+    <ThreadHeader>
+      <h1 className='ForumPageTitle'>
+        <ThreadTitle thread={thread} className='TitleText' />
+      </h1>
+      <ThreadInfoAndActions>
+        <ThreadInfo>
+          Created by
+          <ThreadInfoMemberPreview accountId={thread.author_id} size='small' showId={false}/>
+          <TimeAgoDate date={thread.created_at.momentDate} id='thread' />
+        </ThreadInfo>
+        {renderActions()}
+      </ThreadInfoAndActions>
+    </ThreadHeader>
+
     {category.archived &&
       <JoyWarn title={'This thread is in archived category.'}>
         No new replies can be posted.
@@ -227,6 +403,15 @@ function InnerViewThread (props: ViewThreadProps) {
       ? renderModerationRationale()
       : renderPageOfPosts()
     }
+    <ReplyEditContainer ref={replyFormRef}>
+      {
+        editedPostId ? (
+          <EditReply id={editedPostId} key={editedPostId.toString()} onEditSuccess={onPostEditSuccess} onEditCancel={clearEditedPost} />
+        ) : (
+          <NewReply threadId={thread.id} key={quotedPost?.id.toString()} quotedPost={quotedPost} />
+        )
+      }
+    </ReplyEditContainer>
   </div>;
 }
 
@@ -238,40 +423,22 @@ export const ViewThread = withMulti(
   )
 );
 
-type ViewThreadByIdProps = ApiProps & {
-  history: History;
-  match: {
-    params: {
-      id: string;
-      page?: string;
-    };
-  };
-};
+type ViewThreadByIdProps = RouteComponentProps<{ id: string }>;
 
-function InnerViewThreadById (props: ViewThreadByIdProps) {
-  const { api, history, match: { params: { id, page: pageStr } } } = props;
+export function ViewThreadById (props: ViewThreadByIdProps) {
+  const { api } = useApi();
+  const { match: { params: { id } } } = props;
+  const [loaded, setLoaded] = useState(false);
+  const [thread, setThread] = useState(api.createType('Thread', {}));
+  const [category, setCategory] = useState(api.createType('Category', {}));
 
-  let page = 1;
-  if (pageStr) {
-    try {
-      // tslint:disable-next-line:radix
-      page = parseInt(pageStr);
-    } catch (err) {
-      console.log('Failed to parse page number form URL');
-    }
-  }
+  let threadId: ThreadId | undefined;
 
-  let threadId: ThreadId;
   try {
-    threadId = new ThreadId(id);
+    threadId = api.createType('ThreadId', id);
   } catch (err) {
     console.log('Failed to parse thread id form URL');
-    return <em>Invalid thread ID: {id}</em>;
   }
-
-  const [loaded, setLoaded] = useState(false);
-  const [thread, setThread] = useState(Thread.newEmpty());
-  const [category, setCategory] = useState(Category.newEmpty());
 
   useEffect(() => {
     const loadThreadAndCategory = async () => {
@@ -285,8 +452,12 @@ function InnerViewThreadById (props: ViewThreadByIdProps) {
       setLoaded(true);
     };
 
-    loadThreadAndCategory();
-  }, [id, page]);
+    void loadThreadAndCategory();
+  }, [id]);
+
+  if (threadId === undefined) {
+    return <em>Invalid thread ID: {id}</em>;
+  }
 
   // console.log({ threadId: id, page });
 
@@ -302,7 +473,5 @@ function InnerViewThreadById (props: ViewThreadByIdProps) {
     return <em>{ 'Thread\'s category was not found' }</em>;
   }
 
-  return <ViewThread id={threadId} category={category} thread={thread} page={page} history={history} />;
+  return <ViewThread id={threadId} category={category} thread={thread} />;
 }
-
-export const ViewThreadById = withApi(InnerViewThreadById);

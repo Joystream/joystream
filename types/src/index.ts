@@ -1,228 +1,105 @@
-import { Enum, Option, Struct, Vec } from "@polkadot/types/codec";
-import { getTypeRegistry, Text } from "@polkadot/types";
-import { BlockNumber, AccountId, Balance, Hash } from "@polkadot/types/interfaces";
-import { u32, bool } from "@polkadot/types/primitive";
-import { Codec } from "@polkadot/types/types";
+import { Codec, RegistryTypes } from '@polkadot/types/types'
+import common from './common'
+import members from './members'
+import council from './council'
+import roles from './roles'
+import forum from './forum'
+import stake from './stake'
+import mint from './mint'
+import recurringRewards from './recurring-rewards'
+import hiring from './hiring'
+import contentWorkingGroup from './content-working-group'
+import workingGroup from './working-group'
+import discovery from './discovery'
+import media from './media'
+import proposals from './proposals'
+import contentDirectory from './content-directory'
+import { InterfaceTypes } from '@polkadot/types/types/registry'
+import { TypeRegistry, Text, UInt, Null, bool, Option, Vec, BTreeSet, BTreeMap } from '@polkadot/types'
+import { ExtendedEnum } from './JoyEnum'
+import { ExtendedStruct } from './JoyStruct'
+import BN from 'bn.js'
 
-import { registerForumTypes } from "./forum";
-import { registerMediaTypes } from "./media";
-import { registerMembershipTypes } from "./members";
-import { registerRolesTypes } from "./roles";
-import { registerDiscoveryTypes } from "./discovery";
-import { registerHiringTypes } from "./hiring";
-import { registerVersionedStoreTypes } from "./versioned-store";
-import { registerVersionedStorePermissionsTypes } from "./versioned-store/permissions";
-import { registerStakeTypes } from "./stake";
-import { registerMintTypes } from "./mint";
-import { registerRecurringRewardsTypes } from "./recurring-rewards";
-import { registerContentWorkingGroupTypes } from "./content-working-group";
-import { registerProposalTypes, ProposalStatus } from "./proposals";
-
-export function getTextPropAsString(struct: Struct, fieldName: string): string {
-  return (struct.get(fieldName) as Text).toString();
+export {
+  common,
+  members,
+  council,
+  roles,
+  forum,
+  stake,
+  mint,
+  recurringRewards,
+  hiring,
+  contentWorkingGroup,
+  workingGroup,
+  discovery,
+  media,
+  proposals,
+  contentDirectory,
 }
 
-export function getBoolPropAsBoolean(struct: Struct, fieldName: string): boolean {
-  return (struct.get(fieldName) as bool).valueOf();
+export const types: RegistryTypes = {
+  ...common,
+  ...members,
+  ...council,
+  ...roles,
+  ...forum,
+  ...stake,
+  ...mint,
+  ...recurringRewards,
+  ...hiring,
+  ...contentWorkingGroup,
+  ...workingGroup,
+  ...discovery,
+  ...media,
+  ...proposals,
+  ...contentDirectory,
 }
 
-export function getOptionPropOrUndefined<T extends Codec>(struct: Struct, fieldName: string): T | undefined {
-  return (struct.get(fieldName) as Option<T>).unwrapOr(undefined);
-}
+// Allows creating types without api instance (it's not a recommended way though, so should be used just for mocks)
+export const registry = new TypeRegistry()
+registry.register(types)
 
-export class OptionText extends Option.with(Text) {
-  static none(): OptionText {
-    return new Option(Text, null);
-  }
+// Tweaked version of https://stackoverflow.com/a/62163715 for handling enum variants
+// Based on type (T) like: { a: string; b: number; c: Null; }
+// will create a type like: { a: string } | { b: number } | { c: Null } | "c"
+type EnumVariant<T> = keyof T extends infer K
+  ? K extends keyof T
+    ? T[K] extends Null
+      ? K
+      : { [I in K]: T[I] }
+    : never
+  : never
 
-  static some(text: string): OptionText {
-    return new Option(Text, text);
-  }
-}
+// Create simple interface for any Codec type (inlcuding JoyEnums and JoyStructs)
+// Cannot handle Option here, since that would cause circular reference error
+type CreateInterface_NoOption<T extends Codec> =
+  | T
+  | (T extends ExtendedEnum<infer S>
+      ? EnumVariant<{ [K in keyof S]: CreateInterface<InstanceType<T['typeDefinitions'][K]>> }>
+      : T extends ExtendedStruct<infer S>
+      ? { [K in keyof S]?: CreateInterface<InstanceType<T['typeDefs'][K]>> }
+      : T extends Text
+      ? string
+      : T extends UInt
+      ? number | BN
+      : T extends bool
+      ? boolean
+      : T extends Vec<infer S> | BTreeSet<infer S>
+      ? CreateInterface<S>[]
+      : T extends BTreeMap<infer K, infer V>
+      ? Map<K, V>
+      : any)
 
-export type TransferableStake = {
-  seat: Balance;
-  backing: Balance;
-};
+// Wrapper for CreateInterface_NoOption that includes resolving an Option
+// (nested Options like Option<Option<Codec>> will resolve to Option<any>, but there are very edge case)
+type CreateInterface<T extends Codec> =
+  | T
+  | (T extends Option<infer S> ? undefined | null | S | CreateInterface_NoOption<S> : CreateInterface_NoOption<T>)
 
-export type Stake = {
-  new: Balance;
-  transferred: Balance;
-};
-
-export type Backer = {
-  member: AccountId;
-  stake: Balance;
-};
-
-export type Seat = {
-  member: AccountId;
-  stake: Balance;
-  backers: Backer[];
-};
-
-export type SealedVote = {
-  voter: AccountId;
-  commitment: Hash;
-  stake: Stake;
-  vote: Option<AccountId>;
-};
-
-export type ProposalVote = {
-  voter: AccountId;
-  kind: VoteKind;
-};
-
-export type TallyResult = {
-  proposal_id: u32;
-  abstentions: u32;
-  approvals: u32;
-  rejections: u32;
-  slashes: u32;
-  status: ProposalStatus;
-  finalized_at: BlockNumber;
-};
-
-export class Announcing extends u32 {}
-export class Voting extends u32 {}
-export class Revealing extends u32 {}
-
-export class ElectionStage extends Enum {
-  constructor(value?: any, index?: number) {
-    super(
-      {
-        Announcing,
-        Voting,
-        Revealing
-      },
-      value,
-      index
-    );
-  }
-
-  /** Create a new Announcing stage. */
-  static Announcing(endsAt: BlockNumber | number): ElectionStage {
-    return this.newElectionStage("Announcing", endsAt);
-  }
-
-  /** Create a new Voting stage. */
-  static Voting(endsAt: BlockNumber | number): ElectionStage {
-    return this.newElectionStage("Voting", endsAt);
-  }
-
-  /** Create a new Revealing stage. */
-  static Revealing(endsAt: BlockNumber | number): ElectionStage {
-    return this.newElectionStage("Revealing", endsAt);
-  }
-
-  static newElectionStage(stageName: string, endsAt: BlockNumber | number) {
-    return new ElectionStage({ [stageName]: endsAt });
-  }
-}
-
-export type AnyElectionStage = Announcing | Voting | Revealing;
-
-export const VoteKinds: { [key: string]: string } = {
-  Abstain: "Abstain",
-  Approve: "Approve",
-  Reject: "Reject",
-  Slash: "Slash"
-};
-
-export class VoteKind extends Enum {
-  constructor(value?: any) {
-    super(["Abstain", "Approve", "Reject", "Slash"], value);
-  }
-}
-
-export type ProposalVotes = [AccountId, VoteKind][];
-
-// Treat a BTreeSet as a Vec since it is encoded in the same way.
-export class BTreeSet<T extends Codec> extends Vec<T> {}
-
-// TODO Refactor: split this function and move to corresponding modules: election and proposals.
-function registerElectionAndProposalTypes() {
-  try {
-    const typeRegistry = getTypeRegistry();
-    // Is this enough?
-    typeRegistry.register({
-      BTreeSet
-    });
-
-    typeRegistry.register({
-      MemoText: "Text"
-    });
-    // Register parametrized enum ElectionStage:
-    typeRegistry.register({
-      ElectionStage
-    });
-    typeRegistry.register({
-      ProposalStatus,
-      VoteKind
-    });
-    typeRegistry.register({
-      ElectionStake: {
-        new: "Balance",
-        transferred: "Balance"
-      },
-      SealedVote: {
-        voter: "AccountId",
-        commitment: "Hash",
-        stake: "ElectionStake",
-        vote: "Option<AccountId>"
-      },
-      TransferableStake: {
-        seat: "Balance",
-        backing: "Balance"
-      },
-      RuntimeUpgradeProposal: {
-        id: "u32",
-        proposer: "AccountId",
-        stake: "Balance",
-        name: "Text",
-        description: "Text",
-        wasm_hash: "Hash",
-        proposed_at: "BlockNumber",
-        status: "ProposalStatus"
-      },
-      "TallyResult<BlockNumber>": {
-        proposal_id: "u32",
-        abstentions: "u32",
-        approvals: "u32",
-        rejections: "u32",
-        slashes: "u32",
-        status: "ProposalStatus",
-        finalized_at: "BlockNumber"
-      },
-      ElectionParameters: {
-        announcing_period: "BlockNumber",
-        voting_period: "BlockNumber",
-        revealing_period: "BlockNumber",
-        council_size: "u32",
-        candidacy_limit: "u32",
-        new_term_duration: "BlockNumber",
-        min_council_stake: "Balance",
-        min_voting_stake: "Balance"
-      }
-    });
-  } catch (err) {
-    console.error("Failed to register custom types of Joystream node", err);
-  }
-}
-
-export function registerJoystreamTypes() {
-  registerMembershipTypes();
-  registerRolesTypes();
-  registerMediaTypes();
-  registerForumTypes();
-  registerElectionAndProposalTypes();
-  registerDiscoveryTypes();
-  registerVersionedStoreTypes();
-  registerVersionedStorePermissionsTypes();
-  registerStakeTypes();
-  registerMintTypes();
-  registerRecurringRewardsTypes();
-  registerHiringTypes();
-  registerContentWorkingGroupTypes();
-  registerProposalTypes();
+export function createType<TypeName extends keyof InterfaceTypes>(
+  type: TypeName,
+  value: InterfaceTypes[TypeName] extends Codec ? CreateInterface<InterfaceTypes[TypeName]> : any
+): InterfaceTypes[TypeName] {
+  return registry.createType(type, value)
 }

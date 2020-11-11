@@ -1,6 +1,6 @@
 import React from 'react';
-import { withMulti } from '@polkadot/react-api/with';
-import { InputValidationLengthConstraint } from '@joystream/types/forum';
+import { withMulti } from '@polkadot/react-api/hoc';
+import { InputValidationLengthConstraint } from '@joystream/types/common';
 import { withForumCalls } from './calls';
 import { componentName } from '@polkadot/joy-utils/react/helpers';
 
@@ -28,14 +28,18 @@ function waitForRequiredConstraints (
   return function (Component: React.ComponentType<any>) {
     const ResultComponent: React.FunctionComponent<ValidationProps> = (props: ValidationProps) => {
       const nonEmptyProps = requiredConstraintNames
-        .filter(name => props[name] !== undefined)
+        .filter((name) => props[name] !== undefined)
         .length;
+
       if (nonEmptyProps !== requiredConstraintNames.length) {
         return <em>Loading validation constraints...</em>;
       }
+
       return <Component {...props} />;
     };
+
     ResultComponent.displayName = `waitForRequiredConstraints(${componentName(Component)})`;
+
     return ResultComponent;
   };
 }

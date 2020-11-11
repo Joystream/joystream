@@ -1,9 +1,7 @@
 use super::*;
 use crate::mock::*;
 
-static FIRST_BLOCK_HEIGHT: <Test as system::Trait>::BlockNumber = 1;
-
-use rstd::collections::btree_set::BTreeSet;
+use sp_std::collections::btree_set::BTreeSet;
 
 /**
 Main hiring workflow:
@@ -52,7 +50,7 @@ fn full_hiring_workflow_successful_path() {
         assert_eq!(Hiring::next_opening_id(), expected_opening_id + 1);
 
         // Check that our opening actually was added
-        assert!(<OpeningById<Test>>::exists(expected_opening_id));
+        assert!(<OpeningById<Test>>::contains_key(expected_opening_id));
 
         let found_opening = Hiring::opening_by_id(expected_opening_id);
 
@@ -90,10 +88,10 @@ fn full_hiring_workflow_successful_path() {
         let destructured_app_data = ensure_can_add_application_result.unwrap();
         let expected = DestructuredApplicationCanBeAddedEvaluation {
             opening: Opening {
-                created: 1,
+                created: FIRST_BLOCK_HEIGHT,
                 stage: OpeningStage::Active {
                     stage: ActiveOpeningStage::AcceptingApplications {
-                        started_accepting_applicants_at_block: 1,
+                        started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT,
                     },
                     applications_added: BTreeSet::new(),
                     active_application_count: 0,
@@ -107,7 +105,7 @@ fn full_hiring_workflow_successful_path() {
                 human_readable_text: human_readable_text.clone(),
             },
             active_stage: ActiveOpeningStage::AcceptingApplications {
-                started_accepting_applicants_at_block: 1,
+                started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT,
             },
             applications_added: BTreeSet::new(),
             active_application_count: 0,
@@ -136,7 +134,7 @@ fn full_hiring_workflow_successful_path() {
         let new_application_id = app_added.application_id_added;
 
         // Check that our application actually was added
-        assert!(<ApplicationById<Test>>::exists(new_application_id));
+        assert!(<ApplicationById<Test>>::contains_key(new_application_id));
 
         let new_application = Hiring::application_by_id(new_application_id);
 
@@ -146,7 +144,7 @@ fn full_hiring_workflow_successful_path() {
             Application {
                 opening_id: 0,
                 application_index_in_opening: 0,
-                add_to_opening_in_block: 1,
+                add_to_opening_in_block: FIRST_BLOCK_HEIGHT,
                 active_role_staking_id: None,
                 active_application_staking_id: None,
                 stage: ApplicationStage::Active,
@@ -169,11 +167,11 @@ fn full_hiring_workflow_successful_path() {
         assert_eq!(
             updated_opening_after_begin_review,
             Opening {
-                created: 1,
+                created: FIRST_BLOCK_HEIGHT,
                 stage: OpeningStage::Active {
                     stage: ActiveOpeningStage::ReviewPeriod {
-                        started_accepting_applicants_at_block: 1,
-                        started_review_period_at_block: 1
+                        started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT,
+                        started_review_period_at_block: FIRST_BLOCK_HEIGHT
                     },
                     applications_added: expected_added_apps_in_opening.clone(),
                     active_application_count: 1,
@@ -204,13 +202,13 @@ fn full_hiring_workflow_successful_path() {
         assert_eq!(
             updated_opening_fill_opening,
             Opening {
-                created: 1,
+                created: FIRST_BLOCK_HEIGHT,
                 stage: OpeningStage::Active {
                     stage: ActiveOpeningStage::Deactivated {
                         cause: OpeningDeactivationCause::Filled,
-                        deactivated_at_block: 1,
-                        started_accepting_applicants_at_block: 1,
-                        started_review_period_at_block: Some(1)
+                        deactivated_at_block: FIRST_BLOCK_HEIGHT,
+                        started_accepting_applicants_at_block: FIRST_BLOCK_HEIGHT,
+                        started_review_period_at_block: Some(FIRST_BLOCK_HEIGHT)
                     },
                     applications_added: expected_added_apps_in_opening,
                     active_application_count: 0,
@@ -234,12 +232,12 @@ fn full_hiring_workflow_successful_path() {
             Application {
                 opening_id: 0,
                 application_index_in_opening: 0,
-                add_to_opening_in_block: 1,
+                add_to_opening_in_block: FIRST_BLOCK_HEIGHT,
                 active_role_staking_id: None,
                 active_application_staking_id: None,
                 stage: ApplicationStage::Inactive {
-                    deactivation_initiated: 1,
-                    deactivated: 1,
+                    deactivation_initiated: FIRST_BLOCK_HEIGHT,
+                    deactivated: FIRST_BLOCK_HEIGHT,
                     cause: ApplicationDeactivationCause::Hired
                 },
                 human_readable_text: application_readable_text.clone()

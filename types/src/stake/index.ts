@@ -1,128 +1,97 @@
-import { getTypeRegistry, u32, u64, u128, Enum, Null, BTreeMap, bool } from '@polkadot/types';
-import { JoyStruct } from '../JoyStruct';
-import { BlockNumber, Balance } from '@polkadot/types/interfaces';
+import { u32, u64, u128, Null, BTreeMap, bool } from '@polkadot/types'
+import { BlockNumber, Balance } from '@polkadot/types/interfaces'
+import { RegistryTypes } from '@polkadot/types/types'
+import { JoyEnum, JoyStructDecorated } from '../common'
 
-export class StakeId extends u64 {};
-export class SlashId extends u64 {};
+export class StakeId extends u64 {}
+export class SlashId extends u64 {}
 
 export type ISlash = {
-    started_at_block: BlockNumber,
+  started_at_block: BlockNumber
+  is_active: bool
+  blocks_remaining_in_active_period_for_slashing: BlockNumber
+  slash_amount: Balance
+}
+export class Slash
+  extends JoyStructDecorated({
+    started_at_block: u32,
     is_active: bool,
-    blocks_remaining_in_active_period_for_slashing: BlockNumber,
-    slash_amount: Balance,
-};
-export class Slash extends JoyStruct<ISlash> {
-    constructor (value?: ISlash) {
-        super({
-            started_at_block: u32,
-            is_active: bool,
-            blocks_remaining_in_active_period_for_slashing: u32,
-            slash_amount: u128,
-        }, value);
-    }
-};
+    blocks_remaining_in_active_period_for_slashing: u32,
+    slash_amount: u128,
+  })
+  implements ISlash {}
 
 export type IUnstakingState = {
-    started_at_block: BlockNumber,
+  started_at_block: BlockNumber
+  is_active: bool
+  blocks_remaining_in_active_period_for_unstaking: BlockNumber
+}
+export class UnstakingState
+  extends JoyStructDecorated({
+    started_at_block: u32,
     is_active: bool,
-    blocks_remaining_in_active_period_for_unstaking: BlockNumber,
-};
-export class UnstakingState extends JoyStruct<IUnstakingState> {
-    constructor (value?: IUnstakingState) {
-        super({
-            started_at_block: u32,
-            is_active: bool,
-            blocks_remaining_in_active_period_for_unstaking: u32,
-        }, value);
-    }
-};
+    blocks_remaining_in_active_period_for_unstaking: u32,
+  })
+  implements IUnstakingState {}
 
-export class Normal extends Null {};
-export class Unstaking extends UnstakingState {};
-export class StakedStatus extends Enum {
-    constructor (value?: any, index?: number) {
-        super(
-          {
-            Normal,
-            Unstaking
-          },
-          value, index);
-    }
-};
+export class Normal extends Null {}
+export class Unstaking extends UnstakingState {}
+export class StakedStatus extends JoyEnum({
+  Normal,
+  Unstaking,
+} as const) {}
 
 export type IStakedState = {
-    staked_amount: Balance,
+  staked_amount: Balance
+  staked_status: StakedStatus
+  next_slash_id: SlashId
+  ongoing_slashes: BTreeMap<SlashId, Slash>
+}
+export class StakedState
+  extends JoyStructDecorated({
+    staked_amount: u128,
     staked_status: StakedStatus,
     next_slash_id: SlashId,
-    ongoing_slashes: BTreeMap<SlashId, Slash>,
-};
-export class StakedState extends JoyStruct<IStakedState> {
-    constructor (value?: IStakedState) {
-        super({
-            staked_amount: u128,
-            staked_status: StakedStatus,
-            next_slash_id: SlashId,
-            ongoing_slashes: BTreeMap.with(SlashId, Slash),
-        }, value);
-    }
+    ongoing_slashes: BTreeMap.with(SlashId, Slash),
+  })
+  implements IStakedState {}
 
-    get staked_amount(): u128 {
-      return this.getField<u128>('staked_amount')
-    }
-};
+export class NotStaked extends Null {}
+export class Staked extends StakedState {}
 
-export class NotStaked extends Null {};
-export class Staked extends StakedState {};
-
-export class StakingStatus extends Enum {
-    constructor (value?: any, index?: number) {
-        super(
-          {
-            NotStaked,
-            Staked,
-          },
-          value, index);
-    }
-};
+export class StakingStatus extends JoyEnum({
+  NotStaked,
+  Staked,
+} as const) {}
 
 export type IStake = {
-    created: BlockNumber,
-    staking_status: StakingStatus
-};
-
-export class Stake extends JoyStruct<IStake> {
-    constructor (value?: IStake) {
-        super({
-            created: u32,
-            staking_status: StakingStatus
-        }, value);
-    }
-
-    get created(): u32 {
-      return this.getField<u32>('created')
-    }
-
-    get staking_status(): StakingStatus {
-      return this.getField<StakingStatus>('staking_status')
-    }
-
-    get value(): Balance {
-      switch (this.staking_status.type) {
-        case "Staked":
-          return (this.staking_status.value as Staked).staked_amount
-      }
-
-      return new u128(0)
-    }
+  created: BlockNumber
+  staking_status: StakingStatus
 }
 
-export function registerStakeTypes () {
-    try {
-      getTypeRegistry().register({
-        StakeId: 'u64',
-        Stake,
-      });
-    } catch (err) {
-      console.error('Failed to register custom types of stake module', err);
+export class Stake
+  extends JoyStructDecorated({
+    created: u32,
+    staking_status: StakingStatus,
+  })
+  implements IStake {
+  get value(): Balance {
+    if (this.staking_status.isOfType('Staked')) {
+      return this.staking_status.asType('Staked').staked_amount
     }
+
+    return this.registry.createType('Balance', 0)
+  }
 }
+
+export const stakeTypes: RegistryTypes = {
+  StakeId,
+  Stake,
+  // Expose in registry for api.createType purposes:
+  StakingStatus,
+  Staked,
+  StakedStatus,
+  Unstaking,
+  Slash,
+}
+export default stakeTypes

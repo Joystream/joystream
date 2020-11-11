@@ -1,104 +1,122 @@
-// Copyright 2017-2019 @polkadot/app-staking authors & contributors
+// Copyright 2017-2020 @polkadot/app-staking authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
+
+import { IconName } from '@fortawesome/fontawesome-svg-core';
 
 import React, { useState } from 'react';
 import styled from 'styled-components';
 
+import Icon from './Icon';
 import Tooltip from './Tooltip';
 
 interface Props {
   className?: string;
-  hover: React.ReactNode;
-  info: React.ReactNode;
-  isTooltip?: boolean;
-  type: 'online' | 'offline' | 'next';
+  color: 'counter' | 'green' | 'blue' | 'gray' | 'normal' | 'purple' | 'red' | 'transparent';
+  hover?: React.ReactNode;
+  icon?: IconName;
+  info?: React.ReactNode;
+  isSmall?: boolean;
+  onClick?: () => void;
 }
 
 let badgeId = 0;
 
-function Badge ({ className, hover, info, isTooltip, type }: Props): React.ReactElement<Props> | null {
-  const [key] = useState(`${Date.now()}-${badgeId++}`);
-  const [isOpen, setIsOpen] = useState(false);
-
-  const _toggleOpen = (): void => setIsOpen(!isOpen);
+function Badge ({ className = '', color = 'normal', hover, icon, info, isSmall, onClick }: Props): React.ReactElement<Props> | null {
+  const [trigger] = useState(`badge-hover-${Date.now()}-${badgeId++}`);
+  const extraProps = hover
+    ? { 'data-for': trigger, 'data-tip': true }
+    : {};
 
   return (
     <div
-      className={`ui--Badge ${isOpen && 'expand'} ${isTooltip && 'tooltip'} ${type} ${className}`}
-      onClick={
-        isTooltip
-          ? _toggleOpen
-          : undefined
-      }
-      data-for={`badge-status-${key}`}
-      data-tip={true}
-      data-tip-disable={!isTooltip}
+      {...extraProps}
+      className={`ui--Badge${hover ? ' isTooltip' : ''}${isSmall ? ' isSmall' : ''}${onClick ? ' isClickable' : ''} ${color}Color ${className}`}
+      onClick={onClick}
     >
-      <div className='badge'>
-        {info}
-      </div>
-      <div className='detail'>
-        {hover}
-      </div>
-      <Tooltip
-        trigger={`badge-status-${key}`}
-        text={hover}
-      />
+      {info || (icon && <Icon icon={icon} />)}
+      {hover && (
+        <Tooltip
+          text={hover}
+          trigger={trigger}
+        />
+      )}
     </div>
   );
 }
 
-export default styled(Badge)`
+export default React.memo(styled(Badge)`
   border-radius: 16px;
-  box-shadow: 0 3px 3px rgba(0, 0, 0, 0.2);
   color: #eee;
-  cursor: help;
-  display: flex;
+  display: inline-block;
   font-size: 12px;
   height: 22px;
-  justify-content: center;
-  margin-bottom: 0.25rem;
+  line-height: 22px;
+  margin-right: 0.25rem;
+  min-width: 22px;
   padding: 0 4px;
+  overflow: hidden;
   text-align: center;
+  vertical-align: middle;
   width: 22px;
 
-  &.next {
+  &.isTooltip {
+    cursor: help;
+  }
+
+  .ui--Icon {
+    cursor: inherit;
+    margin-top: 5px;
+    vertical-align: top;
+    width: 1em;
+  }
+
+  &.isClickable {
+    cursor: pointer;
+  }
+
+  &.isSmall {
+    font-size: 10px;
+    height: 16px;
+    line-height: 16px;
+    min-width: 16px;
+    padding: 0;
+    width: 16px;
+
+    .ui--Icon {
+      margin-top: 3px;
+    }
+  }
+
+  &.blueColor {
     background: steelblue;
   }
 
-  &.offline {
+  &.counterColor {
     background: red;
+    margin: 0 0.5rem;
+    vertical-align: middle;
   }
 
-  &.online {
+  &.grayColor {
+    background: #eee !important;
+    color: #aaa;
+  }
+
+  &.redColor {
+    background: darkred;
+  }
+
+  &.greenColor {
     background: green;
   }
 
-  & > * {
-    line-height: 22px;
-    overflow: hidden;
-    transition: all ease 0.25;
+  &.purpleColor {
+    background: indigo;
   }
 
-  .badge {
-    font-weight: bold;
-    width: auto;
+  &.transparentColor {
+    background: transparent;
+    box-shadow: none;
   }
-
-  .detail {
-    width: 0;
-  }
-
-  &.expand {
-    width: 300px;
-
-    .badge {
-      width: 0;
-    }
-
-    .detail {
-      width: auto;
-    }
-  }
-`;
+`);

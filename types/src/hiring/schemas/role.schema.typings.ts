@@ -9,6 +9,7 @@ export type SchemaVersion = number;
 export type Headline = string;
 export type JobTitle = string;
 export type JobDescriptionExpectsHTML = string;
+export type FieldTitle = string;
 export type QuestionFieldType = string;
 export type QuestionsFields = QuestionField[];
 export type QuestionSections = QuestionSection[];
@@ -25,36 +26,36 @@ export interface GenericJoyStreamRoleSchema {
   reward: TheRewardSchema;
   creator: CreatorDetails;
   process?: HiringProcess;
-  [k: string]: any;
+  [k: string]: unknown;
 }
 export interface JobSpecifics {
   title: JobTitle;
   description: JobDescriptionExpectsHTML;
-  [k: string]: any;
+  [k: string]: unknown;
 }
 export interface ApplicationDetails {
   sections?: QuestionSections;
-  [k: string]: any;
+  [k: string]: unknown;
 }
 export interface QuestionSection {
-  title: any;
+  title: FieldTitle;
   questions: QuestionsFields;
-  [k: string]: any;
+  [k: string]: unknown;
 }
 export interface QuestionField {
-  title: any;
+  title: FieldTitle;
   type: QuestionFieldType;
-  [k: string]: any;
+  [k: string]: unknown;
 }
 export interface CreatorDetails {
   membership: EntryInMembershipModuke;
-  [k: string]: any;
+  [k: string]: unknown;
 }
 export interface EntryInMembershipModuke {
   handle: HandleOrUsername;
-  [k: string]: any;
+  [k: string]: unknown;
 }
 export interface HiringProcess {
   details: AdditionalRolehiringProcessDetails;
-  [k: string]: any;
+  [k: string]: unknown;
 }

@@ -1,6 +1,10 @@
 import React from 'react';
-import { Form, FormInputProps, FormTextAreaProps } from 'semantic-ui-react';
+import { Form, StrictFormInputProps, StrictFormTextAreaProps, Label, LabelProps, Checkbox } from 'semantic-ui-react';
+import { FormikProps } from 'formik';
 import LabelWithHelp from './LabelWithHelp';
+import { FormErrorLabelsProps } from './errorHandling';
+import { formatBalance } from '@polkadot/util';
+import styled from 'styled-components';
 
 /*
  * Generic form field components
@@ -10,16 +14,18 @@ import LabelWithHelp from './LabelWithHelp';
  * and to easily switch the structure/display of a typical form field.
 */
 
-type InputFormFieldProps = FormInputProps & {
+type StrictInputFormFieldProps = Omit<StrictFormInputProps, 'error'> & {
   help?: string;
   unit?: string;
+  error?: LabelProps;
 };
 
-export function InputFormField (props: InputFormFieldProps) {
+export function InputFormField (props: { [key: string]: any } & StrictInputFormFieldProps) {
   const { unit } = props;
-  const fieldProps = { ...props, label: undefined };
+  const fieldProps = { ...props, label: undefined, error: undefined };
+
   return (
-    <FormField {...props}>
+    <FormField {...props} showErrorMsg={true}>
       <Form.Input
         {...fieldProps}
         style={ unit ? { display: 'flex', alignItems: 'center' } : undefined }>
@@ -30,31 +36,100 @@ export function InputFormField (props: InputFormFieldProps) {
   );
 }
 
-type TextareaFormFieldProps = FormTextAreaProps & {
+type StrictTextareaFormFieldProps = Omit<StrictFormTextAreaProps, 'error'> & {
   help?: string;
+  error?: LabelProps;
 };
 
-export function TextareaFormField (props: TextareaFormFieldProps) {
-  const fieldProps = { ...props, label: undefined };
+export function TextareaFormField (props: { [key: string]: any } & StrictTextareaFormFieldProps) {
+  const fieldProps = { ...props, label: undefined, error: undefined };
+
   return (
-    <FormField {...props}>
+    <FormField {...props} showErrorMsg={true}>
       <Form.TextArea {...fieldProps}/>
     </FormField>
   );
 }
 
-type FormFieldProps = InputFormFieldProps | TextareaFormFieldProps;
+type StrictFormFieldProps = Omit<(StrictInputFormFieldProps | StrictTextareaFormFieldProps), 'error'> & {
+  error?: LabelProps;
+  showErrorMsg?: boolean;
+};
 
-export function FormField (props: React.PropsWithChildren<FormFieldProps>) {
-  const { error, label, help, children } = props;
+const StyledFormField = styled(Form.Field)`
+  & .field {
+    margin-bottom: 0 !important;
+  }
+`;
+
+export function FormField (props: React.PropsWithChildren<{ [key: string]: any } & StrictFormFieldProps>) {
+  const { error, showErrorMsg = false, label, help, children } = props;
+
   return (
-    <Form.Field error={Boolean(error)}>
+    <StyledFormField error={!!error}>
       { (label && help)
         ? <LabelWithHelp text={ label.toString() } help={ help }/>
         : (label ? <label>{ label.toString() }</label> : null)
       }
       { children }
-    </Form.Field>
+      { Boolean(showErrorMsg && error) && <Label {...error} prompt/> }
+    </StyledFormField>
+  );
+}
+
+type ReawrdPolicyFieldsType = {
+  rewardAmount: string;
+  rewardNextBlock: string;
+  rewardRecurring: boolean;
+  rewardInterval: string;
+}
+type RewardPolicyFieldsProps<ValuesT extends ReawrdPolicyFieldsType> =
+  Pick<FormikProps<ValuesT>, 'values' | 'handleChange' | 'setFieldValue'> & {
+    errorLabelsProps: FormErrorLabelsProps<ValuesT>;
+  };
+
+export function RewardPolicyFields<ValuesT extends ReawrdPolicyFieldsType> ({
+  values,
+  errorLabelsProps,
+  handleChange,
+  setFieldValue
+}: RewardPolicyFieldsProps<ValuesT>) {
+  return (
+    <>
+      <InputFormField
+        label='Amount per payout'
+        unit={formatBalance.getDefaults().unit}
+        onChange={handleChange}
+        name={'rewardAmount'}
+        error={errorLabelsProps.rewardAmount}
+        value={values.rewardAmount}
+        placeholder={'ie. 100'}
+      />
+      <InputFormField
+        label='Next payment at block'
+        onChange={handleChange}
+        name={'rewardNextBlock'}
+        error={errorLabelsProps.rewardNextBlock}
+        value={values.rewardNextBlock}
+      />
+      <FormField>
+        <Checkbox
+          toggle
+          onChange={(e, data) => { setFieldValue('rewardRecurring', data.checked); }}
+          label={'Recurring'}
+          checked={values.rewardRecurring}/>
+      </FormField>
+      { values.rewardRecurring && (
+        <InputFormField
+          label='Reward interval'
+          onChange={handleChange}
+          name={'rewardInterval'}
+          error={errorLabelsProps.rewardInterval}
+          value={values.rewardInterval}
+          unit={'Blocks'}
+        />
+      ) }
+    </>
   );
 }
 

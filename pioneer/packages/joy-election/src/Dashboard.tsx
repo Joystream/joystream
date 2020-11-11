@@ -3,18 +3,19 @@ import React from 'react';
 
 import { ApiProps } from '@polkadot/react-api/types';
 import { I18nProps } from '@polkadot/react-components/types';
-import { withCalls } from '@polkadot/react-api/with';
+import { withCalls } from '@polkadot/react-api/hoc';
 import { Option } from '@polkadot/types';
 import { BlockNumber, Balance } from '@polkadot/types/interfaces';
-import { Bubble } from '@polkadot/react-components/index';
+import { Label, Icon } from 'semantic-ui-react';
 import { formatNumber, formatBalance } from '@polkadot/util';
 
-import Section from '@polkadot/joy-utils/Section';
-import { queryToProp } from '@polkadot/joy-utils/index';
-import { ElectionStage, Seat } from '@joystream/types/';
+import Section from '@polkadot/joy-utils/react/components/Section';
+import { queryToProp } from '@polkadot/joy-utils/functions/misc';
+import { ElectionStage, Seat } from '@joystream/types/council';
 import translate from './translate';
+import { RouteProps } from 'react-router-dom';
 
-type Props = ApiProps & I18nProps & {
+type Props = RouteProps & ApiProps & I18nProps & {
   bestNumber?: BN;
 
   activeCouncil?: Seat[];
@@ -34,7 +35,7 @@ type Props = ApiProps & I18nProps & {
   stage?: Option<ElectionStage>;
 };
 
-type State = {};
+type State = Record<any, never>;
 
 class Dashboard extends React.PureComponent<Props, State> {
   state: State = {};
@@ -45,12 +46,17 @@ class Dashboard extends React.PureComponent<Props, State> {
     const title = `Council ${activeCouncil.length > 0 ? '' : '(not elected)'}`;
 
     return <Section title={title}>
-      <Bubble label='Council members'>
-        {activeCouncil.length}
-      </Bubble>
-      <Bubble icon='flag checkered' label='Term ends at block #'>
-        {formatNumber(p.termEndsAt)}
-      </Bubble>
+      <Label.Group color='grey' size='large'>
+        <Label>
+          Council members
+          <Label.Detail>{activeCouncil.length}</Label.Detail>
+        </Label>
+        <Label>
+          <Icon name='flag checkered'/>
+          Term ends at block #
+          <Label.Detail>{formatNumber(p.termEndsAt)}</Label.Detail>
+        </Label>
+      </Label.Group>
     </Section>;
   }
 
@@ -59,13 +65,16 @@ class Dashboard extends React.PureComponent<Props, State> {
 
     let stageName: string | undefined;
     let stageEndsAt: BlockNumber | undefined;
+
     if (stage && stage.isSome) {
       const stageValue = stage.value as ElectionStage;
+
       stageEndsAt = stageValue.value as BlockNumber; // contained value
       stageName = stageValue.type; // name of Enum variant
     }
 
     let leftBlocks: BN | undefined;
+
     if (stageEndsAt && bestNumber) {
       leftBlocks = stageEndsAt.sub(bestNumber);
     }
@@ -76,20 +85,28 @@ class Dashboard extends React.PureComponent<Props, State> {
     const title = <>Election (<span className={stateClass}>{stateText}</span>)</>;
 
     return <Section title={title}>
-      <Bubble icon='target' label='Election round #'>
-        {formatNumber(round)}
-      </Bubble>
-      {isRunning && <>
-        <Bubble label='Stage'>
-          {stageName}
-        </Bubble>
-        <Bubble label='Blocks left'>
-          {formatNumber(leftBlocks)}
-        </Bubble>
-        <Bubble icon='flag checkered' label='Stage ends at block #'>
-          {formatNumber(stageEndsAt)}
-        </Bubble>
-      </>}
+      <Label.Group color='grey' size='large'>
+        <Label>
+          <Icon name='target'/>
+          Election round #
+          <Label.Detail>{formatNumber(round)}</Label.Detail>
+        </Label>
+        {isRunning && <>
+          <Label>
+            Stage
+            <Label.Detail>{stageName}</Label.Detail>
+          </Label>
+          <Label>
+            Blocks left
+            <Label.Detail>{formatNumber(leftBlocks)}</Label.Detail>
+          </Label>
+          <Label>
+            <Icon name='flag checkered'/>
+            Stage ends at block #
+            <Label.Detail>{formatNumber(stageEndsAt)}</Label.Detail>
+          </Label>
+        </>}
+      </Label.Group>
     </Section>;
   }
 
@@ -98,33 +115,46 @@ class Dashboard extends React.PureComponent<Props, State> {
     const isAutoStart = (p.autoStart || false).valueOf();
 
     return <Section title='Configuration'>
-      <Bubble label='Auto-start elections'>
-        {isAutoStart ? 'Yes' : 'No'}
-      </Bubble>
-      <Bubble label='New term duration'>
-        {formatNumber(p.newTermDuration)}
-      </Bubble>
-      <Bubble label='Candidacy limit'>
-        {formatNumber(p.candidacyLimit)}
-      </Bubble>
-      <Bubble label='Council size'>
-        {formatNumber(p.councilSize)}
-      </Bubble>
-      <Bubble label='Min. council stake'>
-        {formatBalance(p.minCouncilStake)}
-      </Bubble>
-      <Bubble label='Min. voting stake'>
-        {formatBalance(p.minVotingStake)}
-      </Bubble>
-      <Bubble label='Announcing period'>
-        {formatNumber(p.announcingPeriod)} blocks
-      </Bubble>
-      <Bubble label='Voting period'>
-        {formatNumber(p.votingPeriod)} blocks
-      </Bubble>
-      <Bubble label='Revealing period'>
-        {formatNumber(p.revealingPeriod)} blocks
-      </Bubble>
+      <Label.Group color='grey' size='large'>
+        <Label>
+          Auto-start elections
+          <Label.Detail>{isAutoStart ? 'Yes' : 'No'}</Label.Detail>
+        </Label>
+        <Label>
+          New term duration
+          <Label.Detail>{formatNumber(p.newTermDuration)}</Label.Detail>
+        </Label>
+        <Label>
+          Candidacy limit
+          <Label.Detail>{formatNumber(p.candidacyLimit)}</Label.Detail>
+        </Label>
+        <Label>
+          Council size
+          <Label.Detail>{formatNumber(p.councilSize)}</Label.Detail>
+        </Label>
+        <Label>
+          Min. council stake
+          <Label.Detail>{formatBalance(p.minCouncilStake)}</Label.Detail>
+        </Label>
+        <Label>
+          Min. voting stake
+          <Label.Detail>{formatBalance(p.minVotingStake)}</Label.Detail>
+        </Label>
+      </Label.Group>
+      <Label.Group color='grey' size='large'>
+        <Label>
+          Announcing period
+          <Label.Detail>{formatNumber(p.announcingPeriod)} blocks</Label.Detail>
+        </Label>
+        <Label>
+          Voting period
+          <Label.Detail>{formatNumber(p.votingPeriod)} blocks</Label.Detail>
+        </Label>
+        <Label>
+          Revealing period
+          <Label.Detail>{formatNumber(p.revealingPeriod)} blocks</Label.Detail>
+        </Label>
+      </Label.Group>
     </Section>;
   }
 

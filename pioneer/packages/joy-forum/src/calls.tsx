@@ -1,14 +1,12 @@
 
 import React from 'react';
 import { ApiProps, SubtractProps } from '@polkadot/react-api/types';
-import { Options } from '@polkadot/react-api/with/types';
-import { withApi, withCall as withSubstrateCall } from '@polkadot/react-api';
-import { Option } from '@polkadot/types/codec';
-import { AccountId } from '@polkadot/types/interfaces';
+import { Options } from '@polkadot/react-api/hoc/types';
+import { withApi, withCall as withSubstrateCall } from '@polkadot/react-api/hoc';
 import { u64 } from '@polkadot/types';
-import { Constructor } from '@polkadot/types/types';
-import { Category, Thread, Reply } from '@joystream/types/forum';
+import { InterfaceTypes } from '@polkadot/types/types/registry';
 import { useForum, ForumState } from './Context';
+import { createType } from '@joystream/types';
 
 type Call = string | [string, Options];
 
@@ -18,18 +16,20 @@ const storage: StorageType = 'substrate';
 
 type EntityMapName = 'categoryById' | 'threadById' | 'replyById';
 
-const getReactValue = (state: ForumState, endpoint: string, paramValue: any): any => {
-  const getEntityById = (mapName: EntityMapName, constructor: Constructor): any => {
+const getReactValue = (state: ForumState, endpoint: string, paramValue: any) => {
+  function getEntityById<T extends 'Category' | 'Thread' | 'Reply'>
+  (mapName: EntityMapName, type: T): InterfaceTypes[T] {
     const id = (paramValue as u64).toNumber();
     const entity = state[mapName].get(id);
-    return new constructor(entity);
-  };
+
+    return createType(type, entity as any);
+  }
 
   switch (endpoint) {
-    case 'forumSudo': return new Option<AccountId>('AccountId', state.sudo);
-    case 'categoryById': return getEntityById(endpoint, Category);
-    case 'threadById': return getEntityById(endpoint, Thread);
-    case 'replyById': return getEntityById(endpoint, Reply);
+    case 'forumSudo': return createType('Option<AccountId>', state.sudo);
+    case 'categoryById': return getEntityById(endpoint, 'Category');
+    case 'threadById': return getEntityById(endpoint, 'Thread');
+    case 'replyById': return getEntityById(endpoint, 'Reply');
     default: throw new Error('Unknown endpoint for Forum storage');
   }
 };
@@ -38,13 +38,14 @@ function withReactCall<P extends ApiProps> (endpoint: string, { paramName, propN
   return (Inner: React.ComponentType<ApiProps>): React.ComponentType<SubtractProps<P, ApiProps>> => {
     const SetProp = (props: P) => {
       const { state } = useForum();
-      const paramValue = paramName ? (props as any)[paramName] : undefined;
+      const paramValue = paramName ? (props as Record<string, unknown>)[paramName] : undefined;
       const propValue = getReactValue(state, endpoint, paramValue);
       const _propName = propName || endpoint;
       const _props = {
         ...props,
         [_propName]: propValue
       };
+
       return <Inner {..._props} />;
     };
 
@@ -56,10 +57,12 @@ function withForumCall<P extends ApiProps> (endpoint: string, opts: Options = {}
   if (!opts.propName) {
     opts.propName = endpoint;
   }
+
   if (storage === 'react') {
     return withReactCall(endpoint, opts);
   } else {
     endpoint = 'query.forum.' + endpoint;
+
     return withSubstrateCall(endpoint, opts);
   }
 }

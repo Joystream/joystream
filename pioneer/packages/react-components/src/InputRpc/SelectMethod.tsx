@@ -1,33 +1,33 @@
-// Copyright 2017-2019 @polkadot/react-components authors & contributors
+// Copyright 2017-2020 @polkadot/react-components authors & contributors
 // This software may be modified and distributed under the terms
 // of the Apache-2.0 license. See the LICENSE file for details.
 
-import { RpcMethod } from '@polkadot/jsonrpc/types';
+import { DefinitionRpcExt } from '@polkadot/types/types';
 import { DropdownOptions } from '../util/types';
-import { BareProps } from '../types';
 
 import React from 'react';
 
-import map from '@polkadot/jsonrpc';
+import jsonrpc from '@polkadot/types/interfaces/jsonrpc';
 
 import Dropdown from '../Dropdown';
 import { classes } from '../util';
 
-interface Props extends BareProps {
+interface Props {
+  className?: string;
   isError?: boolean;
-  onChange: (value: RpcMethod) => void;
+  onChange: (value: DefinitionRpcExt) => void;
   options: DropdownOptions;
-  value: RpcMethod;
+  value: DefinitionRpcExt;
 }
 
-function transform ({ value }: Props): (method: string) => RpcMethod {
-  return function (method: string): RpcMethod {
-    return map[value.section].methods[method];
+function transform ({ value: { section } }: Props): (method: string) => DefinitionRpcExt {
+  return function (method: string): DefinitionRpcExt {
+    return jsonrpc[section][method];
   };
 }
 
-export default function SelectMethod (props: Props): React.ReactElement<Props> | null {
-  const { className, isError, onChange, options, style, value } = props;
+function SelectMethod (props: Props): React.ReactElement<Props> | null {
+  const { className = '', isError, onChange, options, value } = props;
 
   if (!options.length) {
     return null;
@@ -39,10 +39,11 @@ export default function SelectMethod (props: Props): React.ReactElement<Props> |
       isError={isError}
       onChange={onChange}
       options={options}
-      style={style}
       transform={transform(props)}
       value={value.method}
       withLabel={false}
     />
   );
 }
+
+export default React.memo(SelectMethod);

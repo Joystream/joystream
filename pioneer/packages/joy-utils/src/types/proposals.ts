@@ -1,7 +1,8 @@
 import { ProposalId, VoteKind } from '@joystream/types/proposals';
-import { MemberId, Profile } from '@joystream/types/members';
-import { ThreadId, PostId } from '@joystream/types/forum';
+import { MemberId, Membership } from '@joystream/types/members';
+import { ThreadId, PostId } from '@joystream/types/common';
 import { ParsedMember } from './members';
+import { ProposalDetails, ProposalStatus, VotingResults, ProposalParameters } from '@joystream/types/src/proposals';
 
 export const ProposalTypes = [
   'Text',
@@ -12,33 +13,55 @@ export const ProposalTypes = [
   'SetContentWorkingGroupMintCapacity',
   'EvictStorageProvider',
   'SetValidatorCount',
-  'SetStorageRoleParameters'
+  'SetStorageRoleParameters',
+  'AddWorkingGroupLeaderOpening',
+  'SetWorkingGroupMintCapacity',
+  'BeginReviewWorkingGroupLeaderApplication',
+  'FillWorkingGroupLeaderOpening',
+  'SlashWorkingGroupLeaderStake',
+  'DecreaseWorkingGroupLeaderStake',
+  'SetWorkingGroupLeaderReward',
+  'TerminateWorkingGroupLeaderRole'
 ] as const;
 
 export type ProposalType = typeof ProposalTypes[number];
+
+export const proposalStatusFilters = ['All', 'Active', 'Canceled', 'Approved', 'Rejected', 'Slashed', 'Expired'] as const;
+export type ProposalStatusFilter = typeof proposalStatusFilters[number];
+
+// Overriden for better optimalization
+export type RuntimeUpgradeProposalDetails = [
+  string, // hash as hex
+  number // file size in bytes
+]
+
+export type ParsedProposalDetails = ProposalDetails | RuntimeUpgradeProposalDetails;
+
+export type SpecificProposalDetails<T extends keyof ProposalDetails['typeDefinitions']> =
+  T extends 'RuntimeUpgrade' ? RuntimeUpgradeProposalDetails :
+    InstanceType<ProposalDetails['typeDefinitions'][Exclude<T, 'RuntimeUpgrade'>]>;
 
 export type ParsedProposal = {
   id: ProposalId;
   type: ProposalType;
   title: string;
   description: string;
-  status: any;
+  status: ProposalStatus;
   proposer: ParsedMember;
   proposerId: number;
   createdAtBlock: number;
   createdAt: Date;
-  details: any[];
-  votingResults: any;
-  parameters: {
-    approvalQuorumPercentage: number;
-    approvalThresholdPercentage: number;
-    gracePeriod: number;
-    requiredStake: number;
-    slashingQuorumPercentage: number;
-    slashingThresholdPercentage: number;
-    votingPeriod: number;
-  };
+  details: ParsedProposalDetails;
+  votingResults: VotingResults;
+  parameters: ProposalParameters;
   cancellationFee: number;
+};
+
+export type ProposalsBatch = {
+  batchNumber: number;
+  batchSize: number;
+  totalBatches: number;
+  proposals: ParsedProposal[];
 };
 
 export type ProposalVote = {
@@ -52,10 +75,9 @@ export type ProposalVotes = {
 };
 
 export const Categories = {
-  storage: 'Storage',
   council: 'Council',
   validators: 'Validators',
-  cwg: 'Content Working Group',
+  wg: 'Working Groups',
   other: 'Other'
 } as const;
 
@@ -69,6 +91,7 @@ export type ProposalMeta = {
   approvalThreshold: number;
   slashingQuorum: number;
   slashingThreshold: number;
+  outdated?: boolean;
 }
 
 export type ParsedPost = {
@@ -79,7 +102,7 @@ export type ParsedPost = {
   createdAtBlock: number;
   updatedAt: Date;
   updatedAtBlock: number;
-  author: Profile | null;
+  author: Membership | null;
   authorId: MemberId;
   editsCount: number;
 };
@@ -93,4 +116,47 @@ export type ParsedDiscussion = {
 export type DiscussionContraints = {
   maxPostLength: number;
   maxPostEdits: number;
+}
+
+export type HistoricalParsedPost = {
+  postId: number;
+  threadId: number;
+  text: string;
+  createdAt: string;
+  createdAtBlock: number;
+  updatedAt: string;
+  updatedAtBlock: number;
+  author: ParsedMember;
+  authorId: number;
+  editsCount: number;
+}
+
+export type HistoricalProposalData = {
+  proposal: {
+    id: number,
+    parameters: unknown, // JSON of ProposalParameters
+    proposerId: number,
+    title: string,
+    description: string,
+    createdAt: string,
+    status: unknown, // JSON of ProposalStatus
+    votingResults: unknown, // JSON of VotingResults
+    details: unknown[], // JSON of ParsedProposalDetails
+    type: string,
+    proposer: ParsedMember,
+    createdAtBlock: number,
+    cancellationFee: number
+  },
+  votes: {
+    councilMembersLength: number,
+    votes: {
+      vote: number;
+      member: ParsedMember & { memberId: number },
+    }[]
+  },
+  discussion: {
+    title: string,
+    threadId: number,
+    posts: HistoricalParsedPost[]
+  }
 }

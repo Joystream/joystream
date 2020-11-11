@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "./packages/",
+    "outDir": "./build",
+    "allowJs": true,
+    "target": "es2017",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "skipLibCheck": true,
+    "types": ["node", "mocha"]
+  },
+  "files": [],
+  "exclude": ["**/node_modules/*", "build"],
+  "references": [
+    { "path": "packages/cli" }
+    //   { "path": "packages/storage" }
+  ]
+}
