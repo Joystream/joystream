@@ -17,14 +17,15 @@ import { formatDurationShort } from '@/utils/time'
 import VideoPreviewBase from './VideoPreviewBase'
 import { formatVideoViewsAndDate } from '@/utils/video'
 
-const MIN_COVER_WIDTH = 300
-const MAX_COVER_WIDTH = 600
+export const MIN_VIDEO_PREVIEW_WIDTH = 300
+const MAX_VIDEO_PREVIEW_WIDTH = 600
 const MIN_SCALING_FACTOR = 1
 const MAX_SCALING_FACTOR = 1.375
 // Linear Interpolation, see https://en.wikipedia.org/wiki/Linear_interpolation
-const calculateScalingFactor = (coverWidth: number) =>
+const calculateScalingFactor = (videoPreviewWidth: number) =>
   MIN_SCALING_FACTOR +
-  ((coverWidth - MIN_COVER_WIDTH) * (MAX_SCALING_FACTOR - MIN_SCALING_FACTOR)) / (MAX_COVER_WIDTH - MIN_COVER_WIDTH)
+  ((videoPreviewWidth - MIN_VIDEO_PREVIEW_WIDTH) * (MAX_SCALING_FACTOR - MIN_SCALING_FACTOR)) /
+    (MAX_VIDEO_PREVIEW_WIDTH - MIN_VIDEO_PREVIEW_WIDTH)
 
 type VideoPreviewProps = {
   title: string
@@ -66,9 +67,9 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
   const [scalingFactor, setScalingFactor] = useState(MIN_SCALING_FACTOR)
   const { ref: imgRef } = useResizeObserver<HTMLImageElement>({
     onResize: (size) => {
-      const { width: coverWidth } = size
-      if (coverWidth && !main) {
-        setScalingFactor(calculateScalingFactor(coverWidth))
+      const { width: videoPreviewWidth } = size
+      if (videoPreviewWidth && !main) {
+        setScalingFactor(calculateScalingFactor(videoPreviewWidth))
       }
     },
   })

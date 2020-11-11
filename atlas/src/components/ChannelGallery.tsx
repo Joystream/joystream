@@ -20,13 +20,13 @@ const ChannelGallery: React.FC<ChannelGalleryProps> = ({ title, channels, loadin
   const displayPlaceholders = loading || !channels
 
   return (
-    <Gallery title={title} trackPadding={trackPadding}>
+    <Gallery title={title} trackPadding={trackPadding} itemWidth={210}>
       {displayPlaceholders
         ? Array.from({ length: PLACEHOLDERS_COUNT }).map((_, idx) => (
-            <StyledChannelPreviewBase key={`channel-placeholder-${idx}`} />
+            <ChannelPreviewBase key={`channel-placeholder-${idx}`} />
           ))
         : channels!.map((channel) => (
-            <StyledChannelPreview
+            <ChannelPreview
               id={channel.id}
               name={channel.handle}
               avatarURL={channel.avatarPhotoURL}
@@ -37,13 +37,5 @@ const ChannelGallery: React.FC<ChannelGalleryProps> = ({ title, channels, loadin
     </Gallery>
   )
 }
-
-const StyledChannelPreviewBase = styled(ChannelPreviewBase)`
-  margin-right: 1.5rem;
-`
-
-const StyledChannelPreview = styled(ChannelPreview)`
-  margin-right: 1.5rem;
-`
 
 export default ChannelGallery

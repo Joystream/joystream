@@ -1,5 +1,4 @@
-import VideoPreview from './VideoPreview'
+import VideoPreview, { MIN_VIDEO_PREVIEW_WIDTH } from './VideoPreview'
 import VideoPreviewBase from './VideoPreviewBase'
-import { MAX_VIDEO_PREVIEW_WIDTH } from './VideoPreviewBase.styles'
 
-export { VideoPreview, VideoPreviewBase, MAX_VIDEO_PREVIEW_WIDTH }
+export { VideoPreview, VideoPreviewBase, MIN_VIDEO_PREVIEW_WIDTH }

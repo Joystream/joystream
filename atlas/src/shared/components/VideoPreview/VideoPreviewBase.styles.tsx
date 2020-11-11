@@ -17,8 +17,6 @@ type ScalesWithCoverProps = {
   scalingFactor: number
 }
 
-export const MAX_VIDEO_PREVIEW_WIDTH = '320px'
-
 const fadeIn = keyframes`
   0% {
     opacity: 0
