@@ -17,6 +17,15 @@ import { formatDurationShort } from '@/utils/time'
 import VideoPreviewBase from './VideoPreviewBase'
 import { formatVideoViewsAndDate } from '@/utils/video'
 
+const MIN_COVER_WIDTH = 300
+const MAX_COVER_WIDTH = 600
+const MIN_SCALING_FACTOR = 1
+const MAX_SCALING_FACTOR = 1.375
+// Linear Interpolation, see https://en.wikipedia.org/wiki/Linear_interpolation
+const calculateScalingFactor = (coverWidth: number) =>
+  MIN_SCALING_FACTOR +
+  ((coverWidth - MIN_COVER_WIDTH) * (MAX_SCALING_FACTOR - MIN_SCALING_FACTOR)) / (MAX_COVER_WIDTH - MIN_COVER_WIDTH)
+
 type VideoPreviewProps = {
   title: string
   channelName: string
@@ -54,6 +63,16 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
   onChannelClick,
   className,
 }) => {
+  const [scalingFactor, setScalingFactor] = useState(MIN_SCALING_FACTOR)
+  const { ref: imgRef } = useResizeObserver<HTMLImageElement>({
+    onResize: (size) => {
+      const { width: coverWidth } = size
+      if (coverWidth && !main) {
+        setScalingFactor(calculateScalingFactor(coverWidth))
+      }
+    },
+  })
+
   const channelClickable = !!onChannelClick
 
   const handleChannelClick = (e: React.MouseEvent<HTMLElement>) => {
@@ -71,25 +90,6 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
     e.stopPropagation()
     onClick(e)
   }
-
-  const MIN_COVER_WIDTH = 300
-  const MAX_COVER_WIDTH = 600
-  const MIN_SCALING_FACTOR = 1
-  const MAX_SCALING_FACTOR = 1.375
-  // Linear Interpolation, see https://en.wikipedia.org/wiki/Linear_interpolation
-  const calculateScalingFactor = (coverWidth: number) =>
-    MIN_SCALING_FACTOR +
-    ((coverWidth - MIN_COVER_WIDTH) * (MAX_SCALING_FACTOR - MIN_SCALING_FACTOR)) / (MAX_COVER_WIDTH - MIN_COVER_WIDTH)
-
-  const [scalingFactor, setScalingFactor] = useState(MIN_SCALING_FACTOR)
-  const { ref: imgRef } = useResizeObserver<HTMLImageElement>({
-    onResize: (size) => {
-      const { width: coverWidth } = size
-      if (coverWidth && !main) {
-        setScalingFactor(calculateScalingFactor(coverWidth))
-      }
-    },
-  })
 
   const coverNode = (
     <>
