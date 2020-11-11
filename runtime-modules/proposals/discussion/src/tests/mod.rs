@@ -48,13 +48,7 @@ fn assert_thread_content(thread_entry: TestThreadEntry, post_entries: Vec<TestPo
     for post_entry in post_entries {
         let actual_post =
             <PostThreadIdByPostId<Test>>::get(thread_entry.thread_id, post_entry.post_id);
-        let expected_post = DiscussionPost {
-            activated_at: 0,
-            updated_at: 0,
-            author_id: 1,
-            thread_id: thread_entry.thread_id,
-            edition_number: post_entry.edition_number,
-        };
+        let expected_post = DiscussionPost { author_id: 1 };
 
         assert_eq!(actual_post, expected_post);
     }
@@ -79,17 +73,13 @@ impl Default for DiscussionFixture {
 }
 
 impl DiscussionFixture {
-    fn with_title(self, title: Vec<u8>) -> Self {
-        DiscussionFixture { title, ..self }
-    }
-
     fn with_mode(self, mode: ThreadMode<u64>) -> Self {
         Self { mode, ..self }
     }
 
     fn create_discussion_and_assert(&self, result: Result<u64, DispatchError>) -> Option<u64> {
         let create_discussion_result =
-            Discussions::create_thread(self.author_id, self.title.clone(), self.mode.clone());
+            Discussions::create_thread(self.author_id, self.mode.clone());
 
         assert_eq!(create_discussion_result, result);
 
@@ -114,10 +104,6 @@ impl PostFixture {
             origin: RawOrigin::Signed(1),
             post_id: None,
         }
-    }
-
-    fn with_text(self, text: Vec<u8>) -> Self {
-        PostFixture { text, ..self }
     }
 
     fn with_origin(self, origin: RawOrigin<u64>) -> Self {
@@ -268,27 +254,6 @@ fn update_post_call_succeeds() {
 }
 
 #[test]
-fn update_post_call_fails_because_of_post_edition_limit() {
-    initial_test_ext().execute_with(|| {
-        let discussion_fixture = DiscussionFixture::default();
-
-        let thread_id = discussion_fixture
-            .create_discussion_and_assert(Ok(1))
-            .unwrap();
-
-        let mut post_fixture = PostFixture::default_for_thread(thread_id);
-
-        post_fixture.add_post_and_assert(Ok(()));
-
-        for _ in 1..6 {
-            post_fixture.update_post_and_assert(Ok(()));
-        }
-
-        post_fixture.update_post_and_assert(Err(Error::<Test>::PostEditionNumberExceeded.into()));
-    });
-}
-
-#[test]
 fn update_post_call_fails_because_of_the_wrong_author() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default();
@@ -349,18 +314,6 @@ fn thread_content_check_succeeded() {
 }
 
 #[test]
-fn create_discussion_call_with_bad_title_failed() {
-    initial_test_ext().execute_with(|| {
-        let mut discussion_fixture = DiscussionFixture::default().with_title(Vec::new());
-        discussion_fixture
-            .create_discussion_and_assert(Err(Error::<Test>::EmptyTitleProvided.into()));
-
-        discussion_fixture = DiscussionFixture::default().with_title([0; 201].to_vec());
-        discussion_fixture.create_discussion_and_assert(Err(Error::<Test>::TitleIsTooLong.into()));
-    });
-}
-
-#[test]
 fn add_post_call_with_invalid_thread_failed() {
     initial_test_ext().execute_with(|| {
         let discussion_fixture = DiscussionFixture::default();
@@ -402,57 +355,6 @@ fn update_post_call_with_invalid_thread_failed() {
 
         let mut post_fixture2 = post_fixture1.change_thread_id(2);
         post_fixture2.update_post_and_assert(Err(Error::<Test>::ThreadDoesntExist.into()));
-    });
-}
-
-#[test]
-fn add_post_call_with_invalid_text_failed() {
-    initial_test_ext().execute_with(|| {
-        let discussion_fixture = DiscussionFixture::default();
-        let thread_id = discussion_fixture
-            .create_discussion_and_assert(Ok(1))
-            .unwrap();
-
-        let mut post_fixture1 = PostFixture::default_for_thread(thread_id).with_text(Vec::new());
-        post_fixture1.add_post_and_assert(Err(Error::<Test>::EmptyPostProvided.into()));
-
-        let mut post_fixture2 =
-            PostFixture::default_for_thread(thread_id).with_text([0; 2001].to_vec());
-        post_fixture2.add_post_and_assert(Err(Error::<Test>::PostIsTooLong.into()));
-    });
-}
-
-#[test]
-fn update_post_call_with_invalid_text_failed() {
-    initial_test_ext().execute_with(|| {
-        let discussion_fixture = DiscussionFixture::default();
-        let thread_id = discussion_fixture
-            .create_discussion_and_assert(Ok(1))
-            .unwrap();
-
-        let mut post_fixture1 = PostFixture::default_for_thread(thread_id);
-        post_fixture1.add_post_and_assert(Ok(()));
-
-        let mut post_fixture2 = post_fixture1.with_text(Vec::new());
-        post_fixture2.update_post_and_assert(Err(Error::<Test>::EmptyPostProvided.into()));
-
-        let mut post_fixture3 = post_fixture2.with_text([0; 2001].to_vec());
-        post_fixture3.update_post_and_assert(Err(Error::<Test>::PostIsTooLong.into()));
-    });
-}
-
-#[test]
-fn add_discussion_thread_fails_because_of_max_thread_by_same_author_in_a_row_limit_exceeded() {
-    initial_test_ext().execute_with(|| {
-        let discussion_fixture = DiscussionFixture::default();
-        for idx in 1..=3 {
-            discussion_fixture
-                .create_discussion_and_assert(Ok(idx))
-                .unwrap();
-        }
-
-        discussion_fixture
-            .create_discussion_and_assert(Err(Error::<Test>::MaxThreadInARowLimitExceeded.into()));
     });
 }
 
@@ -628,5 +530,32 @@ fn create_post_call_fails_with_closed_mode_by_not_allowed_member() {
             .with_author(11);
 
         post_fixture.add_post_and_assert(Err(Error::<Test>::CannotPostOnClosedThread.into()));
+    });
+}
+
+#[test]
+fn change_thread_mode_fails_with_exceeded_max_author_list_size() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture = DiscussionFixture::default();
+
+        let thread_id = discussion_fixture
+            .create_discussion_and_assert(Ok(1))
+            .unwrap();
+
+        let change_thread_mode_fixture = ChangeThreadModeFixture::default_for_thread_id(thread_id)
+            .with_mode(ThreadMode::Closed(vec![2, 3, 4, 5, 6]));
+        change_thread_mode_fixture
+            .call_and_assert(Err(Error::<Test>::MaxWhiteListSizeExceeded.into()));
+    });
+}
+
+#[test]
+fn create_discussion_call_fails_with_exceeded_max_author_list_size() {
+    initial_test_ext().execute_with(|| {
+        let discussion_fixture =
+            DiscussionFixture::default().with_mode(ThreadMode::Closed(vec![2, 3, 4, 5, 6]));
+
+        discussion_fixture
+            .create_discussion_and_assert(Err(Error::<Test>::MaxWhiteListSizeExceeded.into()));
     });
 }
