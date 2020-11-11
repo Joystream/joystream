@@ -2,17 +2,7 @@
 set -e
 
 # Run a complete joystream development network on your machine using docker.
-
-# TODO
-# - Check if docker is installed and prompt to install.
-# - Prompt user if they wish to rebuild before starting . default no, timeout if not prompted.
-# - Try to fetch a cached joystream/node image if one is found matching code shasum.
-
-# if ! docker inspect joystream/node:latest > /dev/null 2>&1;
-# then
-#   echo "Didn't find a joystream/node:latest docker image."
-#   exit 1
-# fi
+# Make sure to run build.sh prior to running this script.
 
 # Clean start!
 docker-compose down -v
@@ -25,7 +15,7 @@ function down()
 
 trap down EXIT
 
-# Run a development joystream-node chain
+# Run a local development chain
 docker-compose up -d joystream-node
 
 ## Storage Infrastructure
