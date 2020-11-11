@@ -616,6 +616,8 @@ impl proposals_codex::Trait for Runtime {
         SetWorkingGroupMintCapacityProposalParameters;
     type DecreaseWorkingGroupLeaderStakeProposalParameters =
         DecreaseWorkingGroupLeaderStakeProposalParameters;
+    type SlashWorkingGroupLeaderStakeProposalParameters =
+        SlashWorkingGroupLeaderStakeProposalParameters;
 }
 
 impl constitution::Trait for Runtime {

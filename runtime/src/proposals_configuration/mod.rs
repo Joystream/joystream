@@ -31,6 +31,7 @@ parameter_types! {
     pub FillWorkingGroupOpeningProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.fill_working_group_opening_proposal;
     pub SetWorkingGroupMintCapacityProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.set_working_group_mint_capacity_proposal;
     pub DecreaseWorkingGroupLeaderStakeProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.decrease_working_group_leader_stake_proposal;
+    pub SlashWorkingGroupLeaderStakeProposalParameters: ProposalParameters<BlockNumber, Balance> = ALL_PROPOSALS_PARAMETERS.slash_working_group_leader_stake_proposal;
 }
 
 ///////////
@@ -45,6 +46,7 @@ struct AllProposalsParameters {
     pub fill_working_group_opening_proposal: ProposalParameters<BlockNumber, Balance>,
     pub set_working_group_mint_capacity_proposal: ProposalParameters<BlockNumber, Balance>,
     pub decrease_working_group_leader_stake_proposal: ProposalParameters<BlockNumber, Balance>,
+    pub slash_working_group_leader_stake_proposal: ProposalParameters<BlockNumber, Balance>,
 }
 
 // to initialize parameters only once.
@@ -117,6 +119,11 @@ fn convert_json_object_to_proposal_parameters(
             params,
             jo.clone(),
             decrease_working_group_leader_stake_proposal
+        );
+        init_proposal_parameter_object!(
+            params,
+            jo.clone(),
+            slash_working_group_leader_stake_proposal
         );
     }
 
@@ -228,5 +235,7 @@ fn default_parameters() -> AllProposalsParameters {
             defaults::set_working_group_mint_capacity_proposal(),
         decrease_working_group_leader_stake_proposal:
             defaults::decrease_working_group_leader_stake_proposal(),
+        slash_working_group_leader_stake_proposal:
+            defaults::slash_working_group_leader_stake_proposal(),
     }
 }

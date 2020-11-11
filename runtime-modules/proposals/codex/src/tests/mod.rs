@@ -785,7 +785,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     0,
                     10,
                     working_group,
- 					None,
+                    None,
                 )
             },
             empty_stake_call: || {
@@ -798,7 +798,7 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     0,
                     10,
                     working_group,
- 					None,
+                    None,
                 )
             },
             successful_call: || {
@@ -811,18 +811,12 @@ fn run_create_slash_working_group_leader_stake_proposal_common_checks_succeed(
                     10,
                     10,
                     working_group,
- 					None,
+                    None,
                 )
             },
             proposal_parameters:
-                crate::proposal_types::parameters::slash_working_group_leader_stake_proposal::<
-                    Test,
-                >(),
-            proposal_details: ProposalDetails::SlashWorkingGroupLeaderStake(
-                10,
-                10,
-                working_group,
-            ),
+                <Test as crate::Trait>::SlashWorkingGroupLeaderStakeProposalParameters::get(),
+            proposal_details: ProposalDetails::SlashWorkingGroupLeaderStake(10, 10, working_group),
         };
         proposal_fixture.check_all();
     });

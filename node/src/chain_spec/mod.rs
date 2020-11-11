@@ -340,10 +340,6 @@ pub fn testnet_genesis(
         versioned_store_permissions: Some(versioned_store_permissions_config),
         content_wg: Some(content_working_group_config),
         proposals_codex: Some(ProposalsCodexConfig {
-            slash_working_group_leader_stake_proposal_voting_period: cpcp
-                .slash_working_group_leader_stake_proposal_voting_period,
-            slash_working_group_leader_stake_proposal_grace_period: cpcp
-                .slash_working_group_leader_stake_proposal_grace_period,
             set_working_group_leader_reward_proposal_voting_period: cpcp
                 .set_working_group_leader_reward_proposal_voting_period,
             set_working_group_leader_reward_proposal_grace_period: cpcp
