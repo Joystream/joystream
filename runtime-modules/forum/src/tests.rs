@@ -2,6 +2,8 @@
 
 use super::*;
 use crate::mock::*;
+use frame_support::assert_err;
+
 /// test cases are arranged as two layers.
 /// first layer is each method in defined in module.
 /// second layer is each parameter of the specific method.
@@ -12,10 +14,9 @@ use crate::mock::*;
 #[test]
 // test case for check if origin is forum lead
 fn update_category_membership_of_moderator_origin() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
             origin.clone(),
@@ -36,7 +37,7 @@ fn update_category_membership_of_moderator_origin() {
             moderator_id,
             category_id,
             true,
-            Err(Error::OriginNotForumLead),
+            Err(Error::<Runtime>::OriginNotForumLead.into()),
         );
     });
 }
@@ -44,10 +45,9 @@ fn update_category_membership_of_moderator_origin() {
 #[test]
 // test case for check whether category is existed.
 fn update_category_membership_of_moderator_category() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
             origin.clone(),
@@ -68,7 +68,7 @@ fn update_category_membership_of_moderator_category() {
             moderator_id,
             INVLAID_CATEGORY_ID,
             true,
-            Err(Error::CategoryDoesNotExist),
+            Err(Error::<Runtime>::CategoryDoesNotExist.into()),
         );
     });
 }
@@ -77,10 +77,9 @@ fn update_category_membership_of_moderator_category() {
 // test case for check if origin is forum lead
 fn create_category_origin() {
     let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
-    let results = vec![Ok(()), Err(Error::OriginNotForumLead)];
+    let results = vec![Ok(()), Err(Error::<Runtime>::OriginNotForumLead.into())];
     for index in 0..origins.len() {
-        let config = default_genesis_config();
-        build_test_externalities(config).execute_with(|| {
+        with_test_externalities(|| {
             create_category_mock(
                 origins[index].clone(),
                 None,
@@ -98,15 +97,14 @@ fn create_category_parent() {
     let parents = vec![Some(1), Some(2), Some(3)];
     let results = vec![
         Ok(()),
-        Err(Error::AncestorCategoryImmutable),
-        Err(Error::CategoryDoesNotExist),
+        Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
+        Err(Error::<Runtime>::CategoryDoesNotExist.into()),
     ];
 
     for index in 0..parents.len() {
-        let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
+        with_test_externalities(|| {
             create_category_mock(
                 origin.clone(),
                 None,
@@ -143,10 +141,9 @@ fn create_category_parent() {
 #[test]
 // test case set category depth
 fn create_category_depth() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let max_depth = <Runtime as Trait>::MaxCategoryDepth::get();
         for i in 0..(max_depth + 1) {
             let parent_category_id = match i {
@@ -154,7 +151,7 @@ fn create_category_depth() {
                 _ => Some(i),
             };
             let expected_result = match i {
-                _ if i >= max_depth => Err(Error::MaxValidCategoryDepthExceeded),
+                _ if i >= max_depth => Err(Error::<Runtime>::MaxValidCategoryDepthExceeded.into()),
                 _ => Ok(()),
             };
 
@@ -176,13 +173,12 @@ fn create_category_depth() {
 // test if category updator is forum lead
 fn update_category_archival_status_origin() {
     let origins = [FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
-    let results = vec![Ok(()), Err(Error::OriginNotForumLead)];
+    let results = vec![Ok(()), Err(Error::<Runtime>::OriginNotForumLead.into())];
 
     for index in 0..origins.len() {
-        let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
+        with_test_externalities(|| {
             let category_id = create_category_mock(
                 origin,
                 None,
@@ -204,10 +200,9 @@ fn update_category_archival_status_origin() {
 #[test]
 // test case for new setting actually not update category status
 fn update_category_archival_status_no_change() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -220,7 +215,7 @@ fn update_category_archival_status_no_change() {
             PrivilegedActor::Lead,
             category_id,
             false,
-            Err(Error::CategoryNotBeingUpdated),
+            Err(Error::<Runtime>::CategoryNotBeingUpdated.into()),
         );
     });
 }
@@ -228,10 +223,9 @@ fn update_category_archival_status_no_change() {
 #[test]
 // test case for editing nonexistent category
 fn update_category_archival_status_category_exists() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         create_category_mock(
             origin.clone(),
             None,
@@ -251,7 +245,7 @@ fn update_category_archival_status_category_exists() {
             PrivilegedActor::Lead,
             2,
             true,
-            Err(Error::CategoryDoesNotExist),
+            Err(Error::<Runtime>::CategoryDoesNotExist.into()),
         );
     });
 }
@@ -262,10 +256,9 @@ fn update_category_archival_status_moderator() {
     let moderators = [FORUM_MODERATOR_ORIGIN_ID];
     let origins = [FORUM_MODERATOR_ORIGIN];
 
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -280,7 +273,7 @@ fn update_category_archival_status_moderator() {
             PrivilegedActor::Moderator(moderators[0]),
             category_id,
             true,
-            Err(Error::ModeratorCantUpdateCategory),
+            Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
         );
 
         // give permision to moderate category itself
@@ -306,10 +299,9 @@ fn update_category_archival_status_moderator() {
 #[test]
 // test if moderator can archive category
 fn update_category_archival_status_lock_works() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -353,7 +345,7 @@ fn update_category_archival_status_lock_works() {
             good_thread_title(),
             good_thread_text(),
             None,
-            Err(Error::AncestorCategoryImmutable),
+            Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
         );
 
         // can't add more posts to thread inside category
@@ -363,7 +355,7 @@ fn update_category_archival_status_lock_works() {
             category_id,
             thread_id,
             good_post_text(),
-            Err(Error::AncestorCategoryImmutable),
+            Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
         );
 
         // can't update post
@@ -374,7 +366,7 @@ fn update_category_archival_status_lock_works() {
             thread_id,
             post_id,
             good_post_new_text(),
-            Err(Error::AncestorCategoryImmutable),
+            Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
         );
 
         // can't update thread
@@ -384,7 +376,7 @@ fn update_category_archival_status_lock_works() {
             category_id,
             thread_id,
             good_thread_new_title(),
-            Err(Error::AncestorCategoryImmutable),
+            Err(Error::<Runtime>::AncestorCategoryImmutable.into()),
         );
     });
 }
@@ -392,10 +384,9 @@ fn update_category_archival_status_lock_works() {
 #[test]
 // test category can be deleted
 fn delete_category() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -403,19 +394,18 @@ fn delete_category() {
             good_category_description(),
             Ok(()),
         );
-        assert!(<CategoryById<Runtime>>::exists(category_id));
+        assert!(<CategoryById<Runtime>>::contains_key(category_id));
         delete_category_mock(origin.clone(), PrivilegedActor::Lead, category_id, Ok(()));
-        assert!(!<CategoryById<Runtime>>::exists(category_id));
+        assert!(!<CategoryById<Runtime>>::contains_key(category_id));
     });
 }
 
 #[test]
 // test category can't be deleted when it has subcategories
 fn delete_category_non_empty_subcategories() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -434,7 +424,7 @@ fn delete_category_non_empty_subcategories() {
             origin.clone(),
             PrivilegedActor::Lead,
             category_id,
-            Err(Error::CategoryNotEmptyCategories),
+            Err(Error::<Runtime>::CategoryNotEmptyCategories.into()),
         );
     });
 }
@@ -442,10 +432,9 @@ fn delete_category_non_empty_subcategories() {
 #[test]
 // test category can't be deleted when it contains threads
 fn delete_category_non_empty_threads() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -467,7 +456,7 @@ fn delete_category_non_empty_threads() {
             origin.clone(),
             PrivilegedActor::Lead,
             category_id,
-            Err(Error::CategoryNotEmptyThreads),
+            Err(Error::<Runtime>::CategoryNotEmptyThreads.into()),
         );
     });
 }
@@ -478,10 +467,9 @@ fn delete_category_need_ancestor_moderation() {
     let moderators = [FORUM_MODERATOR_ORIGIN_ID];
     let origins = [FORUM_MODERATOR_ORIGIN];
 
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id_1 = create_category_mock(
             origin.clone(),
             None,
@@ -502,7 +490,7 @@ fn delete_category_need_ancestor_moderation() {
             origins[0].clone(),
             PrivilegedActor::Moderator(moderators[0]),
             category_id_2,
-            Err(Error::ModeratorCantDeleteCategory),
+            Err(Error::<Runtime>::ModeratorCantDeleteCategory.into()),
         );
 
         // give permision to moderate category itself
@@ -519,7 +507,7 @@ fn delete_category_need_ancestor_moderation() {
             origins[0].clone(),
             PrivilegedActor::Moderator(moderators[0]),
             category_id_2,
-            Err(Error::ModeratorCantDeleteCategory),
+            Err(Error::<Runtime>::ModeratorCantDeleteCategory.into()),
         );
 
         // give permision to moderate parent category
@@ -556,10 +544,9 @@ fn delete_category_need_ancestor_moderation() {
 #[test]
 // test if lead can delete root category
 fn delete_category_root_by_lead() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -580,12 +567,14 @@ fn delete_category_root_by_lead() {
 fn create_thread_origin() {
     let origins = [NOT_FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_2_ORIGIN];
     let forum_user_id = NOT_FORUM_LEAD_ORIGIN_ID;
-    let results = vec![Ok(()), Err(Error::ForumUserIdNotMatchAccount)];
+    let results = vec![
+        Ok(()),
+        Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
+    ];
     for index in 0..origins.len() {
-        let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
+        with_test_externalities(|| {
             let category_id = create_category_mock(
                 origin,
                 None,
@@ -610,14 +599,13 @@ fn create_thread_origin() {
 // test if timestamp of poll start time and end time are valid
 fn create_thread_poll_timestamp() {
     let expiration_diff = 10;
-    let results = vec![Ok(()), Err(Error::PollTimeSetting)];
+    let results = vec![Ok(()), Err(Error::<Runtime>::PollTimeSetting.into())];
 
     for index in 0..results.len() {
-        let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
 
-        build_test_externalities(config).execute_with(|| {
+        with_test_externalities(|| {
             change_current_time(1);
             let poll = generate_poll_timestamp_cases(index, expiration_diff);
             change_current_time(index as u64 * expiration_diff + 1);
@@ -649,10 +637,9 @@ fn edit_thread_title() {
     let forum_users = [NOT_FORUM_LEAD_ORIGIN_ID, NOT_FORUM_LEAD_2_ORIGIN_ID];
     let origins = [NOT_FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_2_ORIGIN];
 
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -688,7 +675,7 @@ fn edit_thread_title() {
             category_id,
             thread_id,
             good_thread_new_title(),
-            Err(Error::AccountDoesNotMatchThreadAuthor),
+            Err(Error::<Runtime>::AccountDoesNotMatchThreadAuthor.into()),
         );
     });
 }
@@ -700,13 +687,12 @@ fn edit_thread_title() {
 // test if category updator is forum lead
 fn update_thread_archival_status_origin() {
     let origins = [FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
-    let results = vec![Ok(()), Err(Error::OriginNotForumLead)];
+    let results = vec![Ok(()), Err(Error::<Runtime>::OriginNotForumLead.into())];
 
     for index in 0..origins.len() {
-        let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
+        with_test_externalities(|| {
             let category_id = create_category_mock(
                 origin,
                 None,
@@ -739,10 +725,9 @@ fn update_thread_archival_status_origin() {
 #[test]
 // test case for new setting actually not update thread status
 fn update_thread_archival_status_no_change() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -765,7 +750,7 @@ fn update_thread_archival_status_no_change() {
             category_id,
             thread_id,
             false,
-            Err(Error::ThreadNotBeingUpdated),
+            Err(Error::<Runtime>::ThreadNotBeingUpdated.into()),
         );
     });
 }
@@ -773,10 +758,9 @@ fn update_thread_archival_status_no_change() {
 #[test]
 // test case for editing nonexistent thread
 fn update_thread_archival_status_thread_exists() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -807,7 +791,7 @@ fn update_thread_archival_status_thread_exists() {
             category_id,
             thread_id + 1,
             true,
-            Err(Error::ThreadDoesNotExist),
+            Err(Error::<Runtime>::ThreadDoesNotExist.into()),
         );
     });
 }
@@ -818,10 +802,9 @@ fn update_thread_archival_status_moderator() {
     let moderators = [FORUM_MODERATOR_ORIGIN_ID];
     let origins = [FORUM_MODERATOR_ORIGIN];
 
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -846,7 +829,7 @@ fn update_thread_archival_status_moderator() {
             category_id,
             thread_id,
             true,
-            Err(Error::ModeratorCantUpdateCategory),
+            Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
         );
 
         // give permision to moderate category itself
@@ -873,10 +856,9 @@ fn update_thread_archival_status_moderator() {
 #[test]
 // test if moderator can archive thread
 fn update_thread_archival_status_lock_works() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -920,7 +902,7 @@ fn update_thread_archival_status_lock_works() {
             category_id,
             thread_id,
             good_post_text(),
-            Err(Error::ThreadImmutable),
+            Err(Error::<Runtime>::ThreadImmutable.into()),
         );
 
         // can't update post
@@ -931,7 +913,7 @@ fn update_thread_archival_status_lock_works() {
             thread_id,
             post_id,
             good_post_new_text(),
-            Err(Error::ThreadImmutable),
+            Err(Error::<Runtime>::ThreadImmutable.into()),
         );
 
         // can't update thread
@@ -941,7 +923,7 @@ fn update_thread_archival_status_lock_works() {
             category_id,
             thread_id,
             good_thread_new_title(),
-            Err(Error::ThreadImmutable),
+            Err(Error::<Runtime>::ThreadImmutable.into()),
         );
     });
 }
@@ -960,10 +942,9 @@ fn delete_thread() {
         NOT_FORUM_LEAD_ORIGIN,
     ];
 
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1011,7 +992,7 @@ fn delete_thread() {
             moderators[2],
             category_id,
             thread_id,
-            Err(Error::ModeratorIdNotMatchAccount),
+            Err(Error::<Runtime>::ModeratorIdNotMatchAccount.into()),
         );
 
         // moderator not associated with thread will fail to delete it
@@ -1020,7 +1001,7 @@ fn delete_thread() {
             moderators[1],
             category_id,
             thread_id,
-            Err(Error::ModeratorCantUpdateCategory),
+            Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
         );
 
         // moderator will delete thread
@@ -1033,7 +1014,7 @@ fn delete_thread() {
         );
 
         // check thread's post was deleted
-        assert!(!<PostById<Runtime>>::exists(thread_id, post_id));
+        assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
 
         // check category's thread count was decreased
         assert_eq!(
@@ -1049,10 +1030,9 @@ fn move_thread_moderator_permissions() {
     let moderators = [FORUM_MODERATOR_ORIGIN_ID, FORUM_MODERATOR_2_ORIGIN_ID];
     let origins = [FORUM_MODERATOR_ORIGIN, FORUM_MODERATOR_2_ORIGIN];
 
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id_1 = create_category_mock(
             origin.clone(),
             None,
@@ -1088,7 +1068,7 @@ fn move_thread_moderator_permissions() {
             category_id_1,
             thread_id,
             category_id_2,
-            Err(Error::ModeratorModerateOriginCategory),
+            Err(Error::<Runtime>::ModeratorModerateOriginCategory.into()),
         );
 
         // set incomplete permissions for first user (only category 1)
@@ -1115,7 +1095,7 @@ fn move_thread_moderator_permissions() {
             category_id_1,
             thread_id,
             category_id_2,
-            Err(Error::ModeratorModerateOriginCategory),
+            Err(Error::<Runtime>::ModeratorModerateOriginCategory.into()),
         );
 
         // moderator associated only with the second category will fail to move thread
@@ -1125,7 +1105,7 @@ fn move_thread_moderator_permissions() {
             category_id_1,
             thread_id,
             category_id_2,
-            Err(Error::ModeratorModerateDestinationCategory),
+            Err(Error::<Runtime>::ModeratorModerateDestinationCategory.into()),
         );
 
         // give the rest of necessary permissions to the first moderator
@@ -1175,10 +1155,9 @@ fn move_thread_invalid_move() {
     let moderators = [FORUM_MODERATOR_ORIGIN_ID];
     let origins = [FORUM_MODERATOR_ORIGIN];
 
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1212,7 +1191,7 @@ fn move_thread_invalid_move() {
             category_id,
             thread_id,
             category_id,
-            Err(Error::ThreadMoveInvalid),
+            Err(Error::<Runtime>::ThreadMoveInvalid.into()),
         );
     });
 }
@@ -1224,14 +1203,16 @@ fn move_thread_invalid_move() {
 // test if poll submitter is a forum user
 fn vote_on_poll_origin() {
     let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
-    let results = vec![Ok(()), Err(Error::ForumUserIdNotMatchAccount)];
+    let results = vec![
+        Ok(()),
+        Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
+    ];
     let expiration_diff = 10;
 
     for index in 0..origins.len() {
-        let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
+        with_test_externalities(|| {
             let category_id = create_category_mock(
                 origin.clone(),
                 None,
@@ -1264,10 +1245,9 @@ fn vote_on_poll_origin() {
 #[test]
 // test if poll metadata created
 fn vote_on_poll_exists() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1290,7 +1270,7 @@ fn vote_on_poll_exists() {
             thread_id,
             category_id,
             1,
-            Err(Error::PollNotExist),
+            Err(Error::<Runtime>::PollNotExist.into()),
         );
     });
 }
@@ -1298,12 +1278,11 @@ fn vote_on_poll_exists() {
 #[test]
 // test if forum reject poll submit after expiration
 fn vote_on_poll_expired() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
     let expiration_diff = 10;
 
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1327,7 +1306,7 @@ fn vote_on_poll_expired() {
             category_id,
             thread_id,
             1,
-            Err(Error::PollCommitExpired),
+            Err(Error::<Runtime>::PollCommitExpired.into()),
         );
     });
 }
@@ -1339,10 +1318,9 @@ fn vote_on_poll_expired() {
 #[test]
 // test if thread moderator registered as valid moderator
 fn moderate_thread_origin_ok() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
             origin.clone(),
@@ -1386,12 +1364,14 @@ fn moderate_thread_origin_ok() {
 // test if post origin registered as forum user
 fn add_post_origin() {
     let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
-    let results = vec![Ok(()), Err(Error::ForumUserIdNotMatchAccount)];
+    let results = vec![
+        Ok(()),
+        Err(Error::<Runtime>::ForumUserIdNotMatchAccount.into()),
+    ];
     for index in 0..origins.len() {
-        let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
+        with_test_externalities(|| {
             let category_id = create_category_mock(
                 origin.clone(),
                 None,
@@ -1424,14 +1404,13 @@ fn add_post_origin() {
 #[test]
 // test if post text can be edited by author
 fn edit_post_text() {
-    let config = default_genesis_config();
     let forum_users = [NOT_FORUM_LEAD_ORIGIN_ID, NOT_FORUM_LEAD_2_ORIGIN_ID];
     let origins = [NOT_FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_2_ORIGIN];
 
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
 
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         // prepare category and thread
         let category_id = create_category_mock(
             origin.clone(),
@@ -1479,7 +1458,7 @@ fn edit_post_text() {
             thread_id,
             post_id,
             good_post_new_text(),
-            Err(Error::AccountDoesNotMatchPostAuthor),
+            Err(Error::<Runtime>::AccountDoesNotMatchPostAuthor.into()),
         );
     });
 }
@@ -1493,11 +1472,10 @@ fn react_post() {
     // three reations to post, test them one by one.
     let reactions = vec![0, 1, 2];
     for index in 0..reactions.len() {
-        let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = FORUM_LEAD_ORIGIN;
 
-        build_test_externalities(config).execute_with(|| {
+        with_test_externalities(|| {
             let category_id = create_category_mock(
                 origin.clone(),
                 None,
@@ -1544,12 +1522,14 @@ fn react_post() {
 // test if post moderator registered
 fn moderate_post_origin() {
     let origins = vec![FORUM_LEAD_ORIGIN, NOT_FORUM_LEAD_ORIGIN];
-    let results = vec![Ok(()), Err(Error::ModeratorIdNotMatchAccount)];
+    let results = vec![
+        Ok(()),
+        Err(Error::<Runtime>::ModeratorIdNotMatchAccount.into()),
+    ];
     for index in 0..origins.len() {
-        let config = default_genesis_config();
         let forum_lead = FORUM_LEAD_ORIGIN_ID;
         let origin = OriginType::Signed(forum_lead);
-        build_test_externalities(config).execute_with(|| {
+        with_test_externalities(|| {
             let moderator_id = forum_lead;
 
             let category_id = create_category_mock(
@@ -1599,10 +1579,9 @@ fn moderate_post_origin() {
 
 #[test]
 fn set_stickied_threads_ok() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
             origin.clone(),
@@ -1633,10 +1612,9 @@ fn set_stickied_threads_ok() {
 
 #[test]
 fn set_stickied_threads_wrong_moderator() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
             origin.clone(),
@@ -1660,17 +1638,16 @@ fn set_stickied_threads_wrong_moderator() {
             moderator_id,
             category_id,
             vec![thread_id],
-            Err(Error::ModeratorCantUpdateCategory),
+            Err(Error::<Runtime>::ModeratorCantUpdateCategory.into()),
         );
     });
 }
 
 #[test]
 fn set_stickied_threads_thread_not_exists() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let moderator_id = forum_lead;
         let category_id = create_category_mock(
             origin.clone(),
@@ -1701,7 +1678,7 @@ fn set_stickied_threads_thread_not_exists() {
             moderator_id,
             category_id,
             vec![wrong_thread_id],
-            Err(Error::ThreadDoesNotExist),
+            Err(Error::<Runtime>::ThreadDoesNotExist.into()),
         );
     });
 }
@@ -1718,17 +1695,17 @@ fn test_migration_not_done() {
         let thread_id = 1;
         let post_id = 1;
 
-        assert_eq!(
+        assert_err!(
             TestForumModule::create_category(
                 mock_origin(origin.clone()),
                 None,
                 good_category_title(),
                 good_category_description()
             ),
-            Err(Error::DataMigrationNotDone),
+            Error::<Runtime>::DataMigrationNotDone,
         );
 
-        assert_eq!(
+        assert_err!(
             TestForumModule::create_thread(
                 mock_origin(origin.clone()),
                 forum_user_id,
@@ -1737,10 +1714,10 @@ fn test_migration_not_done() {
                 good_thread_text(),
                 None,
             ),
-            Err(Error::DataMigrationNotDone),
+            Error::<Runtime>::DataMigrationNotDone,
         );
 
-        assert_eq!(
+        assert_err!(
             TestForumModule::add_post(
                 mock_origin(origin.clone()),
                 forum_user_id,
@@ -1748,10 +1725,10 @@ fn test_migration_not_done() {
                 thread_id,
                 good_post_text(),
             ),
-            Err(Error::DataMigrationNotDone),
+            Error::<Runtime>::DataMigrationNotDone,
         );
 
-        assert_eq!(
+        assert_err!(
             TestForumModule::moderate_thread(
                 mock_origin(origin.clone()),
                 PrivilegedActor::Moderator(moderator_id),
@@ -1759,10 +1736,10 @@ fn test_migration_not_done() {
                 thread_id,
                 good_moderation_rationale(),
             ),
-            Err(Error::DataMigrationNotDone),
+            Error::<Runtime>::DataMigrationNotDone,
         );
 
-        assert_eq!(
+        assert_err!(
             TestForumModule::moderate_post(
                 mock_origin(origin.clone()),
                 PrivilegedActor::Moderator(moderator_id),
@@ -1771,7 +1748,7 @@ fn test_migration_not_done() {
                 post_id,
                 good_moderation_rationale(),
             ),
-            Err(Error::DataMigrationNotDone),
+            Error::<Runtime>::DataMigrationNotDone,
         );
     });
 }
@@ -1779,12 +1756,11 @@ fn test_migration_not_done() {
 #[test]
 // test storage limits are enforced
 fn storage_limit_checks() {
-    let config = default_genesis_config();
     let forum_lead = FORUM_LEAD_ORIGIN_ID;
     let origin = OriginType::Signed(forum_lead);
 
     // test MaxSubcategories and MaxThreadsInCategory
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1802,7 +1778,7 @@ fn storage_limit_checks() {
                 good_category_title(),
                 good_category_description(),
                 match i {
-                    _ if i == max => Err(Error::MapSizeLimit),
+                    _ if i == max => Err(Error::<Runtime>::MapSizeLimit.into()),
                     _ => Ok(()),
                 },
             );
@@ -1819,7 +1795,7 @@ fn storage_limit_checks() {
                 good_thread_text(),
                 None,
                 match i {
-                    _ if i == max => Err(Error::MapSizeLimit),
+                    _ if i == max => Err(Error::<Runtime>::MapSizeLimit.into()),
                     _ => Ok(()),
                 },
             );
@@ -1827,8 +1803,7 @@ fn storage_limit_checks() {
     });
 
     // test MaxPostsInThread
-    let config = default_genesis_config();
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1857,7 +1832,7 @@ fn storage_limit_checks() {
                 thread_id,
                 good_post_text(),
                 match i {
-                    _ if i == max => Err(Error::MapSizeLimit),
+                    _ if i == max => Err(Error::<Runtime>::MapSizeLimit.into()),
                     _ => Ok(()),
                 },
             );
@@ -1865,8 +1840,7 @@ fn storage_limit_checks() {
     });
 
     // test MaxModeratorsForCategory
-    let config = default_genesis_config();
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let category_id = create_category_mock(
             origin.clone(),
             None,
@@ -1886,7 +1860,7 @@ fn storage_limit_checks() {
                 category_id,
                 true,
                 match i {
-                    _ if i == max => Err(Error::MapSizeLimit),
+                    _ if i == max => Err(Error::<Runtime>::MapSizeLimit.into()),
                     _ => Ok(()),
                 },
             );
@@ -1894,8 +1868,7 @@ fn storage_limit_checks() {
     });
 
     // test MaxCategories
-    let config = default_genesis_config();
-    build_test_externalities(config).execute_with(|| {
+    with_test_externalities(|| {
         let max: usize =
             <<<Runtime as Trait>::MapLimits as StorageLimits>::MaxPostsInThread>::get() as usize;
         for i in 0..max {
@@ -1905,7 +1878,7 @@ fn storage_limit_checks() {
                 good_category_title(),
                 good_category_description(),
                 match i {
-                    _ if i == max => Err(Error::MapSizeLimit),
+                    _ if i == max => Err(Error::<Runtime>::MapSizeLimit.into()),
                     _ => Ok(()),
                 },
             );

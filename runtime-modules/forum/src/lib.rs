@@ -213,9 +213,9 @@
 pub use serde::{Deserialize, Serialize};
 
 use codec::{Codec, Decode, Encode};
+pub use frame_support::dispatch::DispatchResult;
 use frame_support::{
-    decl_error, decl_event, decl_module, decl_storage, dispatch::DispatchResult, ensure,
-    traits::Get, Parameter,
+    decl_error, decl_event, decl_module, decl_storage, ensure, traits::Get, Parameter,
 };
 use sp_arithmetic::traits::{BaseArithmetic, One};
 pub use sp_io::storage::clear_prefix;

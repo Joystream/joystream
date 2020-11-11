@@ -2,16 +2,18 @@
 
 use crate::*;
 
-use primitives::H256;
+pub use frame_support::assert_err;
+use sp_core::H256;
 
 use crate::{GenesisConfig, Module, Trait};
+use frame_support::traits::{OnFinalize, OnInitialize};
 
-use runtime_primitives::{
+use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
+use sp_runtime::{
     testing::Header,
     traits::{BlakeTwo256, Hash, IdentityLookup},
     Perbill,
 };
-use srml_support::{impl_outer_event, impl_outer_origin, parameter_types};
 
 impl_outer_origin! {
     pub enum Origin for Runtime {}
@@ -24,6 +26,7 @@ mod forum_mod {
 impl_outer_event! {
     pub enum TestEvent for Runtime {
         forum_mod<T>,
+        system<T>,
     }
 }
 
@@ -39,25 +42,33 @@ parameter_types! {
 }
 
 impl system::Trait for Runtime {
+    type BaseCallFilter = ();
     type Origin = Origin;
+    type Call = ();
     type Index = u64;
     type BlockNumber = u64;
-    type Call = ();
     type Hash = H256;
     type Hashing = BlakeTwo256;
     type AccountId = u64;
     type Lookup = IdentityLookup<Self::AccountId>;
     type Header = Header;
-    // type WeightMultiplierUpdate = ();
     type Event = TestEvent;
     type BlockHashCount = BlockHashCount;
     type MaximumBlockWeight = MaximumBlockWeight;
+    type DbWeight = ();
+    type BlockExecutionWeight = ();
+    type ExtrinsicBaseWeight = ();
+    type MaximumExtrinsicWeight = ();
     type MaximumBlockLength = MaximumBlockLength;
     type AvailableBlockRatio = AvailableBlockRatio;
     type Version = ();
+    type ModuleToIndex = ();
+    type AccountData = ();
+    type OnNewAccount = ();
+    type OnKilledAccount = ();
 }
 
-impl timestamp::Trait for Runtime {
+impl pallet_timestamp::Trait for Runtime {
     type Moment = u64;
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
@@ -207,7 +218,7 @@ pub fn good_poll_alternative_text() -> Vec<u8> {
 
 pub fn generate_poll(
     expiration_diff: u64,
-) -> Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
+) -> Poll<<Runtime as pallet_timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
     Poll {
         description_hash: Runtime::calculate_hash(good_poll_description().as_slice()),
         end_time: Timestamp::now() + expiration_diff,
@@ -229,7 +240,7 @@ pub fn generate_poll(
 pub fn generate_poll_timestamp_cases(
     index: usize,
     expiration_diff: u64,
-) -> Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
+) -> Poll<<Runtime as pallet_timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash> {
     let test_cases = vec![generate_poll(expiration_diff), generate_poll(1)];
     test_cases[index].clone()
 }
@@ -239,7 +250,7 @@ pub fn create_category_mock(
     parent: Option<<Runtime as Trait>::CategoryId>,
     title: Vec<u8>,
     description: Vec<u8>,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) -> <Runtime as Trait>::CategoryId {
     let category_id = TestForumModule::next_category_id();
     assert_eq!(
@@ -268,9 +279,9 @@ pub fn create_thread_mock(
     title: Vec<u8>,
     text: Vec<u8>,
     poll_data: Option<
-        Poll<<Runtime as timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash>,
+        Poll<<Runtime as pallet_timestamp::Trait>::Moment, <Runtime as system::Trait>::Hash>,
     >,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) -> <Runtime as Trait>::ThreadId {
     let thread_id = TestForumModule::next_thread_id();
     assert_eq!(
@@ -300,7 +311,7 @@ pub fn edit_thread_title_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::PostId,
     new_title: Vec<u8>,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) -> <Runtime as Trait>::PostId {
     assert_eq!(
         TestForumModule::edit_thread_title(
@@ -330,9 +341,9 @@ pub fn delete_thread_mock(
     moderator_id: <Runtime as Trait>::ModeratorId,
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::PostId,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) {
-    let num_direct_threads = match <CategoryById<Runtime>>::exists(category_id) {
+    let num_direct_threads = match <CategoryById<Runtime>>::contains_key(category_id) {
         true => <CategoryById<Runtime>>::get(category_id).num_direct_threads,
         false => 0,
     };
@@ -346,7 +357,7 @@ pub fn delete_thread_mock(
         result
     );
     if result.is_ok() {
-        assert!(!<ThreadById<Runtime>>::exists(category_id, thread_id));
+        assert!(!<ThreadById<Runtime>>::contains_key(category_id, thread_id));
         assert_eq!(
             <CategoryById<Runtime>>::get(category_id).num_direct_threads,
             num_direct_threads - 1,
@@ -364,7 +375,7 @@ pub fn move_thread_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::PostId,
     new_category_id: <Runtime as Trait>::CategoryId,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) {
     assert_eq!(
         TestForumModule::move_thread_to_category(
@@ -377,7 +388,10 @@ pub fn move_thread_mock(
         result
     );
     if result.is_ok() {
-        assert!(<ThreadById<Runtime>>::exists(new_category_id, thread_id),);
+        assert!(<ThreadById<Runtime>>::contains_key(
+            new_category_id,
+            thread_id
+        ),);
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadMoved(thread_id, new_category_id))
@@ -391,7 +405,7 @@ pub fn update_thread_archival_status_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     new_archival_status: bool,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) {
     assert_eq!(
         TestForumModule::update_thread_archival_status(
@@ -417,7 +431,7 @@ pub fn create_post_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     text: Vec<u8>,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) -> <Runtime as Trait>::PostId {
     let post_id = TestForumModule::next_post_id();
     assert_eq!(
@@ -447,7 +461,7 @@ pub fn edit_post_text_mock(
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
     new_text: Vec<u8>,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) -> <Runtime as Trait>::PostId {
     assert_eq!(
         TestForumModule::edit_post_text(
@@ -482,7 +496,7 @@ pub fn update_category_membership_of_moderator_mock(
     moderator_id: <Runtime as Trait>::ModeratorId,
     category_id: <Runtime as Trait>::CategoryId,
     new_value: bool,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) -> <Runtime as Trait>::CategoryId {
     assert_eq!(
         TestForumModule::update_category_membership_of_moderator(
@@ -495,7 +509,7 @@ pub fn update_category_membership_of_moderator_mock(
     );
     if result.is_ok() {
         assert_eq!(
-            <CategoryByModerator<Runtime>>::exists(category_id, moderator_id),
+            <CategoryByModerator<Runtime>>::contains_key(category_id, moderator_id),
             new_value
         );
     };
@@ -508,7 +522,7 @@ pub fn vote_on_poll_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     index: u32,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) -> <Runtime as Trait>::ThreadId {
     let thread = TestForumModule::thread_by_id(category_id, thread_id);
     assert_eq!(
@@ -543,7 +557,7 @@ pub fn update_category_archival_status_mock(
     actor: PrivilegedActor<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
     new_archival_status: bool,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) {
     assert_eq!(
         TestForumModule::update_category_archival_status(
@@ -566,14 +580,14 @@ pub fn delete_category_mock(
     origin: OriginType,
     moderator_id: PrivilegedActor<Runtime>,
     category_id: <Runtime as Trait>::CategoryId,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) -> () {
     assert_eq!(
         TestForumModule::delete_category(mock_origin(origin), moderator_id, category_id),
         result,
     );
     if result.is_ok() {
-        assert!(!<CategoryById<Runtime>>::exists(category_id));
+        assert!(!<CategoryById<Runtime>>::contains_key(category_id));
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::CategoryDeleted(category_id))
@@ -587,7 +601,7 @@ pub fn moderate_thread_mock(
     category_id: <Runtime as Trait>::CategoryId,
     thread_id: <Runtime as Trait>::ThreadId,
     rationale: Vec<u8>,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) -> <Runtime as Trait>::ThreadId {
     assert_eq!(
         TestForumModule::moderate_thread(
@@ -600,7 +614,7 @@ pub fn moderate_thread_mock(
         result
     );
     if result.is_ok() {
-        assert!(!<ThreadById<Runtime>>::exists(category_id, thread_id));
+        assert!(!<ThreadById<Runtime>>::contains_key(category_id, thread_id));
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::ThreadModerated(thread_id, rationale))
@@ -616,7 +630,7 @@ pub fn moderate_post_mock(
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
     rationale: Vec<u8>,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) -> <Runtime as Trait>::PostId {
     assert_eq!(
         TestForumModule::moderate_post(
@@ -630,7 +644,7 @@ pub fn moderate_post_mock(
         result
     );
     if result.is_ok() {
-        assert!(!<PostById<Runtime>>::exists(thread_id, post_id));
+        assert!(!<PostById<Runtime>>::contains_key(thread_id, post_id));
         assert_eq!(
             System::events().last().unwrap().event,
             TestEvent::forum_mod(RawEvent::PostModerated(post_id, rationale))
@@ -645,7 +659,7 @@ pub fn set_stickied_threads_mock(
     moderator_id: <Runtime as Trait>::ModeratorId,
     category_id: <Runtime as Trait>::CategoryId,
     stickied_ids: Vec<<Runtime as Trait>::ThreadId>,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) -> <Runtime as Trait>::CategoryId {
     assert_eq!(
         TestForumModule::set_stickied_threads(
@@ -679,7 +693,7 @@ pub fn react_post_mock(
     thread_id: <Runtime as Trait>::ThreadId,
     post_id: <Runtime as Trait>::PostId,
     post_reaction_id: <Runtime as Trait>::PostReactionId,
-    result: Result<(), Error>,
+    result: DispatchResult,
 ) {
     assert_eq!(
         TestForumModule::react_post(
@@ -737,7 +751,7 @@ pub fn create_genesis_config(data_migration_done: bool) -> GenesisConfig<Runtime
 // NB!:
 // Wanted to have payload: a: &GenesisConfig<Test>
 // but borrow checker made my life miserabl, so giving up for now.
-pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::TestExternalities {
+pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> sp_io::TestExternalities {
     let mut t = system::GenesisConfig::default()
         .build_storage::<Runtime>()
         .unwrap();
@@ -747,9 +761,36 @@ pub fn build_test_externalities(config: GenesisConfig<Runtime>) -> runtime_io::T
     t.into()
 }
 
+pub fn with_test_externalities<R, F: FnOnce() -> R>(f: F) -> R {
+    let default_genesis_config = default_genesis_config();
+    /*
+        Events are not emitted on block 0.
+        So any dispatchable calls made during genesis block formation will have no events emitted.
+        https://substrate.dev/recipes/2-appetizers/4-events.html
+    */
+    let func = || {
+        run_to_block(1);
+        f()
+    };
+
+    build_test_externalities(default_genesis_config).execute_with(func)
+}
+
+// Recommendation from Parity on testing on_finalize
+// https://substrate.dev/docs/en/next/development/module/tests
+pub fn run_to_block(n: u64) {
+    while System::block_number() < n {
+        <System as OnFinalize<u64>>::on_finalize(System::block_number());
+        <TestForumModule as OnFinalize<u64>>::on_finalize(System::block_number());
+        System::set_block_number(System::block_number() + 1);
+        <System as OnInitialize<u64>>::on_initialize(System::block_number());
+        <TestForumModule as OnInitialize<u64>>::on_initialize(System::block_number());
+    }
+}
+
 pub type System = system::Module<Runtime>;
 
-pub type Timestamp = timestamp::Module<Runtime>;
+pub type Timestamp = pallet_timestamp::Module<Runtime>;
 
 /// Export forum module on a test runtime
 pub type TestForumModule = Module<Runtime>;
