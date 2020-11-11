@@ -236,7 +236,7 @@ fn extract_numeric_parameter(
             .find(|(name_vec, _)| name_vec.eq(&parameter_name.chars().collect::<Vec<_>>()))
             .map(|(_, value)| match value {
                 JsonValue::Number(number) => number.integer.saturated_into(),
-                _ => 0u128,
+                _ => panic!("Incorrect JSON: not a number."),
             })
             .unwrap_or(default),
         _ => default,
