@@ -218,8 +218,6 @@ impl_runtime_apis! {
             use frame_system_benchmarking::Module as SystemBench;
             impl frame_system_benchmarking::Trait for Runtime {}
 
-            use crate::WorkingTeam;
-
             let whitelist: Vec<Vec<u8>> = vec![
                 // Block Number
                 hex_literal::hex!("26aa394eea5630e07c48ae0c9558cef702a5c1b19ab7a04f536c519aca4983ac").to_vec(),
@@ -241,7 +239,6 @@ impl_runtime_apis! {
             let params = (&pallet, &benchmark, &lowest_range_values, &highest_range_values, &steps, repeat, &whitelist);
 
             add_benchmark!(params, batches, b"system", SystemBench::<Runtime>);
-            add_benchmark!(params, batches, b"working-team", WorkingTeam);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

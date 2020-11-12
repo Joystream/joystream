@@ -70,7 +70,6 @@ hiring = { package = 'pallet-hiring', default-features = false, path = '../runti
 minting = { package = 'pallet-token-mint', default-features = false, path = '../runtime-modules/token-minting'}
 recurring-rewards = { package = 'pallet-recurring-reward', default-features = false, path = '../runtime-modules/recurring-reward'}
 working-group = { package = 'pallet-working-group', default-features = false, path = '../runtime-modules/working-group'}
-working-team = { package = 'pallet-working-team', default-features = false, path = '../runtime-modules/working-team'}
 content-working-group = { package = 'pallet-content-working-group', default-features = false, path = '../runtime-modules/content-working-group'}
 versioned-store = { package = 'pallet-versioned-store', default-features = false, path = '../runtime-modules/versioned-store'}
 versioned-store-permissions = { package = 'pallet-versioned-store-permissions', default-features = false, path = '../runtime-modules/versioned-store-permissions'}
@@ -146,7 +145,6 @@ std = [
     'minting/std',
     'recurring-rewards/std',
     'working-group/std',
-    'working-team/std',
     'content-working-group/std',
     'versioned-store/std',
     'versioned-store-permissions/std',
@@ -169,7 +167,6 @@ runtime-benchmarks = [
     "frame-system-benchmarking",
     "pallet-offences-benchmarking",
     "pallet-session-benchmarking",
-    "working-team/runtime-benchmarks",
     "hex-literal",
 ]
 

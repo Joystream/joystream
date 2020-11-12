@@ -65,88 +65,6 @@ pub use versioned_store;
 pub use versioned_store_permissions;
 pub use working_group;
 
-use frame_support::dispatch::DispatchResult;
-pub use working_team;
-use working_team::BalanceOfCurrency;
-pub type StorageWorkingTeamInstance = working_team::Instance1;
-
-parameter_types! {
-    pub const RewardPeriod: u32 = 3;
-    pub const MinUnstakingPeriodLimit: u32 = 3;
-}
-
-impl working_team::Trait<StorageWorkingTeamInstance> for Runtime {
-    type OpeningId = u64;
-    type ApplicationId = u64;
-    type Event = Event;
-    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
-    type StakingHandler = Runtime;
-    type MemberOriginValidator = MembershipOriginValidator<Self>;
-    type MinUnstakingPeriodLimit = MinUnstakingPeriodLimit;
-    type RewardPeriod = RewardPeriod;
-}
-
-impl working_team::StakingHandler<Runtime> for Runtime {
-    fn lock(
-        _account_id: &<Runtime as system::Trait>::AccountId,
-        _amount: BalanceOfCurrency<Runtime>,
-    ) {
-    }
-
-    fn unlock(_account_id: &<Runtime as system::Trait>::AccountId) {}
-
-    fn slash(
-        _account_id: &<Runtime as system::Trait>::AccountId,
-        _amount: Option<BalanceOfCurrency<Runtime>>,
-    ) -> BalanceOfCurrency<Runtime> {
-        0
-    }
-
-    fn decrease_stake(
-        _account_id: &<Runtime as system::Trait>::AccountId,
-        _new_stake: BalanceOfCurrency<Runtime>,
-    ) {
-    }
-
-    fn increase_stake(
-        _account_id: &<Runtime as system::Trait>::AccountId,
-        _new_stake: BalanceOfCurrency<Runtime>,
-    ) -> DispatchResult {
-        Ok(())
-    }
-
-    fn is_member_staking_account(
-        _member_id: &<Runtime as membership::Trait>::MemberId,
-        _account_id: &<Runtime as system::Trait>::AccountId,
-    ) -> bool {
-        true
-    }
-
-    fn is_account_free_of_conflicting_stakes(
-        _account_id: &<Runtime as system::Trait>::AccountId,
-    ) -> bool {
-        true
-    }
-
-    fn is_enough_balance_for_stake(
-        _account_id: &<Runtime as system::Trait>::AccountId,
-        _amount: BalanceOfCurrency<Runtime>,
-    ) -> bool {
-        true
-    }
-
-    fn current_stake(
-        _account_id: &<Runtime as system::Trait>::AccountId,
-    ) -> BalanceOfCurrency<Runtime> {
-        /*
-         * We need to return more than zero for `leave_role` later to work
-         * might need to implement more functions
-         * see `working_team` benchmarking
-         */
-        BalanceOfCurrency::<Runtime>::max_value()
-    }
-}
-
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("joystream-node"),
@@ -700,9 +618,5 @@ construct_runtime!(
         // --- Working groups
         // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
-        /*
-         * TODO: revert, used by temporary implementation for working_team for benchmark
-         */
-        WorkingTeam: working_team::<Instance1>::{Module, Call, Storage, Event<T>},
     }
 );

@@ -48,8 +48,7 @@ use sp_std::vec::Vec;
 use system::{ensure_root, ensure_signed};
 
 pub use errors::Error;
-pub use types::BalanceOfCurrency;
-use types::{ApplicationInfo, MemberId, TeamWorker, TeamWorkerId, WorkerInfo};
+use types::{ApplicationInfo, BalanceOfCurrency, MemberId, TeamWorker, TeamWorkerId, WorkerInfo};
 pub use types::{
     ApplyOnOpeningParameters, JobApplication, JobOpening, JobOpeningType, Penalty, RewardPolicy,
     StakePolicy, StakingHandler,
