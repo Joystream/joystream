@@ -21,9 +21,9 @@ rustup install 1.46.0
 rustup default 1.46.0
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
-    apt-get install coreutils
+    apt-get install -y coreutils clang jq curl gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-	brew install b2sum gnu-tar
+    brew install b2sum gnu-tar jq curl
 fi
 
 # Volta nodejs, npm, yarn tools manager
@@ -31,3 +31,4 @@ curl https://get.volta.sh | bash
 
 volta install node@12
 volta install yarn
+volta install npx
