@@ -147,12 +147,14 @@ benchmarks! {
         assert_last_event::<T>(RawEvent::PostUpdated(post_id, caller_member_id).into());
     }
 
-    // TODO: this extrinsic uses `T::CouncilOriginValidator::ensure_actor_origin`
+    // TODO: Review this after changes to the governance/council are merged:
+    // this extrinsic uses `T::CouncilOriginValidator::ensure_actor_origin`
     // this is a hook to the runtime. Since the pallet implementation shouldn't have any
     // information on the runtime this hooks should be constant.
     // However, the implementation in the runtime is linear in the number of council members.
-    // Even if we use that knowledge we need to create an artificial dependency with `governance`
-    // to be able to correctly benchmark this.
+    // But since the size of the council should be completely filled over time we could
+    // always use the worst case scenario, still this would require to create an artificial
+    // dependency with the `governance` pallet to correctly benchmark this.
     change_thread_mode {
         let i in 1 .. T::MaxWhiteListSize::get();
 
