@@ -29,5 +29,5 @@ fi
 # Volta nodejs, npm, yarn tools manager
 curl https://get.volta.sh | bash
 
-volta install node
+volta install node@12
 volta install yarn
