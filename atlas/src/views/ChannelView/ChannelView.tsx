@@ -4,11 +4,13 @@ import { useQuery } from '@apollo/client'
 
 import { GET_CHANNEL } from '@/api/queries/channels'
 import { GetChannel, GetChannelVariables } from '@/api/queries/__generated__/GetChannel'
-import { VideoGrid, PlaceholderVideoGrid } from '@/components'
+import { PlaceholderVideoGrid, VideoGrid } from '@/components'
 
 import {
   AvatarPlaceholder,
+  CoverImage,
   Header,
+  MediaWrapper,
   StyledAvatar,
   Title,
   TitleContainer,
@@ -29,7 +31,10 @@ const ChannelView: React.FC<RouteComponentProps> = () => {
 
   return (
     <div>
-      <Header coverPhotoURL={data?.channel?.coverPhotoURL || DEFAULT_CHANNEL_COVER_URL}>
+      <Header>
+        <MediaWrapper>
+          <CoverImage src={data?.channel?.coverPhotoURL || DEFAULT_CHANNEL_COVER_URL} />
+        </MediaWrapper>
         <TitleSection>
           {data?.channel ? (
             <>
