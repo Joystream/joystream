@@ -213,9 +213,6 @@ impl_runtime_apis! {
             steps: Vec<u32>,
             repeat: u32,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            /*
-             * TODO: remember to benchhmark every pallet
-             */
             use sp_std::vec;
             use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark};
             use frame_system_benchmarking::Module as SystemBench;

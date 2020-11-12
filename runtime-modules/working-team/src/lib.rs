@@ -48,10 +48,6 @@ use sp_std::vec::Vec;
 use system::{ensure_root, ensure_signed};
 
 pub use errors::Error;
-/*
- * TODO: Change this back, this is only needed for the temporary implementation of `working_team` in the `Runtime`
- */
-
 pub use types::BalanceOfCurrency;
 use types::{ApplicationInfo, MemberId, TeamWorker, TeamWorkerId, WorkerInfo};
 pub use types::{

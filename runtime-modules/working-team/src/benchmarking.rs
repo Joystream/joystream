@@ -159,7 +159,6 @@ fn add_and_apply_opening<T: Trait<I>, I: Instance>(
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-// TODO: This will only work as long as max_handle_length >= 4
 fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     let min_handle_length = Membership::<T>::min_handle_length();
     // If the index is ever different from u32 change this
@@ -513,7 +512,7 @@ benchmarks_instance! {
     }
 
     apply_on_opening {
-        let i in 1 .. 50000; // TODO: We should have a bounded value for description
+        let i in 1 .. 50000;
 
         let (lead_account_id, lead_member_id) = member_funded_account::<T>("lead", 0);
         let opening_id = add_opening_helper::<T, I>(
@@ -550,7 +549,6 @@ benchmarks_instance! {
     }
 
     fill_opening_lead {
-        // TODO: This is needed only to run in the current version erase when upgrading
         let i in 0 .. 1;
 
         let (lead_account_id, lead_member_id) = member_funded_account::<T>("lead", 0);
@@ -625,7 +623,6 @@ benchmarks_instance! {
     }
 
     update_role_account{
-        // TODO: This is needed only to run in the current version erase when upgrading
         let i in 0 .. 1;
         let (lead_id, lead_worker_id) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
@@ -644,7 +641,6 @@ benchmarks_instance! {
     }
 
     cancel_opening {
-        // TODO: This is needed only to run in the current version erase when upgrading
         let i in 0 .. 1;
 
         let (lead_id, _) =
@@ -663,7 +659,6 @@ benchmarks_instance! {
     }
 
     withdraw_application {
-        // TODO: This is needed only to run in the current version erase when upgrading
         let i in 0 .. 1;
 
         let (caller_id, member_id) = member_funded_account::<T>("lead", 0);
@@ -684,7 +679,6 @@ benchmarks_instance! {
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     slash_stake {
-        // TODO: We should have a bounded value for the slashing_text
         let i in 0 .. 50000;
 
         let (lead_id, lead_worker_id) =
@@ -706,7 +700,6 @@ benchmarks_instance! {
     }
 
     terminate_role_worker {
-        // TODO: We should have a bounded value for the slashing_text
         let i in 0 .. 50000;
 
         let (lead_id, _) =
@@ -731,7 +724,6 @@ benchmarks_instance! {
     }
 
     terminate_role_lead {
-        // TODO: We should have a bounded value for the slashing_text
         let i in 0 .. 50000;
 
         let (_, lead_worker_id) =
@@ -752,7 +744,6 @@ benchmarks_instance! {
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     increase_stake {
-        // TODO: This is needed only to run in the current version erase when upgrading
         let i in 0 .. 1;
 
         let (lead_id, _) =
@@ -776,7 +767,6 @@ benchmarks_instance! {
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     decrease_stake {
-        // TODO: This is needed only to run in the current version erase when upgrading
         let i in 0 .. 1;
 
         let (lead_id, _) =
@@ -796,7 +786,6 @@ benchmarks_instance! {
     }
 
     spend_from_budget {
-        // TODO: This is needed only to run in the current version erase when upgrading
         let i in 0 .. 1;
 
         let (lead_id, _) = insert_a_worker::<T, I>(
@@ -817,7 +806,6 @@ benchmarks_instance! {
     // Regular worker is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     update_reward_amount {
-        // TODO: This is needed only to run in the current version erase when upgrading
         let i in 0 .. 1;
 
         let (lead_id, _) =
@@ -844,7 +832,7 @@ benchmarks_instance! {
     }
 
     set_status_text {
-        let i in 0 .. 50000; // TODO: We should have a bounded value for description
+        let i in 0 .. 50000;
 
         let (lead_id, _) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
@@ -864,7 +852,6 @@ benchmarks_instance! {
     }
 
     update_reward_account {
-        // TODO: This is needed only to run in the current version erase when upgrading
         let i in 0 .. 1;
 
         let (caller_id, worker_id) =
@@ -883,7 +870,6 @@ benchmarks_instance! {
     }
 
     set_budget {
-        // TODO: This is needed only to run in the current version erase when upgrading
         let i in 0 .. 1;
 
         let new_budget = BalanceOfCurrency::<T>::max_value();
@@ -897,7 +883,7 @@ benchmarks_instance! {
     // Regular opening is the worst case scenario since the checks
     // require access to the storage whilist that's not the case with a lead opening
     add_opening {
-        let i in 0 .. 50000; // TODO: We should have a bounded value for description
+        let i in 0 .. 50000;
 
         let (lead_id, _) =
             insert_a_worker::<T, I>(StakingRole::WithoutStakes, JobOpeningType::Leader, 0, None);
@@ -927,7 +913,6 @@ benchmarks_instance! {
 
     // This is always worse than leave_role_immediatly
     leave_role_immediatly {
-        // TODO: This is needed only to run in the current version erase when upgrading
         let i in 0 .. 1;
         // Worst case scenario there is a lead(this requires **always** more steps)
         // could separate into new branch to tighten weight
@@ -951,7 +936,6 @@ benchmarks_instance! {
     // but since it's so obviously a different branch I think it's a good idea
     // to leave this branch and use tha max between these 2
     leave_role_later {
-        // TODO: This is needed only to run in the current version erase when upgrading
         let i in 0 .. 1;
 
         // Workers with stake can't leave immediatly

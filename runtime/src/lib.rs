@@ -65,10 +65,6 @@ pub use versioned_store;
 pub use versioned_store_permissions;
 pub use working_group;
 
-/*
- * TODO: revert, used by temporary implementation for working_team for benchmark
- * ====================== Starts here =========================================
- */
 use frame_support::dispatch::DispatchResult;
 pub use working_team;
 use working_team::BalanceOfCurrency;
@@ -143,16 +139,13 @@ impl working_team::StakingHandler<Runtime> for Runtime {
         _account_id: &<Runtime as system::Trait>::AccountId,
     ) -> BalanceOfCurrency<Runtime> {
         /*
-         * TODO: We need to return more than zero for `leave_role` later to work
+         * We need to return more than zero for `leave_role` later to work
          * might need to implement more functions
          * see `working_team` benchmarking
          */
         BalanceOfCurrency::<Runtime>::max_value()
     }
 }
-/*
- * ====================== Ends here =========================================
- */
 
 /// This runtime version.
 pub const VERSION: RuntimeVersion = RuntimeVersion {
