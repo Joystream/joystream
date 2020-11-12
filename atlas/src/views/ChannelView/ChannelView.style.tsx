@@ -15,6 +15,8 @@ export const Header = styled.section`
   position: relative;
   margin-bottom: 60px;
 
+  // because of the fixed aspect ratio, as the viewport width grows, the media will occupy more height as well
+  // so that the media doesn't take too big of a portion of the space, we let the content overlap the media via a negative margin
   @media screen and (min-width: ${breakpoints.small}) {
     margin-bottom: -75px;
     padding-bottom: 0;
@@ -47,6 +49,8 @@ export const CoverImage = styled.div<CoverImageProps>`
   background-attachment: local;
   background-size: cover;
 
+  // as the content overlaps the media more and more as the viewport width grows, we need to hide some part of the media with a gradient
+  // this helps with keeping a consistent background behind a page content - we don't want the media to peek out in the content spacing
   background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 40%), url(${({ src }) => src});
   @media screen and (min-width: ${breakpoints.small}) {
     background-image: linear-gradient(0deg, black 0%, rgba(0, 0, 0, 0) 80%), url(${({ src }) => src});
