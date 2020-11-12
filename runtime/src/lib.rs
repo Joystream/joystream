@@ -353,7 +353,7 @@ impl pallet_staking::Trait for Runtime {
     type SessionInterface = Self;
     type RewardCurve = RewardCurve;
     type NextNewSession = Session;
-    type ElectionLookahead = MaxIterations;
+    type ElectionLookahead = ElectionLookahead;
     type Call = Call;
     type MaxIterations = MaxIterations;
     type MinSolutionScoreBump = MinSolutionScoreBump;
@@ -390,7 +390,7 @@ parameter_types! {
 }
 
 impl pallet_finality_tracker::Trait for Runtime {
-    type OnFinalizationStalled = Grandpa;
+    type OnFinalizationStalled = ();
     type WindowSize = WindowSize;
     type ReportLatency = ReportLatency;
 }
