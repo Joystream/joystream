@@ -31,7 +31,7 @@ sp-application-crypto = { package = 'sp-application-crypto', default-features = 
 frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 frame-executive = { package = 'frame-executive', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 frame-system-rpc-runtime-api = { package = 'frame-system-rpc-runtime-api', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 
 # Pallets
 pallet-grandpa = { package = 'pallet-grandpa', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
@@ -113,7 +113,7 @@ std = [
     'frame-support/std',
     'frame-executive/std',
     'frame-system-rpc-runtime-api/std',
-    'system/std',
+    'frame-system/std',
 
     # Pallets
     'pallet-timestamp/std',
@@ -156,7 +156,7 @@ std = [
     'content-directory/std',
 ]
 runtime-benchmarks = [
-    "system/runtime-benchmarks",
+    "frame-system/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",

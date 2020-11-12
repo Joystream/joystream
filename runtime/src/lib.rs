@@ -13,15 +13,14 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-
-/// Weights for pallets used in the runtime.
-mod weights;
 mod constants;
 mod integration;
 pub mod primitives;
 mod runtime_api;
 #[cfg(test)]
-mod tests; // Runtime integration tests
+mod tests;
+/// Weights for pallets used in the runtime.
+mod weights; // Runtime integration tests
 
 use frame_support::traits::KeyOwnerProofSystem;
 use frame_support::weights::{
@@ -29,6 +28,7 @@ use frame_support::weights::{
     Weight,
 };
 use frame_support::{construct_runtime, parameter_types};
+use frame_system::EnsureRoot;
 use pallet_grandpa::{AuthorityId as GrandpaId, AuthorityList as GrandpaAuthorityList};
 use pallet_im_online::sr25519::AuthorityId as ImOnlineId;
 use pallet_session::historical as pallet_session_historical;
@@ -42,7 +42,6 @@ use sp_std::vec::Vec;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use sp_version::RuntimeVersion;
-use system::EnsureRoot;
 
 pub use constants::*;
 pub use primitives::*;
@@ -108,7 +107,7 @@ parameter_types! {
 const AVERAGE_ON_INITIALIZE_WEIGHT: Perbill = Perbill::from_percent(10);
 
 // TODO: adjust weight
-impl system::Trait for Runtime {
+impl frame_system::Trait for Runtime {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = Call;
@@ -164,7 +163,7 @@ impl pallet_babe::Trait for Runtime {
     )>>::IdentificationTuple;
 
     type HandleEquivocation =
-    pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences>;
+        pallet_babe::EquivocationHandler<Self::KeyOwnerIdentification, Offences>;
 
     type WeightInfo = ();
 }
@@ -182,15 +181,16 @@ impl pallet_grandpa::Trait for Runtime {
 
     type KeyOwnerProofSystem = Historical;
 
-    type HandleEquivocation = pallet_grandpa::EquivocationHandler<Self::KeyOwnerIdentification, Offences>;
+    type HandleEquivocation =
+        pallet_grandpa::EquivocationHandler<Self::KeyOwnerIdentification, Offences>;
     type WeightInfo = ();
 }
 
-impl<LocalCall> system::offchain::CreateSignedTransaction<LocalCall> for Runtime
+impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
 where
     Call: From<LocalCall>,
 {
-    fn create_transaction<C: system::offchain::AppCrypto<Self::Public, Self::Signature>>(
+    fn create_transaction<C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>>(
         call: Call,
         public: <Signature as sp_runtime::traits::Verify>::Signer,
         account: AccountId,
@@ -203,12 +203,12 @@ where
     }
 }
 
-impl system::offchain::SigningTypes for Runtime {
+impl frame_system::offchain::SigningTypes for Runtime {
     type Public = <Signature as sp_runtime::traits::Verify>::Signer;
     type Signature = Signature;
 }
 
-impl<C> system::offchain::SendTransactionTypes<C> for Runtime
+impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
 where
     Call: From<C>,
 {
@@ -661,7 +661,7 @@ construct_runtime!(
         UncheckedExtrinsic = UncheckedExtrinsic
     {
         // Substrate
-        System: system::{Module, Call, Storage, Config, Event<T>},
+        System: frame_system::{Module, Call, Storage, Config, Event<T>},
         Utility: pallet_utility::{Module, Call, Event},
         Babe: pallet_babe::{Module, Call, Storage, Config, Inherent, ValidateUnsigned},
         Timestamp: pallet_timestamp::{Module, Call, Storage, Inherent},

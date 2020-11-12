@@ -9,7 +9,6 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use system as frame_system;
 
 use crate::data_directory::ContentIdExists;
 use crate::data_object_type_registry::IsActiveDataObjectType;
@@ -39,7 +38,7 @@ impl_outer_event! {
         balances<T>,
         members<T>,
         working_group_mod StorageWorkingGroupInstance <T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -97,7 +96,7 @@ parameter_types! {
     pub const MaxObjectsPerInjection: u32 = 5;
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -182,7 +181,7 @@ impl crate::data_directory::StorageProviderHelper<Test> for () {
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, _account_id: u64) -> Result<u64, &'static str> {
-        let signed_account_id = system::ensure_signed(origin)?;
+        let signed_account_id = frame_system::ensure_signed(origin)?;
 
         Ok(signed_account_id)
     }
@@ -264,7 +263,7 @@ impl ExtBuilder {
         self
     }
     pub fn build(self) -> sp_io::TestExternalities {
-        let mut t = system::GenesisConfig::default()
+        let mut t = frame_system::GenesisConfig::default()
             .build_storage::<Test>()
             .unwrap();
 
@@ -302,7 +301,7 @@ impl ExtBuilder {
 pub type TestDataObjectType = data_object_type_registry::DataObjectType;
 
 pub type Balances = balances::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 pub type TestDataObjectTypeRegistry = data_object_type_registry::Module<Test>;
 pub type TestDataDirectory = data_directory::Module<Test>;
 pub type TestDataObjectStorageRegistry = data_object_storage_registry::Module<Test>;

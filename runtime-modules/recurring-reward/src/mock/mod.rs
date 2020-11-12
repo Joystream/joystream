@@ -12,8 +12,6 @@ use sp_runtime::{
     Perbill,
 };
 
-use system as frame_system;
-
 mod status_handler;
 pub use status_handler::MockStatusHandler;
 
@@ -32,7 +30,7 @@ parameter_types! {
     pub const MinimumPeriod: u64 = 5;
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -88,14 +86,14 @@ impl minting::Trait for Test {
 pub fn build_test_externalities() -> sp_io::TestExternalities {
     MockStatusHandler::reset();
 
-    let t = system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
     t.into()
 }
 
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Rewards = Module<Test>;
 pub type Minting = minting::Module<Test>;

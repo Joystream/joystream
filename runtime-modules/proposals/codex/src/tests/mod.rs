@@ -3,7 +3,7 @@ mod mock;
 use frame_support::dispatch::{DispatchError, DispatchResult};
 use frame_support::storage::StorageMap;
 use frame_support::traits::Currency;
-use system::RawOrigin;
+use frame_system::RawOrigin;
 
 use common::working_group::WorkingGroup;
 use governance::election_params::ElectionParameters;

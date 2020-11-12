@@ -2,8 +2,7 @@
 
 use frame_support::decl_module;
 use sp_std::vec::Vec;
-pub trait Trait: system::Trait {}
-use system as frame_system;
+pub trait Trait: frame_system::Trait {}
 
 decl_module! {
     pub struct Module<T: Trait> for enum Call where origin: T::Origin {

@@ -27,9 +27,8 @@ use codec::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
+use frame_system::ensure_root;
 use sp_std::vec::Vec;
-use system::ensure_root;
-use system as frame_system;
 
 /*
   Although there is support for ed25519 keys as the IPNS identity key and we could potentially
@@ -73,9 +72,9 @@ pub struct ServiceProviderRecord<BlockNumber> {
 }
 
 /// The _Service discovery_ main _Trait_.
-pub trait Trait: system::Trait + working_group::Trait<StorageWorkingGroupInstance> {
+pub trait Trait: frame_system::Trait + working_group::Trait<StorageWorkingGroupInstance> {
     /// _Service discovery_ event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 decl_storage! {
@@ -135,7 +134,7 @@ decl_module! {
 
             <AccountInfoByStorageProviderId<T>>::insert(storage_provider_id, ServiceProviderRecord {
                 identity: id.clone(),
-                expires_at: <system::Module<T>>::block_number() + Self::default_lifetime(),
+                expires_at: <frame_system::Module<T>>::block_number() + Self::default_lifetime(),
             });
 
             Self::deposit_event(RawEvent::AccountInfoUpdated(storage_provider_id, id));
@@ -185,7 +184,7 @@ impl<T: Trait> Module<T> {
     /// Verifies that account info for the storage provider is still valid.
     pub fn is_account_info_expired(storage_provider_id: &StorageProviderId<T>) -> bool {
         !<AccountInfoByStorageProviderId<T>>::contains_key(storage_provider_id)
-            || <system::Module<T>>::block_number()
+            || <frame_system::Module<T>>::block_number()
                 > <AccountInfoByStorageProviderId<T>>::get(storage_provider_id).expires_at
     }
 }

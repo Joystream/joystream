@@ -9,7 +9,6 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use system as frame_system;
 
 impl_outer_origin! {
     pub enum Origin for Test {}
@@ -25,7 +24,7 @@ parameter_types! {
     pub const AvailableBlockRatio: Perbill = Perbill::one();
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -78,13 +77,13 @@ impl Trait for Test {
 }
 
 pub fn build_test_externalities() -> sp_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
     t.into()
 }
 
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Minting = Module<Test>;

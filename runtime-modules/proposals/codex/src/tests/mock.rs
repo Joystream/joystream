@@ -1,6 +1,7 @@
 #![cfg(test)]
 
 use frame_support::{impl_outer_dispatch, impl_outer_origin, parameter_types};
+pub use frame_system;
 use sp_core::H256;
 use sp_runtime::curve::PiecewiseLinear;
 use sp_runtime::{
@@ -9,8 +10,6 @@ use sp_runtime::{
     Perbill,
 };
 use sp_staking::SessionIndex;
-pub use system;
-use system as frame_system;
 
 use crate::{ProposalDetailsOf, ProposalEncoder};
 use proposals_engine::VotersParameters;
@@ -37,7 +36,7 @@ impl_outer_dispatch! {
         codex::ProposalCodex,
         proposals::ProposalsEngine,
         staking::Staking,
-        system::System,
+        frame_system::System,
     }
 }
 
@@ -116,7 +115,7 @@ impl governance::council::Trait for Test {
 
 impl common::origin::ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, _: u64) -> Result<u64, &'static str> {
-        let account_id = system::ensure_signed(origin)?;
+        let account_id = frame_system::ensure_signed(origin)?;
 
         Ok(account_id)
     }
@@ -217,7 +216,7 @@ impl staking::Trait for Test {
     type SessionsPerEra = SessionsPerEra;
     type BondingDuration = BondingDuration;
     type SlashDeferDuration = ();
-    type SlashCancelOrigin = system::EnsureRoot<Self::AccountId>;
+    type SlashCancelOrigin = frame_system::EnsureRoot<Self::AccountId>;
     type SessionInterface = Self;
     type RewardCurve = RewardCurve;
     type NextNewSession = ();
@@ -230,7 +229,7 @@ impl staking::Trait for Test {
     type WeightInfo = ();
 }
 
-impl<LocalCall> system::offchain::SendTransactionTypes<LocalCall> for Test
+impl<LocalCall> frame_system::offchain::SendTransactionTypes<LocalCall> for Test
 where
     Call: From<LocalCall>,
 {
@@ -267,7 +266,7 @@ impl ProposalEncoder<Test> for () {
     }
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = Call;
@@ -303,7 +302,7 @@ impl pallet_timestamp::Trait for Test {
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
@@ -315,4 +314,4 @@ pub type ProposalCodex = crate::Module<Test>;
 pub type ProposalsEngine = proposals_engine::Module<Test>;
 pub type Balances = balances::Module<Test>;
 pub type Timestamp = pallet_timestamp::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;

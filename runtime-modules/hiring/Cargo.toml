@@ -9,7 +9,7 @@ serde = { version = "1.0.101", optional = true, features = ["derive"] }
 codec = { package = 'parity-scale-codec', version = '1.3.1', default-features = false, features = ['derive'] }
 sp-std = { package = 'sp-std', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 frame-support = { package = 'frame-support', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
+frame-system = { package = 'frame-system', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-arithmetic = { package = 'sp-arithmetic', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-runtime = { package = 'sp-runtime', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 stake = { package = 'pallet-stake', default-features = false, path = '../stake'}
@@ -27,7 +27,7 @@ std = [
 	'codec/std',
 	'sp-std/std',
 	'frame-support/std',
-	'system/std',
+	'frame-system/std',
 	'sp-arithmetic/std',
 	'sp-runtime/std',
 	'stake/std',

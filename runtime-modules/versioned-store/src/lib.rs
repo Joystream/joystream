@@ -20,7 +20,6 @@ use frame_support::{decl_event, decl_module, decl_storage, ensure};
 use sp_std::collections::btree_set::BTreeSet;
 use sp_std::vec;
 use sp_std::vec::Vec;
-use system as frame_system;
 
 mod example;
 mod mock;
@@ -214,8 +213,8 @@ pub struct ClassPropertyValue {
     pub value: PropertyValue,
 }
 
-pub trait Trait: system::Trait + Sized {
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+pub trait Trait: frame_system::Trait + Sized {
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 decl_storage! {
@@ -247,7 +246,7 @@ decl_storage! {
 decl_event!(
     pub enum Event<T>
     where
-        <T as system::Trait>::AccountId,
+        <T as frame_system::Trait>::AccountId,
     {
         ClassCreated(ClassId),
         ClassSchemaAdded(ClassId, u16),

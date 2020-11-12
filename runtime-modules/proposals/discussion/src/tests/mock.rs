@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-pub use system;
+pub use frame_system;
 
 use frame_support::traits::{OnFinalize, OnInitialize};
 use frame_support::{impl_outer_event, impl_outer_origin, parameter_types};
@@ -10,7 +10,6 @@ use sp_runtime::{
     traits::{BlakeTwo256, IdentityLookup},
     Perbill,
 };
-use system as frame_system;
 
 use crate::ActorOriginValidator;
 
@@ -50,7 +49,7 @@ impl_outer_event! {
         discussion<T>,
         balances<T>,
         membership_mod<T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -95,7 +94,7 @@ impl crate::Trait for Test {
 
 impl ActorOriginValidator<Origin, u64, u64> for () {
     fn ensure_actor_origin(origin: Origin, actor_id: u64) -> Result<u64, &'static str> {
-        if system::ensure_none(origin).is_ok() {
+        if frame_system::ensure_none(origin).is_ok() {
             return Ok(1);
         }
 
@@ -107,7 +106,7 @@ impl ActorOriginValidator<Origin, u64, u64> for () {
     }
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -143,7 +142,7 @@ impl pallet_timestamp::Trait for Test {
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
@@ -151,7 +150,7 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
 }
 
 pub type Discussions = crate::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 
 // Recommendation from Parity on testing on_finalize
 // https://substrate.dev/docs/en/next/development/module/tests

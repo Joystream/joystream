@@ -4,8 +4,8 @@ mod mock;
 
 use frame_support::dispatch::DispatchError;
 use frame_support::storage::{StorageMap, StorageValue};
+use frame_system::RawOrigin;
 use std::collections::BTreeMap;
-use system::RawOrigin;
 
 use crate::tests::hiring_workflow::HiringWorkflow;
 use crate::types::{OpeningPolicyCommitment, OpeningType, RewardPolicy};

@@ -22,19 +22,18 @@ use serde::{Deserialize, Serialize};
 use codec::{Decode, Encode};
 use frame_support::traits::{Currency, ExistenceRequirement, WithdrawReasons};
 use frame_support::{decl_event, decl_module, decl_storage, ensure};
+use frame_system::{ensure_root, ensure_signed};
 use sp_arithmetic::traits::{One, Zero};
 use sp_std::borrow::ToOwned;
 use sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet};
 use sp_std::vec;
 use sp_std::vec::Vec;
-use system::{ensure_root, ensure_signed};
-use system as frame_system;
 
 use common::constraints::InputValidationLengthConstraint;
 
 /// Module configuration trait for this Substrate module.
 pub trait Trait:
-    system::Trait
+    frame_system::Trait
     + minting::Trait
     + recurringrewards::Trait
     + stake::Trait
@@ -43,7 +42,7 @@ pub trait Trait:
     + membership::Trait
 {
     /// The event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 }
 
 /// Type constraint for identifer used for actors.
@@ -68,14 +67,15 @@ pub type CuratorApplicationId<T> = <T as hiring::Trait>::ApplicationId;
 
 /// Balance type of runtime
 pub type BalanceOf<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as stake::Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 /// Balance type of runtime
 pub type CurrencyOf<T> = <T as stake::Trait>::Currency;
 
 /// Negative imbalance of runtime.
-pub type NegativeImbalance<T> =
-    <<T as stake::Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+pub type NegativeImbalance<T> = <<T as stake::Trait>::Currency as Currency<
+    <T as frame_system::Trait>::AccountId,
+>>::NegativeImbalance;
 
 /// Type of mintin reward relationship identifiers
 pub type RewardRelationshipId<T> = <T as recurringrewards::Trait>::RewardRelationshipId;
@@ -1062,7 +1062,7 @@ decl_event! {
         CuratorId = CuratorId<T>,
         CuratorApplicationIdToCuratorIdMap = CuratorApplicationIdToCuratorIdMap<T>,
         MintBalanceOf = minting::BalanceOf<T>,
-        <T as system::Trait>::AccountId,
+        <T as frame_system::Trait>::AccountId,
         <T as minting::Trait>::MintId,
     {
         ChannelCreated(ChannelId),
@@ -1161,7 +1161,7 @@ decl_module! {
                 role_account,
                 publication_status,
                 curation_status: ChannelCurationStatus::Normal,
-                created: <system::Module<T>>::block_number(),
+                created: <frame_system::Module<T>>::block_number(),
                 principal_id,
             };
 
@@ -1422,7 +1422,7 @@ decl_module! {
                 ensure!(<minting::Mints<T>>::contains_key(mint_id), MSG_FILL_CURATOR_OPENING_MINT_DOES_NOT_EXIST);
 
                 // Make sure valid parameters are selected for next payment at block number
-                ensure!(policy.next_payment_at_block > <system::Module<T>>::block_number(), MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
+                ensure!(policy.next_payment_at_block > <frame_system::Module<T>>::block_number(), MSG_FILL_CURATOR_OPENING_INVALID_NEXT_PAYMENT_BLOCK);
 
                 // The verified reward settings to use
                 Some((mint_id, policy))
@@ -1472,7 +1472,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            let current_block = <system::Module<T>>::block_number();
+            let current_block = <frame_system::Module<T>>::block_number();
 
             // For each successful application
             // - create and hold on to curator
@@ -1983,7 +1983,7 @@ impl<T: Trait> Module<T> {
             member_id: member,
             role_account,
             reward_relationship: None,
-            inducted: <system::Module<T>>::block_number(),
+            inducted: <frame_system::Module<T>>::block_number(),
             stage: LeadRoleState::Active,
         };
 
@@ -2012,7 +2012,7 @@ impl<T: Trait> Module<T> {
         //
 
         // Update lead stage as exited
-        let current_block = <system::Module<T>>::block_number();
+        let current_block = <frame_system::Module<T>>::block_number();
 
         let new_lead = Lead {
             stage: LeadRoleState::Exited(ExitedLeadRole {
@@ -2496,7 +2496,7 @@ impl<T: Trait> Module<T> {
         // otherwise they can be terminated right away.
 
         // Create exit summary for this termination
-        let current_block = <system::Module<T>>::block_number();
+        let current_block = <frame_system::Module<T>>::block_number();
 
         let curator_exit_summary =
             CuratorExitSummary::new(exit_initiation_origin, &current_block, rationale_text);

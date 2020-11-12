@@ -81,7 +81,7 @@ impl<
     pub fn compute_unique_hash<T: Trait>(&self, property_id: PropertyId) -> T::Hash {
         match self {
             StoredPropertyValue::Single(output_value) => {
-                (property_id, output_value).using_encoded(<T as system::Trait>::Hashing::hash)
+                (property_id, output_value).using_encoded(<T as frame_system::Trait>::Hashing::hash)
             }
             StoredPropertyValue::Vector(vector_output_value) => {
                 vector_output_value.compute_unique_hash::<T>(property_id)
@@ -159,7 +159,7 @@ impl<
     /// Compute hash from unique vec property value and its respective property_id
     pub fn compute_unique_hash<T: Trait>(&self, property_id: PropertyId) -> T::Hash {
         // Do not hash nonce
-        (property_id, &self.vec_value).using_encoded(<T as system::Trait>::Hashing::hash)
+        (property_id, &self.vec_value).using_encoded(<T as frame_system::Trait>::Hashing::hash)
     }
 
     /// Increase nonce by 1

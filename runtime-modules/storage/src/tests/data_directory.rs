@@ -1,8 +1,8 @@
 #![cfg(test)]
 
 use frame_support::dispatch::DispatchError;
+use frame_system::RawOrigin;
 use sp_std::collections::btree_map::BTreeMap;
-use system::RawOrigin;
 
 use super::mock::*;
 

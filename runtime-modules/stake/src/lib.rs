@@ -10,7 +10,6 @@ use sp_runtime::traits::{AccountIdConversion, MaybeSerialize, Member};
 use sp_runtime::ModuleId;
 use sp_std::collections::btree_map::BTreeMap;
 use sp_std::prelude::*;
-use system as frame_system;
 
 mod errors;
 pub use errors::*;
@@ -19,12 +18,12 @@ mod mock;
 mod tests;
 
 pub type BalanceOf<T> =
-    <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
+    <<T as Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::Balance;
 
 pub type NegativeImbalance<T> =
-    <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::NegativeImbalance;
+    <<T as Trait>::Currency as Currency<<T as frame_system::Trait>::AccountId>>::NegativeImbalance;
 
-pub trait Trait: system::Trait + Sized {
+pub trait Trait: frame_system::Trait + Sized {
     /// The currency that is managed by the module
     type Currency: Currency<Self::AccountId>;
 
@@ -745,7 +744,10 @@ impl<T: Trait> Module<T> {
         let stake_id = Self::stakes_created();
         <StakesCreated<T>>::put(stake_id + One::one());
 
-        <Stakes<T>>::insert(&stake_id, Stake::new(<system::Module<T>>::block_number()));
+        <Stakes<T>>::insert(
+            &stake_id,
+            Stake::new(<frame_system::Module<T>>::block_number()),
+        );
 
         stake_id
     }
@@ -1037,7 +1039,7 @@ impl<T: Trait> Module<T> {
         let slash_id = stake.initiate_slashing(
             slash_amount,
             slash_period,
-            <system::Module<T>>::block_number(),
+            <frame_system::Module<T>>::block_number(),
         )?;
 
         <Stakes<T>>::insert(stake_id, stake);
@@ -1093,7 +1095,8 @@ impl<T: Trait> Module<T> {
         let mut stake = ensure_stake_exists!(T, stake_id, StakeActionError::StakeNotFound)?;
 
         if let Some(unstaking_period) = unstaking_period {
-            stake.initiate_unstaking(unstaking_period, <system::Module<T>>::block_number())?;
+            stake
+                .initiate_unstaking(unstaking_period, <frame_system::Module<T>>::block_number())?;
             <Stakes<T>>::insert(stake_id, stake);
         } else {
             let staked_amount = stake.unstake()?;

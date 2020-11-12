@@ -28,7 +28,6 @@ use frame_support::{decl_error, decl_event, decl_module, decl_storage, ensure, P
 use sp_arithmetic::traits::BaseArithmetic;
 use sp_runtime::traits::{MaybeSerialize, Member};
 use sp_std::vec::Vec;
-use system as frame_system;
 
 use crate::data_directory::{self, ContentIdExists};
 use crate::{StorageProviderId, StorageWorkingGroup, StorageWorkingGroupInstance};
@@ -38,12 +37,12 @@ const DEFAULT_FIRST_RELATIONSHIP_ID: u8 = 1;
 /// The _Data object storage registry_ main _Trait_.
 pub trait Trait:
     pallet_timestamp::Trait
-    + system::Trait
+    + frame_system::Trait
     + data_directory::Trait
     + working_group::Trait<StorageWorkingGroupInstance>
 {
     /// _Data object storage registry_ event type.
-    type Event: From<Event<Self>> + Into<<Self as system::Trait>::Event>;
+    type Event: From<Event<Self>> + Into<<Self as frame_system::Trait>::Event>;
 
     /// Type for data object storage relationship id
     type DataObjectStorageRelationshipId: Parameter

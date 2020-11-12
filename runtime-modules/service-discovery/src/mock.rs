@@ -37,7 +37,7 @@ impl_outer_event! {
         balances<T>,
         membership_mod<T>,
         working_group_mod StorageWorkingGroupInstance <T>,
-        system<T>,
+        frame_system<T>,
     }
 }
 
@@ -54,7 +54,7 @@ parameter_types! {
     pub const ExistentialDeposit: u32 = 0;
 }
 
-impl system::Trait for Test {
+impl frame_system::Trait for Test {
     type BaseCallFilter = ();
     type Origin = Origin;
     type Call = ();
@@ -151,7 +151,7 @@ impl pallet_timestamp::Trait for Test {
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {
-    let t = system::GenesisConfig::default()
+    let t = frame_system::GenesisConfig::default()
         .build_storage::<Test>()
         .unwrap();
 
@@ -159,7 +159,7 @@ pub fn initial_test_ext() -> sp_io::TestExternalities {
 }
 
 pub type Balances = balances::Module<Test>;
-pub type System = system::Module<Test>;
+pub type System = frame_system::Module<Test>;
 pub type Discovery = Module<Test>;
 
 pub(crate) fn hire_storage_provider() -> (u64, u64) {
