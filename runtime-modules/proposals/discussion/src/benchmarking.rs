@@ -80,7 +80,7 @@ benchmarks! {
 
         // We do this to ignore the id 0 because the `Test` runtime
         // returns 0 as an invalid id but 0 as a valid one
-        let (_, _) = member_account::<T>("caller_member", 0);
+        let (_, _) = member_account::<T>("member", 0);
         let (account_id, caller_member_id) = member_account::<T>("caller_member", 1);
 
         let mut whitelisted_members = vec![caller_member_id];
@@ -99,7 +99,7 @@ benchmarks! {
 
         let text = vec![0u8; j.try_into().unwrap()];
 
-    }: add_post (RawOrigin::Signed(account_id), caller_member_id, thread_id, text)
+    }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, text)
     verify {
         let post_id = T::PostId::from(1);
 
@@ -111,6 +111,82 @@ benchmarks! {
         );
 
         assert_last_event::<T>(RawEvent::PostCreated(post_id, caller_member_id).into());
+    }
+
+    update_post {
+        // TODO: this parameter doesn't affect the running time
+        // maybe we should bound it here with the UI limit?
+        let j in 0 .. 50000;
+
+        // We do this to ignore the id 0 because the `Test` runtime
+        // returns 0 as an invalid id but 0 as a valid one
+        let (_, _) = member_account::<T>("caller_member", 0);
+        let (account_id, caller_member_id) = member_account::<T>("caller_member", 1);
+
+        let thread_id = ProposalsDiscussion::<T>::create_thread(
+            caller_member_id,
+            ThreadMode::Open
+        ).unwrap();
+
+        assert!(ThreadById::<T>::contains_key(thread_id), "Thread not created");
+
+        ProposalsDiscussion::<T>::add_post(
+            RawOrigin::Signed(account_id.clone()).into(),
+            caller_member_id,
+            thread_id,
+            vec![0u8]
+        ).unwrap();
+
+        let post_id = T::PostId::from(1);
+
+        assert!(PostThreadIdByPostId::<T>::contains_key(thread_id, post_id), "Post not created");
+
+        let new_text = vec![0u8; j.try_into().unwrap()];
+    }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, post_id, new_text)
+    verify {
+        assert_last_event::<T>(RawEvent::PostUpdated(post_id, caller_member_id).into());
+    }
+
+    // TODO: this extrinsic uses `T::CouncilOriginValidator::ensure_actor_origin`
+    // this is a hook to the runtime. Since the pallet implementation shouldn't have any
+    // information on the runtime this hooks should be constant.
+    // However, the implementation in the runtime is linear in the number of council members.
+    // Even if we use that knowledge we need to create an artificial dependency with `governance`
+    // to be able to correctly benchmark this.
+    change_thread_mode {
+        let i in 1 .. T::MaxWhiteListSize::get();
+
+        // We do this to ignore the id 0 because the `Test` runtime
+        // returns 0 as an invalid id but 0 as a valid one
+        let (_, _) = member_account::<T>("member", 0);
+        let (account_id, caller_member_id) = member_account::<T>("caller_member", 1);
+
+
+        let thread_id = ProposalsDiscussion::<T>::create_thread(
+            caller_member_id,
+            ThreadMode::Open
+        ).unwrap();
+
+        assert!(ThreadById::<T>::contains_key(thread_id), "Thread not created");
+
+
+        let mut whitelisted_members = vec![caller_member_id];
+
+        for id in 2 .. i + 1 {
+            let (_, member_id) = member_account::<T>("member", id);
+            whitelisted_members.push(member_id);
+        }
+
+        let mode = ThreadMode::Closed(whitelisted_members);
+    }: _ (RawOrigin::Signed(account_id), caller_member_id, thread_id, mode.clone())
+    verify {
+        assert_eq!(
+            ProposalsDiscussion::<T>::thread_by_id(thread_id).mode,
+            mode.clone(),
+            "Thread not correctly updated"
+        );
+
+        assert_last_event::<T>(RawEvent::ThreadModeChanged(thread_id, mode).into());
     }
 }
 
@@ -124,6 +200,20 @@ mod tests {
     fn test_add_post() {
         initial_test_ext().execute_with(|| {
             assert_ok!(test_benchmark_add_post::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_update_post() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_update_post::<Test>());
+        });
+    }
+
+    #[test]
+    fn test_change_thread_mode() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_change_thread_mode::<Test>());
         });
     }
 }
