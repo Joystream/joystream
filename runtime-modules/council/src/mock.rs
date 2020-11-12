@@ -29,7 +29,7 @@ use std::marker::PhantomData;
 use system::{EnsureOneOf, EnsureRoot, EnsureSigned, RawOrigin};
 
 use crate::spending_budget;
-use crate::spending_budget::BudgetController;
+use crate::spending_budget::{BudgetController, BudgetsAccess};
 use crate::staking_handler::mocks::{Lock1, Lock2, CANDIDATE_BASE_ID, VOTER_BASE_ID};
 
 pub const USER_REGULAR_POWER_VOTES: u64 = 0;
@@ -88,7 +88,8 @@ parameter_types! {
     pub const MinCandidateStake: u64 = 11000;
     pub const CandidacyLockId: LockIdentifier = *b"council1";
     pub const ElectedMemberLockId: LockIdentifier = *b"council2";
-    pub const BudgetIdWorkingBudget: Budgets = Budgets::WorkingTeam;
+    //pub const BudgetIdWorkingBudget: Budgets = Budgets::WorkingTeam;
+    pub const BudgetIdElectedMembers: Budgets = Budgets::ElectedMemberReward;
     pub const ElectedMemberRewardPerBlock: u64 = 100;
 }
 
@@ -107,14 +108,24 @@ impl Trait for Runtime {
     type CandidacyLock = Lock1;
     type ElectedMemberLock = Lock2;
 
+    type Budgets = Self;
+    type BudgetIdElectedMembers = BudgetIdElectedMembers;
+
+    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
+}
+
+impl
+    BudgetsAccess<
+        <Runtime as Trait>::CouncilUserId,
+        Balance<Runtime>,
+        <Runtime as system::Trait>::BlockNumber,
+    > for Runtime
+{
     type BudgetType = Budgets;
     type GenericBudgetControllerTrait = BudgetController<Self>;
     type BudgetCollection = spending_budget::Module<Self>;
-
-    type BudgetIdWorkingBudget = BudgetIdWorkingBudget;
-
     type PeriodicBudgetControllerTrait = BudgetController<Self>;
-    type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
+    type PeriodicPullRewardBudgetControllerTrait = BudgetController<Self>;
 }
 
 /////////////////// Module implementation //////////////////////////////////////

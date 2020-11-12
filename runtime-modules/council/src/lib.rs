@@ -69,8 +69,8 @@ mod staking_handler;
 mod tests;
 
 use spending_budget::{
-    BudgetCollection, BudgetControllerTrait, PeriodicRewardBudgetCollection,
-    PeriodicRewardBudgetControllerTrait, RewardRecipient,
+    BudgetsAccess, PeriodicRewardBudgetCollection, PeriodicRewardBudgetControllerTrait,
+    RewardRecipient,
 };
 use staking_handler::StakingHandler2;
 
@@ -146,6 +146,7 @@ impl<AccountId, CouncilUserId, Balance> From<(Candidate<AccountId, Balance>, Cou
 
 /////////////////// Type aliases ///////////////////////////////////////////////
 
+// referendum related aliases
 pub type Balance<T> = <<<T as Trait>::Referendum as ReferendumManager<
     <T as system::Trait>::Origin,
     <T as system::Trait>::AccountId,
@@ -158,10 +159,28 @@ pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
     <T as system::Trait>::Hash,
 >>::VotePower;
 
+// council related aliases
 pub type CouncilMemberOf<T> =
     CouncilMember<<T as system::Trait>::AccountId, <T as Trait>::CouncilUserId, Balance<T>>;
 pub type CandidateOf<T> = Candidate<<T as system::Trait>::AccountId, Balance<T>>;
 pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as system::Trait>::BlockNumber>;
+
+// budget related aliases
+pub type BudgetTypeOf<T> = <<T as Trait>::Budgets as BudgetsAccess<
+    <T as Trait>::CouncilUserId,
+    Balance<T>,
+    <T as system::Trait>::BlockNumber,
+>>::BudgetType;
+pub type PeriodicRewardBudgetCollectionOf<T> = <<T as Trait>::Budgets as BudgetsAccess<
+    <T as Trait>::CouncilUserId,
+    Balance<T>,
+    <T as system::Trait>::BlockNumber,
+>>::BudgetCollection;
+pub type PeriodicBudgetControllerTraitOf<T> = <<T as Trait>::Budgets as BudgetsAccess<
+    <T as Trait>::CouncilUserId,
+    Balance<T>,
+    <T as system::Trait>::BlockNumber,
+>>::PeriodicBudgetControllerTrait;
 
 /////////////////// Trait, Storage, Errors, and Events /////////////////////////
 
@@ -202,30 +221,11 @@ pub trait Trait: system::Trait {
     /// Duration of idle period
     type IdlePeriodDuration: Get<Self::BlockNumber>;
 
-    /// Budget identifier.
-    type BudgetType: From<u64>;
-    /// Generic budget controller.
-    type GenericBudgetControllerTrait: BudgetControllerTrait<Balance<Self>> + Codec;
-    /// Controller for budget with periodic rewards.
-    type PeriodicBudgetControllerTrait: PeriodicRewardBudgetControllerTrait<
-            Self::CouncilUserId,
-            Balance<Self>,
-            Self::BlockNumber,
-            RewardRecipient<Self::BlockNumber, Balance<Self>>,
-        > + Codec;
-    /// Collection of budgets.
-    type BudgetCollection: BudgetCollection<Self::BudgetType, Balance<Self>, Self::GenericBudgetControllerTrait>
-        + PeriodicRewardBudgetCollection<
-            Self::BudgetType,
-            Self::CouncilUserId,
-            Balance<Self>,
-            Self::BlockNumber,
-            RewardRecipient<Self::BlockNumber, Balance<Self>>,
-            Self::PeriodicBudgetControllerTrait,
-        >;
+    /// Access to budgets.
+    type Budgets: BudgetsAccess<Self::CouncilUserId, Balance<Self>, Self::BlockNumber>;
 
     /// Identifier for working group budget.
-    type BudgetIdWorkingBudget: Get<Self::BudgetType>;
+    type BudgetIdElectedMembers: Get<<Self::Budgets as BudgetsAccess<Self::CouncilUserId, Balance<Self>, Self::BlockNumber>>::BudgetType>;
 
     /// The value elected members will be awarded each block of their reign.
     type ElectedMemberRewardPerBlock: Get<Balance<Self>>;
@@ -708,14 +708,27 @@ impl<T: Trait> Mutations<T> {
         old_members: &[CouncilMemberOf<T>],
         new_members: &[CouncilMemberOf<T>],
     ) {
-        let budget = <T::BudgetCollection as PeriodicRewardBudgetCollection<
+        ////let budget = <T::Budgets::BudgetCollection as PeriodicRewardBudgetCollectionOf<T>>::get_budget(&T::BudgetIdElectedMembers::get());
+        ////let budget = <T::Budgets::BudgetCollection as PeriodicRewardBudgetCollectionOf<T>>::get_budget(&T::BudgetIdElectedMembers::get());
+        //let budget = PeriodicRewardBudgetCollectionOf::<T>::get_budget(&T::BudgetIdElectedMembers::get());
+        /*
+        let budget = <PeriodicRewardBudgetCollectionOf<T> as PeriodicRewardBudgetCollection<
             T::BudgetType,
             T::CouncilUserId,
             Balance<T>,
             T::BlockNumber,
             RewardRecipient<T::BlockNumber, Balance<T>>,
             T::PeriodicBudgetControllerTrait,
-        >>::get_budget(&T::BudgetIdWorkingBudget::get());
+        >>::get_budget(&T::BudgetIdElectedMembers::get());
+        */
+        let budget = <PeriodicRewardBudgetCollectionOf<T> as PeriodicRewardBudgetCollection<
+            BudgetTypeOf<T>,
+            T::CouncilUserId,
+            Balance<T>,
+            T::BlockNumber,
+            RewardRecipient<T::BlockNumber, Balance<T>>,
+            PeriodicBudgetControllerTraitOf<T>,
+        >>::get_budget(&T::BudgetIdElectedMembers::get());
 
         // stop paying reward to old council members
         old_members

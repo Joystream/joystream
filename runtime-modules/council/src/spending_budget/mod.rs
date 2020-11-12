@@ -35,6 +35,7 @@ pub struct RewardRecipient<BlockNumber, Balance> {
     last_withdraw_block: BlockNumber,
     reward_per_block: Balance,
     unpaid_reward: Balance,
+    pull_reward_enabled: bool,
 }
 
 /// Budget controller facilitating access to budget operations.
@@ -122,7 +123,7 @@ pub trait BudgetControllerTrait<Balance> {
     fn set_budget(&self, amount: &Balance);
 }
 
-/// The trait defining operations for pull-based reward budget.
+/// The trait defining operations for periodic reward budget.
 pub trait PeriodicRewardBudgetControllerTrait<BudgetUserId, Balance, BlockNumber, RewardRecipient>:
     BudgetControllerTrait<Balance>
 {
@@ -139,6 +140,19 @@ pub trait PeriodicRewardBudgetControllerTrait<BudgetUserId, Balance, BlockNumber
     /// Remove the user from the list of periodic reward recipients. Any unpaid reward is annulled, and the user can't withdraw it.
     /// Use it when, for example, you want to prevent a malicious user from any reward accumulated so far.
     fn remove_recipient_clear_reward(&self, id: &BudgetUserId);
+}
+
+/// The trait defining operations for pull-based periodic reward budget.
+pub trait PeriodicPullRewardBudgetControllerTrait<
+    BudgetUserId,
+    Balance,
+    BlockNumber,
+    RewardRecipient,
+>:
+    PeriodicRewardBudgetControllerTrait<BudgetUserId, Balance, BlockNumber, RewardRecipient>
+{
+    /// Add the user from the list of periodic reward recipients.
+    fn add_recipient(&self, id: &BudgetUserId, reward_per_block: &Balance);
 }
 
 /// The trait for periodicly refilling budgets.
@@ -167,6 +181,42 @@ pub trait PeriodicRewardBudgetCollection<
 {
     /// Get selected budget controller.
     fn get_budget(budget_type: &BudgetType) -> BudgetController;
+}
+
+/// The trait for easy access to budgets.
+pub trait BudgetsAccess<CouncilUserId, Balance, BlockNumber> {
+    /// Budget identifier.
+    type BudgetType: From<u64>;
+
+    /// Generic budget controller.
+    type GenericBudgetControllerTrait: BudgetControllerTrait<Balance> + Codec;
+
+    /// Controller for budget with periodic rewards.
+    type PeriodicBudgetControllerTrait: PeriodicRewardBudgetControllerTrait<
+            CouncilUserId,
+            Balance,
+            BlockNumber,
+            RewardRecipient<BlockNumber, Balance>,
+        > + Codec;
+
+    /// Controller for budget with periodic rewards that users can withdraw themselves.
+    type PeriodicPullRewardBudgetControllerTrait: PeriodicPullRewardBudgetControllerTrait<
+            CouncilUserId,
+            Balance,
+            BlockNumber,
+            RewardRecipient<BlockNumber, Balance>,
+        > + Codec;
+
+    /// Collection of budgets.
+    type BudgetCollection: BudgetCollection<Self::BudgetType, Balance, Self::GenericBudgetControllerTrait>
+        + PeriodicRewardBudgetCollection<
+            Self::BudgetType,
+            CouncilUserId,
+            Balance,
+            BlockNumber,
+            RewardRecipient<BlockNumber, Balance>,
+            Self::PeriodicBudgetControllerTrait,
+        >;
 }
 
 decl_storage! {
@@ -213,6 +263,9 @@ decl_error! {
 
         /// Invalid reward recipient.
         NotRewardRecipient,
+
+        /// Reward recipient can't withdraw reward by themselves.
+        NotPullRewardRecipient,
 
         /// The given recipient has no reward accumulated now.
         NoRewardNow,
@@ -454,6 +507,7 @@ impl<T: Trait>
                     last_withdraw_block: <system::Module<T>>::block_number(),
                     reward_per_block: *reward_per_block,
                     unpaid_reward: 0.into(),
+                    pull_reward_enabled: false,
                 },
             );
 
@@ -472,6 +526,7 @@ impl<T: Trait>
                 last_withdraw_block: <system::Module<T>>::block_number(),
                 reward_per_block: *reward_per_block,
                 unpaid_reward: new_unpaid_reward,
+                ..recipient
             },
         );
     }
@@ -507,6 +562,7 @@ impl<T: Trait>
                 last_withdraw_block: <system::Module<T>>::block_number(),
                 reward_per_block: 0.into(),
                 unpaid_reward: new_unpaid_reward,
+                ..recipient
             },
         );
     }
@@ -514,6 +570,30 @@ impl<T: Trait>
     /// Remove the user from the list of periodic reward recipients. Any unpaid reward is annulled, and the user can't withdraw it.
     fn remove_recipient_clear_reward(&self, user_id: &T::BudgetUserId) {
         PeriodicRewardRecipient::<T>::remove(self.budget_type, user_id);
+    }
+}
+
+impl<T: Trait>
+    PeriodicPullRewardBudgetControllerTrait<
+        T::BudgetUserId,
+        Balance<T>,
+        T::BlockNumber,
+        RewardRecipientOf<T>,
+    > for BudgetController<T>
+{
+    /// Add the user from the list of periodic reward recipients.
+    fn add_recipient(&self, user_id: &T::BudgetUserId, reward_per_block: &Balance<T>) {
+        <Self as PeriodicRewardBudgetControllerTrait<
+            T::BudgetUserId,
+            Balance<T>,
+            T::BlockNumber,
+            RewardRecipientOf<T>,
+        >>::add_recipient(&self, user_id, reward_per_block);
+
+        // enable pulling the reward
+        PeriodicRewardRecipient::<T>::mutate(self.budget_type, user_id, |value| {
+            value.pull_reward_enabled = true
+        });
     }
 }
 
@@ -650,6 +730,7 @@ impl<T: Trait> Mutations<T> {
                 last_withdraw_block: <system::Module<T>>::block_number(),
                 reward_per_block: recipient.reward_per_block,
                 unpaid_reward: *unpaid_remaining,
+                ..*recipient
             },
         );
 
@@ -719,6 +800,11 @@ impl<T: Trait> EnsureChecks<T> {
         }
 
         let recipient = PeriodicRewardRecipient::<T>::get(budget_type, user_id);
+
+        if !recipient.pull_reward_enabled {
+            return Err(Error::NotPullRewardRecipient);
+        }
+
         let reward = Calculations::<T>::get_current_reward(&recipient);
 
         // ensure user is eligible to receive some reward
