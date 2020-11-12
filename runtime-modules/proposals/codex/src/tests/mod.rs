@@ -621,17 +621,7 @@ fn create_set_validator_count_proposal_common_checks_succeed() {
 #[test]
 fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
     initial_test_ext().execute_with(|| {
-        assert_eq!(
-            ProposalCodex::create_set_validator_count_proposal(
-                RawOrigin::Signed(1).into(),
-                1,
-                b"title".to_vec(),
-                b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(500u32)),
-                3,
-            ),
-            Err(Error::<Test>::InvalidValidatorCount.into())
-        );
+        staking::MinimumValidatorCount::put(10);
 
         assert_eq!(
             ProposalCodex::create_set_validator_count_proposal(
@@ -639,7 +629,7 @@ fn create_set_validator_count_proposal_failed_with_invalid_validator_count() {
                 1,
                 b"title".to_vec(),
                 b"body".to_vec(),
-                Some(<BalanceOf<Test>>::from(1001u32)),
+                Some(<BalanceOf<Test>>::from(100_000_u32)),
                 3,
             ),
             Err(Error::<Test>::InvalidValidatorCount.into())
