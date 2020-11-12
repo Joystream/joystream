@@ -15,11 +15,18 @@ use system::ensure_signed;
 /////////////////// Data Structures ////////////////////////////////////////////
 
 /// Settings for budget periodic refill.
-#[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
 pub struct BudgetRefill<BlockNumber, Balance> {
     period: BlockNumber,
     amount: Balance,
     next_refill: BlockNumber,
+}
+
+/// Settings for budget automatic payments.
+#[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
+pub struct BudgetAutoPayment<BlockNumber> {
+    period: BlockNumber,
+    next_auto_payment: BlockNumber,
 }
 
 /// Generic budget representation.
@@ -27,15 +34,21 @@ pub struct BudgetRefill<BlockNumber, Balance> {
 pub struct Budget<BlockNumber, Balance> {
     balance: Balance,
     refill: Option<BudgetRefill<BlockNumber, Balance>>,
+    auto_payment: Option<BudgetAutoPayment<BlockNumber>>,
 }
 
 /// Recipient of budget reward.
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default)]
-pub struct RewardRecipient<BlockNumber, Balance> {
-    last_withdraw_block: BlockNumber,
+pub struct RewardRecipient<BlockNumber, Balance, AccountId, BudgetUserId> {
+    last_payment_block: BlockNumber,
     reward_per_block: Balance,
     unpaid_reward: Balance,
     pull_reward_enabled: bool,
+    auto_payment_account_id: Option<AccountId>,
+
+    // TODO: this user id is redudant and is only needed because there is currently no way to get key when iterating StorageDoubleMap
+    //       remove it after this issue is fixed https://github.com/paritytech/substrate/issues/7530
+    user_id: BudgetUserId,
 }
 
 /// Budget controller facilitating access to budget operations.
@@ -57,7 +70,12 @@ impl<T: Trait> From<(T::BudgetType,)> for BudgetController<T> {
 pub type Balance<T> =
     <<T as Trait>::Currency as Currency<<T as system::Trait>::AccountId>>::Balance;
 pub type BudgetOf<T> = Budget<<T as system::Trait>::BlockNumber, Balance<T>>;
-pub type RewardRecipientOf<T> = RewardRecipient<<T as system::Trait>::BlockNumber, Balance<T>>;
+pub type RewardRecipientOf<T> = RewardRecipient<
+    <T as system::Trait>::BlockNumber,
+    Balance<T>,
+    <T as system::Trait>::AccountId,
+    <T as Trait>::BudgetUserId,
+>;
 pub type BudgetRefillOf<T> = BudgetRefill<<T as system::Trait>::BlockNumber, Balance<T>>;
 type CanWithdrawResultOf<T> = (
     <T as system::Trait>::AccountId,
@@ -92,7 +110,12 @@ pub trait Trait: system::Trait {
     /// The maximum amount of periodically refilling budgets.
     type MaxRefillingBudgets: Get<u64>;
 
+    /// The maximum reward recipients of a single budget.
+    type MaxBudgetRewardRecipients: Get<u64>;
+
     /// Facilitate transfer of currency to the reward recipient.
+    /// IMPORTANT: this function should prevent re-entrancy into budget operations,
+    ///            otherwise unexpected behavior might occur (see re-entrancy attack).
     fn pay_reward(
         budget_type: &Self::BudgetType,
         target_account_id: &Self::AccountId,
@@ -128,7 +151,7 @@ pub trait PeriodicRewardBudgetControllerTrait<BudgetUserId, Balance, BlockNumber
     BudgetControllerTrait<Balance>
 {
     /// Add the user from the list of periodic reward recipients.
-    fn add_recipient(&self, id: &BudgetUserId, reward_per_block: &Balance);
+    fn add_recipient(&self, id: &BudgetUserId, reward_per_block: &Balance) -> bool;
 
     /// Retrieve recipient's information.
     fn get_recipient(&self, user_id: &BudgetUserId) -> Option<RewardRecipient>;
@@ -145,6 +168,7 @@ pub trait PeriodicRewardBudgetControllerTrait<BudgetUserId, Balance, BlockNumber
 /// The trait defining operations for pull-based periodic reward budget.
 pub trait PeriodicPullRewardBudgetControllerTrait<
     BudgetUserId,
+    AccountId,
     Balance,
     BlockNumber,
     RewardRecipient,
@@ -152,7 +176,12 @@ pub trait PeriodicPullRewardBudgetControllerTrait<
     PeriodicRewardBudgetControllerTrait<BudgetUserId, Balance, BlockNumber, RewardRecipient>
 {
     /// Add the user from the list of periodic reward recipients.
-    fn add_recipient(&self, id: &BudgetUserId, reward_per_block: &Balance);
+    fn add_recipient(
+        &self,
+        id: &BudgetUserId,
+        reward_per_block: &Balance,
+        account_id: &AccountId,
+    ) -> bool;
 }
 
 /// The trait for periodicly refilling budgets.
@@ -184,7 +213,7 @@ pub trait PeriodicRewardBudgetCollection<
 }
 
 /// The trait for easy access to budgets.
-pub trait BudgetsAccess<CouncilUserId, Balance, BlockNumber> {
+pub trait BudgetsAccess<BudgetUserId, AccountId, Balance, BlockNumber> {
     /// Budget identifier.
     type BudgetType: From<u64>;
 
@@ -193,28 +222,29 @@ pub trait BudgetsAccess<CouncilUserId, Balance, BlockNumber> {
 
     /// Controller for budget with periodic rewards.
     type PeriodicBudgetControllerTrait: PeriodicRewardBudgetControllerTrait<
-            CouncilUserId,
+            BudgetUserId,
             Balance,
             BlockNumber,
-            RewardRecipient<BlockNumber, Balance>,
+            RewardRecipient<BlockNumber, Balance, AccountId, BudgetUserId>,
         > + Codec;
 
     /// Controller for budget with periodic rewards that users can withdraw themselves.
     type PeriodicPullRewardBudgetControllerTrait: PeriodicPullRewardBudgetControllerTrait<
-            CouncilUserId,
+            BudgetUserId,
+            AccountId,
             Balance,
             BlockNumber,
-            RewardRecipient<BlockNumber, Balance>,
+            RewardRecipient<BlockNumber, Balance, AccountId, BudgetUserId>,
         > + Codec;
 
     /// Collection of budgets.
     type BudgetCollection: BudgetCollection<Self::BudgetType, Balance, Self::GenericBudgetControllerTrait>
         + PeriodicRewardBudgetCollection<
             Self::BudgetType,
-            CouncilUserId,
+            BudgetUserId,
             Balance,
             BlockNumber,
-            RewardRecipient<BlockNumber, Balance>,
+            RewardRecipient<BlockNumber, Balance, AccountId, BudgetUserId>,
             Self::PeriodicBudgetControllerTrait,
         >;
 }
@@ -229,6 +259,9 @@ decl_storage! {
 
         /// A list of periodicly refilling budgets.
         pub ActiveBudgetRefills get(fn active_budget_refills) config(): Vec<T::BudgetType>;
+
+        /// A list of periodicly paying budgets.
+        pub ActiveBudgetAutoPayments get(fn active_budget_auto_payments) config(): Vec<T::BudgetType>;
     }
 }
 
@@ -243,6 +276,8 @@ decl_event! {
 
         /// The reward was paid to the recipient only partially.
         RewardPartialWithdrawal(BudgetUserId, AccountId),
+
+
     }
 }
 
@@ -294,7 +329,9 @@ decl_module! {
 
         // No origin so this is a priviledged call
         fn on_finalize(now: T::BlockNumber) {
-            Self::try_progress_stage(now);
+            // process automatic reward payments and buget refills
+            Self::try_refill_budgets(now);
+            Self::try_pay_reward(now);
         }
 
         ///
@@ -310,7 +347,7 @@ decl_module! {
             // == MUTATION SAFE ==
             //
 
-            Mutations::<T>::payout(&budget_type, &user_id, &account_id, &recipient, &available_balance, &missing_balance)?;
+            Mutations::<T>::withdraw_reward(&budget_type, &user_id, &account_id, &recipient, &available_balance, &missing_balance)?;
 
             // emit event
             if missing_balance > 0.into() {
@@ -329,7 +366,8 @@ decl_module! {
 /////////////////// Inner logic ////////////////////////////////////////////////
 
 impl<T: Trait> Module<T> {
-    fn try_progress_stage(now: T::BlockNumber) {
+    /// Execute planned budgets refills.
+    fn try_refill_budgets(now: T::BlockNumber) {
         // iterate through refilling budgets
         for budget_type in ActiveBudgetRefills::<T>::get() {
             let budget = Budgets::<T>::get(budget_type);
@@ -339,6 +377,22 @@ impl<T: Trait> Module<T> {
                 // refill budget if it is due time
                 if refill.next_refill == now {
                     Mutations::<T>::refill_budget(&budget_type, &budget, refill);
+                }
+            }
+        }
+    }
+
+    /// Execute planned automatic rewards.
+    fn try_pay_reward(now: T::BlockNumber) {
+        // iterate through refilling budgets
+        for budget_type in ActiveBudgetAutoPayments::<T>::get() {
+            let budget = Budgets::<T>::get(budget_type);
+
+            // deconstruct automatic payment
+            if let Some(auto_payment) = &budget.auto_payment {
+                // auto_payment budget if it is due time
+                if auto_payment.next_auto_payment == now {
+                    Mutations::<T>::auto_payment_budget(&budget_type, &budget, auto_payment);
                 }
             }
         }
@@ -436,6 +490,7 @@ impl<T: Trait> BudgetControllerTrait<Balance<T>> for BudgetController<T> {
                 Budget {
                     balance: *amount,
                     refill: None,
+                    auto_payment: None,
                 },
             );
 
@@ -466,6 +521,7 @@ impl<T: Trait> BudgetControllerTrait<Balance<T>> for BudgetController<T> {
                 Budget {
                     balance: *amount,
                     refill: None,
+                    auto_payment: None,
                 },
             );
 
@@ -496,22 +552,31 @@ impl<T: Trait>
     > for BudgetController<T>
 {
     /// Add the user from the list of periodic reward recipients.
-    fn add_recipient(&self, user_id: &T::BudgetUserId, reward_per_block: &Balance<T>) {
+    fn add_recipient(&self, user_id: &T::BudgetUserId, reward_per_block: &Balance<T>) -> bool {
         // check if recipient's record exists
         if !PeriodicRewardRecipient::<T>::contains_key(self.budget_type, user_id) {
+            if T::MaxBudgetRewardRecipients::get()
+                == PeriodicRewardRecipient::<T>::iter_prefix_values(self.budget_type).count() as u64
+            {
+                return false;
+            }
+
             // create recipient
             PeriodicRewardRecipient::<T>::insert(
                 self.budget_type,
                 user_id,
                 RewardRecipient {
-                    last_withdraw_block: <system::Module<T>>::block_number(),
+                    last_payment_block: <system::Module<T>>::block_number(),
                     reward_per_block: *reward_per_block,
                     unpaid_reward: 0.into(),
                     pull_reward_enabled: false,
+                    auto_payment_account_id: None,
+
+                    user_id: *user_id,
                 },
             );
 
-            return;
+            return true;
         }
 
         // calculate currently unpaid reward
@@ -523,12 +588,14 @@ impl<T: Trait>
             self.budget_type,
             user_id,
             RewardRecipient {
-                last_withdraw_block: <system::Module<T>>::block_number(),
+                last_payment_block: <system::Module<T>>::block_number(),
                 reward_per_block: *reward_per_block,
                 unpaid_reward: new_unpaid_reward,
                 ..recipient
             },
         );
+
+        true
     }
 
     /// Retrieve recipient's information.
@@ -559,7 +626,7 @@ impl<T: Trait>
             self.budget_type,
             user_id,
             RewardRecipientOf::<T> {
-                last_withdraw_block: <system::Module<T>>::block_number(),
+                last_payment_block: <system::Module<T>>::block_number(),
                 reward_per_block: 0.into(),
                 unpaid_reward: new_unpaid_reward,
                 ..recipient
@@ -576,24 +643,36 @@ impl<T: Trait>
 impl<T: Trait>
     PeriodicPullRewardBudgetControllerTrait<
         T::BudgetUserId,
+        T::AccountId,
         Balance<T>,
         T::BlockNumber,
         RewardRecipientOf<T>,
     > for BudgetController<T>
 {
     /// Add the user from the list of periodic reward recipients.
-    fn add_recipient(&self, user_id: &T::BudgetUserId, reward_per_block: &Balance<T>) {
-        <Self as PeriodicRewardBudgetControllerTrait<
+    fn add_recipient(
+        &self,
+        user_id: &T::BudgetUserId,
+        reward_per_block: &Balance<T>,
+        account_id: &T::AccountId,
+    ) -> bool {
+        if !<Self as PeriodicRewardBudgetControllerTrait<
             T::BudgetUserId,
             Balance<T>,
             T::BlockNumber,
             RewardRecipientOf<T>,
-        >>::add_recipient(&self, user_id, reward_per_block);
+        >>::add_recipient(&self, user_id, reward_per_block)
+        {
+            return false;
+        }
 
         // enable pulling the reward
         PeriodicRewardRecipient::<T>::mutate(self.budget_type, user_id, |value| {
-            value.pull_reward_enabled = true
+            value.pull_reward_enabled = true;
+            value.auto_payment_account_id = Some(account_id.clone());
         });
+
+        true
     }
 }
 
@@ -668,7 +747,7 @@ impl<T: Trait> Calculations<T> {
     fn get_current_reward(recipient: &RewardRecipientOf<T>) -> Balance<T> {
         recipient.unpaid_reward
             + T::blocks_to_balance(
-                &(<system::Module<T>>::block_number() - recipient.last_withdraw_block),
+                &(<system::Module<T>>::block_number() - recipient.last_payment_block),
             ) * recipient.reward_per_block
     }
 
@@ -699,7 +778,7 @@ struct Mutations<T: Trait> {
 
 impl<T: Trait> Mutations<T> {
     /// Payout currently accumulated reward to the user.
-    fn payout(
+    fn withdraw_reward(
         budget_type: &T::BudgetType,
         user_id: &T::BudgetUserId,
         account_id: &T::AccountId,
@@ -727,9 +806,10 @@ impl<T: Trait> Mutations<T> {
             budget_type,
             user_id,
             RewardRecipient {
-                last_withdraw_block: <system::Module<T>>::block_number(),
+                last_payment_block: <system::Module<T>>::block_number(),
                 reward_per_block: recipient.reward_per_block,
                 unpaid_reward: *unpaid_remaining,
+                auto_payment_account_id: recipient.auto_payment_account_id.clone(),
                 ..*recipient
             },
         );
@@ -737,6 +817,7 @@ impl<T: Trait> Mutations<T> {
         Ok(())
     }
 
+    /// Increases budgets balance and plans next refill.
     fn refill_budget(
         budget_type: &T::BudgetType,
         budget: &BudgetOf<T>,
@@ -748,11 +829,82 @@ impl<T: Trait> Mutations<T> {
         // update budget balance and set next refill block number
         Budgets::<T>::insert(
             budget_type,
-            Budget {
+            BudgetOf::<T> {
                 balance: new_balance,
                 refill: Some(BudgetRefill {
                     next_refill: <system::Module<T>>::block_number() + refill.period,
                     ..*refill
+                }),
+                auto_payment: budget.auto_payment.clone(),
+            },
+        );
+    }
+
+    /// Pays budgets reward to known recipients and plans nex payment reward.
+    fn auto_payment_budget(
+        budget_type: &T::BudgetType,
+        budget: &BudgetOf<T>,
+        auto_payment: &BudgetAutoPayment<T::BlockNumber>,
+    ) {
+        // NOTE: The behavior of this function can be extended in the future by introducing different payment strategies
+        //       that can be associated with budgets. The current strategy is to try to pay rewards to all recipients
+        //       until all recipients are paid or the budget is depleted. When the budget is depleted, the remaining rewards
+        //       will be paid in the next auto payment.
+
+        // get all budget's rewards recipients
+        let recipients = PeriodicRewardRecipient::<T>::iter_prefix_values(budget_type);
+
+        // walkthrough recipients
+        let mut new_balance = budget.balance;
+        for recipient in recipients {
+            // stop iterating if budget is completely depleted
+            if new_balance == 0.into() {
+                break;
+            }
+
+            let new_unpaid_reward = Calculations::<T>::get_current_reward(&recipient);
+
+            // calculate how much can be paid from budget
+            let reward_to_pay = match new_balance >= new_unpaid_reward {
+                true => new_unpaid_reward,
+                false => new_balance,
+            };
+
+            if let Some(account_id) = recipient.auto_payment_account_id.clone() {
+                // send reward to user - escape reward payments if payment failed
+                if T::pay_reward(&budget_type, &account_id, &reward_to_pay).is_err() {
+                    return;
+                }
+            } else {
+                // this branch shound never happen since all auto payment recipients will have account_id associated,
+                // but let's add it for type safety
+                continue;
+            }
+
+            // update recipient record
+            PeriodicRewardRecipient::<T>::insert(
+                budget_type,
+                recipient.user_id,
+                RewardRecipient {
+                    last_payment_block: <system::Module<T>>::block_number(),
+                    reward_per_block: recipient.reward_per_block,
+                    unpaid_reward: recipient.unpaid_reward - reward_to_pay,
+                    ..recipient
+                },
+            );
+
+            new_balance -= reward_to_pay;
+        }
+
+        // update budget balance and set next auto payment block number
+        Budgets::<T>::insert(
+            budget_type,
+            BudgetOf::<T> {
+                balance: new_balance,
+                refill: budget.refill.clone(),
+                auto_payment: Some(BudgetAutoPayment {
+                    next_auto_payment: auto_payment.next_auto_payment + auto_payment.period,
+                    ..*auto_payment
                 }),
             },
         );

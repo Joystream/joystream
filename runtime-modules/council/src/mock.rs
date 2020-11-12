@@ -117,6 +117,7 @@ impl Trait for Runtime {
 impl
     BudgetsAccess<
         <Runtime as Trait>::CouncilUserId,
+        <Runtime as system::Trait>::AccountId,
         Balance<Runtime>,
         <Runtime as system::Trait>::BlockNumber,
     > for Runtime
@@ -356,6 +357,7 @@ parameter_types! {
 
 parameter_types! {
     pub const MaxRefillingBudgets: u64 = 1;
+    pub const MaxBudgetRewardRecipients: u64 = 20;
 }
 
 impl spending_budget::Trait for Runtime {
@@ -364,6 +366,7 @@ impl spending_budget::Trait for Runtime {
     type Currency = balances::Module<RuntimeReferendum>;
     type BudgetType = Budgets;
     type MaxRefillingBudgets = MaxRefillingBudgets;
+    type MaxBudgetRewardRecipients = MaxBudgetRewardRecipients;
 
     fn pay_reward(
         _budget_type: &Self::BudgetType,
