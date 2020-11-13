@@ -4,13 +4,15 @@ import { IPropertyIdWithName } from '../types'
 export enum ContentDirectoryKnownClasses {
   CHANNEL = 'Channel',
   CATEGORY = 'Category',
-  KNOWNLICENSE = 'KnownLicense',
-  USERDEFINEDLICENSE = 'UserDefinedLicense',
-  JOYSTREAMMEDIALOCATION = 'JoystreamMediaLocation',
   HTTPMEDIALOCATION = 'HttpMediaLocation',
-  VIDEOMEDIA = 'VideoMedia',
-  VIDEO = 'Video',
+  JOYSTREAMMEDIALOCATION = 'JoystreamMediaLocation',
+  KNOWNLICENSE = 'KnownLicense',
   LANGUAGE = 'Language',
+  LICENSE = 'License',
+  MEDIALOCATION = 'MediaLocation',
+  USERDEFINEDLICENSE = 'UserDefinedLicense',
+  VIDEO = 'Video',
+  VIDEOMEDIA = 'VideoMedia',
   VIDEOMEDIAENCODING = 'VideoMediaEncoding',
 }
 
@@ -18,13 +20,15 @@ export enum ContentDirectoryKnownClasses {
 export const contentDirectoryClassNamesWithId: { classId: number; name: string }[] = [
   { name: ContentDirectoryKnownClasses.CHANNEL, classId: 1 },
   { name: ContentDirectoryKnownClasses.CATEGORY, classId: 2 },
-  { name: ContentDirectoryKnownClasses.KNOWNLICENSE, classId: 5 },
-  { name: ContentDirectoryKnownClasses.USERDEFINEDLICENSE, classId: 9 },
-  { name: ContentDirectoryKnownClasses.LANGUAGE, classId: 6 },
-  { name: ContentDirectoryKnownClasses.JOYSTREAMMEDIALOCATION, classId: 4 },
   { name: ContentDirectoryKnownClasses.HTTPMEDIALOCATION, classId: 3 },
-  { name: ContentDirectoryKnownClasses.VIDEOMEDIA, classId: 11 },
+  { name: ContentDirectoryKnownClasses.JOYSTREAMMEDIALOCATION, classId: 4 },
+  { name: ContentDirectoryKnownClasses.KNOWNLICENSE, classId: 5 },
+  { name: ContentDirectoryKnownClasses.LANGUAGE, classId: 6 },
+  { name: ContentDirectoryKnownClasses.LICENSE, classId: 7 },
+  { name: ContentDirectoryKnownClasses.MEDIALOCATION, classId: 8 },
+  { name: ContentDirectoryKnownClasses.USERDEFINEDLICENSE, classId: 9 },
   { name: ContentDirectoryKnownClasses.VIDEO, classId: 10 },
+  { name: ContentDirectoryKnownClasses.VIDEOMEDIA, classId: 11 },
   { name: ContentDirectoryKnownClasses.VIDEOMEDIAENCODING, classId: 12 },
 ]
 
@@ -43,6 +47,11 @@ export const channelPropertyNamesWithId: IPropertyIdWithName = {
   6: 'language',
 }
 
+export const licensePropertyNamesWithId: IPropertyIdWithName = {
+  0: 'knownLicense',
+  1: 'userDefinedLicense',
+}
+
 export const knownLicensePropertyNamesWIthId: IPropertyIdWithName = {
   0: 'code',
   1: 'name',
@@ -57,6 +66,11 @@ export const languagePropertyNamesWIthId: IPropertyIdWithName = {
 
 export const userDefinedLicensePropertyNamesWithId: IPropertyIdWithName = {
   0: 'content',
+}
+
+export const mediaLocationPropertyNamesWithId: IPropertyIdWithName = {
+  0: 'httpMediaLocation',
+  1: 'joystreamMediaLocation',
 }
 
 export const joystreamMediaLocationPropertyNamesWithId: IPropertyIdWithName = {
