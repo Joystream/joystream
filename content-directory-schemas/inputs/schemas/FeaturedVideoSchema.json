@@ -5,6 +5,7 @@
       "name": "video",
       "description": "Reference to a video",
       "required": true,
+      "unique": true,
       "property_type": { "Single": { "Reference": { "className": "Video" } } }
     }
   ]
