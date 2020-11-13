@@ -745,21 +745,6 @@ impl<T: Trait> EnsureChecks<T> {
         Ok(account_id)
     }
 
-    fn ensure_user_membership_staking(
-        origin: T::Origin,
-        council_user_id: &T::CouncilUserId,
-        staking_account_id: &T::AccountId,
-    ) -> Result<T::AccountId, Error<T>> {
-        let account_id = Self::ensure_user_membership(origin, council_user_id)?;
-
-        ensure!(
-            T::CandidacyLock::is_member_staking_account(&council_user_id, &staking_account_id),
-            Error::CouncilUserIdNotMatchAccount,
-        );
-
-        Ok(account_id)
-    }
-
     /////////////////// Action checks //////////////////////////////////////////
 
     /// Ensures there is no problem in announcing candidacy.
@@ -770,7 +755,12 @@ impl<T: Trait> EnsureChecks<T> {
         stake: &Balance<T>,
     ) -> Result<(CouncilStageAnnouncing, Option<T::AccountId>), Error<T>> {
         // ensure user's membership
-        Self::ensure_user_membership_staking(origin, &council_user_id, staking_account_id)?;
+        Self::ensure_user_membership(origin, council_user_id)?;
+
+        // ensure staking account's membership
+        if !T::CandidacyLock::is_member_staking_account(&council_user_id, &staking_account_id) {
+            return Err(Error::CouncilUserIdNotMatchAccount);
+        }
 
         let stage_data = match Stage::<T>::get().stage {
             CouncilStage::Announcing(stage_data) => stage_data,
