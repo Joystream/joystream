@@ -84,6 +84,8 @@ benchmarks! {
 
         let mut whitelisted_members = vec![caller_member_id];
 
+        // We start from 2 since we have previously created id 0 and not used it
+        // and used id 1 for the caller (see comment above)
         for id in 2 .. i + 1 {
             let (_, member_id) = member_account::<T>("member", id);
             whitelisted_members.push(member_id);
@@ -115,10 +117,10 @@ benchmarks! {
     update_post {
         // TODO: this parameter doesn't affect the running time
         // maybe we should bound it here with the UI limit?
-        let j in 0 .. 50000;
+        let j in 0 .. MAX_BYTES;
 
         // We do this to ignore the id 0 because the `Test` runtime
-        // returns 0 as an invalid id but 0 as a valid one
+        // returns 0 as an invalid id but 1 as a valid one
         let (_, _) = member_account::<T>("caller_member", 0);
         let (account_id, caller_member_id) = member_account::<T>("caller_member", 1);
 
@@ -158,7 +160,7 @@ benchmarks! {
         let i in 1 .. T::MaxWhiteListSize::get();
 
         // We do this to ignore the id 0 because the `Test` runtime
-        // returns 0 as an invalid id but 0 as a valid one
+        // returns 0 as an invalid id but 1 as a valid one
         let (_, _) = member_account::<T>("member", 0);
         let (account_id, caller_member_id) = member_account::<T>("caller_member", 1);
 
@@ -171,6 +173,8 @@ benchmarks! {
 
         let mut whitelisted_members = vec![caller_member_id];
 
+        // We start from 2 since we have previously created id 0 and not used it
+        // and used id 1 for the caller (see comment above)
         for id in 2 .. i + 1 {
             let (_, member_id) = member_account::<T>("member", id);
             whitelisted_members.push(member_id);
