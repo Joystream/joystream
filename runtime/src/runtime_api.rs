@@ -255,20 +255,18 @@ impl_runtime_apis! {
         }
     }
 
-     #[cfg(feature = "runtime-benchmarks")]
+    #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
-            /*
-             * TODO: remember to benchhmark every pallet
-             */
             use sp_std::vec;
             use frame_benchmarking::{Benchmarking, BenchmarkBatch, add_benchmark, TrackedStorageKey};
             use frame_system_benchmarking::Module as SystemBench;
             impl frame_system_benchmarking::Trait for Runtime {}
 
             use crate::ProposalsDiscussion;
+            use crate::ProposalsEngine;
 
             let whitelist: Vec<TrackedStorageKey> = vec![
                 // Block Number
@@ -292,6 +290,7 @@ impl_runtime_apis! {
 
             add_benchmark!(params, batches, system, SystemBench::<Runtime>);
             add_benchmark!(params, batches, proposals_discussion, ProposalsDiscussion);
+            add_benchmark!(params, batches, proposals_engine, ProposalsEngine);
 
             if batches.is_empty() { return Err("Benchmark not found for this pallet.".into()) }
             Ok(batches)

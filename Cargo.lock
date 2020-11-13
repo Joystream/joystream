@@ -4085,10 +4085,12 @@ dependencies = [
 name = "pallet-proposals-engine"
 version = "4.0.0"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
  "pallet-common",
+ "pallet-governance",
  "pallet-membership",
  "pallet-timestamp",
  "parity-scale-codec",

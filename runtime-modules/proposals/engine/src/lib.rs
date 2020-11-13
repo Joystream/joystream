@@ -119,6 +119,8 @@ pub use types::{
 
 pub(crate) mod types;
 
+mod benchmarking;
+
 #[cfg(test)]
 mod tests;
 

@@ -17,12 +17,19 @@ balances = { package = 'pallet-balances', default-features = false, git = 'https
 membership = { package = 'pallet-membership', default-features = false, path = '../../membership'}
 common = { package = 'pallet-common', default-features = false, path = '../../common'}
 
+frame-benchmarking = { package = 'frame-benchmarking', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = '00768a1f21a579c478fe5d4f51e1fa71f7db9fd4', optional = true}
+governance = { package = 'pallet-governance', default-features = false, path = '../../governance', optional = true}
+
 [dev-dependencies]
 sp-io = { package = 'sp-io', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 sp-core = { package = 'sp-core', default-features = false, git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca'}
 
 [features]
 default = ['std']
+runtime-benchmarks = [
+    'frame-benchmarking',
+    'governance',
+]
 std = [
 	'serde',
 	'codec/std',
