@@ -845,15 +845,6 @@ impl<T: Trait> EnsureChecks<T> {
             None => return Err(Error::NoStake),
         };
 
-        // ensure user is not current council member
-        let members = CouncilMembers::<T>::get();
-        let council_member = members
-            .iter()
-            .find(|item| item.staking_account_id == staking_account_id);
-        if council_member.is_some() {
-            return Err(Error::StakeStillNeeded);
-        }
-
         Ok(staking_account_id)
     }
 
