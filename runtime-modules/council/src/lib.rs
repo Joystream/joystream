@@ -59,8 +59,6 @@ use sp_runtime::traits::{Hash, MaybeSerialize, Member};
 use std::marker::PhantomData;
 use system::{ensure_signed, RawOrigin};
 
-use referendum::Instance as ReferendumInstanceGeneric;
-use referendum::Trait as ReferendumTrait;
 use referendum::{OptionResult, ReferendumManager};
 
 // declared modules
@@ -317,15 +315,6 @@ decl_error! {
 
         /// Can't withdraw candidacy outside of the candidacy announcement period.
         CantWithdrawCandidacyNow,
-    }
-}
-
-impl<T: Trait, RT: ReferendumTrait<I>, I: ReferendumInstanceGeneric> From<referendum::Error<RT, I>>
-    for Error<T>
-{
-    fn from(_other: referendum::Error<RT, I>) -> Error<T> {
-        //panic!(format!("{:?}", other)); // temporary debug
-        Error::<T>::BadOrigin // TODO: find way to select proper error
     }
 }
 
