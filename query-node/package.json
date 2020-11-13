@@ -35,5 +35,8 @@
 		"debug": "^4.2.0",
 		"dotenvi": "^0.9.1",
 		"tslib": "^2.0.0"
+	},
+	"volta": {
+		"extends": "../package.json"
 	}
 }
