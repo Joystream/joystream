@@ -240,8 +240,8 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     return entity
   }
 
-  async getAndParseKnownEntity<T>(id: string | number): Promise<FlattenRelations<T>> {
-    const entity = await this.getEntity(id)
+  async getAndParseKnownEntity<T>(id: string | number, className?: string): Promise<FlattenRelations<T>> {
+    const entity = await this.getEntity(id, className)
     return this.parseToKnownEntityJson<T>(entity)
   }
 

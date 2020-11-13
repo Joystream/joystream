@@ -1,0 +1,11 @@
+{
+  "className": "FeaturedVideo",
+  "newProperties": [
+    {
+      "name": "video",
+      "description": "Reference to a video",
+      "required": true,
+      "property_type": { "Single": { "Reference": { "className": "Video" } } }
+    }
+  ]
+}
