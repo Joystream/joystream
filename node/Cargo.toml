@@ -3,7 +3,7 @@ authors = ['Joystream contributors']
 build = 'build.rs'
 edition = '2018'
 name = 'joystream-node'
-version = '3.4.1'
+version = '4.0.0'
 default-run = "joystream-node"
 
 [[bin]]
@@ -17,7 +17,7 @@ crate-type = ["cdylib", "rlib"]
 # third-party dependencies
 serde = { version = "1.0.102", features = ["derive"] }
 futures = { version = "0.3.1", features = ["compat"] }
-jsonrpc-core = "14.2.0"
+jsonrpc-core = "15.0.0"
 structopt = { version = "0.3.8", optional = true}
 serde_json = '1.0'
 codec = { package = "parity-scale-codec", version = "1.3.1" }
@@ -53,6 +53,7 @@ sc-keystore = { package = 'sc-keystore', git = 'https://github.com/paritytech/su
 sc-consensus-babe-rpc = { package = 'sc-consensus-babe-rpc', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
 sc-finality-grandpa-rpc = { package = 'sc-finality-grandpa-rpc', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
 sc-rpc-api = { package = 'sc-rpc-api', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
+sc-rpc = { package = 'sc-rpc', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
 sc-executor = { package = 'sc-executor', git = 'https://github.com/paritytech/substrate.git', rev = 'a200cdb93c6af5763b9c7bf313fa708764ac88ca' }
 
 # frame dependencies

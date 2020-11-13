@@ -30,23 +30,24 @@
 
 #![warn(missing_docs)]
 
-use std::sync::Arc;
-
-use node_runtime::UncheckedExtrinsic;
 use node_runtime::{opaque::Block, AccountId, Balance, BlockNumber, Hash, Index};
 use sc_consensus_babe::{Config, Epoch};
 use sc_consensus_babe_rpc::BabeRpcHandler;
 use sc_consensus_epochs::SharedEpochChanges;
-use sc_finality_grandpa::{SharedAuthoritySet, SharedVoterState};
+use sc_finality_grandpa::{
+    FinalityProofProvider, GrandpaJustificationStream, SharedAuthoritySet, SharedVoterState,
+};
 use sc_finality_grandpa_rpc::GrandpaRpcHandler;
 use sc_keystore::KeyStorePtr;
-use sc_rpc_api::DenyUnsafe;
+use sc_rpc::SubscriptionTaskExecutor;
+pub use sc_rpc_api::DenyUnsafe;
 use sp_api::ProvideRuntimeApi;
 use sp_block_builder::BlockBuilder;
 use sp_blockchain::{Error as BlockChainError, HeaderBackend, HeaderMetadata};
 use sp_consensus::SelectChain;
 use sp_consensus_babe::BabeApi;
 use sp_transaction_pool::TransactionPool;
+use std::sync::Arc;
 
 /// Light client extra dependencies.
 pub struct LightDeps<C, F, P> {
@@ -71,15 +72,21 @@ pub struct BabeDeps {
 }
 
 /// Extra dependencies for GRANDPA
-pub struct GrandpaDeps {
+pub struct GrandpaDeps<B> {
     /// Voting round info.
     pub shared_voter_state: SharedVoterState,
     /// Authority set info.
     pub shared_authority_set: SharedAuthoritySet<Hash, BlockNumber>,
+    /// Receives notifications about justification events from Grandpa.
+    pub justification_stream: GrandpaJustificationStream<Block>,
+    /// Executor to drive the subscription manager in the Grandpa RPC handler.
+    pub subscription_executor: SubscriptionTaskExecutor,
+    /// Finality proof provider.
+    pub finality_provider: Arc<FinalityProofProvider<B, Block>>,
 }
 
 /// Full client dependencies.
-pub struct FullDeps<C, P, SC> {
+pub struct FullDeps<C, P, SC, B> {
     /// The client instance to use.
     pub client: Arc<C>,
     /// Transaction pool instance.
@@ -91,26 +98,28 @@ pub struct FullDeps<C, P, SC> {
     /// BABE specific dependencies.
     pub babe: BabeDeps,
     /// GRANDPA specific dependencies.
-    pub grandpa: GrandpaDeps,
+    pub grandpa: GrandpaDeps<B>,
 }
 
+/// A IO handler that uses all Full RPC extensions.
+pub type IoHandler = jsonrpc_core::IoHandler<sc_rpc::Metadata>;
+
 /// Instantiate all Full RPC extensions.
-pub fn create_full<C, P, M, SC>(deps: FullDeps<C, P, SC>) -> jsonrpc_core::IoHandler<M>
+pub fn create_full<C, P, SC, B>(
+    deps: FullDeps<C, P, SC, B>,
+) -> jsonrpc_core::IoHandler<sc_rpc_api::Metadata>
 where
     C: ProvideRuntimeApi<Block>,
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
     C: Send + Sync + 'static,
     C::Api: substrate_frame_rpc_system::AccountNonceApi<Block, AccountId, Index>,
-    C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<
-        Block,
-        Balance,
-        UncheckedExtrinsic,
-    >,
+    C::Api: pallet_transaction_payment_rpc::TransactionPaymentRuntimeApi<Block, Balance>,
     C::Api: BabeApi<Block>,
     C::Api: BlockBuilder<Block>,
     P: TransactionPool + 'static,
-    M: jsonrpc_core::Metadata + Default,
     SC: SelectChain<Block> + 'static,
+    B: sc_client_api::Backend<Block> + Send + Sync + 'static,
+    B::State: sc_client_api::backend::StateBackend<sp_runtime::traits::HashFor<Block>>,
 {
     use pallet_transaction_payment_rpc::{TransactionPayment, TransactionPaymentApi};
     use substrate_frame_rpc_system::{FullSystem, SystemApi};
@@ -124,6 +133,7 @@ where
         babe,
         grandpa,
     } = deps;
+
     let BabeDeps {
         keystore,
         babe_config,
@@ -132,6 +142,9 @@ where
     let GrandpaDeps {
         shared_voter_state,
         shared_authority_set,
+        justification_stream,
+        subscription_executor,
+        finality_provider,
     } = grandpa;
 
     io.extend_with(SystemApi::to_delegate(FullSystem::new(
@@ -139,9 +152,6 @@ where
         pool,
         deny_unsafe,
     )));
-    // Making synchronous calls in light client freezes the browser currently,
-    // more context: https://github.com/paritytech/substrate/pull/3480
-    // These RPCs should use an asynchronous caller instead.
     io.extend_with(TransactionPaymentApi::to_delegate(TransactionPayment::new(
         client.clone(),
     )));
@@ -156,7 +166,13 @@ where
         ),
     ));
     io.extend_with(sc_finality_grandpa_rpc::GrandpaApi::to_delegate(
-        GrandpaRpcHandler::new(shared_authority_set, shared_voter_state),
+        GrandpaRpcHandler::new(
+            shared_authority_set,
+            shared_voter_state,
+            justification_stream,
+            subscription_executor,
+            finality_provider,
+        ),
     ));
 
     io
