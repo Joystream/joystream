@@ -2280,10 +2280,7 @@ impl<T: Trait> Module<T> {
 
         // Ensure curator is still active
         ensure!(
-            match curator.stage {
-                CuratorRoleStage::Active => true,
-                _ => false,
-            },
+            matches!(curator.stage, CuratorRoleStage::Active),
             MSG_CURATOR_IS_NOT_ACTIVE
         );
 

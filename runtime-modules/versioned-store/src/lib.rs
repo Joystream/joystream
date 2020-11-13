@@ -697,7 +697,9 @@ impl<T: Trait> Module<T> {
         }
     }
 
+    // Preserve special formatting.
     #[rustfmt::skip]
+    #[allow(clippy::match_like_matches_macro)]
     pub fn does_prop_value_match_type(
         value: PropertyValue,
         prop: Property,

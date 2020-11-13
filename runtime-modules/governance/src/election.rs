@@ -832,10 +832,7 @@ decl_module! {
             let stage = Self::stage();
             ensure!(Self::stage().is_some(), "election not running");
 
-            let is_announcing = match stage.unwrap() {
-                ElectionStage::Announcing(_) => true,
-                _ => false
-            };
+            let is_announcing = matches!(stage.unwrap(), ElectionStage::Announcing(_));
             ensure!(is_announcing, "election not in announcing stage");
 
             // minimum stake on first attempt to apply
@@ -856,10 +853,7 @@ decl_module! {
             let stage = Self::stage();
             ensure!(Self::stage().is_some(), "election not running");
 
-            let is_voting = match stage.unwrap() {
-                ElectionStage::Voting(_) => true,
-                _ => false
-            };
+            let is_voting =  matches!(stage.unwrap(), ElectionStage::Voting(_));
             ensure!(is_voting, "election not in voting stage");
 
             ensure!(stake >= Self::min_voting_stake(), "voting stake too low");
@@ -876,10 +870,7 @@ decl_module! {
             let stage = Self::stage();
             ensure!(Self::stage().is_some(), "election not running");
 
-            let is_revealing = match stage.unwrap() {
-                ElectionStage::Revealing(_) => true,
-                _ => false
-            };
+            let is_revealing = matches!(stage.unwrap(), ElectionStage::Revealing(_));
             ensure!(is_revealing, "election not in revealing stage");
 
             Self::try_reveal_vote(sender.clone(), commitment, vote.clone(), salt)?;
