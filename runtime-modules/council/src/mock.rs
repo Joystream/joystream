@@ -63,7 +63,7 @@ impl Trait for Runtime {
 
     type Referendum = referendum::Module<RuntimeReferendum, ReferendumInstance>;
 
-    type CouncilUserId = <Lock1 as membership::Trait>::MemberId;
+    type MembershipId = <Lock1 as membership::Trait>::MemberId;
     type MinNumberOfExtraCandidates = MinNumberOfExtraCandidates;
     type CouncilSize = CouncilSize;
     type AnnouncingPeriodDuration = AnnouncingPeriodDuration;
@@ -74,10 +74,10 @@ impl Trait for Runtime {
     type ElectedMemberLock = Lock2;
 
     fn is_council_member_account(
-        council_user_id: &Self::CouncilUserId,
+        membership_id: &Self::MembershipId,
         account_id: &<Self as system::Trait>::AccountId,
     ) -> bool {
-        council_user_id == account_id
+        membership_id == account_id
     }
 }
 
@@ -313,8 +313,8 @@ pub enum OriginType<AccountId> {
 #[derive(Clone)]
 pub struct CandidateInfo<T: Trait> {
     pub origin: OriginType<T::AccountId>,
-    pub account_id: T::CouncilUserId,
-    pub council_user_id: T::CouncilUserId,
+    pub account_id: T::MembershipId,
+    pub membership_id: T::MembershipId,
     pub candidate: CandidateOf<T>,
 }
 
@@ -430,7 +430,7 @@ pub struct InstanceMockUtils<T: Trait> {
 impl<T: Trait> InstanceMockUtils<T>
 where
     T::AccountId: From<u64>,
-    T::CouncilUserId: From<u64>,
+    T::MembershipId: From<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
     BalanceReferendum<T>: From<u64> + Into<u64>,
 {
@@ -477,7 +477,7 @@ where
         CandidateInfo {
             origin,
             candidate,
-            council_user_id: account_id.into(),
+            membership_id: account_id.into(),
             account_id: account_id.into(),
         }
     }
@@ -532,7 +532,7 @@ pub struct InstanceMocks<T: Trait> {
 impl<T: Trait> InstanceMocks<T>
 where
     T::AccountId: From<u64> + Into<u64>,
-    T::CouncilUserId: From<u64>,
+    T::MembershipId: From<u64>,
     T::BlockNumber: From<u64> + Into<u64>,
     BalanceReferendum<T>: From<u64> + Into<u64>,
 
@@ -542,7 +542,7 @@ where
         + Into<<RuntimeReferendum as system::Trait>::Origin>,
     <T::Referendum as ReferendumManager<T::Origin, T::AccountId, T::Hash>>::VotePower:
         From<u64> + Into<u64>,
-    T::CouncilUserId: Into<T::AccountId>,
+    T::MembershipId: Into<T::AccountId>,
 {
     pub fn check_announcing_period(
         expected_update_block_number: T::BlockNumber,
@@ -629,29 +629,26 @@ where
         });
     }
 
-    pub fn check_announcing_stake(
-        council_user_id: &T::CouncilUserId,
-        amount: BalanceReferendum<T>,
-    ) {
-        assert_eq!(Candidates::<T>::contains_key(council_user_id), true);
+    pub fn check_announcing_stake(membership_id: &T::MembershipId, amount: BalanceReferendum<T>) {
+        assert_eq!(Candidates::<T>::contains_key(membership_id), true);
 
-        assert_eq!(Candidates::<T>::get(council_user_id).stake, amount);
+        assert_eq!(Candidates::<T>::get(membership_id).stake, amount);
     }
 
-    pub fn check_candidacy_note(council_user_id: &T::CouncilUserId, note: Option<&[u8]>) {
-        assert_eq!(Candidates::<T>::contains_key(council_user_id), true);
+    pub fn check_candidacy_note(membership_id: &T::MembershipId, note: Option<&[u8]>) {
+        assert_eq!(Candidates::<T>::contains_key(membership_id), true);
 
         let note_hash = match note {
             Some(tmp_note) => Some(T::Hashing::hash(tmp_note)),
             None => None,
         };
 
-        assert_eq!(Candidates::<T>::get(council_user_id).note_hash, note_hash,);
+        assert_eq!(Candidates::<T>::get(membership_id).note_hash, note_hash,);
     }
 
     pub fn set_candidacy_note(
         origin: OriginType<T::AccountId>,
-        council_user_id: T::CouncilUserId,
+        membership_id: T::MembershipId,
         note: &[u8],
         expected_result: Result<(), Error<T>>,
     ) {
@@ -659,7 +656,7 @@ where
         assert_eq!(
             Module::<T>::set_candidacy_note(
                 InstanceMockUtils::<T>::mock_origin(origin),
-                council_user_id,
+                membership_id,
                 note.to_vec()
             ),
             expected_result,
@@ -669,12 +666,12 @@ where
             return;
         }
 
-        Self::check_candidacy_note(&council_user_id, Some(note));
+        Self::check_candidacy_note(&membership_id, Some(note));
     }
 
     pub fn announce_candidacy(
         origin: OriginType<T::AccountId>,
-        member_id: T::CouncilUserId,
+        member_id: T::MembershipId,
         stake: BalanceReferendum<T>,
         expected_result: Result<(), Error<T>>,
     ) {
@@ -866,21 +863,9 @@ where
             .collect();
 
         let expected_final_council_members: Vec<CouncilMemberOf<T>> = vec![
-            (
-                candidates[3].candidate.clone(),
-                candidates[3].council_user_id,
-            )
-                .into(),
-            (
-                candidates[0].candidate.clone(),
-                candidates[0].council_user_id,
-            )
-                .into(),
-            (
-                candidates[1].candidate.clone(),
-                candidates[1].council_user_id,
-            )
-                .into(),
+            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
+            (candidates[0].candidate.clone(), candidates[0].membership_id).into(),
+            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
         ];
 
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C

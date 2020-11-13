@@ -166,7 +166,7 @@ fn council_candidacy_invalid_member() {
             candidate.origin.clone(),
             candidate.account_id.clone(),
             candidate.candidate.stake.clone(),
-            Err(Error::CouncilUserIdNotMatchAccount),
+            Err(Error::MembershipIdNotMatchAccount),
         );
     });
 }
@@ -307,21 +307,9 @@ fn council_two_consecutive_rounds() {
             .collect();
 
         let expected_final_council_members: Vec<CouncilMemberOf<Runtime>> = vec![
-            (
-                candidates[3].candidate.clone(),
-                candidates[3].council_user_id,
-            )
-                .into(),
-            (
-                candidates[0].candidate.clone(),
-                candidates[0].council_user_id,
-            )
-                .into(),
-            (
-                candidates[1].candidate.clone(),
-                candidates[1].council_user_id,
-            )
-                .into(),
+            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
+            (candidates[0].candidate.clone(), candidates[0].membership_id).into(),
+            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
         ];
 
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
@@ -365,21 +353,9 @@ fn council_two_consecutive_rounds() {
             .collect();
 
         let expected_final_council_members2: Vec<CouncilMemberOf<Runtime>> = vec![
-            (
-                candidates[3].candidate.clone(),
-                candidates[3].council_user_id,
-            )
-                .into(),
-            (
-                candidates[1].candidate.clone(),
-                candidates[1].council_user_id,
-            )
-                .into(),
-            (
-                candidates[2].candidate.clone(),
-                candidates[2].council_user_id,
-            )
-                .into(),
+            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
+            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
+            (candidates[2].candidate.clone(), candidates[2].membership_id).into(),
         ];
 
         let params2 = CouncilCycleParams {
@@ -410,13 +386,13 @@ fn council_cant_candidate_repeatedly() {
 
         Mocks::announce_candidacy(
             candidate.origin.clone(),
-            candidate.council_user_id,
+            candidate.membership_id,
             council_settings.min_candidate_stake,
             Ok(()),
         );
         Mocks::announce_candidacy(
             candidate.origin.clone(),
-            candidate.council_user_id,
+            candidate.membership_id,
             council_settings.min_candidate_stake,
             Err(Error::CantCandidateTwice),
         );
@@ -487,21 +463,9 @@ fn council_candidate_stake_can_be_unlocked() {
             .collect();
 
         let expected_final_council_members: Vec<CouncilMemberOf<Runtime>> = vec![
-            (
-                candidates[3].candidate.clone(),
-                candidates[3].council_user_id,
-            )
-                .into(),
-            (
-                candidates[0].candidate.clone(),
-                candidates[0].council_user_id,
-            )
-                .into(),
-            (
-                candidates[1].candidate.clone(),
-                candidates[1].council_user_id,
-            )
-                .into(),
+            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
+            (candidates[0].candidate.clone(), candidates[0].membership_id).into(),
+            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
         ];
 
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
@@ -587,21 +551,9 @@ fn council_candidate_stake_automaticly_converted() {
             .collect();
 
         let expected_final_council_members: Vec<CouncilMemberOf<Runtime>> = vec![
-            (
-                candidates[3].candidate.clone(),
-                candidates[3].council_user_id,
-            )
-                .into(),
-            (
-                candidates[0].candidate.clone(),
-                candidates[0].council_user_id,
-            )
-                .into(),
-            (
-                candidates[1].candidate.clone(),
-                candidates[1].council_user_id,
-            )
-                .into(),
+            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
+            (candidates[0].candidate.clone(), candidates[0].membership_id).into(),
+            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
         ];
 
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
@@ -671,21 +623,9 @@ fn council_member_stake_is_locked() {
             .collect();
 
         let expected_final_council_members: Vec<CouncilMemberOf<Runtime>> = vec![
-            (
-                candidates[3].candidate.clone(),
-                candidates[3].council_user_id,
-            )
-                .into(),
-            (
-                candidates[0].candidate.clone(),
-                candidates[0].council_user_id,
-            )
-                .into(),
-            (
-                candidates[1].candidate.clone(),
-                candidates[1].council_user_id,
-            )
-                .into(),
+            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
+            (candidates[0].candidate.clone(), candidates[0].membership_id).into(),
+            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
         ];
 
         // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
@@ -761,21 +701,9 @@ fn council_member_stake_automaticly_unlocked() {
             .collect();
 
         let expected_final_council_members2: Vec<CouncilMemberOf<Runtime>> = vec![
-            (
-                candidates[3].candidate.clone(),
-                candidates[3].council_user_id,
-            )
-                .into(),
-            (
-                candidates[1].candidate.clone(),
-                candidates[1].council_user_id,
-            )
-                .into(),
-            (
-                candidates[2].candidate.clone(),
-                candidates[2].council_user_id,
-            )
-                .into(),
+            (candidates[3].candidate.clone(), candidates[3].membership_id).into(),
+            (candidates[1].candidate.clone(), candidates[1].membership_id).into(),
+            (candidates[2].candidate.clone(), candidates[2].membership_id).into(),
         ];
 
         let params2 = CouncilCycleParams {
@@ -850,7 +778,7 @@ fn council_candidacy_set_note() {
         Mocks::simulate_council_cycle(params.clone());
 
         // prepare values for note testing
-        let council_user_id = candidates[0].clone().council_user_id;
+        let membership_id = candidates[0].clone().membership_id;
         let origin = candidates[0].origin.clone();
         let note1 = "MyNote1".as_bytes();
         let note2 = "MyNote2".as_bytes();
@@ -858,19 +786,19 @@ fn council_candidacy_set_note() {
         let note4 = "MyNote4".as_bytes();
 
         // check note is not set yet
-        Mocks::check_candidacy_note(&council_user_id, None);
+        Mocks::check_candidacy_note(&membership_id, None);
 
         // set note - announcement stage
-        Mocks::set_candidacy_note(origin.clone(), council_user_id.clone(), note1, Ok(()));
+        Mocks::set_candidacy_note(origin.clone(), membership_id.clone(), note1, Ok(()));
 
         // change note - announcement stage
-        Mocks::set_candidacy_note(origin.clone(), council_user_id.clone(), note2, Ok(()));
+        Mocks::set_candidacy_note(origin.clone(), membership_id.clone(), note2, Ok(()));
 
         // forward to election-voting period
         MockUtils::increase_block_number(council_settings.announcing_stage_duration + 1);
 
         // change note - election stage
-        Mocks::set_candidacy_note(origin.clone(), council_user_id.clone(), note3, Ok(()));
+        Mocks::set_candidacy_note(origin.clone(), membership_id.clone(), note3, Ok(()));
 
         // vote with all voters
         params.voters.iter().for_each(|voter| {
@@ -908,7 +836,7 @@ fn council_candidacy_set_note() {
         // check that note can be changed no longer
         Mocks::set_candidacy_note(
             origin.clone(),
-            council_user_id.clone(),
+            membership_id.clone(),
             note4,
             Err(Error::NotCandidatingNow),
         );
@@ -935,7 +863,7 @@ fn council_repeated_candidacy_unstakes() {
 
         // check candidacy stake from 1st cycle is locked
         Mocks::check_announcing_stake(
-            &candidate.council_user_id,
+            &candidate.membership_id,
             council_settings.min_candidate_stake,
         );
 
@@ -947,6 +875,6 @@ fn council_repeated_candidacy_unstakes() {
         );
 
         // check candidacy
-        Mocks::check_announcing_stake(&candidate.council_user_id, new_stake);
+        Mocks::check_announcing_stake(&candidate.membership_id, new_stake);
     });
 }
