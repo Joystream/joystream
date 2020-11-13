@@ -32,6 +32,8 @@ pub type SignedExtra = (
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
 );
+/// We don't use specific Address types (like Indices).
+pub type Address = AccountId;
 
 /// Digest item type.
 pub type DigestItem = generic::DigestItem<Hash>;

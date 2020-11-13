@@ -513,9 +513,10 @@ pub fn new_light(config: Configuration) -> Result<TaskManager, ServiceError> {
 mod tests {
     use crate::service::{new_full_base, new_light_base, NewFullBase};
     use codec::Encode;
-    use node_primitives::{Block, DigestItem, Signature};
-    use node_runtime::constants::{currency::CENTS, time::SLOT_DURATION};
+    use node_runtime::opaque::Block;
+    use node_runtime::{currency::CENTS, SLOT_DURATION};
     use node_runtime::{Address, BalancesCall, Call, UncheckedExtrinsic};
+    use node_runtime::{DigestItem, Signature};
     use sc_client_api::BlockBackend;
     use sc_consensus_babe::{BabeIntermediate, CompatibleDigestItem, INTERMEDIATE_KEY};
     use sc_consensus_epochs::descendent_query;
