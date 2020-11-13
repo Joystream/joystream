@@ -29,6 +29,7 @@
 //! ## Supported extrinsics
 //! - [announce_candidacy](./struct.Module.html#method.announce_candidacy)
 //! - [release_candidacy_stake](./struct.Module.html#method.release_candidacy_stake)
+//! - [set_candidacy_note](./struct.Module.html#method.set_candidacy_note)
 //!
 //! ## Important functions
 //! These functions have to be called by the runtime for the council to work properly.
@@ -38,7 +39,7 @@
 //! ## Dependencies:
 //! - [referendum](../referendum/index.html)
 //!
-//! NOTE: When implementing runtime for this module, don't forget to call all ReferendumConnection
+//! note_hash: When implementing runtime for this module, don't forget to call all ReferendumConnection
 //!       trait functions at proper places.
 
 /////////////////// Configuration //////////////////////////////////////////////
@@ -54,7 +55,7 @@ use frame_support::{
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
 use sp_arithmetic::traits::BaseArithmetic;
-use sp_runtime::traits::{MaybeSerialize, Member};
+use sp_runtime::traits::{Hash, MaybeSerialize, Member};
 use std::marker::PhantomData;
 use system::{ensure_signed, RawOrigin};
 
@@ -117,10 +118,11 @@ pub struct CouncilStageElection {
 /// Candidate representation.
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Encode, Decode, PartialEq, Eq, Debug, Default, Clone)]
-pub struct Candidate<AccountId, Balance> {
+pub struct Candidate<AccountId, Balance, Hash> {
     staking_account_id: AccountId,
     cycle_id: u64,
     stake: Balance,
+    note_hash: Option<Hash>,
 }
 
 /// Council member representation.
@@ -132,10 +134,11 @@ pub struct CouncilMember<AccountId, CouncilUserId, Balance> {
     stake: Balance,
 }
 
-impl<AccountId, CouncilUserId, Balance> From<(Candidate<AccountId, Balance>, CouncilUserId)>
+impl<AccountId, CouncilUserId, Balance, Hash>
+    From<(Candidate<AccountId, Balance, Hash>, CouncilUserId)>
     for CouncilMember<AccountId, CouncilUserId, Balance>
 {
-    fn from(candidate_and_user_id: (Candidate<AccountId, Balance>, CouncilUserId)) -> Self {
+    fn from(candidate_and_user_id: (Candidate<AccountId, Balance, Hash>, CouncilUserId)) -> Self {
         Self {
             staking_account_id: candidate_and_user_id.0.staking_account_id,
             council_user_id: candidate_and_user_id.1,
@@ -162,7 +165,8 @@ pub type VotePowerOf<T> = <<T as Trait>::Referendum as ReferendumManager<
 // council related aliases
 pub type CouncilMemberOf<T> =
     CouncilMember<<T as system::Trait>::AccountId, <T as Trait>::CouncilUserId, Balance<T>>;
-pub type CandidateOf<T> = Candidate<<T as system::Trait>::AccountId, Balance<T>>;
+pub type CandidateOf<T> =
+    Candidate<<T as system::Trait>::AccountId, Balance<T>, <T as system::Trait>::Hash>;
 pub type CouncilStageUpdateOf<T> = CouncilStageUpdate<<T as system::Trait>::BlockNumber>;
 
 // budget related aliases
@@ -270,7 +274,7 @@ decl_storage! {
         pub CouncilMembers get(fn council_members) config(): Vec<CouncilMemberOf<T>>;
 
         /// Map of all candidates that ever candidated and haven't unstake yet.
-        pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat) T::CouncilUserId => Candidate<T::AccountId, Balance::<T>>;
+        pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat) T::CouncilUserId => Candidate<T::AccountId, Balance::<T>, T::Hash>;
 
         /// Index of the current candidacy period. It is incremented everytime announcement period is.
         pub CurrentAnnouncementCycleId get(fn current_announcement_cycle_id) config(): u64;
@@ -306,6 +310,9 @@ decl_event! {
 
         /// Candidate has withdrawn his candidacy
         CandidacyWithdraw(CouncilUserId),
+
+        /// The candidate has set a new note for their candidacy
+        CandidacyNoteSet(CouncilUserId, Vec<u8>),
     }
 }
 
@@ -450,6 +457,28 @@ decl_module! {
 
             Ok(())
         }
+
+        /// Set short description for the user's candidacy. Can be called anytime during user's candidacy.
+        #[weight = 10_000_000]
+        pub fn set_candidacy_note(origin, council_user_id: T::CouncilUserId, note: Vec<u8>) -> Result<(), Error<T>> {
+            // ensure action can be started
+            EnsureChecks::<T>::can_set_candidacy_note(origin, &council_user_id)?;
+
+            //
+            // == MUTATION SAFE ==
+            //
+
+            // calculate note's hash
+            let note_hash = T::Hashing::hash(note.as_slice());
+
+            // update state
+            Mutations::<T>::set_candidacy_note(&council_user_id, &note_hash);
+
+            // emit event
+            Self::deposit_event(RawEvent::CandidacyNoteSet(council_user_id, note));
+
+            Ok(())
+        }
     }
 }
 
@@ -553,6 +582,7 @@ impl<T: Trait> Module<T> {
             staking_account_id: account_id,
             cycle_id: CurrentAnnouncementCycleId::get(),
             stake,
+            note_hash: None,
         }
     }
 }
@@ -757,6 +787,11 @@ impl<T: Trait> Mutations<T> {
         // setup reward automatic payments
         budget.setup_auto_payments(&T::ElectedMemberRewardPeriod::get());
     }
+
+    /// Set a new candidacy note for a candidate in the current election.
+    fn set_candidacy_note(council_user_id: &T::CouncilUserId, note_hash: &T::Hash) {
+        Candidates::<T>::mutate(council_user_id, |value| value.note_hash = Some(*note_hash));
+    }
 }
 
 /////////////////// Ensure checks //////////////////////////////////////////////
@@ -834,7 +869,7 @@ impl<T: Trait> EnsureChecks<T> {
         })?;
 
         // prevent user from candidating twice in the same election
-        // NOTE: repeated candidacy without releasing stake is possible and the (still) locked stake will be reused
+        // note_hash: repeated candidacy without releasing stake is possible and the (still) locked stake will be reused
         if Candidates::<T>::contains_key(council_user_id)
             && Candidates::<T>::get(council_user_id).cycle_id == CurrentAnnouncementCycleId::get()
         {
@@ -904,5 +939,28 @@ impl<T: Trait> EnsureChecks<T> {
         };
 
         Ok(candidate.staking_account_id)
+    }
+
+    /// Ensures there is no problem in setting new note for the candidacy.
+    fn can_set_candidacy_note(
+        origin: T::Origin,
+        council_user_id: &T::CouncilUserId,
+    ) -> Result<(), Error<T>> {
+        // ensure user's membership
+        Self::ensure_user_membership(origin, council_user_id)?;
+
+        // escape when no previous candidacy stake is present
+        if !Candidates::<T>::contains_key(council_user_id) {
+            return Err(Error::NotCandidatingNow);
+        }
+
+        let candidate = Candidates::<T>::get(council_user_id);
+
+        // ensure candidacy was announced in current election cycle
+        if candidate.cycle_id != CurrentAnnouncementCycleId::get() {
+            return Err(Error::NotCandidatingNow);
+        }
+
+        Ok(())
     }
 }
