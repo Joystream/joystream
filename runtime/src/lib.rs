@@ -537,6 +537,9 @@ impl forum::StorageLimits for MapLimits {
     type MaxCategories = MaxCategories;
 }
 
+// Alias for forum working group
+type ForumGroup<T> = working_group::Module<T, ForumWorkingGroupInstance>;
+
 impl forum::Trait for Runtime {
     type Event = Event;
     //type MembershipRegistry = ShimMembershipRegistry;
@@ -551,7 +554,17 @@ impl forum::Trait for Runtime {
     type MapLimits = MapLimits;
 
     fn is_lead(_account_id: &AccountId) -> bool {
-        true
+        // get current lead id
+        let maybe_current_lead_id = ForumGroup::<Runtime>::current_lead();
+        if let Some(ref current_lead_id) = maybe_current_lead_id {
+            if let Ok(worker) = ForumGroup::<Runtime>::ensure_worker_exists(current_lead_id) {
+                *_account_id == worker.role_account_id
+            } else {
+                false
+            }
+        } else {
+            false
+        }
     }
 
     fn is_forum_member(
@@ -570,6 +583,9 @@ impl forum::Trait for Runtime {
     }
 }
 
+// The forum working group instance alias.
+pub type ForumWorkingGroupInstance = working_group::Instance1;
+
 // The storage working group instance alias.
 pub type StorageWorkingGroupInstance = working_group::Instance2;
 
@@ -578,6 +594,11 @@ pub type ContentDirectoryWorkingGroupInstance = working_group::Instance3;
 
 parameter_types! {
     pub const MaxWorkerNumberLimit: u32 = 100;
+}
+
+impl working_group::Trait<ForumWorkingGroupInstance> for Runtime {
+    type Event = Event;
+    type MaxWorkerNumberLimit = MaxWorkerNumberLimit;
 }
 
 impl working_group::Trait<StorageWorkingGroupInstance> for Runtime {
@@ -659,6 +680,11 @@ parameter_types! {
     pub const SurchargeReward: Balance = 0; // no reward
 }
 
+/// Forum identifiers for user, moderator and category
+pub type ForumUserId = u64;
+pub type ModeratorId = u64;
+pub type CategoryId = u64;
+
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
 /// the specifics of the runtime. They can then be made to be agnostic over specific formats
 /// of data like extrinsics, allowing for them to continue syncing the network through upgrades
@@ -724,7 +750,7 @@ construct_runtime!(
         ProposalsDiscussion: proposals_discussion::{Module, Call, Storage, Event<T>},
         ProposalsCodex: proposals_codex::{Module, Call, Storage, Config<T>},
         // --- Working groups
-        // reserved for the future use: ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Event<T>},
+        ForumWorkingGroup: working_group::<Instance1>::{Module, Call, Storage, Config<T>, Event<T>},
         StorageWorkingGroup: working_group::<Instance2>::{Module, Call, Storage, Config<T>, Event<T>},
         ContentDirectoryWorkingGroup: working_group::<Instance3>::{Module, Call, Storage, Config<T>, Event<T>},
     }

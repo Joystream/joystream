@@ -34,7 +34,7 @@ use node_runtime::{
     CouncilConfig, CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
     DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
     MembersConfig, Moment, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
-    StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig, SystemConfig,
+    StakerStatus, StakingConfig, StorageWorkingGroupConfig, ForumWorkingGroupConfig, SudoConfig, SystemConfig,
     VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
 };
 
@@ -313,6 +313,13 @@ pub fn testnet_genesis(
         }),
         data_object_storage_registry: Some(DataObjectStorageRegistryConfig {
             first_relationship_id: 1,
+        }),
+        working_group_Instance1: Some(ForumWorkingGroupConfig {
+            phantom: Default::default(),
+            working_group_mint_capacity: 0,
+            opening_human_readable_text_constraint: default_text_constraint,
+            worker_application_human_readable_text_constraint: default_text_constraint,
+            worker_exit_rationale_text_constraint: default_text_constraint,
         }),
         working_group_Instance2: Some(StorageWorkingGroupConfig {
             phantom: Default::default(),
