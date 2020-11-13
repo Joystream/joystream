@@ -571,11 +571,20 @@ impl forum::Trait for Runtime {
         _account_id: &<Self as system::Trait>::AccountId,
         _forum_user_id: &Self::ForumUserId,
     ) -> bool {
-        true
+        membership::Module::<Runtime>::ensure_is_controller_account_for_member(
+            _forum_user_id, _account_id,
+        )
+        .is_ok()
     }
 
     fn is_moderator(_account_id: &Self::AccountId, _moderator_id: &Self::ModeratorId) -> bool {
-        true
+        if let Ok(worker) =
+            ForumGroup::<Runtime>::ensure_worker_exists(_moderator_id)
+        {
+            *_account_id == worker.role_account_id
+        } else {
+            false
+        }
     }
 
     fn calculate_hash(text: &[u8]) -> Self::Hash {

@@ -1,7 +1,7 @@
 use codec::Decode;
 use node_runtime::{
     forum,
-    forum::{InputValidationLengthConstraint, Category, Post, Thread},
+    forum::{Category, InputValidationLengthConstraint, Post, Thread},
     AccountId, ForumConfig, Moment, PostId, Runtime, ThreadId,
 };
 use serde::Deserialize;
@@ -39,7 +39,6 @@ struct EncodedForumData {
     /// hex encoded poll items input validation constraint
     poll_items_constraint: String,
     data_migration_done: String,
-
 }
 
 impl EncodedForumData {
@@ -88,11 +87,10 @@ impl EncodedForumData {
                 Decode::decode(&mut poll_items_constraint.as_slice()).unwrap()
             },
             data_migration_done: {
-                let data_migration_done =
-                    hex::decode(&self.data_migration_done[2..].as_bytes())
-                        .expect("failed to parse thread hex string");
+                let data_migration_done = hex::decode(&self.data_migration_done[2..].as_bytes())
+                    .expect("failed to parse thread hex string");
                 Decode::decode(&mut data_migration_done.as_slice()).unwrap()
-            }
+            },
         }
     }
 }
@@ -152,6 +150,6 @@ fn create(_forum_sudo: AccountId, forum_data: EncodedForumData) -> ForumConfig {
         next_thread_id,
         next_post_id,
         category_counter: next_category_id - 1,
-        data_migration_done: forum_data.data_migration_done
+        data_migration_done: forum_data.data_migration_done,
     }
 }

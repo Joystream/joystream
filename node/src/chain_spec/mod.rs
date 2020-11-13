@@ -32,10 +32,10 @@ use node_runtime::{
     membership, AuthorityDiscoveryConfig, BabeConfig, Balance, BalancesConfig,
     ContentDirectoryConfig, ContentDirectoryWorkingGroupConfig, ContentWorkingGroupConfig,
     CouncilConfig, CouncilElectionConfig, DataDirectoryConfig, DataObjectStorageRegistryConfig,
-    DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, GrandpaConfig, ImOnlineConfig,
-    MembersConfig, Moment, ProposalsCodexConfig, SessionConfig, SessionKeys, Signature,
-    StakerStatus, StakingConfig, StorageWorkingGroupConfig, ForumWorkingGroupConfig, SudoConfig, SystemConfig,
-    VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
+    DataObjectTypeRegistryConfig, ElectionParameters, ForumConfig, ForumWorkingGroupConfig,
+    GrandpaConfig, ImOnlineConfig, MembersConfig, Moment, ProposalsCodexConfig, SessionConfig,
+    SessionKeys, Signature, StakerStatus, StakingConfig, StorageWorkingGroupConfig, SudoConfig,
+    SystemConfig, VersionedStoreConfig, VersionedStorePermissionsConfig, DAYS, WASM_BINARY,
 };
 
 // Exported to be used by chain-spec-builder
