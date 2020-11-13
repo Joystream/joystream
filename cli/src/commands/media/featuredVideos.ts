@@ -9,9 +9,9 @@ export default class FeaturedVideosCommand extends ContentDirectoryCommandBase {
   async run() {
     const featuredEntries = await this.entitiesByClassAndOwner('FeaturedVideo')
     const featured = await Promise.all(
-      featuredEntries.map(([, featuredVidEntity]) =>
-        this.parseToKnownEntityJson<FeaturedVideoEntity>(featuredVidEntity)
-      )
+      featuredEntries
+        .filter(([, entity]) => entity.supported_schemas.toArray().length) // Ignore FeaturedVideo entities without schema
+        .map(([, entity]) => this.parseToKnownEntityJson<FeaturedVideoEntity>(entity))
     )
 
     const videoIds: number[] = featured.map(({ video: videoId }) => videoId)

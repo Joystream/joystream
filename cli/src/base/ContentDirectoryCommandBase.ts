@@ -234,7 +234,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     }
 
     if (requireSchema && !entity.supported_schemas.toArray().length) {
-      this.error(`${requiredClass || ''}Entity of id ${id} has no schema support added!`)
+      this.error(`${requiredClass || ''} entity of id ${id} has no schema support added!`)
     }
 
     return entity
@@ -337,7 +337,7 @@ export default abstract class ContentDirectoryCommandBase extends RolesCommandBa
     const defaultValues = entityClass.properties
       .map((p) => p.name.toString())
       .reduce((d, propName) => {
-        if (includedProps?.includes(propName)) {
+        if (!includedProps || includedProps.includes(propName)) {
           d[propName] = chalk.grey('[not set]')
         }
         return d
