@@ -4,6 +4,7 @@ use crate::Module as ProposalsDiscussion;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
 use membership::Module as Membership;
+use sp_std::cmp::min;
 use sp_std::prelude::*;
 use system as frame_system;
 use system::EventRecord;
@@ -18,16 +19,14 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-// TODO: This will only work as long as max_handle_length >= 4
 fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     let min_handle_length = Membership::<T>::min_handle_length();
-    // If the index is ever different from u32 change this
-    let mut handle = vec![
-        get_byte(id, 0),
-        get_byte(id, 1),
-        get_byte(id, 2),
-        get_byte(id, 3),
-    ];
+
+    let mut handle = vec![];
+
+    for i in 0..min(Membership::<T>::max_handle_length().try_into().unwrap(), 4) {
+        handle.push(get_byte(id, i));
+    }
 
     while handle.len() < (min_handle_length as usize) {
         handle.push(0u8);
@@ -68,18 +67,18 @@ fn member_account<T: membership::Trait>(
     (account_id, T::MemberId::from(id.try_into().unwrap()))
 }
 
+const MAX_BYTES: u32 = 50000;
+
 benchmarks! {
     _ { }
 
     add_post {
         let i in 1 .. T::MaxWhiteListSize::get();
 
-        // TODO: this parameter doesn't affect the running time
-        // maybe we should bound it here with the UI limit?
-        let j in 0 .. 50000;
+        let j in 0 .. MAX_BYTES;
 
         // We do this to ignore the id 0 because the `Test` runtime
-        // returns 0 as an invalid id but 0 as a valid one
+        // returns 0 as an invalid id but 1 as a valid one
         let (_, _) = member_account::<T>("member", 0);
         let (account_id, caller_member_id) = member_account::<T>("caller_member", 1);
 
@@ -163,14 +162,12 @@ benchmarks! {
         let (_, _) = member_account::<T>("member", 0);
         let (account_id, caller_member_id) = member_account::<T>("caller_member", 1);
 
-
         let thread_id = ProposalsDiscussion::<T>::create_thread(
             caller_member_id,
             ThreadMode::Open
         ).unwrap();
 
         assert!(ThreadById::<T>::contains_key(thread_id), "Thread not created");
-
 
         let mut whitelisted_members = vec![caller_member_id];
 
