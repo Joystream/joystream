@@ -233,7 +233,7 @@ decl_storage! {
         pub Candidates get(fn candidates) config(): map hasher(blake2_128_concat) T::CouncilUserId => Candidate<T::AccountId, Balance::<T>, T::Hash>;
 
         /// Index of the current candidacy period. It is incremented everytime announcement period is.
-        pub CurrentAnnouncementCycleId get(fn current_announcement_cycle_id) config(): u64;
+        pub AnnouncementPeriodNr get(fn announcement_period_nr) config(): u64;
     }
 }
 
@@ -471,7 +471,6 @@ impl<T: Trait> Module<T> {
 
         // reset announcing period when not enough candidates registered
         if stage_data.candidates_count < candidate_count {
-            Mutations::<T>::next_announcing_cycle();
             Mutations::<T>::start_announcing_period();
 
             // emit event
@@ -493,7 +492,6 @@ impl<T: Trait> Module<T> {
         let council_size = T::CouncilSize::get();
         if winners.len() as u64 != council_size {
             // reset candidacy announcement period
-            Mutations::<T>::next_announcing_cycle();
             Mutations::<T>::start_announcing_period();
 
             // emit event
@@ -544,7 +542,7 @@ impl<T: Trait> Module<T> {
     ) -> CandidateOf<T> {
         Candidate {
             staking_account_id,
-            cycle_id: CurrentAnnouncementCycleId::get(),
+            cycle_id: AnnouncementPeriodNr::get(),
             stake,
             note_hash: None,
         }
@@ -585,7 +583,7 @@ impl<T: Trait> ReferendumConnection<T> for Module<T> {
 
         let candidate = Candidates::<T>::get(council_user_id);
 
-        candidate.cycle_id == CurrentAnnouncementCycleId::get()
+        candidate.cycle_id == AnnouncementPeriodNr::get()
     }
 }
 
@@ -609,12 +607,9 @@ impl<T: Trait> Mutations<T> {
             stage: CouncilStage::Announcing(stage_data),
             changed_at: block_number + 1.into(), // set next block as the start of next phase (this function is invoke on block finalization)
         });
-    }
 
-    /// Increases announcing cycle index. It should be called after election phase ends or before announcing period is reset.
-    fn next_announcing_cycle() {
         // increase anouncement cycle id
-        CurrentAnnouncementCycleId::mutate(|value| *value += 1);
+        AnnouncementPeriodNr::mutate(|value| *value += 1);
     }
 
     /// Change the council stage from the announcing to the election stage.
@@ -645,7 +640,6 @@ impl<T: Trait> Mutations<T> {
         let block_number = <system::Module<T>>::block_number();
 
         // change council state
-        Mutations::<T>::next_announcing_cycle();
         Stage::<T>::mutate(|value| {
             *value = CouncilStageUpdate {
                 stage: CouncilStage::Idle,
@@ -773,7 +767,7 @@ impl<T: Trait> EnsureChecks<T> {
             let candidate = Candidates::<T>::get(council_user_id);
 
             // prevent user from candidating twice in the same election
-            if candidate.cycle_id == CurrentAnnouncementCycleId::get() {
+            if candidate.cycle_id == AnnouncementPeriodNr::get() {
                 return Err(Error::CantCandidateTwice);
             }
 
@@ -810,8 +804,11 @@ impl<T: Trait> EnsureChecks<T> {
         let candidate = Candidates::<T>::get(council_user_id);
 
         // prevent user from releasing candidacy stake during election
-        if candidate.cycle_id == CurrentAnnouncementCycleId::get() {
-            return Err(Error::StakeStillNeeded);
+        if candidate.cycle_id == AnnouncementPeriodNr::get() {
+            match Stage::<T>::get().stage {
+                CouncilStage::Idle => (),
+                _ => return Err(Error::StakeStillNeeded),
+            }
         }
 
         Ok(candidate.staking_account_id)
@@ -832,14 +829,15 @@ impl<T: Trait> EnsureChecks<T> {
 
         let candidate = Candidates::<T>::get(council_user_id);
 
-        // ensure candidacy was announced in current election cycle
-        if candidate.cycle_id != CurrentAnnouncementCycleId::get() {
-            return Err(Error::NotCandidatingNow);
-        }
-
         // ensure candidacy announcing period is running now
         match Stage::<T>::get().stage {
-            CouncilStage::Announcing(_) => (),
+            CouncilStage::Announcing(_) => {
+                // ensure candidacy was announced in current election cycle
+                match Stage::<T>::get().stage {
+                    CouncilStage::Idle => (),
+                    _ => return Err(Error::NotCandidatingNow),
+                }
+            }
             _ => return Err(Error::CantWithdrawCandidacyNow),
         };
 
@@ -862,7 +860,7 @@ impl<T: Trait> EnsureChecks<T> {
         let candidate = Candidates::<T>::get(council_user_id);
 
         // ensure candidacy was announced in current election cycle
-        if candidate.cycle_id != CurrentAnnouncementCycleId::get() {
+        if candidate.cycle_id != AnnouncementPeriodNr::get() {
             return Err(Error::NotCandidatingNow);
         }
 

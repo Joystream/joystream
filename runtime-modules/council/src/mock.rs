@@ -2,9 +2,9 @@
 
 /////////////////// Configuration //////////////////////////////////////////////
 use crate::{
-    BalanceReferendum, CandidateOf, Candidates, CouncilMemberOf, CouncilMembers, CouncilStage,
-    CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate, CouncilStageUpdateOf,
-    CurrentAnnouncementCycleId, Error, GenesisConfig, Module, ReferendumConnection, Stage, Trait,
+    AnnouncementPeriodNr, BalanceReferendum, CandidateOf, Candidates, CouncilMemberOf,
+    CouncilMembers, CouncilStage, CouncilStageAnnouncing, CouncilStageElection, CouncilStageUpdate,
+    CouncilStageUpdateOf, Error, GenesisConfig, Module, ReferendumConnection, Stage, Trait,
 };
 
 use balances;
@@ -404,7 +404,7 @@ pub fn default_genesis_config() -> GenesisConfig<Runtime> {
         stage: CouncilStageUpdate::default(),
         council_members: vec![],
         candidates: vec![],
-        current_announcement_cycle_id: 0,
+        announcement_period_nr: 0,
     }
 }
 
@@ -467,7 +467,7 @@ where
         let origin = OriginType::Signed(account_id.into());
         let candidate = CandidateOf::<T> {
             staking_account_id: account_id.into(),
-            cycle_id: CurrentAnnouncementCycleId::get(),
+            cycle_id: AnnouncementPeriodNr::get(),
             stake,
             note_hash: None,
         };
