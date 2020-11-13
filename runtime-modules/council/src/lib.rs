@@ -39,7 +39,7 @@
 //! ## Dependencies:
 //! - [referendum](../referendum/index.html)
 //!
-//! note_hash: When implementing runtime for this module, don't forget to call all ReferendumConnection
+//! NOTE: When implementing runtime for this module, don't forget to call all ReferendumConnection
 //!       trait functions at proper places.
 
 /////////////////// Configuration //////////////////////////////////////////////
