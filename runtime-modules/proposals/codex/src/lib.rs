@@ -288,6 +288,58 @@ decl_module! {
         /// Predefined errors
         type Error = Error<T>;
 
+        /// Exports 'Set validator count' proposal parameters.
+        const SetValidatorCountProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SetValidatorCountProposalParameters::get();
+
+        /// Exports 'Runtime upgrade' proposal parameters.
+        const RuntimeUpgradeProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::RuntimeUpgradeProposalParameters::get();
+
+        /// Exports 'Text' proposal parameters.
+        const TextProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::TextProposalParameters::get();
+
+        /// Exports 'Spending' proposal parameters.
+        const SpendingProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SpendingProposalParameters::get();
+
+        /// Exports 'Add working group opening' proposal parameters.
+        const AddWorkingGroupOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::AddWorkingGroupOpeningProposalParameters::get();
+
+        /// Exports 'Begin review working group applications' proposal parameters.
+        const BeginReviewWorkingGroupApplicationsProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::BeginReviewWorkingGroupApplicationsProposalParameters::get();
+
+        /// Exports 'Fill working group opening' proposal parameters.
+        const FillWorkingGroupOpeningProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::FillWorkingGroupOpeningProposalParameters::get();
+
+        /// Exports 'Set working group mint capacity' proposal parameters.
+        const SetWorkingGroupMintCapacityProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SetWorkingGroupMintCapacityProposalParameters::get();
+
+        /// Exports 'Decrease working group leader stake' proposal parameters.
+        const DecreaseWorkingGroupLeaderStakeProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::DecreaseWorkingGroupLeaderStakeProposalParameters::get();
+
+        /// Exports 'Slash working group leader stake' proposal parameters.
+        const SlashWorkingGroupLeaderStakeProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SlashWorkingGroupLeaderStakeProposalParameters::get();
+
+        /// Exports 'Set working group leader reward' proposal parameters.
+        const SetWorkingGroupLeaderRewardProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::SetWorkingGroupLeaderRewardProposalParameters::get();
+
+        /// Exports 'Terminate working group leader role' proposal parameters.
+        const TerminateWorkingGroupLeaderRoleProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::TerminateWorkingGroupLeaderRoleProposalParameters::get();
+
+        /// Exports 'Amend constitution' proposal parameters.
+        const AmendConstitutionProposalParameters: ProposalParameters<T::BlockNumber, BalanceOf<T>>
+            = T::AmendConstitutionProposalParameters::get();
+
         /// Exports max allowed text proposal length const.
         const TextProposalMaxLength: u32 = T::TextProposalMaxLength::get();
 

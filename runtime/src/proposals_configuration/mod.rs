@@ -190,11 +190,11 @@ macro_rules! init_proposal_parameter_field {
 macro_rules! init_proposal_parameter_optional_field {
     ($parameters_object:ident, $jsonObj:expr, $default_object:ident, $name:ident) => {
         let param_value = extract_numeric_parameter(
-                $jsonObj,
-                stringify!($name),
-                $default_object.$name.unwrap_or_default().saturated_into(),
-            )
-            .saturated_into();
+            $jsonObj,
+            stringify!($name),
+            $default_object.$name.unwrap_or_default().saturated_into(),
+        )
+        .saturated_into();
         let opt_value = if param_value == 0 {
             None
         } else {
