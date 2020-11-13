@@ -362,7 +362,7 @@ decl_module! {
         #[weight = 10_000_000]
         pub fn announce_candidacy(origin, council_user_id: T::CouncilUserId, staking_account_id: T::AccountId, stake: Balance<T>) -> Result<(), Error<T>> {
             // ensure action can be started
-            let stage_data = EnsureChecks::<T>::can_announce_candidacy(origin, &council_user_id, &staking_account_id, &stake)?;
+            let (stage_data, previous_staking_account_id) = EnsureChecks::<T>::can_announce_candidacy(origin, &council_user_id, &staking_account_id, &stake)?;
 
             // prepare candidate
             let candidate = Self::prepare_new_candidate(staking_account_id, stake);
@@ -370,6 +370,9 @@ decl_module! {
             //
             // == MUTATION SAFE ==
             //
+            if let Some(tmp_account_id) = previous_staking_account_id {
+                Mutations::<T>::release_candidacy_stake(&council_user_id, &tmp_account_id);
+            }
 
             // update state
             Mutations::<T>::announce_candidacy(&stage_data, &council_user_id, &candidate, &stake);
@@ -757,25 +760,6 @@ impl<T: Trait> EnsureChecks<T> {
         Ok(account_id)
     }
 
-    /// Checks any previous candidacy stakes has been unstaked or is reusable.
-    fn ensure_previous_stake_is_reusable(
-        council_user_id: &T::CouncilUserId,
-    ) -> Result<Option<CandidateOf<T>>, Error<T>> {
-        // escape when no previous candidacy stake is present
-        if !Candidates::<T>::contains_key(council_user_id) {
-            return Ok(None);
-        }
-
-        let candidate = Candidates::<T>::get(council_user_id);
-
-        // prevent user from candidating twice in the same election
-        if candidate.cycle_id == CurrentAnnouncementCycleId::get() {
-            return Err(Error::StakeStillNeeded);
-        }
-
-        Ok(Some(candidate))
-    }
-
     /////////////////// Action checks //////////////////////////////////////////
 
     /// Ensures there is no problem in announcing candidacy.
@@ -784,7 +768,7 @@ impl<T: Trait> EnsureChecks<T> {
         council_user_id: &T::CouncilUserId,
         staking_account_id: &T::AccountId,
         stake: &Balance<T>,
-    ) -> Result<CouncilStageAnnouncing, Error<T>> {
+    ) -> Result<(CouncilStageAnnouncing, Option<T::AccountId>), Error<T>> {
         // ensure user's membership
         Self::ensure_user_membership_staking(origin, &council_user_id, staking_account_id)?;
 
@@ -793,29 +777,18 @@ impl<T: Trait> EnsureChecks<T> {
             _ => return Err(Error::CantCandidateNow),
         };
 
-        // ensure that previous stake is unlockable (if any present)
-        let old_candidate =
-            Self::ensure_previous_stake_is_reusable(council_user_id).map_err(|error| {
-                if error == Error::StakeStillNeeded {
-                    return Error::CantCandidateTwice;
-                }
+        // when previous candidacy record is present, ensure user is not candidating twice & prepare old stake for unlocking
+        let mut existing_staking_account_id = None;
+        if Candidates::<T>::contains_key(council_user_id) {
+            let candidate = Candidates::<T>::get(council_user_id);
 
-                error
-            })?;
-
-        // ensure existing and current staking account are the same
-        if let Some(tmp_old_candidate) = old_candidate {
-            if tmp_old_candidate.staking_account_id != *staking_account_id {
-                return Err(Error::InvalidAccountToStakeReuse);
+            // prevent user from candidating twice in the same election
+            if candidate.cycle_id == CurrentAnnouncementCycleId::get() {
+                return Err(Error::CantCandidateTwice);
             }
-        }
 
-        // prevent user from candidating twice in the same election
-        // note_hash: repeated candidacy without releasing stake is possible and the (still) locked stake will be reused
-        if Candidates::<T>::contains_key(council_user_id)
-            && Candidates::<T>::get(council_user_id).cycle_id == CurrentAnnouncementCycleId::get()
-        {
-            return Err(Error::CantCandidateTwice);
+            // remember old staking account
+            existing_staking_account_id = Some(candidate.staking_account_id);
         }
 
         // ensure stake is above minimal threshold
@@ -828,7 +801,7 @@ impl<T: Trait> EnsureChecks<T> {
             return Err(Error::InsufficientBalanceForStaking);
         }
 
-        Ok(stage_data)
+        Ok((stage_data, existing_staking_account_id))
     }
 
     /// Ensures there is no problem in releasing old candidacy stake.
@@ -839,13 +812,19 @@ impl<T: Trait> EnsureChecks<T> {
         // ensure user's membership
         Self::ensure_user_membership(origin, council_user_id)?;
 
-        // ensure stake is unlockable
-        let staking_account_id = match Self::ensure_previous_stake_is_reusable(council_user_id)? {
-            Some(candidate) => candidate.staking_account_id,
-            None => return Err(Error::NoStake),
-        };
+        // escape when no previous candidacy stake is present
+        if !Candidates::<T>::contains_key(council_user_id) {
+            return Err(Error::NoStake);
+        }
 
-        Ok(staking_account_id)
+        let candidate = Candidates::<T>::get(council_user_id);
+
+        // prevent user from releasing candidacy stake during election
+        if candidate.cycle_id == CurrentAnnouncementCycleId::get() {
+            return Err(Error::StakeStillNeeded);
+        }
+
+        Ok(candidate.staking_account_id)
     }
 
     /// Ensures there is no problem in withdrawing already announced candidacy.

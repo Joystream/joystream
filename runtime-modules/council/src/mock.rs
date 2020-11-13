@@ -629,6 +629,15 @@ where
         });
     }
 
+    pub fn check_announcing_stake(
+        council_user_id: &T::CouncilUserId,
+        amount: BalanceReferendum<T>,
+    ) {
+        assert_eq!(Candidates::<T>::contains_key(council_user_id), true);
+
+        assert_eq!(Candidates::<T>::get(council_user_id).stake, amount);
+    }
+
     pub fn check_candidacy_note(council_user_id: &T::CouncilUserId, note: Option<&[u8]>) {
         assert_eq!(Candidates::<T>::contains_key(council_user_id), true);
 
@@ -831,5 +840,75 @@ where
                 + settings.voting_stage_duration,
         );
         Self::check_council_members(params.expected_final_council_members.clone());
+    }
+
+    /// Simulate one full round of council lifecycle (announcing, election, idle). Use it to quickly test behavior in 2nd, 3rd, etc. cycle.
+    pub fn run_full_council_cycle(start_block_number: T::BlockNumber) -> CouncilCycleParams<T> {
+        let council_settings = CouncilSettings::<T>::extract_settings();
+        let vote_stake =
+            <RuntimeReferendum as referendum::Trait<ReferendumInstance>>::MinimumStake::get();
+
+        // generate candidates
+        let candidates: Vec<CandidateInfo<T>> = (0..(council_settings.min_candidate_count + 1)
+            as u64)
+            .map(|i| {
+                InstanceMockUtils::<T>::generate_candidate(
+                    u64::from(i),
+                    council_settings.min_candidate_stake,
+                )
+            })
+            .collect();
+
+        // prepare candidates that are expected to get into candidacy list
+        let expected_candidates = candidates
+            .iter()
+            .map(|item| item.candidate.clone())
+            .collect();
+
+        let expected_final_council_members: Vec<CouncilMemberOf<T>> = vec![
+            (
+                candidates[3].candidate.clone(),
+                candidates[3].council_user_id,
+            )
+                .into(),
+            (
+                candidates[0].candidate.clone(),
+                candidates[0].council_user_id,
+            )
+                .into(),
+            (
+                candidates[1].candidate.clone(),
+                candidates[1].council_user_id,
+            )
+                .into(),
+        ];
+
+        // generate voter for each 6 voters and give: 4 votes for option D, 3 votes for option A, and 2 vote for option B, and 1 for option C
+        let votes_map: Vec<u64> = vec![3, 3, 3, 3, 0, 0, 0, 1, 1, 2];
+        let voters = (0..votes_map.len())
+            .map(|index| {
+                InstanceMockUtils::<T>::generate_voter(
+                    index as u64,
+                    vote_stake.into(),
+                    CANDIDATE_BASE_ID + votes_map[index],
+                )
+            })
+            .collect();
+
+        let params = CouncilCycleParams {
+            council_settings: CouncilSettings::<T>::extract_settings(),
+            cycle_start_block_number: start_block_number,
+            expected_initial_council_members: vec![],
+            expected_final_council_members,
+            candidates_announcing: candidates.clone(),
+            expected_candidates,
+            voters,
+
+            interrupt_point: None,
+        };
+
+        InstanceMocks::<T>::simulate_council_cycle(params.clone());
+
+        params
     }
 }
