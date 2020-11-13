@@ -244,6 +244,8 @@ pub trait Trait: system::Trait {
 
     /// The value elected members will be awarded each block of their reign.
     type ElectedMemberRewardPerBlock: Get<Balance<Self>>;
+    /// Interval for automatic reward payments.
+    type ElectedMemberRewardPeriod: Get<Self::BlockNumber>;
 }
 
 /// Trait with functions that MUST be called by the runtime with values received from the referendum module.
@@ -726,23 +728,34 @@ impl<T: Trait> Mutations<T> {
         let budget = <PeriodicRewardBudgetCollectionOf<T> as PeriodicRewardBudgetCollection<
             BudgetTypeOf<T>,
             T::CouncilUserId,
+            T::AccountId,
             Balance<T>,
             T::BlockNumber,
-            RewardRecipient<T::BlockNumber, Balance<T>, T::AccountId, T::CouncilUserId>,
+            RewardRecipient<T::BlockNumber, Balance<T>, T::AccountId>,
             PeriodicBudgetControllerTraitOf<T>,
         >>::get_budget(&T::BudgetIdElectedMembers::get());
 
-        // stop paying reward to old council members
+        // pay remaining rewards to ending council members
+        budget.pay_rewards_now();
+
+        // stop paying reward to old council members - discard any unpaid rewards
         old_members
             .iter()
-            .for_each(|member| budget.remove_recipient(&member.council_user_id));
+            .for_each(|member| budget.remove_recipient_clear_reward(&member.council_user_id));
 
         let reward_per_block = T::ElectedMemberRewardPerBlock::get();
 
         // start paying reward to new council members
         new_members.iter().for_each(|member| {
-            budget.add_recipient(&member.council_user_id, &reward_per_block);
+            budget.add_recipient(
+                &member.council_user_id,
+                &reward_per_block,
+                &member.staking_account_id,
+            );
         });
+
+        // setup reward automatic payments
+        budget.setup_auto_payments(&T::ElectedMemberRewardPeriod::get());
     }
 }
 

@@ -91,6 +91,7 @@ parameter_types! {
     //pub const BudgetIdWorkingBudget: Budgets = Budgets::WorkingTeam;
     pub const BudgetIdElectedMembers: Budgets = Budgets::ElectedMemberReward;
     pub const ElectedMemberRewardPerBlock: u64 = 100;
+    pub const ElectedMemberRewardPeriod: u64 = 2;
 }
 
 impl Trait for Runtime {
@@ -112,6 +113,7 @@ impl Trait for Runtime {
     type BudgetIdElectedMembers = BudgetIdElectedMembers;
 
     type ElectedMemberRewardPerBlock = ElectedMemberRewardPerBlock;
+    type ElectedMemberRewardPeriod = ElectedMemberRewardPeriod;
 }
 
 impl
