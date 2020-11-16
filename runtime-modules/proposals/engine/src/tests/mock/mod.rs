@@ -38,12 +38,17 @@ mod membership_mod {
     pub use membership::Event;
 }
 
+mod council {
+    pub use governance::council::Event;
+}
+
 impl_outer_event! {
     pub enum TestEvent for Test {
         balances<T>,
         engine<T>,
         membership_mod<T>,
         frame_system<T>,
+        council<T>,
     }
 }
 
@@ -168,6 +173,25 @@ impl pallet_timestamp::Trait for Test {
     type OnTimestampSet = ();
     type MinimumPeriod = MinimumPeriod;
     type WeightInfo = ();
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl governance::council::Trait for Test {
+    type Event = TestEvent;
+    type CouncilTermEnded = ();
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl recurringrewards::Trait for Test {
+    type PayoutStatusHandler = ();
+    type RecipientId = u64;
+    type RewardRelationshipId = u64;
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl minting::Trait for Test {
+    type Currency = Balances;
+    type MintId = u64;
 }
 
 pub fn initial_test_ext() -> sp_io::TestExternalities {

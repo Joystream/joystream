@@ -5,6 +5,7 @@ use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks};
 use governance::council::Module as Council;
 use membership::Module as Membership;
+use sp_std::cmp::min;
 use sp_std::prelude::*;
 use system as frame_system;
 use system::EventRecord;
@@ -19,16 +20,14 @@ fn get_byte(num: u32, byte_number: u8) -> u8 {
 
 // Method to generate a distintic valid handle
 // for a membership. For each index.
-// TODO: This will only work as long as max_handle_length >= 4
 fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     let min_handle_length = Membership::<T>::min_handle_length();
-    // If the index is ever different from u32 change this
-    let mut handle = vec![
-        get_byte(id, 0),
-        get_byte(id, 1),
-        get_byte(id, 2),
-        get_byte(id, 3),
-    ];
+
+    let mut handle = vec![];
+
+    for i in 0..min(Membership::<T>::max_handle_length().try_into().unwrap(), 4) {
+        handle.push(get_byte(id, i));
+    }
 
     while handle.len() < (min_handle_length as usize) {
         handle.push(0u8);
@@ -75,6 +74,7 @@ benchmarks! {
     where_clause {
         where T: governance::council::Trait
     }
+
     _ { }
 
     vote {
@@ -106,6 +106,11 @@ benchmarks! {
 
         let proposal_id =
             ProposalsEngine::<T>::create_proposal(proposal_creation_parameters).unwrap();
+        assert!(Proposals::<T>::contains_key(proposal_id), "Proposal not created");
+        assert!(DispatchableCallCode::<T>::contains_key(proposal_id), "Dispatchable code not added");
+        assert_eq!(ProposalsEngine::<T>::proposal_codes(proposal_id), vec![0u8], "Dispatchable code does not match");
+        assert_eq!(ProposalsEngine::<T>::proposal_count(), 1, "Not correct number of proposals stored");
+        assert_eq!(ProposalsEngine::<T>::active_proposal_count(), 1, "Created proposal not active");
 
         let (account_voter_id, member_voter_id) = member_account::<T>("voter", 1);
 
@@ -116,5 +121,43 @@ benchmarks! {
             proposal_id,
             VoteKind::Approve,
             vec![0u8; i.try_into().unwrap()]
-        )
+      )
+      verify {
+          assert!(Proposals::<T>::contains_key(proposal_id), "Proposal should still exist");
+
+          let voting_results = ProposalsEngine::<T>::proposals(proposal_id).voting_results;
+
+          assert_eq!(
+              voting_results,
+              VotingResults{ approvals: 1, abstentions: 0, rejections: 0, slashes: 0 },
+              "There should only be 1 approval"
+          );
+
+          assert!(
+              VoteExistsByProposalByVoter::<T>::contains_key(proposal_id, member_voter_id),
+              "Voter not added to existing voters"
+          );
+
+          assert_eq!(
+              ProposalsEngine::<T>::vote_by_proposal_by_voter(proposal_id, member_voter_id),
+              VoteKind::Approve,
+              "Stored vote doesn't match"
+          );
+
+          assert_last_event::<T>(RawEvent::Voted(member_voter_id, proposal_id, VoteKind::Approve).into());
+      }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tests::mock::{initial_test_ext, Test};
+    use frame_support::assert_ok;
+
+    #[test]
+    fn test_vote() {
+        initial_test_ext().execute_with(|| {
+            assert_ok!(test_benchmark_vote::<Test>());
+        });
+    }
 }
