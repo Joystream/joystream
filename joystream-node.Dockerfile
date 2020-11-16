@@ -1,4 +1,11 @@
-FROM joystream/rust-builder AS builder
+FROM liuchong/rustup:1.46.0 AS rustup
+RUN rustup component add rustfmt clippy
+RUN rustup install nightly-2020-05-23 --force
+RUN rustup target add wasm32-unknown-unknown --toolchain nightly-2020-05-23
+RUN apt-get update && \
+  apt-get install -y curl git gcc xz-utils sudo pkg-config unzip clang libc6-dev-i386
+
+FROM rustup AS builder
 LABEL description="Compiles all workspace artifacts"
 WORKDIR /joystream
 COPY . /joystream
