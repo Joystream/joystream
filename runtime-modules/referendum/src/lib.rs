@@ -239,7 +239,7 @@ decl_event! {
         ReferendumFinished(Vec<OptionResult<VotePower>>),
 
         /// User cast a vote in referendum
-        VoteCast(AccountId, AccountId, Hash, Balance),
+        VoteCast(AccountId, Hash, Balance),
 
         /// User revealed his vote
         VoteRevealed(AccountId, u64),
@@ -323,19 +323,19 @@ decl_module! {
 
         /// Cast a sealed vote in the referendum.
         #[weight = 10_000_000]
-        pub fn vote(origin, staking_account_id: T::AccountId, commitment: T::Hash, stake: Balance<T, I>) -> Result<(), Error<T, I>> {
+        pub fn vote(origin, commitment: T::Hash, stake: Balance<T, I>) -> Result<(), Error<T, I>> {
             // ensure action can be started
-            let account_id = EnsureChecks::<T, I>::can_vote(origin, &staking_account_id, &stake)?;
+            let account_id = EnsureChecks::<T, I>::can_vote(origin, &stake)?;
 
             //
             // == MUTATION SAFE ==
             //
 
             // start revealing phase - it can return error when stake fails to lock
-            Mutations::<T, I>::vote(&staking_account_id, &commitment, &stake)?;
+            Mutations::<T, I>::vote(&account_id, &commitment, &stake)?;
 
             // emit event
-            Self::deposit_event(RawEvent::VoteCast(account_id, staking_account_id, commitment, stake));
+            Self::deposit_event(RawEvent::VoteCast(account_id, commitment, stake));
 
             Ok(())
         }
@@ -519,21 +519,21 @@ impl<T: Trait<I>, I: Instance> Mutations<T, I> {
 
     /// Cast a user's sealed vote for the current referendum cycle.
     fn vote(
-        staking_account_id: &<T as system::Trait>::AccountId,
+        account_id: &<T as system::Trait>::AccountId,
         commitment: &T::Hash,
         stake: &Balance<T, I>,
     ) -> Result<(), Error<T, I>> {
         // lock stake amount
         T::Currency::set_lock(
             T::LockId::get(),
-            staking_account_id,
+            account_id,
             *stake,
             WithdrawReason::Transfer.into(),
         );
 
         // store vote
         Votes::<T, I>::insert(
-            staking_account_id,
+            account_id,
             CastVote {
                 commitment: *commitment,
                 stake: *stake,
@@ -706,19 +706,15 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         Ok(())
     }
 
-    fn can_vote(
-        origin: T::Origin,
-        staking_account_id: &T::AccountId,
-        stake: &Balance<T, I>,
-    ) -> Result<T::AccountId, Error<T, I>> {
+    fn can_vote(origin: T::Origin, stake: &Balance<T, I>) -> Result<T::AccountId, Error<T, I>> {
         fn prevent_repeated_vote<T: Trait<I>, I: Instance>(
-            staking_account_id: &T::AccountId,
+            account_id: &T::AccountId,
         ) -> Result<(), Error<T, I>> {
-            if !Votes::<T, I>::contains_key(&staking_account_id) {
+            if !Votes::<T, I>::contains_key(&account_id) {
                 return Ok(());
             }
 
-            let existing_vote = Votes::<T, I>::get(&staking_account_id);
+            let existing_vote = Votes::<T, I>::get(&account_id);
 
             // don't allow repeated vote
             if existing_vote.cycle_id == CurrentCycleId::<I>::get() {
@@ -740,7 +736,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         };
 
         // prevent repeated vote
-        prevent_repeated_vote::<T, I>(&staking_account_id)?;
+        prevent_repeated_vote::<T, I>(&account_id)?;
 
         // ensure stake is enough for voting
         if stake < &T::MinimumStake::get() {
@@ -748,7 +744,7 @@ impl<T: Trait<I>, I: Instance> EnsureChecks<T, I> {
         }
 
         // ensure account can lock the stake
-        if T::Currency::total_balance(&staking_account_id) < *stake {
+        if T::Currency::total_balance(&account_id) < *stake {
             return Err(Error::InsufficientBalanceToStakeCurrency);
         }
 

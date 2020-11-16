@@ -689,7 +689,6 @@ where
 
     pub fn vote_for_candidate(
         origin: OriginType<T::AccountId>,
-        staking_account_id: T::AccountId,
         commitment: T::Hash,
         stake: BalanceReferendum<T>,
         expected_result: Result<(), ()>,
@@ -698,7 +697,6 @@ where
         assert_eq!(
             referendum::Module::<RuntimeReferendum, ReferendumInstance>::vote(
                 InstanceMockUtils::<T>::mock_origin(origin).into(),
-                staking_account_id.into(),
                 commitment.into(),
                 stake.into(),
             )
@@ -783,7 +781,6 @@ where
         params.voters.iter().for_each(|voter| {
             Self::vote_for_candidate(
                 voter.origin.clone(),
-                voter.account_id.clone(),
                 voter.commitment.clone(),
                 voter.stake.clone(),
                 Ok(()),

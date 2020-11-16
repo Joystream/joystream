@@ -133,7 +133,6 @@ fn council_can_vote_for_yourself() {
         );
         Mocks::vote_for_candidate(
             voter.origin.clone(),
-            voter.account_id.clone(),
             voter.commitment.clone(),
             voter.stake.clone(),
             Ok(()),
@@ -804,7 +803,6 @@ fn council_candidacy_set_note() {
         params.voters.iter().for_each(|voter| {
             Mocks::vote_for_candidate(
                 voter.origin.clone(),
-                voter.account_id.clone(),
                 voter.commitment.clone(),
                 voter.stake.clone(),
                 Ok(()),
