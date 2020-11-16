@@ -31,7 +31,6 @@ export const videosResolver: QueryResolver<VideoQueryArgs, GetNewestVideos_video
   context,
   info
 ) => {
-  return null
   const baseResolverArgs = {
     first: args.first,
     after: args.after,
@@ -61,7 +60,6 @@ export const channelsResolver: QueryResolver<GetNewestChannelsVariables, GetNewe
   context,
   info
 ) => {
-  return null
   const resolverArgs = {
     first: args.first,
     after: args.after,
@@ -73,7 +71,6 @@ export const channelsResolver: QueryResolver<GetNewestChannelsVariables, GetNewe
 
 // FIXME: This resolver is currently broken and returns the same result n times instead of the correct result.
 export const searchResolver: QueryResolver<SearchVariables, Search_search[]> = (_, { query_string }, context) => {
-  return null
   const { mirageSchema: schema } = context
   const videos = getRecords({ name: 'Video' }, {}, schema) as VideoFields[]
   const channels = getRecords({ name: 'Channel' }, {}, schema) as ChannelFields[]
