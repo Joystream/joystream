@@ -22,7 +22,7 @@ const executableOrionSchema = wrapSchema({
 
 const mergedSchema = mergeSchemas({
   schemas: [executableQueryNodeSchema, executableOrionSchema],
-  resolvers: queryNodeStitchingResolvers(executableOrionSchema),
+  resolvers: queryNodeStitchingResolvers(executableQueryNodeSchema, executableOrionSchema),
 })
 
 const link = new SchemaLink({ schema: mergedSchema })
