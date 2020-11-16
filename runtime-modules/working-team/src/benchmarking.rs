@@ -1,10 +1,10 @@
 #![cfg(feature = "runtime-benchmarks")]
 use super::*;
-use core::cmp::min;
 use core::convert::TryInto;
 use frame_benchmarking::{account, benchmarks_instance, Zero};
 use frame_support::traits::OnInitialize;
 use sp_runtime::traits::Bounded;
+use sp_std::cmp::min;
 use sp_std::prelude::*;
 use system as frame_system;
 use system::EventRecord;
@@ -162,13 +162,12 @@ fn add_and_apply_opening<T: Trait<I>, I: Instance>(
 // for a membership. For each index.
 fn handle_from_id<T: membership::Trait>(id: u32) -> Vec<u8> {
     let min_handle_length = Membership::<T>::min_handle_length();
-    // If the index is ever different from u32 change this
-    let mut handle = vec![
-        get_byte(id, 0),
-        get_byte(id, 1),
-        get_byte(id, 2),
-        get_byte(id, 3),
-    ];
+
+    let mut handle = vec![];
+
+    for i in 0..min(Membership::<T>::max_handle_length().try_into().unwrap(), 4) {
+        handle.push(get_byte(id, i));
+    }
 
     while handle.len() < (min_handle_length as usize) {
         handle.push(0u8);
