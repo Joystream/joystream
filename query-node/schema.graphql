@@ -55,6 +55,14 @@ type ClassEntity @entity {
   happenedIn: Block!
 }
 
+"Keep track of the next entity id"
+type NextEntityId @entity {
+  "Constant field is set to '1'"
+  id: ID!
+
+  nextId: Int!
+}
+
 #### High Level Derivative Entities ####
 
 type Language @entity {
