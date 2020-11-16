@@ -1691,6 +1691,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hex-literal"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5af1f635ef1bc545d78392b136bfe1c9809e029023c84a3638a864a10b8819c8"
+
+[[package]]
 name = "hex-literal-impl"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2061,6 +2067,7 @@ dependencies = [
  "frame-system",
  "frame-system-benchmarking",
  "frame-system-rpc-runtime-api",
+ "hex-literal 0.3.1",
  "pallet-authority-discovery",
  "pallet-authorship",
  "pallet-babe",
@@ -3573,8 +3580,9 @@ dependencies = [
 
 [[package]]
 name = "pallet-proposals-discussion"
-version = "3.0.0"
+version = "3.0.1"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "pallet-balances",
@@ -5077,7 +5085,7 @@ dependencies = [
  "fnv",
  "futures 0.3.4",
  "hash-db",
- "hex-literal",
+ "hex-literal 0.2.1",
  "kvdb",
  "lazy_static",
  "log",
@@ -5687,7 +5695,7 @@ dependencies = [
  "fdlimit",
  "futures 0.1.29",
  "futures 0.3.4",
- "hex-literal",
+ "hex-literal 0.2.1",
  "log",
  "parity-scale-codec",
  "parking_lot 0.10.2",
