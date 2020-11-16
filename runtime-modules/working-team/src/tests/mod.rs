@@ -2,6 +2,8 @@ mod fixtures;
 mod hiring_workflow;
 mod mock;
 
+pub use mock::{build_test_externalities, Test};
+
 use system::RawOrigin;
 
 use crate::tests::fixtures::{
@@ -15,7 +17,10 @@ use crate::tests::mock::{
     STAKING_ACCOUNT_ID_FOR_FAILED_VALIDITY_CHECK, STAKING_ACCOUNT_ID_FOR_ZERO_STAKE,
 };
 use crate::types::StakeParameters;
-use crate::{Error, JobOpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy, TeamWorker};
+use crate::{
+    DefaultInstance, Error, JobOpeningType, Penalty, RawEvent, RewardPolicy, StakePolicy,
+    TeamWorker,
+};
 use fixtures::{
     increase_total_balance_issuance_using_account_id, setup_members, AddOpeningFixture,
     ApplyOnOpeningFixture, EventFixture, FillOpeningFixture, HireLeadFixture,
@@ -24,10 +29,7 @@ use fixtures::{
 };
 use frame_support::dispatch::DispatchError;
 use frame_support::StorageMap;
-use mock::{
-    build_test_externalities, run_to_block, Balances, RewardPeriod, Test, TestWorkingTeam,
-    TestWorkingTeamInstance, ACTOR_ORIGIN_ERROR,
-};
+use mock::{run_to_block, Balances, RewardPeriod, TestWorkingTeam, ACTOR_ORIGIN_ERROR};
 use sp_runtime::traits::Hash;
 use sp_std::collections::btree_map::BTreeMap;
 
@@ -77,9 +79,8 @@ fn add_opening_fails_with_zero_stake() {
                 leaving_unstaking_period: 0,
             }));
 
-        add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::CannotStakeZero.into(),
-        ));
+        add_opening_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::CannotStakeZero.into()));
     });
 }
 
@@ -94,7 +95,7 @@ fn add_opening_fails_with_zero_reward() {
             }));
 
         add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::CannotRewardWithZero.into(),
+            Error::<Test, DefaultInstance>::CannotRewardWithZero.into(),
         ));
     });
 }
@@ -118,7 +119,7 @@ fn add_opening_fails_with_incorrect_unstaking_period() {
             }));
 
         add_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::UnstakingPeriodLessThanMinimum.into(),
+            Error::<Test, DefaultInstance>::UnstakingPeriodLessThanMinimum.into(),
         ));
     });
 }
@@ -167,7 +168,7 @@ fn apply_on_opening_fails_with_invalid_opening_id() {
             ApplyOnOpeningFixture::default_for_opening_id(invalid_opening_id);
 
         apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::OpeningDoesNotExist.into(),
+            Error::<Test, DefaultInstance>::OpeningDoesNotExist.into(),
         ));
     });
 }
@@ -351,7 +352,7 @@ fn fill_opening_fails_with_invalid_active_worker_number() {
         );
 
         fill_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::MaxActiveWorkerNumberExceeded.into(),
+            Error::<Test, DefaultInstance>::MaxActiveWorkerNumberExceeded.into(),
         ));
     });
 }
@@ -371,7 +372,7 @@ fn fill_opening_fails_with_invalid_application_id() {
             FillOpeningFixture::default_for_ids(opening_id, vec![invalid_application_id]);
 
         fill_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::SuccessfulWorkerApplicationDoesNotExist.into(),
+            Error::<Test, DefaultInstance>::SuccessfulWorkerApplicationDoesNotExist.into(),
         ));
     });
 }
@@ -382,9 +383,7 @@ fn cannot_hire_a_lead_twice() {
         HireLeadFixture::default().hire_lead();
         HireLeadFixture::default()
             .with_setup_environment(false)
-            .expect(
-                Error::<Test, TestWorkingTeamInstance>::CannotHireLeaderWhenLeaderExists.into(),
-            );
+            .expect(Error::<Test, DefaultInstance>::CannotHireLeaderWhenLeaderExists.into());
     });
 }
 
@@ -397,7 +396,7 @@ fn cannot_hire_muptiple_leaders() {
             .add_default_application()
             .add_application_full(b"leader2".to_vec(), RawOrigin::Signed(2), 2, Some(2))
             .expect(Err(
-                Error::<Test, TestWorkingTeamInstance>::CannotHireMultipleLeaders.into(),
+                Error::<Test, DefaultInstance>::CannotHireMultipleLeaders.into(),
             ))
             .execute();
     });
@@ -481,9 +480,8 @@ fn update_worker_role_fails_with_leaving_worker() {
         let update_worker_account_fixture =
             UpdateWorkerRoleAccountFixture::default_with_ids(worker_id, new_account_id);
 
-        update_worker_account_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::WorkerIsLeaving.into(),
-        ));
+        update_worker_account_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::WorkerIsLeaving.into()));
     });
 }
 
@@ -497,7 +495,7 @@ fn update_worker_role_account_fails_with_invalid_origin() {
                 .with_origin(RawOrigin::None);
 
         update_worker_account_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::InvalidMemberOrigin.into(),
+            Error::<Test, DefaultInstance>::InvalidMemberOrigin.into(),
         ));
     });
 }
@@ -612,7 +610,7 @@ fn leave_worker_role_fails_with_invalid_origin_signed_account() {
             .with_origin(RawOrigin::Signed(2));
 
         leave_worker_role_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::SignerIsNotWorkerRoleAccount.into(),
+            Error::<Test, DefaultInstance>::SignerIsNotWorkerRoleAccount.into(),
         ));
     });
 }
@@ -639,9 +637,8 @@ fn leave_worker_role_fails_already_leaving_worker() {
             .with_stake_policy(stake_policy);
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
-        leave_worker_role_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::WorkerIsLeaving.into(),
-        ));
+        leave_worker_role_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::WorkerIsLeaving.into()));
     });
 }
 
@@ -655,7 +652,7 @@ fn leave_worker_role_fails_with_invalid_worker_id() {
             LeaveWorkerRoleFixture::default_for_worker_id(invalid_worker_id);
 
         leave_worker_role_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::WorkerDoesNotExist.into(),
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
         ));
     });
 }
@@ -746,9 +743,8 @@ fn terminate_worker_role_fails_with_unset_lead() {
         let terminate_worker_role_fixture =
             TerminateWorkerRoleFixture::default_for_worker_id(worker_id);
 
-        terminate_worker_role_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::CurrentLeadNotSet.into(),
-        ));
+        terminate_worker_role_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::CurrentLeadNotSet.into()));
     });
 }
 
@@ -846,7 +842,7 @@ fn apply_on_opening_fails_with_stake_inconsistent_with_opening_stake() {
             .with_stake_parameters(Some(stake_parameters));
 
         apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::ApplicationStakeDoesntMatchOpening.into(),
+            Error::<Test, DefaultInstance>::ApplicationStakeDoesntMatchOpening.into(),
         ));
     });
 }
@@ -916,7 +912,7 @@ fn apply_on_opening_fails_invalid_staking_check() {
             .with_stake_parameters(Some(stake_parameters));
 
         apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::InvalidStakingAccountForMember.into(),
+            Error::<Test, DefaultInstance>::InvalidStakingAccountForMember.into(),
         ));
     });
 }
@@ -952,7 +948,7 @@ fn apply_on_opening_fails_stake_amount_check() {
             .with_stake_parameters(Some(stake_parameters));
 
         apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::InsufficientBalanceToCoverStake.into(),
+            Error::<Test, DefaultInstance>::InsufficientBalanceToCoverStake.into(),
         ));
     });
 }
@@ -988,7 +984,7 @@ fn apply_on_opening_fails_with_conflicting_stakes() {
             .with_stake_parameters(Some(stake_parameters));
 
         apply_on_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::ConflictStakesOnAccount.into(),
+            Error::<Test, DefaultInstance>::ConflictStakesOnAccount.into(),
         ));
     });
 }
@@ -1083,7 +1079,9 @@ fn leave_worker_unlocks_the_stake_with_unstaking_period() {
 
         run_to_block(leaving_unstaking_period);
 
-        assert!(!<crate::WorkerById<Test, TestWorkingTeamInstance>>::contains_key(worker_id));
+        assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+            worker_id
+        ));
         assert_eq!(Balances::usable_balance(&account_id), total_balance);
 
         EventFixture::assert_last_crate_event(RawEvent::WorkerExited(worker_id));
@@ -1125,7 +1123,9 @@ fn leave_worker_works_immedietely_stake_is_zero() {
 
         leave_worker_role_fixture.call_and_assert(Ok(()));
 
-        assert!(!<crate::WorkerById<Test, TestWorkingTeamInstance>>::contains_key(worker_id));
+        assert!(!<crate::WorkerById<Test, DefaultInstance>>::contains_key(
+            worker_id
+        ));
     });
 }
 
@@ -1188,7 +1188,7 @@ fn terminate_worker_with_slashing_fails_with_no_staking_account() {
                 .with_penalty(Some(penalty));
 
         terminate_worker_role_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::CannotChangeStakeWithoutStakingAccount.into(),
+            Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),
         ));
     });
 }
@@ -1256,7 +1256,7 @@ fn slash_worker_stake_fails_with_no_staking_account() {
             SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_penalty(penalty);
 
         slash_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::CannotChangeStakeWithoutStakingAccount.into(),
+            Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),
         ));
     });
 }
@@ -1352,7 +1352,7 @@ fn slash_worker_stake_fails_with_zero_balance() {
             SlashWorkerStakeFixture::default_for_worker_id(worker_id).with_penalty(penalty);
 
         slash_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::StakeBalanceCannotBeZero.into(),
+            Error::<Test, DefaultInstance>::StakeBalanceCannotBeZero.into(),
         ));
     });
 }
@@ -1366,7 +1366,7 @@ fn slash_worker_stake_fails_with_invalid_worker_id() {
         let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
         slash_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::WorkerDoesNotExist.into(),
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
         ));
     });
 }
@@ -1378,9 +1378,8 @@ fn slash_worker_stake_fails_with_not_set_lead() {
 
         let slash_stake_fixture = SlashWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
-        slash_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::CurrentLeadNotSet.into(),
-        ));
+        slash_stake_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::CurrentLeadNotSet.into()));
     });
 }
 
@@ -1440,7 +1439,7 @@ fn decrease_worker_stake_fails_with_no_staking_account() {
             .with_balance(new_stake_balance);
 
         decrease_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::CannotChangeStakeWithoutStakingAccount.into(),
+            Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),
         ));
     });
 }
@@ -1518,7 +1517,7 @@ fn decrease_worker_stake_fails_with_zero_balance() {
             DecreaseWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
 
         decrease_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::StakeBalanceCannotBeZero.into(),
+            Error::<Test, DefaultInstance>::StakeBalanceCannotBeZero.into(),
         ));
     });
 }
@@ -1533,7 +1532,7 @@ fn decrease_worker_stake_fails_with_invalid_worker_id() {
             DecreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
         decrease_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::WorkerDoesNotExist.into(),
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
         ));
     });
 }
@@ -1546,9 +1545,8 @@ fn decrease_worker_stake_fails_with_not_set_lead() {
         let decrease_stake_fixture =
             DecreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
-        decrease_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::CurrentLeadNotSet.into(),
-        ));
+        decrease_stake_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::CurrentLeadNotSet.into()));
     });
 }
 
@@ -1650,7 +1648,7 @@ fn increase_worker_stake_fails_with_zero_balance() {
             IncreaseWorkerStakeFixture::default_for_worker_id(worker_id).with_balance(0);
 
         increase_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::StakeBalanceCannotBeZero.into(),
+            Error::<Test, DefaultInstance>::StakeBalanceCannotBeZero.into(),
         ));
     });
 }
@@ -1671,7 +1669,7 @@ fn increase_worker_stake_fails_with_no_staking_account() {
         let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id);
 
         increase_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::CannotChangeStakeWithoutStakingAccount.into(),
+            Error::<Test, DefaultInstance>::CannotChangeStakeWithoutStakingAccount.into(),
         ));
     });
 }
@@ -1687,7 +1685,7 @@ fn increase_worker_stake_fails_with_invalid_worker_id() {
             IncreaseWorkerStakeFixture::default_for_worker_id(invalid_worker_id);
 
         increase_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::WorkerDoesNotExist.into(),
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
         ));
     });
 }
@@ -1715,7 +1713,7 @@ fn increase_worker_stake_fails_external_check() {
             .with_balance(invalid_new_stake);
 
         decrease_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::InsufficientBalanceToCoverStake.into(),
+            Error::<Test, DefaultInstance>::InsufficientBalanceToCoverStake.into(),
         ));
     });
 }
@@ -1772,7 +1770,7 @@ fn withdraw_application_fails_invalid_application_id() {
         let withdraw_application_fixture =
             WithdrawApplicationFixture::default_for_application_id(invalid_application_id);
         withdraw_application_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::WorkerApplicationDoesNotExist.into(),
+            Error::<Test, DefaultInstance>::WorkerApplicationDoesNotExist.into(),
         ));
     });
 }
@@ -1811,7 +1809,7 @@ fn withdraw_worker_application_fails_with_invalid_application_author() {
             WithdrawApplicationFixture::default_for_application_id(application_id)
                 .with_signer(invalid_author_account_id);
         withdraw_application_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::OriginIsNotApplicant.into(),
+            Error::<Test, DefaultInstance>::OriginIsNotApplicant.into(),
         ));
     });
 }
@@ -1862,7 +1860,7 @@ fn cancel_opening_fails_invalid_opening_id() {
             CancelOpeningFixture::default_for_opening_id(invalid_opening_id);
 
         cancel_opening_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::OpeningDoesNotExist.into(),
+            Error::<Test, DefaultInstance>::OpeningDoesNotExist.into(),
         ));
     });
 }
@@ -1894,9 +1892,8 @@ fn decrease_worker_stake_fails_with_leaving_worker() {
         let decrease_stake_fixture = DecreaseWorkerStakeFixture::default_for_worker_id(worker_id)
             .with_balance(new_stake_balance);
 
-        decrease_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::WorkerIsLeaving.into(),
-        ));
+        decrease_stake_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::WorkerIsLeaving.into()));
     });
 }
 
@@ -1927,9 +1924,8 @@ fn increase_worker_stake_fails_with_leaving_worker() {
         let increase_stake_fixture = IncreaseWorkerStakeFixture::default_for_worker_id(worker_id)
             .with_balance(new_stake_balance);
 
-        increase_stake_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::WorkerIsLeaving.into(),
-        ));
+        increase_stake_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::WorkerIsLeaving.into()));
     });
 }
 
@@ -2171,7 +2167,7 @@ fn update_reward_account_fails_with_invalid_origin_signed_account() {
                 .with_origin(RawOrigin::Signed(invalid_role_account));
 
         update_account_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::SignerIsNotWorkerRoleAccount.into(),
+            Error::<Test, DefaultInstance>::SignerIsNotWorkerRoleAccount.into(),
         ));
     });
 }
@@ -2192,7 +2188,7 @@ fn update_reward_account_fails_with_invalid_worker_id() {
             UpdateRewardAccountFixture::default_with_ids(invalid_worker_id, new_reward_account);
 
         update_account_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::WorkerDoesNotExist.into(),
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
         ));
     });
 }
@@ -2207,9 +2203,8 @@ fn update_reward_account_fails_with_no_recurring_reward() {
         let update_account_fixture =
             UpdateRewardAccountFixture::default_with_ids(worker_id, new_reward_account);
 
-        update_account_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::WorkerHasNoReward.into(),
-        ));
+        update_account_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::WorkerHasNoReward.into()));
     });
 }
 
@@ -2289,9 +2284,8 @@ fn update_reward_amount_fails_with_invalid_origin_signed_account() {
         let update_amount_fixture = UpdateRewardAmountFixture::default_for_worker_id(worker_id)
             .with_origin(RawOrigin::Signed(2));
 
-        update_amount_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::IsNotLeadAccount.into(),
-        ));
+        update_amount_fixture
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::IsNotLeadAccount.into()));
     });
 }
 
@@ -2305,7 +2299,7 @@ fn update_reward_amount_fails_with_invalid_worker_id() {
             UpdateRewardAmountFixture::default_for_worker_id(invalid_worker_id);
 
         update_amount_fixture.call_and_assert(Err(
-            Error::<Test, TestWorkingTeamInstance>::WorkerDoesNotExist.into(),
+            Error::<Test, DefaultInstance>::WorkerDoesNotExist.into(),
         ));
     });
 }
@@ -2337,9 +2331,7 @@ fn set_status_text_fails_with_bad_origin() {
 
         SetStatusTextFixture::default()
             .with_origin(RawOrigin::Signed(leader_account_id))
-            .call_and_assert(Err(
-                Error::<Test, TestWorkingTeamInstance>::IsNotLeadAccount.into(),
-            ));
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::IsNotLeadAccount.into()));
     });
 }
 
@@ -2384,7 +2376,7 @@ fn spend_from_budget_fails_with_empty_budget() {
             .with_account_id(account_id)
             .with_amount(amount)
             .call_and_assert(Err(
-                Error::<Test, TestWorkingTeamInstance>::InsufficientBudgetForSpending.into(),
+                Error::<Test, DefaultInstance>::InsufficientBudgetForSpending.into(),
             ));
     });
 }
@@ -2399,8 +2391,6 @@ fn spend_from_budget_fails_with_zero_amount() {
         SpendFromBudgetFixture::default()
             .with_account_id(account_id)
             .with_amount(amount)
-            .call_and_assert(Err(
-                Error::<Test, TestWorkingTeamInstance>::CannotSpendZero.into()
-            ));
+            .call_and_assert(Err(Error::<Test, DefaultInstance>::CannotSpendZero.into()));
     });
 }

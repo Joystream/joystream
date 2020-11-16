@@ -4,6 +4,7 @@ use codec::{Decode, Encode};
 use common::currency::GovernanceCurrency;
 use frame_support::dispatch::DispatchResult;
 use frame_support::traits::Currency;
+use sp_std::vec::Vec;
 
 #[cfg(feature = "std")]
 use serde::{Deserialize, Serialize};
