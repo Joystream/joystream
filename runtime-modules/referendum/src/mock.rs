@@ -33,12 +33,6 @@ pub const USER_REGULAR_POWER_VOTES: u64 = 3;
 pub const USER_REGULAR_2: u64 = 4;
 pub const USER_REGULAR_3: u64 = 5;
 
-pub const USER_ADMIN_STAKING: u64 = USER_ADMIN + 1000;
-pub const USER_REGULAR_POWER_VOTES_STAKING: u64 = USER_REGULAR_POWER_VOTES + 1000;
-pub const USER_REGULAR_STAKING: u64 = USER_REGULAR + 1000;
-pub const USER_REGULAR_2_STAKING: u64 = USER_REGULAR_2 + 1000;
-pub const USER_REGULAR_3_STAKING: u64 = USER_REGULAR_3 + 1000;
-
 pub const POWER_VOTE_STRENGTH: u64 = 10;
 
 /////////////////// Runtime and Instances //////////////////////////////////////
@@ -259,11 +253,11 @@ pub fn build_test_externalities(
     result.execute_with(|| {
         // topup significant accounts
         let amount = 40000; // some high enough number to pass all test checks
-        topup_account(USER_ADMIN_STAKING, amount);
-        topup_account(USER_REGULAR_STAKING, amount);
-        topup_account(USER_REGULAR_2_STAKING, amount);
-        topup_account(USER_REGULAR_3_STAKING, amount);
-        topup_account(USER_REGULAR_POWER_VOTES_STAKING, amount);
+        topup_account(USER_ADMIN, amount);
+        topup_account(USER_REGULAR, amount);
+        topup_account(USER_REGULAR_2, amount);
+        topup_account(USER_REGULAR_3, amount);
+        topup_account(USER_REGULAR_POWER_VOTES, amount);
 
         InstanceMockUtils::<Runtime, Instance0>::increase_block_number(1)
     });
@@ -319,21 +313,21 @@ where
     }
 
     pub fn calculate_commitment(
-        staking_account_id: &<T as system::Trait>::AccountId,
+        account_id: &<T as system::Trait>::AccountId,
         vote_option_index: &u64,
     ) -> (T::Hash, Vec<u8>) {
         let cycle_id = CurrentCycleId::<I>::get();
-        Self::calculate_commitment_for_cycle(staking_account_id, &cycle_id, vote_option_index, None)
+        Self::calculate_commitment_for_cycle(account_id, &cycle_id, vote_option_index, None)
     }
 
     pub fn calculate_commitment_custom_salt(
-        staking_account_id: &<T as system::Trait>::AccountId,
+        account_id: &<T as system::Trait>::AccountId,
         vote_option_index: &u64,
         custom_salt: &[u8],
     ) -> (T::Hash, Vec<u8>) {
         let cycle_id = CurrentCycleId::<I>::get();
         Self::calculate_commitment_for_cycle(
-            staking_account_id,
+            account_id,
             &cycle_id,
             vote_option_index,
             Some(custom_salt),
@@ -347,7 +341,7 @@ where
     }
 
     pub fn calculate_commitment_for_cycle(
-        staking_account_id: &<T as system::Trait>::AccountId,
+        account_id: &<T as system::Trait>::AccountId,
         cycle_id: &u64,
         vote_option_index: &u64,
         custom_salt: Option<&[u8]>,
@@ -362,9 +356,7 @@ where
                 <T as system::Trait>::Origin,
                 <T as system::Trait>::AccountId,
                 <T as system::Trait>::Hash,
-            >>::calculate_commitment(
-                staking_account_id, &salt, cycle_id, vote_option_index
-            ),
+            >>::calculate_commitment(account_id, &salt, cycle_id, vote_option_index),
             salt.to_vec(),
         )
     }
@@ -494,7 +486,6 @@ impl InstanceMocks<Runtime, Instance0> {
     pub fn vote(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         account_id: <Runtime as system::Trait>::AccountId,
-        staking_account_id: <Runtime as system::Trait>::AccountId,
         commitment: <Runtime as system::Trait>::Hash,
         stake: Balance<Runtime, Instance0>,
         expected_result: Result<(), Error<Runtime, Instance0>>,
@@ -503,7 +494,7 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(
             Module::<Runtime, Instance0>::vote(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
-                staking_account_id,
+                account_id,
                 commitment,
                 stake,
             ),
@@ -515,7 +506,7 @@ impl InstanceMocks<Runtime, Instance0> {
         }
 
         assert_eq!(
-            Votes::<Runtime, Instance0>::get(staking_account_id),
+            Votes::<Runtime, Instance0>::get(account_id),
             CastVote {
                 commitment,
                 cycle_id: CurrentCycleId::<Instance0>::get(),
@@ -528,10 +519,7 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
             TestEvent::event_mod_Instance0(RawEvent::VoteCast(
-                account_id,
-                staking_account_id,
-                commitment,
-                stake
+                account_id, account_id, commitment, stake
             ))
         );
     }
@@ -539,7 +527,6 @@ impl InstanceMocks<Runtime, Instance0> {
     pub fn reveal_vote(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         account_id: <Runtime as system::Trait>::AccountId,
-        staking_account_id: <Runtime as system::Trait>::AccountId,
         salt: Vec<u8>,
         vote_option_index: u64,
         expected_result: Result<(), Error<Runtime, Instance0>>,
@@ -548,7 +535,6 @@ impl InstanceMocks<Runtime, Instance0> {
         assert_eq!(
             Module::<Runtime, Instance0>::reveal_vote(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
-                staking_account_id,
                 salt,
                 vote_option_index,
             ),
@@ -562,25 +548,19 @@ impl InstanceMocks<Runtime, Instance0> {
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::event_mod_Instance0(RawEvent::VoteRevealed(
-                account_id,
-                staking_account_id,
-                vote_option_index
-            ))
+            TestEvent::event_mod_Instance0(RawEvent::VoteRevealed(account_id, vote_option_index))
         );
     }
 
     pub fn release_stake(
         origin: OriginType<<Runtime as system::Trait>::AccountId>,
         account_id: <Runtime as system::Trait>::AccountId,
-        staking_account_id: <Runtime as system::Trait>::AccountId,
         expected_result: Result<(), Error<Runtime, Instance0>>,
     ) -> () {
         // check method returns expected result
         assert_eq!(
             Module::<Runtime, Instance0>::release_stake(
                 InstanceMockUtils::<Runtime, Instance0>::mock_origin(origin),
-                staking_account_id,
             ),
             expected_result,
         );
@@ -592,7 +572,7 @@ impl InstanceMocks<Runtime, Instance0> {
         // check event was emitted
         assert_eq!(
             system::Module::<Runtime>::events().last().unwrap().event,
-            TestEvent::event_mod_Instance0(RawEvent::StakeReleased(account_id, staking_account_id))
+            TestEvent::event_mod_Instance0(RawEvent::StakeReleased(account_id))
         );
     }
 }
