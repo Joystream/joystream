@@ -1,24 +1,8 @@
 import styled from '@emotion/styled'
 import Button from '../Button'
 
-export const FADE_COLOR = 'black'
 export const Container = styled.div`
-  --prev-arrow-color: transparent;
-  --next-arrow-color: ${FADE_COLOR};
   position: relative;
-
-  ::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: calc(-1 * var(--global-horizontal-padding));
-    bottom: 0;
-    right: calc(-1 * var(--global-horizontal-padding));
-    background-image: linear-gradient(90deg, transparent 75%, var(--next-arrow-color)),
-      linear-gradient(270deg, transparent 75%, var(--prev-arrow-color));
-    pointer-events: none;
-    transition: background-image 0.2s;
-  }
 `
 
 export const Arrow = styled(Button)`
