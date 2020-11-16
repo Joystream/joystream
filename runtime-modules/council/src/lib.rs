@@ -203,11 +203,6 @@ pub trait Trait: system::Trait {
         membership_id: &Self::MembershipId,
         account_id: &<Self as system::Trait>::AccountId,
     ) -> bool;
-
-    fn is_account_free_of_conflicting_stakes(
-        staking_account_id: &<Self as system::Trait>::AccountId,
-        stake: &Balance<Self>,
-    ) -> bool;
 }
 
 /// Trait with functions that MUST be called by the runtime with values received from the referendum module.
@@ -753,7 +748,8 @@ impl<T: Trait> EnsureChecks<T> {
             return Err(Error::MembershipIdNotMatchAccount);
         }
 
-        if !T::is_account_free_of_conflicting_stakes(&staking_account_id, &stake) {
+        // ensure there are no conflicting stake types for the account
+        if !T::CandidacyLock::is_account_free_of_conflicting_stakes(&staking_account_id) {
             return Err(Error::ConflictingStake);
         }
 

@@ -79,13 +79,6 @@ impl Trait for Runtime {
     ) -> bool {
         membership_id == account_id
     }
-
-    fn is_account_free_of_conflicting_stakes(
-        _account_id: &<Self as system::Trait>::AccountId,
-        _stake: &Balance<Self>,
-    ) -> bool {
-        true
-    }
 }
 
 /////////////////// Module implementation //////////////////////////////////////
