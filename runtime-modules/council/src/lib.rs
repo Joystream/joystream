@@ -806,10 +806,7 @@ impl<T: Trait> EnsureChecks<T> {
 
         // prevent user from releasing candidacy stake during election
         if candidate.cycle_id == AnnouncementPeriodNr::get()
-            && match Stage::<T>::get().stage {
-                CouncilStage::Idle => false,
-                _ => true,
-            }
+            && !matches!(Stage::<T>::get().stage, CouncilStage::Idle)
         {
             return Err(Error::StakeStillNeeded);
         }
